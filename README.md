@@ -1,14 +1,14 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org592a49a)
-2.  [News](#org8df6521)
-3.  [Installation](#org73836c4)
-4.  [Documentation](#orgef3c0aa)
-5.  [License](#org30aae5d)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org153cd69)
+2.  [News](#orgd58aee5)
+3.  [Installation](#org71affd3)
+4.  [Documentation](#org2e6f040)
+5.  [License](#orge337489)
 
 
-<a id="org592a49a"></a>
+<a id="org153cd69"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -24,14 +24,14 @@ generation of graphical result. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="org8df6521"></a>
+<a id="orgd58aee5"></a>
 
 # News
 
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org73836c4"></a>
+<a id="org71affd3"></a>
 
 # Installation
 
@@ -47,17 +47,22 @@ ESBMTK relies on the following python versions and libraries
 please install the above with pip or conda etc. 
 
 At present, there is no ready made installation routine. Rather
-download the `esbmtk.py` library into your local working library. 
+download the `esbmtk.py` library into your local working library using
+one of the following commands
+
+-   <https://github.com/uliw/esbmtk/archive/main.zip>
+-   <https://github.com/uliw/esbmtk.git>
+-   git@github.com:uliw/esbmtk.git
 
 
-<a id="orgef3c0aa"></a>
+<a id="org2e6f040"></a>
 
 # Documentation
 
-See the documentation folder, specifically the quickstart guide.
+See the documentation folder, [specifically the quickstart guide.](esbmtk::Documentation/ESBMTK-Quick-Start_Guide.org::c394)
 
 
-<a id="org30aae5d"></a>
+<a id="orge337489"></a>
 
 # License
 
