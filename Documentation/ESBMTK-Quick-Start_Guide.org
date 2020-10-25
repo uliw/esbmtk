@@ -21,7 +21,7 @@ element can have one or more species. Note that these classes specify
 units, however at present, these units are only used for display
 purposes. It is therefore best, to use the same units throughout.
 
-#+BEGIN_SRC ditaa :file execution scheme.png :exports results
+#+BEGIN_SRC ditaa :file scheme1.png :exports results
                        +---------------+ 
                        |  Model        | 
                        |               | 
@@ -45,7 +45,7 @@ purposes. It is therefore best, to use the same units throughout.
 #+END_SRC
 
 #+RESULTS:
-[[file:execution scheme.png]]
+[[file:scheme1.png]]
 
 
 At present, these classes only specify the isotopic reference ratios,
@@ -66,7 +66,7 @@ handled by the connection class. This class will create the necessary
 fluxes, and where possible add processes. Fluxes and processes are
 also implemented as objects.
 
-#+BEGIN_SRC ditaa :file execution scheme.png :exports results
+#+BEGIN_SRC ditaa :file scheme2.png :exports results
                                Connector 1                                             Connector 2
 			     +-------------------------+			      +--------------------+
 			     | +---------------------+ |			      |+------------------+|
@@ -87,7 +87,7 @@ also implemented as objects.
 #+END_SRC
 
 #+RESULTS:
-[[file:execution scheme.png]]
+[[file:scheme2.png]]
 
 Each connector object can have more than one signal or process (or a
 mixture of signals and processes). Each reservoir can have more than
