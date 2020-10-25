@@ -1,14 +1,14 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org9cc91bb)
-2.  [News](#orgf36df6e)
-3.  [Installation](#orge18d954)
-4.  [Documentation](#orgb271d0f)
-5.  [License](#org68a68bd)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgf878683)
+2.  [News](#org6ed9f2a)
+3.  [Installation](#org4a81af2)
+4.  [Documentation](#org8eef6b5)
+5.  [License](#orgdb1fa68)
 
 
-<a id="org9cc91bb"></a>
+<a id="orgf878683"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -24,14 +24,14 @@ generation of graphical result. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="orgf36df6e"></a>
+<a id="org6ed9f2a"></a>
 
 # News
 
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orge18d954"></a>
+<a id="org4a81af2"></a>
 
 # Installation
 
@@ -55,14 +55,14 @@ one of the following commands
 -   git@github.com:uliw/esbmtk.git
 
 
-<a id="orgb271d0f"></a>
+<a id="org8eef6b5"></a>
 
 # Documentation
 
-See the documentation folder, [specifically the quickstart guide.](esbmtk::Documentation/ESBMTK-Quick-Start_Guide.org::c394)
+See the documentation folder, [[<esbmtk::Documentation/ESBMTK-Quick-Start_Guide.org::c394>][specifically the quickstart guide] in the Documentation folder
 
 
-<a id="org68a68bd"></a>
+<a id="orgdb1fa68"></a>
 
 # License
 
