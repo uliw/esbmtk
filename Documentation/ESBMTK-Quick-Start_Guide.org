@@ -321,4 +321,7 @@ C_Cycle.plot_data()
 C_Cycle.save_data()
 #+END_SRC
 
-[[nb:esbmtk::Documentation/C_Cycle_Ocean.png::c131606]]
+
+[[./C_Cycle_Ocean.png]]
+
+
