@@ -316,5 +316,5 @@ C_Cycle.plot_data()
 C_Cycle.save_data()
 #+END_SRC
 
-file:///cb06f7dde8bd2effb6c85330a0c415adfc94ba1d.png
-[[file:Overview/2020-10-26_10-30-08_cb06f7dde8bd2effb6c85330a0c415adfc94ba1d.png]]
+
+[[file:Overview/2020-10-26_10-34-45_cb06f7dde8bd2effb6c85330a0c415adfc94ba1d.png]]
