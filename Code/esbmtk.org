@@ -2032,6 +2032,7 @@ class Connect(esbmtkBase):
             "react_with": Flux,
             "ratio": Number,
             "scale": Number,
+            "k": Number,
         }
 
         n = kwargs["source"].n + "_" + kwargs[
@@ -2077,7 +2078,7 @@ class Connect(esbmtkBase):
 
         """
         #print(f"r1 = {r1.n}, r2 = {r2.n}")
-        if isinstance(self.r1, Source): 
+        if isinstance(self.r1, Source):
             self.r = r1
         else:  # in this case we do have an upstream reservoir
             self.r = r2
@@ -2197,7 +2198,7 @@ class Connect(esbmtkBase):
         flux handle, and the process handle(s).
         """
         from esbmtk import PassiveFlux, PassiveFlux_fixed_delta, VarDeltaOut, ScaleFlux, Fractionation
-        from esbmtk import Source, Sink, Flux
+        from esbmtk import Source, Sink, Flux, RateConstant
 
         if isinstance(self.r1, Source):
             self.r = self.r2
@@ -2211,7 +2212,11 @@ class Connect(esbmtkBase):
         if "delta" in self.kwargs and "rate" in self.kwargs:
             pass  # static flux,
         elif "delta" in self.kwargs:
-            self.__passivefluxfixeddelta__()  # variable flux with fixed delta
+            if "k" in self.kwargs:
+                self.__rateconstant__()  # flux depends on a rate constant
+            else:
+                self.__passivefluxfixeddelta__(
+                )  # variable flux with fixed delta
         elif "rate" in self.kwargs:
             self.__vardeltaout__()  # variable delta with fixed flux
             print("vardeltaa out")
@@ -2219,6 +2224,8 @@ class Connect(esbmtkBase):
             self.__scaleflux__()  # scaled variable flux with fixed delta
         elif "react_with" in self.kwargs:
             self.__reaction__()  # this flux will react with another flux
+        elif "k" in self.kwargs:  # this flux uses a rate constant
+            self.__rateconstant__()
         else:  # if neither are given -> default varflux type
             self.__passiveflux__()
 
@@ -2296,6 +2303,15 @@ class Connect(esbmtkBase):
                            alpha=self.kwargs["alpha"])
         self.pl.append(ph)  #
 
+    def __rateconstant__(self) -> None:
+        """ Add rate constant process"""
+        print("\n adding rate constant process \n")
+        ph = RateConstant(name=self.pn + "_k",
+                          reservoir=self.r,
+                          flux=self.fh,
+                          k = self.kwargs["k"])
+        self.pl.append(ph)
+
     def __equilibrium__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
         """
@@ -2312,9 +2328,8 @@ class Connect(esbmtkBase):
         # then set all fluxes?  do processes need to be bound
         # to reservoirs? -> yes!  but we add this process
         # simply to r1 and it will do the right thing.
-        ph = Equilibrium(pn + "_eq", self.fh, r1, r2, r3, r4, kf, kb,
-                         n)
-        
+        ph = Equilibrium(pn + "_eq", self.fh, r1, r2, r3, r4, kf, kb, n)
+
         self.pl.append(ph)  # add this process to the process list
 #+END_SRC
 
@@ -2337,6 +2352,7 @@ class Process(esbmtkBase):
 
         self.__defaultnames__()      # default kwargs names
         self.__initerrormessages__() # default error messages
+        # update self.bem dict if necessary
         self.__validateandregister__(kwargs)  # initialize keyword values
         self.__postinit__()          # do some housekeeping
 
@@ -2854,6 +2870,51 @@ class Equilibrium():
 
           # Assign fluxes. How do we do that?
 #+END_SRC
+
+*** Flux as a function of concentration and rate constant
+#+BEGIN_SRC ipython  :tangle esbmtk.py
+class RateConstant(Process):
+    """This process scales the flux as a function of the upstream
+     reservoir concentration C and a rate constant k
+
+     F = C * k
+
+     where C denotes
+     the concentration in the ustream reservoir, and k is rate constant
+
+     Example:
+          RateConstant(name = "Name",
+                       reservoir upstream_reservoir_handle,
+                       k = 1 )
+
+     """
+    from esbmtk import Reservoir, Flux
+    from typing import Dict
+
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """ Initialize this Process """
+
+        from esbmtk import Reservoir
+        from numbers import Number
+        
+        # get default names and update list for this Process
+        self.__defaultnames__()  # default kwargs names
+        self.lkk.update({"k": Number}) # update the allowed keywords
+        self.lrk.extend(["reservoir", "k"])  # new required keywords
+        # self.lod dict with default values if none provided
+        self.__initerrormessages__() 
+        self.bem.update({"k": "a number", "reservoir": Reservoir})
+        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__postinit__()  # do some housekeeping
+
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """
+          this will be called by Model.execute apply_processes
+          """
+        rate :float = self.k * reservoir.c[i - 1]
+        self.f[i] = set_mass(rate,reservoir.d[i-1], reservoir.sp.r)
+#+END_SRC
+
 
 *** Monod type limiters
 #+BEGIN_SRC ipython  :tangle esbmtk.py

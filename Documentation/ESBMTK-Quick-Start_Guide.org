@@ -165,11 +165,10 @@ use. Interaction with the model classes is done through keyword/value
 pairs. Use =help()= to inquire about the supported keyword value
 pairs.
 
-#+BEGIN_SRC ipython
+#+BEGIN_SRC ipython :tangle ocean.py
 from esbmtk import Model, Element, Species, Reservoir
 from esbmtk import Signal, Connect, Source, Sink, Flux
 from esbmtk import ExternalData
-import matplotlib.pyplot as plt
 
 # create model
 Model(
@@ -186,7 +185,7 @@ name. Note that this is not a string, but the model handle which is
 derived from the model name in the model definition above. We use the
 element handle in a similar way to register the species with an
 element.
-#+BEGIN_SRC ipython
+#+BEGIN_SRC ipython :tangle ocean.py
 # Element properties
 Element(
     name="C",                  # Element Name
@@ -203,6 +202,7 @@ Element(
 Species(name="CO2", element=C)  # Name & element handle
 Species(name="DIC", element=C)
 Species(name="OM", element=C)
+Species(name="CaCO3", element=C)
 #+END_SRC
 
 ** Using external data and initializing a signal
@@ -215,7 +215,7 @@ understands, square, and pyramidal signal forms, as well as
 repetition. Signal can be added to each other (i.e., you can specify a
 signal which effects the flux, and then add another signal which
 effects the isotope ratio). 
-#+BEGIN_SRC ipython
+#+BEGIN_SRC ipython :tangle ocean.py
 ExternalData(name="mydata",
              filename="test-data.csv",
              legend="Test Data",
@@ -232,12 +232,12 @@ Signal(name = "ACOR",
 
 ** Sources, Sinks and Reservoirs
 
-#+BEGIN_SRC ipython :tangle ocean.py
+#+BEGIN_SRC ipython :tangle ocean.py 
 Source(name="Fossil_Fuel_Burning", species=CO2)
 Source(name="Carbonate_Weathering", species=CO2)
 Source(name="Organic_Weathering", species=CO2)
 Source(name="Volcanic", species=CO2)
-Sink(name="Carbonate_burial", species=OM)
+Sink(name="Carbonate_burial", species=CaCO3)
 Sink(name="OM_burial", species=OM)
 
 Reservoir(
@@ -321,5 +321,4 @@ C_Cycle.plot_data()
 C_Cycle.save_data()
 #+END_SRC
 
-
-[[file:Overview/2020-10-26_10-34-45_cb06f7dde8bd2effb6c85330a0c415adfc94ba1d.png]]
+[[nb:esbmtk::Documentation/C_Cycle_Ocean.png::c131606]]
