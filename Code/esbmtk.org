@@ -1384,33 +1384,21 @@ class Signal(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: List[str] = ["name", "duration", "species", "shape"]
+        self.lrk: List[str] = [
+            "name", "duration", "species", "shape",
+            ["magnitude", "mass", "data"]
+        ]
 
         # list of default values if none provided
         self.lod: Dict[str, any] = {
             'start': 0,
             'delta': 0,
             'stype': "addition",
-            'mass': 0,
-            'magnitude': 0,
-            'data': None,
         }
 
         self.__initerrormessages__()
-        self.bem.update({"data": "external_data object"})
+        self.bem.update({"data": "external_data object", "magnitude": Number})
         self.__validateandregister__(kwargs)  # initialize keyword values
-
-        # if mass is given remove magnitude and vice versa
-        #if "mass" in kwargs and "magnitude" in kwargs:
-        #    raise ValueError("Specify mass or magnitude")
-        #elif kwargs["mass"] > 0:
-        #    self.lod.pop('magnitude')
-        #elif "magnitude" in kwargs["magnitude"] > 0:
-        #    self.lod.pop('mass')
-        #elif "data" in kwargs:
-        #    pass
-        #else:
-        #    raise ValueError("Either mass or magnitude must be specified")
 
         self.los: List[Signal] = []  # list of signals we are based on.
 
@@ -1491,6 +1479,7 @@ class Signal(esbmtkBase):
         else:
             raise ValueError(
                 "You must specify mass or magnitude of the signal")
+
         self.s_m: float = h  # add this to the section
         self.s_d: float = self.d  # add the delta offset
 
@@ -1500,16 +1489,20 @@ class Signal(esbmtkBase):
         from numpy import mean, array, interp, arange
         from nptyping import NDArray, Float
 
+       
+        
         w: float = (s - 1) * self.mo.dt  # get the base of the pyramid
 
         if "mass" in self.kwd:
             h = 2 * self.mass / w  # get the height of the pyramid
+            print("mass")
         elif "magnitude" in self.kwd:
             h = self.magnitude
         else:
             raise ValueError(
                 "You must specify mass or magnitude of the signal")
 
+        print(f"\n pyramid h = {h} \n")
         # create pyramid
         c: int = int(round((e - s) / 2))  # get the center index for the peak
         x: [NDArray, Float[64]] = array([0, c,
@@ -2911,7 +2904,7 @@ class RateConstant(Process):
         """
           this will be called by Model.execute apply_processes
           """
-        rate :float = self.k * reservoir.c[i - 1]
+        rate :float = self.k * reservoir.c[i-1]
         self.f[i] = set_mass(rate,reservoir.d[i-1], reservoir.sp.r)
 #+END_SRC
 
