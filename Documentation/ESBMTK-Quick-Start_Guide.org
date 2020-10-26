@@ -54,7 +54,12 @@ and plot labels.
 
 Next comes the source and sink class, which simply specify the name
 and species, followed by reservoir object which specifies things like
-reservoir name, reservoir size, reservoir species etc.
+reservoir name, reservoir size, reservoir species etc.  Each reservoir
+can only have one element. This is counter intuitive since we would
+think of the ocean as single reservoir with many elements. However,
+the model only attempts to track the transfer of mass between
+reservoirs, for a given element. For multi element models, you need to
+setup reservoirs and connections for each element.
 
 Sources, sinks, and reservoirs are connected through fluxes, and
 fluxes are either forced by signals, or affected by processes. Most
