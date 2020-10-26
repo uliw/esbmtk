@@ -18,8 +18,9 @@ with the model class. The model class (or object), set's global
 parameters like the model name, the time step etc. Next comes one or
 more element objects which define basic element properties. Each
 element can have one or more species. Note that these classes specify
-units, however at present, these units are only used for display
-purposes. It is therefore best, to use the same units throughout.
+units, however at present, there is incomplete support for unit
+conversions. So it is up to the author to ensure proper unit
+conversions. It is therefore best, to use the same units throughout.
 
 #+BEGIN_SRC ditaa :file scheme1.png :exports results
                        +---------------+ 
@@ -102,6 +103,56 @@ external data object which allows to integrate external data into the
 model framework. It can then be used to generate a signal, or it can
 be associated with a reservoir so that the data is plotted with the
 reservoir data.
+
+The model consists of four sources, two sinks, and one reservoir
+
+#+BEGIN_SRC ditaa :file model.png :exports results
+			     +-------------+        +--------------+
+			     |Fossil Fuel  |        |Volcanic      |
+			     |Burning      |        |Emissions     |
+			     |             |        |              |
+			     |             |        |              |
+			     |             |        |              |
+			     |             |        |              |
+			     +--+----------+        +--+-----------+
+				|		       |
+				|		       |
+				v		       v
++-------------+		     +--+----------------------+-----------+
+|Carbonate    |		     |        	                           |
+|Weathering   +------------->|        	                           |
+|             |	             |        	                           |
+|             |		     |        	                           |
+|             |		     |        	                           |
+|             |		     |        	                           |
++-------------+		     |        	Ocean                      |
+			     |        	                           |
++-------------+		     |        	                           |
+|Organic C    |		     |        	                           |
+|Weathering   +------------->+        	                           |
+|             |		     |        	                           |
+|             |		     |        	                           |
+|             |		     |        	                           |
+|             |		     |        	                           |
++-------------+		     +-----------+--------------+----------+
+					 |		|
+					 |		|
+					 v		v
+			     +-----------+--+	    +---+----------+
+			     |Organic C     | 	    |Carbonate     |
+			     |Burial        |  	    |Burial        |
+			     |              | 	    |              |
+			     |              | 	    |              |
+			     |              | 	    |              |
+			     |              |	    |              |
+			     |              |	    |              |
+			     +--------------+ 	    +--------------+
+
+#+END_SRC
+
+#+RESULTS:
+[[file:model.png]]
+
 
 ** Setting up the model
 We need to load all required libraries and all classes we want to
