@@ -518,6 +518,8 @@ class Model(esbmtkBase):
     
     """
     from typing import Dict
+    from nptyping import NDArray, Float
+    # from numba import jit, njit
 
     def __init__(self, **kwargs: Dict[any, any]) -> None:
         """ initialize object"""
@@ -526,7 +528,8 @@ class Model(esbmtkBase):
         from esbmtk import get_mag
         from typing import Dict
         from numbers import Number
-       
+        from nptyping import NDArray, Float
+
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
@@ -547,18 +550,19 @@ class Model(esbmtkBase):
             'dt_unit': kwargs['time_unit'],
             'base_unit': kwargs['time_unit']
         }
-        
+
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
 
-        self.lor: list = [
-        ]  # empty list which will hold all reservoir references
-        self.loc: list = [
-        ]  # empty list which will hold all connector references
+        # empty list which will hold all reservoir references
+        self.lor: list = []
+        # empty list which will hold all connector references
+        self.loc: list = []  
         self.lel: list = []  # list which will hold all element references
         self.lsp: list = []  # list which will hold all species references
         self.lop: list = []  # list flux processe
         self.lmo: list = []  # list of all model objects
+        self.olkk : list = [] # optional keywords for use in the connector class
 
         # legacy name defintions
         self.bu = self.base_unit
@@ -639,39 +643,54 @@ class Model(esbmtkBase):
         """
 
         from time import process_time
-        from numpy import array
-        
-        start:float = process_time()  # this has nothing todo with self.time below!
+        from numpy import array, zeros
+        from nptyping import NDArray, Float
 
+        # this has nothing todo with self.time below!
+        start: float = process_time()
+        new: [NDArray, Float] = zeros(3) + 1
+        
+        i = self.execute(new, self.time, self.lor)
+        
+        duration: float = process_time() - start
+        print(f"Execution took {duration} seconds")
+
+    # some mumbo jumbbo to support numba optimization. Currently not working though
+    @staticmethod
+    def execute(new:[NDArray, Float] , time: [NDArray, Float], lor:list) -> None:
+        """ Moved this code into a separate function to enable numba optimization
+        """
+        
+        from nptyping import NDArray, Float
         i = 1  # some processes refer to the previous time step
-        for t in self.time[0:-1]:  # loop over the time vector except the first
+        for t in time[0:-1]:  # loop over the time vector except the first
             # we first need to calculate all fluxes
-            for r in self.lor:  # loop over all reservoirs
+            for r in lor:  # loop over all reservoirs
                 for p in r.lop:  # loop over reservoir processes
                     p(r, i)  # update fluxes
 
             # and then update all reservoirs
-            for r in self.lor:  # loop over all reservoirs
+            for r in lor:  # loop over all reservoirs
                 flux_list = r.lof
 
-                ms = ls = hs = 0
+                new[0] = new[1] = new[2] = 0
                 for f in flux_list:  # do sum of fluxes in this reservoir
                     direction = r.lio[f.n]
-                    ms = ms + f.m[i] * direction  # current flux and direction
-                    ls = ls + f.l[i] * direction  # current flux and direction
-                    hs = hs + f.h[i] * direction  # current flux and direction
+                    new[0] = new[
+                        0] + f.m[i] * direction  # current flux and direction
+                    new[1] = new[
+                        1] + f.l[i] * direction  # current flux and direction
+                    new[2] = new[
+                        2] + f.h[i] * direction  # current flux and direction
 
-                new = array([ms, ls, hs])
+                #new = array([ms, ls, hs])
                 new = new * r.mo.dt  # get flux / timestep
                 new = new + r[i - 1]  # add to data from last time step
                 new = new * (new > 0)  # set negative values to zero
                 r[i] = new  # update reservoir data
 
             i = i + 1
-
-        duration :float = process_time() - start
-        print(f"Execution took {duration} seconds")
-
+            
     def __step_process__(self, r, i) -> None:
         """ For debugging. Provide reservoir and step number,
         """
@@ -688,7 +707,7 @@ class Model(esbmtkBase):
         ms = ls = hs = 0
         for f in flux_list:  # do sum of fluxes in this reservoir
             direction = r.lio[f.n]
-            ms = ms + f.m[i] * direction  # current flux and direction
+            ms = ms + f.m[i] * direction  # current flux and direction 
             ls = ls + f.l[i] * direction  # current flux and direction
             hs = hs + f.h[i] * direction  # current flux and direction
 
@@ -2000,8 +2019,8 @@ class Connect(esbmtkBase):
 
         Arguments:
            name = name of the connector object : string
-           r1   = upstream reservoir    : object handle
-           r2   = downstream reservoir  : object handle
+           source   = upstream reservoir    : object handle
+           sink  = downstream reservoir  : object handle
            fp   = connection_properties : dictionary {delta, rate, alpha, species, type}
            pl[optional]   = optional processes : list
         """
@@ -2881,8 +2900,9 @@ class RateConstant(Process):
 
      Example:
           RateConstant(name = "Name",
-                       reservoir upstream_reservoir_handle,
-                       Slope = 1,
+                       reservoir= upstream_reservoir_handle,
+                       flux = flux handle
+                       Slope =  0.00028,
                        C0 = 2 # reference_concentration
     )
 
@@ -2893,24 +2913,50 @@ class RateConstant(Process):
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this Process """
 
-        from esbmtk import Reservoir
+        from esbmtk import Reservoir, Flux
         from numbers import Number
-        
+
+        # Note that self.lkk values also need to be added to the lkk
+        # list of the connector object.
+
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
-        self.lkk.update({"slope": Number, "C0": Number}) # update the allowed keywords
-        self.lrk.extend(["reservoir", "slope", "C0"])  # new required keywords
-        # self.lod dict with default values if none provided
-        self.__initerrormessages__() 
-        self.bem.update({"slope": "a number", "reservoir": Reservoir, "C0": "a number"})
-        self.__validateandregister__(kwargs)  # initialize keyword values
+
+        # update the allowed keywords
+        self.lkk = {
+            "slope": Number,
+            "C0": Number,
+            "name": str,
+            "reservoir": Reservoir,
+            "flux": Flux
+        }
+
+        # new required keywords
+        self.lrk.extend(["reservoir", "slope", "C0"])
+
+        # dict with default values if none provided
+        # self.lod d
+
+        self.__initerrormessages__()
+
+        # add these terms to the known error messages
+        self.bem.update({
+            "slope": "a number",
+            "reservoir": "Reservoir handle",
+            "C0": "a number",
+            "name": "a string value",
+            "flux": "a flux handle",
+        })
+
+        # initialize keyword values
+        self.__validateandregister__(kwargs)
         self.__postinit__()  # do some housekeeping
 
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
           this will be called by Model.execute apply_processes
           """
-        scale :float = reservoir.c[i-1]/self.C0 * self.slope
+        scale: float = reservoir.c[i - 1] / self.C0 * self.slope
         self.f[i] = self.f[i] * scale
 #+END_SRC
 
