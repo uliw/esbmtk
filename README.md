@@ -1,37 +1,42 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgd01bd2b)
-2.  [News](#orga33fc7e)
-3.  [Installation](#org1132397)
-4.  [Documentation](#org8cd0850)
-5.  [License](#orga7e7ce9)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org01edfc1)
+2.  [News](#org6cf61ca)
+3.  [Installation](#org744a9f4)
+4.  [Documentation](#org41f52fa)
+5.  [License](#orge70876a)
 
 
-<a id="orgd01bd2b"></a>
+<a id="org01edfc1"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
 ESBMTK is python library which aims to simplify typical box modeling
-projects the in Earth-Sciences. The focus of this project is to make
-box modeling more approachable for classroom teaching. So performance
-and scalability are not great.
+projects the in Earth-Sciences. I started this project to teach myself
+python and explore object oriented programming.  The code became
+however functional enough that the focus of this project has shifted
+to make box modeling more approachable for classroom teaching. So
+performance and scalability are not great.
 
 At present, it will calculate masses/concentrations in reservoirs and
 fluxes including isotope ratios. It provides a variety of classes
 which allow the creation and manipulation of input signals, and the
-generation of graphical result. There is however no support for
+generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="orga33fc7e"></a>
+<a id="org6cf61ca"></a>
 
 # News
 
+-   Oct. 27<sup>th</sup>, added documentation on how to integrate user written
+    process classes, added a class which allows for concentration
+    dependent flux
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org1132397"></a>
+<a id="org744a9f4"></a>
 
 # Installation
 
@@ -43,6 +48,7 @@ ESBMTK relies on the following python versions and libraries
 -   pandas
 -   logging
 -   nptyping
+-   numbers
 
 please install the above with pip or conda etc. 
 
@@ -55,14 +61,14 @@ one of the following commands
 -   git@github.com:uliw/esbmtk.git
 
 
-<a id="org8cd0850"></a>
+<a id="org41f52fa"></a>
 
 # Documentation
 
 See the documentation folder, [specifically the quickstart guide](https://github.com/uliw/esbmtk/blob/main/Documentation/ESBMTK-Quick-Start_Guide.org).
 
 
-<a id="orga7e7ce9"></a>
+<a id="orge70876a"></a>
 
 # License
 

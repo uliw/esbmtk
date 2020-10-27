@@ -1,19 +1,25 @@
 * ESBMTK - An Earth-sciences box modeling toolkit
 
 ESBMTK is python library which aims to simplify typical box modeling
-projects the in Earth-Sciences. The focus of this project is to make
-box modeling more approachable for classroom teaching. So performance
-and scalability are not great.
+projects the in Earth-Sciences. I started this project to teach myself
+python and explore object oriented programming.  The code became
+however functional enough that the focus of this project has shifted
+to make box modeling more approachable for classroom teaching. So
+performance and scalability are not great.
 
 At present, it will calculate masses/concentrations in reservoirs and
 fluxes including isotope ratios. It provides a variety of classes
 which allow the creation and manipulation of input signals, and the
-generation of graphical result. There is however no support for
+generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 * News
 
+ - Oct. 27^{th}, added documentation on how to integrate user written
+   process classes, added a class which allows for concentration
+   dependent flux
  - Oct. 25^{th}, Initial release on github.
+ 
 
 * Installation
 
@@ -25,6 +31,7 @@ ESBMTK relies on the following python versions and libraries
  - pandas
  - logging
  - nptyping
+ - numbers
 
 please install the above with pip or conda etc. 
 

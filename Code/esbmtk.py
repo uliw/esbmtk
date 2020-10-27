@@ -453,14 +453,17 @@ class Model(esbmtkBase):
     
     """
     from typing import Dict
+    from nptyping import NDArray, Float
+    # from numba import jit, njit
 
     def __init__(self, **kwargs: Dict[any, any]) -> None:
         """ initialize object"""
 
-        from numpy import arange, zeros
+        from numpy import arange, zeros, array
         from esbmtk import get_mag
         from typing import Dict
         from numbers import Number
+        from nptyping import NDArray, Float
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -482,18 +485,19 @@ class Model(esbmtkBase):
             'dt_unit': kwargs['time_unit'],
             'base_unit': kwargs['time_unit']
         }
-        
+
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
 
-        self.lor: list = [
-        ]  # empty list which will hold all reservoir references
-        self.loc: list = [
-        ]  # empty list which will hold all connector references
+        # empty list which will hold all reservoir references
+        self.lor: list = []
+        # empty list which will hold all connector references
+        self.loc: list = []  
         self.lel: list = []  # list which will hold all element references
         self.lsp: list = []  # list which will hold all species references
         self.lop: list = []  # list flux processe
         self.lmo: list = []  # list of all model objects
+        self.olkk : list = [] # optional keywords for use in the connector class
 
         # legacy name defintions
         self.bu = self.base_unit
@@ -574,39 +578,54 @@ class Model(esbmtkBase):
         """
 
         from time import process_time
-        from numpy import array
+        from numpy import array, zeros
+        from nptyping import NDArray, Float
 
-        start = process_time()  # this has nothing todo with self.time below!
+        # this has nothing todo with self.time below!
+        start: float = process_time()
+        new: [NDArray, Float] = zeros(3) + 1
+        
+        i = self.execute(new, self.time, self.lor)
+        
+        duration: float = process_time() - start
+        print(f"Execution took {duration} seconds")
 
+    # some mumbo jumbbo to support numba optimization. Currently not working though
+    @staticmethod
+    def execute(new:[NDArray, Float] , time: [NDArray, Float], lor:list) -> None:
+        """ Moved this code into a separate function to enable numba optimization
+        """
+        
+        from nptyping import NDArray, Float
         i = 1  # some processes refer to the previous time step
-        for t in self.time[0:-1]:  # loop over the time vector except the first
+        for t in time[0:-1]:  # loop over the time vector except the first
             # we first need to calculate all fluxes
-            for r in self.lor:  # loop over all reservoirs
+            for r in lor:  # loop over all reservoirs
                 for p in r.lop:  # loop over reservoir processes
                     p(r, i)  # update fluxes
 
             # and then update all reservoirs
-            for r in self.lor:  # loop over all reservoirs
+            for r in lor:  # loop over all reservoirs
                 flux_list = r.lof
 
-                ms = ls = hs = 0
+                new[0] = new[1] = new[2] = 0
                 for f in flux_list:  # do sum of fluxes in this reservoir
                     direction = r.lio[f.n]
-                    ms = ms + f.m[i] * direction  # current flux and direction
-                    ls = ls + f.l[i] * direction  # current flux and direction
-                    hs = hs + f.h[i] * direction  # current flux and direction
+                    new[0] = new[
+                        0] + f.m[i] * direction  # current flux and direction
+                    new[1] = new[
+                        1] + f.l[i] * direction  # current flux and direction
+                    new[2] = new[
+                        2] + f.h[i] * direction  # current flux and direction
 
-                new = array([ms, ls, hs])
+                #new = array([ms, ls, hs])
                 new = new * r.mo.dt  # get flux / timestep
                 new = new + r[i - 1]  # add to data from last time step
                 new = new * (new > 0)  # set negative values to zero
                 r[i] = new  # update reservoir data
 
             i = i + 1
-
-        duration = process_time() - start
-        print(f"Execution took {duration} seconds")
-
+            
     def __step_process__(self, r, i) -> None:
         """ For debugging. Provide reservoir and step number,
         """
@@ -623,7 +642,7 @@ class Model(esbmtkBase):
         ms = ls = hs = 0
         for f in flux_list:  # do sum of fluxes in this reservoir
             direction = r.lio[f.n]
-            ms = ms + f.m[i] * direction  # current flux and direction
+            ms = ms + f.m[i] * direction  # current flux and direction 
             ls = ls + f.l[i] * direction  # current flux and direction
             hs = hs + f.h[i] * direction  # current flux and direction
 
@@ -1284,33 +1303,21 @@ class Signal(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: List[str] = ["name", "duration", "species", "shape"]
+        self.lrk: List[str] = [
+            "name", "duration", "species", "shape",
+            ["magnitude", "mass", "data"]
+        ]
 
         # list of default values if none provided
         self.lod: Dict[str, any] = {
             'start': 0,
             'delta': 0,
             'stype': "addition",
-            'mass': 0,
-            'magnitude': 0,
-            'data': None,
         }
 
         self.__initerrormessages__()
-        self.bem.update({"data": "external_data object"})
+        self.bem.update({"data": "external_data object", "magnitude": Number})
         self.__validateandregister__(kwargs)  # initialize keyword values
-
-        # if mass is given remove magnitude and vice versa
-        #if "mass" in kwargs and "magnitude" in kwargs:
-        #    raise ValueError("Specify mass or magnitude")
-        #elif kwargs["mass"] > 0:
-        #    self.lod.pop('magnitude')
-        #elif "magnitude" in kwargs["magnitude"] > 0:
-        #    self.lod.pop('mass')
-        #elif "data" in kwargs:
-        #    pass
-        #else:
-        #    raise ValueError("Either mass or magnitude must be specified")
 
         self.los: List[Signal] = []  # list of signals we are based on.
 
@@ -1391,6 +1398,7 @@ class Signal(esbmtkBase):
         else:
             raise ValueError(
                 "You must specify mass or magnitude of the signal")
+
         self.s_m: float = h  # add this to the section
         self.s_d: float = self.d  # add the delta offset
 
@@ -1400,16 +1408,20 @@ class Signal(esbmtkBase):
         from numpy import mean, array, interp, arange
         from nptyping import NDArray, Float
 
+       
+        
         w: float = (s - 1) * self.mo.dt  # get the base of the pyramid
 
         if "mass" in self.kwd:
             h = 2 * self.mass / w  # get the height of the pyramid
+            print("mass")
         elif "magnitude" in self.kwd:
             h = self.magnitude
         else:
             raise ValueError(
                 "You must specify mass or magnitude of the signal")
 
+        print(f"\n pyramid h = {h} \n")
         # create pyramid
         c: int = int(round((e - s) / 2))  # get the center index for the peak
         x: [NDArray, Float[64]] = array([0, c,
@@ -1823,8 +1835,8 @@ class Connect(esbmtkBase):
 
         Arguments:
            name = name of the connector object : string
-           r1   = upstream reservoir    : object handle
-           r2   = downstream reservoir  : object handle
+           source   = upstream reservoir    : object handle
+           sink  = downstream reservoir  : object handle
            fp   = connection_properties : dictionary {delta, rate, alpha, species, type}
            pl[optional]   = optional processes : list
         """
@@ -1848,7 +1860,8 @@ class Connect(esbmtkBase):
             "react_with": Flux,
             "ratio": Number,
             "scale": Number,
-            "k": Number,
+            "slope": Number,
+            "C0": Number
         }
 
         n = kwargs["source"].n + "_" + kwargs[
@@ -2028,11 +2041,7 @@ class Connect(esbmtkBase):
         if "delta" in self.kwargs and "rate" in self.kwargs:
             pass  # static flux,
         elif "delta" in self.kwargs:
-            if "k" in self.kwargs:
-                self.__rateconstant__()  # flux depends on a rate constant
-            else:
-                self.__passivefluxfixeddelta__(
-                )  # variable flux with fixed delta
+            self.__passivefluxfixeddelta__()  # variable flux with fixed delta
         elif "rate" in self.kwargs:
             self.__vardeltaout__()  # variable delta with fixed flux
             print("vardeltaa out")
@@ -2048,6 +2057,9 @@ class Connect(esbmtkBase):
         # Set optional flux processes
         if "alpha" in self.kwargs:  # isotope enrichment
             self.__alpha__()
+
+        if "slope" in self.kwargs:
+            self.__rateconstant__()  # flux depends on a rate constant
 
         if "type" in self.kwargs:
             if self.kwargs["type"] == "eq":  # equlibrium type connection
@@ -2125,7 +2137,8 @@ class Connect(esbmtkBase):
         ph = RateConstant(name=self.pn + "_k",
                           reservoir=self.r,
                           flux=self.fh,
-                          k = self.kwargs["k"])
+                          C0=self.C0,
+                          slope=self.slope)
         self.pl.append(ph)
 
     def __equilibrium__(self) -> None:
@@ -2613,44 +2626,76 @@ class Equilibrium():
 
 class RateConstant(Process):
     """This process scales the flux as a function of the upstream
-     reservoir concentration C and a rate constant k
+     reservoir concentration C and a constant which describes the
+     slope between the reservoir concentration and the flux scaling
 
-     F = C * k
+     F = slope * (C/C0)
 
      where C denotes
-     the concentration in the ustream reservoir, and k is rate constant
+     the concentration in the ustream reservoir, C0 denotes the baseline
+     concentration and and m & k are constants
+    
 
      Example:
           RateConstant(name = "Name",
-                       reservoir upstream_reservoir_handle,
-                       k = 1 )
+                       reservoir= upstream_reservoir_handle,
+                       flux = flux handle
+                       Slope =  0.00028,
+                       C0 = 2 # reference_concentration
+    )
 
-     """
+    """
     from esbmtk import Reservoir, Flux
     from typing import Dict
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this Process """
 
-        from esbmtk import Reservoir
+        from esbmtk import Reservoir, Flux
         from numbers import Number
-        
+
+        # Note that self.lkk values also need to be added to the lkk
+        # list of the connector object.
+
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
-        self.lkk.update({"k": Number}) # update the allowed keywords
-        self.lrk.extend(["reservoir", "k"])  # new required keywords
-        # self.lod dict with default values if none provided
-        self.__initerrormessages__() 
-        self.bem.update({"k": "a number", "reservoir": Reservoir})
-        self.__validateandregister__(kwargs)  # initialize keyword values
+
+        # update the allowed keywords
+        self.lkk = {
+            "slope": Number,
+            "C0": Number,
+            "name": str,
+            "reservoir": Reservoir,
+            "flux": Flux
+        }
+
+        # new required keywords
+        self.lrk.extend(["reservoir", "slope", "C0"])
+
+        # dict with default values if none provided
+        # self.lod d
+
+        self.__initerrormessages__()
+
+        # add these terms to the known error messages
+        self.bem.update({
+            "slope": "a number",
+            "reservoir": "Reservoir handle",
+            "C0": "a number",
+            "name": "a string value",
+            "flux": "a flux handle",
+        })
+
+        # initialize keyword values
+        self.__validateandregister__(kwargs)
         self.__postinit__()  # do some housekeeping
 
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
           this will be called by Model.execute apply_processes
           """
-        rate :float = self.k * reservoir.c[i - 1]
-        self.f[i] = set_mass(rate,reservoir.d[i-1], reservoir.sp.r)
+        scale: float = reservoir.c[i - 1] / self.C0 * self.slope
+        self.f[i] = self.f[i] * scale
 
 class Monod(Process):
      """This process scales the flux as a function of the upstream

@@ -2082,7 +2082,7 @@ class Connect(esbmtkBase):
 
         self.mo.loc.append(self)  # register connector with model
         self.register_fluxes()  # Source/Sink/Regular
-        self.set_process_type()  # derive flux type and create flux(es)
+        self.__set_process_type__()  # derive flux type and create flux(es)
         self.register_process()  # This should probably move to register fluxes
 
     def get_species(self, r1, r2) -> None:
@@ -2206,7 +2206,7 @@ class Connect(esbmtkBase):
             print(f"with reservoir {self.r.n} and flux {self.fh.n}")
             p.register(self.r, self.fh)
 
-    def set_process_type(self) -> None:
+    def __set_process_type__(self) -> None:
         """ Deduce flux type based on the provided flux properties. The method returns the 
         flux handle, and the process handle(s).
         """
@@ -2901,14 +2901,13 @@ class RateConstant(Process):
      Example:
           RateConstant(name = "Name",
                        reservoir= upstream_reservoir_handle,
-                       flux = flux handle
+                       flux = flux handle,
                        Slope =  0.00028,
                        C0 = 2 # reference_concentration
     )
 
     """
     from esbmtk import Reservoir, Flux
-    from typing import Dict
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this Process """
@@ -2954,7 +2953,7 @@ class RateConstant(Process):
 
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
-          this will be called by Model.execute apply_processes
+          this will be called by the Model.run() method
           """
         scale: float = reservoir.c[i - 1] / self.C0 * self.slope
         self.f[i] = self.f[i] * scale
