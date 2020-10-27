@@ -2025,7 +2025,8 @@ class Connect(esbmtkBase):
             "react_with": Flux,
             "ratio": Number,
             "scale": Number,
-            "k": Number,
+            "slope": Number,
+            "C0": Number
         }
 
         n = kwargs["source"].n + "_" + kwargs[
@@ -2205,11 +2206,7 @@ class Connect(esbmtkBase):
         if "delta" in self.kwargs and "rate" in self.kwargs:
             pass  # static flux,
         elif "delta" in self.kwargs:
-            if "k" in self.kwargs:
-                self.__rateconstant__()  # flux depends on a rate constant
-            else:
-                self.__passivefluxfixeddelta__(
-                )  # variable flux with fixed delta
+            self.__passivefluxfixeddelta__()  # variable flux with fixed delta
         elif "rate" in self.kwargs:
             self.__vardeltaout__()  # variable delta with fixed flux
             print("vardeltaa out")
@@ -2225,6 +2222,9 @@ class Connect(esbmtkBase):
         # Set optional flux processes
         if "alpha" in self.kwargs:  # isotope enrichment
             self.__alpha__()
+
+        if "slope" in self.kwargs:
+            self.__rateconstant__()  # flux depends on a rate constant
 
         if "type" in self.kwargs:
             if self.kwargs["type"] == "eq":  # equlibrium type connection
@@ -2302,7 +2302,8 @@ class Connect(esbmtkBase):
         ph = RateConstant(name=self.pn + "_k",
                           reservoir=self.r,
                           flux=self.fh,
-                          k = self.kwargs["k"])
+                          C0=self.C0,
+                          slope=self.slope)
         self.pl.append(ph)
 
     def __equilibrium__(self) -> None:
@@ -2868,19 +2869,24 @@ class Equilibrium():
 #+BEGIN_SRC ipython  :tangle esbmtk.py
 class RateConstant(Process):
     """This process scales the flux as a function of the upstream
-     reservoir concentration C and a rate constant k
+     reservoir concentration C and a constant which describes the
+     slope between the reservoir concentration and the flux scaling
 
-     F = C * k
+     F = slope * (C/C0)
 
      where C denotes
-     the concentration in the ustream reservoir, and k is rate constant
+     the concentration in the ustream reservoir, C0 denotes the baseline
+     concentration and and m & k are constants
+    
 
      Example:
           RateConstant(name = "Name",
                        reservoir upstream_reservoir_handle,
-                       k = 1 )
+                       Slope = 1,
+                       C0 = 2 # reference_concentration
+    )
 
-     """
+    """
     from esbmtk import Reservoir, Flux
     from typing import Dict
 
@@ -2892,11 +2898,11 @@ class RateConstant(Process):
         
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
-        self.lkk.update({"k": Number}) # update the allowed keywords
-        self.lrk.extend(["reservoir", "k"])  # new required keywords
+        self.lkk.update({"slope": Number, "C0": Number}) # update the allowed keywords
+        self.lrk.extend(["reservoir", "slope", "C0"])  # new required keywords
         # self.lod dict with default values if none provided
         self.__initerrormessages__() 
-        self.bem.update({"k": "a number", "reservoir": Reservoir})
+        self.bem.update({"slope": "a number", "reservoir": Reservoir, "C0": "a number"})
         self.__validateandregister__(kwargs)  # initialize keyword values
         self.__postinit__()  # do some housekeeping
 
@@ -2904,8 +2910,8 @@ class RateConstant(Process):
         """
           this will be called by Model.execute apply_processes
           """
-        rate :float = self.k * reservoir.c[i-1]
-        self.f[i] = set_mass(rate,reservoir.d[i-1], reservoir.sp.r)
+        scale :float = reservoir.c[i-1]/self.C0 * self.slope
+        self.f[i] = self.f[i] * scale
 #+END_SRC
 
 
