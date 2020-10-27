@@ -1,0 +1,180 @@
+#+TITLE: ESBMTK: Adding your own process classes
+#+AUTHOR:Ulrich G Wortmann
+#+STARTUP: showall
+#+OPTIONS: todo:nil tasks:nil tags:nil toc:nil
+#+PROPERTY: header-args :eval never-export
+#+EXCLUDE_TAGS: noexport
+#+LATEX_HEADER: \usepackage{breakurl}
+#+LATEX_HEADER: \usepackage{newuli}
+#+LATEX_HEADER: \usepackage{uli-german-paragraphs}
+#+latex_header: \usepackage{natbib}
+#+latex_header: \usepackage{natmove}
+
+* Overview
+
+For each time step, ESBMTK first executes all process instances which
+act on the fluxes. Once the new flux values are computed, all fluxes
+will be integrated to calculate the new mass in the reservoir.
+
+It is fairly straight forward to add a new user defined process type
+to the ESBMTK code. Since most of the time processes are implicitly
+initialized as function of how the connection between two reservoirs
+was specified, the below instructions outline how to integrate the new
+process with the connector class. However, it is perfectly fine to
+instantiate a process manually, and simply pass it to the process list
+when you connect two reservoirs.
+
+** Adding your own process
+
+All processes are derived from the ESBMTK process class, and the a
+derived process must define the =__init__()= method, and the
+=__call__()= method. The latter method contains the code which is
+executed at a given time step.  The below example code provides an
+example. This snippet loads the class template, defines the help text,
+and imports any ESMBTK classes we might need: 
+
+#+BEGIN_SRC ipython
+from ESBMTK import Process
+
+class RateConstant(Process):
+    """This process scales the flux as a function of the upstream
+     reservoir concentration C and a constant which describes the
+     slope between the reservoir concentration and the flux scaling
+
+     F = slope * (C/C0)
+
+     where C denotes
+     the concentration in the ustream reservoir, C0 denotes the baseline
+     concentration and and m & k are constants
+    
+
+     Example:
+          RateConstant(name = "Name",
+                       reservoir= upstream_reservoir_handle,
+                       flux = flux handle
+                       Slope =  0.00028,
+                       C0 = 2 # reference_concentration
+    )
+
+    """
+    from esbmtk import Reservoir, Flux
+#+END_SRC
+
+next we define the init method. This method mainly deals with keyword
+parsing, broadcasting keywords to the class namespace, and registering
+the new process within the ESBMTK framework. Much of the below code is
+self explanatory, and easily adapted.
+
+#+BEGIN_SRC ipython
+def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """ Initialize this Process """
+
+        from esbmtk import Reservoir, Flux
+        from numbers import Number
+
+        # get default names and update list for this Process
+        self.__defaultnames__()  # default kwargs names
+
+        # update the allowed keywords
+        self.lkk = {
+            "slope": Number,
+            "C0": Number,
+            "name": str,
+            "reservoir": Reservoir,
+            "flux": Flux
+        }
+
+        # register required keywords
+        self.lrk.extend(["reservoir", "slope", "C0"])
+
+        # dict with default values if none provided
+        # self.lod d
+
+        self.__initerrormessages__()
+
+        # add these terms to the list of known error messages
+        self.bem.update({
+            "slope": "a number",
+            "reservoir": "Reservoir handle",
+            "C0": "a number",
+            "name": "a string value",
+            "flux": "a flux handle",
+        })
+
+        # initialize all keyword values
+        self.__validateandregister__(kwargs)
+        
+        # do some housekeeping like registering this class with ESBMTK
+        self.__postinit__() 
+#+END_SRC
+
+Next comes the method where all the actual work is done, and which is
+called by the =model.run()= method. In other words, you cannot change
+the arguments to the methods call. See =help()= and =dir()= to explore
+which variables are known to the respective objects. The standard ones are 
+
+ - =Reservoir.m= = mass
+ - =Reservoir.c= = concentration
+ - =Reservoir.d= = delta
+ - =Reservoir.h= = the mas of the heavy isotope
+ - =Reservoir.l= = the mas of the light isotope
+ - =Flux.m= = mass
+ - =Flux.d= = delta
+ - =Flux.h= = the mas of the heavy isotope
+ - =Flux.l= = the mas of the light isotope
+
+A new flux value is set by calling the flux by index as and passing a
+numpy array =flux[i]=np.array([m,h,l]= the delta value is being
+recalculated for each assignment.
+#+BEGIN_SRC ipython
+def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """
+          this will be called by the Model.run() method
+          """
+        scale: float = reservoir.c[i - 1] / self.C0 * self.slope
+        self.f[i] = self.f[i] * scale
+#+END_SRC
+
+The new class can now be explicitly used in a model in the following way:
+#+BEGIN_SRC ipython
+from ESBMTK import RateConstant
+
+RateConstant(name="pRC"            # name
+                  reservoir=Ocean, # reservoir handlle
+                  flux=OM_burial,  # flux handle
+                  C0=120,          # reference concentration
+                  slope=1.0004)    # slope
+
+pRC.register(Ocean,OM_Burial)      # register the process with the flux
+#+END_SRC
+Note however that I have not used this method in a while, so it is likely buggy.
+
+** Adding the new class to the connector class
+
+In order to add the new class the connector class, we first have to
+add the list of known keywords (self.lkk in the connection class =__init__()= method).
+
+next we have to make this class known to the =__set_process_type__()=
+method. Simply append the following at the end of the if statements
+
+#+BEGIN_SRC ipython
+if "slope" in self.kwargs:
+        self.__rateconstant__()  # flux depends on a rate constant
+#+END_SRC
+
+and then add a =__rateconstant__()= method to the connection class which initializes the new process
+The following template is straight forward
+#+BEGIN_SRC ipython
+ def __rateconstant__(self) -> None:
+        """ Add rate constant process"""
+        print("\n adding rate constant process \n")
+        ph = RateConstant(name=self.pn + "_slope", # choose a useful name
+                          reservoir=self.r,        # the associated reservoir
+                          flux=self.fh,            # the flux handle prvided by the connector class
+                          C0=self.C0,              # parameters needed by the process
+                          slope=self.slope)
+        self.pl.append(ph) # register the process with the connector
+#+END_SRC
+
+and that's it. See the actual source code which use the this very
+process to see the above code snippets in their context.
