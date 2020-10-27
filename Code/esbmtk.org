@@ -2228,7 +2228,6 @@ class Connect(esbmtkBase):
             self.__passivefluxfixeddelta__()  # variable flux with fixed delta
         elif "rate" in self.kwargs:
             self.__vardeltaout__()  # variable delta with fixed flux
-            print("vardeltaa out")
         elif "scale" in self.kwargs:
             self.__scaleflux__()  # scaled variable flux with fixed delta
         elif "react_with" in self.kwargs:
@@ -2256,7 +2255,7 @@ class Connect(esbmtkBase):
             name=self.pn + "_Pfd",
             reservoir=self.r,
             flux=self.fh,
-            delta=self.kwargs["delta"]
+            delta=self.delta
         )  # initialize a passive flux process object
         self.pl.append(ph)
 
