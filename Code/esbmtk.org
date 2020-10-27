@@ -2625,6 +2625,10 @@ class PassiveFlux_fixed_delta(Process):
 
           # legacy names
           self.f :Flux = self.flux
+
+          print("\nn *** Warning, you selected the PassiveFlux_fixed_delta method ***\n ")
+          print(" This is not a particularly phyiscal process is this really what you want?\n")
+          print(self.__doc__)
      
      def __call__(self, reservoir :Reservoir, i :int) -> None:
           """Here we re-balance the flux. This code will be called by the
@@ -2907,6 +2911,7 @@ class RateConstant(Process):
 
     """
     from esbmtk import Reservoir, Flux
+    from typing import Dict
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this Process """

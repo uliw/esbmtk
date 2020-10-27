@@ -1898,7 +1898,7 @@ class Connect(esbmtkBase):
 
         self.mo.loc.append(self)  # register connector with model
         self.register_fluxes()  # Source/Sink/Regular
-        self.set_process_type()  # derive flux type and create flux(es)
+        self.__set_process_type__()  # derive flux type and create flux(es)
         self.register_process()  # This should probably move to register fluxes
 
     def get_species(self, r1, r2) -> None:
@@ -2022,7 +2022,7 @@ class Connect(esbmtkBase):
             print(f"with reservoir {self.r.n} and flux {self.fh.n}")
             p.register(self.r, self.fh)
 
-    def set_process_type(self) -> None:
+    def __set_process_type__(self) -> None:
         """ Deduce flux type based on the provided flux properties. The method returns the 
         flux handle, and the process handle(s).
         """
@@ -2044,7 +2044,6 @@ class Connect(esbmtkBase):
             self.__passivefluxfixeddelta__()  # variable flux with fixed delta
         elif "rate" in self.kwargs:
             self.__vardeltaout__()  # variable delta with fixed flux
-            print("vardeltaa out")
         elif "scale" in self.kwargs:
             self.__scaleflux__()  # scaled variable flux with fixed delta
         elif "react_with" in self.kwargs:
@@ -2072,7 +2071,7 @@ class Connect(esbmtkBase):
             name=self.pn + "_Pfd",
             reservoir=self.r,
             flux=self.fh,
-            delta=self.kwargs["delta"]
+            delta=self.delta
         )  # initialize a passive flux process object
         self.pl.append(ph)
 
@@ -2415,6 +2414,10 @@ class PassiveFlux_fixed_delta(Process):
 
           # legacy names
           self.f :Flux = self.flux
+
+          print("\nn *** Warning, you selected the PassiveFlux_fixed_delta method. ")
+          print(" This is not a particularly phyiscal process is this really what you want?\n")
+          print(self.__doc__)
      
      def __call__(self, reservoir :Reservoir, i :int) -> None:
           """Here we re-balance the flux. This code will be called by the
@@ -2639,7 +2642,7 @@ class RateConstant(Process):
      Example:
           RateConstant(name = "Name",
                        reservoir= upstream_reservoir_handle,
-                       flux = flux handle
+                       flux = flux handle,
                        Slope =  0.00028,
                        C0 = 2 # reference_concentration
     )
@@ -2692,7 +2695,7 @@ class RateConstant(Process):
 
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
-          this will be called by Model.execute apply_processes
+          this will be called by the Model.run() method
           """
         scale: float = reservoir.c[i - 1] / self.C0 * self.slope
         self.f[i] = self.f[i] * scale
