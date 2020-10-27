@@ -522,11 +522,11 @@ class Model(esbmtkBase):
     def __init__(self, **kwargs: Dict[any, any]) -> None:
         """ initialize object"""
 
-        from numpy import arange, zeros
+        from numpy import arange, zeros, array
         from esbmtk import get_mag
         from typing import Dict
         from numbers import Number
-
+       
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
@@ -640,8 +640,8 @@ class Model(esbmtkBase):
 
         from time import process_time
         from numpy import array
-
-        start = process_time()  # this has nothing todo with self.time below!
+        
+        start:float = process_time()  # this has nothing todo with self.time below!
 
         i = 1  # some processes refer to the previous time step
         for t in self.time[0:-1]:  # loop over the time vector except the first
@@ -669,7 +669,7 @@ class Model(esbmtkBase):
 
             i = i + 1
 
-        duration = process_time() - start
+        duration :float = process_time() - start
         print(f"Execution took {duration} seconds")
 
     def __step_process__(self, r, i) -> None:
