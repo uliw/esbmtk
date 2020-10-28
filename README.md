@@ -1,15 +1,15 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org6151245)
-2.  [News](#orgc095fdc)
-3.  [Contributing](#orgeeb458f)
-4.  [Installation](#orgee4153a)
-5.  [Documentation](#orge511392)
-6.  [License](#orgfc36304)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgd114727)
+2.  [News](#orge9abfe5)
+3.  [Contributing](#org10786eb)
+4.  [Installation](#org9904f8c)
+5.  [Documentation](#orgff85c0b)
+6.  [License](#org8820bbd)
 
 
-<a id="org6151245"></a>
+<a id="orgd114727"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -29,7 +29,7 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="orgc095fdc"></a>
+<a id="orge9abfe5"></a>
 
 # News
 
@@ -39,7 +39,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgeeb458f"></a>
+<a id="org10786eb"></a>
 
 # Contributing
 
@@ -49,13 +49,13 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-)
 
 
-<a id="orgee4153a"></a>
+<a id="org9904f8c"></a>
 
 # Installation
 
 ESBMTK relies on the following python versions and libraries
 
--   python > 3.5
+-   python > 3.6
 -   matplotlib
 -   numpy
 -   pandas
@@ -63,18 +63,15 @@ ESBMTK relies on the following python versions and libraries
 -   nptyping
 -   numbers
 
-please install the above with pip or conda etc. 
+please install the above with pip or conda etc. You can install esbmtk with pip or in a local working directory from github
 
-At present, there is no ready made installation routine. Rather
-download the `esbmtk.py` library into your local working library using
-one of the following commands
-
+-   pip install esbmtk
 -   <https://github.com/uliw/esbmtk/archive/main.zip>
 -   <https://github.com/uliw/esbmtk.git>
 -   git@github.com:uliw/esbmtk.git
 
 
-<a id="orge511392"></a>
+<a id="orgff85c0b"></a>
 
 # Documentation
 
@@ -93,7 +90,7 @@ Last but not least, I added a short [guide how to add your own process
 classes to the ESBMTK](https://github.com/uliw/esbmtk/blob/main/Documentation/Adding_your_own_Processes.org) 
 
 
-<a id="orgfc36304"></a>
+<a id="org8820bbd"></a>
 
 # License
 
