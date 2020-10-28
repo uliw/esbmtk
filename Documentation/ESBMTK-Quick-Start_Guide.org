@@ -205,30 +205,27 @@ Species(name="OM", element=C)
 Species(name="CaCO3", element=C)
 #+END_SRC
 
-** Using external data and initializing a signal
-We use the external data object to import CSV data into model. At
-present, this must be a time vector in the first column and data in
-the second column. The first row must contain a header. Next we feed
-this object to the signal class to create a signal. Signals call also
-by created by specifying a signal type. At present the class
-understands, square, and pyramidal signal forms, as well as
-repetition. Signal can be added to each other (i.e., you can specify a
-signal which effects the flux, and then add another signal which
-effects the isotope ratio). 
-#+BEGIN_SRC ipython :tangle ocean.py
-ExternalData(name="mydata",
-             filename="test-data.csv",
-             legend="Test Data",
-             model=C_Cycle,)
+** Using external data to initialize a signal
+We can use an external csv file to create a signal.  The first column
+contains the time coordinates, the second the flux rate, and the third
+the delta value of the flux.  The first row must contain a header. All
+values will be interpolated to fit the model time resolution.
 
+Signals can also by created by specifying a signal type. At
+present the class understands, square, and pyramidal signal forms, as
+well as repetition. Signal can be added to each other (i.e., you can
+specify a signal which effects the flux, and then add another signal
+which effects the isotope ratio).
+#+BEGIN_SRC ipython :tangle ocean.py
 Signal(name = "ACOR",
        species = CO2,
-       delta = -27,           
        duration = 100, # must match what is in the file
-       shape = "External Data",
-       data = mydata   
+       filename = "test-data.csv"
 )
 #+END_SRC
+Once a signal instance has been created, it can be passed to a
+connector object in order to associate it with a flux (see the first
+connection below as an example).
 
 ** Sources, Sinks and Reservoirs
 
