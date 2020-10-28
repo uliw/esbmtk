@@ -1241,14 +1241,13 @@ class Signal(esbmtkBase):
       described by its startime (relative to the model time), it's
       size (as mass) and duration, or as duration and
       magnitude. Furthermore, we can presribe the signal shape
-      (square, pyramid, sinus) and whether the signal will repeat. You
+      (square, pyramid) and whether the signal will repeat. You
       can also specify whether the event will affect the delta value.
 
       The data in the signal class will simply be added to the data in
       a given flux. So this class cannot be used for scaling (can we
       add this functionality?)
   
-
       Example:
 
             Signal(name = "Name",
@@ -1257,26 +1256,35 @@ class Signal(esbmtkBase):
                    duration = 0,        #
                    delta = 0,           # optional
                    stype = "addition"   # optional, currently the only type
-                   shape = "square"     # square, pyramid, sinus, ExternalData
-                   mass =  or magnitude # give one
+                   shape = "square"     # square, pyramid
+                   mass/magnitude/data  # give one
                   )
 
       Signals are cumulative, i.e., complex signals ar created by
       adding one signal to another (i.e., Snew = S1 + S2) 
 
-      If the shape is set to be an ExternalData object the data will
-      be interpolated at the model dt, and inserted at start_time.
-      
-      Signals are registered with a flux when during flux creation,
-      i.e., their are passed on the process list when calling the
+      Signals are registered with a flux during flux creation,
+      i.e., they are passed on the process list when calling the
       connector object.
+    
+      if the data argument is used, you can provide a filename which
+      contains the data to be used in scv format. The data will be
+      interpolated to the model domain, and added to the already existing data.
+      The external data need to be in the following format
+
+        Time, Rate, delta value
+        0,     10,   12
+
+        i.e., the first row needs to be a header line
+
 
       This class has the following methods
 
         Signal.repeat()
         Signal.plot()
         Signal.describe()
-      """
+    """
+
     from nptyping import NDArray, Float
     import numpy as np
 
@@ -1288,7 +1296,7 @@ class Signal(esbmtkBase):
         from typing import Dict, List
         from esbmtk import ExternalData, get_mass
 
-        # provide a list of all known keywords
+        # provide a list of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
             "start": Number,
@@ -1297,26 +1305,28 @@ class Signal(esbmtkBase):
             "delta": Number,
             "stype": str,
             "shape": str,
-            "data": ExternalData,
+            "filename": str,
             "mass": Number,
             "magnitude": Number
         }
 
         # provide a list of absolutely required keywords
         self.lrk: List[str] = [
-            "name", "duration", "species", "shape",
-            ["magnitude", "mass", "data"]
+            "name", "duration", "species", ["shape", "filename"],
+            ["magnitude", "mass", "filename"]
         ]
 
         # list of default values if none provided
         self.lod: Dict[str, any] = {
             'start': 0,
-            'delta': 0,
             'stype': "addition",
+            'shape': "external_data",
+            'duration': 0,
+            'delta': 0,
         }
 
         self.__initerrormessages__()
-        self.bem.update({"data": "external_data object", "magnitude": Number})
+        self.bem.update({"data": "a string", "magnitude": Number})
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         self.los: List[Signal] = []  # list of signals we are based on.
@@ -1372,7 +1382,7 @@ class Signal(esbmtkBase):
         elif self.sh == "pyramid":
             self.__pyramid__(self.si, self.ei)
 
-        elif self.sh == "External Data":  # use an external data set
+        elif "filename" in self.kwargs:  # use an external data set
             self.__int_ext_data__(self.si, self.ei)
 
         else:
@@ -1408,8 +1418,6 @@ class Signal(esbmtkBase):
         from numpy import mean, array, interp, arange
         from nptyping import NDArray, Float
 
-       
-        
         w: float = (s - 1) * self.mo.dt  # get the base of the pyramid
 
         if "mass" in self.kwd:
@@ -1437,29 +1445,41 @@ class Signal(esbmtkBase):
         self.s_d: [NDArray, Float[64]] = self.s_d + dy  # ditto for delta
 
     def __int_ext_data__(self, s, e) -> None:
-        """ Interpolate External data as a signal """
+        """ Interpolate External data as a signal. Unlike the other signals,
+        thiw will replace the values in the flux with those read from the
+        external data source. The external data need to be in the following format
+
+        Time, Rate, delta value
+        0,     10,   12
+
+        i.e., the first row needs to be a header line
+        
+        """
 
         from numpy import mean, array, interp, arange
-        #import numpy as np
+        import pandas as pd
         from nptyping import NDArray, Float
 
-        self.st: float = self.data.x[0]  # set the start time
-        l: float = int(self.data.x[-1] -
-                       self.data.x[0])  # calculate the length
+        # read external dataset
+        df = pd.read_csv(self.filename)
+
+        x = df.iloc[:, 0].to_numpy()
+        y = df.iloc[:, 1].to_numpy()
+        d = df.iloc[:, 2].to_numpy()
+
+        self.st: float = x[0]  # set the start time
+        l : float = int(x[-1] - x[0])  # calculate the length
         self.si: int = int(round(self.st / self.mo.dt))  # starting index
-        self.ei: int = s + int(round(l / self.mo.dt))  # end index
+        self.ei: int = s + int(round(l / self.mo.dt))  # endf index
 
         self.s_m: [NDArray, Float[64]] = array(
             self.nf.m[self.si:self.ei])  # create slice of flux vector
         self.s_d: [NDArray, Float[64]] = array(
             self.nf.d[self.si:self.ei])  # create slice of delta vector
 
-        self.d = self.data.x * 0 + self.d
         xi = arange(0, e - s)  # setup the points at which to interpolate
-        h: [NDArray, Float[64]] = interp(xi, self.data.x,
-                                         self.data.y)  # interpolate flux
-        dy: [NDArray, Float[64]] = interp(xi, self.data.x,
-                                          self.d)  # interpolate delta
+        h: [NDArray, Float[64]] = interp(xi, x, y)  # interpolate flux
+        dy: [NDArray, Float[64]] = interp(xi, x, d)  # interpolate delta
         #self.m :float = sum((s_m * h - s_m)) * model.dt  # calculate mass of excursion
         self.s_m: [NDArray,
                    Float[64]] = self.s_m + h  # add this to the section
@@ -2415,7 +2435,7 @@ class PassiveFlux_fixed_delta(Process):
           # legacy names
           self.f :Flux = self.flux
 
-          print("\nn *** Warning, you selected the PassiveFlux_fixed_delta method. ")
+          print("\nn *** Warning, you selected the PassiveFlux_fixed_delta method ***\n ")
           print(" This is not a particularly phyiscal process is this really what you want?\n")
           print(self.__doc__)
      
