@@ -34,7 +34,7 @@ graphical interface ;-)
 
 ESBMTK relies on the following python versions and libraries
 
- - python > 3.5
+ - python > 3.6
  - matplotlib
  - numpy
  - pandas
@@ -42,12 +42,9 @@ ESBMTK relies on the following python versions and libraries
  - nptyping
  - numbers
 
-please install the above with pip or conda etc. 
+please install the above with pip or conda etc. You can install esbmtk with pip or in a local working directory from github
 
-At present, there is no ready made installation routine. Rather
-download the =esbmtk.py= library into your local working library using
-one of the following commands
-
+ - pip install esbmtk
  - https://github.com/uliw/esbmtk/archive/main.zip
  - https://github.com/uliw/esbmtk.git
  - git@github.com:uliw/esbmtk.git

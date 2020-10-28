@@ -1,11 +1,3 @@
-#+STARTUP: content
-#+OPTIONS: todo:nil tasks:nil tags:nil
-#+PROPERTY: header-args :eval never-export
-#+EXCLUDE_TAGS: noexport
-
-* License
-
-#+BEGIN_SRC ipython :tangle esbmtk.py
 """
      esbmtk: A general purpose Earth Science box model toolkit
      Copyright (C), 2020 Ulrich G. Wortmann
@@ -23,31 +15,7 @@
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-#+END_SRC
 
- 
-
-
-* Dependencies
- - nptyping
- - typing
- - python 3.5 or higher
- - numpy
- - pandas
- - matplotlib
- - builtins
- - logging
- - numbers
- - pint
-
-* Implementation
-
-** Utility functions
-Some functions which need to be present outside classes.
-
-
-*** Get isotope masses from delta
-#+BEGIN_SRC ipython :exports yes :noweb yes :tangle esbmtk.py
 def get_mass(m: float, d: float, r: float) -> [float, float]:
     """
     Calculate the isotope masses from bulk mass and delta value.
@@ -74,10 +42,7 @@ def set_mass(m: float, d: float, r: float) -> [float, float, float]:
     h: float = ((d * m + 1000 * m) * r) / ((d + 1000) * r + 1000)
 
     return array([m, l, h])
-#+END_SRC
 
-*** Get delta from isotope masses
-#+BEGIN_SRC ipython :tangle esbmtk.py
 def get_delta(l, h, r):
     """
       Calculate the delta from the mass of light and heavy isotope
@@ -89,10 +54,7 @@ def get_delta(l, h, r):
     # d = around(1000 * (h / l - r) / r, 4)
     d = 1000 * (h / l - r) / r
     return d
-#+END_SRC
 
-*** Test if list element already exist
-#+BEGIN_SRC ipython :tangle esbmtk.py
 def add_to (l, e):
     """
       add element e to list l, but check if the entry already exist. If so, throw
@@ -100,11 +62,8 @@ def add_to (l, e):
     """
 
     if not (e in l):  # if not present, append element
-        l.append(e) 
-#+END_SRC
+        l.append(e)
 
-*** Get magnitude of obj relative to model base unit
-#+BEGIN_SRC ipython :exports yes :noweb yes :tangle esbmtk.py
 def get_mag(unit, base_unit):
     """
       Compare the unit associated with the object obj (i.e., a flux, etc)
@@ -148,10 +107,7 @@ def get_mag(unit, base_unit):
         s = 1 / s
         
     return s
-#+END_SRC           
 
-*** Get the plot layout
-#+BEGIN_SRC ipython :tangle esbmtk.py
 def get_plot_layout(obj):
       """ Simple function which selects a row, column layout based on the number of
       objects to display.  The expected argument is a reservoir object which
@@ -184,10 +140,7 @@ def get_plot_layout(obj):
           # print(f"Selected Geometry: rows = {geo[0]}, cols = {geo[1]}")
 
       return size, geo
-#+END_SRC
 
-*** Calculate the sum of a list of fluxes
-#+BEGIN_SRC ipython :tangle esbmtk.py
 def sum_fluxes(flux_list,reservoir,i):
     """This function takes a list of fluxes and calculates the sum for each
     flux element.  It will return a an array with [mass, li, hi] The
@@ -211,10 +164,7 @@ def sum_fluxes(flux_list,reservoir,i):
     # sum up the each array component individually
     new = array([ms, ls, hs])
     return new
-#+END_SRC
 
-*** Show list of fluxes in a reservoir
-#+BEGIN_SRC ipython  :tangle esbmtk.py
 def list_fluxes(self,name,i) -> None:
             """
             Echo all fluxes in the reservoir to the screen
@@ -238,9 +188,7 @@ def list_fluxes(self,name,i) -> None:
             print(" ")
             for f in self.lof:
                   f.describe(i) # print out the flux data
-#+END_SRC
-*** Show data of flux or reservoir
-#+BEGIN_SRC ipython :tangle esbmtk.py
+
 def show_data(self,name,i) -> None:
     """ Print the first 4, and last 3 lines of the data for a given flux or reservoir object
     """
@@ -252,15 +200,6 @@ def show_data(self,name,i) -> None:
     
     print(".......................")
 
-    
-#+END_SRC
-
-
-** The main model classes
-*** The esbmtk base class ClassName
-Here we define a base class from which we derive the other model
-classes. This class handles naming and keyword handling
-#+BEGIN_SRC ipython :tangle esbmtk.py
 class esbmtkBase():
     """The esbmtk base class template. This class handles keyword
     arguments, name registration and other common tasks
@@ -488,11 +427,7 @@ class esbmtkBase():
             if not isinstance({k}, esbmtkBase):
                 m = m + f"{k} = {v}\n"
         return m
-#+END_SRC
 
-
-*** The Model object
-#+BEGIN_SRC ipython :tangle esbmtk.py
 class Model(esbmtkBase):
     """ This is the class specify a new model.
 
@@ -716,12 +651,7 @@ class Model(esbmtkBase):
         new = new + r[i - 1]  # add to data from last time step
         new = new * (new > 0)  # set negative values to zero
         r[i] = new  # update reservoir data
-#+END_SRC
 
-*** Element specific properties
-
-#+name: element
-#+BEGIN_SRC ipython :exports yes :noweb yes :tangle esbmtk.py
 class Element(esbmtkBase):
     """Each model, can have one or more elements.  This class sets
 element specific properties
@@ -786,18 +716,7 @@ element specific properties
 
     def __lt__(self, other) -> None:  # this is needed for sorting with sorted()
         return self.n < other.n
-#+END_SRC
 
-
-
-
-
-*** Defining Species object
-For each species in the model, we need to know same basic parameters
-like plot labels, isotopic reference values etc. These will be store
-in the species object.
-#+name: species
-#+BEGIN_SRC ipython :exports yes :noweb yes :tangle esbmtk.py
 class Species(esbmtkBase):
     """Each model, can have one or more species.  This class sets species
 specific properties
@@ -845,11 +764,7 @@ specific properties
 
     def __lt__(self, other) -> None:  # this is needed for sorting with sorted()
         return self.n < other.n
-#+END_SRC
 
-*** Defining the Reservoir object
-#+name: reservoir
-#+BEGIN_SRC ipython :exports yes :noweb yes :tangle esbmtk.py
 class Reservoir(esbmtkBase):
     """
       Tis object holds reservoir specific information. 
@@ -1110,13 +1025,7 @@ class Reservoir(esbmtkBase):
         """ List all processes associated with this reservoir"""
         for p in self.lop:
             print(f"{p.n}")
-#+END_SRC
 
-
-
-*** Defining the Flux object
-#+name: flux
-#+BEGIN_SRC ipython :exports yes :noweb yes :tangle esbmtk.py
 class Flux(esbmtkBase):
     """A class which defines a flux object. Flux objects contain
       information which links them to an species, describe things like
@@ -1270,13 +1179,7 @@ class Flux(esbmtkBase):
         fig.tight_layout()
         plt.show()
         plt.savefig(self.n + ".pdf")
-#+END_SRC
 
-*** Creating Sources and Sinks
-Sources and Sinks are pseudo reservoirs. They will typically be
-created by the connect class, and at a minimum, must have a 
-
-#+BEGIN_SRC ipython :tangle esbmtk.py
 class SourceSink(esbmtkBase):
     """
     This is just a meta calls to setup a Source/Sink object. These are not 
@@ -1332,10 +1235,7 @@ class Source(SourceSink):
 
     where the first argument is a string, and the second is a species handle
     """
-#+END_SRC
 
-*** Creating a Signal
-#+BEGIN_SRC ipython :tangle esbmtk.py
 class Signal(esbmtkBase):
     """We use a simple generator which will create a signal which is
       described by its startime (relative to the model time), it's
@@ -1705,39 +1605,7 @@ class Signal(esbmtkBase):
 
     def __lt__(self, other):  # this is needed for sorting with sorted()
         return self.n < other.n
-#+END_SRC
 
-#+RESULTS:
-:results:
-# Out [1]: 
-# output
-
-NameErrorTraceback (most recent call last)
-<ipython-input-1-0027be1f2554> in <module>
-----> 1 class Signal(esbmtkBase):
-      2     """We use a simple generator which will create a signal which is
-      3       described by its startime (relative to the model time), it's
-      4       size (as mass) and duration, or as duration and
-      5       magnitude. Furthermore, we can presribe the signal shape
-
-NameError: name 'esbmtkBase' is not defined
-:end:
-
-in order to apply the signal dynamically, we need a process which
-looks up the signal data at a given t_i . The signal is than assigned
-on the process-list of the connection object which will instantiate
-the process object.
-
- We can call it as
- #+BEGIN_SRC ipython
-   ## Pyrite = Pyrite burial flux, Pyrite.m[0] = background
-   PETM = Perturbation(S_Weathering,10,1e19,1e6,-5,"square")
- #+END_SRC
- 
-
-     
-*** The vector object
-#+BEGIN_SRC ipython :tangle esbmtk.py
 class Vector:
       """
       The vector object simply contains a list of values, which can be used a input 
@@ -1755,10 +1623,6 @@ class Vector:
           can subsequently be modified using the perturbation class.
           """
 
-#+END_SRC
-*** Plotting objects
-
-#+BEGIN_SRC ipython :tangle esbmtk.py
 def plot_object_data(geo, fn, yl, yr, obj) -> None:
       """collection of commands which will plot and annotate a reservoir or flux
       object into an existing plot window. 
@@ -1813,11 +1677,7 @@ def plot_object_data(geo, fn, yl, yr, obj) -> None:
       handler2, label2 = ax2.get_legend_handles_labels()
       legend = ax2.legend(handler1+handler2, label1+label2, loc=0).set_zorder(6)
       # ax1.legend(frameon=False)
-#+END_SRC
 
-*** Comparing against external data
-
-#+BEGIN_SRC ipython :tangle esbmtk.py
 class ExternalData(esbmtkBase):
     """Instances of this class hold external X/Y data which can be associated with 
       a reservoir, e.g, to compare computed vs measured data, or with a perturbation
@@ -1945,51 +1805,7 @@ class ExternalData(esbmtkBase):
         ax.set_ylabel(self.yh)
         plt.show()
         plt.savefig(self.n + ".pdf")
-#+END_SRC
 
-
-
-* Connecting Reservoirs
-
-Two reservoirs connect to each other via at least 1 flux. Connection properties include 
- - the direction of the flux (from A to B)
- - any processes which act on the flux, and whether these processes
-   depend on the upstream, downstream or both reservoirs
- - the type of flux:
-   - Fixed: both flux-rate and delta are given, allowed processes include signal and fractionation
-   - Reservoir-Driven: delta and or flux rate depend on the reservoir data (upstream/downstream both)
-     - if nothing assume upstream reservoir passive flux with var delta
-     - if only flux it assume upstream reservoir with fixed flux and var delta
-     - if only delta assume varflux with fixed delta
-     - if both delta and flux are given print warning and suggest to use a static flux
-     - if only alpha assume upstream var flux and fractionation process
-     - Allowed processes: ALL
-
-The above is handled by the connector object which is called as
-#+BEGIN_EXAMPLE
-new_connection = connector("Name"
-                           upstream reservoir
-			   downstrean reservoir
-			   flux_properties = {delta: 34, rate=12}
-			   optional processes = [list])
-#+END_EXAMPLE
-where flux properties is a dictionary which overwrites any default
-values (e.g., the dependency) and optional processes is a list of
-externally defined processes (e.g., a signal type etc).
-
-The init method of the connector obbjects performs sanity checks e.g.:
- - whether the reservoirs exist
- - correct flux type names
- - correct flux properties
- - whether the processes do exist (hmmh, that implies that the
-   optional processes do get registered with the model)
- - creates the correct default processes
- - and connects the reservoirs
-
-   
-*** A connector object
-
-#+BEGIN_SRC ipython :tangle esbmtk.py
 class Connect(esbmtkBase):
     """Name:
 
@@ -2255,6 +2071,8 @@ class Connect(esbmtkBase):
         elif "k" in self.kwargs:  # this flux uses a rate constant
             self.__rateconstant__()
         else:  # if neither are given -> default varflux type
+            if isinstance(self.r1, Source):
+                raise ValueError(f"{self.r1.n} requires a rate and delta value")
             self.__passiveflux__()
 
         # Set optional flux processes
@@ -2366,10 +2184,7 @@ class Connect(esbmtkBase):
         ph = Equilibrium(pn + "_eq", self.fh, r1, r2, r3, r4, kf, kb, n)
 
         self.pl.append(ph)  # add this process to the process list
-#+END_SRC
 
-*** The default process class 
-#+BEGIN_SRC ipython :tangle esbmtk.py
 class Process(esbmtkBase):
     """This class defines template for process which acts on one or more
      reservoir flux combinations. To use it, you need to create an
@@ -2475,18 +2290,6 @@ class Process(esbmtkBase):
           """
         pass
 
-    
-#+END_SRC
-
-** Flux varies as function of one or more influxes
-In this case, the sum of all fluxes is balanced by a single outflux. I.e.,
-the reservoir size does not change. This case is particularly trivial since
-we only designate one flux as variable. This can be done with the reservoir
-setvar method. However, in order to make it compatible with the process
-list framework idea. we create a dedicated flux governor class here:
-
-*** Replace data with data from a lookup table
-#+BEGIN_SRC ipython :tangle esbmtk.py
 class LookupTable(Process):
      """This process replaces the flux-values with values from a static
 lookup table
@@ -2511,10 +2314,7 @@ lookup table
           self.d[i] :float  = self.lt.d[i]
           self.l[i] :float = self.lt.l[i]
           self.h[i] :float = self.lt.h[i]
-#+END_SRC
 
-*** Add data from a signal
-#+BEGIN_SRC ipython :tangle esbmtk.py
 class AddSignal(Process):
     """This process adds values to the current flux based on the values provided by the sifnal object.
     This class is typically invoked through the connector object
@@ -2561,11 +2361,7 @@ class AddSignal(Process):
         # signals may have zero mass, but may have a delta offset. Thus, we do not know
         # the masses for the light and heavy isotope. As such we have to calculate the masses
         # after we add the signal to a flux
-#+END_SRC
 
-
-*** Passive Flux with variable delta
-#+BEGIN_SRC ipython :tangle esbmtk.py
 class PassiveFlux(Process):
      """This process sets the output flux from a reservoir to be equal to
      the sum of input fluxes, so that the reservoir concentration does
@@ -2612,12 +2408,7 @@ class PassiveFlux(Process):
 
           # set isotope mass according to the reservoir delta
           self.f[i] = set_mass(fm,reservoir.d[i-1],reservoir.sp.r)
-#+END_SRC
 
-#+RESULTS:
-
-*** Passive Flux with fixed delta
-#+BEGIN_SRC ipython :tangle esbmtk.py
 class PassiveFlux_fixed_delta(Process):
      """This process sets the output flux from a reservoir to be equal to
      the sum of input fluxes, so that the reservoir concentration does
@@ -2675,10 +2466,7 @@ class PassiveFlux_fixed_delta(Process):
 
           # set isotope mass according to keyword value
           self.f[i] = array(set_mass(newflux, self.delta, r))
-#+END_SRC
 
-*** Fixed flux with variable delta
-#+BEGIN_SRC ipython  :tangle esbmtk.py
 class VarDeltaOut(Process):
      """Unlike a passive flux, this process sets the output flux from a
      reservoir to a fixed value, but the isotopic ratio of the output
@@ -2713,10 +2501,7 @@ class VarDeltaOut(Process):
 
           # set flux according to keyword value
           self.f[i] = set_mass(self.rate,reservoir.d[i-1], reservoir.sp.r)
-#+END_SRC
 
-*** Scale a flux and flux splitting
-#+BEGIN_SRC ipython  :tangle esbmtk.py
 class ScaleFlux(Process):
     """This process scales the mass of a flux (m,l,h) relative to another
      flux but does not affect delta. The scale factor "scale" and flux
@@ -2750,21 +2535,7 @@ class ScaleFlux(Process):
           """
         self.f[i] = self.ref[i] * self.scale
         self.f[i] = set_mass(self.f.m[i], reservoir.d[i - 1], reservoir.sp.r)
-#+END_SRC
 
-*** Combine two elements into a new species (Chemical reaction)
-At present, true chemical reactions are not supported. However, if we
-have one flux driving a another, this behavior can be
-approximated. For a reaction to occur, both fluxes need to belong to a
-different chemical species. Only one of these species will be needed
-in a given reservoir. The second species (the one given in the
-=react_with= keyword) will be removed from the list of fluxes in the
-reservoir,and simply be used a scaling reference. Thus, internally,
-this is no different then the scale-flux class. SO we can simply
-subclass it here. A better approach would be to allow multiple
-elements per reservoir. 
-
-#+BEGIN_SRC ipython  :tangle esbmtk.py
 class Reaction(ScaleFlux):
      """This process approximates the effect of a chemical reaction between
      two fluxes which belong to a differents species (e.g., S, and O).
@@ -2780,10 +2551,7 @@ class Reaction(ScaleFlux):
           Reaction("Name",upstream_reservoir_handle,{"scale":1,"ref":flux_handle})
 
      """
-#+END_SRC
 
-*** Flux with Isotope Fractionation/Offset
-#+BEGIN_SRC ipython  :tangle esbmtk.py
 class Fractionation(Process):
      """This process offsets the isotopic ratio of the flux by a given
         delta value. In other words, we add a fractionation factor
@@ -2818,32 +2586,7 @@ class Fractionation(Process):
                                               self.f.d[i],
                                               self.f.sp.r)
           return
-#+END_SRC
 
-*** Equilibrium reactions
- - each reactant is reservoir with a concentration and the ability to
-   have fluxes
- - the forward equilibrium reaction  is implemented as a process:
-   - this process needs to know the reference reservoirs and concentrations
-   - will only act on one of the reference reservoirs
-   - needs to know the stoichiometric ratio of the products so that it
-     can calculate the fluxes
-   - needs a way to split/combine fluxes: Example:
-     - CaCO3 + H2CO3 will use the concentration in both reservoirs to
-       calculate the flux into the Ca2+ and HCO_{3}^{-}- reservoirs with a
-       1:1 ratio. EqReact([R1,R2],[R3,R4],[1,1,1],[k1,k2,k3]) where Ci are the
-       equilibrium constants.
-   - The init above would also create the necessary fluxes and create
-     and register the process
-
-The below code is a mix between code which creates processes and
-connections. How do we implement the callable process?
-
-What needs to be known for each process? How do we know if a process
-splits species 1 into two, or whether we transfer symmetrically?  What
-about a syntax of [R1,P1], or [R1,P1,P2]? This way we would need to
-know whether a reservoir is a source or sink?
-#+BEGIN_SRC ipython  :tangle esbmtk.py
 class Equilibrium():
      """This class creates the connections and initializes the processes
      which describe equilibration reactions between different
@@ -2908,10 +2651,7 @@ class Equilibrium():
           fb = ( kb * c3 * c4)/n  # calculate the backward fluxes
 
           # Assign fluxes. How do we do that?
-#+END_SRC
 
-*** Flux as a function of concentration and rate constant
-#+BEGIN_SRC ipython  :tangle esbmtk.py
 class RateConstant(Process):
     """This process scales the flux as a function of the upstream
      reservoir concentration C and a constant which describes the
@@ -2984,11 +2724,7 @@ class RateConstant(Process):
           """
         scale: float = reservoir.c[i - 1] / self.C0 * self.kvalue
         self.f[i] = self.f[i] * scale
-#+END_SRC
 
-
-*** Monod type limiters
-#+BEGIN_SRC ipython  :tangle esbmtk.py
 class Monod(Process):
      """This process scales the flux as a function of the upstream
      reservoir concentration using a Michaelis Menten type
@@ -3029,86 +2765,7 @@ class Monod(Process):
           self.m[i] =set_mass(self.a * (self.f[0] * reservoir.c[i])/(self.b + reservoir.c[i]),
                               reservoir.d[i-1],
                               reservoir.sp.r)
-#+END_SRC
 
-*** 
-*** 
-*** Modifying fluxes dynamically as function of something else
-
-
-
-
-* Dealing with Sealevel
-Sea level variations affect the size of the continental shelves. This
-in turn affects a variety of biogeochemical processes. As such, I here
-provide a class which handles sea-level data, and provides shelf area
-estimates in return. The sealevel object is instantiated with a signal
-object, which contains sealevel/time data points along the modeling
-domain relative to the modern sealevel (positive is higher, negative
-is lower). These are converted to shelf area, and other ocean area
-estimates (both in total area, as well as percentage points. Optional
-arguments allow to specify the depth of the shelf break (default =
--250 mbsl), as well as the total ocean area (3.61E14 m^2 in the modern
-ocean).
-
-There are 3 different ways to calculate the effect of sealevel on carbon burial:
-
- - We scale carbon burial with the area were the shelf area is defined
-   as the depth interval between the modern shelf break depth, and
-   mean sealevel. This scenario will work well for small sealevel
-   change, but is likely to fail for large sealevel changes
- - We scale carbon burial with the area defined by the location of the
-   modern shelf break, and the beach line. This approach will likely
-   overestimate carbon burial in case of large amplitude variations
- - We implement a mechanistic carbon burial model which computes the
-   carbon burial efficiency as a function of water depth. This way, we
-   can simply integrate the overall carbon flux. If we scale sulfur
-   burial fractionation inversely to burial efficiency, we can then
-   get sulfur burial and fractionation factor by simple integration.
-   
-** Background
-We first calculate the size of shelf area at any given time step using
-the sea-level estimate of Kominz et al. (2008). To average out
-regional or local sea-level signals (as modified by, e.g., gravity,
-mantle flow, and isostatic rebound), we use the cubic polynomial fit
-of the global mean hypsometric curve (ETOPO5, National Geophysical
-Data Center, 1988) after Bjerrum et al 2006 which is approximated for 
-depths shallower than 1000 meters as
-
-label:area
-\begin{equation}
- A = 0.307 * z^3 + 0.624 * z^2 + 0.43 * z + 0. ﻿99991
-\end{equation}
-
-where A denotes the normalized hypsographic area, and z denotes the
-sealevel. For z=0 we obtain a scaling factor of 0.99991. I.e. if we
-multiply this by the actual ocean area A_0 we are slightly off. 
-
-To obtain the shelf area for a given sealevel, we need to calculate
-the shelf area in the modern ocean. We thus define the shelf as all
-the areas which are covered by water of a depth of 200 mbsl or
-less. We can calculate this as the difference between the area for z =
-0 and z =-200 in Eq:ref:area and multiply the result by A_0
-
-\begin{equation}
- A_s = A_0 * (A(0) - A(-200))
-\end{equation}
-
-if define as =A(0) = 1= the above equation reduces to 
-
-\begin{equation}
- A_s = A_0 * (1 - A(-200))
-\end{equation}
-
-Now, ignoring the effects of shelf edge loading, let's express this
-more generally, i.e., not relative to the modern sealevel, but relative to any sealevel
-\begin{equation}
- A_s = A_0 * (A(z) - A(-200))
-\end{equation}
-
-where A(z) stands for the area at a given sealevel z relative to modern
-
-#+BEGIN_SRC ipython :tangle esbmtk.py
 class Hypsometry(esbmtkBase):
     """Sea level variations affect the size of the continental
 shelves. This in turn affects a variety of biogeochemical
@@ -3401,13 +3058,7 @@ values for sealevel variations between -500 and + 500 meters.
 
         za: float = self.area[4500 - z]
         return za
-#+END_SRC
 
-#
-
-* A ESBMTK class template
-
-#+BEGIN_SRC ipython :tangle esbmtk.py
 class SomeClass(esbmtkBase):
     """
     A ESBMTK class template
@@ -3459,43 +3110,3 @@ class SomeClass(esbmtkBase):
                          "shelf_break" : "an integer number"})
         
         self.__validateandregister__(kwargs)  # initialize keyword values
-
-
-#+END_SRC
-
-***** Flux as non-linear function of reservoir concentration 
-****** Decrease with decreasing concentration
-
-#+BEGIN_SRC ipython :results value verbatim latex replace
-from sympy import *  # get sympy library
-a, b, c, f, f0 = symbols('a b c f f0')  
-# since there is no equal sign for symbolic computation, rephrase
-# with zero being on the lelft side of the equation
-# 0 = ( a*f0*c/(b+c) -f) and solve for f0
-return solveset( a*f0*c/(b+c) -f, f0)
-#+END_SRC
-
-#+RESULTS:
-#+BEGIN_EXPORT latex
-{f*(b + c)/(a*c)}
-#+END_EXPORT
-
-
-
-
-****** Calculate Flux as fraction of other flux
-
-       
-
-* Tangle files :noexport:
-
-
-
-
-
-
-
-
-
-
-
