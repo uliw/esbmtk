@@ -1,0 +1,157 @@
+#+TITLE: ESBMTK Carbon Cycle example
+#+AUTHOR:Ulrich G Wortmann
+#+STARTUP: showall
+#+OPTIONS: todo:nil tasks:nil tags:nil toc:nil
+#+PROPERTY: header-args :eval never-export
+#+EXCLUDE_TAGS: noexport
+#+LATEX_HEADER: \usepackage{breakurl}
+#+LATEX_HEADER: \usepackage{newuli}
+#+LATEX_HEADER: \usepackage{uli-german-paragraphs}
+#+latex_header: \usepackage{natbib}
+#+latex_header: \usepackage{natmove}
+
+* Overview
+
+Note: This is the same code as in the quickstart guide. See the guide
+for a more in detail explanation.
+
+
+#+BEGIN_SRC ipython :tangle ocean.py
+from esbmtk import Model, Element, Species, Reservoir
+from esbmtk import Signal, Connect, Source, Sink, Flux
+from esbmtk import ExternalData
+
+# create model
+Model(
+    name="C_Cycle",  # model name
+    stop=100,         # end time of model
+    time_unit="yr",  # time units 
+    dt=1,            # time step
+)
+#+END_SRC
+
+
+#+BEGIN_SRC ipython :tangle ocean.py
+# Element properties
+Element(
+    name="C",                  # Element Name
+    model=C_Cycle,             # Model handle
+    mass_unit="mmol",          # base mass unit
+    li_label="C^{12$S",        # Name of light isotope
+    hi_label="C^{13}$S",       # Name of heavy isotope
+    d_label="$\delta^{13}$C",       # Name of isotope delta
+    d_scale="VPDB",            # Isotope scale. End of plot labels
+    r=0.0112372,  # VPDB C13/C12 ratio https://www-pub.iaea.org/MTCD/publications/PDF/te_825_prn.pdf
+)
+
+# add species
+Species(name="CO2", element=C)  # Name & element handle
+Species(name="DIC", element=C)
+Species(name="OM", element=C)
+Species(name="CaCO3", element=C)
+#+END_SRC
+
+#+RESULTS:
+:results:
+# Out [1]: 
+# output
+
+NameErrorTraceback (most recent call last)
+<ipython-input-1-9227c36eb586> in <module>
+      1 # Element properties
+----> 2 Element(
+      3     name="C",                  # Element Name
+      4     model=C_Cycle,             # Model handle
+      5     mass_unit="mmol",          # base mass unit
+
+NameError: name 'Element' is not defined
+:end:
+
+#+BEGIN_SRC ipython :tangle ocean.py
+Signal(name = "ACOR",
+       species = CO2,
+       duration = 100, # must match what is in the file
+       filename = "test-data.csv"
+)
+#+END_SRC
+Once a signal instance has been created, it can be passed to a
+connector object in order to associate it with a flux (see the first
+connection below as an example).
+
+
+#+BEGIN_SRC ipython :tangle ocean.py 
+Source(name="Fossil_Fuel_Burning", species=CO2)
+Source(name="Carbonate_Weathering", species=CO2)
+Source(name="Organic_Weathering", species=CO2)
+Source(name="Volcanic", species=CO2)
+Sink(name="Carbonate_burial", species=CaCO3)
+Sink(name="OM_burial", species=OM)
+
+Reservoir(
+    name="Ocean",       # Name of reservoir
+    species=DIC,        # Species handle
+    delta=0,            # initial delta
+    concentration=2.62, # mass in mol
+    unit="mmol",        # mass unit
+    volume=1.332E18,    # reservoir size (m^3)
+)
+#+END_SRC
+
+#+BEGIN_SRC ipython :tangle ocean.py
+# connect source to reservoir
+Connect(
+    source=Fossil_Fuel_Burning,  # source of flux
+    sink=Ocean,         # target of flux
+    rate=0,              # weathering flux in 
+    delta=0,            # set a default flux
+    pl=[ACOR],
+)
+
+Connect(
+    source=Carbonate_Weathering,  # source of flux
+    sink=Ocean,         # target of flux
+    rate=12.3E12,              # weathering flux in 
+    delta=0,            # set a default flux
+)
+
+Connect(
+    source=Organic_Weathering,  # source of flux
+    sink=Ocean,         # target of flux
+    rate=4.0E12,              # weathering flux in 
+    delta=-20,            # set a default flux
+    
+)
+
+Connect(
+    source=Volcanic,  # source of flux
+    sink=Ocean,         # target of flux
+    rate=6.0E12,              # weathering flux in 
+    delta=-5,            # set a default flux
+)
+
+Connect(
+    source=Ocean,  # source of flux
+    sink=OM_burial,         # target of flux
+    rate=4.2E12,              # weathering flux in 
+    delta=-26.32,            # set a default flux
+)
+
+Connect(
+    source=Ocean,  # source of flux
+    sink=Carbonate_burial,         # target of flux
+    rate=18.1E12,              # weathering flux in 
+    delta=0, # set a default flux
+)
+#+END_SRC
+
+#+BEGIN_SRC ipython :tangle ocean.py
+# Run the model
+C_Cycle.run()
+
+# plot the results
+C_Cycle.plot_data()
+C_Cycle.save_data()
+#+END_SRC
+
+
+

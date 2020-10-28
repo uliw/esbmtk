@@ -5,7 +5,9 @@ projects the in Earth-Sciences. I started this project to teach myself
 python and explore object oriented programming.  The code became
 however functional enough that the focus of this project has shifted
 to make box modeling more approachable for classroom teaching. So
-performance and scalability are not great.
+performance and scalability are not great. Specifically, the solved is
+a simple forward Euler scheme, so stiff problems are not handled
+gracefully.
 
 At present, it will calculate masses/concentrations in reservoirs and
 fluxes including isotope ratios. It provides a variety of classes
@@ -17,9 +19,17 @@ chemical reactions (including equilibrium reactions).
 
  - Oct. 27^{th}, added documentation on how to integrate user written
    process classes, added a class which allows for concentration
-   dependent flux
+   dependent flux. Updated the documentation, added examples
  - Oct. 25^{th}, Initial release on github.
- 
+
+* Contributing
+
+Don't be shy. Contributing is as easy as finding bugs by using the
+code, or maybe you want to add a new process code? If you have plenty
+of time to spare, ESMBTK could use a solver for stiff problems, or a
+graphical interface ;-)
+
+
 
 * Installation
 
@@ -47,7 +57,17 @@ one of the following commands
 
 See the documentation folder, [[https://github.com/uliw/esbmtk/blob/main/Documentation/ESBMTK-Quick-Start_Guide.org][specifically the quickstart guide]].
 
+At present, I also provide the following example cases (as py-files
+and in jupyter notebook format)
 
+  - A simple carbon cycle model which shows how to set up the model,
+    and read an external csv file to force the model
+  - A simple carbon cycle model which demonstrates how to a simple
+    signal, and how to use the rate constant process to adjust
+    concentration dependent flux rates
+
+Last but not least, I added a short guide how to add your own process
+classes to the ESBMTK
 
 * License
 

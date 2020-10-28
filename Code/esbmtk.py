@@ -1880,7 +1880,7 @@ class Connect(esbmtkBase):
             "react_with": Flux,
             "ratio": Number,
             "scale": Number,
-            "slope": Number,
+            "kvalue": Number,
             "C0": Number
         }
 
@@ -2077,7 +2077,7 @@ class Connect(esbmtkBase):
         if "alpha" in self.kwargs:  # isotope enrichment
             self.__alpha__()
 
-        if "slope" in self.kwargs:
+        if "kvalue" in self.kwargs:
             self.__rateconstant__()  # flux depends on a rate constant
 
         if "type" in self.kwargs:
@@ -2091,8 +2091,7 @@ class Connect(esbmtkBase):
             name=self.pn + "_Pfd",
             reservoir=self.r,
             flux=self.fh,
-            delta=self.delta
-        )  # initialize a passive flux process object
+            delta=self.delta)  # initialize a passive flux process object
         self.pl.append(ph)
 
     def __vardeltaout__(self) -> None:
@@ -2110,7 +2109,7 @@ class Connect(esbmtkBase):
         if not isinstance(self.kwargs["ref"], Flux):
             raise ValueError("Scale reference must be a flux")
 
-        ph = ScaleFlux(name=self.pn + "_SF",
+        ph = ScaleFlux(name=self.pn + "_PSF",
                        reservoir=self.r,
                        flux=self.fh,
                        scale=self.kwargs["scale"],
@@ -2144,7 +2143,7 @@ class Connect(esbmtkBase):
     def __alpha__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
         """
-        ph = Fractionation(name=self.pn + "_a",
+        ph = Fractionation(name=self.pn + "_Pa",
                            reservoir=self.r,
                            flux=self.fh,
                            alpha=self.kwargs["alpha"])
@@ -2152,12 +2151,16 @@ class Connect(esbmtkBase):
 
     def __rateconstant__(self) -> None:
         """ Add rate constant process"""
-        print("\n adding rate constant process \n")
-        ph = RateConstant(name=self.pn + "_k",
+        if "rate" not in self.kwargs:
+            raise ValueError(
+                "The rate constant process requires that the flux rate is being set explicitly"
+            )
+
+        ph = RateConstant(name=self.pn + "_Pk",
                           reservoir=self.r,
                           flux=self.fh,
                           C0=self.C0,
-                          slope=self.slope)
+                          kvalue=self.kvalue)
         self.pl.append(ph)
 
     def __equilibrium__(self) -> None:
@@ -2650,9 +2653,9 @@ class Equilibrium():
 class RateConstant(Process):
     """This process scales the flux as a function of the upstream
      reservoir concentration C and a constant which describes the
-     slope between the reservoir concentration and the flux scaling
+     kvalue between the reservoir concentration and the flux scaling
 
-     F = slope * (C/C0)
+     F = kvalue * (C/C0)
 
      where C denotes
      the concentration in the ustream reservoir, C0 denotes the baseline
@@ -2663,7 +2666,7 @@ class RateConstant(Process):
           RateConstant(name = "Name",
                        reservoir= upstream_reservoir_handle,
                        flux = flux handle,
-                       Slope =  0.00028,
+                       Kvalue =  0.00028,
                        C0 = 2 # reference_concentration
     )
 
@@ -2685,7 +2688,7 @@ class RateConstant(Process):
 
         # update the allowed keywords
         self.lkk = {
-            "slope": Number,
+            "kvalue": Number,
             "C0": Number,
             "name": str,
             "reservoir": Reservoir,
@@ -2693,7 +2696,7 @@ class RateConstant(Process):
         }
 
         # new required keywords
-        self.lrk.extend(["reservoir", "slope", "C0"])
+        self.lrk.extend(["reservoir", "kvalue", "C0"])
 
         # dict with default values if none provided
         # self.lod d
@@ -2702,7 +2705,7 @@ class RateConstant(Process):
 
         # add these terms to the known error messages
         self.bem.update({
-            "slope": "a number",
+            "kvalue": "a number",
             "reservoir": "Reservoir handle",
             "C0": "a number",
             "name": "a string value",
@@ -2717,7 +2720,7 @@ class RateConstant(Process):
         """
           this will be called by the Model.run() method
           """
-        scale: float = reservoir.c[i - 1] / self.C0 * self.slope
+        scale: float = reservoir.c[i - 1] / self.C0 * self.kvalue
         self.f[i] = self.f[i] * scale
 
 class Monod(Process):
