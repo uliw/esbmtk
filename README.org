@@ -30,7 +30,6 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-)
 
 
-
 * Installation
 
 ESBMTK relies on the following python versions and libraries
@@ -60,14 +59,14 @@ See the documentation folder, [[https://github.com/uliw/esbmtk/blob/main/Documen
 At present, I also provide the following example cases (as py-files
 and in jupyter notebook format)
 
-  - A simple carbon cycle model which shows how to set up the model,
-    and read an external csv file to force the model
-  - A simple carbon cycle model which demonstrates how to a simple
-    signal, and how to use the rate constant process to adjust
-    concentration dependent flux rates
+  - A trivial carbon cycle model which shows how to set up the model,
+    and read an external [[https://github.com/uliw/esbmtk/blob/main/Examples/A%20simple%20carbon%20cycle%20example/C_cycle.org][csv file to force the model]] 
+  - The same model as be before but now to demonstrate how to add
+    pyramid shaped signal, and how to use the rate constant process to
+    adjust concentration dependent flux rates[[https://github.com/uliw/esbmtk/blob/main/Examples/Using%20a%20rate%20constant/rate_example.org][concentration dependent flux rates]]. 
 
-Last but not least, I added a short guide how to add your own process
-classes to the ESBMTK
+Last but not least, I added a short [[https://github.com/uliw/esbmtk/blob/main/Documentation/Adding_your_own_Processes.org][guide how to add your own process
+classes to the ESBMTK]] 
 
 * License
 
