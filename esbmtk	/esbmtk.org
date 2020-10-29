@@ -494,7 +494,7 @@ class esbmtkBase():
 *** The Model object
 #+BEGIN_SRC ipython :tangle esbmtk.py
 class Model(esbmtkBase):
-    """ This is the class specify a new model.
+    """This is the class specify a new model.
 
     Example:
 
@@ -502,12 +502,21 @@ class Model(esbmtkBase):
                       start = 0,          # optional: start time 
                       stop  = 1000,       # end time
                       time_unit = "yr",   # units for start/end time
-                      dt = 2,
+                      dt = 2,             # model time step
                       dt_unit = "yr",     # optional: units for dt
                       base_unit = "yr",   # optional: time unit for model
+                      ref_time = 0,       # optional: time offset for plot
             )
-           
-    all of the above keyword values are available as Model_Name.keyword
+
+    The 'ref_time' keyword will offset the time axis by the specified
+    amount, when plotting the data, .i.e., the model time runs from to
+    100, but you want to plot data as if where from 2000 to 2100, you would
+    specify a value of 2000. This is for display purposes only, and does not affect
+    the model. Care must be taken that any external data references the model
+    time domain, and not the display time.
+    
+    All of the above keyword values are available as variables with 
+    Model_Name.keyword
 
     The user facing methods of the model class are
        - Model_Name.describe()
@@ -515,7 +524,7 @@ class Model(esbmtkBase):
        - Model_Name.plot_data()
        - Model_Name.plot_reservoirs()
        - Model_Name.run()
-    
+
     """
     from typing import Dict
     from nptyping import NDArray, Float
@@ -538,7 +547,8 @@ class Model(esbmtkBase):
             "time_unit": str,
             "dt": Number,
             "dt_unit": str,
-            "base_unit": str
+            "base_unit": str,
+            "ref_time": int,
         }
 
         # provide a list of absolutely required keywords
@@ -548,10 +558,13 @@ class Model(esbmtkBase):
         self.lod: Dict[str, any] = {
             'start': 0,
             'dt_unit': kwargs['time_unit'],
-            'base_unit': kwargs['time_unit']
+            'base_unit': kwargs['time_unit'],
+            'ref_time': 0,
         }
 
         self.__initerrormessages__()
+        self.bem.update({"ref_time":  "an integer number"})
+        
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # empty list which will hold all reservoir references
@@ -1042,7 +1055,7 @@ class Reservoir(esbmtkBase):
         model = self.sp.mo
         species = self.sp
         obj = self
-        time = model.time  # get the model time
+        time =  model.time + model.ref_time  # get the model time
         xl = f"Time [{model.bu}]"
 
         size, geo = get_plot_layout(self)  # adjust layout
@@ -1054,12 +1067,12 @@ class Reservoir(esbmtkBase):
         fig.set_size_inches(size)
 
         # plot reservoir data
-        plot_object_data(geo, fn, self.c, self.d, self)
+        plot_object_data(geo, fn, self.c, self.d, self, time)
 
-        # plot teh fluxes assoiated with this reservoir
+        # plot the fluxes assoiated with this reservoir
         for f in sorted(self.lof):  # plot flux data
             fn = fn + 1
-            plot_object_data(geo, fn, f.m, f.d, f)
+            plot_object_data(geo, fn, f.m, f.d, f, time)
 
         fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
         fig.tight_layout()
@@ -1077,7 +1090,7 @@ class Reservoir(esbmtkBase):
         model = self.sp.mo
         species = self.sp
         obj = self
-        time = model.time  # get the model time
+        time = model.time + model.ref_time  # get the model time
         xl = f"Time [{model.bu}]"
 
         size = [5, 3]
@@ -1089,7 +1102,7 @@ class Reservoir(esbmtkBase):
         fig.set_size_inches(size)
 
         # plt.legend()ot reservoir data
-        plot_object_data(geo, fn, self.c, self.d, self)
+        plot_object_data(geo, fn, self.c, self.d, self, time)
 
         fig.tight_layout()
         # fig.subplots_adjust(top=0.88)
@@ -1759,7 +1772,7 @@ class Vector:
 *** Plotting objects
 
 #+BEGIN_SRC ipython :tangle esbmtk.py
-def plot_object_data(geo, fn, yl, yr, obj) -> None:
+def plot_object_data(geo, fn, yl, yr, obj, time) -> None:
       """collection of commands which will plot and annotate a reservoir or flux
       object into an existing plot window. 
       """
@@ -1775,7 +1788,7 @@ def plot_object_data(geo, fn, yl, yr, obj) -> None:
       cols = geo[1]
       species = obj.sp
       model = obj.mo
-      time = model.time
+      # time = model.time
 
       ax1 = plt.subplot(rows, cols, fn, title=obj.n)  # start subplot
 
@@ -3408,8 +3421,8 @@ values for sealevel variations between -500 and + 500 meters.
 
 #
 
-* A ESBMTK class template
-
+* A ESBMTK class ClassName(object):
+ 
 #+BEGIN_SRC ipython :tangle esbmtk.py
 class SomeClass(esbmtkBase):
     """
