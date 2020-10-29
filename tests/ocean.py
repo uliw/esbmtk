@@ -5,7 +5,7 @@ from esbmtk import ExternalData
 # create model
 Model(
     name="C_Cycle",  # model name
-    stop=100,        # end time of model
+    stop=100,         # end time of model
     time_unit="yr",  # time units 
     dt=1,            # time step
 )
@@ -28,10 +28,10 @@ Species(name="DIC", element=C)
 Species(name="OM", element=C)
 Species(name="CaCO3", element=C)
 
-Signal(name = "ACOR",
-       species = CO2,
+Signal(name = "ACR",   # Signal name
+       species = CO2,  # Species
        duration = 100, # must match what is in the file
-       filename = "test-data.csv"
+       filename = "test-data.csv" # filename
 )
 
 Source(name="Fossil_Fuel_Burning", species=CO2)
@@ -45,7 +45,7 @@ Reservoir(
     name="Ocean",       # Name of reservoir
     species=DIC,        # Species handle
     delta=0,            # initial delta
-    concentration=2.62, # concentration
+    concentration=2.62, # cocentration 
     unit="mmol",        # mass unit
     volume=1.332E18,    # reservoir size (m^3)
 )
@@ -53,46 +53,46 @@ Reservoir(
 # connect source to reservoir
 Connect(
     source=Fossil_Fuel_Burning,  # source of flux
-    sink=Ocean,         # target of flux
+    sink=Ocean,          # target of flux
     rate=0,              # weathering flux in 
-    delta=0,            # set a default flux
-    pl=[ACOR],
+    delta=0,             # set a default flux
+    pl=[ACR],            # process list, here the anthropogenic carbon release
 )
 
 Connect(
     source=Carbonate_Weathering,  # source of flux
     sink=Ocean,         # target of flux
-    rate=12.3E12,       # flux rate 
+    rate=12.3E12,       # weathering flux in 
     delta=0,            # isotope ratio
 )
 
 Connect(
     source=Organic_Weathering,  # source of flux
-    sink=Ocean,           # target of flux
-    rate=4.0E12,          # flux rate
-    delta=-20,            # isotope ratio
+    sink=Ocean,         # target of flux
+    rate=4.0E12,        # flux rate
+    delta=-20,          # isotope ratio
     
 )
 
 Connect(
-    source=Volcanic,  # source of flux
-    sink=Ocean,       # target of flux
-    rate=6.0E12,      # flux rate
-    delta=-5,         # set a default isotope ratio
+    source=Volcanic,    # source of flux
+    sink=Ocean,         # target of flux
+    rate=6.0E12,        # flux rate
+    delta=-5,           # isotope ratio
 )
 
 Connect(
-    source=Ocean,   # source of flux
-    sink=OM_burial, # target of flux
-    rate=4.2E12,    # flux rate
-    alpha=-26.32,   # isotope fractionation
+    source=Ocean,       # source of flux
+    sink=OM_burial,     # target of flux
+    rate=4.2E12,        # burial rate
+    alpha=-26.32,       # fractionation factor
 )
 
 Connect(
-    source=Ocean,  # source of flux
-    sink=Carbonate_burial,    # target of flux
-    rate=18.1E12,             # flux rate
-    delta=0,        # isotope fractionation
+    source=Ocean,       # source of flux
+    sink=Carbonate_burial,     # target of flux
+    rate=18.1E12,              # burial rate
+    alpha=0,            # set the istope fractionation
 )
 
 # Run the model
@@ -100,4 +100,5 @@ C_Cycle.run()
 
 # plot the results
 C_Cycle.plot_data()
+# save the results
 C_Cycle.save_data()

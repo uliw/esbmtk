@@ -24,7 +24,7 @@ from esbmtk import ExternalData
 # create model
 Model(
     name="C_Cycle",  # model name
-    stop=100,         # end time of model
+    stop=100,        # end time of model
     time_unit="yr",  # time units 
     dt=1,            # time step
 )
@@ -91,7 +91,7 @@ Reservoir(
     name="Ocean",       # Name of reservoir
     species=DIC,        # Species handle
     delta=0,            # initial delta
-    concentration=2.62, # mass in mol
+    concentration=2.62, # concentration
     unit="mmol",        # mass unit
     volume=1.332E18,    # reservoir size (m^3)
 )
@@ -110,37 +110,37 @@ Connect(
 Connect(
     source=Carbonate_Weathering,  # source of flux
     sink=Ocean,         # target of flux
-    rate=12.3E12,              # weathering flux in 
-    delta=0,            # set a default flux
+    rate=12.3E12,       # flux rate 
+    delta=0,            # isotope ratio
 )
 
 Connect(
     source=Organic_Weathering,  # source of flux
-    sink=Ocean,         # target of flux
-    rate=4.0E12,              # weathering flux in 
-    delta=-20,            # set a default flux
+    sink=Ocean,           # target of flux
+    rate=4.0E12,          # flux rate
+    delta=-20,            # isotope ratio
     
 )
 
 Connect(
     source=Volcanic,  # source of flux
-    sink=Ocean,         # target of flux
-    rate=6.0E12,              # weathering flux in 
-    delta=-5,            # set a default flux
+    sink=Ocean,       # target of flux
+    rate=6.0E12,      # flux rate
+    delta=-5,         # set a default isotope ratio
+)
+
+Connect(
+    source=Ocean,   # source of flux
+    sink=OM_burial, # target of flux
+    rate=4.2E12,    # flux rate
+    alpha=-26.32,   # isotope fractionation
 )
 
 Connect(
     source=Ocean,  # source of flux
-    sink=OM_burial,         # target of flux
-    rate=4.2E12,              # weathering flux in 
-    delta=-26.32,            # set a default flux
-)
-
-Connect(
-    source=Ocean,  # source of flux
-    sink=Carbonate_burial,         # target of flux
-    rate=18.1E12,              # weathering flux in 
-    delta=0, # set a default flux
+    sink=Carbonate_burial,    # target of flux
+    rate=18.1E12,             # flux rate
+    delta=0,        # isotope fractionation
 )
 #+END_SRC
 

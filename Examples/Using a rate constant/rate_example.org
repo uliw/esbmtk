@@ -5,9 +5,11 @@ here. The main difference is in the following declaration (see below
 in the Connection Chapter) which declares that the output flux has
 linear dependency on the reservoir concentration, such that
 
-f =  c/C0 *k
+f =  (c/C0 - 1) * k
 
-where c denotes the reservoir concentration in the previous time step, C0 the reference concentration, and k equals the rate constant.
+where c denotes the reservoir concentration in the previous time step,
+C0 the reference concentration, and k equals the rate constant. The
+result is forced to be equal or larger than zero.
 
 Note that this code makes no attempt to prevent you from shooting into
 your own foot. I.e., if you forget to declare the rate, it will
@@ -33,10 +35,10 @@ import matplotlib.pyplot as plt
 
 # create model
 Model(
-    name="test",  # model name
-    stop=1000,                   # end time of model
-    time_unit="yr",             # time units 
-    dt=1,                     # time step
+    name="test",        # model name
+    stop=1000,          # end time of model
+    time_unit="yr",     # time units 
+    dt=1,               # time step
 )
 
 # Element properties
@@ -87,7 +89,7 @@ Signal(
     duration=100,     # duration
     delta=1,          # isotope effect
     shape="pyramid",  # signal shape
-    magnitude=2e10,   # magnitude or mass
+    magnitude=1e17,   # magnitude or mass
 )
 #+END_SRC
 
@@ -97,22 +99,21 @@ Signal(
 
 #+BEGIN_SRC ipython :tangle rate_example.py
 # connect source to reservoir
-
-
 Connect(
     source=Carbonate_Weathering,  # source of flux
-    sink=Ocean,         # target of flux
-    rate=18E12,              # weathering flux in 
-    pl=[P1]
+    sink=Ocean,                   # target of flux
+    rate=18E12,                   # flux rate
+    pl=[P1]                       # process list
 )
 
 
 Connect(
-    source=Ocean,  # source of flux
-    sink=Carbonate_Burial,         # target of flux
-    kvalue = 1000,              # weathering flux in
-    C0 =3,
-    rate = 18E12
+    source=Ocean,          # source of flux
+    sink=Carbonate_Burial, # target of flux
+    kvalue = 1000,         # flux rate 
+    C0 =3,                 # reference concentration
+    rate = 18E12,          # flux rate
+    alpha = 0,             # isotope offset
 )
 #+END_SRC
 

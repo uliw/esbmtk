@@ -1,21 +1,21 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgd114727)
-2.  [News](#orge9abfe5)
-3.  [Contributing](#org10786eb)
-4.  [Installation](#org9904f8c)
-5.  [Documentation](#orgff85c0b)
-6.  [License](#org8820bbd)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org836a601)
+2.  [News](#org059d08b)
+3.  [Contributing](#orgfe4b42f)
+4.  [Installation](#orgd297053)
+5.  [Documentation](#org7c7729e)
+6.  [License](#org3ef33b7)
 
 
-<a id="orgd114727"></a>
+<a id="org836a601"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
 ESBMTK is python library which aims to simplify typical box modeling
 projects the in Earth-Sciences. I started this project to teach myself
-python and explore object oriented programming.  The code became
+python and explore object oriented programming. The code became
 however functional enough that the focus of this project has shifted
 to make box modeling more approachable for classroom teaching. So
 performance and scalability are not great. Specifically, the solved is
@@ -29,7 +29,7 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="orge9abfe5"></a>
+<a id="org059d08b"></a>
 
 # News
 
@@ -39,7 +39,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org10786eb"></a>
+<a id="orgfe4b42f"></a>
 
 # Contributing
 
@@ -49,7 +49,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-)
 
 
-<a id="org9904f8c"></a>
+<a id="orgd297053"></a>
 
 # Installation
 
@@ -71,7 +71,7 @@ please install the above with pip or conda etc. You can install esbmtk with pip 
 -   git@github.com:uliw/esbmtk.git
 
 
-<a id="orgff85c0b"></a>
+<a id="org7c7729e"></a>
 
 # Documentation
 
@@ -90,7 +90,7 @@ Last but not least, I added a short [guide how to add your own process
 classes to the ESBMTK](https://github.com/uliw/esbmtk/blob/main/Documentation/Adding_your_own_Processes.org) 
 
 
-<a id="org8820bbd"></a>
+<a id="org3ef33b7"></a>
 
 # License
 

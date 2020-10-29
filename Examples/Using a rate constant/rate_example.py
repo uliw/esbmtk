@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 
 # create model
 Model(
-    name="test",  # model name
-    stop=1000,                   # end time of model
-    time_unit="yr",             # time units 
-    dt=1,                     # time step
+    name="test",        # model name
+    stop=1000,          # end time of model
+    time_unit="yr",     # time units 
+    dt=1,               # time step
 )
 
 # Element properties
@@ -47,26 +47,25 @@ Signal(
     duration=100,     # duration
     delta=1,          # isotope effect
     shape="pyramid",  # signal shape
-    magnitude=2e10,   # magnitude or mass
+    magnitude=1e17,   # magnitude or mass
 )
 
 # connect source to reservoir
-
-
 Connect(
     source=Carbonate_Weathering,  # source of flux
-    sink=Ocean,         # target of flux
-    rate=18E12,              # weathering flux in 
-    pl=[P1]
+    sink=Ocean,                   # target of flux
+    rate=18E12,                   # flux rate
+    pl=[P1]                       # process list
 )
 
 
 Connect(
-    source=Ocean,  # source of flux
-    sink=Carbonate_Burial,         # target of flux
-    kvalue = 1000,              # weathering flux in
-    C0 =3,
-    rate = 18E12
+    source=Ocean,          # source of flux
+    sink=Carbonate_Burial, # target of flux
+    kvalue = 1000,         # flux rate 
+    C0 =3,                 # reference concentration
+    rate = 18E12,           # flux rate
+    alpha = 0,
 )
 
 # Run the model

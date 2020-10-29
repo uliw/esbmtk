@@ -217,10 +217,10 @@ well as repetition. Signal can be added to each other (i.e., you can
 specify a signal which effects the flux, and then add another signal
 which effects the isotope ratio).
 #+BEGIN_SRC ipython :tangle ocean.py
-Signal(name = "ACOR",
-       species = CO2,
+Signal(name = "ACR",   # Signal name
+       species = CO2,  # Species
        duration = 100, # must match what is in the file
-       filename = "test-data.csv"
+       filename = "test-data.csv" # filename
 )
 #+END_SRC
 Once a signal instance has been created, it can be passed to a
@@ -241,7 +241,7 @@ Reservoir(
     name="Ocean",       # Name of reservoir
     species=DIC,        # Species handle
     delta=0,            # initial delta
-    concentration=2.62, # mass in mol
+    concentration=2.62, # cocentration 
     unit="mmol",        # mass unit
     volume=1.332E18,    # reservoir size (m^3)
 )
@@ -249,7 +249,7 @@ Reservoir(
 
 ** Connecting sources, reservoirs and sinks
 Now that all model elements are specified, we can connect
-everything. Note how the previously specified =ACOR= signal is added
+everything. Note how the previously specified =ACR= signal is added
 to the fossil fuel burning source. If the flux rate and delta are
 provided, the flux is treated a static. If the delta is omitted, the
 flux delta is driven by the upstream reservoir. If the flux is
@@ -265,46 +265,46 @@ they are defined.
 # connect source to reservoir
 Connect(
     source=Fossil_Fuel_Burning,  # source of flux
-    sink=Ocean,         # target of flux
+    sink=Ocean,          # target of flux
     rate=0,              # weathering flux in 
-    delta=0,            # set a default flux
-    pl=[ACOR],
+    delta=0,             # set a default flux
+    pl=[ACR],            # process list, here the anthropogenic carbon release
 )
 
 Connect(
     source=Carbonate_Weathering,  # source of flux
     sink=Ocean,         # target of flux
-    rate=12.3E12,              # weathering flux in 
-    delta=0,            # set a default flux
+    rate=12.3E12,       # weathering flux in 
+    delta=0,            # isotope ratio
 )
 
 Connect(
     source=Organic_Weathering,  # source of flux
     sink=Ocean,         # target of flux
-    rate=4.0E12,              # weathering flux in 
-    delta=-20,            # set a default flux
+    rate=4.0E12,        # flux rate
+    delta=-20,          # isotope ratio
     
 )
 
 Connect(
-    source=Volcanic,  # source of flux
+    source=Volcanic,    # source of flux
     sink=Ocean,         # target of flux
-    rate=6.0E12,              # weathering flux in 
-    delta=-5,            # set a default flux
+    rate=6.0E12,        # flux rate
+    delta=-5,           # isotope ratio
 )
 
 Connect(
-    source=Ocean,  # source of flux
-    sink=OM_burial,         # target of flux
-    rate=4.2E12,              # weathering flux in 
-    delta=-26.32,            # set a default flux
+    source=Ocean,       # source of flux
+    sink=OM_burial,     # target of flux
+    rate=4.2E12,        # burial rate
+    alpha=-26.32,       # fractionation factor
 )
 
 Connect(
-    source=Ocean,  # source of flux
-    sink=Carbonate_burial,         # target of flux
-    rate=18.1E12,              # weathering flux in 
-    delta=0, # set a default flux
+    source=Ocean,       # source of flux
+    sink=Carbonate_burial,     # target of flux
+    rate=18.1E12,              # burial rate
+    alpha=0,            # set the istope fractionation
 )
 #+END_SRC
 ** Running the model
@@ -315,6 +315,7 @@ C_Cycle.run()
 
 # plot the results
 C_Cycle.plot_data()
+# save the results
 C_Cycle.save_data()
 #+END_SRC
 
@@ -322,3 +323,27 @@ C_Cycle.save_data()
 [[./C_Cycle_Ocean.png]]
 
 
+* Notes and pointers
+
+The connect method has a variety of way to specify the flux:
+
+ - If both =rate= and =delta= are given, the flux is treated as a
+   fixed flux with a given isotope ratio. This is usually the case for
+   most source objects (they can still be affected by a signal, see
+   above), but makes little sense for reservoirs and sinks.
+ - If both the =rate= and =alpha= are given, the flux rate is fixed
+   (subject to any signals), but the isotopic ratio of the output flux
+   depends on the isotopic ratio of the upstream reservoir plus and
+   isotopic offset specified by =alpha=. This is typically the case
+   for fluxes which include an isotopic fractionation (i.e., pyrite
+   burial). This combination is not particularly useful for source
+   objects.
+ - If the connection specifies only =delta= the flux is treated as a
+   variable flux which is computed in such a way that the reservoir
+   maintains steady state with respect to it's mass.
+ - If the connection specifies only =rate= the flux is treated as a
+   fixed flux which is computed in such a way that the reservoir
+   maintains steady state with respect to it's isotope ratio.
+ - Other connection types are possible, but currently untested.
+ - Reservoirs can be specified by either providing =volume= and
+   =concentration= or =volume= and =mass=
