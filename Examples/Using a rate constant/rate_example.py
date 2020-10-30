@@ -62,10 +62,10 @@ Connect(
 Connect(
     source=Ocean,          # source of flux
     sink=Carbonate_Burial, # target of flux
-    kvalue = 1000,         # flux rate 
-    C0 =3,                 # reference concentration
-    rate = 18E12,           # flux rate
-    alpha = 0,
+    k_concentration = 1000,         # flux rate 
+    ref_value =3,                 # reference concentration
+    rate = 18E12,          # flux rate
+    alpha = 0,             # isotope offset
 )
 
 # Run the model

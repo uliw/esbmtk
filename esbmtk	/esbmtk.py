@@ -429,7 +429,7 @@ class esbmtkBase():
         return m
 
 class Model(esbmtkBase):
-    """ This is the class specify a new model.
+    """This is the class specify a new model.
 
     Example:
 
@@ -437,12 +437,21 @@ class Model(esbmtkBase):
                       start = 0,          # optional: start time 
                       stop  = 1000,       # end time
                       time_unit = "yr",   # units for start/end time
-                      dt = 2,
+                      dt = 2,             # model time step
                       dt_unit = "yr",     # optional: units for dt
                       base_unit = "yr",   # optional: time unit for model
+                      ref_time = 0,       # optional: time offset for plot
             )
-           
-    all of the above keyword values are available as Model_Name.keyword
+
+    The 'ref_time' keyword will offset the time axis by the specified
+    amount, when plotting the data, .i.e., the model time runs from to
+    100, but you want to plot data as if where from 2000 to 2100, you would
+    specify a value of 2000. This is for display purposes only, and does not affect
+    the model. Care must be taken that any external data references the model
+    time domain, and not the display time.
+    
+    All of the above keyword values are available as variables with 
+    Model_Name.keyword
 
     The user facing methods of the model class are
        - Model_Name.describe()
@@ -450,7 +459,7 @@ class Model(esbmtkBase):
        - Model_Name.plot_data()
        - Model_Name.plot_reservoirs()
        - Model_Name.run()
-    
+
     """
     from typing import Dict
     from nptyping import NDArray, Float
@@ -473,7 +482,8 @@ class Model(esbmtkBase):
             "time_unit": str,
             "dt": Number,
             "dt_unit": str,
-            "base_unit": str
+            "base_unit": str,
+            "ref_time": int,
         }
 
         # provide a list of absolutely required keywords
@@ -483,10 +493,13 @@ class Model(esbmtkBase):
         self.lod: Dict[str, any] = {
             'start': 0,
             'dt_unit': kwargs['time_unit'],
-            'base_unit': kwargs['time_unit']
+            'base_unit': kwargs['time_unit'],
+            'ref_time': 0,
         }
 
         self.__initerrormessages__()
+        self.bem.update({"ref_time":  "an integer number"})
+        
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # empty list which will hold all reservoir references
@@ -957,7 +970,7 @@ class Reservoir(esbmtkBase):
         model = self.sp.mo
         species = self.sp
         obj = self
-        time = model.time  # get the model time
+        time =  model.time + model.ref_time  # get the model time
         xl = f"Time [{model.bu}]"
 
         size, geo = get_plot_layout(self)  # adjust layout
@@ -969,12 +982,12 @@ class Reservoir(esbmtkBase):
         fig.set_size_inches(size)
 
         # plot reservoir data
-        plot_object_data(geo, fn, self.c, self.d, self)
+        plot_object_data(geo, fn, self.c, self.d, self, time)
 
-        # plot teh fluxes assoiated with this reservoir
+        # plot the fluxes assoiated with this reservoir
         for f in sorted(self.lof):  # plot flux data
             fn = fn + 1
-            plot_object_data(geo, fn, f.m, f.d, f)
+            plot_object_data(geo, fn, f.m, f.d, f, time)
 
         fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
         fig.tight_layout()
@@ -992,7 +1005,7 @@ class Reservoir(esbmtkBase):
         model = self.sp.mo
         species = self.sp
         obj = self
-        time = model.time  # get the model time
+        time = model.time + model.ref_time  # get the model time
         xl = f"Time [{model.bu}]"
 
         size = [5, 3]
@@ -1004,7 +1017,7 @@ class Reservoir(esbmtkBase):
         fig.set_size_inches(size)
 
         # plt.legend()ot reservoir data
-        plot_object_data(geo, fn, self.c, self.d, self)
+        plot_object_data(geo, fn, self.c, self.d, self, time)
 
         fig.tight_layout()
         # fig.subplots_adjust(top=0.88)
@@ -1623,7 +1636,7 @@ class Vector:
           can subsequently be modified using the perturbation class.
           """
 
-def plot_object_data(geo, fn, yl, yr, obj) -> None:
+def plot_object_data(geo, fn, yl, yr, obj, time) -> None:
       """collection of commands which will plot and annotate a reservoir or flux
       object into an existing plot window. 
       """
@@ -1639,7 +1652,7 @@ def plot_object_data(geo, fn, yl, yr, obj) -> None:
       cols = geo[1]
       species = obj.sp
       model = obj.mo
-      time = model.time
+      # time = model.time
 
       ax1 = plt.subplot(rows, cols, fn, title=obj.n)  # start subplot
 
@@ -1880,8 +1893,11 @@ class Connect(esbmtkBase):
             "react_with": Flux,
             "ratio": Number,
             "scale": Number,
-            "kvalue": Number,
-            "C0": Number
+            "k_concentration": Number,
+            "k_mass": Number,
+            "ref_value": Number,
+            "a_value": Number,
+            "b_value": Number,
         }
 
         n = kwargs["source"].n + "_" + kwargs[
@@ -2068,23 +2084,23 @@ class Connect(esbmtkBase):
             self.__scaleflux__()  # scaled variable flux with fixed delta
         elif "react_with" in self.kwargs:
             self.__reaction__()  # this flux will react with another flux
-        elif "k" in self.kwargs:  # this flux uses a rate constant
-            self.__rateconstant__()
         else:  # if neither are given -> default varflux type
             if isinstance(self.r1, Source):
-                raise ValueError(f"{self.r1.n} requires a rate and delta value")
+                raise ValueError(
+                    f"{self.r1.n} requires a rate and delta value")
             self.__passiveflux__()
 
         # Set optional flux processes
         if "alpha" in self.kwargs:  # isotope enrichment
             self.__alpha__()
 
-        if "kvalue" in self.kwargs:
+        # set a rate dependent process
+        if "k_concentration" in self.kwargs or "k_mass" in self.kwargs:
             self.__rateconstant__()  # flux depends on a rate constant
 
-        if "type" in self.kwargs:
-            if self.kwargs["type"] == "eq":  # equlibrium type connection
-                self.__equilibrium__()
+        # monod type rate process
+        if "a_value" in self.kwargs and "b_value" in self.kwargs:
+            self.__rateconstant__()  # flux depends on a rate constant
 
     def __passivefluxfixeddelta__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
@@ -2153,37 +2169,52 @@ class Connect(esbmtkBase):
 
     def __rateconstant__(self) -> None:
         """ Add rate constant process"""
+
         if "rate" not in self.kwargs:
             raise ValueError(
-                "The rate constant process requires that the flux rate is being set explicitly"
+                "The rate constant process requires that the flux rate for this reservoir is being set explicitly"
             )
 
-        ph = RateConstant(name=self.pn + "_Pk",
-                          reservoir=self.r,
-                          flux=self.fh,
-                          C0=self.C0,
-                          kvalue=self.kvalue)
+        if "k_concentration" in self.kwargs and "ref_value" in self.kwargs:
+            ph = ScaleRelativeToNormalizedConcentration(
+                name=self.pn + "_PknC",
+                reservoir=self.r,
+                flux=self.fh,
+                ref_value=self.ref_value,
+                k_value=self.k_concentration)
+
+        elif "k_mass" in self.kwargs and "ref_value" in self.kwargs:
+            ph = ScaleRelativeToNormalizedMass(name=self.pn + "_PknM",
+                                               reservoir=self.r,
+                                               flux=self.fh,
+                                               ref_value=self.ref_value,
+                                               k_value=self.k_mass)
+
+        elif "k_mass" in self.kwargs and not "ref_value" in self.kwargs:
+            ph = ScaleRelativeToMass(name=self.pn + "_PkM",
+                                     reservoir=self.r,
+                                     flux=self.fh,
+                                     k_value=self.k_mass)
+
+        elif "k_concentration" in self.kwargs and not "ref_value" in self.kwargs:
+            ph = ScaleRelativeToConcentration(name=self.pn + "_PkC",
+                                              reservoir=self.r,
+                                              flux=self.fh,
+                                              k_value=self.k_mass)
+
+        elif "a_value" in self.kwargs and "b_value" in self.kwargs:
+            ph = Monod(name=self.pn + "_PMonod",
+                       reservoir=self.r,
+                       flux=self.fh,
+                       ref_value=self.ref_value,
+                       a_value=self.a_value,
+                       b_value=self.b_value)
+        else:
+            raise ValueError(
+                f"This should not happen,and points to a keywords problem in {self.name}"
+            )
+
         self.pl.append(ph)
-
-    def __equilibrium__(self) -> None:
-        """ Just a wrapper to keep the if statement manageable
-        """
-        r1 = self.r1  # left side reservoir 1
-        r2 = self.r2  # left side reservoir 2
-        r3 = self.kwargs["r3"]  # right side reservoir 1
-        r4 = self.kwargs["r4"]  # right side reservoir 1
-        kf = self.kwargs["kf"]  # k-value for the forward reaction
-        kb = self.kwargs["kr"]  # k-value for the backwards reaction
-        n = self.kwargs["steps"]  # number of steps to equilibration
-
-        # we need to setup 4 fluxes with two processes, or
-        # better yet can we call the process once and it will
-        # then set all fluxes?  do processes need to be bound
-        # to reservoirs? -> yes!  but we add this process
-        # simply to r1 and it will do the right thing.
-        ph = Equilibrium(pn + "_eq", self.fh, r1, r2, r3, r4, kf, kb, n)
-
-        self.pl.append(ph)  # add this process to the process list
 
 class Process(esbmtkBase):
     """This class defines template for process which acts on one or more
@@ -2653,25 +2684,13 @@ class Equilibrium():
           # Assign fluxes. How do we do that?
 
 class RateConstant(Process):
-    """This process scales the flux as a function of the upstream
-     reservoir concentration C and a constant which describes the
-     kvalue between the reservoir concentration and the flux scaling
+    """This is a wrapper for a variety of processes which depend on rate constants
+    Please see the below class definitions for details on how to call them
+    At present, the following processes are defined
 
-     F = (C/C0 -1) * k
-
-     where C denotes
-     the concentration in the ustream reservoir, C0 denotes the baseline
-     concentration and and m & k are constants
+    ScaleRelativeToNormalizedConcentration
+    ScaleRelativeToConcentration
     
-
-     Example:
-          RateConstant(name = "Name",
-                       reservoir= upstream_reservoir_handle,
-                       flux = flux handle,
-                       Kvalue =  0.00028,
-                       C0 = 2 # reference_concentration
-    )
-
     """
     from esbmtk import Reservoir, Flux
     from typing import Dict
@@ -2690,26 +2709,27 @@ class RateConstant(Process):
 
         # update the allowed keywords
         self.lkk = {
-            "kvalue": Number,
-            "C0": Number,
+            "k_value": Number,
+            "ref_value": Number,
             "name": str,
             "reservoir": Reservoir,
-            "flux": Flux
+            "flux": Flux,
+            
         }
 
         # new required keywords
-        self.lrk.extend(["reservoir", "kvalue", "C0"])
+        self.lrk.extend(["reservoir", "k_value"])
 
         # dict with default values if none provided
-        # self.lod d
+        #self.lod = {r
 
         self.__initerrormessages__()
 
         # add these terms to the known error messages
         self.bem.update({
-            "kvalue": "a number",
+            "k_value": "a number",
             "reservoir": "Reservoir handle",
-            "C0": "a number",
+            "ref_value": "a number",
             "name": "a string value",
             "flux": "a flux handle",
         })
@@ -2718,16 +2738,127 @@ class RateConstant(Process):
         self.__validateandregister__(kwargs)
         self.__postinit__()  # do some housekeeping
 
+
+class ScaleRelativeToNormalizedConcentration(RateConstant):
+    """This process scales the flux as a function of the upstream
+     reservoir concentration C and a constant which describes the
+     strength of relation between the reservoir concentration and
+     the flux scaling
+
+     F = (C/C0 -1) * k
+
+     where C denotes the concentration in the ustream reservoir, C0
+     denotes the baseline concentration and k is a constant
+     This process is typically called by the connector
+     instance. However you can instantiate it manually as
+    
+
+     ScaleRelativeToNormalizedConcentration(
+                       name = "Name",
+                       reservoir= upstream_reservoir_handle,
+                       flux = flux handle,
+                       K_value =  1000,
+                       ref_value = 2 # reference_concentration
+    )
+
+    """
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
           this will be called by the Model.run() method
           """
-        scale: float = (reservoir.c[i - 1] / self.C0 - 1) * self.kvalue
+        scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.k_value
+        scale = scale * (scale >= 0) # prevent negative fluxes.
+        self.f[i] = self.f[i] + self.f[i] * scale
+
+class ScaleRelativeConcentration(RateConstant):
+    """This process scales the flux as a function of the upstream
+     reservoir concentration C and a constant which describes the
+     strength of relation between the reservoir concentration and
+     the flux scaling
+
+     F = C * k
+
+     where C denotes the concentration in the ustream reservoir, k is a
+     constant. This process is typically called by the connector
+     instance. However you can instantiate it manually as
+    
+
+     ScaleRelativeToConcentration(
+                       name = "Name",
+                       reservoir= upstream_reservoir_handle,
+                       flux = flux handle,
+                       K_value =  1000,
+    )
+
+    """
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """
+          this will be called by the Model.run() method
+          """
+        scale: float = reservoir.c[i - 1] * self.k_value
+        self.f[i] =  self.f[i] * scale
+
+class ScaleRelativeToMass(RateConstant):
+    """This process scales the flux as a function of the upstream
+     reservoir Mass M and a constant which describes the
+     strength of relation between the reservoir mass and
+     the flux scaling
+
+     F = M * k
+
+     where M denotes the mass in the ustream reservoir, k is a
+     constant. This process is typically called by the connector
+     instance. However you can instantiate it manually as
+    
+     ScaleRelativeToMass(
+                       name = "Name",
+                       reservoir= upstream_reservoir_handle,
+                       flux = flux handle,
+                       K_value =  1000,
+    )
+
+    """
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """
+          this will be called by the Model.run() method
+          """
+        scale: float = reservoir.m[i - 1] * self.k_value
+        self.f[i] = self.f[i] * scale
+
+
+class ScaleRelativeToNormalizedMass(RateConstant):
+    """This process scales the flux as a function of the upstream
+     reservoir mass M and a constant which describes the
+     strength of relation between the reservoir concentration and
+     the flux scaling
+
+     F = (M/M0 -1) * k
+
+     where M denotes the mass in the ustream reservoir, M0
+     denotes the reference mass, and k is a constant
+     This process is typically called by the connector
+     instance. However you can instantiate it manually as
+    
+
+     ScaleRelativeToNormalizedConcentration(
+                       name = "Name",
+                       reservoir= upstream_reservoir_handle,
+                       flux = flux handle,
+                       K_value =  1,
+                       ref_value = 1e5 # reference_mass
+    )
+
+    """
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """
+          this will be called by the Model.run() method
+          """
+        scale: float = (reservoir.m[i - 1] / self.ref_value - 1) * self.k_value
         scale = scale * (scale >= 0) # prevent negative fluxes.
         self.f[i] = self.f[i] + self.f[i] * scale
 
 class Monod(Process):
-     """This process scales the flux as a function of the upstream
+    """This process scales the flux as a function of the upstream
      reservoir concentration using a Michaelis Menten type
      relationship
 
@@ -2739,33 +2870,84 @@ class Monod(Process):
 
      Example:
           Monod(name = "Name",
-                reservoir upstream_reservoir_handle,
-                a = ,
-                b = )
+                reservoir =  upstream_reservoir_handle,
+                flux = flux handle ,
+                ref_value = reference concentration
+                a_value = constant,
+                b_value = constant )
 
      """
-     from esbmtk import Reservoir, Flux
-     from typing import Dict
 
-     def __init__(self, **kwargs :Dict[str, any]) -> None:
-          """ Initialize this Process """
-           # get default names and update list for this Process
-          self.__defaultnames__()  # default kwargs names
-          self.lrk.extend(["reservoir", "a", "b"]) # new required keywords
+    from typing import Dict
+    from numbers import Number
+
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """
+
+        """
         
-          self.__validateandregister__(kwargs)  # initialize keyword values
-          self.__postinit__()  # do some housekeeping
-     
-    
-     def __call__(self, reservoir: Reservoir, i :int) -> None:
-          """
+        from esbmtk import Reservoir, Flux
+        from typing import Dict
+        from numbers import Number
+        
+        """ Initialize this Process """
+        # get default names and update list for this Process
+        self.__defaultnames__()  # default kwargs names
+        
+        # update the allowed keywords
+        self.lkk = {
+            "a_value": Number,
+            "b_value": Number,
+            "ref_value": Number,
+            "name": str,
+            "reservoir": Reservoir,
+            "flux": Flux,
+        }
+
+        self.lrk.extend(["reservoir", "a_value", "b_value",
+                         "ref_value"])  # new required keywords
+
+        self.__initerrormessages__()
+        self.bem.update({
+            "a_value": "a number",
+            "b_value": "a number",
+            "reservoir": "Reservoir handle",
+            "ref_value": "a number",
+            "name": "a string value",
+            "flux": "a flux handle",
+        })
+
+        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__postinit__()  # do some housekeeping
+
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """
           this willbe called by Model.execute apply_processes
           """
-          from esbmtk import get_mass
-          
-          self.m[i] =set_mass(self.a * (self.f[0] * reservoir.c[i])/(self.b + reservoir.c[i]),
-                              reservoir.d[i-1],
-                              reservoir.sp.r)
+
+        scale: float = self.a_value * (self.ref_value * reservoir.c[i - 1]) / (
+            self.b_value + reservoir.c[i - 1])
+
+        self.f[i] + self.f[i] * scale
+
+    def __plot__(self, start: int, stop: int, ref: float, a: float,
+                 b: float) -> None:
+        """ Test the implementation
+
+          """
+
+        import matplotlib.pyplot as plt
+
+        y = []
+        x = range(start, stop)
+
+        for e in x:
+            y.append(a * ref * e / (b + e))
+
+        fig, ax = plt.subplots()  #
+        ax.plot(x, y)
+        # Create a scatter plot for ax
+        plt.show()
 
 class Hypsometry(esbmtkBase):
     """Sea level variations affect the size of the continental

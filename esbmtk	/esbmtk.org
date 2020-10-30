@@ -3131,7 +3131,7 @@ class Monod(Process):
      reservoir concentration using a Michaelis Menten type
      relationship
 
-     F = a * F0 x C/(b+C)
+     F = F * a * F0 x C/(b+C)
 
      where F0 denotes the unscaled flux (i.e., at t=0), C denotes
      the concentration in the ustream reservoir, and a and b are

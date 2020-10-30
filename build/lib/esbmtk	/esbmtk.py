@@ -2657,7 +2657,7 @@ class RateConstant(Process):
      reservoir concentration C and a constant which describes the
      kvalue between the reservoir concentration and the flux scaling
 
-     F = kvalue * (C/C0)
+     F = (C/C0 -1) * k
 
      where C denotes
      the concentration in the ustream reservoir, C0 denotes the baseline
@@ -2722,8 +2722,9 @@ class RateConstant(Process):
         """
           this will be called by the Model.run() method
           """
-        scale: float = reservoir.c[i - 1] / self.C0 * self.kvalue
-        self.f[i] = self.f[i] * scale
+        scale: float = (reservoir.c[i - 1] / self.C0 - 1) * self.kvalue
+        scale = scale * (scale >= 0) # prevent negative fluxes.
+        self.f[i] = self.f[i] + self.f[i] * scale
 
 class Monod(Process):
      """This process scales the flux as a function of the upstream
