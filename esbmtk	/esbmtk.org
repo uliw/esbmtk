@@ -2077,8 +2077,9 @@ class Connect(esbmtkBase):
             "react_with": Flux,
             "ratio": Number,
             "scale": Number,
-            "kvalue": Number,
-            "C0": Number
+            "k_concentration": Number,
+            "k_mass": Number,
+            "ref_value": Number
         }
 
         n = kwargs["source"].n + "_" + kwargs[
@@ -2265,18 +2266,18 @@ class Connect(esbmtkBase):
             self.__scaleflux__()  # scaled variable flux with fixed delta
         elif "react_with" in self.kwargs:
             self.__reaction__()  # this flux will react with another flux
-        elif "k" in self.kwargs:  # this flux uses a rate constant
-            self.__rateconstant__()
         else:  # if neither are given -> default varflux type
             if isinstance(self.r1, Source):
-                raise ValueError(f"{self.r1.n} requires a rate and delta value")
+                raise ValueError(
+                    f"{self.r1.n} requires a rate and delta value")
             self.__passiveflux__()
 
         # Set optional flux processes
         if "alpha" in self.kwargs:  # isotope enrichment
             self.__alpha__()
 
-        if "kvalue" in self.kwargs:
+        # set a rate dependent process
+        if "k_concentration" in self.kwargs or "k_mass" in self.kwargs:
             self.__rateconstant__()  # flux depends on a rate constant
 
         if "type" in self.kwargs:
@@ -2350,37 +2351,44 @@ class Connect(esbmtkBase):
 
     def __rateconstant__(self) -> None:
         """ Add rate constant process"""
+
         if "rate" not in self.kwargs:
             raise ValueError(
-                "The rate constant process requires that the flux rate is being set explicitly"
+                "The rate constant process requires that the flux rate for this reservoir is being set explicitly"
             )
 
-        ph = RateConstant(name=self.pn + "_Pk",
-                          reservoir=self.r,
-                          flux=self.fh,
-                          C0=self.C0,
-                          kvalue=self.kvalue)
+        if "k_concentration" in self.kwargs and "ref_value" in self.kwargs:
+            ph = ScaleRelativeToNormalizedConcentration(
+                name=self.pn + "_PknC",
+                reservoir=self.r,
+                flux=self.fh,
+                ref_value=self.ref_value,
+                k_value=self.k_concentration)
+
+        elif "k_mass" in self.kwargs and "ref_value" in self.kwargs:
+            ph = ScaleRelativeToNormalizedMass(name=self.pn + "_PknM",
+                                               reservoir=self.r,
+                                               flux=self.fh,
+                                               ref_value=self.ref_value,
+                                               k_value=self.k_mass)
+
+        elif "k_mass" in self.kwargs and not "ref_value" in self.kwargs:
+            ph = ScaleRelativeToMass(name=self.pn + "_PkM",
+                                     reservoir=self.r,
+                                     flux=self.fh,
+                                     k_value=self.k_mass)
+
+        elif "k_concentration" in self.kwargs and not "ref_value" in self.kwargs:
+            ph = ScaleRelativeToConcentration(name=self.pn + "_PkC",
+                                              reservoir=self.r,
+                                              flux=self.fh,
+                                              k_value=self.k_mass)
+        else:
+            raise ValueError(
+                f"This should not happen,and points to a keywords problem in {self.name}"
+            )
+
         self.pl.append(ph)
-
-    def __equilibrium__(self) -> None:
-        """ Just a wrapper to keep the if statement manageable
-        """
-        r1 = self.r1  # left side reservoir 1
-        r2 = self.r2  # left side reservoir 2
-        r3 = self.kwargs["r3"]  # right side reservoir 1
-        r4 = self.kwargs["r4"]  # right side reservoir 1
-        kf = self.kwargs["kf"]  # k-value for the forward reaction
-        kb = self.kwargs["kr"]  # k-value for the backwards reaction
-        n = self.kwargs["steps"]  # number of steps to equilibration
-
-        # we need to setup 4 fluxes with two processes, or
-        # better yet can we call the process once and it will
-        # then set all fluxes?  do processes need to be bound
-        # to reservoirs? -> yes!  but we add this process
-        # simply to r1 and it will do the right thing.
-        ph = Equilibrium(pn + "_eq", self.fh, r1, r2, r3, r4, kf, kb, n)
-
-        self.pl.append(ph)  # add this process to the process list
 #+END_SRC
 
 *** The default process class 
@@ -2928,25 +2936,13 @@ class Equilibrium():
 *** Flux as a function of concentration and rate constant
 #+BEGIN_SRC ipython  :tangle esbmtk.py
 class RateConstant(Process):
-    """This process scales the flux as a function of the upstream
-     reservoir concentration C and a constant which describes the
-     kvalue between the reservoir concentration and the flux scaling
+    """This is a wrapper for a variety of processes which depend on rate constants
+    Please see the below class definitions for details on how to call them
+    At present, the following processes are defined
 
-     F = (C/C0 -1) * k
-
-     where C denotes
-     the concentration in the ustream reservoir, C0 denotes the baseline
-     concentration and and m & k are constants
+    ScaleRelativeToNormalizedConcentration
+    ScaleRelativeToConcentration
     
-
-     Example:
-          RateConstant(name = "Name",
-                       reservoir= upstream_reservoir_handle,
-                       flux = flux handle,
-                       Kvalue =  0.00028,
-                       C0 = 2 # reference_concentration
-    )
-
     """
     from esbmtk import Reservoir, Flux
     from typing import Dict
@@ -2965,26 +2961,26 @@ class RateConstant(Process):
 
         # update the allowed keywords
         self.lkk = {
-            "kvalue": Number,
-            "C0": Number,
+            "k_value": Number,
+            "ref_value": Number,
             "name": str,
             "reservoir": Reservoir,
-            "flux": Flux
+            "flux": Flux,
         }
 
         # new required keywords
-        self.lrk.extend(["reservoir", "kvalue", "C0"])
+        self.lrk.extend(["reservoir", "k_value"])
 
         # dict with default values if none provided
-        # self.lod d
+        #self.lod = {r
 
         self.__initerrormessages__()
 
         # add these terms to the known error messages
         self.bem.update({
-            "kvalue": "a number",
+            "k_value": "a number",
             "reservoir": "Reservoir handle",
-            "C0": "a number",
+            "ref_value": "a number",
             "name": "a string value",
             "flux": "a flux handle",
         })
@@ -2993,13 +2989,127 @@ class RateConstant(Process):
         self.__validateandregister__(kwargs)
         self.__postinit__()  # do some housekeeping
 
+
+class ScaleRelativeToNormalizedConcentration(RateConstant):
+    """This process scales the flux as a function of the upstream
+     reservoir concentration C and a constant which describes the
+     strength of relation between the reservoir concentration and
+     the flux scaling
+
+     F = (C/C0 -1) * k
+
+     where C denotes the concentration in the ustream reservoir, C0
+     denotes the baseline concentration and k is a constant
+     This process is typically called by the connector
+     instance. However you can instantiate it manually as
+    
+
+     ScaleRelativeToNormalizedConcentration(
+                       name = "Name",
+                       reservoir= upstream_reservoir_handle,
+                       flux = flux handle,
+                       K_value =  1000,
+                       ref_value = 2 # reference_concentration
+    )
+
+    """
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
           this will be called by the Model.run() method
           """
-        scale: float = (reservoir.c[i - 1] / self.C0 - 1) * self.kvalue
+        scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.k_value
         scale = scale * (scale >= 0) # prevent negative fluxes.
         self.f[i] = self.f[i] + self.f[i] * scale
+
+class ScaleRelativeConcentration(RateConstant):
+    """This process scales the flux as a function of the upstream
+     reservoir concentration C and a constant which describes the
+     strength of relation between the reservoir concentration and
+     the flux scaling
+
+     F = C * k
+
+     where C denotes the concentration in the ustream reservoir, k is a
+     constant. This process is typically called by the connector
+     instance. However you can instantiate it manually as
+    
+
+     ScaleRelativeToConcentration(
+                       name = "Name",
+                       reservoir= upstream_reservoir_handle,
+                       flux = flux handle,
+                       K_value =  1000,
+    )
+
+    """
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """
+          this will be called by the Model.run() method
+          """
+        scale: float = reservoir.c[i - 1] * self.k_value
+        self.f[i] = self.f[i] + self.f[i] * scale
+
+class ScaleRelativeToMass(RateConstant):
+    """This process scales the flux as a function of the upstream
+     reservoir Mass M and a constant which describes the
+     strength of relation between the reservoir mass and
+     the flux scaling
+
+     F = M * k
+
+     where M denotes the mass in the ustream reservoir, k is a
+     constant. This process is typically called by the connector
+     instance. However you can instantiate it manually as
+    
+     ScaleRelativeToMass(
+                       name = "Name",
+                       reservoir= upstream_reservoir_handle,
+                       flux = flux handle,
+                       K_value =  1000,
+    )
+
+    """
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """
+          this will be called by the Model.run() method
+          """
+        scale: float = reservoir.m[i - 1] * self.k_value
+        self.f[i] = self.f[i] + self.f[i] * scale
+
+
+class ScaleRelativeToNormalizedMass(RateConstant):
+    """This process scales the flux as a function of the upstream
+     reservoir mass M and a constant which describes the
+     strength of relation between the reservoir concentration and
+     the flux scaling
+
+     F = (M/M0 -1) * k
+
+     where M denotes the mass in the ustream reservoir, M0
+     denotes the reference mass, and k is a constant
+     This process is typically called by the connector
+     instance. However you can instantiate it manually as
+    
+
+     ScaleRelativeToNormalizedConcentration(
+                       name = "Name",
+                       reservoir= upstream_reservoir_handle,
+                       flux = flux handle,
+                       K_value =  1,
+                       ref_value = 1e5 # reference_mass
+    )
+
+    """
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """
+          this will be called by the Model.run() method
+          """
+        scale: float = (reservoir.m[i - 1] / self.ref_value - 1) * self.k_value
+        scale = scale * (scale >= 0) # prevent negative fluxes.
+        self.f[i] = self.f[i] + self.f[i] * scale
+
+
+
 #+END_SRC
 
 
