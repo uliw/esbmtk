@@ -1,5 +1,5 @@
 #+TITLE: ESBMTK Quick Start Guide
-#+AUTHOR:Ulrich G Wortmann
+#+AUTHOR: Ulrich G Wortmann
 #+STARTUP: showall
 #+OPTIONS: todo:nil tasks:nil tags:nil toc:nil
 #+PROPERTY: header-args :eval never-export
@@ -10,9 +10,11 @@
 #+latex_header: \usepackage{natbib}
 #+latex_header: \usepackage{natmove}
 
+\maketitle
+
 * Overview
 
-ESBMTK provides a couple of classes which are use to define a
+ESBMTK provides a couple of classes which are used to define a
 model. The classes are arranged in a hierarchical manner, starting
 with the model class. The model class (or object), set's global
 parameters like the model name, the time step etc. Next comes one or
@@ -323,7 +325,7 @@ C_Cycle.save_data()
 [[./C_Cycle_Ocean.png]]
 
 
-* Notes and pointers
+* Controlling the flux type
 
 The connect method has a variety of way to specify the flux:
 
@@ -345,5 +347,29 @@ The connect method has a variety of way to specify the flux:
    fixed flux which is computed in such a way that the reservoir
    maintains steady state with respect to it's isotope ratio.
  - Other connection types are possible, but currently untested.
- - Reservoirs can be specified by either providing =volume= and
+ - A flux can be scaled relative to another flux. To do so, provide
+   the =scale= keyword, and a flux reference via the =ref= keyword
+ - A flux can be scaled relative to the mass or concentration of the
+   upstream reservoir. This is achieved by providing a =k_mass= or a
+   =k_concentration= keyword with an appropriate k-value. If one
+   additionally provides the =ref_value= keyword, the
+   mass/concentration is first normalized, then mapped to zero, and
+   the difference is being scale by the k-value
+ 
+   F = (M/M0 -1) * k where F is forced to be >=0
+
+   This allows to scale the rate dependence relative to an equilibrium
+   value M0, i.e. when the reservoir approaches M0, the flux ->
+   zero. The k-value then expresses how fast the system returns to the
+   equilibrium value
+
+ - Fluxes can be scaled with a Michalis-Menten type scaling function
+
+   F = F * a * F0 x C/(b+C)
+
+   this type of scaling is invoked by providing the following
+   keywords: =a_value=, =b_value=, =ref_value= the latter being F0 in
+   the above equation
+ 
+ - Last but not least, Reservoirs can be specified by either providing =volume= and
    =concentration= or =volume= and =mass=
