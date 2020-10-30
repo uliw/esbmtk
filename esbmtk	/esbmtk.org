@@ -2079,7 +2079,9 @@ class Connect(esbmtkBase):
             "scale": Number,
             "k_concentration": Number,
             "k_mass": Number,
-            "ref_value": Number
+            "ref_value": Number,
+            "a_value": Number,
+            "b_value": Number,
         }
 
         n = kwargs["source"].n + "_" + kwargs[
@@ -2280,9 +2282,9 @@ class Connect(esbmtkBase):
         if "k_concentration" in self.kwargs or "k_mass" in self.kwargs:
             self.__rateconstant__()  # flux depends on a rate constant
 
-        if "type" in self.kwargs:
-            if self.kwargs["type"] == "eq":  # equlibrium type connection
-                self.__equilibrium__()
+        # monod type rate process
+        if "a_value" in self.kwargs and "b_value" in self.kwargs:
+            self.__rateconstant__()  # flux depends on a rate constant
 
     def __passivefluxfixeddelta__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
@@ -2383,6 +2385,14 @@ class Connect(esbmtkBase):
                                               reservoir=self.r,
                                               flux=self.fh,
                                               k_value=self.k_mass)
+
+        elif "a_value" in self.kwargs and "b_value" in self.kwargs:
+            ph = Monod(name=self.pn + "_PMonod",
+                       reservoir=self.r,
+                       flux=self.fh,
+                       ref_value=self.ref_value,
+                       a_value=self.a_value,
+                       b_value=self.b_value)
         else:
             raise ValueError(
                 f"This should not happen,and points to a keywords problem in {self.name}"
@@ -2966,6 +2976,7 @@ class RateConstant(Process):
             "name": str,
             "reservoir": Reservoir,
             "flux": Flux,
+            
         }
 
         # new required keywords
@@ -3047,7 +3058,7 @@ class ScaleRelativeConcentration(RateConstant):
           this will be called by the Model.run() method
           """
         scale: float = reservoir.c[i - 1] * self.k_value
-        self.f[i] = self.f[i] + self.f[i] * scale
+        self.f[i] =  self.f[i] * scale
 
 class ScaleRelativeToMass(RateConstant):
     """This process scales the flux as a function of the upstream
@@ -3074,7 +3085,7 @@ class ScaleRelativeToMass(RateConstant):
           this will be called by the Model.run() method
           """
         scale: float = reservoir.m[i - 1] * self.k_value
-        self.f[i] = self.f[i] + self.f[i] * scale
+        self.f[i] = self.f[i] * scale
 
 
 class ScaleRelativeToNormalizedMass(RateConstant):
@@ -3116,7 +3127,7 @@ class ScaleRelativeToNormalizedMass(RateConstant):
 *** Monod type limiters
 #+BEGIN_SRC ipython  :tangle esbmtk.py
 class Monod(Process):
-     """This process scales the flux as a function of the upstream
+    """This process scales the flux as a function of the upstream
      reservoir concentration using a Michaelis Menten type
      relationship
 
@@ -3128,33 +3139,84 @@ class Monod(Process):
 
      Example:
           Monod(name = "Name",
-                reservoir upstream_reservoir_handle,
-                a = ,
-                b = )
+                reservoir =  upstream_reservoir_handle,
+                flux = flux handle ,
+                ref_value = reference concentration
+                a_value = constant,
+                b_value = constant )
 
      """
-     from esbmtk import Reservoir, Flux
-     from typing import Dict
 
-     def __init__(self, **kwargs :Dict[str, any]) -> None:
-          """ Initialize this Process """
-           # get default names and update list for this Process
-          self.__defaultnames__()  # default kwargs names
-          self.lrk.extend(["reservoir", "a", "b"]) # new required keywords
+    from typing import Dict
+    from numbers import Number
+
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """
+
+        """
         
-          self.__validateandregister__(kwargs)  # initialize keyword values
-          self.__postinit__()  # do some housekeeping
-     
-    
-     def __call__(self, reservoir: Reservoir, i :int) -> None:
-          """
+        from esbmtk import Reservoir, Flux
+        from typing import Dict
+        from numbers import Number
+        
+        """ Initialize this Process """
+        # get default names and update list for this Process
+        self.__defaultnames__()  # default kwargs names
+        
+        # update the allowed keywords
+        self.lkk = {
+            "a_value": Number,
+            "b_value": Number,
+            "ref_value": Number,
+            "name": str,
+            "reservoir": Reservoir,
+            "flux": Flux,
+        }
+
+        self.lrk.extend(["reservoir", "a_value", "b_value",
+                         "ref_value"])  # new required keywords
+
+        self.__initerrormessages__()
+        self.bem.update({
+            "a_value": "a number",
+            "b_value": "a number",
+            "reservoir": "Reservoir handle",
+            "ref_value": "a number",
+            "name": "a string value",
+            "flux": "a flux handle",
+        })
+
+        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__postinit__()  # do some housekeeping
+
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """
           this willbe called by Model.execute apply_processes
           """
-          from esbmtk import get_mass
-          
-          self.m[i] =set_mass(self.a * (self.f[0] * reservoir.c[i])/(self.b + reservoir.c[i]),
-                              reservoir.d[i-1],
-                              reservoir.sp.r)
+
+        scale: float = self.a_value * (self.ref_value * reservoir.c[i - 1]) / (
+            self.b_value + reservoir.c[i - 1])
+
+        self.f[i] + self.f[i] * scale
+
+    def __plot__(self, start: int, stop: int, ref: float, a: float,
+                 b: float) -> None:
+        """ Test the implementation
+
+          """
+
+        import matplotlib.pyplot as plt
+
+        y = []
+        x = range(start, stop)
+
+        for e in x:
+            y.append(a * ref * e / (b + e))
+
+        fig, ax = plt.subplots()  #
+        ax.plot(x, y)
+        # Create a scatter plot for ax
+        plt.show()
 #+END_SRC
 
 *** 
