@@ -460,16 +460,24 @@ class Model(esbmtkBase):
        - Model_Name.plot_reservoirs()
        - Model_Name.run()
 
+    Optional, you can provide the element keyword which will setup a
+    default set of Species for Carbon and Sulfur.  In this case, there
+    is no need to define elements or species. The argument to this
+    keyword are either "Carbon", or "Sulfur" or both as a list
+    ["Carbon", "Sulfur"].
+
     """
     from typing import Dict
     from nptyping import NDArray, Float
+
     # from numba import jit, njit
 
     def __init__(self, **kwargs: Dict[any, any]) -> None:
         """ initialize object"""
 
         from numpy import arange, zeros, array
-        from esbmtk import get_mag
+        from esbmtk import get_mag, Element
+        from defaults import Carbon
         from typing import Dict
         from numbers import Number
         from nptyping import NDArray, Float
@@ -484,6 +492,7 @@ class Model(esbmtkBase):
             "dt_unit": str,
             "base_unit": str,
             "ref_time": int,
+            "element": str,
         }
 
         # provide a list of absolutely required keywords
@@ -498,19 +507,23 @@ class Model(esbmtkBase):
         }
 
         self.__initerrormessages__()
-        self.bem.update({"ref_time":  "an integer number"})
-        
+        self.bem.update({
+            "ref_time": "an integer number",
+            "element": "element name"
+        })
+
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # empty list which will hold all reservoir references
         self.lor: list = []
         # empty list which will hold all connector references
-        self.loc: list = []  
+        self.loc: list = []
         self.lel: list = []  # list which will hold all element references
         self.lsp: list = []  # list which will hold all species references
         self.lop: list = []  # list flux processe
         self.lmo: list = []  # list of all model objects
-        self.olkk : list = [] # optional keywords for use in the connector class
+        self.olkk: list = [
+        ]  # optional keywords for use in the connector class
 
         # legacy name defintions
         self.bu = self.base_unit
@@ -531,6 +544,21 @@ class Model(esbmtkBase):
         self.length = int(abs(self.start - self.stop))
         self.steps = int(abs(round(self.length / self.dt)))
         self.time = ((arange(self.steps) * self.dt) + self.start) / self.mag
+
+        if "element" in self.kwargs:
+            if isinstance(self.kwargs["element"], list):
+                element_list = self.kwargs["element"]
+            else:
+                element_list = [self.kwargs["element"]]
+
+            for e in element_list:
+
+                if e == "Carbon":
+                    Carbon(model=self, name=self.mo + "_Carbon")
+                elif e == "Sulfur":
+                    Sulfur(model=self, name=self.mo + "_Sulfur")
+                else:
+                    raise ValueError(f"{e} not implemented yet")
 
     def describe(self) -> None:
         """ Describe Basic Model Parameters and log them
@@ -597,18 +625,19 @@ class Model(esbmtkBase):
         # this has nothing todo with self.time below!
         start: float = process_time()
         new: [NDArray, Float] = zeros(3) + 1
-        
+
         i = self.execute(new, self.time, self.lor)
-        
+
         duration: float = process_time() - start
         print(f"Execution took {duration} seconds")
 
     # some mumbo jumbbo to support numba optimization. Currently not working though
     @staticmethod
-    def execute(new:[NDArray, Float] , time: [NDArray, Float], lor:list) -> None:
+    def execute(new: [NDArray, Float], time: [NDArray, Float],
+                lor: list) -> None:
         """ Moved this code into a separate function to enable numba optimization
         """
-        
+
         from nptyping import NDArray, Float
         i = 1  # some processes refer to the previous time step
         for t in time[0:-1]:  # loop over the time vector except the first
@@ -638,7 +667,7 @@ class Model(esbmtkBase):
                 r[i] = new  # update reservoir data
 
             i = i + 1
-            
+
     def __step_process__(self, r, i) -> None:
         """ For debugging. Provide reservoir and step number,
         """
@@ -655,7 +684,7 @@ class Model(esbmtkBase):
         ms = ls = hs = 0
         for f in flux_list:  # do sum of fluxes in this reservoir
             direction = r.lio[f.n]
-            ms = ms + f.m[i] * direction  # current flux and direction 
+            ms = ms + f.m[i] * direction  # current flux and direction
             ls = ls + f.l[i] * direction  # current flux and direction
             hs = hs + f.h[i] * direction  # current flux and direction
 
@@ -684,7 +713,7 @@ element specific properties
       """
 
     # set element properties
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs) -> any:
         """ Initialize all instance variables
         """
         from numbers import Number
@@ -2862,7 +2891,7 @@ class Monod(Process):
      reservoir concentration using a Michaelis Menten type
      relationship
 
-     F = a * F0 x C/(b+C)
+     F = F * a * F0 x C/(b+C)
 
      where F0 denotes the unscaled flux (i.e., at t=0), C denotes
      the concentration in the ustream reservoir, and a and b are
@@ -2948,299 +2977,6 @@ class Monod(Process):
         ax.plot(x, y)
         # Create a scatter plot for ax
         plt.show()
-
-class Hypsometry(esbmtkBase):
-    """Sea level variations affect the size of the continental
-shelves. This in turn affects a variety of biogeochemical
-processes. As such, I here provide a class which handles sea-level
-data, and provides shelf area estimates in return. The sealevel object
-is instantiated with a signal object, which contains sealevel/time
-data points along the modeling domain in meters relative to the modern
-sealevel (positive is higher, negative is lower). These are converted
-to shelf area, and other ocean area estimates (both in total area, as
-well as percentage points. Optional arguments allow to specify the
-depth of the shelf break (default = -250 mbsl), as well as the total
-ocean area (3.61E14 m^2 in the modern ocean). The code will return
-values for sealevel variations between -500 and + 500 meters.
-
-    Example:
-             Hypsometry(name = "Name"         # handle
-                       data = s-handle       # data object handle
-                       shelf_break = -250    # optional, defaults to -250
-                       ocean_area  = 3.61E14 # optional, defaults to 3.61E14 m^2
-                       satype = "static"     # default: static
-                       omcutoff = -4500      # default -4500
-    )
-
-    if satype = static the shelf area will be computed relative to
-    the modern shelf break. 
-
-    if satype = dynamic, the shelf area is the interval between zero
-    and 250 bsl, regardless of the modern shelf break
-
-    if satype = burial, calculate the OM burial 
-
-    The instance provides the following data
-
-    self.carbon_flux = the normalized total carbon burial efficiency 
-    self.cf_z    = carbon burial efficiency [4500 elements]
-    self.cfn   = the normalized total carbon burial efficiency for SL = 0
-    self.elevation = array  from -5000 to +500 [5500 elements]
-    self.area = the normalized hypsographic area for self.elevation
-    self.area_dz = the normalized hypsographic area per depth interval (1m)
-    
-    self.sa    = shelf area as function of sealevel and time in m^2
-    self.sap   = shelf area in percent relative to z=0
-    self.sbz0  = open ocean area up to the shelf break
-    self.sa0   = shelf area for z=0
-
-    Methods:
-
-    Name.plot() will plot the current shelf area data
-    Name.plotvsl() will plot the shelf area versus the sealevel data
-    Name.save_data() will save Name.csv with the sealevel versus shelf area data
-
-    """
-
-    from esbmtk import ExternalData, Model
-    from typing import Dict
-    from nptyping import Float, NDArray
-
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
-        """ Initialize this instance """
-
-        # dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            "name": str,
-            "data": ExternalData,
-            "shelf_break": int,
-            "ocean_area": float,
-            "satype": str,
-            "omcutoff": int,
-        }
-
-        # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "data"]
-
-        # list of default values if none provided
-        self.lod: Dict[str, any] = {
-            "shelf_break": -250,
-            "ocean_area": 3.61E14,
-            "satype": "static",
-            "omcutoff": -4500,
-        }
-
-        # provide a dictionary entry for a keyword specific error message
-        # see esbmtkBase.__initerrormessages__()
-        self.__initerrormessages__()
-        self.bem.update({
-            "ocean_area": "a number",
-            "shelf_break": "an integer number",
-            "omcutoff": "an integer number",
-            "satype": "'static/dynamic/burial'",
-        })
-
-        self.__validateandregister__(kwargs)  # initialize keyword values
-
-        # set variables
-        self.sa: [NDArray] = self.data.model.time * 0
-        self.time: [NDArray] = self.data.model.time
-        self.bvsa: [NDArray] = []  # OM burial versus area
-
-        # Test if data object is of correct resolution
-        if (len(self.data.x) != len(self.data.model.time)):
-            self.data.interpolate()
-            print(f"\n Warning, sealevel data had to be interpolated")
-
-        # set up hypsometry data
-        self.__calc_area__()
-        a = self.__carbon_burial_integral__(0)
-        a = self.__S_fractionation__integral__(0)
-        self.cfn: float = self.carbon_flux  # get the C flux for SL =0
-        self.cf_zn = self.cf_dz / self.cfn  # normalize the data 
-        #self.carbon_flux = self.carbon_flux / self.cfn
-
-        # Calculate shelf area as function of the input data
-        if self.satype == "static":
-            self.__get_static_shelf_area__()
-        elif self.satype == "dynamic":
-            self.__get_dynamic_shelf_area__()
-        elif self.satype == "burial":
-            pass
-            # print(self.__carbon_burial_integral__(0.0))
-        else:
-            raise ValueError(f"Wrong value for satype!"
-)
-        # calculate relative shelf area change in percent
-        # self.sap :[NDArray] = self.sa / self.sa0
-
-    def __calc_area__(self) -> None:
-        """Calculate the normalized hypsometric area as a function of
-        elevation after Bjerrum et al. 2006: modeling organic carbon
-        burial doi:10.1029/2005GC001032 Note that Bjerrums equation
-        assume that z in km, not meter We will also calculate teh
-        first derivative, which is the area per depth interval """
-
-        import numpy as np
-        from nptyping import NDArray, Float, Int
-        import matplotlib.pyplot as plt
-
-        start: int = self.omcutoff - 500  # -5000 below m sl
-        stop: int = 500  # 500m above sl
-
-        # the current 0 elevatio is thus at i = 5000
-        self.elevation: [NDArray, Int] = np.arange(start, stop, 1)
-
-        # calculate the deep data. Note, z has to be in km
-        z: [NDArray, Int] = self.elevation[self.elevation <= -1000] * 1E-3
-        ps1: float = 0.020
-        ps2: float = 0.103
-        ps3: float = 0.219
-        ps4: float = 1.016
-        deep: [NDArray, Float] = (ps1 * z**3 + ps2 * z**2 + ps3 * z + ps4)
-
-        # calculate the shallow data
-        z: [NDArray, Int] = self.elevation[self.elevation > -1000] * 1E-3
-        ps1: float = 0.307
-        ps2: float = 0.624
-        ps3: float = 0.430
-        ps4: float = 0.99295  # manually adjusted so that both curves meet
-        shallow: [NDArray, Float] = (ps1 * z**3 + ps2 * z**2 + ps3 * z + ps4)
-        # combine both into single vector which contains the normalized area
-        # from -5000 to 500 m sl with indices running fromm 0 to 5500
-        self.area = np.append(deep, shallow)
-
-        # calculate the first derivative which provides us with the area per depth
-        # interval
-        self.area_dz: [NDArray, Float] = self.area[1:] - self.area[:-1]
-
-    def __carbon_burial_integral__(self, sl: float) -> float:
-        """Calculate the normalized organic matter burial efficiency as
-        integral from deep sea to shelf. We use an artifical deep sea
-        carbon burial cutoff of -4500 meters This is done by
-        calculating burial efficency beta as a function of z, and multiply
-        it with the area at a given depth
-
-        sum beta(z)* area/dz * np.exp(z / 700)
-
-        """
-
-        import numpy as np
-        from nptyping import NDArray, Float, Int
-       
-        b1: float = 0.411
-        b2: float = 0.15
-        start: int = self.omcutoff
-        stop: int = 0
-
-        # adjust z values for sealevel. The resulting vector will alwasy have 4500
-        # elements
-        z: [NDArray, Int] = np.arange(start + sl, stop + sl, 1)
-
-        #Parametrization of the organic matter burial efficiency. This
-        #follows Bjerrum et al 2006, although some of his parameters had to be tweaked
-        self.beta: [NDArray, Float] = b1 * np.exp(z * 1E-3) + b2
-
-        # the first derivative of the hypsomentric data has beeen computed from
-        # -5000 to + 500 msl. So we only consider a subset here
-        # the current 0 mark is at i = 5000 see  __calc_area__
-        #area_dz :[NDArray, Float] = self.area_dz[500+sl:5000+sl]
-        # carbon flux as a function of z
-        self.cf_z: [ NDArray, Float] = self.beta * np.exp(z/700)
-
-        # carbon flux per depth interval
-        self.cf_dz = self.cf_z * self.area_dz[500 + sl:5000 + sl]
-        # integrate the carbon flux
-        self.carbon_flux: float = np.sum(self.cf_dz)
-        return self.carbon_flux
-
-    def __S_fractionation__integral__(self,sl: float) -> float:
-        """ Calculate the average fractionation rate as a function of the dept dependent 
-        carbon burial flux
-        """
-        import numpy as np
-        from nptyping import NDArray, Float, Int
-             
-        # we can establish an linear relationship between C-burial flux and s-sitope fractionation
-        b1 :float = 1.93766662
-        b2 :float = 6.16408015
-        b3 :float = 8.38951494
-        co = 10 # cutoff in permil
-
-        # get S-fractionation as function of carbon flux at a given depth
-        self.alpha_z :[NDArray, Float] = b1 * np.exp(b2*self.cf_z) + b3
-        self.alpha_z = 80 -  self.alpha_z
-        # the above equation will overpredict, once the carbon flux
-        # exceeded 0.55. As such we cap alpha
-        self.alpha_z = np.where(self.alpha_z < co, co, self.alpha_z)
-
-        # get S-fractionation per depth interval
-        self.alpha_dz :[NDArray, Float] = self.alpha_z * self.area_dz[500 + sl:5000 + sl]
-        # integrate        
-        self.alpha: float = np.sum(self.alpha_dz)
-
-        return self.alpha
-       
-    def save_data(self):
-        # save data to csv file
-        import pandas as pd
-        df = pd.DataFrame(data=[self.cf_z]).T
-        df.to_csv(self.name + ".csv")
-
-    def __get_static_shelf_area__(self) -> None:
-        """Calculate shelf area as a function of sealevel z relative to the
-        modern shelf break depth (z0). z = 0 is for the modern ocean. z < is
-        for sealeves which are below the moden ocean, z>0 is for sealevels
-        which are above the modern sealevel. z should be meters
-        """
-
-        # get ocean area up to the shelf break
-        self.sbz0: float = self.__ocean_area__(self.shelf_break)
-        self.sa0 = self.__ocean_area__(0) - self.sbz0
-
-        # loop over all sealevel data points, and calculate the area
-        # at a given sealevel
-        i = 0
-        for e in self.data.y:
-            self.sa[i] = self.__ocean_area__(e) - self.sbz0
-            i = i + 1
-
-        self.sa = self.sa * self.ocean_area
-
-    def __get_dynamic_shelf_area__(self) -> None:
-        """Calculate shelf area as the aera bewteen 0 mbsl and the depth given
-        in shelf-break relative to the sealevel at time(i). I.e., the
-        shelf break depth is dynamic
-        """
-
-        # get ocean area up to the shelf break at t=0 this data is
-        # used in the init routine to normalize the change relative to the starting
-        # sealevel - is the useful? 
-        self.sbz0: float = self.__ocean_area__(self.shelf_break)
-        self.sa0 = self.__ocean_area__(0) - self.sbz0
-
-        # loop over all sealevel data points, and calculate the area
-        # at a given sealevel
-        i: int = 0
-        for e in self.data.y:
-            # get new shelf break depth
-            sbd: float = e - self.shelf_break
-            # calc the areal difference
-            self.sa[i] = self.__ocean_area__(sbd) - self.__ocean_area__(e)
-            i = i + 1
-
-        # scale to absolute area
-        self.sa = self.sa * self.ocean_area
-
-    def __ocean_area__(self, z: float) -> float:
-        """This returns the normalized ocean area up to this depth interval
-        It would be more elegant to query self.area_dz which gives the
-        ocean area for a given interval. We keep this notation to remain compatibel with earlier
-        version.
-        """
-
-        za: float = self.area[4500 - z]
-        return za
 
 class SomeClass(esbmtkBase):
     """

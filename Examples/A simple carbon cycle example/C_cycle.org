@@ -51,22 +51,6 @@ Species(name="OM", element=C)
 Species(name="CaCO3", element=C)
 #+END_SRC
 
-#+RESULTS:
-:results:
-# Out [1]: 
-# output
-
-NameErrorTraceback (most recent call last)
-<ipython-input-1-9227c36eb586> in <module>
-      1 # Element properties
-----> 2 Element(
-      3     name="C",                  # Element Name
-      4     model=C_Cycle,             # Model handle
-      5     mass_unit="mmol",          # base mass unit
-
-NameError: name 'Element' is not defined
-:end:
-
 #+BEGIN_SRC ipython :tangle ocean.py
 Signal(name = "ACOR",
        species = CO2,
