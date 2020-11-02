@@ -772,6 +772,22 @@ class Model(esbmtkBase):
         r[i] = new  # update reservoir data
 #+END_SRC
 
+#+RESULTS:
+:results:
+# Out [1]: 
+# output
+
+NameErrorTraceback (most recent call last)
+<ipython-input-1-b35e99883984> in <module>
+----> 1 class Model(esbmtkBase):
+      2     """This is the class specify a new model.
+      3 
+      4     Example:
+      5 
+
+NameError: name 'esbmtkBase' is not defined
+:end:
+
 *** Element specific properties
 
 #+name: element
@@ -2084,8 +2100,9 @@ class Connect(esbmtkBase):
            species = optional
            type = optional
 	   pl = [list]) process list. optional
+           id = optional identifier
 
-    Currently reckonized flux properties: delta, rate, alpha, species
+    Currently reckonized flux properties: delta, rate, alpha, species, k_value, k_mass, k_concentration, ref_value,
     """
 
     from typing import Dict
@@ -2113,6 +2130,7 @@ class Connect(esbmtkBase):
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
+            "id": str,
             "source": (Source, Reservoir),
             "sink": (Sink, Reservoir),
             "delta": Number,
@@ -2128,6 +2146,7 @@ class Connect(esbmtkBase):
             "k_concentration": Number,
             "k_mass": Number,
             "ref_value": Number,
+            "k_value": Number,
             "a_value": Number,
             "b_value": Number,
         }
@@ -2140,10 +2159,22 @@ class Connect(esbmtkBase):
         self.lrk: list = ["name", "source", "sink"]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {}
+        self.lod: Dict[any, any] = {"id": ""}
 
         # validate and initialize instance variables
         self.__initerrormessages__()
+
+        self.bem.update({
+            "k_concentration": "a number",
+            "k_mass": "a number",
+            "k_value": "a number",
+            "a_value": "a number",
+            "ref_value": "a number",
+            "b_value": "a number",
+            "name": "a string",
+            "id": "a string",
+        })
+
         self.__validateandregister__(kwargs)
 
         if not 'pl' in kwargs:
@@ -2204,7 +2235,10 @@ class Connect(esbmtkBase):
             r = 1
 
         # flux name
-        n = self.r1.n + '_to_' + self.r2.n  # flux name r1_to_r2
+        if not self.id == "":
+            n = self.r1.n + '_to_' + self.r2.n + "_" + self.id  # flux name r1_to_r2
+        else:
+            n = self.r1.n + '_to_' + self.r2.n
 
         # derive flux unit from species obbject
         funit = self.sp.mu + "/" + self.sp.mo.bu
@@ -2432,7 +2466,7 @@ class Connect(esbmtkBase):
             ph = ScaleRelativeToConcentration(name=self.pn + "_PkC",
                                               reservoir=self.r,
                                               flux=self.fh,
-                                              k_value=self.k_mass)
+                                              k_value=self.k_concentration)
 
         elif "a_value" in self.kwargs and "b_value" in self.kwargs:
             ph = Monod(name=self.pn + "_PMonod",
@@ -3080,7 +3114,7 @@ class ScaleRelativeToNormalizedConcentration(RateConstant):
         scale = scale * (scale >= 0) # prevent negative fluxes.
         self.f[i] = self.f[i] + self.f[i] * scale
 
-class ScaleRelativeConcentration(RateConstant):
+class ScaleRelativeToConcentration(RateConstant):
     """This process scales the flux as a function of the upstream
      reservoir concentration C and a constant which describes the
      strength of relation between the reservoir concentration and
@@ -3105,6 +3139,7 @@ class ScaleRelativeConcentration(RateConstant):
         """
           this will be called by the Model.run() method
           """
+        #print(f"k= {self.k_value}")
         scale: float = reservoir.c[i - 1] * self.k_value
         self.f[i] =  self.f[i] * scale
 
