@@ -39,8 +39,38 @@
  - logging
  - numbers
  - pint
+ - builtins
+ - copy
+ - time
 
 * Implementation
+#+BEGIN_SRC ipython :tangle esbmtk.py
+# from pint import UnitRegistry
+from numbers import Number
+from nptyping import *
+from typing import *
+from numpy import array, set_printoptions, arange, zeros, interp, mean
+from pandas import DataFrame
+from copy import deepcopy, copy
+from time import process_time
+
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+import logging
+import time
+import builtins
+
+from pint import UnitRegistry
+
+ureg = UnitRegistry()
+Q_ = ureg.Quantity
+
+set_printoptions(precision=4)
+#+END_SRC
+
+
 
 ** Utility functions
 Some functions which need to be present outside classes.
@@ -53,10 +83,9 @@ def get_mass(m: float, d: float, r: float) -> [float, float]:
     Calculate the isotope masses from bulk mass and delta value.
     Arguments are m = mass, d= delta value, r = abundance ratio 
     species
+    
     """
-    # from numpy import around
-    # li = around((1000 * m) / ((d + 1000) * r + 1000),decimals=16)
-    # hi = around(((d * m + 1000 * m) * r) / ((d + 1000) * r + 1000),decimals=16)
+    
     li: float = (1000 * m) / ((d + 1000) * r + 1000)
     hi: float = ((d * m + 1000 * m) * r) / ((d + 1000) * r + 1000)
     return [li, hi]
@@ -67,9 +96,9 @@ def set_mass(m: float, d: float, r: float) -> [float, float, float]:
     Calculate the isotope masses from bulk mass and delta value.
     Arguments are m = mass, d= delta value, r = abundance ratio 
     species. Unlike get_mass, this function returns the full array
+    
     """
-    from numpy import array
-
+    
     l: float = (1000 * m) / ((d + 1000) * r + 1000)
     h: float = ((d * m + 1000 * m) * r) / ((d + 1000) * r + 1000)
 
@@ -85,8 +114,7 @@ def get_delta(l, h, r):
       heavy isotopes respectively, r = abundance ratio of the respective
       element
     """
-    # from numpy import around
-    # d = around(1000 * (h / l - r) / r, 4)
+   
     d = 1000 * (h / l - r) / r
     return d
 #+END_SRC
@@ -158,8 +186,7 @@ def get_plot_layout(obj):
       contains the list of fluxes in the reservoir
 
       """
-      import logging
-
+      
       noo = len(obj.lof) + 1  # number of objects in this reservoir
       logging.debug(f"{noo} subplots for {obj.n} required")
 
@@ -196,7 +223,6 @@ def sum_fluxes(flux_list,reservoir,i):
     look up the reservoir specific flux direction which is stored as
     key-value pair in the reservoir.lio dictionary (flux name: direction)
     """
-    from numpy import array
     
     ms  = 0
     ls  = 0
@@ -266,11 +292,9 @@ class esbmtkBase():
     arguments, name registration and other common tasks
 
     """
-    from numpy import set_printoptions
+
     from typing import Dict
-
-    set_printoptions(precision=4)
-
+    
     def __init__(self) -> None:
         raise NotImplementedError
 
@@ -283,7 +307,7 @@ class esbmtkBase():
 
         and register the instance variables and the instance in teh global name space
         """
-        import builtins
+
 
         # validate input
         self.__validateinput__(kwargs)
@@ -302,11 +326,6 @@ class esbmtkBase():
         self.lod = dictionary of default values for keys
 
         """
-
-        import logging
-        import time
-        from typing import Dict, List
-        from esbmtk import Model
 
         self.kwargs = kwargs  # store the kwargs
         self.provided_kwargs = kwargs.copy()  # preserve a copy
@@ -351,10 +370,6 @@ class esbmtkBase():
         av = dictinory with the allowed input keys and their type
         pv = dictionary with the user provided key-value data
         """
-        from numbers import Number
-        from typing import Dict
-        from esbmtk import Model, Element, Species, Flux, Reservoir, Signal, Process
-        from esbmtk import ExternalData
 
         k: any
         v: any
@@ -435,7 +450,6 @@ class esbmtkBase():
 
     def __checkkeys__(self) -> None:
         """ check if the mandatory keys are present"""
-        from typing import List
 
         k: str
         v: any
@@ -480,8 +494,9 @@ class esbmtkBase():
 
     def __repr__(self):
         """ Print the basic parameters for this class when called via the print method
+        
         """
-        from esbmtk import esbmtkBase
+        
         m: str = ""
         
         for k, v in self.provided_kwargs.items():
@@ -492,6 +507,11 @@ class esbmtkBase():
 
 
 *** The Model object
+ESBMTK has rudimentary support for unit conversions. The model will do
+all it's computations in the base units. However, you are free to
+specify all quantities in their own units. The code will convert these
+to the model units before using them.
+
 #+BEGIN_SRC ipython :tangle esbmtk.py
 class Model(esbmtkBase):
     """This is the class specify a new model.
@@ -532,20 +552,10 @@ class Model(esbmtkBase):
     ["Carbon", "Sulfur"].
 
     """
+
     from typing import Dict
-    from nptyping import NDArray, Float
-
-    # from numba import jit, njit
-
     def __init__(self, **kwargs: Dict[any, any]) -> None:
         """ initialize object"""
-
-        from numpy import arange, zeros, array
-        from esbmtk import get_mag, Element
-        from esbmtk import Carbon, Sulfur
-        from typing import Dict
-        from numbers import Number
-        from nptyping import NDArray, Float
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -627,9 +637,10 @@ class Model(esbmtkBase):
 
     def describe(self) -> None:
         """ Describe Basic Model Parameters and log them
+        
         """
 
-        import logging
+
         logging.info("---------- Model description start ----------")
         logging.info(f"Model Name = {self.n}")
         logging.info(f"Model time [{self.bu}], dt = {self.dt}")
@@ -669,7 +680,6 @@ class Model(esbmtkBase):
         window, or save it to a pdf
         """
 
-        import matplotlib.pyplot as plt
         i = 0
         for r in self.lor:
             r.__plot__(i)
@@ -682,7 +692,6 @@ class Model(esbmtkBase):
             or save it to a pdf
         """
 
-        import matplotlib.pyplot as plt
         i = 0
         for r in self.lor:
             r.__plot_reservoirs__(i)
@@ -695,10 +704,7 @@ class Model(esbmtkBase):
         fluxes for each reservoir
         """
 
-        from time import process_time
-        from numpy import array, zeros
-        from nptyping import NDArray, Float
-
+       
         # this has nothing todo with self.time below!
         start: float = process_time()
         new: [NDArray, Float] = zeros(3) + 1
@@ -715,7 +721,6 @@ class Model(esbmtkBase):
         """ Moved this code into a separate function to enable numba optimization
         """
 
-        from nptyping import NDArray, Float
         i = 1  # some processes refer to the previous time step
         for t in time[0:-1]:  # loop over the time vector except the first
             # we first need to calculate all fluxes
@@ -772,21 +777,6 @@ class Model(esbmtkBase):
         r[i] = new  # update reservoir data
 #+END_SRC
 
-#+RESULTS:
-:results:
-# Out [1]: 
-# output
-
-NameErrorTraceback (most recent call last)
-<ipython-input-1-b35e99883984> in <module>
-----> 1 class Model(esbmtkBase):
-      2     """This is the class specify a new model.
-      3 
-      4     Example:
-      5 
-
-NameError: name 'esbmtkBase' is not defined
-:end:
 
 *** Element specific properties
 
@@ -814,10 +804,6 @@ element specific properties
     def __init__(self, **kwargs) -> any:
         """ Initialize all instance variables
         """
-        from numbers import Number
-        from typing import Dict
-        from esbmtk import Model
-        import logging
 
         # provide a dict of known keywords and types
         self.lkk = {
@@ -890,8 +876,6 @@ specific properties
     def __init__(self, **kwargs) -> None:
         """ Initialize all instance variables
             """
-        from esbmtk import Element
-        from typing import Dict
         
         # provide a list of all known keywords
         self.lkk :Dict[any,any] = {"name":str, "element":Element}
@@ -955,18 +939,11 @@ class Reservoir(esbmtkBase):
       
     """
 
-    from nptyping import NDArray, Float
-    import numpy as np
-
     def __init__(self, **kwargs) -> None:
-        """ Initialize a reservoir. 
-            """
-        from numpy import zeros  # import numpy library
-        from esbmtk import get_mass, get_mag, Species, ExternalData, Species, Process, Flux, Element
-        from numbers import Number
-        from typing import Dict, Tuple
-        from nptyping import NDArray, Float, Number
-
+        """ Initialize a reservoir.
+        
+        """
+        
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
@@ -1042,7 +1019,6 @@ class Reservoir(esbmtkBase):
             i: int) -> NDArray[np.float64]:  # howto get data by index [i]
         """ Get flux data by index
         """
-        from numpy import array
 
         return array([self.m[i], self.l[i], self.h[i]])
 
@@ -1059,7 +1035,7 @@ class Reservoir(esbmtkBase):
         self.c[i]: float = self.m[i] / self.v  # update concentration
 
     def log_description(self) -> None:
-        import logging
+
         o = 8 * " "
         logging.info(f"{o}{self.n}: Volume = {self.v:4E},\
             mass={self.m[1]},\
@@ -1078,8 +1054,6 @@ class Reservoir(esbmtkBase):
         o csv file. Each Reservoir gets its own file
             Files are named as 'Modelname_Reservoirname.csv'
             """
-        from pandas import DataFrame
-
         # some short hands
         sn = self.sp.n  # species name
         sp = self.sp
@@ -1113,9 +1087,6 @@ class Reservoir(esbmtkBase):
             Plot data from reservoirs and fluxes into a multiplot window
             """
 
-        import matplotlib.pyplot as plt
-        from esbmtk import get_plot_layout, plot_object_data
-
         model = self.sp.mo
         species = self.sp
         obj = self
@@ -1147,9 +1118,6 @@ class Reservoir(esbmtkBase):
         """ 
             Plot only the  reservoirs data, and ignore the fluxes
             """
-
-        import matplotlib.pyplot as plt
-        from esbmtk import get_plot_layout, plot_object_data
 
         model = self.sp.mo
         species = self.sp
@@ -1215,21 +1183,12 @@ class Flux(esbmtkBase):
       - Name.c # concentration
       
       """
-    from typing import Dict, Tuple
-    from nptyping import NDArray, Float
-    import numpy as np
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
           Initialize a flux. Arguments are the species name the flux rate
           (mol/year), the delta value and unit
           """
-        from numpy import zeros
-        from esbmtk import get_mag, get_mass, Species, Model, Reservoir, Process, ExternalData
-        from typing import Dict, Tuple
-        from nptyping import NDArray, Float
-        from numbers import Number
-        import logging
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -1290,7 +1249,7 @@ class Flux(esbmtkBase):
     def __getitem__(
             self,
             i: int) -> NDArray[np.float64]:  # howto get data by index [i]
-        from numpy import array
+
         return array([self.m[i], self.l[i], self.h[i]])
 
     def __setitem__(self, i: int,
@@ -1305,7 +1264,7 @@ class Flux(esbmtkBase):
         return self
 
     def log_description(self, reservoir) -> None:
-        import logging
+
         o = 16 * " "
         logging.info(
             f"{o}{self.n}, Flux = {self.m[1]*self.reservoir.lio[self.n]}, delta = {self.d[1]:.4f}"
@@ -1326,8 +1285,6 @@ class Flux(esbmtkBase):
 
     def plot(self) -> None:
         """Plot the flux data """
-
-        import matplotlib.pyplot as plt
 
         fig, ax1 = plt.subplots()
         fig.set_size_inches(5, 4)  # Set figure size in inches
@@ -1367,7 +1324,6 @@ class SourceSink(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
 
-        from esbmtk import Species
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -1462,16 +1418,9 @@ class Signal(esbmtkBase):
         Signal.describe()
     """
 
-    from nptyping import NDArray, Float
-    import numpy as np
-
     def __init__(self, **kwargs) -> None:
         """ Parse and initialize variables
             """
-        from numbers import Number
-        from esbmtk import Species, Signal, Model
-        from typing import Dict, List
-        from esbmtk import ExternalData, get_mass
 
         # provide a list of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -1529,10 +1478,6 @@ class Signal(esbmtkBase):
     def __init_signal_data__(self) -> None:
         """ Create an empty flux and apply the shape
             """
-        from numpy import mean, array, interp, arange
-        from esbmtk import Flux, get_mass
-        from nptyping import NDArray, Float
-
         # create a dummy flux we can act up
         self.nf: Flux = Flux(name=self.n + "_data",
                              species=self.sp,
@@ -1592,9 +1537,6 @@ class Signal(esbmtkBase):
     def __pyramid__(self, s, e) -> None:
         """ Create pyramid type Signal """
 
-        from numpy import mean, array, interp, arange
-        from nptyping import NDArray, Float
-
         w: float = (s - 1) * self.mo.dt  # get the base of the pyramid
 
         if "mass" in self.kwd:
@@ -1633,10 +1575,6 @@ class Signal(esbmtkBase):
         
         """
 
-        from numpy import mean, array, interp, arange
-        import pandas as pd
-        from nptyping import NDArray, Float
-
         # read external dataset
         df = pd.read_csv(self.filename)
 
@@ -1665,9 +1603,6 @@ class Signal(esbmtkBase):
 
     def __add__(self, other):
         """ allow the addition of two signals and return a new signal"""
-
-        from copy import deepcopy
-        from nptyping import NDArray, Float
 
         ns = deepcopy(self)
 
@@ -1700,11 +1635,6 @@ class Signal(esbmtkBase):
                                    times,   # number of time to repeat the slice
                               )
       """
-
-        from copy import deepcopy
-        from esbmtk import Signal
-        from nptyping import NDArray, Float
-        import numpy as np
 
         ns: Signal = deepcopy(self)
         ns.n: str = self.n + f"_repeated_{times}_times"
@@ -1747,7 +1677,6 @@ class Signal(esbmtkBase):
     def __register__(self, flux) -> None:
         """ Register this signal with a flux. This should probably be done
             through a process!  """
-        from esbmtk import Flux, Species, model
 
         self.fo: Flux = flux  # the flux handle
         self.sp: Species = flux.sp  # the species handle
@@ -1757,7 +1686,7 @@ class Signal(esbmtkBase):
 
     def __call__(self) -> NDArray[np.float64]:
         """ what to do when called as a function ()"""
-        from numpy import array
+
         return (array([self.fo.m, self.fo.l, self.fo.h,
                        self.fo.d]), self.fo.n, self)
 
@@ -1772,7 +1701,7 @@ class Signal(esbmtkBase):
         self.data.plot()
 
     def describe(self) -> None:
-        import logging
+
         o = 24 * " "
         s = f"{o}{self.n}, Shape = {self.sh}:"
         logging.info(s)
@@ -1840,7 +1769,6 @@ def plot_object_data(geo, fn, yl, yr, obj, time) -> None:
       """collection of commands which will plot and annotate a reservoir or flux
       object into an existing plot window. 
       """
-      import matplotlib.pyplot as plt
 
       # geo = list with rows and cols
       # fn  = figure number
@@ -1921,14 +1849,7 @@ class ExternalData(esbmtkBase):
 
       """
 
-    from typing import Dict
-
     def __init__(self, **kwargs: Dict[str, str]):
-        from esbmtk import Model, ExternalData
-        import pandas as pd
-        from typing import Dict
-        from nptyping import Float, NDArray
-        import logging
 
         # dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -1988,8 +1909,6 @@ class ExternalData(esbmtkBase):
 
 
         """
-        from numpy import interp
-        from nptyping import NDArray, Float
 
         xi :[NDArray] = self.model.time
         
@@ -2012,8 +1931,6 @@ class ExternalData(esbmtkBase):
 
                   ExternalData.plot()
           """
-        import matplotlib.pyplot as plt
-        import pandas as pd
 
         fig, ax = plt.subplots() #
         ax.scatter(self.x,self.y)
@@ -2105,8 +2022,6 @@ class Connect(esbmtkBase):
     Currently reckonized flux properties: delta, rate, alpha, species, k_value, k_mass, k_concentration, ref_value,
     """
 
-    from typing import Dict
-
     def __init__(self, **kwargs):
         """ The init method of the connector obbjects performs sanity checks e.g.:
                - whether the reservoirs exist
@@ -2122,11 +2037,7 @@ class Connect(esbmtkBase):
            fp   = connection_properties : dictionary {delta, rate, alpha, species, type}
            pl[optional]   = optional processes : list
         """
-        import builtins
-        from esbmtk import Source, Sink, Reservoir, Flux, Process
-        from typing import Dict, List
-        from numbers import Number
-
+        
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
@@ -2221,7 +2132,6 @@ class Connect(esbmtkBase):
         """Create flux object, and register with reservoir and global namespace
 
         """
-        import builtins
 
         # test if default arguments present
         if "delta" in self.kwargs:
@@ -2298,7 +2208,6 @@ class Connect(esbmtkBase):
     def register_process(self) -> None:
         """ Register all flux related processes"""
 
-        from copy import copy
         # first test if we have a signal in the list. If so,
         # remove signal and replace with process
 
@@ -2328,8 +2237,6 @@ class Connect(esbmtkBase):
         """ Deduce flux type based on the provided flux properties. The method returns the 
         flux handle, and the process handle(s).
         """
-        from esbmtk import PassiveFlux, PassiveFlux_fixed_delta, VarDeltaOut, ScaleFlux, Fractionation
-        from esbmtk import Source, Sink, Flux, RateConstant
 
         if isinstance(self.r1, Source):
             self.r = self.r2
@@ -2492,8 +2399,6 @@ class Process(esbmtkBase):
      call method. See 'PassiveFlux as example'
     """
 
-    from typing import Dict
-    from esbmtk import Reservoir, Flux
     
     def __init__(self, **kwargs :Dict[str, any]) -> None:
         """
@@ -2509,8 +2414,6 @@ class Process(esbmtkBase):
     def __postinit__(self) -> None:
         """ Do some housekeeping for the process class
           """
-        from typing import Dict, List
-        from esbmtk import Model, Reservoir, Flux
 
         # legacy name aliases
         self.n: str = self.name  # display name of species
@@ -2531,9 +2434,6 @@ class Process(esbmtkBase):
         """Set up the default names and dicts for the process class. This
           allows us to extend these values without modifying the entire init process"""
 
-        from typing import Dict
-        from esbmtk import Reservoir, Flux
-        from numbers import Number
 
         # provide a dict of known keywords and types
         self.lkk: Dict[str, any] = {
@@ -2565,7 +2465,6 @@ class Process(esbmtkBase):
           the process with the reservoir
           """
 
-        import builtins
         # register the reservoir flux combination we are acting on
         self.f :Flux = flux
         self.r :Reservoir = reservoir
@@ -2614,8 +2513,6 @@ lookup table
      which will replace the current flux values.
 
      """
-     from typing import Dict
-     from esbmtk import Reservoir, Flux
      
      def __call__(self, r: Reservoir, i: int) -> None:
           """Here we replace the flux value with the value from the flux object 
@@ -2646,13 +2543,11 @@ class AddSignal(Process):
              lt= contains the flux object we lookup from
 
     """
-    from typing import Dict
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
         Create a new process object with a given process type and options
         """
-        from esbmtk import Flux
 
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
@@ -2695,8 +2590,6 @@ class PassiveFlux(Process):
                  flux = flux handle)
 
      """
-     from typing import Dict
-     from esbmtk import Reservoir, Flux
 
      def __init__(self, **kwargs :Dict[str,any]) -> None:
           """ Initialize this Process """
@@ -2747,14 +2640,11 @@ class PassiveFlux_fixed_delta(Process):
                              delta = delta offset)
 
      """
-     from typing import Dict, List
-     from esbmtk import Reservoir, Flux
 
      def __init__(self, **kwargs :Dict[str, any]) -> None:
           """ Initialize this Process """
 
-          from esbmtk import Reservoir, Flux
-          # get default names and update list for this Process
+
           self.__defaultnames__()  # default kwargs names
           self.lrk.extend(["reservoir","delta", "flux"]) # new required keywords
         
@@ -2771,12 +2661,10 @@ class PassiveFlux_fixed_delta(Process):
      def __call__(self, reservoir :Reservoir, i :int) -> None:
           """Here we re-balance the flux. This code will be called by the
           apply_flux_modifier method of a reservoir which itself is
-          called by the model execute method"""
+          called by the model execute method
 
-          from numpy import array
-          from esbmtk import Flux
-          from typing import Dict, List
-          
+          """
+
           r :float = reservoir.sp.r # the isotope reference value
 
           varflux :Flux = self.f 
@@ -2808,8 +2696,6 @@ class VarDeltaOut(Process):
                  rate = rate)
 
      """
-     from esbmtk import Reservoir, Flux
-     from typing import Dict
 
      def __init__(self, **kwargs :Dict[str, any]) -> None:
           """ Initialize this Process """
@@ -2844,8 +2730,6 @@ class ScaleFlux(Process):
                     ref = flux we use for scale)
 
      """
-    from esbmtk import Reservoir, Flux
-    from typing import Dict
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this Process """
@@ -2910,8 +2794,6 @@ class Fractionation(Process):
                         alpha = 12)
 
      """
-     from esbmtk import Reservoir, Flux
-     from typing import Dict
 
      def __init__(self, **kwargs :Dict[str, any]) -> None:
           """ Initialize this Process """
@@ -2925,8 +2807,6 @@ class Fractionation(Process):
      
      def __call__(self,reservoir :Reservoir, i :int) -> None: 
         
-          from esbmtk import get_mass
-
           self.f.d[i] = self.f.d[i] + self.alpha # set the new delta
           # recalculate masses based on new delta
           self.f.l[i], self.f.h[i] = get_mass(self.f.m[i],
@@ -2983,7 +2863,6 @@ class Equilibrium():
           [k1,k2,k3] is a list of the equilibrium constants
 
           """
-          import builtins
           
           self.n = name         # process name
           self.lor = reactants  # list of reservoirs with the reactants
@@ -3036,14 +2915,10 @@ class RateConstant(Process):
     ScaleRelativeToConcentration
     
     """
-    from esbmtk import Reservoir, Flux
-    from typing import Dict
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this Process """
 
-        from esbmtk import Reservoir, Flux
-        from numbers import Number
 
         # Note that self.lkk values also need to be added to the lkk
         # list of the connector object.
@@ -3230,18 +3105,12 @@ class Monod(Process):
 
      """
 
-    from typing import Dict
-    from numbers import Number
-
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
 
         """
         
-        from esbmtk import Reservoir, Flux
-        from typing import Dict
-        from numbers import Number
-        
+
         """ Initialize this Process """
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
@@ -3288,8 +3157,6 @@ class Monod(Process):
 
           """
 
-        import matplotlib.pyplot as plt
-
         y = []
         x = range(start, stop)
 
@@ -3311,14 +3178,11 @@ class Carbon(esbmtkBase):
     """ Some often used definitions
     
     """
-    from esbmtk import Model
-    from typing import Dict
-    from nptyping import Float, NDArray
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this instance """
 
-        from esbmtk import Model, Element, Species
+
         # dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "model": Model,
@@ -3363,15 +3227,11 @@ class Sulfur(esbmtkBase):
     """ Some often used definitions
     
     """
-    from esbmtk import Model
-    from typing import Dict
-    from nptyping import Float, NDArray
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this instance """
 
-        from esbmtk import Model, Element, Species
-        # dict of all known keywords and their type
+
         self.lkk: Dict[str, any] = {
             "model": Model,
             "name": str,
@@ -3438,10 +3298,6 @@ class SomeClass(esbmtkBase):
     Name.plot() will plot the current shelf area data
     Name.plotvsl() will plot the shelf area versus the sealevel data 
 """
-
-    from esbmtk import ExternalData, Model
-    from typing import Dict
-    from nptyping import Float, NDArray
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this instance """
