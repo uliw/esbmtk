@@ -19,4 +19,17 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.6",
+    install_requires=[
+        "nptyping",
+        "typing",
+        "numpy",
+        "pandas",
+        "matplotlib",
+        "builtins",
+        "logging",
+        "numbers",
+        "pint",
+        "copy",
+        "time",
+    ],
 )
