@@ -1,7 +1,8 @@
 README.md
 setup.py
-esbmtk	/__init__.py
-esbmtk	/esbmtk.py
+esbmtk/__init__.py
+esbmtk/esbmtk.py
+esbmtk/utilities.py
 esbmtk.egg-info/PKG-INFO
 esbmtk.egg-info/SOURCES.txt
 esbmtk.egg-info/dependency_links.txt

@@ -1,19 +1,33 @@
-#+BEGIN_SRC ipython :tangle defaults.py
-from esbmtk import esbmtkBase
+# from pint import UnitRegistry
+from numbers import Number
+from nptyping import *
+from typing import *
+from numpy import array, set_printoptions, arange, zeros, interp, mean
+from pandas import DataFrame
+from copy import deepcopy, copy
+from time import process_time
 
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+import logging
+import time
+import builtins
+set_printoptions(precision=4)
+from .utility_functions import *
+from .base_class import *
+from .esbmtk import *
 
 class Carbon(esbmtkBase):
     """ Some often used definitions
     
     """
-    from esbmtk import Model
-    from typing import Dict
-    from nptyping import Float, NDArray
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this instance """
 
-        from esbmtk import Model, Element, Species
+
         # dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "model": Model,
@@ -58,15 +72,11 @@ class Sulfur(esbmtkBase):
     """ Some often used definitions
     
     """
-    from esbmtk import Model
-    from typing import Dict
-    from nptyping import Float, NDArray
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this instance """
 
-        from esbmtk import Model, Element, Species
-        # dict of all known keywords and their type
+
         self.lkk: Dict[str, any] = {
             "model": Model,
             "name": str,
@@ -105,4 +115,3 @@ class Sulfur(esbmtkBase):
         Species(name="FeS", element=eh)
         Species(name="FeS2", element=eh)
         Species(name="S0", element=eh)
-#+END_SRC
