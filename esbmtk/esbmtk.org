@@ -60,9 +60,8 @@ import logging
 import time
 import builtins
 set_printoptions(precision=4)
-
-from .utility_functions import *
-from .class_templates import *
+# from .utility_functions import *
+from .base_class import esbmtkBase
 #+END_SRC
 
 * The main esbmtk objects
@@ -489,9 +488,8 @@ class Reservoir(esbmtkBase):
               Reservoir(name = "IW_SO4",      # Name of reservoir
                         species = S,          # Species handle
                         delta = 20,           # initial delta - optional (defaults  to 0)
-                        mass/concentration = 200,  # species concentration or mass
-                        unit = "mmol",        # concentration unit
-                        volume = 1E5,         # reservoir volume (m^3) 
+                        mass/concentration = "1 unit"  # species concentration or mass
+                        volume = "1E5 l",      # reservoir volume (m^3) 
                )
 
       you must either give mass or concentration. The result will always be displayed as concentration
@@ -507,49 +505,64 @@ class Reservoir(esbmtkBase):
       - Name.describe() # show data this takess an optional argument to show the nth dataset
       
     """
-
     def __init__(self, **kwargs) -> None:
         """ Initialize a reservoir.
         
         """
-        
+
+        from . import ureg, Q_
+
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
             "species": Species,
             "delta": Number,
-            "concentration": Number,
-            "mass": Number,
-            "unit": str,
-            "volume": Number
+            "concentration": str,
+            "mass": str,
+            "volume": str,
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = [
-            "name", "species", "unit", "volume", ["mass", "concentration"]
+            "name", "species", "volume", ["mass", "concentration"]
         ]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {'delta': 0, 'concentration': 0, 'mass': 0}
+        self.lod: Dict[any, any] = {
+            'delta': 0,
+        }
 
         # validate and initialize instance variables
         self.__initerrormessages__()
-        self.bem.update({"concentration": "a number"})
+        self.bem.update({
+            "concentration": "string",
+            "mass": "a  string",
+            "concentration": "a string",
+            "volume": "a string"
+        })
         self.__validateandregister__(kwargs)
 
         # legacy names
         self.n: str = self.name  # name of reservoir
-        self.mu: str = self.unit  # massunit
         self.sp: Species = self.species  # species handle
         self.mo: Model = self.species.mo  # model handle
-        self.v: Number = self.volume  # reservoir volume
-        if self.concentration == 0:
-            if self.mass == None:
-                raise ValueError("You need to specify mass or concentration")
-            else:
-                self.concentration = self.mass / self.volume
 
-        self.c: Number = self.concentration  # concentration
+        # convert units
+        self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
+        self.v: Number = self.volume  # reservoir volume
+        
+        # This should probably be species specific?
+        self.mu: str = self.sp.e.mass_unit  # massunit xxxx
+
+        if "concentration" in kwargs:
+            self.concentration: Number = Q_(self.concentration).to(
+                self.mo.c_unit).magnitude
+            self.mass: Number = self.concentration * self.volume  # caculate mass
+        elif "mass" in kwargs:
+            self.mass: Number = Q_(self.mass).to(self.mo.m_unit).magnitude
+            self.concentration = self.mass / self.volume
+        else:
+            raise ValueError("You need to specify mass or concentration")
 
         self.lof: list[Flux] = []  #  flux references
         self.led: list[ExternalData] = []  # all external data references
@@ -558,12 +571,8 @@ class Reservoir(esbmtkBase):
         self.loe: list[Element] = []  # list of elements in thiis reservoir
         self.doe: Dict[Species, Flux] = {}  # species flux pairs
 
-        # get magnitude rel to species
-        self.mag: float = get_mag(self.mu, self.species.mu)
-        self.c: float = self.c * self.mag  # convert to base unit
-        mass: float = self.c * self.v  # caculate mass
         # initialize mass vector
-        self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + mass
+        self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
         # initialize concentration vector
         self.c: [NDArray, Float[64]] = self.m / self.v
         self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
@@ -659,7 +668,7 @@ class Reservoir(esbmtkBase):
         model = self.sp.mo
         species = self.sp
         obj = self
-        time =  model.time + model.ref_time  # get the model time
+        time = model.time + model.ref_time  # get the model time
         xl = f"Time [{model.bu}]"
 
         size, geo = get_plot_layout(self)  # adjust layout
