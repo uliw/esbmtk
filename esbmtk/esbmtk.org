@@ -612,6 +612,7 @@ class Model(esbmtkBase):
         # legacy variable names
         self.start =  Q_(self.start).to(self.t_unit).magnitude
         self.stop =  Q_(self.stop).to(self.t_unit).magnitude
+        self.ref_time = Q_(self.ref_time).to(self.t_unit).magnitude
 
         self.bu = self.t_unit.units
         self.base_unit = self.t_unit.units
@@ -1794,7 +1795,7 @@ def plot_object_data(geo, fn, yl, yr, obj, time) -> None:
 
       cn = 0
       col  = f"C{cn}"
-      ln1 = ax1.plot(time[1:-2], yl[1:-2] / obj.mag, color=col, label=obj.lm)        # plot left y-scale data
+      ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=obj.lm)        # plot left y-scale data
       ax1.set_xlabel(obj.xl)                    # set the x-axis label
       ax1.set_ylabel(obj.lm)   # the y labqel
       ax1.spines['top'].set_visible(False)  # remove unnecessary frame speciess
@@ -2720,7 +2721,11 @@ class VarDeltaOut(Process):
      """
 
      def __init__(self, **kwargs :Dict[str, any]) -> None:
-          """ Initialize this Process """
+          """ Initialize this Process
+          
+          """
+
+          from . import ureg, Q_
           
           # get default names and update list for this Process
           self.__defaultnames__()   
@@ -2734,6 +2739,11 @@ class VarDeltaOut(Process):
           self.__initerrormessages__()
           self.bem.update({"rate": "a string"})
           self.__validateandregister__(kwargs)  # initialize keyword values
+
+          # parse rate term, and map to legacy name
+          self.rateq = Q_(self.rate)
+          self.rate = Q_(self.rate).to(self.reservoir.mo.f_unit).magnitude
+          
           self.__postinit__()  # do some housekeeping
      
      def __call__(self, reservoir:Reservoir ,i :int) -> None:
