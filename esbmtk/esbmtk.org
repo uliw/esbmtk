@@ -44,6 +44,9 @@
  - time
 
 * Implementation
+
+
+** Global Imports
 #+BEGIN_SRC ipython :tangle esbmtk.py
 # from pint import UnitRegistry
 from numbers import Number
@@ -61,11 +64,6 @@ import pandas as pd
 import logging
 import time
 import builtins
-
-from pint import UnitRegistry
-
-ureg = UnitRegistry()
-Q_ = ureg.Quantity
 
 set_printoptions(precision=4)
 #+END_SRC
@@ -283,8 +281,8 @@ def show_data(self,name,i) -> None:
 
 
 ** The main model classes
-*** The esbmtk base class ClassName
-Here we define a base class from which we derive the other model
+*** The esbmtk base class ClassName(object):
+ Here we define a base class from which we derive the other model
 classes. This class handles naming and keyword handling
 #+BEGIN_SRC ipython :tangle esbmtk.py
 class esbmtkBase():
@@ -518,14 +516,13 @@ class Model(esbmtkBase):
 
     Example:
 
-            esbmtkModel(name =  "Test_Model",
-                      start = 0,          # optional: start time 
-                      stop  = 1000,       # end time
-                      time_unit = "yr",   # units for start/end time
-                      dt = 2,             # model time step
-                      dt_unit = "yr",     # optional: units for dt
-                      base_unit = "yr",   # optional: time unit for model
-                      ref_time = 0,       # optional: time offset for plot
+            esbmtkModel(name   =  "Test_Model",
+                      start    = "0 yrs",    # optional: start time 
+                      stop     = "1000 yrs", # end time
+                      timestep = "2 yrs",    # as a string "2 yrs"
+                      ref_time = "0 yrs",    # optional: time offset for plot
+                      mass_unit = "mol/l",   #required
+                      volume_unit = "mol/l", #required 
             )
 
     The 'ref_time' keyword will offset the time axis by the specified
@@ -554,37 +551,40 @@ class Model(esbmtkBase):
     """
 
     from typing import Dict
+    from . import ureg, Q_
     def __init__(self, **kwargs: Dict[any, any]) -> None:
         """ initialize object"""
+
+        from . import ureg, Q_
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
-            "start": Number,
-            "stop": Number,
-            "time_unit": str,
-            "dt": Number,
-            "dt_unit": str,
-            "base_unit": str,
-            "ref_time": int,
+            "start": str,
+            "stop": str,
+            "timestep": str,
+            "ref_time": str,
             "element": str,
+            "mass_unit": str,
+            "volume_unit": str,
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list[str] = ["name", "stop", "time_unit", "dt"]
+        self.lrk: list[str] = ["name", "stop", "timestep", "mass_unit", "volume_unit"]
 
         # list of default values if none provided
         self.lod: Dict[str, any] = {
-            'start': 0,
-            'dt_unit': kwargs['time_unit'],
-            'base_unit': kwargs['time_unit'],
-            'ref_time': 0,
+            'start': "0 years",
+            'ref_time': "0 years",
         }
 
         self.__initerrormessages__()
         self.bem.update({
-            "ref_time": "an integer number",
-            "element": "element name"
+            "ref_time": "a string",
+            "timesetp": "a string",
+            "element": "element name",
+            "mass_unit": "a string",
+            "volume_unit": "a string",
         })
 
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -600,26 +600,31 @@ class Model(esbmtkBase):
         self.olkk: list = [
         ]  # optional keywords for use in the connector class
 
-        # legacy name defintions
-        self.bu = self.base_unit
+        # Parse the strings which contain unit information and convert
+        # into model base units For this we setup 3 variables which define
+        self.t_unit = Q_(self.timestep) # the time unit
+        self.m_unit = Q_(self.mass_unit) # the mass unit
+        self.v_unit = Q_(self.volume_unit) # the volume unit
+        self.c_unit = self.m_unit / self.v_unit # the concentration unit (mass/volume)
+        self.f_unit = self.m_unit / self.t_unit # the flux unit (mass/time)
+        ureg.define('Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups')
+
+        # legacy variable names
+        self.start =  Q_(self.start).to(self.t_unit).magnitude
+        self.stop =  Q_(self.stop).to(self.t_unit).magnitude
+
+        self.bu = self.t_unit.units
+        self.base_unit = self.t_unit.units
+        self.dt =  self.t_unit.magnitude
+        self.tu = str(self.bu)  # needs to be a string
         self.n = self.name
         self.mo = self.name
 
-        self.xl = f"Time [{self.time_unit}]"  # time axis label
-        self.mag_dt = get_mag(self.dt_unit,
-                              self.base_unit)  # get magnitude rel to base unit
-        print(f"mag_dt = {self.mag_dt}")
-        self.dt = self.dt * self.mag_dt  # convert to base unit
-        self.mag = get_mag(self.time_unit,
-                           self.base_unit)  # get magnitude rel to base unit
-        print(f"mag_dt = {self.mag_dt}, dt = {self.dt}")
-        self.start = self.start * self.mag
-        self.stop = self.stop * self.mag
-        self.tu = self.time_unit  # Time units used to set start/end time
-        self.length = int(abs(self.start - self.stop))
+        self.xl = f"Time [{self.bu}]"  # time axis label
+        self.length = int(abs(self.stop - self.start))
         self.steps = int(abs(round(self.length / self.dt)))
-        self.time = ((arange(self.steps) * self.dt) + self.start) / self.mag
-
+        self.time = ((arange(self.steps) * self.dt) + self.start)
+        
         if "element" in self.kwargs:
             if isinstance(self.kwargs["element"], list):
                 element_list = self.kwargs["element"]
@@ -645,7 +650,7 @@ class Model(esbmtkBase):
         logging.info(f"Model Name = {self.n}")
         logging.info(f"Model time [{self.bu}], dt = {self.dt}")
         logging.info(
-            f"start = {self.start}, stop={self.stop/self.mag} [{self.tu}]")
+            f"start = {self.start}, stop={self.stop} [{self.tu}]")
         logging.info(f"Steps = {self.steps}\n")
         logging.info(f"  Species(s) in {self.n}:")
 
@@ -1059,8 +1064,8 @@ class Reservoir(esbmtkBase):
         sp = self.sp
         # species mass units in the reservoir
         smu = f"[{self.sp.mu}]"
-        mtu = f"[{self.sp.mo.bu}]"  # model time units
-        fmu = f"[{self.sp.mu}/{self.sp.mo.bu}]"  # mass unit for the fluxes
+        mtu = f"[{str(self.sp.mo.bu)}]"  # model time units
+        fmu = f"[{self.sp.mu}/{str(self.sp.mo.bu)}]"  # mass unit for the fluxes
         sdn = self.sp.dn  # delta name
         sds = f"[{self.sp.ds}]"  # delta scale
         rn = self.n  # reservoir name
@@ -1173,8 +1178,7 @@ class Flux(esbmtkBase):
       Flux = (name = "Name"
               species = species_handle,
               delta = any number,
-              rate  = flux rate,
-              unit  = flux unit
+              rate  = "12 mol/s" # must be a string
       )
 
        You can access the flux data as
@@ -1190,23 +1194,24 @@ class Flux(esbmtkBase):
           (mol/year), the delta value and unit
           """
 
+        from . import ureg, Q_
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
             "species": Species,
             "delta": Number,
-            "rate": Number,
-            "unit": str,
+            "rate": str,
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "species", "unit", "rate"]
+        self.lrk: list = ["name", "species", "rate"]
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {'delta': 0}
 
         # initialize instance
         self.__initerrormessages__()
+        self.bem.update({"rate": "a string"})
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # legacy names
@@ -1215,18 +1220,11 @@ class Flux(esbmtkBase):
         self.mo: Model = self.species.mo  # model name
         self.model: Model = self.species.mo  # model handle
 
-        self.mu: str = self.unit  # mass unit used for this flux
-        # unit is mass/time, so we need to first split the string
-        mu, tu = self.unit.split("/")  # mu = mass unit, tu = time unit
-        logging.debug(f"mu = {mu}, {self.species.mu}")
-        logging.debug(f"tu = {tu}, model.bu = {self.model.bu}")
-        mu_mag = get_mag(mu, self.species.mu)  # get magnitude rel to species
-        tu_mag = get_mag(tu, self.model.bu)  # get timestep rel to model time
-        logging.debug(f"scale factor time = {tu_mag}, mass = {mu_mag}")
-
-        self.mag: float = mu_mag / tu_mag  # set scale factor accordingly
-
-        fluxrate: float = self.rate * self.mag  # convert flux to model units
+        # model units
+        self.mu :str = f"{self.species.mu}/{self.mo.tu}"
+        # and convert flux into model units
+        fluxrate :float =  Q_(self.rate).to(self.mo.f_unit).magnitude
+        
         self.m: [NDArray, Float[64]
                  ] = zeros(self.model.steps) + fluxrate  # add the flux
         self.l: [NDArray, Float[64]] = zeros(self.model.steps)
@@ -1342,7 +1340,7 @@ class SourceSink(esbmtkBase):
         # legacy names
         self.n = self.name
         self.sp = self.species
-        self.u = self.species.mu + "/" + self.species.mo.bu
+        self.u = self.species.mu + "/" + str(self.species.mo.bu)
 
 
 class Sink(SourceSink):
@@ -1385,12 +1383,12 @@ class Signal(esbmtkBase):
 
             Signal(name = "Name",
                    species = Species handle,
-                   start = 0,           # optional
-                   duration = 0,        #
+                   start = "0 yrs",     # optional
+                   duration = "0 yrs",  #
                    delta = 0,           # optional
                    stype = "addition"   # optional, currently the only type
                    shape = "square"     # square, pyramid
-                   mass/magnitude/data  # give one
+                   mass/magnitude/filename  # give one
                   )
 
       Signals are cumulative, i.e., complex signals ar created by
@@ -1400,8 +1398,8 @@ class Signal(esbmtkBase):
       i.e., they are passed on the process list when calling the
       connector object.
     
-      if the data argument is used, you can provide a filename which
-      contains the data to be used in scv format. The data will be
+      if the filename argument is used, you can provide a filename which
+      contains the data to be used in csv format. The data will be
       interpolated to the model domain, and added to the already existing data.
       The external data need to be in the following format
 
@@ -1420,19 +1418,22 @@ class Signal(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
         """ Parse and initialize variables
-            """
-
+        
+        """
+        
+        from . import ureg, Q_
+        
         # provide a list of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
-            "start": Number,
-            "duration": Number,
+            "start": str,
+            "duration": str,
             "species": Species,
             "delta": Number,
             "stype": str,
             "shape": str,
             "filename": str,
-            "mass": Number,
+            "mass": str,
             "magnitude": Number
         }
 
@@ -1444,10 +1445,10 @@ class Signal(esbmtkBase):
 
         # list of default values if none provided
         self.lod: Dict[str, any] = {
-            'start': 0,
+            'start': "0 yrs",
             'stype': "addition",
             'shape': "external_data",
-            'duration': 0,
+            'duration': "0 yrs",
             'delta': 0,
         }
 
@@ -1455,15 +1456,23 @@ class Signal(esbmtkBase):
         self.bem.update({"data": "a string", "magnitude": Number})
         self.__validateandregister__(kwargs)  # initialize keyword values
 
-        self.los: List[Signal] = []  # list of signals we are based on.
+        # list of signals we are based on.
+        self.los: List[Signal] = []
+        
+        # convert units to model units
+        self.st: Number = Q_(self.start).to(self.species.mo.t_unit).magnitude  # start time
+        self.l: Number = Q_(self.duration).to(self.species.mo.t_unit).magnitude  # the duration
+
+        if "mass" in self.kwargs:
+            self.mass = Q_(self.mass).to_self.species.mo.m_unit.magnitude
+        elif "magnitude" in self.kwargs:
+            self.magnitude = Q_(self.magnitude).to_self.species.mo.f_unit.magnitude
 
         # legacy name definitions
         self.n: str = self.name  # the name of the this signal
         self.sp: Species = self.species  # the species
         self.mo: Model = self.species.mo  # the model handle
-        self.st: Number = self.start  # start time
         self.ty: str = self.stype  # type of signal
-        self.l: Number = self.duration  # the duration
         self.sh: str = self.shape  # shape the event
         self.d: float = self.delta  # delta value offset during the event
         self.kwd: Dict[str, any] = self.kwargs  # list of keywords
@@ -1481,13 +1490,12 @@ class Signal(esbmtkBase):
         # create a dummy flux we can act up
         self.nf: Flux = Flux(name=self.n + "_data",
                              species=self.sp,
-                             rate=0,
-                             delta=0,
-                             unit=self.sp.mu + "/" + self.mo.tu)
+                             rate="0 mol/yr",
+                             delta=0)
 
         # since the flux is zero, the delta value will be undefined. So we set it explicitly
         # this will avoid having additions with Nan values.
-        self.nf.d[0:]: float = 0
+        self.nf.d[0:]: float = 0.0
 
         # find nearest index for start, and end point
         self.si: int = int(round(self.st / self.mo.dt))  # starting index
@@ -2036,7 +2044,10 @@ class Connect(esbmtkBase):
            sink  = downstream reservoir  : object handle
            fp   = connection_properties : dictionary {delta, rate, alpha, species, type}
            pl[optional]   = optional processes : list
+        
         """
+        
+        from . import ureg, Q_
         
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -2045,7 +2056,7 @@ class Connect(esbmtkBase):
             "source": (Source, Reservoir),
             "sink": (Sink, Reservoir),
             "delta": Number,
-            "rate": Number,
+            "rate": str,
             "pl": list,
             "alpha": Number,
             "species": Species,
@@ -2091,11 +2102,17 @@ class Connect(esbmtkBase):
         if not 'pl' in kwargs:
             self.pl: list[Process] = []
 
+        
+        
         # legacy names
         self.influx: int = 1
         self.outflux: int = -1
         self.n = self.name
         self.mo = self.source.sp.mo
+
+        # convert units into model units rate, k_mass, k_concentrationn
+        if "rate" in kwargs:
+            self.rate = Q_(self.rate).to(self.mo.f_unit)
 
         self.p = 0  # the default process handle
         self.r1: (Process, Reservoir) = self.source
@@ -2142,7 +2159,7 @@ class Connect(esbmtkBase):
         if "rate" in self.kwargs:
             r = self.kwargs["rate"]
         else:
-            r = 1
+            r = "1 mol/year"
 
         # flux name
         if not self.id == "":
@@ -2151,14 +2168,14 @@ class Connect(esbmtkBase):
             n = self.r1.n + '_to_' + self.r2.n
 
         # derive flux unit from species obbject
-        funit = self.sp.mu + "/" + self.sp.mo.bu
+        funit = self.sp.mu + "/" + str(self.sp.mo.bu) # xxx
 
+        print(f"r = {r}")
         self.fh = Flux(
             name=n,  # flux name
             species=self.sp,  # Species handle
             delta=d,  # delta value of flux
             rate=r,  # flux value
-            unit=funit,  # flux unit
         )
 
         # register flux with its reservoirs
@@ -2407,7 +2424,7 @@ class Process(esbmtkBase):
 
         self.__defaultnames__()      # default kwargs names
         self.__initerrormessages__() # default error messages
-        # update self.bem dict if necessary
+        self.bem.update({"rate": "a string"})
         self.__validateandregister__(kwargs)  # initialize keyword values
         self.__postinit__()          # do some housekeeping
 
@@ -2553,6 +2570,8 @@ class AddSignal(Process):
         self.__defaultnames__()  # default kwargs names
         self.lrk.extend(["lt", "flux", "reservoir"])  # new required keywords
 
+        self.__initerrormessages__()
+        #self.bem.update({"rate": "a string"})
         self.__validateandregister__(kwargs)  # initialize keyword values
         self.__postinit__()  # do some housekeeping
 
@@ -2598,7 +2617,8 @@ class PassiveFlux(Process):
           # get default names and update list for this Process
           self.__defaultnames__()  # default kwargs names
           self.lrk.extend(["reservoir", "flux"]) # new required keywords
-        
+          self.__initerrormessages__()
+          #self.bem.update({"rate": "a string"})
           self.__validateandregister__(kwargs)  # initialize keyword values
           self.__postinit__()  # do some housekeeping
      
@@ -2647,7 +2667,9 @@ class PassiveFlux_fixed_delta(Process):
 
           self.__defaultnames__()  # default kwargs names
           self.lrk.extend(["reservoir","delta", "flux"]) # new required keywords
-        
+
+          self.__initerrormessages__()
+          #self.bem.update({"rate": "a string"})
           self.__validateandregister__(kwargs)  # initialize keyword values
           self.__postinit__()  # do some housekeeping
 
@@ -2692,8 +2714,8 @@ class VarDeltaOut(Process):
 
      VarDeltaOut(name = "name",
                  reservoir = upstream_reservoir_handle,
-                 flux = flux handle
-                 rate = rate)
+                 flux = flux handle,
+                 rate = rate,)
 
      """
 
@@ -2701,9 +2723,16 @@ class VarDeltaOut(Process):
           """ Initialize this Process """
           
           # get default names and update list for this Process
-          self.__defaultnames__()  # default kwargs names
+          self.__defaultnames__()   
+          self.lkk: Dict[str, any] = {
+               "name": str,
+               "reservoir" : Reservoir,
+               "flux": Flux,
+               "rate": str,
+               }
           self.lrk.extend(["reservoir", "rate"]) # new required keywords
-        
+          self.__initerrormessages__()
+          self.bem.update({"rate": "a string"})
           self.__validateandregister__(kwargs)  # initialize keyword values
           self.__postinit__()  # do some housekeeping
      
