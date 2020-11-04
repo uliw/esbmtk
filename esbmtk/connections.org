@@ -25,6 +25,31 @@ A collection of classes which define connections and fluxes
 #+END_SRC
 
 
+
+* Global Imports
+#+BEGIN_SRC ipython :tangle connections.py
+# from pint import UnitRegistry
+from numbers import Number
+from nptyping import *
+from typing import *
+from numpy import array, set_printoptions, arange, zeros, interp, mean
+from pandas import DataFrame
+from copy import deepcopy, copy
+from time import process_time
+
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+import logging
+import time
+import builtins
+set_printoptions(precision=4)
+from .utility_functions import *
+from .base_class import esbmtkBase
+from .esbmtk import *
+#+END_SRC
+
 * Connecting Reservoirs
 
 Two reservoirs connect to each other via at least 1 flux. Connection properties include 
@@ -66,6 +91,8 @@ The init method of the connector obbjects performs sanity checks e.g.:
 *** A connector object
 
 #+BEGIN_SRC ipython :tangle connections.py
+from .base_class import esbmtkBase
+
 class Connect(esbmtkBase):
     """Name:
 
