@@ -1,15 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org836a601)
-2.  [News](#org059d08b)
-3.  [Contributing](#orgfe4b42f)
-4.  [Installation](#orgd297053)
-5.  [Documentation](#org7c7729e)
-6.  [License](#org3ef33b7)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgc5853a1)
+2.  [News](#orgc889a9b)
+3.  [Contributing](#orgcf573a4)
+4.  [Installation](#org945958a)
+5.  [Documentation](#orgdd6ffa3)
+6.  [Todo](#orgc689ba0)
+7.  [License](#org6c62fdd)
 
 
-<a id="org836a601"></a>
+<a id="orgc5853a1"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -29,27 +30,35 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="org059d08b"></a>
+<a id="orgc889a9b"></a>
 
 # News
+
+-   Nov. 5<sup>th</sup>, released version 0.2. This version is now unit aware. So
+    rather than having a separate keyword for `unit`, quantities are
+    now specified together wit their unit, e.g., `rate = "15
+       mol/s"`. This breaks the API, and requires that existing scripts
+    are modified. I thus also removed much of the existing
+    documentation until I have time to update it.
 
 -   Oct. 27<sup>th</sup>, added documentation on how to integrate user written
     process classes, added a class which allows for concentration
     dependent flux. Updated the documentation, added examples
+
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgfe4b42f"></a>
+<a id="orgcf573a4"></a>
 
 # Contributing
 
 Don't be shy. Contributing is as easy as finding bugs by using the
 code, or maybe you want to add a new process code? If you have plenty
 of time to spare, ESMBTK could use a solver for stiff problems, or a
-graphical interface ;-)
+graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orgd297053"></a>
+<a id="org945958a"></a>
 
 # Installation
 
@@ -60,37 +69,49 @@ ESBMTK relies on the following python versions and libraries
 -   numpy
 -   pandas
 -   logging
+-   typing
+-   builtins
 -   nptyping
 -   numbers
+-   pint
+-   copy
+-   time
 
-please install the above with pip or conda etc. You can install esbmtk with pip or in a local working directory from github
+If you work with conda, it is recommended to install the above via
+conda. If you work with pip, the installer should install these
+libraries automatically. ESBMTK itself can be installed with pip
 
 -   pip install esbmtk
--   <https://github.com/uliw/esbmtk/archive/main.zip>
--   <https://github.com/uliw/esbmtk.git>
--   git@github.com:uliw/esbmtk.git
 
 
-<a id="org7c7729e"></a>
+<a id="orgdd6ffa3"></a>
 
 # Documentation
 
+The documentation is available in org format or in pdf format. 
 See the documentation folder, [specifically the quickstart guide](https://github.com/uliw/esbmtk/blob/main/Documentation/ESBMTK-Quick-Start_Guide.org).
 
 At present, I also provide the following example cases (as py-files
 and in jupyter notebook format)
 
 -   A trivial carbon cycle model which shows how to set up the model,
-    and read an external [csv file to force the model](https://github.com/uliw/esbmtk/blob/main/Examples/A%20simple%20carbon%20cycle%20example/C_cycle.org)
--   The same model as be before but now to demonstrate how to add
-    pyramid shaped signal, and how to use the rate constant process to
-    adjust concentration dependent flux rates[concentration dependent flux rates](https://github.com/uliw/esbmtk/blob/main/Examples/Using%20a%20rate%20constant/rate_example.org).
+    and read an external csv file to force the model.
+-   
 
-Last but not least, I added a short [guide how to add your own process
-classes to the ESBMTK](https://github.com/uliw/esbmtk/blob/main/Documentation/Adding_your_own_Processes.org) 
+pyramid shaped signal, and how to use the rate constant process to
+adjust concentration dependent flux rates[concentration dependent flux rates](https://github.com/uliw/esbmtk/blob/main/Examples/Using%20a%20rate%20constant/rate_example.org). 
 
 
-<a id="org3ef33b7"></a>
+<a id="orgc689ba0"></a>
+
+# Todo
+
+-   expand the documentation
+-   provide more examples
+-   do more testing
+
+
+<a id="org6c62fdd"></a>
 
 # License
 

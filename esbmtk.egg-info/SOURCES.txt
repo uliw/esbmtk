@@ -1,9 +1,15 @@
 README.md
 setup.py
 esbmtk/__init__.py
+esbmtk/base_class.py
+esbmtk/class_templates.py
+esbmtk/connections.py
 esbmtk/esbmtk.py
-esbmtk/utilities.py
+esbmtk/processes.py
+esbmtk/species_definitions.py
+esbmtk/utility_functions.py
 esbmtk.egg-info/PKG-INFO
 esbmtk.egg-info/SOURCES.txt
 esbmtk.egg-info/dependency_links.txt
+esbmtk.egg-info/requires.txt
 esbmtk.egg-info/top_level.txt
