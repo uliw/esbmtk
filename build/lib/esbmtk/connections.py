@@ -39,6 +39,7 @@ from .esbmtk import *
 
 from .base_class import esbmtkBase
 
+
 class Connect(esbmtkBase):
     """Name:
 
@@ -76,7 +77,6 @@ class Connect(esbmtkBase):
 
     Currently reckonized flux properties: delta, rate, alpha, species, k_value, k_mass, k_concentration, ref_value,
     """
-
     def __init__(self, **kwargs):
         """ The init method of the connector obbjects performs sanity checks e.g.:
                - whether the reservoirs exist
@@ -93,9 +93,9 @@ class Connect(esbmtkBase):
            pl[optional]   = optional processes : list
         
         """
-        
+
         from . import ureg, Q_
-        
+
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
@@ -103,7 +103,7 @@ class Connect(esbmtkBase):
             "source": (Source, Reservoir),
             "sink": (Sink, Reservoir),
             "delta": Number,
-            "rate": str,
+            "rate": (str, Number),
             "pl": list,
             "alpha": Number,
             "species": Species,
@@ -112,9 +112,9 @@ class Connect(esbmtkBase):
             "react_with": Flux,
             "ratio": Number,
             "scale": Number,
-            "k_concentration": Number,
-            "k_mass": Number,
-            "ref_value": Number,
+            "k_concentration": (str, Number, Q_),
+            "k_mass": (str, Number, Q_),
+            "ref_value": (str, Number, Q_),
             "k_value": Number,
             "a_value": Number,
             "b_value": Number,
@@ -138,7 +138,7 @@ class Connect(esbmtkBase):
             "k_mass": "a number",
             "k_value": "a number",
             "a_value": "a number",
-            "ref_value": "a number",
+            "ref_value": "a number, string, or quantity",
             "b_value": "a number",
             "name": "a string",
             "id": "a string",
@@ -149,8 +149,6 @@ class Connect(esbmtkBase):
         if not 'pl' in kwargs:
             self.pl: list[Process] = []
 
-        
-        
         # legacy names
         self.influx: int = 1
         self.outflux: int = -1
@@ -215,7 +213,7 @@ class Connect(esbmtkBase):
             n = self.r1.n + '_to_' + self.r2.n
 
         # derive flux unit from species obbject
-        funit = self.sp.mu + "/" + str(self.sp.mo.bu) # xxx
+        funit = self.sp.mu + "/" + str(self.sp.mo.bu)  # xxx
 
         print(f"r = {r}")
         self.fh = Flux(
@@ -405,14 +403,39 @@ class Connect(esbmtkBase):
         self.pl.append(ph)  #
 
     def __rateconstant__(self) -> None:
-        """ Add rate constant process"""
+        """ Add rate constant type process
+
+        """
+
+        from . import ureg, Q_
 
         if "rate" not in self.kwargs:
             raise ValueError(
                 "The rate constant process requires that the flux rate for this reservoir is being set explicitly"
             )
 
+        # k_concentration, k_mass and ref_value can be a number, a unit string, or a quantity
+        # if unit - convert into qauntity
+        # if quantity convert into number
+        if "k_concentration" in self.kwargs:
+            if isinstance(self.k_concentration,str):
+                self.k_concentration = Q_(self.k_concentration)
+
+        if "k_mass" in self.kwargs:
+            if isinstance(self.k_mass,str):
+                self.k_mass = Q_(self.k_mass)
+
+        if "ref_value" in self.kwargs:
+            if isinstance(self.ref_value,str):
+                self.ref_value = Q_(self.ref_value)
+        
         if "k_concentration" in self.kwargs and "ref_value" in self.kwargs:
+            # if necessary, map units
+            if isinstance(self.k_concentration, Q_):
+                self.k_concentration = self.k_concentration.to(self.mo.c_unit).magnitude
+            if isinstance(self.ref_value, Q_):
+                self.ref_value = self.ref_value.to(self.mo.c_unit).magnitude
+
             ph = ScaleRelativeToNormalizedConcentration(
                 name=self.pn + "_PknC",
                 reservoir=self.r,
@@ -421,6 +444,12 @@ class Connect(esbmtkBase):
                 k_value=self.k_concentration)
 
         elif "k_mass" in self.kwargs and "ref_value" in self.kwargs:
+            # if necessary, map units
+            if isinstance(self.k_mass, Q_):
+                self.k_mass = self.k_mass.to(self.mo.m_unit).magnitude
+            if isinstance(self.ref_value, Q_):
+                self.ref_value = self.ref_value.to(self.mo.m_unit).magnitude
+
             ph = ScaleRelativeToNormalizedMass(name=self.pn + "_PknM",
                                                reservoir=self.r,
                                                flux=self.fh,
@@ -428,12 +457,20 @@ class Connect(esbmtkBase):
                                                k_value=self.k_mass)
 
         elif "k_mass" in self.kwargs and not "ref_value" in self.kwargs:
+            # if necessary, map units
+            if isinstance(self.k_mass, Q_):
+                self.k_mass = self.k_mass.to(self.mo.m_unit).magnitude
+
             ph = ScaleRelativeToMass(name=self.pn + "_PkM",
                                      reservoir=self.r,
                                      flux=self.fh,
                                      k_value=self.k_mass)
 
         elif "k_concentration" in self.kwargs and not "ref_value" in self.kwargs:
+            # if necessary, map units
+            if isinstance(self.k_concentration, Q_):
+                self.k_concentration = self.k_concentration.to(self.mo.c_unit).magnitude
+
             ph = ScaleRelativeToConcentration(name=self.pn + "_PkC",
                                               reservoir=self.r,
                                               flux=self.fh,
@@ -860,8 +897,11 @@ class RateConstant(Process):
     """
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
-        """ Initialize this Process """
+        """ Initialize this Process
 
+        """
+        
+        from . import ureg, Q_
 
         # Note that self.lkk values also need to be added to the lkk
         # list of the connector object.
@@ -872,7 +912,7 @@ class RateConstant(Process):
         # update the allowed keywords
         self.lkk = {
             "k_value": Number,
-            "ref_value": Number,
+            "ref_value": (Number,str, Q_),
             "name": str,
             "reservoir": Reservoir,
             "flux": Flux,
@@ -1045,7 +1085,8 @@ class Monod(Process):
         """
 
         """
-        
+
+        from . import ureg, Q_
 
         """ Initialize this Process """
         # get default names and update list for this Process
@@ -1055,7 +1096,7 @@ class Monod(Process):
         self.lkk = {
             "a_value": Number,
             "b_value": Number,
-            "ref_value": Number,
+            "ref_value": (Number,str, Q_),
             "name": str,
             "reservoir": Reservoir,
             "flux": Flux,

@@ -46,14 +46,9 @@ ESBMTK relies on the following python versions and libraries
  - matplotlib
  - numpy
  - pandas
- - logging
  - typing
- - builtins
  - nptyping
- - numbers
  - pint
- - copy
- - time
 
 If you work with conda, it is recommended to install the above via
 conda. If you work with pip, the installer should install these

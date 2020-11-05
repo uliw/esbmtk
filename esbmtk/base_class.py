@@ -97,20 +97,6 @@ class esbmtkBase():
         # check if key values are of correct type
         self.__checktypes__(self.lkk, self.kwargs)
 
-        # this wont work since we don't know the model yet.
-        # coulde be moved into a post init section?
-
-        # register instance on the list of model objects
-        #if not type(self) == Model:
-        #    self.mo.lmo.append(self)  # register on the list of model objects
-
-        # start log entry
-        #logfile = self.name+".log"
-        #logging.basicConfig(filename=logfile,
-        #                    filemode='w',
-        #                    format='%(message)s',
-        #                    level=logging.INFO)
-        #logging.info(f"{self.name} initialized on {time.ctime()}")
 
     def __checktypes__(self, av: Dict[any, any], pv: Dict[any, any]) -> None:
         """ this method will use the the dict key in the user provided
@@ -129,8 +115,7 @@ class esbmtkBase():
         for k, v in pv.items():
             # check av if provided value v is of correct type
             if not isinstance(v, av[k]):
-                print(f"Offending Key = {k}")
-                raise TypeError(f"{v} must be {m[k]}, not {type(v)}")
+                raise TypeError(f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'")
 
     def __initerrormessages__(self):
         """ Init the list of known error messages"""
