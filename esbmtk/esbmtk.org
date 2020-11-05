@@ -164,7 +164,8 @@ class Model(esbmtkBase):
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
-        self.t_unit = Q_(self.timestep) # the time unit
+        self.t_unit = Q_(self.timestep).units # the time unit
+        self.d_unit = Q_(self.stop).units # display time units
         self.m_unit = Q_(self.mass_unit) # the mass unit
         self.v_unit = Q_(self.volume_unit) # the volume unit
         self.c_unit = self.m_unit / self.v_unit # the concentration unit (mass/volume)
@@ -176,9 +177,9 @@ class Model(esbmtkBase):
         self.stop =  Q_(self.stop).to(self.t_unit).magnitude
         self.ref_time = Q_(self.ref_time).to(self.t_unit).magnitude
 
-        self.bu = self.t_unit.units
-        self.base_unit = self.t_unit.units
-        self.dt =  self.t_unit.magnitude
+        self.bu = self.t_unit
+        self.base_unit = self.t_unit
+        self.dt =  Q_(self.timestep).magnitude
         self.tu = str(self.bu)  # needs to be a string
         self.n = self.name
         self.mo = self.name
@@ -283,7 +284,7 @@ class Model(esbmtkBase):
         print(f"Execution took {duration} seconds")
 
     # some mumbo jumbbo to support numba optimization. Currently not working though
-    @staticmethod
+    @staticmethod # this provides significnt speedups
     def execute(new: [NDArray, Float], time: [NDArray, Float],
                 lor: list) -> None:
         """ Moved this code into a separate function to enable numba optimization
@@ -556,12 +557,12 @@ class Reservoir(esbmtkBase):
 
         if "concentration" in kwargs:
             c = Q_(self.concentration)
-            self.plt_unit = c.units 
+            self.plt_units = c.units 
             self.concentration: Number = c.to(self.mo.c_unit).magnitude
             self.mass: Number = self.concentration * self.volume  # caculate mass
         elif "mass" in kwargs:
             m =  Q_(self.mass)
-            self.plt_unit = m.units 
+            self.plt_units = m.units 
             self.mass: Number = m.to(self.mo.m_unit).magnitude
             self.concentration = self.mass / self.volume
         else:
@@ -591,6 +592,9 @@ class Reservoir(esbmtkBase):
         self.lm: str = f"{self.species.n} [{self.mu}/l]"  # left y-axis label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis label
         self.xl: str = self.mo.xl  # set x-axis lable to model time
+
+        self.legend_left = self.species.n
+        self.legend_right = self.species.dn
 
         self.mo.lor.append(self)  # add this reservoir to the model
 
@@ -674,8 +678,8 @@ class Reservoir(esbmtkBase):
         model = self.sp.mo
         species = self.sp
         obj = self
-        time = model.time + model.ref_time  # get the model time
-        xl = f"Time [{model.bu}]"
+        #time = model.time + model.ref_time  # get the model time
+        #xl = f"Time [{model.bu}]"
 
         size, geo = get_plot_layout(self)  # adjust layout
         filename = f"{model.n}_{self.n}.pdf"
@@ -686,12 +690,12 @@ class Reservoir(esbmtkBase):
         fig.set_size_inches(size)
 
         # plot reservoir data
-        plot_object_data(geo, fn, self.c, self.d, self, time)
+        plot_object_data(geo, fn, self)
 
         # plot the fluxes assoiated with this reservoir
         for f in sorted(self.lof):  # plot flux data
             fn = fn + 1
-            plot_object_data(geo, fn, f.m, f.d, f, time)
+            plot_object_data(geo, fn, f)
 
         fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
         fig.tight_layout()
@@ -774,6 +778,7 @@ class Flux(esbmtkBase):
           """
 
         from . import ureg, Q_
+        
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
@@ -801,8 +806,8 @@ class Flux(esbmtkBase):
 
         # model units
         self.plt_units =  Q_(self.rate).units
-        
         self.mu :str = f"{self.species.mu}/{self.mo.tu}"
+        
         # and convert flux into model units
         fluxrate :float =  Q_(self.rate).to(self.mo.f_unit).magnitude
         
@@ -818,6 +823,9 @@ class Flux(esbmtkBase):
                                                      self.sp.r)  # update delta
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
+        self.legend_left = self.species.n
+        self.legend_right = self.species.dn
+        
         self.xl: str = self.model.xl  # se x-axis label equal to model time
         self.lop: list[Process] = []  # list of processes
         self.led: list[ExternalData] = []  # list of ext data
@@ -1322,63 +1330,87 @@ class Signal(esbmtkBase):
 ** Plotting objects
 
 #+BEGIN_SRC ipython :tangle esbmtk.py
-def plot_object_data(geo, fn, yl, yr, obj, time) -> None:
-      """collection of commands which will plot and annotate a reservoir or flux
+def plot_object_data(geo, fn, obj) -> None:
+    """collection of commands which will plot and annotate a reservoir or flux
       object into an existing plot window. 
       """
 
-      # geo = list with rows and cols
-      # fn  = figure number
-      # yl  = array with y values for the left side
-      # yr  = array with y values for the right side
-      # obj = object handle, i.e., reservoir or flux
-      
-      rows = geo[0]
-      cols = geo[1]
-      species = obj.sp
-      model = obj.mo
-      # time = model.time
+    from . import ureg, Q_
 
-      # convert data from model units to display units (i.e. the same
-      # units the input data was defined).
+    # geo = list with rows and cols
+    # fn  = figure number
+    # yl  = array with y values for the left side
+    # yr  = array with y values for the right side
+    # obj = object handle, i.e., reservoir or flux
 
-      
-      ax1 = plt.subplot(rows, cols, fn, title=obj.n)  # start subplot
+    rows = geo[0]
+    cols = geo[1]
+    species = obj.sp
+    model = obj.mo
+    time = model.time + model.ref_time
 
-      cn = 0
-      col  = f"C{cn}"
-      ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=obj.lm)        # plot left y-scale data
-      ax1.set_xlabel(obj.xl)                    # set the x-axis label
-      ax1.set_ylabel(obj.lm)   # the y labqel
-      ax1.spines['top'].set_visible(False)  # remove unnecessary frame speciess
+    # convert data from model units to display units (i.e. the same
+    # units the input data was defined).
+    # time units are the same regardless of object
+    time = (model.time * model.t_unit).to(model.d_unit).magnitude
 
-      cn = cn + 1
-      col  = f"C{cn}"
-      ax2 = ax1.twinx()                     # create a second y-axis
-      ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.ld)        # plof right y-scale data
+    # we do not map isotope values
+    yr = obj.d
 
-      ax2.set_ylabel(obj.ld)  # species object delta label
-      ax2.spines['top'].set_visible(False)  # remove unnecessary frame speciess
+    # remap concentration & flux values
+    if isinstance(obj, Flux):
+        yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
+        y_label = f"{obj.legend_left} [{obj.plt_units}]"
+    elif isinstance(obj, Reservoir):
+        yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
+        y_label = f"{obj.legend_left} [{obj.plt_units}]"
+    elif isinstance(obj, Signal):
+        # use the same units as the associated flux
+        yl = (obj.c * model.c_unit).to(obj.fo.plt_units).magnitude
+        y_label = f"{obj.n} [{obj.fo.plt_units}]"
+    else:  # sources, sinks, external data should not show up here
+        raise ValueError(f"{obj.n} = {type(obj)}")
 
-      for d in obj.led: # loop over external data objects if present
-          if isinstance(d.x[0], str): # if string, something is off
-              raise ValueError("No time axis in external data object {d.name}") 
-          if isinstance(d.y[0],str) is False:  # mass or concentration data is present
-              cn = cn + 1
-              col  = f"C{cn}"
-              leg  = f"{obj.lm} {d.legend}"
-              ln3 = ax1.scatter(d.x, d.y, color=col, label = leg)
-          if isinstance(d.d[0], str) is False:  # isotope data is present
-              cn = cn + 1
-              col  = f"C{cn}"
-              leg  = f"{obj.ld} {d.legend}"
-              ln3 = ax2.scatter(d.x, d.d, color=col, label = leg)
+    ax1 = plt.subplot(rows, cols, fn, title=obj.n)  # start subplot
 
-      # collect all labels and print them in one legend
-      handler1, label1 = ax1.get_legend_handles_labels()
-      handler2, label2 = ax2.get_legend_handles_labels()
-      legend = ax2.legend(handler1+handler2, label1+label2, loc=0).set_zorder(6)
-      # ax1.legend(frameon=False)
+    cn = 0
+    col = f"C{cn}"
+    ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col,
+                   label=obj.legend_left)  # plot left y-scale data
+    ax1.set_xlabel(f"[{model.d_unit}]")  # set the x-axis label
+    ax1.set_ylabel(y_label)  # the y labqel
+    ax1.spines['top'].set_visible(False)  # remove unnecessary frame speciess
+
+    cn = cn + 1
+    col = f"C{cn}"
+    ax2 = ax1.twinx()  # create a second y-axis
+    ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col,
+                   label=obj.legend_right)  # plof right y-scale data
+
+    ax2.set_ylabel(obj.ld)  # species object delta label
+    ax2.spines['top'].set_visible(False)  # remove unnecessary frame speciess
+
+    for d in obj.led:  # loop over external data objects if present
+        if isinstance(d.x[0], str):  # if string, something is off
+            raise ValueError("No time axis in external data object {d.name}")
+        if isinstance(d.y[0],
+                      str) is False:  # mass or concentration data is present
+            cn = cn + 1
+            col = f"C{cn}"
+            leg = f"{obj.lm} {d.legend}"
+            ln3 = ax1.scatter(d.x, d.y, color=col, label=leg)
+        if isinstance(d.d[0], str) is False:  # isotope data is present
+            cn = cn + 1
+            col = f"C{cn}"
+            leg = f"{obj.ld} {d.legend}"
+            ln3 = ax2.scatter(d.x, d.d, color=col, label=leg)
+
+    # collect all labels and print them in one legend
+    handler1, label1 = ax1.get_legend_handles_labels()
+    handler2, label2 = ax2.get_legend_handles_labels()
+    legend = ax2.legend(handler1 + handler2, label1 + label2,
+                        loc=0).set_zorder(6)
+    # ax1.legend(frameon=False)
 #+END_SRC
 
 ** Comparing against external data
