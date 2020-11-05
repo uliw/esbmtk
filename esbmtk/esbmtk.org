@@ -555,15 +555,21 @@ class Reservoir(esbmtkBase):
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
 
         if "concentration" in kwargs:
-            self.concentration: Number = Q_(self.concentration).to(
-                self.mo.c_unit).magnitude
+            c = Q_(self.concentration)
+            self.plt_unit = c.units 
+            self.concentration: Number = c.to(self.mo.c_unit).magnitude
             self.mass: Number = self.concentration * self.volume  # caculate mass
         elif "mass" in kwargs:
-            self.mass: Number = Q_(self.mass).to(self.mo.m_unit).magnitude
+            m =  Q_(self.mass)
+            self.plt_unit = m.units 
+            self.mass: Number = m.to(self.mo.m_unit).magnitude
             self.concentration = self.mass / self.volume
         else:
             raise ValueError("You need to specify mass or concentration")
 
+        # save the unit which was provided by the user for display purposes
+        
+        
         self.lof: list[Flux] = []  #  flux references
         self.led: list[ExternalData] = []  # all external data references
         self.lio: dict[str, int] = {}  #  flux name:direction pairs
@@ -794,6 +800,8 @@ class Flux(esbmtkBase):
         self.model: Model = self.species.mo  # model handle
 
         # model units
+        self.plt_units =  Q_(self.rate).units
+        
         self.mu :str = f"{self.species.mu}/{self.mo.tu}"
         # and convert flux into model units
         fluxrate :float =  Q_(self.rate).to(self.mo.f_unit).magnitude
@@ -1149,19 +1157,36 @@ class Signal(esbmtkBase):
         thiw will replace the values in the flux with those read from the
         external data source. The external data need to be in the following format
 
-        Time, Rate, delta value
+        Time [units], Rate [units], delta value [units]
         0,     10,   12
 
         i.e., the first row needs to be a header line
         
         """
 
+        from . import ureg, Q_
+        
         # read external dataset
         df = pd.read_csv(self.filename)
 
-        x = df.iloc[:, 0].to_numpy()
-        y = df.iloc[:, 1].to_numpy()
-        d = df.iloc[:, 2].to_numpy()
+        # get unit information from each header
+        xh = df.columns[0].split("[")[1].split("]")[0] 
+        yh = df.columns[1].split("[")[1].split("]")[0]
+        # zh = df.iloc[0,2].split("[")[1].split("]")[0]
+
+        # create the associated quantities
+        xq = Q_(xh)
+        yq = Q_(yh)
+        # zq = Q_(zh)
+
+        # add these to the data we are are reading
+        x = df.iloc[:, 0].to_numpy() * xq  
+        y = df.iloc[:, 1].to_numpy() * yq
+        d = df.iloc[:, 2].to_numpy() 
+
+        # map into model units, and strip unit information
+        x = x.to(self.mo.t_unit).magnitude
+        y = y.to(self.mo.f_unit).magnitude
 
         self.st: float = x[0]  # set the start time
         l : float = int(x[-1] - x[0])  # calculate the length
@@ -1314,6 +1339,10 @@ def plot_object_data(geo, fn, yl, yr, obj, time) -> None:
       model = obj.mo
       # time = model.time
 
+      # convert data from model units to display units (i.e. the same
+      # units the input data was defined).
+
+      
       ax1 = plt.subplot(rows, cols, fn, title=obj.n)  # start subplot
 
       cn = 0
