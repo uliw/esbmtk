@@ -14,6 +14,7 @@
 
 * Overview
 
+
 ESBMTK provides a couple of classes which are used to define a
 model. The classes are arranged in a hierarchical manner, starting
 with the model class. The model class (or object), set's global
@@ -167,17 +168,38 @@ use. Interaction with the model classes is done through keyword/value
 pairs. Use =help()= to inquire about the supported keyword value
 pairs.
 
-#+BEGIN_SRC ipython :tangle ocean.py
+ESBMTK is unit aware. The units are used to map all input data to
+internal units. The type of internal units needs to specified when
+creating the model object. The time unit is derived from the timestep
+variable. I.e., if the timestep is given in seconds, all other time
+related input will be mapped to seconds. Similarly you have to define
+the base mass unit. Typically, this will be moles, but other units
+like grams etc can also be used.  At present ESBMTK cannot convert
+between different types of mass units (e.g., kg to moles).  The usual
+prefixes like kilo, mega, milli etc are recognized. Volume units like
+=l= or =m**3= are recognized as well. ESBMTK also defines the sverdrup
+("Sv")
+
+Once the input units are mapped to base units specified by the model
+object, all data will be reported in the base units. The only
+exception is the =object.plot()= method which will transform the data
+back into the original unit. In other words, if your timestep is in
+years, but you specify your endtime in kyrs, the time axis will be
+plotted in kyrs. Similarly for all other data, with the exception of
+the isotope delta values.
+
+#+BEGIN_SRC ipython :tangle C_Cycle_Ocean.py
 from esbmtk import Model, Element, Species, Reservoir
 from esbmtk import Signal, Connect, Source, Sink, Flux
 from esbmtk import ExternalData
 
 # create model
 Model(
-    name="C_Cycle",  # model name
-    stop=100,         # end time of model
-    time_unit="yr",  # time units 
-    dt=1,            # time step
+    name="C_Cycle",     # model name
+    stop="200 yrs",     # end time of model
+    timestep=" 1 yr",   # time unit
+    mass_unit = "mol",  # mass unit
+    volume_unit = "l",  # volume unit
 )
 #+END_SRC
 
@@ -187,7 +209,7 @@ name. Note that this is not a string, but the model handle which is
 derived from the model name in the model definition above. We use the
 element handle in a similar way to register the species with an
 element.
-#+BEGIN_SRC ipython :tangle ocean.py
+#+BEGIN_SRC ipython :tangle C_Cycle_Ocean.py
 # Element properties
 Element(
     name="C",                  # Element Name
@@ -207,21 +229,45 @@ Species(name="OM", element=C)
 Species(name="CaCO3", element=C)
 #+END_SRC
 
+You can do this explicitly as in the example above, or use the builtin
+definition by providing the element keyword in the model
+definition. This keyword takes and element name, and causes the model
+to initialize an =Element= object and a variety of =Species=
+objects. At present ESBMT contains definitions for "Carbon" and
+"Sulfur" which will create the element objects =C= and =S=
+respectively. You can query which species are known to an element by
+calling the =list_species= method, e.g., =C.list_species()=
+
+You can initialize more than one element by providing a list as
+argument (i.e., =["Sulfur", "Carbon"]). In other words, you can
+replace the above code block by adding =element = "Carbon"= to the
+model parameters.
+
+
 ** Using external data to initialize a signal
-We can use an external csv file to create a signal.  The first column
+We can use an external csv file to create a signal. The first column
 contains the time coordinates, the second the flux rate, and the third
-the delta value of the flux.  The first row must contain a header. All
-values will be interpolated to fit the model time resolution.
+the delta value of the flux.  The first row must contain a header, and
+the header must contain a variable name followed by a unit:
+
+| Age [kyr] | Volcanic Flux [mol/s] | \delta^{13}C [permille] |
+|-----------+-----------------------+-----------------|
+|         0 |                    20 |               0 |
+|         1 |                    30 |               2 |
+
+Note that the unit must be specified inside square brackets. All
+values will be mapped into the model units and interpolated to fit the
+model time resolution.
 
 Signals can also by created by specifying a signal type. At
 present the class understands, square, and pyramidal signal forms, as
 well as repetition. Signal can be added to each other (i.e., you can
 specify a signal which effects the flux, and then add another signal
 which effects the isotope ratio).
-#+BEGIN_SRC ipython :tangle ocean.py
-Signal(name = "ACR",   # Signal name
-       species = CO2,  # Species
-       duration = 100, # must match what is in the file
+#+BEGIN_SRC ipython :tangle C_Cycle_Ocean.py
+Signal(name = "ACR",              # Signal name
+       species = CO2,             # Species
+       duration = "100 yrs",      # must match what is in the file
        filename = "test-data.csv" # filename
 )
 #+END_SRC
@@ -230,8 +276,15 @@ connector object in order to associate it with a flux (see the first
 connection below as an example).
 
 ** Sources, Sinks and Reservoirs
+The fundamental model object is the reservoir. Reservoirs are
+connected to each other by one or more fluxes. Fluxes are created
+implicitly by connecting two reservoirs. 
 
-#+BEGIN_SRC ipython :tangle ocean.py 
+Connecting a reservoir with a Source or Sink also creates a flux, but
+unlike reservoirs, sources and sinks do not have any associated
+data. They are merely there to allow the creation of a flux.
+
+#+BEGIN_SRC ipython :tangle C_Cycle_Ocean.py 
 Source(name="Fossil_Fuel_Burning", species=CO2)
 Source(name="Carbonate_Weathering", species=CO2)
 Source(name="Organic_Weathering", species=CO2)
@@ -240,78 +293,90 @@ Sink(name="Carbonate_burial", species=CaCO3)
 Sink(name="OM_burial", species=OM)
 
 Reservoir(
-    name="Ocean",       # Name of reservoir
-    species=DIC,        # Species handle
-    delta=0,            # initial delta
-    concentration=2.62, # cocentration 
-    unit="mmol",        # mass unit
-    volume=1.332E18,    # reservoir size (m^3)
+    name="Ocean",                # Name of reservoir
+    species=DIC,                 # Species handle
+    delta=0,                     # initial delta
+    concentration="2.62 mmol/l", # cocentration 
+    volume="1.332E18 m**3",      # reservoir size (m^3)
 )
 #+END_SRC
 
 ** Connecting sources, reservoirs and sinks
 Now that all model elements are specified, we can connect
-everything. Note how the previously specified =ACR= signal is added
-to the fossil fuel burning source. If the flux rate and delta are
-provided, the flux is treated a static. If the delta is omitted, the
-flux delta is driven by the upstream reservoir. If the flux is
-omitted, the flux is set in such a way that it maintains the mass in
-the reservoir. If the connection specifies a fractionation factor, the
-flux delta is function of the upstream reservoir delta plus the
-fractionation factor (=OM_burial=). Other processes like concentration
-dependent fluxes will be available soon.
+everything. The first statement below, connects the source
+=Fossil_Fuel_Burning= with the reservoir =Ocean=. This will create a
+flux with the name =Fossil_Fuel_Burning_to_Ocean=. The rate and delta
+keywords indicate that this flux will be zero. However, we provide =pl
+= [ACR]= which is the carbon flux data which we imported via the
+signal object above. This data will be added to the
+=Fossil_Fuel_Burning_to_Ocean= flux (since the process is additive,
+the initial flux has to be zero!)
+
+The type of flux depends on how we specify the connection. In the
+previous example we provided a signal, so the flux will change with
+time according to the signal data. If you look at the connection
+between =Carbonate_Weathering= and =Ocean= below, we specify a given
+rate and delta value. So this flux will not change over time. If you
+look at the connection between =Ocean= and =OM_burial= the connection
+specifies a constant flux but with an =alpha = -26.3=. This indicates
+that this flux involves a fixed isotope offset relative to the
+upstream reservoir, i.e., the isotope ratio of this flux will change
+dynamically in response to the isotope ratio of the reservoir, but
+with a constant offset. See below for a full list of connection
+options.
 
 Fluxes can be circular, care must however be taken in which sequence
-they are defined.
-#+BEGIN_SRC ipython :tangle ocean.py
+they are defined, since the solver computes each flux and reservoir in
+the order they are initialized (see the Examples directory for a more
+complete example).
+#+BEGIN_SRC ipython :tangle C_Cycle_Ocean.py
 # connect source to reservoir
 Connect(
     source=Fossil_Fuel_Burning,  # source of flux
-    sink=Ocean,          # target of flux
-    rate=0,              # weathering flux in 
-    delta=0,             # set a default flux
-    pl=[ACR],            # process list, here the anthropogenic carbon release
+    sink=Ocean,                  # target of flux
+    rate="0 mol/yr",             # weathering flux in 
+    delta=0,                     # set a default flux
+    pl=[ACR],                    # process list, here the anthropogenic carbon release
 )
 
 Connect(
     source=Carbonate_Weathering,  # source of flux
-    sink=Ocean,         # target of flux
-    rate=12.3E12,       # weathering flux in 
-    delta=0,            # isotope ratio
+    sink=Ocean,                   # target of flux
+    rate="12.3E12 mol/yr",        # weathering flux in 
+    delta=0,                      # isotope ratio
 )
 
 Connect(
     source=Organic_Weathering,  # source of flux
-    sink=Ocean,         # target of flux
-    rate=4.0E12,        # flux rate
-    delta=-20,          # isotope ratio
-    
+    sink=Ocean,                 # target of flux
+    rate="4.0E12 mol/yr",       # flux rate
+    delta=-20,                  # isotope ratio
 )
 
 Connect(
-    source=Volcanic,    # source of flux
-    sink=Ocean,         # target of flux
-    rate=6.0E12,        # flux rate
-    delta=-5,           # isotope ratio
+    source=Volcanic,      # source of flux
+    sink=Ocean,           # target of flux
+    rate="6.0E12 mol/yr", # flux rate
+    delta=-5,             # isotope ratio
 )
 
 Connect(
-    source=Ocean,       # source of flux
-    sink=OM_burial,     # target of flux
-    rate=4.2E12,        # burial rate
-    alpha=-26.32,       # fractionation factor
+    source=Ocean,          # source of flux
+    sink=OM_burial,        # target of flux
+    rate="4.2E12 mol/yr",  # burial rate
+    alpha=-26.32,          # fractionation factor
 )
 
 Connect(
-    source=Ocean,       # source of flux
-    sink=Carbonate_burial,     # target of flux
-    rate=18.1E12,              # burial rate
-    alpha=0,            # set the istope fractionation
+    source=Ocean,          # source of flux
+    sink=Carbonate_burial, # target of flux
+    rate="18.1E12 mol/yr", # burial rate
+    alpha=0,               # set the istope fractionation
 )
 #+END_SRC
 ** Running the model
 The model is executed via the =run()= method. The results can be displayed withe the =plot_data()= method which will generate an overview graph for each reservoir. Export of the results to a csv file is done via the =save_data()= method which will create csv file for each reservoir.
-#+BEGIN_SRC ipython :tangle ocean.py
+#+BEGIN_SRC ipython :tangle C_Cycle_Ocean.py
 # Run the model
 C_Cycle.run()
 
