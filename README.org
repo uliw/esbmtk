@@ -17,9 +17,17 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - Nov. 5^{th}, released version 0.2. This version is now unit aware. So
+   rather than having a separate keyword for =unit=, quantities are
+   now specified together wit their unit, e.g., =rate = "15
+   mol/s"=. This breaks the API, and requires that existing scripts
+   are modified. I thus also removed much of the existing
+   documentation until I have time to update it.
+   
  - Oct. 27^{th}, added documentation on how to integrate user written
    process classes, added a class which allows for concentration
    dependent flux. Updated the documentation, added examples
+
  - Oct. 25^{th}, Initial release on github.
 
 * Contributing
@@ -27,7 +35,7 @@ chemical reactions (including equilibrium reactions).
 Don't be shy. Contributing is as easy as finding bugs by using the
 code, or maybe you want to add a new process code? If you have plenty
 of time to spare, ESMBTK could use a solver for stiff problems, or a
-graphical interface ;-)
+graphical interface ;-) See the todo section for ideas.
 
 
 * Installation
@@ -39,31 +47,43 @@ ESBMTK relies on the following python versions and libraries
  - numpy
  - pandas
  - logging
+ - typing
+ - builtins
  - nptyping
  - numbers
+ - pint
+ - copy
+ - time
 
-please install the above with pip or conda etc. You can install esbmtk with pip or in a local working directory from github
+If you work with conda, it is recommended to install the above via
+conda. If you work with pip, the installer should install these
+libraries automatically. ESBMTK itself can be installed with pip
 
  - pip install esbmtk
- - https://github.com/uliw/esbmtk/archive/main.zip
- - https://github.com/uliw/esbmtk.git
- - git@github.com:uliw/esbmtk.git
 
 * Documentation
 
+The documentation is available in org format or in pdf format. 
 See the documentation folder, [[https://github.com/uliw/esbmtk/blob/main/Documentation/ESBMTK-Quick-Start_Guide.org][specifically the quickstart guide]].
 
 At present, I also provide the following example cases (as py-files
 and in jupyter notebook format)
 
   - A trivial carbon cycle model which shows how to set up the model,
-    and read an external [[https://github.com/uliw/esbmtk/blob/main/Examples/A%20simple%20carbon%20cycle%20example/C_cycle.org][csv file to force the model]] 
-  - The same model as be before but now to demonstrate how to add
+    and read an external csv file to force the model.
+  - 
+#  - The same model as be before but now to demonstrate how to add
     pyramid shaped signal, and how to use the rate constant process to
     adjust concentration dependent flux rates[[https://github.com/uliw/esbmtk/blob/main/Examples/Using%20a%20rate%20constant/rate_example.org][concentration dependent flux rates]]. 
 
-Last but not least, I added a short [[https://github.com/uliw/esbmtk/blob/main/Documentation/Adding_your_own_Processes.org][guide how to add your own process
-classes to the ESBMTK]] 
+# Last but not least, I added a short [[https://github.com/uliw/esbmtk/blob/main/Documentation/Adding_your_own_Processes.org][guide how to add your own process
+# classes to the ESBMTK]] 
+
+* Todo
+
+   - expand the documentation
+   - provide more examples
+   - do more testing
 
 * License
 
