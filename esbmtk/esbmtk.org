@@ -1397,8 +1397,19 @@ class ExternalData(esbmtkBase):
                           model = model_handle)
 
       The data must exist as CSV file, where the first column contains
-      the X-values, and the second column contains the Y-values. The first row should
-      contain column headers, however, these are ignored by the
+      the X-values, and the second column contains the Y-values.
+
+      The x-values must be time and specify the time units. they will be mapped into the
+      model time units.
+
+      The y-values can be any data, but the user must take care that they match the model units
+      defined in the model instance. So your data file mujst look like this
+
+      Time [years], Data [any]
+      1, 12
+      2, 13
+    
+      The column headers are only used for the time conversion, and ignored by the
       default plotting methods, but they are available as self.xh,yh  
 
       The file must exist in the local working directory.
@@ -1412,6 +1423,8 @@ class ExternalData(esbmtkBase):
 
     def __init__(self, **kwargs: Dict[str, str]):
 
+        from . import ureg, Q_
+        
         # dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
@@ -1419,7 +1432,7 @@ class ExternalData(esbmtkBase):
             "legend": str,
             "model": Model,
         }
-
+        
         # provide a list of absolutely required keywords
         self.lrk: list = ["name", "filename", "legend","model"]
         # list of default values if none provided
@@ -1436,16 +1449,20 @@ class ExternalData(esbmtkBase):
 
         self.df: pd.DataFrame = pd.read_csv(self.fn)  # read file
         logging.info(f"Read external data from {self.fn}")
-        # first column should be time
-        # second colum should be data
-        self.x :[NDArray] = self.df.to_numpy()[:, 0]
-        self.y :[NDArray] = self.df.to_numpy()[:, 1]
-        self.xh: str = self.df.columns[0]  # get the column header
-        self.yh: str = self.df.columns[1]  # get the column header
 
         if len(self.df.columns) != 2:  # test if delta given
             raise ValueError("CSV file must have only two columns")
+        
+        self.xh: str = self.df.columns[0]  # get the column header
+        self.yh: str = self.df.columns[1]  # get the column header
 
+        # unit mapping
+        xq = Q_(xh)
+        x = df.iloc[:, 0].to_numpy() * xq
+        
+        self.x :[NDArray] = x.to(self.mo.t_unit).magnitude
+        self.y :[NDArray] = self.df.to_numpy()[:, 1]
+       
     def register(self, obj):
         """Register this dataset with a flux or reservoir. This will have the
           effect that the data will be printed together with the model
