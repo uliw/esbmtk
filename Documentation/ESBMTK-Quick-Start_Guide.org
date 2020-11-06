@@ -267,7 +267,6 @@ which effects the isotope ratio).
 #+BEGIN_SRC ipython :tangle C_Cycle_Ocean.py
 Signal(name = "ACR",              # Signal name
        species = CO2,             # Species
-       duration = "100 yrs",      # must match what is in the file
        filename = "test-data.csv" # filename
 )
 #+END_SRC

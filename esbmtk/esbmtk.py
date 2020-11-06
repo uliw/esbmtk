@@ -45,7 +45,7 @@ class Model(esbmtkBase):
                       start    = "0 yrs",    # optional: start time 
                       stop     = "1000 yrs", # end time
                       timestep = "2 yrs",    # as a string "2 yrs"
-                      ref_time = "0 yrs",    # optional: time offset for plot
+                      offset = "0 yrs",    # optional: time offset for plot
                       mass_unit = "mol/l",   #required
                       volume_unit = "mol/l", #required 
             )
@@ -88,7 +88,7 @@ class Model(esbmtkBase):
             "start": str,
             "stop": str,
             "timestep": str,
-            "ref_time": str,
+            "offset": str,
             "element": str,
             "mass_unit": str,
             "volume_unit": str,
@@ -100,12 +100,12 @@ class Model(esbmtkBase):
         # list of default values if none provided
         self.lod: Dict[str, any] = {
             'start': "0 years",
-            'ref_time': "0 years",
+            'offset': "0 years",
         }
 
         self.__initerrormessages__()
         self.bem.update({
-            "ref_time": "a string",
+            "offset": "a string",
             "timesetp": "a string",
             "element": "element name",
             "mass_unit": "a string",
@@ -138,7 +138,7 @@ class Model(esbmtkBase):
         # legacy variable names
         self.start =  Q_(self.start).to(self.t_unit).magnitude
         self.stop =  Q_(self.stop).to(self.t_unit).magnitude
-        self.ref_time = Q_(self.ref_time).to(self.t_unit).magnitude
+        self.offset = Q_(self.offset).to(self.t_unit).magnitude
 
         self.bu = self.t_unit
         self.base_unit = self.t_unit
@@ -626,7 +626,7 @@ class Reservoir(esbmtkBase):
         model = self.sp.mo
         species = self.sp
         obj = self
-        #time = model.time + model.ref_time  # get the model time
+        #time = model.time + model.offset  # get the model time
         #xl = f"Time [{model.bu}]"
 
         size, geo = get_plot_layout(self)  # adjust layout
@@ -658,7 +658,7 @@ class Reservoir(esbmtkBase):
         model = self.sp.mo
         species = self.sp
         obj = self
-        time = model.time + model.ref_time  # get the model time
+        time = model.time + model.offset  # get the model time
         xl = f"Time [{model.bu}]"
 
         size = [5, 3]
@@ -911,6 +911,7 @@ class Signal(esbmtkBase):
                    stype = "addition"   # optional, currently the only type
                    shape = "square"     # square, pyramid
                    mass/magnitude/filename  # give one
+                   offset = '0 yrs'     # 
                   )
 
       Signals are cumulative, i.e., complex signals ar created by
@@ -929,6 +930,10 @@ class Signal(esbmtkBase):
         0,     10,   12
 
         i.e., the first row needs to be a header line
+
+      All time data in the csv file will be treated as realative time
+      (i.e., the start time will be mapped to zero). Use the offset
+      keyword to shift the external signal data in teh time domain.
 
 
       This class has the following methods
@@ -956,7 +961,8 @@ class Signal(esbmtkBase):
             "shape": str,
             "filename": str,
             "mass": str,
-            "magnitude": Number
+            "magnitude": Number,
+            "offset": str,
         }
 
         # provide a list of absolutely required keywords
@@ -970,6 +976,7 @@ class Signal(esbmtkBase):
             'start': "0 yrs",
             'stype': "addition",
             'shape': "external_data",
+            'offset': "0 yrs",
             'duration': "0 yrs",
             'delta': 0,
         }
@@ -983,14 +990,19 @@ class Signal(esbmtkBase):
         
         # convert units to model units
         self.st: Number = Q_(self.start).to(self.species.mo.t_unit).magnitude  # start time
-        self.l: Number = Q_(self.duration).to(self.species.mo.t_unit).magnitude  # the duration
 
         if "mass" in self.kwargs:
-            self.mass = Q_(self.mass).to_self.species.mo.m_unit.magnitude
+            self.mass = Q_(self.mass).to(self.species.mo.m_unit).magnitude
         elif "magnitude" in self.kwargs:
-            self.magnitude = Q_(self.magnitude).to_self.species.mo.f_unit.magnitude
+            self.magnitude = Q_(self.magnitude).to(self.species.mo.f_unit).magnitude
 
+        if "duration" in self.kwargs:
+            self.duration = Q_(self.duration).to(self.species.mo.t_unit).magnitude
+
+        self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
+        
         # legacy name definitions
+        self.l :int = self.duration
         self.n: str = self.name  # the name of the this signal
         self.sp: Species = self.species  # the species
         self.mo: Model = self.species.mo  # the model handle
@@ -1134,7 +1146,7 @@ class Signal(esbmtkBase):
         # coordinate. So the duration is x[-1] - X[0]. Duration/dt
         # gives us the steps, so we can setup a vector for
         # interpolation. Insertion off this vector depends on the time
-        # offset defined by the value of x[0], which defines the
+        # offset defined by offset keyword which defines the
         # insertion indexes self.si self.ei
         
         self.st: float  = x[0]    # start time
@@ -1142,8 +1154,8 @@ class Signal(esbmtkBase):
         duration = int(round(self.et - self.st))
 
         # since everything has been mapped to dt, time equals index
-        self.si: int = int(self.st)  # starting index
-        self.ei: int = int(self.et)  # end index
+        self.si: int = self.offset   # starting index
+        self.ei: int = self.offset + duration  # end index
 
         print(f"startindex = {self.si}, end index = {self.ei}")
         #self.si: int = int(round(self.st / self.mo.dt))  # starting index
@@ -1163,7 +1175,6 @@ class Signal(esbmtkBase):
         # add this to the corresponding section off the flux
         self.s_m: [NDArray, Float[64]] = self.s_m + h  
         self.s_d: [NDArray, Float[64]] = self.s_d + dy  # ditto for delta
-        print(f"length off s_m ={len(self.s_m)}")
 
     def __add__(self, other):
         """ allow the addition of two signals and return a new signal"""
