@@ -869,7 +869,7 @@ class VarDeltaOut(Process):
                "name": str,
                "reservoir" : Reservoir,
                "flux": Flux,
-               "rate": str,
+               "rate": [str,Q_],
                }
           self.lrk.extend(["reservoir", "rate"]) # new required keywords
           self.__initerrormessages__()
