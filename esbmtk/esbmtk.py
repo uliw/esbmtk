@@ -548,9 +548,7 @@ class Reservoir(esbmtkBase):
         pass
         return self
 
-    def __getitem__(
-            self,
-            i: int) -> NDArray[np.float64]:  # howto get data by index [i]
+    def __getitem__(self, i: int) -> NDArray[np.float64]:  
         """ Get flux data by index
         """
 
@@ -584,34 +582,38 @@ class Reservoir(esbmtkBase):
 
     def write_data(self) -> None:
         """
-            Write model data \int_{}^{} d
-        o csv file. Each Reservoir gets its own file
+            Write model data to CSV file. Each Reservoir gets its own file
             Files are named as 'Modelname_Reservoirname.csv'
             """
         # some short hands
         sn = self.sp.n  # species name
         sp = self.sp
-        # species mass units in the reservoir
-        smu = f"[{self.sp.mu}]"
-        mtu = f"[{str(self.sp.mo.bu)}]"  # model time units
-        fmu = f"[{self.sp.mu}/{str(self.sp.mo.bu)}]"  # mass unit for the fluxes
+        mo = self.sp.mo
+       
+        smu = f"{mo.m_unit:~P}"
+        mtu = f"{mo.t_unit:~P}"
+        fmu = f"{mo.f_unit:~P}"
+        cmu = f"{mo.c_unit:~P}"
+        
         sdn = self.sp.dn  # delta name
         sds = f"[{self.sp.ds}]"  # delta scale
         rn = self.n  # reservoir name
         mn = self.sp.mo.n  # model name
         fn = f"{mn}_{rn}.csv"  # file name
 
+        # build the dataframe
         df: pd.dataframe = DataFrame()
-        df[f"{self.n}_{sn}_{smu}"] = self.m
-        df[f"{self.n}_{sp.ln}"] = self.l
-        df[f"{self.n}_{sp.hn} "] = self.h
-        df[f"{self.n}_{sdn} {sds}"] = self.d
+        df[f"{self.n} {sn} [{smu}]"] = self.m    # mass
+        df[f"{self.n} {sn} [{cmu}]"] = self.c    # concentration
+        df[f"{self.n} {sp.ln}"] = self.l         # light isotope
+        df[f"{self.n} {sp.hn} "] = self.h        # heavy isotope
+        df[f"{self.n} {sdn} {sds}"] = self.d   # delta value
 
         for f in self.lof:  # Assemble the headers and data for the reservoir fluxes
-            df[f"{f.n}_{sn}_{fmu}"] = f.m
-            df[f"{f.n}_{sn}_{sp.ln}"] = f.l
-            df[f"{f.n}_{sn}_{sp.hn}"] = f.h
-            df[f"{f.n}_{sn}_{sdn}, {sds}"] = f.d
+            df[f"{f.n} {sn} [{fmu}]"] = f.m
+            df[f"{f.n} {sn} [{sp.ln}]"] = f.l
+            df[f"{f.n} {sn} [{sp.hn}]"] = f.h
+            df[f"{f.n} {sn} {sdn} {sds}"] = f.d
 
         df.to_csv(fn)  # Write dataframe to file
         return df
@@ -1256,88 +1258,6 @@ class Signal(esbmtkBase):
 
     def __lt__(self, other):  # this is needed for sorting with sorted()
         return self.n < other.n
-
-def plot_object_data(geo, fn, obj) -> None:
-    """collection of commands which will plot and annotate a reservoir or flux
-      object into an existing plot window. 
-      """
-
-    from . import ureg, Q_
-
-    # geo = list with rows and cols
-    # fn  = figure number
-    # yl  = array with y values for the left side
-    # yr  = array with y values for the right side
-    # obj = object handle, i.e., reservoir or flux
-
-    rows = geo[0]
-    cols = geo[1]
-    species = obj.sp
-    model = obj.mo
-    time = model.time + model.ref_time
-
-    # convert data from model units to display units (i.e. the same
-    # units the input data was defined).
-    # time units are the same regardless of object
-    time = (model.time * model.t_unit).to(model.d_unit).magnitude
-
-    # we do not map isotope values
-    yr = obj.d
-
-    # remap concentration & flux values
-    if isinstance(obj, Flux):
-        yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
-        y_label = f"{obj.legend_left} [{obj.plt_units}]"
-    elif isinstance(obj, Reservoir):
-        yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
-        y_label = f"{obj.legend_left} [{obj.plt_units}]"
-    elif isinstance(obj, Signal):
-        # use the same units as the associated flux
-        yl = (obj.c * model.c_unit).to(obj.fo.plt_units).magnitude
-        y_label = f"{obj.n} [{obj.fo.plt_units}]"
-    else:  # sources, sinks, external data should not show up here
-        raise ValueError(f"{obj.n} = {type(obj)}")
-
-    ax1 = plt.subplot(rows, cols, fn, title=obj.n)  # start subplot
-
-    cn = 0
-    col = f"C{cn}"
-    ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col,
-                   label=obj.legend_left)  # plot left y-scale data
-    ax1.set_xlabel(f"[{model.d_unit}]")  # set the x-axis label
-    ax1.set_ylabel(y_label)  # the y labqel
-    ax1.spines['top'].set_visible(False)  # remove unnecessary frame speciess
-
-    cn = cn + 1
-    col = f"C{cn}"
-    ax2 = ax1.twinx()  # create a second y-axis
-    ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col,
-                   label=obj.legend_right)  # plof right y-scale data
-
-    ax2.set_ylabel(obj.ld)  # species object delta label
-    ax2.spines['top'].set_visible(False)  # remove unnecessary frame speciess
-
-    for d in obj.led:  # loop over external data objects if present
-        if isinstance(d.x[0], str):  # if string, something is off
-            raise ValueError("No time axis in external data object {d.name}")
-        if isinstance(d.y[0],
-                      str) is False:  # mass or concentration data is present
-            cn = cn + 1
-            col = f"C{cn}"
-            leg = f"{obj.lm} {d.legend}"
-            ln3 = ax1.scatter(d.x, d.y, color=col, label=leg)
-        if isinstance(d.d[0], str) is False:  # isotope data is present
-            cn = cn + 1
-            col = f"C{cn}"
-            leg = f"{obj.ld} {d.legend}"
-            ln3 = ax2.scatter(d.x, d.d, color=col, label=leg)
-
-    # collect all labels and print them in one legend
-    handler1, label1 = ax1.get_legend_handles_labels()
-    handler2, label2 = ax2.get_legend_handles_labels()
-    legend = ax2.legend(handler1 + handler2, label1 + label2,
-                        loc=0).set_zorder(6)
-    # ax1.legend(frameon=False)
 
 class ExternalData(esbmtkBase):
     """Instances of this class hold external X/Y data which can be associated with 

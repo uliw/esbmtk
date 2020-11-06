@@ -51,7 +51,7 @@ class Carbon(esbmtkBase):
             name="C",  # Element Name
             model=self.model,  # Model handle
             mass_unit="mmol",  # base mass unit
-            li_label="C^{12$S",  # Name of light isotope
+            li_label="C^{12}$S",  # Name of light isotope
             hi_label="C^{13}$S",  # Name of heavy isotope
             d_label="$\delta^{13}$C",  # Name of isotope delta
             d_scale="VPDB",  # Isotope scale. End of plot labels
