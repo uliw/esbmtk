@@ -271,13 +271,13 @@ def plot_object_data(geo, fn, obj) -> None:
     cols = geo[1]
     species = obj.sp
     model = obj.mo
-    time = model.time + model.ref_time
+    time = model.time + model.offset
 
     # convert data from model units to display units (i.e. the same
     # units the input data was defined).
     # time units are the same regardless of object
-    time = (model.time * model.t_unit).to(model.d_unit).magnitude
-
+    time = (time * model.t_unit).to(model.d_unit).magnitude
+    
     # we do not map isotope values
     yr = obj.d
 
