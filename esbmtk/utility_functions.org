@@ -252,13 +252,14 @@ def show_data(self,name,i) -> None:
 
 ** Plotting objects
 
-#+BEGIN_SRC ipython :tangle esbmtk.py
+#+BEGIN_SRC ipython :tangle utility_functions.py
 def plot_object_data(geo, fn, obj) -> None:
     """collection of commands which will plot and annotate a reservoir or flux
       object into an existing plot window. 
       """
 
     from . import ureg, Q_
+    from esbmtk import Flux, Reservoir, Signal
 
     # geo = list with rows and cols
     # fn  = figure number
@@ -283,35 +284,46 @@ def plot_object_data(geo, fn, obj) -> None:
     # remap concentration & flux values
     if isinstance(obj, Flux):
         yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
-        y_label = f"{obj.legend_left} [{obj.plt_units}]"
+        y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
     elif isinstance(obj, Reservoir):
         yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
-        y_label = f"{obj.legend_left} [{obj.plt_units}]"
+        y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
     elif isinstance(obj, Signal):
         # use the same units as the associated flux
         yl = (obj.c * model.c_unit).to(obj.fo.plt_units).magnitude
-        y_label = f"{obj.n} [{obj.fo.plt_units}]"
+        y_label = f"{obj.n} [{obj.fo.plt_units:~P}]"
     else:  # sources, sinks, external data should not show up here
         raise ValueError(f"{obj.n} = {type(obj)}")
 
-    ax1 = plt.subplot(rows, cols, fn, title=obj.n)  # start subplot
+    # start subplot
+    ax1 = plt.subplot(rows, cols, fn, title=obj.n)
 
+    # set color index
     cn = 0
     col = f"C{cn}"
-    ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col,
-                   label=obj.legend_left)  # plot left y-scale data
-    ax1.set_xlabel(f"[{model.d_unit}]")  # set the x-axis label
-    ax1.set_ylabel(y_label)  # the y labqel
-    ax1.spines['top'].set_visible(False)  # remove unnecessary frame speciess
+    # plot left y-scale data
+    ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=obj.legend_left)
 
+    # set labels
+    ax1.set_xlabel(f"[{model.d_unit:~P}]")  # set the x-axis label
+    ax1.set_ylabel(y_label)  # the y label
+    ax1.spines['top'].set_visible(False)  # remove unnecessary frame species
+
+    # set color index
     cn = cn + 1
     col = f"C{cn}"
+
     ax2 = ax1.twinx()  # create a second y-axis
-    ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col,
-                   label=obj.legend_right)  # plof right y-scale data
+
+    # plof right y-scale data
+    ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
 
     ax2.set_ylabel(obj.ld)  # species object delta label
     ax2.spines['top'].set_visible(False)  # remove unnecessary frame speciess
+
+    # set title
+    ax1.set_title(obj.n)
+    plt.rcParams['axes.titlepad'] = 14 # offset title upwards
 
     for d in obj.led:  # loop over external data objects if present
         if isinstance(d.x[0], str):  # if string, something is off
