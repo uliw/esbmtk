@@ -1030,7 +1030,7 @@ class Signal(esbmtkBase):
 
         # provide a list of absolutely required keywords
         self.lrk: List[str] = [
-            "name", "duration", "species", ["shape", "filename"],
+            "name", ["duration", "filename"], "species", ["shape", "filename"],
             ["magnitude", "mass", "filename"]
         ]
 
@@ -1198,22 +1198,39 @@ class Signal(esbmtkBase):
         x = x.to(self.mo.t_unit).magnitude
         y = y.to(self.mo.f_unit).magnitude
 
-        self.st: float = x[0]  # set the start time
-        l : float = int(x[-1] - x[0])  # calculate the length
-        self.si: int = int(round(self.st / self.mo.dt))  # starting index
-        self.ei: int = s + int(round(l / self.mo.dt))  # endf index
+        # the data can contain 1 to n data points (i.e., index
+        # values[0,1,n]) each index value contains a time
+        # coordinate. So the duration is x[-1] - X[0]. Duration/dt
+        # gives us the steps, so we can setup a vector for
+        # interpolation. Insertion off this vector depends on the time
+        # offset defined by the value of x[0], which defines the
+        # insertion indexes self.si self.ei
+        
+        self.st: float  = x[0]    # start time
+        self.et : float = x[-1]   # end times
+        duration = int(round(self.et - self.st))
 
-        self.s_m: [NDArray, Float[64]] = array(
-            self.nf.m[self.si:self.ei])  # create slice of flux vector
-        self.s_d: [NDArray, Float[64]] = array(
-            self.nf.d[self.si:self.ei])  # create slice of delta vector
+        # since everything has been mapped to dt, time equals index
+        self.si: int = int(self.st)  # starting index
+        self.ei: int = int(self.et)  # end index
 
-        xi = arange(0, e - s)  # setup the points at which to interpolate
+        print(f"startindex = {self.si}, end index = {self.ei}")
+        #self.si: int = int(round(self.st / self.mo.dt))  # starting index
+        #self.ei: int = s + int(round(l / self.mo.dt))  # endf index
+        
+        # create slice of flux vector
+        self.s_m: [NDArray, Float[64]] = array(self.nf.m[self.si:self.ei])
+        
+        # create slice of delta vector
+        self.s_d: [NDArray, Float[64]] = array(self.nf.d[self.si:self.ei])
+
+        # setup the points at which to interpolate
+        xi = arange(0, duration)  
         h: [NDArray, Float[64]] = interp(xi, x, y)  # interpolate flux
         dy: [NDArray, Float[64]] = interp(xi, x, d)  # interpolate delta
-        #self.m :float = sum((s_m * h - s_m)) * model.dt  # calculate mass of excursion
-        self.s_m: [NDArray,
-                   Float[64]] = self.s_m + h  # add this to the section
+
+        # add this to the corresponding section off the flux
+        self.s_m: [NDArray, Float[64]] = self.s_m + h  
         self.s_d: [NDArray, Float[64]] = self.s_d + dy  # ditto for delta
         print(f"length off s_m ={len(self.s_m)}")
 
