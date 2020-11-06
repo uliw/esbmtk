@@ -348,6 +348,12 @@ def plot_object_data(geo, fn, obj) -> None:
     handler2, label2 = ax2.get_legend_handles_labels()
     legend = ax2.legend(handler1 + handler2, label1 + label2,
                         loc=0).set_zorder(6)
-    #plt.rcParams["legend.edgecolor"] = '1'
-    # ax1.legend(frameon=False)
+    
+    # Matplotlib will show arbitrarily small differences which can be confusing
+    #yl_min = min(yl)
+    #yl_max = max(yl)
+    #if (yl_max - yl_min) < 0.1:
+        
+     
+    
 #+END_SRC
