@@ -321,9 +321,12 @@ def plot_object_data(geo, fn, obj) -> None:
     ax2.set_ylabel(obj.ld)  # species object delta label
     ax2.spines['top'].set_visible(False)  # remove unnecessary frame speciess
 
-    # set title
+    # adjust display properties for title and legend
     ax1.set_title(obj.n)
     plt.rcParams['axes.titlepad'] = 14 # offset title upwards
+    plt.rcParams["legend.facecolor"] = '0.8' # show a gray background
+    plt.rcParams["legend.edgecolor"] = '0.8' # make frame the same color
+    plt.rcParams["legend.framealpha"] = 0.4  # set transparency
 
     for d in obj.led:  # loop over external data objects if present
         if isinstance(d.x[0], str):  # if string, something is off
@@ -345,5 +348,6 @@ def plot_object_data(geo, fn, obj) -> None:
     handler2, label2 = ax2.get_legend_handles_labels()
     legend = ax2.legend(handler1 + handler2, label1 + label2,
                         loc=0).set_zorder(6)
+    #plt.rcParams["legend.edgecolor"] = '1'
     # ax1.legend(frameon=False)
 #+END_SRC
