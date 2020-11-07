@@ -567,26 +567,25 @@ class Reservoir(esbmtkBase):
         # convert units
         self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
         self.v: Number = self.volume  # reservoir volume
-        
+
         # This should probably be species specific?
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
 
         if "concentration" in kwargs:
             c = Q_(self.concentration)
-            self.plt_units = c.units 
+            self.plt_units = c.units
             self.concentration: Number = c.to(self.mo.c_unit).magnitude
             self.mass: Number = self.concentration * self.volume  # caculate mass
         elif "mass" in kwargs:
-            m =  Q_(self.mass)
-            self.plt_units = m.units 
+            m = Q_(self.mass)
+            self.plt_units = m.units
             self.mass: Number = m.to(self.mo.m_unit).magnitude
             self.concentration = self.mass / self.volume
         else:
             raise ValueError("You need to specify mass or concentration")
 
         # save the unit which was provided by the user for display purposes
-        
-        
+
         self.lof: list[Flux] = []  #  flux references
         self.led: list[ExternalData] = []  # all external data references
         self.lio: dict[str, int] = {}  #  flux name:direction pairs
@@ -600,32 +599,37 @@ class Reservoir(esbmtkBase):
         self.c: [NDArray, Float[64]] = self.m / self.v
         self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
         self.h: [NDArray, Float[64]] = zeros(self.mo.steps)
-        [self.l, self.h] = get_mass(self.m, self.delta,
-                                    self.species.r)  # isotope mass
-        self.d: [NDArray,
-                 Float[64]] = get_delta(self.l, self.h,
-                                        self.sp.r)  # delta of reservoir
-        self.lm: str = f"{self.species.n} [{self.mu}/l]"  # left y-axis label
-        self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis label
+
+        # isotope mass
+        [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
+        # delta of reservoir
+        self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.sp.r)
+        # left y-axis label
+        self.lm: str = f"{self.species.n} [{self.mu}/l]"
+        # right y-axis label
+        self.ld: str = f"{self.species.dn} [{self.species.ds}]"
         self.xl: str = self.mo.xl  # set x-axis lable to model time
 
         self.legend_left = self.species.n
         self.legend_right = self.species.dn
-
         self.mo.lor.append(self)  # add this reservoir to the model
 
     def __call__(self) -> None:  # what to do when called as a function ()
         pass
         return self
 
-    def __getitem__(self, i: int) -> NDArray[np.float64]:  
+    def __getitem__(self, i: int) -> NDArray[np.float64]:
         """ Get flux data by index
+        
         """
 
         return array([self.m[i], self.l[i], self.h[i]])
 
-    def __setitem__(self, i: int,
-                    value: float) -> None:  # howto write data by index
+    def __setitem__(self, i: int, value: float) -> None:
+        """ write data by index
+        
+        """
+
         self.m[i]: float = value[0]
         self.l[i]: float = value[1]
         self.h[i]: float = value[2]
@@ -651,20 +655,21 @@ class Reservoir(esbmtkBase):
             m.describe(self)
 
     def write_data(self) -> None:
+        """ Write model data to CSV file. Each Reservoir gets its own file
+        Files are named as 'Modelname_Reservoirname.csv'
+
         """
-            Write model data to CSV file. Each Reservoir gets its own file
-            Files are named as 'Modelname_Reservoirname.csv'
-            """
+
         # some short hands
         sn = self.sp.n  # species name
         sp = self.sp
         mo = self.sp.mo
-       
+
         smu = f"{mo.m_unit:~P}"
         mtu = f"{mo.t_unit:~P}"
         fmu = f"{mo.f_unit:~P}"
         cmu = f"{mo.c_unit:~P}"
-        
+
         sdn = self.sp.dn  # delta name
         sds = f"[{self.sp.ds}]"  # delta scale
         rn = self.n  # reservoir name
@@ -673,11 +678,11 @@ class Reservoir(esbmtkBase):
 
         # build the dataframe
         df: pd.dataframe = DataFrame()
-        df[f"{self.n} {sn} [{smu}]"] = self.m    # mass
-        df[f"{self.n} {sn} [{cmu}]"] = self.c    # concentration
-        df[f"{self.n} {sp.ln}"] = self.l         # light isotope
-        df[f"{self.n} {sp.hn} "] = self.h        # heavy isotope
-        df[f"{self.n} {sdn} {sds}"] = self.d   # delta value
+        df[f"{self.n} {sn} [{smu}]"] = self.m  # mass
+        df[f"{self.n} {sn} [{cmu}]"] = self.c  # concentration
+        df[f"{self.n} {sp.ln}"] = self.l  # light isotope
+        df[f"{self.n} {sp.hn} "] = self.h  # heavy isotope
+        df[f"{self.n} {sdn} {sds}"] = self.d  # delta value
 
         for f in self.lof:  # Assemble the headers and data for the reservoir fluxes
             df[f"{f.n} {sn} [{fmu}]"] = f.m
@@ -689,9 +694,9 @@ class Reservoir(esbmtkBase):
         return df
 
     def __plot__(self, i: int, ptype: int) -> None:
-        """ 
-            Plot data from reservoirs and fluxes into a multiplot window
-            """
+        """ Plot data from reservoirs and fluxes into a multiplot window
+        
+        """
 
         model = self.sp.mo
         species = self.sp
@@ -720,10 +725,10 @@ class Reservoir(esbmtkBase):
         fig.subplots_adjust(top=0.88)
         fig.savefig(filename)
 
-    def __plot_reservoirs__(self, i: int, ptype :int) -> None:
-        """ 
-            Plot only the  reservoirs data, and ignore the fluxes
-            """
+    def __plot_reservoirs__(self, i: int, ptype: int) -> None:
+        """ Plot only the  reservoirs data, and ignore the fluxes
+
+        """
 
         model = self.sp.mo
         species = self.sp
@@ -731,10 +736,10 @@ class Reservoir(esbmtkBase):
         time = model.time + model.offset  # get the model time
         xl = f"Time [{model.bu}]"
 
-        size :list = [5, 3]
-        geo :list = [1, 1]
+        size: list = [5, 3]
+        geo: list = [1, 1]
         filename = f"{model.n}_{self.n}.pdf"
-        fn :int = 1  # counter for the figure number
+        fn: int = 1  # counter for the figure number
 
         fig = plt.figure(i)  # Initialize a plot window
         fig.set_size_inches(size)
@@ -748,17 +753,24 @@ class Reservoir(esbmtkBase):
 
     def __lt__(self, other) -> None:
         """ This is needed for sorting with sorted()
-            """
+
+        """
+
         return self.n < other.n
 
     def describe(self, i=0) -> None:
-        """ Show an overview of the object properties"""
+        """ Show an overview of the object properties
+
+        """
+
         list_fluxes(self, self.n, i)
         print("\n")
         show_data(self, self.n, i)
 
     def __list_processes__(self) -> None:
-        """ List all processes associated with this reservoir"""
+        """ List all processes associated with this reservoir
+
+        """
         for p in self.lop:
             print(f"{p.n}")
 #+END_SRC
@@ -833,7 +845,7 @@ class Flux(esbmtkBase):
                  ] = zeros(self.model.steps) + fluxrate  # add the flux
         self.l: [NDArray, Float[64]] = zeros(self.model.steps)
         self.h: [NDArray, Float[64]] = zeros(self.model.steps)
-        [self.l, self.h] = get_mass(self.m, self.delta, self.species.r)
+        [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
         if self.delta == 0:
             self.d: [NDArray, Float[64]] = zeros(self.model.steps)
         else:
@@ -841,24 +853,27 @@ class Flux(esbmtkBase):
                                                      self.sp.r)  # update delta
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
-        self.legend_left = self.species.n
-        self.legend_right = self.species.dn
+        self.legend_left :str = self.species.n
+        self.legend_right :str = self.species.dn
         
         self.xl: str = self.model.xl  # se x-axis label equal to model time
         self.lop: list[Process] = []  # list of processes
         self.led: list[ExternalData] = []  # list of ext data
-        #self.t = 0        # time dependent flux = 1, otherwise 0
         self.source: str = ""  # Name of reservoir which acts as flux source
         self.sink: str = ""  # Name of reservoir which acts as flux sink
 
-    def __getitem__(
-            self,
-            i: int) -> NDArray[np.float64]:  # howto get data by index [i]
+    def __getitem__(self, i: int) -> NDArray[np.float64]:
+        """ Get data by index
+        
+        """
 
         return array([self.m[i], self.l[i], self.h[i]])
 
-    def __setitem__(self, i: int,
-                    value: float) -> None:  # howto write data by index
+    def __setitem__(self, i: int, value: [NDArray, float]) -> None:
+        """ Write data by index
+        
+        """
+        
         self.m[i] = value[0]
         self.l[i] = value[1]
         self.h[i] = value[2]
@@ -882,7 +897,10 @@ class Flux(esbmtkBase):
                 p.describe()
 
     def describe(self, i: int) -> None:
-        """ Show an overview of the object properties"""
+        """ Show an overview of the object properties
+
+        """
+        
         show_data(self, self.n, i)
 
     def __lt__(self, other):  # this is needed for sorting with sorted()
@@ -1109,7 +1127,7 @@ class Signal(esbmtkBase):
         self.data = self.__init_signal_data__()
         self.data.n: str = self.name + "_data"  # update the name of the signal data
         # update isotope values
-        self.data.li, self.data.hi = get_mass(self.data.m, self.data.d,
+        self.data.li, self.data.hi = get_imass(self.data.m, self.data.d,
                                               self.sp.r)
 
     def __init_signal_data__(self) -> None:
@@ -1281,7 +1299,7 @@ class Signal(esbmtkBase):
         ns.data.l: [NDArray, Float[64]]
         ns.data.h: [NDArray, Float[64]]
 
-        [ns.data.l, ns.data.h] = get_mass(ns.data.m, ns.data.d, ns.data.sp.r)
+        [ns.data.l, ns.data.h] = get_imass(ns.data.m, ns.data.d, ns.data.sp.r)
 
         ns.n: str = self.n + "_and_" + other.n
         print(f"adding {self.n} to {other.n}, returning {ns.n}")
@@ -1340,7 +1358,7 @@ class Signal(esbmtkBase):
         # and recalculate li and hi
         ns.data.l: [NDArray, Float[64]]
         ns.data.h: [NDArray, Float[64]]
-        [ns.data.l, ns.data.h] = get_mass(ns.data.m, ns.data.d, ns.data.sp.r)
+        [ns.data.l, ns.data.h] = get_imass(ns.data.m, ns.data.d, ns.data.sp.r)
         return ns
 
     def __register__(self, flux) -> None:
