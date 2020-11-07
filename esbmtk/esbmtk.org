@@ -114,6 +114,7 @@ class Model(esbmtkBase):
 
     from typing import Dict
     from . import ureg, Q_
+
     def __init__(self, **kwargs: Dict[any, any]) -> None:
         """ initialize object"""
 
@@ -132,7 +133,9 @@ class Model(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list[str] = ["name", "stop", "timestep", "mass_unit", "volume_unit"]
+        self.lrk: list[str] = [
+            "name", "stop", "timestep", "mass_unit", "volume_unit"
+        ]
 
         # list of default values if none provided
         self.lod: Dict[str, any] = {
@@ -164,22 +167,22 @@ class Model(esbmtkBase):
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
-        self.t_unit = Q_(self.timestep).units # the time unit
-        self.d_unit = Q_(self.stop).units # display time units
-        self.m_unit = Q_(self.mass_unit) # the mass unit
-        self.v_unit = Q_(self.volume_unit) # the volume unit
-        self.c_unit = self.m_unit / self.v_unit # the concentration unit (mass/volume)
-        self.f_unit = self.m_unit / self.t_unit # the flux unit (mass/time)
+        self.t_unit = Q_(self.timestep).units  # the time unit
+        self.d_unit = Q_(self.stop).units  # display time units
+        self.m_unit = Q_(self.mass_unit)  # the mass unit
+        self.v_unit = Q_(self.volume_unit)  # the volume unit
+        self.c_unit = self.m_unit / self.v_unit  # the concentration unit (mass/volume)
+        self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
         ureg.define('Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups')
 
         # legacy variable names
-        self.start =  Q_(self.start).to(self.t_unit).magnitude
-        self.stop =  Q_(self.stop).to(self.t_unit).magnitude
+        self.start = Q_(self.start).to(self.t_unit).magnitude
+        self.stop = Q_(self.stop).to(self.t_unit).magnitude
         self.offset = Q_(self.offset).to(self.t_unit).magnitude
 
         self.bu = self.t_unit
         self.base_unit = self.t_unit
-        self.dt =  Q_(self.timestep).magnitude
+        self.dt = Q_(self.timestep).magnitude
         self.tu = str(self.bu)  # needs to be a string
         self.n = self.name
         self.mo = self.name
@@ -188,7 +191,7 @@ class Model(esbmtkBase):
         self.length = int(abs(self.stop - self.start))
         self.steps = int(abs(round(self.length / self.dt)))
         self.time = ((arange(self.steps) * self.dt) + self.start)
-        
+
         if "element" in self.kwargs:
             if isinstance(self.kwargs["element"], list):
                 element_list = self.kwargs["element"]
@@ -209,12 +212,10 @@ class Model(esbmtkBase):
         
         """
 
-
         logging.info("---------- Model description start ----------")
         logging.info(f"Model Name = {self.n}")
         logging.info(f"Model time [{self.bu}], dt = {self.dt}")
-        logging.info(
-            f"start = {self.start}, stop={self.stop} [{self.tu}]")
+        logging.info(f"start = {self.start}, stop={self.stop} [{self.tu}]")
         logging.info(f"Steps = {self.steps}\n")
         logging.info(f"  Species(s) in {self.n}:")
 
@@ -224,7 +225,6 @@ class Model(esbmtkBase):
 
             logging.info("---------- Model description end ------------\n")
 
-            
     def list_species(self) -> None:
         """ List all species known to the model
         
@@ -243,27 +243,44 @@ class Model(esbmtkBase):
         for r in self.lor:
             r.write_data()
 
-    def plot_data(self) -> None:
+    def plot_data(self, **kwargs :dict) -> None:
         """ 
         Loop over all reservoirs and either plot the data into a 
         window, or save it to a pdf
+
+        This method has the optional keyword ptype which can be
+
+        both = plot both, concentration and isotope data
+        iso  = plot isotope data alone
+        concentration = plot only concentration data.
+
         """
+
+        ptype: int = get_ptype(kwargs)
 
         i = 0
         for r in self.lor:
-            r.__plot__(i)
+            r.__plot__(i,ptype)
             i = i + 1
 
         plt.show()  # create the plot windows
 
-    def plot_reservoirs(self) -> None:
+    def plot_reservoirs(self, **kwargs: dict) -> None:
         """Loop over all reservoirs and either plot the data into a window,
             or save it to a pdf
+
+        This method has the optional keyword ptype which can be
+
+        both = plot both, concentration and isotope data
+        iso  = plot isotope data alone
+        concentration = plot only concentration data.
         """
 
-        i = 0
+        ptype: int = get_ptype(kwargs)
+
+        i: int = 0
         for r in self.lor:
-            r.__plot_reservoirs__(i)
+            r.__plot_reservoirs__(i, ptype)
             i = i + 1
 
         plt.show()  # create the plot windows
@@ -273,7 +290,6 @@ class Model(esbmtkBase):
         fluxes for each reservoir
         """
 
-       
         # this has nothing todo with self.time below!
         start: float = process_time()
         new: [NDArray, Float] = zeros(3) + 1
@@ -284,7 +300,7 @@ class Model(esbmtkBase):
         print(f"Execution took {duration} seconds")
 
     # some mumbo jumbbo to support numba optimization. Currently not working though
-    @staticmethod # this provides significnt speedups
+    @staticmethod  # this provides significnt speedups
     def execute(new: [NDArray, Float], time: [NDArray, Float],
                 lor: list) -> None:
         """ Moved this code into a separate function to enable numba optimization
@@ -672,7 +688,7 @@ class Reservoir(esbmtkBase):
         df.to_csv(fn)  # Write dataframe to file
         return df
 
-    def __plot__(self, i: int) -> None:
+    def __plot__(self, i: int, ptype: int) -> None:
         """ 
             Plot data from reservoirs and fluxes into a multiplot window
             """
@@ -692,19 +708,19 @@ class Reservoir(esbmtkBase):
         fig.set_size_inches(size)
 
         # plot reservoir data
-        plot_object_data(geo, fn, self)
+        plot_object_data(geo, fn, self, ptype)
 
         # plot the fluxes assoiated with this reservoir
         for f in sorted(self.lof):  # plot flux data
             fn = fn + 1
-            plot_object_data(geo, fn, f)
+            plot_object_data(geo, fn, f, ptype)
 
         fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
         fig.tight_layout()
         fig.subplots_adjust(top=0.88)
         fig.savefig(filename)
 
-    def __plot_reservoirs__(self, i: int) -> None:
+    def __plot_reservoirs__(self, i: int, ptype :int) -> None:
         """ 
             Plot only the  reservoirs data, and ignore the fluxes
             """
@@ -715,16 +731,16 @@ class Reservoir(esbmtkBase):
         time = model.time + model.offset  # get the model time
         xl = f"Time [{model.bu}]"
 
-        size = [5, 3]
-        geo = [1, 1]
+        size :list = [5, 3]
+        geo :list = [1, 1]
         filename = f"{model.n}_{self.n}.pdf"
-        fn = 1  # counter for the figure number
+        fn :int = 1  # counter for the figure number
 
         fig = plt.figure(i)  # Initialize a plot window
         fig.set_size_inches(size)
 
         # plt.legend()ot reservoir data
-        plot_object_data(geo, fn, self.c, self.d, self, time)
+        plot_object_data(geo, fn, self, ptype)
 
         fig.tight_layout()
         # fig.subplots_adjust(top=0.88)
@@ -786,7 +802,7 @@ class Flux(esbmtkBase):
             "name": str,
             "species": Species,
             "delta": Number,
-            "rate": str,
+            "rate": (str,Q_),
         }
 
         # provide a list of absolutely required keywords
@@ -872,9 +888,18 @@ class Flux(esbmtkBase):
     def __lt__(self, other):  # this is needed for sorting with sorted()
         return self.n < other.n
 
-    def plot(self) -> None:
-        """Plot the flux data """
+    def plot(self, **kwargs :dict) -> None:
+        """Plot the flux data:
+        This method has the optional keyword ptype which can be
 
+        both = plot both, concentration and isotope data
+        iso  = plot isotope data alone
+        concentration = plot only concentration data.
+
+        """
+
+        ptype: int = get_ptype(kwargs)
+        
         fig, ax1 = plt.subplots()
         fig.set_size_inches(5, 4)  # Set figure size in inches
         fig.set_dpi(100)  # Set resolution in dots per inch
