@@ -46,36 +46,36 @@ set_printoptions(precision=4)
 
 *** Get isotope masses from delta
 #+BEGIN_SRC ipython :exports yes :noweb yes :tangle utility_functions.py
-def get_mass(m: float, d: float, r: float) -> [float, float]:
+def get_imass(m: float, d: float, r: float) -> [float, float]:
     """
     Calculate the isotope masses from bulk mass and delta value.
     Arguments are m = mass, d= delta value, r = abundance ratio 
     species
     
     """
-    
-    li: float = (1000 * m) / ((d + 1000) * r + 1000)
-    hi: float = ((d * m + 1000 * m) * r) / ((d + 1000) * r + 1000)
+
+    li: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+    hi: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
     return [li, hi]
 
 
-def set_mass(m: float, d: float, r: float) -> [float, float, float]:
+def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
     """
     Calculate the isotope masses from bulk mass and delta value.
     Arguments are m = mass, d= delta value, r = abundance ratio 
     species. Unlike get_mass, this function returns the full array
     
     """
-    
-    l: float = (1000 * m) / ((d + 1000) * r + 1000)
-    h: float = ((d * m + 1000 * m) * r) / ((d + 1000) * r + 1000)
 
-    return array([m, l, h])
+    l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+    h: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
+
+    return array([m, l, h, d])
 #+END_SRC
 
 *** Get delta from isotope masses
 #+BEGIN_SRC ipython :tangle utility_functions.py
-def get_delta(l, h, r):
+def get_delta(l: float, h :float, r :float)-> float:
     """
       Calculate the delta from the mass of light and heavy isotope
       Arguments are l and h which are the masses of the light and
@@ -83,7 +83,7 @@ def get_delta(l, h, r):
       element
     """
    
-    d = 1000 * (h / l - r) / r
+    d :float = 1000 * (h / l - r) / r
     return d
 #+END_SRC
 
@@ -183,28 +183,29 @@ def get_plot_layout(obj):
 
 *** Calculate the sum of a list of fluxes
 #+BEGIN_SRC ipython :tangle utility_functions.py
-def sum_fluxes(flux_list,reservoir,i):
+def sum_fluxes(flux_list: list, reservoir, i: int):
     """This function takes a list of fluxes and calculates the sum for each
     flux element.  It will return a an array with [mass, li, hi] The
     summation is a bit more involved than I like, but I issues with summing
     small values, so here we doing is using fsum. For this step, we need to
     look up the reservoir specific flux direction which is stored as
     key-value pair in the reservoir.lio dictionary (flux name: direction)
+
     """
-    
-    ms  = 0
-    ls  = 0
-    hs  = 0
+
+    ms: float = 0
+    ls: float = 0
+    hs: float = 0
+    direction: int = 0
 
     for f in flux_list:  # do sum of fluxes in this reservoir
         direction = reservoir.lio[f.n]
-        ms  = ms + f.m[i] * direction # current flux and direction
-        ls  = ls + f.l[i] * direction # current flux and direction
-        hs  = hs + f.h[i] * direction # current flux and direction
+        ms = ms + f.m[i] * direction  # current flux and direction
+        ls = ls + f.l[i] * direction  # current flux and direction
+        hs = hs + f.h[i] * direction  # current flux and direction
 
     # sum up the each array component individually
-    new = array([ms, ls, hs])
-    return new
+    return array([ms, ls, hs])
 #+END_SRC
 
 *** Show list of fluxes in a reservoir
