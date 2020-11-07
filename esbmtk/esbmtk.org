@@ -243,7 +243,7 @@ class Model(esbmtkBase):
         for r in self.lor:
             r.write_data()
 
-    def plot_data(self, **kwargs :dict) -> None:
+    def plot_data(self, **kwargs: dict) -> None:
         """ 
         Loop over all reservoirs and either plot the data into a 
         window, or save it to a pdf
@@ -260,7 +260,7 @@ class Model(esbmtkBase):
 
         i = 0
         for r in self.lor:
-            r.__plot__(i,ptype)
+            r.__plot__(i, ptype)
             i = i + 1
 
         plt.show()  # create the plot windows
@@ -318,19 +318,18 @@ class Model(esbmtkBase):
                 flux_list = r.lof
 
                 new[0] = new[1] = new[2] = 0
-                for f in flux_list:  # do sum of fluxes in this reservoir
+
+                # do sum of fluxes in this reservoir
+                for f in flux_list:
                     direction = r.lio[f.n]
-                    new[0] = new[
-                        0] + f.m[i] * direction  # current flux and direction
-                    new[1] = new[
-                        1] + f.l[i] * direction  # current flux and direction
-                    new[2] = new[
-                        2] + f.h[i] * direction  # current flux and direction
+                    new[0] = new[0] + f.m[i] * direction
+                    new[1] = new[1] + f.l[i] * direction
+                    new[2] = new[2] + f.h[i] * direction
 
                 #new = array([ms, ls, hs])
-                new = new * r.mo.dt  # get flux / timestep
+                new = new * r.mo.dt  # multiply with timestep
                 new = new + r[i - 1]  # add to data from last time step
-                new = new * (new > 0)  # set negative values to zero
+                #n ew = new * (new > 0)  # set negative values to zero
                 r[i] = new  # update reservoir data
 
             i = i + 1
@@ -776,7 +775,6 @@ class Reservoir(esbmtkBase):
 #+END_SRC
 
 
-
 ** Defining the Flux object
 #+name: flux
 #+BEGIN_SRC ipython :exports yes :noweb yes :tangle esbmtk.py
@@ -846,6 +844,7 @@ class Flux(esbmtkBase):
         self.l: [NDArray, Float[64]] = zeros(self.model.steps)
         self.h: [NDArray, Float[64]] = zeros(self.model.steps)
         [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
+        
         if self.delta == 0:
             self.d: [NDArray, Float[64]] = zeros(self.model.steps)
         else:
@@ -867,7 +866,7 @@ class Flux(esbmtkBase):
         
         """
 
-        return array([self.m[i], self.l[i], self.h[i]])
+        return array([self.m[i], self.l[i], self.h[i], self.d[i]])
 
     def __setitem__(self, i: int, value: [NDArray, float]) -> None:
         """ Write data by index
@@ -877,11 +876,22 @@ class Flux(esbmtkBase):
         self.m[i] = value[0]
         self.l[i] = value[1]
         self.h[i] = value[2]
-        self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
+        self.d[i] = value[3]
+        #self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
 
     def __call__(self) -> None:  # what to do when called as a function ()
         pass
         return self
+
+    def __add__(self, other):
+        """ adding two fluxes works for the masses, but not for delta
+
+        """
+        
+        self.m = self.m + other.m
+        self.l = self.l + other.l
+        self.h = self.h + other.h
+        self.d = get_delta(self.l, self.h,self.sp.r)
 
     def log_description(self, reservoir) -> None:
 
