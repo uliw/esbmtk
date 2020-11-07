@@ -157,7 +157,7 @@ class Connect(esbmtkBase):
             "source": (Source, Reservoir),
             "sink": (Sink, Reservoir),
             "delta": Number,
-            "rate": (str, Number),
+            "rate": (str, Number, Q_),
             "pl": list,
             "alpha": Number,
             "species": Species,
@@ -723,7 +723,7 @@ class AddSignal(Process):
         # add signal delta to flux delta
         self.f.d[i] = self.f.d[i] + self.lt.d[i]
 
-        self.f.l[i], self.f.h[i] = get_mass(self.f.m[i], self.f.d[i], r.sp.r)
+        self.f.l[i], self.f.h[i] = get_imass(self.f.m[i], self.f.d[i], r.sp.r)
         # signals may have zero mass, but may have a delta offset. Thus, we do not know
         # the masses for the light and heavy isotope. As such we have to calculate the masses
         # after we add the signal to a flux
@@ -776,7 +776,7 @@ class PassiveFlux(Process):
           fm = abs(self.rm0 -rm) / self.m.dt
 
           # set isotope mass according to the reservoir delta
-          self.f[i] = set_mass(fm,reservoir.d[i-1],reservoir.sp.r)
+          self.f[i] = get_flux_data(fm,reservoir.d[i-1],reservoir.sp.r)
 #+END_SRC
 
 #+RESULTS:
@@ -836,7 +836,7 @@ class PassiveFlux_fixed_delta(Process):
                newflux = newflux + f.m[i-1] * reservoir.lio[f.n]
 
           # set isotope mass according to keyword value
-          self.f[i] = array(set_mass(newflux, self.delta, r))
+          self.f[i] = array(get_flux_data(newflux, self.delta, r))
 #+END_SRC
 
 *** Fixed flux with variable delta
@@ -869,7 +869,7 @@ class VarDeltaOut(Process):
                "name": str,
                "reservoir" : Reservoir,
                "flux": Flux,
-               "rate": [str,Q_],
+               "rate": (str,Q_),
                }
           self.lrk.extend(["reservoir", "rate"]) # new required keywords
           self.__initerrormessages__()
@@ -888,7 +888,7 @@ class VarDeltaOut(Process):
           called by the model execute method"""
 
           # set flux according to keyword value
-          self.f[i] = set_mass(self.rate,reservoir.d[i-1], reservoir.sp.r)
+          self.f[i] = get_flux_data(self.rate,reservoir.d[i-1], reservoir.sp.r)
 #+END_SRC
 
 *** Scale a flux and flux splitting
@@ -923,8 +923,9 @@ class ScaleFlux(Process):
           delta according to the reservoir (or the flux?)
           """
         self.f[i] = self.ref[i] * self.scale
-        self.f[i] = set_mass(self.f.m[i], reservoir.d[i - 1], reservoir.sp.r)
+        self.f[i] = get_flux_data(self.f.m[i], reservoir.d[i - 1], reservoir.sp.r)
 #+END_SRC
+
 
 *** Combine two elements into a new species (Chemical reaction)
 At present, true chemical reactions are not supported. However, if we
@@ -984,7 +985,7 @@ class Fractionation(Process):
         
           self.f.d[i] = self.f.d[i] + self.alpha # set the new delta
           # recalculate masses based on new delta
-          self.f.l[i], self.f.h[i] = get_mass(self.f.m[i],
+          self.f.l[i], self.f.h[i] = get_imass(self.f.m[i],
                                               self.f.d[i],
                                               self.f.sp.r)
           return
@@ -1076,7 +1077,7 @@ class ScaleRelativeToNormalizedConcentration(RateConstant):
           """
         scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.k_value
         scale = scale * (scale >= 0) # prevent negative fluxes.
-        self.f[i] = self.f[i] + self.f[i] * scale
+        self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
 
 class ScaleRelativeToConcentration(RateConstant):
     """This process scales the flux as a function of the upstream
@@ -1105,7 +1106,8 @@ class ScaleRelativeToConcentration(RateConstant):
           """
         #print(f"k= {self.k_value}")
         scale: float = reservoir.c[i - 1] * self.k_value
-        self.f[i] =  self.f[i] * scale
+        
+        self.f[i] =  self.f[i] * array([scale, scale, scale, 1])
 
 class ScaleRelativeToMass(RateConstant):
     """This process scales the flux as a function of the upstream
@@ -1132,7 +1134,7 @@ class ScaleRelativeToMass(RateConstant):
           this will be called by the Model.run() method
           """
         scale: float = reservoir.m[i - 1] * self.k_value
-        self.f[i] = self.f[i] * scale
+        self.f[i] = self.f[i] * array([scale, scale, scale, 1])
 
 
 class ScaleRelativeToNormalizedMass(RateConstant):
@@ -1164,8 +1166,19 @@ class ScaleRelativeToNormalizedMass(RateConstant):
           """
         scale: float = (reservoir.m[i - 1] / self.ref_value - 1) * self.k_value
         scale = scale * (scale >= 0) # prevent negative fluxes.
-        self.f[i] = self.f[i] + self.f[i] * scale
+        self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
 #+END_SRC
+
+#+RESULTS:
+:results:
+# Out [2]: 
+# output
+  File "<ipython-input-2-dea00fba26b6>", line 142
+    self.f[i] = self.f[i] *
+                            ^
+SyntaxError: invalid syntax
+
+:end:
 
 
 *** Monod type limiters
