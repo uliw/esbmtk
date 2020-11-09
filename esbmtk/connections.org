@@ -169,6 +169,7 @@ class Connect(esbmtkBase):
             "k_concentration": (str, Number, Q_),
             "k_mass": (str, Number, Q_),
             "ref_value": (str, Number, Q_),
+            "ref_reservoirs": list,
             "k_value": Number,
             "a_value": Number,
             "b_value": Number,
@@ -279,20 +280,20 @@ class Connect(esbmtkBase):
 
         # register flux with its reservoirs
         if isinstance(self.r1, Source):
-            self.r2.lio[
-                self.fh.n] = self.influx  # add the flux name direction/pair
-            self.r2.lof.append(self.fh)  # add the handle to the list of fluxes
-            self.__register_species__(
-                self.r2,
-                self.r1.sp)  # register flux and element in the reservoir.
+            # add the flux name direction/pair
+            self.r2.lio[self.fh.n] = self.influx
+            # add the handle to the list of fluxes
+            self.r2.lof.append(self.fh)
+            # register flux and element in the reservoir.
+            self.__register_species__(self.r2, self.r1.sp)
 
         elif isinstance(self.r2, Sink):
-            self.r1.lio[
-                self.fh.n] = self.outflux  # add the flux name direction/pair
-            self.r1.lof.append(self.fh)  # add flux to the upstream reservoir
-            self.__register_species__(
-                self.r1,
-                self.r2.sp)  # register flux and element in the reservoir.
+            # add the flux name direction/pair
+            self.r1.lio[self.fh.n] = self.outflux
+            # add flux to the upstream reservoir
+            self.r1.lof.append(self.fh)
+            # register flux and element in the reservoir.
+            self.__register_species__(self.r1, self.r2.sp)
 
         elif isinstance(self.r1, Sink):
             raise NameError(
@@ -303,12 +304,14 @@ class Connect(esbmtkBase):
             raise NameError("The Source must be specified as first argument")
 
         else:  # this is a regular connection
-            self.r1.lio[
-                self.fh.n] = self.outflux  # add the flux name direction/pair
-            self.r2.lio[
-                self.fh.n] = self.influx  # add the flux name direction/pair`
-            self.r1.lof.append(self.fh)  # add flux to the upstream reservoir
-            self.r2.lof.append(self.fh)  # add flux to the downstream reservoir
+            # add the flux name direction/pair
+            self.r1.lio[self.fh.n] = self.outflux
+            # add the flux name direction/pair
+            self.r2.lio[self.fh.n] = self.influx
+            # add flux to the upstream reservoir
+            self.r1.lof.append(self.fh)
+            # add flux to the downstream reservoir
+            self.r2.lof.append(self.fh)
             self.__register_species__(self.r1, self.r1.sp)
             self.__register_species__(self.r2, self.r2.sp)
 
@@ -384,7 +387,7 @@ class Connect(esbmtkBase):
             self.__alpha__()
 
         # set a rate dependent process
-        if "k_concentration" in self.kwargs or "k_mass" in self.kwargs:
+        if "k_concentration" in self.kwargs or "k_mass" in self.kwargs or "ref_reservoirs" in self.kwargs:
             self.__rateconstant__()  # flux depends on a rate constant
 
         # monod type rate process
@@ -472,21 +475,22 @@ class Connect(esbmtkBase):
         # if unit - convert into qauntity
         # if quantity convert into number
         if "k_concentration" in self.kwargs:
-            if isinstance(self.k_concentration,str):
+            if isinstance(self.k_concentration, str):
                 self.k_concentration = Q_(self.k_concentration)
 
         if "k_mass" in self.kwargs:
-            if isinstance(self.k_mass,str):
+            if isinstance(self.k_mass, str):
                 self.k_mass = Q_(self.k_mass)
 
         if "ref_value" in self.kwargs:
-            if isinstance(self.ref_value,str):
+            if isinstance(self.ref_value, str):
                 self.ref_value = Q_(self.ref_value)
-        
+
         if "k_concentration" in self.kwargs and "ref_value" in self.kwargs:
             # if necessary, map units
             if isinstance(self.k_concentration, Q_):
-                self.k_concentration = self.k_concentration.to(self.mo.c_unit).magnitude
+                self.k_concentration = self.k_concentration.to(
+                    self.mo.c_unit).magnitude
             if isinstance(self.ref_value, Q_):
                 self.ref_value = self.ref_value.to(self.mo.c_unit).magnitude
 
@@ -523,12 +527,21 @@ class Connect(esbmtkBase):
         elif "k_concentration" in self.kwargs and not "ref_value" in self.kwargs:
             # if necessary, map units
             if isinstance(self.k_concentration, Q_):
-                self.k_concentration = self.k_concentration.to(self.mo.c_unit).magnitude
+                self.k_concentration = self.k_concentration.to(
+                    self.mo.c_unit).magnitude
 
             ph = ScaleRelativeToConcentration(name=self.pn + "_PkC",
                                               reservoir=self.r,
                                               flux=self.fh,
                                               k_value=self.k_concentration)
+        elif "k_value" in self.kwargs and "ref_reservoirs" in self.kwargs:
+            # if necessary, map units
+
+            ph = ScaleRelative2otherReservoir(name=self.pn + "_PkC",
+                                              reservoir=self.r,
+                                              ref_reservoirs=self.ref_reservoirs,
+                                              flux=self.fh,
+                                              k_value=self.k_value)
 
         elif "a_value" in self.kwargs and "b_value" in self.kwargs:
             ph = Monod(name=self.pn + "_PMonod",
@@ -1002,12 +1015,11 @@ class RateConstant(Process):
     ScaleRelativeToConcentration
     
     """
-
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this Process
 
         """
-        
+
         from . import ureg, Q_
 
         # Note that self.lkk values also need to be added to the lkk
@@ -1019,11 +1031,11 @@ class RateConstant(Process):
         # update the allowed keywords
         self.lkk = {
             "k_value": Number,
-            "ref_value": (Number,str, Q_),
+            "ref_value": (Number, str, Q_),
             "name": str,
-            "reservoir": Reservoir,
+            "reservoir": (Reservoir, list),
             "flux": Flux,
-            
+            "ref_reservoirs": list,
         }
 
         # new required keywords
@@ -1038,6 +1050,7 @@ class RateConstant(Process):
         self.bem.update({
             "k_value": "a number",
             "reservoir": "Reservoir handle",
+            "ref_reservoirs": "List of Reservoir handle(s)",
             "ref_value": "a number",
             "name": "a string value",
             "flux": "a flux handle",
@@ -1076,8 +1089,9 @@ class ScaleRelativeToNormalizedConcentration(RateConstant):
           this will be called by the Model.run() method
           """
         scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.k_value
-        scale = scale * (scale >= 0) # prevent negative fluxes.
+        scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
+
 
 class ScaleRelativeToConcentration(RateConstant):
     """This process scales the flux as a function of the upstream
@@ -1106,8 +1120,9 @@ class ScaleRelativeToConcentration(RateConstant):
           """
         #print(f"k= {self.k_value}")
         scale: float = reservoir.c[i - 1] * self.k_value
-        
-        self.f[i] =  self.f[i] * array([scale, scale, scale, 1])
+
+        self.f[i] = self.f[i] * array([scale, scale, scale, 1])
+
 
 class ScaleRelativeToMass(RateConstant):
     """This process scales the flux as a function of the upstream
@@ -1165,20 +1180,44 @@ class ScaleRelativeToNormalizedMass(RateConstant):
           this will be called by the Model.run() method
           """
         scale: float = (reservoir.m[i - 1] / self.ref_value - 1) * self.k_value
-        scale = scale * (scale >= 0) # prevent negative fluxes.
+        scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
+
+
+class ScaleRelative2otherReservoir(RateConstant):
+    """This process scales the flux as a function one or more reservoirs
+     constant which describes the
+     strength of relation between the reservoir mass(ese) and
+     the flux scaling
+
+     F = M1 * M2 * k
+
+     where Mi denotes the mass in one  or more reservoirs, k is a
+     constant. This process is typically called by the connector
+     instance. However you can instantiate it manually as
+    
+     ScaleRelativeToMass(
+                       name = "Name",
+                       reservoir = upstream_reservoir_handle,
+                       ref_reservoirs = [r1, r2]
+                       flux = flux handle,
+                       k_value =  1000,
+    )
+
+    """
+    def __call__(self, reservoir :Reservoir, i: int) -> None:
+        """
+        this will be called by the Model.run() method
+
+        """
+
+        c: float = 0
+        for r in self.ref_reservoirs:
+            c = c * r.c[i - 1]
+
+        scale: float = c * self.k_value
+        self.f[i] = self.f[i] * array([scale, scale, scale, 1])
 #+END_SRC
-
-#+RESULTS:
-:results:
-# Out [2]: 
-# output
-  File "<ipython-input-2-dea00fba26b6>", line 142
-    self.f[i] = self.f[i] *
-                            ^
-SyntaxError: invalid syntax
-
-:end:
 
 
 *** Monod type limiters
