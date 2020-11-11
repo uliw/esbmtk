@@ -1,3 +1,4 @@
+
 * Utility functions
 Some functions which need to be present outside classes.
 
@@ -33,6 +34,7 @@ from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
 from copy import deepcopy, copy
 from time import process_time
+#from numba import jit, njit
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -71,6 +73,26 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
     h: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
 
     return array([m, l, h, d])
+
+def sum_fluxes_a(flux, dirs: list)-> [NDArray, float]:
+
+    new = np.zeros(3)
+    direction = dirs
+    new[0] = new[0] + flux.m * direction
+    new[1] = new[1] + flux.l * direction
+    new[2] = new[2] + flux.h * direction
+
+    return array(new)
+
+def sum_fluxes_n(new: [NDArray, float], flux_list: list, dir_l: Dict[str,int], i: int)-> [NDArray, float]:
+
+    for f in flux_list:
+        direction = dir_l[f.n]
+        new[0] +=  f.m[i] * direction
+        new[1] +=  f.l[i] * direction
+        new[2] +=  f.h[i] * direction
+  
+    return new
 #+END_SRC
 
 *** Get delta from isotope masses
@@ -154,8 +176,13 @@ def get_plot_layout(obj):
       contains the list of fluxes in the reservoir
 
       """
-      
-      noo = len(obj.lof) + 1  # number of objects in this reservoir
+
+      noo = 1
+      for f in obj.lof:
+            if f.plot == "yes":
+                  noo += 1
+            
+      # noo = len(obj.lof) + 1  # number of objects in this reservoir
       logging.debug(f"{noo} subplots for {obj.n} required")
 
       if noo < 2:
@@ -292,7 +319,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
 
     first_axis: bool = False
     second_axis: bool = False
-
+    
     rows = geo[0]
     cols = geo[1]
     species = obj.sp
@@ -369,6 +396,8 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     plt.rcParams["legend.framealpha"] = 0.4  # set transparency
 
     for d in obj.led:  # loop over external data objects if present
+       
+        
         if isinstance(d.x[0], str):  # if string, something is off
             raise ValueError("No time axis in external data object {d.name}")
         if isinstance(d.y[0],
