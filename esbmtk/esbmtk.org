@@ -720,8 +720,9 @@ class Reservoir(esbmtkBase):
 
         # plot the fluxes assoiated with this reservoir
         for f in sorted(self.lof):  # plot flux data
-            fn = fn + 1
-            plot_object_data(geo, fn, f, ptype)
+            if f.plot == "yes":
+                fn = fn + 1
+                plot_object_data(geo, fn, f, ptype)
 
         fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
         fig.tight_layout()
@@ -817,17 +818,18 @@ class Flux(esbmtkBase):
             "species": Species,
             "delta": Number,
             "rate": (str,Q_),
+            "plot": str,
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["name", "species", "rate"]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {'delta': 0}
+        self.lod: Dict[any, any] = {'delta': 0, "plot": "yes"}
 
         # initialize instance
         self.__initerrormessages__()
-        self.bem.update({"rate": "a string"})
+        self.bem.update({"rate": "a string", "plot": "a string"})
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # legacy names

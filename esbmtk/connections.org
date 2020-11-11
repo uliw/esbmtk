@@ -128,6 +128,7 @@ class Connect(esbmtkBase):
            type = optional
 	   pl = [list]) process list. optional
            id = optional identifier
+           plot = "yes/no" # defaults to yes
 
     Currently reckonized flux properties: delta, rate, alpha, species, k_value, k_mass, k_concentration, ref_value,
     """
@@ -173,6 +174,7 @@ class Connect(esbmtkBase):
             "k_value": Number,
             "a_value": Number,
             "b_value": Number,
+            "plot": str,
         }
 
         n = kwargs["source"].n + "_" + kwargs[
@@ -183,7 +185,7 @@ class Connect(esbmtkBase):
         self.lrk: list = ["name", "source", "sink"]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {"id": ""}
+        self.lod: Dict[any, any] = {"id": "", "plot": "yes"}
 
         # validate and initialize instance variables
         self.__initerrormessages__()
@@ -197,6 +199,7 @@ class Connect(esbmtkBase):
             "b_value": "a number",
             "name": "a string",
             "id": "a string",
+            "plot" : "a string",
         })
 
         self.__validateandregister__(kwargs)
@@ -276,6 +279,7 @@ class Connect(esbmtkBase):
             species=self.sp,  # Species handle
             delta=d,  # delta value of flux
             rate=r,  # flux value
+            plot=self.plot # display this flux?
         )
 
         # register flux with its reservoirs
