@@ -1056,9 +1056,18 @@ class RateConstant(Process):
             "flux": "a flux handle",
         })
 
+        if "ref_value" in kwargs:
+            # convert into base units if necessary
+            if isinstance(kwargs["ref_value"],str):
+                rv = Q_(kwargs["ref_value"])
+                kwargs["ref_value"].to(self.mo.c_unit).magnitude
+                print(f"ref_value = {kwargs['ref_value']}")
+                        
         # initialize keyword values
         self.__validateandregister__(kwargs)
         self.__postinit__()  # do some housekeeping
+
+        
 
 
 class ScaleRelativeToNormalizedConcentration(RateConstant):
@@ -1089,7 +1098,7 @@ class ScaleRelativeToNormalizedConcentration(RateConstant):
           this will be called by the Model.run() method
           """
         scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.k_value
-        scale = scale * (scale >= 0)  # prevent negative fluxes.
+        # scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
 
 
@@ -1211,7 +1220,7 @@ class ScaleRelative2otherReservoir(RateConstant):
 
         """
 
-        c: float = 0
+        c: float = 1
         for r in self.ref_reservoirs:
             c = c * r.c[i - 1]
 
