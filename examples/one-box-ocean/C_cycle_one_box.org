@@ -29,6 +29,18 @@ activate a code cell with mouse click and hit shift+enter). Code/Text
 cells can be edited which allows you to change model parameters and
 play with the code.
 
+
+* Install the ESBMTK libraries
+
+Please execute the following code
+#+BEGIN_SRC ipython
+# Install a pip package in the current Jupyter kernel
+import sys
+!{sys.executable} -m pip install esbmtk
+#+END_SRC
+
+
+
 * A worked example
 
 Note that this example is not mean to be scientifically
