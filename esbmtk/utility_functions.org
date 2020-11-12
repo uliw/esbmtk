@@ -61,6 +61,7 @@ def get_imass(m: float, d: float, r: float) -> [float, float]:
     return [li, hi]
 
 
+
 def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
     """
     Calculate the isotope masses from bulk mass and delta value.
