@@ -169,6 +169,13 @@ class Model(esbmtkBase):
                     Sulfur(model=self, name=self.mo + "_Sulfur")
                 else:
                     raise ValueError(f"{e} not implemented yet")
+        warranty = (
+            f"\n ESBMTK  Copyright (C) 2020  Ulrich G.Wortmann"
+            f"This program comes with ABSOLUTELY NO WARRANTY;"
+            f"for details see the LICENSE file"
+            f"This is free software, and you are welcome to redistribute it"
+            f"under certain conditions; See the LICENSE file for details.\n")
+        print(warranty)
 
     def describe(self) -> None:
         """ Describe Basic Model Parameters and log them
@@ -258,14 +265,13 @@ class Model(esbmtkBase):
         new: [NDArray, Float] = zeros(4)
 
         # put direction dictionary into a list
-        for r in self.lor: # loop over reservoirs
-            r.lodir =[]
-            for f in r.lof: # loop over fluxes
+        for r in self.lor:  # loop over reservoirs
+            r.lodir = []
+            for f in r.lof:  # loop over fluxes
                 a = r.lio[f.n]
                 r.lodir.append(a)
 
         i = self.execute(new, self.time, self.lor)
-        
 
         duration: float = process_time() - start
         print(f"Execution took {duration} seconds")
@@ -276,7 +282,7 @@ class Model(esbmtkBase):
         """ Moved this code into a separate function to enable numba optimization
         """
         # from functools import reduce
-              
+
         i = 1  # some processes refer to the previous time step
         for t in time[0:-1]:  # loop over the time vector except the first
             # we first need to calculate all fluxes
@@ -286,17 +292,19 @@ class Model(esbmtkBase):
 
             # and then update all reservoirs
             for r in lor:  # loop over all reservoirs
-                flux_list :List[str] = r.lof
-                direction_list :List[int] = r.lodir
+                flux_list: List[str] = r.lof
+                direction_list: List[int] = r.lodir
                 new[0] = new[1] = new[2] = new[3] = 0
-                j :int = 0
+                j: int = 0
 
                 for f in flux_list:
-                   # another option is to keep influx and outflux list and do the summation independently 
-                   new += f[i] * direction_list[j]
-                   j += 1
+                    # another option is to keep influx and outflux list and do the summation independently
+                    new += f[i] * direction_list[j]
+                    j += 1
 
-                r[i] = r[i - 1] + new[0:3]  * r.mo.dt  # add to data from last time step 
+                r[i] = r[
+                    i -
+                    1] + new[0:3] * r.mo.dt  # add to data from last time step
                 #n ew = new * (new > 0)  # set negative values to zero
 
             i = i + 1

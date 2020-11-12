@@ -32,7 +32,9 @@ play with the code.
 
 * Install the ESBMTK libraries
 
-Please execute the following code
+In order to install the esbmtk library, please execute the following
+code. You only need to do this once. The library will remain installed
+as long as this account is not deleted.
 #+BEGIN_SRC ipython
 # Install a pip package in the current Jupyter kernel
 import sys

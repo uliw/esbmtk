@@ -65,6 +65,7 @@ class esbmtkBase():
         self.__registerkeys__()
 
         # register instance name in global name space
+        self.reg_time = time.monotonic()
         setattr(builtins, self.name, self)
 
     def __validateinput__(self, kwargs: Dict[str, any]) -> None:
@@ -232,8 +233,12 @@ class esbmtkBase():
         """
         
         m: str = ""
-        
-        for k, v in self.provided_kwargs.items():
-            if not isinstance({k}, esbmtkBase):
-                m = m + f"{k} = {v}\n"
+
+        # suppress output during object initialization 
+        tdiff = time.monotonic() -self.reg_time
+        if tdiff > 1:
+            for k, v in self.provided_kwargs.items():
+                if not isinstance({k}, esbmtkBase):
+                    m = m + f"{k} = {v}\n"
+                    
         return m

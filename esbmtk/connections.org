@@ -24,8 +24,6 @@ A collection of classes which define connections and fluxes
 """
 #+END_SRC
 
-
-
 * Global Imports
 #+BEGIN_SRC ipython :tangle connections.py
 # from pint import UnitRegistry
@@ -273,7 +271,6 @@ class Connect(esbmtkBase):
         # derive flux unit from species obbject
         funit = self.sp.mu + "/" + str(self.sp.mo.bu)  # xxx
 
-        print(f"r = {r}")
         self.fh = Flux(
             name=n,  # flux name
             species=self.sp,  # Species handle
@@ -337,7 +334,6 @@ class Connect(esbmtkBase):
         p_copy = copy(self.pl)
         for p in p_copy:
             if isinstance(p, Signal):
-                print(f"removing Signal {p.n}")
                 self.pl.remove(p)
                 if p.ty == "addition":
                     # create AddSignal Process object
@@ -346,14 +342,13 @@ class Connect(esbmtkBase):
                                   flux=self.fh,
                                   lt=p.data)
                     self.pl.append(n)
-                    print(f"Adding new process {n.n}")
                 else:
                     raise ValueError(f"Signal type {p.ty} is not defined")
 
         # nwo we can register everythig on pl
         for p in self.pl:
-            print(f"Registering Process {p.n}")
-            print(f"with reservoir {self.r.n} and flux {self.fh.n}")
+            # print(f"Registering Process {p.n}")
+            # print(f"with reservoir {self.r.n} and flux {self.fh.n}")
             p.register(self.r, self.fh)
 
     def __set_process_type__(self) -> None:
@@ -1065,7 +1060,6 @@ class RateConstant(Process):
             if isinstance(kwargs["ref_value"],str):
                 rv = Q_(kwargs["ref_value"])
                 kwargs["ref_value"].to(self.mo.c_unit).magnitude
-                print(f"ref_value = {kwargs['ref_value']}")
                         
         # initialize keyword values
         self.__validateandregister__(kwargs)
