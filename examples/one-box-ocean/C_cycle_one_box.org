@@ -34,11 +34,16 @@ play with the code.
 
 In order to install the esbmtk library, please execute the following
 code. You only need to do this once. The library will remain installed
-as long as this account is not deleted.
+as long as this account is not deleted. This command will generate
+quite a bit of output but there should be no error messages. 
 #+BEGIN_SRC ipython
 # Install a pip package in the current Jupyter kernel
 import sys
+# installl esbmtk in your jupyter account
 !{sys.executable} -m pip install esbmtk
+
+# update esbmtk if necessary
+# !{sys.executable} -m pip install --upgrade esbmtk
 #+END_SRC
 
 

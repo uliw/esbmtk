@@ -24,6 +24,7 @@ from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
 from copy import deepcopy, copy
 from time import process_time
+#from numba import jit, njit
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -34,33 +35,54 @@ import time
 import builtins
 set_printoptions(precision=4)
 
-def get_mass(m: float, d: float, r: float) -> [float, float]:
+def get_imass(m: float, d: float, r: float) -> [float, float]:
     """
     Calculate the isotope masses from bulk mass and delta value.
     Arguments are m = mass, d= delta value, r = abundance ratio 
     species
     
     """
-    
-    li: float = (1000 * m) / ((d + 1000) * r + 1000)
-    hi: float = ((d * m + 1000 * m) * r) / ((d + 1000) * r + 1000)
+
+    li: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+    hi: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
     return [li, hi]
 
 
-def set_mass(m: float, d: float, r: float) -> [float, float, float]:
+
+def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
     """
     Calculate the isotope masses from bulk mass and delta value.
     Arguments are m = mass, d= delta value, r = abundance ratio 
     species. Unlike get_mass, this function returns the full array
     
     """
-    
-    l: float = (1000 * m) / ((d + 1000) * r + 1000)
-    h: float = ((d * m + 1000 * m) * r) / ((d + 1000) * r + 1000)
 
-    return array([m, l, h])
+    l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+    h: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
 
-def get_delta(l, h, r):
+    return array([m, l, h, d])
+
+def sum_fluxes_a(flux, dirs: list)-> [NDArray, float]:
+
+    new = np.zeros(3)
+    direction = dirs
+    new[0] = new[0] + flux.m * direction
+    new[1] = new[1] + flux.l * direction
+    new[2] = new[2] + flux.h * direction
+
+    return array(new)
+
+def sum_fluxes_n(new: [NDArray, float], flux_list: list, dir_l: Dict[str,int], i: int)-> [NDArray, float]:
+
+    for f in flux_list:
+        direction = dir_l[f.n]
+        new[0] +=  f.m[i] * direction
+        new[1] +=  f.l[i] * direction
+        new[2] +=  f.h[i] * direction
+  
+    return new
+
+def get_delta(l: float, h :float, r :float)-> float:
     """
       Calculate the delta from the mass of light and heavy isotope
       Arguments are l and h which are the masses of the light and
@@ -68,7 +90,7 @@ def get_delta(l, h, r):
       element
     """
    
-    d = 1000 * (h / l - r) / r
+    d :float = 1000 * (h / l - r) / r
     return d
 
 def add_to (l, e):
@@ -130,8 +152,13 @@ def get_plot_layout(obj):
       contains the list of fluxes in the reservoir
 
       """
-      
-      noo = len(obj.lof) + 1  # number of objects in this reservoir
+
+      noo = 1
+      for f in obj.lof:
+            if f.plot == "yes":
+                  noo += 1
+            
+      # noo = len(obj.lof) + 1  # number of objects in this reservoir
       logging.debug(f"{noo} subplots for {obj.n} required")
 
       if noo < 2:
@@ -156,28 +183,29 @@ def get_plot_layout(obj):
 
       return size, geo
 
-def sum_fluxes(flux_list,reservoir,i):
+def sum_fluxes(flux_list: list, reservoir, i: int):
     """This function takes a list of fluxes and calculates the sum for each
     flux element.  It will return a an array with [mass, li, hi] The
     summation is a bit more involved than I like, but I issues with summing
     small values, so here we doing is using fsum. For this step, we need to
     look up the reservoir specific flux direction which is stored as
     key-value pair in the reservoir.lio dictionary (flux name: direction)
+
     """
-    
-    ms  = 0
-    ls  = 0
-    hs  = 0
+
+    ms: float = 0
+    ls: float = 0
+    hs: float = 0
+    direction: int = 0
 
     for f in flux_list:  # do sum of fluxes in this reservoir
         direction = reservoir.lio[f.n]
-        ms  = ms + f.m[i] * direction # current flux and direction
-        ls  = ls + f.l[i] * direction # current flux and direction
-        hs  = hs + f.h[i] * direction # current flux and direction
+        ms = ms + f.m[i] * direction  # current flux and direction
+        ls = ls + f.l[i] * direction  # current flux and direction
+        hs = hs + f.h[i] * direction  # current flux and direction
 
     # sum up the each array component individually
-    new = array([ms, ls, hs])
-    return new
+    return array([ms, ls, hs])
 
 def list_fluxes(self,name,i) -> None:
             """
@@ -214,7 +242,27 @@ def show_data(self,name,i) -> None:
     
     print(".......................")
 
-def plot_object_data(geo, fn, obj) -> None:
+def get_ptype(kwargs: dict) -> int:
+    """
+    Set plot type variable
+    
+    """
+
+    ptype: int = 0
+    if "ptype" in kwargs:
+        if kwargs["ptype"] == "both":
+            ptype = 0
+        elif kwargs["ptype"] == "iso":
+            ptype = 1
+        elif kwargs["ptype"] == "concentration":
+            ptype = 2
+        else:
+            raise ValueError("ptype must be one of 'both/iso/concentration'")
+
+    return ptype
+
+
+def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     """collection of commands which will plot and annotate a reservoir or flux
       object into an existing plot window. 
       """
@@ -228,6 +276,9 @@ def plot_object_data(geo, fn, obj) -> None:
     # yr  = array with y values for the right side
     # obj = object handle, i.e., reservoir or flux
 
+    first_axis: bool = False
+    second_axis: bool = False
+    
     rows = geo[0]
     cols = geo[1]
     species = obj.sp
@@ -238,7 +289,7 @@ def plot_object_data(geo, fn, obj) -> None:
     # units the input data was defined).
     # time units are the same regardless of object
     time = (time * model.t_unit).to(model.d_unit).magnitude
-    
+
     # we do not map isotope values
     yr = obj.d
 
@@ -256,40 +307,56 @@ def plot_object_data(geo, fn, obj) -> None:
     else:  # sources, sinks, external data should not show up here
         raise ValueError(f"{obj.n} = {type(obj)}")
 
+    # decide what to plot
+    if ptype == 0:
+        first_axis = True
+        second_axis = True
+    elif ptype == 1:
+        first_axis = False
+        second_axis = True
+    elif ptype == 2:
+        first_axis = True
+        second_axis = False
+
     # start subplot
     ax1 = plt.subplot(rows, cols, fn, title=obj.n)
 
     # set color index
     cn = 0
     col = f"C{cn}"
-    # plot left y-scale data
-    ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=obj.legend_left)
 
-    # set labels
-    ax1.set_xlabel(f"[{model.d_unit:~P}]")  # set the x-axis label
-    ax1.set_ylabel(y_label)  # the y label
-    ax1.spines['top'].set_visible(False)  # remove unnecessary frame species
+    if first_axis:
+        # plot left y-scale data
+        ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=obj.legend_left)
+        # set labels
+        ax1.set_xlabel(f"[{model.d_unit:~P}]")  
+        ax1.set_ylabel(y_label)  
+        # remove unnecessary frame species
+        ax1.spines['top'].set_visible(False)  
 
     # set color index
     cn = cn + 1
     col = f"C{cn}"
 
-    ax2 = ax1.twinx()  # create a second y-axis
+    if second_axis:
+        ax2 = ax1.twinx()  # create a second y-axis
 
-    # plof right y-scale data
-    ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
+        # plof right y-scale data
+        ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
 
-    ax2.set_ylabel(obj.ld)  # species object delta label
-    ax2.spines['top'].set_visible(False)  # remove unnecessary frame speciess
+        ax2.set_ylabel(obj.ld)  # species object delta label
+        ax2.spines['top'].set_visible(False)  # remove unnecessary frame speciess
 
     # adjust display properties for title and legend
     ax1.set_title(obj.n)
-    plt.rcParams['axes.titlepad'] = 14 # offset title upwards
-    plt.rcParams["legend.facecolor"] = '0.8' # show a gray background
-    plt.rcParams["legend.edgecolor"] = '0.8' # make frame the same color
+    plt.rcParams['axes.titlepad'] = 14  # offset title upwards
+    plt.rcParams["legend.facecolor"] = '0.8'  # show a gray background
+    plt.rcParams["legend.edgecolor"] = '0.8'  # make frame the same color
     plt.rcParams["legend.framealpha"] = 0.4  # set transparency
 
     for d in obj.led:  # loop over external data objects if present
+       
+        
         if isinstance(d.x[0], str):  # if string, something is off
             raise ValueError("No time axis in external data object {d.name}")
         if isinstance(d.y[0],
@@ -305,11 +372,21 @@ def plot_object_data(geo, fn, obj) -> None:
             ln3 = ax2.scatter(d.x, d.d, color=col, label=leg)
 
     # collect all labels and print them in one legend
-    handler1, label1 = ax1.get_legend_handles_labels()
-    handler2, label2 = ax2.get_legend_handles_labels()
-    legend = ax2.legend(handler1 + handler2, label1 + label2,
-                        loc=0).set_zorder(6)
+    if first_axis:
+        handler1, label1 = ax1.get_legend_handles_labels()
     
+    if second_axis:
+        handler2, label2 = ax2.get_legend_handles_labels()
+    
+    if first_axis and second_axis:
+        legend = ax2.legend(handler1 + handler2, label1 + label2,
+                            loc=0).set_zorder(6)
+    #elif first_axis:
+    #    legend = ax1.legend(handler1 + label1, loc=0).set_zorder(6)
+    #elif second_axis:
+    #   legend = ax2.legend(handler2 + label2, loc=0).set_zorder(6)
+        
+
     # Matplotlib will show arbitrarily small differences which can be confusing
     #yl_min = min(yl)
     #yl_max = max(yl)
