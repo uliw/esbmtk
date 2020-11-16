@@ -59,7 +59,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 * Documentation
 
 The documentation is available in org format or in pdf format. 
-See the documentation folder, [[https://github.com/uliw/esbmtk/blob/main/Documentation/ESBMTK-Quick-Start_Guide.org][specifically the quickstart guide]].
+See the documentation folder, [[https://github.com/uliw/esbmtk/blob/master/Documentation/ESBMTK-Quick-Start_Guide.org][specifically the quickstart guide]].
 
 At present, I also provide the following example cases (as py-files
 and in jupyter notebook format)
@@ -68,8 +68,8 @@ and in jupyter notebook format)
     and read an external csv file to force the model.
   - 
 #  - The same model as be before but now to demonstrate how to add
-    pyramid shaped signal, and how to use the rate constant process to
-    adjust concentration dependent flux rates [[https://github.com/uliw/esbmtk/blob/main/Examples/Using%20a%20rate%20constant/rate_example.org][concentration dependent flux rates]]. 
+ #   pyramid shaped signal, and how to use the rate constant process to
+ #   adjust concentration dependent flux rates . [[https://github.com/uliw/esbmtk/blob/master/Examples/Using%20a%20rate%20constant/rate_example.org][concentration dependent flux rates]]
 
 # Last but not least, I added a short [[https://github.com/uliw/esbmtk/blob/master/Documentation/Adding_your_own_Processes.org][guide how to add your own process
 # classes to the ESBMTK]] 

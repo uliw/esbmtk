@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org8c3bc1b)
-2.  [News](#org1984bf7)
-3.  [Contributing](#org4994994)
-4.  [Installation](#orgb910984)
-5.  [Documentation](#org100bfad)
-6.  [Todo](#org9d9dca2)
-7.  [License](#org2fec58f)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org8459e67)
+2.  [News](#org3d03696)
+3.  [Contributing](#orgb476a5d)
+4.  [Installation](#orgfafabf4)
+5.  [Documentation](#org4642bd0)
+6.  [Todo](#orgc917b2e)
+7.  [License](#org27820a0)
 
 
-<a id="org8c3bc1b"></a>
+<a id="org8459e67"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,7 +30,7 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="org1984bf7"></a>
+<a id="org3d03696"></a>
 
 # News
 
@@ -48,7 +48,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org4994994"></a>
+<a id="orgb476a5d"></a>
 
 # Contributing
 
@@ -58,7 +58,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orgb910984"></a>
+<a id="orgfafabf4"></a>
 
 # Installation
 
@@ -79,12 +79,12 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org100bfad"></a>
+<a id="org4642bd0"></a>
 
 # Documentation
 
 The documentation is available in org format or in pdf format. 
-See the documentation folder, [specifically the quickstart guide](https://github.com/uliw/esbmtk/blob/main/Documentation/ESBMTK-Quick-Start_Guide.org).
+See the documentation folder, [specifically the quickstart guide](https://github.com/uliw/esbmtk/blob/master/Documentation/ESBMTK-Quick-Start_Guide.org).
 
 At present, I also provide the following example cases (as py-files
 and in jupyter notebook format)
@@ -93,11 +93,8 @@ and in jupyter notebook format)
     and read an external csv file to force the model.
 -   
 
-pyramid shaped signal, and how to use the rate constant process to
-adjust concentration dependent flux rates [concentration dependent flux rates](https://github.com/uliw/esbmtk/blob/main/Examples/Using%20a%20rate%20constant/rate_example.org). 
 
-
-<a id="org9d9dca2"></a>
+<a id="orgc917b2e"></a>
 
 # Todo
 
@@ -106,7 +103,7 @@ adjust concentration dependent flux rates [concentration dependent flux rates](h
 -   do more testing
 
 
-<a id="org2fec58f"></a>
+<a id="org27820a0"></a>
 
 # License
 
