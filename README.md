@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org8d723a0)
-2.  [News](#org924b06f)
-3.  [Contributing](#org5e2eec3)
-4.  [Installation](#org8bf6060)
-5.  [Documentation](#org08a4231)
-6.  [Todo](#org28aa14e)
-7.  [License](#orgee4bfcf)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org8c3bc1b)
+2.  [News](#org1984bf7)
+3.  [Contributing](#org4994994)
+4.  [Installation](#orgb910984)
+5.  [Documentation](#org100bfad)
+6.  [Todo](#org9d9dca2)
+7.  [License](#org2fec58f)
 
 
-<a id="org8d723a0"></a>
+<a id="org8c3bc1b"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,7 +30,7 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="org924b06f"></a>
+<a id="org1984bf7"></a>
 
 # News
 
@@ -48,7 +48,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org5e2eec3"></a>
+<a id="org4994994"></a>
 
 # Contributing
 
@@ -58,7 +58,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org8bf6060"></a>
+<a id="orgb910984"></a>
 
 # Installation
 
@@ -79,7 +79,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org08a4231"></a>
+<a id="org100bfad"></a>
 
 # Documentation
 
@@ -94,10 +94,10 @@ and in jupyter notebook format)
 -   
 
 pyramid shaped signal, and how to use the rate constant process to
-adjust concentration dependent flux rates[concentration dependent flux rates](https://github.com/uliw/esbmtk/blob/main/Examples/Using%20a%20rate%20constant/rate_example.org). 
+adjust concentration dependent flux rates [concentration dependent flux rates](https://github.com/uliw/esbmtk/blob/main/Examples/Using%20a%20rate%20constant/rate_example.org). 
 
 
-<a id="org28aa14e"></a>
+<a id="org9d9dca2"></a>
 
 # Todo
 
@@ -106,7 +106,7 @@ adjust concentration dependent flux rates[concentration dependent flux rates](ht
 -   do more testing
 
 
-<a id="orgee4bfcf"></a>
+<a id="org2fec58f"></a>
 
 # License
 

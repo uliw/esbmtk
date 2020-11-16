@@ -69,9 +69,9 @@ and in jupyter notebook format)
   - 
 #  - The same model as be before but now to demonstrate how to add
     pyramid shaped signal, and how to use the rate constant process to
-    adjust concentration dependent flux rates[[https://github.com/uliw/esbmtk/blob/main/Examples/Using%20a%20rate%20constant/rate_example.org][concentration dependent flux rates]]. 
+    adjust concentration dependent flux rates [[https://github.com/uliw/esbmtk/blob/main/Examples/Using%20a%20rate%20constant/rate_example.org][concentration dependent flux rates]]. 
 
-# Last but not least, I added a short [[https://github.com/uliw/esbmtk/blob/main/Documentation/Adding_your_own_Processes.org][guide how to add your own process
+# Last but not least, I added a short [[https://github.com/uliw/esbmtk/blob/master/Documentation/Adding_your_own_Processes.org][guide how to add your own process
 # classes to the ESBMTK]] 
 
 * Todo
