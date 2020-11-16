@@ -47,6 +47,8 @@ def get_imass(m: float, d: float, r: float) -> [float, float]:
     hi: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
     return [li, hi]
 
+
+
 def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
     """
     Calculate the isotope masses from bulk mass and delta value.
@@ -58,10 +60,9 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
     l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
     h: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
 
-    return np.array([m, l, h])
+    return array([m, l, h, d])
 
-
-def sum_fluxes_a(flux, dirs: list) -> [NDArray, float]:
+def sum_fluxes_a(flux, dirs: list)-> [NDArray, float]:
 
     new = np.zeros(3)
     direction = dirs
@@ -71,21 +72,14 @@ def sum_fluxes_a(flux, dirs: list) -> [NDArray, float]:
 
     return array(new)
 
+def sum_fluxes_n(new: [NDArray, float], flux_list: list, dir_l: Dict[str,int], i: int)-> [NDArray, float]:
 
-def sum_fluxes_n(new: [NDArray, float], flux_list: list, dir_l: Dict[str, int],
-                 i: int) -> [NDArray, float]:
-
-    for j, f in enumerate(flux_list):
-        # another option is to keep influx and outflux list and do the summation independently
-        new += f[i] * direction_list[j]
-
-    # xxxx
-    #for f in flux_list:
-    #    direction = dir_l[f.n]
-    #    new[0] +=  f.m[i] * direction
-    #    new[1] +=  f.l[i] * direction
-    #    new[2] +=  f.h[i] * direction
-
+    for f in flux_list:
+        direction = dir_l[f.n]
+        new[0] +=  f.m[i] * direction
+        new[1] +=  f.l[i] * direction
+        new[2] +=  f.h[i] * direction
+  
     return new
 
 def get_delta(l: float, h :float, r :float)-> float:

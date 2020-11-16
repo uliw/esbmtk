@@ -44,7 +44,6 @@ import time
 import builtins
 set_printoptions(precision=4)
 from .utility_functions import *
-from .base_class import esbmtkBase
 from .esbmtk import *
 #+END_SRC
 
@@ -89,9 +88,6 @@ The init method of the connector obbjects performs sanity checks e.g.:
 *** A connector object
 
 #+BEGIN_SRC ipython :tangle connections.py
-from .base_class import esbmtkBase
-
-
 class Connect(esbmtkBase):
     """Name:
 

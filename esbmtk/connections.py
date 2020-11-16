@@ -615,12 +615,10 @@ lookup table
           which we use as a lookup-table
 
           """
-          raise NotImplementedError()
-          #self.dat[:][i] = 
-          #self.m[i] :float  = self.lt.m[i]
-          #self.d[i] :float  = self.lt.d[i]
-          #self.l[i] :float = self.lt.l[i]
-          #self.h[i] :float = self.lt.h[i]
+          self.m[i] :float  = self.lt.m[i]
+          self.d[i] :float  = self.lt.d[i]
+          self.l[i] :float = self.lt.l[i]
+          self.h[i] :float = self.lt.h[i]
 
 class AddSignal(Process):
     """This process adds values to the current flux based on the values provided by the sifnal object.
@@ -703,10 +701,10 @@ class PassiveFlux(Process):
 
           fm :float = 0  # the new flux mass 
           for f in self.fws:  # do sum of fluxes in this reservoir
-               fm += f.m[i] * self.direction[f.n]
+               fm = fm + f.m[i] * self.direction
           
           # get new reservoir mass
-          rm :float = reservoir.m[i-1] + (fm * self.m.dt)
+          rm :float = reservoir.m[i-1] + (fm * self.m.dt *  self.direction)
 
           # get the difference to the desired mass
           # fm = (rm - self.rm0) / self.m.dt  * reservoir.lio[self.f.n]
@@ -816,8 +814,8 @@ class VarDeltaOut(Process):
           apply_flux_modifier method of a reservoir which itself is
           called by the model execute method"""
 
+          # set flux according to keyword value
           self.f[i] = get_flux_data(self.rate,reservoir.d[i-1], reservoir.sp.r)
-          self.f.d[i] = reservoir.d[i-1]
 
 class ScaleFlux(Process):
     """This process scales the mass of a flux (m,l,h) relative to another
@@ -990,7 +988,7 @@ class ScaleRelativeToNormalizedConcentration(RateConstant):
           """
         scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.k_value
         # scale = scale * (scale >= 0)  # prevent negative fluxes.
-        self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale])
+        self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
 
 
 class ScaleRelativeToConcentration(RateConstant):
@@ -1021,7 +1019,7 @@ class ScaleRelativeToConcentration(RateConstant):
         #print(f"k= {self.k_value}")
         scale: float = reservoir.c[i - 1] * self.k_value
 
-        self.f[i] = self.f[i] * array([scale, scale, scale])
+        self.f[i] = self.f[i] * array([scale, scale, scale, 1])
 
 
 class ScaleRelativeToMass(RateConstant):
@@ -1049,7 +1047,7 @@ class ScaleRelativeToMass(RateConstant):
           this will be called by the Model.run() method
           """
         scale: float = reservoir.m[i - 1] * self.k_value
-        self.f[i] = self.f[i] * array([scale, scale, scale])
+        self.f[i] = self.f[i] * array([scale, scale, scale, 1])
 
 
 class ScaleRelativeToNormalizedMass(RateConstant):
@@ -1081,7 +1079,7 @@ class ScaleRelativeToNormalizedMass(RateConstant):
           """
         scale: float = (reservoir.m[i - 1] / self.ref_value - 1) * self.k_value
         scale = scale * (scale >= 0)  # prevent negative fluxes.
-        self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale])
+        self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
 
 
 class ScaleRelative2otherReservoir(RateConstant):
@@ -1116,7 +1114,7 @@ class ScaleRelative2otherReservoir(RateConstant):
             c = c * r.c[i - 1]
 
         scale: float = c * self.k_value
-        self.f[i] = self.f[i] * array([scale, scale, scale])
+        self.f[i] = self.f[i] * array([scale, scale, scale, 1])
 
 class Monod(Process):
     """This process scales the flux as a function of the upstream

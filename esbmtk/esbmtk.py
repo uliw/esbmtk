@@ -34,7 +34,6 @@ import time
 import builtins
 set_printoptions(precision=4)
 # from .utility_functions import *
-# from .base_class import esbmtkBase
 
 class esbmtkBase():
     """The esbmtk base class template. This class handles keyword
@@ -470,7 +469,7 @@ class Model(esbmtkBase):
 
         # this has nothing todo with self.time below!
         start: float = process_time()
-        new: [NDArray, Float] = np.zeros(3)
+        new: [NDArray, Float] = zeros(4)
 
         # put direction dictionary into a list
         for r in self.lor:  # loop over reservoirs
@@ -502,8 +501,7 @@ class Model(esbmtkBase):
             for r in lor:  # loop over all reservoirs
                 flux_list: List[str] = r.lof
                 direction_list: List[int] = r.lodir
-                
-                new[0] = new[1] = new[2] = 0
+                new[0] = new[1] = new[2] = new[3] = 0
                 j: int = 0
 
                 for f in flux_list:
@@ -511,16 +509,12 @@ class Model(esbmtkBase):
                     new += f[i] * direction_list[j]
                     j += 1
 
-                # add to data from last time step
-                r[i] = r[i-1] + new * r.mo.dt
-                r.d[i] =  get_delta(r.l[i], r.h[i], r.sp.r)
-                r.c[i] = r.m[i]/r.v
-                # update delta in reservoir
+                r[i] = r[
+                    i -
+                    1] + new[0:3] * r.mo.dt  # add to data from last time step
                 #n ew = new * (new > 0)  # set negative values to zero
 
             i = i + 1
-            
-            #update  flux delta
 
     def __step_process__(self, r, i) -> None:
         """ For debugging. Provide reservoir and step number,
@@ -763,25 +757,14 @@ class Reservoir(esbmtkBase):
         self.loe: list[Element] = []  # list of elements in thiis reservoir
         self.doe: Dict[Species, Flux] = {}  # species flux pairs
 
-        # initialize data fields. We keep d,c separate since they
-        # cannot be added, and must be updated separately
-        columns: int = 3  # [m,l,h]
-        
-        self.dat: [NDArray, Float[64]] = np.zeros(shape=(self.species.mo.steps,
-                                                         columns))
-
-        # set up shorthands as views
-        self.m = self.dat.view()[:, 0]
-        self.h = self.dat.view()[:, 1]
-        self.l = self.dat.view()[:, 2]
-
         # initialize mass vector
-        self.m += self.mass
+        self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
         # initialize concentration vector
-        self.c = self.m / self.v
+        self.c: [NDArray, Float[64]] = self.m / self.v
+        self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
+        self.h: [NDArray, Float[64]] = zeros(self.mo.steps)
 
-        # initialize isotope mass data
-        # xxx [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
+        # isotope mass
         [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
         # delta of reservoir
         self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.sp.r)
@@ -800,23 +783,20 @@ class Reservoir(esbmtkBase):
         return self
 
     def __getitem__(self, i: int) -> NDArray[np.float64]:
-        """ Get reservoir data by index
+        """ Get flux data by index
         
         """
 
-        # return array([self.m[i], self.l[i], self.h[i]], self.d[i])
-        return self.dat[:][i]
+        return array([self.m[i], self.l[i], self.h[i]], self.d[i])
 
     def __setitem__(self, i: int, value: float) -> None:
         """ write data by index
         
         """
 
-        self.dat[:][i] = value
-        # xxx
-        # self.m[i]: float = value[0]
-        # self.l[i]: float = value[1]
-        # self.h[i]: float = value[2]
+        self.m[i]: float = value[0]
+        self.l[i]: float = value[1]
+        self.h[i]: float = value[2]
         # update concentration and delta next. This is computationally inefficient
         # but the next time step may depend on on both variables.
         # update delta for this species
@@ -979,6 +959,7 @@ class Flux(esbmtkBase):
       - Name.c # concentration
       
       """
+
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
           Initialize a flux. Arguments are the species name the flux rate
@@ -986,13 +967,13 @@ class Flux(esbmtkBase):
           """
 
         from . import ureg, Q_
-
+        
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
             "species": Species,
             "delta": Number,
-            "rate": (str, Q_),
+            "rate": (str,Q_),
             "plot": str,
         }
 
@@ -1014,24 +995,18 @@ class Flux(esbmtkBase):
         self.model: Model = self.species.mo  # model handle
 
         # model units
-        self.plt_units = Q_(self.rate).units
-        self.mu: str = f"{self.species.mu}/{self.mo.tu}"
-
+        self.plt_units =  Q_(self.rate).units
+        self.mu :str = f"{self.species.mu}/{self.mo.tu}"
+        
         # and convert flux into model units
-        fluxrate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
-
-        # initialize data fields
-        columns: int = 3  # [m,l,h]
-        self.dat: [NDArray, Float[64]] = np.zeros(shape=(self.species.mo.steps,
-                                                         columns))
-
-        # set up shorthands as views
-        self.m = self.dat.view()[:, 0] + fluxrate
-        self.h = self.dat.view()[:, 1]
-        self.l = self.dat.view()[:, 2]
-
+        fluxrate :float =  Q_(self.rate).to(self.mo.f_unit).magnitude
+        
+        self.m: [NDArray, Float[64]
+                 ] = zeros(self.model.steps) + fluxrate  # add the flux
+        self.l: [NDArray, Float[64]] = zeros(self.model.steps)
+        self.h: [NDArray, Float[64]] = zeros(self.model.steps)
         [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
-
+        
         if self.delta == 0:
             self.d: [NDArray, Float[64]] = zeros(self.model.steps)
         else:
@@ -1039,9 +1014,9 @@ class Flux(esbmtkBase):
                                                      self.sp.r)  # update delta
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
-        self.legend_left: str = self.species.n
-        self.legend_right: str = self.species.dn
-
+        self.legend_left :str = self.species.n
+        self.legend_right :str = self.species.dn
+        
         self.xl: str = self.model.xl  # se x-axis label equal to model time
         self.lop: list[Process] = []  # list of processes
         self.led: list[ExternalData] = []  # list of ext data
@@ -1052,20 +1027,18 @@ class Flux(esbmtkBase):
         """ Get data by index
         
         """
-        # xxx
-        # return array([self.m[i], self.l[i], self.h[i], self.d[i]])
-        return self.dat[:][i]
+
+        return array([self.m[i], self.l[i], self.h[i], self.d[i]])
 
     def __setitem__(self, i: int, value: [NDArray, float]) -> None:
         """ Write data by index
         
         """
-        self.dat[:][i] = value
-
-        #self.m[i] = value[0]
-        #self.l[i] = value[1]
-        #self.h[i] = value[2]
-        #self.d[i] = value[3]
+        
+        self.m[i] = value[0]
+        self.l[i] = value[1]
+        self.h[i] = value[2]
+        self.d[i] = value[3]
         #self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
 
     def __call__(self) -> None:  # what to do when called as a function ()
@@ -1076,12 +1049,11 @@ class Flux(esbmtkBase):
         """ adding two fluxes works for the masses, but not for delta
 
         """
-
-        self.dat[:][i] += other.dat
-        #self.m = self.m + other.m
-        #self.l = self.l + other.l
-        #self.h = self.h + other.h
-        #self.d = get_delta(self.l, self.h,self.sp.r)
+        
+        self.m = self.m + other.m
+        self.l = self.l + other.l
+        self.h = self.h + other.h
+        self.d = get_delta(self.l, self.h,self.sp.r)
 
     def log_description(self, reservoir) -> None:
 
@@ -1100,13 +1072,13 @@ class Flux(esbmtkBase):
         """ Show an overview of the object properties
 
         """
-
+        
         show_data(self, self.n, i)
 
     def __lt__(self, other):  # this is needed for sorting with sorted()
         return self.n < other.n
 
-    def plot(self, **kwargs: dict) -> None:
+    def plot(self, **kwargs :dict) -> None:
         """Plot the flux data:
         This method has the optional keyword ptype which can be
 
@@ -1117,7 +1089,7 @@ class Flux(esbmtkBase):
         """
 
         ptype: int = get_ptype(kwargs)
-
+        
         fig, ax1 = plt.subplots()
         fig.set_size_inches(5, 4)  # Set figure size in inches
         fig.set_dpi(100)  # Set resolution in dots per inch

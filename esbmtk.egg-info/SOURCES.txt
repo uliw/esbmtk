@@ -1,8 +1,6 @@
 README.md
 setup.py
 esbmtk/__init__.py
-esbmtk/base_class.py
-esbmtk/class_templates.py
 esbmtk/connections.py
 esbmtk/esbmtk.py
 esbmtk/processes.py

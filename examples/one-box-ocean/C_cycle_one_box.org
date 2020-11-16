@@ -69,46 +69,29 @@ CO_{2} from fossil fuel burning, and then evaluate the response of the
 ocean to this perturbation.
 
 #+BEGIN_SRC ditaa :file model.png :exports results
-			     +-------------+        +--------------+
-			     |Fossil Fuel  |        |Volcanic      |
-			     |Burning      |        |Emissions     |
-			     |             |        |              |
-			     |             |        |              |
-			     |             |        |              |
-			     |             |        |              |
-			     +--+----------+        +--+-----------+
+			     /-------------\        /--------------\
+			     |Fossil Fuel  |        |Volcanic c28A |
+			     |Burning c28A |        |Emissions     |
+			     \--+----------/        \--+-----------/
 				|		       |
 				|		       |
 				v		       v
-+-------------+		     +--+----------------------+-----------+
-|Carbonate    |		     |        	                           |
-|Weathering   +------------->|        	                           |
-|             |	             |        	                           |
-|             |		     |        	                           |
-|             |		     |        	                           |
-|             |		     |        	                           |
-+-------------+		     |        	Ocean                      |
-			     |        	                           |
-+-------------+		     |        	                           |
-|Organic C    |		     |        	                           |
-|Weathering   +------------->+        	                           |
-|             |		     |        	                           |
-|             |		     |        	                           |
-|             |		     |        	                           |
-|             |		     |        	                           |
-+-------------+		     +-----------+--------------+----------+
-					 |		|
-					 |		|
-					 v		v
-			     +-----------+--+	    +---+----------+
+/--------------\      /---------+----------------------+-----\
+|Carbonate c28A|      |              c577                    |
+|Weathering    +----->|       	                             |
+\--------------/      |        	Ocean                        |
+		      |        	                             |
+/--------------\      |        	                             |
+|Organic C c28A|      |        	                             |
+|Weathering    +----->+        	                             |
+\--------------/      \----------++------+-------+-----++----/
+                      		 |		       |
+				 |		       |
+				 v		       v
+			     /---+-------+--\	    /--++----------\
 			     |Organic C     | 	    |Carbonate     |
-			     |Burial        |  	    |Burial        |
-			     |              | 	    |              |
-			     |              | 	    |              |
-			     |              | 	    |              |
-			     |              |	    |              |
-			     |              |	    |              |
-			     +--------------+ 	    +--------------+
+			     |Burial c28A   |  	    |Burial c28A   |
+			     \--------------/ 	    \--------------/
 
 #+END_SRC
 
@@ -276,7 +259,7 @@ Connect(
     rate="18.1E12 mol/yr", # burial rate
     ref_value="2.6 mmol/l",
     k_concentration = 1000,
-    alpha=0,               # set the istope fractionation
+    alpha=0,               # set the isotope fractionation
 )
 #+END_SRC
 
