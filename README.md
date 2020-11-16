@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgc5853a1)
-2.  [News](#orgc889a9b)
-3.  [Contributing](#orgcf573a4)
-4.  [Installation](#org945958a)
-5.  [Documentation](#orgdd6ffa3)
-6.  [Todo](#orgc689ba0)
-7.  [License](#org6c62fdd)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org8d723a0)
+2.  [News](#org924b06f)
+3.  [Contributing](#org5e2eec3)
+4.  [Installation](#org8bf6060)
+5.  [Documentation](#org08a4231)
+6.  [Todo](#org28aa14e)
+7.  [License](#orgee4bfcf)
 
 
-<a id="orgc5853a1"></a>
+<a id="org8d723a0"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -19,8 +19,8 @@ projects the in Earth-Sciences. I started this project to teach myself
 python and explore object oriented programming. The code became
 however functional enough that the focus of this project has shifted
 to make box modeling more approachable for classroom teaching. So
-performance and scalability are not great. Specifically, the solved is
-a simple forward Euler scheme, so stiff problems are not handled
+performance and scalability are not great. Specifically, the solver is
+just a simple forward Euler scheme, so stiff problems are not handled
 gracefully.
 
 At present, it will calculate masses/concentrations in reservoirs and
@@ -30,7 +30,7 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="orgc889a9b"></a>
+<a id="org924b06f"></a>
 
 # News
 
@@ -48,7 +48,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgcf573a4"></a>
+<a id="org5e2eec3"></a>
 
 # Contributing
 
@@ -58,7 +58,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org945958a"></a>
+<a id="org8bf6060"></a>
 
 # Installation
 
@@ -68,14 +68,9 @@ ESBMTK relies on the following python versions and libraries
 -   matplotlib
 -   numpy
 -   pandas
--   logging
 -   typing
--   builtins
 -   nptyping
--   numbers
 -   pint
--   copy
--   time
 
 If you work with conda, it is recommended to install the above via
 conda. If you work with pip, the installer should install these
@@ -84,7 +79,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="orgdd6ffa3"></a>
+<a id="org08a4231"></a>
 
 # Documentation
 
@@ -102,7 +97,7 @@ pyramid shaped signal, and how to use the rate constant process to
 adjust concentration dependent flux rates[concentration dependent flux rates](https://github.com/uliw/esbmtk/blob/main/Examples/Using%20a%20rate%20constant/rate_example.org). 
 
 
-<a id="orgc689ba0"></a>
+<a id="org28aa14e"></a>
 
 # Todo
 
@@ -111,7 +106,7 @@ adjust concentration dependent flux rates[concentration dependent flux rates](ht
 -   do more testing
 
 
-<a id="org6c62fdd"></a>
+<a id="orgee4bfcf"></a>
 
 # License
 

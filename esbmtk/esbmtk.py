@@ -502,12 +502,13 @@ class Model(esbmtkBase):
                 flux_list: List[str] = r.lof
                 direction_list: List[int] = r.lodir
                 new[0] = new[1] = new[2] = new[3] = 0
-                j: int = 0
+                #j: int = 0
 
-                for f in flux_list:
+                for j, f in enumerate(flux_list):
+                    #for f in flux_list:
                     # another option is to keep influx and outflux list and do the summation independently
                     new += f[i] * direction_list[j]
-                    j += 1
+                    #j += 1
 
                 r[i] = r[
                     i -

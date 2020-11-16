@@ -5,8 +5,8 @@ projects the in Earth-Sciences. I started this project to teach myself
 python and explore object oriented programming. The code became
 however functional enough that the focus of this project has shifted
 to make box modeling more approachable for classroom teaching. So
-performance and scalability are not great. Specifically, the solved is
-a simple forward Euler scheme, so stiff problems are not handled
+performance and scalability are not great. Specifically, the solver is
+just a simple forward Euler scheme, so stiff problems are not handled
 gracefully.
 
 At present, it will calculate masses/concentrations in reservoirs and

@@ -545,16 +545,12 @@ class Model(esbmtkBase):
                 flux_list: List[str] = r.lof
                 direction_list: List[int] = r.lodir
                 new[0] = new[1] = new[2] = new[3] = 0
-                j: int = 0
 
-                for f in flux_list:
-                    # another option is to keep influx and outflux list and do the summation independently
+                for j, f in enumerate(flux_list):
                     new += f[i] * direction_list[j]
-                    j += 1
-
-                r[i] = r[
-                    i -
-                    1] + new[0:3] * r.mo.dt  # add to data from last time step
+                    
+                 # add to data from last time step
+                r[i] = r[i-1] + new[0:3] * r.mo.dt 
                 #n ew = new * (new > 0)  # set negative values to zero
 
             i = i + 1
