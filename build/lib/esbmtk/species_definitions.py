@@ -16,7 +16,6 @@ import time
 import builtins
 set_printoptions(precision=4)
 from .utility_functions import *
-from .base_class import *
 from .esbmtk import *
 
 class Carbon(esbmtkBase):
@@ -97,9 +96,9 @@ class Sulfur(esbmtkBase):
 
         eh = Element(
             name="S",
-            model=MSD_Model,  # model handle
+            model=self.model,  # model handle
             mass_unit="mmol",  # base mass unit
-            li_label="$^{32$S",  # Name of light isotope
+            li_label="$^{32}$S",  # Name of light isotope
             hi_label="$^{34}$S",  # Name of heavy isotope
             d_label="$\delta^{34}$S",  # Name of isotope delta
             d_scale="VCDT",  # Isotope scale. End of plot labels
@@ -115,3 +114,44 @@ class Sulfur(esbmtkBase):
         Species(name="FeS", element=eh)
         Species(name="FeS2", element=eh)
         Species(name="S0", element=eh)
+
+class Hydrogen(esbmtkBase):
+    """ Some often used definitions
+    
+    """
+
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """ Initialize this instance """
+
+
+        self.lkk: Dict[str, any] = {
+            "model": Model,
+            "name": str,
+        }
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = ["model", "name"]
+        # list of default values if none provided
+        self.lod: Dict[str, any] = {}
+
+        # provide a dictionary entry for a keyword specific error message
+        # see esbmtkBase.__initerrormessages__()
+        self.__initerrormessages__()
+        self.bem.update({
+            "model": "a model handle",
+        })
+        self.__validateandregister__(kwargs)  # initialize keyword values
+
+        eh = Element(
+            name="H",
+            model=self.Model,  # model handle
+            mass_unit="mmol",  # base mass unit
+            li_label="$^{1$}H",  # Name of light isotope
+            hi_label="$^{2}$H",  # Name of heavy isotope
+            d_label="$\delta^{2}$H",  # Name of isotope delta
+            d_scale="VSMOV",  # Isotope scale. End of plot labels  # needs verification 
+            r=0.00015575 ,  # isotopic abundance ratio for species # needs verification 
+        )
+
+        # add species
+        Species(name="H+", element=eh)  # Name & element handle

@@ -16,7 +16,6 @@ import time
 import builtins
 set_printoptions(precision=4)
 from .utility_functions import *
-from .base_class import *
 from .esbmtk import *
 
 class Carbon(esbmtkBase):
