@@ -502,17 +502,12 @@ class Model(esbmtkBase):
                 flux_list: List[str] = r.lof
                 direction_list: List[int] = r.lodir
                 new[0] = new[1] = new[2] = new[3] = 0
-                #j: int = 0
 
                 for j, f in enumerate(flux_list):
-                    #for f in flux_list:
-                    # another option is to keep influx and outflux list and do the summation independently
                     new += f[i] * direction_list[j]
-                    #j += 1
-
-                r[i] = r[
-                    i -
-                    1] + new[0:3] * r.mo.dt  # add to data from last time step
+                    
+                 # add to data from last time step
+                r[i] = r[i-1] + new[0:3] * r.mo.dt 
                 #n ew = new * (new > 0)  # set negative values to zero
 
             i = i + 1
@@ -765,10 +760,13 @@ class Reservoir(esbmtkBase):
         self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
         self.h: [NDArray, Float[64]] = zeros(self.mo.steps)
 
+        print(f"mass = {self.m[2]}")
+        print(f"delta ={self.delta}, r = {self.species.r}")
         # isotope mass
         [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
         # delta of reservoir
-        self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.sp.r)
+        self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.species.r)
+        print(f"delta after = {self.d[0]}")
         # left y-axis label
         self.lm: str = f"{self.species.n} [{self.mu}/l]"
         # right y-axis label

@@ -819,10 +819,13 @@ class Reservoir(esbmtkBase):
         self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
         self.h: [NDArray, Float[64]] = zeros(self.mo.steps)
 
+        print(f"mass = {self.m[2]}")
+        print(f"delta ={self.delta}, r = {self.species.r}")
         # isotope mass
         [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
         # delta of reservoir
-        self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.sp.r)
+        self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.species.r)
+        print(f"delta after = {self.d[0]}")
         # left y-axis label
         self.lm: str = f"{self.species.n} [{self.mu}/l]"
         # right y-axis label

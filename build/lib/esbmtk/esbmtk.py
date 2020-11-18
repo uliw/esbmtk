@@ -34,7 +34,6 @@ import time
 import builtins
 set_printoptions(precision=4)
 # from .utility_functions import *
-# from .base_class import esbmtkBase
 
 class esbmtkBase():
     """The esbmtk base class template. This class handles keyword
@@ -503,16 +502,12 @@ class Model(esbmtkBase):
                 flux_list: List[str] = r.lof
                 direction_list: List[int] = r.lodir
                 new[0] = new[1] = new[2] = new[3] = 0
-                j: int = 0
 
-                for f in flux_list:
-                    # another option is to keep influx and outflux list and do the summation independently
+                for j, f in enumerate(flux_list):
                     new += f[i] * direction_list[j]
-                    j += 1
-
-                r[i] = r[
-                    i -
-                    1] + new[0:3] * r.mo.dt  # add to data from last time step
+                    
+                 # add to data from last time step
+                r[i] = r[i-1] + new[0:3] * r.mo.dt 
                 #n ew = new * (new > 0)  # set negative values to zero
 
             i = i + 1
@@ -758,29 +753,20 @@ class Reservoir(esbmtkBase):
         self.loe: list[Element] = []  # list of elements in thiis reservoir
         self.doe: Dict[Species, Flux] = {}  # species flux pairs
 
-         # initialize data field
-        columns: int = 5  # [m,l,h,d,c]
-        rows: [NDArray, int] = np.arange(self.species.mo.steps)
-
-        self.dat: [NDArray, Float[64]] = np.zeros(shape=(self.species.mo.steps, columns))
-
-        self.m = self.dat.view()[rows[:, np.newaxis], 0][:,0] 
-        self.h = self.dat.view()[rows[:, np.newaxis], 1][:,0]
-        self.l = self.dat.view()[rows[:, np.newaxis], 2][:,0]
-        self.d = self.dat.view()[rows[:, np.newaxis], 3][:,0]
-        self.c = self.dat.view()[rows[:, np.newaxis], 4][:,0]
-
         # initialize mass vector
-        self.m = self.m + self.mass
+        self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
         # initialize concentration vector
-        self.c = self.m / self.v
-        self.l = zeros(self.mo.steps)
-        self.h = zeros(self.mo.steps)
-        
+        self.c: [NDArray, Float[64]] = self.m / self.v
+        self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
+        self.h: [NDArray, Float[64]] = zeros(self.mo.steps)
+
+        print(f"mass = {self.m[2]}")
+        print(f"delta ={self.delta}, r = {self.species.r}")
         # isotope mass
         [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
         # delta of reservoir
-        self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.sp.r)
+        self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.species.r)
+        print(f"delta after = {self.d[0]}")
         # left y-axis label
         self.lm: str = f"{self.species.n} [{self.mu}/l]"
         # right y-axis label

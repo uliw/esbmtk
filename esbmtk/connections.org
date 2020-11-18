@@ -768,23 +768,17 @@ class PassiveFlux(Process):
           self.__postinit__()  # do some housekeeping
      
      def __call__(self,reservoir :Reservoir, i :int) -> None:
-          """Here we re-balance the flux. This code will be called by the 
-          apply_flux_modifier method of a reservoir which itself is
-          called by the model execute method"""
-
-          fm :float = 0  # the new flux mass 
-          for f in self.fws:  # do sum of fluxes in this reservoir
-               fm = fm + f.m[i] * self.direction
+          """Here we re-balance the flux. That is, we calculate the sum of all fluxes
+          excluding this flux. This sum will be equl to this flux. This will likely only
+          work for outfluxes though
           
-          # get new reservoir mass
-          rm :float = reservoir.m[i-1] + (fm * self.m.dt *  self.direction)
+          """
 
-          # get the difference to the desired mass
-          # fm = (rm - self.rm0) / self.m.dt  * reservoir.lio[self.f.n]
-          fm = abs(self.rm0 -rm) / self.m.dt
-
-          # set isotope mass according to the reservoir delta
-          self.f[i] = get_flux_data(fm,reservoir.d[i-1],reservoir.sp.r)
+          new :float = 0
+          for j, f in enumerate(self.fws):
+               new += f.m[i] * reservoir.lio[f.n]
+               
+          self.f[i] = get_flux_data(new,reservoir.d[i-1],reservoir.sp.r)
 #+END_SRC
 
 #+RESULTS:

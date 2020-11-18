@@ -79,7 +79,7 @@ Connect(
     rate="18.1E12 mol/yr", # burial rate
     ref_value="2.6 mmol/l",
     k_concentration = 1000,
-    alpha=0,               # set the istope fractionation
+    alpha=0,               # set the isotope fractionation
 )
 
 # Run the model

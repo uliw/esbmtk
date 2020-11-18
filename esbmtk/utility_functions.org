@@ -73,41 +73,27 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
     l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
     h: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
 
-    return array([m, l, h, d])
+    return np.array([m, l, h, d])
 
-def sum_fluxes_a(flux, dirs: list)-> [NDArray, float]:
 
-    new = np.zeros(3)
-    direction = dirs
-    new[0] = new[0] + flux.m * direction
-    new[1] = new[1] + flux.l * direction
-    new[2] = new[2] + flux.h * direction
-
-    return array(new)
-
-def sum_fluxes_n(new: [NDArray, float], flux_list: list, dir_l: Dict[str,int], i: int)-> [NDArray, float]:
-
-    for f in flux_list:
-        direction = dir_l[f.n]
-        new[0] +=  f.m[i] * direction
-        new[1] +=  f.l[i] * direction
-        new[2] +=  f.h[i] * direction
-  
-    return new
 #+END_SRC
 
 *** Get delta from isotope masses
 #+BEGIN_SRC ipython :tangle utility_functions.py
-def get_delta(l: float, h :float, r :float)-> float:
-    """
-      Calculate the delta from the mass of light and heavy isotope
-      Arguments are l and h which are the masses of the light and
-      heavy isotopes respectively, r = abundance ratio of the respective
-      element
-    """
-   
-    d :float = 1000 * (h / l - r) / r
-    return d
+def get_delta(l :[NDArray, [Float64]], h :[NDArray, [Float64]], r
+              :float)-> [NDArray, [Float64]]:
+   """Calculate the delta from the mass of light and heavy isotope
+     Arguments are l and h which are the masses of the light and
+     heavy isotopes respectively, r = abundance ratio of the
+     respective element. Note that this equation can result in a
+     siginificant loss of precision (on the order of 1E-13). I
+     therefore round the results to numbers largers 1E12 (otherwise a
+     delta of zero may no longer be zero)
+
+   """
+
+   d :float = 1E3 * (h / l - r) / r
+   return np.round(d, 12)
 #+END_SRC
 
 *** Test if list element already exist
@@ -121,53 +107,7 @@ def add_to (l, e):
     if not (e in l):  # if not present, append element
         l.append(e) 
 #+END_SRC
-
-*** Get magnitude of obj relative to model base unit
-#+BEGIN_SRC ipython :exports yes :noweb yes :tangle utility_functions.py
-def get_mag(unit, base_unit):
-    """
-      Compare the unit associated with the object obj (i.e., a flux, etc)
-      with the base unit set for the species or model (base_unit)
-      ms = magnitude string, s = scaling factor
-    """
-
-    # E.g., unit = mmol, and base_unit = mol -> ms = m, and thus s = 1E-3
-    if len(base_unit) > len(unit):
-        ms = base_unit.replace(unit, "")
-    else:
-        ms = unit.replace(base_unit, "")  # get the magnitude string of the species
         
-        if ms == "":  # species unit and reservoir units are the same
-            s = 1  # -> no scaling
-        elif ms == "G":  # value is provided in mega
-            s = 1E9  # thus they need to be scaled by 1e9
-        elif ms == "M":  # value is provided in mega
-            s = 1E6  # thus they need to be scaled by 1e6
-        elif ms == "k":  # value is provided in kilo
-            s = 1E3  # thus they need to be scaled by 1e3
-        elif ms == "m":  # value is provided in milli
-            s = 1E-3  # thus they need to be scaled by 1e-3
-        elif ms == "u":  # value is provided in micro
-            s = 1E-6  # thus they need to be scaled by 1e-6
-        elif ms == "n":  # value is provided in nano
-            s = 1E-9  # thus they need to be scaled by 1e-9
-        elif ms == "p":  # value is print(replace. Tab to end.)ovided in pico
-            s = 1E-12  # thus they need to be scaled by 1e-12
-        elif ms == "f":  # value is print(replace. Tab to end.)ovided in femto
-            s = 1E-15  # thus they need to be scaled by 1e-15
-        else:  # unknown conversion
-            s = 1  # -> no scaling
-            raise ValueError(
-                (f"magnitude = {ms}, unit = {unit} "
-                 f"base_unit = {base_unit} ."
-                 f"This case is not defined (yet?)")
-            )
-        
-    if len(base_unit) > len(unit):
-        s = 1 / s
-        
-    return s
-#+END_SRC           
 
 *** Get the plot layout
 #+BEGIN_SRC ipython :tangle utility_functions.py
@@ -207,33 +147,6 @@ def get_plot_layout(obj):
           # print(f"Selected Geometry: rows = {geo[0]}, cols = {geo[1]}")
 
       return size, geo
-#+END_SRC
-
-*** Calculate the sum of a list of fluxes
-#+BEGIN_SRC ipython :tangle utility_functions.py
-def sum_fluxes(flux_list: list, reservoir, i: int):
-    """This function takes a list of fluxes and calculates the sum for each
-    flux element.  It will return a an array with [mass, li, hi] The
-    summation is a bit more involved than I like, but I issues with summing
-    small values, so here we doing is using fsum. For this step, we need to
-    look up the reservoir specific flux direction which is stored as
-    key-value pair in the reservoir.lio dictionary (flux name: direction)
-
-    """
-
-    ms: float = 0
-    ls: float = 0
-    hs: float = 0
-    direction: int = 0
-
-    for f in flux_list:  # do sum of fluxes in this reservoir
-        direction = reservoir.lio[f.n]
-        ms = ms + f.m[i] * direction  # current flux and direction
-        ls = ls + f.l[i] * direction  # current flux and direction
-        hs = hs + f.h[i] * direction  # current flux and direction
-
-    # sum up the each array component individually
-    return array([ms, ls, hs])
 #+END_SRC
 
 *** Show list of fluxes in a reservoir
