@@ -1,5 +1,5 @@
 from esbmtk import Model, Element, Species, Reservoir
-from esbmtk import Signal, Connect, Source, Sink
+from esbmtk import Signal, Connect, Source, Sink, ExternalData
 
 # create model
 Model(
@@ -27,7 +27,7 @@ Sink(name="OM_burial", species=OM)
 Reservoir(
     name="Ocean",                # Name of reservoir
     species=DIC,                 # Species handle
-    delta=0,                     # initial delta
+    delta=2,                     # initial delta
     concentration="2.6 mmol/l", # cocentration 
     volume="1.332E18 m**3",      # reservoir size (m^3)
 )
@@ -81,6 +81,13 @@ Connect(
     k_concentration = 1000,
     alpha=0,               # set the isotope fractionation
 )
+
+ExternalData(name="measured_carbon_isotopes",
+             filename = "measured_c_isotopes.csv",
+             legend = "Dean et al. 2014",
+             offset = "1750 yrs",
+             reservoir = Ocean
+             )
 
 # Run the model
 C_Cycle.run()

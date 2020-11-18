@@ -17,6 +17,10 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - Nov. 18^{th}, started to add unit tests for selected modules. Added
+   unit conversions to external data sets. External data can now be
+   directly associated with a reservoir.
+
  - Nov. 5^{th}, released version 0.2. This version is now unit aware. So
    rather than having a separate keyword for =unit=, quantities are
    now specified together wit their unit, e.g., =rate = "15

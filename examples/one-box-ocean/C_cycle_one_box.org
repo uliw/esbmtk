@@ -129,7 +129,7 @@ The below code loads predefined definitions for carbon, but you can
 also define your own element and species objects. 
 #+BEGIN_SRC ipython :tangle C_Cycle_Ocean.py
 from esbmtk import Model, Element, Species, Reservoir
-from esbmtk import Signal, Connect, Source, Sink
+from esbmtk import Signal, Connect, Source, Sink, ExternalData
 
 # create model
 Model(
@@ -142,7 +142,6 @@ Model(
     offset="1751 yrs"   # map to external timescale
 )
 #+END_SRC
-
 
 
 ** Using external data to initialize a signal
@@ -176,7 +175,7 @@ Sink(name="OM_burial", species=OM)
 Reservoir(
     name="Ocean",                # Name of reservoir
     species=DIC,                 # Species handle
-    delta=0,                     # initial delta
+    delta=2,                     # initial delta
     concentration="2.6 mmol/l", # cocentration 
     volume="1.332E18 m**3",      # reservoir size (m^3)
 )
@@ -262,6 +261,20 @@ Connect(
     alpha=0,               # set the isotope fractionation
 )
 #+END_SRC
+
+** Add some external data to compare against
+External data can be read from a csv file, which must contain 3
+columns. Run =help(External_data)= for details.
+
+#+BEGIN_SRC ipython  :tangle C_Cycle_Ocean.py
+ExternalData(name="measured_carbon_isotopes",
+             filename = "measured_c_isotopes.csv",
+             legend = "Dean et al. 2014",
+             offset = "1750 yrs",
+             reservoir = Ocean
+             )
+#+END_SRC
+
 
 ** Running the model
 The model is executed via the =run()= method. The results can be displayed withe the =plot_data()= method which will generate an overview graph for each reservoir. Export of the results to a csv file is done via the =save_data()= method which will create csv file for each reservoir.

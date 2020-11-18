@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org8459e67)
-2.  [News](#org3d03696)
-3.  [Contributing](#orgb476a5d)
-4.  [Installation](#orgfafabf4)
-5.  [Documentation](#org4642bd0)
-6.  [Todo](#orgc917b2e)
-7.  [License](#org27820a0)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgbd9d036)
+2.  [News](#orgc57d127)
+3.  [Contributing](#org3db8aa8)
+4.  [Installation](#org1095bc9)
+5.  [Documentation](#org503888d)
+6.  [Todo](#org45e9ed1)
+7.  [License](#org2cbf75f)
 
 
-<a id="org8459e67"></a>
+<a id="orgbd9d036"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,9 +30,13 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="org3d03696"></a>
+<a id="orgc57d127"></a>
 
 # News
+
+-   Nov. 18<sup>th</sup>, started to add unit tests for selected modules. Added
+    unit conversions to external data sets. External data can now be
+    directly associated with a reservoir.
 
 -   Nov. 5<sup>th</sup>, released version 0.2. This version is now unit aware. So
     rather than having a separate keyword for `unit`, quantities are
@@ -48,7 +52,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgb476a5d"></a>
+<a id="org3db8aa8"></a>
 
 # Contributing
 
@@ -58,7 +62,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orgfafabf4"></a>
+<a id="org1095bc9"></a>
 
 # Installation
 
@@ -79,7 +83,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org4642bd0"></a>
+<a id="org503888d"></a>
 
 # Documentation
 
@@ -94,7 +98,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orgc917b2e"></a>
+<a id="org45e9ed1"></a>
 
 # Todo
 
@@ -103,7 +107,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org27820a0"></a>
+<a id="org2cbf75f"></a>
 
 # License
 

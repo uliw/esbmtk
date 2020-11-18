@@ -66,6 +66,23 @@ def test_reservoir_creation(create_model):
     assert R1.m[2] == mass
     assert R1.d[2] == d0
 
+def test_external_data(create_model):
+    """ test the creation of an external data object
+    
+    """
+
+    from esbmtk import ExternalData
+    ExternalData(name="ED1",
+                 filename = "measured_c_isotopes.csv",
+                 legend="ED1",
+                 reservoir=R1,
+                 offset="0.1 kyrs",
+                 )
+    assert ED1.x[0] == 100
+    assert "Unnamed" in ED1.df.columns[1]
+    assert round(ED1.z[0],10) == 2.09512
+    assert round(ED1.z[-1],10) == 0.968293
+
 def test_sum_fluxes(create_model):
     """
     test that the code which adds fluxes to a reservoir yields the expected results

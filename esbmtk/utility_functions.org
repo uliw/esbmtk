@@ -314,17 +314,16 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         
         if isinstance(d.x[0], str):  # if string, something is off
             raise ValueError("No time axis in external data object {d.name}")
-        if isinstance(d.y[0],
-                      str) is False:  # mass or concentration data is present
+        if "y" in dir(d):  # mass or concentration data is present
             cn = cn + 1
             col = f"C{cn}"
             leg = f"{obj.lm} {d.legend}"
             ln3 = ax1.scatter(d.x, d.y, color=col, label=leg)
-        if isinstance(d.d[0], str) is False:  # isotope data is present
+        if "z" in dir(d): # isotope data is present
             cn = cn + 1
             col = f"C{cn}"
-            leg = f"{obj.ld} {d.legend}"
-            ln3 = ax2.scatter(d.x, d.d, color=col, label=leg)
+            leg = f"{d.legend}"
+            ln3 = ax2.scatter(d.x, d.z, color=col, label=leg)
 
     # collect all labels and print them in one legend
     if first_axis:

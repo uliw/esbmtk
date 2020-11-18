@@ -588,7 +588,7 @@ class Model(esbmtkBase):
 #+BEGIN_SRC ipython :exports yes :noweb yes :tangle esbmtk.py
 class Element(esbmtkBase):
     """Each model, can have one or more elements.  This class sets
-element specific properties
+       element specific properties
       
       Example:
         
@@ -600,8 +600,8 @@ element specific properties
                     d_label   =  "$\delta^{34}$S",  # Label for delta value 
                     d_scale   =  "VCDT",       # Isotope scale
                     r         = 0.044162589,   # isotopic abundance ratio for element
-                  
-)  
+                  )
+    
       """
 
     # set element properties
@@ -622,7 +622,7 @@ element specific properties
         }
 
         # provide a list of absolutely required keywords
-        self.lrk :list = ["name", "model", "mass_unit"]
+        self.lrk: list = ["name", "model", "mass_unit"]
         # list of default values if none provided
         self.lod = {
             'li_label': "NONE",
@@ -636,14 +636,14 @@ element specific properties
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # legacy name aliases
-        self.n :str = self.name  # display name of species
-        self.mu :str = self.mass_unit  # display name of mass unit
-        self.ln :str = self.li_label  # display name of light isotope
-        self.hn :str = self.hi_label  # display name of heavy isotope
-        self.dn :str = self.d_label  # display string for delta
-        self.ds :str = self.d_scale  # display string for delta scale
-        self.mo :Model = self.model  # model handle
-        self.lsp :list = [] # list of species for this element.
+        self.n: str = self.name  # display name of species
+        self.mu: str = self.mass_unit  # display name of mass unit
+        self.ln: str = self.li_label  # display name of light isotope
+        self.hn: str = self.hi_label  # display name of heavy isotope
+        self.dn: str = self.d_label  # display string for delta
+        self.ds: str = self.d_scale  # display string for delta scale
+        self.mo: Model = self.model  # model handle
+        self.lsp: list = []  # list of species for this element.
         self.mo.lel.append(self)
 
     def list_species(self) -> None:
@@ -654,7 +654,8 @@ element specific properties
         for e in self.lsp:
             print(e.n)
 
-    def __lt__(self, other) -> None:  # this is needed for sorting with sorted()
+    def __lt__(self,
+               other) -> None:  # this is needed for sorting with sorted()
         return self.n < other.n
 #+END_SRC
 
@@ -819,13 +820,11 @@ class Reservoir(esbmtkBase):
         self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
         self.h: [NDArray, Float[64]] = zeros(self.mo.steps)
 
-        print(f"mass = {self.m[2]}")
-        print(f"delta ={self.delta}, r = {self.species.r}")
         # isotope mass
         [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
         # delta of reservoir
         self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.species.r)
-        print(f"delta after = {self.d[0]}")
+
         # left y-axis label
         self.lm: str = f"{self.species.n} [{self.mu}/l]"
         # right y-axis label
@@ -1642,84 +1641,116 @@ class Signal(esbmtkBase):
 #+BEGIN_SRC ipython :tangle esbmtk.py
 class ExternalData(esbmtkBase):
     """Instances of this class hold external X/Y data which can be associated with 
-      a reservoir, e.g, to compare computed vs measured data, or with a perturbation
-      where the data would be interpreted as control points.
+      a reservoir.
 
       Example:
 
-             ExternalData(name =  "Name"
-                          file = "filename",
-                          legend = "label",
-                          model = model_handle)
+             ExternalData(name       = "Name"
+                          filename   = "filename",
+                          legend     = "label",
+                          offset     = "0 yrs",
+                          reservoir  = reservoir_handle)
 
       The data must exist as CSV file, where the first column contains
       the X-values, and the second column contains the Y-values.
 
-      The x-values must be time and specify the time units. they will be mapped into the
-      model time units.
+      The x-values must be time and specify the time units in the header between square brackets
+      They will be mapped into the model time units.
 
       The y-values can be any data, but the user must take care that they match the model units
       defined in the model instance. So your data file mujst look like this
 
-      Time [years], Data [any]
+      Time [years], Data [units], Data [units]
       1, 12
       2, 13
+
+      By convention, the secon column should contaain the same type of
+      data as the reservoir (i.e., a concentration), whereas the third
+      column contain isotope delta values. Columns with no data should
+      be left empty (and have no header!)
     
-      The column headers are only used for the time conversion, and ignored by the
-      default plotting methods, but they are available as self.xh,yh  
+      The column headers are only used for the time or concentration
+      data conversion, and are ignored by the default plotting
+      methods, but they are available as self.xh,yh
 
       The file must exist in the local working directory.
 
       Methods:
         - name.plot()
-        - name.register(Reservoir) # associate the data with a reservoir
-        - name.interpolate() # replaces input data with interpolated data across the model domain
 
+      Data:
+        - name.x
+        - name.y
+        - name.df = dataframe as read from csv file
       """
-
     def __init__(self, **kwargs: Dict[str, str]):
 
         from . import ureg, Q_
-        
+
         # dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
             "filename": str,
             "legend": str,
-            "model": Model,
+            "reservoir": Reservoir,
+            "offset": str,
         }
-        
+
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "filename", "legend","model"]
+        self.lrk: list = ["name", "filename", "legend", "reservoir"]
         # list of default values if none provided
-        self.lod: Dict[str, any] = {}
+        self.lod: Dict[str, any] = {"offset": "0 yrs"}
 
         # validate input and initialize instance variables
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # legacy names
-        self.n: str = self.name # string =  name of this instance
+        self.n: str = self.name  # string =  name of this instance
         self.fn: str = self.filename  # string = filename of data
-        self.m :str = self.model.name # model handle
+        self.mo: Model = self.reservoir.species.mo
 
         self.df: pd.DataFrame = pd.read_csv(self.fn)  # read file
         logging.info(f"Read external data from {self.fn}")
 
-        if len(self.df.columns) != 2:  # test if delta given
-            raise ValueError("CSV file must have only two columns")
-        
-        self.xh: str = self.df.columns[0]  # get the column header
-        self.yh: str = self.df.columns[1]  # get the column header
+        ncols = len(self.df.columns)
+        if ncols != 3:  # test of we have 3 columns
+            raise ValueError("CSV file must have 3 columns")
 
-        # unit mapping
+        self.offset = Q_(self.offset).to(self.mo.t_unit).magnitude
+
+        xh = self.df.columns[0]
+
+        # get unit information from each header
+        xh = xh.split("[")[1].split("]")[0]
         xq = Q_(xh)
-        x = df.iloc[:, 0].to_numpy() * xq
-        
-        self.x :[NDArray] = x.to(self.mo.t_unit).magnitude
-        self.y :[NDArray] = self.df.to_numpy()[:, 1]
-       
-    def register(self, obj):
+        # add these to the data we are are reading
+        self.x: [NDArray] = self.df.iloc[:, 0].to_numpy() * xq
+        # map into model units
+        self.x = self.x.to(self.mo.t_unit).magnitude
+
+        # map into model space
+        self.x = self.x - self.x[0] + self.offset
+
+        # check if y-data is present
+        yh = self.df.columns[1]
+        if not "Unnamed" in yh:
+            yh = self.df.columns[1].split("[")[1].split("]")[0]
+            yq = Q_(yh)
+            # add these to the data we are are reading
+            self.y: [NDArray] = self.df.iloc[:, 1].to_numpy() * yq
+            # map into model units
+            self.y = self.y.to(self.mo.t_unit).magnitude
+
+        # check if z-data is present
+        if ncols == 3:
+            zh = self.df.columns[2]
+            self.z = self.df.iloc[:, 2].to_numpy()
+
+        # register with reservoir
+        self.__register__(self.reservoir)
+
+    def __register__(self, obj):
         """Register this dataset with a flux or reservoir. This will have the
           effect that the data will be printed together with the model
           results for this reservoir
@@ -1732,7 +1763,7 @@ class ExternalData(esbmtkBase):
         self.obj = obj  # reser handle we associate with
         obj.led.append(self)
 
-    def interpolate(self) -> None:
+    def __interpolate__(self) -> None:
         """Interpolate the input data with a resolution of dt across the model
         domain The first and last data point must coincide with the
         model start and end time. In other words, this method will not
@@ -1744,20 +1775,19 @@ class ExternalData(esbmtkBase):
 
         """
 
-        xi :[NDArray] = self.model.time
-        
+        xi: [NDArray] = self.model.time
+
         if ((self.x[0] > xi[0]) or (self.x[-1] < xi[-1])):
             message = (f"\n Interpolation requires that the time domain"
                        f"is equal or greater than the model domain"
                        f"data t(0) = {self.x[0]}, tmax = {self.x[-1]}"
                        f"model t(0) = {xi[0]}, tmax = {xi[-1]}")
-            
+
             raise ValueError(message)
         else:
-            self.y :[NDArray] = interp(xi,self.x,self.y)
-            self.x = xi 
-        
-        
+            self.y: [NDArray] = interp(xi, self.x, self.y)
+            self.x = xi
+
     def plot(self) -> None:
         """ Plot the data and save a pdf
 
@@ -1766,8 +1796,8 @@ class ExternalData(esbmtkBase):
                   ExternalData.plot()
           """
 
-        fig, ax = plt.subplots() #
-        ax.scatter(self.x,self.y)
+        fig, ax = plt.subplots()  #
+        ax.scatter(self.x, self.y)
         ax.set_label(self.legend)
         ax.set_xlabel(self.xh)
         ax.set_ylabel(self.yh)
