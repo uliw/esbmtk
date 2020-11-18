@@ -294,7 +294,7 @@ Sink(name="OM_burial", species=OM)
 Reservoir(
     name="Ocean",                # Name of reservoir
     species=DIC,                 # Species handle
-    delta=0,                     # initial delta
+    delta=2,                     # initial delta
     concentration="2.62 mmol/l", # cocentration 
     volume="1.332E18 m**3",      # reservoir size (m^3)
 )
@@ -370,7 +370,7 @@ Connect(
     source=Ocean,          # source of flux
     sink=Carbonate_burial, # target of flux
     rate="18.1E12 mol/yr", # burial rate
-    alpha=0,               # set the istope fractionation
+    alpha=0,               # set the isotope fractionation
 )
 #+END_SRC
 ** Running the model
@@ -437,3 +437,9 @@ The connect method has a variety of way to specify the flux:
  
  - Last but not least, Reservoirs can be specified by either providing =volume= and
    =concentration= or =volume= and =mass=
+
+** External Data
+
+You can associate external datasets to a reservoir (or flux) in order
+to compare model results against measured data. See the
+=one-box-ocean= example in the examples directory.

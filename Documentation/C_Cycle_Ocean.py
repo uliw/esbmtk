@@ -31,7 +31,6 @@ Species(name="CaCO3", element=C)
 
 Signal(name = "ACR",              # Signal name
        species = CO2,             # Species
-       duration = "100 yrs",      # must match what is in the file
        filename = "test-data.csv" # filename
 )
 
@@ -45,7 +44,7 @@ Sink(name="OM_burial", species=OM)
 Reservoir(
     name="Ocean",                # Name of reservoir
     species=DIC,                 # Species handle
-    delta=0,                     # initial delta
+    delta=2,                     # initial delta
     concentration="2.62 mmol/l", # cocentration 
     volume="1.332E18 m**3",      # reservoir size (m^3)
 )
@@ -91,7 +90,7 @@ Connect(
     source=Ocean,          # source of flux
     sink=Carbonate_burial, # target of flux
     rate="18.1E12 mol/yr", # burial rate
-    alpha=0,               # set the istope fractionation
+    alpha=0,               # set the isotope fractionation
 )
 
 # Run the model
