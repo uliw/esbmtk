@@ -596,7 +596,7 @@ class Element(esbmtkBase):
                     mass_unit =  "mol",        # base mass unit
                     li_label  =  "$^{32$S",    # Label of light isotope
                     hi_label  =  "$^{34}S",    # Label of heavy isotope
-                    d_label   =  "$\delta^{34}$S",  # Label for delta value 
+                    d_label   =  r"$\delta^{34}$S",  # Label for delta value 
                     d_scale   =  "VCDT",       # Isotope scale
                     r         = 0.044162589,   # isotopic abundance ratio for element
                   )
@@ -753,9 +753,9 @@ class Reservoir(esbmtkBase):
             "name": str,
             "species": Species,
             "delta": Number,
-            "concentration": str,
-            "mass": str,
-            "volume": str,
+            "concentration": (str,Q_),
+            "mass": (str,Q_),
+            "volume": (str,Q_),
         }
 
         # provide a list of absolutely required keywords
@@ -771,10 +771,9 @@ class Reservoir(esbmtkBase):
         # validate and initialize instance variables
         self.__initerrormessages__()
         self.bem.update({
-            "concentration": "string",
-            "mass": "a  string",
-            "concentration": "a string",
-            "volume": "a string"
+            "mass": "a  string or quantity",
+            "concentration": "a string or quantity",
+            "volume": "a string or quantity"
         })
         self.__validateandregister__(kwargs)
 
