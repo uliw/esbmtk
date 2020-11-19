@@ -1,4 +1,3 @@
-
 #+STARTUP: content
 #+OPTIONS: todo:nil tasks:nil tags:nil
 #+PROPERTY: header-args :eval never-export
@@ -1722,7 +1721,15 @@ class ExternalData(esbmtkBase):
         xh = self.df.columns[0]
 
         # get unit information from each header
-        xh = xh.split("[")[1].split("]")[0]
+        xh =  xh.split("[")
+        if len(xh) < 2:
+            raise ValueError(f"Column header {xh} must include units in square brackets")
+        xh = xh.[1]
+        xh = xh.split("]")
+        if len(xh) < 2:
+            raise ValueError(f"Column header {xh} must include units in square brackets")
+        xh = xh[0]
+        
         xq = Q_(xh)
         # add these to the data we are are reading
         self.x: [NDArray] = self.df.iloc[:, 0].to_numpy() * xq
