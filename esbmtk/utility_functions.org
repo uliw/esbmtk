@@ -60,6 +60,21 @@ def get_imass(m: float, d: float, r: float) -> [float, float]:
     hi: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
     return [li, hi]
 
+def get_imass2(mr: float, mn: float, lr: float, hr: float) -> [float, float]:
+    """
+    Calculate the isotope masses from bulk mass and isotope ratio
+
+    mr, lr, hr = are the masses of the reference values
+    mn, ln, hn = are the masses of the new values
+    
+    """
+
+    ln :float = mn * lr / mr
+    hn :float = mn - ln
+
+    #li: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+    #hi: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
+    return [ln, hn]
 
 
 def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
@@ -345,4 +360,27 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     #yl_min = min(yl)
     #yl_max = max(yl)
     #if (yl_max - yl_min) < 0.1:
+#+END_SRC
+
+** Miscellaneous function
+
+#+BEGIN_SRC python :tangle utility_functions.py
+
+def get_string_between_brackets(s :str) -> str:
+    """ Parse string and extract substring between square brackets
+
+    """
+    
+    s =  s.split("[")
+    if len(s) < 2:
+        raise ValueError(f"Column header {s} must include units in square brackets")
+
+    s = s[1]
+
+    s = s.split("]")
+
+    if len(s) < 2:
+        raise ValueError(f"Column header {s} must include units in square brackets")
+
+    return s[0]
 #+END_SRC
