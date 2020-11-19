@@ -63,7 +63,7 @@ class Carbon(esbmtkBase):
             mass_unit="mmol",  # base mass unit
             li_label="C^{12}$S",  # Name of light isotope
             hi_label="C^{13}$S",  # Name of heavy isotope
-            d_label="$\delta^{13}$C",  # Name of isotope delta
+            d_label= r"$\delta^{13}$C",  # Name of isotope delta
             d_scale="VPDB",  # Isotope scale. End of plot labels
             r=0.0112372,  # VPDB C13/C12 ratio https://www-pub.iaea.org/MTCD/publications/PDF/te_825_prn.pdf
         )
@@ -161,7 +161,7 @@ class Hydrogen(esbmtkBase):
             mass_unit="mmol",  # base mass unit
             li_label="$^{1$}H",  # Name of light isotope
             hi_label="$^{2}$H",  # Name of heavy isotope
-            d_label="$\delta^{2}$H",  # Name of isotope delta
+            d_label= r"$\delta^{2}$H",  # Name of isotope delta
             d_scale="VSMOV",  # Isotope scale. End of plot labels  # needs verification 
             r=0.00015575 ,  # isotopic abundance ratio for species # needs verification 
         )
