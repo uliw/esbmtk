@@ -1721,15 +1721,8 @@ class ExternalData(esbmtkBase):
         xh = self.df.columns[0]
 
         # get unit information from each header
-        xh =  xh.split("[")
-        if len(xh) < 2:
-            raise ValueError(f"Column header {xh} must include units in square brackets")
-        xh = xh.[1]
-        xh = xh.split("]")
-        if len(xh) < 2:
-            raise ValueError(f"Column header {xh} must include units in square brackets")
-        xh = xh[0]
-        
+        xh = get_string_between_brackets(xh)
+       
         xq = Q_(xh)
         # add these to the data we are are reading
         self.x: [NDArray] = self.df.iloc[:, 0].to_numpy() * xq
@@ -1742,7 +1735,7 @@ class ExternalData(esbmtkBase):
         # check if y-data is present
         yh = self.df.columns[1]
         if not "Unnamed" in yh:
-            yh = self.df.columns[1].split("[")[1].split("]")[0]
+            yh = get_string_between_brackets(yh)
             yq = Q_(yh)
             # add these to the data we are are reading
             self.y: [NDArray] = self.df.iloc[:, 1].to_numpy() * yq
