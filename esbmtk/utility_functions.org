@@ -384,3 +384,44 @@ def get_string_between_brackets(s :str) -> str:
 
     return s[0]
 #+END_SRC
+
+#+BEGIN_SRC python :tangle utility_functions.py
+def map_units(v: any, *args) -> float:
+    """ parse v to see if it is a string. if yes, map to quantity. 
+        parse v to see if it is a quantity, if yes, map to model units
+        and extract magnitude, assign mangitude to return value
+        if not, assign value to return value
+        
+        v : a keyword value number/string/quantity
+        args: one or more quantities (units) see the Model class (e.g., f_unit)
+
+    """
+
+    from . import Q_
+
+    m: float = 0
+    match :bool = False
+
+    # test if string, map to quantity if yes
+    if isinstance(v, str):
+        v = Q_(v)
+
+    # test if we find a matching dimension, map if true
+    if isinstance(v, Q_):
+        for q in args:
+            if v.dimensionality == q.dimensionality:
+                m = v.to(q).magnitude
+                match = True
+
+        if not match:
+            message = f"{v} is none of {print(*args)}"
+            raise ValueError(message)
+
+    else:  # no quantity, so it should be a number
+        m = v
+
+    if not isinstance(m, float):
+        raise ValueError(f"m is {type(m)}, must be float, v={v}. Something is fishy")
+
+    return m
+#+END_SRC
