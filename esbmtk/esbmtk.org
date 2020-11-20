@@ -457,6 +457,20 @@ class Model(esbmtkBase):
 
         print("Use the species class to add to this list")
 
+    def save_state(self) -> None:
+        """ Save model state. Similar to save data, but only saves the last 10
+        time-steps
+
+        """
+
+        start: int = -10
+        stop: int = -1
+        stride: int = 1
+        prefix: str = "state_"
+
+        for r in self.lor:
+            r.__write_data__(prefix, start, stop, stride)
+
     def save_data(self, **kwargs) -> None:
         """Save the model results to a CSV file. Each reservoir will have
         their own CSV file
@@ -466,10 +480,10 @@ class Model(esbmtkBase):
         start = int   # start index
         stop = int    # end index
         
-    
+        
         """
 
-        for k,v in kwargs.items():
+        for k, v in kwargs.items():
             if not isinstance(v, int):
                 print(f"{k} must be an integer number")
                 raise ValueError(f"{k} must be an integer number")
@@ -489,8 +503,9 @@ class Model(esbmtkBase):
         else:
             stop = None
 
+        prefix = ""
         for r in self.lor:
-            r.__write_data__(start, stop, stride)
+            r.__write_data__(prefix, start, stop, stride)
 
     def plot_data(self, **kwargs: dict) -> None:
         """ 
@@ -904,7 +919,7 @@ class Reservoir(esbmtkBase):
         for m in self.lop:
             m.describe(self)
 
-    def __write_data__(self, start :int, stop :int, stride :int) -> None:
+    def __write_data__(self, prefix :str, start :int, stop :int, stride :int) -> None:
         """ To be called by write_data and save_state
         """
 
@@ -922,21 +937,21 @@ class Reservoir(esbmtkBase):
         sds = f"[{self.sp.ds}]"  # delta scale
         rn = self.n  # reservoir name
         mn = self.sp.mo.n  # model name
-        fn = f"{mn}_{rn}.csv"  # file name
+        fn = f"{prefix}{mn}_{rn}.csv"  # file name
 
         # build the dataframe
         df: pd.dataframe = DataFrame()
-        df[f"{self.n} {sn} [{smu}]"] = self.m[::stride]  # mass
-        df[f"{self.n} {sn} [{cmu}]"] = self.c[::stride]  # concentration
-        df[f"{self.n} {sp.ln}"] = self.l[::stride]  # light isotope
-        df[f"{self.n} {sp.hn} "] = self.h[::stride]  # heavy isotope
-        df[f"{self.n} {sdn} {sds}"] = self.d[::stride]  # delta value
+        df[f"{self.n} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
+        df[f"{self.n} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
+        df[f"{self.n} {sp.ln}"] = self.l[start:stop:stride]  # light isotope
+        df[f"{self.n} {sp.hn} "] = self.h[start:stop:stride]  # heavy isotope
+        df[f"{self.n} {sdn} {sds}"] = self.d[start:stop:stride]  # delta value
 
         for f in self.lof:  # Assemble the headers and data for the reservoir fluxes
-            df[f"{f.n} {sn} [{fmu}]"] = f.m[::stride]
-            df[f"{f.n} {sn} [{sp.ln}]"] = f.l[::stride]
-            df[f"{f.n} {sn} [{sp.hn}]"] = f.h[::stride]
-            df[f"{f.n} {sn} {sdn} {sds}"] = f.d[::stride]
+            df[f"{f.n} {sn} [{fmu}]"] = f.m[start:stop:stride]
+            df[f"{f.n} {sn} [{sp.ln}]"] = f.l[start:stop:stride]
+            df[f"{f.n} {sn} [{sp.hn}]"] = f.h[start:stop:stride]
+            df[f"{f.n} {sn} {sdn} {sds}"] = f.d[start:stop:stride]
 
         df.to_csv(fn)  # Write dataframe to file
         return df
