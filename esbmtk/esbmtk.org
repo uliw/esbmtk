@@ -43,7 +43,6 @@
 
 * Global Imports
 #+BEGIN_SRC ipython :tangle esbmtk.py
-# from pint import UnitRegistry
 from numbers import Number
 from nptyping import *
 from typing import *
@@ -60,7 +59,6 @@ import logging
 import time
 import builtins
 set_printoptions(precision=4)
-# from .utility_functions import *
 #+END_SRC
 
 * The main esbmtk objects
@@ -312,6 +310,7 @@ class Model(esbmtkBase):
        - Model_Name.describe()
        - Model_Name.save_data()
        - Model_Name.plot_data()
+
        - Model_Name.plot_reservoirs()
        - Model_Name.run()
 
@@ -378,13 +377,16 @@ class Model(esbmtkBase):
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
+        self.l_unit = ureg.meter               # the length unit
         self.t_unit = Q_(self.timestep).units  # the time unit
         self.d_unit = Q_(self.stop).units  # display time units
         self.m_unit = Q_(self.mass_unit)  # the mass unit
         self.v_unit = Q_(self.volume_unit)  # the volume unit
         self.c_unit = self.m_unit / self.v_unit  # the concentration unit (mass/volume)
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
-        ureg.define('Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups')
+        self.r_unit = self.v_unit / self.t_unit  # flux as volume/time
+        # this is now defined in __init__.py
+        #ureg.define('Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups')
 
         # legacy variable names
         self.start = Q_(self.start).to(self.t_unit).magnitude
