@@ -52,7 +52,7 @@ class Carbon(esbmtkBase):
             mass_unit="mmol",  # base mass unit
             li_label="C^{12}$S",  # Name of light isotope
             hi_label="C^{13}$S",  # Name of heavy isotope
-            d_label="$\delta^{13}$C",  # Name of isotope delta
+            d_label= r"$\delta^{13}$C",  # Name of isotope delta
             d_scale="VPDB",  # Isotope scale. End of plot labels
             r=0.0112372,  # VPDB C13/C12 ratio https://www-pub.iaea.org/MTCD/publications/PDF/te_825_prn.pdf
         )

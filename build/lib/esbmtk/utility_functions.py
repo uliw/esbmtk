@@ -47,6 +47,21 @@ def get_imass(m: float, d: float, r: float) -> [float, float]:
     hi: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
     return [li, hi]
 
+def get_imass2(mr: float, mn: float, lr: float, hr: float) -> [float, float]:
+    """
+    Calculate the isotope masses from bulk mass and isotope ratio
+
+    mr, lr, hr = are the masses of the reference values
+    mn, ln, hn = are the masses of the new values
+    
+    """
+
+    ln :float = mn * lr / mr
+    hn :float = mn - ln
+
+    #li: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+    #hi: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
+    return [ln, hn]
 
 
 def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
@@ -306,3 +321,60 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     #yl_min = min(yl)
     #yl_max = max(yl)
     #if (yl_max - yl_min) < 0.1:
+
+def get_string_between_brackets(s :str) -> str:
+    """ Parse string and extract substring between square brackets
+
+    """
+    
+    s =  s.split("[")
+    if len(s) < 2:
+        raise ValueError(f"Column header {s} must include units in square brackets")
+
+    s = s[1]
+
+    s = s.split("]")
+
+    if len(s) < 2:
+        raise ValueError(f"Column header {s} must include units in square brackets")
+
+    return s[0]
+
+def map_units(v: any, *args) -> float:
+    """ parse v to see if it is a string. if yes, map to quantity. 
+        parse v to see if it is a quantity, if yes, map to model units
+        and extract magnitude, assign mangitude to return value
+        if not, assign value to return value
+        
+        v : a keyword value number/string/quantity
+        args: one or more quantities (units) see the Model class (e.g., f_unit)
+
+    """
+
+    from . import Q_
+
+    m: float = 0
+    match :bool = False
+
+    # test if string, map to quantity if yes
+    if isinstance(v, str):
+        v = Q_(v)
+
+    # test if we find a matching dimension, map if true
+    if isinstance(v, Q_):
+        for q in args:
+            if v.dimensionality == q.dimensionality:
+                m = v.to(q).magnitude
+                match = True
+
+        if not match:
+            message = f"{v} is none of {print(*args)}"
+            raise ValueError(message)
+
+    else:  # no quantity, so it should be a number
+        m = v
+
+    if not isinstance(m, float):
+        raise ValueError(f"m is {type(m)}, must be float, v={v}. Something is fishy")
+
+    return m

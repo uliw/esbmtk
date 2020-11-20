@@ -109,11 +109,11 @@ class Connect(esbmtkBase):
             "react_with": Flux,
             "ratio": Number,
             "scale": Number,
-            "k_concentration": (str, Number, Q_),
+            "k_concentration": (Number, str, Q_),
             "k_mass": (str, Number, Q_),
             "ref_value": (str, Number, Q_),
             "ref_reservoirs": list,
-            "k_value": Number,
+            "k_value": (Number, str, Q_),
             "a_value": Number,
             "b_value": Number,
             "plot": str,
@@ -141,7 +141,7 @@ class Connect(esbmtkBase):
             "b_value": "a number",
             "name": "a string",
             "id": "a string",
-            "plot" : "a string",
+            "plot": "a string",
         })
 
         self.__validateandregister__(kwargs)
@@ -220,7 +220,7 @@ class Connect(esbmtkBase):
             species=self.sp,  # Species handle
             delta=d,  # delta value of flux
             rate=r,  # flux value
-            plot=self.plot # display this flux?
+            plot=self.plot  # display this flux?
         )
 
         # register flux with its reservoirs
@@ -417,26 +417,21 @@ class Connect(esbmtkBase):
         # k_concentration, k_mass and ref_value can be a number, a unit string, or a quantity
         # if unit - convert into qauntity
         # if quantity convert into number
+        # k_concentration can be mass/time or voolume/time
+
+        # map quantities if necessary
         if "k_concentration" in self.kwargs:
-            if isinstance(self.k_concentration, str):
-                self.k_concentration = Q_(self.k_concentration)
+            self.k_concentration = map_units(self.k_concentration,
+                                             self.mo.f_unit, self.mo.r_unit,self.mo.c_unit)
 
         if "k_mass" in self.kwargs:
-            if isinstance(self.k_mass, str):
-                self.k_mass = Q_(self.k_mass)
+            self.k_mass = map_units(self.k_mass, self.mo.m_unit)
 
         if "ref_value" in self.kwargs:
-            if isinstance(self.ref_value, str):
-                self.ref_value = Q_(self.ref_value)
+            self.ref_value = map_units(self.ref_value, self.mo.c_unit)
 
+        # call the appropriate scaling function
         if "k_concentration" in self.kwargs and "ref_value" in self.kwargs:
-            # if necessary, map units
-            if isinstance(self.k_concentration, Q_):
-                self.k_concentration = self.k_concentration.to(
-                    self.mo.c_unit).magnitude
-            if isinstance(self.ref_value, Q_):
-                self.ref_value = self.ref_value.to(self.mo.c_unit).magnitude
-
             ph = ScaleRelativeToNormalizedConcentration(
                 name=self.pn + "_PknC",
                 reservoir=self.r,
@@ -445,12 +440,6 @@ class Connect(esbmtkBase):
                 k_value=self.k_concentration)
 
         elif "k_mass" in self.kwargs and "ref_value" in self.kwargs:
-            # if necessary, map units
-            if isinstance(self.k_mass, Q_):
-                self.k_mass = self.k_mass.to(self.mo.m_unit).magnitude
-            if isinstance(self.ref_value, Q_):
-                self.ref_value = self.ref_value.to(self.mo.m_unit).magnitude
-
             ph = ScaleRelativeToNormalizedMass(name=self.pn + "_PknM",
                                                reservoir=self.r,
                                                flux=self.fh,
@@ -458,33 +447,24 @@ class Connect(esbmtkBase):
                                                k_value=self.k_mass)
 
         elif "k_mass" in self.kwargs and not "ref_value" in self.kwargs:
-            # if necessary, map units
-            if isinstance(self.k_mass, Q_):
-                self.k_mass = self.k_mass.to(self.mo.m_unit).magnitude
-
             ph = ScaleRelativeToMass(name=self.pn + "_PkM",
                                      reservoir=self.r,
                                      flux=self.fh,
                                      k_value=self.k_mass)
 
         elif "k_concentration" in self.kwargs and not "ref_value" in self.kwargs:
-            # if necessary, map units
-            if isinstance(self.k_concentration, Q_):
-                self.k_concentration = self.k_concentration.to(
-                    self.mo.c_unit).magnitude
-
             ph = ScaleRelativeToConcentration(name=self.pn + "_PkC",
                                               reservoir=self.r,
                                               flux=self.fh,
                                               k_value=self.k_concentration)
-        elif "k_value" in self.kwargs and "ref_reservoirs" in self.kwargs:
-            # if necessary, map units
 
-            ph = ScaleRelative2otherReservoir(name=self.pn + "_PkC",
-                                              reservoir=self.r,
-                                              ref_reservoirs=self.ref_reservoirs,
-                                              flux=self.fh,
-                                              k_value=self.k_value)
+        elif "k_value" in self.kwargs and "ref_reservoirs" in self.kwargs:
+            ph = ScaleRelative2otherReservoir(
+                name=self.pn + "_PkC",
+                reservoir=self.r,
+                ref_reservoirs=self.ref_reservoirs,
+                flux=self.fh,
+                k_value=self.k_value)
 
         elif "a_value" in self.kwargs and "b_value" in self.kwargs:
             ph = Monod(name=self.pn + "_PMonod",
@@ -915,7 +895,7 @@ class RateConstant(Process):
         # update the allowed keywords
         self.lkk = {
             "k_value": Number,
-            "ref_value": (Number, str, Q_),
+            "ref_value": Number,
             "name": str,
             "reservoir": (Reservoir, list),
             "flux": Flux,
@@ -935,17 +915,11 @@ class RateConstant(Process):
             "k_value": "a number",
             "reservoir": "Reservoir handle",
             "ref_reservoirs": "List of Reservoir handle(s)",
-            "ref_value": "a number",
+            "ref_value": "a number or flux quantity",
             "name": "a string value",
             "flux": "a flux handle",
         })
 
-        if "ref_value" in kwargs:
-            # convert into base units if necessary
-            if isinstance(kwargs["ref_value"],str):
-                rv = Q_(kwargs["ref_value"])
-                kwargs["ref_value"].to(self.mo.c_unit).magnitude
-                        
         # initialize keyword values
         self.__validateandregister__(kwargs)
         self.__postinit__()  # do some housekeeping

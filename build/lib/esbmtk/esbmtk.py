@@ -16,7 +16,6 @@
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-# from pint import UnitRegistry
 from numbers import Number
 from nptyping import *
 from typing import *
@@ -33,7 +32,6 @@ import logging
 import time
 import builtins
 set_printoptions(precision=4)
-# from .utility_functions import *
 
 class esbmtkBase():
     """The esbmtk base class template. This class handles keyword
@@ -270,6 +268,7 @@ class Model(esbmtkBase):
        - Model_Name.describe()
        - Model_Name.save_data()
        - Model_Name.plot_data()
+
        - Model_Name.plot_reservoirs()
        - Model_Name.run()
 
@@ -336,13 +335,16 @@ class Model(esbmtkBase):
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
+        self.l_unit = ureg.meter               # the length unit
         self.t_unit = Q_(self.timestep).units  # the time unit
         self.d_unit = Q_(self.stop).units  # display time units
         self.m_unit = Q_(self.mass_unit)  # the mass unit
         self.v_unit = Q_(self.volume_unit)  # the volume unit
         self.c_unit = self.m_unit / self.v_unit  # the concentration unit (mass/volume)
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
-        ureg.define('Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups')
+        self.r_unit = self.v_unit / self.t_unit  # flux as volume/time
+        # this is now defined in __init__.py
+        #ureg.define('Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups')
 
         # legacy variable names
         self.start = Q_(self.start).to(self.t_unit).magnitude
@@ -549,7 +551,7 @@ class Element(esbmtkBase):
                     mass_unit =  "mol",        # base mass unit
                     li_label  =  "$^{32$S",    # Label of light isotope
                     hi_label  =  "$^{34}S",    # Label of heavy isotope
-                    d_label   =  "$\delta^{34}$S",  # Label for delta value 
+                    d_label   =  r"$\delta^{34}$S",  # Label for delta value 
                     d_scale   =  "VCDT",       # Isotope scale
                     r         = 0.044162589,   # isotopic abundance ratio for element
                   )
@@ -695,9 +697,9 @@ class Reservoir(esbmtkBase):
             "name": str,
             "species": Species,
             "delta": Number,
-            "concentration": str,
-            "mass": str,
-            "volume": str,
+            "concentration": (str,Q_),
+            "mass": (str,Q_),
+            "volume": (str,Q_),
         }
 
         # provide a list of absolutely required keywords
@@ -713,10 +715,9 @@ class Reservoir(esbmtkBase):
         # validate and initialize instance variables
         self.__initerrormessages__()
         self.bem.update({
-            "concentration": "string",
-            "mass": "a  string",
-            "concentration": "a string",
-            "volume": "a string"
+            "mass": "a  string or quantity",
+            "concentration": "a string or quantity",
+            "volume": "a string or quantity"
         })
         self.__validateandregister__(kwargs)
 
@@ -1643,7 +1644,8 @@ class ExternalData(esbmtkBase):
         xh = self.df.columns[0]
 
         # get unit information from each header
-        xh = xh.split("[")[1].split("]")[0]
+        xh = get_string_between_brackets(xh)
+       
         xq = Q_(xh)
         # add these to the data we are are reading
         self.x: [NDArray] = self.df.iloc[:, 0].to_numpy() * xq
@@ -1656,7 +1658,7 @@ class ExternalData(esbmtkBase):
         # check if y-data is present
         yh = self.df.columns[1]
         if not "Unnamed" in yh:
-            yh = self.df.columns[1].split("[")[1].split("]")[0]
+            yh = get_string_between_brackets(yh)
             yq = Q_(yh)
             # add these to the data we are are reading
             self.y: [NDArray] = self.df.iloc[:, 1].to_numpy() * yq
