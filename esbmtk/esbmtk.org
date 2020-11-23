@@ -310,6 +310,8 @@ class Model(esbmtkBase):
        - Model_Name.describe()
        - Model_Name.save_data()
        - Model_Name.plot_data()
+       - Model_Name.save_state() Save the model state
+       - Model_name.read_state() Initialize with a previous model state
 
        - Model_Name.plot_reservoirs()
        - Model_Name.run()
@@ -930,7 +932,8 @@ class Reservoir(esbmtkBase):
         for m in self.lop:
             m.describe(self)
 
-    def __write_data__(self, prefix :str, start :int, stop :int, stride :int) -> None:
+    def __write_data__(self, prefix: str, start: int, stop: int,
+                       stride: int) -> None:
         """ To be called by write_data and save_state
         """
 
@@ -952,24 +955,27 @@ class Reservoir(esbmtkBase):
 
         # build the dataframe
         df: pd.dataframe = DataFrame()
-        
+
         df[f"{self.n} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
         df[f"{self.n} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
         df[f"{self.n} {sp.ln}"] = self.l[start:stop:stride]  # light isotope
         df[f"{self.n} {sp.hn} "] = self.h[start:stop:stride]  # heavy isotope
         df[f"{self.n} {sdn} {sds}"] = self.d[start:stop:stride]  # delta value
-        df[f"{self.n} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
+        df[f"{self.n} {sn} [{cmu}]"] = self.c[start:stop:
+                                              stride]  # concentration
 
         for f in self.lof:  # Assemble the headers and data for the reservoir fluxes
-            df[f"{f.n} {sn} [{fmu}]"] = f.m[start:stop:stride] # mass
-            df[f"{f.n} {sn} [{sp.ln}]"] = f.l[start:stop:stride] # light isotope
-            df[f"{f.n} {sn} [{sp.hn}]"] = f.h[start:stop:stride] # heavy isotope
-            df[f"{f.n} {sn} {sdn} {sds}"] = f.d[start:stop:stride] # delta
+            df[f"{f.n} {sn} [{fmu}]"] = f.m[start:stop:stride]  # mass
+            df[f"{f.n} {sn} [{sp.ln}]"] = f.l[start:stop:
+                                              stride]  # light isotope
+            df[f"{f.n} {sn} [{sp.hn}]"] = f.h[start:stop:
+                                              stride]  # heavy isotope
+            df[f"{f.n} {sn} {sdn} {sds}"] = f.d[start:stop:stride]  # delta
 
-        df.to_csv(fn,index=False)  # Write dataframe to file
+        df.to_csv(fn, index=False)  # Write dataframe to file
         return df
 
-    def __read_state__(self)->None:
+    def __read_state__(self) -> None:
         """ read data from csv-file into a dataframe
         
         The CSV file must have the following columns
@@ -988,40 +994,41 @@ class Reservoir(esbmtkBase):
         import os.path
         from os import path
 
-        fn = "state_"+self.mo.n+"_"+self.n+".csv"
+        fn = "state_" + self.mo.n + "_" + self.n + ".csv"
 
         if not path.exists(fn):
             print(f"Cannot find {fn}\n")
             raise ValueError(f"The file does not exist")
-        
-        df :pd.DataFrame = pd.read_csv(fn)
+
+        df: pd.DataFrame = pd.read_csv(fn)
         headers = list(df.columns.values)
+        self.df = df
 
         # the headers contain the object name for each data in the
         # reservoir or flux thus, we must reduce the list to unique
         # object names first. Note, we must preserve order
-        header_list :list = []
+        header_list: list = []
         for x in headers:
             n = x.split(" ")[0]
             if n not in header_list:
                 header_list.append(n)
 
-        print(f"number of headers {len(header_list)}")
-       
         # loop over all columns
-        col :int = 1 # we ignore the time column
+        col :int = 1  # we ignore the time column
+        i   :int = 0
         for n in header_list:
             name = n.split(" ")[0]
             if name == self.name:
-              col =  self.__assign__data__(name,df,col,True)
+                col = self.__assign__data__(self, df, col, True)
             elif is_name_in_list(name, self.lof):
-              col =  self.__assign__data__(name,df,col,False)  
+                col = self.__assign__data__(self.lof[i], df, col, False)
+                i += 1
             else:
                 print(f"No '{name}' in {self.n}\n")
                 raise ValueError("Unable to find Reservoir of Flux Name")
-            
 
-    def __assign__data__(self, name :str, df: pd.DataFrame, col :int, res :bool)->int:
+    def __assign__data__(self, obj: any, df: pd.DataFrame, col: int,
+                         res: bool) -> int:
         """
         Assign the data to the first 3 values in of this flux or reservoir
 
@@ -1031,19 +1038,21 @@ class Reservoir(esbmtkBase):
         
         """
 
-        print(f"header = {name}, col={col}")
-        self.m[0:3] = df.iloc[0:3,col].to_numpy()
+        # is there a bettetr way to do this?
+        rows = 6
+        obj.m[0:rows] = df.iloc[0:rows, col].to_numpy()
+        print(f"{obj.n} Mass = {df.iloc[0:2,col].to_numpy()}")
         col += 1
-        self.l[0:3] = df.iloc[0:3,col].to_numpy()
+        obj.l[0:rows] = df.iloc[0:rows, col].to_numpy()
         col += 1
-        self.h[0:3] = df.iloc[0:3,col].to_numpy()
+        obj.h[0:rows] = df.iloc[0:rows, col].to_numpy()
         col += 1
-        self.d[0:3] = df.iloc[0:3,col].to_numpy()
+        obj.d[0:rows] = df.iloc[0:rows, col].to_numpy()
         col += 1
 
-        if res: # if type is reservoir
-             self.c[0:3] = df.iloc[0:3,col].to_numpy()
-             col += 1
+        if res:  # if type is reservoir
+            obj.c[0:rows] = df.iloc[0:rows, col].to_numpy()
+            col += 1
 
         return col
 

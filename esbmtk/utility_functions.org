@@ -425,3 +425,17 @@ def map_units(v: any, *args) -> float:
 
     return m
 #+END_SRC
+
+#+BEGIN_SRC ipython :tangle utility_functions.py
+def is_name_in_list(n: str, l: list)->bool:
+    """ Test if an object name is part of the object list
+    
+    """
+
+    r :bool = False
+    for e in l:
+        if e.n == n:
+            r = True
+
+    return r
+#+END_SRC
