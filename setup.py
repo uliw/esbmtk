@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="esbmtk",  # Replace with your own username
-    version="0.2.1.2",
+    version="0.2.1.3",
     author="Ulrich G. Wortmann",
     author_email="uli.wortmann@utoronto.ca",
     description="An Earth Sciences Box Modeling Toolkit",
@@ -19,9 +19,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
         "Intended Audience :: Education",
         "Intended Audience :: Science/Research",
-        "Topic :: Scientific/Engineering :: Chemistry"
-        "Topic :: Scientific/Engineering :: Earth Sciences"
-        "Topic :: Scientific/Engineering :: Box Modeling",
+        "Topic :: Scientific/Engineering :: Chemistry",
     ],
     python_requires=">=3.6",
     install_requires=[

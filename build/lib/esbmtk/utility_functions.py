@@ -322,6 +322,18 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     #yl_max = max(yl)
     #if (yl_max - yl_min) < 0.1:
 
+def is_name_in_list(n: str, l: list)->bool:
+    """ Test if an object name is part of the object list
+    
+    """
+
+    r :bool = False
+    for e in l:
+        if e.n == n:
+            r = True
+
+    return r
+
 def get_string_between_brackets(s :str) -> str:
     """ Parse string and extract substring between square brackets
 
