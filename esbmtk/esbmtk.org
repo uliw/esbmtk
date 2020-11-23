@@ -1392,11 +1392,15 @@ class Signal(esbmtkBase):
                    stype = "addition"   # optional, currently the only type
                    shape = "square"     # square, pyramid
                    mass/magnitude/filename  # give one
-                   offset = '0 yrs'     # 
+                   offset = '0 yrs',     #
+                   scale = 1, optional
                   )
 
       Signals are cumulative, i.e., complex signals ar created by
-      adding one signal to another (i.e., Snew = S1 + S2) 
+      adding one signal to another (i.e., Snew = S1 + S2)
+
+      The optional scaling argument will only affect the y-column data of
+      external data files
 
       Signals are registered with a flux during flux creation,
       i.e., they are passed on the process list when calling the
@@ -1444,6 +1448,7 @@ class Signal(esbmtkBase):
             "mass": str,
             "magnitude": Number,
             "offset": str,
+            "scale": Number
         }
 
         # provide a list of absolutely required keywords
@@ -1460,10 +1465,11 @@ class Signal(esbmtkBase):
             'offset': "0 yrs",
             'duration': "0 yrs",
             'delta': 0,
+            'scale': 1,
         }
 
         self.__initerrormessages__()
-        self.bem.update({"data": "a string", "magnitude": Number})
+        self.bem.update({"data": "a string", "magnitude": "Number", "scale": "Number",})
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # list of signals we are based on.
@@ -1620,7 +1626,7 @@ class Signal(esbmtkBase):
 
         # map into model units, and strip unit information
         x = x.to(self.mo.t_unit).magnitude
-        y = y.to(self.mo.f_unit).magnitude
+        y = y.to(self.mo.f_unit).magnitude * self.scale
 
         # the data can contain 1 to n data points (i.e., index
         # values[0,1,n]) each index value contains a time
@@ -1784,7 +1790,9 @@ class ExternalData(esbmtkBase):
                           filename   = "filename",
                           legend     = "label",
                           offset     = "0 yrs",
-                          reservoir  = reservoir_handle)
+                          reservoir  = reservoir_handle,
+                          scale      = scaling factor, optional
+                         )
 
       The data must exist as CSV file, where the first column contains
       the X-values, and the second column contains the Y-values.
@@ -1802,7 +1810,8 @@ class ExternalData(esbmtkBase):
       By convention, the secon column should contaain the same type of
       data as the reservoir (i.e., a concentration), whereas the third
       column contain isotope delta values. Columns with no data should
-      be left empty (and have no header!)
+      be left empty (and have no header!) The optional scale argumenty, will
+      only affect the Y-col data, not the isotope data
     
       The column headers are only used for the time or concentration
       data conversion, and are ignored by the default plotting
@@ -1829,12 +1838,13 @@ class ExternalData(esbmtkBase):
             "legend": str,
             "reservoir": Reservoir,
             "offset": str,
+            "scale": Number,
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["name", "filename", "legend", "reservoir"]
         # list of default values if none provided
-        self.lod: Dict[str, any] = {"offset": "0 yrs"}
+        self.lod: Dict[str, any] = {"offset": "0 yrs", "scale": 1}
 
         # validate input and initialize instance variables
         self.__initerrormessages__()
@@ -1876,7 +1886,7 @@ class ExternalData(esbmtkBase):
             # add these to the data we are are reading
             self.y: [NDArray] = self.df.iloc[:, 1].to_numpy() * yq
             # map into model units
-            self.y = self.y.to(self.mo.t_unit).magnitude
+            self.y = self.y.to(self.mo.t_unit).magnitude * self.scale
 
         # check if z-data is present
         if ncols == 3:
