@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgbd9d036)
-2.  [News](#orgc57d127)
-3.  [Contributing](#org3db8aa8)
-4.  [Installation](#org1095bc9)
-5.  [Documentation](#org503888d)
-6.  [Todo](#org45e9ed1)
-7.  [License](#org2cbf75f)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org9c39566)
+2.  [News](#orgc634157)
+3.  [Contributing](#org8a1d31e)
+4.  [Installation](#org073a07b)
+5.  [Documentation](#org762b91c)
+6.  [Todo](#org5fabf3c)
+7.  [License](#org0ee5b06)
 
 
-<a id="orgbd9d036"></a>
+<a id="org9c39566"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,9 +30,13 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="orgc57d127"></a>
+<a id="orgc634157"></a>
 
 # News
+
+-   Nov. 23<sup>rd</sup> A model can now save it's state, which can then be used
+    to initialize a subsequent model run. This is particularly useful
+    for models which require a spin up phase to reach equilibrium
 
 -   Nov. 18<sup>th</sup>, started to add unit tests for selected modules. Added
     unit conversions to external data sets. External data can now be
@@ -52,7 +56,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org3db8aa8"></a>
+<a id="org8a1d31e"></a>
 
 # Contributing
 
@@ -62,7 +66,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org1095bc9"></a>
+<a id="org073a07b"></a>
 
 # Installation
 
@@ -83,7 +87,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org503888d"></a>
+<a id="org762b91c"></a>
 
 # Documentation
 
@@ -98,7 +102,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org45e9ed1"></a>
+<a id="org5fabf3c"></a>
 
 # Todo
 
@@ -107,7 +111,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org2cbf75f"></a>
+<a id="org0ee5b06"></a>
 
 # License
 

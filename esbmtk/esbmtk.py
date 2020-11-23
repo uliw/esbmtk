@@ -270,8 +270,6 @@ class Model(esbmtkBase):
        - Model_Name.plot_data()
        - Model_Name.save_state() Save the model state
        - Model_name.read_state() Initialize with a previous model state
-
-       - Model_Name.plot_reservoirs()
        - Model_Name.run()
 
     Optional, you can provide the element keyword which will setup a
@@ -982,15 +980,20 @@ class Reservoir(esbmtkBase):
 
         # is there a bettetr way to do this?
         rows = 6
-        obj.m[0:rows] = df.iloc[0:rows, col].to_numpy()
-        print(f"{obj.n} Mass = {df.iloc[0:2,col].to_numpy()}")
-        col += 1
-        obj.l[0:rows] = df.iloc[0:rows, col].to_numpy()
-        col += 1
-        obj.h[0:rows] = df.iloc[0:rows, col].to_numpy()
-        col += 1
-        obj.d[0:rows] = df.iloc[0:rows, col].to_numpy()
-        col += 1
+
+        ovars :list = ["m", "l", "h", "d"]
+        for v in ovars:
+            obj.__dict__[v][0:rows] =  df.iloc[0:rows, col].to_numpy()
+            col += 1
+            
+        #obj.m[0:rows] = df.iloc[0:rows, col].to_numpy()
+        #col += 1
+        #obj.l[0:rows] = df.iloc[0:rows, col].to_numpy()
+        #col += 1
+        #obj.h[0:rows] = df.iloc[0:rows, col].to_numpy()
+        #col += 1
+        #obj.d[0:rows] = df.iloc[0:rows, col].to_numpy()
+        #col += 1
 
         if res:  # if type is reservoir
             obj.c[0:rows] = df.iloc[0:rows, col].to_numpy()

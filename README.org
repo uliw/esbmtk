@@ -17,6 +17,10 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - Nov. 23^{rd} A model can now save it's state, which can then be used
+   to initialize a subsequent model run. This is particularly useful
+   for models which require a spin up phase to reach equilibrium
+
  - Nov. 18^{th}, started to add unit tests for selected modules. Added
    unit conversions to external data sets. External data can now be
    directly associated with a reservoir.
