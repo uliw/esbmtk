@@ -750,6 +750,7 @@ class Reservoir(esbmtkBase):
 
       - Name.write_data() # dave data to file
       - Name.describe() # show data this takess an optional argument to show the nth dataset
+      - Name.list_connections() # list all connection objects.
       
     """
     def __init__(self, **kwargs) -> None:
@@ -821,6 +822,7 @@ class Reservoir(esbmtkBase):
         self.lop: list[Process] = []  # list holding all processe references
         self.loe: list[Element] = []  # list of elements in thiis reservoir
         self.doe: Dict[Species, Flux] = {}  # species flux pairs
+        self.loc: list[Connection]  = []  # list of connection objects
 
         # initialize mass vector
         self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
@@ -1078,6 +1080,15 @@ class Reservoir(esbmtkBase):
         list_fluxes(self, self.n, i)
         print("\n")
         show_data(self, self.n, i)
+        
+    def list_connections(self) -> None:
+        """ List all processes associated with this reservoir
+
+        """
+        for p in self.loc:
+            print(f"{p.n}")
+
+        print("You can get further information by running connection_name.list_processes()")
 
     def __list_processes__(self) -> None:
         """ List all processes associated with this reservoir
@@ -1085,6 +1096,8 @@ class Reservoir(esbmtkBase):
         """
         for p in self.lop:
             print(f"{p.n}")
+
+        print("You can get further information by running connection_name.list_processes()")
 
 class Flux(esbmtkBase):
     """A class which defines a flux object. Flux objects contain
@@ -1283,6 +1296,8 @@ class SourceSink(esbmtkBase):
 
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
+
+        self.loc: list[Connection]  = []  # list of connection objects
 
         # legacy names
         self.n = self.name

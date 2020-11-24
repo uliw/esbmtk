@@ -67,13 +67,28 @@ class Connect(esbmtkBase):
            rate = optional
            ref = optional
            species = optional
-           type = optional
+           ctype = optional
 	   pl = [list]) process list. optional
            id = optional identifier
            plot = "yes/no" # defaults to yes
 
-    Currently reckonized flux properties: delta, rate, alpha, species, k_value, k_mass, k_concentration, ref_value,
+    You can aditionally define connection properties via the ctype keyword. The following values are reckognized
+
+   - scale_with_flux: flux-reference, k-value
+   - scale_with_mass: reservoir-reference, k-value
+   - scale_with_concentration: reservoir-ref, k-value
+   - scale_with_mass_normalized: reservoir-ref, k-value, ref-value
+   - scale_with_concentration_normalized:  reservoir-ref, k-value, ref-value
+   - monod_type_limit: ref_value, a-value, b-value
+
+    where k_value represents a scaling factor. For details, see the help system
+
+    useful methods in this class
+
+    Name.list_processes() which will list all the processes which are associated with this connection.
+    
     """
+    
     def __init__(self, **kwargs):
         """ The init method of the connector obbjects performs sanity checks e.g.:
                - whether the reservoirs exist
@@ -104,15 +119,13 @@ class Connect(esbmtkBase):
             "pl": list,
             "alpha": Number,
             "species": Species,
-            "type": str,
+            "ctype": str,
             "ref": Flux,
             "react_with": Flux,
             "ratio": Number,
             "scale": Number,
-            "k_concentration": (Number, str, Q_),
-            "k_mass": (str, Number, Q_),
             "ref_value": (str, Number, Q_),
-            "ref_reservoirs": list,
+            "ref_reservoir": (list, Reservoir),
             "k_value": (Number, str, Q_),
             "a_value": Number,
             "b_value": Number,
@@ -127,7 +140,7 @@ class Connect(esbmtkBase):
         self.lrk: list = ["name", "source", "sink"]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {"id": "", "plot": "yes"}
+        self.lod: Dict[any, any] = {"id": "", "plot": "yes", "ctype": "None"}
 
         # validate and initialize instance variables
         self.__initerrormessages__()
@@ -149,6 +162,10 @@ class Connect(esbmtkBase):
         if not 'pl' in kwargs:
             self.pl: list[Process] = []
 
+        # if no reference reservoir is specified, default to the upstream reservoir    
+        if not 'ref_reservoir' in kwargs:
+            self.ref_reservoir = kwargs["source"]
+
         # legacy names
         self.influx: int = 1
         self.outflux: int = -1
@@ -168,10 +185,14 @@ class Connect(esbmtkBase):
         self.lor: list[
             Reservoir] = self.mo.lor  # get a list of all reservoirs registered for this species
 
+        self.source.loc.append(self)  # register connector with reservoir
+        self.sink.loc.append(self)  # register connector with reservoir
         self.mo.loc.append(self)  # register connector with model
-        self.register_fluxes()  # Source/Sink/Regular
+
+        
+        self.__register_fluxes__()  # Source/Sink/Regular
         self.__set_process_type__()  # derive flux type and create flux(es)
-        self.register_process()  # This should probably move to register fluxes
+        self.__register_process__()  # This should probably move to register fluxes
 
     def get_species(self, r1, r2) -> None:
         """In most cases the species is set by r2. However, if we have
@@ -190,7 +211,7 @@ class Connect(esbmtkBase):
         else:
             self.sp = self.r.sp  # get the parent species
 
-    def register_fluxes(self) -> None:
+    def __register_fluxes__(self) -> None:
         """Create flux object, and register with reservoir and global namespace
 
         """
@@ -269,7 +290,7 @@ class Connect(esbmtkBase):
         else:  # add key and first list value
             r.doe[sp.eh] = [self.fh]
 
-    def register_process(self) -> None:
+    def __register_process__(self) -> None:
         """ Register all flux related processes"""
 
         # first test if we have a signal in the list. If so,
@@ -293,7 +314,7 @@ class Connect(esbmtkBase):
         for p in self.pl:
             # print(f"Registering Process {p.n}")
             # print(f"with reservoir {self.r.n} and flux {self.fh.n}")
-            p.register(self.r, self.fh)
+            p.__register__(self.r, self.fh)
 
     def __set_process_type__(self) -> None:
         """ Deduce flux type based on the provided flux properties. The method returns the 
@@ -308,17 +329,18 @@ class Connect(esbmtkBase):
         # set process name
         self.pn = self.r1.n + "_to_" + self.r2.n
 
-        # set the flux type
+        # set the fundamental flux type
         if "delta" in self.kwargs and "rate" in self.kwargs:
             pass  # static flux,
         elif "delta" in self.kwargs:
             self.__passivefluxfixeddelta__()  # variable flux with fixed delta
         elif "rate" in self.kwargs:
             self.__vardeltaout__()  # variable delta with fixed flux
-        elif "scale" in self.kwargs:
-            self.__scaleflux__()  # scaled variable flux with fixed delta
-        elif "react_with" in self.kwargs:
-            self.__reaction__()  # this flux will react with another flux
+
+        #elif "scale" in self.kwargs:
+        #    self.__scaleflux__()  # scaled variable flux with fixed delta
+        #elif "react_with" in self.kwargs:
+        #    self.__reaction__()  # this flux will react with another flux
         else:  # if neither are given -> default varflux type
             if isinstance(self.r1, Source):
                 raise ValueError(
@@ -329,13 +351,24 @@ class Connect(esbmtkBase):
         if "alpha" in self.kwargs:  # isotope enrichment
             self.__alpha__()
 
-        # set a rate dependent process
-        if "k_concentration" in self.kwargs or "k_mass" in self.kwargs or "ref_reservoirs" in self.kwargs:
-            self.__rateconstant__()  # flux depends on a rate constant
-
-        # monod type rate process
-        if "a_value" in self.kwargs and "b_value" in self.kwargs:
-            self.__rateconstant__()  # flux depends on a rate constant
+        # set complex flux types
+        if self.ctype == "None":
+            pass
+        elif self.ctype == "scale_with_flux":
+            self.__scaleflux__()
+        elif self.ctype == "scale_with_mass":
+            self.__rateconstant__()
+        elif self.ctype == "scale_with_concentration":
+            self.__rateconstant__()
+        elif self.ctype == "scale_with_concentration_normalized":
+            self.__rateconstant__()
+        elif self.ctype == "scale_with_mass_normalized":
+            self.__rateconstant__()
+        elif self.ctype == "monod_type_limit":
+            self.__rateconstant__()
+        else:
+            print(f"Connection Type {self.type} is unknown")
+            raise ValueError(f"Unknown connection type {self.ctype}")
 
     def __passivefluxfixeddelta__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
@@ -414,71 +447,79 @@ class Connect(esbmtkBase):
                 "The rate constant process requires that the flux rate for this reservoir is being set explicitly"
             )
 
-        # k_concentration, k_mass and ref_value can be a number, a unit string, or a quantity
-        # if unit - convert into qauntity
-        # if quantity convert into number
-        # k_concentration can be mass/time or voolume/time
+        if self.ctype == "scale_with_mass":
+            self.k_value = map_units(self.k_value, self.mo.m_unit)
+            ph = ScaleRelativeToMass(name=self.pn + "_PkM",
+                                     reservoir=self.ref_reservoir,
+                                     flux=self.fh,
+                                     k_value=self.k_value)
 
-        # map quantities if necessary
-        if "k_concentration" in self.kwargs:
-            self.k_concentration = map_units(self.k_concentration,
-                                             self.mo.f_unit, self.mo.r_unit,self.mo.c_unit)
-
-        if "k_mass" in self.kwargs:
-            self.k_mass = map_units(self.k_mass, self.mo.m_unit)
-
-        if "ref_value" in self.kwargs:
-            self.ref_value = map_units(self.ref_value, self.mo.c_unit)
-
-        # call the appropriate scaling function
-        if "k_concentration" in self.kwargs and "ref_value" in self.kwargs:
-            ph = ScaleRelativeToNormalizedConcentration(
-                name=self.pn + "_PknC",
-                reservoir=self.r,
-                flux=self.fh,
-                ref_value=self.ref_value,
-                k_value=self.k_concentration)
-
-        elif "k_mass" in self.kwargs and "ref_value" in self.kwargs:
+        elif self.ctype == "scale_with_mass_normalized":
+            self.k_value = map_units(self.k_value, self.mo.m_unit)
+            self.ref_value = map_units(self.ref_value, self.mo.m_unit)
             ph = ScaleRelativeToNormalizedMass(name=self.pn + "_PknM",
-                                               reservoir=self.r,
+                                               reservoir=self.ref_reservoir,
                                                flux=self.fh,
                                                ref_value=self.ref_value,
-                                               k_value=self.k_mass)
+                                               k_value=self.k_value)
 
-        elif "k_mass" in self.kwargs and not "ref_value" in self.kwargs:
-            ph = ScaleRelativeToMass(name=self.pn + "_PkM",
-                                     reservoir=self.r,
-                                     flux=self.fh,
-                                     k_value=self.k_mass)
-
-        elif "k_concentration" in self.kwargs and not "ref_value" in self.kwargs:
+        elif self.ctype == "scale_with_concentration":
+            self.k_value = map_units(self.k_value, self.mo.c_unit,
+                                     self.mo.f_unit, self.mo.r_unit)
             ph = ScaleRelativeToConcentration(name=self.pn + "_PkC",
-                                              reservoir=self.r,
+                                              reservoir=self.ref_reservoir,
                                               flux=self.fh,
-                                              k_value=self.k_concentration)
+                                              k_value=self.k_value)
 
-        elif "k_value" in self.kwargs and "ref_reservoirs" in self.kwargs:
-            ph = ScaleRelative2otherReservoir(
-                name=self.pn + "_PkC",
-                reservoir=self.r,
-                ref_reservoirs=self.ref_reservoirs,
+        elif self.ctype == "scale_with_concentration_normalized":
+            self.k_value = map_units(self.k_value, self.mo.c_unit,
+                                     self.mo.f_unit, self.mo.r_unit)
+            self.ref_value = map_units(self.ref_value, self.mo.c_unit)
+            ph = ScaleRelativeToNormalizedConcentration(
+                name=self.pn + "_PknC",
+                reservoir=self.ref_reservoir,
                 flux=self.fh,
+                ref_value=self.ref_value,
                 k_value=self.k_value)
 
-        elif "a_value" in self.kwargs and "b_value" in self.kwargs:
+        elif self.ctype == "monod_ctype_limit":
+            self.ref_value = map_units(self.ref_value, self.mo.c_unit)
             ph = Monod(name=self.pn + "_PMonod",
-                       reservoir=self.r,
+                       reservoir=self.ref_reservoir,
                        flux=self.fh,
                        ref_value=self.ref_value,
                        a_value=self.a_value,
                        b_value=self.b_value)
+
         else:
             raise ValueError(
                 f"This should not happen,and points to a keywords problem in {self.name}"
             )
 
+        #elif "k_value" in self.kwargs and "ref_reservoirs" in self.kwargs:
+        #    ph = ScaleRelative2otherReservoir(
+        #        name=self.pn + "_PkC",
+        #        reservoir=self.r,
+        #        ref_reservoirs=self.ref_reservoirs,
+        #        flux=self.fh,
+        #        k_value=self.k_value)
+
         self.pl.append(ph)
+
+    def list_processes(self)->None:
+        """ list all processes associated with this class
+
+        """
+        
+        for p in self.pl:
+            print(p.n)
+
+        print("You can get further information by running help(process_name)")
+
+class Connection(Connect):
+    """ Alias for the Connect class
+
+    """
 
 class Process(esbmtkBase):
     """This class defines template for process which acts on one or more
@@ -548,7 +589,7 @@ class Process(esbmtkBase):
         self.alpha :Number
         
 
-    def register(self, reservoir :Reservoir, flux :Flux) -> None:
+    def __register__(self, reservoir :Reservoir, flux :Flux) -> None:
         """Register the flux/reservoir pair we are acting upon, and register
           the process with the reservoir
           """

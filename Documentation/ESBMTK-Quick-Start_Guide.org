@@ -390,8 +390,9 @@ C_Cycle.save_data()
 
 
 * Controlling the flux type
-
-The connect method has a variety of way to specify the flux:
+Connecting two reservoirs creates a flux. In order to keep the
+connection definition concise, basic flux properties are derived
+implicitly from the way the connection is specified:
 
  - If both =rate= and =delta= are given, the flux is treated as a
    fixed flux with a given isotope ratio. This is usually the case for
@@ -410,33 +411,101 @@ The connect method has a variety of way to specify the flux:
  - If the connection specifies only =rate= the flux is treated as a
    fixed flux which is computed in such a way that the reservoir
    maintains steady state with respect to it's isotope ratio.
- - Other connection types are possible, but currently untested.
- - A flux can be scaled relative to another flux. To do so, provide
-   the =scale= keyword, and a flux reference via the =ref= keyword
- - A flux can be scaled relative to the mass or concentration of the
-   upstream reservoir. This is achieved by providing a =k_mass= or a
-   =k_concentration= keyword with an appropriate k-value. If one
-   additionally provides the =ref_value= keyword, the
-   mass/concentration is first normalized, then mapped to zero, and
-   the difference is being scale by the k-value
+
+** Advanced flux properties
+Often is desirable to modify a flux is response to something else. A
+typical example would be some sort of signal to force an input
+flux. This can be done by first creating a signal, and then by adding
+this signal to the list of processes registered with this connection:
+#+BEGIN_SRC ipython
+Signal(name = "ACR",   # name of signal
+       species = CO2,  # species
+       filename = "emissions.csv",
+       scale  = 0.3,
+)
+
+Connect(
+    source=Fossil_Fuel_Burning,  # source of flux
+    sink=Shallow_Ocean,          # target of flux
+    rate="0 mol/year",           # baseline flux 
+    delta=0,                     # baseline delta
+    pl=[ACR],                    # add signal to process list
+)
+#+END_SRC
+
+The above method will work for all process types, often used processes
+can also be specified directly during connection creation by providing
+the ctype keyword as in this example
+#+BEGIN_SRC ipython
+Connect(
+    source=Deep_Ocean,          # source of flux
+    sink=Carbonate_burial,      # target of flux
+    rate="18.1E12 mol/year",    # flux rate
+    ctype="scale_with_concentration_normalized", #type
+    ref_reservoir = Deep_Ocean, # 
+    k_value = 1e3,              # scaling value
+    ref_value = "2.6 mmol/l",   # target concentration
+    alpha=0,                    # isotope fractionation
+)
+#+END_SRC
+
+Note that in most cases, the below scaling functions will relate to
+the upstream reservoir. As such, =ref_reservoir= defaults to the
+upstream reservoir, and the =ref_reservoir= keyword can be omittted.
+
+*** Currently recognized ctype values
+
+In most cases, the below scaling functions will relate to the upstream
+reservoir. As such, =ref_reservoir= defaults to the upstream
+reservoir.
+
+ - =scale_with_mass= scale a flux relative to the mass in a given
+   reservoir. Required parameters are =ref_reservoir= which must be a
+   reservoir handle, and =k_value= which must be a constant.
+
+ - =scale_with_concentration= scale a flux relative to the
+   concentration in a given reservoir. Required parameters are
+   =ref_reservoir= which must be a reservoir handle, and =k_value= which
+   must be a constant.
+
+ - =scale_with_mass_normalized= scale a flux relative to the mass in
+  a given reservoir. Required parameters are =ref_reservoir= which
+  must be a reservoir handle, and =k_value= which must be a
+  constant. Additionally, =ref_value= must be specified. This will
+  scale the flux in such a way that it maintains the mass specified
+  by =ref_value=. The scaling factor =k_value= defines how fast the
+  system returns to equilibrium
+
+   F = (M(t)/ref_value -1) * k_value
+
+ - =scale_with_concentration_normalized= same as above, but this time
+   the scaling is relative to concentration
+
+   F = (c(t)/ref_value -1) * k_value
  
-   F = (M/M0 -1) * k where F is forced to be >=0
-
-   This allows to scale the rate dependence relative to an equilibrium
-   value M0, i.e. when the reservoir approaches M0, the flux ->
-   zero. The k-value then expresses how fast the system returns to the
-   equilibrium value
-
- - Fluxes can be scaled with a Michalis-Menten type scaling function
+ -  =monod_type_limit= Fluxes can be scaled with a Michalis-Menten type scaling function
 
    F = F * a * F0 x C/(b+C)
 
-   this type of scaling is invoked by providing the following
-   keywords: =a_value=, =b_value=, =ref_value= the latter being F0 in
-   the above equation
- 
- - Last but not least, Reservoirs can be specified by either providing =volume= and
-   =concentration= or =volume= and =mass=
+
+** Connection Introspection
+
+Each reservoir keeps a list of it's connection objects. This list is accessible via the =list_connnections()= method
+#+BEGIN_SRC ipython
+Ocean.list_connections()
+#+END_SRC
+
+Each connection keeps a list of it's processes
+#+BEGIN_SRC ipython
+connection.list_processes()
+#+END_SRC
+
+In turn, the process names can be used to access the help system
+#+BEGIN_SRC ipython
+help(processname)
+#+END_SRC
+
+
 
 ** External Data
 
