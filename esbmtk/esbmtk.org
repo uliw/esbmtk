@@ -1154,6 +1154,8 @@ class Reservoir(esbmtkBase):
         """
         for p in self.lop:
             print(f"{p.n}")
+
+        print("You can get further information by running connection_name.list_processes()")
 #+END_SRC
 
 
