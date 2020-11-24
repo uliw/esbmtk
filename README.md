@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org9c39566)
-2.  [News](#orgc634157)
-3.  [Contributing](#org8a1d31e)
-4.  [Installation](#org073a07b)
-5.  [Documentation](#org762b91c)
-6.  [Todo](#org5fabf3c)
-7.  [License](#org0ee5b06)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgea8bec1)
+2.  [News](#orge7d5f5d)
+3.  [Contributing](#org431475f)
+4.  [Installation](#orgd2b7616)
+5.  [Documentation](#orgb869cf2)
+6.  [Todo](#orgcb82949)
+7.  [License](#org4e97335)
 
 
-<a id="org9c39566"></a>
+<a id="orgea8bec1"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,9 +30,17 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="orgc634157"></a>
+<a id="orge7d5f5d"></a>
 
 # News
+
+-   Nov. 24<sup>th</sup> New functions to list all connections of a reservoir, and
+    to list all processes associated with a connection. This allows the
+    use of the help system on process names. New interface to specify
+    connections with more complex characteristics (e.g., scale a flux
+    in response to reservoir concentration). This will breaks existing
+    scripts which use these kind of connections. See the Quickstart
+    guide how to change the connection definition.
 
 -   Nov. 23<sup>rd</sup> A model can now save it's state, which can then be used
     to initialize a subsequent model run. This is particularly useful
@@ -56,7 +64,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org8a1d31e"></a>
+<a id="org431475f"></a>
 
 # Contributing
 
@@ -66,7 +74,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org073a07b"></a>
+<a id="orgd2b7616"></a>
 
 # Installation
 
@@ -87,7 +95,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org762b91c"></a>
+<a id="orgb869cf2"></a>
 
 # Documentation
 
@@ -102,7 +110,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org5fabf3c"></a>
+<a id="orgcb82949"></a>
 
 # Todo
 
@@ -111,7 +119,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org0ee5b06"></a>
+<a id="org4e97335"></a>
 
 # License
 

@@ -17,6 +17,14 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - Nov. 24^{th} New functions to list all connections of a reservoir, and
+   to list all processes associated with a connection. This allows the
+   use of the help system on process names. New interface to specify
+   connections with more complex characteristics (e.g., scale a flux
+   in response to reservoir concentration). This will breaks existing
+   scripts which use these kind of connections. See the Quickstart
+   guide how to change the connection definition.
+
  - Nov. 23^{rd} A model can now save it's state, which can then be used
    to initialize a subsequent model run. This is particularly useful
    for models which require a spin up phase to reach equilibrium
