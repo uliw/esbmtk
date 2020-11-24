@@ -443,3 +443,50 @@ The connect method has a variety of way to specify the flux:
 You can associate external datasets to a reservoir (or flux) in order
 to compare model results against measured data. See the
 =one-box-ocean= example in the examples directory.
+
+
+** Working with Units
+
+ESBMTK supports unit parsing in it's arguments, i.e., "1 ky" is
+understood to be equivalent to 1000 yrs. It also supports some unit
+which are useful in Oceanography (i.e., the Sverdrup). The unit
+parsing is handled by the =pint= library, please see
+https://github.com/hgrecco/pint for details.
+
+Sometimes is useful to leverage unit parsing in your code which
+establishes the boundary conditions for the model. An immediate
+example is the definition of the time units. Default alias for year is
+=a=, which works well in a geological context. However, for models
+which deal with historic times, "yrs" my be more appropriate. You can
+redefine the year unit definition in the following way
+#+BEGIN_SRC ipython
+from esbmtk import ureg
+
+ureg.define("year = 365.25 * day = yrs = julian_year")
+#+END_SRC
+where the first alias after the definition (i.e.,"yrs") is the one
+which will be used by ESBMTK for plotting.
+
+Similarly, we can create some shorthands to simplify calculations
+#+BEGIN_SRC ipython
+from esbmtk import ureg
+
+meter = ureg.meter
+mol = ureg.mol
+mmol = ureg.mmol
+Mol = ureg.Mol
+mMol = ureg.mMol
+Sv = ureg.Sv
+years = ureg.years
+seconds = ureg.seconds
+liter = ureg.liter
+#+END_SRC
+
+and then do some dimensionality correct calculations similar to this one
+#+BEGIN_SRC ipython
+volume = 1.38E21 * liter  # Total ocean volume in m**3
+area = 361E12 * meter**2  # m^2 # Total ocean area
+average_depth = volume/area # average depth, about 4000m
+print(f"average_depth = {average_depth:.2e~P}")
+#+END_SRC
+

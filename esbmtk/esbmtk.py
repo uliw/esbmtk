@@ -31,7 +31,6 @@ import pandas as pd
 import logging
 import time
 import builtins
-set_printoptions(precision=4)
 
 class esbmtkBase():
     """The esbmtk base class template. This class handles keyword
@@ -251,7 +250,9 @@ class Model(esbmtkBase):
                       timestep = "2 yrs",    # as a string "2 yrs"
                       offset = "0 yrs",    # optional: time offset for plot
                       mass_unit = "mol/l",   #required
-                      volume_unit = "mol/l", #required 
+                      volume_unit = "mol/l", #required
+                      time_label = optional, defaults to "Time"
+                      display_precision = optional, defaults to 0.01,
             )
 
     The 'ref_time' keyword will offset the time axis by the specified
@@ -260,6 +261,10 @@ class Model(esbmtkBase):
     specify a value of 2000. This is for display purposes only, and does not affect
     the model. Care must be taken that any external data references the model
     time domain, and not the display time.
+
+    The display precision affects the on-screen display of data. It is
+    also cutoff for the graphicak output. I.e., the interval f the y-axis will not be
+    smaller than the display_precision.
     
     All of the above keyword values are available as variables with 
     Model_Name.keyword
@@ -298,6 +303,8 @@ class Model(esbmtkBase):
             "element": str,
             "mass_unit": str,
             "volume_unit": str,
+            "time_label": str,
+            "display_precision": float,
         }
 
         # provide a list of absolutely required keywords
@@ -309,6 +316,8 @@ class Model(esbmtkBase):
         self.lod: Dict[str, any] = {
             'start': "0 years",
             'offset': "0 years",
+            'time_label': "Time",
+            'display_precision': 0.01,
         }
 
         self.__initerrormessages__()
@@ -318,6 +327,8 @@ class Model(esbmtkBase):
             "element": "element name",
             "mass_unit": "a string",
             "volume_unit": "a string",
+            "time_label": "a string",
+            "display_precision": "a number",
         })
 
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -363,6 +374,8 @@ class Model(esbmtkBase):
         self.steps = int(abs(round(self.length / self.dt)))
         self.time = ((arange(self.steps) * self.dt) + self.start)
 
+        set_printoptions(precision=self.display_precision)
+        
         if "element" in self.kwargs:
             if isinstance(self.kwargs["element"], list):
                 element_list = self.kwargs["element"]
