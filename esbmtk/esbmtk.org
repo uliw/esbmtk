@@ -866,7 +866,7 @@ class Reservoir(esbmtkBase):
             self.mass: Number = self.concentration * self.volume  # caculate mass
         elif "mass" in kwargs:
             m = Q_(self.mass)
-            self.plt_units = m.units
+            self.plt_units = self.mo.c_unit
             self.mass: Number = m.to(self.mo.m_unit).magnitude
             self.concentration = self.mass / self.volume
         else:
