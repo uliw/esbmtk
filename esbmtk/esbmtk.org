@@ -427,9 +427,9 @@ class Model(esbmtkBase):
             for e in element_list:
 
                 if e == "Carbon":
-                    Carbon(model=self, name=self.mo + "_Carbon")
+                    Carbon(self)
                 elif e == "Sulfur":
-                    Sulfur(model=self, name=self.mo + "_Sulfur")
+                    Sulfur(self)
                 else:
                     raise ValueError(f"{e} not implemented yet")
         warranty = (
@@ -615,8 +615,10 @@ class Model(esbmtkBase):
                 new[0] = new[1] = new[2] = new[3] = 0
 
                 for j, f in enumerate(flux_list):
+                    #print(f"flux = {f.n}")
                     new += f[i] * direction_list[j]
 
+                #print(f"sum = {new[0]}")
                 # add to data from last time step
                 r[i] = r[i - 1] + new[0:3] * r.mo.dt
                 #n ew = new * (new > 0)  # set negative values to zero
@@ -864,11 +866,13 @@ class Reservoir(esbmtkBase):
             self.plt_units = c.units
             self.concentration: Number = c.to(self.mo.c_unit).magnitude
             self.mass: Number = self.concentration * self.volume  # caculate mass
+            self.display_as = "concentration"
         elif "mass" in kwargs:
             m = Q_(self.mass)
-            self.plt_units = self.mo.c_unit
+            self.plt_units = self.mo.m_unit
             self.mass: Number = m.to(self.mo.m_unit).magnitude
             self.concentration = self.mass / self.volume
+            self.display_as = "mass"
         else:
             raise ValueError("You need to specify mass or concentration")
 
