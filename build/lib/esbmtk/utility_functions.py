@@ -185,12 +185,13 @@ def set_y_limits(ax  :plt.Axes, model :any)->None:
         ax.set_ylim(bottom, top)
         
 
-def get_ptype(kwargs: dict) -> int:
+def get_ptype(obj, kwargs: dict) -> int:
     """
     Set plot type variable
     
     """
 
+    
     ptype: int = 0
     if "ptype" in kwargs:
         if kwargs["ptype"] == "both":
@@ -199,8 +200,15 @@ def get_ptype(kwargs: dict) -> int:
             ptype = 1
         elif kwargs["ptype"] == "concentration":
             ptype = 2
+        elif kwargs["ptype"] == "mass_only":
+            ptype = 2
+    else:
+        if obj.m_type == "mass_only":
+            ptype = 2
+        elif obj.m_type == "both":
+            ptype = 0    
         else:
-            raise ValueError("ptype must be one of 'both/iso/concentration'")
+            raise ValueError("ptype must be one of 'both/iso/concentration/mass_only'")
 
     return ptype
 
@@ -241,8 +249,12 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
         y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
     elif isinstance(obj, Reservoir):
-        yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
-        y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
+        if obj.display_as == "mass":
+            yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
+            y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
+        else:
+            yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
+            y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
     elif isinstance(obj, Signal):
         # use the same units as the associated flux
         yl = (obj.c * model.c_unit).to(obj.fo.plt_units).magnitude

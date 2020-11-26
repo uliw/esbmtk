@@ -253,6 +253,7 @@ class Model(esbmtkBase):
                       volume_unit = "mol/l", #required
                       time_label = optional, defaults to "Time"
                       display_precision = optional, defaults to 0.01,
+                      m_type = "mass_only", defaults to both (mass & isotope)
             )
 
     The 'ref_time' keyword will offset the time axis by the specified
@@ -276,6 +277,7 @@ class Model(esbmtkBase):
        - Model_Name.save_state() Save the model state
        - Model_name.read_state() Initialize with a previous model state
        - Model_Name.run()
+       - Model_Name.list_species()
 
     Optional, you can provide the element keyword which will setup a
     default set of Species for Carbon and Sulfur.  In this case, there
@@ -305,6 +307,7 @@ class Model(esbmtkBase):
             "volume_unit": str,
             "time_label": str,
             "display_precision": float,
+            "m_type": str,
         }
 
         # provide a list of absolutely required keywords
@@ -318,6 +321,7 @@ class Model(esbmtkBase):
             'offset': "0 years",
             'time_label': "Time",
             'display_precision': 0.01,
+            'm_type': "both",
         }
 
         self.__initerrormessages__()
@@ -329,6 +333,7 @@ class Model(esbmtkBase):
             "volume_unit": "a string",
             "time_label": "a string",
             "display_precision": "a number",
+            "m_type": "a string",
         })
 
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -482,7 +487,7 @@ class Model(esbmtkBase):
         for r in self.lor:
             r.__write_data__(prefix, start, stop, stride)
 
-    def read_previos_state(self):
+    def read_state(self):
         """This will initialize the model with the result of a previous model
         run.  For this to work, you will need issue a
         Model.save_state() command at then end of a model run. This
@@ -500,14 +505,14 @@ class Model(esbmtkBase):
 
         This method has the optional keyword ptype which can be
 
-        both = plot both, concentration and isotope data
+        both = plot both, concentraqqtion and isotope data
         iso  = plot isotope data alone
         concentration = plot only concentration data.
 
         """
 
-        ptype: int = get_ptype(kwargs)
-
+        ptype: int = get_ptype(self,kwargs)
+                        
         i = 0
         for r in self.lor:
             r.__plot__(i, ptype)
@@ -526,8 +531,8 @@ class Model(esbmtkBase):
         concentration = plot only concentration data.
         """
 
-        ptype: int = get_ptype(kwargs)
-
+        ptype: int = get_ptype(self,kwargs)
+            
         i: int = 0
         for r in self.lor:
             r.__plot_reservoirs__(i, ptype)
@@ -612,6 +617,14 @@ class Model(esbmtkBase):
         new = new + r[i - 1]  # add to data from last time step
         # new = new * (new > 0)  # set negative values to zero
         r[i] = new  # update reservoir data
+
+    def list_species(self):
+        """ List all  defined species.
+
+        """
+        for e in self.lel:
+            print(f"{e.n}")
+            e.list_species()
 
 class Element(esbmtkBase):
     """Each model, can have one or more elements.  This class sets
@@ -1000,7 +1013,7 @@ class Reservoir(esbmtkBase):
     def __assign__data__(self, obj: any, df: pd.DataFrame, col: int,
                          res: bool) -> int:
         """
-        Assign the data to the first 3 values in of this flux or reservoir
+        Assign the third last entry data to all values in flux or reservoir
 
         parameters: df = dataframe
                     col = column number
@@ -1008,15 +1021,17 @@ class Reservoir(esbmtkBase):
         
         """
 
-        rows = 6
+        #rows = 6
         ovars :list = ["m", "l", "h", "d"]
         
         for v in ovars:
-            obj.__dict__[v][0:rows] =  df.iloc[0:rows, col].to_numpy()
+            #obj.__dict__[v][0:rows] =  df.iloc[0:rows, col].to_numpy()
+            obj.__dict__[v][:] =  df.iloc[-3, col]
             col += 1
             
         if res:  # if type is reservoir
-            obj.c[0:rows] = df.iloc[0:rows, col].to_numpy()
+            #obj.c[0:rows] = df.iloc[0:rows, col].to_numpy()
+            obj.c[:] = df.iloc[-3, col]
             col += 1
 
         return col

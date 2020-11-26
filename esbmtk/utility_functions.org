@@ -222,12 +222,13 @@ def set_y_limits(ax  :plt.Axes, model :any)->None:
         ax.set_ylim(bottom, top)
         
 
-def get_ptype(kwargs: dict) -> int:
+def get_ptype(obj, kwargs: dict) -> int:
     """
     Set plot type variable
     
     """
 
+    
     ptype: int = 0
     if "ptype" in kwargs:
         if kwargs["ptype"] == "both":
@@ -236,8 +237,15 @@ def get_ptype(kwargs: dict) -> int:
             ptype = 1
         elif kwargs["ptype"] == "concentration":
             ptype = 2
+        elif kwargs["ptype"] == "mass_only":
+            ptype = 2
+    else:
+        if obj.m_type == "mass_only":
+            ptype = 2
+        elif obj.m_type == "both":
+            ptype = 0    
         else:
-            raise ValueError("ptype must be one of 'both/iso/concentration'")
+            raise ValueError("ptype must be one of 'both/iso/concentration/mass_only'")
 
     return ptype
 

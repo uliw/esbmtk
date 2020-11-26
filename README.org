@@ -17,6 +17,9 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - Nov. 26^{th}  Species definitions now accept an optional display string. This
+   allows pretty printed output for chemical formulas.
+
  - Nov. 24^{th} New functions to list all connections of a reservoir, and
    to list all processes associated with a connection. This allows the
    use of the help system on process names. New interface to specify

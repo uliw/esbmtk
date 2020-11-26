@@ -1,4 +1,3 @@
-\maketitle
 
 
 # Overview
@@ -393,12 +392,15 @@ reservoir.
 
 -   `scale_with_mass` scale a flux relative to the mass in a given
     reservoir. Required parameters are `ref_reservoir` which must be a
-    reservoir handle, and `k_value` which must be a constant.
+    reservoir handle, and `k_value` which must be a constant. Note that
+    this will scale the flux based on the initial flux rate you
+    specify.
 
 -   `scale_with_concentration` scale a flux relative to the
     concentration in a given reservoir. Required parameters are
-    `ref_reservoir` which must be a reservoir handle, and `k_value` which
-    must be a constant.
+    `ref_reservoir` which must be a reservoir handle, and `k_value`
+    which must be a constant.  Note that this will scale the flux based
+    on the initial flux rate you specify.
 
 -   `scale_with_mass_normalized` scale a flux relative to the mass in
     a given reservoir. Required parameters are `ref_reservoir` which
@@ -484,4 +486,17 @@ and then do some dimensionality correct calculations similar to this one
     area = 361E12 * meter**2  # m^2 # Total ocean area
     average_depth = volume/area # average depth, about 4000m
     print(f"average_depth = {average_depth:.2e~P}")
+
+
+## Saving and reading model state
+
+Some models require a spin up period to reach steady state. The
+`save_state()` method allows to the save the model state, and use it
+as the initial conditions for a new model run. 
+
+Notes: The model definition must remain the same. Similarly, if you
+change a boundary condition in the model definition between two runs,
+it will be overwritten by the `read_state()` method. It is however
+possible to add signals to the new run, in order to change the steady
+state.
 
