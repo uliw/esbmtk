@@ -295,6 +295,7 @@ class Model(esbmtkBase):
                       volume_unit = "mol/l", #required
                       time_label = optional, defaults to "Time"
                       display_precision = optional, defaults to 0.01,
+                      m_type = "mass_only", defaults to both (mass & isotope)
             )
 
     The 'ref_time' keyword will offset the time axis by the specified
@@ -347,6 +348,7 @@ class Model(esbmtkBase):
             "volume_unit": str,
             "time_label": str,
             "display_precision": float,
+            "m_type": str,
         }
 
         # provide a list of absolutely required keywords
@@ -360,6 +362,7 @@ class Model(esbmtkBase):
             'offset': "0 years",
             'time_label': "Time",
             'display_precision': 0.01,
+            'm_type': "both",
         }
 
         self.__initerrormessages__()
@@ -371,6 +374,7 @@ class Model(esbmtkBase):
             "volume_unit": "a string",
             "time_label": "a string",
             "display_precision": "a number",
+            "m_type": "a string",
         })
 
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -542,14 +546,14 @@ class Model(esbmtkBase):
 
         This method has the optional keyword ptype which can be
 
-        both = plot both, concentration and isotope data
+        both = plot both, concentraqqtion and isotope data
         iso  = plot isotope data alone
         concentration = plot only concentration data.
 
         """
 
-        ptype: int = get_ptype(kwargs)
-
+        ptype: int = get_ptype(self,kwargs)
+                        
         i = 0
         for r in self.lor:
             r.__plot__(i, ptype)
@@ -568,8 +572,8 @@ class Model(esbmtkBase):
         concentration = plot only concentration data.
         """
 
-        ptype: int = get_ptype(kwargs)
-
+        ptype: int = get_ptype(self,kwargs)
+            
         i: int = 0
         for r in self.lor:
             r.__plot_reservoirs__(i, ptype)
@@ -654,6 +658,14 @@ class Model(esbmtkBase):
         new = new + r[i - 1]  # add to data from last time step
         # new = new * (new > 0)  # set negative values to zero
         r[i] = new  # update reservoir data
+
+    def list_species(self):
+        """ List all  defined species
+
+        """
+        for e in self.lel:
+            print(f"{e.n}")
+            e.list_species()
 #+END_SRC
 
 ** Element specific properties
@@ -792,6 +804,7 @@ specific properties
     def __lt__(self,
                other) -> None:  # this is needed for sorting with sorted()
         return self.n < other.n
+    
 #+END_SRC
 
 ** Defining the Reservoir object
