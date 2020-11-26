@@ -1,5 +1,6 @@
 #+TITLE: ESBMTK Quick Start Guide
 #+AUTHOR: Ulrich G Wortmann
+#+OX-IPYNB-LANGUAGE: ipython
 #+STARTUP: showall
 #+OPTIONS: todo:nil tasks:nil tags:nil toc:nil
 #+PROPERTY: header-args :eval never-export
@@ -10,7 +11,6 @@
 #+latex_header: \usepackage{natbib}
 #+latex_header: \usepackage{natmove}
 
-\maketitle
 
 * Overview
 

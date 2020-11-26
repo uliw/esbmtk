@@ -331,7 +331,7 @@ class Connect(esbmtkBase):
 
         # set the fundamental flux type
         if "delta" in self.kwargs and "rate" in self.kwargs:
-            pass  # static flux,
+            pass # static flux
         elif "delta" in self.kwargs:
             self.__passivefluxfixeddelta__()  # variable flux with fixed delta
         elif "rate" in self.kwargs:
@@ -1037,11 +1037,18 @@ class ScaleRelativeToMass(RateConstant):
      strength of relation between the reservoir mass and
      the flux scaling
 
-     F = M * k
+     F = F0 *  M * k
 
      where M denotes the mass in the ustream reservoir, k is a
-     constant. This process is typically called by the connector
-     instance. However you can instantiate it manually as
+     constant and F0 is the initial unscaled flux. This process is
+     typically called by the connector instance. However you can
+     instantiate it manually as
+
+     Note that we scale the flux, rather than compute the flux!
+
+     This is faster than setting a new flux, computing the isotope
+     ratio and setting delta. So you either have to set the initial
+     flux F0 to 1, or calculate the k_value accordingly
     
      ScaleRelativeToMass(
                        name = "Name",

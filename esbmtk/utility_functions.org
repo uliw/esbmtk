@@ -278,8 +278,12 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
         y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
     elif isinstance(obj, Reservoir):
-        yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
-        y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
+        if obj.display_as == "mass":
+            yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
+            y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
+        else:
+            yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
+            y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
     elif isinstance(obj, Signal):
         # use the same units as the associated flux
         yl = (obj.c * model.c_unit).to(obj.fo.plt_units).magnitude

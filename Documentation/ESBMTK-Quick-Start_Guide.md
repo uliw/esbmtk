@@ -445,7 +445,7 @@ to compare model results against measured data. See the
 ## Working with Units
 
 ESBMTK supports unit parsing in it's arguments, i.e., "1 ky" is
-understood to be equivalent to 1000 yrs. It also supports some unit
+understood to be equivalent to 1000 yrs. It also supports some units
 which are useful in Oceanography (i.e., the Sverdrup). The unit
 parsing is handled by the `pint` library, please see
 <https://github.com/hgrecco/pint> for details.

@@ -385,9 +385,13 @@ class Model(esbmtkBase):
             for e in element_list:
 
                 if e == "Carbon":
-                    Carbon(model=self, name=self.mo + "_Carbon")
+                    carbon(self)
                 elif e == "Sulfur":
-                    Sulfur(model=self, name=self.mo + "_Sulfur")
+                    sulfur(self)
+                elif e == "Hydrogen":
+                    hydrogen(self)
+                elif e == "Phosphor":
+                    phosphor(self)
                 else:
                     raise ValueError(f"{e} not implemented yet")
         warranty = (
@@ -573,8 +577,10 @@ class Model(esbmtkBase):
                 new[0] = new[1] = new[2] = new[3] = 0
 
                 for j, f in enumerate(flux_list):
+                    #print(f"flux = {f.n}")
                     new += f[i] * direction_list[j]
 
+                #print(f"sum = {new[0]}")
                 # add to data from last time step
                 r[i] = r[i - 1] + new[0:3] * r.mo.dt
                 #n ew = new * (new > 0)  # set negative values to zero
@@ -695,35 +701,42 @@ specific properties
     def __init__(self, **kwargs) -> None:
         """ Initialize all instance variables
             """
-        
+
         # provide a list of all known keywords
-        self.lkk :Dict[any,any] = {"name":str, "element":Element}
+        self.lkk: Dict[any, any] = {
+            "name": str,
+            "element": Element,
+            'display_as': str,
+            'm_weight': Number
+        }
 
         # provide a list of absolutely required keywords
         self.lrk = ["name", "element"]
 
         # list of default values if none provided
-        self.lod = {}
+        self.lod = {"display_as": kwargs["name"], 'm_weight': 0}
 
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # legacy names
-        self.n  = self.name        # display name of species
+        self.n = self.name  # display name of species
         self.mu = self.element.mu  # display name of mass unit
         self.ln = self.element.ln  # display name of light isotope
         self.hn = self.element.hn  # display name of heavy isotope
         self.dn = self.element.dn  # display string for delta
         self.ds = self.element.ds  # display string for delta scale
-        self.r  = self.element.r   # ratio of isotope standard
+        self.r = self.element.r  # ratio of isotope standard
         self.mo = self.element.mo  # model handle
-        self.eh = self.element.n   # element name
-        self.e  = self.element    # element handle
+        self.eh = self.element.n  # element name
+        self.e = self.element  # element handle
+        self.ds = self.display_as # the display string.
 
         #self.mo.lsp.append(self)   # register self on the list of model objects
-        self.e.lsp.append(self) # register this species with the element 
+        self.e.lsp.append(self)  # register this species with the element
 
-    def __lt__(self, other) -> None:  # this is needed for sorting with sorted()
+    def __lt__(self,
+               other) -> None:  # this is needed for sorting with sorted()
         return self.n < other.n
 
 class Reservoir(esbmtkBase):
@@ -806,11 +819,13 @@ class Reservoir(esbmtkBase):
             self.plt_units = c.units
             self.concentration: Number = c.to(self.mo.c_unit).magnitude
             self.mass: Number = self.concentration * self.volume  # caculate mass
+            self.display_as = "concentration"
         elif "mass" in kwargs:
             m = Q_(self.mass)
-            self.plt_units = m.units
+            self.plt_units = self.mo.m_unit
             self.mass: Number = m.to(self.mo.m_unit).magnitude
             self.concentration = self.mass / self.volume
+            self.display_as = "mass"
         else:
             raise ValueError("You need to specify mass or concentration")
 
@@ -843,7 +858,7 @@ class Reservoir(esbmtkBase):
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"
         self.xl: str = self.mo.xl  # set x-axis lable to model time
 
-        self.legend_left = self.species.n
+        self.legend_left = self.species.ds
         self.legend_right = self.species.dn
         self.mo.lor.append(self)  # add this reservoir to the model
 
@@ -1174,7 +1189,7 @@ class Flux(esbmtkBase):
                                                      self.sp.r)  # update delta
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
-        self.legend_left :str = self.species.n
+        self.legend_left :str = self.species.ds
         self.legend_right :str = self.species.dn
         
         self.xl: str = self.model.xl  # se x-axis label equal to model time
