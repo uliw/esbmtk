@@ -1,6 +1,6 @@
 
-
 * Global Imports
+
 #+BEGIN_SRC ipython :tangle species_definitions.py
 # from pint import UnitRegistry
 from numbers import Number
@@ -25,149 +25,95 @@ from .esbmtk import *
 
 **** Defaults for some elements
 
-THis could possibly be moved to a text based config file.
+This could possibly be moved to a text based config file.
 
 #+BEGIN_SRC ipython :tangle species_definitions.py
-
-class Carbon(esbmtkBase):
+def carbon(model):
     """ Some often used definitions
     
     """
 
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
-        """ Initialize this instance """
+    eh = Element(
+        name="Carbon",  # Element Name
+        model=model,  # Model handle
+        mass_unit="mmol",  # base mass unit
+        li_label="C^{12}$S",  # Name of light isotope
+        hi_label="C^{13}$S",  # Name of heavy isotope
+        d_label= r"$\delta^{13}$C",  # Name of isotope delta
+        d_scale="VPDB",  # Isotope scale. End of plot labels
+        r=0.0112372,  # VPDB C13/C12 ratio https://www-pub.iaea.org/MTCD/publications/PDF/te_825_prn.pdf
+    )
+
+    # add species
+    Species(name="CO2", element=eh, display_as = r"CO$_2$" )  # Name & element handle
+    Species(name="DIC", element=eh)
+    Species(name="OM", element=eh)
+    Species(name="CaCO3", element=eh,  display_as= r"CaCO$_3$")
+    Species(name="HCO3", element=eh, display_as= r"HCO$_3^-$")
+    Species(name="CO3", element=eh, display_as = "CO$_3^{2-}$")
+    Species(name="OH", element=eh, display_as = "OH$^{-}$")
+    Species(name="DOC", element=eh)
+    Species(name="C", element=eh)
 
 
-        # dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            "model": Model,
-            "name": str,
-        }
+def sulfur(model):
+    eh = Element(
+        name="Sulfur",
+        model=model,  # model handle
+        mass_unit="mmol",  # base mass unit
+        li_label="$^{32}$S",  # Name of light isotope
+        hi_label="$^{34}$S",  # Name of heavy isotope
+        d_label="$\delta^{34}$S",  # Name of isotope delta
+        d_scale="VCDT",  # Isotope scale. End of plot labels
+        r=0.044162589,  # isotopic abundance ratio for species
+    )
 
-        # provide a list of absolutely required keywords
-        self.lrk: list = ["model", "name"]
-        # list of default values if none provided
-        self.lod: Dict[str, any] = {}
-
-        # provide a dictionary entry for a keyword specific error message
-        # see esbmtkBase.__initerrormessages__()
-        self.__initerrormessages__()
-        self.bem.update({
-            "model": "a model handle",
-        })
-        self.__validateandregister__(kwargs)  # initialize keyword values
-
-        eh = Element(
-            name="C",  # Element Name
-            model=self.model,  # Model handle
-            mass_unit="mmol",  # base mass unit
-            li_label="C^{12}$S",  # Name of light isotope
-            hi_label="C^{13}$S",  # Name of heavy isotope
-            d_label= r"$\delta^{13}$C",  # Name of isotope delta
-            d_scale="VPDB",  # Isotope scale. End of plot labels
-            r=0.0112372,  # VPDB C13/C12 ratio https://www-pub.iaea.org/MTCD/publications/PDF/te_825_prn.pdf
-        )
-
-        # add species
-        Species(name="CO2", element=eh)  # Name & element handle
-        Species(name="DIC", element=eh)
-        Species(name="OM", element=eh)
-        Species(name="CaCO3", element=eh)
-        Species(name="HCO3", element=eh)
-        Species(name="CO3", element=eh)
-        Species(name="OH", element=eh)
-
-
-class Sulfur(esbmtkBase):
-    """ Some often used definitions
-    
-    """
-
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
-        """ Initialize this instance """
-
-
-        self.lkk: Dict[str, any] = {
-            "model": Model,
-            "name": str,
-        }
-
-        # provide a list of absolutely required keywords
-        self.lrk: list = ["model", "name"]
-        # list of default values if none provided
-        self.lod: Dict[str, any] = {}
-
-        # provide a dictionary entry for a keyword specific error message
-        # see esbmtkBase.__initerrormessages__()
-        self.__initerrormessages__()
-        self.bem.update({
-            "model": "a model handle",
-        })
-        self.__validateandregister__(kwargs)  # initialize keyword values
-
-        eh = Element(
-            name="S",
-            model=self.model,  # model handle
-            mass_unit="mmol",  # base mass unit
-            li_label="$^{32}$S",  # Name of light isotope
-            hi_label="$^{34}$S",  # Name of heavy isotope
-            d_label="$\delta^{34}$S",  # Name of isotope delta
-            d_scale="VCDT",  # Isotope scale. End of plot labels
-            r=0.044162589,  # isotopic abundance ratio for species
-        )
-
-        # add species
-        Species(name="SO4", element=eh)  # Name & element handle
-        Species(name="SO3", element=eh)
-        Species(name="SO2", element=eh)
-        Species(name="HS", element=eh)
-        Species(name="H2S", element=eh)
-        Species(name="FeS", element=eh)
-        Species(name="FeS2", element=eh)
-        Species(name="S0", element=eh)
+    # add species
+    Species(name="SO4", element=eh, display_as=r"SO$_{4}^{2-}$")
+    Species(name="SO3", element=eh,  display_as=r"SO$_{3}$")
+    Species(name="SO2", element=eh, display_as=r"SO$_{2$}")
+    Species(name="HS", element=eh, display_as=r"HS$^-$")
+    Species(name="H2S", element=eh, display_as=r"H$_{2}$S")
+    Species(name="FeS", element=eh)
+    Species(name="FeS2", element=eh, display_as=r"FeS$_{2}$") 
+    Species(name="S0", element=eh)
+    Species(name="S", element=eh)
+    Species(name="S2minus", element=eh, display_as=r"S$^{2-}$") 
 #+END_SRC
 
 #+BEGIN_SRC ipython :tangle species_definitions.py
-class Hydrogen(esbmtkBase):
-    """ Some often used definitions
-    
-    """
-
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
-        """ Initialize this instance """
-
-
-        self.lkk: Dict[str, any] = {
-            "model": Model,
-            "name": str,
-        }
-
-        # provide a list of absolutely required keywords
-        self.lrk: list = ["model", "name"]
-        # list of default values if none provided
-        self.lod: Dict[str, any] = {}
-
-        # provide a dictionary entry for a keyword specific error message
-        # see esbmtkBase.__initerrormessages__()
-        self.__initerrormessages__()
-        self.bem.update({
-            "model": "a model handle",
-        })
-        self.__validateandregister__(kwargs)  # initialize keyword values
-
+def hydrogen(model):
         eh = Element(
-            name="H",
-            model=self.Model,  # model handle
-            mass_unit="mmol",  # base mass unit
-            li_label="$^{1$}H",  # Name of light isotope
-            hi_label="$^{2}$H",  # Name of heavy isotope
-            d_label= r"$\delta^{2}$H",  # Name of isotope delta
-            d_scale="VSMOV",  # Isotope scale. End of plot labels  # needs verification 
-            r=0.00015575 ,  # isotopic abundance ratio for species # needs verification 
+                name="Hydrogen",
+                model=model,  # model handle
+                mass_unit="mmol",  # base mass unit
+                li_label="$^{1$}H",  # Name of light isotope
+                hi_label="$^{2}$H",  # Name of heavy isotope
+                d_label= r"$\delta^{2}$H",  # Name of isotope delta
+                d_scale="VSMOV",  # Isotope scale. End of plot labels  # needs verification 
+                r=0.00015575 ,  # isotopic abundance ratio for species # needs verification 
         )
 
         # add species
-        Species(name="H+", element=eh)  # Name & element handle
+        Species(name="Hplus", element=eh, display_as= r"$H^+$")  # Name & element handle
+        Species(name="H20", element=eh, display_as= r"H$_{2}$O" )  # Name & element handle
+        Species(name="H", element=eh)  # Name & element handle
         
+
+def phosphor(model):
+        eh = Element(
+                name="Phosphor",
+                model=model,  # model handle
+                mass_unit="mmol",  # base mass unit
+                li_label="None",  # Name of light isotope
+                hi_label="None",  # Name of heavy isotope
+                d_label= "None",  # Name of isotope delta
+                d_scale="None",  # Isotope scale. End of plot labels  # needs verification 
+                r=1 ,  # isotopic abundance ratio for species # needs verification 
+        )
+
+        # add species
+        Species(name="PO4", element=eh)  # Name & element handle
+        Species(name="P", element=eh)  # Name & element handle
 #+END_SRC
 
