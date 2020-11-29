@@ -292,8 +292,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
         elif obj.transform == "pH":
             yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
-            print(f"len yl ={yl}")
-            yl = math.log10(yl)
+            yl = -np.log10(yl)
             y_label = f"{obj.legend_left} [pH]"
         else:
             yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
