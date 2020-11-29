@@ -344,7 +344,7 @@ class Model(esbmtkBase):
             "stop": str,
             "timestep": str,
             "offset": str,
-            "element": str,
+            "element": (str, list),
             "mass_unit": str,
             "volume_unit": str,
             "time_label": str,
@@ -370,7 +370,7 @@ class Model(esbmtkBase):
         self.bem.update({
             "offset": "a string",
             "timesetp": "a string",
-            "element": "element name",
+            "element": "element name or list of names",
             "mass_unit": "a string",
             "volume_unit": "a string",
             "time_label": "a string",
@@ -630,6 +630,7 @@ class Model(esbmtkBase):
                 #print(f"sum = {new[0]}")
                 # add to data from last time step
                 r[i] = r[i - 1] + new[0:3] * r.mo.dt
+                r[i] = r[i] * (r[i] > 0)
                 #n ew = new * (new > 0)  # set negative values to zero
 
             i = i + 1
@@ -853,6 +854,7 @@ class Reservoir(esbmtkBase):
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
+            "transform": str,
         }
 
         # provide a list of absolutely required keywords
@@ -862,6 +864,7 @@ class Reservoir(esbmtkBase):
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
+            'transform': "none",
             'delta': 0,
         }
 
