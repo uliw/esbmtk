@@ -108,7 +108,7 @@ def get_delta(l: [NDArray, [Float64]], h: [NDArray, [Float64]],
 
    """
 
-    d: float = 1E3 * (abs(h) / (abs(l) - r)) / r
+    d: float = 1E3 * (abs(h) / abs(l) - r) / r
     return np.round(d, 12)
 #+END_SRC
 
