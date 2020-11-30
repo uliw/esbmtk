@@ -95,6 +95,7 @@ class esbmtkBase():
 
         # register instance name in global name space
         self.reg_time = time.monotonic()
+
         setattr(builtins, self.name, self)
 
     def __validateinput__(self, kwargs: Dict[str, any]) -> None:
@@ -256,7 +257,7 @@ class esbmtkBase():
         kwargs.update(new)
         return kwargs
 
-    def __arepr__(self):
+    def __repr__(self):
         """ Print the basic parameters for this class when called via the print method
         
         """
@@ -421,7 +422,7 @@ class Model(esbmtkBase):
         self.steps = int(abs(round(self.length / self.dt)))
         self.time = ((arange(self.steps) * self.dt) + self.start)
 
-        set_printoptions(precision=self.display_precision)
+        # set_printoptions(precision=self.display_precision)
         
         if "element" in self.kwargs:
             if isinstance(self.kwargs["element"], list):
