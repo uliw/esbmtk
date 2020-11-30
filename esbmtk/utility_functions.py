@@ -33,6 +33,7 @@ import pandas as pd
 import logging
 import time
 import builtins
+import math
 set_printoptions(precision=4)
 
 def get_imass(m: float, d: float, r: float) -> [float, float]:
@@ -77,9 +78,9 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
 
     return np.array([m, l, h, d])
 
-def get_delta(l :[NDArray, [Float64]], h :[NDArray, [Float64]], r
-              :float)-> [NDArray, [Float64]]:
-   """Calculate the delta from the mass of light and heavy isotope
+def get_delta(l: [NDArray, [Float64]], h: [NDArray, [Float64]],
+              r: float) -> [NDArray, [Float64]]:
+    """Calculate the delta from the mass of light and heavy isotope
      Arguments are l and h which are the masses of the light and
      heavy isotopes respectively, r = abundance ratio of the
      respective element. Note that this equation can result in a
@@ -89,8 +90,8 @@ def get_delta(l :[NDArray, [Float64]], h :[NDArray, [Float64]], r
 
    """
 
-   d :float = 1E3 * (h / l - r) / r
-   return np.round(d, 12)
+    d: float = 1E3 * (abs(h) / abs(l) - r) / r
+    return np.round(d, 12)
 
 def add_to (l, e):
     """
@@ -252,6 +253,10 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         if obj.display_as == "mass":
             yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
+        elif obj.transform == "pH":
+            yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
+            yl = -np.log10(yl)
+            y_label = f"{obj.legend_left} [pH]"
         else:
             yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
@@ -411,7 +416,7 @@ def map_units(v: any, *args) -> float:
     else:  # no quantity, so it should be a number
         m = v
 
-    if not isinstance(m, float):
+    if not isinstance(m, Number):
         raise ValueError(f"m is {type(m)}, must be float, v={v}. Something is fishy")
 
     return m

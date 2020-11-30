@@ -223,7 +223,7 @@ class esbmtkBase():
         kwargs.update(new)
         return kwargs
 
-    def __repr__(self):
+    def __arepr__(self):
         """ Print the basic parameters for this class when called via the print method
         
         """
@@ -302,7 +302,7 @@ class Model(esbmtkBase):
             "stop": str,
             "timestep": str,
             "offset": str,
-            "element": str,
+            "element": (str, list),
             "mass_unit": str,
             "volume_unit": str,
             "time_label": str,
@@ -328,7 +328,7 @@ class Model(esbmtkBase):
         self.bem.update({
             "offset": "a string",
             "timesetp": "a string",
-            "element": "element name",
+            "element": "element name or list of names",
             "mass_unit": "a string",
             "volume_unit": "a string",
             "time_label": "a string",
@@ -588,7 +588,7 @@ class Model(esbmtkBase):
                 #print(f"sum = {new[0]}")
                 # add to data from last time step
                 r[i] = r[i - 1] + new[0:3] * r.mo.dt
-                #n ew = new * (new > 0)  # set negative values to zero
+                #r[i] = r[i] * (r[i] > 0)
 
             i = i + 1
 
@@ -794,6 +794,7 @@ class Reservoir(esbmtkBase):
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
+            "transform": str,
         }
 
         # provide a list of absolutely required keywords
@@ -803,6 +804,7 @@ class Reservoir(esbmtkBase):
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
+            'transform': "none",
             'delta': 0,
         }
 
@@ -1243,6 +1245,16 @@ class Flux(esbmtkBase):
         self.m = self.m + other.m
         self.l = self.l + other.l
         self.h = self.h + other.h
+        self.d = get_delta(self.l, self.h,self.sp.r)
+
+    def __sub__(self, other):
+        """ adding two fluxes works for the masses, but not for delta
+
+        """
+        
+        self.m = self.m - other.m
+        self.l = self.l - other.l
+        self.h = self.h - other.h
         self.d = get_delta(self.l, self.h,self.sp.r)
 
     def log_description(self, reservoir) -> None:

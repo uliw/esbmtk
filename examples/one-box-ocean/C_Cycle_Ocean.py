@@ -77,8 +77,9 @@ Connect(
     source=Ocean,          # source of flux
     sink=Carbonate_burial, # target of flux
     rate="18.1E12 mol/yr", # burial rate
-    ref_value="2.6 mmol/l",
-    k_concentration = 1000,
+    #ctype = "scale_with_concentration_normalized",
+    #ref_value="2.6 mmol/l",
+    #k_value = 1000,
     alpha=0,               # set the isotope fractionation
 )
 
