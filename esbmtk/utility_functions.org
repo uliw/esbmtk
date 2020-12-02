@@ -468,3 +468,43 @@ def is_name_in_list(n: str, l: list)->bool:
 
     return r
 #+END_SRC
+
+** Utility functions for carbonate chemistry
+
+#+BEGIN_SRC ipython :tangle utility_functions.py
+def get_hplus(dic :float, ta :float)->float:
+    """
+    Calculate H+ concentration based on DIC concentration and Alkalinity
+    according to eq 11 in Follows et al 2006
+    
+    """
+
+    pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
+    pk2 = 8.92
+    K1 = 10**-pk1
+    K2 = 10**-pk2
+    
+    g = dic / ta
+    hplus = 0.5 * ((g - 1) * K1 + ((1 - g)**2 * K1**2 - 4 * K1 * K2 *
+                                   (1 - 2 * g))**0.5)
+
+    return hplus
+
+def get_pco2(dic : float) -> float:
+    """Calculate pCO_{2} in uatm at 25C and a Salinity of 35 CO 2
+    fugacity at S35,
+
+    DIC has to be in mmol/l!
+    
+    Back calculated with equation 8 from Follows 2006
+    using data from data for T25C after Zeebe, Carbonate Systems. This
+    yields 0.005753424657534247 if DIC in mmol/l and pCO_{2} in
+    uatm. The experimentally determined value in Weiss 1970 is 23.9
+    mmols/l atm. Not+ sure why this value is so off? 
+
+    """
+    co2_f = 2.1/356
+
+    return dic/co2_f
+    
+#+END_SRC
