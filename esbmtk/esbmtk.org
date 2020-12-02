@@ -1113,6 +1113,7 @@ class Reservoir(esbmtkBase):
         filename = f"{model.n}_{self.n}.pdf"
         fn = 1  # counter for the figure number
 
+        plt.style.use(['default'])
         fig = plt.figure(i)  # Initialize a plot window
         fig.canvas.set_window_title(f"Reservoir Name: {self.n}")
         fig.set_size_inches(size)
@@ -1146,7 +1147,8 @@ class Reservoir(esbmtkBase):
         geo: list = [1, 1]
         filename = f"{model.n}_{self.n}.pdf"
         fn: int = 1  # counter for the figure number
-
+        
+        plt.style.use(['default'])
         fig = plt.figure(i)  # Initialize a plot window
         fig.set_size_inches(size)
 
