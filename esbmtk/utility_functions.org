@@ -134,10 +134,13 @@ def get_plot_layout(obj):
 
       """
 
-      noo = 1
-      for f in obj.lof:
+      noo = 1 # the reservoir is the fisrt object
+      for f in obj.lof: # count numbert of fluxes
             if f.plot == "yes":
                   noo += 1
+                  
+      for d in obj.ldf: # count number of data fields
+            noo +=1
             
       # noo = len(obj.lof) + 1  # number of objects in this reservoir
       logging.debug(f"{noo} subplots for {obj.n} required")
@@ -257,7 +260,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
       """
 
     from . import ureg, Q_
-    from esbmtk import Flux, Reservoir, Signal
+    from esbmtk import Flux, Reservoir, Signal, DataField
 
     # geo = list with rows and cols
     # fn  = figure number
@@ -270,7 +273,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     
     rows = geo[0]
     cols = geo[1]
-    species = obj.sp
+    # species = obj.sp
     model = obj.mo
     time = model.time + model.offset
 
@@ -301,6 +304,15 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         # use the same units as the associated flux
         yl = (obj.c * model.c_unit).to(obj.fo.plt_units).magnitude
         y_label = f"{obj.n} [{obj.fo.plt_units:~P}]"
+    elif isinstance(obj, DataField):
+        time = (time * model.t_unit).to(model.d_unit).magnitude
+        yl = obj.y1_data
+        y_label = obj.y1_label
+        if len(obj.y2_data) > 1:
+            ptype = 0
+        else:
+            ptype = 2
+        
     else:  # sources, sinks, external data should not show up here
         raise ValueError(f"{obj.n} = {type(obj)}")
 
