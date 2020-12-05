@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org3b7460c)
-2.  [News](#orgd89f072)
-3.  [Contributing](#org1ded03a)
-4.  [Installation](#org9720c67)
-5.  [Documentation](#org42f2d5d)
-6.  [Todo](#orgb129727)
-7.  [License](#org4f18dbd)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org4243668)
+2.  [News](#org565f52d)
+3.  [Contributing](#orgbc33c04)
+4.  [Installation](#orgb4fc069)
+5.  [Documentation](#org15a2320)
+6.  [Todo](#org48fc5bf)
+7.  [License](#org848c751)
 
 
-<a id="org3b7460c"></a>
+<a id="org4243668"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,9 +30,13 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="orgd89f072"></a>
+<a id="org565f52d"></a>
 
 # News
+
+-   Dec. 5<sup>th</sup>, added a DataField Class. This allows for the integration of data
+    which is computed after the model finishes into the model summary
+    plots.
 
 -   Nov. 26<sup>th</sup>  Species definitions now accept an optional display string. This
     allows pretty printed output for chemical formulas.
@@ -67,7 +71,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org1ded03a"></a>
+<a id="orgbc33c04"></a>
 
 # Contributing
 
@@ -77,7 +81,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org9720c67"></a>
+<a id="orgb4fc069"></a>
 
 # Installation
 
@@ -98,7 +102,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org42f2d5d"></a>
+<a id="org15a2320"></a>
 
 # Documentation
 
@@ -113,7 +117,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orgb129727"></a>
+<a id="org48fc5bf"></a>
 
 # Todo
 
@@ -122,7 +126,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org4f18dbd"></a>
+<a id="org848c751"></a>
 
 # License
 

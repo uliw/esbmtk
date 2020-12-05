@@ -62,6 +62,7 @@ class esbmtkBase():
 
         # register instance name in global name space
         self.reg_time = time.monotonic()
+
         setattr(builtins, self.name, self)
 
     def __validateinput__(self, kwargs: Dict[str, any]) -> None:
@@ -223,7 +224,7 @@ class esbmtkBase():
         kwargs.update(new)
         return kwargs
 
-    def __arepr__(self):
+    def __repr__(self):
         """ Print the basic parameters for this class when called via the print method
         
         """
@@ -379,7 +380,7 @@ class Model(esbmtkBase):
         self.steps = int(abs(round(self.length / self.dt)))
         self.time = ((arange(self.steps) * self.dt) + self.start)
 
-        set_printoptions(precision=self.display_precision)
+        # set_printoptions(precision=self.display_precision)
         
         if "element" in self.kwargs:
             if isinstance(self.kwargs["element"], list):
@@ -848,11 +849,12 @@ class Reservoir(esbmtkBase):
 
         self.lof: list[Flux] = []  #  flux references
         self.led: list[ExternalData] = []  # all external data references
-        self.lio: dict[str, int] = {}  #  flux name:direction pairs
-        self.lop: list[Process] = []  # list holding all processe references
-        self.loe: list[Element] = []  # list of elements in thiis reservoir
-        self.doe: Dict[Species, Flux] = {}  # species flux pairs
-        self.loc: list[Connection]  = []  # list of connection objects
+        self.lio: dict[str, int] = {}      #  flux name:direction pairs
+        self.lop: list[Process] = []       # list holding all processe references
+        self.loe: list[Element] = []       # list of elements in thiis reservoir
+        self.doe: Dict[Species, Flux] = {} # species flux pairs
+        self.loc: list[Connection]  = []   # list of connection objects
+        self.ldf: list[DataField] = []     # list of datafield objects
 
         # initialize mass vector
         self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
@@ -1053,6 +1055,7 @@ class Reservoir(esbmtkBase):
         filename = f"{model.n}_{self.n}.pdf"
         fn = 1  # counter for the figure number
 
+        plt.style.use(['default'])
         fig = plt.figure(i)  # Initialize a plot window
         fig.canvas.set_window_title(f"Reservoir Name: {self.n}")
         fig.set_size_inches(size)
@@ -1065,6 +1068,10 @@ class Reservoir(esbmtkBase):
             if f.plot == "yes":
                 fn = fn + 1
                 plot_object_data(geo, fn, f, ptype)
+
+        for d in sorted(self.ldf): # plot data fields
+            fn = fn + 1
+            plot_object_data(geo, fn, d, ptype)
 
         fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
         fig.tight_layout()
@@ -1086,7 +1093,8 @@ class Reservoir(esbmtkBase):
         geo: list = [1, 1]
         filename = f"{model.n}_{self.n}.pdf"
         fn: int = 1  # counter for the figure number
-
+        
+        plt.style.use(['default'])
         fig = plt.figure(i)  # Initialize a plot window
         fig.set_size_inches(size)
 
@@ -1771,6 +1779,87 @@ class Signal(esbmtkBase):
 
     def __lt__(self, other):  # this is needed for sorting with sorted()
         return self.n < other.n
+
+class DataField(esbmtkBase):
+    """
+    DataField: Datafields can be used to plot data which is computed after
+    the model finishes in the overview plot windows. Therefore, datafields will
+    plot in the same window as the reservoir they are associated with.
+    Datafields must share the same x-axis is the model, and can have up to two
+    y axis.
+    
+    Example:
+             DataField(name = "Name"        
+                       associated_with = reservoir_handle
+                       y1_data = np.Ndarray
+                       y1_label = Y-Axis label
+                       y1_legend = Data legend
+                       y2_data = np.Ndarray    # optional
+                       y2_label = Y-Axis label # optional
+                       y2_legend = Data legend # optional
+    
+    The instance provides the following data
+    
+    Name.x    = X-axis = model X-axis
+    Name.y1_data     
+    Name.y1_label    
+    Name.y1_legend   
+
+    Similarly for y2
+
+"""
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """ Initialize this instance """
+
+        # dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            "name": str,
+            "associated_with": Reservoir,
+            "y1_data": NDArray[float],
+            "y1_label": str,
+            "y1_legend": str,
+            "y2_data": NDArray[float],
+            "y2_label": str,
+            "y2_legend": str,
+        }
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = ["name", "associated_with", "y1_data"]
+
+        # list of default values if none provided
+        self.lod: Dict[str, any] = {
+            "y1_label": "Not Provided",
+            "y1_legend": "Not Provided",
+            "y2_label": "Not Provided",
+            "y2_legend": "Not Provided",
+            "y2_data": 0,
+        }
+
+        # provide a dictionary entry for a keyword specific error message
+        # see esbmtkBase.__initerrormessages__()
+        self.__initerrormessages__()
+        self.bem.update({
+            "associated_with": "a string",
+            "y1_data": "a numpy array",
+            "y1_label": "a string",
+            "y1_legend": "a string",
+            "y2_data": "a numpy array",
+            "y2_label": "a string",
+            "y2_legend": "a string"
+        })
+
+        self.__validateandregister__(kwargs)  # initialize keyword values
+
+        # set legacy variables
+        self.legend_left = self.y1_legend
+        self.legend_right = self.y2_legend
+        self.ld = self.y2_label
+        self.mo = self.associated_with.mo
+        self.d = self.y2_data
+        self.n = self.name
+        self.led = []
+        # register with reservoir
+        self.associated_with.ldf.append(self)
 
 class ExternalData(esbmtkBase):
     """Instances of this class hold external X/Y data which can be associated with 

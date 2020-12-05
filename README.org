@@ -17,6 +17,10 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - Dec. 5^{th}, added a DataField Class. This allows for the integration of data
+   which is computed after the model finishes into the model summary
+   plots.
+
  - Nov. 26^{th}  Species definitions now accept an optional display string. This
    allows pretty printed output for chemical formulas.
 

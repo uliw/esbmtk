@@ -573,3 +573,27 @@ change a boundary condition in the model definition between two runs,
 it will be overwritten by the =read_state()= method. It is however
 possible to add signals to the new run, in order to change the steady
 state.
+
+
+** Adding data after the fact
+
+Data which is computed after the model finishes, can be integrated
+into the summary plots via the DataField class. The data will be
+plotted in the same window as the reservoir it has been associated
+with.
+#+BEGIN_EXAMPLE
+Example:
+             DataField(name = "Name"        
+                       associated_with = reservoir_handle
+                       y1_data = np.Ndarray
+                       y1_label = Y-Axis label
+                       y1_legend = Data legend
+                       y2_data = np.Ndarray    # optional
+                       y2_label = Y-Axis label # optional
+                       y2_legend = Data legend # optional
+
+    Note that Datafield data is not mapped to model units. Care must be taken
+    that the data units match the model units.
+#+END_EXAMPLE
+
+  

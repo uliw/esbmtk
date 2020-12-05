@@ -109,10 +109,13 @@ def get_plot_layout(obj):
 
       """
 
-      noo = 1
-      for f in obj.lof:
+      noo = 1 # the reservoir is the fisrt object
+      for f in obj.lof: # count numbert of fluxes
             if f.plot == "yes":
                   noo += 1
+                  
+      for d in obj.ldf: # count number of data fields
+            noo +=1
             
       # noo = len(obj.lof) + 1  # number of objects in this reservoir
       logging.debug(f"{noo} subplots for {obj.n} required")
@@ -220,7 +223,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
       """
 
     from . import ureg, Q_
-    from esbmtk import Flux, Reservoir, Signal
+    from esbmtk import Flux, Reservoir, Signal, DataField
 
     # geo = list with rows and cols
     # fn  = figure number
@@ -233,7 +236,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     
     rows = geo[0]
     cols = geo[1]
-    species = obj.sp
+    # species = obj.sp
     model = obj.mo
     time = model.time + model.offset
 
@@ -264,6 +267,15 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         # use the same units as the associated flux
         yl = (obj.c * model.c_unit).to(obj.fo.plt_units).magnitude
         y_label = f"{obj.n} [{obj.fo.plt_units:~P}]"
+    elif isinstance(obj, DataField):
+        time = (time * model.t_unit).to(model.d_unit).magnitude
+        yl = obj.y1_data
+        y_label = obj.y1_label
+        if len(obj.y2_data) > 1:
+            ptype = 0
+        else:
+            ptype = 2
+        
     else:  # sources, sinks, external data should not show up here
         raise ValueError(f"{obj.n} = {type(obj)}")
 
@@ -363,6 +375,41 @@ def is_name_in_list(n: str, l: list)->bool:
             r = True
 
     return r
+
+def get_hplus(dic :float, ta :float)->float:
+    """
+    Calculate H+ concentration based on DIC concentration and Alkalinity
+    according to eq 11 in Follows et al 2006
+    
+    """
+
+    pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
+    pk2 = 8.92
+    K1 = 10**-pk1
+    K2 = 10**-pk2
+    
+    g = dic / ta
+    hplus = 0.5 * ((g - 1) * K1 + ((1 - g)**2 * K1**2 - 4 * K1 * K2 *
+                                   (1 - 2 * g))**0.5)
+
+    return hplus
+
+def get_pco2(dic : float) -> float:
+    """Calculate pCO_{2} in uatm at 25C and a Salinity of 35 CO 2
+    fugacity at S35,
+
+    DIC has to be in mmol/l!
+    
+    Back calculated with equation 8 from Follows 2006
+    using data from data for T25C after Zeebe, Carbonate Systems. This
+    yields 0.005753424657534247 if DIC in mmol/l and pCO_{2} in
+    uatm. The experimentally determined value in Weiss 1970 is 23.9
+    mmols/l atm. Not+ sure why this value is so off? 
+
+    """
+    co2_f = 2.1/356
+
+    return dic/co2_f
 
 def get_string_between_brackets(s :str) -> str:
     """ Parse string and extract substring between square brackets
