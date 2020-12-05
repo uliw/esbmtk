@@ -1876,6 +1876,9 @@ class DataField(esbmtkBase):
                        y2_data = np.Ndarray    # optional
                        y2_label = Y-Axis label # optional
                        y2_legend = Data legend # optional
+
+    Note that Datafield data is not mapped to model units. Care must be taken
+    that the data units match the model units.
     
     The instance provides the following data
     
