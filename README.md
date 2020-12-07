@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org4243668)
-2.  [News](#org565f52d)
-3.  [Contributing](#orgbc33c04)
-4.  [Installation](#orgb4fc069)
-5.  [Documentation](#org15a2320)
-6.  [Todo](#org48fc5bf)
-7.  [License](#org848c751)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org35fb3ae)
+2.  [News](#orgdd001fe)
+3.  [Contributing](#orgce391b2)
+4.  [Installation](#org57ec755)
+5.  [Documentation](#org9af042b)
+6.  [Todo](#org3fe5993)
+7.  [License](#orgfa74a0a)
 
 
-<a id="org4243668"></a>
+<a id="org35fb3ae"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,9 +30,13 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="org565f52d"></a>
+<a id="orgdd001fe"></a>
 
 # News
+
+-   Dec. 7<sup>th</sup>, When calling an instance without arguments, it now
+    returns the values it was initialized with. In other words, it will
+    print the code which was used to initialize the instance.
 
 -   Dec. 5<sup>th</sup>, added a DataField Class. This allows for the integration of data
     which is computed after the model finishes into the model summary
@@ -71,7 +75,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgbc33c04"></a>
+<a id="orgce391b2"></a>
 
 # Contributing
 
@@ -81,7 +85,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orgb4fc069"></a>
+<a id="org57ec755"></a>
 
 # Installation
 
@@ -102,7 +106,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org15a2320"></a>
+<a id="org9af042b"></a>
 
 # Documentation
 
@@ -117,7 +121,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org48fc5bf"></a>
+<a id="org3fe5993"></a>
 
 # Todo
 
@@ -126,7 +130,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org848c751"></a>
+<a id="orgfa74a0a"></a>
 
 # License
 

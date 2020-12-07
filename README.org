@@ -17,6 +17,10 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - Dec. 7^{th}, When calling an instance without arguments, it now
+   returns the values it was initialized with. In other words, it will
+   print the code which was used to initialize the instance.
+
  - Dec. 5^{th}, added a DataField Class. This allows for the integration of data
    which is computed after the model finishes into the model summary
    plots.
