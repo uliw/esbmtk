@@ -261,17 +261,32 @@ class esbmtkBase():
         """ Print the basic parameters for this class when called via the print method
         
         """
+        from esbmtk import Q_
         
         m: str = ""
 
         # suppress output during object initialization 
         tdiff = time.monotonic() -self.reg_time
+
+        # do not echo input unless explicitly requestted
         if tdiff > 1:
+
+            m = f"{self.__class__.__name__}(\n"
             for k, v in self.provided_kwargs.items():
                 if not isinstance({k}, esbmtkBase):
-                    m = m + f"{k} = {v}\n"
-                    
-        return m
+                    # check if this is not another esbmtk object
+                    if "esbmtk" in str(type(v)):
+                        m = m +f"    {k} = {v.n},\n"
+                    elif isinstance(v,str):
+                        m = m + f"    {k} = '{v}',\n"
+                    elif isinstance(v,Q_):
+                        m = m + f"    {k} = '{v}',\n"
+                    else:
+                        m = m + f"    {k} = {v},\n"
+
+            m = m + ")"
+            
+            return m
 #+END_SRC
 
 
