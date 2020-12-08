@@ -258,6 +258,7 @@ class Connect(esbmtkBase):
         self.__set_process_type__()  # derive flux type and create flux(es)
         self.__register_process__(
         )  # This should probably move to register fluxes
+        self.__register_name__()
 
     def get_species(self, r1, r2) -> None:
         """In most cases the species is set by r2. However, if we have
@@ -655,6 +656,7 @@ class Process(esbmtkBase):
         self.bem.update({"rate": "a string"})
         self.__validateandregister__(kwargs)  # initialize keyword values
         self.__postinit__()          # do some housekeeping
+        self.__register_name__()
 
     def __postinit__(self) -> None:
         """ Do some housekeeping for the process class
