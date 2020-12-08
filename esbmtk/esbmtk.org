@@ -305,20 +305,55 @@ class esbmtkBase():
         else:
             ind: str = ""
 
-        m = f"{ind}{self.n}\n"
+        m = f"{ind}{self.n} ({self.__class__.__name__})\n"
         for k, v in self.provided_kwargs.items():
             if not isinstance({k}, esbmtkBase):
                 # check if this is not another esbmtk object
                 if "esbmtk" in str(type(v)):
                     pass
                 elif isinstance(v, str) and not (k == "name"):
-                    m = m + f"{ind}{off}{k} = {v},\n"
+                    m = m + f"{ind}{off}{k} = {v}\n"
                 elif isinstance(v, Q_):
-                    m = m + f"{ind}{off}{k} = {v},\n"
+                    m = m + f"{ind}{off}{k} = {v}\n"
                 elif k != "name":
-                    m = m + f"{ind}{off}{k} = {v} ,\n"
+                    m = m + f"{ind}{off}{k} = {v}"
 
         return m
+
+    def __lt__(self, other) -> None:
+        """ This is needed for sorting with sorted()
+
+        """
+
+        return self.n < other.n
+
+    def __gt__(self, other) -> None:
+        """ This is needed for sorting with sorted()
+
+        """
+
+        return self.n > other.n
+
+    
+
+    def describe(self, **kwargs) -> None:
+        """ Show an overview of the object properties.
+        Optional arguments are
+     
+        indent :int = 0 indentation 
+
+        """
+        
+        if "indent" not in kwargs:
+            indent = 0
+            ind = ""
+        else:
+            indent = kwargs["indent"]
+            ind = ' ' * indent
+
+        # print basic data bout this object
+        print(f"{ind}{self.__str__(indent=indent)}")
+
 #+END_SRC
 
 
@@ -431,7 +466,7 @@ class Model(esbmtkBase):
         # empty list which will hold all reservoir references
         self.lor: list = []
         # empty list which will hold all connector references
-        self.loc: list = []
+        self.loc: set  = set()  # set with connection handles
         self.lel: list = []  # list which will hold all element references
         self.lsp: list = []  # list which will hold all species references
         self.lop: list = []  # list flux processe
@@ -789,9 +824,7 @@ class Element(esbmtkBase):
         for e in self.lsp:
             print(e.n)
 
-    def __lt__(self,
-               other) -> None:  # this is needed for sorting with sorted()
-        return self.n < other.n
+   
 #+END_SRC
 
 ** Defining Species object
@@ -849,11 +882,6 @@ specific properties
 
         #self.mo.lsp.append(self)   # register self on the list of model objects
         self.e.lsp.append(self)  # register this species with the element
-
-    def __lt__(self,
-               other) -> None:  # this is needed for sorting with sorted()
-        return self.n < other.n
-    
 #+END_SRC
 
 ** Defining the Reservoir object
@@ -953,13 +981,13 @@ class Reservoir(esbmtkBase):
 
         # save the unit which was provided by the user for display purposes
 
-        self.lof: list[Flux] = []  #  flux references
+        self.lof: list[Flux] = []          #  flux references
         self.led: list[ExternalData] = []  # all external data references
         self.lio: dict[str, int] = {}      #  flux name:direction pairs
         self.lop: list[Process] = []       # list holding all processe references
         self.loe: list[Element] = []       # list of elements in thiis reservoir
         self.doe: Dict[Species, Flux] = {} # species flux pairs
-        self.loc: list[Connection]  = []   # list of connection objects
+        self.loc: set[Connection] = set()  # set of connection objects
         self.ldf: list[DataField] = []     # list of datafield objects
 
         # initialize mass vector
@@ -1211,23 +1239,19 @@ class Reservoir(esbmtkBase):
         # fig.subplots_adjust(top=0.88)
         fig.savefig(filename)
 
-    def __lt__(self, other) -> None:
-        """ This is needed for sorting with sorted()
-
-        """
-
-        return self.n < other.n
-
+    
     def describe(self, **kwargs) -> None:
         """ Show an overview of the object properties.
         Optional arguments are
-        index  :int = 0 this will show data at the given inde
+        index  :int = 0 this will show data at the given index
         indent :int = 0 indentation 
 
         """
-        
+        off : str = "  "
         if "index" not in kwargs:
             index = 0
+        else:
+            index = kwargs["index"]
 
         if "indent" not in kwargs:
             indent = 0
@@ -1237,30 +1261,14 @@ class Reservoir(esbmtkBase):
             ind = ' ' * indent
 
         # print basic data bout this reservoir
-        print(f"{self.__str__(indent=indent)}")
-        #show_data(self, self.n, index)
+        print(f"{ind}{self.__str__(indent=indent)}")
+        print(f"{ind}Data sample:")
+        show_data(self, index=index, indent=indent)
         
-        #list_fluxes(self, self.n, i)
-        #print("\n")
-        #show_data(self, self.n, i)
+        print(f"\n{ind}Connnections:")
+        for p in sorted(self.loc):
+            print(f"{off}{ind}{p.n}")
         
-    def list_connections(self) -> None:
-        """ List all processes associated with this reservoir
-
-        """
-        for p in self.loc:
-            print(f"{p.n}")
-
-        print("You can get further information by running connection_name.list_processes()")
-
-    def __list_processes__(self) -> None:
-        """ List all processes associated with this reservoir
-
-        """
-        for p in self.lop:
-            print(f"{p.n}")
-
-        print("You can get further information by running connection_name.list_processes()")
 #+END_SRC
 
 
@@ -1413,9 +1421,6 @@ class Flux(esbmtkBase):
         
         show_data(self, self.n, i)
 
-    def __lt__(self, other):  # this is needed for sorting with sorted()
-        return self.n < other.n
-
     def plot(self, **kwargs :dict) -> None:
         """Plot the flux data:
         This method has the optional keyword ptype which can be
@@ -1481,7 +1486,7 @@ class SourceSink(esbmtkBase):
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
 
-        self.loc: list[Connection]  = []  # list of connection objects
+        self.loc: set[Connection]  = set()  # set of connection objects
 
         # legacy names
         self.n = self.name
@@ -1913,9 +1918,6 @@ class Signal(esbmtkBase):
         o = 24 * " "
         s = f"{o}Start = {self.st}, Mass = {self.m:4E}, Delta = {self.d}"
         logging.info(s)
-
-    def __lt__(self, other):  # this is needed for sorting with sorted()
-        return self.n < other.n
 #+END_SRC
 
 
