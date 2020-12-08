@@ -74,8 +74,9 @@ class SomeClass(esbmtkBase):
         
         self.__validateandregister__(kwargs)  # initialize keyword values
 
+        # register name in global name space
+        self.__register_name__()
+
 
 #+END_SRC
 
-
-** The process class template
