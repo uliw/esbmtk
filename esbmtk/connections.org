@@ -182,7 +182,7 @@ class Connect(esbmtkBase):
             "alpha": Number,
             "species": Species,
             "ctype": str,
-            "ref": (Flux,list),
+            "ref": (Flux, list),
             "react_with": Flux,
             "ratio": Number,
             "scale": Number,
@@ -221,6 +221,8 @@ class Connect(esbmtkBase):
 
         self.__validateandregister__(kwargs)
 
+        if "id" in kwargs:
+            self.name = self.name + f"_{self.id}"
         if not 'pl' in kwargs:
             self.pl: list[Process] = []
 
@@ -244,12 +246,13 @@ class Connect(esbmtkBase):
 
         self.get_species(self.r1, self.r2)  #
         self.mo: Model = self.sp.mo  # the current model handle
+        self.lof: list[Flux] = []  # list of fluxes in this connection
         self.lor: list[
             Reservoir] = self.mo.lor  # get a list of all reservoirs registered for this species
 
-        self.source.loc.append(self)  # register connector with reservoir
-        self.sink.loc.append(self)  # register connector with reservoir
-        self.mo.loc.append(self)  # register connector with model
+        self.source.loc.add(self)  # register connector with reservoir
+        self.sink.loc.add(self)  # register connector with reservoir
+        self.mo.loc.add(self)  # register connector with model
 
         self.__register_fluxes__()  # Source/Sink/Regular
         self.__set_process_type__()  # derive flux type and create flux(es)
@@ -442,7 +445,7 @@ class Connect(esbmtkBase):
         """ Just a wrapper to keep the if statement manageable
 
         """
-        
+
         ph = PassiveFlux_fixed_delta(
             name=self.pn + "_Pfd",
             reservoir=self.r,
@@ -454,7 +457,7 @@ class Connect(esbmtkBase):
         """ Just a wrapper to keep the if statement manageable
 
         """
-        
+
         ph = VarDeltaOut(name=self.pn + "_Pvdo",
                          reservoir=self.r,
                          flux=self.fh,
@@ -486,18 +489,17 @@ class Connect(esbmtkBase):
             raise ValueError("ref must be a list")
 
         ph = FluxDiff(name=self.pn + "_PSF",
-                       reservoir=self.r,
-                       flux=self.fh,
-                       scale=self.kwargs["scale"],
-                       ref=self.kwargs["ref"])
+                      reservoir=self.r,
+                      flux=self.fh,
+                      scale=self.kwargs["scale"],
+                      ref=self.kwargs["ref"])
         self.pl.append(ph)
-        
 
     def __reaction__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
 
         """
-        
+
         if not isinstance(self.kwargs["react_with"], Flux):
             raise ValueError("Scale reference must be a flux")
         ph = Reaction(name=self.pn + "_RF",
@@ -515,7 +517,7 @@ class Connect(esbmtkBase):
         """ Just a wrapper to keep the if statement manageable
 
         """
-        
+
         ph = PassiveFlux(
             name=self.pn + "_PF", reservoir=self.r,
             flux=self.fh)  # initialize a passive flux process object
@@ -525,7 +527,7 @@ class Connect(esbmtkBase):
         """ Just a wrapper to keep the if statement manageable
 
         """
-        
+
         ph = Fractionation(name=self.pn + "_Pa",
                            reservoir=self.r,
                            flux=self.fh,
