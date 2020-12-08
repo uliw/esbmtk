@@ -92,10 +92,25 @@ class esbmtkBase():
         # register all key/value pairs as instance variables
         self.__registerkeys__()
 
+        
+
+    def __register_name__(self) -> None:
+        """
+        Register object name in global name space, and test if
+        name is unique
+
+        """
         # register instance name in global name space
         self.reg_time = time.monotonic()
 
-        setattr(builtins, self.name, self)
+        if type(self) == Model:
+            setattr(builtins, self.name, self)
+        else: # check that name is unique
+            if self.name in self.mo.lmo:
+                raise NameError(f"{self.name} is a duplicate. Please fix")
+            else:
+                self.mo.lmo.append(self.name)
+                setattr(builtins, self.name, self)
 
     def __validateinput__(self, kwargs: Dict[str, any]) -> None:
         """Validate the user provided input key-value pairs. For this we need
@@ -257,7 +272,7 @@ class esbmtkBase():
         kwargs.update(new)
         return kwargs
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """ Print the basic parameters for this class when called via the print method
         
         """
@@ -286,7 +301,7 @@ class esbmtkBase():
 
             m = m + ")"
 
-            return m
+        return m
 
     def __str__(self, **kwargs):
         """ Print the basic parameters for this class when called via the print method
@@ -532,6 +547,8 @@ class Model(esbmtkBase):
             f"This is free software, and you are welcome to redistribute it\n"
             f"under certain conditions; See the LICENSE file for details.\n")
         print(warranty)
+
+        self.__register_name__()
 
     def describe(self) -> None:
         """ Describe Basic Model Parameters and log them
@@ -802,19 +819,22 @@ class Element(esbmtkBase):
             'r': 1,
         }
 
+        
+        
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # legacy name aliases
         self.n: str = self.name  # display name of species
+        self.mo: Model = self.model  # model handle
         self.mu: str = self.mass_unit  # display name of mass unit
         self.ln: str = self.li_label  # display name of light isotope
         self.hn: str = self.hi_label  # display name of heavy isotope
         self.dn: str = self.d_label  # display string for delta
         self.ds: str = self.d_scale  # display string for delta scale
-        self.mo: Model = self.model  # model handle
         self.lsp: list = []  # list of species for this element.
         self.mo.lel.append(self)
+        self.__register_name__()
 
     def list_species(self) -> None:
         """ List all species which are predefined for this element
@@ -865,6 +885,7 @@ specific properties
         self.lod = {"display_as": kwargs["name"], 'm_weight': 0}
 
         self.__initerrormessages__()
+
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # legacy names
@@ -882,6 +903,7 @@ specific properties
 
         #self.mo.lsp.append(self)   # register self on the list of model objects
         self.e.lsp.append(self)  # register this species with the element
+        self.__register_name__()
 #+END_SRC
 
 ** Defining the Reservoir object
@@ -1012,6 +1034,10 @@ class Reservoir(esbmtkBase):
         self.legend_left = self.species.ds
         self.legend_right = self.species.dn
         self.mo.lor.append(self)  # add this reservoir to the model
+        # register instance name in global name space
+        self.reg_time = time.monotonic()
+
+        self.__register_name__()   
 
     def __call__(self) -> None:  # what to do when called as a function ()
         pass
@@ -1358,6 +1384,7 @@ class Flux(esbmtkBase):
         self.led: list[ExternalData] = []  # list of ext data
         self.source: str = ""  # Name of reservoir which acts as flux source
         self.sink: str = ""  # Name of reservoir which acts as flux sink
+        self.__register_name__()   
 
     def __getitem__(self, i: int) -> NDArray[np.float64]:
         """ Get data by index
@@ -1491,7 +1518,9 @@ class SourceSink(esbmtkBase):
         # legacy names
         self.n = self.name
         self.sp = self.species
+        self.mo = self.species.mo
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
+        self.__register_name__()
 
 
 class Sink(SourceSink):
@@ -1652,6 +1681,7 @@ class Signal(esbmtkBase):
         # update isotope values
         self.data.li, self.data.hi = get_imass(self.data.m, self.data.d,
                                               self.sp.r)
+        self.__register_name__()
 
     def __init_signal_data__(self) -> None:
         """ Create an empty flux and apply the shape
@@ -2008,6 +2038,7 @@ class DataField(esbmtkBase):
         self.led = []
         # register with reservoir
         self.associated_with.ldf.append(self)
+        self.__register_name__()
 #+END_SRC
 
 
@@ -2129,6 +2160,7 @@ class ExternalData(esbmtkBase):
 
         # register with reservoir
         self.__register__(self.reservoir)
+        self.__register_name__() 
 
     def __register__(self, obj):
         """Register this dataset with a flux or reservoir. This will have the
