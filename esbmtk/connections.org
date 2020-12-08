@@ -221,10 +221,12 @@ class Connect(esbmtkBase):
 
         self.__validateandregister__(kwargs)
 
-        if "id" in kwargs:
+        if len(kwargs["id"]) > 0 :
             self.name = self.name + f"_{self.id}"
-        if not 'pl' in kwargs:
-            self.pl: list[Process] = []
+        if 'pl' in kwargs:
+            self.lop :list[Process] = self.pl
+        else:
+            self.lop :list[Process] = []
 
         # if no reference reservoir is specified, default to the upstream reservoir
         if not 'ref_reservoir' in kwargs:
@@ -347,6 +349,8 @@ class Connect(esbmtkBase):
             self.__register_species__(self.r1, self.r1.sp)
             self.__register_species__(self.r2, self.r2.sp)
 
+        self.lof.append(self.fh)
+
     def __register_species__(self, r, sp) -> None:
         """ Add flux to the correct element dictionary"""
         # test if element key is present in reservoir
@@ -362,22 +366,22 @@ class Connect(esbmtkBase):
         # first test if we have a signal in the list. If so,
         # remove signal and replace with process
 
-        p_copy = copy(self.pl)
+        p_copy = copy(self.lop)
         for p in p_copy:
             if isinstance(p, Signal):
-                self.pl.remove(p)
+                self.lop.remove(p)
                 if p.ty == "addition":
                     # create AddSignal Process object
                     n = AddSignal(name=p.n + "_addition_process",
                                   reservoir=self.r,
                                   flux=self.fh,
                                   lt=p.data)
-                    self.pl.append(n)
+                    self.lop.append(n)
                 else:
                     raise ValueError(f"Signal type {p.ty} is not defined")
 
         # nwo we can register everythig on pl
-        for p in self.pl:
+        for p in self.lop:
             # print(f"Registering Process {p.n}")
             # print(f"with reservoir {self.r.n} and flux {self.fh.n}")
             p.__register__(self.r, self.fh)
@@ -452,7 +456,7 @@ class Connect(esbmtkBase):
             reservoir=self.r,
             flux=self.fh,
             delta=self.delta)  # initialize a passive flux process object
-        self.pl.append(ph)
+        self.lop.append(ph)
 
     def __vardeltaout__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
@@ -463,7 +467,7 @@ class Connect(esbmtkBase):
                          reservoir=self.r,
                          flux=self.fh,
                          rate=self.kwargs["rate"])
-        self.pl.append(ph)
+        self.lop.append(ph)
 
     def __scaleflux__(self) -> None:
         """ Scale a flux relative to another flux
@@ -478,7 +482,7 @@ class Connect(esbmtkBase):
                        flux=self.fh,
                        scale=self.kwargs["scale"],
                        ref=self.kwargs["ref"])
-        self.pl.append(ph)
+        self.lop.append(ph)
 
     def __flux_diff__(self) -> None:
         """ Scale a flux relative to the difference between
@@ -494,7 +498,7 @@ class Connect(esbmtkBase):
                       flux=self.fh,
                       scale=self.kwargs["scale"],
                       ref=self.kwargs["ref"])
-        self.pl.append(ph)
+        self.lop.append(ph)
 
     def __reaction__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
@@ -512,7 +516,7 @@ class Connect(esbmtkBase):
         # react_with is removed from the list of fluxes in this
         # reservoir.
         self.r2.lof.remove(self.kwargs["react_with"])
-        self.pl.append(ph)
+        self.lop.append(ph)
 
     def __passiveflux__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
@@ -522,7 +526,7 @@ class Connect(esbmtkBase):
         ph = PassiveFlux(
             name=self.pn + "_PF", reservoir=self.r,
             flux=self.fh)  # initialize a passive flux process object
-        self.pl.append(ph)  # add this process to the process list
+        self.lop.append(ph)  # add this process to the process list
 
     def __alpha__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
@@ -533,7 +537,7 @@ class Connect(esbmtkBase):
                            reservoir=self.r,
                            flux=self.fh,
                            alpha=self.kwargs["alpha"])
-        self.pl.append(ph)  #
+        self.lop.append(ph)  #
 
     def __rateconstant__(self) -> None:
         """ Add rate constant type process
@@ -613,17 +617,44 @@ class Connect(esbmtkBase):
         #        flux=self.fh,
         #        k_value=self.k_value)
 
-        self.pl.append(ph)
+        self.lop.append(ph)
 
     def list_processes(self) -> None:
         """ list all processes associated with this class
 
         """
 
-        for p in self.pl:
+        for p in self.lop:
             print(p.n)
 
         print("You can get further information by running help(process_name)")
+
+    def describe(self, **kwargs) -> None:
+        """ Show an overview of the object properties.
+        Optional arguments are
+        index  :int = 0 this will show data at the given index
+        indent :int = 0 indentation 
+
+        """
+        off : str = "  "
+        if "index" not in kwargs:
+            index = 0
+        else:
+            index = kwargs["index"]
+
+        if "indent" not in kwargs:
+            indent = 0
+            ind = ""
+        else:
+            indent = kwargs["indent"]
+            ind = ' ' * indent
+
+        # print basic data bout this Connection
+        print(f"{ind}{self.__str__(indent=indent)}")
+        
+        print(f"{ind}Fluxes:")
+        for f in sorted(self.lof):
+            print(f"{off}{ind}{f.n}")
 
 
 class Connection(Connect):
