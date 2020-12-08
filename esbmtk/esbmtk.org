@@ -72,7 +72,7 @@ class esbmtkBase():
     """
 
     from typing import Dict
-    
+
     def __init__(self) -> None:
         raise NotImplementedError
 
@@ -85,7 +85,6 @@ class esbmtkBase():
 
         and register the instance variables and the instance in teh global name space
         """
-
 
         # validate input
         self.__validateinput__(kwargs)
@@ -128,7 +127,6 @@ class esbmtkBase():
         # check if key values are of correct type
         self.__checktypes__(self.lkk, self.kwargs)
 
-
     def __checktypes__(self, av: Dict[any, any], pv: Dict[any, any]) -> None:
         """ this method will use the the dict key in the user provided
         key value data (pv) to look up the allowed data type for this key in av
@@ -146,7 +144,9 @@ class esbmtkBase():
         for k, v in pv.items():
             # check av if provided value v is of correct type
             if not isinstance(v, av[k]):
-                raise TypeError(f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'")
+                raise TypeError(
+                    f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
+                )
 
     def __initerrormessages__(self):
         """ Init the list of known error messages"""
@@ -262,11 +262,11 @@ class esbmtkBase():
         
         """
         from esbmtk import Q_
-        
+
         m: str = ""
 
-        # suppress output during object initialization 
-        tdiff = time.monotonic() -self.reg_time
+        # suppress output during object initialization
+        tdiff = time.monotonic() - self.reg_time
 
         # do not echo input unless explicitly requestted
         if tdiff > 1:
@@ -276,17 +276,49 @@ class esbmtkBase():
                 if not isinstance({k}, esbmtkBase):
                     # check if this is not another esbmtk object
                     if "esbmtk" in str(type(v)):
-                        m = m +f"    {k} = {v.n},\n"
-                    elif isinstance(v,str):
+                        m = m + f"    {k} = {v.n},\n"
+                    elif isinstance(v, str):
                         m = m + f"    {k} = '{v}',\n"
-                    elif isinstance(v,Q_):
+                    elif isinstance(v, Q_):
                         m = m + f"    {k} = '{v}',\n"
                     else:
                         m = m + f"    {k} = {v},\n"
 
             m = m + ")"
-            
+
             return m
+
+    def __str__(self, **kwargs):
+        """ Print the basic parameters for this class when called via the print method
+        Optional arguments
+
+        indent :int = 0 printing offset
+        
+        """
+        from esbmtk import Q_
+
+        m: str = ""
+        off: str = "  "
+
+        if "indent" in kwargs:
+            ind: str = kwargs["indent"] * " "
+        else:
+            ind: str = ""
+
+        m = f"{ind}{self.n}\n"
+        for k, v in self.provided_kwargs.items():
+            if not isinstance({k}, esbmtkBase):
+                # check if this is not another esbmtk object
+                if "esbmtk" in str(type(v)):
+                    pass
+                elif isinstance(v, str) and not (k == "name"):
+                    m = m + f"{ind}{off}{k} = {v},\n"
+                elif isinstance(v, Q_):
+                    m = m + f"{ind}{off}{k} = {v},\n"
+                elif k != "name":
+                    m = m + f"{ind}{off}{k} = {v} ,\n"
+
+        return m
 #+END_SRC
 
 
@@ -1186,14 +1218,31 @@ class Reservoir(esbmtkBase):
 
         return self.n < other.n
 
-    def describe(self, i=0) -> None:
-        """ Show an overview of the object properties
+    def describe(self, **kwargs) -> None:
+        """ Show an overview of the object properties.
+        Optional arguments are
+        index  :int = 0 this will show data at the given inde
+        indent :int = 0 indentation 
 
         """
+        
+        if "index" not in kwargs:
+            index = 0
 
-        list_fluxes(self, self.n, i)
-        print("\n")
-        show_data(self, self.n, i)
+        if "indent" not in kwargs:
+            indent = 0
+            ind = ""
+        else:
+            indent = kwargs["indent"]
+            ind = ' ' * indent
+
+        # print basic data bout this reservoir
+        print(f"{self.__str__(indent=indent)}")
+        #show_data(self, self.n, index)
+        
+        #list_fluxes(self, self.n, i)
+        #print("\n")
+        #show_data(self, self.n, i)
         
     def list_connections(self) -> None:
         """ List all processes associated with this reservoir
