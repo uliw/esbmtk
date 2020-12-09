@@ -110,7 +110,7 @@ class esbmtkBase():
                 self.mo.lmo.append(self.name)
                 setattr(builtins, self.name, self)
 
-        logging.info(self)
+        logging.info(self.__repr__(1))
 
     def __validateinput__(self, kwargs: Dict[str, any]) -> None:
         """Validate the user provided input key-value pairs. For this we need
@@ -272,7 +272,7 @@ class esbmtkBase():
         kwargs.update(new)
         return kwargs
 
-    def __repr__(self) -> str:
+    def __repr__(self,log=0) -> str:
         """ Print the basic parameters for this class when called via the print method
         
         """
@@ -306,8 +306,8 @@ class esbmtkBase():
 
         m = m + ")"
 
-        #if tdiff < 1:
-        #     m = ""
+        if log == 0 and tdiff < 1:
+             m = ""
 
         return m
 
@@ -556,7 +556,6 @@ class Model(esbmtkBase):
             logging.root.removeHandler(handler)
         
         fn: str = f"{kwargs['name']}.log"
-        print(fn)
         logging.basicConfig(
             filename=fn,
             filemode='w',
