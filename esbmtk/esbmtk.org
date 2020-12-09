@@ -109,6 +109,8 @@ class esbmtkBase():
             else:
                 self.mo.lmo.append(self.name)
                 setattr(builtins, self.name, self)
+                
+        logging.info(self)
 
     def __validateinput__(self, kwargs: Dict[str, any]) -> None:
         """Validate the user provided input key-value pairs. For this we need
@@ -282,23 +284,26 @@ class esbmtkBase():
         tdiff = time.monotonic() - self.reg_time
 
         # do not echo input unless explicitly requestted
-        if tdiff > 1:
+       
 
-            m = f"{self.__class__.__name__}(\n"
-            for k, v in self.provided_kwargs.items():
-                if not isinstance({k}, esbmtkBase):
-                    # check if this is not another esbmtk object
-                    if "esbmtk" in str(type(v)):
-                        m = m + f"    {k} = {v.n},\n"
-                    elif isinstance(v, str):
-                        m = m + f"    {k} = '{v}',\n"
-                    elif isinstance(v, Q_):
-                        m = m + f"    {k} = '{v}',\n"
-                    else:
-                        m = m + f"    {k} = {v},\n"
+        m = f"{self.__class__.__name__}(\n"
+        for k, v in self.provided_kwargs.items():
+            if not isinstance({k}, esbmtkBase):
+                # check if this is not another esbmtk object
+                if "esbmtk" in str(type(v)):
+                    m = m + f"    {k} = {v.n},\n"
+                elif isinstance(v, str):
+                    m = m + f"    {k} = '{v}',\n"
+                elif isinstance(v, Q_):
+                    m = m + f"    {k} = '{v}',\n"
+                else:
+                    m = m + f"    {k} = {v},\n"
 
-            m = m + ")"
+        m = m + ")"
 
+        #if tdiff < 1:
+        #     m = ""
+            
         return m
 
     def __str__(self, **kwargs):
@@ -420,7 +425,6 @@ class Model(esbmtkBase):
     ["Carbon", "Sulfur"].
 
     """
-
     def __init__(self, **kwargs: Dict[any, any]) -> None:
         """ Init Sequence
 
@@ -542,36 +546,48 @@ class Model(esbmtkBase):
                 )
                 print(warranty)
 
+        # start a log file
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+        
+        fn: str = f"{kwargs['name']}.log"
+        print(fn)
+        logging.basicConfig(
+            filename=fn,
+            filemode='w',
+            level=logging.INFO)
         self.__register_name__()
 
-    def describe(self) -> None:
-        """ Describe Basic Model Parameters and log them
+    def describe(self, **kwargs) -> None:
+        """ Show an overview of the object properties.
+        Optional arguments are
+        index  :int = 0 this will show data at the given index
+        indent :int = 0 indentation 
 
         """
+        off: str = "  "
+        if "index" not in kwargs:
+            index = 0
+        else:
+            index = kwargs["index"]
 
-        logging.info("---------- Model description start ----------")
-        logging.info(f"Model Name = {self.n}")
-        logging.info(f"Model time [{self.bu}], dt = {self.dt}")
-        logging.info(f"start = {self.start}, stop={self.stop} [{self.tu}]")
-        logging.info(f"Steps = {self.steps}\n")
-        logging.info(f"  Species(s) in {self.n}:")
+        if "indent" not in kwargs:
+            indent = 0
+            ind = ""
+        else:
+            indent = kwargs["indent"]
+            ind = ' ' * indent
 
-        for r in self.lor:
-            r.describe()
-            logging.info(" ")
+        # print basic data bout this object
+        print(self)
 
-            logging.info("---------- Model description end ------------\n")
-
-    def list_species(self) -> None:
-        """ List all species known to the model
-
-        """
+        # list elements
+        print("Currently defined elements and their species:")
         for e in self.lel:
-            print(f"Defined Species for {e.n}:")
-            e.list_species()
-            print("\n")
-
-        print("Use the species class to add to this list")
+            print(f"{ind}{e}")
+            print(f"{off} Defined Species:")
+            for s in e.lsp:
+                print(f"{off}{off}{ind}{s.n}")
 
     def save_state(self) -> None:
         """ Save model state. Similar to save data, but only saves the last 10
@@ -994,14 +1010,14 @@ class Reservoir(esbmtkBase):
 
         # save the unit which was provided by the user for display purposes
 
-        self.lof: list[Flux] = []          #  flux references
+        self.lof: list[Flux] = []  #  flux references
         self.led: list[ExternalData] = []  # all external data references
-        self.lio: dict[str, int] = {}      #  flux name:direction pairs
-        self.lop: list[Process] = []       # list holding all processe references
-        self.loe: list[Element] = []       # list of elements in thiis reservoir
-        self.doe: Dict[Species, Flux] = {} # species flux pairs
+        self.lio: dict[str, int] = {}  #  flux name:direction pairs
+        self.lop: list[Process] = []  # list holding all processe references
+        self.loe: list[Element] = []  # list of elements in thiis reservoir
+        self.doe: Dict[Species, Flux] = {}  # species flux pairs
         self.loc: set[Connection] = set()  # set of connection objects
-        self.ldf: list[DataField] = []     # list of datafield objects
+        self.ldf: list[DataField] = []  # list of datafield objects
 
         # initialize mass vector
         self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
@@ -1028,7 +1044,7 @@ class Reservoir(esbmtkBase):
         # register instance name in global name space
         self.reg_time = time.monotonic()
 
-        self.__register_name__()   
+        self.__register_name__()
 
     def __call__(self) -> None:  # what to do when called as a function ()
         pass
@@ -1055,20 +1071,6 @@ class Reservoir(esbmtkBase):
         #self.d = self.sp.getdelta(self.l, self.h)
         self.d[i]: float = get_delta(self.l[i], self.h[i], self.sp.r)
         self.c[i]: float = self.m[i] / self.v  # update concentration
-
-    def log_description(self) -> None:
-
-        o = 8 * " "
-        logging.info(f"{o}{self.n}: Volume = {self.v:4E},\
-            mass={self.m[1]},\
-            concentration={self.c[1]}")
-        logging.info(f"{o}    Initial d-value = {self.d[1]:.4f}")
-        # loop over all reservoir objects
-        o = 12 * " "
-        if len(self.lop) > 0:
-            logging.info(f"{o}Modifiers acting on fluxes in this reservoir:")
-        for m in self.lop:
-            m.describe(self)
 
     def __write_data__(self, prefix: str, start: int, stop: int,
                        stride: int) -> None:
@@ -1152,8 +1154,8 @@ class Reservoir(esbmtkBase):
                 header_list.append(n)
 
         # loop over all columns
-        col :int = 1  # we ignore the time column
-        i   :int = 0
+        col: int = 1  # we ignore the time column
+        i: int = 0
         for n in header_list:
             name = n.split(" ")[0]
             if name == self.name:
@@ -1177,13 +1179,13 @@ class Reservoir(esbmtkBase):
         """
 
         #rows = 6
-        ovars :list = ["m", "l", "h", "d"]
-        
+        ovars: list = ["m", "l", "h", "d"]
+
         for v in ovars:
             #obj.__dict__[v][0:rows] =  df.iloc[0:rows, col].to_numpy()
-            obj.__dict__[v][:] =  df.iloc[-3, col]
+            obj.__dict__[v][:] = df.iloc[-3, col]
             col += 1
-            
+
         if res:  # if type is reservoir
             #obj.c[0:rows] = df.iloc[0:rows, col].to_numpy()
             obj.c[:] = df.iloc[-3, col]
@@ -1220,7 +1222,7 @@ class Reservoir(esbmtkBase):
                 fn = fn + 1
                 plot_object_data(geo, fn, f, ptype)
 
-        for d in sorted(self.ldf): # plot data fields
+        for d in sorted(self.ldf):  # plot data fields
             fn = fn + 1
             plot_object_data(geo, fn, d, ptype)
 
@@ -1244,7 +1246,7 @@ class Reservoir(esbmtkBase):
         geo: list = [1, 1]
         filename = f"{model.n}_{self.n}.pdf"
         fn: int = 1  # counter for the figure number
-        
+
         plt.style.use(['default'])
         fig = plt.figure(i)  # Initialize a plot window
         fig.set_size_inches(size)
@@ -1256,7 +1258,6 @@ class Reservoir(esbmtkBase):
         # fig.subplots_adjust(top=0.88)
         fig.savefig(filename)
 
-    
     def describe(self, **kwargs) -> None:
         """ Show an overview of the object properties.
         Optional arguments are
@@ -1264,7 +1265,7 @@ class Reservoir(esbmtkBase):
         indent :int = 0 indentation 
 
         """
-        off : str = "  "
+        off: str = "  "
         if "index" not in kwargs:
             index = 0
         else:
@@ -1281,11 +1282,14 @@ class Reservoir(esbmtkBase):
         print(f"{ind}{self.__str__(indent=indent)}")
         print(f"{ind}Data sample:")
         show_data(self, index=index, indent=indent)
-        
+
         print(f"\n{ind}Connnections:")
         for p in sorted(self.loc):
             print(f"{off}{ind}{p.n}")
-        
+
+        print()
+        print("Use the describe method on any of the above connections")
+        print("to see information on fluxes and processes")
 #+END_SRC
 
 
@@ -1312,7 +1316,6 @@ class Flux(esbmtkBase):
       - Name.c # concentration
       
       """
-
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
           Initialize a flux. Arguments are the species name the flux rate
@@ -1320,13 +1323,13 @@ class Flux(esbmtkBase):
           """
 
         from . import ureg, Q_
-        
+
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
             "species": Species,
             "delta": Number,
-            "rate": (str,Q_),
+            "rate": (str, Q_),
             "plot": str,
         }
 
@@ -1348,18 +1351,18 @@ class Flux(esbmtkBase):
         self.model: Model = self.species.mo  # model handle
 
         # model units
-        self.plt_units =  Q_(self.rate).units
-        self.mu :str = f"{self.species.mu}/{self.mo.tu}"
-        
+        self.plt_units = Q_(self.rate).units
+        self.mu: str = f"{self.species.mu}/{self.mo.tu}"
+
         # and convert flux into model units
-        fluxrate :float =  Q_(self.rate).to(self.mo.f_unit).magnitude
-        
+        fluxrate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
+
         self.m: [NDArray, Float[64]
                  ] = zeros(self.model.steps) + fluxrate  # add the flux
         self.l: [NDArray, Float[64]] = zeros(self.model.steps)
         self.h: [NDArray, Float[64]] = zeros(self.model.steps)
         [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
-        
+
         if self.delta == 0:
             self.d: [NDArray, Float[64]] = zeros(self.model.steps)
         else:
@@ -1367,15 +1370,15 @@ class Flux(esbmtkBase):
                                                      self.sp.r)  # update delta
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
-        self.legend_left :str = self.species.ds
-        self.legend_right :str = self.species.dn
-        
+        self.legend_left: str = self.species.ds
+        self.legend_right: str = self.species.dn
+
         self.xl: str = self.model.xl  # se x-axis label equal to model time
         self.lop: list[Process] = []  # list of processes
         self.led: list[ExternalData] = []  # list of ext data
         self.source: str = ""  # Name of reservoir which acts as flux source
         self.sink: str = ""  # Name of reservoir which acts as flux sink
-        self.__register_name__()   
+        self.__register_name__()
 
     def __getitem__(self, i: int) -> NDArray[np.float64]:
         """ Get data by index
@@ -1388,7 +1391,7 @@ class Flux(esbmtkBase):
         """ Write data by index
         
         """
-        
+
         self.m[i] = value[0]
         self.l[i] = value[1]
         self.h[i] = value[2]
@@ -1403,34 +1406,21 @@ class Flux(esbmtkBase):
         """ adding two fluxes works for the masses, but not for delta
 
         """
-        
+
         self.m = self.m + other.m
         self.l = self.l + other.l
         self.h = self.h + other.h
-        self.d = get_delta(self.l, self.h,self.sp.r)
+        self.d = get_delta(self.l, self.h, self.sp.r)
 
     def __sub__(self, other):
         """ adding two fluxes works for the masses, but not for delta
 
         """
-        
+
         self.m = self.m - other.m
         self.l = self.l - other.l
         self.h = self.h - other.h
-        self.d = get_delta(self.l, self.h,self.sp.r)
-
-    def log_description(self, reservoir) -> None:
-
-        o = 16 * " "
-        logging.info(
-            f"{o}{self.n}, Flux = {self.m[1]*self.reservoir.lio[self.n]}, delta = {self.d[1]:.4f}"
-        )
-
-        o = 20 * " "
-        if len(self.lop) > 0:
-            logging.info(f"{o}Associated Perturbations:")
-            for p in self.lop:  # loop over all perturbations objects
-                p.describe()
+        self.d = get_delta(self.l, self.h, self.sp.r)
 
     def describe(self, **kwargs) -> None:
         """ Show an overview of the object properties.
@@ -1439,7 +1429,7 @@ class Flux(esbmtkBase):
         indent :int = 0 indentation 
 
         """
-        off : str = "  "
+        off: str = "  "
         if "index" not in kwargs:
             index = 0
         else:
@@ -1456,13 +1446,21 @@ class Flux(esbmtkBase):
         print(f"{ind}{self.__str__(indent=indent)}")
         print(f"{ind}Data sample:")
         show_data(self, index=index, indent=indent)
-        
-        print(f"\n{ind}Processes:")
-        for p in self.lop:
-            print(f"{off}{ind}{p.n}")
-        
 
-    def plot(self, **kwargs :dict) -> None:
+        if len(self.lop) > 0:
+            print(f"\n{ind}Process(es) acting on this flux:")
+            for p in self.lop:
+                print(f"{off}{ind}{p.__repr__()}")
+
+            print("")
+            print(
+                "Use help on the process name to get an explanation what this process does"
+            )
+            print(f"e.g., help({self.lop[0].n})")
+        else:
+            print("There are no processes for this flux")
+
+    def plot(self, **kwargs: dict) -> None:
         """Plot the flux data:
         This method has the optional keyword ptype which can be
 
@@ -1473,7 +1471,7 @@ class Flux(esbmtkBase):
         """
 
         ptype: int = get_ptype(kwargs)
-        
+
         fig, ax1 = plt.subplots()
         fig.set_size_inches(5, 4)  # Set figure size in inches
         fig.set_dpi(100)  # Set resolution in dots per inch
@@ -1954,14 +1952,6 @@ class Signal(esbmtkBase):
             """
         self.data.plot()
 
-    def describe(self) -> None:
-
-        o = 24 * " "
-        s = f"{o}{self.n}, Shape = {self.sh}:"
-        logging.info(s)
-        o = 24 * " "
-        s = f"{o}Start = {self.st}, Mass = {self.m:4E}, Delta = {self.d}"
-        logging.info(s)
 #+END_SRC
 
 
@@ -2135,8 +2125,6 @@ class ExternalData(esbmtkBase):
         self.mo: Model = self.reservoir.species.mo
 
         self.df: pd.DataFrame = pd.read_csv(self.fn)  # read file
-        logging.info(f"Read external data from {self.fn}")
-
         ncols = len(self.df.columns)
         if ncols != 3:  # test of we have 3 columns
             raise ValueError("CSV file must have 3 columns")
