@@ -62,7 +62,7 @@ import builtins
 
 * The main esbmtk objects
   
-** The esbmtk base class
+** The esbmtk base class 
 
 #+BEGIN_SRC ipython :tangle esbmtk.py
 class esbmtkBase():
@@ -92,8 +92,6 @@ class esbmtkBase():
         # register all key/value pairs as instance variables
         self.__registerkeys__()
 
-        
-
     def __register_name__(self) -> None:
         """
         Register object name in global name space, and test if
@@ -105,7 +103,7 @@ class esbmtkBase():
 
         if type(self) == Model:
             setattr(builtins, self.name, self)
-        else: # check that name is unique
+        else:  # check that name is unique
             if self.name in self.mo.lmo:
                 raise NameError(f"{self.name} is a duplicate. Please fix")
             else:
@@ -331,7 +329,7 @@ class esbmtkBase():
                 elif isinstance(v, Q_):
                     m = m + f"{ind}{off}{k} = {v}\n"
                 elif k != "name":
-                    m = m + f"{ind}{off}{k} = {v}"
+                    m = m + f"{ind}{off}{k} = {v}\n"
 
         return m
 
@@ -349,8 +347,6 @@ class esbmtkBase():
 
         return self.n > other.n
 
-    
-
     def describe(self, **kwargs) -> None:
         """ Show an overview of the object properties.
         Optional arguments are
@@ -358,7 +354,7 @@ class esbmtkBase():
         indent :int = 0 indentation 
 
         """
-        
+
         if "indent" not in kwargs:
             indent = 0
             ind = ""
@@ -368,23 +364,21 @@ class esbmtkBase():
 
         # print basic data bout this object
         print(f"{ind}{self.__str__(indent=indent)}")
-
 #+END_SRC
 
-
 ** The Model object
-ESBMTK has rudimentary support for unit conversions. The model will do
-all it's computations in the base units. However, you are free to
-specify all quantities in their own units. The code will convert these
-to the model units before using them.
+   ESBMTK has rudimentary support for unit conversions. The model will do
+   all it's computations in the base units. However, you are free to
+   specify all quantities in their own units. The code will convert these
+   to the model units before using them.
 
 #+BEGIN_SRC ipython :tangle esbmtk.py
 class Model(esbmtkBase):
-    """This is the class specify a new model.
+    """ This lass is used to specify a new model
 
     Example:
 
-            esbmtkModel(name   =  "Test_Model",
+          esbmtkModel(name   =  "Test_Model",
                       start    = "0 yrs",    # optional: start time 
                       stop     = "1000 yrs", # end time
                       timestep = "2 yrs",    # as a string "2 yrs"
@@ -394,7 +388,7 @@ class Model(esbmtkBase):
                       time_label = optional, defaults to "Time"
                       display_precision = optional, defaults to 0.01,
                       m_type = "mass_only", defaults to both (mass & isotope)
-            )
+                      )
 
     The 'ref_time' keyword will offset the time axis by the specified
     amount, when plotting the data, .i.e., the model time runs from to
@@ -406,7 +400,7 @@ class Model(esbmtkBase):
     The display precision affects the on-screen display of data. It is
     also cutoff for the graphicak output. I.e., the interval f the y-axis will not be
     smaller than the display_precision.
-    
+
     All of the above keyword values are available as variables with 
     Model_Name.keyword
 
@@ -420,18 +414,17 @@ class Model(esbmtkBase):
        - Model_Name.list_species()
 
     Optional, you can provide the element keyword which will setup a
-    default set of Species for Carbon and Sulfur.  In this case, there
+    default set of Species for Carbon and Sulfur. In this case, there
     is no need to define elements or species. The argument to this
     keyword are either "Carbon", or "Sulfur" or both as a list
     ["Carbon", "Sulfur"].
 
     """
 
-    #from typing import Dict
-    #from . import ureg, Q_
-
     def __init__(self, **kwargs: Dict[any, any]) -> None:
-        """ initialize object"""
+        """ Init Sequence
+
+        """
 
         from . import ureg, Q_
 
@@ -481,7 +474,7 @@ class Model(esbmtkBase):
         # empty list which will hold all reservoir references
         self.lor: list = []
         # empty list which will hold all connector references
-        self.loc: set  = set()  # set with connection handles
+        self.loc: set = set()  # set with connection handles
         self.lel: list = []  # list which will hold all element references
         self.lsp: list = []  # list which will hold all species references
         self.lop: list = []  # list flux processe
@@ -520,7 +513,7 @@ class Model(esbmtkBase):
         self.time = ((arange(self.steps) * self.dt) + self.start)
 
         # set_printoptions(precision=self.display_precision)
-        
+
         if "element" in self.kwargs:
             if isinstance(self.kwargs["element"], list):
                 element_list = self.kwargs["element"]
@@ -539,20 +532,21 @@ class Model(esbmtkBase):
                     phosphor(self)
                 else:
                     raise ValueError(f"{e} not implemented yet")
-        warranty = (
-            f"\n"
-            f"ESBMTK  Copyright (C) 2020  Ulrich G.Wortmann\n"
-            f"This program comes with ABSOLUTELY NO WARRANTY\n"
-            f"For details see the LICENSE file\n"
-            f"This is free software, and you are welcome to redistribute it\n"
-            f"under certain conditions; See the LICENSE file for details.\n")
-        print(warranty)
+                warranty = (
+                    f"\n"
+                    f"ESBMTK  Copyright (C) 2020  Ulrich G.Wortmann\n"
+                    f"This program comes with ABSOLUTELY NO WARRANTY\n"
+                    f"For details see the LICENSE file\n"
+                    f"This is free software, and you are welcome to redistribute it\n"
+                    f"under certain conditions; See the LICENSE file for details.\n"
+                )
+                print(warranty)
 
         self.__register_name__()
 
     def describe(self) -> None:
         """ Describe Basic Model Parameters and log them
-        
+
         """
 
         logging.info("---------- Model description start ----------")
@@ -570,7 +564,7 @@ class Model(esbmtkBase):
 
     def list_species(self) -> None:
         """ List all species known to the model
-        
+
         """
         for e in self.lel:
             print(f"Defined Species for {e.n}:")
@@ -601,8 +595,8 @@ class Model(esbmtkBase):
         stride = int  # every nth element
         start = int   # start index
         stop = int    # end index
-        
-        
+
+
         """
 
         for k, v in kwargs.items():
@@ -653,8 +647,8 @@ class Model(esbmtkBase):
 
         """
 
-        ptype: int = get_ptype(self,kwargs)
-                        
+        ptype: int = get_ptype(self, kwargs)
+
         i = 0
         for r in self.lor:
             r.__plot__(i, ptype)
@@ -673,8 +667,8 @@ class Model(esbmtkBase):
         concentration = plot only concentration data.
         """
 
-        ptype: int = get_ptype(self,kwargs)
-            
+        ptype: int = get_ptype(self, kwargs)
+
         i: int = 0
         for r in self.lor:
             r.__plot_reservoirs__(i, ptype)
@@ -819,8 +813,6 @@ class Element(esbmtkBase):
             'r': 1,
         }
 
-        
-        
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
 
@@ -931,9 +923,8 @@ class Reservoir(esbmtkBase):
 
     Useful methods include
 
-      - Name.write_data() # dave data to file
-      - Name.describe() # show data this takess an optional argument to show the nth dataset
-      - Name.list_connections() # list all connection objects.
+      - Name.write_data() # save data to file
+      - Name.describe()   # describe Reservoir
       
     """
     def __init__(self, **kwargs) -> None:
@@ -1441,12 +1432,35 @@ class Flux(esbmtkBase):
             for p in self.lop:  # loop over all perturbations objects
                 p.describe()
 
-    def describe(self, i: int) -> None:
-        """ Show an overview of the object properties
+    def describe(self, **kwargs) -> None:
+        """ Show an overview of the object properties.
+        Optional arguments are
+        index  :int = 0 this will show data at the given index
+        indent :int = 0 indentation 
 
         """
+        off : str = "  "
+        if "index" not in kwargs:
+            index = 0
+        else:
+            index = kwargs["index"]
+
+        if "indent" not in kwargs:
+            indent = 0
+            ind = ""
+        else:
+            indent = kwargs["indent"]
+            ind = ' ' * indent
+
+        # print basic data bout this object
+        print(f"{ind}{self.__str__(indent=indent)}")
+        print(f"{ind}Data sample:")
+        show_data(self, index=index, indent=indent)
         
-        show_data(self, self.n, i)
+        print(f"\n{ind}Processes:")
+        for p in self.lop:
+            print(f"{off}{ind}{p.n}")
+        
 
     def plot(self, **kwargs :dict) -> None:
         """Plot the flux data:
