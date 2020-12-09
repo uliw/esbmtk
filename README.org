@@ -17,6 +17,11 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - Dec. 9^{th}, added a basic logging infrastructure. Added =describe()=
+   method to =Model=, =Reservoir= and =Connnection= classes. This will
+   list details about the fluxes and processes etc. Lot's of code
+   cleanup and refactoring.
+
  - Dec. 7^{th}, When calling an instance without arguments, it now
    returns the values it was initialized with. In other words, it will
    print the code which was used to initialize the instance.

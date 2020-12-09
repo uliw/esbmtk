@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org35fb3ae)
-2.  [News](#orgdd001fe)
-3.  [Contributing](#orgce391b2)
-4.  [Installation](#org57ec755)
-5.  [Documentation](#org9af042b)
-6.  [Todo](#org3fe5993)
-7.  [License](#orgfa74a0a)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org0f39d35)
+2.  [News](#org8360a56)
+3.  [Contributing](#org1fbc3dd)
+4.  [Installation](#orgbdf90ea)
+5.  [Documentation](#orgbea3e02)
+6.  [Todo](#orgff219df)
+7.  [License](#org63a04d9)
 
 
-<a id="org35fb3ae"></a>
+<a id="org0f39d35"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,9 +30,14 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="orgdd001fe"></a>
+<a id="org8360a56"></a>
 
 # News
+
+-   Dec. 9<sup>th</sup>, added a basic logging infrastructure. Added `describe()`
+    method to `Model`, `Reservoir` and `Connnection` classes. This will
+    list details about the fluxes and processes etc. Lot's of code
+    cleanup and refactoring.
 
 -   Dec. 7<sup>th</sup>, When calling an instance without arguments, it now
     returns the values it was initialized with. In other words, it will
@@ -75,7 +80,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgce391b2"></a>
+<a id="org1fbc3dd"></a>
 
 # Contributing
 
@@ -85,7 +90,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org57ec755"></a>
+<a id="orgbdf90ea"></a>
 
 # Installation
 
@@ -106,7 +111,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org9af042b"></a>
+<a id="orgbea3e02"></a>
 
 # Documentation
 
@@ -121,7 +126,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org3fe5993"></a>
+<a id="orgff219df"></a>
 
 # Todo
 
@@ -130,7 +135,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orgfa74a0a"></a>
+<a id="org63a04d9"></a>
 
 # License
 

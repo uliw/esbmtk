@@ -196,18 +196,32 @@ def list_fluxes(self,name,i) -> None:
 #+END_SRC
 *** Show data of flux or reservoir
 #+BEGIN_SRC ipython :tangle utility_functions.py
-def show_data(self,name,i) -> None:
-    """ Print the first 4, and last 3 lines of the data for a given flux or reservoir object
-    """
-    
-    # show the first 4 entries
-    print(f"{name}:")
-    for i in range(i,i+3):
-        print(f"\t i = {i}, Mass = {self.m[i]:.2f}, LI = {self.l[i]:.2f}, HI = {self.h[i]:.2f}, delta = {self.d[i]:.2f}")
-    
-    print(".......................")
+def show_data(self, **kwargs) -> None:
+    """ Print the 3 lines of the data starting with index
 
+    Optional arguments:
     
+    index :int = 0 starting index
+    indent :int = 0 indentation 
+    """
+
+    off: str = "  "
+
+    if "index" not in kwargs:
+        index = 0
+    else:
+        index = kwargs["index"]
+
+    if "indent" in kwargs:
+        ind: str = kwargs["indent"] * " "
+    else:
+        ind: str = ""
+
+    # show the first 4 entries
+    for i in range(index, index + 3):
+        print(
+            f"{off}{ind}i = {i}, Mass = {self.m[i]:.2e}, delta = {self.d[i]:.2f}"
+        )
 #+END_SRC
 
 

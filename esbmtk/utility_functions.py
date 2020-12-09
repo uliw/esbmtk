@@ -166,16 +166,32 @@ def list_fluxes(self,name,i) -> None:
             for f in self.lof:
                   f.describe(i) # print out the flux data
 
-def show_data(self,name,i) -> None:
-    """ Print the first 4, and last 3 lines of the data for a given flux or reservoir object
+def show_data(self, **kwargs) -> None:
+    """ Print the 3 lines of the data starting with index
+
+    Optional arguments:
+    
+    index :int = 0 starting index
+    indent :int = 0 indentation 
     """
-    
+
+    off: str = "  "
+
+    if "index" not in kwargs:
+        index = 0
+    else:
+        index = kwargs["index"]
+
+    if "indent" in kwargs:
+        ind: str = kwargs["indent"] * " "
+    else:
+        ind: str = ""
+
     # show the first 4 entries
-    print(f"{name}:")
-    for i in range(i,i+3):
-        print(f"\t i = {i}, Mass = {self.m[i]:.2f}, LI = {self.l[i]:.2f}, HI = {self.h[i]:.2f}, delta = {self.d[i]:.2f}")
-    
-    print(".......................")
+    for i in range(index, index + 3):
+        print(
+            f"{off}{ind}i = {i}, Mass = {self.m[i]:.2e}, delta = {self.d[i]:.2f}"
+        )
 
 def set_y_limits(ax  :plt.Axes, model :any)->None:
     """ Prevent the display or arbitrarily small differences
@@ -394,45 +410,29 @@ def get_hplus(dic :float, ta :float)->float:
 
     return hplus
 
-def get_pco2(dic :float) -> float:
-    """Calculate pCO_{2} in uatm at 25C and a Salinity of 35 CO 2
-    fugacity at S35,
+def get_pco2(dic :float, ta :float) -> float:
+    """Calculate pCO2 in uatm at 25C and a Salinity of 35
 
     DIC has to be in mmol/l!
-    
-    Back calculated with equation 8 from Follows 2006
-    using data from data for T25C after Zeebe, Carbonate Systems. This
-    yields 0.005753424657534247 if DIC in mmol/l and pCO_{2} in
-    uatm. The experimentally determined value in Weiss 1970 is 23.9
-    mmols/l atm. Not+ sure why this value is so off? 
-
-    """
-     
-    co2_f = 2.1/356
-    return dic/co2_f
-
-def get_pco2b(dic :float, ta :float) -> float:
-    """Calculate pCO_{2} in uatm at 25C and a Salinity of 35 CO 2
-    fugacity at S35,
-
-    DIC has to be in mmol/l!
-    
-    Back calculated with equation 8 from Follows 2006
-    using data from data for T25C after Zeebe, Carbonate Systems. This
-    yields 0.005753424657534247 if DIC in mmol/l and pCO_{2} in
-    uatm. The experimentally determined value in Weiss 1970 is 23.9
-    mmols/l atm. Not+ sure why this value is so off? 
 
     """
     pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
     pk2 = 8.92
     K1 = 10**-pk1
     K2 = 10**-pk2
-    K0 = 2.25E2
+    K0 = 36
 
     hplus = get_hplus(dic,ta)
 
-    pco2 = ta/K0 * ( K1/hplus + 2*K1*K2/hplus**2)**-1
+    # get [CO2] in water
+    co2 = dic / (1 + K1/hplus + K1*K2/hplus**2)
+
+    # get pco2 as a function of co2 fugacity
+    pco2 = co2/K0 *1E6
+
+    # this cam also be expressed in teh following way
+    #pco2a = (ta/K0 * ( K1/hplus + 2*K1*K2/hplus**2)**-1) * 1.e6
+    #pco2b = (dic/K0 * (1 + K1/hplus + (K1*K2)/hplus**2)**-1) * 1.e6
    
     return pco2
 

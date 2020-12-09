@@ -119,7 +119,7 @@ class Connect(esbmtkBase):
             "alpha": Number,
             "species": Species,
             "ctype": str,
-            "ref": (Flux,list),
+            "ref": (Flux, list),
             "react_with": Flux,
             "ratio": Number,
             "scale": Number,
@@ -158,8 +158,12 @@ class Connect(esbmtkBase):
 
         self.__validateandregister__(kwargs)
 
-        if not 'pl' in kwargs:
-            self.pl: list[Process] = []
+        if len(kwargs["id"]) > 0:
+            self.name = self.name + f"_{self.id}"
+        if 'pl' in kwargs:
+            self.lop: list[Process] = self.pl
+        else:
+            self.lop: list[Process] = []
 
         # if no reference reservoir is specified, default to the upstream reservoir
         if not 'ref_reservoir' in kwargs:
@@ -181,17 +185,19 @@ class Connect(esbmtkBase):
 
         self.get_species(self.r1, self.r2)  #
         self.mo: Model = self.sp.mo  # the current model handle
+        self.lof: list[Flux] = []  # list of fluxes in this connection
         self.lor: list[
             Reservoir] = self.mo.lor  # get a list of all reservoirs registered for this species
 
-        self.source.loc.append(self)  # register connector with reservoir
-        self.sink.loc.append(self)  # register connector with reservoir
-        self.mo.loc.append(self)  # register connector with model
+        self.source.loc.add(self)  # register connector with reservoir
+        self.sink.loc.add(self)  # register connector with reservoir
+        self.mo.loc.add(self)  # register connector with model
 
         self.__register_fluxes__()  # Source/Sink/Regular
         self.__set_process_type__()  # derive flux type and create flux(es)
         self.__register_process__(
         )  # This should probably move to register fluxes
+        self.__register_name__()
 
     def get_species(self, r1, r2) -> None:
         """In most cases the species is set by r2. However, if we have
@@ -280,6 +286,8 @@ class Connect(esbmtkBase):
             self.__register_species__(self.r1, self.r1.sp)
             self.__register_species__(self.r2, self.r2.sp)
 
+        self.lof.append(self.fh)
+
     def __register_species__(self, r, sp) -> None:
         """ Add flux to the correct element dictionary"""
         # test if element key is present in reservoir
@@ -295,22 +303,22 @@ class Connect(esbmtkBase):
         # first test if we have a signal in the list. If so,
         # remove signal and replace with process
 
-        p_copy = copy(self.pl)
+        p_copy = copy(self.lop)
         for p in p_copy:
             if isinstance(p, Signal):
-                self.pl.remove(p)
+                self.lop.remove(p)
                 if p.ty == "addition":
                     # create AddSignal Process object
                     n = AddSignal(name=p.n + "_addition_process",
                                   reservoir=self.r,
                                   flux=self.fh,
                                   lt=p.data)
-                    self.pl.append(n)
+                    self.lop.append(n)
                 else:
                     raise ValueError(f"Signal type {p.ty} is not defined")
 
-        # nwo we can register everythig on pl
-        for p in self.pl:
+        # nwo we can register everythig on lop
+        for p in self.lop:
             # print(f"Registering Process {p.n}")
             # print(f"with reservoir {self.r.n} and flux {self.fh.n}")
             p.__register__(self.r, self.fh)
@@ -326,7 +334,10 @@ class Connect(esbmtkBase):
             self.r = self.r1
 
         # set process name
-        self.pn = self.r1.n + "_to_" + self.r2.n
+        if len(self.kwargs["id"]) > 0:
+            self.pn = self.r1.n + "_to_" + self.r2.n + f"_{self.id}"
+        else:
+            self.pn = self.r1.n + "_to_" + self.r2.n
 
         # set the fundamental flux type
         if "delta" in self.kwargs and "rate" in self.kwargs:
@@ -379,24 +390,24 @@ class Connect(esbmtkBase):
         """ Just a wrapper to keep the if statement manageable
 
         """
-        
+
         ph = PassiveFlux_fixed_delta(
             name=self.pn + "_Pfd",
             reservoir=self.r,
             flux=self.fh,
             delta=self.delta)  # initialize a passive flux process object
-        self.pl.append(ph)
+        self.lop.append(ph)
 
     def __vardeltaout__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
 
         """
-        
+
         ph = VarDeltaOut(name=self.pn + "_Pvdo",
                          reservoir=self.r,
                          flux=self.fh,
                          rate=self.kwargs["rate"])
-        self.pl.append(ph)
+        self.lop.append(ph)
 
     def __scaleflux__(self) -> None:
         """ Scale a flux relative to another flux
@@ -411,7 +422,7 @@ class Connect(esbmtkBase):
                        flux=self.fh,
                        scale=self.kwargs["scale"],
                        ref=self.kwargs["ref"])
-        self.pl.append(ph)
+        self.lop.append(ph)
 
     def __flux_diff__(self) -> None:
         """ Scale a flux relative to the difference between
@@ -423,18 +434,17 @@ class Connect(esbmtkBase):
             raise ValueError("ref must be a list")
 
         ph = FluxDiff(name=self.pn + "_PSF",
-                       reservoir=self.r,
-                       flux=self.fh,
-                       scale=self.kwargs["scale"],
-                       ref=self.kwargs["ref"])
-        self.pl.append(ph)
-        
+                      reservoir=self.r,
+                      flux=self.fh,
+                      scale=self.kwargs["scale"],
+                      ref=self.kwargs["ref"])
+        self.lop.append(ph)
 
     def __reaction__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
 
         """
-        
+
         if not isinstance(self.kwargs["react_with"], Flux):
             raise ValueError("Scale reference must be a flux")
         ph = Reaction(name=self.pn + "_RF",
@@ -446,28 +456,28 @@ class Connect(esbmtkBase):
         # react_with is removed from the list of fluxes in this
         # reservoir.
         self.r2.lof.remove(self.kwargs["react_with"])
-        self.pl.append(ph)
+        self.lop.append(ph)
 
     def __passiveflux__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
 
         """
-        
+
         ph = PassiveFlux(
             name=self.pn + "_PF", reservoir=self.r,
             flux=self.fh)  # initialize a passive flux process object
-        self.pl.append(ph)  # add this process to the process list
+        self.lop.append(ph)  # add this process to the process list
 
     def __alpha__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
 
         """
-        
+
         ph = Fractionation(name=self.pn + "_Pa",
                            reservoir=self.r,
                            flux=self.fh,
                            alpha=self.kwargs["alpha"])
-        self.pl.append(ph)  #
+        self.lop.append(ph)  #
 
     def __rateconstant__(self) -> None:
         """ Add rate constant type process
@@ -547,17 +557,34 @@ class Connect(esbmtkBase):
         #        flux=self.fh,
         #        k_value=self.k_value)
 
-        self.pl.append(ph)
+        self.lop.append(ph)
 
-    def list_processes(self) -> None:
-        """ list all processes associated with this class
+    def describe(self, **kwargs) -> None:
+        """ Show an overview of the object properties.
+        Optional arguments are
+        index  :int = 0 this will show data at the given index
+        indent :int = 0 indentation 
 
         """
+        off: str = "  "
+        if "index" not in kwargs:
+            index = 0
+        else:
+            index = kwargs["index"]
 
-        for p in self.pl:
-            print(p.n)
+        if "indent" not in kwargs:
+            indent = 0
+            ind = ""
+        else:
+            indent = kwargs["indent"]
+            ind = ' ' * indent
 
-        print("You can get further information by running help(process_name)")
+        # print basic data bout this Connection
+        print(f"{ind}{self.__str__(indent=indent)}")
+
+        print(f"{ind}Fluxes:")
+        for f in sorted(self.lof):
+            f.describe(indent=indent, index=index)
 
 
 class Connection(Connect):
@@ -583,6 +610,7 @@ class Process(esbmtkBase):
         self.bem.update({"rate": "a string"})
         self.__validateandregister__(kwargs)  # initialize keyword values
         self.__postinit__()          # do some housekeeping
+        self.__register_name__()
 
     def __postinit__(self) -> None:
         """ Do some housekeeping for the process class
@@ -594,7 +622,7 @@ class Process(esbmtkBase):
         self.f: Flux = self.flux
         self.m: Model = self.r.sp.mo  # the model handle
 
-        # Create a list of fluxes wich texclude the flux this process
+        # Create a list of fluxes wich excludes the flux this process
         # will be acting upon
         self.fws :List[Flux] = self.r.lof.copy()
         self.fws.remove(self.f)  # remove this handle
@@ -644,14 +672,6 @@ class Process(esbmtkBase):
         # add this process to the list of processes acting on this reservoir
         reservoir.lop.append(self)
         flux.lop.append(self)
-
-    def describe(self) -> None:
-        """Print basic data about this process """
-        print(f"\t\tProcess: {self.n}", end="")
-        for key, value in self.kwargs.items():
-            print(f", {key} = {value}", end="")
-
-        print("")
 
     def show_figure(self, x, y) -> None:
         """ Apply the current process to the vector x, and show the result as y.
@@ -714,7 +734,11 @@ class AddSignal(Process):
         self.__initerrormessages__()
         #self.bem.update({"rate": "a string"})
         self.__validateandregister__(kwargs)  # initialize keyword values
+
+        #legacy variables
+        self.mo = self.reservoir.mo
         self.__postinit__()  # do some housekeeping
+        self.__register_name__()
 
     def __call__(self, r, i) -> None:
         """Each process is associated with a flux (self.f). Here we replace
@@ -757,7 +781,10 @@ class PassiveFlux(Process):
           self.__initerrormessages__()
           #self.bem.update({"rate": "a string"})
           self.__validateandregister__(kwargs)  # initialize keyword values
+          #legacy variables
+          self.mo = self.reservoir.mo
           self.__postinit__()  # do some housekeeping
+          self.__register_name__()
      
      def __call__(self,reservoir :Reservoir, i :int) -> None:
           """Here we re-balance the flux. That is, we calculate the sum of all fluxes
@@ -801,10 +828,13 @@ class PassiveFlux_fixed_delta(Process):
 
           # legacy names
           self.f :Flux = self.flux
+          #legacy variables
+          self.mo = self.reservoir.mo
 
           print("\nn *** Warning, you selected the PassiveFlux_fixed_delta method ***\n ")
           print(" This is not a particularly phyiscal process is this really what you want?\n")
           print(self.__doc__)
+          self.__register_name__()
      
      def __call__(self, reservoir :Reservoir, i :int) -> None:
           """Here we re-balance the flux. This code will be called by the
@@ -865,8 +895,10 @@ class VarDeltaOut(Process):
           # parse rate term, and map to legacy name
           self.rateq = Q_(self.rate)
           self.rate = Q_(self.rate).to(self.reservoir.mo.f_unit).magnitude
-          
+          #legacy variables
+          self.mo = self.reservoir.mo
           self.__postinit__()  # do some housekeeping
+          self.__register_name__()
      
      def __call__(self, reservoir:Reservoir ,i :int) -> None:
           """Here we re-balance the flux. This code will be called by the
@@ -898,7 +930,11 @@ class ScaleFlux(Process):
                          "ref"])  # new required keywords
 
         self.__validateandregister__(kwargs)  # initialize keyword values
+
+        #legacy variables
+        self.mo = self.reservoir.mo
         self.__postinit__()  # do some housekeeping
+        self.__register_name__()
 
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """Apply the scale factor. This is typically done through the the
@@ -938,6 +974,10 @@ class FluxDiff(Process):
 
         self.__validateandregister__(kwargs)  # initialize keyword values
         self.__postinit__()  # do some housekeeping
+
+        #legacy variables
+        self.mo = self.reservoir.mo
+        self.__register_name__()
 
 
     
@@ -987,6 +1027,9 @@ class Fractionation(Process):
         
           self.__validateandregister__(kwargs)  # initialize keyword values
           self.__postinit__()  # do some housekeeping
+          #legacy variables
+          self.mo = self.reservoir.mo
+          self.__register_name__()
      
      
      def __call__(self,reservoir :Reservoir, i :int) -> None: 
@@ -1051,6 +1094,9 @@ class RateConstant(Process):
         # initialize keyword values
         self.__validateandregister__(kwargs)
         self.__postinit__()  # do some housekeeping
+        #legacy variables
+        self.mo = self.reservoir.mo
+        self.__register_name__()
 
         
 
@@ -1278,6 +1324,9 @@ class Monod(Process):
 
         self.__validateandregister__(kwargs)  # initialize keyword values
         self.__postinit__()  # do some housekeeping
+        #legacy variables
+        self.mo = self.reservoir.mo
+        self.__register_name__()
 
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
