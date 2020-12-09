@@ -491,23 +491,14 @@ reservoir.
    F = F * a * F0 x C/(b+C)
 
 
-** Connection Introspection
+** Introspection
 
-Each reservoir keeps a list of it's connection objects. This list is accessible via the =list_connnections()= method
-#+BEGIN_SRC ipython
-Ocean.list_connections()
-#+END_SRC
-
-Each connection keeps a list of it's processes
-#+BEGIN_SRC ipython
-connection.list_processes()
-#+END_SRC
-
-In turn, the process names can be used to access the help system
-#+BEGIN_SRC ipython
-help(processname)
-#+END_SRC
-
+The object names can be used to query almost all object parameters. I
+addition to the usual commands (e.g., =print=, =help=, =dir=), the
+=model=, =reservoir= and =connection= classes provide a =describe()=
+method. This method can be used e.g., to query the name and type of
+the connections, fluxes and processes which are associated with a
+reservoir.
 
 
 ** External Data
