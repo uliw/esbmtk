@@ -109,7 +109,7 @@ class esbmtkBase():
             else:
                 self.mo.lmo.append(self.name)
                 setattr(builtins, self.name, self)
-                
+
         logging.info(self)
 
     def __validateinput__(self, kwargs: Dict[str, any]) -> None:
@@ -284,7 +284,6 @@ class esbmtkBase():
         tdiff = time.monotonic() - self.reg_time
 
         # do not echo input unless explicitly requestted
-       
 
         m = f"{self.__class__.__name__}(\n"
         for k, v in self.provided_kwargs.items():
@@ -292,10 +291,16 @@ class esbmtkBase():
                 # check if this is not another esbmtk object
                 if "esbmtk" in str(type(v)):
                     m = m + f"    {k} = {v.n},\n"
+                # if this is a string
                 elif isinstance(v, str):
                     m = m + f"    {k} = '{v}',\n"
+                # if this is a quantity
                 elif isinstance(v, Q_):
                     m = m + f"    {k} = '{v}',\n"
+                # if this is a list
+                elif isinstance(v, (list, np.ndarray)):
+                    m = m + f"    {k} = '{v[0:3]}',\n"
+                # all other cases
                 else:
                     m = m + f"    {k} = {v},\n"
 
@@ -303,7 +308,7 @@ class esbmtkBase():
 
         #if tdiff < 1:
         #     m = ""
-            
+
         return m
 
     def __str__(self, **kwargs):
