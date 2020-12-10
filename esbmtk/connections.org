@@ -1407,8 +1407,8 @@ class Equilibrium(RateConstant):
         # parse the left hand side
 
         em = "left/right values must be constants or reservoirs"
-        [Rl, Cl] = sort_list_arguments(self.left, [Reservoir, Number], em)
-        [Rr, Cr] = sort_list_arguments(self.right, [Reservoir, Number], em)
+        [Rl, Cl] = sort_by_type(self.left, [Reservoir, Number], em)
+        [Rr, Cr] = sort_by_type(self.right, [Reservoir, Number], em)
 
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
