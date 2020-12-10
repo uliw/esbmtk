@@ -667,18 +667,16 @@ class Process(esbmtkBase):
      subclass which defines the actual process implementation in their
      call method. See 'PassiveFlux as example'
     """
-
-    
-    def __init__(self, **kwargs :Dict[str, any]) -> None:
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
           Create a new process object with a given process type and options
           """
 
-        self.__defaultnames__()      # default kwargs names
-        self.__initerrormessages__() # default error messages
+        self.__defaultnames__()  # default kwargs names
+        self.__initerrormessages__()  # default error messages
         self.bem.update({"rate": "a string"})
         self.__validateandregister__(kwargs)  # initialize keyword values
-        self.__postinit__()          # do some housekeeping
+        self.__postinit__()  # do some housekeeping
         self.__register_name__()
 
     def __postinit__(self) -> None:
@@ -693,17 +691,27 @@ class Process(esbmtkBase):
 
         # Create a list of fluxes wich excludes the flux this process
         # will be acting upon
-        self.fws :List[Flux] = self.r.lof.copy()
+        self.fws: List[Flux] = self.r.lof.copy()
         self.fws.remove(self.f)  # remove this handle
 
-        self.rm0 :float = self.r.m[0]  # the initial reservoir mass
-        self.direction :Dict[Flux,int] = self.r.lio[self.f.n]
-        
+        self.rm0: float = self.r.m[0]  # the initial reservoir mass
+        self.direction: Dict[Flux, int] = self.r.lio[self.f.n]
+
+        self.__misc_init__()
+
+    def __misc_init__(self) -> None:
+        """This is just a place holder method which will be called by default
+        in __post_init__() This can be overloaded to add additional
+        code to the init procedure without the need to redefine
+        init. This useful for processes which only define a call method.
+
+        """
+
+        pass
 
     def __defaultnames__(self) -> None:
         """Set up the default names and dicts for the process class. This
           allows us to extend these values without modifying the entire init process"""
-
 
         # provide a dict of known keywords and types
         self.lkk: Dict[str, any] = {
@@ -715,7 +723,7 @@ class Process(esbmtkBase):
             "lt": Flux,
             "alpha": Number,
             "scale": Number,
-            "ref": (Flux,list),
+            "ref": (Flux, list),
         }
 
         # provide a list of absolutely required keywords
@@ -725,19 +733,18 @@ class Process(esbmtkBase):
         self.lod: Dict[str, any] = {}
 
         # default type hints
-        self.scale :t
-        self.delta :Number
-        self.alpha :Number
-        
+        self.scale: t
+        self.delta: Number
+        self.alpha: Number
 
-    def __register__(self, reservoir :Reservoir, flux :Flux) -> None:
+    def __register__(self, reservoir: Reservoir, flux: Flux) -> None:
         """Register the flux/reservoir pair we are acting upon, and register
           the process with the reservoir
           """
 
         # register the reservoir flux combination we are acting on
-        self.f :Flux = flux
-        self.r :Reservoir = reservoir
+        self.f: Flux = flux
+        self.r: Reservoir = reservoir
         # add this process to the list of processes acting on this reservoir
         reservoir.lop.append(self)
         flux.lop.append(self)
@@ -750,8 +757,6 @@ class Process(esbmtkBase):
                process_name.show_figure(x,y)
           """
         pass
-
-    
 #+END_SRC
 
 
@@ -1087,35 +1092,6 @@ class FluxDiff(Process):
 #+END_SRC
 
 
-*** Combine two elements into a new species (Chemical reaction)
-At present, true chemical reactions are not supported. However, if we
-have one flux driving a another, this behavior can be
-approximated. For a reaction to occur, both fluxes need to belong to a
-different chemical species. Only one of these species will be needed
-in a given reservoir. The second species (the one given in the
-=react_with= keyword) will be removed from the list of fluxes in the
-reservoir,and simply be used a scaling reference. Thus, internally,
-this is no different then the scale-flux class. SO we can simply
-subclass it here. A better approach would be to allow multiple
-elements per reservoir. 
-
-#+BEGIN_SRC ipython  :tangle connections.py
-class Reaction(ScaleFlux):
-     """This process approximates the effect of a chemical reaction between
-     two fluxes which belong to a differents species (e.g., S, and O).
-     The flux belonging to the upstream reservoir will simply be
-     scaled relative to the flux it reacts with. The scaling is given
-     by the ratio argument. So this function is equivalent to the
-     ScaleFlux class. It is up to the connector class (or the user) to
-     ensure that the reference flux is removed from the reservoir list
-     of fluxes (.lof) which will be used to sum all fluxes in the
-     reservoir.
-
-     Example:
-          Reaction("Name",upstream_reservoir_handle,{"scale":1,"ref":flux_handle})
-
-     """
-#+END_SRC
 
 *** Flux with Isotope Fractionation/Offset
 #+BEGIN_SRC ipython  :tangle connections.py
@@ -1380,6 +1356,81 @@ class ScaleRelative2otherReservoir(RateConstant):
 
         scale: float = c * self.k_value
         #scale = scale * (scale >= 0)  # prevent negative fluxes.  
+        self.f[i] = self.f[i] * array([scale, scale, scale, 1])
+#+END_SRC
+
+
+*** Equilibrium reaction
+basic idea have two new arguments:
+
+left = [r1, r2, number] and ditto for the right. Use the
+=__misc_init__()= method to analyze both arguments and prep the
+variables for the call method
+
+
+#+BEGIN_SRC ipython
+class Equilibrium(RateConstant):
+    """This process calculates a flux between two reservoirs as a function
+    of multiple reservoir concentrations and constants.
+
+    Note that could result in negative fluxes. which might cause
+    issues with isotope ratios (untested)
+
+    This will work with equilibrium reactions between two reservoirs where the
+    reaction can be described as 
+
+    K * [R1] = R[2] * [R3]  
+
+    you can have more than two terms on each side as long as they are
+    constants or reservoirs
+    
+    Equilibrium(
+                name = "Name",
+                reservoir = reservoir handle,
+                left = [] # list with reservoir names or constants
+                right = [] # list with reservoir names or constants
+                flux = flux handle,
+    )
+
+    """
+
+    # redefine misc_init which is being called by post-init
+    def __misc__init(self):
+        """ Sort out input variables
+        
+        """
+
+        Rl: List[Reservoir] = []
+        Rr: List[Reservoir] = []
+        Cl: List[float] = []
+        Cr: List[float] = []
+        # parse the left hand side
+
+        em = "left/right values must be constants or reservoirs"
+        [Rl, Cl] = sort_list_arguments(self.left, [Reservoir, Number], em)
+        [Rr, Cr] = sort_list_arguments(self.right, [Reservoir, Number], em)
+
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """
+        this will be called by the Model.run() method
+
+        """
+
+        # loop over Rl and extract concentrations
+        rl = np.array(1, 1, 1, 1)
+        rr = np.array(1, 1, 1, 1)
+
+        # calculate the product for left side
+        for rl in self.Rl:
+            rl *= r[i - 1]
+
+        # calculate the product for right side
+        for rr in self.Rr:
+            rr *= r[i - 1]
+
+        get- scale factor
+        scale = self.lk * np.prod(rl) - np.prod(rr) * self.rk
+
         self.f[i] = self.f[i] * array([scale, scale, scale, 1])
 #+END_SRC
 
