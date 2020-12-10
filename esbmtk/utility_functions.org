@@ -545,6 +545,40 @@ def get_pco2(dic :float, ta :float) -> float:
     
 #+END_SRC
 
+
+#+BEGIN_SRC ipython :tangle utility_functions.py
+def sort_by_type(l: list, t: list, m: str) -> list:
+    """divide a list by type into new lists. This function will return a
+    list and it is up to the calling code to unpack the list
+
+    l is list with various object types
+    t is a list which contains the object types used for sorting
+    m is a string for the error function
+    """
+
+    #from numbers import Number
+
+    lc = l.copy()
+    rl = []
+
+    for ot in t:  # loop over object types
+        a = []
+        for e in l:  # loop over list elements
+            if isinstance(e, ot):
+                a.append(e)  # add to temporary list
+                lc.remove(e)  # remove this element
+
+        rl.append(a)  # save the temporary list to rl
+
+    # at this point, all elements of lc should have been processed
+    # if not, lc contains element which are of a different type
+    if len(lc) > 0:
+        raise TypeError(m)
+
+    return rl
+#+END_SRC
+
+
 #+RESULTS:
 :results:
 # Out [1]: 
