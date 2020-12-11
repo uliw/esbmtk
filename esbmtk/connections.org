@@ -190,6 +190,8 @@ class Connect(esbmtkBase):
             "k_value": (Number, str, Q_),
             "a_value": Number,
             "b_value": Number,
+            "left": (list, Number, Reservoir),
+            "right": (list, Number, Reservoir),
             "plot": str,
         }
 
@@ -216,6 +218,8 @@ class Connect(esbmtkBase):
             "name": "a string",
             "id": "a string",
             "plot": "a string",
+            "left": "Number, list or Reservoir",
+            "right": "Number, list or Reservoir",
         })
 
         self.__validateandregister__(kwargs)
@@ -442,6 +446,8 @@ class Connect(esbmtkBase):
             self.__rateconstant__()
         elif self.ctype == "scale_relative_to_multiple_reservoirs":
             self.__rateconstant__()
+        elif self.ctype == "flux_balance":
+            self.__rateconstant__()
         elif self.ctype == "monod_type_limit":
             self.__rateconstant__()
         else:
@@ -586,6 +592,16 @@ class Connect(esbmtkBase):
                                               flux=self.fh,
                                               k_value=self.k_value)
 
+        elif self.ctype == "flux_balance":
+            self.k_value = map_units(self.k_value, self.mo.c_unit,
+                                     self.mo.f_unit, self.mo.r_unit)
+            ph = Flux_Balance(name=self.pn + "_Pfb",
+                              reservoir=self.source,
+                              left=self.left,
+                              right=self.right,
+                              flux=self.fh,
+                              k_value=self.k_value)
+
         elif self.ctype == "scale_with_concentration_normalized":
             self.k_value = map_units(self.k_value, self.mo.c_unit,
                                      self.mo.f_unit, self.mo.r_unit)
@@ -610,14 +626,6 @@ class Connect(esbmtkBase):
             raise ValueError(
                 f"This should not happen,and points to a keywords problem in {self.name}"
             )
-
-        #elif "k_value" in self.kwargs and "ref_reservoirs" in self.kwargs:
-        #    ph = ScaleRelative2otherReservoir(
-        #        name=self.pn + "_PkC",
-        #        reservoir=self.r,
-        #        ref_reservoirs=self.ref_reservoirs,
-        #        flux=self.fh,
-        #        k_value=self.k_value)
 
         self.lop.append(ph)
 
@@ -1139,8 +1147,9 @@ class RateConstant(Process):
 
     ScaleRelativeToNormalizedConcentration
     ScaleRelativeToConcentration
-    
+
     """
+
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this Process
 
@@ -1162,13 +1171,15 @@ class RateConstant(Process):
             "reservoir": Reservoir,
             "flux": Flux,
             "ref_reservoir": list,
+            "left": (list, Reservoir, Number),
+            "right": (list, Reservoir, Number),
         }
 
         # new required keywords
         self.lrk.extend(["reservoir", "k_value"])
 
         # dict with default values if none provided
-        #self.lod = {r
+        # self.lod = {r
 
         self.__initerrormessages__()
 
@@ -1180,16 +1191,16 @@ class RateConstant(Process):
             "ref_value": "a number or flux quantity",
             "name": "a string value",
             "flux": "a flux handle",
+            "left": "list, reservoir or number",
+            "right": "list, reservoir or number",
         })
 
         # initialize keyword values
         self.__validateandregister__(kwargs)
         self.__postinit__()  # do some housekeeping
-        #legacy variables
+        # legacy variables
         self.mo = self.reservoir.mo
         self.__register_name__()
-
-        
 
 
 class ScaleRelativeToNormalizedConcentration(RateConstant):
@@ -1204,7 +1215,7 @@ class ScaleRelativeToNormalizedConcentration(RateConstant):
      denotes the baseline concentration and k is a constant
      This process is typically called by the connector
      instance. However you can instantiate it manually as
-    
+
 
      ScaleRelativeToNormalizedConcentration(
                        name = "Name",
@@ -1215,11 +1226,12 @@ class ScaleRelativeToNormalizedConcentration(RateConstant):
     )
 
     """
+
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
           this will be called by the Model.run() method
           """
-       
+
         scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.k_value
         # scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
@@ -1236,7 +1248,7 @@ class ScaleRelativeToConcentration(RateConstant):
      where C denotes the concentration in the ustream reservoir, k is a
      constant. This process is typically called by the connector
      instance. However you can instantiate it manually as
-    
+
 
      ScaleRelativeToConcentration(
                        name = "Name",
@@ -1246,6 +1258,7 @@ class ScaleRelativeToConcentration(RateConstant):
     )
 
     """
+
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
           this will be called by the Model.run() method
@@ -1274,7 +1287,7 @@ class ScaleRelativeToMass(RateConstant):
      This is faster than setting a new flux, computing the isotope
      ratio and setting delta. So you either have to set the initial
      flux F0 to 1, or calculate the k_value accordingly
-    
+
      ScaleRelativeToMass(
                        name = "Name",
                        reservoir= upstream_reservoir_handle,
@@ -1283,6 +1296,7 @@ class ScaleRelativeToMass(RateConstant):
     )
 
     """
+
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
           this will be called by the Model.run() method
@@ -1303,7 +1317,7 @@ class ScaleRelativeToNormalizedMass(RateConstant):
      denotes the reference mass, and k is a constant
      This process is typically called by the connector
      instance. However you can instantiate it manually as
-    
+
 
      ScaleRelativeToNormalizedConcentration(
                        name = "Name",
@@ -1314,6 +1328,7 @@ class ScaleRelativeToNormalizedMass(RateConstant):
     )
 
     """
+
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
           this will be called by the Model.run() method
@@ -1334,7 +1349,7 @@ class ScaleRelative2otherReservoir(RateConstant):
      where Mi denotes the mass in one  or more reservoirs, k is a
      constant. This process is typically called by the connector
      instance. However you can instantiate it manually as
-    
+
      ScaleRelativeToMass(
                        name = "Name",
                        reservoir = upstream_reservoir_handle,
@@ -1344,7 +1359,8 @@ class ScaleRelative2otherReservoir(RateConstant):
     )
 
     """
-    def __call__(self, reservoir :Reservoir, i: int) -> None:
+
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
         this will be called by the Model.run() method
 
@@ -1355,7 +1371,7 @@ class ScaleRelative2otherReservoir(RateConstant):
             c = c * r.c[i - 1]
 
         scale: float = c * self.k_value
-        #scale = scale * (scale >= 0)  # prevent negative fluxes.  
+        # scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] * array([scale, scale, scale, 1])
 #+END_SRC
 
@@ -1368,8 +1384,8 @@ left = [r1, r2, number] and ditto for the right. Use the
 variables for the call method
 
 
-#+BEGIN_SRC ipython
-class Equilibrium(RateConstant):
+#+BEGIN_SRC ipython :tangle connections.py
+class Flux_Balance(RateConstant):
     """This process calculates a flux between two reservoirs as a function
     of multiple reservoir concentrations and constants.
 
@@ -1377,27 +1393,28 @@ class Equilibrium(RateConstant):
     issues with isotope ratios (untested)
 
     This will work with equilibrium reactions between two reservoirs where the
-    reaction can be described as 
+    reaction can be described as
 
-    K * [R1] = R[2] * [R3]  
+    K * [R1] = R[2] * [R3]
 
     you can have more than two terms on each side as long as they are
     constants or reservoirs
-    
+
     Equilibrium(
                 name = "Name",
                 reservoir = reservoir handle,
                 left = [] # list with reservoir names or constants
                 right = [] # list with reservoir names or constants
                 flux = flux handle,
+                k_value = a constant, defaults to 1
     )
 
     """
 
     # redefine misc_init which is being called by post-init
-    def __misc__init(self):
+    def __misc_init__(self):
         """ Sort out input variables
-        
+
         """
 
         Rl: List[Reservoir] = []
@@ -1407,8 +1424,8 @@ class Equilibrium(RateConstant):
         # parse the left hand side
 
         em = "left/right values must be constants or reservoirs"
-        [Rl, Cl] = sort_by_type(self.left, [Reservoir, Number], em)
-        [Rr, Cr] = sort_by_type(self.right, [Reservoir, Number], em)
+        [self.Rl, self.Cl] = sort_by_type(self.left, [Reservoir, Number], em)
+        [self.Rr, self.Cr] = sort_by_type(self.right, [Reservoir, Number], em)
 
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
@@ -1416,21 +1433,25 @@ class Equilibrium(RateConstant):
 
         """
 
-        # loop over Rl and extract concentrations
-        rl = np.array(1, 1, 1, 1)
-        rr = np.array(1, 1, 1, 1)
+        kl = 1
+        kr = 1
 
-        # calculate the product for left side
-        for rl in self.Rl:
-            rl *= r[i - 1]
+        # calculate the product of reservoir concentrations for left side
+        for r in self.Rl:
+            kl *= r.c[i - 1]
+        # multiply with any any constants on the right
+        for c in self.Cl:
+            kl *= c
 
-        # calculate the product for right side
-        for rr in self.Rr:
-            rr *= r[i - 1]
+        # calculate the product of reservoir concentrations for right side
+        for r in self.Rr:
+            kr *= r.c[i - 1]
+        # multiply with any any constants on the right
+        for c in self.Cr:
+            kr *= c
 
-        get- scale factor
-        scale = self.lk * np.prod(rl) - np.prod(rr) * self.rk
-
+        # get- scale factor
+        scale = (kl - kr) * self.k_value
         self.f[i] = self.f[i] * array([scale, scale, scale, 1])
 #+END_SRC
 
