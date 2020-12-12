@@ -740,7 +740,7 @@ class Model(esbmtkBase):
                     new += f[i] * direction_list[j]
 
                 # add to data from last time step
-                r[i] = r[i - 1] + new[0:3] * r.mo.dt
+                r[i] = r[i - 1] + new * r.mo.dt
 
             i = i + 1  # next time step
 
@@ -1060,7 +1060,7 @@ class Reservoir(esbmtkBase):
 
         """
 
-        return array([self.m[i], self.l[i], self.h[i]], self.d[i])
+        return np.array([self.m[i], self.l[i], self.h[i], self.d[i]])
 
     def __setitem__(self, i: int, value: float) -> None:
         """ write data by index
@@ -1401,8 +1401,8 @@ class Flux(esbmtkBase):
         self.m[i] = value[0]
         self.l[i] = value[1]
         self.h[i] = value[2]
-        self.d[i] = value[3]
-        #self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
+        #self.d[i] = value[3]
+        self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
 
     def __call__(self) -> None:  # what to do when called as a function ()
         pass
