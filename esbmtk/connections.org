@@ -696,6 +696,7 @@ class Process(esbmtkBase):
         self.r: Reservoir = self.reservoir
         self.f: Flux = self.flux
         self.m: Model = self.r.sp.mo  # the model handle
+        self.mo: Model = self.m
 
         # Create a list of fluxes wich excludes the flux this process
         # will be acting upon
@@ -1433,26 +1434,27 @@ class Flux_Balance(RateConstant):
 
         """
 
-        kl = 1
-        kr = 1
+        kl: NDArray    = np.array([1.0, 1.0, 1.0, 1.0])
+        kr: NDArray    = np.array([1.0, 1.0, 1.0, 1.0])
+        scale: NDArray = np.array([1.0, 1.0, 1.0, 1.0])
 
         # calculate the product of reservoir concentrations for left side
         for r in self.Rl:
-            kl *= r.c[i - 1]
+            kl *= r[i - 1]
         # multiply with any any constants on the right
         for c in self.Cl:
             kl *= c
 
         # calculate the product of reservoir concentrations for right side
         for r in self.Rr:
-            kr *= r.c[i - 1]
+            kr *= r[i - 1]
         # multiply with any any constants on the right
         for c in self.Cr:
             kr *= c
 
+        scale = kl - kr
         # get- scale factor
-        scale = (kl - kr) * self.k_value
-        self.f[i] = self.f[i] * array([scale, scale, scale, 1])
+        self.f[i] = self.f[i] * scale * self.k_value
 #+END_SRC
 
 
