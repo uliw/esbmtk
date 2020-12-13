@@ -45,7 +45,20 @@ def get_imass(m: float, d: float, r: float) -> [float, float]:
     """
 
     li: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-    hi: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
+    # hi: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
+    hi: float = m - li
+    return [li, hi]
+
+def get_imass3(m: float, d: float, r: float) -> [float, float]:
+    """
+    Calculate the isotope masses from bulk mass and delta value.
+    Arguments are m = mass, d= delta value, r = abundance ratio 
+    species
+    
+    """
+
+    li: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+    hi: float = m - li
     return [li, hi]
 
 def get_imass2(mr: float, mn: float, lr: float, hr: float) -> [float, float]:
@@ -435,6 +448,36 @@ def get_pco2(dic :float, ta :float) -> float:
     #pco2b = (dic/K0 * (1 + K1/hplus + (K1*K2)/hplus**2)**-1) * 1.e6
    
     return pco2
+
+def sort_by_type(l: list, t: list, m: str) -> list:
+    """divide a list by type into new lists. This function will return a
+    list and it is up to the calling code to unpack the list
+
+    l is list with various object types
+    t is a list which contains the object types used for sorting
+    m is a string for the error function
+    """
+
+    #from numbers import Number
+
+    lc = l.copy()
+    rl = []
+
+    for ot in t:  # loop over object types
+        a = []
+        for e in l:  # loop over list elements
+            if isinstance(e, ot):
+                a.append(e)  # add to temporary list
+                lc.remove(e)  # remove this element
+
+        rl.append(a)  # save the temporary list to rl
+
+    # at this point, all elements of lc should have been processed
+    # if not, lc contains element which are of a different type
+    if len(lc) > 0:
+        raise TypeError(m)
+
+    return rl
 
 def get_string_between_brackets(s :str) -> str:
     """ Parse string and extract substring between square brackets

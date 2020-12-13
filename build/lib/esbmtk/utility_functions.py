@@ -33,6 +33,7 @@ import pandas as pd
 import logging
 import time
 import builtins
+import math
 set_printoptions(precision=4)
 
 def get_imass(m: float, d: float, r: float) -> [float, float]:
@@ -77,9 +78,9 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
 
     return np.array([m, l, h, d])
 
-def get_delta(l :[NDArray, [Float64]], h :[NDArray, [Float64]], r
-              :float)-> [NDArray, [Float64]]:
-   """Calculate the delta from the mass of light and heavy isotope
+def get_delta(l: [NDArray, [Float64]], h: [NDArray, [Float64]],
+              r: float) -> [NDArray, [Float64]]:
+    """Calculate the delta from the mass of light and heavy isotope
      Arguments are l and h which are the masses of the light and
      heavy isotopes respectively, r = abundance ratio of the
      respective element. Note that this equation can result in a
@@ -89,8 +90,8 @@ def get_delta(l :[NDArray, [Float64]], h :[NDArray, [Float64]], r
 
    """
 
-   d :float = 1E3 * (h / l - r) / r
-   return np.round(d, 12)
+    d: float = 1E3 * (abs(h) / abs(l) - r) / r
+    return np.round(d, 12)
 
 def add_to (l, e):
     """
@@ -108,10 +109,13 @@ def get_plot_layout(obj):
 
       """
 
-      noo = 1
-      for f in obj.lof:
+      noo = 1 # the reservoir is the fisrt object
+      for f in obj.lof: # count numbert of fluxes
             if f.plot == "yes":
                   noo += 1
+                  
+      for d in obj.ldf: # count number of data fields
+            noo +=1
             
       # noo = len(obj.lof) + 1  # number of objects in this reservoir
       logging.debug(f"{noo} subplots for {obj.n} required")
@@ -162,16 +166,32 @@ def list_fluxes(self,name,i) -> None:
             for f in self.lof:
                   f.describe(i) # print out the flux data
 
-def show_data(self,name,i) -> None:
-    """ Print the first 4, and last 3 lines of the data for a given flux or reservoir object
+def show_data(self, **kwargs) -> None:
+    """ Print the 3 lines of the data starting with index
+
+    Optional arguments:
+    
+    index :int = 0 starting index
+    indent :int = 0 indentation 
     """
-    
+
+    off: str = "  "
+
+    if "index" not in kwargs:
+        index = 0
+    else:
+        index = kwargs["index"]
+
+    if "indent" in kwargs:
+        ind: str = kwargs["indent"] * " "
+    else:
+        ind: str = ""
+
     # show the first 4 entries
-    print(f"{name}:")
-    for i in range(i,i+3):
-        print(f"\t i = {i}, Mass = {self.m[i]:.2f}, LI = {self.l[i]:.2f}, HI = {self.h[i]:.2f}, delta = {self.d[i]:.2f}")
-    
-    print(".......................")
+    for i in range(index, index + 3):
+        print(
+            f"{off}{ind}i = {i}, Mass = {self.m[i]:.2e}, delta = {self.d[i]:.2f}"
+        )
 
 def set_y_limits(ax  :plt.Axes, model :any)->None:
     """ Prevent the display or arbitrarily small differences
@@ -219,7 +239,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
       """
 
     from . import ureg, Q_
-    from esbmtk import Flux, Reservoir, Signal
+    from esbmtk import Flux, Reservoir, Signal, DataField
 
     # geo = list with rows and cols
     # fn  = figure number
@@ -232,7 +252,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     
     rows = geo[0]
     cols = geo[1]
-    species = obj.sp
+    # species = obj.sp
     model = obj.mo
     time = model.time + model.offset
 
@@ -252,6 +272,10 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         if obj.display_as == "mass":
             yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
+        elif obj.transform == "pH":
+            yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
+            yl = -np.log10(yl)
+            y_label = f"{obj.legend_left} [pH]"
         else:
             yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
@@ -259,6 +283,15 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         # use the same units as the associated flux
         yl = (obj.c * model.c_unit).to(obj.fo.plt_units).magnitude
         y_label = f"{obj.n} [{obj.fo.plt_units:~P}]"
+    elif isinstance(obj, DataField):
+        time = (time * model.t_unit).to(model.d_unit).magnitude
+        yl = obj.y1_data
+        y_label = obj.y1_label
+        if len(obj.y2_data) > 1:
+            ptype = 0
+        else:
+            ptype = 2
+        
     else:  # sources, sinks, external data should not show up here
         raise ValueError(f"{obj.n} = {type(obj)}")
 
@@ -359,6 +392,50 @@ def is_name_in_list(n: str, l: list)->bool:
 
     return r
 
+def get_hplus(dic :float, ta :float)->float:
+    """
+    Calculate H+ concentration based on DIC concentration and Alkalinity
+    according to eq 11 in Follows et al 2006
+    
+    """
+
+    pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
+    pk2 = 8.92
+    K1 = 10**-pk1
+    K2 = 10**-pk2
+    
+    g = dic / ta
+    hplus = 0.5 * ((g - 1) * K1 + ((1 - g)**2 * K1**2 - 4 * K1 * K2 *
+                                   (1 - 2 * g))**0.5)
+
+    return hplus
+
+def get_pco2(dic :float, ta :float) -> float:
+    """Calculate pCO2 in uatm at 25C and a Salinity of 35
+
+    DIC has to be in mmol/l!
+
+    """
+    pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
+    pk2 = 8.92
+    K1 = 10**-pk1
+    K2 = 10**-pk2
+    K0 = 36
+
+    hplus = get_hplus(dic,ta)
+
+    # get [CO2] in water
+    co2 = dic / (1 + K1/hplus + K1*K2/hplus**2)
+
+    # get pco2 as a function of co2 fugacity
+    pco2 = co2/K0 *1E6
+
+    # this cam also be expressed in teh following way
+    #pco2a = (ta/K0 * ( K1/hplus + 2*K1*K2/hplus**2)**-1) * 1.e6
+    #pco2b = (dic/K0 * (1 + K1/hplus + (K1*K2)/hplus**2)**-1) * 1.e6
+   
+    return pco2
+
 def get_string_between_brackets(s :str) -> str:
     """ Parse string and extract substring between square brackets
 
@@ -411,7 +488,7 @@ def map_units(v: any, *args) -> float:
     else:  # no quantity, so it should be a number
         m = v
 
-    if not isinstance(m, float):
+    if not isinstance(m, Number):
         raise ValueError(f"m is {type(m)}, must be float, v={v}. Something is fishy")
 
     return m

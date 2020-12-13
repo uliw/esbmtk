@@ -128,6 +128,8 @@ class Connect(esbmtkBase):
             "k_value": (Number, str, Q_),
             "a_value": Number,
             "b_value": Number,
+            "left": (list, Number, Reservoir),
+            "right": (list, Number, Reservoir),
             "plot": str,
         }
 
@@ -154,6 +156,8 @@ class Connect(esbmtkBase):
             "name": "a string",
             "id": "a string",
             "plot": "a string",
+            "left": "Number, list or Reservoir",
+            "right": "Number, list or Reservoir",
         })
 
         self.__validateandregister__(kwargs)
@@ -380,6 +384,8 @@ class Connect(esbmtkBase):
             self.__rateconstant__()
         elif self.ctype == "scale_relative_to_multiple_reservoirs":
             self.__rateconstant__()
+        elif self.ctype == "flux_balance":
+            self.__rateconstant__()
         elif self.ctype == "monod_type_limit":
             self.__rateconstant__()
         else:
@@ -524,6 +530,16 @@ class Connect(esbmtkBase):
                                               flux=self.fh,
                                               k_value=self.k_value)
 
+        elif self.ctype == "flux_balance":
+            self.k_value = map_units(self.k_value, self.mo.c_unit,
+                                     self.mo.f_unit, self.mo.r_unit)
+            ph = Flux_Balance(name=self.pn + "_Pfb",
+                              reservoir=self.source,
+                              left=self.left,
+                              right=self.right,
+                              flux=self.fh,
+                              k_value=self.k_value)
+
         elif self.ctype == "scale_with_concentration_normalized":
             self.k_value = map_units(self.k_value, self.mo.c_unit,
                                      self.mo.f_unit, self.mo.r_unit)
@@ -548,14 +564,6 @@ class Connect(esbmtkBase):
             raise ValueError(
                 f"This should not happen,and points to a keywords problem in {self.name}"
             )
-
-        #elif "k_value" in self.kwargs and "ref_reservoirs" in self.kwargs:
-        #    ph = ScaleRelative2otherReservoir(
-        #        name=self.pn + "_PkC",
-        #        reservoir=self.r,
-        #        ref_reservoirs=self.ref_reservoirs,
-        #        flux=self.fh,
-        #        k_value=self.k_value)
 
         self.lop.append(ph)
 
@@ -598,18 +606,16 @@ class Process(esbmtkBase):
      subclass which defines the actual process implementation in their
      call method. See 'PassiveFlux as example'
     """
-
-    
-    def __init__(self, **kwargs :Dict[str, any]) -> None:
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
           Create a new process object with a given process type and options
           """
 
-        self.__defaultnames__()      # default kwargs names
-        self.__initerrormessages__() # default error messages
+        self.__defaultnames__()  # default kwargs names
+        self.__initerrormessages__()  # default error messages
         self.bem.update({"rate": "a string"})
         self.__validateandregister__(kwargs)  # initialize keyword values
-        self.__postinit__()          # do some housekeeping
+        self.__postinit__()  # do some housekeeping
         self.__register_name__()
 
     def __postinit__(self) -> None:
@@ -621,20 +627,31 @@ class Process(esbmtkBase):
         self.r: Reservoir = self.reservoir
         self.f: Flux = self.flux
         self.m: Model = self.r.sp.mo  # the model handle
+        self.mo: Model = self.m
 
         # Create a list of fluxes wich excludes the flux this process
         # will be acting upon
-        self.fws :List[Flux] = self.r.lof.copy()
+        self.fws: List[Flux] = self.r.lof.copy()
         self.fws.remove(self.f)  # remove this handle
 
-        self.rm0 :float = self.r.m[0]  # the initial reservoir mass
-        self.direction :Dict[Flux,int] = self.r.lio[self.f.n]
-        
+        self.rm0: float = self.r.m[0]  # the initial reservoir mass
+        self.direction: Dict[Flux, int] = self.r.lio[self.f.n]
+
+        self.__misc_init__()
+
+    def __misc_init__(self) -> None:
+        """This is just a place holder method which will be called by default
+        in __post_init__() This can be overloaded to add additional
+        code to the init procedure without the need to redefine
+        init. This useful for processes which only define a call method.
+
+        """
+
+        pass
 
     def __defaultnames__(self) -> None:
         """Set up the default names and dicts for the process class. This
           allows us to extend these values without modifying the entire init process"""
-
 
         # provide a dict of known keywords and types
         self.lkk: Dict[str, any] = {
@@ -646,7 +663,7 @@ class Process(esbmtkBase):
             "lt": Flux,
             "alpha": Number,
             "scale": Number,
-            "ref": (Flux,list),
+            "ref": (Flux, list),
         }
 
         # provide a list of absolutely required keywords
@@ -656,19 +673,18 @@ class Process(esbmtkBase):
         self.lod: Dict[str, any] = {}
 
         # default type hints
-        self.scale :t
-        self.delta :Number
-        self.alpha :Number
-        
+        self.scale: t
+        self.delta: Number
+        self.alpha: Number
 
-    def __register__(self, reservoir :Reservoir, flux :Flux) -> None:
+    def __register__(self, reservoir: Reservoir, flux: Flux) -> None:
         """Register the flux/reservoir pair we are acting upon, and register
           the process with the reservoir
           """
 
         # register the reservoir flux combination we are acting on
-        self.f :Flux = flux
-        self.r :Reservoir = reservoir
+        self.f: Flux = flux
+        self.r: Reservoir = reservoir
         # add this process to the list of processes acting on this reservoir
         reservoir.lop.append(self)
         flux.lop.append(self)
@@ -991,22 +1007,6 @@ class FluxDiff(Process):
 
         self.f[i] = (self.ref[0][i] - self.ref[1][i]) * self.scale
 
-class Reaction(ScaleFlux):
-     """This process approximates the effect of a chemical reaction between
-     two fluxes which belong to a differents species (e.g., S, and O).
-     The flux belonging to the upstream reservoir will simply be
-     scaled relative to the flux it reacts with. The scaling is given
-     by the ratio argument. So this function is equivalent to the
-     ScaleFlux class. It is up to the connector class (or the user) to
-     ensure that the reference flux is removed from the reservoir list
-     of fluxes (.lof) which will be used to sum all fluxes in the
-     reservoir.
-
-     Example:
-          Reaction("Name",upstream_reservoir_handle,{"scale":1,"ref":flux_handle})
-
-     """
-
 class Fractionation(Process):
      """This process offsets the isotopic ratio of the flux by a given
         delta value. In other words, we add a fractionation factor
@@ -1048,8 +1048,9 @@ class RateConstant(Process):
 
     ScaleRelativeToNormalizedConcentration
     ScaleRelativeToConcentration
-    
+
     """
+
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this Process
 
@@ -1071,13 +1072,15 @@ class RateConstant(Process):
             "reservoir": Reservoir,
             "flux": Flux,
             "ref_reservoir": list,
+            "left": (list, Reservoir, Number),
+            "right": (list, Reservoir, Number),
         }
 
         # new required keywords
         self.lrk.extend(["reservoir", "k_value"])
 
         # dict with default values if none provided
-        #self.lod = {r
+        # self.lod = {r
 
         self.__initerrormessages__()
 
@@ -1089,16 +1092,16 @@ class RateConstant(Process):
             "ref_value": "a number or flux quantity",
             "name": "a string value",
             "flux": "a flux handle",
+            "left": "list, reservoir or number",
+            "right": "list, reservoir or number",
         })
 
         # initialize keyword values
         self.__validateandregister__(kwargs)
         self.__postinit__()  # do some housekeeping
-        #legacy variables
+        # legacy variables
         self.mo = self.reservoir.mo
         self.__register_name__()
-
-        
 
 
 class ScaleRelativeToNormalizedConcentration(RateConstant):
@@ -1113,7 +1116,7 @@ class ScaleRelativeToNormalizedConcentration(RateConstant):
      denotes the baseline concentration and k is a constant
      This process is typically called by the connector
      instance. However you can instantiate it manually as
-    
+
 
      ScaleRelativeToNormalizedConcentration(
                        name = "Name",
@@ -1124,11 +1127,12 @@ class ScaleRelativeToNormalizedConcentration(RateConstant):
     )
 
     """
+
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
           this will be called by the Model.run() method
           """
-       
+
         scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.k_value
         # scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
@@ -1145,7 +1149,7 @@ class ScaleRelativeToConcentration(RateConstant):
      where C denotes the concentration in the ustream reservoir, k is a
      constant. This process is typically called by the connector
      instance. However you can instantiate it manually as
-    
+
 
      ScaleRelativeToConcentration(
                        name = "Name",
@@ -1155,6 +1159,7 @@ class ScaleRelativeToConcentration(RateConstant):
     )
 
     """
+
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
           this will be called by the Model.run() method
@@ -1183,7 +1188,7 @@ class ScaleRelativeToMass(RateConstant):
      This is faster than setting a new flux, computing the isotope
      ratio and setting delta. So you either have to set the initial
      flux F0 to 1, or calculate the k_value accordingly
-    
+
      ScaleRelativeToMass(
                        name = "Name",
                        reservoir= upstream_reservoir_handle,
@@ -1192,6 +1197,7 @@ class ScaleRelativeToMass(RateConstant):
     )
 
     """
+
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
           this will be called by the Model.run() method
@@ -1212,7 +1218,7 @@ class ScaleRelativeToNormalizedMass(RateConstant):
      denotes the reference mass, and k is a constant
      This process is typically called by the connector
      instance. However you can instantiate it manually as
-    
+
 
      ScaleRelativeToNormalizedConcentration(
                        name = "Name",
@@ -1223,6 +1229,7 @@ class ScaleRelativeToNormalizedMass(RateConstant):
     )
 
     """
+
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
           this will be called by the Model.run() method
@@ -1243,7 +1250,7 @@ class ScaleRelative2otherReservoir(RateConstant):
      where Mi denotes the mass in one  or more reservoirs, k is a
      constant. This process is typically called by the connector
      instance. However you can instantiate it manually as
-    
+
      ScaleRelativeToMass(
                        name = "Name",
                        reservoir = upstream_reservoir_handle,
@@ -1253,7 +1260,8 @@ class ScaleRelative2otherReservoir(RateConstant):
     )
 
     """
-    def __call__(self, reservoir :Reservoir, i: int) -> None:
+
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
         this will be called by the Model.run() method
 
@@ -1264,8 +1272,78 @@ class ScaleRelative2otherReservoir(RateConstant):
             c = c * r.c[i - 1]
 
         scale: float = c * self.k_value
-        #scale = scale * (scale >= 0)  # prevent negative fluxes.  
+        # scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] * array([scale, scale, scale, 1])
+
+class Flux_Balance(RateConstant):
+    """This process calculates a flux between two reservoirs as a function
+    of multiple reservoir concentrations and constants.
+
+    Note that could result in negative fluxes. which might cause
+    issues with isotope ratios (untested)
+
+    This will work with equilibrium reactions between two reservoirs where the
+    reaction can be described as
+
+    K * [R1] = R[2] * [R3]
+
+    you can have more than two terms on each side as long as they are
+    constants or reservoirs
+
+    Equilibrium(
+                name = "Name",
+                reservoir = reservoir handle,
+                left = [] # list with reservoir names or constants
+                right = [] # list with reservoir names or constants
+                flux = flux handle,
+                k_value = a constant, defaults to 1
+    )
+
+    """
+
+    # redefine misc_init which is being called by post-init
+    def __misc_init__(self):
+        """ Sort out input variables
+
+        """
+
+        Rl: List[Reservoir] = []
+        Rr: List[Reservoir] = []
+        Cl: List[float] = []
+        Cr: List[float] = []
+        # parse the left hand side
+
+        em = "left/right values must be constants or reservoirs"
+        [self.Rl, self.Cl] = sort_by_type(self.left, [Reservoir, Number], em)
+        [self.Rr, self.Cr] = sort_by_type(self.right, [Reservoir, Number], em)
+
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """
+        this will be called by the Model.run() method
+
+        """
+
+        kl: NDArray    = np.array([1.0, 1.0, 1.0, 1.0])
+        kr: NDArray    = np.array([1.0, 1.0, 1.0, 1.0])
+        scale: NDArray = np.array([1.0, 1.0, 1.0, 1.0])
+
+        # calculate the product of reservoir concentrations for left side
+        for r in self.Rl:
+            kl *= r[i - 1]
+        # multiply with any any constants on the right
+        for c in self.Cl:
+            kl *= c
+
+        # calculate the product of reservoir concentrations for right side
+        for r in self.Rr:
+            kr *= r[i - 1]
+        # multiply with any any constants on the right
+        for c in self.Cr:
+            kr *= c
+
+        scale = kl - kr
+        # get- scale factor
+        self.f[i] = self.f[i] * scale * self.k_value
 
 class Monod(Process):
     """This process scales the flux as a function of the upstream

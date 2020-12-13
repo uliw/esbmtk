@@ -39,7 +39,7 @@ class esbmtkBase():
     """
 
     from typing import Dict
-    
+
     def __init__(self) -> None:
         raise NotImplementedError
 
@@ -53,16 +53,31 @@ class esbmtkBase():
         and register the instance variables and the instance in teh global name space
         """
 
-
         # validate input
         self.__validateinput__(kwargs)
 
         # register all key/value pairs as instance variables
         self.__registerkeys__()
 
+    def __register_name__(self) -> None:
+        """
+        Register object name in global name space, and test if
+        name is unique
+
+        """
         # register instance name in global name space
         self.reg_time = time.monotonic()
-        setattr(builtins, self.name, self)
+
+        if type(self) == Model:
+            setattr(builtins, self.name, self)
+        else:  # check that name is unique
+            if self.name in self.mo.lmo:
+                raise NameError(f"{self.name} is a duplicate. Please fix")
+            else:
+                self.mo.lmo.append(self.name)
+                setattr(builtins, self.name, self)
+
+        logging.info(self.__repr__(1))
 
     def __validateinput__(self, kwargs: Dict[str, any]) -> None:
         """Validate the user provided input key-value pairs. For this we need
@@ -94,7 +109,6 @@ class esbmtkBase():
         # check if key values are of correct type
         self.__checktypes__(self.lkk, self.kwargs)
 
-
     def __checktypes__(self, av: Dict[any, any], pv: Dict[any, any]) -> None:
         """ this method will use the the dict key in the user provided
         key value data (pv) to look up the allowed data type for this key in av
@@ -112,7 +126,9 @@ class esbmtkBase():
         for k, v in pv.items():
             # check av if provided value v is of correct type
             if not isinstance(v, av[k]):
-                raise TypeError(f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'")
+                raise TypeError(
+                    f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
+                )
 
     def __initerrormessages__(self):
         """ Init the list of known error messages"""
@@ -223,28 +239,115 @@ class esbmtkBase():
         kwargs.update(new)
         return kwargs
 
-    def __repr__(self):
+    def __repr__(self,log=0) -> str:
         """ Print the basic parameters for this class when called via the print method
         
         """
-        
+        from esbmtk import Q_
+
         m: str = ""
 
-        # suppress output during object initialization 
-        tdiff = time.monotonic() -self.reg_time
-        if tdiff > 1:
-            for k, v in self.provided_kwargs.items():
-                if not isinstance({k}, esbmtkBase):
-                    m = m + f"{k} = {v}\n"
-                    
+        # suppress output during object initialization
+        tdiff = time.monotonic() - self.reg_time
+
+        # do not echo input unless explicitly requestted
+
+        m = f"{self.__class__.__name__}(\n"
+        for k, v in self.provided_kwargs.items():
+            if not isinstance({k}, esbmtkBase):
+                # check if this is not another esbmtk object
+                if "esbmtk" in str(type(v)):
+                    m = m + f"    {k} = {v.n},\n"
+                # if this is a string
+                elif isinstance(v, str):
+                    m = m + f"    {k} = '{v}',\n"
+                # if this is a quantity
+                elif isinstance(v, Q_):
+                    m = m + f"    {k} = '{v}',\n"
+                # if this is a list
+                elif isinstance(v, (list, np.ndarray)):
+                    m = m + f"    {k} = '{v[0:3]}',\n"
+                # all other cases
+                else:
+                    m = m + f"    {k} = {v},\n"
+
+        m = m + ")"
+
+        if log == 0 and tdiff < 1:
+             m = ""
+
         return m
 
+    def __str__(self, **kwargs):
+        """ Print the basic parameters for this class when called via the print method
+        Optional arguments
+
+        indent :int = 0 printing offset
+        
+        """
+        from esbmtk import Q_
+
+        m: str = ""
+        off: str = "  "
+
+        if "indent" in kwargs:
+            ind: str = kwargs["indent"] * " "
+        else:
+            ind: str = ""
+
+        m = f"{ind}{self.n} ({self.__class__.__name__})\n"
+        for k, v in self.provided_kwargs.items():
+            if not isinstance({k}, esbmtkBase):
+                # check if this is not another esbmtk object
+                if "esbmtk" in str(type(v)):
+                    pass
+                elif isinstance(v, str) and not (k == "name"):
+                    m = m + f"{ind}{off}{k} = {v}\n"
+                elif isinstance(v, Q_):
+                    m = m + f"{ind}{off}{k} = {v}\n"
+                elif k != "name":
+                    m = m + f"{ind}{off}{k} = {v}\n"
+
+        return m
+
+    def __lt__(self, other) -> None:
+        """ This is needed for sorting with sorted()
+
+        """
+
+        return self.n < other.n
+
+    def __gt__(self, other) -> None:
+        """ This is needed for sorting with sorted()
+
+        """
+
+        return self.n > other.n
+
+    def describe(self, **kwargs) -> None:
+        """ Show an overview of the object properties.
+        Optional arguments are
+     
+        indent :int = 0 indentation 
+
+        """
+
+        if "indent" not in kwargs:
+            indent = 0
+            ind = ""
+        else:
+            indent = kwargs["indent"]
+            ind = ' ' * indent
+
+        # print basic data bout this object
+        print(f"{ind}{self.__str__(indent=indent)}")
+
 class Model(esbmtkBase):
-    """This is the class specify a new model.
+    """ This lass is used to specify a new model
 
     Example:
 
-            esbmtkModel(name   =  "Test_Model",
+          esbmtkModel(name   =  "Test_Model",
                       start    = "0 yrs",    # optional: start time 
                       stop     = "1000 yrs", # end time
                       timestep = "2 yrs",    # as a string "2 yrs"
@@ -254,7 +357,7 @@ class Model(esbmtkBase):
                       time_label = optional, defaults to "Time"
                       display_precision = optional, defaults to 0.01,
                       m_type = "mass_only", defaults to both (mass & isotope)
-            )
+                      )
 
     The 'ref_time' keyword will offset the time axis by the specified
     amount, when plotting the data, .i.e., the model time runs from to
@@ -266,7 +369,7 @@ class Model(esbmtkBase):
     The display precision affects the on-screen display of data. It is
     also cutoff for the graphicak output. I.e., the interval f the y-axis will not be
     smaller than the display_precision.
-    
+
     All of the above keyword values are available as variables with 
     Model_Name.keyword
 
@@ -280,18 +383,16 @@ class Model(esbmtkBase):
        - Model_Name.list_species()
 
     Optional, you can provide the element keyword which will setup a
-    default set of Species for Carbon and Sulfur.  In this case, there
+    default set of Species for Carbon and Sulfur. In this case, there
     is no need to define elements or species. The argument to this
     keyword are either "Carbon", or "Sulfur" or both as a list
     ["Carbon", "Sulfur"].
 
     """
-
-    #from typing import Dict
-    #from . import ureg, Q_
-
     def __init__(self, **kwargs: Dict[any, any]) -> None:
-        """ initialize object"""
+        """ Init Sequence
+
+        """
 
         from . import ureg, Q_
 
@@ -302,7 +403,7 @@ class Model(esbmtkBase):
             "stop": str,
             "timestep": str,
             "offset": str,
-            "element": str,
+            "element": (str, list),
             "mass_unit": str,
             "volume_unit": str,
             "time_label": str,
@@ -328,7 +429,7 @@ class Model(esbmtkBase):
         self.bem.update({
             "offset": "a string",
             "timesetp": "a string",
-            "element": "element name",
+            "element": "element name or list of names",
             "mass_unit": "a string",
             "volume_unit": "a string",
             "time_label": "a string",
@@ -341,7 +442,7 @@ class Model(esbmtkBase):
         # empty list which will hold all reservoir references
         self.lor: list = []
         # empty list which will hold all connector references
-        self.loc: list = []
+        self.loc: set = set()  # set with connection handles
         self.lel: list = []  # list which will hold all element references
         self.lsp: list = []  # list which will hold all species references
         self.lop: list = []  # list flux processe
@@ -379,8 +480,8 @@ class Model(esbmtkBase):
         self.steps = int(abs(round(self.length / self.dt)))
         self.time = ((arange(self.steps) * self.dt) + self.start)
 
-        set_printoptions(precision=self.display_precision)
-        
+        # set_printoptions(precision=self.display_precision)
+
         if "element" in self.kwargs:
             if isinstance(self.kwargs["element"], list):
                 element_list = self.kwargs["element"]
@@ -399,43 +500,58 @@ class Model(esbmtkBase):
                     phosphor(self)
                 else:
                     raise ValueError(f"{e} not implemented yet")
-        warranty = (
-            f"\n"
-            f"ESBMTK  Copyright (C) 2020  Ulrich G.Wortmann\n"
-            f"This program comes with ABSOLUTELY NO WARRANTY\n"
-            f"For details see the LICENSE file\n"
-            f"This is free software, and you are welcome to redistribute it\n"
-            f"under certain conditions; See the LICENSE file for details.\n")
-        print(warranty)
+                warranty = (
+                    f"\n"
+                    f"ESBMTK  Copyright (C) 2020  Ulrich G.Wortmann\n"
+                    f"This program comes with ABSOLUTELY NO WARRANTY\n"
+                    f"For details see the LICENSE file\n"
+                    f"This is free software, and you are welcome to redistribute it\n"
+                    f"under certain conditions; See the LICENSE file for details.\n"
+                )
+                print(warranty)
 
-    def describe(self) -> None:
-        """ Describe Basic Model Parameters and log them
+        # start a log file
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
         
+        fn: str = f"{kwargs['name']}.log"
+        print(fn)
+        logging.basicConfig(
+            filename=fn,
+            filemode='w',
+            level=logging.INFO)
+        self.__register_name__()
+
+    def describe(self, **kwargs) -> None:
+        """ Show an overview of the object properties.
+        Optional arguments are
+        index  :int = 0 this will show data at the given index
+        indent :int = 0 indentation 
+
         """
+        off: str = "  "
+        if "index" not in kwargs:
+            index = 0
+        else:
+            index = kwargs["index"]
 
-        logging.info("---------- Model description start ----------")
-        logging.info(f"Model Name = {self.n}")
-        logging.info(f"Model time [{self.bu}], dt = {self.dt}")
-        logging.info(f"start = {self.start}, stop={self.stop} [{self.tu}]")
-        logging.info(f"Steps = {self.steps}\n")
-        logging.info(f"  Species(s) in {self.n}:")
+        if "indent" not in kwargs:
+            indent = 0
+            ind = ""
+        else:
+            indent = kwargs["indent"]
+            ind = ' ' * indent
 
-        for r in self.lor:
-            r.describe()
-            logging.info(" ")
+        # print basic data bout this object
+        print(self)
 
-            logging.info("---------- Model description end ------------\n")
-
-    def list_species(self) -> None:
-        """ List all species known to the model
-        
-        """
+        # list elements
+        print("Currently defined elements and their species:")
         for e in self.lel:
-            print(f"Defined Species for {e.n}:")
-            e.list_species()
-            print("\n")
-
-        print("Use the species class to add to this list")
+            print(f"{ind}{e}")
+            print(f"{off} Defined Species:")
+            for s in e.lsp:
+                print(f"{off}{off}{ind}{s.n}")
 
     def save_state(self) -> None:
         """ Save model state. Similar to save data, but only saves the last 10
@@ -459,8 +575,8 @@ class Model(esbmtkBase):
         stride = int  # every nth element
         start = int   # start index
         stop = int    # end index
-        
-        
+
+
         """
 
         for k, v in kwargs.items():
@@ -511,8 +627,8 @@ class Model(esbmtkBase):
 
         """
 
-        ptype: int = get_ptype(self,kwargs)
-                        
+        ptype: int = get_ptype(self, kwargs)
+
         i = 0
         for r in self.lor:
             r.__plot__(i, ptype)
@@ -531,8 +647,8 @@ class Model(esbmtkBase):
         concentration = plot only concentration data.
         """
 
-        ptype: int = get_ptype(self,kwargs)
-            
+        ptype: int = get_ptype(self, kwargs)
+
         i: int = 0
         for r in self.lor:
             r.__plot_reservoirs__(i, ptype)
@@ -588,7 +704,7 @@ class Model(esbmtkBase):
                 #print(f"sum = {new[0]}")
                 # add to data from last time step
                 r[i] = r[i - 1] + new[0:3] * r.mo.dt
-                #n ew = new * (new > 0)  # set negative values to zero
+                #r[i] = r[i] * (r[i] > 0)
 
             i = i + 1
 
@@ -677,14 +793,15 @@ class Element(esbmtkBase):
 
         # legacy name aliases
         self.n: str = self.name  # display name of species
+        self.mo: Model = self.model  # model handle
         self.mu: str = self.mass_unit  # display name of mass unit
         self.ln: str = self.li_label  # display name of light isotope
         self.hn: str = self.hi_label  # display name of heavy isotope
         self.dn: str = self.d_label  # display string for delta
         self.ds: str = self.d_scale  # display string for delta scale
-        self.mo: Model = self.model  # model handle
         self.lsp: list = []  # list of species for this element.
         self.mo.lel.append(self)
+        self.__register_name__()
 
     def list_species(self) -> None:
         """ List all species which are predefined for this element
@@ -693,10 +810,6 @@ class Element(esbmtkBase):
 
         for e in self.lsp:
             print(e.n)
-
-    def __lt__(self,
-               other) -> None:  # this is needed for sorting with sorted()
-        return self.n < other.n
 
 class Species(esbmtkBase):
     """Each model, can have one or more species.  This class sets species
@@ -730,6 +843,7 @@ specific properties
         self.lod = {"display_as": kwargs["name"], 'm_weight': 0}
 
         self.__initerrormessages__()
+
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # legacy names
@@ -747,10 +861,7 @@ specific properties
 
         #self.mo.lsp.append(self)   # register self on the list of model objects
         self.e.lsp.append(self)  # register this species with the element
-
-    def __lt__(self,
-               other) -> None:  # this is needed for sorting with sorted()
-        return self.n < other.n
+        self.__register_name__()
 
 class Reservoir(esbmtkBase):
     """
@@ -774,9 +885,8 @@ class Reservoir(esbmtkBase):
 
     Useful methods include
 
-      - Name.write_data() # dave data to file
-      - Name.describe() # show data this takess an optional argument to show the nth dataset
-      - Name.list_connections() # list all connection objects.
+      - Name.write_data() # save data to file
+      - Name.describe()   # describe Reservoir
       
     """
     def __init__(self, **kwargs) -> None:
@@ -794,6 +904,7 @@ class Reservoir(esbmtkBase):
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
+            "transform": str,
         }
 
         # provide a list of absolutely required keywords
@@ -803,6 +914,7 @@ class Reservoir(esbmtkBase):
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
+            'transform': "none",
             'delta': 0,
         }
 
@@ -850,7 +962,8 @@ class Reservoir(esbmtkBase):
         self.lop: list[Process] = []  # list holding all processe references
         self.loe: list[Element] = []  # list of elements in thiis reservoir
         self.doe: Dict[Species, Flux] = {}  # species flux pairs
-        self.loc: list[Connection]  = []  # list of connection objects
+        self.loc: set[Connection] = set()  # set of connection objects
+        self.ldf: list[DataField] = []  # list of datafield objects
 
         # initialize mass vector
         self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
@@ -874,6 +987,10 @@ class Reservoir(esbmtkBase):
         self.legend_left = self.species.ds
         self.legend_right = self.species.dn
         self.mo.lor.append(self)  # add this reservoir to the model
+        # register instance name in global name space
+        self.reg_time = time.monotonic()
+
+        self.__register_name__()
 
     def __call__(self) -> None:  # what to do when called as a function ()
         pass
@@ -900,20 +1017,6 @@ class Reservoir(esbmtkBase):
         #self.d = self.sp.getdelta(self.l, self.h)
         self.d[i]: float = get_delta(self.l[i], self.h[i], self.sp.r)
         self.c[i]: float = self.m[i] / self.v  # update concentration
-
-    def log_description(self) -> None:
-
-        o = 8 * " "
-        logging.info(f"{o}{self.n}: Volume = {self.v:4E},\
-            mass={self.m[1]},\
-            concentration={self.c[1]}")
-        logging.info(f"{o}    Initial d-value = {self.d[1]:.4f}")
-        # loop over all reservoir objects
-        o = 12 * " "
-        if len(self.lop) > 0:
-            logging.info(f"{o}Modifiers acting on fluxes in this reservoir:")
-        for m in self.lop:
-            m.describe(self)
 
     def __write_data__(self, prefix: str, start: int, stop: int,
                        stride: int) -> None:
@@ -997,8 +1100,8 @@ class Reservoir(esbmtkBase):
                 header_list.append(n)
 
         # loop over all columns
-        col :int = 1  # we ignore the time column
-        i   :int = 0
+        col: int = 1  # we ignore the time column
+        i: int = 0
         for n in header_list:
             name = n.split(" ")[0]
             if name == self.name:
@@ -1022,13 +1125,13 @@ class Reservoir(esbmtkBase):
         """
 
         #rows = 6
-        ovars :list = ["m", "l", "h", "d"]
-        
+        ovars: list = ["m", "l", "h", "d"]
+
         for v in ovars:
             #obj.__dict__[v][0:rows] =  df.iloc[0:rows, col].to_numpy()
-            obj.__dict__[v][:] =  df.iloc[-3, col]
+            obj.__dict__[v][:] = df.iloc[-3, col]
             col += 1
-            
+
         if res:  # if type is reservoir
             #obj.c[0:rows] = df.iloc[0:rows, col].to_numpy()
             obj.c[:] = df.iloc[-3, col]
@@ -1051,6 +1154,7 @@ class Reservoir(esbmtkBase):
         filename = f"{model.n}_{self.n}.pdf"
         fn = 1  # counter for the figure number
 
+        plt.style.use(['default'])
         fig = plt.figure(i)  # Initialize a plot window
         fig.canvas.set_window_title(f"Reservoir Name: {self.n}")
         fig.set_size_inches(size)
@@ -1063,6 +1167,10 @@ class Reservoir(esbmtkBase):
             if f.plot == "yes":
                 fn = fn + 1
                 plot_object_data(geo, fn, f, ptype)
+
+        for d in sorted(self.ldf):  # plot data fields
+            fn = fn + 1
+            plot_object_data(geo, fn, d, ptype)
 
         fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
         fig.tight_layout()
@@ -1085,6 +1193,7 @@ class Reservoir(esbmtkBase):
         filename = f"{model.n}_{self.n}.pdf"
         fn: int = 1  # counter for the figure number
 
+        plt.style.use(['default'])
         fig = plt.figure(i)  # Initialize a plot window
         fig.set_size_inches(size)
 
@@ -1095,39 +1204,38 @@ class Reservoir(esbmtkBase):
         # fig.subplots_adjust(top=0.88)
         fig.savefig(filename)
 
-    def __lt__(self, other) -> None:
-        """ This is needed for sorting with sorted()
+    def describe(self, **kwargs) -> None:
+        """ Show an overview of the object properties.
+        Optional arguments are
+        index  :int = 0 this will show data at the given index
+        indent :int = 0 indentation 
 
         """
+        off: str = "  "
+        if "index" not in kwargs:
+            index = 0
+        else:
+            index = kwargs["index"]
 
-        return self.n < other.n
+        if "indent" not in kwargs:
+            indent = 0
+            ind = ""
+        else:
+            indent = kwargs["indent"]
+            ind = ' ' * indent
 
-    def describe(self, i=0) -> None:
-        """ Show an overview of the object properties
+        # print basic data bout this reservoir
+        print(f"{ind}{self.__str__(indent=indent)}")
+        print(f"{ind}Data sample:")
+        show_data(self, index=index, indent=indent)
 
-        """
+        print(f"\n{ind}Connnections:")
+        for p in sorted(self.loc):
+            print(f"{off}{ind}{p.n}")
 
-        list_fluxes(self, self.n, i)
-        print("\n")
-        show_data(self, self.n, i)
-        
-    def list_connections(self) -> None:
-        """ List all processes associated with this reservoir
-
-        """
-        for p in self.loc:
-            print(f"{p.n}")
-
-        print("You can get further information by running connection_name.list_processes()")
-
-    def __list_processes__(self) -> None:
-        """ List all processes associated with this reservoir
-
-        """
-        for p in self.lop:
-            print(f"{p.n}")
-
-        print("You can get further information by running connection_name.list_processes()")
+        print()
+        print("Use the describe method on any of the above connections")
+        print("to see information on fluxes and processes")
 
 class Flux(esbmtkBase):
     """A class which defines a flux object. Flux objects contain
@@ -1149,7 +1257,6 @@ class Flux(esbmtkBase):
       - Name.c # concentration
       
       """
-
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
           Initialize a flux. Arguments are the species name the flux rate
@@ -1157,13 +1264,13 @@ class Flux(esbmtkBase):
           """
 
         from . import ureg, Q_
-        
+
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
             "species": Species,
             "delta": Number,
-            "rate": (str,Q_),
+            "rate": (str, Q_),
             "plot": str,
         }
 
@@ -1185,18 +1292,18 @@ class Flux(esbmtkBase):
         self.model: Model = self.species.mo  # model handle
 
         # model units
-        self.plt_units =  Q_(self.rate).units
-        self.mu :str = f"{self.species.mu}/{self.mo.tu}"
-        
+        self.plt_units = Q_(self.rate).units
+        self.mu: str = f"{self.species.mu}/{self.mo.tu}"
+
         # and convert flux into model units
-        fluxrate :float =  Q_(self.rate).to(self.mo.f_unit).magnitude
-        
+        fluxrate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
+
         self.m: [NDArray, Float[64]
                  ] = zeros(self.model.steps) + fluxrate  # add the flux
         self.l: [NDArray, Float[64]] = zeros(self.model.steps)
         self.h: [NDArray, Float[64]] = zeros(self.model.steps)
         [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
-        
+
         if self.delta == 0:
             self.d: [NDArray, Float[64]] = zeros(self.model.steps)
         else:
@@ -1204,14 +1311,15 @@ class Flux(esbmtkBase):
                                                      self.sp.r)  # update delta
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
-        self.legend_left :str = self.species.ds
-        self.legend_right :str = self.species.dn
-        
+        self.legend_left: str = self.species.ds
+        self.legend_right: str = self.species.dn
+
         self.xl: str = self.model.xl  # se x-axis label equal to model time
         self.lop: list[Process] = []  # list of processes
         self.led: list[ExternalData] = []  # list of ext data
         self.source: str = ""  # Name of reservoir which acts as flux source
         self.sink: str = ""  # Name of reservoir which acts as flux sink
+        self.__register_name__()
 
     def __getitem__(self, i: int) -> NDArray[np.float64]:
         """ Get data by index
@@ -1224,7 +1332,7 @@ class Flux(esbmtkBase):
         """ Write data by index
         
         """
-        
+
         self.m[i] = value[0]
         self.l[i] = value[1]
         self.h[i] = value[2]
@@ -1239,36 +1347,61 @@ class Flux(esbmtkBase):
         """ adding two fluxes works for the masses, but not for delta
 
         """
-        
+
         self.m = self.m + other.m
         self.l = self.l + other.l
         self.h = self.h + other.h
-        self.d = get_delta(self.l, self.h,self.sp.r)
+        self.d = get_delta(self.l, self.h, self.sp.r)
 
-    def log_description(self, reservoir) -> None:
-
-        o = 16 * " "
-        logging.info(
-            f"{o}{self.n}, Flux = {self.m[1]*self.reservoir.lio[self.n]}, delta = {self.d[1]:.4f}"
-        )
-
-        o = 20 * " "
-        if len(self.lop) > 0:
-            logging.info(f"{o}Associated Perturbations:")
-            for p in self.lop:  # loop over all perturbations objects
-                p.describe()
-
-    def describe(self, i: int) -> None:
-        """ Show an overview of the object properties
+    def __sub__(self, other):
+        """ adding two fluxes works for the masses, but not for delta
 
         """
-        
-        show_data(self, self.n, i)
 
-    def __lt__(self, other):  # this is needed for sorting with sorted()
-        return self.n < other.n
+        self.m = self.m - other.m
+        self.l = self.l - other.l
+        self.h = self.h - other.h
+        self.d = get_delta(self.l, self.h, self.sp.r)
 
-    def plot(self, **kwargs :dict) -> None:
+    def describe(self, **kwargs) -> None:
+        """ Show an overview of the object properties.
+        Optional arguments are
+        index  :int = 0 this will show data at the given index
+        indent :int = 0 indentation 
+
+        """
+        off: str = "  "
+        if "index" not in kwargs:
+            index = 0
+        else:
+            index = kwargs["index"]
+
+        if "indent" not in kwargs:
+            indent = 0
+            ind = ""
+        else:
+            indent = kwargs["indent"]
+            ind = ' ' * indent
+
+        # print basic data bout this object
+        print(f"{ind}{self.__str__(indent=indent)}")
+        print(f"{ind}Data sample:")
+        show_data(self, index=index, indent=indent)
+
+        if len(self.lop) > 0:
+            print(f"\n{ind}Process(es) acting on this flux:")
+            for p in self.lop:
+                print(f"{off}{ind}{p.__repr__()}")
+
+            print("")
+            print(
+                "Use help on the process name to get an explanation what this process does"
+            )
+            print(f"e.g., help({self.lop[0].n})")
+        else:
+            print("There are no processes for this flux")
+
+    def plot(self, **kwargs: dict) -> None:
         """Plot the flux data:
         This method has the optional keyword ptype which can be
 
@@ -1279,7 +1412,7 @@ class Flux(esbmtkBase):
         """
 
         ptype: int = get_ptype(kwargs)
-        
+
         fig, ax1 = plt.subplots()
         fig.set_size_inches(5, 4)  # Set figure size in inches
         fig.set_dpi(100)  # Set resolution in dots per inch
@@ -1327,12 +1460,14 @@ class SourceSink(esbmtkBase):
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
 
-        self.loc: list[Connection]  = []  # list of connection objects
+        self.loc: set[Connection]  = set()  # set of connection objects
 
         # legacy names
         self.n = self.name
         self.sp = self.species
+        self.mo = self.species.mo
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
+        self.__register_name__()
 
 
 class Sink(SourceSink):
@@ -1490,6 +1625,7 @@ class Signal(esbmtkBase):
         # update isotope values
         self.data.li, self.data.hi = get_imass(self.data.m, self.data.d,
                                               self.sp.r)
+        self.__register_name__()
 
     def __init_signal_data__(self) -> None:
         """ Create an empty flux and apply the shape
@@ -1748,17 +1884,90 @@ class Signal(esbmtkBase):
             """
         self.data.plot()
 
-    def describe(self) -> None:
+class DataField(esbmtkBase):
+    """
+    DataField: Datafields can be used to plot data which is computed after
+    the model finishes in the overview plot windows. Therefore, datafields will
+    plot in the same window as the reservoir they are associated with.
+    Datafields must share the same x-axis is the model, and can have up to two
+    y axis.
+    
+    Example:
+             DataField(name = "Name"        
+                       associated_with = reservoir_handle
+                       y1_data = np.Ndarray
+                       y1_label = Y-Axis label
+                       y1_legend = Data legend
+                       y2_data = np.Ndarray    # optional
+                       y2_label = Y-Axis label # optional
+                       y2_legend = Data legend # optional
 
-        o = 24 * " "
-        s = f"{o}{self.n}, Shape = {self.sh}:"
-        logging.info(s)
-        o = 24 * " "
-        s = f"{o}Start = {self.st}, Mass = {self.m:4E}, Delta = {self.d}"
-        logging.info(s)
+    Note that Datafield data is not mapped to model units. Care must be taken
+    that the data units match the model units.
+    
+    The instance provides the following data
+    
+    Name.x    = X-axis = model X-axis
+    Name.y1_data     
+    Name.y1_label    
+    Name.y1_legend   
 
-    def __lt__(self, other):  # this is needed for sorting with sorted()
-        return self.n < other.n
+    Similarly for y2
+
+"""
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """ Initialize this instance """
+
+        # dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            "name": str,
+            "associated_with": Reservoir,
+            "y1_data": NDArray[float],
+            "y1_label": str,
+            "y1_legend": str,
+            "y2_data": NDArray[float],
+            "y2_label": str,
+            "y2_legend": str,
+        }
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = ["name", "associated_with", "y1_data"]
+
+        # list of default values if none provided
+        self.lod: Dict[str, any] = {
+            "y1_label": "Not Provided",
+            "y1_legend": "Not Provided",
+            "y2_label": "Not Provided",
+            "y2_legend": "Not Provided",
+            "y2_data": 0,
+        }
+
+        # provide a dictionary entry for a keyword specific error message
+        # see esbmtkBase.__initerrormessages__()
+        self.__initerrormessages__()
+        self.bem.update({
+            "associated_with": "a string",
+            "y1_data": "a numpy array",
+            "y1_label": "a string",
+            "y1_legend": "a string",
+            "y2_data": "a numpy array",
+            "y2_label": "a string",
+            "y2_legend": "a string"
+        })
+
+        self.__validateandregister__(kwargs)  # initialize keyword values
+
+        # set legacy variables
+        self.legend_left = self.y1_legend
+        self.legend_right = self.y2_legend
+        self.ld = self.y2_label
+        self.mo = self.associated_with.mo
+        self.d = self.y2_data
+        self.n = self.name
+        self.led = []
+        # register with reservoir
+        self.associated_with.ldf.append(self)
+        self.__register_name__()
 
 class ExternalData(esbmtkBase):
     """Instances of this class hold external X/Y data which can be associated with 
@@ -1836,8 +2045,6 @@ class ExternalData(esbmtkBase):
         self.mo: Model = self.reservoir.species.mo
 
         self.df: pd.DataFrame = pd.read_csv(self.fn)  # read file
-        logging.info(f"Read external data from {self.fn}")
-
         ncols = len(self.df.columns)
         if ncols != 3:  # test of we have 3 columns
             raise ValueError("CSV file must have 3 columns")
@@ -1875,6 +2082,7 @@ class ExternalData(esbmtkBase):
 
         # register with reservoir
         self.__register__(self.reservoir)
+        self.__register_name__() 
 
     def __register__(self, obj):
         """Register this dataset with a flux or reservoir. This will have the

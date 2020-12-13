@@ -30,12 +30,24 @@ def test_delta_conversion_with_vector():
     from esbmtk import get_imass, get_delta, get_flux_data
     import numpy as np
 
-    r =0.0112372
+    r = 0.0112372
     m = np.zeros(4) + 3001
     d = 0
-    l,h = get_imass(m, d, r)
-    d2 = get_delta(l,h,r)
+    l, h = get_imass(m, d, r)
+    d2 = get_delta(l, h, r)
     assert d == d2[1]
+
+
+def test_isotope_mass_calculation():
+
+    r = 0.0112372
+
+    d = 21
+    m = 10
+
+    li, hi = get_imass(m, d, r)
+
+    assert m - li - hi == 0
 #+END_SRC
 
 * Global test data (aka fixtures)

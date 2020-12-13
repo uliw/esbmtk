@@ -77,7 +77,7 @@ class esbmtkBase():
                 self.mo.lmo.append(self.name)
                 setattr(builtins, self.name, self)
 
-        logging.info(self)
+        logging.info(self.__repr__(1))
 
     def __validateinput__(self, kwargs: Dict[str, any]) -> None:
         """Validate the user provided input key-value pairs. For this we need
@@ -239,7 +239,7 @@ class esbmtkBase():
         kwargs.update(new)
         return kwargs
 
-    def __repr__(self) -> str:
+    def __repr__(self,log=0) -> str:
         """ Print the basic parameters for this class when called via the print method
         
         """
@@ -273,8 +273,8 @@ class esbmtkBase():
 
         m = m + ")"
 
-        #if tdiff < 1:
-        #     m = ""
+        if log == 0 and tdiff < 1:
+             m = ""
 
         return m
 
@@ -348,7 +348,7 @@ class Model(esbmtkBase):
     Example:
 
           esbmtkModel(name   =  "Test_Model",
-                      start    = "0 yrs",    # optional: start time 
+                      start    = "0 yrs",    # optional: start time
                       stop     = "1000 yrs", # end time
                       timestep = "2 yrs",    # as a string "2 yrs"
                       offset = "0 yrs",    # optional: time offset for plot
@@ -370,7 +370,7 @@ class Model(esbmtkBase):
     also cutoff for the graphicak output. I.e., the interval f the y-axis will not be
     smaller than the display_precision.
 
-    All of the above keyword values are available as variables with 
+    All of the above keyword values are available as variables with
     Model_Name.keyword
 
     The user facing methods of the model class are
@@ -389,6 +389,7 @@ class Model(esbmtkBase):
     ["Carbon", "Sulfur"].
 
     """
+
     def __init__(self, **kwargs: Dict[any, any]) -> None:
         """ Init Sequence
 
@@ -457,7 +458,8 @@ class Model(esbmtkBase):
         self.d_unit = Q_(self.stop).units  # display time units
         self.m_unit = Q_(self.mass_unit)  # the mass unit
         self.v_unit = Q_(self.volume_unit)  # the volume unit
-        self.c_unit = self.m_unit / self.v_unit  # the concentration unit (mass/volume)
+        # the concentration unit (mass/volume)
+        self.c_unit = self.m_unit / self.v_unit
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
         self.r_unit = self.v_unit / self.t_unit  # flux as volume/time
         # this is now defined in __init__.py
@@ -506,27 +508,22 @@ class Model(esbmtkBase):
                     f"This program comes with ABSOLUTELY NO WARRANTY\n"
                     f"For details see the LICENSE file\n"
                     f"This is free software, and you are welcome to redistribute it\n"
-                    f"under certain conditions; See the LICENSE file for details.\n"
-                )
+                    f"under certain conditions; See the LICENSE file for details.\n")
                 print(warranty)
 
         # start a log file
         for handler in logging.root.handlers[:]:
             logging.root.removeHandler(handler)
-        
+
         fn: str = f"{kwargs['name']}.log"
-        print(fn)
-        logging.basicConfig(
-            filename=fn,
-            filemode='w',
-            level=logging.INFO)
+        logging.basicConfig(filename=fn, filemode='w', level=logging.INFO)
         self.__register_name__()
 
     def describe(self, **kwargs) -> None:
         """ Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
-        indent :int = 0 indentation 
+        indent :int = 0 indentation
 
         """
         off: str = "  "
@@ -615,8 +612,8 @@ class Model(esbmtkBase):
             r.__read_state__()
 
     def plot_data(self, **kwargs: dict) -> None:
-        """ 
-        Loop over all reservoirs and either plot the data into a 
+        """
+        Loop over all reservoirs and either plot the data into a
         window, or save it to a pdf
 
         This method has the optional keyword ptype which can be
@@ -695,18 +692,16 @@ class Model(esbmtkBase):
             for r in lor:  # loop over all reservoirs
                 flux_list: List[str] = r.lof
                 direction_list: List[int] = r.lodir
-                new[0] = new[1] = new[2] = new[3] = 0
+                new[0] = new[1] = new[2] = new[3] = 0.0
 
+                # sum fluxes
                 for j, f in enumerate(flux_list):
-                    #print(f"flux = {f.n}")
                     new += f[i] * direction_list[j]
 
-                #print(f"sum = {new[0]}")
                 # add to data from last time step
-                r[i] = r[i - 1] + new[0:3] * r.mo.dt
-                #r[i] = r[i] * (r[i] > 0)
+                r[i] = r[i - 1] + new * r.mo.dt
 
-            i = i + 1
+            i = i + 1  # next time step
 
     def __step_process__(self, r, i) -> None:
         """ For debugging. Provide reservoir and step number,
@@ -865,7 +860,7 @@ specific properties
 
 class Reservoir(esbmtkBase):
     """
-      Tis object holds reservoir specific information. 
+      Tis object holds reservoir specific information.
 
       Example:
 
@@ -873,7 +868,8 @@ class Reservoir(esbmtkBase):
                         species = S,          # Species handle
                         delta = 20,           # initial delta - optional (defaults  to 0)
                         mass/concentration = "1 unit"  # species concentration or mass
-                        volume = "1E5 l",      # reservoir volume (m^3) 
+                        volume = "1E5 l",      # reservoir volume (m^3)
+                        plot = yes/no, defaults to yes
                )
 
       you must either give mass or concentration. The result will always be displayed as concentration
@@ -887,11 +883,12 @@ class Reservoir(esbmtkBase):
 
       - Name.write_data() # save data to file
       - Name.describe()   # describe Reservoir
-      
+
     """
+
     def __init__(self, **kwargs) -> None:
         """ Initialize a reservoir.
-        
+
         """
 
         from . import ureg, Q_
@@ -905,6 +902,7 @@ class Reservoir(esbmtkBase):
             "mass": (str, Q_),
             "volume": (str, Q_),
             "transform": str,
+            "plot": str,
         }
 
         # provide a list of absolutely required keywords
@@ -916,6 +914,7 @@ class Reservoir(esbmtkBase):
         self.lod: Dict[any, any] = {
             'transform': "none",
             'delta': 0,
+            'plot': "yes",
         }
 
         # validate and initialize instance variables
@@ -923,7 +922,8 @@ class Reservoir(esbmtkBase):
         self.bem.update({
             "mass": "a  string or quantity",
             "concentration": "a string or quantity",
-            "volume": "a string or quantity"
+            "volume": "a string or quantity",
+            "plot": "yes or no",
         })
         self.__validateandregister__(kwargs)
 
@@ -956,9 +956,9 @@ class Reservoir(esbmtkBase):
 
         # save the unit which was provided by the user for display purposes
 
-        self.lof: list[Flux] = []  #  flux references
+        self.lof: list[Flux] = []  # flux references
         self.led: list[ExternalData] = []  # all external data references
-        self.lio: dict[str, int] = {}  #  flux name:direction pairs
+        self.lio: dict[str, int] = {}  # flux name:direction pairs
         self.lop: list[Process] = []  # list holding all processe references
         self.loe: list[Element] = []  # list of elements in thiis reservoir
         self.doe: Dict[Species, Flux] = {}  # species flux pairs
@@ -998,14 +998,14 @@ class Reservoir(esbmtkBase):
 
     def __getitem__(self, i: int) -> NDArray[np.float64]:
         """ Get flux data by index
-        
+
         """
 
-        return array([self.m[i], self.l[i], self.h[i]], self.d[i])
+        return np.array([self.m[i], self.l[i], self.h[i], self.d[i]])
 
     def __setitem__(self, i: int, value: float) -> None:
         """ write data by index
-        
+
         """
 
         self.m[i]: float = value[0]
@@ -1063,7 +1063,7 @@ class Reservoir(esbmtkBase):
 
     def __read_state__(self) -> None:
         """ read data from csv-file into a dataframe
-        
+
         The CSV file must have the following columns
 
         Model Time     t
@@ -1121,7 +1121,7 @@ class Reservoir(esbmtkBase):
         parameters: df = dataframe
                     col = column number
                     res = true if reservoir
-        
+
         """
 
         #rows = 6
@@ -1141,13 +1141,13 @@ class Reservoir(esbmtkBase):
 
     def __plot__(self, i: int, ptype: int) -> None:
         """ Plot data from reservoirs and fluxes into a multiplot window
-        
+
         """
 
         model = self.sp.mo
         species = self.sp
         obj = self
-        #time = model.time + model.offset  # get the model time
+        # time = model.time + model.offset  # get the model time
         #xl = f"Time [{model.bu}]"
 
         size, geo = get_plot_layout(self)  # adjust layout
@@ -1160,22 +1160,23 @@ class Reservoir(esbmtkBase):
         fig.set_size_inches(size)
 
         # plot reservoir data
-        plot_object_data(geo, fn, self, ptype)
+        if self.plot == "yes":
+            plot_object_data(geo, fn, self, ptype)
 
-        # plot the fluxes assoiated with this reservoir
-        for f in sorted(self.lof):  # plot flux data
-            if f.plot == "yes":
+            # plot the fluxes assoiated with this reservoir
+            for f in sorted(self.lof):  # plot flux data
+                if f.plot == "yes":
+                    fn = fn + 1
+                    plot_object_data(geo, fn, f, ptype)
+
+            for d in sorted(self.ldf):  # plot data fields
                 fn = fn + 1
-                plot_object_data(geo, fn, f, ptype)
+                plot_object_data(geo, fn, d, ptype)
 
-        for d in sorted(self.ldf):  # plot data fields
-            fn = fn + 1
-            plot_object_data(geo, fn, d, ptype)
-
-        fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
-        fig.tight_layout()
-        fig.subplots_adjust(top=0.88)
-        fig.savefig(filename)
+            fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
+            fig.tight_layout()
+            fig.subplots_adjust(top=0.88)
+            fig.savefig(filename)
 
     def __plot_reservoirs__(self, i: int, ptype: int) -> None:
         """ Plot only the  reservoirs data, and ignore the fluxes
@@ -1208,7 +1209,7 @@ class Reservoir(esbmtkBase):
         """ Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
-        indent :int = 0 indentation 
+        indent :int = 0 indentation
 
         """
         off: str = "  "
@@ -1336,8 +1337,8 @@ class Flux(esbmtkBase):
         self.m[i] = value[0]
         self.l[i] = value[1]
         self.h[i] = value[2]
-        self.d[i] = value[3]
-        #self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
+        #self.d[i] = value[3]
+        self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
 
     def __call__(self) -> None:  # what to do when called as a function ()
         pass
