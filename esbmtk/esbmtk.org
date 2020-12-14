@@ -59,6 +59,7 @@ import pandas as pd
 import logging
 import time
 import builtins
+import os
 #+END_SRC
 
 * The main esbmtk objects
@@ -1137,14 +1138,12 @@ class Reservoir(esbmtkBase):
 
         """
 
-        import os.path
-        from os import path
 
         fn = "state_" + self.mo.n + "_" + self.n + ".csv"
 
-        if not path.exists(fn):
+        if not os.path.exists(fn):
             print(f"Cannot find {fn}\n")
-            raise ValueError(f"The file does not exist")
+            raise FileNotFoundError(f"{fn} does not exist")
 
         df: pd.DataFrame = pd.read_csv(fn)
         headers = list(df.columns.values)
@@ -1623,14 +1622,13 @@ class Signal(esbmtkBase):
         Signal.plot()
         Signal.describe()
     """
-
     def __init__(self, **kwargs) -> None:
         """ Parse and initialize variables
         
         """
-        
+
         from . import ureg, Q_
-        
+
         # provide a list of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
@@ -1665,27 +1663,34 @@ class Signal(esbmtkBase):
         }
 
         self.__initerrormessages__()
-        self.bem.update({"data": "a string", "magnitude": "Number", "scale": "Number",})
+        self.bem.update({
+            "data": "a string",
+            "magnitude": "Number",
+            "scale": "Number",
+        })
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # list of signals we are based on.
         self.los: List[Signal] = []
-        
+
         # convert units to model units
-        self.st: Number = Q_(self.start).to(self.species.mo.t_unit).magnitude  # start time
+        self.st: Number = Q_(self.start).to(
+            self.species.mo.t_unit).magnitude  # start time
 
         if "mass" in self.kwargs:
             self.mass = Q_(self.mass).to(self.species.mo.m_unit).magnitude
         elif "magnitude" in self.kwargs:
-            self.magnitude = Q_(self.magnitude).to(self.species.mo.f_unit).magnitude
+            self.magnitude = Q_(self.magnitude).to(
+                self.species.mo.f_unit).magnitude
 
         if "duration" in self.kwargs:
-            self.duration = Q_(self.duration).to(self.species.mo.t_unit).magnitude
+            self.duration = Q_(self.duration).to(
+                self.species.mo.t_unit).magnitude
 
         self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
-        
+
         # legacy name definitions
-        self.l :int = self.duration
+        self.l: int = self.duration
         self.n: str = self.name  # the name of the this signal
         self.sp: Species = self.species  # the species
         self.mo: Model = self.species.mo  # the model handle
@@ -1699,7 +1704,7 @@ class Signal(esbmtkBase):
         self.data.n: str = self.name + "_data"  # update the name of the signal data
         # update isotope values
         self.data.li, self.data.hi = get_imass(self.data.m, self.data.d,
-                                              self.sp.r)
+                                               self.sp.r)
         self.__register_name__()
 
     def __init_signal_data__(self) -> None:
@@ -1802,12 +1807,15 @@ class Signal(esbmtkBase):
         """
 
         from . import ureg, Q_
-        
+
+        if not os.path.exists(
+                self.filename):  # check if the file is actually there
+            raise FileNotFoundError(f"Cannot find file {self.filename}")
         # read external dataset
         df = pd.read_csv(self.filename)
 
         # get unit information from each header
-        xh = df.columns[0].split("[")[1].split("]")[0] 
+        xh = df.columns[0].split("[")[1].split("]")[0]
         yh = df.columns[1].split("[")[1].split("]")[0]
         # zh = df.iloc[0,2].split("[")[1].split("]")[0]
 
@@ -1817,9 +1825,9 @@ class Signal(esbmtkBase):
         # zq = Q_(zh)
 
         # add these to the data we are are reading
-        x = df.iloc[:, 0].to_numpy() * xq  
+        x = df.iloc[:, 0].to_numpy() * xq
         y = df.iloc[:, 1].to_numpy() * yq
-        d = df.iloc[:, 2].to_numpy() 
+        d = df.iloc[:, 2].to_numpy()
 
         # map into model units, and strip unit information
         x = x.to(self.mo.t_unit).magnitude
@@ -1832,32 +1840,32 @@ class Signal(esbmtkBase):
         # interpolation. Insertion off this vector depends on the time
         # offset defined by offset keyword which defines the
         # insertion indexes self.si self.ei
-        
-        self.st: float  = x[0]    # start time
-        self.et : float = x[-1]   # end times
+
+        self.st: float = x[0]  # start time
+        self.et: float = x[-1]  # end times
         duration = int(round(self.et - self.st))
 
         # map the original time coordinate into model space
         x = x - x[0]
-        
+
         # since everything has been mapped to dt, time equals index
-        self.si: int = self.offset   # starting index
+        self.si: int = self.offset  # starting index
         self.ei: int = self.offset + duration  # end index
 
         # create slice of flux vector
         self.s_m: [NDArray, Float[64]] = array(self.nf.m[self.si:self.ei])
-        
+
         # create slice of delta vector
         self.s_d: [NDArray, Float[64]] = array(self.nf.d[self.si:self.ei])
 
         # setup the points at which to interpolate
         xi = arange(0, duration)
-       
+
         h: [NDArray, Float[64]] = interp(xi, x, y)  # interpolate flux
         dy: [NDArray, Float[64]] = interp(xi, x, d)  # interpolate delta
 
         # add this to the corresponding section off the flux
-        self.s_m: [NDArray, Float[64]] = self.s_m + h  
+        self.s_m: [NDArray, Float[64]] = self.s_m + h
         self.s_d: [NDArray, Float[64]] = self.s_d + dy  # ditto for delta
 
     def __add__(self, other):
@@ -1958,7 +1966,6 @@ class Signal(esbmtkBase):
             Plot the signal
             """
         self.data.plot()
-
 #+END_SRC
 
 
@@ -2131,7 +2138,11 @@ class ExternalData(esbmtkBase):
         self.fn: str = self.filename  # string = filename of data
         self.mo: Model = self.reservoir.species.mo
 
+        if not os.path.exists(self.fn):  # check if the file is actually there
+            raise FileNotFoundError(f"Cannot find file {self.fn}")
+
         self.df: pd.DataFrame = pd.read_csv(self.fn)  # read file
+        
         ncols = len(self.df.columns)
         if ncols != 3:  # test of we have 3 columns
             raise ValueError("CSV file must have 3 columns")
@@ -2142,7 +2153,7 @@ class ExternalData(esbmtkBase):
 
         # get unit information from each header
         xh = get_string_between_brackets(xh)
-       
+
         xq = Q_(xh)
         # add these to the data we are are reading
         self.x: [NDArray] = self.df.iloc[:, 0].to_numpy() * xq
@@ -2169,7 +2180,7 @@ class ExternalData(esbmtkBase):
 
         # register with reservoir
         self.__register__(self.reservoir)
-        self.__register_name__() 
+        self.__register_name__()
 
     def __register__(self, obj):
         """Register this dataset with a flux or reservoir. This will have the
