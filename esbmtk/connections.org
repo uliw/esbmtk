@@ -1452,9 +1452,8 @@ class Flux_Balance(RateConstant):
         for c in self.Cr:
             kr *= c
 
-        scale = kl - kr
-        # get- scale factor
-        self.f[i] = self.f[i] * scale * self.k_value
+        # set flux
+        self.f[i] = (kl - kr) *  self.k_value
 #+END_SRC
 
 
