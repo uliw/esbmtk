@@ -45,19 +45,6 @@ def get_imass(m: float, d: float, r: float) -> [float, float]:
     """
 
     li: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-    # hi: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
-    hi: float = m - li
-    return [li, hi]
-
-def get_imass3(m: float, d: float, r: float) -> [float, float]:
-    """
-    Calculate the isotope masses from bulk mass and delta value.
-    Arguments are m = mass, d= delta value, r = abundance ratio 
-    species
-    
-    """
-
-    li: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
     hi: float = m - li
     return [li, hi]
 
@@ -73,8 +60,6 @@ def get_imass2(mr: float, mn: float, lr: float, hr: float) -> [float, float]:
     ln :float = mn * lr / mr
     hn :float = mn - ln
 
-    #li: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-    #hi: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
     return [ln, hn]
 
 
@@ -87,7 +72,8 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
     """
 
     l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-    h: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
+    # h: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
+    h: float = m - l
 
     return np.array([m, l, h, d])
 
@@ -104,7 +90,7 @@ def get_delta(l: [NDArray, [Float64]], h: [NDArray, [Float64]],
    """
 
     d: float = 1E3 * (abs(h) / abs(l) - r) / r
-    return np.round(d, 12)
+    return d
 
 def add_to (l, e):
     """

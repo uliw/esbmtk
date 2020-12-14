@@ -57,26 +57,9 @@ def get_imass(m: float, d: float, r: float) -> [float, float]:
     
     """
 
-    li: float = (1000 * m) / ((d + 1000) * r + 1000)
-    #li: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-    # hi: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
-    hi: float = m - li
-    return [li, hi]
-
-def get_imass_mp(m: float, d: float, r: float) -> [float, float]:
-    """
-    Calculate the isotope masses from bulk mass and delta value.
-    Arguments are m = mass, d= delta value, r = abundance ratio 
-    species
-    
-    """
-    
-    
     li: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-    # hi: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
     hi: float = m - li
     return [li, hi]
-
 
 def get_imass2(mr: float, mn: float, lr: float, hr: float) -> [float, float]:
     """

@@ -7,12 +7,13 @@ def test_delta_conversion():
     
     l,h = get_imass(m, d, r)
     d2 = get_delta(l,h,r)
-    assert d == d2
+    assert abs(d - d2) < 1e-10, "deltas should be similar"
     A =  get_flux_data(m, d, r)
-    assert A[0] == m
-    assert A[1] == l
-    assert A[2] == h
-    assert A[3] == d
+    
+    assert A[0] == m, "mass should be equal"
+    assert A[1] == l, "light mass should be equal"
+    assert A[2] == h, "heavy mass should be equal"
+    assert A[3] == d, "deltas should be equal"
 
 def test_delta_conversion_with_vector():
     from esbmtk import get_imass, get_delta, get_flux_data
@@ -23,11 +24,11 @@ def test_delta_conversion_with_vector():
     d = 0
     l, h = get_imass(m, d, r)
     d2 = get_delta(l, h, r)
-    assert d == d2[1]
+    assert abs(max(d2 - d)) < 1e-10
 
 
 def test_isotope_mass_calculation():
-
+    from esbmtk import get_imass
     r = 0.0112372
 
     d = 21
@@ -76,7 +77,7 @@ def test_reservoir_creation(create_model):
     mass = v0 * c0
     assert R1.c[2] == c0
     assert R1.m[2] == mass
-    assert R1.d[2] == d0
+    assert abs(R1.d[2] - d0) < 1e-10
 
 def test_external_data(create_model):
     """ test the creation of an external data object
@@ -185,4 +186,4 @@ def test_passive_sum(create_model):
 
     M1.run()
     assert R1.c[-2] == c0
-    assert R1.d[-2] == d0
+    assert abs(R1.d[-2] - d0) < 1e-10
