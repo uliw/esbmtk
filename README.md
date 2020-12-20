@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org0f39d35)
-2.  [News](#org8360a56)
-3.  [Contributing](#org1fbc3dd)
-4.  [Installation](#orgbdf90ea)
-5.  [Documentation](#orgbea3e02)
-6.  [Todo](#orgff219df)
-7.  [License](#org63a04d9)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org8b0f5fb)
+2.  [News](#org28937f3)
+3.  [Contributing](#org538f0db)
+4.  [Installation](#org7dcca84)
+5.  [Documentation](#org50a9902)
+6.  [Todo](#orgef07bb1)
+7.  [License](#orgb99bb59)
 
 
-<a id="org0f39d35"></a>
+<a id="org8b0f5fb"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,9 +30,14 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="org8360a56"></a>
+<a id="org28937f3"></a>
 
 # News
+
+-   Dec. 20<sup>th</sup>, added a new connection type (`flux_balance`) which
+    allows equilibration fluxes between two reservoirs without the need
+    to specify forward and backwards fluxes explicitly. See the
+    equilibration example in the example directory.
 
 -   Dec. 9<sup>th</sup>, added a basic logging infrastructure. Added `describe()`
     method to `Model`, `Reservoir` and `Connnection` classes. This will
@@ -80,7 +85,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org1fbc3dd"></a>
+<a id="org538f0db"></a>
 
 # Contributing
 
@@ -90,7 +95,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orgbdf90ea"></a>
+<a id="org7dcca84"></a>
 
 # Installation
 
@@ -111,7 +116,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="orgbea3e02"></a>
+<a id="org50a9902"></a>
 
 # Documentation
 
@@ -126,7 +131,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orgff219df"></a>
+<a id="orgef07bb1"></a>
 
 # Todo
 
@@ -135,7 +140,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org63a04d9"></a>
+<a id="orgb99bb59"></a>
 
 # License
 

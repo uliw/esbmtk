@@ -17,6 +17,11 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - Dec. 20^{th}, added a new connection type (=flux_balance=) which
+   allows equilibration fluxes between two reservoirs without the need
+   to specify forward and backwards fluxes explicitly. See the
+   equilibration example in the example directory.
+
  - Dec. 9^{th}, added a basic logging infrastructure. Added =describe()=
    method to =Model=, =Reservoir= and =Connnection= classes. This will
    list details about the fluxes and processes etc. Lot's of code

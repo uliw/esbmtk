@@ -1,4 +1,3 @@
-
 #+STARTUP: content
 #+OPTIONS: todo:nil tasks:nil tags:nil
 #+PROPERTY: header-args :eval never-export
@@ -221,9 +220,10 @@ class esbmtkBase():
             str: "a string with quotation marks",
         }
 
+        
     def __registerkeys__(self) -> None:
         """ register the kwargs key/value pairs as instance variables
-        and complain about uknown keywords"""
+        and complain about unknown keywords"""
         k: any
         v: any
 

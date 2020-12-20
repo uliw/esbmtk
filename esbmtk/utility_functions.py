@@ -29,6 +29,7 @@ from time import process_time
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import mpmath
 
 import logging
 import time
@@ -48,23 +49,20 @@ def get_imass(m: float, d: float, r: float) -> [float, float]:
     hi: float = m - li
     return [li, hi]
 
-def get_imass2(mr: float, mn: float, lr: float, hr: float) -> [float, float]:
-    """
-    Calculate the isotope masses from bulk mass and isotope ratio
 
-    mr, lr, hr = are the masses of the reference values
-    mn, ln, hn = are the masses of the new values
-    
+def get_frac(m: float, l: float, a: float) -> [float, float]:
+    """Calculate the effect of the istope fractionation factor alpha on
+    the ratio between the light and heavy isotope.
+
     """
 
-    ln :float = mn * lr / mr
-    hn :float = mn - ln
-
-    return [ln, hn]
+    li: float = -l * m / (a * l - a * m - l)
+    hi: float = m - li  # get the new heavy isotope value
+    return li, hi
 
 
 def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
-    """
+    """ 
     Calculate the isotope masses from bulk mass and delta value.
     Arguments are m = mass, d= delta value, r = abundance ratio 
     species. Unlike get_mass, this function returns the full array
@@ -72,7 +70,6 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
     """
 
     l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-    # h: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
     h: float = m - l
 
     return np.array([m, l, h, d])

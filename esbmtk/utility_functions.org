@@ -76,18 +76,18 @@ def get_frac(m: float, l: float, a: float) -> [float, float]:
 
 def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
     """ 
-   Calculate the isotope masses from bulk mass and delta value.
+    Calculate the isotope masses from bulk mass and delta value.
     Arguments are m = mass, d= delta value, r = abundance ratio 
     species. Unlike get_mass, this function returns the full array
     
     """
 
     l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-    # h: float = ((d * m + 1000.0 * m) * r) / ((d + 1000.0) * r + 1000.0)
     h: float = m - l
 
     return np.array([m, l, h, d])
 #+END_SRC
+
 
 
 

@@ -1008,38 +1008,49 @@ class FluxDiff(Process):
         self.f[i] = (self.ref[0][i] - self.ref[1][i]) * self.scale
 
 class Fractionation(Process):
-     """This process offsets the isotopic ratio of the flux by a given
+    """This process offsets the isotopic ratio of the flux by a given
         delta value. In other words, we add a fractionation factor
 
      Example:
           Fractionation(name = "Name",
                         reservoir = upstream_reservoir_handle,
                         flux = flux handle
-                        alpha = 12)
+                        alpha = 12 in permil (e.f)
 
      """
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """ Initialize this Process """
+        # get default names and update list for this Process
+        self.__defaultnames__()  # default kwargs names
+        self.lrk.extend(["reservoir", "flux",
+                         "alpha"])  # new required keywords
 
-     def __init__(self, **kwargs :Dict[str, any]) -> None:
-          """ Initialize this Process """
-           # get default names and update list for this Process
-          self.__defaultnames__()  # default kwargs names
-          self.lrk.extend(["reservoir", "flux", "alpha"]) # new required keywords
-        
-          self.__validateandregister__(kwargs)  # initialize keyword values
-          self.__postinit__()  # do some housekeeping
-          #legacy variables
-          self.mo = self.reservoir.mo
-          self.__register_name__()
-     
-     
-     def __call__(self,reservoir :Reservoir, i :int) -> None: 
-        
-          self.f.d[i] = self.f.d[i] + self.alpha # set the new delta
-          # recalculate masses based on new delta
-          self.f.l[i], self.f.h[i] = get_imass(self.f.m[i],
-                                              self.f.d[i],
-                                              self.f.sp.r)
-          return
+        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__postinit__()  # do some housekeeping
+
+        # alpha is given in permil, but the fractionation routine expects
+        # it as 1 + permil, i.e., 70 permil would 1.007
+        #legacy variables
+        self.alpha = 1 + self.alpha/1000
+        self.mo = self.reservoir.mo
+        self.__register_name__()
+
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """
+        Set flux isotope masses based on fractionation factor
+
+        """
+
+        self.f.l[i], self.f.h[i] = get_frac(self.f.m[i],
+                                            self.f.l[i],
+                                            self.alpha)
+
+        #update delta
+        self.d = get_delta(self.f.l,
+                           self.f.h,
+                           self.f.sp.r)
+
+        return
 
 class RateConstant(Process):
     """This is a wrapper for a variety of processes which depend on rate constants

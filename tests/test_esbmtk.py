@@ -38,6 +38,22 @@ def test_isotope_mass_calculation():
 
     assert m - li - hi == 0
 
+def test_fractionation_calculation():
+    from esbmtk import get_imass, get_delta, get_frac
+
+    r = 0.044162589
+    m = 10
+    d = 21
+    a = 1.003
+
+    l, h =  get_imass(m,d,r)
+    l2, h2 = get_frac(m, l, a)
+
+    a2 = (l * h2) / (h * l2)
+
+    diff = abs(a - a2)
+    assert diff < 1e-15
+
 import pytest
 
 @pytest.fixture

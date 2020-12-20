@@ -1,0 +1,119 @@
+#+TITLE: ESBMTK Carbon Cycle example
+#+AUTHOR:Ulrich G Wortmann
+#+STARTUP: showall
+#+OPTIONS: todo:nil tasks:nil tags:nil toc:nil
+#+PROPERTY: header-args :eval never-export
+#+EXCLUDE_TAGS: noexport
+#+LATEX_HEADER: \usepackage{breakurl}
+#+LATEX_HEADER: \usepackage{newuli}
+#+LATEX_HEADER: \usepackage{uli-german-paragraphs}
+#+latex_header: \usepackage{natbib}
+#+latex_header: \usepackage{natmove}
+
+* Equilibrating two reservoirs
+
+Two reservoirs which are connected via forward and backward fluxes
+will equilibrate their concentrations (and thus their isotope
+ratios). The equilibrium depends on the actual concentration plus any
+optional equilibrium constants. 
+
+We can model this situation by creating two explicit fluxes between
+two reservoirs, which mimics the actual nature of exchange
+fluxes. However, we can also express the flux balance between both
+fluxes, and only compute the difference. The latter approach is more
+succinct. ESBMTK implements this case with the =flux_balance= connection type, takes three parameters
+
+ - =left= is a list which can contain constants and/or reservoirs. The
+   list must contain at least one valid element. All elements in this
+   list will be multiplied with each other. E.g. if we have a list
+   with one constant and one reservoir, the reservoir concentration
+   will be multiplied with the constant. If we have two reservoirs,
+   the respective reservoir concentrations will be multiplied with
+   each other.
+ - =right= similar to =left= The final flux rate will be computed as the difference between =left= and =right=
+ - =k_value= a constant which will be multiplied with the difference
+   between =left=and =right=
+
+Here a simple example
+
+#+BEGIN_SRC ipython :tangle equi4.py
+from esbmtk import Model, Reservoir, Signal
+from esbmtk import Connect, Source, Sink
+
+volume = "1 liter"
+
+# create model
+Model(
+    name="equi4",  # model name
+    stop="1000 s",        # end time of model
+    timestep="0.1 s",            # time step
+    element=["Carbon"],  # initialize carbon species
+    mass_unit="mol",
+    volume_unit="l",
+)
+
+Reservoir(
+    name="R1",    # Name of reservoir
+    species=CO2,             # Species handle
+    delta=10,                 # initial delta
+    concentration=f"10 mol/l",       # concentration
+    volume=volume,         # reservoir size (m^3)
+)
+
+Reservoir(
+    name="R2",    # Name of reservoir
+    species=CO2,             # Species handle
+    delta=0,                 # initial delta
+    concentration=f"11 mol/l",       # concentration
+    volume=volume,         # reservoir size (m^3)
+)
+
+Connect(
+    source=R1,   # target of flux
+    sink=R2,    # source of flux
+    rate="1 mol/s",           # flux rate
+    ctype="flux_balance",
+    k_value=1,
+    left=[R1],
+    right=[R2],
+    #alpha=0,                # isotope fractionation
+    plot="no",
+)
+
+
+# Run the model
+equi4.run()
+
+# plot the results
+equi4.plot_data()
+#+END_SRC
+
+#+RESULTS:
+:results:
+# Out [5]: 
+# output
+
+ESBMTK  Copyright (C) 2020  Ulrich G.Wortmann
+This program comes with ABSOLUTELY NO WARRANTY
+For details see the LICENSE file
+This is free software, and you are welcome to redistribute it
+under certain conditions; See the LICENSE file for details.
+
+Execution took 0.005507877000000327 seconds
+
+# text/plain
+: <Figure size 500x300 with 2 Axes>
+
+# image/png
+[[file:obipy-resources/4590b61a271e20ad6c85543bc9a70f18631849e9/a8d4c522d745b2391c8ee0fb5ee74e300d9ef764.png]]
+
+# text/plain
+: <Figure size 500x300 with 2 Axes>
+
+# image/png
+[[file:obipy-resources/4590b61a271e20ad6c85543bc9a70f18631849e9/a2718a44b8f3c92056db58e8bdddebd1e5979cb0.png]]
+:end:
+
+
+
+

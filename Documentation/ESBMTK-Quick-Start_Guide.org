@@ -486,9 +486,24 @@ reservoir.
 
    F = (c(t)/ref_value -1) * k_value
  
- -  =monod_type_limit= Fluxes can be scaled with a Michalis-Menten type scaling function
+ - =monod_type_limit= Fluxes can be scaled with a Michalis-Menten type scaling function
 
-   F = F * a * F0 x C/(b+C)
+  F = F * a * F0 x C/(b+C)
+
+ - =flux_balance= This can be used to express equilibration fluxes
+   between two reservoirs (see the equilibration example in the
+   example directory). This connection type, takes three parameters
+
+   - =left= is a list which can contain constants and/or reservoirs. The
+     list must contain at least one valid element. All elements in this
+     list will be multiplied with each other. E.g. if we have a list
+     with one constant and one reservoir, the reservoir concentration
+     will be multiplied with the constant. If we have two reservoirs,
+     the respective reservoir concentrations will be multiplied with
+     each other.
+   - =right= similar to =left= The final flux rate will be computed as the difference between =left= and =right=
+   - =k_value= a constant which will be multiplied with the difference
+     between =left=and =right=
 
 
 ** Introspection
