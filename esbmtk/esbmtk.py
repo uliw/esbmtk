@@ -69,6 +69,10 @@ class esbmtkBase():
         # register instance name in global name space
         self.reg_time = time.monotonic()
 
+        if type(self) == Reservoir:
+            if self.register == "no":
+                return
+
         if type(self) == Model:
             setattr(builtins, self.name, self)
         else:  # check that name is unique
@@ -189,7 +193,7 @@ class esbmtkBase():
 
     def __registerkeys__(self) -> None:
         """ register the kwargs key/value pairs as instance variables
-        and complain about uknown keywords"""
+        and complain about unknown keywords"""
         k: any
         v: any
 
@@ -240,7 +244,7 @@ class esbmtkBase():
         kwargs.update(new)
         return kwargs
 
-    def __repr__(self,log=0) -> str:
+    def __repr__(self, log=0) -> str:
         """ Print the basic parameters for this class when called via the print method
         
         """
@@ -275,7 +279,7 @@ class esbmtkBase():
         m = m + ")"
 
         if log == 0 and tdiff < 1:
-             m = ""
+            m = ""
 
         return m
 
@@ -871,6 +875,8 @@ class Reservoir(esbmtkBase):
                         mass/concentration = "1 unit"  # species concentration or mass
                         volume = "1E5 l",      # reservoir volume (m^3)
                         plot = yes/no, defaults to yes
+                        transform = optional,
+                        register = optional, defaults to yes
                )
 
       you must either give mass or concentration. The result will always be displayed as concentration
@@ -904,6 +910,7 @@ class Reservoir(esbmtkBase):
             "volume": (str, Q_),
             "transform": str,
             "plot": str,
+            "register": str,
         }
 
         # provide a list of absolutely required keywords
@@ -916,6 +923,7 @@ class Reservoir(esbmtkBase):
             'transform': "none",
             'delta': 0,
             'plot': "yes",
+            'register': "yes",
         }
 
         # validate and initialize instance variables
@@ -925,6 +933,7 @@ class Reservoir(esbmtkBase):
             "concentration": "a string or quantity",
             "volume": "a string or quantity",
             "plot": "yes or no",
+            'register': 'yes or no',
         })
         self.__validateandregister__(kwargs)
 
@@ -1236,6 +1245,95 @@ class Reservoir(esbmtkBase):
         print()
         print("Use the describe method on any of the above connections")
         print("to see information on fluxes and processes")
+
+class ReservoirGroup(esbmtkBase):
+    """This class allows the creation of a group of reservoirs which share
+    a common volume, and potentially connections. E.g., if we have two
+    reservoir groups with the same reservoirs, and we connect them
+    with a flux, this flux will apply to all reservoirs in this group. 
+
+    A typical examples might be ocean water which comprises several
+    species.  A reservoir group like ShallowOcean will then contain
+    sub-reservoirs like DIC in the form of ShallowOcean.DIC
+
+    Example:
+
+        ReservoirGroup(name = "ShallowOcean",      # Name of reservoir
+                    volume = "1E5 l",      # reservoir volume (m^3)
+                    species = [DIC, ALK, HCO3],    # List of species
+                    delta   = [0,0,0]             # list of delta values
+                    mass/concentration = ["1 unit", "1 unit", "1 unit"] # 
+                    plot = ["yes", "yes", "no"] defaults to yes
+               )
+
+    Species must contain valid species name, and each entry will
+    create a new reservoir subgroup.
+
+    """
+    def __init__(self, **kwargs) -> None:
+        """ Initialize a new reservoir group
+
+        """
+
+        from . import ureg, Q_
+
+        # provide a dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            "name": str,
+            "species": list,
+            "delta": list,
+            "concentration": list,
+            "mass": list,
+            "volume": (str, Q_),
+            "transform": list,
+            "plot": list,
+        }
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = [
+            "name", "species", "volume", ["mass", "concentration"]
+        ]
+
+        nosr = len(kwargs["species"])
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            'transform': ["none"] * nosr,
+            'delta': [0] * nosr,
+            'plot': ["yes"] * nosr,
+        }
+
+        # validate and initialize instance variables
+        self.__initerrormessages__()
+        self.bem.update({
+            "mass": "a  string or quantity",
+            "concentration": "a string or quantity",
+            "volume": "a string or quantity",
+            "plot": "yes or no",
+        })
+        self.__validateandregister__(kwargs)
+
+        # get model handle
+        self.mo = self.species[0].mo
+
+        # register this group object in the global namespace
+        self.__register_name__()
+        # loop over all entries in species and create the respective reservoirs
+
+        for i, s in enumerate(self.species):
+            if not isinstance(s, Species):
+                raise ValueError(f"{s} needs to be a valid species name")
+
+            # create reservoir without registering it in the global name space
+            a = Reservoir(name=f"{s.name}",
+                          register="no",
+                          species=s,
+                          delta=self.delta[i],
+                          concentration=self.concentration[i],
+                          volume=self.volume,
+                          plot=self.plot[i],
+                          transform=self.plot[i])
+            # register with group
+            setattr(self, s.name, a)
 
 class Flux(esbmtkBase):
     """A class which defines a flux object. Flux objects contain

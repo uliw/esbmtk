@@ -121,16 +121,16 @@ class Connect(esbmtkBase):
                - Allowed processes: ALL
 
     Example:
-    
+
     Connect(source =  upstream reservoir
-	   sink = downstrean reservoir
+           sink = downstrean reservoir
            delta = optional
            alpha = optional
            rate = optional
            ref = optional
            species = optional
            ctype = optional
-	   pl = [list]) process list. optional
+           pl = [list]) process list. optional
            id = optional identifier
            plot = "yes/no" # defaults to yes
 
@@ -148,9 +148,57 @@ class Connect(esbmtkBase):
     useful methods in this class
 
     Name.list_processes() which will list all the processes which are associated with this connection.
-    
+
     """
+
     def __init__(self, **kwargs):
+        """During init, we first check whether this is a connection between
+        two reservoirs. In this case we call __init__connection(). If
+        this is a connection between two reservoirs_groups, we will
+        call __init_group_connections__() which in turn will call
+        __init_connection__ on each group element.
+
+        """
+
+        if isinstance(self.kwargs["source"], ReservoirGroup) or isinstance(
+                self.kwargs["sink"], ReservoirGroup):
+            self.__init_group_connections__(self, kwargs)
+        else:
+            self.__init__(self, kwargs)
+
+    def __init_group_connections__(self, kwargs):
+        """At least one of the arguments is a reservoirs_group object. This
+        method will create regular connections for each matching
+        species.
+
+        Example:
+
+        Connect(source =  upstream reservoir / upstream reservoir group
+           sink = downstrean reservoir / downstream reservoirs_group
+           delta = defaults to zero and has to be set manually
+           alpha =  defaults to zero and has to be set manually
+           rate = shared between all connections
+           ref = shared between all connections
+           species = list, optional, if present, only these species will be connected
+           ctype = if set it will be shared between all connections
+           pl = [list]) process list. optional, shared between all connections
+           id = optional identifier, shared between all connections
+           plot = "yes/no" # defaults to yes, shared between all connections
+
+        Notes: if species is given as a list, shared arguments like, delta, alpha, rate, ref,
+        ctype pl, and plot can also be provided as list. As long as there is a one to one mapping
+        the species list and the list of a shared property, the shared property will be mapped
+        to each species, e.g.:
+
+        species = [CO, Hplus]
+        alpha = [1.02, 1.03]
+
+        will create two connections, the first one with an alpha of 1.02, and the second with an alpha of 1.03
+        """
+
+        raise NotImplementedError("This is unfinished business")
+
+    def __init_connection__(self, kwargs):
         """ The init method of the connector obbjects performs sanity checks e.g.:
                - whether the reservoirs exist
                - correct flux properties (this will be handled by the process object)
@@ -164,7 +212,7 @@ class Connect(esbmtkBase):
            sink  = downstream reservoir  : object handle
            fp   = connection_properties : dictionary {delta, rate, alpha, species, type}
            pl[optional]   = optional processes : list
-        
+
         """
 
         from . import ureg, Q_
@@ -231,8 +279,9 @@ class Connect(esbmtkBase):
         else:
             self.lop: list[Process] = []
 
-        # if no reference reservoir is specified, default to the upstream reservoir
-        if not 'ref_reservoir' in kwargs:
+        # if no reference reservoir is specified, default to the upstream
+        # reservoir
+        if 'ref_reservoir' not in kwargs:
             self.ref_reservoir = kwargs["source"]
 
         # legacy names
@@ -252,8 +301,8 @@ class Connect(esbmtkBase):
         self.get_species(self.r1, self.r2)  #
         self.mo: Model = self.sp.mo  # the current model handle
         self.lof: list[Flux] = []  # list of fluxes in this connection
-        self.lor: list[
-            Reservoir] = self.mo.lor  # get a list of all reservoirs registered for this species
+        # get a list of all reservoirs registered for this species
+        self.lor: list[Reservoir] = self.mo.lor
 
         self.source.loc.add(self)  # register connector with reservoir
         self.sink.loc.add(self)  # register connector with reservoir
@@ -390,7 +439,7 @@ class Connect(esbmtkBase):
             p.__register__(self.r, self.fh)
 
     def __set_process_type__(self) -> None:
-        """ Deduce flux type based on the provided flux properties. The method returns the 
+        """ Deduce flux type based on the provided flux properties. The method returns the
         flux handle, and the process handle(s).
         """
 
@@ -413,9 +462,9 @@ class Connect(esbmtkBase):
         elif "rate" in self.kwargs:
             self.__vardeltaout__()  # variable delta with fixed flux
 
-        #elif "scale" in self.kwargs:
+        # elif "scale" in self.kwargs:
         #    self.__scaleflux__()  # scaled variable flux with fixed delta
-        #elif "react_with" in self.kwargs:
+        # elif "react_with" in self.kwargs:
         #    self.__reaction__()  # this flux will react with another flux
         else:  # if neither are given -> default varflux type
             if isinstance(self.r1, Source):
@@ -479,7 +528,7 @@ class Connect(esbmtkBase):
 
     def __scaleflux__(self) -> None:
         """ Scale a flux relative to another flux
-        
+
         """
 
         if not isinstance(self.kwargs["ref"], Flux):
@@ -495,7 +544,7 @@ class Connect(esbmtkBase):
     def __flux_diff__(self) -> None:
         """ Scale a flux relative to the difference between
         two fluxes
-        
+
         """
 
         if not isinstance(self.kwargs["ref"], list):
@@ -633,7 +682,7 @@ class Connect(esbmtkBase):
         """ Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
-        indent :int = 0 indentation 
+        indent :int = 0 indentation
 
         """
         off: str = "  "
