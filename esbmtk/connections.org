@@ -150,7 +150,6 @@ class Connect(esbmtkBase):
     Name.list_processes() which will list all the processes which are associated with this connection.
 
     """
-
     def __init__(self, **kwargs):
         """During init, we first check whether this is a connection between
         two reservoirs. In this case we call __init__connection(). If
@@ -160,11 +159,11 @@ class Connect(esbmtkBase):
 
         """
 
-        if isinstance(self.kwargs["source"], ReservoirGroup) or isinstance(
-                self.kwargs["sink"], ReservoirGroup):
-            self.__init_group_connections__(self, kwargs)
+        if isinstance(kwargs["source"], ReservoirGroup) or isinstance(
+                kwargs["sink"], ReservoirGroup):
+            self.__init_group_connections__(kwargs)
         else:
-            self.__init__(self, kwargs)
+            self.__init_connection__(kwargs)
 
     def __init_group_connections__(self, kwargs):
         """At least one of the arguments is a reservoirs_group object. This
@@ -223,10 +222,10 @@ class Connect(esbmtkBase):
             "id": str,
             "source": (Source, Reservoir),
             "sink": (Sink, Reservoir),
-            "delta": Number,
+            "delta": (Number,str),
             "rate": (str, Number, Q_),
             "pl": list,
-            "alpha": Number,
+            "alpha": (Number, str),
             "species": Species,
             "ctype": str,
             "ref": (Flux, list),
@@ -251,7 +250,13 @@ class Connect(esbmtkBase):
         self.lrk: list = ["name", "source", "sink"]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {"id": "", "plot": "yes", "ctype": "None"}
+        self.lod: Dict[any, any] = {
+            "id": "",
+            "plot": "yes",
+            "ctype": "None",
+            "delta": "None",
+            "alpha": "None",
+        }
 
         # validate and initialize instance variables
         self.__initerrormessages__()
@@ -308,8 +313,9 @@ class Connect(esbmtkBase):
         self.sink.loc.add(self)  # register connector with reservoir
         self.mo.loc.add(self)  # register connector with model
 
-        self.__register_fluxes__()  # Source/Sink/Regular
+        self.__create_flux__()  # Source/Sink/Regular
         self.__set_process_type__()  # derive flux type and create flux(es)
+
         self.__register_process__(
         )  # This should probably move to register fluxes
         self.__register_name__()
@@ -331,21 +337,29 @@ class Connect(esbmtkBase):
         else:
             self.sp = self.r.sp  # get the parent species
 
-    def __register_fluxes__(self) -> None:
+    def __create_flux__(self) -> None:
         """Create flux object, and register with reservoir and global namespace
 
         """
 
         # test if default arguments present
-        if "delta" in self.kwargs:
-            d = self.kwargs["delta"]
-        else:
+        if self.delta == "None":
             d = 0
-
-        if "rate" in self.kwargs:
-            r = self.kwargs["rate"]
         else:
+            d = self.delta
+        #if "delta" in self.kwargs:
+        #    d = self.kwargs["delta"]
+        #else:
+        #    d = 0
+
+        if self.rate == "None":
             r = "1 mol/year"
+        else:
+            r = self.rate
+        #if "rate" in self.kwargs:
+        #    r = self.kwargs["rate"]
+        #else:
+        #    r = "1 mol/year"
 
         # flux name
         if not self.id == "":
@@ -455,17 +469,13 @@ class Connect(esbmtkBase):
             self.pn = self.r1.n + "_to_" + self.r2.n
 
         # set the fundamental flux type
-        if "delta" in self.kwargs and "rate" in self.kwargs:
+        if self.delta != "None" and self.rate != "None":
+            #if "delta" in self.kwargs and "rate" in self.kwargs:
             pass  # static flux
-        elif "delta" in self.kwargs:
+        elif self.delta != "None":
             self.__passivefluxfixeddelta__()  # variable flux with fixed delta
-        elif "rate" in self.kwargs:
+        elif self.rate  != "None":
             self.__vardeltaout__()  # variable delta with fixed flux
-
-        # elif "scale" in self.kwargs:
-        #    self.__scaleflux__()  # scaled variable flux with fixed delta
-        # elif "react_with" in self.kwargs:
-        #    self.__reaction__()  # this flux will react with another flux
         else:  # if neither are given -> default varflux type
             if isinstance(self.r1, Source):
                 raise ValueError(
@@ -473,7 +483,7 @@ class Connect(esbmtkBase):
             self.__passiveflux__()
 
         # Set optional flux processes
-        if "alpha" in self.kwargs:  # isotope enrichment
+        if self.alpha != "None":
             self.__alpha__()
 
         # set complex flux types
