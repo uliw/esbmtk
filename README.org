@@ -17,6 +17,13 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - Dec. 23^{rd}, The connection object has now the basic machinery to
+   allow updates to the connection properties after the connection has
+   been established. If need be, updates will trigger a change to the
+   connection type and re-initialize the associated processes. At
+   present this works for changes to the rate, the fractionation
+   factor, possibly delta.
+
  - Dec. 20^{th}, added a new connection type (=flux_balance=) which
    allows equilibration fluxes between two reservoirs without the need
    to specify forward and backwards fluxes explicitly. See the
