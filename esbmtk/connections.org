@@ -277,7 +277,9 @@ class Connect(esbmtkBase):
             "right": "Number, list or Reservoir",
         })
 
-        self.drn = {"alpha": "_alpha"}
+        self.drn = {"alpha": "_alpha",
+                    "rate": "_rate",
+                    }
         
         self.__validateandregister__(kwargs)
 
@@ -301,7 +303,7 @@ class Connect(esbmtkBase):
 
         # convert units into model units rate, k_mass, k_concentrationn
         if "rate" in kwargs:
-            self.rate = Q_(self.rate).to(self.mo.f_unit)
+            self._rate = Q_(self.rate).to(self.mo.f_unit)
 
         self.p = 0  # the default process handle
         self.r1: (Process, Reservoir) = self.source
@@ -352,20 +354,12 @@ class Connect(esbmtkBase):
             d = 0
         else:
             d = self.delta
-        #if "delta" in self.kwargs:
-        #    d = self.kwargs["delta"]
-        #else:
-        #    d = 0
-
+        
         if self.rate == "None":
             r = "1 mol/year"
         else:
             r = self.rate
-        #if "rate" in self.kwargs:
-        #    r = self.kwargs["rate"]
-        #else:
-        #    r = "1 mol/year"
-
+        
         # flux name
         if not self.id == "":
             n = self.r1.n + '_to_' + self.r2.n + "_" + self.id  # flux name r1_to_r2
@@ -719,22 +713,41 @@ class Connect(esbmtkBase):
             f.describe(indent=indent, index=index)
 
     def __delete_process__(self) -> None:
-        """ Updates to connection properties may change the connection type and thus
+        """ Updates to the connection properties may change the connection type and thus
         the processes which are associated with this connection. We thus have to
         first delete the old processes, before we re-initialize the connection
 
         """
 
         # identify which processes we need to delete
-        # unregister process from connection.lop, reservoir.lop, flux.lop
-        # delete process if present
+        # unregister process from connection.lop, reservoir.lop, flux.lop, model.lmo
+        # delete process from global name space if present
 
         lop = copy(self.lop)
         for p in lop:
             self.r1.lop.remove(p)
             self.fh.lop.remove(p)
             self.lop.remove(p)
+            self.r1.mo.lmo.remove(p.n)
             del p
+
+    def __delete_flux__(self) -> None:
+        """ Updates to the connection properties may change the connection type and thus
+        the processes which are associated with this connection. We thus have to
+        first delete the old flux, before we re-initialize the connection
+
+        """
+
+        # identify which processes we need to delete
+        # unregister process from connection.lop, reservoir.lop, flux.lop, model.lmo
+        # delete process from global name space if present
+
+        lof = copy(self.lof)
+        for f in lof:
+            self.r1.lof.remove(f)
+            self.lof.remove(f)
+            self.r1.mo.lmo.remove(f.n)
+            del f 
         
 
     # ---- Property definitions to allow for connection updates --------
@@ -748,14 +761,28 @@ class Connect(esbmtkBase):
         #delete this process from the model
         self.__delete_process__()
         self._alpha = alpha
+        self.kwargs["alpha"] = alpha
         # update processes
         self.__set_process_type__()  # derive flux type and create flux(es)
         self.__register_process__()  
 
-    @alpha.deleter
-    def alpha(self) -> None:
-        del self.alpha
- 
+    @property
+    def rate(self) -> Number:
+        return self._rate
+
+    @rate.setter
+    def rate(self, rate: Number) -> None:
+        from . import ureg, Q_
+        #delete this process from the model
+        self.__delete_process__()
+        self.__delete_flux__()
+        self._rate = Q_(rate).to(self.mo.f_unit)
+        self.kwargs["rate"] = rate
+        # update processes
+        self.__create_flux__()  # Source/Sink/Regular
+        self.__set_process_type__()  # derive flux type and create flux(es)
+        self.__register_process__()  
+
 #+END_SRC
 
 create a class alias
