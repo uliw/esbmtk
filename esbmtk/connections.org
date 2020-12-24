@@ -121,19 +121,19 @@ class Connect(esbmtkBase):
                - if only alpha assume upstream var flux and fractionation process
                - Allowed processes: ALL
 
-    Example:
+    Example::
 
-    Connect(source =  upstream reservoir
-           sink = downstrean reservoir
-           delta = optional
-           alpha = optional
-           rate = optional
-           ref = optional
-           species = optional
-           ctype = optional
-           pl = [list]) process list. optional
-           id = optional identifier
-           plot = "yes/no" # defaults to yes
+        Connect(source =  upstream reservoir
+               sink = downstrean reservoir
+               delta = optional
+               alpha = optional
+               rate = optional
+               ref = optional
+               species = optional
+               ctype = optional
+               pl = [list]) process list. optional
+               id = optional identifier
+               plot = "yes/no" # defaults to yes
 
     You can aditionally define connection properties via the ctype keyword. The following values are reckognized
 
@@ -151,6 +151,7 @@ class Connect(esbmtkBase):
     Name.list_processes() which will list all the processes which are associated with this connection.
 
     """
+
     def __init__(self, **kwargs):
         """During init, we first check whether this is a connection between
         two reservoirs. In this case we call __init__connection(). If
@@ -171,7 +172,7 @@ class Connect(esbmtkBase):
         method will create regular connections for each matching
         species.
 
-        Example:
+        Example::
 
         Connect(source =  upstream reservoir / upstream reservoir group
            sink = downstrean reservoir / downstream reservoirs_group
@@ -223,7 +224,7 @@ class Connect(esbmtkBase):
             "id": str,
             "source": (Source, Reservoir),
             "sink": (Sink, Reservoir),
-            "delta": (Number,str),
+            "delta": (Number, str),
             "rate": (str, Number, Q_),
             "pl": list,
             "alpha": (Number, str),
@@ -259,7 +260,6 @@ class Connect(esbmtkBase):
             "alpha": "None",
         }
 
-        
         # validate and initialize instance variables
         self.__initerrormessages__()
 
@@ -277,10 +277,13 @@ class Connect(esbmtkBase):
             "right": "Number, list or Reservoir",
         })
 
-        self.drn = {"alpha": "_alpha",
-                    "rate": "_rate",
-                    }
-        
+        self.drn = {
+            "alpha": "_alpha",
+            "rate": "_rate",
+            "delta": "_delta",
+            "ctype": "_ctype",
+        }
+
         self.__validateandregister__(kwargs)
 
         if len(kwargs["id"]) > 0:
@@ -303,7 +306,7 @@ class Connect(esbmtkBase):
 
         # convert units into model units rate, k_mass, k_concentrationn
         if "rate" in kwargs:
-            self._rate = Q_(self.rate).to(self.mo.f_unit)
+            self._rate = Q_(self._rate).to(self.mo.f_unit)
 
         self.p = 0  # the default process handle
         self.r1: (Process, Reservoir) = self.source
@@ -323,7 +326,7 @@ class Connect(esbmtkBase):
         self.__set_process_type__()  # derive flux type and create flux(es)
 
         # This should probably move to register fluxes
-        self.__register_process__()  
+        self.__register_process__()
         self.__register_name__()
         print(f"Created connection {self.name}")
 
@@ -354,12 +357,12 @@ class Connect(esbmtkBase):
             d = 0
         else:
             d = self.delta
-        
+
         if self.rate == "None":
             r = "1 mol/year"
         else:
             r = self.rate
-        
+
         # flux name
         if not self.id == "":
             n = self.r1.n + '_to_' + self.r2.n + "_" + self.id  # flux name r1_to_r2
@@ -432,7 +435,7 @@ class Connect(esbmtkBase):
         # remove signal and replace with process
 
         p_copy = copy(self.lop)
-        for p in p_copy: # loop over process list if provided during init
+        for p in p_copy:  # loop over process list if provided during init
             if isinstance(p, Signal):
                 self.lop.remove(p)
                 if p.ty == "addition":
@@ -450,7 +453,7 @@ class Connect(esbmtkBase):
             p.__register__(self.r, self.fh)
 
     def __set_process_type__(self) -> None:
-        """ Deduce flux type based on the provided flux properties. The method calls the 
+        """ Deduce flux type based on the provided flux properties. The method calls the
         appropriate method init routine
         """
 
@@ -467,11 +470,11 @@ class Connect(esbmtkBase):
 
         # set the fundamental flux type
         if self.delta != "None" and self.rate != "None":
-            #if "delta" in self.kwargs and "rate" in self.kwargs:
+            # if "delta" in self.kwargs and "rate" in self.kwargs:
             pass  # static flux
         elif self.delta != "None":
             self.__passivefluxfixeddelta__()  # variable flux with fixed delta
-        elif self.rate  != "None":
+        elif self.rate != "None":
             self.__vardeltaout__()  # variable delta with fixed flux
         else:  # if neither are given -> default varflux type
             if isinstance(self.r1, Source):
@@ -747,42 +750,76 @@ class Connect(esbmtkBase):
             self.r1.lof.remove(f)
             self.lof.remove(f)
             self.r1.mo.lmo.remove(f.n)
-            del f 
-        
+            del f
 
     # ---- Property definitions to allow for connection updates --------
+    """ Changing the below properties requires that we delete all
+    associated objects (processes), and determines the new flux type,
+    and initialize/register these with the connection and model.
+    We also have to update the keyword arguments as these are used
+    for the log entry
+    
+    """
+    
+    # ---- alpha ----
     @property
     def alpha(self) -> Number:
         return self._alpha
 
     @alpha.setter
-    def alpha(self, alpha :Number) -> None:
-
-        #delete this process from the model
+    def alpha(self, a: Number) -> None:
         self.__delete_process__()
-        self._alpha = alpha
-        self.kwargs["alpha"] = alpha
-        # update processes
+        self.__delete_flux__()
+        self._alpha = a
+        self.kwargs["alpha"] = a
         self.__set_process_type__()  # derive flux type and create flux(es)
-        self.__register_process__()  
+        self.__register_process__()
 
+    # ---- rate  ----
     @property
     def rate(self) -> Number:
         return self._rate
 
     @rate.setter
-    def rate(self, rate: Number) -> None:
+    def rate(self, r: str) -> None:
         from . import ureg, Q_
-        #delete this process from the model
         self.__delete_process__()
         self.__delete_flux__()
-        self._rate = Q_(rate).to(self.mo.f_unit)
-        self.kwargs["rate"] = rate
-        # update processes
+        self._rate = Q_(r).to(self.mo.f_unit)
+        self.kwargs["rate"] = r
         self.__create_flux__()  # Source/Sink/Regular
         self.__set_process_type__()  # derive flux type and create flux(es)
-        self.__register_process__()  
+        self.__register_process__()
 
+    # ---- delta  ----
+    @property
+    def delta(self) -> Number:
+        return self._delta
+
+    @delta.setter
+    def delta(self, d: Number) -> None:
+        self.__delete_process__()
+        self.__delete_flux__()
+        self._delta = d
+        self.kwargs["delta"] = d
+        self.__create_flux__()  # Source/Sink/Regular
+        self.__set_process_type__()  # derive flux type and create flux(es)
+        self.__register_process__()
+
+    # ---- ctype  ----
+    @property
+    def ctype(self) -> Number:
+        return self._ctype
+
+    @ctype.setter
+    def ctype(self, t: str) -> None:
+        self.__delete_process__()
+        self.__delete_flux__()
+        self._ctype = t
+        self.kwargs["ctype"] = t
+        self.__create_flux__()  # Source/Sink/Regular
+        self.__set_process_type__()  # derive flux type and create flux(es)
+        self.__register_process__()
 #+END_SRC
 
 create a class alias
