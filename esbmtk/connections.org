@@ -148,7 +148,9 @@ class Connect(esbmtkBase):
 
     useful methods in this class
 
-    Name.list_processes() which will list all the processes which are associated with this connection.
+    list_processes() which will list all the processes which are associated with this connection.
+    update() which allows you to update connection properties after the connection has been created
+    
 
     """
     def __init__(self, **kwargs):
@@ -259,6 +261,7 @@ class Connect(esbmtkBase):
             "ctype": "None",
             "delta": "None",
             "alpha": "None",
+            "rate": "None",
         }
 
         # validate and initialize instance variables
@@ -305,7 +308,7 @@ class Connect(esbmtkBase):
         self.mo = self.source.sp.mo
 
         # convert units into model units rate, k_mass, k_concentrationn
-        if "rate" in kwargs:
+        if kwargs["rate"] != "None":
             self._rate = Q_(self._rate).to(self.mo.f_unit)
 
         self.p = 0  # the default process handle
