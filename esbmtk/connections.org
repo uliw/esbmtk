@@ -151,7 +151,6 @@ class Connect(esbmtkBase):
     Name.list_processes() which will list all the processes which are associated with this connection.
 
     """
-
     def __init__(self, **kwargs):
         """During init, we first check whether this is a connection between
         two reservoirs. In this case we call __init__connection(). If
@@ -166,6 +165,8 @@ class Connect(esbmtkBase):
             self.__init_group_connections__(kwargs)
         else:
             self.__init_connection__(kwargs)
+            self.__register_name__()  # register connection in namespace
+            print(f"Created connection {self.name}")
 
     def __init_group_connections__(self, kwargs):
         """At least one of the arguments is a reservoirs_group object. This
@@ -281,7 +282,6 @@ class Connect(esbmtkBase):
             "alpha": "_alpha",
             "rate": "_rate",
             "delta": "_delta",
-            "ctype": "_ctype",
         }
 
         self.__validateandregister__(kwargs)
@@ -327,8 +327,18 @@ class Connect(esbmtkBase):
 
         # This should probably move to register fluxes
         self.__register_process__()
-        self.__register_name__()
-        print(f"Created connection {self.name}")
+
+    def update(self, **kwargs):
+        """Update connection properties. This will delete existing processes
+        and fluxes, replace existing key-value pairs in the
+        self.kwargs dict, and then re-initialize the connection.
+
+        """
+        self.__delete_process__()
+        self.__delete_flux__()
+        self.kwargs.update(kwargs)
+        self.__init_connection__(self.kwargs)
+        print(f"Updated {self.n}")
 
     def get_species(self, r1, r2) -> None:
         """In most cases the species is set by r2. However, if we have
@@ -760,7 +770,7 @@ class Connect(esbmtkBase):
     for the log entry
     
     """
-    
+
     # ---- alpha ----
     @property
     def alpha(self) -> Number:
@@ -802,21 +812,6 @@ class Connect(esbmtkBase):
         self.__delete_flux__()
         self._delta = d
         self.kwargs["delta"] = d
-        self.__create_flux__()  # Source/Sink/Regular
-        self.__set_process_type__()  # derive flux type and create flux(es)
-        self.__register_process__()
-
-    # ---- ctype  ----
-    @property
-    def ctype(self) -> Number:
-        return self._ctype
-
-    @ctype.setter
-    def ctype(self, t: str) -> None:
-        self.__delete_process__()
-        self.__delete_flux__()
-        self._ctype = t
-        self.kwargs["ctype"] = t
         self.__create_flux__()  # Source/Sink/Regular
         self.__set_process_type__()  # derive flux type and create flux(es)
         self.__register_process__()
