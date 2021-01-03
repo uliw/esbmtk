@@ -373,7 +373,8 @@ class Connect(esbmtkBase):
             d = self.delta
 
         if self.rate == "None":
-            r = "1 mol/year"
+            r = f"0 {self.sp.mo.f_unit}"
+
         else:
             r = self.rate
 
@@ -677,7 +678,7 @@ class Connect(esbmtkBase):
                               right=self.right,
                               flux=self.fh,
                               k_value=self.k_value)
-
+           
         elif self.ctype == "scale_with_concentration_normalized":
             self.k_value = map_units(self.k_value, self.mo.c_unit,
                                      self.mo.f_unit, self.mo.r_unit)
