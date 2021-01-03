@@ -1924,7 +1924,7 @@ class Signal(esbmtkBase):
         # create a dummy flux we can act up
         self.nf: Flux = Flux(name=self.n + "_data",
                              species=self.sp,
-                             rate="0 mol/yr",
+                             rate=f"0 {self.sp.mo.f_unit}",
                              delta=0)
 
         # since the flux is zero, the delta value will be undefined. So we set it explicitly
