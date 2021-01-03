@@ -262,6 +262,7 @@ class Connect(esbmtkBase):
             "delta": "None",
             "alpha": "None",
             "rate": "None",
+            "k_value": 1,
         }
 
         # validate and initialize instance variables
@@ -490,9 +491,12 @@ class Connect(esbmtkBase):
         elif self.rate != "None":
             self.__vardeltaout__()  # variable delta with fixed flux
         else:  # if neither are given -> default varflux type
-            if isinstance(self.r1, Source):
-                raise ValueError(
-                    f"{self.r1.n} requires a rate and delta value")
+            # if isinstance(self.r1, Source):
+            #     raise ValueError(
+            #         f"{self.r1.n} requires a rate and delta value")
+            # xxx experimental. Not sure this is valid in all cases
+            self._delta = 0
+            self._rate  = 1
             self.__passiveflux__()
 
         # Set optional flux processes
@@ -560,7 +564,7 @@ class Connect(esbmtkBase):
         ph = ScaleFlux(name=self.pn + "_PSF",
                        reservoir=self.r,
                        flux=self.fh,
-                       scale=self.kwargs["scale"],
+                       scale=self.kwargs["k_value"],
                        ref=self.kwargs["ref"])
         self.lop.append(ph)
 
@@ -576,7 +580,7 @@ class Connect(esbmtkBase):
         ph = FluxDiff(name=self.pn + "_PSF",
                       reservoir=self.r,
                       flux=self.fh,
-                      scale=self.kwargs["scale"],
+                      scale=self.kwargs["k_value"],
                       ref=self.kwargs["ref"])
         self.lop.append(ph)
 
