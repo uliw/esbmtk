@@ -27,7 +27,7 @@ Model(
     mass_unit = "mol",  # base unit for mass
     volume_unit = "l",  # base unit for volume
     element="Carbon",    # load default element and species definitions
-    mtype = "both",     # calculate mass and isotopes
+    m_type = "both",     # calculate mass and isotopes
 )
 Source(name="SO1", species=CO2)
 Sink(name="SI1", species=CO2)
