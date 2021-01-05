@@ -1,0 +1,53 @@
+esbmtk package
+==============
+
+Submodules
+----------
+
+esbmtk.connections module
+-------------------------
+
+.. automodule:: esbmtk.connections
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+esbmtk.esbmtk module
+--------------------
+
+.. automodule:: esbmtk.esbmtk
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+esbmtk.processes module
+-----------------------
+
+.. automodule:: esbmtk.processes
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+esbmtk.species\_definitions module
+----------------------------------
+
+.. automodule:: esbmtk.species_definitions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+esbmtk.utility\_functions module
+--------------------------------
+
+.. automodule:: esbmtk.utility_functions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: esbmtk
+   :members:
+   :undoc-members:
+   :show-inheritance:

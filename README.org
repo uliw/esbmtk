@@ -17,7 +17,19 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
- - Dec. 23^{rd}, The connection object has now the basic machinery to
+ - Jan. 5^{th}, Connector objects and fluxes use now a more consistent
+   naming scheme: =Source_2_Sink_Connector=, and the associated flux
+   is named =Source_2_Sink_Flux=. Processes acting on flux are named
+   =Source_2_Sink_Pname=
+
+   The model type (=mtype=) now defaults to =mass_only=, and will
+   ignore isotope calculations. Use =mtype = "both"= to get the old
+   behavior.
+
+ - Dec. 30^{th}, the connection object has now a generalized update
+   method which allows to update all or a subset of all parameters
+
+ - Dec. 23^{rd}, the connection object has now the basic machinery to
    allow updates to the connection properties after the connection has
    been established. If need be, updates will trigger a change to the
    connection type and re-initialize the associated processes. At

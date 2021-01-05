@@ -6,26 +6,27 @@ volume = "1 liter"
 # create model
 Model(
     name="equi4",  # model name
-    stop="3 s",        # end time of model
+    stop="1000 s",        # end time of model
     timestep="0.1 s",            # time step
     element=["Carbon"],  # initialize carbon species
     mass_unit="mol",
     volume_unit="l",
+    mtype = "both",     # calculate mass and isotopes
 )
 
 Reservoir(
     name="R1",    # Name of reservoir
     species=CO2,             # Species handle
     delta=10,                 # initial delta
-    concentration=f"11 mol/l",       # concentration
+    concentration=f"10 mol/l",       # concentration
     volume=volume,         # reservoir size (m^3)
 )
 
 Reservoir(
     name="R2",    # Name of reservoir
     species=CO2,             # Species handle
-    delta=12,                 # initial delta
-    concentration=f"110 mol/l",       # concentration
+    delta=0,                 # initial delta
+    concentration=f"11 mol/l",       # concentration
     volume=volume,         # reservoir size (m^3)
 )
 
@@ -37,7 +38,7 @@ Connect(
     k_value=1,
     left=[R1],
     right=[R2],
-    alpha=0,                # isotope fractionation
+    #alpha=0,                # isotope fractionation
     plot="no",
 )
 

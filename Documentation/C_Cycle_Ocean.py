@@ -9,6 +9,7 @@ Model(
     timestep=" 1 yr",   # time unit
     mass_unit = "mol",  # mass unit
     volume_unit = "l",  # volume unit
+    mtype = "both",     # calculate mass and isotopes
 )
 
 # Element properties

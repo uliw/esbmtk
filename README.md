@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org8b0f5fb)
-2.  [News](#org28937f3)
-3.  [Contributing](#org538f0db)
-4.  [Installation](#org7dcca84)
-5.  [Documentation](#org50a9902)
-6.  [Todo](#orgef07bb1)
-7.  [License](#orgb99bb59)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org4bf73f4)
+2.  [News](#orgec1f80a)
+3.  [Contributing](#org9dee9ed)
+4.  [Installation](#org9a3432b)
+5.  [Documentation](#org5def8ea)
+6.  [Todo](#org7b739f3)
+7.  [License](#org97a547f)
 
 
-<a id="org8b0f5fb"></a>
+<a id="org4bf73f4"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,9 +30,16 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="org28937f3"></a>
+<a id="orgec1f80a"></a>
 
 # News
+
+-   Dec. 23<sup>rd</sup>, The connection object has now the basic machinery to
+    allow updates to the connection properties after the connection has
+    been established. If need be, updates will trigger a change to the
+    connection type and re-initialize the associated processes. At
+    present this works for changes to the rate, the fractionation
+    factor, possibly delta.
 
 -   Dec. 20<sup>th</sup>, added a new connection type (`flux_balance`) which
     allows equilibration fluxes between two reservoirs without the need
@@ -85,7 +92,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org538f0db"></a>
+<a id="org9dee9ed"></a>
 
 # Contributing
 
@@ -95,7 +102,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org7dcca84"></a>
+<a id="org9a3432b"></a>
 
 # Installation
 
@@ -116,7 +123,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org50a9902"></a>
+<a id="org5def8ea"></a>
 
 # Documentation
 
@@ -131,7 +138,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orgef07bb1"></a>
+<a id="org7b739f3"></a>
 
 # Todo
 
@@ -140,7 +147,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orgb99bb59"></a>
+<a id="org97a547f"></a>
 
 # License
 

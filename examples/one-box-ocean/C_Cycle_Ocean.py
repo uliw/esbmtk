@@ -10,6 +10,7 @@ Model(
     volume_unit = "l",  # base unit for volume
     element="Carbon",    # load default element and species definitions
     offset="1751 yrs"   # map to external timescale
+    mtype = "both",     # calculate mass and isotopes
 )
 
 Signal(name = "ACR",              # Signal name

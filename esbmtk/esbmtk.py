@@ -96,12 +96,14 @@ class esbmtkBase():
         self.kwargs = kwargs  # store the kwargs
         self.provided_kwargs = kwargs.copy()  # preserve a copy
 
-        if not self.lkk:  #dictionary with allowed keys and type
+        if not hasattr(self, 'lkk'):   
             self.lkk: Dict[str, any] = {}
-        if not self.lrk:  # list with mandatory keywords
+        if not hasattr(self, 'lrk'):    
             self.lrk: List[str] = []
-        if not self.lod:  # dictionary of default values for keys
+        if not hasattr(self, 'lod'):
             self.lod: Dict[str, any] = []
+        if not hasattr(self, 'drn'):   
+            self.drn: Dict[str, any] = []
 
         # check that mandatory keys are present
         # and that all keys are allowed
@@ -194,10 +196,16 @@ class esbmtkBase():
     def __registerkeys__(self) -> None:
         """ register the kwargs key/value pairs as instance variables
         and complain about unknown keywords"""
-        k: any
-        v: any
+        k: any  # dict keys
+        v: any  # dict values
+
+        # need list of replacement values
+        # "alpha" : _alpha
 
         for k, v in self.kwargs.items():
+            # check wheather the variable name needs to be replaced
+            if k in self.drn:
+                k = self.drn[k]
             setattr(self, k, v)
 
     def __checkkeys__(self) -> None:
@@ -744,25 +752,26 @@ class Model(esbmtkBase):
 
 class Element(esbmtkBase):
     """Each model, can have one or more elements.  This class sets
-       element specific properties
-      
-      Example:
-        
+    element specific properties
+
+    Example::
+
             Element(name      = "S "           # the element name
-                    model     = Test_model     # the model handle  
+                    model     = Test_model     # the model handle
                     mass_unit =  "mol",        # base mass unit
                     li_label  =  "$^{32$S",    # Label of light isotope
                     hi_label  =  "$^{34}S",    # Label of heavy isotope
-                    d_label   =  r"$\delta^{34}$S",  # Label for delta value 
+                    d_label   =  r"$\delta^{34}$S",  # Label for delta value
                     d_scale   =  "VCDT",       # Isotope scale
                     r         = 0.044162589,   # isotopic abundance ratio for element
                   )
-    
-      """
+
+    """
 
     # set element properties
     def __init__(self, **kwargs) -> any:
         """ Initialize all instance variables
+
         """
 
         # provide a dict of known keywords and types
@@ -805,7 +814,7 @@ class Element(esbmtkBase):
 
     def list_species(self) -> None:
         """ List all species which are predefined for this element
-        
+
         """
 
         for e in self.lsp:
@@ -815,7 +824,7 @@ class Species(esbmtkBase):
     """Each model, can have one or more species.  This class sets species
 specific properties
       
-      Example:
+      Example::
         
             Species(name = "SO4",
                     element = S,
@@ -867,7 +876,7 @@ class Reservoir(esbmtkBase):
     """
       Tis object holds reservoir specific information.
 
-      Example:
+      Example::
 
               Reservoir(name = "IW_SO4",      # Name of reservoir
                         species = S,          # Species handle
@@ -1023,14 +1032,13 @@ class Reservoir(esbmtkBase):
         self.h[i]: float = value[2]
         # update concentration and delta next. This is computationally inefficient
         # but the next time step may depend on on both variables.
-        # update delta for this species
-        #self.d = self.sp.getdelta(self.l, self.h)
         self.d[i]: float = get_delta(self.l[i], self.h[i], self.sp.r)
         self.c[i]: float = self.m[i] / self.v  # update concentration
 
     def __write_data__(self, prefix: str, start: int, stop: int,
                        stride: int) -> None:
         """ To be called by write_data and save_state
+        
         """
 
         # some short hands
@@ -1256,20 +1264,30 @@ class ReservoirGroup(esbmtkBase):
     species.  A reservoir group like ShallowOcean will then contain
     sub-reservoirs like DIC in the form of ShallowOcean.DIC
 
-    Example:
+    Example::
 
-        ReservoirGroup(name = "ShallowOcean",      # Name of reservoir
-                    volume = "1E5 l",      # reservoir volume (m^3)
-                    species = [DIC, ALK, HCO3],    # List of species
-                    delta   = [0,0,0]             # list of delta values
+        ReservoirGroup(name = "ShallowOcean",    # Name of reservoir group
+                    volume = "1E5 l",            # reservoir volume (m^3)
+                    names = ['DIC', 'ALK', 'P'], # sub-reservoirs
+                    species = [DIC, ALK, PO4],   # species per sub reservoir
+                    delta   = [0,0,0]            # list of delta values
                     mass/concentration = ["1 unit", "1 unit", "1 unit"] # 
                     plot = ["yes", "yes", "no"] defaults to yes
                )
 
-    Species must contain valid species name, and each entry will
-    create a new reservoir subgroup.
+    Notes: - The names list must be a slist of strings. Each entry will create a new
+             sub-reservoir
+           - The species list must contain valid species objects
+           - the list of delate values should contain one entry per sub reservoir. If
+             the respectibe sub reservoir does not have isotopes, replace the value
+             the string "None"
+    
+    Connecting two reservoir groups requires that the names in both
+    group match, or that you specify a dictionary which delineates the
+    matching.
 
     """
+    
     def __init__(self, **kwargs) -> None:
         """ Initialize a new reservoir group
 
@@ -1282,6 +1300,7 @@ class ReservoirGroup(esbmtkBase):
             "name": str,
             "species": list,
             "delta": list,
+            "names": list,
             "concentration": list,
             "mass": list,
             "volume": (str, Q_),
@@ -1291,7 +1310,7 @@ class ReservoirGroup(esbmtkBase):
 
         # provide a list of absolutely required keywords
         self.lrk: list = [
-            "name", "species", "volume", ["mass", "concentration"]
+            "name", "species", "volume", ["mass", "concentration"], "names"
         ]
 
         nosr = len(kwargs["species"])
@@ -1309,6 +1328,7 @@ class ReservoirGroup(esbmtkBase):
             "concentration": "a string or quantity",
             "volume": "a string or quantity",
             "plot": "yes or no",
+            "names": "a list of strings",
         })
         self.__validateandregister__(kwargs)
 
@@ -1317,23 +1337,23 @@ class ReservoirGroup(esbmtkBase):
 
         # register this group object in the global namespace
         self.__register_name__()
+        
         # loop over all entries in species and create the respective reservoirs
-
-        for i, s in enumerate(self.species):
-            if not isinstance(s, Species):
+        for i, s in enumerate(self.names):
+            if not isinstance(self.species[i], Species):
                 raise ValueError(f"{s} needs to be a valid species name")
 
             # create reservoir without registering it in the global name space
-            a = Reservoir(name=f"{s.name}",
+            a = Reservoir(name=f"{self.names[i]}",
                           register="no",
-                          species=s,
+                          species=self.species[i],
                           delta=self.delta[i],
                           concentration=self.concentration[i],
                           volume=self.volume,
                           plot=self.plot[i],
-                          transform=self.plot[i])
+                          )
             # register with group
-            setattr(self, s.name, a)
+            setattr(self, self.names[i], a)
 
 class Flux(esbmtkBase):
     """A class which defines a flux object. Flux objects contain
@@ -1354,12 +1374,14 @@ class Flux(esbmtkBase):
       - Name.d # delta
       - Name.c # concentration
       
-      """
+    """
+    
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
-          Initialize a flux. Arguments are the species name the flux rate
-          (mol/year), the delta value and unit
-          """
+        Initialize a flux. Arguments are the species name the flux rate
+        (mol/year), the delta value and unit
+        
+        """
 
         from . import ureg, Q_
 
@@ -1404,9 +1426,10 @@ class Flux(esbmtkBase):
 
         if self.delta == 0:
             self.d: [NDArray, Float[64]] = zeros(self.model.steps)
-        else:
-            self.d: [NDArray, Float[64]] = get_delta(self.l, self.h,
-                                                     self.sp.r)  # update delta
+        else:  # update delta
+            self.d: [NDArray, Float[64]] = get_delta(self.l,
+                                                     self.h,
+                                                     self.sp.r) 
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
         self.legend_left: str = self.species.ds
@@ -1434,7 +1457,6 @@ class Flux(esbmtkBase):
         self.m[i] = value[0]
         self.l[i] = value[1]
         self.h[i] = value[2]
-        #self.d[i] = value[3]
         self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
 
     def __call__(self) -> None:  # what to do when called as a function ()
@@ -1532,13 +1554,14 @@ class Flux(esbmtkBase):
 
 class SourceSink(esbmtkBase):
     """
-    This is just a meta calls to setup a Source/Sink object. These are not 
+    This is a meta class to setup a Source/Sink objects. These are not 
     actual reservoirs, but we stil need to have them as objects
-    Example:
+    Example::
     
            Sink(name = "Pyrite",species = SO4)
 
     where the first argument is a string, and the second is a reservoir handle
+    
     """
 
     def __init__(self, **kwargs) -> None:
@@ -1548,12 +1571,13 @@ class SourceSink(esbmtkBase):
         self.lkk: Dict[str, any] = {
             "name": str,
             "species": Species,
+            "register": str,
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species"]
         # list of default values if none provided
-        self.lod: Dict[str, any] = {}
+        self.lod: Dict[str, any] = {'register':'yes'}
 
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -1565,13 +1589,15 @@ class SourceSink(esbmtkBase):
         self.sp = self.species
         self.mo = self.species.mo
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
-        self.__register_name__()
+
+        if self.register == "yes":
+            self.__register_name__()
 
 
 class Sink(SourceSink):
     """
     This is just a wrapper to setup a Sink object
-    Example:
+    Example::
     
            Sink(name = "Pyrite",species =SO4)
 
@@ -1582,7 +1608,86 @@ class Sink(SourceSink):
 class Source(SourceSink):
     """
     This is just a wrapper to setup a Source object
-    Example:
+    Example::
+    
+           Sink(name = "SO4_diffusion", species ="SO4")
+
+    where the first argument is a string, and the second is a species handle
+    """
+
+class SourceSinkGroup(esbmtkBase):
+    """
+    This is a meta class to setup  Source/Sink Groups. These are not 
+    actual reservoirs, but we stil need to have them as objects
+    Example::
+    
+           Sink(name = "Pyrite",species = SO4)
+
+    where the first argument is a string, and the second is a reservoir handle
+    """
+    def __init__(self, **kwargs) -> None:
+
+        # provide a dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            "name": str,
+            "names": list,
+            "species": list,
+        }
+
+        # provide a list of absolutely required keywords
+        self.lrk: list[str] = ["name", "names", "species"]
+        # list of default values if none provided
+
+        self.__initerrormessages__()
+        self.__validateandregister__(kwargs)  # initialize keyword values
+
+        self.loc: set[Connection] = set()  # set of connection objects
+
+        # register this object in the global namespace
+        self.mo = self.species[0].mo  # get model handle
+        self.__register_name__()
+
+        # loop over names and setup sub-objects
+        for i, s in enumerate(self.names):
+            if not isinstance(self.species[i], Species):
+                raise ValueError(f"{s} needs to be a valid species name")
+
+            if type(self).__name__ == "SourceGroup":
+                a = Source(
+                    name=f"{self.names[i]}",
+                    register="no",
+                    species=self.species[i],
+                )
+            elif type(self).__name__ == "SinkGroup":
+                a = Sink(
+                    name=f"{self.names[i]}",
+                    register="no",
+                    species=self.species[i],
+                )
+            else:
+                raise TypeError(
+                    f"{type(self).__name__} is not a valid class type")
+
+            # register in local namespace
+            a.reg_time = time.monotonic() # needed for __repr__
+            setattr(self, self.names[i], a)
+
+
+class SinkGroup(SourceSinkGroup):
+    """
+    This is just a wrapper to setup a Sink object
+    Example::
+    
+           Sink(name = "Pyrite",species =SO4)
+
+    where the first argument is a string, and the second is a species handle
+    """
+
+
+class SourceGroup(SourceSinkGroup):
+    """
+    This is just a wrapper to setup a Source object
+    Example::
     
            Sink(name = "SO4_diffusion", species ="SO4")
 
@@ -1601,7 +1706,7 @@ class Signal(esbmtkBase):
       a given flux. So this class cannot be used for scaling (can we
       add this functionality?)
   
-      Example:
+      Example::
 
             Signal(name = "Name",
                    species = Species handle,
@@ -1645,7 +1750,9 @@ class Signal(esbmtkBase):
         Signal.repeat()
         Signal.plot()
         Signal.describe()
+    
     """
+    
     def __init__(self, **kwargs) -> None:
         """ Parse and initialize variables
         
@@ -1737,7 +1844,7 @@ class Signal(esbmtkBase):
         # create a dummy flux we can act up
         self.nf: Flux = Flux(name=self.n + "_data",
                              species=self.sp,
-                             rate="0 mol/yr",
+                             rate=f"0 {self.sp.mo.f_unit}",
                              delta=0)
 
         # since the flux is zero, the delta value will be undefined. So we set it explicitly
@@ -1774,7 +1881,9 @@ class Signal(esbmtkBase):
         return self.nf
 
     def __square__(self, s, e) -> None:
-        """ Create Square Signal """
+        """ Create Square Signal
+
+        """
 
         w: float = (e - s) * self.mo.dt  # get the base of the square
 
@@ -1790,7 +1899,9 @@ class Signal(esbmtkBase):
         self.s_d: float = self.d  # add the delta offset
 
     def __pyramid__(self, s, e) -> None:
-        """ Create pyramid type Signal """
+        """ Create pyramid type Signal
+
+        """
 
         w: float = (s - 1) * self.mo.dt  # get the base of the pyramid
 
@@ -1918,14 +2029,15 @@ class Signal(esbmtkBase):
 
     def repeat(self, start, stop, offset, times) -> None:
         """ This method creates a new signal by repeating an existing signal.
-        Example:
+        Example::
       
         new_signal = signal.repeat(start,   # start time of signal slice to be repeated
                                    stop,    # end time of signal slice to be repeated
                                    offset,  # offset between repetitions 
                                    times,   # number of time to repeat the slice
                               )
-      """
+
+        """
 
         ns: Signal = deepcopy(self)
         ns.n: str = self.n + f"_repeated_{times}_times"
@@ -1967,7 +2079,9 @@ class Signal(esbmtkBase):
 
     def __register__(self, flux) -> None:
         """ Register this signal with a flux. This should probably be done
-            through a process!  """
+            through a process!
+        
+        """
 
         self.fo: Flux = flux  # the flux handle
         self.sp: Species = flux.sp  # the species handle
@@ -1976,19 +2090,22 @@ class Signal(esbmtkBase):
         flux.lop.append(self)
 
     def __call__(self) -> NDArray[np.float64]:
-        """ what to do when called as a function ()"""
+        """ what to do when called as a function ()
+
+        """
 
         return (array([self.fo.m, self.fo.l, self.fo.h,
                        self.fo.d]), self.fo.n, self)
 
     def plot(self) -> None:
         """
-              Example:
+              Example::
 
                   Signal.plot()
             
             Plot the signal
-            """
+        
+        """
         self.data.plot()
 
 class DataField(esbmtkBase):
@@ -1999,7 +2116,7 @@ class DataField(esbmtkBase):
     Datafields must share the same x-axis is the model, and can have up to two
     y axis.
     
-    Example:
+    Example::
              DataField(name = "Name"        
                        associated_with = reservoir_handle
                        y1_data = np.Ndarray
@@ -2080,7 +2197,7 @@ class ExternalData(esbmtkBase):
     """Instances of this class hold external X/Y data which can be associated with 
       a reservoir.
 
-      Example:
+      Example::
 
              ExternalData(name       = "Name"
                           filename   = "filename",
@@ -2122,7 +2239,9 @@ class ExternalData(esbmtkBase):
         - name.x
         - name.y
         - name.df = dataframe as read from csv file
-      """
+    
+    """
+    
     def __init__(self, **kwargs: Dict[str, str]):
 
         from . import ureg, Q_
@@ -2200,7 +2319,7 @@ class ExternalData(esbmtkBase):
           effect that the data will be printed together with the model
           results for this reservoir
 
-          Example:
+          Example::
 
           ExternalData.register(Reservoir)
 
@@ -2236,10 +2355,11 @@ class ExternalData(esbmtkBase):
     def plot(self) -> None:
         """ Plot the data and save a pdf
 
-          Example:
+          Example::
 
                   ExternalData.plot()
-          """
+        
+        """
 
         fig, ax = plt.subplots()  #
         ax.scatter(self.x, self.y)
@@ -2250,4 +2370,5 @@ class ExternalData(esbmtkBase):
         plt.savefig(self.n + ".pdf")
 
 from .connections import *
+from .processes import *
 from .species_definitions import *
