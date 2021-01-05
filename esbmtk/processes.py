@@ -155,7 +155,6 @@ class AddSignal(Process):
              lt= contains the flux object we lookup from
 
     """
-
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
         Create a new process object with a given process type and options
@@ -174,7 +173,18 @@ class AddSignal(Process):
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
 
-    def __call__(self, r, i) -> None:
+        # decide whichh call function to use
+        if self.mo.m_type == "both":
+            self.__execute__ = self.__with_isotopes__
+        else:
+            self.__execute__ = self.__without_isotopes__
+
+    # setup a placeholder call function
+    def __call__(self, r: Reservoir, i: int):
+        return self.__execute__(r, i)
+
+    # use this when we do isotopes
+    def __with_isotopes__(self, r, i) -> None:
         """Each process is associated with a flux (self.f). Here we replace
           the flux value with the value from the signal object which
           we use as a lookup-table (self.lt)
@@ -189,6 +199,16 @@ class AddSignal(Process):
         # signals may have zero mass, but may have a delta offset. Thus, we do not know
         # the masses for the light and heavy isotope. As such we have to calculate the masses
         # after we add the signal to a flux
+
+    # use this when we do isotopes
+    def __without_isotopes__(self, r, i) -> None:
+        """Each process is associated with a flux (self.f). Here we replace
+          the flux value with the value from the signal object which
+          we use as a lookup-table (self.lt)
+
+        """
+        # add signal mass to flux mass
+        self.f.m[i] = self.f.m[i] + self.lt.m[i]
 
 class PassiveFlux(Process):
      """This process sets the output flux from a reservoir to be equal to
@@ -453,14 +473,17 @@ class Fractionation(Process):
         self.mo = self.reservoir.mo
         self.__register_name__()
 
+        # decide which call function to use
         if self.mo.m_type == "both":
             self.__execute__ = self.__with_isotopes__
         else:
             self.__execute__ = self.__without_isotopes__
 
+    # setup a placeholder call function        
     def __call__(self, reservoir: Reservoir, i: int):
         return self.__execute__(reservoir, i)
 
+    # use this when we do isotopes
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
         Set flux isotope masses based on fractionation factor
@@ -474,6 +497,7 @@ class Fractionation(Process):
         self.f.d[i] = get_delta(self.f.l[i], self.f.h[i], self.f.sp.r)
         return
 
+    # use this when we don't do isotopes
     def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
         Set flux isotope masses based on fractionation factor

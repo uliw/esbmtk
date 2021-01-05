@@ -901,7 +901,6 @@ class Reservoir(esbmtkBase):
       - Name.describe()   # describe Reservoir
 
     """
-
     def __init__(self, **kwargs) -> None:
         """ Initialize a reservoir.
 
@@ -1008,8 +1007,17 @@ class Reservoir(esbmtkBase):
         self.mo.lor.append(self)  # add this reservoir to the model
         # register instance name in global name space
         self.reg_time = time.monotonic()
-
         self.__register_name__()
+
+        # decide which setitem functions to use
+        if self.mo.m_type == "both":
+            self.__set_data__ = self.__set_with_isotopes__
+        else:
+            self.__set_data__ = self.__set_without_isotopes__
+
+    # setup a placeholder setitem function
+    def __setitem__(self, i: int, value: float):
+        return self.__set_data__(i, value)
 
     def __call__(self) -> None:  # what to do when called as a function ()
         pass
@@ -1022,7 +1030,7 @@ class Reservoir(esbmtkBase):
 
         return np.array([self.m[i], self.l[i], self.h[i], self.d[i]])
 
-    def __setitem__(self, i: int, value: float) -> None:
+    def __set_with_isotopes__(self, i: int, value: float) -> None:
         """ write data by index
 
         """
@@ -1033,6 +1041,14 @@ class Reservoir(esbmtkBase):
         # update concentration and delta next. This is computationally inefficient
         # but the next time step may depend on on both variables.
         self.d[i]: float = get_delta(self.l[i], self.h[i], self.sp.r)
+        self.c[i]: float = self.m[i] / self.v  # update concentration
+
+    def __set_without_isotopes__(self, i: int, value: float) -> None:
+        """ write data by index
+
+        """
+
+        self.m[i]: float = value[0]
         self.c[i]: float = self.m[i] / self.v  # update concentration
 
     def __write_data__(self, prefix: str, start: int, stop: int,
@@ -1094,7 +1110,6 @@ class Reservoir(esbmtkBase):
         Flux_name l etc etc.
 
         """
-
 
         fn = "state_" + self.mo.n + "_" + self.n + ".csv"
 
@@ -1375,7 +1390,6 @@ class Flux(esbmtkBase):
       - Name.c # concentration
       
     """
-    
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
         Initialize a flux. Arguments are the species name the flux rate
@@ -1427,9 +1441,7 @@ class Flux(esbmtkBase):
         if self.delta == 0:
             self.d: [NDArray, Float[64]] = zeros(self.model.steps)
         else:  # update delta
-            self.d: [NDArray, Float[64]] = get_delta(self.l,
-                                                     self.h,
-                                                     self.sp.r) 
+            self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.sp.r)
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
         self.legend_left: str = self.species.ds
@@ -1442,6 +1454,16 @@ class Flux(esbmtkBase):
         self.sink: str = ""  # Name of reservoir which acts as flux sink
         self.__register_name__()
 
+        # decide which setitem functions to use
+        if self.mo.m_type == "both":
+            self.__set_data__ = self.__set_with_isotopes__
+        else:
+            self.__set_data__ = self.__set_without_isotopes__
+
+    # setup a placeholder setitem function
+    def __setitem__(self, i: int, value: [NDArray, float]):
+        return self.__set_data__(i, value)
+
     def __getitem__(self, i: int) -> NDArray[np.float64]:
         """ Get data by index
         
@@ -1449,7 +1471,7 @@ class Flux(esbmtkBase):
 
         return array([self.m[i], self.l[i], self.h[i], self.d[i]])
 
-    def __setitem__(self, i: int, value: [NDArray, float]) -> None:
+    def __set_with_isotopes__(self, i: int, value: [NDArray, float]) -> None:
         """ Write data by index
         
         """
@@ -1459,9 +1481,17 @@ class Flux(esbmtkBase):
         self.h[i] = value[2]
         self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
 
+    def __set_without_isotopes__(self, i: int, value: [NDArray,
+                                                       float]) -> None:
+        """ Write data by index
+        
+        """
+
+        self.m[i] = value[0]
+
     def __call__(self) -> None:  # what to do when called as a function ()
         pass
-        return self
+        return
 
     def __add__(self, other):
         """ adding two fluxes works for the masses, but not for delta
