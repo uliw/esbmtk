@@ -385,7 +385,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
             col = f"C{cn}"
             leg = f"{obj.lm} {d.legend}"
             ln3 = ax1.scatter(d.x, d.y, color=col, label=leg)
-        if "z" in dir(d): # isotope data is present
+        if "z" in dir(d) and second_axis: # isotope data is present
             cn = cn + 1
             col = f"C{cn}"
             leg = f"{d.legend}"
