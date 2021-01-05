@@ -436,7 +436,7 @@ class Model(esbmtkBase):
             'offset': "0 years",
             'time_label': "Time",
             'display_precision': 0.01,
-            'm_type': "both",
+            'm_type': "mass_only",
         }
 
         self.__initerrormessages__()

@@ -11,7 +11,7 @@ Model(
     element=["Carbon"],  # initialize carbon species
     mass_unit="mol",
     volume_unit="l",
-    mtype = "both",     # calculate mass and isotopes
+    m_type = "both",     # calculate mass and isotopes
 )
 
 Reservoir(

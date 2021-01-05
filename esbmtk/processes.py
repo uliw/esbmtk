@@ -453,7 +453,15 @@ class Fractionation(Process):
         self.mo = self.reservoir.mo
         self.__register_name__()
 
-    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        if self.mo.m_type == "both":
+            self.__execute__ = self.__with_isotopes__
+        else:
+            self.__execute__ = self.__without_isotopes__
+
+    def __call__(self, reservoir: Reservoir, i: int):
+        return self.__execute__(reservoir, i)
+
+    def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
         Set flux isotope masses based on fractionation factor
 
@@ -464,6 +472,14 @@ class Fractionation(Process):
 
         #update delta
         self.f.d[i] = get_delta(self.f.l[i], self.f.h[i], self.f.sp.r)
+        return
+
+    def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
+        """
+        Set flux isotope masses based on fractionation factor
+
+        """
+
         return
 
 class RateConstant(Process):
