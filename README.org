@@ -22,8 +22,8 @@ chemical reactions (including equilibrium reactions).
    is named =Source_2_Sink_Flux=. Processes acting on flux are named
    =Source_2_Sink_Pname=
 
-   The model type (=mtype=) now defaults to =mass_only=, and will
-   ignore isotope calculations. Use =mtype = "both"= to get the old
+   The model type (=m_type=) now defaults to =mass_only=, and will
+   ignore isotope calculations. Use =m_type = "both"= to get the old
    behavior.
 
  - Dec. 30^{th}, the connection object has now a generalized update
