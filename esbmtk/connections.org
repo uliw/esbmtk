@@ -247,7 +247,7 @@ class Connect(esbmtkBase):
             "plot": str,
         }
 
-        n = kwargs["source"].n + "_" + kwargs[
+        n = kwargs["source"].n + "_2_" + kwargs[
             "sink"].n + "_connector"  # set the name
         kwargs.update({"name": n})  # and add it to the kwargs
 
@@ -380,9 +380,9 @@ class Connect(esbmtkBase):
 
         # flux name
         if not self.id == "":
-            n = self.r1.n + '_to_' + self.r2.n + "_" + self.id  # flux name r1_to_r2
+            n = self.r1.n + '_2_' + self.r2.n + "_" + self.id + "_Flux" # flux name r1_2_r2
         else:
-            n = self.r1.n + '_to_' + self.r2.n
+            n = self.r1.n + '_2_' + self.r2.n + "_Flux"
 
         # derive flux unit from species obbject
         funit = self.sp.mu + "/" + str(self.sp.mo.bu)  # xxx
@@ -479,9 +479,9 @@ class Connect(esbmtkBase):
 
         # set process name
         if len(self.kwargs["id"]) > 0:
-            self.pn = self.r1.n + "_to_" + self.r2.n + f"_{self.id}"
+            self.pn = self.r1.n + "_2_" + self.r2.n + f"_{self.id}"
         else:
-            self.pn = self.r1.n + "_to_" + self.r2.n
+            self.pn = self.r1.n + "_2_" + self.r2.n
 
         # set the fundamental flux type
         if self.delta != "None" and self.rate != "None":
