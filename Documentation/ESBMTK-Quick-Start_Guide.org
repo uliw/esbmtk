@@ -200,6 +200,7 @@ Model(
     timestep=" 1 yr",   # time unit
     mass_unit = "mol",  # mass unit
     volume_unit = "l",  # volume unit
+    mtype = "both",     # calculate mass and isotopes
 )
 #+END_SRC
 
@@ -501,7 +502,8 @@ reservoir.
      will be multiplied with the constant. If we have two reservoirs,
      the respective reservoir concentrations will be multiplied with
      each other.
-   - =right= similar to =left= The final flux rate will be computed as the difference between =left= and =right=
+   - =right= similar to =left= The final flux rate will be computed as
+     the difference between =left= and =right=
    - =k_value= a constant which will be multiplied with the difference
      between =left=and =right=
 
@@ -514,6 +516,25 @@ addition to the usual commands (e.g., =print=, =help=, =dir=), the
 method. This method can be used e.g., to query the name and type of
 the connections, fluxes and processes which are associated with a
 reservoir.
+
+The code will echo the names of the connector objects on to the
+console as =Source_2_Sink_Connector=. The corresponding flux name is
+=Source_2_Sink_Flux= and any associated Processes will be named
+=Source_2_Sink_Pname= where =Source= and =Sink= refer too the
+corresponding upstream and downstream reservoirs/sources/sinks.
+
+Lastly, it is possible to update connection properties after the
+connection has been specified. Individual values can be updated by
+simple assignment, e.g., =Connection.alpha = 34=. If you need to
+update more than one value, you can use update method
+#+BEGIN_SRC ipython
+Connection.update(
+    ctype='flux_balance',
+    left=[R1, K],
+    right=[R2, R3],
+)
+#+END_SRC
+This is particularly useful in connection with reservoir groups
 
 
 ** External Data
