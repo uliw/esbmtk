@@ -140,8 +140,8 @@ Model(
     mass_unit = "mol",  # base unit for mass
     volume_unit = "l",  # base unit for volume
     element="Carbon",    # load default element and species definitions
-    offset="1751 yrs"   # map to external timescale
-    mtype = "both",     # calculate mass and isotopes
+    offset="1751 yrs",   # map to external timescale
+    m_type = "both",     # calculate mass and isotopes
 )
 #+END_SRC
 
@@ -172,8 +172,8 @@ Source(name="Carbonate_Weathering", species=CO2)
 Source(name="Organic_Weathering", species=CO2)
 Source(name="Volcanic", species=CO2)
 Sink(name="Carbonate_burial", species=CaCO3)
-Sink(name="OM_burial", species=OM)
-
+Sink(name="OM_burial", species=OM
+)
 Reservoir(
     name="Ocean",                # Name of reservoir
     species=DIC,                 # Species handle
