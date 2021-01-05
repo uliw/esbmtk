@@ -93,6 +93,7 @@ def create_model():
         mass_unit="mol",  # base unit for mass
         volume_unit="l",  # base unit for volume
         element="Carbon",  # load default element and species definitions
+        m_type = "both",
     )
     Reservoir(
         name="R1",  # Name of reservoir
