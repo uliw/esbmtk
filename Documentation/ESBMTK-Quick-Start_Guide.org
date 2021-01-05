@@ -204,6 +204,9 @@ Model(
 )
 #+END_SRC
 
+Note that per default, ESBMTK will ignore isotope calculations. You
+need to set =mtype = 'both'= to enable isotope calculations.
+
 ** Declare elements and species
 We register the elements(s) with the model by providing the model
 name. Note that this is not a string, but the model handle which is
