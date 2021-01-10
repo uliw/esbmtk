@@ -1391,9 +1391,9 @@ class ReservoirGroup(esbmtkBase):
         mass: dict = {}
 
         if 'concentration' in kwargs:
-            self.species :list = list(kwargs['concentration'].keys())
+            self.species: list = list(kwargs['concentration'].keys())
         elif 'mass' in kwargs:
-            self.species :list = list(kwargs['mass'].keys())
+            self.species: list = list(kwargs['mass'].keys())
         else:
             raise ValueError("You must provide either mass or concentration")
 
@@ -1434,16 +1434,31 @@ class ReservoirGroup(esbmtkBase):
             if not isinstance(s, Species):
                 raise ValueError(f"{s} needs to be a valid species name")
 
-            # create reservoir without registering it in the global name space
-            a = Reservoir(
-                name=f"{s.name}",
-                register="no",
-                species=s,
-                delta=self.delta[s],
-                concentration=self.concentration[s],
-                volume=self.volume,
-                plot=self.plot[s],
-            )
+            if self.concentration[s] == "None":
+                # create reservoir without registering it in the global name space
+                a = Reservoir(
+                    name=f"{s.name}",
+                    register="no",
+                    species=s,
+                    delta=self.delta[s],
+                    mass=self.mass[s],
+                    volume=self.volume,
+                    plot=self.plot[s],
+                )
+            elif self.mass[s] == "None":
+                # create reservoir without registering it in the global name space
+                a = Reservoir(
+                    name=f"{s.name}",
+                    register="no",
+                    species=s,
+                    delta=self.delta[s],
+                    concentration=self.concentration[s],
+                    volume=self.volume,
+                    plot=self.plot[s],
+                )
+            else:
+                raise ValueError("You must specify mass or concentration")
+
             # register as part of this group
             setattr(self, s.name, a)
             self.lor.append(a)
