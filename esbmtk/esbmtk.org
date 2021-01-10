@@ -969,7 +969,7 @@ class Reservoir(esbmtkBase):
         self.lkk: Dict[str, any] = {
             "name": str,
             "species": Species,
-            "delta": Number,
+            "delta": (Number,str),
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
@@ -985,8 +985,8 @@ class Reservoir(esbmtkBase):
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
-            'transform': "none",
-            'delta': 0,
+            'transform': "None",
+            'delta': "None",
             'plot': "yes",
             'register': "yes",
         }
@@ -1002,6 +1002,9 @@ class Reservoir(esbmtkBase):
         })
         self.__validateandregister__(kwargs)
 
+        if self.delta == "None":
+            self.delta = 0
+            
         # legacy names
         self.n: str = self.name  # name of reservoir
         self.sp: Species = self.species  # species handle
@@ -1343,26 +1346,20 @@ class ReservoirGroup(esbmtkBase):
 
         ReservoirGroup(name = "ShallowOcean",    # Name of reservoir group
                     volume = "1E5 l",            # reservoir volume (m^3)
-                    names = ['DIC', 'ALK', 'P'], # sub-reservoirs
-                    species = [DIC, ALK, PO4],   # species per sub reservoir
-                    delta   = [0,0,0]            # list of delta values
-                    mass/concentration = ["1 unit", "1 unit", "1 unit"] # 
-                    plot = ["yes", "yes", "no"] defaults to yes
+                    delta   = {DIC:0, ALK:0, PO4:0]            # dict of delta values
+                    mass/concentration = {DIC:"1 unit", ALK: "1 unit", PO$: "1 unit"] # 
+                    plot = {DIC:"yes", ALK:"yes", PO4: "no"] defaults to yes
                )
 
-    Notes: - The names list must be a slist of strings. Each entry will create a new
-             sub-reservoir
-           - The species list must contain valid species objects
-           - the list of delate values should contain one entry per sub reservoir. If
-             the respectibe sub reservoir does not have isotopes, replace the value
-             the string "None"
+    Notes: - The subreservoirs are derived from the keys in the concentration or mass
+             dictionary. Toward this end, the keys must be valid species handles and
+             -- not species names -- !
     
     Connecting two reservoir groups requires that the names in both
     group match, or that you specify a dictionary which delineates the
     matching.
 
     """
-    
     def __init__(self, **kwargs) -> None:
         """ Initialize a new reservoir group
 
@@ -1373,27 +1370,45 @@ class ReservoirGroup(esbmtkBase):
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
-            "species": list,
-            "delta": list,
-            "names": list,
-            "concentration": list,
-            "mass": list,
+            "delta": dict,
+            "concentration": dict,
+            "mass": dict,
             "volume": (str, Q_),
-            "transform": list,
-            "plot": list,
+            "plot": dict,
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = [
-            "name", "species", "volume", ["mass", "concentration"], "names"
+            "name",
+            "volume",
+            ["mass", "concentration"],
         ]
 
-        nosr = len(kwargs["species"])
-        # list of default values if none provided
-        self.lod: Dict[any, any] = {
-            'transform': ["none"] * nosr,
-            'delta': [0] * nosr,
-            'plot': ["yes"] * nosr,
+        # Create a list of default values if none provided
+        plot: dict = {}
+        delta: dict = {}
+        concentration: dict = {}
+        mass: dict = {}
+
+        if 'concentration' in kwargs:
+            self.species :list = list(kwargs['concentration'].keys())
+        elif 'mass' in kwargs:
+            self.species :list = list(kwargs['mass'].keys())
+        else:
+            raise ValueError("You must provide either mass or concentration")
+
+        # loop over names and create dicts
+        for n in self.species:
+            delta[n] = 'None'
+            plot[n] = 'yes'
+            concentration[n] = 'None'
+            mass[n] = 'None'
+
+        self.lod: Dict[str, any] = {
+            'delta': delta,
+            'concentration': concentration,
+            'mass': concentration,
+            'plot': plot,
         }
 
         # validate and initialize instance variables
@@ -1403,8 +1418,8 @@ class ReservoirGroup(esbmtkBase):
             "concentration": "a string or quantity",
             "volume": "a string or quantity",
             "plot": "yes or no",
-            "names": "a list of strings",
         })
+
         self.__validateandregister__(kwargs)
 
         # get model handle
@@ -1413,23 +1428,24 @@ class ReservoirGroup(esbmtkBase):
         # register this group object in the global namespace
         self.__register_name__()
 
-        self.lor :list = [] # list of reservoirs in this group.
+        self.lor: list = []  # list of reservoirs in this group.
         # loop over all entries in species and create the respective reservoirs
-        for i, s in enumerate(self.names):
-            if not isinstance(self.species[i], Species):
+        for i, s in enumerate(self.species):
+            if not isinstance(s, Species):
                 raise ValueError(f"{s} needs to be a valid species name")
 
             # create reservoir without registering it in the global name space
-            a = Reservoir(name=f"{self.names[i]}",
-                          register="no",
-                          species=self.species[i],
-                          delta=self.delta[i],
-                          concentration=self.concentration[i],
-                          volume=self.volume,
-                          plot=self.plot[i],
-                          )
-            # register as as names[i] with group
-            setattr(self, self.names[i], a)
+            a = Reservoir(
+                name=f"{s.name}",
+                register="no",
+                species=s,
+                delta=self.delta[s],
+                concentration=self.concentration[s],
+                volume=self.volume,
+                plot=self.plot[s],
+            )
+            # register as part of this group
+            setattr(self, s.name, a)
             self.lor.append(a)
 #+END_SRC
 
@@ -1738,12 +1754,11 @@ class SourceSinkGroup(esbmtkBase):
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
-            "names": list,
             "species": list,
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list[str] = ["name", "names", "species"]
+        self.lrk: list[str] = ["name", "species"]
         # list of default values if none provided
 
         self.__initerrormessages__()
@@ -1755,32 +1770,33 @@ class SourceSinkGroup(esbmtkBase):
         self.mo = self.species[0].mo  # get model handle
         self.__register_name__()
 
-        self.lor :list = [] # list of sub reservoirs in this group
+        self.lor: list = []  # list of sub reservoirs in this group
         # loop over names and setup sub-objects
-        for i, s in enumerate(self.names):
-            if not isinstance(self.species[i], Species):
+        for i, s in enumerate(self.species):
+            if not isinstance(s, Species):
                 raise ValueError(f"{s} needs to be a valid species name")
 
             if type(self).__name__ == "SourceGroup":
                 a = Source(
-                    name=f"{self.names[i]}",
+                    name=f"{s.name}",
                     register="no",
-                    species=self.species[i],
+                    species=s,
                 )
             elif type(self).__name__ == "SinkGroup":
                 a = Sink(
-                    name=f"{self.names[i]}",
+                    name=f"{s.name}",
                     register="no",
-                    species=self.species[i],
+                    species=s,
                 )
             else:
                 raise TypeError(
                     f"{type(self).__name__} is not a valid class type")
 
             # register in local namespace
-            a.reg_time = time.monotonic() # needed for __repr__
-            setattr(self, self.names[i], a)
+            a.reg_time = time.monotonic()  # needed for __repr__
+            setattr(self, s.name, a)
             self.lor.append(a)
+
 
 class SinkGroup(SourceSinkGroup):
     """
