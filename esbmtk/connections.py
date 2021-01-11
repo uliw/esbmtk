@@ -91,56 +91,8 @@ class Connect(esbmtkBase):
     
 
     """
+    
     def __init__(self, **kwargs):
-        """During init, we first check whether this is a connection between
-        two reservoirs. In this case we call __init__connection(). If
-        this is a connection between two reservoirs_groups, we will
-        call __init_group_connections__() which in turn will call
-        __init_connection__ on each group element.
-
-        """
-
-        if isinstance(kwargs["source"], ReservoirGroup) or isinstance(
-                kwargs["sink"], ReservoirGroup):
-            self.__init_group_connections__(kwargs)
-        else:
-            self.__init_connection__(kwargs)
-            self.__register_name__()  # register connection in namespace
-            print(f"Created connection {self.name}")
-
-    def __init_group_connections__(self, kwargs):
-        """At least one of the arguments is a reservoirs_group object. This
-        method will create regular connections for each matching
-        species.
-
-        Example::
-
-        Connect(source =  upstream reservoir / upstream reservoir group
-           sink = downstrean reservoir / downstream reservoirs_group
-           delta = defaults to zero and has to be set manually
-           alpha =  defaults to zero and has to be set manually
-           rate = shared between all connections
-           ref = shared between all connections
-           species = list, optional, if present, only these species will be connected
-           ctype = if set it will be shared between all connections
-           pl = [list]) process list. optional, shared between all connections
-           id = optional identifier, shared between all connections
-           plot = "yes/no" # defaults to yes, shared between all connections
-
-        Notes: if species is given as a list, shared arguments like, delta, alpha, rate, ref,
-        ctype pl, and plot can also be provided as list. As long as there is a one to one mapping
-        the species list and the list of a shared property, the shared property will be mapped
-        to each species, e.g.:
-
-        species = [CO, Hplus]
-        alpha = [1.02, 1.03]
-
-        will create two connections, the first one with an alpha of 1.02, and the second with an alpha of 1.03
-        """
-
-        raise NotImplementedError("This is unfinished business")
-
-    def __init_connection__(self, kwargs):
         """ The init method of the connector obbjects performs sanity checks e.g.:
                - whether the reservoirs exist
                - correct flux properties (this will be handled by the process object)
@@ -183,24 +135,27 @@ class Connect(esbmtkBase):
             "left": (list, Number, Reservoir),
             "right": (list, Number, Reservoir),
             "plot": str,
+            "register": str,
         }
 
-        n = kwargs["source"].n + "_" + kwargs[
-            "sink"].n + "_connector"  # set the name
-        kwargs.update({"name": n})  # and add it to the kwargs
+        if not "name" in kwargs:
+            n = kwargs["source"].n + "_2_" + kwargs[
+                "sink"].n + "_connector"  # set the name
+            kwargs.update({"name": n})  # and add it to the kwargs
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["name", "source", "sink"]
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
-            "id": "",
+            "id": "None",
             "plot": "yes",
             "ctype": "None",
             "delta": "None",
             "alpha": "None",
             "rate": "None",
             "k_value": 1,
+            "register": "yes"
         }
 
         # validate and initialize instance variables
@@ -228,7 +183,7 @@ class Connect(esbmtkBase):
 
         self.__validateandregister__(kwargs)
 
-        if len(kwargs["id"]) > 0:
+        if kwargs["id"] != "None":
             self.name = self.name + f"_{self.id}"
         if 'pl' in kwargs:
             self.lop: list[Process] = self.pl
@@ -266,6 +221,12 @@ class Connect(esbmtkBase):
 
         self.__create_flux__()  # Source/Sink/Regular
         self.__set_process_type__()  # derive flux type and create flux(es)
+
+        if self.register == "yes":
+            self.__register_name__()  # register connection in namespace
+            print(f"Created connection {self.name}")
+        else:
+            self.reg_time = time.monotonic()
 
         # This should probably move to register fluxes
         self.__register_process__()
@@ -318,9 +279,9 @@ class Connect(esbmtkBase):
 
         # flux name
         if not self.id == "":
-            n = self.r1.n + '_to_' + self.r2.n + "_" + self.id  # flux name r1_to_r2
+            n = self.r1.n + '_2_' + self.r2.n + "_" + self.id + "_Flux"  # flux name r1_2_r2
         else:
-            n = self.r1.n + '_to_' + self.r2.n
+            n = self.r1.n + '_2_' + self.r2.n + "_Flux"
 
         # derive flux unit from species obbject
         funit = self.sp.mu + "/" + str(self.sp.mo.bu)  # xxx
@@ -417,9 +378,9 @@ class Connect(esbmtkBase):
 
         # set process name
         if len(self.kwargs["id"]) > 0:
-            self.pn = self.r1.n + "_to_" + self.r2.n + f"_{self.id}"
+            self.pn = self.r1.n + "_2_" + self.r2.n + f"_{self.id}"
         else:
-            self.pn = self.r1.n + "_to_" + self.r2.n
+            self.pn = self.r1.n + "_2_" + self.r2.n
 
         # set the fundamental flux type
         if self.delta != "None" and self.rate != "None":
@@ -435,7 +396,7 @@ class Connect(esbmtkBase):
             #         f"{self.r1.n} requires a rate and delta value")
             # xxx experimental. Not sure this is valid in all cases
             self._delta = 0
-            self._rate  = 1
+            self._rate = 1
             self.__passiveflux__()
 
         # Set optional flux processes
@@ -616,7 +577,7 @@ class Connect(esbmtkBase):
                               right=self.right,
                               flux=self.fh,
                               k_value=self.k_value)
-           
+
         elif self.ctype == "scale_with_concentration_normalized":
             self.k_value = map_units(self.k_value, self.mo.c_unit,
                                      self.mo.f_unit, self.mo.r_unit)
@@ -766,3 +727,148 @@ class Connection(Connect):
     """ Alias for the Connect class
 
     """
+
+class ConnectGroup(esbmtkBase):
+    """Name:
+
+        ConnectGroup
+
+        Connect reservoir/sink/source groups when at least one of the
+        arguments is a reservoirs_group object. This method will
+        create regular connections for each matching species. 
+
+        Use the connection.update() method to fine tune connections 
+        after creation
+
+    Example::
+
+        ConnectGroup(source =  upstream reservoir / upstream reservoir group
+           sink = downstrean reservoir / downstream reservoirs_group
+           delta = defaults to zero and has to be set manually
+           alpha =  defaults to zero and has to be set manually
+           rate = shared between all connections
+           ref = shared between all connections
+           species = list, optional, if present, only these species will be connected
+           ctype = if set it will be shared between all connections. To
+           pl = [list]) process list. optional, shared between all connections
+           id = optional identifier, shared between all connections
+           plot = "yes/no" # defaults to yes, shared between all connections
+        )
+
+        Notes: if species is given as a list, shared arguments like, delta, alpha, rate, ref,
+        ctype pl, and plot can also be provided as list. As long as there is a one to one mapping
+        the species list and the list of a shared property, the shared property will be mapped
+        to each species, e.g.:
+
+        species = [CO, Hplus]
+        alpha = [1.02, 1.03]
+
+        will create two connections, the first one with an alpha of 1.02, and the second with an alpha of 1.03
+
+    """
+    
+    def __init__(self,**kwargs)->None:
+
+        # provide a dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            "id": dict,
+            "name": str,
+            "source": (SourceGroup, ReservoirGroup),
+            "sink": (SinkGroup, ReservoirGroup),
+            "delta": dict,
+            "rate": dict,
+            "pl": dict,
+            "alpha": dict,
+            "species": dict,
+            "ctype": str,
+            "ref": list,
+            "plot": dict,
+        }
+
+        n = kwargs["source"].name + "_2_" + kwargs[
+            "sink"].name + "_connector"  # set the name
+
+        # set connection group name
+        kwargs.update({"name": n})  # and add it to the kwargs
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = ["source", "sink"]
+
+        # get the number of sub reservoirs in the source and sink
+        nor_sink = len(kwargs["sink"].species)
+        nor_source = len(kwargs["source"].species)
+
+        if nor_source != nor_sink:
+            raise ValueError(
+                "Number of sub reservoirs does not match. Specify match explicitly"
+            )
+
+        cid: dict = {}
+        plot: dict = {}
+        delta: dict = {}
+        alpha: dict = {}
+        rate: dict = {}
+        # loop over names and create dicts
+        for n in kwargs['sink'].species:
+            cid[n] = 'None'
+            plot[n] = 'yes'
+            delta[n] = 'None'
+            alpha[n] = 'None'
+            rate[n] = 'None'
+
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            "id": cid,
+            "plot": plot,
+            "delta": delta,
+            "alpha": alpha,
+            "rate": rate
+        }
+
+        # turn kwargs into instance variables
+        self.__validateandregister__(kwargs)
+
+        self.loc: list = []  # list of connections in this group
+
+        # self.source.lor is a  list with the object names in the group
+        self.mo = self.sink.lor[0].mo
+
+        # loop over sub-reservoirs and create connections
+        for i, r in enumerate(self.source.lor):
+            if not isinstance(r, (Reservoir, Source, Sink)):
+                raise ValueError(
+                    f"{r} must be of type reservoir, source or sink")
+                # take the species of this sub reservoir
+                # in the source, and find matching
+                # species in the sink
+
+            # loop over sink list until a match is found
+            for j, s in enumerate(self.sink.lor):
+                if not isinstance(s, (Reservoir, Source, Sink)):
+                    raise ValueError(
+                        f"{r} must be of type reservoir, source or sink")
+
+                if r.species == s.species:  # match found
+                    # name = f"{self.source.name}_{r.species.name}_2_{self.sink.name}_{s.species.name}"
+                    name = f"{r.species.name}_2_{s.species.name}"
+                    a = Connect(
+                        name=name,
+                        source=r,
+                        sink=s,
+                        rate=self.rate[s.species],
+                        delta=self.delta[s.species],
+                        alpha=self.alpha[s.species],
+                        plot=self.plot[s.species],
+                        id=self.id[s.species],
+                        register="no",
+                    )
+                elif j == nor_sink:  # no match was found
+                    raise ValueError("{r.species} has no match")
+
+            # register connection with connection group
+            print(f"Created = {self.name}.{a.name}")
+            setattr(self, a.name, a)
+            self.loc.append(a)
+
+        self.__register_name__(
+        )  # register connection group in global namespace

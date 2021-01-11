@@ -397,7 +397,7 @@ class esbmtkBase():
 
 #+BEGIN_SRC ipython :tangle esbmtk.py
 class Model(esbmtkBase):
-    """ This lass is used to specify a new model
+    """This lass is used to specify a new model
 
     Example:
 
@@ -435,6 +435,9 @@ class Model(esbmtkBase):
        - Model_name.read_state() Initialize with a previous model state
        - Model_Name.run()
        - Model_Name.list_species()
+
+    User facing variable are Model_Name.time which contains the time
+    axis.
 
     Optional, you can provide the element keyword which will setup a
     default set of Species for Carbon and Sulfur. In this case, there
