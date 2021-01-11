@@ -24,7 +24,8 @@ from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
 from copy import deepcopy, copy
 from time import process_time
-#from numba import jit, njit
+
+# from numba import jit, njit
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -35,14 +36,16 @@ import logging
 import time
 import builtins
 import math
+
 set_printoptions(precision=4)
+
 
 def get_imass(m: float, d: float, r: float) -> [float, float]:
     """
     Calculate the isotope masses from bulk mass and delta value.
-    Arguments are m = mass, d= delta value, r = abundance ratio 
+    Arguments are m = mass, d= delta value, r = abundance ratio
     species
-    
+
     """
 
     li: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
@@ -58,15 +61,15 @@ def get_frac(m: float, l: float, a: float) -> [float, float]:
 
     li: float = -l * m / (a * l - a * m - l)
     hi: float = m - li  # get the new heavy isotope value
-    return li, hi
+    return [li, hi]
 
 
 def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
-    """ 
+    """
     Calculate the isotope masses from bulk mass and delta value.
-    Arguments are m = mass, d= delta value, r = abundance ratio 
+    Arguments are m = mass, d= delta value, r = abundance ratio
     species. Unlike get_mass, this function returns the full array
-    
+
     """
 
     l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
@@ -74,101 +77,107 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
 
     return np.array([m, l, h, d])
 
-def get_delta(l: [NDArray, [Float64]], h: [NDArray, [Float64]],
-              r: float) -> [NDArray, [Float64]]:
+
+def get_delta(
+    l: [NDArray, [Float64]], h: [NDArray, [Float64]], r: float
+) -> [NDArray, [Float64]]:
     """Calculate the delta from the mass of light and heavy isotope
-     Arguments are l and h which are the masses of the light and
-     heavy isotopes respectively, r = abundance ratio of the
-     respective element. Note that this equation can result in a
-     siginificant loss of precision (on the order of 1E-13). I
-     therefore round the results to numbers largers 1E12 (otherwise a
-     delta of zero may no longer be zero)
+    Arguments are l and h which are the masses of the light and
+    heavy isotopes respectively, r = abundance ratio of the
+    respective element. Note that this equation can result in a
+    siginificant loss of precision (on the order of 1E-13). I
+    therefore round the results to numbers largers 1E12 (otherwise a
+    delta of zero may no longer be zero)
 
-   """
+    """
 
-    d: float = 1E3 * (abs(h) / abs(l) - r) / r
+    d: float = 1e3 * (abs(h) / abs(l) - r) / r
     return d
 
-def add_to (l, e):
+
+def add_to(l, e):
     """
-      add element e to list l, but check if the entry already exist. If so, throw
-      exception. Otherwise add
+    add element e to list l, but check if the entry already exist. If so, throw
+    exception. Otherwise add
     """
 
     if not (e in l):  # if not present, append element
         l.append(e)
 
+
 def get_plot_layout(obj):
-      """ Simple function which selects a row, column layout based on the number of
-      objects to display.  The expected argument is a reservoir object which
-      contains the list of fluxes in the reservoir
+    """Simple function which selects a row, column layout based on the number of
+    objects to display.  The expected argument is a reservoir object which
+    contains the list of fluxes in the reservoir
 
-      """
+    """
 
-      noo = 1 # the reservoir is the fisrt object
-      for f in obj.lof: # count numbert of fluxes
-            if f.plot == "yes":
-                  noo += 1
-                  
-      for d in obj.ldf: # count number of data fields
-            noo +=1
-            
-      # noo = len(obj.lof) + 1  # number of objects in this reservoir
-      logging.debug(f"{noo} subplots for {obj.n} required")
+    noo = 1  # the reservoir is the fisrt object
+    for f in obj.lof:  # count numbert of fluxes
+        if f.plot == "yes":
+            noo += 1
 
-      if noo < 2:
-          geo = [1, 1]  # one row, one column
-          size = [5, 3]  # size in inches
-      elif 1 < noo < 3:
-          geo = [2, 1]  # two rows, one column
-          size = [5, 6]  # size in inches
-      elif 2 < noo < 5:
-          geo = [2, 2]  # two rows, two columns
-          size = [10, 6]  # size in inches
-      elif 4 < noo < 7:
-          geo = [2, 3]  # two rows, three columns
-          size = [15, 6]  # size in inches
-      elif 6 < noo < 10:
-          geo = [3, 3]  # two rows, three columns
-          size = [15, 9]  # size in inches
-      else:
-          print("plot geometry for more than 8 fluxes is not yet defined")
-          print("Consider calling flux.plot individually on each flux in the reservoir")
-          # print(f"Selected Geometry: rows = {geo[0]}, cols = {geo[1]}")
+    for d in obj.ldf:  # count number of data fields
+        noo += 1
 
-      return size, geo
+    # noo = len(obj.lof) + 1  # number of objects in this reservoir
+    logging.debug(f"{noo} subplots for {obj.n} required")
 
-def list_fluxes(self,name,i) -> None:
-            """
-            Echo all fluxes in the reservoir to the screen
-            """
-            print(f"\nList of fluxes in {self.n}:")
-            
-            for f in self.lof: # show the processes
-                  direction = self.lio[f.n]
-                  if direction == -1:
-                        t1 = "From:"
-                        t2 = "Outflux from"
-                  else:
-                        t1 = "To  :"   
-                        t2 = "Influx to"
+    if noo < 2:
+        geo = [1, 1]  # one row, one column
+        size = [5, 3]  # size in inches
+    elif 1 < noo < 3:
+        geo = [2, 1]  # two rows, one column
+        size = [5, 6]  # size in inches
+    elif 2 < noo < 5:
+        geo = [2, 2]  # two rows, two columns
+        size = [10, 6]  # size in inches
+    elif 4 < noo < 7:
+        geo = [2, 3]  # two rows, three columns
+        size = [15, 6]  # size in inches
+    elif 6 < noo < 10:
+        geo = [3, 3]  # two rows, three columns
+        size = [15, 9]  # size in inches
+    else:
+        print("plot geometry for more than 8 fluxes is not yet defined")
+        print("Consider calling flux.plot individually on each flux in the reservoir")
+        # print(f"Selected Geometry: rows = {geo[0]}, cols = {geo[1]}")
 
-                  print(f"\t {t2} {self.n} via {f.n}")
-                  
-                  for p in f.lop:
-                        p.describe()
+    return size, geo
 
-            print(" ")
-            for f in self.lof:
-                  f.describe(i) # print out the flux data
+
+def list_fluxes(self, name, i) -> None:
+    """
+    Echo all fluxes in the reservoir to the screen
+    """
+    print(f"\nList of fluxes in {self.n}:")
+
+    for f in self.lof:  # show the processes
+        direction = self.lio[f.n]
+        if direction == -1:
+            t1 = "From:"
+            t2 = "Outflux from"
+        else:
+            t1 = "To  :"
+            t2 = "Influx to"
+
+        print(f"\t {t2} {self.n} via {f.n}")
+
+        for p in f.lop:
+            p.describe()
+
+    print(" ")
+    for f in self.lof:
+        f.describe(i)  # print out the flux data
+
 
 def show_data(self, **kwargs) -> None:
-    """ Print the 3 lines of the data starting with index
+    """Print the 3 lines of the data starting with index
 
     Optional arguments:
-    
+
     index :int = 0 starting index
-    indent :int = 0 indentation 
+    indent :int = 0 indentation
     """
 
     off: str = "  "
@@ -185,29 +194,26 @@ def show_data(self, **kwargs) -> None:
 
     # show the first 4 entries
     for i in range(index, index + 3):
-        print(
-            f"{off}{ind}i = {i}, Mass = {self.m[i]:.2e}, delta = {self.d[i]:.2f}"
-        )
+        print(f"{off}{ind}i = {i}, Mass = {self.m[i]:.2e}, delta = {self.d[i]:.2f}")
 
-def set_y_limits(ax  :plt.Axes, model :any)->None:
-    """ Prevent the display or arbitrarily small differences
-    """
-    lower :float
-    upper :float
 
-    bottom, top =  ax.get_ylim()
-    if (top - bottom)  < model.display_precision:
+def set_y_limits(ax: plt.Axes, model: any) -> None:
+    """Prevent the display or arbitrarily small differences"""
+    lower: float
+    upper: float
+
+    bottom, top = ax.get_ylim()
+    if (top - bottom) < model.display_precision:
         top = bottom + model.display_precision
         ax.set_ylim(bottom, top)
-        
+
 
 def get_ptype(obj, kwargs: dict) -> int:
     """
     Set plot type variable
-    
+
     """
 
-    
     ptype: int = 0
     if "ptype" in kwargs:
         if kwargs["ptype"] == "both":
@@ -222,7 +228,7 @@ def get_ptype(obj, kwargs: dict) -> int:
         if obj.m_type == "mass_only":
             ptype = 2
         elif obj.m_type == "both":
-            ptype = 0    
+            ptype = 0
         else:
             raise ValueError("ptype must be one of 'both/iso/concentration/mass_only'")
 
@@ -231,8 +237,8 @@ def get_ptype(obj, kwargs: dict) -> int:
 
 def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     """collection of commands which will plot and annotate a reservoir or flux
-      object into an existing plot window. 
-      """
+    object into an existing plot window.
+    """
 
     from . import ureg, Q_
     from esbmtk import Flux, Reservoir, Signal, DataField
@@ -245,7 +251,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
 
     first_axis: bool = False
     second_axis: bool = False
-    
+
     rows = geo[0]
     cols = geo[1]
     # species = obj.sp
@@ -287,7 +293,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
             ptype = 0
         else:
             ptype = 2
-        
+
     else:  # sources, sinks, external data should not show up here
         raise ValueError(f"{obj.n} = {type(obj)}")
 
@@ -313,11 +319,11 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         # plot left y-scale data
         ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=obj.legend_left)
         # set labels
-        ax1.set_xlabel(f"{model.time_label} [{model.d_unit:~P}]")  
-        ax1.set_ylabel(y_label)  
+        ax1.set_xlabel(f"{model.time_label} [{model.d_unit:~P}]")
+        ax1.set_ylabel(y_label)
         # remove unnecessary frame species
-        ax1.spines['top'].set_visible(False)
-        set_y_limits(ax1,model)
+        ax1.spines["top"].set_visible(False)
+        set_y_limits(ax1, model)
 
     # set color index
     cn = cn + 1
@@ -330,18 +336,18 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
 
         ax2.set_ylabel(obj.ld)  # species object delta label
-        ax2.spines['top'].set_visible(False)  # remove unnecessary frame speciess
-        set_y_limits(ax2,model)
+        ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
+        set_y_limits(ax2, model)
 
     # adjust display properties for title and legend
     ax1.set_title(obj.n)
-    plt.rcParams['axes.titlepad'] = 14  # offset title upwards
-    plt.rcParams["legend.facecolor"] = '0.8'  # show a gray background
-    plt.rcParams["legend.edgecolor"] = '0.8'  # make frame the same color
+    plt.rcParams["axes.titlepad"] = 14  # offset title upwards
+    plt.rcParams["legend.facecolor"] = "0.8"  # show a gray background
+    plt.rcParams["legend.edgecolor"] = "0.8"  # make frame the same color
     plt.rcParams["legend.framealpha"] = 0.4  # set transparency
 
     for d in obj.led:  # loop over external data objects if present
-        
+
         if isinstance(d.x[0], str):  # if string, something is off
             raise ValueError("No time axis in external data object {d.name}")
         if "y" in dir(d):  # mass or concentration data is present
@@ -349,7 +355,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
             col = f"C{cn}"
             leg = f"{obj.lm} {d.legend}"
             ln3 = ax1.scatter(d.x, d.y, color=col, label=leg)
-        if "z" in dir(d) and second_axis: # isotope data is present
+        if "z" in dir(d) and second_axis:  # isotope data is present
             cn = cn + 1
             col = f"C{cn}"
             leg = f"{d.legend}"
@@ -358,55 +364,55 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     # collect all labels and print them in one legend
     if first_axis:
         handler1, label1 = ax1.get_legend_handles_labels()
-    
+
     if second_axis:
         handler2, label2 = ax2.get_legend_handles_labels()
-    
+
     if first_axis and second_axis:
-        legend = ax2.legend(handler1 + handler2, label1 + label2,
-                            loc=0).set_zorder(6)
-    #elif first_axis:
+        legend = ax2.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(6)
+    # elif first_axis:
     #    legend = ax1.legend(handler1 + label1, loc=0).set_zorder(6)
-    #elif second_axis:
+    # elif second_axis:
     #   legend = ax2.legend(handler2 + label2, loc=0).set_zorder(6)
-        
 
     # Matplotlib will show arbitrarily small differences which can be confusing
-    #yl_min = min(yl)
-    #yl_max = max(yl)
-    #if (yl_max - yl_min) < 0.1:
+    # yl_min = min(yl)
+    # yl_max = max(yl)
+    # if (yl_max - yl_min) < 0.1:
 
-def is_name_in_list(n: str, l: list)->bool:
-    """ Test if an object name is part of the object list
-    
-    """
 
-    r :bool = False
+def is_name_in_list(n: str, l: list) -> bool:
+    """Test if an object name is part of the object list"""
+
+    r: bool = False
     for e in l:
         if e.n == n:
             r = True
 
     return r
 
-def get_hplus(dic :float, ta :float)->float:
+
+def get_hplus(dic: float, ta: float) -> float:
     """
     Calculate H+ concentration based on DIC concentration and Alkalinity
     according to eq 11 in Follows et al 2006
-    
+
     """
 
     pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
     pk2 = 8.92
-    K1 = 10**-pk1
-    K2 = 10**-pk2
-    
+    K1 = 10 ** -pk1
+    K2 = 10 ** -pk2
+
     g = dic / ta
-    hplus = 0.5 * ((g - 1) * K1 + ((1 - g)**2 * K1**2 - 4 * K1 * K2 *
-                                   (1 - 2 * g))**0.5)
+    hplus = 0.5 * (
+        (g - 1) * K1 + ((1 - g) ** 2 * K1 ** 2 - 4 * K1 * K2 * (1 - 2 * g)) ** 0.5
+    )
 
     return hplus
 
-def get_pco2(dic :float, ta :float) -> float:
+
+def get_pco2(dic: float, ta: float) -> float:
     """Calculate pCO2 in uatm at 25C and a Salinity of 35
 
     DIC has to be in mmol/l!
@@ -414,23 +420,24 @@ def get_pco2(dic :float, ta :float) -> float:
     """
     pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
     pk2 = 8.92
-    K1 = 10**-pk1
-    K2 = 10**-pk2
+    K1 = 10 ** -pk1
+    K2 = 10 ** -pk2
     K0 = 36
 
-    hplus = get_hplus(dic,ta)
+    hplus = get_hplus(dic, ta)
 
     # get [CO2] in water
-    co2 = dic / (1 + K1/hplus + K1*K2/hplus**2)
+    co2 = dic / (1 + K1 / hplus + K1 * K2 / hplus ** 2)
 
     # get pco2 as a function of co2 fugacity
-    pco2 = co2/K0 *1E6
+    pco2 = co2 / K0 * 1e6
 
     # this cam also be expressed in teh following way
-    #pco2a = (ta/K0 * ( K1/hplus + 2*K1*K2/hplus**2)**-1) * 1.e6
-    #pco2b = (dic/K0 * (1 + K1/hplus + (K1*K2)/hplus**2)**-1) * 1.e6
-   
+    # pco2a = (ta/K0 * ( K1/hplus + 2*K1*K2/hplus**2)**-1) * 1.e6
+    # pco2b = (dic/K0 * (1 + K1/hplus + (K1*K2)/hplus**2)**-1) * 1.e6
+
     return pco2
+
 
 def sort_by_type(l: list, t: list, m: str) -> list:
     """divide a list by type into new lists. This function will return a
@@ -441,7 +448,7 @@ def sort_by_type(l: list, t: list, m: str) -> list:
     m is a string for the error function
     """
 
-    #from numbers import Number
+    # from numbers import Number
 
     lc = l.copy()
     rl = []
@@ -462,12 +469,11 @@ def sort_by_type(l: list, t: list, m: str) -> list:
 
     return rl
 
-def get_string_between_brackets(s :str) -> str:
-    """ Parse string and extract substring between square brackets
 
-    """
-    
-    s =  s.split("[")
+def get_string_between_brackets(s: str) -> str:
+    """Parse string and extract substring between square brackets"""
+
+    s = s.split("[")
     if len(s) < 2:
         raise ValueError(f"Column header {s} must include units in square brackets")
 
@@ -480,21 +486,22 @@ def get_string_between_brackets(s :str) -> str:
 
     return s[0]
 
+
 def map_units(v: any, *args) -> float:
-    """ parse v to see if it is a string. if yes, map to quantity. 
-        parse v to see if it is a quantity, if yes, map to model units
-        and extract magnitude, assign mangitude to return value
-        if not, assign value to return value
-        
-        v : a keyword value number/string/quantity
-        args: one or more quantities (units) see the Model class (e.g., f_unit)
+    """parse v to see if it is a string. if yes, map to quantity.
+    parse v to see if it is a quantity, if yes, map to model units
+    and extract magnitude, assign mangitude to return value
+    if not, assign value to return value
+
+    v : a keyword value number/string/quantity
+    args: one or more quantities (units) see the Model class (e.g., f_unit)
 
     """
 
     from . import Q_
 
     m: float = 0
-    match :bool = False
+    match: bool = False
 
     # test if string, map to quantity if yes
     if isinstance(v, str):

@@ -1,5 +1,4 @@
 nptyping
-os
 typing
 numpy
 pandas
