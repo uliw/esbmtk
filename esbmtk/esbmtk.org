@@ -411,6 +411,7 @@ class Model(esbmtkBase):
                       time_label = optional, defaults to "Time"
                       display_precision = optional, defaults to 0.01,
                       m_type = "mass_only", defaults to both (mass & isotope)
+                      plot_style = 'default', optional defaults to 'default'
                       )
 
     The 'ref_time' keyword will offset the time axis by the specified
@@ -467,6 +468,7 @@ class Model(esbmtkBase):
             "time_label": str,
             "display_precision": float,
             "m_type": str,
+            "plot_style": str,
         }
 
         # provide a list of absolutely required keywords
@@ -481,6 +483,7 @@ class Model(esbmtkBase):
             'time_label': "Time",
             'display_precision': 0.01,
             'm_type': "mass_only",
+            'plot_style': "default",
         }
 
         self.__initerrormessages__()
@@ -493,6 +496,7 @@ class Model(esbmtkBase):
             "time_label": "a string",
             "display_precision": "a number",
             "m_type": "a string",
+            "plot_style": "a string",
         })
 
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -533,6 +537,7 @@ class Model(esbmtkBase):
         self.tu = str(self.bu)  # needs to be a string
         self.n = self.name
         self.mo = self.name
+        self.plot_style :list = [self.plot_style]
 
         self.xl = f"Time [{self.bu}]"  # time axis label
         self.length = int(abs(self.stop - self.start))
@@ -1248,7 +1253,7 @@ class Reservoir(esbmtkBase):
         filename = f"{model.n}_{self.n}.pdf"
         fn = 1  # counter for the figure number
 
-        plt.style.use(['default'])
+        plt.style.use(model.plot_style)
         fig = plt.figure(i)  # Initialize a plot window
         fig.canvas.set_window_title(f"Reservoir Name: {self.n}")
         fig.set_size_inches(size)
@@ -1267,7 +1272,9 @@ class Reservoir(esbmtkBase):
                 fn = fn + 1
                 plot_object_data(geo, fn, d, ptype)
 
-            fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
+            if geo != [1, 1]:
+                fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
+                
             fig.tight_layout()
             fig.subplots_adjust(top=0.88)
             fig.savefig(filename)
@@ -1288,7 +1295,7 @@ class Reservoir(esbmtkBase):
         filename = f"{model.n}_{self.n}.pdf"
         fn: int = 1  # counter for the figure number
 
-        plt.style.use(['default'])
+        plt.style.use(model.plot_style)
         fig = plt.figure(i)  # Initialize a plot window
         fig.set_size_inches(size)
 
