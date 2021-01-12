@@ -447,7 +447,6 @@ class Model(esbmtkBase):
     ["Carbon", "Sulfur"].
 
     """
-
     def __init__(self, **kwargs: Dict[any, any]) -> None:
         """ Init Sequence
 
@@ -517,8 +516,8 @@ class Model(esbmtkBase):
         self.l_unit = ureg.meter  # the length unit
         self.t_unit = Q_(self.timestep).units  # the time unit
         self.d_unit = Q_(self.stop).units  # display time units
-        self.m_unit = Q_(self.mass_unit)  # the mass unit
-        self.v_unit = Q_(self.volume_unit)  # the volume unit
+        self.m_unit = Q_(self.mass_unit).units  # the mass unit
+        self.v_unit = Q_(self.volume_unit).units  # the volume unit
         # the concentration unit (mass/volume)
         self.c_unit = self.m_unit / self.v_unit
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
@@ -537,7 +536,7 @@ class Model(esbmtkBase):
         self.tu = str(self.bu)  # needs to be a string
         self.n = self.name
         self.mo = self.name
-        self.plot_style :list = [self.plot_style]
+        self.plot_style: list = [self.plot_style]
 
         self.xl = f"Time [{self.bu}]"  # time axis label
         self.length = int(abs(self.stop - self.start))
@@ -570,7 +569,8 @@ class Model(esbmtkBase):
                     f"This program comes with ABSOLUTELY NO WARRANTY\n"
                     f"For details see the LICENSE file\n"
                     f"This is free software, and you are welcome to redistribute it\n"
-                    f"under certain conditions; See the LICENSE file for details.\n")
+                    f"under certain conditions; See the LICENSE file for details.\n"
+                )
                 print(warranty)
 
         # start a log file
