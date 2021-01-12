@@ -1,4 +1,3 @@
--*- org-emphasis-alist: (("*" bold) ("/" italic) ("_" underline) ("=" org-verbatim verbatim) ("~" org-code verbatim) ("+" (:strike-through nil))); -*-
 #+TITLE: Fractionation Example
 #+AUTHOR:Ulrich G Wortmann
 #+OX-IPYNB-LANGUAGE: ipython
@@ -33,7 +32,7 @@ Source(name="SO1", species=CO2)
 Sink(name="SI1", species=CO2)
 
 Reservoir(
-    name="O",                # Name of reservoir
+    name="R1",                # Name of reservoir
     species=CO2,                 # Species handle
     delta=0,                     # initial delta
     concentration="2.6 mmol/l", # cocentration 
@@ -42,17 +41,16 @@ Reservoir(
 
 Connect(
     source=SO1,  # source of flux
-    sink=O,                   # target of flux
+    sink=R1,                   # target of flux
     rate="12.3E12 mol/yr",        # weathering flux in 
-    delta=0,                      # isotope ratio
     plot="no",
 )
 
 Connect(
-    source=O,  # source of flux
+    source=R1,  # source of flux
     sink=SI1,                   # target of flux
     rate="12.3E12 mol/yr",        # weathering flux in 
-    alpha=12,                      # isotope ratio
+    alpha=-12,                      # isotope ratio
     plot="yes",
 )
 
