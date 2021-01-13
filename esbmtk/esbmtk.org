@@ -66,12 +66,14 @@ import os
 ** The esbmtk base class 
 
 #+BEGIN_SRC ipython :tangle esbmtk.py
-class esbmtkBase():
+class esbmtkBase(object):
     """The esbmtk base class template. This class handles keyword
     arguments, name registration and other common tasks
 
     """
 
+    __slots__ = ('__dict__')
+   
     from typing import Dict
 
     def __init__(self) -> None:
@@ -396,6 +398,15 @@ class esbmtkBase():
    to the model units before using them.
 
 #+BEGIN_SRC ipython :tangle esbmtk.py
+# class ClassName(object):
+#     """Documentation for ClassName
+
+#     """
+#     def __init__(self, args):
+#         super(ClassName, self).__init__()
+#         self.args = args
+        
+        
 class Model(esbmtkBase):
     """This lass is used to specify a new model
 
@@ -447,6 +458,9 @@ class Model(esbmtkBase):
     ["Carbon", "Sulfur"].
 
     """
+
+    __slots__ = ('lor')
+    
     def __init__(self, **kwargs: Dict[any, any]) -> None:
         """ Init Sequence
 
@@ -744,6 +758,7 @@ class Model(esbmtkBase):
         # from functools import reduce
 
         i = 1  # some processes refer to the previous time step
+        dt = lor[0].mo.dt
         for t in time[0:-1]:  # loop over the time vector except the first
             # we first need to calculate all fluxes
             for r in lor:  # loop over all reservoirs
@@ -761,7 +776,7 @@ class Model(esbmtkBase):
                     new += f[i] * direction_list[j]
 
                 # add to data from last time step
-                r[i] = r[i - 1] + new * r.mo.dt
+                r[i] = r[i - 1] + new * dt
 
             i = i + 1  # next time step
 
@@ -969,20 +984,20 @@ class Reservoir(esbmtkBase):
 
     """
 
-    __slots__ = ('m', 'l', 'h', 'd', 'c', 'lio', 'rvalue')
-    
+    __slots__ = ('m', 'l', 'h', 'd', 'c', 'lio', 'rvalue', 'lodir', 'lof')
+
     def __init__(self, **kwargs) -> None:
         """ Initialize a reservoir.
 
         """
-        
+
         from . import ureg, Q_
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
             "species": Species,
-            "delta": (Number,str),
+            "delta": (Number, str),
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
@@ -1017,7 +1032,7 @@ class Reservoir(esbmtkBase):
 
         if self.delta == "None":
             self.delta = 0
-            
+
         # legacy names
         self.n: str = self.name  # name of reservoir
         self.sp: Species = self.species  # species handle
@@ -1133,8 +1148,8 @@ class Reservoir(esbmtkBase):
 
         # some short hands
         sn = self.sp.n  # species name
-        sp = self.sp
-        mo = self.sp.mo
+        sp = self.sp  # species handle
+        mo = self.sp.mo  # model handle
 
         smu = f"{mo.m_unit:~P}"
         mtu = f"{mo.t_unit:~P}"
@@ -1152,9 +1167,12 @@ class Reservoir(esbmtkBase):
 
         df[f"{self.n} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
         df[f"{self.n} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
-        df[f"{self.n} {sp.ln}"] = self.l[start:stop:stride]  # light isotope
-        df[f"{self.n} {sp.hn} "] = self.h[start:stop:stride]  # heavy isotope
-        df[f"{self.n} {sdn} {sds}"] = self.d[start:stop:stride]  # delta value
+        df[f"{self.n} {sp.ln} [{smu}]"] = self.l[start:stop:
+                                                 stride]  # light isotope
+        df[f"{self.n} {sp.hn} [{smu}]"] = self.h[start:stop:
+                                                 stride]  # heavy isotope
+        df[f"{self.n} {sdn} [{sds}]"] = self.d[start:stop:
+                                               stride]  # delta value
         df[f"{self.n} {sn} [{cmu}]"] = self.c[start:stop:
                                               stride]  # concentration
 
@@ -1164,7 +1182,7 @@ class Reservoir(esbmtkBase):
                                               stride]  # light isotope
             df[f"{f.n} {sn} [{sp.hn}]"] = f.h[start:stop:
                                               stride]  # heavy isotope
-            df[f"{f.n} {sn} {sdn} {sds}"] = f.d[start:stop:stride]  # delta
+            df[f"{f.n} {sn} {sdn} [{sds}]"] = f.d[start:stop:stride]  # delta
 
         df.to_csv(fn, index=False)  # Write dataframe to file
         return df
@@ -1232,13 +1250,16 @@ class Reservoir(esbmtkBase):
         #rows = 6
         ovars: list = ["m", "l", "h", "d"]
 
-        for v in ovars:
-            #obj.__dict__[v][0:rows] =  df.iloc[0:rows, col].to_numpy()
-            obj.__dict__[v][:] = df.iloc[-3, col]
-            col += 1
+        #for v in ovars:
+        #    print(f" assigning [v] to {obj.name} which is of type {type(obj)}")
+        #    obj.__dict__[v][:] = df.iloc[-3, col]
+        obj.m[:] = df.iloc[-3, col]
+        obj.l[:] = df.iloc[-3, col + 1]
+        obj.h[:] = df.iloc[-3, col + 2]
+        obj.d[:] = df.iloc[-3, col + 3]
+        col = col + 4
 
         if res:  # if type is reservoir
-            #obj.c[0:rows] = df.iloc[0:rows, col].to_numpy()
             obj.c[:] = df.iloc[-3, col]
             col += 1
 
@@ -1279,8 +1300,9 @@ class Reservoir(esbmtkBase):
                 plot_object_data(geo, fn, d, ptype)
 
             if geo != [1, 1]:
-                fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
-                
+                fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n",
+                             size=16)
+
             fig.tight_layout()
             fig.subplots_adjust(top=0.88)
             fig.savefig(filename)
