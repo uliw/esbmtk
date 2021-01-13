@@ -213,7 +213,7 @@ class AddSignal(Process):
         # add signal delta to flux delta
         self.f.d[i] = self.f.d[i] + self.lt.d[i]
 
-        self.f.l[i], self.f.h[i] = get_imass(self.f.m[i], self.f.d[i], r.sp.r)
+        self.f.l[i], self.f.h[i] = get_imass(self.f.m[i], self.f.d[i], r.rvalue)
         # signals may have zero mass, but may have a delta offset. Thus, we do not know
         # the masses for the light and heavy isotope. As such we have to calculate the masses
         # after we add the signal to a flux
@@ -273,7 +273,7 @@ class PassiveFlux(Process):
           for j, f in enumerate(self.fws):
                new += f.m[i] * reservoir.lio[f.n]
                
-          self.f[i] = get_flux_data(new,reservoir.d[i-1],reservoir.sp.r)
+          self.f[i] = get_flux_data(new,reservoir.d[i-1],reservoir.rvalue)
 #+END_SRC
 
 #+RESULTS:
@@ -324,7 +324,7 @@ class PassiveFlux_fixed_delta(Process):
 
           """
 
-          r :float = reservoir.sp.r # the isotope reference value
+          r :float = reservoir.rvalue # the isotope reference value
 
           varflux :Flux = self.f 
           flux_list :List[Flux] = reservoir.lof.copy()
@@ -356,6 +356,7 @@ class VarDeltaOut(Process):
 
      """
 
+     __slots__ = ['rate']
      def __init__(self, **kwargs :Dict[str, any]) -> None:
           """ Initialize this Process
           
@@ -390,7 +391,7 @@ class VarDeltaOut(Process):
           called by the model execute method"""
 
           # set flux according to keyword value
-          self.f[i] = get_flux_data(self.rate,reservoir.d[i-1], reservoir.sp.r)
+          self.f[i] = get_flux_data(self.rate,reservoir.d[i-1], reservoir.rvalue)
 #+END_SRC
 
 *** Scale a flux and flux splitting
@@ -406,7 +407,9 @@ class ScaleFlux(Process):
                     scale = 1
                     ref = flux we use for scale)
 
-     """
+    """
+
+    __slots__ = ['rate', 'scale']
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this Process 
 
@@ -423,6 +426,8 @@ class ScaleFlux(Process):
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
 
+        
+
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """Apply the scale factor. This is typically done through the the
           model execute method.
@@ -432,7 +437,7 @@ class ScaleFlux(Process):
           """
         self.f[i] = self.ref[i] * self.scale
         self.f[i] = get_flux_data(self.f.m[i], reservoir.d[i - 1],
-                                  reservoir.sp.r)
+                                  reservoir.rvalue)
 
 
 class FluxDiff(Process):
@@ -533,7 +538,7 @@ class Fractionation(Process):
                                             self.alpha)
 
         #update delta
-        self.f.d[i] = get_delta(self.f.l[i], self.f.h[i], self.f.sp.r)
+        self.f.d[i] = get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)
         return
 
     # use this when we don't do isotopes
@@ -557,7 +562,7 @@ class RateConstant(Process):
     ScaleRelativeToConcentration
 
     """
-
+    __slots__ = ['k_value', 'ref_value'] 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this Process
 
