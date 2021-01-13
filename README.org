@@ -17,6 +17,8 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - Jan. 12^{th}, The model object now accepts a =plot_style= keyword
+
  - Jan. 5^{th}, Connector objects and fluxes use now a more consistent
    naming scheme: =Source_2_Sink_Connector=, and the associated flux
    is named =Source_2_Sink_Flux=. Processes acting on flux are named

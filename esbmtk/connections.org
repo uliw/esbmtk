@@ -335,6 +335,7 @@ class Connect(esbmtkBase):
 
         if self.rate == "None":
             r = f"1 {self.sp.mo.f_unit}"
+            self._rate = r
         else:
             r = self.rate
 
@@ -597,7 +598,6 @@ class Connect(esbmtkBase):
         from . import ureg, Q_
 
         # this process requires that we use the vardeltaout process
-
         if self.mo.m_type != "mass_only":
             self.__vardeltaout__()
            

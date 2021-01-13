@@ -6,8 +6,8 @@ volume = "1 liter"
 # create model
 Model(
     name="equi4",  # model name
-    stop="1000 s",        # end time of model
-    timestep="0.1 s",            # time step
+    stop="2 s",        # end time of model
+    timestep="0.001 s",            # time step
     element=["Carbon"],  # initialize carbon species
     mass_unit="mol",
     volume_unit="l",
@@ -33,12 +33,10 @@ Reservoir(
 Connect(
     source=R1,   # target of flux
     sink=R2,    # source of flux
-    rate="1 mol/s",           # flux rate
     ctype="flux_balance",
     k_value=1,
     left=[R1],
     right=[R2],
-    #alpha=0,                # isotope fractionation
     plot="no",
 )
 

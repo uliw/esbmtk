@@ -33,12 +33,14 @@ import time
 import builtins
 import os
 
-class esbmtkBase():
+class esbmtkBase(object):
     """The esbmtk base class template. This class handles keyword
     arguments, name registration and other common tasks
 
     """
 
+    __slots__ = ('__dict__')
+   
     from typing import Dict
 
     def __init__(self) -> None:
@@ -355,8 +357,17 @@ class esbmtkBase():
         # print basic data bout this object
         print(f"{ind}{self.__str__(indent=indent)}")
 
+# class ClassName(object):
+#     """Documentation for ClassName
+
+#     """
+#     def __init__(self, args):
+#         super(ClassName, self).__init__()
+#         self.args = args
+        
+        
 class Model(esbmtkBase):
-    """ This lass is used to specify a new model
+    """This lass is used to specify a new model
 
     Example:
 
@@ -370,6 +381,7 @@ class Model(esbmtkBase):
                       time_label = optional, defaults to "Time"
                       display_precision = optional, defaults to 0.01,
                       m_type = "mass_only", defaults to both (mass & isotope)
+                      plot_style = 'default', optional defaults to 'default'
                       )
 
     The 'ref_time' keyword will offset the time axis by the specified
@@ -395,6 +407,9 @@ class Model(esbmtkBase):
        - Model_Name.run()
        - Model_Name.list_species()
 
+    User facing variable are Model_Name.time which contains the time
+    axis.
+
     Optional, you can provide the element keyword which will setup a
     default set of Species for Carbon and Sulfur. In this case, there
     is no need to define elements or species. The argument to this
@@ -403,6 +418,8 @@ class Model(esbmtkBase):
 
     """
 
+    __slots__ = ('lor')
+    
     def __init__(self, **kwargs: Dict[any, any]) -> None:
         """ Init Sequence
 
@@ -423,6 +440,7 @@ class Model(esbmtkBase):
             "time_label": str,
             "display_precision": float,
             "m_type": str,
+            "plot_style": str,
         }
 
         # provide a list of absolutely required keywords
@@ -437,6 +455,7 @@ class Model(esbmtkBase):
             'time_label': "Time",
             'display_precision': 0.01,
             'm_type': "mass_only",
+            'plot_style': "default",
         }
 
         self.__initerrormessages__()
@@ -449,6 +468,7 @@ class Model(esbmtkBase):
             "time_label": "a string",
             "display_precision": "a number",
             "m_type": "a string",
+            "plot_style": "a string",
         })
 
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -469,8 +489,8 @@ class Model(esbmtkBase):
         self.l_unit = ureg.meter  # the length unit
         self.t_unit = Q_(self.timestep).units  # the time unit
         self.d_unit = Q_(self.stop).units  # display time units
-        self.m_unit = Q_(self.mass_unit)  # the mass unit
-        self.v_unit = Q_(self.volume_unit)  # the volume unit
+        self.m_unit = Q_(self.mass_unit).units  # the mass unit
+        self.v_unit = Q_(self.volume_unit).units  # the volume unit
         # the concentration unit (mass/volume)
         self.c_unit = self.m_unit / self.v_unit
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
@@ -489,6 +509,7 @@ class Model(esbmtkBase):
         self.tu = str(self.bu)  # needs to be a string
         self.n = self.name
         self.mo = self.name
+        self.plot_style: list = [self.plot_style]
 
         self.xl = f"Time [{self.bu}]"  # time axis label
         self.length = int(abs(self.stop - self.start))
@@ -521,7 +542,8 @@ class Model(esbmtkBase):
                     f"This program comes with ABSOLUTELY NO WARRANTY\n"
                     f"For details see the LICENSE file\n"
                     f"This is free software, and you are welcome to redistribute it\n"
-                    f"under certain conditions; See the LICENSE file for details.\n")
+                    f"under certain conditions; See the LICENSE file for details.\n"
+                )
                 print(warranty)
 
         # start a log file
@@ -695,6 +717,7 @@ class Model(esbmtkBase):
         # from functools import reduce
 
         i = 1  # some processes refer to the previous time step
+        dt = lor[0].mo.dt
         for t in time[0:-1]:  # loop over the time vector except the first
             # we first need to calculate all fluxes
             for r in lor:  # loop over all reservoirs
@@ -712,7 +735,7 @@ class Model(esbmtkBase):
                     new += f[i] * direction_list[j]
 
                 # add to data from last time step
-                r[i] = r[i - 1] + new * r.mo.dt
+                r[i] = r[i - 1] + new * dt
 
             i = i + 1  # next time step
 
@@ -832,6 +855,8 @@ specific properties
 
     """
 
+    __slots__ = ('r')
+
     # set species properties
     def __init__(self, **kwargs) -> None:
         """ Initialize all instance variables
@@ -901,6 +926,9 @@ class Reservoir(esbmtkBase):
       - Name.describe()   # describe Reservoir
 
     """
+
+    __slots__ = ('m', 'l', 'h', 'd', 'c', 'lio', 'rvalue', 'lodir', 'lof')
+
     def __init__(self, **kwargs) -> None:
         """ Initialize a reservoir.
 
@@ -912,7 +940,7 @@ class Reservoir(esbmtkBase):
         self.lkk: Dict[str, any] = {
             "name": str,
             "species": Species,
-            "delta": (Number,str),
+            "delta": (Number, str),
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
@@ -947,11 +975,12 @@ class Reservoir(esbmtkBase):
 
         if self.delta == "None":
             self.delta = 0
-            
+
         # legacy names
         self.n: str = self.name  # name of reservoir
         self.sp: Species = self.species  # species handle
         self.mo: Model = self.species.mo  # model handle
+        self.rvalue = self.sp.r
 
         # convert units
         self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
@@ -1062,8 +1091,8 @@ class Reservoir(esbmtkBase):
 
         # some short hands
         sn = self.sp.n  # species name
-        sp = self.sp
-        mo = self.sp.mo
+        sp = self.sp  # species handle
+        mo = self.sp.mo  # model handle
 
         smu = f"{mo.m_unit:~P}"
         mtu = f"{mo.t_unit:~P}"
@@ -1081,9 +1110,12 @@ class Reservoir(esbmtkBase):
 
         df[f"{self.n} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
         df[f"{self.n} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
-        df[f"{self.n} {sp.ln}"] = self.l[start:stop:stride]  # light isotope
-        df[f"{self.n} {sp.hn} "] = self.h[start:stop:stride]  # heavy isotope
-        df[f"{self.n} {sdn} {sds}"] = self.d[start:stop:stride]  # delta value
+        df[f"{self.n} {sp.ln} [{smu}]"] = self.l[start:stop:
+                                                 stride]  # light isotope
+        df[f"{self.n} {sp.hn} [{smu}]"] = self.h[start:stop:
+                                                 stride]  # heavy isotope
+        df[f"{self.n} {sdn} [{sds}]"] = self.d[start:stop:
+                                               stride]  # delta value
         df[f"{self.n} {sn} [{cmu}]"] = self.c[start:stop:
                                               stride]  # concentration
 
@@ -1093,7 +1125,7 @@ class Reservoir(esbmtkBase):
                                               stride]  # light isotope
             df[f"{f.n} {sn} [{sp.hn}]"] = f.h[start:stop:
                                               stride]  # heavy isotope
-            df[f"{f.n} {sn} {sdn} {sds}"] = f.d[start:stop:stride]  # delta
+            df[f"{f.n} {sn} {sdn} [{sds}]"] = f.d[start:stop:stride]  # delta
 
         df.to_csv(fn, index=False)  # Write dataframe to file
         return df
@@ -1161,13 +1193,16 @@ class Reservoir(esbmtkBase):
         #rows = 6
         ovars: list = ["m", "l", "h", "d"]
 
-        for v in ovars:
-            #obj.__dict__[v][0:rows] =  df.iloc[0:rows, col].to_numpy()
-            obj.__dict__[v][:] = df.iloc[-3, col]
-            col += 1
+        #for v in ovars:
+        #    print(f" assigning [v] to {obj.name} which is of type {type(obj)}")
+        #    obj.__dict__[v][:] = df.iloc[-3, col]
+        obj.m[:] = df.iloc[-3, col]
+        obj.l[:] = df.iloc[-3, col + 1]
+        obj.h[:] = df.iloc[-3, col + 2]
+        obj.d[:] = df.iloc[-3, col + 3]
+        col = col + 4
 
         if res:  # if type is reservoir
-            #obj.c[0:rows] = df.iloc[0:rows, col].to_numpy()
             obj.c[:] = df.iloc[-3, col]
             col += 1
 
@@ -1188,7 +1223,7 @@ class Reservoir(esbmtkBase):
         filename = f"{model.n}_{self.n}.pdf"
         fn = 1  # counter for the figure number
 
-        plt.style.use(['default'])
+        plt.style.use(model.plot_style)
         fig = plt.figure(i)  # Initialize a plot window
         fig.canvas.set_window_title(f"Reservoir Name: {self.n}")
         fig.set_size_inches(size)
@@ -1207,7 +1242,10 @@ class Reservoir(esbmtkBase):
                 fn = fn + 1
                 plot_object_data(geo, fn, d, ptype)
 
-            fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
+            if geo != [1, 1]:
+                fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n",
+                             size=16)
+
             fig.tight_layout()
             fig.subplots_adjust(top=0.88)
             fig.savefig(filename)
@@ -1228,7 +1266,7 @@ class Reservoir(esbmtkBase):
         filename = f"{model.n}_{self.n}.pdf"
         fn: int = 1  # counter for the figure number
 
-        plt.style.use(['default'])
+        plt.style.use(model.plot_style)
         fig = plt.figure(i)  # Initialize a plot window
         fig.set_size_inches(size)
 
@@ -1423,6 +1461,9 @@ class Flux(esbmtkBase):
       - Name.c # concentration
       
     """
+
+    __slots__ = ('m', 'l', 'h', 'd', 'rvalue')
+    
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
         Initialize a flux. Arguments are the species name the flux rate
@@ -1457,6 +1498,7 @@ class Flux(esbmtkBase):
         self.sp: Species = self.species  # species name
         self.mo: Model = self.species.mo  # model name
         self.model: Model = self.species.mo  # model handle
+        self.rvalue = self.sp.r
 
         # model units
         self.plt_units = Q_(self.rate).units
@@ -1688,6 +1730,8 @@ class SourceSinkGroup(esbmtkBase):
 
     where the first argument is a string, and the second is a reservoir handle
     """
+
+    
     def __init__(self, **kwargs) -> None:
 
         # provide a dict of all known keywords and their type

@@ -202,8 +202,8 @@ class Connect(esbmtkBase):
         self.mo = self.source.sp.mo
 
         # convert units into model units rate, k_mass, k_concentrationn
-        if kwargs["rate"] != "None":
-            self._rate = Q_(self._rate).to(self.mo.f_unit)
+        #if kwargs["rate"] != "None":
+        #    self._rate = Q_(self._rate).to(self.mo.f_unit)
 
         self.p = 0  # the default process handle
         self.r1: (Process, Reservoir) = self.source
@@ -272,16 +272,16 @@ class Connect(esbmtkBase):
             d = self.delta
 
         if self.rate == "None":
-            r = f"0 {self.sp.mo.f_unit}"
-
+            r = f"1 {self.sp.mo.f_unit}"
+            self._rate = r
         else:
             r = self.rate
 
         # flux name
-        if not self.id == "":
-            n = self.r1.n + '_2_' + self.r2.n + "_" + self.id + "_Flux"  # flux name r1_2_r2
+        if self.id == "None":
+             n = self.r1.n + '_2_' + self.r2.n + "_Flux"
         else:
-            n = self.r1.n + '_2_' + self.r2.n + "_Flux"
+             n = self.r1.n + '_2_' + self.r2.n + "_" + self.id + "_Flux"  # flux name r1_2_r2
 
         # derive flux unit from species obbject
         funit = self.sp.mu + "/" + str(self.sp.mo.bu)  # xxx
@@ -382,35 +382,32 @@ class Connect(esbmtkBase):
         else:
             self.pn = self.r1.n + "_2_" + self.r2.n
 
-        # set the fundamental flux type
-        if self.delta != "None" and self.rate != "None":
-            # if "delta" in self.kwargs and "rate" in self.kwargs:
-            pass  # static flux
-        elif self.delta != "None":
-            self.__passivefluxfixeddelta__()  # variable flux with fixed delta
-        elif self.rate != "None":
-            self.__vardeltaout__()  # variable delta with fixed flux
-        else:  # if neither are given -> default varflux type
-            # if isinstance(self.r1, Source):
-            #     raise ValueError(
-            #         f"{self.r1.n} requires a rate and delta value")
-            # xxx experimental. Not sure this is valid in all cases
-            self._delta = 0
-            self._rate = 1
-            self.__passiveflux__()
-
-        # Set optional flux processes
-        if self.alpha != "None":
-            self.__alpha__()
-
-        # set complex flux types
+        # if connection type is not set explicitly
         if self.ctype == "None":
-            pass
+            # set the fundamental flux type based on the flux arguments given
+            if self.delta != "None" and self.rate != "None":
+                # if "delta" in self.kwargs and "rate" in self.kwargs:
+                pass  # static flux
+            elif self.delta != "None":
+                self.__passivefluxfixeddelta__()  # variable flux with fixed delta
+            elif self.rate != "None":
+                self.__vardeltaout__()  # variable delta with fixed flux
+            else:  # if neither are given -> default varflux type
+                self._delta = 0
+                self.__passiveflux__()
+            #else:
+            # if ctype is set, we need to set the flux type explicitly
+            #self.__vardeltaout__()
+            # XXX not sure that this covers all cases
+           # pass
         elif self.ctype == "flux_diff":
+            self.__vardeltaout__() 
             self.__flux_diff__()
         elif self.ctype == "scale_with_flux":
+            self.__vardeltaout__() 
             self.__scaleflux__()
         elif self.ctype == "copy_flux":
+            self.__vardeltaout__() 
             self.__scaleflux__()
         elif self.ctype == "scale_with_mass":
             self.__rateconstant__()
@@ -425,11 +422,16 @@ class Connect(esbmtkBase):
         elif self.ctype == "flux_balance":
             self.__rateconstant__()
         elif self.ctype == "monod_type_limit":
+            self.__vardeltaout__() 
             self.__rateconstant__()
         else:
             print(f"Connection Type {self.type} is unknown")
             raise ValueError(f"Unknown connection type {self.ctype}")
 
+         # Set optional flux processes
+        if self.alpha != "None":
+            self.__alpha__() # Set optional flux processes
+       
     def __passivefluxfixeddelta__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
 
@@ -443,14 +445,17 @@ class Connect(esbmtkBase):
         self.lop.append(ph)
 
     def __vardeltaout__(self) -> None:
-        """ Just a wrapper to keep the if statement manageable
+        """Unlike a passive flux, this process sets the output flux from a
+        reservoir to a fixed value, but the isotopic ratio of the
+        output flux will be set equal to the isotopic ratio of the
+        upstream reservoir.
 
         """
 
         ph = VarDeltaOut(name=self.pn + "_Pvdo",
                          reservoir=self.r,
                          flux=self.fh,
-                         rate=self.kwargs["rate"])
+                         rate=self.rate)
         self.lop.append(ph)
 
     def __scaleflux__(self) -> None:
@@ -530,11 +535,11 @@ class Connect(esbmtkBase):
 
         from . import ureg, Q_
 
-        if "rate" not in self.kwargs:
-            raise ValueError(
-                "The rate constant process requires that the flux rate for this reservoir is being set explicitly"
-            )
-
+        # this process requires that we use the vardeltaout process
+        if self.mo.m_type != "mass_only":
+            self.__vardeltaout__()
+           
+        
         if self.ctype == "scale_with_mass":
             self.k_value = map_units(self.k_value, self.mo.m_unit)
             ph = ScaleRelativeToMass(name=self.pn + "_PkM",
