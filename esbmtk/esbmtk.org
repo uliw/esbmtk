@@ -933,6 +933,9 @@ specific properties
 
         self.__validateandregister__(kwargs)  # initialize keyword values
 
+        if not "display_as" in kwargs:
+            self.display_as = self.name
+
         # legacy names
         self.n = self.name  # display name of species
         self.mu = self.element.mu  # display name of mass unit
@@ -944,7 +947,7 @@ specific properties
         self.mo = self.element.mo  # model handle
         self.eh = self.element.n  # element name
         self.e = self.element  # element handle
-        self.ds = self.display_as # the display string.
+        self.dsa = self.display_as  # the display string.
 
         #self.mo.lsp.append(self)   # register self on the list of model objects
         self.e.lsp.append(self)  # register this species with the element
@@ -1091,8 +1094,8 @@ class Reservoir(esbmtkBase):
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"
         self.xl: str = self.mo.xl  # set x-axis lable to model time
 
-        self.legend_left = self.species.ds
-        self.legend_right = self.species.dn
+        self.legend_left = self.species.dsa
+        self.legend_right = f"{self.species.dn} [{self.species.ds}]"
         self.mo.lor.append(self)  # add this reservoir to the model
         # register instance name in global name space
         self.reg_time = time.monotonic()
@@ -1585,8 +1588,8 @@ class Flux(esbmtkBase):
             self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.sp.r)
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
-        self.legend_left: str = self.species.ds
-        self.legend_right: str = self.species.dn
+        self.legend_left: str = self.species.dsa
+        self.legend_right: str = f"{self.species.dn} [{self.species.ds}]"
 
         self.xl: str = self.model.xl  # se x-axis label equal to model time
         self.lop: list[Process] = []  # list of processes
