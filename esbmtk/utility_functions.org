@@ -479,16 +479,26 @@ def map_units(v: any, *args) -> float:
 #+END_SRC
 
 #+BEGIN_SRC ipython :tangle utility_functions.py
-def is_name_in_list(n: str, l: list)->bool:
+def is_name_in_list(n: str, l: list) -> bool:
     """ Test if an object name is part of the object list
     
     """
 
-    r :bool = False
+    r: bool = False
     for e in l:
         if e.n == n:
             r = True
+    return r
 
+
+def get_object_from_list(n: str, l: list) -> any:
+    """ Match a name to a list of objects. Return the object
+    
+    """
+
+    for o in l:
+        if o.n == n:
+            r = o
     return r
 #+END_SRC
 
@@ -580,3 +590,26 @@ def sort_by_type(l: list, t: list, m: str) -> list:
 :results:
 # Out [1]: 
 :end:
+
+** Problems with Panchucks data
+
+I only get an isotope effect of 2.9 permil with 6800 Pg C at -22
+permil. The effect on the ocean is smaller if use second assumption
+(i.e., 2220 Pmol at -60). The overall effect is probably dependent on
+how we setup the fluxes?
+
+#+BEGIN_SRC ipython
+from esbmtk import get_imass, get_delta
+
+l1, h1 = get_imass(2200E15,-60,C.r)
+
+l2, h2 = get_imass(68001E15,-22,C.r)
+
+oh1=Ocean.h[0]+h1
+ol1=Ocean.l[0]+l1
+oh2=Ocean.h[0]+h2
+ol2=Ocean.l[0]+l2
+
+get_delta(ol1,oh1,C.r)
+get_delta(ol2,oh2,C.r)
+#+END_SRC
