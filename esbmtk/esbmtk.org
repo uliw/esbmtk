@@ -1206,6 +1206,13 @@ class Reservoir(esbmtkBase):
 
         """
 
+        read: set = set()
+        curr: set = set()
+        
+        # get a set of all current fluxes
+        for e in self.lof:
+            curr.add(e.name)
+
         fn = "state_" + self.mo.n + "_" + self.n + ".csv"
 
         if not os.path.exists(fn):
@@ -1230,14 +1237,22 @@ class Reservoir(esbmtkBase):
         i: int = 0
         for n in header_list:
             name = n.split(" ")[0]
+            # this finds the reservoir name
             if name == self.name:
                 col = self.__assign__data__(self, df, col, True)
+            # this loops over all fluxes in a reservoir
             elif is_name_in_list(name, self.lof):
-                col = self.__assign__data__(self.lof[i], df, col, False)
+                obj = get_object_from_list(name, self.lof)
+                read.add(obj.name)
+                col = self.__assign__data__(obj, df, col, False)
                 i += 1
             else:
                 print(f"No '{name}' in {self.n}\n")
                 raise ValueError("Unable to find Reservoir of Flux Name")
+
+        # test if we missed any fluxes
+        for e in list(curr.difference(read)):
+            print(f"\n Warning: Did not find values for '{e}'\n")
 
     def __assign__data__(self, obj: any, df: pd.DataFrame, col: int,
                          res: bool) -> int:
@@ -1250,12 +1265,8 @@ class Reservoir(esbmtkBase):
 
         """
 
-        #rows = 6
         ovars: list = ["m", "l", "h", "d"]
 
-        #for v in ovars:
-        #    print(f" assigning [v] to {obj.name} which is of type {type(obj)}")
-        #    obj.__dict__[v][:] = df.iloc[-3, col]
         obj.m[:] = df.iloc[-3, col]
         obj.l[:] = df.iloc[-3, col + 1]
         obj.h[:] = df.iloc[-3, col + 2]
