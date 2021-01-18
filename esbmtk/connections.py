@@ -91,7 +91,6 @@ class Connect(esbmtkBase):
     
 
     """
-    
     def __init__(self, **kwargs):
         """ The init method of the connector obbjects performs sanity checks e.g.:
                - whether the reservoirs exist
@@ -136,6 +135,7 @@ class Connect(esbmtkBase):
             "right": (list, Number, Reservoir),
             "plot": str,
             "register": str,
+            "signal": (Signal,str),
         }
 
         if not "name" in kwargs:
@@ -155,7 +155,8 @@ class Connect(esbmtkBase):
             "alpha": "None",
             "rate": "None",
             "k_value": 1,
-            "register": "yes"
+            "register": "yes",
+            "signal": "None",
         }
 
         # validate and initialize instance variables
@@ -173,6 +174,7 @@ class Connect(esbmtkBase):
             "plot": "a string",
             "left": "Number, list or Reservoir",
             "right": "Number, list or Reservoir",
+            "signal": "Signal Handle",
         })
 
         self.drn = {
@@ -189,6 +191,9 @@ class Connect(esbmtkBase):
             self.lop: list[Process] = self.pl
         else:
             self.lop: list[Process] = []
+
+        if self.signal != "None":
+            self.lop.append(self.signal)
 
         # if no reference reservoir is specified, default to the upstream
         # reservoir
@@ -279,9 +284,9 @@ class Connect(esbmtkBase):
 
         # flux name
         if self.id == "None":
-             n = self.r1.n + '_2_' + self.r2.n + "_Flux"
+            n = self.r1.n + '_2_' + self.r2.n + "_Flux"
         else:
-             n = self.r1.n + '_2_' + self.r2.n + "_" + self.id + "_Flux"  # flux name r1_2_r2
+            n = self.r1.n + '_2_' + self.r2.n + "_" + self.id + "_Flux"  # flux name r1_2_r2
 
         # derive flux unit from species obbject
         funit = self.sp.mu + "/" + str(self.sp.mo.bu)  # xxx
@@ -389,7 +394,8 @@ class Connect(esbmtkBase):
                 # if "delta" in self.kwargs and "rate" in self.kwargs:
                 pass  # static flux
             elif self.delta != "None":
-                self.__passivefluxfixeddelta__()  # variable flux with fixed delta
+                self.__passivefluxfixeddelta__(
+                )  # variable flux with fixed delta
             elif self.rate != "None":
                 self.__vardeltaout__()  # variable delta with fixed flux
             else:  # if neither are given -> default varflux type
@@ -399,15 +405,15 @@ class Connect(esbmtkBase):
             # if ctype is set, we need to set the flux type explicitly
             #self.__vardeltaout__()
             # XXX not sure that this covers all cases
-           # pass
+        # pass
         elif self.ctype == "flux_diff":
-            self.__vardeltaout__() 
+            self.__vardeltaout__()
             self.__flux_diff__()
         elif self.ctype == "scale_with_flux":
-            self.__vardeltaout__() 
+            self.__vardeltaout__()
             self.__scaleflux__()
         elif self.ctype == "copy_flux":
-            self.__vardeltaout__() 
+            self.__vardeltaout__()
             self.__scaleflux__()
         elif self.ctype == "scale_with_mass":
             self.__rateconstant__()
@@ -422,16 +428,16 @@ class Connect(esbmtkBase):
         elif self.ctype == "flux_balance":
             self.__rateconstant__()
         elif self.ctype == "monod_type_limit":
-            self.__vardeltaout__() 
+            self.__vardeltaout__()
             self.__rateconstant__()
         else:
             print(f"Connection Type {self.type} is unknown")
             raise ValueError(f"Unknown connection type {self.ctype}")
 
-         # Set optional flux processes
+        # Set optional flux processes
         if self.alpha != "None":
-            self.__alpha__() # Set optional flux processes
-       
+            self.__alpha__()  # Set optional flux processes
+
     def __passivefluxfixeddelta__(self) -> None:
         """ Just a wrapper to keep the if statement manageable
 
@@ -538,8 +544,7 @@ class Connect(esbmtkBase):
         # this process requires that we use the vardeltaout process
         if self.mo.m_type != "mass_only":
             self.__vardeltaout__()
-           
-        
+
         if self.ctype == "scale_with_mass":
             self.k_value = map_units(self.k_value, self.mo.m_unit)
             ph = ScaleRelativeToMass(name=self.pn + "_PkM",

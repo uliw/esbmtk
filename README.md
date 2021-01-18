@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org9f55f91)
-2.  [News](#orgae68427)
-3.  [Contributing](#orgf30a74c)
-4.  [Installation](#orgd89d2c3)
-5.  [Documentation](#org2683df0)
-6.  [Todo](#org97f798f)
-7.  [License](#org5fc2810)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org965a9df)
+2.  [News](#orgb6dd4b7)
+3.  [Contributing](#org8ebda29)
+4.  [Installation](#orgeb5f5b9)
+5.  [Documentation](#orga01a11f)
+6.  [Todo](#org5f48475)
+7.  [License](#org42611db)
 
 
-<a id="org9f55f91"></a>
+<a id="org965a9df"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,9 +30,16 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="orgae68427"></a>
+<a id="orgb6dd4b7"></a>
 
 # News
+
+-   Jan. 18<sup>th</sup>, Reading a previous model state is now more robust. It no
+    longer requires the models model have the same numbers of
+    fluxes. It will attempt to match by name, and print a warning for
+    those fluxes it could not match.
+
+-   Jan. 12<sup>th</sup>, The model object now accepts a `plot_style` keyword
 
 -   Jan. 5<sup>th</sup>, Connector objects and fluxes use now a more consistent
     naming scheme: `Source_2_Sink_Connector`, and the associated flux
@@ -104,7 +111,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgf30a74c"></a>
+<a id="org8ebda29"></a>
 
 # Contributing
 
@@ -114,7 +121,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orgd89d2c3"></a>
+<a id="orgeb5f5b9"></a>
 
 # Installation
 
@@ -135,7 +142,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org2683df0"></a>
+<a id="orga01a11f"></a>
 
 # Documentation
 
@@ -150,7 +157,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org97f798f"></a>
+<a id="org5f48475"></a>
 
 # Todo
 
@@ -159,7 +166,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org5fc2810"></a>
+<a id="org42611db"></a>
 
 # License
 

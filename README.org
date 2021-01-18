@@ -17,6 +17,11 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - Jan. 18^{th}, Reading a previous model state is now more robust. It no
+   longer requires the models model have the same numbers of
+   fluxes. It will attempt to match by name, and print a warning for
+   those fluxes it could not match.
+
  - Jan. 12^{th}, The model object now accepts a =plot_style= keyword
 
  - Jan. 5^{th}, Connector objects and fluxes use now a more consistent

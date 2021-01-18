@@ -195,7 +195,7 @@ class AddSignal(Process):
         # add signal delta to flux delta
         self.f.d[i] = self.f.d[i] + self.lt.d[i]
 
-        self.f.l[i], self.f.h[i] = get_imass(self.f.m[i], self.f.d[i], r.sp.r)
+        self.f.l[i], self.f.h[i] = get_imass(self.f.m[i], self.f.d[i], r.rvalue)
         # signals may have zero mass, but may have a delta offset. Thus, we do not know
         # the masses for the light and heavy isotope. As such we have to calculate the masses
         # after we add the signal to a flux
@@ -211,7 +211,7 @@ class AddSignal(Process):
         self.f.m[i] = self.f.m[i] + self.lt.m[i]
 
 class PassiveFlux(Process):
-     """This process sets the output flux from a reservoir to be equal to
+    """This process sets the output flux from a reservoir to be equal to
      the sum of input fluxes, so that the reservoir concentration does
      not change. Furthermore, the isotopic ratio of the output flux
      will be set equal to the isotopic ratio of the reservoir The init
@@ -224,34 +224,43 @@ class PassiveFlux(Process):
                  flux = flux handle)
 
      """
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """ Initialize this Process """
 
-     def __init__(self, **kwargs :Dict[str,any]) -> None:
-          """ Initialize this Process """
-          
-         
-          # get default names and update list for this Process
-          self.__defaultnames__()  # default kwargs names
-          self.lrk.extend(["reservoir", "flux"]) # new required keywords
-          self.__initerrormessages__()
-          #self.bem.update({"rate": "a string"})
-          self.__validateandregister__(kwargs)  # initialize keyword values
-          #legacy variables
-          self.mo = self.reservoir.mo
-          self.__postinit__()  # do some housekeeping
-          self.__register_name__()
-     
-     def __call__(self,reservoir :Reservoir, i :int) -> None:
-          """Here we re-balance the flux. That is, we calculate the sum of all fluxes
+        # get default names and update list for this Process
+        self.__defaultnames__()  # default kwargs names
+        self.lrk.extend(["reservoir", "flux"])  # new required keywords
+        self.__initerrormessages__()
+        #self.bem.update({"rate": "a string"})
+        self.__validateandregister__(kwargs)  # initialize keyword values
+        #legacy variables
+        self.mo = self.reservoir.mo
+        self.__postinit__()  # do some housekeeping
+        self.__register_name__()
+
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """Here we re-balance the flux. That is, we calculate the sum of all fluxes
           excluding this flux. This sum will be equl to this flux. This will likely only
-          work for outfluxes though
+          work for outfluxes though.
+
+        Should this be done for output fluxes as well?
           
           """
 
-          new :float = 0
-          for j, f in enumerate(self.fws):
-               new += f.m[i] * reservoir.lio[f.n]
-               
-          self.f[i] = get_flux_data(new,reservoir.d[i-1],reservoir.sp.r)
+        new: float = 0
+        for j, f in enumerate(self.fws):
+            new += f.m[i] * reservoir.lio[f.n]
+
+        # self.f[i] = get_flux_data(new,reservoir.d[i-1],reservoir.rvalue)
+
+        m = new
+        r = reservoir.l[i - 1] / reservoir.m[i - 1]
+        l = m * r
+        h = m - l
+        self.f.m[i] = m
+        self.f.l[i] = l
+        self.f.h[i] = h
+        self.f.d[i] = reservoir.d[i - 1]
 
 class PassiveFlux_fixed_delta(Process):
      """This process sets the output flux from a reservoir to be equal to
@@ -297,7 +306,7 @@ class PassiveFlux_fixed_delta(Process):
 
           """
 
-          r :float = reservoir.sp.r # the isotope reference value
+          r :float = reservoir.rvalue # the isotope reference value
 
           varflux :Flux = self.f 
           flux_list :List[Flux] = reservoir.lof.copy()
@@ -312,7 +321,7 @@ class PassiveFlux_fixed_delta(Process):
           self.f[i] = array(get_flux_data(newflux, self.delta, r))
 
 class VarDeltaOut(Process):
-     """Unlike a passive flux, this process sets the output flux from a
+    """Unlike a passive flux, this process sets the output flux from a
      reservoir to a fixed value, but the isotopic ratio of the output
      flux will be set equal to the isotopic ratio of the reservoir The
      init and register methods are inherited from the process
@@ -326,41 +335,55 @@ class VarDeltaOut(Process):
 
      """
 
-     def __init__(self, **kwargs :Dict[str, any]) -> None:
-          """ Initialize this Process
+    __slots__ = ('rate')
+
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """ Initialize this Process
           
           """
 
-          from . import ureg, Q_
-          
-          # get default names and update list for this Process
-          self.__defaultnames__()   
-          self.lkk: Dict[str, any] = {
-               "name": str,
-               "reservoir" : Reservoir,
-               "flux": Flux,
-               "rate": (str,Q_),
-               }
-          self.lrk.extend(["reservoir", "rate"]) # new required keywords
-          self.__initerrormessages__()
-          self.bem.update({"rate": "a string"})
-          self.__validateandregister__(kwargs)  # initialize keyword values
+        from . import ureg, Q_
 
-          # parse rate term, and map to legacy name
-          self.rateq = Q_(self.rate)
-          self.rate = Q_(self.rate).to(self.reservoir.mo.f_unit).magnitude
-          #legacy variables
-          self.mo = self.reservoir.mo
-          self.__postinit__()  # do some housekeeping
-          self.__register_name__()
-     
-     def __call__(self, reservoir:Reservoir ,i :int) -> None:
-          """Here we re-balance the flux. This code will be called by the
+        # get default names and update list for this Process
+        self.__defaultnames__()
+        self.lkk: Dict[str, any] = {
+            "name": str,
+            "reservoir": Reservoir,
+            "flux": Flux,
+            "rate": (str, Q_),
+        }
+        self.lrk.extend(["reservoir", "rate"])  # new required keywords
+        self.__initerrormessages__()
+        self.bem.update({"rate": "a string"})
+        self.__validateandregister__(kwargs)  # initialize keyword values
+
+        # parse rate term, and map to legacy name
+        self.rateq = Q_(self.rate)
+        self.rate = Q_(self.rate).to(self.reservoir.mo.f_unit).magnitude
+        #legacy variables
+        self.mo = self.reservoir.mo
+        self.__postinit__()  # do some housekeeping
+        self.__register_name__()
+
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """Here we re-balance the flux. This code will be called by the
           apply_flux_modifier method of a reservoir which itself is
           called by the model execute method"""
 
-          # set flux according to keyword value
-          self.f[i] = get_flux_data(self.rate,reservoir.d[i-1], reservoir.sp.r)
+        # set flux according to keyword value
+
+        # this explicit expression is siginificantly faster than the below
+        # function call
+        m = self.rate
+        r = reservoir.l[i - 1] / reservoir.m[i - 1]
+        l = m * r
+        h = m - l
+        self.f.m[i] = m
+        self.f.l[i] = l
+        self.f.h[i] = h
+        self.f.d[i] = reservoir.d[i-1]
+       
+        # self.f[i] = get_flux_data(self.rate,reservoir.d[i-1], reservoir.rvalue)
 
 class ScaleFlux(Process):
     """This process scales the mass of a flux (m,l,h) relative to another
@@ -373,7 +396,9 @@ class ScaleFlux(Process):
                     scale = 1
                     ref = flux we use for scale)
 
-     """
+    """
+
+    __slots__ = ('rate', 'scale')
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this Process 
 
@@ -390,6 +415,8 @@ class ScaleFlux(Process):
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
 
+        
+
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """Apply the scale factor. This is typically done through the the
           model execute method.
@@ -399,7 +426,7 @@ class ScaleFlux(Process):
           """
         self.f[i] = self.ref[i] * self.scale
         self.f[i] = get_flux_data(self.f.m[i], reservoir.d[i - 1],
-                                  reservoir.sp.r)
+                                  reservoir.rvalue)
 
 
 class FluxDiff(Process):
@@ -494,7 +521,7 @@ class Fractionation(Process):
                                             self.alpha)
 
         #update delta
-        self.f.d[i] = get_delta(self.f.l[i], self.f.h[i], self.f.sp.r)
+        self.f.d[i] = get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)
         return
 
     # use this when we don't do isotopes
@@ -515,7 +542,7 @@ class RateConstant(Process):
     ScaleRelativeToConcentration
 
     """
-
+    __slots__ = ('k_value', 'ref_value')
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this Process
 
