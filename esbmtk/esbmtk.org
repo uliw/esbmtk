@@ -408,7 +408,7 @@ class esbmtkBase(object):
         
         
 class Model(esbmtkBase):
-    """This lass is used to specify a new model
+    """This class is used to specify a new model
 
     Example:
 
@@ -1532,7 +1532,7 @@ class Flux(esbmtkBase):
     """
 
     __slots__ = ('m', 'l', 'h', 'd', 'rvalue')
-    
+
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
         Initialize a flux. Arguments are the species name the flux rate
@@ -1580,12 +1580,16 @@ class Flux(esbmtkBase):
                  ] = zeros(self.model.steps) + fluxrate  # add the flux
         self.l: [NDArray, Float[64]] = zeros(self.model.steps)
         self.h: [NDArray, Float[64]] = zeros(self.model.steps)
-        [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
+        self.d: [NDArray, Float[64]] = zeros(self.model.steps) + self.delta
 
-        if self.delta == 0:
-            self.d: [NDArray, Float[64]] = zeros(self.model.steps)
-        else:  # update delta
-            self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.sp.r)
+        if self.rate != 0:
+            [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
+
+        # if self.delta == 0:
+        #     self.d: [NDArray, Float[64]] = zeros(self.model.steps)
+        # else:  # update delta
+        #     self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.sp.r)
+
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
         self.legend_left: str = self.species.dsa
@@ -1943,7 +1947,6 @@ class Signal(esbmtkBase):
         Signal.describe()
     
     """
-    
     def __init__(self, **kwargs) -> None:
         """ Parse and initialize variables
         
@@ -2044,7 +2047,7 @@ class Signal(esbmtkBase):
 
         # find nearest index for start, and end point
         self.si: int = int(round(self.st / self.mo.dt))  # starting index
-        self.ei: int = self.si + int(round(self.l / self.mo.dt))  # end index
+        self.ei: int = self.si + int(round(self.duration / self.mo.dt))  # end index
 
         # create slice of flux vector
         self.s_m: [NDArray, Float[64]] = array(self.nf.m[self.si:self.ei])
@@ -2076,10 +2079,9 @@ class Signal(esbmtkBase):
 
         """
 
-        w: float = (e - s) * self.mo.dt  # get the base of the square
-
         if "mass" in self.kwd:
-            h = self.mass / w  # get the height of the square
+            h = self.mass / self.duration  # get the height of the square
+           
         elif "magnitude" in self.kwd:
             h = self.magnitude
         else:
@@ -2092,20 +2094,19 @@ class Signal(esbmtkBase):
     def __pyramid__(self, s, e) -> None:
         """ Create pyramid type Signal
 
+        s = start index
+        e = end index
         """
 
-        w: float = (s - 1) * self.mo.dt  # get the base of the pyramid
-
         if "mass" in self.kwd:
-            h = 2 * self.mass / w  # get the height of the pyramid
-            print("mass")
+            h = 2 * self.mass / self.duration  # get the height of the pyramid
+            
         elif "magnitude" in self.kwd:
             h = self.magnitude
         else:
             raise ValueError(
                 "You must specify mass or magnitude of the signal")
 
-        print(f"\n pyramid h = {h} \n")
         # create pyramid
         c: int = int(round((e - s) / 2))  # get the center index for the peak
         x: [NDArray, Float[64]] = array([0, c,
@@ -2299,6 +2300,22 @@ class Signal(esbmtkBase):
         """
         self.data.plot()
 #+END_SRC
+
+#+RESULTS:
+:results:
+# Out [1]: 
+# output
+
+NameErrorTraceback (most recent call last)
+<ipython-input-1-52d601f7418a> in <module>
+----> 1 class Signal(esbmtkBase):
+      2     """We use a simple generator which will create a signal which is
+      3       described by its startime (relative to the model time), it's
+      4       size (as mass) and duration, or as duration and
+      5       magnitude. Furthermore, we can presribe the signal shape
+
+NameError: name 'esbmtkBase' is not defined
+:end:
 
 
 
