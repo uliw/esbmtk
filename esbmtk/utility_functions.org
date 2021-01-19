@@ -304,10 +304,13 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         if obj.display_as == "mass":
             yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
-        elif obj.transform == "pH":
-            yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
-            yl = -np.log10(yl)
-            y_label = f"{obj.legend_left} [pH]"
+        elif obj.transfor:
+           if callable(obj.transform):
+               yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
+               yl = obj.transform(yl)
+               y_label = f"{obj.legend_left} [pH]"
+           else:
+               raise ValueError("transform must be function")
         else:
             yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
