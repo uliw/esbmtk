@@ -360,7 +360,7 @@ class Connect(esbmtkBase):
         # register flux with its reservoirs
         if isinstance(self.r1, Source):
             # add the flux name direction/pair
-            self.r2.lio[self.fh.n] = self.influx
+            self.r2.lio[self.fh] = self.influx
             # add the handle to the list of fluxes
             self.r2.lof.append(self.fh)
             # register flux and element in the reservoir.
@@ -368,7 +368,7 @@ class Connect(esbmtkBase):
 
         elif isinstance(self.r2, Sink):
             # add the flux name direction/pair
-            self.r1.lio[self.fh.n] = self.outflux
+            self.r1.lio[self.fh] = self.outflux
             # add flux to the upstream reservoir
             self.r1.lof.append(self.fh)
             # register flux and element in the reservoir.
@@ -384,9 +384,9 @@ class Connect(esbmtkBase):
 
         else:  # this is a regular connection
             # add the flux name direction/pair
-            self.r1.lio[self.fh.n] = self.outflux
+            self.r1.lio[self.fh] = self.outflux
             # add the flux name direction/pair
-            self.r2.lio[self.fh.n] = self.influx
+            self.r2.lio[self.fh] = self.influx
             # add flux to the upstream reservoir
             self.r1.lof.append(self.fh)
             # add flux to the downstream reservoir
