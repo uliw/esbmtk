@@ -1,4 +1,3 @@
-# from pint import UnitRegistry
 from numbers import Number
 from nptyping import *
 from typing import *
@@ -53,7 +52,7 @@ class Process(esbmtkBase):
         self.fws.remove(self.f)  # remove this handle
 
         self.rm0: float = self.r.m[0]  # the initial reservoir mass
-        self.direction: Dict[Flux, int] = self.r.lio[self.f.n]
+        self.direction: Dict[Flux, int] = self.r.lio[self.f]
 
         self.__misc_init__()
 
@@ -71,6 +70,8 @@ class Process(esbmtkBase):
         """Set up the default names and dicts for the process class. This
           allows us to extend these values without modifying the entire init process"""
 
+        from .connections import ConnectionGroup
+        
         # provide a dict of known keywords and types
         self.lkk: Dict[str, any] = {
             "name": str,
@@ -82,6 +83,7 @@ class Process(esbmtkBase):
             "alpha": Number,
             "scale": Number,
             "ref": (Flux, list),
+            'register': (str,ConnectionGroup),
         }
 
         # provide a list of absolutely required keywords
@@ -249,7 +251,7 @@ class PassiveFlux(Process):
 
         new: float = 0
         for j, f in enumerate(self.fws):
-            new += f.m[i] * reservoir.lio[f.n]
+            new += f.m[i] * reservoir.lio[f]
 
         # self.f[i] = get_flux_data(new,reservoir.d[i-1],reservoir.rvalue)
 
@@ -315,7 +317,7 @@ class PassiveFlux_fixed_delta(Process):
           # sum up the remaining fluxes
           newflux :float = 0
           for f in flux_list:
-               newflux = newflux + f.m[i-1] * reservoir.lio[f.n]
+               newflux = newflux + f.m[i-1] * reservoir.lio[f]
 
           # set isotope mass according to keyword value
           self.f[i] = array(get_flux_data(newflux, self.delta, r))
@@ -343,6 +345,7 @@ class VarDeltaOut(Process):
           """
 
         from . import ureg, Q_
+        from .connections import ConnectionGroup
 
         # get default names and update list for this Process
         self.__defaultnames__()
@@ -351,6 +354,7 @@ class VarDeltaOut(Process):
             "reservoir": Reservoir,
             "flux": Flux,
             "rate": (str, Q_),
+            "register": (ConnectionGroup, str),
         }
         self.lrk.extend(["reservoir", "rate"])  # new required keywords
         self.__initerrormessages__()
@@ -557,7 +561,7 @@ class RateConstant(Process):
         self.__defaultnames__()  # default kwargs names
 
         # update the allowed keywords
-        self.lkk = {
+        self.lkk :dict = {
             "k_value": Number,
             "ref_value": Number,
             "name": str,
@@ -566,6 +570,8 @@ class RateConstant(Process):
             "ref_reservoir": list,
             "left": (list, Reservoir, Number),
             "right": (list, Reservoir, Number),
+            "register":
+            (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
         }
 
         # new required keywords
@@ -869,13 +875,15 @@ class Monod(Process):
         self.__defaultnames__()  # default kwargs names
         
         # update the allowed keywords
-        self.lkk = {
+        self.lkk :dict = {
             "a_value": Number,
             "b_value": Number,
             "ref_value": (Number,str, Q_),
             "name": str,
             "reservoir": Reservoir,
             "flux": Flux,
+            "register":
+            (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
         }
 
         self.lrk.extend(["reservoir", "a_value", "b_value",

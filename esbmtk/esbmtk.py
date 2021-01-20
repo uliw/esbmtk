@@ -40,11 +40,20 @@ class esbmtkBase(object):
     """
 
     __slots__ = ('__dict__')
-   
+
     from typing import Dict
 
     def __init__(self) -> None:
         raise NotImplementedError
+
+    def __global_defaults__(self) -> None:
+        """ Initial variables which should be present in every object
+
+        """
+        self.lmo: list = []
+
+        if 'register' not in self.kwargs:
+            self.register = "yes"
 
     def __validateandregister__(self, kwargs: Dict[str, any]) -> None:
         """Validate the user provided input key-value pairs. For this we need
@@ -54,10 +63,14 @@ class esbmtkBase(object):
         self.lod = dictionary of default values for keys
 
         and register the instance variables and the instance in teh global name space
+        
         """
 
         # validate input
         self.__validateinput__(kwargs)
+
+        # add global key-value pairs which should be present in each object
+        self.__global_defaults__()
 
         # register all key/value pairs as instance variables
         self.__registerkeys__()
@@ -67,22 +80,36 @@ class esbmtkBase(object):
         Register object name in global name space, and test if
         name is unique
 
+        There are two possible cases: This is a regular object, which will be registered
+        in the global namespace (self.register is not set).
+
+        Case B) This object should be registered in the local namespace of a group. In which case
+        self.register should be set to the group object.
+        
         """
-        # register instance name in global name space
+
+        # we use this to suppress the echo during object creation
         self.reg_time = time.monotonic()
 
-        if type(self) == Reservoir:
-            if self.register == "no":
-                return
-
-        if type(self) == Model:
-            setattr(builtins, self.name, self)
-        else:  # check that name is unique
-            if self.name in self.mo.lmo:
-                raise NameError(f"{self.name} is a duplicate. Please fix")
-            else:
-                self.mo.lmo.append(self.name)
+        # if self register is set, it points to the group object which contains
+        # this sub object.
+        if self.register == "yes":  # This is part of a group
+            if isinstance(self, Model):  # Model only exist in the global NS
                 setattr(builtins, self.name, self)
+            else:
+                if self.name in self.mo.lmo:
+                    raise NameError(f"{self.name} is a duplicate. Please fix")
+                else:
+                    self.mo.lmo.append(self.name)
+                    setattr(builtins, self.name, self)
+
+        else:
+            if self in self.register.lmo:
+                raise NameError(
+                    f"{self.name} is a duplicate in {self.register}. Please fix"
+                )
+            setattr(self.register, self.name, self)
+            self.register.lmo.append(self)
 
         logging.info(self.__repr__(1))
 
@@ -98,13 +125,13 @@ class esbmtkBase(object):
         self.kwargs = kwargs  # store the kwargs
         self.provided_kwargs = kwargs.copy()  # preserve a copy
 
-        if not hasattr(self, 'lkk'):   
+        if not hasattr(self, 'lkk'):
             self.lkk: Dict[str, any] = {}
-        if not hasattr(self, 'lrk'):    
+        if not hasattr(self, 'lrk'):
             self.lrk: List[str] = []
         if not hasattr(self, 'lod'):
             self.lod: Dict[str, any] = []
-        if not hasattr(self, 'drn'):   
+        if not hasattr(self, 'drn'):
             self.drn: Dict[str, any] = []
 
         # check that mandatory keys are present
@@ -121,7 +148,7 @@ class esbmtkBase(object):
     def __checktypes__(self, av: Dict[any, any], pv: Dict[any, any]) -> None:
         """ this method will use the the dict key in the user provided
         key value data (pv) to look up the allowed data type for this key in av
-        
+
         av = dictinory with the allowed input keys and their type
         pv = dictionary with the user provided key-value data
         """
@@ -192,6 +219,7 @@ class esbmtkBase(object):
             "pl": " a list with one or more process handles",
             "react_with": "a Flux handle",
             "data": "External Data Object",
+            "register": "esbmtk object",
             str: "a string with quotation marks",
         }
 
@@ -256,7 +284,7 @@ class esbmtkBase(object):
 
     def __repr__(self, log=0) -> str:
         """ Print the basic parameters for this class when called via the print method
-        
+
         """
         from esbmtk import Q_
 
@@ -298,7 +326,7 @@ class esbmtkBase(object):
         Optional arguments
 
         indent :int = 0 printing offset
-        
+
         """
         from esbmtk import Q_
 
@@ -342,8 +370,8 @@ class esbmtkBase(object):
     def describe(self, **kwargs) -> None:
         """ Show an overview of the object properties.
         Optional arguments are
-     
-        indent :int = 0 indentation 
+
+        indent :int = 0 indentation
 
         """
 
@@ -480,7 +508,6 @@ class Model(esbmtkBase):
         self.lel: list = []  # list which will hold all element references
         self.lsp: list = []  # list which will hold all species references
         self.lop: list = []  # list flux processe
-        self.lmo: list = []  # list of all model objects
         self.olkk: list = [
         ]  # optional keywords for use in the connector class
 
@@ -701,7 +728,7 @@ class Model(esbmtkBase):
         for r in self.lor:  # loop over reservoirs
             r.lodir = []
             for f in r.lof:  # loop over fluxes
-                a = r.lio[f.n]
+                a = r.lio[f]
                 r.lodir.append(a)
 
         i = self.execute(new, self.time, self.lor)
@@ -754,7 +781,7 @@ class Model(esbmtkBase):
 
         ms = ls = hs = 0
         for f in flux_list:  # do sum of fluxes in this reservoir
-            direction = r.lio[f.n]
+            direction = r.lio[f]
             ms = ms + f.m[i] * direction  # current flux and direction
             ls = ls + f.l[i] * direction  # current flux and direction
             hs = hs + f.h[i] * direction  # current flux and direction
@@ -912,9 +939,8 @@ class Reservoir(esbmtkBase):
                         mass/concentration = "1 unit"  # species concentration or mass
                         volume = "1E5 l",      # reservoir volume (m^3)
                         plot = yes/no, defaults to yes
-                        transform = optional,
-                        register = optional, defaults to yes
-               )
+                        transform = optional, currently reckonized: pH
+                        )
 
       you must either give mass or concentration. The result will always be displayed as concentration
 
@@ -947,9 +973,9 @@ class Reservoir(esbmtkBase):
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
-            "transform": str,
+            "transform": any,
             "plot": str,
-            "register": str,
+            "register": (SourceGroup,SinkGroup,ReservoirGroup,ConnectionGroup,str),
         }
 
         # provide a list of absolutely required keywords
@@ -959,10 +985,8 @@ class Reservoir(esbmtkBase):
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
-            'transform': "None",
             'delta': "None",
             'plot': "yes",
-            'register': "yes",
         }
 
         # validate and initialize instance variables
@@ -972,7 +996,7 @@ class Reservoir(esbmtkBase):
             "concentration": "a string or quantity",
             "volume": "a string or quantity",
             "plot": "yes or no",
-            'register': 'yes or no',
+            'register': 'Group Object',
         })
         self.__validateandregister__(kwargs)
 
@@ -1041,7 +1065,6 @@ class Reservoir(esbmtkBase):
         self.legend_right = f"{self.species.dn} [{self.species.ds}]"
         self.mo.lor.append(self)  # add this reservoir to the model
         # register instance name in global name space
-        self.reg_time = time.monotonic()
         self.__register_name__()
 
         # decide which setitem functions to use
@@ -1414,6 +1437,9 @@ class ReservoirGroup(esbmtkBase):
 
         self.__validateandregister__(kwargs)
 
+        # legacy variable
+        self.n = self.name
+        
         # get model handle
         self.mo = self.species[0].mo
 
@@ -1430,7 +1456,7 @@ class ReservoirGroup(esbmtkBase):
                 # create reservoir without registering it in the global name space
                 a = Reservoir(
                     name=f"{s.name}",
-                    register="no",
+                    register=self,
                     species=s,
                     delta=self.delta[s],
                     mass=self.mass[s],
@@ -1441,7 +1467,7 @@ class ReservoirGroup(esbmtkBase):
                 # create reservoir without registering it in the global name space
                 a = Reservoir(
                     name=f"{s.name}",
-                    register="no",
+                    register=self,
                     species=s,
                     delta=self.delta[s],
                     concentration=self.concentration[s],
@@ -1452,7 +1478,6 @@ class ReservoirGroup(esbmtkBase):
                 raise ValueError("You must specify mass or concentration")
 
             # register as part of this group
-            setattr(self, s.name, a)
             self.lor.append(a)
 
 class Flux(esbmtkBase):
@@ -1494,13 +1519,17 @@ class Flux(esbmtkBase):
             "delta": Number,
             "rate": (str, Q_),
             "plot": str,
+            "register": (SourceGroup,SinkGroup,ReservoirGroup,ConnectionGroup,str),
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["name", "species", "rate"]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {'delta': 0, "plot": "yes"}
+        self.lod: Dict[any, any] = {
+            'delta': 0,
+            "plot": "yes",
+        }
 
         # initialize instance
         self.__initerrormessages__()
@@ -1640,7 +1669,10 @@ class Flux(esbmtkBase):
             print(
                 "Use help on the process name to get an explanation what this process does"
             )
-            print(f"e.g., help({self.lop[0].n})")
+            if self.register == "yes":
+                print(f"e.g., help({self.lop[0].n})")
+            else:
+                print(f"e.g., help({self.register.name}.{self.lop[0].n})")
         else:
             print("There are no processes for this flux")
 
@@ -1694,13 +1726,13 @@ class SourceSink(esbmtkBase):
         self.lkk: Dict[str, any] = {
             "name": str,
             "species": Species,
-            "register": str,
+            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup,str),
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species"]
         # list of default values if none provided
-        self.lod: Dict[str, any] = {'register':'yes'}
+        self.lod: Dict[str, any] = {}
 
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -1713,8 +1745,7 @@ class SourceSink(esbmtkBase):
         self.mo = self.species.mo
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
 
-        if self.register == "yes":
-            self.__register_name__()
+        self.__register_name__()
 
 
 class Sink(SourceSink):
@@ -1780,13 +1811,13 @@ class SourceSinkGroup(esbmtkBase):
             if type(self).__name__ == "SourceGroup":
                 a = Source(
                     name=f"{s.name}",
-                    register="no",
+                    register=self,
                     species=s,
                 )
             elif type(self).__name__ == "SinkGroup":
                 a = Sink(
                     name=f"{s.name}",
-                    register="no",
+                    register=self,
                     species=s,
                 )
             else:
@@ -1794,8 +1825,6 @@ class SourceSinkGroup(esbmtkBase):
                     f"{type(self).__name__} is not a valid class type")
 
             # register in local namespace
-            a.reg_time = time.monotonic()  # needed for __repr__
-            setattr(self, s.name, a)
             self.lor.append(a)
 
 

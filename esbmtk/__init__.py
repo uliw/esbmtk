@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pint import UnitRegistry
 
 ureg = UnitRegistry(on_redefinition="ignore")
