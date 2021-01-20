@@ -63,7 +63,7 @@ class Process(esbmtkBase):
         self.fws.remove(self.f)  # remove this handle
 
         self.rm0: float = self.r.m[0]  # the initial reservoir mass
-        self.direction: Dict[Flux, int] = self.r.lio[self.f.n]
+        self.direction: Dict[Flux, int] = self.r.lio[self.f]
 
         self.__misc_init__()
 
@@ -273,7 +273,7 @@ class PassiveFlux(Process):
 
         new: float = 0
         for j, f in enumerate(self.fws):
-            new += f.m[i] * reservoir.lio[f.n]
+            new += f.m[i] * reservoir.lio[f]
 
         # self.f[i] = get_flux_data(new,reservoir.d[i-1],reservoir.rvalue)
 
@@ -344,7 +344,7 @@ class PassiveFlux_fixed_delta(Process):
           # sum up the remaining fluxes
           newflux :float = 0
           for f in flux_list:
-               newflux = newflux + f.m[i-1] * reservoir.lio[f.n]
+               newflux = newflux + f.m[i-1] * reservoir.lio[f]
 
           # set isotope mass according to keyword value
           self.f[i] = array(get_flux_data(newflux, self.delta, r))
