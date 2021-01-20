@@ -769,7 +769,7 @@ class Model(esbmtkBase):
         for r in self.lor:  # loop over reservoirs
             r.lodir = []
             for f in r.lof:  # loop over fluxes
-                a = r.lio[f.n]
+                a = r.lio[f]
                 r.lodir.append(a)
 
         i = self.execute(new, self.time, self.lor)
@@ -822,7 +822,7 @@ class Model(esbmtkBase):
 
         ms = ls = hs = 0
         for f in flux_list:  # do sum of fluxes in this reservoir
-            direction = r.lio[f.n]
+            direction = r.lio[f]
             ms = ms + f.m[i] * direction  # current flux and direction
             ls = ls + f.l[i] * direction  # current flux and direction
             hs = hs + f.h[i] * direction  # current flux and direction
