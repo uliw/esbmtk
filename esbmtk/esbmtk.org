@@ -83,7 +83,10 @@ class esbmtkBase(object):
         """ Initial variables which should be present in every object
 
         """
-        self.lmo :list = []
+        self.lmo: list = []
+
+        if 'register' not in self.kwargs:
+            self.register = "yes"
 
     def __validateandregister__(self, kwargs: Dict[str, any]) -> None:
         """Validate the user provided input key-value pairs. For this we need
@@ -93,16 +96,17 @@ class esbmtkBase(object):
         self.lod = dictionary of default values for keys
 
         and register the instance variables and the instance in teh global name space
+        
         """
 
         # validate input
         self.__validateinput__(kwargs)
 
-        # register all key/value pairs as instance variables
-        self.__registerkeys__()
-
         # add global key-value pairs which should be present in each object
         self.__global_defaults__()
+
+        # register all key/value pairs as instance variables
+        self.__registerkeys__()
 
     def __register_name__(self) -> None:
         """
@@ -110,10 +114,11 @@ class esbmtkBase(object):
         name is unique
 
         There are two possible cases: This is a regular object, which will be registered
-        in the global namespace (self.register is not set). 
+        in the global namespace (self.register is not set).
 
         Case B) This object should be registered in the local namespace of a group. In which case
         self.register should be set to the group object.
+        
         """
 
         # we use this to suppress the echo during object creation
@@ -121,14 +126,8 @@ class esbmtkBase(object):
 
         # if self register is set, it points to the group object which contains
         # this sub object.
-        if self.register: # This is part of a group
-            if self in self.register.lmo:
-                raise NameError(f"{self.name} is a duplicate in {self.register}. Please fix")
-            setattr(self.register, self.name, self)
-            self.register.lmo.append(self)
-
-        else: # this is a regular registration
-            if type(self) == Model: # Model only exist in the global NS
+        if self.register == "yes":  # This is part of a group
+            if isinstance(self, Model):  # Model only exist in the global NS
                 setattr(builtins, self.name, self)
             else:
                 if self.name in self.mo.lmo:
@@ -136,6 +135,14 @@ class esbmtkBase(object):
                 else:
                     self.mo.lmo.append(self.name)
                     setattr(builtins, self.name, self)
+
+        else:
+            if self in self.register.lmo:
+                raise NameError(
+                    f"{self.name} is a duplicate in {self.register}. Please fix"
+                )
+            setattr(self.register, self.name, self)
+            self.register.lmo.append(self)
 
         logging.info(self.__repr__(1))
 
@@ -174,7 +181,7 @@ class esbmtkBase(object):
     def __checktypes__(self, av: Dict[any, any], pv: Dict[any, any]) -> None:
         """ this method will use the the dict key in the user provided
         key value data (pv) to look up the allowed data type for this key in av
-        
+
         av = dictinory with the allowed input keys and their type
         pv = dictionary with the user provided key-value data
         """
@@ -310,7 +317,7 @@ class esbmtkBase(object):
 
     def __repr__(self, log=0) -> str:
         """ Print the basic parameters for this class when called via the print method
-        
+
         """
         from esbmtk import Q_
 
@@ -352,7 +359,7 @@ class esbmtkBase(object):
         Optional arguments
 
         indent :int = 0 printing offset
-        
+
         """
         from esbmtk import Q_
 
@@ -396,8 +403,8 @@ class esbmtkBase(object):
     def describe(self, **kwargs) -> None:
         """ Show an overview of the object properties.
         Optional arguments are
-     
-        indent :int = 0 indentation 
+
+        indent :int = 0 indentation
 
         """
 
@@ -1023,9 +1030,9 @@ class Reservoir(esbmtkBase):
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
-            "transform": str,
+            "transform": any,
             "plot": str,
-            "register": (SourceGroup,SinkGroup,ReservoirGroup,ConnectionGroup),
+            "register": (SourceGroup,SinkGroup,ReservoirGroup,ConnectionGroup,str),
         }
 
         # provide a list of absolutely required keywords
@@ -1035,7 +1042,6 @@ class Reservoir(esbmtkBase):
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
-            'transform': "None",
             'delta': "None",
             'plot': "yes",
         }
@@ -1491,6 +1497,9 @@ class ReservoirGroup(esbmtkBase):
 
         self.__validateandregister__(kwargs)
 
+        # legacy variable
+        self.n = self.name
+        
         # get model handle
         self.mo = self.species[0].mo
 
@@ -1576,7 +1585,7 @@ class Flux(esbmtkBase):
             "delta": Number,
             "rate": (str, Q_),
             "plot": str,
-            "register": (SourceGroup,SinkGroup,ReservoirGroup,ConnectionGroup),
+            "register": (SourceGroup,SinkGroup,ReservoirGroup,ConnectionGroup,str),
         }
 
         # provide a list of absolutely required keywords
@@ -1786,7 +1795,7 @@ class SourceSink(esbmtkBase):
         self.lkk: Dict[str, any] = {
             "name": str,
             "species": Species,
-            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup),
+            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup,str),
         }
 
         # provide a list of absolutely required keywords
