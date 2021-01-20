@@ -1735,7 +1735,10 @@ class Flux(esbmtkBase):
             print(
                 "Use help on the process name to get an explanation what this process does"
             )
-            print(f"e.g., help({self.lop[0].n})")
+            if self.register == "yes":
+                print(f"e.g., help({self.lop[0].n})")
+            else:
+                print(f"e.g., help({self.register.name}.{self.lop[0].n})")
         else:
             print("There are no processes for this flux")
 
