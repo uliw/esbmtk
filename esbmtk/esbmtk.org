@@ -194,10 +194,13 @@ class esbmtkBase(object):
         # loop over provided keywords
         for k, v in pv.items():
             # check av if provided value v is of correct type
-            if not isinstance(v, av[k]):
-                raise TypeError(
-                    f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
-                )
+            if av[k] != any:
+                #print(f"key = {k}, value  = {v}")
+                if not isinstance(v, av[k]):
+                   
+                    raise TypeError(
+                        f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
+                    )
 
     def __initerrormessages__(self):
         """ Init the list of known error messages"""
@@ -2399,7 +2402,7 @@ class DataField(esbmtkBase):
         # dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
-            "associated_with": Reservoir,
+            "associated_with": (Reservoir,ReservoirGroup),
             "y1_data": NDArray[float],
             "y1_label": str,
             "y1_legend": str,
