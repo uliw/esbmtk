@@ -900,7 +900,7 @@ class ConnectionGroup(esbmtkBase):
         # loop over names and create dicts
         for n in kwargs['sink'].species:
             cid[n] = 'None'
-            plot[n] = 'yes'
+            plot[n] = 'no'
             delta[n] = 'None'
             alpha[n] = 'None'
             rate[n] = 'None'
