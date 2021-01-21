@@ -33,6 +33,7 @@ class Process(esbmtkBase):
      reservoir flux combinations. To use it, you need to create an
      subclass which defines the actual process implementation in their
      call method. See 'PassiveFlux as example'
+    
     """
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
@@ -48,7 +49,8 @@ class Process(esbmtkBase):
 
     def __postinit__(self) -> None:
         """ Do some housekeeping for the process class
-          """
+        
+        """
 
         # legacy name aliases
         self.n: str = self.name  # display name of species
@@ -74,12 +76,14 @@ class Process(esbmtkBase):
         init. This useful for processes which only define a call method.
 
         """
-
+        
         pass
 
     def __defaultnames__(self) -> None:
         """Set up the default names and dicts for the process class. This
-          allows us to extend these values without modifying the entire init process"""
+          allows us to extend these values without modifying the entire init process
+
+        """
 
         from .connections import ConnectionGroup
         
@@ -111,7 +115,8 @@ class Process(esbmtkBase):
     def __register__(self, reservoir: Reservoir, flux: Flux) -> None:
         """Register the flux/reservoir pair we are acting upon, and register
           the process with the reservoir
-          """
+        
+        """
 
         # register the reservoir flux combination we are acting on
         self.f: Flux = flux
@@ -126,8 +131,145 @@ class Process(esbmtkBase):
 
           Example::
                process_name.show_figure(x,y)
+        
           """
         pass
+#+END_SRC
+
+*** Generic function
+
+#+BEGIN_SRC ipython  :tangle processes.py
+class GenericFunction(Process):
+    """This Process class takes a generic function and up to 6 optional
+    function arguments, and will replace the mass value(s) of the
+    given reservoirs with whatever the function calculates. This is
+    particularly useful e.g., to calculate the pH of a given reservoir
+    as function of e.g., Alkalinity and DIC.
+
+    Example: 
+              GenericFunction(name = name of process,
+                              act_on = name,
+                              function  = f, 
+                              a1 = a1, 
+                              a2 = a2,
+                              a3 = a3,
+                              a4 = a4,
+                              a5 = a5,
+                              a6 = a6)
+    
+    Where: act_on is the name of the reservoir/flux this function should act upon, 
+           function is the name of a user supplied function
+           ai are optional function arguments. You only need to specify
+           those ai you actually use.
+    
+    Towards this end, your function parameter list must be specified as
+    
+           def myfunc(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0)
+
+    where i is the current timestep, and ai are optional parameters,
+    
+    the function body is free to use or ignore any or all of the parameters
+
+    the function return value must match the reservoir/flux __set__ method format
+
+        return (m, l, h)
+    
+    where m = mass, and l and h are the masses of the light and heavy isotopes
+
+    If l & h are not calculated, it is recommended to return dummmy values, e.g.,
+      
+        return (m, 1,1,)
+
+    """
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """
+          Create a new process object with a given process type and options
+          """
+
+        self.__defaultnames__()  # default kwargs names
+        self.lkk: Dict[str, any] = {
+            "name": str,
+            "act_on": (Flux, Reservoir),
+            "function": any,
+            "a1": any,
+            "a2": any,
+            "a3": any,
+            "a4": any,
+            "a5": any,
+            "a6": any,
+        }
+
+        # required arguments
+        self.lrk: list = (["name", "act_on", "function"])
+
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            'a1': 0,
+            'a2': 0,
+            'a3': 0,
+            'a4': 0,
+            'a5': 0,
+            'a6': 0,
+        }
+
+        self.__initerrormessages__()  # default error messages
+        self.bem.update({
+            "act_on": "a reservoir or flux",
+            "function": "a function",
+            "a1": "a number etc",
+            "a2": "a number etc",
+            "a3": "a number etc",
+            "a4": "a number etc",
+            "a5": "a number etc",
+            "a6": "a number etc",
+        })
+        self.__validateandregister__(kwargs)  # initialize keyword values
+
+        if not callable(self.function):
+            raise ValueError(
+                "function must be defined before it can be used here")
+
+        self.__postinit__()  # do some housekeeping
+        self.__register_name__()  #
+
+        # register with reservoir
+        if isinstance(self.act_on, (Reservoir, Flux)):
+            self.act_on.lop.append(self)
+        else:
+            raise ValueError(
+                "functions can only act upon reservoirs or fluxes")
+
+    def __call__(self, acting_on: (any), i: int) -> None:
+        """Here we execute the user supplied function and assign the 
+        return value to the flux or reservoir
+
+        Where i = index of the current timestep
+              acting_on = reservoir or flux we are acting on.
+
+        """
+
+        self.act_on[i] = self.function(i,
+                                          self.a1,
+                                          self.a2,
+                                          self.a3,
+                                          self.a4,
+                                          self.a5,
+                                          self.a6,
+                                          )
+        
+
+    # redefine post init
+    def __postinit__(self) -> None:
+        """ Do some housekeeping for the process class
+
+          """
+
+        # legacy name aliases
+        self.n: str = self.name  # display name of species
+        self.m: Model = self.act_on.sp.mo  # the model handle
+        self.mo: Model = self.m
+
+        self.__misc_init__()
 #+END_SRC
 
 
@@ -402,7 +544,9 @@ class VarDeltaOut(Process):
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """Here we re-balance the flux. This code will be called by the
           apply_flux_modifier method of a reservoir which itself is
-          called by the model execute method"""
+          called by the model execute method
+
+        """
 
         # set flux according to keyword value
 
