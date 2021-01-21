@@ -234,7 +234,7 @@ class GenericFunction(Process):
 
         # register with reservoir
         if isinstance(self.act_on, (Reservoir, Flux)):
-            self.act_on.lop.append(self)
+            self.act_on.lpc.append(self)
         else:
             raise ValueError(
                 "functions can only act upon reservoirs or fluxes")
