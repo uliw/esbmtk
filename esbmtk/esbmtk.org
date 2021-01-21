@@ -807,6 +807,12 @@ class Model(esbmtkBase):
 
                 # add to data from last time step
                 r[i] = r[i - 1] + new * dt
+                
+            # update reservoirs which are calculated
+            # lrp # list calculated reservoir
+            for r in lor:  # loop over all reservoirs
+                for p in r.lpc:  # loop over reservoir processes
+                    p(r, i)  # update fluxes
 
             i = i + 1  # next time step
 
@@ -1027,15 +1033,20 @@ class Reservoir(esbmtkBase):
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
-            "name": str,
-            "species": Species,
+            "name":
+            str,
+            "species":
+            Species,
             "delta": (Number, str),
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
-            "transform": any,
-            "plot": str,
-            "register": (SourceGroup,SinkGroup,ReservoirGroup,ConnectionGroup,str),
+            "transform":
+            any,
+            "plot":
+            str,
+            "register":
+            (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
         }
 
         # provide a list of absolutely required keywords
@@ -1047,6 +1058,7 @@ class Reservoir(esbmtkBase):
         self.lod: Dict[any, any] = {
             'delta': "None",
             'plot': "yes",
+            'transform': "None",
         }
 
         # validate and initialize instance variables
@@ -1101,19 +1113,24 @@ class Reservoir(esbmtkBase):
         self.doe: Dict[Species, Flux] = {}  # species flux pairs
         self.loc: set[Connection] = set()  # set of connection objects
         self.ldf: list[DataField] = []  # list of datafield objects
+        self.lpc: list[Process] = [] # list of processes which calculate reservoirs
 
         # initialize mass vector
         self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
-        # initialize concentration vector
-        self.c: [NDArray, Float[64]] = self.m / self.v
         self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
         self.h: [NDArray, Float[64]] = zeros(self.mo.steps)
 
-        # isotope mass
-        [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
-        # delta of reservoir
-        self.d: [NDArray, Float[64]] = get_delta(self.l, self.h,
-                                                 self.species.r)
+        if self.mass == 0:
+            self.c: [NDArray, Float[64]] = zeros(self.species.mo.steps)
+            self.d: [NDArray, Float[64]] = zeros(self.species.mo.steps)
+        else:
+            # initialize concentration vector
+            self.c: [NDArray, Float[64]] = self.m / self.v
+            # isotope mass
+            [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
+            # delta of reservoir
+            self.d: [NDArray, Float[64]] = get_delta(self.l, self.h,
+                                                     self.species.r)
 
         # left y-axis label
         self.lm: str = f"{self.species.n} [{self.mu}/l]"
@@ -1234,7 +1251,7 @@ class Reservoir(esbmtkBase):
 
         read: set = set()
         curr: set = set()
-        
+
         # get a set of all current fluxes
         for e in self.lof:
             curr.add(e.name)
