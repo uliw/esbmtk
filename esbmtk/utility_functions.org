@@ -300,24 +300,30 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     if isinstance(obj, Flux):
         yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
         y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
+        
     elif isinstance(obj, Reservoir):
         if obj.display_as == "mass":
             yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
-        elif 'transform' in obj.__dict__:
+            
+        elif obj.transform != "None":
            if callable(obj.transform):
                yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
+               print("using transform")
                yl = obj.transform(yl)
                y_label = f"{obj.legend_left} [pH]"
            else:
                raise ValueError("transform must be function")
+           
         else:
             yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
+            
     elif isinstance(obj, Signal):
         # use the same units as the associated flux
         yl = (obj.c * model.c_unit).to(obj.fo.plt_units).magnitude
         y_label = f"{obj.n} [{obj.fo.plt_units:~P}]"
+        
     elif isinstance(obj, DataField):
         time = (time * model.t_unit).to(model.d_unit).magnitude
         yl = obj.y1_data
@@ -593,26 +599,3 @@ def sort_by_type(l: list, t: list, m: str) -> list:
 :results:
 # Out [1]: 
 :end:
-
-** Problems with Panchucks data
-
-I only get an isotope effect of 2.9 permil with 6800 Pg C at -22
-permil. The effect on the ocean is smaller if use second assumption
-(i.e., 2220 Pmol at -60). The overall effect is probably dependent on
-how we setup the fluxes?
-
-#+BEGIN_SRC ipython
-from esbmtk import get_imass, get_delta
-
-l1, h1 = get_imass(2200E15,-60,C.r)
-
-l2, h2 = get_imass(68001E15,-22,C.r)
-
-oh1=Ocean.h[0]+h1
-ol1=Ocean.l[0]+l1
-oh2=Ocean.h[0]+h2
-ol2=Ocean.l[0]+l2
-
-get_delta(ol1,oh1,C.r)
-get_delta(ol2,oh2,C.r)
-#+END_SRC
