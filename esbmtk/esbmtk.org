@@ -990,32 +990,55 @@ specific properties
         self.__register_name__()
 #+END_SRC
 
-** Defining the Reservoir object
+** COMMENT Defining the Reservoir object
 #+name: reservoir
 #+BEGIN_SRC ipython :exports yes :noweb yes :tangle esbmtk.py
 class Reservoir(esbmtkBase):
-    """
-      Tis object holds reservoir specific information.
+    """Tis object holds reservoir specific information.
 
       Example::
 
-              Reservoir(name = "IW_SO4",      # Name of reservoir
+              Reservoir(name = "foo",      # Name of reservoir
                         species = S,          # Species handle
                         delta = 20,           # initial delta - optional (defaults  to 0)
                         mass/concentration = "1 unit"  # species concentration or mass
                         volume = "1E5 l",      # reservoir volume (m^3)
-                        plot = yes/no, defaults to yes
-                        transform = optional, currently reckonized: pH
+                        plot = "yes"/"no", defaults to yes
+                        transform_c = a function reference, optional (see below)
                         )
 
       you must either give mass or concentration. The result will always be displayed as concentration
 
-      You can access the reservoir data as
+      Using a transform function
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+      In some cases, it is useful to transform the reservoir
+      concentration data before plotting it.  A good example is the H+
+      concentration in water which is better displayed as pH.  We can
+      do this by specifying a function to convert the reservoir
+      concentration into pH units::
+
+          def phc(m):
+              # convert m into the negative log space
+              pH = -np.log10(m)
+              return m
+
+      this function can then be added to a reservoir as::
+    
+          hplus.transform_c = phc
+    
+      Note, at present the transform_c function will only take one
+      argument, which always defaults to the reservoir
+      concentration. The function must return a single argument which
+      will be interpreted as the transformed reservoir concentration.
+
+      You can access the reservoir data as:
+
       - Name.m # mass
       - Name.d # delta
       - Name.c # concentration
 
-    Useful methods include
+    Useful methods include:
 
       - Name.write_data() # save data to file
       - Name.describe()   # describe Reservoir
@@ -1041,7 +1064,7 @@ class Reservoir(esbmtkBase):
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
-            "transform":
+            "transform_c":
             any,
             "plot":
             str,
@@ -1058,7 +1081,7 @@ class Reservoir(esbmtkBase):
         self.lod: Dict[any, any] = {
             'delta': "None",
             'plot': "yes",
-            'transform': "None",
+            'transform_c': "None",
         }
 
         # validate and initialize instance variables
