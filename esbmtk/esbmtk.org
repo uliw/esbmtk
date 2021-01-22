@@ -1012,7 +1012,7 @@ class Reservoir(esbmtkBase):
                         mass/concentration = "1 unit"  # species concentration or mass
                         volume = "1E5 l",      # reservoir volume (m^3)
                         plot = "yes"/"no", defaults to yes
-                        transform_c = a function reference, optional (see below)
+                        transform_m = a function reference, optional (see below)
                         )
 
       you must either give mass or concentration. The result will always be displayed as concentration
@@ -1033,11 +1033,11 @@ class Reservoir(esbmtkBase):
 
       this function can then be added to a reservoir as::
     
-          hplus.transform_c = phc
+          hplus.transform_m = phc
     
-      Note, at present the transform_c function will only take one
+      Note, at present the transform_m function will only take one
       argument, which always defaults to the reservoir
-      concentration. The function must return a single argument which
+      mass. The function must return a single argument which
       will be interpreted as the transformed reservoir concentration.
 
       You can access the reservoir data as:
@@ -1072,7 +1072,7 @@ class Reservoir(esbmtkBase):
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
-            "transform_c":
+            "transform_m":
             any,
             "plot":
             str,
@@ -1089,7 +1089,7 @@ class Reservoir(esbmtkBase):
         self.lod: Dict[any, any] = {
             'delta': "None",
             'plot': "yes",
-            'transform_c': "None",
+            'transform_m': "None",
         }
 
         # validate and initialize instance variables
@@ -2455,7 +2455,7 @@ class DataField(esbmtkBase):
             "y1_data": NDArray[float],
             "y1_label": str,
             "y1_legend": str,
-            "y2_data": NDArray[float],
+            "y2_data": (str,NDArray[float]),
             "y2_label": str,
             "y2_legend": str,
         }
@@ -2469,7 +2469,7 @@ class DataField(esbmtkBase):
             "y1_legend": "Not Provided",
             "y2_label": "Not Provided",
             "y2_legend": "Not Provided",
-            "y2_data": 0,
+            "y2_data": "None",
         }
 
         # provide a dictionary entry for a keyword specific error message
@@ -2489,10 +2489,13 @@ class DataField(esbmtkBase):
 
         # set legacy variables
         self.legend_left = self.y1_legend
-        self.legend_right = self.y2_legend
-        self.ld = self.y2_label
+        
         self.mo = self.associated_with.mo
-        self.d = self.y2_data
+        if "self.y2_data" != "None":
+            self.d = self.y2_data
+            self.legend_right = self.y2_legend
+            self.ld = self.y2_label
+            
         self.n = self.name
         self.led = []
         # register with reservoir
