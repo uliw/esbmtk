@@ -436,8 +436,8 @@ class esbmtkBase(object):
 #     def __init__(self, args):
 #         super(ClassName, self).__init__()
 #         self.args = args
-        
-        
+
+
 class Model(esbmtkBase):
     """This class is used to specify a new model
 
@@ -491,7 +491,7 @@ class Model(esbmtkBase):
     """
 
     __slots__ = ('lor')
-    
+
     def __init__(self, **kwargs: Dict[any, any]) -> None:
         """ Init Sequence
 
@@ -552,8 +552,11 @@ class Model(esbmtkBase):
         self.lel: list = []  # list which will hold all element references
         self.lsp: list = []  # list which will hold all species references
         self.lop: list = []  # list flux processe
-        self.olkk: list = [
-        ]  # optional keywords for use in the connector class
+        self.lpc_f: list = []  # list of external functions affecting fluxes
+        # list of external functions affecting reservoirs
+        self.lpc_r: list = []
+        # optional keywords for use in the connector class
+        self.olkk: list = []
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
@@ -775,25 +778,30 @@ class Model(esbmtkBase):
                 a = r.lio[f]
                 r.lodir.append(a)
 
-        i = self.execute(new, self.time, self.lor)
+        i = self.execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
 
         duration: float = process_time() - start
         print(f"\n Execution took {duration} seconds \n")
 
     @staticmethod
-    def execute(new: [NDArray, Float], time: [NDArray, Float],
-                lor: list) -> None:
+    def execute(new: [NDArray, Float], time: [NDArray, Float], lor: list,
+                f_lpc: list, r_lpc: list) -> None:
         """ Moved this code into a separate function to enable numba optimization
-        """
-        # from functools import reduce
 
-        i = 1  # some processes refer to the previous time step
+        """
+
+        i = 1  # processes refer to the previous time step -> start at 1
         dt = lor[0].mo.dt
+
         for t in time[0:-1]:  # loop over the time vector except the first
             # we first need to calculate all fluxes
             for r in lor:  # loop over all reservoirs
                 for p in r.lop:  # loop over reservoir processes
                     p(r, i)  # update fluxes
+
+            # update all process based fluxes. This can be done in a global lpc list
+            for p in f_lpc:
+                p(i)
 
             # and then update all reservoirs
             for r in lor:  # loop over all reservoirs
@@ -807,12 +815,12 @@ class Model(esbmtkBase):
 
                 # add to data from last time step
                 r[i] = r[i - 1] + new * dt
-                
+
             # update reservoirs which are calculated
             # lrp # list calculated reservoir
-            for r in lor:  # loop over all reservoirs
-                for p in r.lpc:  # loop over reservoir processes
-                    p(r, i)  # update fluxes
+            # update all process based fluxes. This can be done in a global lpc list
+            for p in r_lpc:
+                p(i)
 
             i = i + 1  # next time step
 
@@ -990,7 +998,7 @@ specific properties
         self.__register_name__()
 #+END_SRC
 
-** COMMENT Defining the Reservoir object
+** Defining the Reservoir object
 #+name: reservoir
 #+BEGIN_SRC ipython :exports yes :noweb yes :tangle esbmtk.py
 class Reservoir(esbmtkBase):
@@ -1045,7 +1053,7 @@ class Reservoir(esbmtkBase):
 
     """
 
-    __slots__ = ('m', 'l', 'h', 'd', 'c', 'lio', 'rvalue', 'lodir', 'lof')
+    __slots__ = ('m', 'l', 'h', 'd', 'c', 'lio', 'rvalue', 'lodir', 'lof', 'lpc')
 
     def __init__(self, **kwargs) -> None:
         """ Initialize a reservoir.
@@ -1610,7 +1618,7 @@ class Flux(esbmtkBase):
       
     """
 
-    __slots__ = ('m', 'l', 'h', 'd', 'rvalue')
+    __slots__ = ('m', 'l', 'h', 'd', 'rvalue', 'lpc')
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
@@ -1680,6 +1688,7 @@ class Flux(esbmtkBase):
 
         self.xl: str = self.model.xl  # se x-axis label equal to model time
         self.lop: list[Process] = []  # list of processes
+        self.lpc: list = [] # list of external functions
         self.led: list[ExternalData] = []  # list of ext data
         self.source: str = ""  # Name of reservoir which acts as flux source
         self.sink: str = ""  # Name of reservoir which acts as flux sink
