@@ -178,7 +178,9 @@ class GenericFunction(Process):
                 act_on = reservoir name)
     
     """
-    
+
+    __slots__ = ('function', 'act_on', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'i')
+
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
           Create a new process object with a given process type and options
@@ -231,13 +233,17 @@ class GenericFunction(Process):
         self.__register_name__()  #
 
         # register with reservoir
-        if isinstance(self.act_on, (Reservoir, Flux)):
-            self.act_on.lpc.append(self)
+        if isinstance(self.act_on, Reservoir):
+            self.act_on.lpc.append(self)  # register with Reservoir
+            self.act_in.mo.lpc_r.append(self)  # Register with Model
+        elif isinstance(self.act_on, Flux):
+            self.act_on.lpc.append(self)  # register with Flux
+            self.act_in.mo.lpc_f.append(self)  # Register with Model
         else:
             raise ValueError(
                 "functions can only act upon reservoirs or fluxes")
 
-    def __call__(self, acting_on: (any), i: int) -> None:
+    def __call__(self, i: int) -> None:
         """Here we execute the user supplied function and assign the 
         return value to the flux or reservoir
 
@@ -246,15 +252,15 @@ class GenericFunction(Process):
 
         """
 
-        self.act_on[i] = self.function(i,
-                                          self.a1,
-                                          self.a2,
-                                          self.a3,
-                                          self.a4,
-                                          self.a5,
-                                          self.a6,
-                                          )
-        
+        self.act_on[i] = self.function(
+            i,
+            self.a1,
+            self.a2,
+            self.a3,
+            self.a4,
+            self.a5,
+            self.a6,
+        )
 
     # redefine post init
     def __postinit__(self) -> None:
