@@ -146,41 +146,39 @@ class GenericFunction(Process):
     particularly useful e.g., to calculate the pH of a given reservoir
     as function of e.g., Alkalinity and DIC.
 
-    Example: 
-              GenericFunction(name = name of process,
-                              act_on = name,
-                              function  = f, 
-                              a1 = a1, 
-                              a2 = a2,
-                              a3 = a3,
-                              a4 = a4,
-                              a5 = a5,
-                              a6 = a6)
+    Parameters:
+     - name = name of process,
+     - act_on = name of a reservoir this process will act upon
+     - function  = a function reference
+     - a1 to a6, up to 6 optional function arguments
     
-    Where: act_on is the name of the reservoir/flux this function should act upon, 
-           function is the name of a user supplied function
-           ai are optional function arguments. You only need to specify
-           those ai you actually use.
+    in order to use this function we need first declare a function we plan to
+    use with the generic function process. This function needs to follow this
+    template::
+
+        def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0) -> tuple:
+            # 
+            # i = index of the current timestep
+            # a1 to a2 =  optional function parameter. These must be present, 
+            # even if your function will not use it
+            
+            # calc some stuff and return it as
+
+            return [m, l, h] # where m= mass, and l & h are the respective 
+                             # isotopes. If there are none, dummmy values
+                             # instead
+
     
-    Towards this end, your function parameter list must be specified as
+    This function can then be used as::
     
-           def myfunc(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0)
-
-    where i is the current timestep, and ai are optional parameters,
+        GenericFunction(name="foo",
+                function=my_func,
+                a1 = some argument,
+                a2 = some argument,
+                act_on = reservoir name)
     
-    the function body is free to use or ignore any or all of the parameters
-
-    the function return value must match the reservoir/flux __set__ method format
-
-        return (m, l, h)
-    
-    where m = mass, and l and h are the masses of the light and heavy isotopes
-
-    If l & h are not calculated, it is recommended to return dummmy values, e.g.,
-      
-        return (m, 1,1,)
-
     """
+    
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
           Create a new process object with a given process type and options
