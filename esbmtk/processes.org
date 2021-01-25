@@ -935,8 +935,8 @@ class ScaleRelative2otherReservoir(RateConstant):
 
      F = C1 * C1 * k
 
-     where Mi denotes the mass in one  or more reservoirs, k is a
-     constant. This process is typically called by the connector
+     where Mi denotes the concentration in one  or more reservoirs, k is one
+     or more constant(s). This process is typically called by the connector
      instance when you specify the connection as
 
      Connect(source =  upstream reservoir,
