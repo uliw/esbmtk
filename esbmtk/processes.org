@@ -235,10 +235,10 @@ class GenericFunction(Process):
         # register with reservoir
         if isinstance(self.act_on, Reservoir):
             self.act_on.lpc.append(self)  # register with Reservoir
-            self.act_in.mo.lpc_r.append(self)  # Register with Model
+            self.act_on.mo.lpc_r.append(self)  # Register with Model
         elif isinstance(self.act_on, Flux):
             self.act_on.lpc.append(self)  # register with Flux
-            self.act_in.mo.lpc_f.append(self)  # Register with Model
+            self.act_on.mo.lpc_f.append(self)  # Register with Model
         else:
             raise ValueError(
                 "functions can only act upon reservoirs or fluxes")
@@ -930,23 +930,21 @@ class ScaleRelativeToNormalizedMass(RateConstant):
 class ScaleRelative2otherReservoir(RateConstant):
     """This process scales the flux as a function one or more reservoirs
      constant which describes the
-     strength of relation between the reservoir mass(ese) and
+     strength of relation between the reservoir concentration and
      the flux scaling
 
-     F = M1 * M2 * k
+     F = C1 * C1 * k
 
      where Mi denotes the mass in one  or more reservoirs, k is a
      constant. This process is typically called by the connector
-     instance. However you can instantiate it manually as
+     instance when you specify the connection as
 
-     ScaleRelativeToMass(
-                       name = "Name",
-                       reservoir = upstream_reservoir_handle,
-                       ref_reservoirs = [r1, r2]
-                       flux = flux handle,
-                       k_value =  1000,
-    )
-
+     Connect(source =  upstream reservoir,
+               sink = downstream reservoir,
+               ctype = "scale_relative_to_multiple_reservoirs"
+               ref_reservoirs = [r1, r2, k etc] # you must provide at least one
+               k_value = a overall scaling factor
+            )
     """
 
     def __call__(self, reservoir: Reservoir, i: int) -> None:
