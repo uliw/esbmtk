@@ -211,6 +211,30 @@ class Connect(esbmtkBase):
                ref = reservoir handle, 
                k_value = a scaling factor)
 
+    ctype = "scale_relative_to_multiple_reservoirs"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    This process scales the flux as a function one or more reservoirs
+    or constants which describes the
+    strength of relation between the reservoir concentrations and
+    the flux scaling
+
+    F = C1 * C2 * k
+
+    where Ci denotes the concentrartion in one  or more reservoirs, k is one
+    or more constants. 
+
+    Example:: 
+
+        Connect(source =  upstream reservoir,
+               sink = downstream reservoir,
+               ctype = "scale_relative_to_multiple_reservoirs"
+               ref_reservoirs = [r1, r2, k etc] # you must provide at least one
+               k_value = a scaling factor)
+    
+    K_value is an overall scaling factor.
+
+
     ctype = "flux_balance"
     ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -249,6 +273,7 @@ class Connect(esbmtkBase):
      - update() which allows you to update connection properties after the connection has been created
 
     """
+    
     def __init__(self, **kwargs):
         """ The init method of the connector obbjects performs sanity checks e.g.:
                - whether the reservoirs exist
@@ -986,6 +1011,7 @@ class ConnectionGroup(esbmtkBase):
             "delta": dict,
             "rate": dict,
             "pl": dict,
+            "signal": Signal,
             "alpha": dict,
             "species": dict,
             "ctype": str,
