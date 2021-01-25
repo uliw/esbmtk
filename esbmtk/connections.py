@@ -1,4 +1,11 @@
 """
+
+     esbmtk.connections
+     ~~~~~~~~~~~~~~~~~~
+
+     Classes which handle the connections and fluxes between esbmtk objects
+     like Reservoirs, Sources, and Sinks.
+
      esbmtk: A general purpose Earth Science box model toolkit
      Copyright (C), 2020 Ulrich G. Wortmann
 
@@ -38,60 +45,188 @@ from .processes import *
 from .esbmtk import *
 
 class Connect(esbmtkBase):
-    """Name:
+    """Two reservoirs connect to each other via at least one flux. This
+    module creates the connecting flux and creates a connector object
+    which stores all connection properties.
 
-        Connect
+    For simple connections, the type flux type is derived implcitly from the specified parameters.
+    For complex connections, the flux type must be set explicitly. See the examples below:
 
-    Description: Two reservoirs connect to each other via at least 1
-    flux. This module creates the connecting flux and creates a
-    connecctor object which stores all connection properties
+    Parameters:
+        - name: A string which determines the name of this object. Optional, if not provided
+          the connection name will be derived as "Source_2_Sink_Connection"
+        - source: An object handle for a Source or Reservoir
+        - sink: An object handle for a Sink or Reservoir
+        - rate: A quantity (e.g., "1 mol/s"), optional
+        - delta: The isotope ratio, optional
+        - alpha: A fractionation factor, optional
+        - id: A string wich will become part of the object name, optional
+        - plot: "yes" or "no", defaults to "yes"
+        - signal: An object handle of signal, optional
+        - pl: A list of process objects, optional
+        - ctype: connection type, optional, this allows to scale a flux in response to other
+          reservoirs and fluxes
 
-    Connection properties include:
-       - the direction of the flux (from A to B)
-       - any processes which act on the flux, and whether these processes depend on the upstream, downstream or both reservoirs
-       - the type of flux:
-           - Fixed: both flux-rate and delta are given, allowed processes include signal and fractionation
-           - Reservoir-Driven: delta and or flux rate depend on the reservoir data (upstream/downstream both)
-               - if nothing assume upstream reservoir passive flux with var delta
-               - if only flux it assume upstream reservoir with fixed flux and var delta
-               - if only delta assume varflux with fixed delta
-               - if both delta and flux are given print warning and suggest to use a static flux
-               - if only alpha assume upstream var flux and fractionation process
-               - Allowed processes: ALL
+    Connection Types:
+    -----------------
+    Basic Connections (the advanced ones are below):
+
+    - If both =rate= and =delta= are given, the flux is treated as a
+       fixed flux with a given isotope ratio. This is usually the case for
+       most source objects (they can still be affected by a signal, see
+       above), but makes little sense for reservoirs and sinks.
+
+    - If both the =rate= and =alpha= are given, the flux rate is fixed
+      (subject to any signals), but the isotopic ratio of the output
+      flux depends on the isotopic ratio of the upstream reservoir
+      plus any isotopic fractionation specified by =alpha=. This is
+      typically the case for fluxes which include an isotopic
+      fractionation (i.e., pyrite burial). This combination is not
+      particularly useful for source objects.
+
+    - If the connection specifies only =delta= the flux is treated as a
+      variable flux which is computed in such a way that the reservoir
+      maintains steady state with respect to it's mass.
+
+    - If the connection specifies only =rate= the flux is treated as a
+      fixed flux which is computed in such a way that the reservoir
+      maintains steady state with respect to it's isotope ratio.
+
+    Examples of Basic Connections
+    -----------------------------
+
+    Connecting a Source to a Reservoir
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    Unless you use a Signal, a source typically provides a steady stream with a given isotope ratio (if used)
+    
+    Example::
+
+       Connect(source =  Source,
+               sink = downstrean reservoir,
+               rate = "1 mol/s",
+               delta = optional,
+               signal = optional, see the signal documentation)
+    
+    Connecting a Reservoir to Sink or another Reservoir
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    Here we can distinguish between cases where we use fixed flux, or a flux which reacts to in some way to the 
+    upstream reservoir (see the Reservoir to Reservoir section for a more complete treatment):
+
+    Fixed outflux, with no isotope fractionation
+
+    Example::
+    
+         Connect(source =  upstream reservoir,
+               sink = Sink,
+               rate = "1 mol/s",)
+
+    Fixed outflux, with isotope fractionation
+
+    Example::
+    
+         Connect(source =  upstream reservoir,
+               sink = Sink,
+               alpha = -28,
+               rate = "1 mol/s",)
+
+    Advanced Connections
+    --------------------
+
+    You can aditionally define connection properties via the ctype
+    keyword. This requires additional keyword parameters. The following values are
+    recognized
+
+    ctype = "scale_with_flux"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    This will scale a flux relative to another flux:
+
+    Example::
+     
+        Connect(source =  upstream reservoir,
+               sink = downstream reservoir,
+               ctype = "scale_with_flux",
+               ref = flux handle, 
+               k_value = a scaling factor)
+
+    ctype = "scale_with_mass" and "scale_with_concentration"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    This will scale a flux relative to the mass or concentration of a reservoir
+
+    Example::
+     
+        Connect(source =  upstream reservoir,
+               sink = downstream reservoir,
+               ctype = "scale_with_mass",
+               ref = reservoir handle, 
+               k_value = a scaling factor)
+
+    ctype = "scale_relative_to_multiple_reservoirs"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
+    This process scales the flux as a function one or more reservoirs
+    or constants which describes the
+    strength of relation between the reservoir concentrations and
+    the flux scaling
+
+    F = C1 * C2 * k
+
+    where Ci denotes the concentrartion in one  or more reservoirs, k is one
+    or more constants. 
+
+    Example:: 
+
+        Connect(source =  upstream reservoir,
+               sink = downstream reservoir,
+               ctype = "scale_relative_to_multiple_reservoirs"
+               ref_reservoirs = [r1, r2, k etc] # you must provide at least one
+               k_value = a scaling factor)
+    
+    K_value is an overall scaling factor.
+
+
+    ctype = "flux_balance"
+    ~~~~~~~~~~~~~~~~~~~~~~
+
+   This type can be used to express equilibration fluxes 
+   between two reservoirs. This connection type, takes three parameters:
+
+   - =left= is a list which can contain constants and/or reservoirs. The
+     list must contain at least one valid element. All elements in this
+     list will be multiplied with each other. E.g. if we have a list
+     with one constant and one reservoir, the reservoir concentration
+     will be multiplied with the constant. If we have two reservoirs,
+     the respective reservoir concentrations will be multiplied with
+     each other.
+   - =right= similar to =left= The final flux rate will be computed as
+     the difference between =left= and =right=
+   - =k_value= a constant which will be multiplied with the difference
+     between =left=and =right=
 
     Example::
 
-        Connect(source =  upstream reservoir
-               sink = downstrean reservoir
-               delta = optional
-               alpha = optional
-               rate = optional
-               ref = optional
-               species = optional
-               ctype = optional
-               pl = [list]) process list. optional
-               signal = Signal, optional
-               id = optional identifier
-               plot = "yes/no" # defaults to yes
+        Connect(source=R_CO2,         # target of flux
+                sink=R_HCO3,          # source of flux
+                rate="1 mol/s",       # flux rate
+                ctype="flux_balance", # connection type 
+                k_value=1,            # global scaling factor
+                left=[K1, R_CO2],     # where K1 is a constant
+                right=[R_HCO3, R_Hplus])
 
-    You can aditionally define connection properties via the ctype keyword. The following values are reckognized
-
-   - scale_with_flux: flux-reference, k-value
-   - scale_with_mass: reservoir-reference, k-value
-   - scale_with_concentration: reservoir-ref, k-value
-   - scale_with_mass_normalized: reservoir-ref, k-value, ref-value
-   - scale_with_concentration_normalized:  reservoir-ref, k-value, ref-value
-   - monod_type_limit: ref_value, a-value, b-value
-
-    where k_value represents a scaling factor. For details, see the help system
-
-    useful methods in this class
-
-    list_processes() which will list all the processes which are associated with this connection.
-    update() which allows you to update connection properties after the connection has been created
-
+    
+    Useful methods in this class
+    ----------------------------
+    The following methods might prove useful
+    
+     - describe() will provide a short description of the connection objects.
+     - list_processes() which will list all the processes which are associated with this connection.
+     - update() which allows you to update connection properties after the connection has been created
 
     """
+    
     def __init__(self, **kwargs):
         """ The init method of the connector obbjects performs sanity checks e.g.:
                - whether the reservoirs exist
@@ -100,12 +235,7 @@ class Connect(esbmtkBase):
                - creates the correct default processes
                - and connects the reservoirs
 
-        Arguments:
-           name = name of the connector object : string
-           source   = upstream reservoir    : object handle
-           sink  = downstream reservoir  : object handle
-           fp   = connection_properties : dictionary {delta, rate, alpha, species, type}
-           pl[optional]   = optional processes : list
+        see the class documentation for details and examples
 
         """
 
@@ -810,6 +940,7 @@ class ConnectionGroup(esbmtkBase):
             "delta": dict,
             "rate": dict,
             "pl": dict,
+            "signal": Signal,
             "alpha": dict,
             "species": dict,
             "ctype": str,
@@ -845,7 +976,7 @@ class ConnectionGroup(esbmtkBase):
         # loop over names and create dicts
         for n in kwargs['sink'].species:
             cid[n] = 'None'
-            plot[n] = 'yes'
+            plot[n] = 'no'
             delta[n] = 'None'
             alpha[n] = 'None'
             rate[n] = 'None'

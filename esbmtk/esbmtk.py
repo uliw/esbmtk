@@ -161,10 +161,13 @@ class esbmtkBase(object):
         # loop over provided keywords
         for k, v in pv.items():
             # check av if provided value v is of correct type
-            if not isinstance(v, av[k]):
-                raise TypeError(
-                    f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
-                )
+            if av[k] != any:
+                #print(f"key = {k}, value  = {v}")
+                if not isinstance(v, av[k]):
+                   
+                    raise TypeError(
+                        f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
+                    )
 
     def __initerrormessages__(self):
         """ Init the list of known error messages"""
@@ -392,8 +395,8 @@ class esbmtkBase(object):
 #     def __init__(self, args):
 #         super(ClassName, self).__init__()
 #         self.args = args
-        
-        
+
+
 class Model(esbmtkBase):
     """This class is used to specify a new model
 
@@ -447,7 +450,7 @@ class Model(esbmtkBase):
     """
 
     __slots__ = ('lor')
-    
+
     def __init__(self, **kwargs: Dict[any, any]) -> None:
         """ Init Sequence
 
@@ -508,8 +511,11 @@ class Model(esbmtkBase):
         self.lel: list = []  # list which will hold all element references
         self.lsp: list = []  # list which will hold all species references
         self.lop: list = []  # list flux processe
-        self.olkk: list = [
-        ]  # optional keywords for use in the connector class
+        self.lpc_f: list = []  # list of external functions affecting fluxes
+        # list of external functions affecting reservoirs
+        self.lpc_r: list = []
+        # optional keywords for use in the connector class
+        self.olkk: list = []
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
@@ -731,25 +737,30 @@ class Model(esbmtkBase):
                 a = r.lio[f]
                 r.lodir.append(a)
 
-        i = self.execute(new, self.time, self.lor)
+        i = self.execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
 
         duration: float = process_time() - start
         print(f"\n Execution took {duration} seconds \n")
 
     @staticmethod
-    def execute(new: [NDArray, Float], time: [NDArray, Float],
-                lor: list) -> None:
+    def execute(new: [NDArray, Float], time: [NDArray, Float], lor: list,
+                f_lpc: list, r_lpc: list) -> None:
         """ Moved this code into a separate function to enable numba optimization
-        """
-        # from functools import reduce
 
-        i = 1  # some processes refer to the previous time step
+        """
+
+        i = 1  # processes refer to the previous time step -> start at 1
         dt = lor[0].mo.dt
+
         for t in time[0:-1]:  # loop over the time vector except the first
             # we first need to calculate all fluxes
             for r in lor:  # loop over all reservoirs
                 for p in r.lop:  # loop over reservoir processes
                     p(r, i)  # update fluxes
+
+            # update all process based fluxes. This can be done in a global lpc list
+            for p in f_lpc:
+                p(i)
 
             # and then update all reservoirs
             for r in lor:  # loop over all reservoirs
@@ -763,6 +774,12 @@ class Model(esbmtkBase):
 
                 # add to data from last time step
                 r[i] = r[i - 1] + new * dt
+
+            # update reservoirs which are calculated
+            # lrp # list calculated reservoir
+            # update all process based fluxes. This can be done in a global lpc list
+            for p in r_lpc:
+                p(i)
 
             i = i + 1  # next time step
 
@@ -928,35 +945,58 @@ specific properties
         self.__register_name__()
 
 class Reservoir(esbmtkBase):
-    """
-      Tis object holds reservoir specific information.
+    """Tis object holds reservoir specific information.
 
       Example::
 
-              Reservoir(name = "IW_SO4",      # Name of reservoir
+              Reservoir(name = "foo",      # Name of reservoir
                         species = S,          # Species handle
                         delta = 20,           # initial delta - optional (defaults  to 0)
                         mass/concentration = "1 unit"  # species concentration or mass
                         volume = "1E5 l",      # reservoir volume (m^3)
-                        plot = yes/no, defaults to yes
-                        transform = optional, currently reckonized: pH
+                        plot = "yes"/"no", defaults to yes
+                        transform_m = a function reference, optional (see below)
                         )
 
       you must either give mass or concentration. The result will always be displayed as concentration
 
-      You can access the reservoir data as
+      Using a transform function
+      ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+      In some cases, it is useful to transform the reservoir
+      concentration data before plotting it.  A good example is the H+
+      concentration in water which is better displayed as pH.  We can
+      do this by specifying a function to convert the reservoir
+      concentration into pH units::
+
+          def phc(m):
+              # convert m into the negative log space
+              pH = -np.log10(m)
+              return m
+
+      this function can then be added to a reservoir as::
+    
+          hplus.transform_m = phc
+    
+      Note, at present the transform_m function will only take one
+      argument, which always defaults to the reservoir
+      mass. The function must return a single argument which
+      will be interpreted as the transformed reservoir concentration.
+
+      You can access the reservoir data as:
+
       - Name.m # mass
       - Name.d # delta
       - Name.c # concentration
 
-    Useful methods include
+    Useful methods include:
 
       - Name.write_data() # save data to file
       - Name.describe()   # describe Reservoir
 
     """
 
-    __slots__ = ('m', 'l', 'h', 'd', 'c', 'lio', 'rvalue', 'lodir', 'lof')
+    __slots__ = ('m', 'l', 'h', 'd', 'c', 'lio', 'rvalue', 'lodir', 'lof', 'lpc')
 
     def __init__(self, **kwargs) -> None:
         """ Initialize a reservoir.
@@ -967,15 +1007,20 @@ class Reservoir(esbmtkBase):
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
-            "name": str,
-            "species": Species,
+            "name":
+            str,
+            "species":
+            Species,
             "delta": (Number, str),
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
-            "transform": any,
-            "plot": str,
-            "register": (SourceGroup,SinkGroup,ReservoirGroup,ConnectionGroup,str),
+            "transform_m":
+            any,
+            "plot":
+            str,
+            "register":
+            (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
         }
 
         # provide a list of absolutely required keywords
@@ -987,6 +1032,7 @@ class Reservoir(esbmtkBase):
         self.lod: Dict[any, any] = {
             'delta': "None",
             'plot': "yes",
+            'transform_m': "None",
         }
 
         # validate and initialize instance variables
@@ -1041,19 +1087,24 @@ class Reservoir(esbmtkBase):
         self.doe: Dict[Species, Flux] = {}  # species flux pairs
         self.loc: set[Connection] = set()  # set of connection objects
         self.ldf: list[DataField] = []  # list of datafield objects
+        self.lpc: list[Process] = [] # list of processes which calculate reservoirs
 
         # initialize mass vector
         self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
-        # initialize concentration vector
-        self.c: [NDArray, Float[64]] = self.m / self.v
         self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
         self.h: [NDArray, Float[64]] = zeros(self.mo.steps)
 
-        # isotope mass
-        [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
-        # delta of reservoir
-        self.d: [NDArray, Float[64]] = get_delta(self.l, self.h,
-                                                 self.species.r)
+        if self.mass == 0:
+            self.c: [NDArray, Float[64]] = zeros(self.species.mo.steps)
+            self.d: [NDArray, Float[64]] = zeros(self.species.mo.steps)
+        else:
+            # initialize concentration vector
+            self.c: [NDArray, Float[64]] = self.m / self.v
+            # isotope mass
+            [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
+            # delta of reservoir
+            self.d: [NDArray, Float[64]] = get_delta(self.l, self.h,
+                                                     self.species.r)
 
         # left y-axis label
         self.lm: str = f"{self.species.n} [{self.mu}/l]"
@@ -1174,7 +1225,7 @@ class Reservoir(esbmtkBase):
 
         read: set = set()
         curr: set = set()
-        
+
         # get a set of all current fluxes
         for e in self.lof:
             curr.add(e.name)
@@ -1501,7 +1552,7 @@ class Flux(esbmtkBase):
       
     """
 
-    __slots__ = ('m', 'l', 'h', 'd', 'rvalue')
+    __slots__ = ('m', 'l', 'h', 'd', 'rvalue', 'lpc')
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
@@ -1571,6 +1622,7 @@ class Flux(esbmtkBase):
 
         self.xl: str = self.model.xl  # se x-axis label equal to model time
         self.lop: list[Process] = []  # list of processes
+        self.lpc: list = [] # list of external functions
         self.led: list[ExternalData] = []  # list of ext data
         self.source: str = ""  # Name of reservoir which acts as flux source
         self.sink: str = ""  # Name of reservoir which acts as flux sink
@@ -2297,11 +2349,11 @@ class DataField(esbmtkBase):
         # dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
-            "associated_with": Reservoir,
+            "associated_with": (Reservoir,ReservoirGroup),
             "y1_data": NDArray[float],
             "y1_label": str,
             "y1_legend": str,
-            "y2_data": NDArray[float],
+            "y2_data": (str,NDArray[float]),
             "y2_label": str,
             "y2_legend": str,
         }
@@ -2315,7 +2367,7 @@ class DataField(esbmtkBase):
             "y1_legend": "Not Provided",
             "y2_label": "Not Provided",
             "y2_legend": "Not Provided",
-            "y2_data": 0,
+            "y2_data": "None",
         }
 
         # provide a dictionary entry for a keyword specific error message
@@ -2335,10 +2387,13 @@ class DataField(esbmtkBase):
 
         # set legacy variables
         self.legend_left = self.y1_legend
-        self.legend_right = self.y2_legend
-        self.ld = self.y2_label
+        
         self.mo = self.associated_with.mo
-        self.d = self.y2_data
+        if "self.y2_data" != "None":
+            self.d = self.y2_data
+            self.legend_right = self.y2_legend
+            self.ld = self.y2_label
+            
         self.n = self.name
         self.led = []
         # register with reservoir

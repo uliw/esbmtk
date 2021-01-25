@@ -22,6 +22,7 @@ class Process(esbmtkBase):
      reservoir flux combinations. To use it, you need to create an
      subclass which defines the actual process implementation in their
      call method. See 'PassiveFlux as example'
+    
     """
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
@@ -37,7 +38,8 @@ class Process(esbmtkBase):
 
     def __postinit__(self) -> None:
         """ Do some housekeeping for the process class
-          """
+        
+        """
 
         # legacy name aliases
         self.n: str = self.name  # display name of species
@@ -63,12 +65,14 @@ class Process(esbmtkBase):
         init. This useful for processes which only define a call method.
 
         """
-
+        
         pass
 
     def __defaultnames__(self) -> None:
         """Set up the default names and dicts for the process class. This
-          allows us to extend these values without modifying the entire init process"""
+          allows us to extend these values without modifying the entire init process
+
+        """
 
         from .connections import ConnectionGroup
         
@@ -100,7 +104,8 @@ class Process(esbmtkBase):
     def __register__(self, reservoir: Reservoir, flux: Flux) -> None:
         """Register the flux/reservoir pair we are acting upon, and register
           the process with the reservoir
-          """
+        
+        """
 
         # register the reservoir flux combination we are acting on
         self.f: Flux = flux
@@ -115,8 +120,145 @@ class Process(esbmtkBase):
 
           Example::
                process_name.show_figure(x,y)
+        
           """
         pass
+
+class GenericFunction(Process):
+    """This Process class takes a generic function and up to 6 optional
+    function arguments, and will replace the mass value(s) of the
+    given reservoirs with whatever the function calculates. This is
+    particularly useful e.g., to calculate the pH of a given reservoir
+    as function of e.g., Alkalinity and DIC.
+
+    Parameters:
+     - name = name of process,
+     - act_on = name of a reservoir this process will act upon
+     - function  = a function reference
+     - a1 to a6, up to 6 optional function arguments
+    
+    in order to use this function we need first declare a function we plan to
+    use with the generic function process. This function needs to follow this
+    template::
+
+        def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0) -> tuple:
+            # 
+            # i = index of the current timestep
+            # a1 to a2 =  optional function parameter. These must be present, 
+            # even if your function will not use it
+            
+            # calc some stuff and return it as
+
+            return [m, l, h] # where m= mass, and l & h are the respective 
+                             # isotopes. If there are none, dummmy values
+                             # instead
+
+    
+    This function can then be used as::
+    
+        GenericFunction(name="foo",
+                function=my_func,
+                a1 = some argument,
+                a2 = some argument,
+                act_on = reservoir name)
+    
+    """
+
+    __slots__ = ('function', 'act_on', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'i')
+
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """
+          Create a new process object with a given process type and options
+          """
+
+        self.__defaultnames__()  # default kwargs names
+        self.lkk: Dict[str, any] = {
+            "name": str,
+            "act_on": (Flux, Reservoir),
+            "function": any,
+            "a1": any,
+            "a2": any,
+            "a3": any,
+            "a4": any,
+            "a5": any,
+            "a6": any,
+        }
+
+        # required arguments
+        self.lrk: list = (["name", "act_on", "function"])
+
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            'a1': 0,
+            'a2': 0,
+            'a3': 0,
+            'a4': 0,
+            'a5': 0,
+            'a6': 0,
+        }
+
+        self.__initerrormessages__()  # default error messages
+        self.bem.update({
+            "act_on": "a reservoir or flux",
+            "function": "a function",
+            "a1": "a number etc",
+            "a2": "a number etc",
+            "a3": "a number etc",
+            "a4": "a number etc",
+            "a5": "a number etc",
+            "a6": "a number etc",
+        })
+        self.__validateandregister__(kwargs)  # initialize keyword values
+
+        if not callable(self.function):
+            raise ValueError(
+                "function must be defined before it can be used here")
+
+        self.__postinit__()  # do some housekeeping
+        self.__register_name__()  #
+
+        # register with reservoir
+        if isinstance(self.act_on, Reservoir):
+            self.act_on.lpc.append(self)  # register with Reservoir
+            self.act_on.mo.lpc_r.append(self)  # Register with Model
+        elif isinstance(self.act_on, Flux):
+            self.act_on.lpc.append(self)  # register with Flux
+            self.act_on.mo.lpc_f.append(self)  # Register with Model
+        else:
+            raise ValueError(
+                "functions can only act upon reservoirs or fluxes")
+
+    def __call__(self, i: int) -> None:
+        """Here we execute the user supplied function and assign the 
+        return value to the flux or reservoir
+
+        Where i = index of the current timestep
+              acting_on = reservoir or flux we are acting on.
+
+        """
+
+        self.act_on[i] = self.function(
+            i,
+            self.a1,
+            self.a2,
+            self.a3,
+            self.a4,
+            self.a5,
+            self.a6,
+        )
+
+    # redefine post init
+    def __postinit__(self) -> None:
+        """ Do some housekeeping for the process class
+
+          """
+
+        # legacy name aliases
+        self.n: str = self.name  # display name of species
+        self.m: Model = self.act_on.sp.mo  # the model handle
+        self.mo: Model = self.m
+
+        self.__misc_init__()
 
 class LookupTable(Process):
      """This process replaces the flux-values with values from a static
@@ -372,7 +514,9 @@ class VarDeltaOut(Process):
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """Here we re-balance the flux. This code will be called by the
           apply_flux_modifier method of a reservoir which itself is
-          called by the model execute method"""
+          called by the model execute method
+
+        """
 
         # set flux according to keyword value
 
@@ -740,23 +884,21 @@ class ScaleRelativeToNormalizedMass(RateConstant):
 class ScaleRelative2otherReservoir(RateConstant):
     """This process scales the flux as a function one or more reservoirs
      constant which describes the
-     strength of relation between the reservoir mass(ese) and
+     strength of relation between the reservoir concentration and
      the flux scaling
 
-     F = M1 * M2 * k
+     F = C1 * C1 * k
 
-     where Mi denotes the mass in one  or more reservoirs, k is a
-     constant. This process is typically called by the connector
-     instance. However you can instantiate it manually as
+     where Mi denotes the concentration in one  or more reservoirs, k is one
+     or more constant(s). This process is typically called by the connector
+     instance when you specify the connection as
 
-     ScaleRelativeToMass(
-                       name = "Name",
-                       reservoir = upstream_reservoir_handle,
-                       ref_reservoirs = [r1, r2]
-                       flux = flux handle,
-                       k_value =  1000,
-    )
-
+     Connect(source =  upstream reservoir,
+               sink = downstream reservoir,
+               ctype = "scale_relative_to_multiple_reservoirs"
+               ref_reservoirs = [r1, r2, k etc] # you must provide at least one
+               k_value = a overall scaling factor
+            )
     """
 
     def __call__(self, reservoir: Reservoir, i: int) -> None:

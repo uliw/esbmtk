@@ -189,17 +189,17 @@ def show_data(self, **kwargs) -> None:
             f"{off}{ind}i = {i}, Mass = {self.m[i]:.2e}, delta = {self.d[i]:.2f}"
         )
 
-def set_y_limits(ax  :plt.Axes, model :any)->None:
+def set_y_limits(ax: plt.Axes, model: any) -> None:
     """ Prevent the display or arbitrarily small differences
     """
-    lower :float
-    upper :float
+    lower: float
+    upper: float
 
-    bottom, top =  ax.get_ylim()
-    if (top - bottom)  < model.display_precision:
+    bottom, top = ax.get_ylim()
+    if (top - bottom) < model.display_precision:
         top = bottom + model.display_precision
         ax.set_ylim(bottom, top)
-        
+
 
 def get_ptype(obj, kwargs: dict) -> int:
     """
@@ -207,7 +207,6 @@ def get_ptype(obj, kwargs: dict) -> int:
     
     """
 
-    
     ptype: int = 0
     if "ptype" in kwargs:
         if kwargs["ptype"] == "both":
@@ -222,9 +221,10 @@ def get_ptype(obj, kwargs: dict) -> int:
         if obj.m_type == "mass_only":
             ptype = 2
         elif obj.m_type == "both":
-            ptype = 0    
+            ptype = 0
         else:
-            raise ValueError("ptype must be one of 'both/iso/concentration/mass_only'")
+            raise ValueError(
+                "ptype must be one of 'both/iso/concentration/mass_only'")
 
     return ptype
 
@@ -245,7 +245,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
 
     first_axis: bool = False
     second_axis: bool = False
-    
+
     rows = geo[0]
     cols = geo[1]
     # species = obj.sp
@@ -264,33 +264,38 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     if isinstance(obj, Flux):
         yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
         y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
+
     elif isinstance(obj, Reservoir):
         if obj.display_as == "mass":
             yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
-        elif 'transform' in obj.__dict__:
-           if callable(obj.transform):
-               yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
-               yl = obj.transform(yl)
-               y_label = f"{obj.legend_left} [pH]"
-           else:
-               raise ValueError("transform must be function")
+
+        elif obj.transform_m != "None":
+            if callable(obj.transform_m):
+                #yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
+                yl = obj.transform_m(obj.m)
+                y_label = f"{obj.legend_left}"
+            else:
+                raise ValueError("transform_m must be function")
+
         else:
             yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
+
     elif isinstance(obj, Signal):
         # use the same units as the associated flux
         yl = (obj.c * model.c_unit).to(obj.fo.plt_units).magnitude
         y_label = f"{obj.n} [{obj.fo.plt_units:~P}]"
+
     elif isinstance(obj, DataField):
         time = (time * model.t_unit).to(model.d_unit).magnitude
         yl = obj.y1_data
         y_label = obj.y1_label
-        if len(obj.y2_data) > 1:
-            ptype = 0
-        else:
+        if obj.y2_data == "None":
             ptype = 2
-        
+        else:
+            ptype = 0
+
     else:  # sources, sinks, external data should not show up here
         raise ValueError(f"{obj.n} = {type(obj)}")
 
@@ -316,11 +321,11 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         # plot left y-scale data
         ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=obj.legend_left)
         # set labels
-        ax1.set_xlabel(f"{model.time_label} [{model.d_unit:~P}]")  
-        ax1.set_ylabel(y_label)  
+        ax1.set_xlabel(f"{model.time_label} [{model.d_unit:~P}]")
+        ax1.set_ylabel(y_label)
         # remove unnecessary frame species
         ax1.spines['top'].set_visible(False)
-        set_y_limits(ax1,model)
+        set_y_limits(ax1, model)
 
     # set color index
     cn = cn + 1
@@ -333,8 +338,9 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
 
         ax2.set_ylabel(obj.ld)  # species object delta label
-        ax2.spines['top'].set_visible(False)  # remove unnecessary frame speciess
-        set_y_limits(ax2,model)
+        ax2.spines['top'].set_visible(
+            False)  # remove unnecessary frame speciess
+        set_y_limits(ax2, model)
 
     # adjust display properties for title and legend
     ax1.set_title(obj.n)
@@ -344,7 +350,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     plt.rcParams["legend.framealpha"] = 0.4  # set transparency
 
     for d in obj.led:  # loop over external data objects if present
-        
+
         if isinstance(d.x[0], str):  # if string, something is off
             raise ValueError("No time axis in external data object {d.name}")
         if "y" in dir(d):  # mass or concentration data is present
@@ -352,7 +358,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
             col = f"C{cn}"
             leg = f"{obj.lm} {d.legend}"
             ln3 = ax1.scatter(d.x, d.y, color=col, label=leg)
-        if "z" in dir(d) and second_axis: # isotope data is present
+        if "z" in dir(d) and second_axis:  # isotope data is present
             cn = cn + 1
             col = f"C{cn}"
             leg = f"{d.legend}"
@@ -361,10 +367,10 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     # collect all labels and print them in one legend
     if first_axis:
         handler1, label1 = ax1.get_legend_handles_labels()
-    
+
     if second_axis:
         handler2, label2 = ax2.get_legend_handles_labels()
-    
+
     if first_axis and second_axis:
         legend = ax2.legend(handler1 + handler2, label1 + label2,
                             loc=0).set_zorder(6)
@@ -372,7 +378,6 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     #    legend = ax1.legend(handler1 + label1, loc=0).set_zorder(6)
     #elif second_axis:
     #   legend = ax2.legend(handler2 + label2, loc=0).set_zorder(6)
-        
 
     # Matplotlib will show arbitrarily small differences which can be confusing
     #yl_min = min(yl)
