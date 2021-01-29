@@ -18,8 +18,9 @@ import logging
 import time
 import builtins
 set_printoptions(precision=4)
-from .utility_functions import *
-from .esbmtk import *
+# from .utility_functions import *
+from .esbmtk import esbmtkBase, Reservoir, Flux, Signal
+# from .connections import ConnnectionGroup
 #+END_SRC
 
 
@@ -743,6 +744,8 @@ class RateConstant(Process):
         """
 
         from . import ureg, Q_
+        from .connections import SourceGroup, SinkGroup, ReservoirGroup
+        from .connections import ConnectionGroup
 
         # Note that self.lkk values also need to be added to the lkk
         # list of the connector object.
