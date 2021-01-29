@@ -32,6 +32,8 @@ import logging
 import time
 import builtins
 import os
+from .utility_functions import get_imass, get_delta, get_ptype, get_plot_layout
+from .utility_functions import plot_object_data
 
 class esbmtkBase(object):
     """The esbmtk base class template. This class handles keyword
@@ -1004,6 +1006,7 @@ class Reservoir(esbmtkBase):
         """
 
         from . import ureg, Q_
+        
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -2576,6 +2579,6 @@ class ExternalData(esbmtkBase):
         plt.show()
         plt.savefig(self.n + ".pdf")
 
-from .connections import *
+from .connections import Connection, ConnectionGroup
 from .processes import *
-from .species_definitions import *
+from .species_definitions import carbon, sulfur, hydrogen, phosphor

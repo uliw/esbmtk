@@ -15,8 +15,8 @@ import logging
 import time
 import builtins
 set_printoptions(precision=4)
-from .utility_functions import *
-from .esbmtk import *
+# from .utility_functions import *
+from .esbmtk import Element, Species
 
 def carbon(model):
     """ Some often used definitions

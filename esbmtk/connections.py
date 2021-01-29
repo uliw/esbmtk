@@ -24,6 +24,7 @@
 """
 
 # from pint import UnitRegistry
+from __future__ import annotations
 from numbers import Number
 from nptyping import *
 from typing import *
@@ -40,7 +41,7 @@ import logging
 import time
 import builtins
 set_printoptions(precision=4)
-from .utility_functions import *
+from .utility_functions import map_units
 from .processes import *
 from .esbmtk import *
 
@@ -226,7 +227,6 @@ class Connect(esbmtkBase):
      - update() which allows you to update connection properties after the connection has been created
 
     """
-    
     def __init__(self, **kwargs):
         """ The init method of the connector obbjects performs sanity checks e.g.:
                - whether the reservoirs exist
@@ -808,11 +808,16 @@ class Connect(esbmtkBase):
 
         lop = copy(self.lop)
         for p in lop:
-            self.r1.lop.remove(p)
-            self.fh.lop.remove(p)
-            self.lop.remove(p)
-            self.r1.mo.lmo.remove(p.n)
-            del p
+            for f in lof:
+                if isinstance(f.register, ConnectionGroup):
+                    # remove from Connection group list of model objects
+                    self.register.lmo.remove(f)
+                else:
+                    self.r1.lop.remove(p)
+                    self.fh.lop.remove(p)
+                    self.lop.remove(p)
+                    self.r1.mo.lmo.remove(p.n)
+                    del p
 
     def __delete_flux__(self) -> None:
         """ Updates to the connection properties may change the connection type and thus
@@ -827,10 +832,14 @@ class Connect(esbmtkBase):
 
         lof = copy(self.lof)
         for f in lof:
-            self.r1.lof.remove(f)
-            self.lof.remove(f)
-            self.r1.mo.lmo.remove(f.n)
-            del f
+            if isinstance(f.register, ConnectionGroup):
+                # remove from Connection group list of model objects
+                self.register.lmo.remove(f)
+            else:
+                self.r1.lof.remove(f)
+                self.lof.remove(f)
+                self.r1.mo.lmo.remove(f.n)
+                del f
 
     # ---- Property definitions to allow for connection updates --------
     """ Changing the below properties requires that we delete all
