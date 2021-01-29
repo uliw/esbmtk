@@ -59,6 +59,8 @@ import logging
 import time
 import builtins
 import os
+from .utility_functions import get_imass, get_delta, get_ptype, get_plot_layout
+from .utility_functions import plot_object_data
 #+END_SRC
 
 * The main esbmtk objects
@@ -1061,6 +1063,7 @@ class Reservoir(esbmtkBase):
         """
 
         from . import ureg, Q_
+        
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -2685,11 +2688,11 @@ class ExternalData(esbmtkBase):
 #+END_SRC
 
 
-* Connections and Species
+* Import the remaining modules
 #+BEGIN_SRC ipython :tangle esbmtk.py
-from .connections import *
+from .connections import Connection, ConnectionGroup
 from .processes import *
-from .species_definitions import *
+from .species_definitions import carbon, sulfur, hydrogen, phosphor
 #+END_SRC
 
 
