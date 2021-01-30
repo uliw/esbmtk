@@ -20,6 +20,7 @@ import builtins
 set_printoptions(precision=4)
 # from .utility_functions import *
 from .esbmtk import esbmtkBase, Reservoir, Flux, Signal
+from .utility_functions import get_imass, get_frac, get_delta
 # from .connections import ConnnectionGroup
 #+END_SRC
 
@@ -327,6 +328,8 @@ class AddSignal(Process):
         Create a new process object with a given process type and options
         """
 
+       
+        
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
         self.lrk.extend(["lt", "flux", "reservoir"])  # new required keywords
@@ -946,9 +949,26 @@ class ScaleRelative2otherReservoir(RateConstant):
                sink = downstream reservoir,
                ctype = "scale_relative_to_multiple_reservoirs"
                ref_reservoirs = [r1, r2, k etc] # you must provide at least one
+                                                # reservoir or constant
                k_value = a overall scaling factor
             )
     """
+
+    def __misc_init__(self) -> None:
+        """ Test that self.reservoir only contains numbers and reservoirs
+
+        """
+
+        self.rs :list = []
+        self.constant :Number = 1
+        
+        for r in self.ref_reservoir:
+            if isinstance(r, (Reservoir)):
+                self.rs.append(r)
+            elif isinstance(r, (Number)):
+                self.constant = self.constant * r
+            else:
+                raise ValueError(f"{r} must be reservoir or number, not {type(r)}")
 
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
@@ -957,10 +977,11 @@ class ScaleRelative2otherReservoir(RateConstant):
         """
 
         c: float = 1
-        for r in self.ref_reservoir:
+        for r in self.rs:
             c = c * r.c[i - 1]
 
-        scale: float = c * self.k_value
+        scale: float = c * self.k_value * self.constant
+        
         # scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] * array([scale, scale, scale, 1])
 #+END_SRC
