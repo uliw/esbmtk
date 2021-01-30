@@ -610,6 +610,10 @@ class Model(esbmtkBase):
                     hydrogen(self)
                 elif e == "Phosphor":
                     phosphor(self)
+                elif e == "Oxygen":
+                    oxygen(self)
+                elif e == "Nitrogen":
+                    nitrogen(self)
                 else:
                     raise ValueError(f"{e} not implemented yet")
                 warranty = (
