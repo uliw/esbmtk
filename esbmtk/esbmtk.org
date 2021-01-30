@@ -1283,6 +1283,8 @@ class Reservoir(esbmtkBase):
 
         """
 
+        from .utility_functions import is_name_in_list, get_object_from_list
+        
         read: set = set()
         curr: set = set()
 
