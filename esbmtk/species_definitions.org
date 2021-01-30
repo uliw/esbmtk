@@ -23,7 +23,7 @@ set_printoptions(precision=4)
 from .esbmtk import Element, Species
 #+END_SRC
 
-**** Defaults for some elements
+* Defaults for some elements
 
 This could possibly be moved to a text based config file.
 
@@ -103,6 +103,27 @@ def hydrogen(model):
             display_as=r"H$_{2}$O")  # Name & element handle
     Species(name="H", element=eh)  # Name & element handle
 
+def oxygen(model):
+    eh = Element(
+        name="Oxygen",
+        model=model,  # model handle
+        mass_unit="mmol",  # base mass unit
+        li_label="$^{16$}O",  # Name of light isotope
+        hi_label="$^{18}$)",  # Name of heavy isotope
+        d_label=r"$\delta^{18}$)",  # Name of isotope delta
+        d_scale=
+        "VSMOV",  # Isotope scale. End of plot labels  # needs verification 
+        r=2005.201E-6,  # https://nucleus.iaea.org/rpst/documents/vsmow_slap.pdf
+    )
+
+    # add species
+    Species(name="O",
+            element=eh,
+            display_as="O")
+    # Name & element handle
+    Species(name="O2", element=eh,
+            display_as=r"O$_{2}$")  # Name & element handle
+    Species(name="H", element=eh)  # Name & element handle
 
 def phosphor(model):
     eh = Element(
