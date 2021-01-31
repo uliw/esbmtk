@@ -306,8 +306,6 @@ class Connect(esbmtkBase):
             "ctype":
             str,
             "ref": (Flux, list),
-            "react_with":
-            Flux,
             "ratio":
             Number,
             "scale":
@@ -582,9 +580,9 @@ class Connect(esbmtkBase):
             if self.delta != "None" and self.rate != "None":
                 pass  # do nothing but exit this conditional
             # variable flux with fixed delta
-            elif self.delta != "None":  # rate must None
+            elif self.delta != "None":  # delta must be set
                 self.__passivefluxfixeddelta__()
-            elif self.rate != "None":  # delta must be None
+            elif self.rate != "None":  # rate must be set
                 self.__vardeltaout__()  # variable delta with fixed flux
             else:  # if neither are given -> default varflux type
                 self._delta = 0
@@ -595,11 +593,11 @@ class Connect(esbmtkBase):
             self.__vardeltaout__()
             self.__flux_diff__()
         elif self.ctype == "scale_with_flux":
-            self.__vardeltaout__()
             self.__scaleflux__()
+            #self.__vardeltaout__()
         elif self.ctype == "copy_flux":
-            self.__vardeltaout__()
             self.__scaleflux__()
+            #self.__vardeltaout__()
         elif self.ctype == "scale_with_mass":
             self.__rateconstant__()
         elif self.ctype == "scale_with_concentration":
@@ -612,6 +610,8 @@ class Connect(esbmtkBase):
             self.__rateconstant__()
         elif self.ctype == "flux_balance":
             self.__rateconstant__()
+        elif self.ctype == "react_with":
+            self.__reaction__()
         elif self.ctype == "monod_type_limit":
             self.__vardeltaout__()
             self.__rateconstant__()
@@ -689,18 +689,20 @@ class Connect(esbmtkBase):
 
         """
 
-        if not isinstance(self.kwargs["react_with"], Flux):
+        if not isinstance(self.ref, (Flux)):
             raise ValueError("Scale reference must be a flux")
+
         ph = Reaction(name=self.pn + "_RF",
                       reservoir=self.r,
                       flux=self.fh,
                       register=self.register,
-                      scale=self.kwargs["ratio"],
-                      ref=self.kwargs["react_with"])
+                      scale=self.k_value,
+                      ref=self.ref)
+
         # we need to make sure to remove the flux referenced by
         # react_with is removed from the list of fluxes in this
-        # reservoir.
-        self.r2.lof.remove(self.kwargs["react_with"])
+        # reservoir. This should probably move in to the React Class
+        self.r2.lof.remove(self.ref)
         self.lop.append(ph)
 
     def __passiveflux__(self) -> None:
