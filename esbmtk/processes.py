@@ -16,7 +16,8 @@ import builtins
 set_printoptions(precision=4)
 # from .utility_functions import *
 from .esbmtk import esbmtkBase, Reservoir, Flux, Signal
-from .utility_functions import get_imass, get_frac, get_delta
+from .utility_functions import get_imass, get_frac, get_delta, get_flux_data
+from .utility_functions import sort_by_type
 # from .connections import ConnnectionGroup
 
 class Process(esbmtkBase):
@@ -50,15 +51,24 @@ class Process(esbmtkBase):
         self.m: Model = self.r.sp.mo  # the model handle
         self.mo: Model = self.m
 
-        # Create a list of fluxes wich excludes the flux this process
-        # will be acting upon
-        self.fws: List[Flux] = self.r.lof.copy()
-        self.fws.remove(self.f)  # remove this handle
-
         self.rm0: float = self.r.m[0]  # the initial reservoir mass
         self.direction: Dict[Flux, int] = self.r.lio[self.f]
-
         self.__misc_init__()
+
+    def __delayed_init__(self) -> None:
+        """
+        Initialize stuff which is only known after the entire model has been defined.
+        This will be executed just before running the model. You need to add the following
+        two lines somewhere in the init procedure (preferably by redefining __misc_init__)
+        and redefine __delayed_init__ to actually execute any code below
+
+        # this process requires delayed init
+        self.mo.lto.append(self)
+        
+        """
+
+        pass
+       
 
     def __misc_init__(self) -> None:
         """This is just a place holder method which will be called by default
@@ -67,7 +77,7 @@ class Process(esbmtkBase):
         init. This useful for processes which only define a call method.
 
         """
-        
+
         pass
 
     def __defaultnames__(self) -> None:
@@ -77,7 +87,7 @@ class Process(esbmtkBase):
         """
 
         from .connections import ConnectionGroup
-        
+
         # provide a dict of known keywords and types
         self.lkk: Dict[str, any] = {
             "name": str,
@@ -89,7 +99,7 @@ class Process(esbmtkBase):
             "alpha": Number,
             "scale": Number,
             "ref": (Flux, list),
-            'register': (str,ConnectionGroup),
+            'register': (str, ConnectionGroup),
         }
 
         # provide a list of absolutely required keywords
@@ -386,29 +396,59 @@ class PassiveFlux(Process):
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
 
+    def __misc_init__(self) -> None:
+        """This is just a place holder method which will be called by default
+        in __post_init__() This can be overloaded to add additional
+        code to the init procedure without the need to redefine
+        init. This useful for processes which only define a call method.
+
+        """
+
+        # this process requires delayed init.
+        self.mo.lto.append(self)
+
+    def __delayed_init__(self) -> None:
+        """
+        Initialize stuff which is only known after the entire model has been defined.
+        This will be executed just before running the model.
+        
+        """
+
+        # Create a list of fluxes wich excludes the flux this process
+        # will be acting upon
+
+        print(f"delayed init for {self.name}")
+        self.fws: List[Flux] = self.r.lof.copy()
+        self.fws.remove(self.f)  # remove this handle
+
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """Here we re-balance the flux. That is, we calculate the sum of all fluxes
-          excluding this flux. This sum will be equl to this flux. This will likely only
-          work for outfluxes though.
+        excluding this flux. This sum will be equal to this flux. This will likely only
+        work for outfluxes though.
 
         Should this be done for output fluxes as well?
           
-          """
+        """
 
-        new: float = 0
+        new: float = 0.0
+
+        # calc sum of fluxes in fws. Note that at this point, not all fluxes
+        # will be known so we need to use the flux values from the previous times-step
         for j, f in enumerate(self.fws):
-            new += f.m[i] * reservoir.lio[f]
+            # print(f"{f.n} = {f.m[i-1] * reservoir.lio[f]}")
+            new += f.m[i-1] * reservoir.lio[f]
 
-        # self.f[i] = get_flux_data(new,reservoir.d[i-1],reservoir.rvalue)
+        # print(f"sum = {new:.0f}\n")    
+        self.f[i] = get_flux_data(new,reservoir.d[i-1],reservoir.rvalue)
 
-        m = new
-        r = reservoir.l[i - 1] / reservoir.m[i - 1]
-        l = m * r
-        h = m - l
-        self.f.m[i] = m
-        self.f.l[i] = l
-        self.f.h[i] = h
-        self.f.d[i] = reservoir.d[i - 1]
+        #m = new
+        #r = reservoir.l[i - 1] / reservoir.m[i - 1]
+        #l = m * r
+        #h = m - l
+        #self.f.m[i] = m
+        #self.f.l[i] = l
+        #self.f.h[i] = h
+        #self.f.d[i] = reservoir.d[i - 1]
 
 class PassiveFlux_fixed_delta(Process):
      """This process sets the output flux from a reservoir to be equal to
@@ -581,6 +621,25 @@ class ScaleFlux(Process):
                                   reservoir.rvalue)
 
 
+class Reaction(ScaleFlux):
+     """This process approximates the effect of a chemical reaction between
+     two fluxes which belong to a differents species (e.g., S, and O).
+     The flux belonging to the upstream reservoir will simply be
+     scaled relative to the flux it reacts with. The scaling is given
+     by the ratio argument. So this function is equivalent to the
+     ScaleFlux class.
+
+     Example::
+
+        Connect(source=IW_H2S,
+                sink=S0,
+                ctype = "react_with",
+                k_value=1,
+                ref = O2_diff_to_S0,
+                k_value =1,
+        )
+     """        
+        
 class FluxDiff(Process):
     """ The new flux will be the difference of two fluxes
 

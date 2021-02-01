@@ -17,6 +17,8 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - Jan. 30^{th}, added oxygen and nitrogen species definitions
+
  - Jan. 18^{th}, Reading a previous model state is now more robust. It no
    longer requires the models model have the same numbers of
    fluxes. It will attempt to match by name, and print a warning for
