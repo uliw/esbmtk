@@ -1,4 +1,5 @@
 
+
 * Utility functions
 Some functions which need to be present outside classes.
 
@@ -306,13 +307,13 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
             yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
 
-        elif obj.transform_m != "None":
-            if callable(obj.transform_m):
+        elif obj.plot_transform != "None":
+            if callable(obj.plot_transform):
                 #yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
-                yl = obj.transform_m(obj.m)
+                yl = obj.plot_transform(obj.m)
                 y_label = f"{obj.legend_left}"
             else:
-                raise ValueError("transform_m must be function")
+                raise ValueError("plot_transform must be function")
 
         else:
             yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
