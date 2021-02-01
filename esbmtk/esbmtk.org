@@ -60,7 +60,7 @@ import time
 import builtins
 import os
 from .utility_functions import get_imass, get_delta, get_ptype, get_plot_layout
-from .utility_functions import plot_object_data, show_data
+from .utility_functions import plot_object_data, show_data, get_string_between_brackets
 #+END_SRC
 
 * The main esbmtk objects
