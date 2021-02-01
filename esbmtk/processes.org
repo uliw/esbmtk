@@ -21,6 +21,7 @@ set_printoptions(precision=4)
 # from .utility_functions import *
 from .esbmtk import esbmtkBase, Reservoir, Flux, Signal
 from .utility_functions import get_imass, get_frac, get_delta, get_flux_data
+from .utility_functions import sort_by_type
 # from .connections import ConnnectionGroup
 #+END_SRC
 
