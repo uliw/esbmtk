@@ -750,8 +750,7 @@ class Model(esbmtkBase):
         plt.show()  # create the plot windows
 
     def plot_reservoirs(self, **kwargs: dict) -> None:
-        """Loop over all reservoirs and either plot the data into a window,
-            or save it to a pdf
+        """ Plot only Reservoir data
 
         This method has the optional keyword ptype which can be
 
