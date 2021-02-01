@@ -126,44 +126,52 @@ def add_to (l, e):
 *** Get the plot layout
 #+BEGIN_SRC ipython :tangle utility_functions.py
 def get_plot_layout(obj):
-      """ Simple function which selects a row, column layout based on the number of
-      objects to display.  The expected argument is a reservoir object which
-      contains the list of fluxes in the reservoir
+    """Simple function which selects a row, column layout based on the number of
+    objects to display.  The expected argument is a reservoir object which
+    contains the list of fluxes in the reservoir
 
-      """
+    """
 
-      noo = 1 # the reservoir is the fisrt object
-      for f in obj.lof: # count numbert of fluxes
-            if f.plot == "yes":
-                  noo += 1
-                  
-      for d in obj.ldf: # count number of data fields
-            noo +=1
-            
-      # noo = len(obj.lof) + 1  # number of objects in this reservoir
-      logging.debug(f"{noo} subplots for {obj.n} required")
+    noo = 1  # the reservoir is the fisrt object
+    for f in obj.lof:  # count numbert of fluxes
+        if f.plot == "yes":
+            noo += 1
 
-      if noo < 2:
-          geo = [1, 1]  # one row, one column
-          size = [5, 3]  # size in inches
-      elif 1 < noo < 3:
-          geo = [2, 1]  # two rows, one column
-          size = [5, 6]  # size in inches
-      elif 2 < noo < 5:
-          geo = [2, 2]  # two rows, two columns
-          size = [10, 6]  # size in inches
-      elif 4 < noo < 7:
-          geo = [2, 3]  # two rows, three columns
-          size = [15, 6]  # size in inches
-      elif 6 < noo < 10:
-          geo = [3, 3]  # two rows, three columns
-          size = [15, 9]  # size in inches
-      else:
-          print("plot geometry for more than 8 fluxes is not yet defined")
-          print("Consider calling flux.plot individually on each flux in the reservoir")
-          # print(f"Selected Geometry: rows = {geo[0]}, cols = {geo[1]}")
+    for d in obj.ldf:  # count number of data fields
+        noo += 1
 
-      return size, geo
+    # noo = len(obj.lof) + 1  # number of objects in this reservoir
+    logging.debug(f"{noo} subplots for {obj.n} required")
+
+    size, geo = plot_geometry(noo)
+
+    return size, geo
+
+
+def plot_geometry(noo: int) -> tuple():
+    """Define plot geometry based on number of objects to plot"""
+
+    if noo < 2:
+        geo = [1, 1]  # one row, one column
+        size = [5, 3]  # size in inches
+    elif 1 < noo < 3:
+        geo = [2, 1]  # two rows, one column
+        size = [5, 6]  # size in inches
+    elif 2 < noo < 5:
+        geo = [2, 2]  # two rows, two columns
+        size = [10, 6]  # size in inches
+    elif 4 < noo < 7:
+        geo = [2, 3]  # two rows, three columns
+        size = [15, 6]  # size in inches
+    elif 6 < noo < 10:
+        geo = [3, 3]  # two rows, three columns
+        size = [15, 9]  # size in inches
+    else:
+        print("plot geometry for more than 8 fluxes is not yet defined")
+        print("Consider calling flux.plot individually on each flux in the reservoir")
+        # print(f"Selected Geometry: rows = {geo[0]}, cols = {geo[1]}")
+
+    return size, geo
 #+END_SRC
 
 *** Show list of fluxes in a reservoir
@@ -227,8 +235,7 @@ def show_data(self, **kwargs) -> None:
 
 #+BEGIN_SRC ipython :tangle utility_functions.py
 def set_y_limits(ax: plt.Axes, model: any) -> None:
-    """ Prevent the display or arbitrarily small differences
-    """
+    """Prevent the display or arbitrarily small differences"""
     lower: float
     upper: float
 
@@ -238,10 +245,10 @@ def set_y_limits(ax: plt.Axes, model: any) -> None:
         ax.set_ylim(bottom, top)
 
 
-def get_ptype(obj, kwargs: dict) -> int:
+def get_ptype(obj, **kwargs: dict) -> int:
     """
     Set plot type variable
-    
+
     """
 
     ptype: int = 0
@@ -260,16 +267,21 @@ def get_ptype(obj, kwargs: dict) -> int:
         elif obj.m_type == "both":
             ptype = 0
         else:
-            raise ValueError(
-                "ptype must be one of 'both/iso/concentration/mass_only'")
+            raise ValueError("ptype must be one of 'both/iso/concentration/mass_only'")
 
     return ptype
 
 
 def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
-    """collection of commands which will plot and annotate a reservoir or flux
-      object into an existing plot window. 
-      """
+    """collection of commands which will plotqand annotate a reservoir or flux
+    object into an existing plot window.
+
+    geo: geometry info
+    fn: figure number in plot
+    obj: the object to plot
+    ptype: the plot type
+
+    """
 
     from . import ureg, Q_
     from esbmtk import Flux, Reservoir, Signal, DataField
@@ -309,7 +321,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
 
         elif obj.plot_transform_c != "None":
             if callable(obj.plot_transform_c):
-                #yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
+                # yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
                 yl = obj.plot_transform_c(obj.m)
                 y_label = f"{obj.legend_left}"
             else:
@@ -361,7 +373,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         ax1.set_xlabel(f"{model.time_label} [{model.d_unit:~P}]")
         ax1.set_ylabel(y_label)
         # remove unnecessary frame species
-        ax1.spines['top'].set_visible(False)
+        ax1.spines["top"].set_visible(False)
         set_y_limits(ax1, model)
 
     # set color index
@@ -375,15 +387,14 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
 
         ax2.set_ylabel(obj.ld)  # species object delta label
-        ax2.spines['top'].set_visible(
-            False)  # remove unnecessary frame speciess
+        ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
         set_y_limits(ax2, model)
 
     # adjust display properties for title and legend
     ax1.set_title(obj.n)
-    plt.rcParams['axes.titlepad'] = 14  # offset title upwards
-    plt.rcParams["legend.facecolor"] = '0.8'  # show a gray background
-    plt.rcParams["legend.edgecolor"] = '0.8'  # make frame the same color
+    plt.rcParams["axes.titlepad"] = 14  # offset title upwards
+    plt.rcParams["legend.facecolor"] = "0.8"  # show a gray background
+    plt.rcParams["legend.edgecolor"] = "0.8"  # make frame the same color
     plt.rcParams["legend.framealpha"] = 0.4  # set transparency
 
     for d in obj.led:  # loop over external data objects if present
@@ -409,17 +420,16 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         handler2, label2 = ax2.get_legend_handles_labels()
 
     if first_axis and second_axis:
-        legend = ax2.legend(handler1 + handler2, label1 + label2,
-                            loc=0).set_zorder(6)
-    #elif first_axis:
+        legend = ax2.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(6)
+    # elif first_axis:
     #    legend = ax1.legend(handler1 + label1, loc=0).set_zorder(6)
-    #elif second_axis:
+    # elif second_axis:
     #   legend = ax2.legend(handler2 + label2, loc=0).set_zorder(6)
 
     # Matplotlib will show arbitrarily small differences which can be confusing
-    #yl_min = min(yl)
-    #yl_max = max(yl)
-    #if (yl_max - yl_min) < 0.1:
+    # yl_min = min(yl)
+    # yl_max = max(yl)
+    # if (yl_max - yl_min) < 0.1:
 #+END_SRC
 
 ** Miscellaneous function
