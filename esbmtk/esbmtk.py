@@ -33,7 +33,8 @@ import time
 import builtins
 import os
 from .utility_functions import get_imass, get_delta, get_ptype, get_plot_layout
-from .utility_functions import plot_object_data, show_data, get_string_between_brackets
+from .utility_functions import plot_object_data, show_data, plot_geometry
+from .utility_functions import get_string_between_brackets
 
 class esbmtkBase(object):
     """The esbmtk base class template. This class handles keyword
@@ -451,12 +452,10 @@ class Model(esbmtkBase):
 
     """
 
-    __slots__ = ('lor')
+    __slots__ = "lor"
 
     def __init__(self, **kwargs: Dict[any, any]) -> None:
-        """ Init Sequence
-
-        """
+        """Init Sequence"""
 
         from . import ureg, Q_
 
@@ -477,32 +476,32 @@ class Model(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list[str] = [
-            "name", "stop", "timestep", "mass_unit", "volume_unit"
-        ]
+        self.lrk: list[str] = ["name", "stop", "timestep", "mass_unit", "volume_unit"]
 
         # list of default values if none provided
         self.lod: Dict[str, any] = {
-            'start': "0 years",
-            'offset': "0 years",
-            'time_label': "Time",
-            'display_precision': 0.01,
-            'm_type': "mass_only",
-            'plot_style': "default",
+            "start": "0 years",
+            "offset": "0 years",
+            "time_label": "Time",
+            "display_precision": 0.01,
+            "m_type": "mass_only",
+            "plot_style": "default",
         }
 
         self.__initerrormessages__()
-        self.bem.update({
-            "offset": "a string",
-            "timesetp": "a string",
-            "element": "element name or list of names",
-            "mass_unit": "a string",
-            "volume_unit": "a string",
-            "time_label": "a string",
-            "display_precision": "a number",
-            "m_type": "a string",
-            "plot_style": "a string",
-        })
+        self.bem.update(
+            {
+                "offset": "a string",
+                "timesetp": "a string",
+                "element": "element name or list of names",
+                "mass_unit": "a string",
+                "volume_unit": "a string",
+                "time_label": "a string",
+                "display_precision": "a number",
+                "m_type": "a string",
+                "plot_style": "a string",
+            }
+        )
 
         self.__validateandregister__(kwargs)  # initialize keyword values
 
@@ -533,7 +532,7 @@ class Model(esbmtkBase):
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
         self.r_unit = self.v_unit / self.t_unit  # flux as volume/time
         # this is now defined in __init__.py
-        #ureg.define('Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups')
+        # ureg.define('Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups')
 
         # legacy variable names
         self.start = Q_(self.start).to(self.t_unit).magnitude
@@ -551,7 +550,7 @@ class Model(esbmtkBase):
         self.xl = f"Time [{self.bu}]"  # time axis label
         self.length = int(abs(self.stop - self.start))
         self.steps = int(abs(round(self.length / self.dt)))
-        self.time = ((arange(self.steps) * self.dt) + self.start)
+        self.time = (arange(self.steps) * self.dt) + self.start
 
         # set_printoptions(precision=self.display_precision)
 
@@ -592,11 +591,11 @@ class Model(esbmtkBase):
             logging.root.removeHandler(handler)
 
         fn: str = f"{kwargs['name']}.log"
-        logging.basicConfig(filename=fn, filemode='w', level=logging.INFO)
+        logging.basicConfig(filename=fn, filemode="w", level=logging.INFO)
         self.__register_name__()
 
     def describe(self, **kwargs) -> None:
-        """ Show an overview of the object properties.
+        """Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
         indent :int = 0 indentation
@@ -613,7 +612,7 @@ class Model(esbmtkBase):
             ind = ""
         else:
             indent = kwargs["indent"]
-            ind = ' ' * indent
+            ind = " " * indent
 
         # print basic data bout this object
         print(self)
@@ -627,7 +626,7 @@ class Model(esbmtkBase):
                 print(f"{off}{off}{ind}{s.n}")
 
     def save_state(self) -> None:
-        """ Save model state. Similar to save data, but only saves the last 10
+        """Save model state. Similar to save data, but only saves the last 10
         time-steps
 
         """
@@ -720,14 +719,25 @@ class Model(esbmtkBase):
         concentration = plot only concentration data.
         """
 
-        ptype: int = get_ptype(self, kwargs)
+        ptype: int = get_ptype(self)
+        size, geo = plot_geometry(len(self.lor))  # adjust layout
+        print(f"size ={size}, geo = {geo}")
+        filename = f"{self.n}_Reservoirs.pdf"
+        plt.style.use(self.plot_style)
 
-        i: int = 0
+        fig = plt.figure(0)  # Initialize a plot window
+        fig.canvas.set_window_title(f"{self.n} Reservoirs")
+        fig.set_size_inches(size)
+
+        i: int = 1
         for r in self.lor:
-            r.__plot_reservoirs__(i, ptype)
+            plot_object_data(geo, i, r, ptype)
             i = i + 1
 
+        fig.tight_layout()
         plt.show()  # create the plot windows
+        fig.subplots_adjust(top=0.88)
+        fig.savefig(filename)
 
     def run(self) -> None:
         """Loop over the time vector, and for each time step, calculate the
@@ -756,11 +766,14 @@ class Model(esbmtkBase):
         print(f"\n Execution took {duration} seconds \n")
 
     @staticmethod
-    def execute(new: [NDArray, Float], time: [NDArray, Float], lor: list,
-                f_lpc: list, r_lpc: list) -> None:
-        """ Moved this code into a separate function to enable numba optimization
-
-        """
+    def execute(
+        new: [NDArray, Float],
+        time: [NDArray, Float],
+        lor: list,
+        f_lpc: list,
+        r_lpc: list,
+    ) -> None:
+        """Moved this code into a separate function to enable numba optimization"""
 
         i = 1  # processes refer to the previous time step -> start at 1
         dt = lor[0].mo.dt
@@ -797,15 +810,13 @@ class Model(esbmtkBase):
             i = i + 1  # next time step
 
     def __step_process__(self, r, i) -> None:
-        """ For debugging. Provide reservoir and step number,
-        """
+        """For debugging. Provide reservoir and step number,"""
         for p in r.lop:  # loop over reservoir processes
             print(f"{p.n}")
             p(r, i)  # update fluxes
 
     def __step_update_reservoir__(self, r, i) -> None:
-        """ For debugging. Provide reservoir and step number,
-        """
+        """For debugging. Provide reservoir and step number,"""
         flux_list = r.lof
         # new = sum_fluxes(flux_list,r,i) # integrate all fluxes in self.lof
 
@@ -823,9 +834,7 @@ class Model(esbmtkBase):
         r[i] = new  # update reservoir data
 
     def list_species(self):
-        """ List all  defined species.
-
-        """
+        """List all  defined species."""
         for e in self.lel:
             print(f"{e.n}")
             e.list_species()
