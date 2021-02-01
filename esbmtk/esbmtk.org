@@ -60,7 +60,7 @@ import time
 import builtins
 import os
 from .utility_functions import get_imass, get_delta, get_ptype, get_plot_layout
-from .utility_functions import plot_object_data
+from .utility_functions import plot_object_data, show_data
 #+END_SRC
 
 * The main esbmtk objects
@@ -559,6 +559,8 @@ class Model(esbmtkBase):
         self.lpc_r: list = []
         # optional keywords for use in the connector class
         self.olkk: list = []
+        # list of objects which require a delayed initialize
+        self.lto: list = []
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
@@ -784,6 +786,11 @@ class Model(esbmtkBase):
                 a = r.lio[f]
                 r.lodir.append(a)
 
+        # take care of objects which require a delayed init
+        for o in self.lto:
+            o.__delayed_init__()
+
+        # run the solver
         i = self.execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
 
         duration: float = process_time() - start
@@ -1018,7 +1025,7 @@ class Reservoir(esbmtkBase):
                         mass/concentration = "1 unit"  # species concentration or mass
                         volume = "1E5 l",      # reservoir volume (m^3)
                         plot = "yes"/"no", defaults to yes
-                        transform_m = a function reference, optional (see below)
+                        plot_transform = a function reference, optional (see below)
                         )
 
       you must either give mass or concentration. The result will always be displayed as concentration
@@ -1039,9 +1046,9 @@ class Reservoir(esbmtkBase):
 
       this function can then be added to a reservoir as::
     
-          hplus.transform_m = phc
+          hplus.plot_transform = phc
     
-      Note, at present the transform_m function will only take one
+      Note, at present the plot_transform function will only take one
       argument, which always defaults to the reservoir
       mass. The function must return a single argument which
       will be interpreted as the transformed reservoir concentration.
@@ -1079,7 +1086,7 @@ class Reservoir(esbmtkBase):
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
-            "transform_m":
+            "plot_transform":
             any,
             "plot":
             str,
@@ -1096,7 +1103,7 @@ class Reservoir(esbmtkBase):
         self.lod: Dict[any, any] = {
             'delta': "None",
             'plot': "yes",
-            'transform_m': "None",
+            'plot_transform': "None",
         }
 
         # validate and initialize instance variables
@@ -2698,7 +2705,7 @@ class ExternalData(esbmtkBase):
 #+BEGIN_SRC ipython :tangle esbmtk.py
 from .connections import Connection, ConnectionGroup
 from .processes import *
-from .species_definitions import carbon, sulfur, hydrogen, phosphor
+from .species_definitions import carbon, sulfur, hydrogen, phosphor, oxygen, nitrogen
 #+END_SRC
 
 
