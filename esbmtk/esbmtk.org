@@ -742,7 +742,7 @@ class Model(esbmtkBase):
 
         """
 
-        ptype: int = get_ptype(self, kwargs)
+        ptype: int = get_ptype(self)
 
         i = 0
         for r in self.lor:
@@ -1823,7 +1823,7 @@ class Flux(esbmtkBase):
 
         """
 
-        ptype: int = get_ptype(kwargs)
+        ptype: int = get_ptype(self)
 
         fig, ax1 = plt.subplots()
         fig.set_size_inches(5, 4)  # Set figure size in inches
