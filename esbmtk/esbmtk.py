@@ -519,6 +519,8 @@ class Model(esbmtkBase):
         self.olkk: list = []
         # list of objects which require a delayed initialize
         self.lto: list = []
+        # list of datafield objects
+        self.ldf: list = []
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
@@ -699,7 +701,7 @@ class Model(esbmtkBase):
 
         """
 
-        ptype: int = get_ptype(self, kwargs)
+        ptype: int = get_ptype(self)
 
         i = 0
         for r in self.lor:
@@ -709,8 +711,7 @@ class Model(esbmtkBase):
         plt.show()  # create the plot windows
 
     def plot_reservoirs(self, **kwargs: dict) -> None:
-        """Loop over all reservoirs and either plot the data into a window,
-            or save it to a pdf
+        """Plot only Reservoir data
 
         This method has the optional keyword ptype which can be
 
@@ -720,8 +721,9 @@ class Model(esbmtkBase):
         """
 
         ptype: int = get_ptype(self)
-        size, geo = plot_geometry(len(self.lor))  # adjust layout
-        print(f"size ={size}, geo = {geo}")
+        # number of plot objects
+        noo: int = len(self.lor) + len(self.ldf)
+        size, geo = plot_geometry(noo)  # adjust layout
         filename = f"{self.n}_Reservoirs.pdf"
         plt.style.use(self.plot_style)
 
@@ -730,7 +732,11 @@ class Model(esbmtkBase):
         fig.set_size_inches(size)
 
         i: int = 1
-        for r in self.lor:
+        for r in self.lor:  # reservoirs
+            plot_object_data(geo, i, r, ptype)
+            i = i + 1
+
+        for r in self.ldf:  # datafields
             plot_object_data(geo, i, r, ptype)
             i = i + 1
 
@@ -1751,7 +1757,7 @@ class Flux(esbmtkBase):
 
         """
 
-        ptype: int = get_ptype(kwargs)
+        ptype: int = get_ptype(self)
 
         fig, ax1 = plt.subplots()
         fig.set_size_inches(5, 4)  # Set figure size in inches
@@ -2411,6 +2417,9 @@ class DataField(esbmtkBase):
         self.led = []
         # register with reservoir
         self.associated_with.ldf.append(self)
+        # register with model. needed for print_reservoirs
+        self.mo.ldf.append(self)
+        
         self.__register_name__()
 
 class ExternalData(esbmtkBase):
