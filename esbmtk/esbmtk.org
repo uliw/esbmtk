@@ -617,6 +617,8 @@ class Model(esbmtkBase):
                     oxygen(self)
                 elif e == "Nitrogen":
                     nitrogen(self)
+                elif e == "Boron":
+                    boron(self)
                 else:
                     raise ValueError(f"{e} not implemented yet")
                 warranty = (
