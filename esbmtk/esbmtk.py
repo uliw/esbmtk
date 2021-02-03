@@ -576,17 +576,20 @@ class Model(esbmtkBase):
                     oxygen(self)
                 elif e == "Nitrogen":
                     nitrogen(self)
+                elif e == "Boron":
+                    boron(self)
                 else:
                     raise ValueError(f"{e} not implemented yet")
-                warranty = (
-                    f"\n"
-                    f"ESBMTK  Copyright (C) 2020  Ulrich G.Wortmann\n"
-                    f"This program comes with ABSOLUTELY NO WARRANTY\n"
-                    f"For details see the LICENSE file\n"
-                    f"This is free software, and you are welcome to redistribute it\n"
-                    f"under certain conditions; See the LICENSE file for details.\n"
-                )
-                print(warranty)
+
+        warranty = (
+            f"\n"
+            f"ESBMTK  Copyright (C) 2020  Ulrich G.Wortmann\n"
+            f"This program comes with ABSOLUTELY NO WARRANTY\n"
+            f"For details see the LICENSE file\n"
+            f"This is free software, and you are welcome to redistribute it\n"
+            f"under certain conditions; See the LICENSE file for details.\n"
+        )
+        print(warranty)
 
         # start a log file
         for handler in logging.root.handlers[:]:
@@ -733,8 +736,9 @@ class Model(esbmtkBase):
 
         i: int = 1
         for r in self.lor:  # reservoirs
-            plot_object_data(geo, i, r, ptype)
-            i = i + 1
+            if r.plot == "yes":
+                plot_object_data(geo, i, r, ptype)
+                i = i + 1
 
         for r in self.ldf:  # datafields
             plot_object_data(geo, i, r, ptype)
@@ -973,7 +977,7 @@ specific properties
         self.__register_name__()
 
 class Reservoir(esbmtkBase):
-    """Tis object holds reservoir specific information.
+    """This object holds reservoir specific information.
 
           Example::
 
@@ -1815,6 +1819,7 @@ class SourceSink(esbmtkBase):
         self.sp = self.species
         self.mo = self.species.mo
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
+        self.lio :list = []
 
         self.__register_name__()
 
@@ -2600,4 +2605,4 @@ class ExternalData(esbmtkBase):
 
 from .connections import Connection, ConnectionGroup
 from .processes import *
-from .species_definitions import carbon, sulfur, hydrogen, phosphor, oxygen, nitrogen
+from .species_definitions import carbon, sulfur, hydrogen, phosphor, oxygen, nitrogen, boron

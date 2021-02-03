@@ -41,7 +41,6 @@ def carbon(model):
     Species(name="CaCO3", element=eh,  display_as= r"CaCO$_3$")
     Species(name="HCO3", element=eh, display_as= r"HCO$_3^-$")
     Species(name="CO3", element=eh, display_as = "CO$_3^{2-}$")
-    Species(name="OH", element=eh, display_as = "OH$^{-}$")
     Species(name="DOC", element=eh)
     Species(name="C", element=eh)
     Species(name="ALK", element=eh)
@@ -79,17 +78,15 @@ def hydrogen(model):
         li_label="$^{1$}H",  # Name of light isotope
         hi_label="$^{2}$H",  # Name of heavy isotope
         d_label=r"$\delta^{2}$D",  # Name of isotope delta
-        d_scale=
-        "VSMOV",  # Isotope scale. End of plot labels  # needs verification 
-        r=155.601E-6,  # After Groenig, 2000, Tab 40.1  
+        d_scale="VSMOV",  # Isotope scale. End of plot labels  # needs verification
+        r=155.601e-6,  # After Groenig, 2000, Tab 40.1
     )
 
     # add species
-    Species(name="Hplus", element=eh,
-            display_as=r"$H^+$")  # Name & element handle
-    Species(name="H20", element=eh,
-            display_as=r"H$_{2}$O")  # Name & element handle
+    Species(name="Hplus", element=eh, display_as=r"$H^+$")  # Name & element handle
+    Species(name="H2O", element=eh, display_as=r"H$_{2}$O")  # Name & element handle
     Species(name="H", element=eh)  # Name & element handle
+
 
 def oxygen(model):
     eh = Element(
@@ -99,19 +96,16 @@ def oxygen(model):
         li_label="$^{16$}O",  # Name of light isotope
         hi_label="$^{18}$)",  # Name of heavy isotope
         d_label=r"$\delta^{18}$)",  # Name of isotope delta
-        d_scale=
-        "VSMOV",  # Isotope scale. End of plot labels  # needs verification 
-        r=2005.201E-6,  # https://nucleus.iaea.org/rpst/documents/vsmow_slap.pdf
+        d_scale="VSMOV",  # Isotope scale. End of plot labels  # needs verification
+        r=2005.201e-6,  # https://nucleus.iaea.org/rpst/documents/vsmow_slap.pdf
     )
 
     # add species
-    Species(name="O",
-            element=eh,
-            display_as="O")
+    Species(name="O", element=eh, display_as="O")
     # Name & element handle
-    Species(name="O2", element=eh,
-            display_as=r"O$_{2}$")  # Name & element handle
-    Species(name="H", element=eh)  # Name & element handle
+    Species(name="O2", element=eh, display_as=r"O$_{2}$")  # Name & element handle
+    Species(name="OH", element=eh, display_as=r"OH$^{-}$")  # Name & element handle
+
 
 def phosphor(model):
     eh = Element(
@@ -121,14 +115,12 @@ def phosphor(model):
         li_label="None",  # Name of light isotope
         hi_label="None",  # Name of heavy isotope
         d_label="None",  # Name of isotope delta
-        d_scale=
-        "None",  # Isotope scale. End of plot labels  # needs verification 
-        r=1,  # isotopic abundance ratio for species # needs verification 
+        d_scale="None",  # Isotope scale. End of plot labels  # needs verification
+        r=1,  # isotopic abundance ratio for species # needs verification
     )
 
     # add species
-    Species(name="PO4", element=eh,
-            display_as=r"PO$_{4}$")  # Name & element handle
+    Species(name="PO4", element=eh, display_as=r"PO$_{4}$")  # Name & element handle
     Species(name="P", element=eh, display_as=r"P")  # Name & element handle
 
 
@@ -140,16 +132,31 @@ def nitrogen(model):
         li_label=r"$^{15$}N",  # Name of light isotope
         hi_label=r"$^{14$}N",  # Name of heavy isotope
         d_label=r"$\delta^{15}$N",  # Name of isotope delta
-        d_scale=
-        "Air",  # Isotope scale. End of plot labels  # needs verification 
-        r=3676.5E-6,  # isotopic abundance ratio for species # needs verification 
+        d_scale="Air",  # Isotope scale. End of plot labels  # needs verification
+        r=3676.5e-6,  # isotopic abundance ratio for species # needs verification
     )
 
     # add species
-    Species(name="N2", element=eh,
-            display_as=r"N$_{2}$")  # Name & element handle
+    Species(name="N", element=eh, display_as=r"N")
+    Species(name="N2", element=eh, display_as=r"N$_{2}$")  # Name & element handle
     Species(name="Nox", element=eh, display_as=r"Nox")  # Name & element handle
-    Species(name="NH4", element=eh,
-            display_as=r"NH$_{4}^{+}$")  # Name & element handle
-    Species(name="NH3", element=eh,
-            display_as=r"NH$_{3}$")  # Name & element handle
+    Species(name="NH4", element=eh, display_as=r"NH$_{4}^{+}$")  # Name & element handle
+    Species(name="NH3", element=eh, display_as=r"NH$_{3}$")  # Name & element handle
+
+
+def boron(model):
+    eh = Element(
+        name="Boron",
+        model=model,  # model handle
+        mass_unit="mmol",  # base mass unit
+        li_label=r"$^{11$}B",  # Name of light isotope
+        hi_label=r"$^{10$}B",  # Name of heavy isotope
+        d_label=r"$\delta{11}B",  # Name of isotope delta
+        d_scale="SRM951",  # Isotope scale. End of plot labels  # needs verification
+        r=0.26888,  # isotopic abundance ratio for species # needs verification
+    )
+
+    # add species
+    Species(name="B", element=eh, display_as=r"B")  # Name & element handle
+    Species(name="BOH3", element=eh, display_as=r"B(OH)$_{3}$")  # Boric Acid
+    Species(name="BOH4", element=eh, display_as=r"B(OH)$_{4}^{-}$")  # Borate

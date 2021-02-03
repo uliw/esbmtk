@@ -150,7 +150,8 @@ class Connect(esbmtkBase):
                 sink = downstream reservoir,
                 ctype = "scale_with_flux",
                 ref = flux handle,
-                k_value = a scaling factor)
+                k_value = a scaling factor, optional, defaults to 1
+                )
 
      ctype = "scale_with_mass" and "scale_with_concentration"
      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -163,7 +164,8 @@ class Connect(esbmtkBase):
                 sink = downstream reservoir,
                 ctype = "scale_with_mass",
                 ref = reservoir handle,
-                k_value = a scaling factor)
+                k_value = a scaling factor, optional, defaults to 1
+    )
 
      ctype = "scale_relative_to_multiple_reservoirs"
      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -184,7 +186,8 @@ class Connect(esbmtkBase):
                 sink = downstream reservoir,
                 ctype = "scale_relative_to_multiple_reservoirs"
                 ref_reservoirs = [r1, r2, k etc] # you must provide at least one
-                k_value = a scaling factor)
+                k_value = a scaling factor, optional, defaults to 1
+    )
 
      K_value is an overall scaling factor.
 
@@ -213,7 +216,7 @@ class Connect(esbmtkBase):
                  sink=R_HCO3,          # source of flux
                  rate="1 mol/s",       # flux rate
                  ctype="flux_balance", # connection type
-                 k_value=1,            # global scaling factor
+                 k_value=1,            # global scaling factor, optional
                  left=[K1, R_CO2],     # where K1 is a constant
                  right=[R_HCO3, R_Hplus])
 
@@ -614,6 +617,10 @@ class Connect(esbmtkBase):
             ref=self.kwargs["ref"],
         )
         self.lop.append(ph)
+
+        # this flux must not affect the source reservoir
+        self.r.lof.remove(self.fh)
+       
 
     def __flux_diff__(self) -> None:
         """Scale a flux relative to the difference between

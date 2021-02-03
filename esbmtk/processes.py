@@ -15,22 +15,23 @@ import time
 import builtins
 set_printoptions(precision=4)
 # from .utility_functions import *
-from .esbmtk import esbmtkBase, Reservoir, Flux, Signal
+from .esbmtk import esbmtkBase, Reservoir, Flux, Signal, Source, Sink
 from .utility_functions import get_imass, get_frac, get_delta, get_flux_data
 from .utility_functions import sort_by_type
 # from .connections import ConnnectionGroup
 
 class Process(esbmtkBase):
     """This class defines template for process which acts on one or more
-     reservoir flux combinations. To use it, you need to create an
-     subclass which defines the actual process implementation in their
-     call method. See 'PassiveFlux as example'
-    
+    reservoir flux combinations. To use it, you need to create an
+    subclass which defines the actual process implementation in their
+    call method. See 'PassiveFlux as example'
+
     """
+
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
-          Create a new process object with a given process type and options
-          """
+        Create a new process object with a given process type and options
+        """
 
         self.__defaultnames__()  # default kwargs names
         self.__initerrormessages__()  # default error messages
@@ -40,9 +41,7 @@ class Process(esbmtkBase):
         self.__register_name__()
 
     def __postinit__(self) -> None:
-        """ Do some housekeeping for the process class
-        
-        """
+        """Do some housekeeping for the process class"""
 
         # legacy name aliases
         self.n: str = self.name  # display name of species
@@ -51,8 +50,10 @@ class Process(esbmtkBase):
         self.m: Model = self.r.sp.mo  # the model handle
         self.mo: Model = self.m
 
-        self.rm0: float = self.r.m[0]  # the initial reservoir mass
-        self.direction: Dict[Flux, int] = self.r.lio[self.f]
+        # self.rm0: float = self.r.m[0]  # the initial reservoir mass
+        if isinstance(self.r, Reservoir):
+            self.direction: Dict[Flux, int] = self.r.lio[self.f]
+
         self.__misc_init__()
 
     def __delayed_init__(self) -> None:
@@ -64,11 +65,10 @@ class Process(esbmtkBase):
 
         # this process requires delayed init
         self.mo.lto.append(self)
-        
+
         """
 
         pass
-       
 
     def __misc_init__(self) -> None:
         """This is just a place holder method which will be called by default
@@ -82,7 +82,7 @@ class Process(esbmtkBase):
 
     def __defaultnames__(self) -> None:
         """Set up the default names and dicts for the process class. This
-          allows us to extend these values without modifying the entire init process
+        allows us to extend these values without modifying the entire init process
 
         """
 
@@ -91,7 +91,7 @@ class Process(esbmtkBase):
         # provide a dict of known keywords and types
         self.lkk: Dict[str, any] = {
             "name": str,
-            "reservoir": Reservoir,
+            "reservoir": (Reservoir, Source, Sink),
             "flux": Flux,
             "rate": Number,
             "delta": Number,
@@ -99,7 +99,7 @@ class Process(esbmtkBase):
             "alpha": Number,
             "scale": Number,
             "ref": (Flux, list),
-            'register': (str, ConnectionGroup),
+            "register": (str, ConnectionGroup),
         }
 
         # provide a list of absolutely required keywords
@@ -115,8 +115,8 @@ class Process(esbmtkBase):
 
     def __register__(self, reservoir: Reservoir, flux: Flux) -> None:
         """Register the flux/reservoir pair we are acting upon, and register
-          the process with the reservoir
-        
+        the process with the reservoir
+
         """
 
         # register the reservoir flux combination we are acting on
@@ -127,13 +127,13 @@ class Process(esbmtkBase):
         flux.lop.append(self)
 
     def show_figure(self, x, y) -> None:
-        """ Apply the current process to the vector x, and show the result as y.
-          The resulting figure will be automatically saved.
+        """Apply the current process to the vector x, and show the result as y.
+        The resulting figure will be automatically saved.
 
-          Example::
-               process_name.show_figure(x,y)
-        
-          """
+        Example::
+             process_name.show_figure(x,y)
+
+        """
         pass
 
 class GenericFunction(Process):
@@ -148,40 +148,50 @@ class GenericFunction(Process):
      - act_on = name of a reservoir this process will act upon
      - function  = a function reference
      - a1 to a6, up to 6 optional function arguments
-    
+
     in order to use this function we need first declare a function we plan to
     use with the generic function process. This function needs to follow this
     template::
 
         def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0) -> tuple:
-            # 
+            #
             # i = index of the current timestep
-            # a1 to a2 =  optional function parameter. These must be present, 
+            # a1 to a2 =  optional function parameter. These must be present,
             # even if your function will not use it
-            
+
             # calc some stuff and return it as
 
-            return [m, l, h] # where m= mass, and l & h are the respective 
+            return [m, l, h] # where m= mass, and l & h are the respective
                              # isotopes. If there are none, dummmy values
                              # instead
 
-    
+
     This function can then be used as::
-    
+
         GenericFunction(name="foo",
                 function=my_func,
                 a1 = some argument,
                 a2 = some argument,
                 act_on = reservoir name)
-    
+
     """
 
-    __slots__ = ('function', 'act_on', 'a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'i')
+    __slots__ = (
+        "function",
+        "act_on",
+        "a1",
+        "a2",
+        "a3",
+        "a4",
+        "a5",
+        "a6",
+        "i",
+    )
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
-          Create a new process object with a given process type and options
-          """
+        Create a new process object with a given process type and options
+        """
 
         self.__defaultnames__()  # default kwargs names
         self.lkk: Dict[str, any] = {
@@ -197,34 +207,35 @@ class GenericFunction(Process):
         }
 
         # required arguments
-        self.lrk: list = (["name", "act_on", "function"])
+        self.lrk: list = ["name", "act_on", "function"]
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
-            'a1': 0,
-            'a2': 0,
-            'a3': 0,
-            'a4': 0,
-            'a5': 0,
-            'a6': 0,
+            "a1": 0,
+            "a2": 0,
+            "a3": 0,
+            "a4": 0,
+            "a5": 0,
+            "a6": 0,
         }
 
         self.__initerrormessages__()  # default error messages
-        self.bem.update({
-            "act_on": "a reservoir or flux",
-            "function": "a function",
-            "a1": "a number etc",
-            "a2": "a number etc",
-            "a3": "a number etc",
-            "a4": "a number etc",
-            "a5": "a number etc",
-            "a6": "a number etc",
-        })
+        self.bem.update(
+            {
+                "act_on": "a reservoir or flux",
+                "function": "a function",
+                "a1": "a number etc",
+                "a2": "a number etc",
+                "a3": "a number etc",
+                "a4": "a number etc",
+                "a5": "a number etc",
+                "a6": "a number etc",
+            }
+        )
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         if not callable(self.function):
-            raise ValueError(
-                "function must be defined before it can be used here")
+            raise ValueError("function must be defined before it can be used here")
 
         self.__postinit__()  # do some housekeeping
         self.__register_name__()  #
@@ -237,11 +248,10 @@ class GenericFunction(Process):
             self.act_on.lpc.append(self)  # register with Flux
             self.act_on.mo.lpc_f.append(self)  # Register with Model
         else:
-            raise ValueError(
-                "functions can only act upon reservoirs or fluxes")
+            raise ValueError("functions can only act upon reservoirs or fluxes")
 
     def __call__(self, i: int) -> None:
-        """Here we execute the user supplied function and assign the 
+        """Here we execute the user supplied function and assign the
         return value to the flux or reservoir
 
         Where i = index of the current timestep
@@ -261,9 +271,7 @@ class GenericFunction(Process):
 
     # redefine post init
     def __postinit__(self) -> None:
-        """ Do some housekeeping for the process class
-
-          """
+        """Do some housekeeping for the process class"""
 
         # legacy name aliases
         self.n: str = self.name  # display name of species
@@ -537,7 +545,7 @@ class VarDeltaOut(Process):
         self.__defaultnames__()
         self.lkk: Dict[str, any] = {
             "name": str,
-            "reservoir": Reservoir,
+            "reservoir": (Reservoir,Source,Sink),
             "flux": Flux,
             "rate": (str, Q_),
             "register": (ConnectionGroup, str),
@@ -579,71 +587,66 @@ class VarDeltaOut(Process):
 
 class ScaleFlux(Process):
     """This process scales the mass of a flux (m,l,h) relative to another
-     flux but does not affect delta. The scale factor "scale" and flux
-     reference must be present when the object is being initalized
+    flux but does not affect delta. The scale factor "scale" and flux
+    reference must be present when the object is being initalized
 
-     Example::
-          ScaleFlux(name = "Name",
-                    reservoir = upstream_reservoir_handle,
-                    scale = 1
-                    ref = flux we use for scale)
+    Example::
+         ScaleFlux(name = "Name",
+                   reservoir = upstream_reservoir_handle,
+                   scale = 1
+                   ref = flux we use for scale)
 
     """
 
-    __slots__ = ('rate', 'scale')
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
-        """ Initialize this Process 
+    __slots__ = ("rate", "scale", "ref")
 
-        """
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """Initialize this Process"""
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
-        self.lrk.extend(["reservoir", "flux", "scale",
-                         "ref"])  # new required keywords
+        self.lrk.extend(["reservoir", "flux", "scale", "ref"])  # new required keywords
 
         self.__validateandregister__(kwargs)  # initialize keyword values
 
-        #legacy variables
+        # legacy variables
         self.mo = self.reservoir.mo
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
 
-        
-
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """Apply the scale factor. This is typically done through the the
-          model execute method.
-          Note that this will use the mass of the reference object, but that we will set the 
-          delta according to the reservoir (or the flux?)
+        model execute method.
+        Note that this will use the mass of the reference object, but that we will set the
+        delta according to the reservoir (or the flux?)
 
-          """
+        """
         self.f[i] = self.ref[i] * self.scale
-        self.f[i] = get_flux_data(self.f.m[i], reservoir.d[i - 1],
-                                  reservoir.rvalue)
+        self.f[i] = get_flux_data(self.f.m[i], reservoir.d[i - 1], reservoir.rvalue)
 
 
 class Reaction(ScaleFlux):
-     """This process approximates the effect of a chemical reaction between
-     two fluxes which belong to a differents species (e.g., S, and O).
-     The flux belonging to the upstream reservoir will simply be
-     scaled relative to the flux it reacts with. The scaling is given
-     by the ratio argument. So this function is equivalent to the
-     ScaleFlux class.
+    """This process approximates the effect of a chemical reaction between
+    two fluxes which belong to a differents species (e.g., S, and O).
+    The flux belonging to the upstream reservoir will simply be
+    scaled relative to the flux it reacts with. The scaling is given
+    by the ratio argument. So this function is equivalent to the
+    ScaleFlux class.
 
-     Example::
+    Example::
 
-        Connect(source=IW_H2S,
-                sink=S0,
-                ctype = "react_with",
-                k_value=1,
-                ref = O2_diff_to_S0,
-                k_value =1,
-        )
-     """        
-        
-class FluxDiff(Process):
-    """ The new flux will be the difference of two fluxes
-
+       Connect(source=IW_H2S,
+               sink=S0,
+               ctype = "react_with",
+               k_value=1,
+               ref = O2_diff_to_S0,
+               k_value =1,
+       )
     """
+
+
+class FluxDiff(Process):
+    """The new flux will be the difference of two fluxes"""
+
     """This process scales the mass of a flux (m,l,h) relative to another
      flux but does not affect delta. The scale factor "scale" and flux
      reference must be present when the object is being initalized
@@ -655,28 +658,24 @@ class FluxDiff(Process):
                     ref = flux we use for scale)
 
      """
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
-        """ Initialize this Process 
 
-        """
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """Initialize this Process"""
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
-        self.lrk.extend(["reservoir", "flux", "scale",
-                         "ref"])  # new required keywords
+        self.lrk.extend(["reservoir", "flux", "scale", "ref"])  # new required keywords
 
         self.__validateandregister__(kwargs)  # initialize keyword values
         self.__postinit__()  # do some housekeeping
 
-        #legacy variables
+        # legacy variables
         self.mo = self.reservoir.mo
         self.__register_name__()
 
-
-    
-    def __call__(self, reservoir :Reservoir, i: int) -> None:
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
         """Apply the scale factor. This is typically done through the the
         model execute method.
-        Note that this will use the mass of the reference object, but that we will set the 
+        Note that this will use the mass of the reference object, but that we will set the
         delta according to the reservoir (or the flux?)
 
         """
@@ -774,7 +773,7 @@ class RateConstant(Process):
             "k_value": Number,
             "ref_value": Number,
             "name": str,
-            "reservoir": Reservoir,
+            "reservoir": (Reservoir,Source,Sink),
             "flux": Flux,
             "ref_reservoir": list,
             "left": (list, Reservoir, Number),
@@ -1105,7 +1104,7 @@ class Monod(Process):
             "b_value": Number,
             "ref_value": (Number,str, Q_),
             "name": str,
-            "reservoir": Reservoir,
+            "reservoir": (Reservoir,Source,Sink),
             "flux": Flux,
             "register":
             (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
