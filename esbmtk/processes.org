@@ -650,7 +650,28 @@ class ScaleFlux(Process):
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
 
-    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        # decide which call function to use
+        if self.mo.m_type == "both":
+            self.__execute__ = self.__with_isotopes__
+        else:
+            self.__execute__ = self.__without_isotopes__
+
+    # setup a placeholder call function
+    def __call__(self, reservoir: Reservoir, i: int):
+        return self.__execute__(reservoir, i)
+
+    def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
+        """Apply the scale factor. This is typically done through the the
+        model execute method.
+        Note that this will use the mass of the reference object, but that we will set the
+        delta according to the reservoir (or the flux?)
+
+        """
+
+        self.f[i] = self.ref[i] * self.scale
+        self.f[i] = get_flux_data(self.f.m[i], reservoir.d[i - 1], reservoir.rvalue)
+
+    def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """Apply the scale factor. This is typically done through the the
         model execute method.
         Note that this will use the mass of the reference object, but that we will set the
@@ -658,7 +679,6 @@ class ScaleFlux(Process):
 
         """
         self.f[i] = self.ref[i] * self.scale
-        self.f[i] = get_flux_data(self.f.m[i], reservoir.d[i - 1], reservoir.rvalue)
 
 
 class Reaction(ScaleFlux):
