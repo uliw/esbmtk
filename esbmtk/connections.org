@@ -665,6 +665,10 @@ class Connect(esbmtkBase):
         )
         self.lop.append(ph)
 
+        # this flux must not affect the source reservoir
+        self.r.lof.remove(self.fh)
+       
+
     def __flux_diff__(self) -> None:
         """Scale a flux relative to the difference between
         two fluxes
