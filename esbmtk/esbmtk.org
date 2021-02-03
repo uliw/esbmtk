@@ -432,15 +432,6 @@ class esbmtkBase(object):
    to the model units before using them.
 
 #+BEGIN_SRC ipython :tangle esbmtk.py
-# class ClassName(object):
-#     """Documentation for ClassName
-
-#     """
-#     def __init__(self, args):
-#         super(ClassName, self).__init__()
-#         self.args = args
-
-
 class Model(esbmtkBase):
     """This class is used to specify a new model
 
@@ -621,15 +612,16 @@ class Model(esbmtkBase):
                     boron(self)
                 else:
                     raise ValueError(f"{e} not implemented yet")
-                warranty = (
-                    f"\n"
-                    f"ESBMTK  Copyright (C) 2020  Ulrich G.Wortmann\n"
-                    f"This program comes with ABSOLUTELY NO WARRANTY\n"
-                    f"For details see the LICENSE file\n"
-                    f"This is free software, and you are welcome to redistribute it\n"
-                    f"under certain conditions; See the LICENSE file for details.\n"
-                )
-                print(warranty)
+
+        warranty = (
+            f"\n"
+            f"ESBMTK  Copyright (C) 2020  Ulrich G.Wortmann\n"
+            f"This program comes with ABSOLUTELY NO WARRANTY\n"
+            f"For details see the LICENSE file\n"
+            f"This is free software, and you are welcome to redistribute it\n"
+            f"under certain conditions; See the LICENSE file for details.\n"
+        )
+        print(warranty)
 
         # start a log file
         for handler in logging.root.handlers[:]:
@@ -776,8 +768,9 @@ class Model(esbmtkBase):
 
         i: int = 1
         for r in self.lor:  # reservoirs
-            plot_object_data(geo, i, r, ptype)
-            i = i + 1
+            if r.plot == "yes":
+                plot_object_data(geo, i, r, ptype)
+                i = i + 1
 
         for r in self.ldf:  # datafields
             plot_object_data(geo, i, r, ptype)
@@ -822,7 +815,10 @@ class Model(esbmtkBase):
         f_lpc: list,
         r_lpc: list,
     ) -> None:
-        """Moved this code into a separate function to enable numba optimization"""
+        
+        """Moved this code into a separate function to enable numba optimization
+
+        """
 
         i = 1  # processes refer to the previous time step -> start at 1
         dt = lor[0].mo.dt
@@ -1032,7 +1028,7 @@ specific properties
 #+name: reservoir
 #+BEGIN_SRC ipython :exports yes :noweb yes :tangle esbmtk.py
 class Reservoir(esbmtkBase):
-    """Tis object holds reservoir specific information.
+    """This object holds reservoir specific information.
 
           Example::
 
@@ -1889,6 +1885,7 @@ class SourceSink(esbmtkBase):
         self.sp = self.species
         self.mo = self.species.mo
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
+        self.lio :list = []
 
         self.__register_name__()
 
@@ -2713,7 +2710,7 @@ class ExternalData(esbmtkBase):
 #+BEGIN_SRC ipython :tangle esbmtk.py
 from .connections import Connection, ConnectionGroup
 from .processes import *
-from .species_definitions import carbon, sulfur, hydrogen, phosphor, oxygen, nitrogen
+from .species_definitions import carbon, sulfur, hydrogen, phosphor, oxygen, nitrogen, boron
 #+END_SRC
 
 
