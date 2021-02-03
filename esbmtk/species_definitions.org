@@ -52,7 +52,6 @@ def carbon(model):
     Species(name="CaCO3", element=eh,  display_as= r"CaCO$_3$")
     Species(name="HCO3", element=eh, display_as= r"HCO$_3^-$")
     Species(name="CO3", element=eh, display_as = "CO$_3^{2-}$")
-    Species(name="OH", element=eh, display_as = "OH$^{-}$")
     Species(name="DOC", element=eh)
     Species(name="C", element=eh)
     Species(name="ALK", element=eh)
@@ -98,7 +97,7 @@ def hydrogen(model):
 
     # add species
     Species(name="Hplus", element=eh, display_as=r"$H^+$")  # Name & element handle
-    Species(name="H20", element=eh, display_as=r"H$_{2}$O")  # Name & element handle
+    Species(name="H2O", element=eh, display_as=r"H$_{2}$O")  # Name & element handle
     Species(name="H", element=eh)  # Name & element handle
 
 
@@ -118,7 +117,7 @@ def oxygen(model):
     Species(name="O", element=eh, display_as="O")
     # Name & element handle
     Species(name="O2", element=eh, display_as=r"O$_{2}$")  # Name & element handle
-    Species(name="OH", element=eh)  # Name & element handle
+    Species(name="OH", element=eh, display_as=r"OH$^{-}$")  # Name & element handle
 
 
 def phosphor(model):
