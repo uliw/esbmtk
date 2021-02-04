@@ -153,6 +153,23 @@ class Connect(esbmtkBase):
                 k_value = a scaling factor, optional, defaults to 1
                 )
 
+    ctype = "virtual_flux"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    This will scale a flux relative to another flux, similar to
+    scaleflux. However, in this case, the flux will only affect the
+    sink, and not the source. This is useful to describe reactions which
+    split into two elements (i.e., deprotonation).
+
+    Example::
+
+         Connect(source =  upstream reservoir,
+                sink = downstream reservoir,
+                ctype = "scale_with_flux",
+                ref = flux handle,
+                k_value = a scaling factor, optional, defaults to 1
+                )
+
      ctype = "scale_with_mass" and "scale_with_concentration"
      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -544,6 +561,8 @@ class Connect(esbmtkBase):
             self.__flux_diff__()
         elif self.ctype == "scale_with_flux":
             self.__scaleflux__()
+        elif self.ctype == "virtual_flux":
+            self.__virtual_flux__()
             # self.__vardeltaout__()
         elif self.ctype == "copy_flux":
             self.__scaleflux__()
@@ -619,8 +638,29 @@ class Connect(esbmtkBase):
         self.lop.append(ph)
 
         # this flux must not affect the source reservoir
+        # self.r.lof.remove(self.fh)
+
+    def __virtual_flux__(self) -> None:
+        """Create a virtual flux. This is similar to __scaleflux__, however the new flux
+        will only affect the sink, and not the source.
+
+        """
+
+        if not isinstance(self.kwargs["ref"], Flux):
+            raise ValueError("Scale reference must be a flux")
+
+        ph = ScaleFlux(
+            name=self.pn + "_PSFV",
+            reservoir=self.r,
+            flux=self.fh,
+            register=self.register,
+            scale=self.kwargs["k_value"],
+            ref=self.kwargs["ref"],
+        )
+        self.lop.append(ph)
+
+        # this flux must not affect the source reservoir
         self.r.lof.remove(self.fh)
-       
 
     def __flux_diff__(self) -> None:
         """Scale a flux relative to the difference between
