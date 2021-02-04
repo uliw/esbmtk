@@ -333,8 +333,8 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
 
     elif isinstance(obj, Signal):
         # use the same units as the associated flux
-        yl = (obj.c * model.c_unit).to(obj.fo.plt_units).magnitude
-        y_label = f"{obj.n} [{obj.fo.plt_units:~P}]"
+        yl = (obj.data.m * model.f_unit).to(obj.data.plt_units).magnitude
+        y_label = f"{obj.n} [{obj.data.plt_units:~P}]"
 
     elif isinstance(obj, DataField):
         time = (time * model.t_unit).to(model.d_unit).magnitude
@@ -415,6 +415,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     # collect all labels and print them in one legend
     if first_axis:
         handler1, label1 = ax1.get_legend_handles_labels()
+        plt.gca().spines["right"].set_visible(False)
 
     if second_axis:
         handler2, label2 = ax2.get_legend_handles_labels()
