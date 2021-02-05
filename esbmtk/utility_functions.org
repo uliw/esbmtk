@@ -314,7 +314,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
         y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
 
-    elif isinstance(obj, Reservoir):
+    elif isinstance(obj, (Reservoir)):
         if obj.display_as == "mass":
             yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
@@ -322,7 +322,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         elif obj.plot_transform_c != "None":
             if callable(obj.plot_transform_c):
                 # yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
-                yl = obj.plot_transform_c(obj.m)
+                yl = obj.plot_transform_c(obj.c)
                 y_label = f"{obj.legend_left}"
             else:
                 raise ValueError("plot_transform_c must be function")
@@ -524,25 +524,30 @@ def get_object_from_list(n: str, l: list) -> any:
 ** Utility functions for carbonate chemistry
 
 #+BEGIN_SRC ipython :tangle utility_functions.py
-def get_hplus(dic :float, ta :float)->float:
+def get_hplus(dic: float, ta: float) -> float:
     """
     Calculate H+ concentration based on DIC concentration and Alkalinity
     according to eq 11 in Follows et al 2006
-    
+
     """
 
     pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
     pk2 = 8.92
-    K1 = 10**-pk1
-    K2 = 10**-pk2
-    
+    K1 = 10 ** -pk1
+    K2 = 10 ** -pk2
+
+    #F = -1 * Kb * BT / (Kb + hplus)
+    #ta = ta + F
+
     g = dic / ta
-    hplus = 0.5 * ((g - 1) * K1 + ((1 - g)**2 * K1**2 - 4 * K1 * K2 *
-                                   (1 - 2 * g))**0.5)
+    hplus = 0.5 * (
+        (g - 1) * K1 + ((1 - g) ** 2 * K1 ** 2 - 4 * K1 * K2 * (1 - 2 * g)) ** 0.5
+    )
 
     return hplus
 
-def get_pco2(dic :float, ta :float) -> float:
+
+def get_pco2(dic: float, ta: float) -> float:
     """Calculate pCO2 in uatm at 25C and a Salinity of 35
 
     DIC has to be in mmol/l!
@@ -550,25 +555,23 @@ def get_pco2(dic :float, ta :float) -> float:
     """
     pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
     pk2 = 8.92
-    K1 = 10**-pk1
-    K2 = 10**-pk2
+    K1 = 10 ** -pk1
+    K2 = 10 ** -pk2
     K0 = 36
 
-    hplus = get_hplus(dic,ta)
+    hplus = get_hplus(dic, ta)
 
     # get [CO2] in water
-    co2 = dic / (1 + K1/hplus + K1*K2/hplus**2)
+    co2 = dic / (1 + K1 / hplus + K1 * K2 / hplus ** 2)
 
     # get pco2 as a function of co2 fugacity
-    pco2 = co2/K0 *1E6
+    pco2 = co2 / K0 * 1e6
 
     # this cam also be expressed in teh following way
-    #pco2a = (ta/K0 * ( K1/hplus + 2*K1*K2/hplus**2)**-1) * 1.e6
-    #pco2b = (dic/K0 * (1 + K1/hplus + (K1*K2)/hplus**2)**-1) * 1.e6
-   
-    return pco2
+    # pco2a = (ta/K0 * ( K1/hplus + 2*K1*K2/hplus**2)**-1) * 1.e6
+    # pco2b = (dic/K0 * (1 + K1/hplus + (K1*K2)/hplus**2)**-1) * 1.e6
 
-    
+    return pco2
 #+END_SRC
 
 
