@@ -711,7 +711,12 @@ class Model(esbmtkBase):
             stop = None
 
         prefix = ""
+        # Save reservoir and flux data
         for r in self.lor:
+            r.__write_data__(prefix, start, stop, stride)
+
+        # save data fields
+        for r in self.ldf:
             r.__write_data__(prefix, start, stop, stride)
 
     def read_state(self):
@@ -781,7 +786,7 @@ class Model(esbmtkBase):
             if r.plot == "yes":
                 plot_object_data(geo, i, r, ptype)
                 i = i + 1
-        
+
         for r in self.lor:  # reservoirs
             if r.plot == "yes":
                 plot_object_data(geo, i, r, ptype)
@@ -790,8 +795,6 @@ class Model(esbmtkBase):
         for r in self.ldf:  # datafields
             plot_object_data(geo, i, r, ptype)
             i = i + 1
-
-        
 
         fig.tight_layout()
         plt.show()  # create the plot windows
@@ -2440,9 +2443,9 @@ class DataField(esbmtkBase):
     plot in the same window as the reservoir they are associated with.
     Datafields must share the same x-axis is the model, and can have up to two
     y axis.
-    
+
     Example::
-             DataField(name = "Name"        
+             DataField(name = "Name"
                        associated_with = reservoir_handle
                        y1_data = np.Ndarray
                        y1_label = Y-Axis label
@@ -2453,28 +2456,28 @@ class DataField(esbmtkBase):
 
     Note that Datafield data is not mapped to model units. Care must be taken
     that the data units match the model units.
-    
+
     The instance provides the following data
-    
+
     Name.x    = X-axis = model X-axis
-    Name.y1_data     
-    Name.y1_label    
-    Name.y1_legend   
+    Name.y1_data
+    Name.y1_label
+    Name.y1_legend
 
     Similarly for y2
+    """
 
-"""
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this instance """
 
         # dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
-            "associated_with": (Reservoir,ReservoirGroup),
+            "associated_with": (Reservoir, ReservoirGroup),
             "y1_data": NDArray[float],
             "y1_label": str,
             "y1_legend": str,
-            "y2_data": (str,NDArray[float]),
+            "y2_data": (str, NDArray[float]),
             "y2_label": str,
             "y2_legend": str,
         }
@@ -2494,35 +2497,64 @@ class DataField(esbmtkBase):
         # provide a dictionary entry for a keyword specific error message
         # see esbmtkBase.__initerrormessages__()
         self.__initerrormessages__()
-        self.bem.update({
-            "associated_with": "a string",
-            "y1_data": "a numpy array",
-            "y1_label": "a string",
-            "y1_legend": "a string",
-            "y2_data": "a numpy array",
-            "y2_label": "a string",
-            "y2_legend": "a string"
-        })
+        self.bem.update(
+            {
+                "associated_with": "a string",
+                "y1_data": "a numpy array",
+                "y1_label": "a string",
+                "y1_legend": "a string",
+                "y2_data": "a numpy array",
+                "y2_label": "a string",
+                "y2_legend": "a string",
+            }
+        )
 
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # set legacy variables
         self.legend_left = self.y1_legend
-        
+
         self.mo = self.associated_with.mo
         if "self.y2_data" != "None":
             self.d = self.y2_data
             self.legend_right = self.y2_legend
             self.ld = self.y2_label
-            
+
         self.n = self.name
         self.led = []
         # register with reservoir
         self.associated_with.ldf.append(self)
         # register with model. needed for print_reservoirs
         self.mo.ldf.append(self)
-        
+
         self.__register_name__()
+
+    def __write_data__(self, prefix: str, start: int, stop: int, stride: int) -> None:
+        """To be called by write_data and save_state"""
+
+        # some short hands
+        mo = self.mo  # model handle
+
+        smu = f"{mo.m_unit:~P}"
+        mtu = f"{mo.t_unit:~P}"
+        fmu = f"{mo.f_unit:~P}"
+        cmu = f"{mo.c_unit:~P}"
+
+        rn = self.n  # reservoir name
+        mn = self.mo.n  # model name
+        fn = f"{prefix}{mn}_{rn}.csv"  # file name
+
+        # build the dataframe
+        df: pd.dataframe = DataFrame()
+
+        df[f"{self.n} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
+        df[f"{self.n} {self.y1_label}"] = self.y1_data[start:stop:stride]  # y1 data
+
+        if self.y2_data != "None":
+            df[f"{self.n} {self.y1_label}"] = self.y2_data[start:stop:stride]  # y2_data
+
+        df.to_csv(fn, index=False)  # Write dataframe to file
+        return df
 #+END_SRC
 
 
