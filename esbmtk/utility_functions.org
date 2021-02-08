@@ -166,10 +166,18 @@ def plot_geometry(noo: int) -> tuple():
     elif 6 < noo < 10:
         geo = [3, 3]  # two rows, three columns
         size = [15, 9]  # size in inches
+    elif 9 < noo < 13:
+        geo = [4, 3]  # two rows, three columns
+        size = [15, 12]  # size in inches
+    elif 12 < noo < 16:
+        geo = [5, 3]  # two rows, three columns
+        size = [15, 15]  # size in inches
     else:
-        print("plot geometry for more than 8 fluxes is not yet defined")
-        print("Consider calling flux.plot individually on each flux in the reservoir")
-        # print(f"Selected Geometry: rows = {geo[0]}, cols = {geo[1]}")
+        m = (
+            "plot geometry for more than 15 fluxes is not yet defined"
+            "Consider calling flux.plot individually on each flux in the reservoir"
+        )
+        raise ValueError(m)
 
     return size, geo
 #+END_SRC
@@ -381,14 +389,29 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     col = f"C{cn}"
 
     if second_axis:
-        ax2 = ax1.twinx()  # create a second y-axis
+        if isinstance(obj, DataField):
+            if obj.common_y_scale == "yes":
+                ln2 = ax1.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
+                set_y_limits(ax1, model)
+                ax1.legend()
+                second_axis = False
+            else:
+                ax2 = ax1.twinx()  # create a second y-axis
+                # plof right y-scale data
+                ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
+                ax2.set_ylabel(obj.ld)  # species object delta label
+                set_y_limits(ax2, model)
+                ax2.spines["top"].set_visible(
+                    False
+                )  # remove unnecessary frame speciess
 
-        # plof right y-scale data
-        ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
-
-        ax2.set_ylabel(obj.ld)  # species object delta label
-        ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
-        set_y_limits(ax2, model)
+        else:
+            ax2 = ax1.twinx()  # create a second y-axis
+            # plof right y-scale data
+            ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
+            ax2.set_ylabel(obj.ld)  # species object delta label
+            set_y_limits(ax2, model)
+            ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
 
     # adjust display properties for title and legend
     ax1.set_title(obj.n)
@@ -536,8 +559,8 @@ def get_hplus(dic: float, ta: float) -> float:
     K1 = 10 ** -pk1
     K2 = 10 ** -pk2
 
-    #F = -1 * Kb * BT / (Kb + hplus)
-    #ta = ta + F
+    # F = -1 * Kb * BT / (Kb + hplus)
+    # ta = ta + F
 
     g = dic / ta
     hplus = 0.5 * (
@@ -547,7 +570,7 @@ def get_hplus(dic: float, ta: float) -> float:
     return hplus
 
 
-def get_pco2(dic: float, ta: float) -> float:
+def get_pco2(dic: float, ta: float, hplus: float) -> float:
     """Calculate pCO2 in uatm at 25C and a Salinity of 35
 
     DIC has to be in mmol/l!
@@ -559,7 +582,7 @@ def get_pco2(dic: float, ta: float) -> float:
     K2 = 10 ** -pk2
     K0 = 36
 
-    hplus = get_hplus(dic, ta)
+    # hplus = get_hplus(dic, ta)
 
     # get [CO2] in water
     co2 = dic / (1 + K1 / hplus + K1 * K2 / hplus ** 2)
