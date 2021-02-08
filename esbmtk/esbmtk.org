@@ -134,7 +134,7 @@ class esbmtkBase(object):
                 setattr(builtins, self.name, self)
             else:
                 if self.name in self.mo.lmo:
-                    raise NameError(f"{self.name} is a duplicate. Please fix")
+                    raise NameError(f"{self.name} is a duplicate name. Please fix")
                 else:
                     self.mo.lmo.append(self.name)
                     setattr(builtins, self.name, self)
@@ -770,7 +770,11 @@ class Model(esbmtkBase):
             if s.plot == "yes":
                 i = i + 1
 
-        noo: int = len(self.lor) + len(self.ldf) + i
+        for r in self.lor:
+            if r.plot == "yes":
+                i = i + 1
+
+        noo: int = len(self.ldf) + i
         size, geo = plot_geometry(noo)  # adjust layout
 
         filename = f"{self.n}_Reservoirs.pdf"
@@ -832,8 +836,8 @@ class Model(esbmtkBase):
         new: [NDArray, Float],
         time: [NDArray, Float],
         lor: list,
-        f_lpc: list,
-        r_lpc: list,
+        lpc_f: list,
+        lpc_r: list,
     ) -> None:
 
         """Moved this code into a separate function to enable numba optimization"""
@@ -848,7 +852,7 @@ class Model(esbmtkBase):
                     p(r, i)  # update fluxes
 
             # update all process based fluxes. This can be done in a global lpc list
-            for p in f_lpc:
+            for p in lpc_f:
                 p(i)
 
             # and then update all reservoirs
@@ -867,7 +871,8 @@ class Model(esbmtkBase):
             # update reservoirs which are calculated
             # lrp # list calculated reservoir
             # update all process based fluxes. This can be done in a global lpc list
-            for p in r_lpc:
+            for p in lpc_r:
+                # print(f"Calling {p.name}")
                 p(i)
 
             i = i + 1  # next time step
@@ -2133,7 +2138,7 @@ class Signal(esbmtkBase):
         self.los: List[Signal] = []
 
         # convert units to model units
-        self.st: Number = (
+        self.st: Number = int(
             Q_(self.start).to(self.species.mo.t_unit).magnitude
         )  # start time
 
@@ -2143,7 +2148,7 @@ class Signal(esbmtkBase):
             self.magnitude = Q_(self.magnitude).to(self.species.mo.f_unit).magnitude
 
         if "duration" in self.kwargs:
-            self.duration = Q_(self.duration).to(self.species.mo.t_unit).magnitude
+            self.duration = int(Q_(self.duration).to(self.species.mo.t_unit).magnitude)
 
         self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
 
@@ -2183,8 +2188,14 @@ class Signal(esbmtkBase):
         self.nf.d[0:]: float = 0.0
 
         # find nearest index for start, and end point
+        #print(f"Model time units = {self.species.mo.t_unit}")
+        #print(f"start_time = {self.st}, dt = {self.mo.dt}")
+        #print(f"duration = {self.duration}")
+
         self.si: int = int(round(self.st / self.mo.dt))  # starting index
         self.ei: int = self.si + int(round(self.duration / self.mo.dt))  # end index
+        #print(f"start index = {self.si}")
+        #print(f"end index = {self.ei}")
 
         # create slice of flux vector
         self.s_m: [NDArray, Float[64]] = array(self.nf.m[self.si : self.ei])
@@ -2453,6 +2464,8 @@ class DataField(esbmtkBase):
                        y2_data = np.Ndarray    # optional
                        y2_label = Y-Axis label # optional
                        y2_legend = Data legend # optional
+                       common_y_scale = "no", #o
+ptional, default "no"
 
     Note that Datafield data is not mapped to model units. Care must be taken
     that the data units match the model units.
@@ -2480,6 +2493,7 @@ class DataField(esbmtkBase):
             "y2_data": (str, NDArray[float]),
             "y2_label": str,
             "y2_legend": str,
+            "common_y_scale": str,
         }
 
         # provide a list of absolutely required keywords
@@ -2492,6 +2506,7 @@ class DataField(esbmtkBase):
             "y2_label": "Not Provided",
             "y2_legend": "Not Provided",
             "y2_data": "None",
+            "common_y_scale": "no",
         }
 
         # provide a dictionary entry for a keyword specific error message
@@ -2506,6 +2521,7 @@ class DataField(esbmtkBase):
                 "y2_data": "a numpy array",
                 "y2_label": "a string",
                 "y2_legend": "a string",
+                "common_y_scale": "a string",
             }
         )
 
