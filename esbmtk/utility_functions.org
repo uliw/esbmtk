@@ -597,6 +597,11 @@ def get_pco2(dic: float, ta: float, hplus: float) -> float:
     return pco2
 #+END_SRC
 
+#+RESULTS:
+:results:
+# Out [1]: 
+:end:
+
 
 #+BEGIN_SRC ipython :tangle utility_functions.py
 def sort_by_type(l: list, t: list, m: str) -> list:

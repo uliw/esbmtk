@@ -423,6 +423,13 @@ class esbmtkBase(object):
 
         # print basic data bout this object
         print(f"{ind}{self.__str__(indent=indent)}")
+
+    def __aux_inits__(self)->None:
+        """ Aux initialization code. Not normally used
+        
+        """
+
+        pass
 #+END_SRC
 
 ** The Model object
@@ -545,8 +552,10 @@ class Model(esbmtkBase):
         self.lsp: list = []  # list which will hold all species references
         self.lop: list = []  # list flux processe
         self.lpc_f: list = []  # list of external functions affecting fluxes
-        # list of external functions affecting reservoirs
+        # list of external functions affecting virtual reservoirs
         self.lpc_r: list = []
+        # list of virtual reservoirs
+        self.lvr: list = []
         # optional keywords for use in the connector class
         self.olkk: list = []
         # list of objects which require a delayed initialize
@@ -766,11 +775,18 @@ class Model(esbmtkBase):
 
         # get number of plot objects
         i = 0
+        # get number of signals
         for s in self.los:
             if s.plot == "yes":
                 i = i + 1
 
+        # get number of reservoirs
         for r in self.lor:
+            if r.plot == "yes":
+                i = i + 1
+
+        # get number of virtual reservoirs
+        for r in self.lvr:
             if r.plot == "yes":
                 i = i + 1
 
@@ -792,6 +808,11 @@ class Model(esbmtkBase):
                 i = i + 1
 
         for r in self.lor:  # reservoirs
+            if r.plot == "yes":
+                plot_object_data(geo, i, r, ptype)
+                i = i + 1
+
+        for r in self.lvr:  # virtual reservoirs
             if r.plot == "yes":
                 plot_object_data(geo, i, r, ptype)
                 i = i + 1
@@ -1128,11 +1149,23 @@ class Reservoir(esbmtkBase):
             "plot_transform_c": any,
             "legend_left": str,
             "plot": str,
+            "function": any,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "a1": any,
+            "a2": any,
+            "a3": any,
+            "a4": any,
+            "a5": any,
+            "a6": any,
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "species", "volume", ["mass", "concentration"]]
+        self.lrk: list = [
+            "name",
+            "species",
+            "volume",
+            ["mass", "concentration"],
+        ]
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
@@ -1140,6 +1173,13 @@ class Reservoir(esbmtkBase):
             "plot": "yes",
             "plot_transform_c": "None",
             "legend_left": "None",
+            "function": "None",
+            "a1": 0,
+            "a2": 0,
+            "a3": 0,
+            "a4": 0,
+            "a5": 0,
+            "a6": 0,
         }
 
         # validate and initialize instance variables
@@ -1152,6 +1192,7 @@ class Reservoir(esbmtkBase):
                 "plot": "yes or no",
                 "register": "Group Object",
                 "legend_left": "A string",
+                "function": "A function",
             }
         )
         self.__validateandregister__(kwargs)
@@ -1238,6 +1279,10 @@ class Reservoir(esbmtkBase):
             self.__set_data__ = self.__set_with_isotopes__
         else:
             self.__set_data__ = self.__set_without_isotopes__
+
+        # any auxilliary init - normally empty, but we use it here to extend the
+        # reservoir class in virtual reservoirs
+        self.__aux_inits__()
 
     # setup a placeholder setitem function
     def __setitem__(self, i: int, value: float):
@@ -2444,8 +2489,8 @@ class Signal(esbmtkBase):
 #+END_SRC
 
 
-** A datafield class
-
+** A datafield class ClassName(object):
+  
 #+BEGIN_SRC ipython :tangle esbmtk.py
 class DataField(esbmtkBase):
     """
@@ -2571,6 +2616,104 @@ ptional, default "no"
 
         df.to_csv(fn, index=False)  # Write dataframe to file
         return df
+#+END_SRC
+
+** VirtualReservoirs
+
+#+BEGIN_SRC ipython :tangle esbmtk.py
+class VirtualReservoir(Reservoir):
+    """A virtual reservoir. Unlike regular reservoirs, the mass of a
+    virtual reservoir depends entirely on the return value of a function.
+
+    Example::
+
+    VirtualReservoir(name="foo",
+                    volume="10 liter",
+                    concentration="1 mmol",
+                    species=  ,
+                    function=bar,
+                    a1 to a6 = up to 6 optional function arguments
+                    )
+
+    the concentration argument will be used to initialize the reservoir and
+    to determines the display units.
+
+    The function definition follows the GenericFunction class.
+    which takes a generic function and up to 6 optional
+    function arguments, and will replace the mass value(s) of the
+    given reservoirs with whatever the function calculates. This is
+    particularly useful e.g., to calculate the pH of a given reservoir
+    as function of e.g., Alkalinity and DIC.
+    Parameters:
+     - name = name of process,
+     - act_on = name of a reservoir this process will act upon
+     - function  = a function reference
+     - a1 to a6, up to 6 optional function arguments
+
+    in order to use this function we need first declare a function we plan to
+    use with the generic function process. This function needs to follow this
+    template::
+
+        def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0) -> tuple:
+            #
+            # i = index of the current timestep
+            # a1 to a2 =  optional function parameter. These must be present,
+            # even if your function will not use it
+
+            # calc some stuff and return it as
+
+            return [m, l, h] # where m= mass, and l & h are the respective
+                             # isotopes. If there are none, dummmy values
+                             # instead
+
+    This class provides an update method to resolve cases where e.g., two virtual
+    reservoirs have a circular reference. See the documentation of update().
+
+    """
+
+    def __aux_inits__(self) -> None:
+        """We us the regular init methods of the Reservoir Class, and extend it in this method"""
+
+        from .processes import GenericFunction
+
+        self.gfh = GenericFunction(
+            name=f"{self.name}_generic_function",
+            function=self.function,
+            a1=self.a1,
+            a2=self.a2,
+            a3=self.a3,
+            a4=self.a4,
+            a5=self.a5,
+            a6=self.a6,
+            act_on=self,
+        )
+
+        # we only depend on the above function. so no need
+        # to be in the reservoir list
+        self.mo.lor.remove(self)
+        # but lets keep track of  virtual reservoir in lvr.
+        self.mo.lvr.append(self)
+
+    def update(self, **kwargs) -> None:
+        """This method allows to update GenericFunction parameters after the
+        VirtualReservoir has been initialized. This is most useful
+        when parameters have to reference other virtual reservoirs
+        which do not yet exist, e.g., when two virtual reservoirs have
+        a circular reference.
+
+        Example::
+
+        VR.update(a1=new_parameter, a2=new_parameter)
+
+        """
+
+        allowed_keys: list = ["a1", "a2", "a3", "a4", "a5", "a6"]
+        # loop over provided kwargs
+        for key, value in kwargs.items():
+            if key not in allowed_keys:
+                raise ValueError("you can only change a1 to a6")
+            else:
+                setattr(self.gfh, key, value)
 #+END_SRC
 
 

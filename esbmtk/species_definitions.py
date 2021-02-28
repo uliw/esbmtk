@@ -44,6 +44,7 @@ def carbon(model):
     Species(name="DOC", element=eh)
     Species(name="C", element=eh)
     Species(name="ALK", element=eh)
+    Species(name="CALK", element=eh)
 
 
 def sulfur(model):

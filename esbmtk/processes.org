@@ -120,7 +120,7 @@ class Process(esbmtkBase):
         self.lod: Dict[str, any] = {}
 
         # default type hints
-        self.scale: t
+        self.scale: Number
         self.delta: Number
         self.alpha: Number
 

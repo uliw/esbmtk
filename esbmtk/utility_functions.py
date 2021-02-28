@@ -139,10 +139,18 @@ def plot_geometry(noo: int) -> tuple():
     elif 6 < noo < 10:
         geo = [3, 3]  # two rows, three columns
         size = [15, 9]  # size in inches
+    elif 9 < noo < 13:
+        geo = [4, 3]  # two rows, three columns
+        size = [15, 12]  # size in inches
+    elif 12 < noo < 16:
+        geo = [5, 3]  # two rows, three columns
+        size = [15, 15]  # size in inches
     else:
-        print("plot geometry for more than 8 fluxes is not yet defined")
-        print("Consider calling flux.plot individually on each flux in the reservoir")
-        # print(f"Selected Geometry: rows = {geo[0]}, cols = {geo[1]}")
+        m = (
+            "plot geometry for more than 15 fluxes is not yet defined"
+            "Consider calling flux.plot individually on each flux in the reservoir"
+        )
+        raise ValueError(m)
 
     return size, geo
 
@@ -277,7 +285,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
         y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
 
-    elif isinstance(obj, Reservoir):
+    elif isinstance(obj, (Reservoir)):
         if obj.display_as == "mass":
             yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
@@ -285,7 +293,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         elif obj.plot_transform_c != "None":
             if callable(obj.plot_transform_c):
                 # yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
-                yl = obj.plot_transform_c(obj.m)
+                yl = obj.plot_transform_c(obj.c)
                 y_label = f"{obj.legend_left}"
             else:
                 raise ValueError("plot_transform_c must be function")
@@ -344,14 +352,29 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     col = f"C{cn}"
 
     if second_axis:
-        ax2 = ax1.twinx()  # create a second y-axis
+        if isinstance(obj, DataField):
+            if obj.common_y_scale == "yes":
+                ln2 = ax1.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
+                set_y_limits(ax1, model)
+                ax1.legend()
+                second_axis = False
+            else:
+                ax2 = ax1.twinx()  # create a second y-axis
+                # plof right y-scale data
+                ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
+                ax2.set_ylabel(obj.ld)  # species object delta label
+                set_y_limits(ax2, model)
+                ax2.spines["top"].set_visible(
+                    False
+                )  # remove unnecessary frame speciess
 
-        # plof right y-scale data
-        ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
-
-        ax2.set_ylabel(obj.ld)  # species object delta label
-        ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
-        set_y_limits(ax2, model)
+        else:
+            ax2 = ax1.twinx()  # create a second y-axis
+            # plof right y-scale data
+            ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
+            ax2.set_ylabel(obj.ld)  # species object delta label
+            set_y_limits(ax2, model)
+            ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
 
     # adjust display properties for title and legend
     ax1.set_title(obj.n)
@@ -417,25 +440,30 @@ def get_object_from_list(n: str, l: list) -> any:
             r = o
     return r
 
-def get_hplus(dic :float, ta :float)->float:
+def get_hplus(dic: float, ta: float) -> float:
     """
     Calculate H+ concentration based on DIC concentration and Alkalinity
     according to eq 11 in Follows et al 2006
-    
+
     """
 
     pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
     pk2 = 8.92
-    K1 = 10**-pk1
-    K2 = 10**-pk2
-    
+    K1 = 10 ** -pk1
+    K2 = 10 ** -pk2
+
+    # F = -1 * Kb * BT / (Kb + hplus)
+    # ta = ta + F
+
     g = dic / ta
-    hplus = 0.5 * ((g - 1) * K1 + ((1 - g)**2 * K1**2 - 4 * K1 * K2 *
-                                   (1 - 2 * g))**0.5)
+    hplus = 0.5 * (
+        (g - 1) * K1 + ((1 - g) ** 2 * K1 ** 2 - 4 * K1 * K2 * (1 - 2 * g)) ** 0.5
+    )
 
     return hplus
 
-def get_pco2(dic :float, ta :float) -> float:
+
+def get_pco2(dic: float, ta: float, hplus: float) -> float:
     """Calculate pCO2 in uatm at 25C and a Salinity of 35
 
     DIC has to be in mmol/l!
@@ -443,22 +471,22 @@ def get_pco2(dic :float, ta :float) -> float:
     """
     pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
     pk2 = 8.92
-    K1 = 10**-pk1
-    K2 = 10**-pk2
+    K1 = 10 ** -pk1
+    K2 = 10 ** -pk2
     K0 = 36
 
-    hplus = get_hplus(dic,ta)
+    # hplus = get_hplus(dic, ta)
 
     # get [CO2] in water
-    co2 = dic / (1 + K1/hplus + K1*K2/hplus**2)
+    co2 = dic / (1 + K1 / hplus + K1 * K2 / hplus ** 2)
 
     # get pco2 as a function of co2 fugacity
-    pco2 = co2/K0 *1E6
+    pco2 = co2 / K0 * 1e6
 
     # this cam also be expressed in teh following way
-    #pco2a = (ta/K0 * ( K1/hplus + 2*K1*K2/hplus**2)**-1) * 1.e6
-    #pco2b = (dic/K0 * (1 + K1/hplus + (K1*K2)/hplus**2)**-1) * 1.e6
-   
+    # pco2a = (ta/K0 * ( K1/hplus + 2*K1*K2/hplus**2)**-1) * 1.e6
+    # pco2b = (dic/K0 * (1 + K1/hplus + (K1*K2)/hplus**2)**-1) * 1.e6
+
     return pco2
 
 def sort_by_type(l: list, t: list, m: str) -> list:

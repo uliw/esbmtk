@@ -101,7 +101,7 @@ class esbmtkBase(object):
                 setattr(builtins, self.name, self)
             else:
                 if self.name in self.mo.lmo:
-                    raise NameError(f"{self.name} is a duplicate. Please fix")
+                    raise NameError(f"{self.name} is a duplicate name. Please fix")
                 else:
                     self.mo.lmo.append(self.name)
                     setattr(builtins, self.name, self)
@@ -391,6 +391,13 @@ class esbmtkBase(object):
         # print basic data bout this object
         print(f"{ind}{self.__str__(indent=indent)}")
 
+    def __aux_inits__(self)->None:
+        """ Aux initialization code. Not normally used
+        
+        """
+
+        pass
+
 class Model(esbmtkBase):
     """This class is used to specify a new model
 
@@ -504,8 +511,10 @@ class Model(esbmtkBase):
         self.lsp: list = []  # list which will hold all species references
         self.lop: list = []  # list flux processe
         self.lpc_f: list = []  # list of external functions affecting fluxes
-        # list of external functions affecting reservoirs
+        # list of external functions affecting virtual reservoirs
         self.lpc_r: list = []
+        # list of virtual reservoirs
+        self.lvr: list = []
         # optional keywords for use in the connector class
         self.olkk: list = []
         # list of objects which require a delayed initialize
@@ -670,7 +679,12 @@ class Model(esbmtkBase):
             stop = None
 
         prefix = ""
+        # Save reservoir and flux data
         for r in self.lor:
+            r.__write_data__(prefix, start, stop, stride)
+
+        # save data fields
+        for r in self.ldf:
             r.__write_data__(prefix, start, stop, stride)
 
     def read_state(self):
@@ -720,11 +734,22 @@ class Model(esbmtkBase):
 
         # get number of plot objects
         i = 0
+        # get number of signals
         for s in self.los:
             if s.plot == "yes":
                 i = i + 1
 
-        noo: int = len(self.lor) + len(self.ldf) + i
+        # get number of reservoirs
+        for r in self.lor:
+            if r.plot == "yes":
+                i = i + 1
+
+        # get number of virtual reservoirs
+        for r in self.lvr:
+            if r.plot == "yes":
+                i = i + 1
+
+        noo: int = len(self.ldf) + i
         size, geo = plot_geometry(noo)  # adjust layout
 
         filename = f"{self.n}_Reservoirs.pdf"
@@ -740,8 +765,13 @@ class Model(esbmtkBase):
             if r.plot == "yes":
                 plot_object_data(geo, i, r, ptype)
                 i = i + 1
-        
+
         for r in self.lor:  # reservoirs
+            if r.plot == "yes":
+                plot_object_data(geo, i, r, ptype)
+                i = i + 1
+
+        for r in self.lvr:  # virtual reservoirs
             if r.plot == "yes":
                 plot_object_data(geo, i, r, ptype)
                 i = i + 1
@@ -749,8 +779,6 @@ class Model(esbmtkBase):
         for r in self.ldf:  # datafields
             plot_object_data(geo, i, r, ptype)
             i = i + 1
-
-        
 
         fig.tight_layout()
         plt.show()  # create the plot windows
@@ -788,8 +816,8 @@ class Model(esbmtkBase):
         new: [NDArray, Float],
         time: [NDArray, Float],
         lor: list,
-        f_lpc: list,
-        r_lpc: list,
+        lpc_f: list,
+        lpc_r: list,
     ) -> None:
 
         """Moved this code into a separate function to enable numba optimization"""
@@ -804,7 +832,7 @@ class Model(esbmtkBase):
                     p(r, i)  # update fluxes
 
             # update all process based fluxes. This can be done in a global lpc list
-            for p in f_lpc:
+            for p in lpc_f:
                 p(i)
 
             # and then update all reservoirs
@@ -823,7 +851,8 @@ class Model(esbmtkBase):
             # update reservoirs which are calculated
             # lrp # list calculated reservoir
             # update all process based fluxes. This can be done in a global lpc list
-            for p in r_lpc:
+            for p in lpc_r:
+                # print(f"Calling {p.name}")
                 p(i)
 
             i = i + 1  # next time step
@@ -1063,11 +1092,23 @@ class Reservoir(esbmtkBase):
             "plot_transform_c": any,
             "legend_left": str,
             "plot": str,
+            "function": any,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "a1": any,
+            "a2": any,
+            "a3": any,
+            "a4": any,
+            "a5": any,
+            "a6": any,
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "species", "volume", ["mass", "concentration"]]
+        self.lrk: list = [
+            "name",
+            "species",
+            "volume",
+            ["mass", "concentration"],
+        ]
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
@@ -1075,6 +1116,13 @@ class Reservoir(esbmtkBase):
             "plot": "yes",
             "plot_transform_c": "None",
             "legend_left": "None",
+            "function": "None",
+            "a1": 0,
+            "a2": 0,
+            "a3": 0,
+            "a4": 0,
+            "a5": 0,
+            "a6": 0,
         }
 
         # validate and initialize instance variables
@@ -1087,6 +1135,7 @@ class Reservoir(esbmtkBase):
                 "plot": "yes or no",
                 "register": "Group Object",
                 "legend_left": "A string",
+                "function": "A function",
             }
         )
         self.__validateandregister__(kwargs)
@@ -1173,6 +1222,10 @@ class Reservoir(esbmtkBase):
             self.__set_data__ = self.__set_with_isotopes__
         else:
             self.__set_data__ = self.__set_without_isotopes__
+
+        # any auxilliary init - normally empty, but we use it here to extend the
+        # reservoir class in virtual reservoirs
+        self.__aux_inits__()
 
     # setup a placeholder setitem function
     def __setitem__(self, i: int, value: float):
@@ -2050,7 +2103,7 @@ class Signal(esbmtkBase):
         self.los: List[Signal] = []
 
         # convert units to model units
-        self.st: Number = (
+        self.st: Number = int(
             Q_(self.start).to(self.species.mo.t_unit).magnitude
         )  # start time
 
@@ -2060,7 +2113,7 @@ class Signal(esbmtkBase):
             self.magnitude = Q_(self.magnitude).to(self.species.mo.f_unit).magnitude
 
         if "duration" in self.kwargs:
-            self.duration = Q_(self.duration).to(self.species.mo.t_unit).magnitude
+            self.duration = int(Q_(self.duration).to(self.species.mo.t_unit).magnitude)
 
         self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
 
@@ -2100,8 +2153,14 @@ class Signal(esbmtkBase):
         self.nf.d[0:]: float = 0.0
 
         # find nearest index for start, and end point
+        #print(f"Model time units = {self.species.mo.t_unit}")
+        #print(f"start_time = {self.st}, dt = {self.mo.dt}")
+        #print(f"duration = {self.duration}")
+
         self.si: int = int(round(self.st / self.mo.dt))  # starting index
         self.ei: int = self.si + int(round(self.duration / self.mo.dt))  # end index
+        #print(f"start index = {self.si}")
+        #print(f"end index = {self.ei}")
 
         # create slice of flux vector
         self.s_m: [NDArray, Float[64]] = array(self.nf.m[self.si : self.ei])
@@ -2355,9 +2414,9 @@ class DataField(esbmtkBase):
     plot in the same window as the reservoir they are associated with.
     Datafields must share the same x-axis is the model, and can have up to two
     y axis.
-    
+
     Example::
-             DataField(name = "Name"        
+             DataField(name = "Name"
                        associated_with = reservoir_handle
                        y1_data = np.Ndarray
                        y1_label = Y-Axis label
@@ -2365,33 +2424,36 @@ class DataField(esbmtkBase):
                        y2_data = np.Ndarray    # optional
                        y2_label = Y-Axis label # optional
                        y2_legend = Data legend # optional
+                       common_y_scale = "no", #o
+ptional, default "no"
 
     Note that Datafield data is not mapped to model units. Care must be taken
     that the data units match the model units.
-    
+
     The instance provides the following data
-    
+
     Name.x    = X-axis = model X-axis
-    Name.y1_data     
-    Name.y1_label    
-    Name.y1_legend   
+    Name.y1_data
+    Name.y1_label
+    Name.y1_legend
 
     Similarly for y2
+    """
 
-"""
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this instance """
 
         # dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
-            "associated_with": (Reservoir,ReservoirGroup),
+            "associated_with": (Reservoir, ReservoirGroup),
             "y1_data": NDArray[float],
             "y1_label": str,
             "y1_legend": str,
-            "y2_data": (str,NDArray[float]),
+            "y2_data": (str, NDArray[float]),
             "y2_label": str,
             "y2_legend": str,
+            "common_y_scale": str,
         }
 
         # provide a list of absolutely required keywords
@@ -2404,40 +2466,165 @@ class DataField(esbmtkBase):
             "y2_label": "Not Provided",
             "y2_legend": "Not Provided",
             "y2_data": "None",
+            "common_y_scale": "no",
         }
 
         # provide a dictionary entry for a keyword specific error message
         # see esbmtkBase.__initerrormessages__()
         self.__initerrormessages__()
-        self.bem.update({
-            "associated_with": "a string",
-            "y1_data": "a numpy array",
-            "y1_label": "a string",
-            "y1_legend": "a string",
-            "y2_data": "a numpy array",
-            "y2_label": "a string",
-            "y2_legend": "a string"
-        })
+        self.bem.update(
+            {
+                "associated_with": "a string",
+                "y1_data": "a numpy array",
+                "y1_label": "a string",
+                "y1_legend": "a string",
+                "y2_data": "a numpy array",
+                "y2_label": "a string",
+                "y2_legend": "a string",
+                "common_y_scale": "a string",
+            }
+        )
 
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # set legacy variables
         self.legend_left = self.y1_legend
-        
+
         self.mo = self.associated_with.mo
         if "self.y2_data" != "None":
             self.d = self.y2_data
             self.legend_right = self.y2_legend
             self.ld = self.y2_label
-            
+
         self.n = self.name
         self.led = []
         # register with reservoir
         self.associated_with.ldf.append(self)
         # register with model. needed for print_reservoirs
         self.mo.ldf.append(self)
-        
+
         self.__register_name__()
+
+    def __write_data__(self, prefix: str, start: int, stop: int, stride: int) -> None:
+        """To be called by write_data and save_state"""
+
+        # some short hands
+        mo = self.mo  # model handle
+
+        smu = f"{mo.m_unit:~P}"
+        mtu = f"{mo.t_unit:~P}"
+        fmu = f"{mo.f_unit:~P}"
+        cmu = f"{mo.c_unit:~P}"
+
+        rn = self.n  # reservoir name
+        mn = self.mo.n  # model name
+        fn = f"{prefix}{mn}_{rn}.csv"  # file name
+
+        # build the dataframe
+        df: pd.dataframe = DataFrame()
+
+        df[f"{self.n} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
+        df[f"{self.n} {self.y1_label}"] = self.y1_data[start:stop:stride]  # y1 data
+
+        if self.y2_data != "None":
+            df[f"{self.n} {self.y1_label}"] = self.y2_data[start:stop:stride]  # y2_data
+
+        df.to_csv(fn, index=False)  # Write dataframe to file
+        return df
+
+class VirtualReservoir(Reservoir):
+    """A virtual reservoir. Unlike regular reservoirs, the mass of a
+    virtual reservoir depends entirely on the return value of a function.
+
+    Example::
+
+    VirtualReservoir(name="foo",
+                    volume="10 liter",
+                    concentration="1 mmol",
+                    species=  ,
+                    function=bar,
+                    a1 to a6 = up to 6 optional function arguments
+                    )
+
+    the concentration argument will be used to initialize the reservoir and
+    to determines the display units.
+
+    The function definition follows the GenericFunction class.
+    which takes a generic function and up to 6 optional
+    function arguments, and will replace the mass value(s) of the
+    given reservoirs with whatever the function calculates. This is
+    particularly useful e.g., to calculate the pH of a given reservoir
+    as function of e.g., Alkalinity and DIC.
+    Parameters:
+     - name = name of process,
+     - act_on = name of a reservoir this process will act upon
+     - function  = a function reference
+     - a1 to a6, up to 6 optional function arguments
+
+    in order to use this function we need first declare a function we plan to
+    use with the generic function process. This function needs to follow this
+    template::
+
+        def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0) -> tuple:
+            #
+            # i = index of the current timestep
+            # a1 to a2 =  optional function parameter. These must be present,
+            # even if your function will not use it
+
+            # calc some stuff and return it as
+
+            return [m, l, h] # where m= mass, and l & h are the respective
+                             # isotopes. If there are none, dummmy values
+                             # instead
+
+    This class provides an update method to resolve cases where e.g., two virtual
+    reservoirs have a circular reference. See the documentation of update().
+
+    """
+
+    def __aux_inits__(self) -> None:
+        """We us the regular init methods of the Reservoir Class, and extend it in this method"""
+
+        from .processes import GenericFunction
+
+        self.gfh = GenericFunction(
+            name=f"{self.name}_generic_function",
+            function=self.function,
+            a1=self.a1,
+            a2=self.a2,
+            a3=self.a3,
+            a4=self.a4,
+            a5=self.a5,
+            a6=self.a6,
+            act_on=self,
+        )
+
+        # we only depend on the above function. so no need
+        # to be in the reservoir list
+        self.mo.lor.remove(self)
+        # but lets keep track of  virtual reservoir in lvr.
+        self.mo.lvr.append(self)
+
+    def update(self, **kwargs) -> None:
+        """This method allows to update GenericFunction parameters after the
+        VirtualReservoir has been initialized. This is most useful
+        when parameters have to reference other virtual reservoirs
+        which do not yet exist, e.g., when two virtual reservoirs have
+        a circular reference.
+
+        Example::
+
+        VR.update(a1=new_parameter, a2=new_parameter)
+
+        """
+
+        allowed_keys: list = ["a1", "a2", "a3", "a4", "a5", "a6"]
+        # loop over provided kwargs
+        for key, value in kwargs.items():
+            if key not in allowed_keys:
+                raise ValueError("you can only change a1 to a6")
+            else:
+                setattr(self.gfh, key, value)
 
 class ExternalData(esbmtkBase):
     """Instances of this class hold external X/Y data which can be associated with 

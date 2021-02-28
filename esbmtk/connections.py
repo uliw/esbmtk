@@ -632,8 +632,8 @@ class Connect(esbmtkBase):
             reservoir=self.r,
             flux=self.fh,
             register=self.register,
-            scale=self.kwargs["k_value"],
-            ref=self.kwargs["ref"],
+            scale=self.k_value,
+            ref=self.ref,
         )
         self.lop.append(ph)
 
@@ -654,8 +654,8 @@ class Connect(esbmtkBase):
             reservoir=self.r,
             flux=self.fh,
             register=self.register,
-            scale=self.kwargs["k_value"],
-            ref=self.kwargs["ref"],
+            scale=self.k_value,
+            ref=self.ref,
         )
         self.lop.append(ph)
 
@@ -676,8 +676,8 @@ class Connect(esbmtkBase):
             reservoir=self.r,
             flux=self.fh,
             register=self.register,
-            scale=self.kwargs["k_value"],
-            ref=self.kwargs["ref"],
+            scale=self.k_value,
+            ref=self.ref,
         )
         self.lop.append(ph)
 
