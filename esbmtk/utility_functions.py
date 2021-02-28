@@ -205,14 +205,14 @@ def show_data(self, **kwargs) -> None:
             f"{off}{ind}i = {i}, Mass = {self.m[i]:.2e}, delta = {self.d[i]:.2f}"
         )
 
-def set_y_limits(ax: plt.Axes, model: any) -> None:
+def set_y_limits(ax: plt.Axes, obj: any) -> None:
     """Prevent the display or arbitrarily small differences"""
     lower: float
     upper: float
 
     bottom, top = ax.get_ylim()
-    if (top - bottom) < model.display_precision:
-        top = bottom + model.display_precision
+    if (top - bottom) < obj.display_precision:
+        top = bottom + obj.display_precision
         ax.set_ylim(bottom, top)
 
 
@@ -345,7 +345,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         ax1.set_ylabel(y_label)
         # remove unnecessary frame species
         ax1.spines["top"].set_visible(False)
-        set_y_limits(ax1, model)
+        set_y_limits(ax1, obj)
 
     # set color index
     cn = cn + 1

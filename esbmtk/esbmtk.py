@@ -1027,6 +1027,7 @@ class Reservoir(esbmtkBase):
                             plot = "yes"/"no", defaults to yes
                             plot_transform_c = a function reference, optional (see below)
                             legend_left = str, optional, useful for plot transform
+                            display_precision = number, optional, inherited from Model
                             )
 
           you must either give mass or concentration. The result will always be displayed as concentration
@@ -1093,6 +1094,7 @@ class Reservoir(esbmtkBase):
             "legend_left": str,
             "plot": str,
             "function": any,
+            "display_precision": Number,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "a1": any,
             "a2": any,
@@ -1123,6 +1125,7 @@ class Reservoir(esbmtkBase):
             "a4": 0,
             "a5": 0,
             "a6": 0,
+            "display_precision": 0,
         }
 
         # validate and initialize instance variables
@@ -1155,6 +1158,9 @@ class Reservoir(esbmtkBase):
 
         # This should probably be species specific?
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
+
+        if self.display_precision == 0:
+            self.display_precision = self.mo.display_precision
 
         if "concentration" in kwargs:
             c = Q_(self.concentration)
@@ -1617,32 +1623,33 @@ class ReservoirGroup(esbmtkBase):
 
 class Flux(esbmtkBase):
     """A class which defines a flux object. Flux objects contain
-      information which links them to an species, describe things like
-      the mass and time unit, and store data of the total flux rate at
-      any given time step. Similarly, they store the flux of the light
-      and heavy isotope flux, as well as the delta of the flux. This
-      is typically handled through the Connect object. If you set it up manually
-      
-      Flux = (name = "Name"
-              species = species_handle,
-              delta = any number,
-              rate  = "12 mol/s" # must be a string
-      )
+    information which links them to an species, describe things like
+    the mass and time unit, and store data of the total flux rate at
+    any given time step. Similarly, they store the flux of the light
+    and heavy isotope flux, as well as the delta of the flux. This
+    is typically handled through the Connect object. If you set it up manually
 
-       You can access the flux data as
-      - Name.m # mass
-      - Name.d # delta
-      - Name.c # concentration
-      
+    Flux = (name = "Name"
+            species = species_handle,
+            delta = any number,
+            rate  = "12 mol/s" # must be a string
+            display_precision = number, optional, inherited from Model
+    )
+
+     You can access the flux data as
+    - Name.m # mass
+    - Name.d # delta
+    - Name.c # concentration
+
     """
 
-    __slots__ = ('m', 'l', 'h', 'd', 'rvalue', 'lpc')
+    __slots__ = ("m", "l", "h", "d", "rvalue", "lpc")
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
         Initialize a flux. Arguments are the species name the flux rate
         (mol/year), the delta value and unit
-        
+
         """
 
         from . import ureg, Q_
@@ -1654,7 +1661,8 @@ class Flux(esbmtkBase):
             "delta": Number,
             "rate": (str, Q_),
             "plot": str,
-            "register": (SourceGroup,SinkGroup,ReservoirGroup,ConnectionGroup,str),
+            "display_precision": Number,
+            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
         }
 
         # provide a list of absolutely required keywords
@@ -1662,8 +1670,9 @@ class Flux(esbmtkBase):
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
-            'delta': 0,
+            "delta": 0,
             "plot": "yes",
+            "display_precision": 0,
         }
 
         # initialize instance
@@ -1678,6 +1687,9 @@ class Flux(esbmtkBase):
         self.model: Model = self.species.mo  # model handle
         self.rvalue = self.sp.r
 
+        if self.display_precision == 0:
+            self.display_precision = self.mo.display_precision
+
         # model units
         self.plt_units = Q_(self.rate).units
         self.mu: str = f"{self.species.mu}/{self.mo.tu}"
@@ -1685,8 +1697,9 @@ class Flux(esbmtkBase):
         # and convert flux into model units
         fluxrate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
 
-        self.m: [NDArray, Float[64]
-                 ] = zeros(self.model.steps) + fluxrate  # add the flux
+        self.m: [NDArray, Float[64]] = (
+            zeros(self.model.steps) + fluxrate
+        )  # add the flux
         self.l: [NDArray, Float[64]] = zeros(self.model.steps)
         self.h: [NDArray, Float[64]] = zeros(self.model.steps)
         self.d: [NDArray, Float[64]] = zeros(self.model.steps) + self.delta
@@ -1701,13 +1714,13 @@ class Flux(esbmtkBase):
 
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
-        
+
         self.legend_left: str = self.species.dsa
         self.legend_right: str = f"{self.species.dn} [{self.species.ds}]"
 
         self.xl: str = self.model.xl  # se x-axis label equal to model time
         self.lop: list[Process] = []  # list of processes
-        self.lpc: list = [] # list of external functions
+        self.lpc: list = []  # list of external functions
         self.led: list[ExternalData] = []  # list of ext data
         self.source: str = ""  # Name of reservoir which acts as flux source
         self.sink: str = ""  # Name of reservoir which acts as flux sink
@@ -1724,27 +1737,20 @@ class Flux(esbmtkBase):
         return self.__set_data__(i, value)
 
     def __getitem__(self, i: int) -> NDArray[np.float64]:
-        """ Get data by index
-        
-        """
+        """Get data by index"""
 
         return array([self.m[i], self.l[i], self.h[i], self.d[i]])
 
     def __set_with_isotopes__(self, i: int, value: [NDArray, float]) -> None:
-        """ Write data by index
-        
-        """
+        """Write data by index"""
 
         self.m[i] = value[0]
         self.l[i] = value[1]
         self.h[i] = value[2]
         self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
 
-    def __set_without_isotopes__(self, i: int, value: [NDArray,
-                                                       float]) -> None:
-        """ Write data by index
-        
-        """
+    def __set_without_isotopes__(self, i: int, value: [NDArray, float]) -> None:
+        """Write data by index"""
 
         self.m[i] = value[0]
 
@@ -1753,9 +1759,7 @@ class Flux(esbmtkBase):
         return
 
     def __add__(self, other):
-        """ adding two fluxes works for the masses, but not for delta
-
-        """
+        """adding two fluxes works for the masses, but not for delta"""
 
         self.m = self.m + other.m
         self.l = self.l + other.l
@@ -1763,9 +1767,7 @@ class Flux(esbmtkBase):
         self.d = get_delta(self.l, self.h, self.sp.r)
 
     def __sub__(self, other):
-        """ adding two fluxes works for the masses, but not for delta
-
-        """
+        """adding two fluxes works for the masses, but not for delta"""
 
         self.m = self.m - other.m
         self.l = self.l - other.l
@@ -1773,10 +1775,10 @@ class Flux(esbmtkBase):
         self.d = get_delta(self.l, self.h, self.sp.r)
 
     def describe(self, **kwargs) -> None:
-        """ Show an overview of the object properties.
+        """Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
-        indent :int = 0 indentation 
+        indent :int = 0 indentation
 
         """
         off: str = "  "
@@ -1790,7 +1792,7 @@ class Flux(esbmtkBase):
             ind = ""
         else:
             indent = kwargs["indent"]
-            ind = ' ' * indent
+            ind = " " * indent
 
         # print basic data bout this object
         print(f"{ind}{self.__str__(indent=indent)}")
@@ -1837,8 +1839,8 @@ class Flux(esbmtkBase):
         ax1.set_xlabel(f"Time [{self.mo.tu}]")  #
         ax1.set_ylabel(f"{self.sp.n} [{self.sp.mu}]")
         ax2.set_ylabel(f"{self.sp.dn} [{self.sp.ds}]")
-        ax1.spines['top'].set_visible(False)  # remove unnecessary frame
-        ax2.spines['top'].set_visible(False)  # remove unnecessary frame
+        ax1.spines["top"].set_visible(False)  # remove unnecessary frame
+        ax2.spines["top"].set_visible(False)  # remove unnecessary frame
 
         fig.tight_layout()
         plt.show()
@@ -1846,42 +1848,48 @@ class Flux(esbmtkBase):
 
 class SourceSink(esbmtkBase):
     """
-    This is a meta class to setup a Source/Sink objects. These are not 
+    This is a meta class to setup a Source/Sink objects. These are not
     actual reservoirs, but we stil need to have them as objects
     Example::
-    
-           Sink(name = "Pyrite",species = SO4)
+
+           Sink(name = "Pyrite",
+               species = SO4,
+               display_precision = number, optional, inherited from Model
+           )
 
     where the first argument is a string, and the second is a reservoir handle
-    
+
     """
 
     def __init__(self, **kwargs) -> None:
-
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
             "species": Species,
-            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup,str),
+            "display_precision": Number,
+            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species"]
         # list of default values if none provided
-        self.lod: Dict[str, any] = {}
+        self.lod: Dict[str, any] = {"display_precision": 0}
 
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
 
-        self.loc: set[Connection]  = set()  # set of connection objects
+        self.loc: set[Connection] = set()  # set of connection objects
 
         # legacy names
         self.n = self.name
         self.sp = self.species
         self.mo = self.species.mo
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
-        self.lio :list = []
+        self.lio: list = []
+
+        if self.display_precision == 0:
+            self.display_precision = self.mo.display_precision
 
         self.__register_name__()
 
@@ -1890,7 +1898,7 @@ class Sink(SourceSink):
     """
     This is just a wrapper to setup a Sink object
     Example::
-    
+
            Sink(name = "Pyrite",species =SO4)
 
     where the first argument is a string, and the second is a species handle
@@ -1901,7 +1909,7 @@ class Source(SourceSink):
     """
     This is just a wrapper to setup a Source object
     Example::
-    
+
            Sink(name = "SO4_diffusion", species ="SO4")
 
     where the first argument is a string, and the second is a species handle
@@ -2010,7 +2018,8 @@ class Signal(esbmtkBase):
                  shape = "square"     # square, pyramid
                  mass/magnitude/filename  # give one
                  offset = '0 yrs',     #
-                 scale = 1, optional
+                 scale = 1, optional,
+                 display_precision = number, optional, inherited from Model
                 )
 
     Signals are cumulative, i.e., complex signals ar created by
@@ -2066,6 +2075,7 @@ class Signal(esbmtkBase):
             "offset": str,
             "plot": str,
             "scale": Number,
+            "display_precision": Number,
         }
 
         # provide a list of absolutely required keywords
@@ -2087,6 +2097,7 @@ class Signal(esbmtkBase):
             "plot": "no",
             "delta": 0,
             "scale": 1,
+            "display_precision": 0,
         }
 
         self.__initerrormessages__()
@@ -2128,6 +2139,9 @@ class Signal(esbmtkBase):
         self.kwd: Dict[str, any] = self.kwargs  # list of keywords
         self.led: list = []
 
+        if self.display_precision == 0:
+            self.display_precision = self.mo.display_precision
+
         # initialize signal data
         self.data = self.__init_signal_data__()
         self.data.n: str = self.name + "_data"  # update the name of the signal data
@@ -2153,14 +2167,14 @@ class Signal(esbmtkBase):
         self.nf.d[0:]: float = 0.0
 
         # find nearest index for start, and end point
-        #print(f"Model time units = {self.species.mo.t_unit}")
-        #print(f"start_time = {self.st}, dt = {self.mo.dt}")
-        #print(f"duration = {self.duration}")
+        # print(f"Model time units = {self.species.mo.t_unit}")
+        # print(f"start_time = {self.st}, dt = {self.mo.dt}")
+        # print(f"duration = {self.duration}")
 
         self.si: int = int(round(self.st / self.mo.dt))  # starting index
         self.ei: int = self.si + int(round(self.duration / self.mo.dt))  # end index
-        #print(f"start index = {self.si}")
-        #print(f"end index = {self.ei}")
+        # print(f"start index = {self.si}")
+        # print(f"end index = {self.ei}")
 
         # create slice of flux vector
         self.s_m: [NDArray, Float[64]] = array(self.nf.m[self.si : self.ei])
@@ -2424,8 +2438,9 @@ class DataField(esbmtkBase):
                        y2_data = np.Ndarray    # optional
                        y2_label = Y-Axis label # optional
                        y2_legend = Data legend # optional
-                       common_y_scale = "no", #o
-ptional, default "no"
+                       common_y_scale = "no",  #optional, default "no"
+                       display_precision = number, optional, inherited from Model
+                       )
 
     Note that Datafield data is not mapped to model units. Care must be taken
     that the data units match the model units.
@@ -2454,6 +2469,7 @@ ptional, default "no"
             "y2_label": str,
             "y2_legend": str,
             "common_y_scale": str,
+            "display_precision": Number,
         }
 
         # provide a list of absolutely required keywords
@@ -2467,6 +2483,7 @@ ptional, default "no"
             "y2_legend": "Not Provided",
             "y2_data": "None",
             "common_y_scale": "no",
+            "display_precision": 0,
         }
 
         # provide a dictionary entry for a keyword specific error message
@@ -2502,6 +2519,8 @@ ptional, default "no"
         self.associated_with.ldf.append(self)
         # register with model. needed for print_reservoirs
         self.mo.ldf.append(self)
+        if self.display_precision == 0:
+            self.display_precision = self.mo.display_precision
 
         self.__register_name__()
 
@@ -2543,7 +2562,8 @@ class VirtualReservoir(Reservoir):
                     concentration="1 mmol",
                     species=  ,
                     function=bar,
-                    a1 to a6 = up to 6 optional function arguments
+                    a1 to a6 = up to 6 optional function arguments,
+                    display_precision = number, optional, inherited from Model,
                     )
 
     the concentration argument will be used to initialize the reservoir and
@@ -2627,54 +2647,55 @@ class VirtualReservoir(Reservoir):
                 setattr(self.gfh, key, value)
 
 class ExternalData(esbmtkBase):
-    """Instances of this class hold external X/Y data which can be associated with 
-      a reservoir.
+    """Instances of this class hold external X/Y data which can be associated with
+    a reservoir.
 
-      Example::
+    Example::
 
-             ExternalData(name       = "Name"
-                          filename   = "filename",
-                          legend     = "label",
-                          offset     = "0 yrs",
-                          reservoir  = reservoir_handle,
-                          scale      = scaling factor, optional
-                         )
+           ExternalData(name       = "Name"
+                        filename   = "filename",
+                        legend     = "label",
+                        offset     = "0 yrs",
+                        reservoir  = reservoir_handle,
+                        scale      = scaling factor, optional
+                        display_precision = number, optional, inherited from Model
+                       )
 
-      The data must exist as CSV file, where the first column contains
-      the X-values, and the second column contains the Y-values.
+    The data must exist as CSV file, where the first column contains
+    the X-values, and the second column contains the Y-values.
 
-      The x-values must be time and specify the time units in the header between square brackets
-      They will be mapped into the model time units.
+    The x-values must be time and specify the time units in the header between square brackets
+    They will be mapped into the model time units.
 
-      The y-values can be any data, but the user must take care that they match the model units
-      defined in the model instance. So your data file mujst look like this
+    The y-values can be any data, but the user must take care that they match the model units
+    defined in the model instance. So your data file mujst look like this
 
-      Time [years], Data [units], Data [units]
-      1, 12
-      2, 13
+    Time [years], Data [units], Data [units]
+    1, 12
+    2, 13
 
-      By convention, the secon column should contaain the same type of
-      data as the reservoir (i.e., a concentration), whereas the third
-      column contain isotope delta values. Columns with no data should
-      be left empty (and have no header!) The optional scale argumenty, will
-      only affect the Y-col data, not the isotope data
-    
-      The column headers are only used for the time or concentration
-      data conversion, and are ignored by the default plotting
-      methods, but they are available as self.xh,yh
+    By convention, the secon column should contaain the same type of
+    data as the reservoir (i.e., a concentration), whereas the third
+    column contain isotope delta values. Columns with no data should
+    be left empty (and have no header!) The optional scale argumenty, will
+    only affect the Y-col data, not the isotope data
 
-      The file must exist in the local working directory.
+    The column headers are only used for the time or concentration
+    data conversion, and are ignored by the default plotting
+    methods, but they are available as self.xh,yh
 
-      Methods:
-        - name.plot()
+    The file must exist in the local working directory.
 
-      Data:
-        - name.x
-        - name.y
-        - name.df = dataframe as read from csv file
-    
+    Methods:
+      - name.plot()
+
+    Data:
+      - name.x
+      - name.y
+      - name.df = dataframe as read from csv file
+
     """
-    
+
     def __init__(self, **kwargs: Dict[str, str]):
 
         from . import ureg, Q_
@@ -2686,13 +2707,18 @@ class ExternalData(esbmtkBase):
             "legend": str,
             "reservoir": Reservoir,
             "offset": str,
+            "display_precision": Number,
             "scale": Number,
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["name", "filename", "legend", "reservoir"]
         # list of default values if none provided
-        self.lod: Dict[str, any] = {"offset": "0 yrs", "scale": 1}
+        self.lod: Dict[str, any] = {
+            "offset": "0 yrs",
+            "display_precision": 0,
+            "scale": 1,
+        }
 
         # validate input and initialize instance variables
         self.__initerrormessages__()
@@ -2703,11 +2729,14 @@ class ExternalData(esbmtkBase):
         self.fn: str = self.filename  # string = filename of data
         self.mo: Model = self.reservoir.species.mo
 
+        if self.display_precision == 0:
+            self.display_precision = self.mo.display_precision
+
         if not os.path.exists(self.fn):  # check if the file is actually there
             raise FileNotFoundError(f"Cannot find file {self.fn}")
 
         self.df: pd.DataFrame = pd.read_csv(self.fn)  # read file
-        
+
         ncols = len(self.df.columns)
         if ncols != 3:  # test of we have 3 columns
             raise ValueError("CSV file must have 3 columns")
@@ -2749,14 +2778,14 @@ class ExternalData(esbmtkBase):
 
     def __register__(self, obj):
         """Register this dataset with a flux or reservoir. This will have the
-          effect that the data will be printed together with the model
-          results for this reservoir
+        effect that the data will be printed together with the model
+        results for this reservoir
 
-          Example::
+        Example::
 
-          ExternalData.register(Reservoir)
+        ExternalData.register(Reservoir)
 
-          """
+        """
         self.obj = obj  # reser handle we associate with
         obj.led.append(self)
 
@@ -2765,7 +2794,7 @@ class ExternalData(esbmtkBase):
         domain The first and last data point must coincide with the
         model start and end time. In other words, this method will not
         patch data at the end points.
-        
+
         This will replace the original values of name.x and name.y. However
         the original data remains accessible as name.df
 
@@ -2774,11 +2803,13 @@ class ExternalData(esbmtkBase):
 
         xi: [NDArray] = self.model.time
 
-        if ((self.x[0] > xi[0]) or (self.x[-1] < xi[-1])):
-            message = (f"\n Interpolation requires that the time domain"
-                       f"is equal or greater than the model domain"
-                       f"data t(0) = {self.x[0]}, tmax = {self.x[-1]}"
-                       f"model t(0) = {xi[0]}, tmax = {xi[-1]}")
+        if (self.x[0] > xi[0]) or (self.x[-1] < xi[-1]):
+            message = (
+                f"\n Interpolation requires that the time domain"
+                f"is equal or greater than the model domain"
+                f"data t(0) = {self.x[0]}, tmax = {self.x[-1]}"
+                f"model t(0) = {xi[0]}, tmax = {xi[-1]}"
+            )
 
             raise ValueError(message)
         else:
@@ -2786,12 +2817,12 @@ class ExternalData(esbmtkBase):
             self.x = xi
 
     def plot(self) -> None:
-        """ Plot the data and save a pdf
+        """Plot the data and save a pdf
 
-          Example::
+        Example::
 
-                  ExternalData.plot()
-        
+                ExternalData.plot()
+
         """
 
         fig, ax = plt.subplots()  #

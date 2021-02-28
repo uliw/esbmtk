@@ -17,6 +17,13 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - Feb. 28^{th}, added a VirtualReservoir class. This class allows the
+   definition of reservoirs which depend on the execution of a
+   user-defined function. See the class documentation for details.
+
+   Display precision can now be set independently for each Reservoir,
+   Flux, Signal, Datafield and VirtualReservoir
+
  - Jan. 30^{th}, added oxygen and nitrogen species definitions
 
  - Jan. 18^{th}, Reading a previous model state is now more robust. It no

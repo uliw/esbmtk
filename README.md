@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org965a9df)
-2.  [News](#orgb6dd4b7)
-3.  [Contributing](#org8ebda29)
-4.  [Installation](#orgeb5f5b9)
-5.  [Documentation](#orga01a11f)
-6.  [Todo](#org5f48475)
-7.  [License](#org42611db)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org2159f37)
+2.  [News](#orgfd4c49a)
+3.  [Contributing](#orge69965d)
+4.  [Installation](#org544ff93)
+5.  [Documentation](#org31ba63e)
+6.  [Todo](#org74729fa)
+7.  [License](#orgd18806f)
 
 
-<a id="org965a9df"></a>
+<a id="org2159f37"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,9 +30,15 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="orgb6dd4b7"></a>
+<a id="orgfd4c49a"></a>
 
 # News
+
+-   Feb. 28<sup>th</sup>, added a VirtualReservoir class. This class allows the
+    definition of reservoirs which depend on the execution of a
+    user-defined function. See the class documentation for details.
+
+-   Jan. 30<sup>th</sup>, added oxygen and nitrogen species definitions
 
 -   Jan. 18<sup>th</sup>, Reading a previous model state is now more robust. It no
     longer requires the models model have the same numbers of
@@ -111,7 +117,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org8ebda29"></a>
+<a id="orge69965d"></a>
 
 # Contributing
 
@@ -121,7 +127,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orgeb5f5b9"></a>
+<a id="org544ff93"></a>
 
 # Installation
 
@@ -142,7 +148,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="orga01a11f"></a>
+<a id="org31ba63e"></a>
 
 # Documentation
 
@@ -157,7 +163,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org5f48475"></a>
+<a id="org74729fa"></a>
 
 # Todo
 
@@ -166,7 +172,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org42611db"></a>
+<a id="orgd18806f"></a>
 
 # License
 
