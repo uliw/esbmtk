@@ -17,6 +17,11 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - March 6^{th}, the plot reservoir function now takes and additional
+   filename argument e.g., (fn="foo.pdf"). Signals now accept an
+   optional reservoir argument. This simplifies signal creation as the
+   source and reservoir connection can be created implicitly.
+
  - Feb. 28^{th}, added a VirtualReservoir class. This class allows the
    definition of reservoirs which depend on the execution of a
    user-defined function. See the class documentation for details.

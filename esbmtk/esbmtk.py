@@ -42,7 +42,7 @@ class esbmtkBase(object):
 
     """
 
-    __slots__ = ('__dict__')
+    __slots__ = "__dict__"
 
     from typing import Dict
 
@@ -50,12 +50,10 @@ class esbmtkBase(object):
         raise NotImplementedError
 
     def __global_defaults__(self) -> None:
-        """ Initial variables which should be present in every object
-
-        """
+        """Initial variables which should be present in every object"""
         self.lmo: list = []
 
-        if 'register' not in self.kwargs:
+        if "register" not in self.kwargs:
             self.register = "yes"
 
     def __validateandregister__(self, kwargs: Dict[str, any]) -> None:
@@ -66,7 +64,7 @@ class esbmtkBase(object):
         self.lod = dictionary of default values for keys
 
         and register the instance variables and the instance in teh global name space
-        
+
         """
 
         # validate input
@@ -88,7 +86,7 @@ class esbmtkBase(object):
 
         Case B) This object should be registered in the local namespace of a group. In which case
         self.register should be set to the group object.
-        
+
         """
 
         # we use this to suppress the echo during object creation
@@ -128,13 +126,13 @@ class esbmtkBase(object):
         self.kwargs = kwargs  # store the kwargs
         self.provided_kwargs = kwargs.copy()  # preserve a copy
 
-        if not hasattr(self, 'lkk'):
+        if not hasattr(self, "lkk"):
             self.lkk: Dict[str, any] = {}
-        if not hasattr(self, 'lrk'):
+        if not hasattr(self, "lrk"):
             self.lrk: List[str] = []
-        if not hasattr(self, 'lod'):
+        if not hasattr(self, "lod"):
             self.lod: Dict[str, any] = []
-        if not hasattr(self, 'drn'):
+        if not hasattr(self, "drn"):
             self.drn: Dict[str, any] = []
 
         # check that mandatory keys are present
@@ -149,7 +147,7 @@ class esbmtkBase(object):
         self.__checktypes__(self.lkk, self.kwargs)
 
     def __checktypes__(self, av: Dict[any, any], pv: Dict[any, any]) -> None:
-        """ this method will use the the dict key in the user provided
+        """this method will use the the dict key in the user provided
         key value data (pv) to look up the allowed data type for this key in av
 
         av = dictinory with the allowed input keys and their type
@@ -165,9 +163,9 @@ class esbmtkBase(object):
         for k, v in pv.items():
             # check av if provided value v is of correct type
             if av[k] != any:
-                #print(f"key = {k}, value  = {v}")
+                # print(f"key = {k}, value  = {v}")
                 if not isinstance(v, av[k]):
-                   
+
                     raise TypeError(
                         f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
                     )
@@ -177,17 +175,12 @@ class esbmtkBase(object):
         self.bem: Dict[str, str] = {
             "Number": "a number",
             "Model": "a model handle (i.e. the name without quotation marks)",
-            "Element":
-            "an element handle (i.e. the name without quotation marks)",
-            "Species":
-            "a species handle (i.e. the name without quotation marks)",
+            "Element": "an element handle (i.e. the name without quotation marks)",
+            "Species": "a species handle (i.e. the name without quotation marks)",
             "Flux": "a flux handle (i.e. the name without quotation marks)",
-            "Reservoir":
-            "a reservoir handle (i.e. the name without quotation marks)",
-            "Signal":
-            "a signal handle (i.e. the name without quotation marks)",
-            "Process":
-            "a process handle (i.e. the name without quotation marks)",
+            "Reservoir": "a reservoir handle (i.e. the name without quotation marks)",
+            "Signal": "a signal handle (i.e. the name without quotation marks)",
+            "Process": "a process handle (i.e. the name without quotation marks)",
             "Unit": "a string",
             "File": "a filename inb the local directory",
             "Legend": " a string",
@@ -200,17 +193,12 @@ class esbmtkBase(object):
             "Ratio": " a Number",
             "number": "a number",
             "model": "a model handle (i.e. the name without quotation marks)",
-            "element":
-            "an element handle (i.e. the name without quotation marks)",
-            "species":
-            "a species handle (i.e. the name without quotation marks)",
+            "element": "an element handle (i.e. the name without quotation marks)",
+            "species": "a species handle (i.e. the name without quotation marks)",
             "flux": "a flux handle (i.e. the name without quotation marks)",
-            "reservoir":
-            "a reservoir handle (i.e. the name without quotation marks)",
-            "signal":
-            "a signal handle (i.e. the name without quotation marks)",
-            "Process":
-            "a process handle (i.e. the name without quotation marks)",
+            "reservoir": "a reservoir handle (i.e. the name without quotation marks)",
+            "signal": "a signal handle (i.e. the name without quotation marks)",
+            "Process": "a process handle (i.e. the name without quotation marks)",
             "unit": "a string",
             "file": "a filename inb the local directory",
             "legend": " a string",
@@ -230,7 +218,7 @@ class esbmtkBase(object):
         }
 
     def __registerkeys__(self) -> None:
-        """ register the kwargs key/value pairs as instance variables
+        """register the kwargs key/value pairs as instance variables
         and complain about unknown keywords"""
         k: any  # dict keys
         v: any  # dict values
@@ -257,7 +245,8 @@ class esbmtkBase(object):
                     s = s + int(e in self.kwargs)
                 if s != 1:  # if none, or more than one match, throw error
                     raise ValueError(
-                        f"You need to specify exactly one from this list: {k}")
+                        f"You need to specify exactly one from this list: {k}"
+                    )
 
             else:  # keyword is not a list
                 if k not in self.kwargs:
@@ -271,8 +260,7 @@ class esbmtkBase(object):
         # test if we know all keys
         for k, v in self.kwargs.items():
             if k not in self.lkk:
-                raise ValueError(
-                    f"{k} is not a valid keyword. \n Try any of \n {tl}\n")
+                raise ValueError(f"{k} is not a valid keyword. \n Try any of \n {tl}\n")
 
     def __addmissingdefaults__(self, lod: dict, kwargs: dict) -> dict:
         """
@@ -289,9 +277,7 @@ class esbmtkBase(object):
         return kwargs
 
     def __repr__(self, log=0) -> str:
-        """ Print the basic parameters for this class when called via the print method
-
-        """
+        """Print the basic parameters for this class when called via the print method"""
         from esbmtk import Q_
 
         m: str = ""
@@ -328,7 +314,7 @@ class esbmtkBase(object):
         return m
 
     def __str__(self, **kwargs):
-        """ Print the basic parameters for this class when called via the print method
+        """Print the basic parameters for this class when called via the print method
         Optional arguments
 
         indent :int = 0 printing offset
@@ -360,21 +346,17 @@ class esbmtkBase(object):
         return m
 
     def __lt__(self, other) -> None:
-        """ This is needed for sorting with sorted()
-
-        """
+        """This is needed for sorting with sorted()"""
 
         return self.n < other.n
 
     def __gt__(self, other) -> None:
-        """ This is needed for sorting with sorted()
-
-        """
+        """This is needed for sorting with sorted()"""
 
         return self.n > other.n
 
     def describe(self, **kwargs) -> None:
-        """ Show an overview of the object properties.
+        """Show an overview of the object properties.
         Optional arguments are
 
         indent :int = 0 indentation
@@ -386,15 +368,13 @@ class esbmtkBase(object):
             ind = ""
         else:
             indent = kwargs["indent"]
-            ind = ' ' * indent
+            ind = " " * indent
 
         # print basic data bout this object
         print(f"{ind}{self.__str__(indent=indent)}")
 
-    def __aux_inits__(self)->None:
-        """ Aux initialization code. Not normally used
-        
-        """
+    def __aux_inits__(self) -> None:
+        """Aux initialization code. Not normally used"""
 
         pass
 
@@ -434,6 +414,7 @@ class Model(esbmtkBase):
        - Model_Name.describe()
        - Model_Name.save_data()
        - Model_Name.plot_data()
+       - Model_Name.plot_reservoirs() takes an optional filename as argument
        - Model_Name.save_state() Save the model state
        - Model_name.read_state() Initialize with a previous model state
        - Model_Name.run()
@@ -728,6 +709,10 @@ class Model(esbmtkBase):
         both = plot both, concentration and isotope data
         iso  = plot isotope data alone
         concentration = plot only concentration data.
+
+        you can further specify a different name for the plot
+        fn = "foo.pdf"
+
         """
 
         ptype: int = get_ptype(self)
@@ -752,7 +737,11 @@ class Model(esbmtkBase):
         noo: int = len(self.ldf) + i
         size, geo = plot_geometry(noo)  # adjust layout
 
-        filename = f"{self.n}_Reservoirs.pdf"
+        if "fn" in kwargs:
+            filename = kwargs["fn"]
+        else:
+            filename = f"{self.n}_Reservoirs.pdf"
+
         plt.style.use(self.plot_style)
 
         fig = plt.figure(0)  # Initialize a plot window
@@ -1910,7 +1899,7 @@ class Source(SourceSink):
     This is just a wrapper to setup a Source object
     Example::
 
-           Sink(name = "SO4_diffusion", species ="SO4")
+           Source(name = "SO4_diffusion", species ="SO4")
 
     where the first argument is a string, and the second is a species handle
     """
@@ -2018,7 +2007,9 @@ class Signal(esbmtkBase):
                  shape = "square"     # square, pyramid
                  mass/magnitude/filename  # give one
                  offset = '0 yrs',     #
-                 scale = 1, optional,
+                 scale = 1, optional,  #
+                 reservoir = r-handle # optional, see below
+                 source = s-handle optional, see below
                  display_precision = number, optional, inherited from Model
                 )
 
@@ -2044,7 +2035,14 @@ class Signal(esbmtkBase):
 
     All time data in the csv file will be treated as realative time
     (i.e., the start time will be mapped to zero). Use the offset
-    keyword to shift the external signal data in teh time domain.
+    keyword to shift the external signal data in the time domain.
+
+    Last but not least, you can provide an optional reservoir name. In
+    this case, the signal will create a source as (signal_name_source)
+    and the connection to the specified reservoir. If you build a
+    complex signal do this as the last step. If you additionally
+    provide a source name the connection will be made between the
+    provided source (this can be useful if you use source groups).
 
 
     This class has the following methods
@@ -2076,6 +2074,8 @@ class Signal(esbmtkBase):
             "plot": str,
             "scale": Number,
             "display_precision": Number,
+            "reservoir": (Reservoir, str),
+            "source": (Source, str),
         }
 
         # provide a list of absolutely required keywords
@@ -2098,6 +2098,8 @@ class Signal(esbmtkBase):
             "delta": 0,
             "scale": 1,
             "display_precision": 0,
+            "reservoir": "none",
+            "source": "none",
         }
 
         self.__initerrormessages__()
@@ -2151,6 +2153,25 @@ class Signal(esbmtkBase):
         self.data.li, self.data.hi = get_imass(self.data.m, self.data.d, self.sp.r)
         self.__register_name__()
         self.mo.los.append(self)  # register with model
+
+        if self.reservoir != "none":
+            self.__apply_signal__()
+
+    def __apply_signal__(self)->None:
+        """Create a source, and connect signal, source and reservoir"""
+
+        from esbmtk import Source, Connect
+
+        if self.source == "none":
+            self.source = Source(name=f"{self.name}_Source", species=self.sp)
+
+        Connect(
+            source=self.source,  # source of flux
+            sink=self.reservoir,  # target of flux
+            rate="0 mol/yr",  # flux rate
+            signal=self,  # list of processes
+            plot="no",
+        )
 
     def __init_signal_data__(self) -> None:
         """Create an empty flux and apply the shape"""
@@ -2567,7 +2588,7 @@ class VirtualReservoir(Reservoir):
                     )
 
     the concentration argument will be used to initialize the reservoir and
-    to determines the display units.
+    to determine the display units.
 
     The function definition follows the GenericFunction class.
     which takes a generic function and up to 6 optional

@@ -1,7 +1,0 @@
-esbmtk
-======
-
-.. toctree::
-   :maxdepth: 4
-
-   esbmtk

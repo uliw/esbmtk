@@ -1,3 +1,10 @@
+""" Setup file for esbmtk
+
+sphinx directives:
+
+.  automodule:: package.module
+
+"""
 import setuptools
 
 with open("README.md", "r") as fh:

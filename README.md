@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org2159f37)
-2.  [News](#orgfd4c49a)
-3.  [Contributing](#orge69965d)
-4.  [Installation](#org544ff93)
-5.  [Documentation](#org31ba63e)
-6.  [Todo](#org74729fa)
-7.  [License](#orgd18806f)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org9d94f72)
+2.  [News](#org261b3ce)
+3.  [Contributing](#org1e012d7)
+4.  [Installation](#org69b66a8)
+5.  [Documentation](#org0456c51)
+6.  [Todo](#org5b33014)
+7.  [License](#org2a131e6)
 
 
-<a id="org2159f37"></a>
+<a id="org9d94f72"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,13 +30,21 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="orgfd4c49a"></a>
+<a id="org261b3ce"></a>
 
 # News
+
+-   March 6<sup>th</sup>, the plot reservoir function now takes and additional
+    filename argument e.g., (fn="foo.pdf"). Signals now accept an
+    optional reservoir argument. This simplifies signal creation as the
+    source and reservoir connection can be created implicitly.
 
 -   Feb. 28<sup>th</sup>, added a VirtualReservoir class. This class allows the
     definition of reservoirs which depend on the execution of a
     user-defined function. See the class documentation for details.
+    
+    Display precision can now be set independently for each Reservoir,
+    Flux, Signal, Datafield and VirtualReservoir
 
 -   Jan. 30<sup>th</sup>, added oxygen and nitrogen species definitions
 
@@ -117,7 +125,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orge69965d"></a>
+<a id="org1e012d7"></a>
 
 # Contributing
 
@@ -127,7 +135,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org544ff93"></a>
+<a id="org69b66a8"></a>
 
 # Installation
 
@@ -148,7 +156,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org31ba63e"></a>
+<a id="org0456c51"></a>
 
 # Documentation
 
@@ -163,7 +171,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org74729fa"></a>
+<a id="org5b33014"></a>
 
 # Todo
 
@@ -172,7 +180,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orgd18806f"></a>
+<a id="org2a131e6"></a>
 
 # License
 
