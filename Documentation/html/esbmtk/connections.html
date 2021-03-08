@@ -1,0 +1,2741 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>esbmtk.connections API documentation</title>
+<meta name="description" content="esbmtk.connections
+~~~~~~~~~~~~~~~~~~ …" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>esbmtk.connections</code></h1>
+</header>
+<section id="section-intro">
+<p>esbmtk.connections
+~~~~~~~~~~~~~~~~~~</p>
+<p>Classes which handle the connections and fluxes between esbmtk objects
+like Reservoirs, Sources, and Sinks.</p>
+<p>esbmtk: A general purpose Earth Science box model toolkit
+Copyright (C), 2020 Ulrich G. Wortmann</p>
+<p>This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with this program.
+If not, see <a href="https://www.gnu.org/licenses/">https://www.gnu.org/licenses/</a>.</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;
+
+     esbmtk.connections
+     ~~~~~~~~~~~~~~~~~~
+
+     Classes which handle the connections and fluxes between esbmtk objects
+     like Reservoirs, Sources, and Sinks.
+
+     esbmtk: A general purpose Earth Science box model toolkit
+     Copyright (C), 2020 Ulrich G. Wortmann
+
+     This program is free software: you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation, either version 3 of the License, or
+     (at your option) any later version.
+
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License for more details.
+
+     You should have received a copy of the GNU General Public License
+     along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+&#34;&#34;&#34;
+
+# from pint import UnitRegistry
+from __future__ import annotations
+from numbers import Number
+from nptyping import *
+from typing import *
+from numpy import array, set_printoptions, arange, zeros, interp, mean
+from pandas import DataFrame
+from copy import deepcopy, copy
+from time import process_time
+
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+import logging
+import time
+import builtins
+set_printoptions(precision=4)
+from .utility_functions import map_units
+from .processes import *
+from .esbmtk import *
+
+class Connect(esbmtkBase):
+    &#34;&#34;&#34;Two reservoirs connect to each other via at least one flux. This
+     module creates the connecting flux and creates a connector object
+     which stores all connection properties.
+
+     For simple connections, the type flux type is derived implcitly from the specified parameters.
+     For complex connections, the flux type must be set explicitly. See the examples below:
+
+     Parameters:
+         - name: A string which determines the name of this object. Optional, if not provided
+           the connection name will be derived as &#34;Source_2_Sink_Connection&#34;
+         - source: An object handle for a Source or Reservoir
+         - sink: An object handle for a Sink or Reservoir
+         - rate: A quantity (e.g., &#34;1 mol/s&#34;), optional
+         - delta: The isotope ratio, optional
+         - alpha: A fractionation factor, optional
+         - id: A string wich will become part of the object name, optional
+         - plot: &#34;yes&#34; or &#34;no&#34;, defaults to &#34;yes&#34;
+         - signal: An object handle of signal, optional
+         - pl: A list of process objects, optional
+         - ctype: connection type, optional, this allows to scale a flux in response to other
+           reservoirs and fluxes
+
+     Connection Types:
+     -----------------
+     Basic Connections (the advanced ones are below):
+
+     - If both =rate= and =delta= are given, the flux is treated as a
+        fixed flux with a given isotope ratio. This is usually the case for
+        most source objects (they can still be affected by a signal, see
+        above), but makes little sense for reservoirs and sinks.
+
+     - If both the =rate= and =alpha= are given, the flux rate is fixed
+       (subject to any signals), but the isotopic ratio of the output
+       flux depends on the isotopic ratio of the upstream reservoir
+       plus any isotopic fractionation specified by =alpha=. This is
+       typically the case for fluxes which include an isotopic
+       fractionation (i.e., pyrite burial). This combination is not
+       particularly useful for source objects.
+
+     - If the connection specifies only =delta= the flux is treated as a
+       variable flux which is computed in such a way that the reservoir
+       maintains steady state with respect to it&#39;s mass.
+
+     - If the connection specifies only =rate= the flux is treated as a
+       fixed flux which is computed in such a way that the reservoir
+       maintains steady state with respect to it&#39;s isotope ratio.
+
+     Examples of Basic Connections
+     -----------------------------
+
+     Connecting a Source to a Reservoir
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+     Unless you use a Signal, a source typically provides a steady stream with a given isotope ratio (if used)
+
+     Example::
+
+        Connect(source =  Source,
+                sink = downstrean reservoir,
+                rate = &#34;1 mol/s&#34;,
+                delta = optional,
+                signal = optional, see the signal documentation)
+
+     Connecting a Reservoir to Sink or another Reservoir
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+     Here we can distinguish between cases where we use fixed flux, or a flux which reacts to in some way to the
+     upstream reservoir (see the Reservoir to Reservoir section for a more complete treatment):
+
+     Fixed outflux, with no isotope fractionation
+
+     Example::
+
+          Connect(source =  upstream reservoir,
+                sink = Sink,
+                rate = &#34;1 mol/s&#34;,)
+
+     Fixed outflux, with isotope fractionation
+
+     Example::
+
+          Connect(source =  upstream reservoir,
+                sink = Sink,
+                alpha = -28,
+                rate = &#34;1 mol/s&#34;,)
+
+     Advanced Connections
+     --------------------
+
+     You can aditionally define connection properties via the ctype
+     keyword. This requires additional keyword parameters. The following values are
+     recognized
+
+     ctype = &#34;scale_with_flux&#34;
+     ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+     This will scale a flux relative to another flux:
+
+     Example::
+
+         Connect(source =  upstream reservoir,
+                sink = downstream reservoir,
+                ctype = &#34;scale_with_flux&#34;,
+                ref = flux handle,
+                k_value = a scaling factor, optional, defaults to 1
+                )
+
+    ctype = &#34;virtual_flux&#34;
+    ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    This will scale a flux relative to another flux, similar to
+    scaleflux. However, in this case, the flux will only affect the
+    sink, and not the source. This is useful to describe reactions which
+    split into two elements (i.e., deprotonation).
+
+    Example::
+
+         Connect(source =  upstream reservoir,
+                sink = downstream reservoir,
+                ctype = &#34;scale_with_flux&#34;,
+                ref = flux handle,
+                k_value = a scaling factor, optional, defaults to 1
+                )
+
+     ctype = &#34;scale_with_mass&#34; and &#34;scale_with_concentration&#34;
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+     This will scale a flux relative to the mass or concentration of a reservoir
+
+     Example::
+
+         Connect(source =  upstream reservoir,
+                sink = downstream reservoir,
+                ctype = &#34;scale_with_mass&#34;,
+                ref = reservoir handle,
+                k_value = a scaling factor, optional, defaults to 1
+    )
+
+     ctype = &#34;scale_relative_to_multiple_reservoirs&#34;
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+     This process scales the flux as a function one or more reservoirs
+     or constants which describes the
+     strength of relation between the reservoir concentrations and
+     the flux scaling
+
+     F = C1 * C2 * k
+
+     where Ci denotes the concentrartion in one  or more reservoirs, k is one
+     or more constants.
+
+     Example::
+
+         Connect(source =  upstream reservoir,
+                sink = downstream reservoir,
+                ctype = &#34;scale_relative_to_multiple_reservoirs&#34;
+                ref_reservoirs = [r1, r2, k etc] # you must provide at least one
+                k_value = a scaling factor, optional, defaults to 1
+    )
+
+     K_value is an overall scaling factor.
+
+
+     ctype = &#34;flux_balance&#34;
+     ~~~~~~~~~~~~~~~~~~~~~~
+
+    This type can be used to express equilibration fluxes
+    between two reservoirs. This connection type, takes three parameters:
+
+    - =left= is a list which can contain constants and/or reservoirs. The
+      list must contain at least one valid element. All elements in this
+      list will be multiplied with each other. E.g. if we have a list
+      with one constant and one reservoir, the reservoir concentration
+      will be multiplied with the constant. If we have two reservoirs,
+      the respective reservoir concentrations will be multiplied with
+      each other.
+    - =right= similar to =left= The final flux rate will be computed as
+      the difference between =left= and =right=
+    - =k_value= a constant which will be multiplied with the difference
+      between =left=and =right=
+
+     Example::
+
+         Connect(source=R_CO2,         # target of flux
+                 sink=R_HCO3,          # source of flux
+                 rate=&#34;1 mol/s&#34;,       # flux rate
+                 ctype=&#34;flux_balance&#34;, # connection type
+                 k_value=1,            # global scaling factor, optional
+                 left=[K1, R_CO2],     # where K1 is a constant
+                 right=[R_HCO3, R_Hplus])
+
+
+     Useful methods in this class
+     ----------------------------
+     The following methods might prove useful
+
+      - describe() will provide a short description of the connection objects.
+      - list_processes() which will list all the processes which are associated with this connection.
+      - update() which allows you to update connection properties after the connection has been created
+
+    &#34;&#34;&#34;
+
+    def __init__(self, **kwargs):
+        &#34;&#34;&#34;The init method of the connector obbjects performs sanity checks e.g.:
+               - whether the reservoirs exist
+               - correct flux properties (this will be handled by the process object)
+               - whether the processes do exist (hmmh, that implies that the optional processes do get registered with the model)
+               - creates the correct default processes
+               - and connects the reservoirs
+
+        see the class documentation for details and examples
+
+        &#34;&#34;&#34;
+
+        from . import ureg, Q_
+
+        # provide a dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            &#34;name&#34;: str,
+            &#34;id&#34;: str,
+            &#34;source&#34;: (Source, Reservoir),
+            &#34;sink&#34;: (Sink, Reservoir),
+            &#34;delta&#34;: (Number, str),
+            &#34;rate&#34;: (str, Number, Q_),
+            &#34;pl&#34;: list,
+            &#34;alpha&#34;: (Number, str),
+            &#34;species&#34;: Species,
+            &#34;ctype&#34;: str,
+            &#34;ref&#34;: (Flux, list),
+            &#34;ratio&#34;: Number,
+            &#34;scale&#34;: Number,
+            &#34;ref_value&#34;: (str, Number, Q_),
+            &#34;ref_reservoir&#34;: (list, Reservoir),
+            &#34;k_value&#34;: (Number, str, Q_),
+            &#34;a_value&#34;: Number,
+            &#34;b_value&#34;: Number,
+            &#34;left&#34;: (list, Number, Reservoir),
+            &#34;right&#34;: (list, Number, Reservoir),
+            &#34;plot&#34;: str,
+            &#34;register&#34;: (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            &#34;signal&#34;: (Signal, str),
+        }
+
+        if &#34;name&#34; not in kwargs:
+            n = (
+                kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].n + &#34;_Connector&#34;
+            )  # set the name
+            kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = [&#34;name&#34;, &#34;source&#34;, &#34;sink&#34;]
+
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            &#34;id&#34;: &#34;None&#34;,
+            &#34;plot&#34;: &#34;yes&#34;,
+            &#34;ctype&#34;: &#34;None&#34;,
+            &#34;delta&#34;: &#34;None&#34;,
+            &#34;alpha&#34;: &#34;None&#34;,
+            &#34;rate&#34;: &#34;None&#34;,
+            &#34;k_value&#34;: 1,
+            &#34;signal&#34;: &#34;None&#34;,
+        }
+
+        # validate and initialize instance variables
+        self.__initerrormessages__()
+
+        self.bem.update(
+            {
+                &#34;k_concentration&#34;: &#34;a number&#34;,
+                &#34;k_mass&#34;: &#34;a number&#34;,
+                &#34;k_value&#34;: &#34;a number&#34;,
+                &#34;a_value&#34;: &#34;a number&#34;,
+                &#34;ref_value&#34;: &#34;a number, string, or quantity&#34;,
+                &#34;b_value&#34;: &#34;a number&#34;,
+                &#34;name&#34;: &#34;a string&#34;,
+                &#34;id&#34;: &#34;a string&#34;,
+                &#34;plot&#34;: &#34;a string&#34;,
+                &#34;left&#34;: &#34;Number, list or Reservoir&#34;,
+                &#34;right&#34;: &#34;Number, list or Reservoir&#34;,
+                &#34;signal&#34;: &#34;Signal Handle&#34;,
+            }
+        )
+
+        self.drn = {
+            &#34;alpha&#34;: &#34;_alpha&#34;,
+            &#34;rate&#34;: &#34;_rate&#34;,
+            &#34;delta&#34;: &#34;_delta&#34;,
+        }
+
+        self.__validateandregister__(kwargs)
+
+        if kwargs[&#34;id&#34;] != &#34;None&#34;:
+            self.name = self.name + f&#34;_{self.id}&#34;
+        if &#34;pl&#34; in kwargs:
+            self.lop: list[Process] = self.pl
+        else:
+            self.lop: list[Process] = []
+
+        if self.signal != &#34;None&#34;:
+            self.lop.append(self.signal)
+
+        # if no reference reservoir is specified, default to the upstream
+        # reservoir
+        if &#34;ref_reservoir&#34; not in kwargs:
+            self.ref_reservoir = kwargs[&#34;source&#34;]
+
+        # legacy names
+        self.influx: int = 1
+        self.outflux: int = -1
+        self.n = self.name
+        self.mo = self.source.sp.mo
+        self.p = 0  # the default process handle
+        self.r1: (Process, Reservoir) = self.source
+        self.r2: (Process, Reservoir) = self.sink
+
+        self.get_species(self.r1, self.r2)  #
+        self.mo: Model = self.sp.mo  # the current model handle
+        self.lof: list[Flux] = []  # list of fluxes in this connection
+        # get a list of all reservoirs registered for this species
+        self.lor: list[Reservoir] = self.mo.lor
+
+        self.source.loc.add(self)  # register connector with reservoir
+        self.sink.loc.add(self)  # register connector with reservoir
+        self.mo.loc.add(self)  # register connector with model
+
+        self.__create_flux__()  # Source/Sink/Regular
+
+        self.__set_process_type__()  # derive flux type and create flux(es)
+
+        self.__register_name__()  # register connection in namespace
+
+        # This should probably move to register fluxes
+        self.__register_process__()
+
+        if self.register == &#34;yes&#34;:
+            print(f&#34;Created connection {self.name}&#34;)
+        else:
+            print(f&#34;Created group connection {self.register.name}.{self.name}&#34;)
+
+    def update(self, **kwargs):
+        &#34;&#34;&#34;Update connection properties. This will delete existing processes
+        and fluxes, replace existing key-value pairs in the
+        self.kwargs dict, and then re-initialize the connection.
+
+        &#34;&#34;&#34;
+        self.__delete_process__()
+        self.__delete_flux__()
+        self.kwargs.update(kwargs)
+        self.__init_connection__(self.kwargs)
+        print(f&#34;Updated {self.n}&#34;)
+
+    def get_species(self, r1, r2) -&gt; None:
+        &#34;&#34;&#34;In most cases the species is set by r2. However, if we have
+        backward fluxes the species depends on the r2
+
+        &#34;&#34;&#34;
+        # print(f&#34;r1 = {r1.n}, r2 = {r2.n}&#34;)
+        if isinstance(self.r1, Source):
+            self.r = r1
+        else:  # in this case we do have an upstream reservoir
+            self.r = r2
+
+        # test if species was explicitly given
+        if &#34;species&#34; in self.kwargs:  # this is a quick fix only
+            self.sp = self.kwargs[&#34;species&#34;]
+        else:
+            self.sp = self.r.sp  # get the parent species
+
+    def __create_flux__(self) -&gt; None:
+        &#34;&#34;&#34;Create flux object, and register with reservoir and global namespace&#34;&#34;&#34;
+
+        # test if default arguments present
+        if self.delta == &#34;None&#34;:
+            d = 0
+        else:
+            d = self.delta
+
+        if self.rate == &#34;None&#34;:
+            r = f&#34;1 {self.sp.mo.f_unit}&#34;
+            # self._rate = r
+        else:
+            r = self.rate
+
+        # flux name
+        if self.id == &#34;None&#34;:
+            n = self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_Flux&#34;
+        else:
+            n = (
+                self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_&#34; + self.id + &#34;_Flux&#34;
+            )  # flux name r1_2_r2
+
+        # derive flux unit from species obbject
+        funit = self.sp.mu + &#34;/&#34; + str(self.sp.mo.bu)  # xxx
+
+        self.fh = Flux(
+            name=n,  # flux name
+            species=self.sp,  # Species handle
+            delta=d,  # delta value of flux
+            rate=r,  # flux value
+            plot=self.plot,  # display this flux?
+            register=self.register,  # is this part of a group?
+        )
+
+        # register flux with its reservoirs
+        if isinstance(self.r1, Source):
+            # add the flux name direction/pair
+            self.r2.lio[self.fh] = self.influx
+            # add the handle to the list of fluxes
+            self.r2.lof.append(self.fh)
+            # register flux and element in the reservoir.
+            self.__register_species__(self.r2, self.r1.sp)
+
+        elif isinstance(self.r2, Sink):
+            # add the flux name direction/pair
+            self.r1.lio[self.fh] = self.outflux
+            # add flux to the upstream reservoir
+            self.r1.lof.append(self.fh)
+            # register flux and element in the reservoir.
+            self.__register_species__(self.r1, self.r2.sp)
+
+        elif isinstance(self.r1, Sink):
+            raise NameError(
+                &#34;The Sink must be specified as a destination (i.e., as second argument&#34;
+            )
+
+        elif isinstance(self.r2, Source):
+            raise NameError(&#34;The Source must be specified as first argument&#34;)
+
+        else:  # this is a regular connection
+            # add the flux name direction/pair
+            self.r1.lio[self.fh] = self.outflux
+            # add the flux name direction/pair
+            self.r2.lio[self.fh] = self.influx
+            # add flux to the upstream reservoir
+            self.r1.lof.append(self.fh)
+            # add flux to the downstream reservoir
+            self.r2.lof.append(self.fh)
+            self.__register_species__(self.r1, self.r1.sp)
+            self.__register_species__(self.r2, self.r2.sp)
+
+        self.lof.append(self.fh)
+
+    def __register_species__(self, r, sp) -&gt; None:
+        &#34;&#34;&#34; Add flux to the correct element dictionary&#34;&#34;&#34;
+        # test if element key is present in reservoir
+        if sp.eh in r.doe:
+            # add flux handle to dictionary list
+            r.doe[sp.eh].append(self.fh)
+        else:  # add key and first list value
+            r.doe[sp.eh] = [self.fh]
+
+    def __register_process__(self) -&gt; None:
+        &#34;&#34;&#34; Register all flux related processes&#34;&#34;&#34;
+
+        # first test if we have a signal in the list. If so,
+        # remove signal and replace with process
+
+        p_copy = copy(self.lop)
+        for p in p_copy:  # loop over process list if provided during init
+            if isinstance(p, Signal):
+                self.lop.remove(p)
+                if p.ty == &#34;addition&#34;:
+                    # create AddSignal Process object
+                    n = AddSignal(
+                        name=p.n + &#34;_addition_process&#34;,
+                        reservoir=self.r,
+                        flux=self.fh,
+                        lt=p.data,
+                    )
+                    self.lop.append(n)
+                else:
+                    raise ValueError(f&#34;Signal type {p.ty} is not defined&#34;)
+
+        # nwo we can register everythig on lop
+        for p in self.lop:
+            p.__register__(self.r, self.fh)
+
+    def __set_process_type__(self) -&gt; None:
+        &#34;&#34;&#34;Deduce flux type based on the provided flux properties. The method calls the
+        appropriate method init routine
+        &#34;&#34;&#34;
+
+        if isinstance(self.r1, Source):
+            self.r = self.r2
+        else:
+            self.r = self.r1
+
+        # set process name
+        # if len(self.kwargs[&#34;id&#34;]) &gt; 0:
+        if self.id == &#34;None&#34;:
+            self.pn = self.r1.n + &#34;_2_&#34; + self.r2.n
+        else:
+            self.pn = self.r1.n + &#34;_2_&#34; + self.r2.n + f&#34;_{self.id}&#34;
+
+        # if connection type is not set explicitly
+        if self.ctype == &#34;None&#34;:
+            # set the fundamental flux type based on the flux arguments given
+            if self.delta != &#34;None&#34; and self.rate != &#34;None&#34;:
+                pass  # do nothing but exit this conditional
+            # variable flux with fixed delta
+            elif self.delta != &#34;None&#34;:  # delta must be set
+                self.__passivefluxfixeddelta__()
+            elif self.rate != &#34;None&#34;:  # rate must be set
+                self.__vardeltaout__()  # variable delta with fixed flux
+            else:  # if neither are given -&gt; default varflux type
+                self._delta = 0
+                self.__passiveflux__()
+                print(&#34;passive flux&#34;)
+
+        elif self.ctype == &#34;flux_diff&#34;:
+            self.__vardeltaout__()
+            self.__flux_diff__()
+        elif self.ctype == &#34;scale_with_flux&#34;:
+            self.__scaleflux__()
+        elif self.ctype == &#34;virtual_flux&#34;:
+            self.__virtual_flux__()
+            # self.__vardeltaout__()
+        elif self.ctype == &#34;copy_flux&#34;:
+            self.__scaleflux__()
+            # self.__vardeltaout__()
+        elif self.ctype == &#34;scale_with_mass&#34;:
+            self.__rateconstant__()
+        elif self.ctype == &#34;scale_with_concentration&#34;:
+            self.__rateconstant__()
+        elif self.ctype == &#34;scale_with_concentration_normalized&#34;:
+            self.__rateconstant__()
+        elif self.ctype == &#34;scale_with_mass_normalized&#34;:
+            self.__rateconstant__()
+        elif self.ctype == &#34;scale_relative_to_multiple_reservoirs&#34;:
+            self.__rateconstant__()
+        elif self.ctype == &#34;flux_balance&#34;:
+            self.__rateconstant__()
+        elif self.ctype == &#34;react_with&#34;:
+            self.__reaction__()
+        elif self.ctype == &#34;monod_type_limit&#34;:
+            self.__vardeltaout__()
+            self.__rateconstant__()
+        else:
+            print(f&#34;Connection Type {self.ctype} is unknown&#34;)
+            raise ValueError(f&#34;Unknown connection type {self.ctype}&#34;)
+
+        # Set optional flux processes
+        if self.alpha != &#34;None&#34;:
+            self.__alpha__()  # Set optional flux processes
+
+    def __passivefluxfixeddelta__(self) -&gt; None:
+        &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
+
+        ph = PassiveFlux_fixed_delta(
+            name=self.pn + &#34;_Pfd&#34;,
+            reservoir=self.r,
+            flux=self.fh,
+            register=self.register,
+            delta=self.delta,
+        )  # initialize a passive flux process object
+        self.lop.append(ph)
+
+    def __vardeltaout__(self) -&gt; None:
+        &#34;&#34;&#34;Unlike a passive flux, this process sets the output flux from a
+        reservoir to a fixed value, but the isotopic ratio of the
+        output flux will be set equal to the isotopic ratio of the
+        upstream reservoir.
+
+        &#34;&#34;&#34;
+
+        ph = VarDeltaOut(
+            name=self.pn + &#34;_Pvdo&#34;,
+            reservoir=self.r,
+            flux=self.fh,
+            register=self.register,
+            rate=self.rate,
+        )
+        self.lop.append(ph)
+
+    def __scaleflux__(self) -&gt; None:
+        &#34;&#34;&#34;Scale a flux relative to another flux&#34;&#34;&#34;
+
+        if not isinstance(self.kwargs[&#34;ref&#34;], Flux):
+            raise ValueError(&#34;Scale reference must be a flux&#34;)
+
+        ph = ScaleFlux(
+            name=self.pn + &#34;_PSF&#34;,
+            reservoir=self.r,
+            flux=self.fh,
+            register=self.register,
+            scale=self.k_value,
+            ref=self.ref,
+        )
+        self.lop.append(ph)
+
+        # this flux must not affect the source reservoir
+        # self.r.lof.remove(self.fh)
+
+    def __virtual_flux__(self) -&gt; None:
+        &#34;&#34;&#34;Create a virtual flux. This is similar to __scaleflux__, however the new flux
+        will only affect the sink, and not the source.
+
+        &#34;&#34;&#34;
+
+        if not isinstance(self.kwargs[&#34;ref&#34;], Flux):
+            raise ValueError(&#34;Scale reference must be a flux&#34;)
+
+        ph = ScaleFlux(
+            name=self.pn + &#34;_PSFV&#34;,
+            reservoir=self.r,
+            flux=self.fh,
+            register=self.register,
+            scale=self.k_value,
+            ref=self.ref,
+        )
+        self.lop.append(ph)
+
+        # this flux must not affect the source reservoir
+        self.r.lof.remove(self.fh)
+
+    def __flux_diff__(self) -&gt; None:
+        &#34;&#34;&#34;Scale a flux relative to the difference between
+        two fluxes
+
+        &#34;&#34;&#34;
+
+        if not isinstance(self.kwargs[&#34;ref&#34;], list):
+            raise ValueError(&#34;ref must be a list&#34;)
+
+        ph = FluxDiff(
+            name=self.pn + &#34;_PSF&#34;,
+            reservoir=self.r,
+            flux=self.fh,
+            register=self.register,
+            scale=self.k_value,
+            ref=self.ref,
+        )
+        self.lop.append(ph)
+
+    def __reaction__(self) -&gt; None:
+        &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
+
+        if not isinstance(self.ref, (Flux)):
+            raise ValueError(&#34;Scale reference must be a flux&#34;)
+
+        ph = Reaction(
+            name=self.pn + &#34;_RF&#34;,
+            reservoir=self.r,
+            flux=self.fh,
+            register=self.register,
+            scale=self.k_value,
+            ref=self.ref,
+        )
+
+        # we need to make sure to remove the flux referenced by
+        # react_with is removed from the list of fluxes in this
+        # reservoir. This should probably move in to the React Class
+        self.r2.lof.remove(self.ref)
+        self.lop.append(ph)
+
+    def __passiveflux__(self) -&gt; None:
+        &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
+
+        ph = PassiveFlux(
+            name=self.pn + &#34;_PF&#34;, reservoir=self.r, register=self.register, flux=self.fh
+        )  # initialize a passive flux process object
+        self.lop.append(ph)  # add this process to the process list
+
+    def __alpha__(self) -&gt; None:
+        &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
+
+        ph = Fractionation(
+            name=self.pn + &#34;_Pa&#34;,
+            reservoir=self.r,
+            flux=self.fh,
+            register=self.register,
+            alpha=self.kwargs[&#34;alpha&#34;],
+        )
+        self.lop.append(ph)  #
+
+    def __rateconstant__(self) -&gt; None:
+        &#34;&#34;&#34;Add rate constant type process&#34;&#34;&#34;
+
+        from . import ureg, Q_
+
+        # this process requires that we use the vardeltaout process
+        if self.mo.m_type != &#34;mass_only&#34;:
+            self.__vardeltaout__()
+
+        if self.ctype == &#34;scale_with_mass&#34;:
+            self.k_value = map_units(self.k_value, self.mo.m_unit)
+            ph = ScaleRelativeToMass(
+                name=self.pn + &#34;_PkM&#34;,
+                reservoir=self.ref_reservoir,
+                flux=self.fh,
+                register=self.register,
+                k_value=self.k_value,
+            )
+
+        elif self.ctype == &#34;scale_with_mass_normalized&#34;:
+            self.k_value = map_units(self.k_value, self.mo.m_unit)
+            self.ref_value = map_units(self.ref_value, self.mo.m_unit)
+            ph = ScaleRelativeToNormalizedMass(
+                name=self.pn + &#34;_PknM&#34;,
+                reservoir=self.ref_reservoir,
+                flux=self.fh,
+                register=self.register,
+                ref_value=self.ref_value,
+                k_value=self.k_value,
+            )
+
+        elif self.ctype == &#34;scale_with_concentration&#34;:
+            self.k_value = map_units(
+                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
+            )
+            ph = ScaleRelativeToConcentration(
+                name=self.pn + &#34;_PkC&#34;,
+                reservoir=self.ref_reservoir,
+                flux=self.fh,
+                register=self.register,
+                k_value=self.k_value,
+            )
+
+        elif self.ctype == &#34;scale_relative_to_multiple_reservoirs&#34;:
+            self.k_value = map_units(
+                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
+            )
+            ph = ScaleRelative2otherReservoir(
+                name=self.pn + &#34;_PkC&#34;,
+                reservoir=self.source,
+                ref_reservoir=self.ref_reservoir,
+                flux=self.fh,
+                register=self.register,
+                k_value=self.k_value,
+            )
+
+        elif self.ctype == &#34;flux_balance&#34;:
+            self.k_value = map_units(
+                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
+            )
+            ph = Flux_Balance(
+                name=self.pn + &#34;_Pfb&#34;,
+                reservoir=self.source,
+                left=self.left,
+                right=self.right,
+                flux=self.fh,
+                register=self.register,
+                k_value=self.k_value,
+            )
+
+        elif self.ctype == &#34;scale_with_concentration_normalized&#34;:
+            self.k_value = map_units(
+                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
+            )
+            self.ref_value = map_units(self.ref_value, self.mo.c_unit)
+            ph = ScaleRelativeToNormalizedConcentration(
+                name=self.pn + &#34;_PknC&#34;,
+                reservoir=self.ref_reservoir,
+                flux=self.fh,
+                register=self.register,
+                ref_value=self.ref_value,
+                k_value=self.k_value,
+            )
+
+        elif self.ctype == &#34;monod_ctype_limit&#34;:
+            self.ref_value = map_units(self.ref_value, self.mo.c_unit)
+            ph = Monod(
+                name=self.pn + &#34;_PMonod&#34;,
+                reservoir=self.ref_reservoir,
+                flux=self.fh,
+                register=self.register,
+                ref_value=self.ref_value,
+                a_value=self.a_value,
+                b_value=self.b_value,
+            )
+
+        else:
+            raise ValueError(
+                f&#34;This should not happen,and points to a keywords problem in {self.name}&#34;
+            )
+
+        self.lop.append(ph)
+
+    def describe(self, **kwargs) -&gt; None:
+        &#34;&#34;&#34;Show an overview of the object properties.
+        Optional arguments are
+        index  :int = 0 this will show data at the given index
+        indent :int = 0 indentation
+
+        &#34;&#34;&#34;
+        off: str = &#34;  &#34;
+        if &#34;index&#34; not in kwargs:
+            index = 0
+        else:
+            index = kwargs[&#34;index&#34;]
+
+        if &#34;indent&#34; not in kwargs:
+            indent = 0
+            ind = &#34;&#34;
+        else:
+            indent = kwargs[&#34;indent&#34;]
+            ind = &#34; &#34; * indent
+
+        # print basic data bout this Connection
+        print(f&#34;{ind}{self.__str__(indent=indent)}&#34;)
+
+        print(f&#34;{ind}Fluxes:&#34;)
+        for f in sorted(self.lof):
+            f.describe(indent=indent, index=index)
+
+    def __delete_process__(self) -&gt; None:
+        &#34;&#34;&#34;Updates to the connection properties may change the connection type and thus
+        the processes which are associated with this connection. We thus have to
+        first delete the old processes, before we re-initialize the connection
+
+        &#34;&#34;&#34;
+
+        # identify which processes we need to delete
+        # unregister process from connection.lop, reservoir.lop, flux.lop, model.lmo
+        # delete process from global name space if present
+
+        lop = copy(self.lop)
+        for p in lop:
+            for f in lof:
+                if isinstance(f.register, ConnectionGroup):
+                    # remove from Connection group list of model objects
+                    self.register.lmo.remove(f)
+                else:
+                    self.r1.lop.remove(p)
+                    self.fh.lop.remove(p)
+                    self.lop.remove(p)
+                    self.r1.mo.lmo.remove(p.n)
+                    del p
+
+    def __delete_flux__(self) -&gt; None:
+        &#34;&#34;&#34;Updates to the connection properties may change the connection type and thus
+        the processes which are associated with this connection. We thus have to
+        first delete the old flux, before we re-initialize the connection
+
+        &#34;&#34;&#34;
+
+        # identify which processes we need to delete
+        # unregister process from connection.lop, reservoir.lop, flux.lop, model.lmo
+        # delete process from global name space if present
+
+        lof = copy(self.lof)
+        for f in lof:
+            if isinstance(f.register, ConnectionGroup):
+                # remove from Connection group list of model objects
+                self.register.lmo.remove(f)
+            else:
+                self.r1.lof.remove(f)
+                self.lof.remove(f)
+                self.r1.mo.lmo.remove(f.n)
+                del f
+
+    # ---- Property definitions to allow for connection updates --------
+    &#34;&#34;&#34; Changing the below properties requires that we delete all
+    associated objects (processes), and determines the new flux type,
+    and initialize/register these with the connection and model.
+    We also have to update the keyword arguments as these are used
+    for the log entry
+
+    &#34;&#34;&#34;
+
+    # ---- alpha ----
+    @property
+    def alpha(self) -&gt; Number:
+        return self._alpha
+
+    @alpha.setter
+    def alpha(self, a: Number) -&gt; None:
+        self.__delete_process__()
+        self.__delete_flux__()
+        self._alpha = a
+        self.kwargs[&#34;alpha&#34;] = a
+        self.__set_process_type__()  # derive flux type and create flux(es)
+        self.__register_process__()
+
+    # ---- rate  ----
+    @property
+    def rate(self) -&gt; Number:
+        return self._rate
+
+    @rate.setter
+    def rate(self, r: str) -&gt; None:
+        from . import ureg, Q_
+
+        self.__delete_process__()
+        self.__delete_flux__()
+        self._rate = Q_(r).to(self.mo.f_unit)
+        self.kwargs[&#34;rate&#34;] = r
+        self.__create_flux__()  # Source/Sink/Regular
+        self.__set_process_type__()  # derive flux type and create flux(es)
+        self.__register_process__()
+
+    # ---- delta  ----
+    @property
+    def delta(self) -&gt; Number:
+        return self._delta
+
+    @delta.setter
+    def delta(self, d: Number) -&gt; None:
+        self.__delete_process__()
+        self.__delete_flux__()
+        self._delta = d
+        self.kwargs[&#34;delta&#34;] = d
+        self.__create_flux__()  # Source/Sink/Regular
+        self.__set_process_type__()  # derive flux type and create flux(es)
+        self.__register_process__()
+
+class Connection(Connect):
+    &#34;&#34;&#34; Alias for the Connect class
+
+    &#34;&#34;&#34;
+
+class ConnectionGroup(esbmtkBase):
+    &#34;&#34;&#34;Name:
+
+        ConnectionGroup
+
+        Connect reservoir/sink/source groups when at least one of the
+        arguments is a reservoirs_group object. This method will
+        create regular connections for each matching species. 
+
+        Use the connection.update() method to fine tune connections 
+        after creation
+
+    Example::
+
+        ConnectionGroup(source =  upstream reservoir / upstream reservoir group
+           sink = downstrean reservoir / downstream reservoirs_group
+           delta = defaults to zero and has to be set manually
+           alpha =  defaults to zero and has to be set manually
+           rate = shared between all connections
+           ref = shared between all connections
+           species = list, optional, if present, only these species will be connected
+           ctype = if set it will be shared between all connections. To
+           pl = [list]) process list. optional, shared between all connections
+           id = optional identifier, shared between all connections
+           plot = &#34;yes/no&#34; # defaults to yes, shared between all connections
+        )
+
+        Notes: if species is given as a list, shared arguments like, delta, alpha, rate, ref,
+        ctype pl, and plot can also be provided as list. As long as there is a one to one mapping
+        the species list and the list of a shared property, the shared property will be mapped
+        to each species, e.g.:
+
+        species = [CO, Hplus]
+        alpha = [1.02, 1.03]
+
+        will create two connections, the first one with an alpha of 1.02, and the second with an alpha of 1.03
+
+    &#34;&#34;&#34;
+    def __init__(self, **kwargs) -&gt; None:
+
+        # provide a dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            &#34;id&#34;: dict,
+            &#34;name&#34;: str,
+            &#34;source&#34;: (SourceGroup, ReservoirGroup),
+            &#34;sink&#34;: (SinkGroup, ReservoirGroup),
+            &#34;delta&#34;: dict,
+            &#34;rate&#34;: dict,
+            &#34;pl&#34;: dict,
+            &#34;signal&#34;: Signal,
+            &#34;alpha&#34;: dict,
+            &#34;species&#34;: dict,
+            &#34;ctype&#34;: str,
+            &#34;ref&#34;: list,
+            &#34;plot&#34;: dict,
+        }
+
+        self.base_name = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name
+
+        n = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[
+            &#34;sink&#34;].name + &#34;_ConnectionGroup&#34;  # set the name
+
+        # set connection group name
+        kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = [&#34;source&#34;, &#34;sink&#34;]
+
+        # get the number of sub reservoirs in the source and sink
+        nor_sink = len(kwargs[&#34;sink&#34;].species)
+        nor_source = len(kwargs[&#34;source&#34;].species)
+
+        #if nor_source != nor_sink:
+        #    raise ValueError(
+        #        &#34;Number of sub reservoirs does not match. Specify match explicitly&#34;
+        #    )
+
+        cid: dict = {}
+        plot: dict = {}
+        delta: dict = {}
+        alpha: dict = {}
+        rate: dict = {}
+        # loop over names and create dicts
+        for n in kwargs[&#39;sink&#39;].species:
+            cid[n] = &#39;None&#39;
+            plot[n] = &#39;no&#39;
+            delta[n] = &#39;None&#39;
+            alpha[n] = &#39;None&#39;
+            rate[n] = &#39;None&#39;
+
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            &#34;id&#34;: cid,
+            &#34;plot&#34;: plot,
+            &#34;delta&#34;: delta,
+            &#34;alpha&#34;: alpha,
+            &#34;rate&#34;: rate
+        }
+
+        # turn kwargs into instance variables
+        self.__validateandregister__(kwargs)
+
+        self.loc: list = []  # list of connections in this group
+
+        # self.source.lor is a  list with the object names in the group
+        self.mo = self.sink.lor[0].mo
+
+        # loop over sub-reservoirs and create connections
+        for i, r in enumerate(self.source.lor):
+            if not isinstance(r, (Reservoir, Source, Sink)):
+                raise ValueError(
+                    f&#34;{r} must be of type reservoir, source or sink&#34;)
+                # take the species of this sub reservoir
+                # in the source, and find matching
+                # species in the sink
+
+            # loop over sink list until a match is found
+            for j, s in enumerate(self.sink.lor):
+                if not isinstance(s, (Reservoir, Source, Sink)):
+                    raise ValueError(
+                        f&#34;{r} must be of type reservoir, source or sink&#34;)
+
+                if r.species == s.species:  # match found
+                    # name = f&#34;{self.source.name}_{r.species.name}_2_{self.sink.name}_{s.species.name}&#34;
+                    name = f&#34;{r.species.name}_2_{s.species.name}_Connector&#34;
+                    a = Connect(
+                        name=name,
+                        source=r,
+                        sink=s,
+                        rate=self.rate[s.species],
+                        delta=self.delta[s.species],
+                        alpha=self.alpha[s.species],
+                        plot=self.plot[s.species],
+                        id=self.id[s.species],
+                        register=self,
+                    )
+                elif j == nor_sink:  # no match was found
+                    raise ValueError(&#34;{r.species} has no match&#34;)
+
+            # register connection with connection group
+            #this should happen automatically
+            #setattr(self, a.name, a)
+            self.loc.append(a)
+
+        # register connection group in global namespace
+        self.__register_name__()
+
+    def describe(self) -&gt; None:
+        &#34;&#34;&#34; List all connections in this group
+        
+        &#34;&#34;&#34;
+
+        print(f&#34;Group Connection from {self.source.name} to {self.sink.name}\n&#34;)
+        print(&#34;    The following Connections are part of this group\n&#34;)
+
+        for c in self.loc:
+            print(c.name)
+
+        print(&#34;&#34;)
+
+        print(f&#34;        You can query the details of each connection like this:\n&#34;)
+        print(f&#34;          {self.name}.{self.loc[0].name}.describe()&#34;)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="esbmtk.connections.Connect"><code class="flex name class">
+<span>class <span class="ident">Connect</span></span>
+<span>(</span><span>**kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Two reservoirs connect to each other via at least one flux. This
+module creates the connecting flux and creates a connector object
+which stores all connection properties.</p>
+<p>For simple connections, the type flux type is derived implcitly from the specified parameters.
+For complex connections, the flux type must be set explicitly. See the examples below:</p>
+<p>Parameters:
+- name: A string which determines the name of this object. Optional, if not provided
+the connection name will be derived as "Source_2_Sink_Connection"
+- source: An object handle for a Source or Reservoir
+- sink: An object handle for a Sink or Reservoir
+- rate: A quantity (e.g., "1 mol/s"), optional
+- delta: The isotope ratio, optional
+- alpha: A fractionation factor, optional
+- id: A string wich will become part of the object name, optional
+- plot: "yes" or "no", defaults to "yes"
+- signal: An object handle of signal, optional
+- pl: A list of process objects, optional
+- ctype: connection type, optional, this allows to scale a flux in response to other
+reservoirs and fluxes</p>
+<p>Connection Types:</p>
+<hr>
+<p>Basic Connections (the advanced ones are below):</p>
+<ul>
+<li>
+<p>If both =rate= and =delta= are given, the flux is treated as a
+fixed flux with a given isotope ratio. This is usually the case for
+most source objects (they can still be affected by a signal, see
+above), but makes little sense for reservoirs and sinks.</p>
+</li>
+<li>
+<p>If both the =rate= and =alpha= are given, the flux rate is fixed
+(subject to any signals), but the isotopic ratio of the output
+flux depends on the isotopic ratio of the upstream reservoir
+plus any isotopic fractionation specified by =alpha=. This is
+typically the case for fluxes which include an isotopic
+fractionation (i.e., pyrite burial). This combination is not
+particularly useful for source objects.</p>
+</li>
+<li>
+<p>If the connection specifies only =delta= the flux is treated as a
+variable flux which is computed in such a way that the reservoir
+maintains steady state with respect to it's mass.</p>
+</li>
+<li>
+<p>If the connection specifies only =rate= the flux is treated as a
+fixed flux which is computed in such a way that the reservoir
+maintains steady state with respect to it's isotope ratio.</p>
+</li>
+</ul>
+<p>Examples of Basic Connections</p>
+<hr>
+<p>Connecting a Source to a Reservoir
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</p>
+<p>Unless you use a Signal, a source typically provides a steady stream with a given isotope ratio (if used)</p>
+<p>Example::</p>
+<pre><code>Connect(source =  Source,
+        sink = downstrean reservoir,
+        rate = "1 mol/s",
+        delta = optional,
+        signal = optional, see the signal documentation)
+</code></pre>
+<p>Connecting a Reservoir to Sink or another Reservoir
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</p>
+<p>Here we can distinguish between cases where we use fixed flux, or a flux which reacts to in some way to the
+upstream reservoir (see the Reservoir to Reservoir section for a more complete treatment):</p>
+<p>Fixed outflux, with no isotope fractionation</p>
+<p>Example::</p>
+<pre><code>  Connect(source =  upstream reservoir,
+        sink = Sink,
+        rate = "1 mol/s",)
+</code></pre>
+<p>Fixed outflux, with isotope fractionation</p>
+<p>Example::</p>
+<pre><code>  Connect(source =  upstream reservoir,
+        sink = Sink,
+        alpha = -28,
+        rate = "1 mol/s",)
+</code></pre>
+<p>Advanced Connections</p>
+<hr>
+<p>You can aditionally define connection properties via the ctype
+keyword. This requires additional keyword parameters. The following values are
+recognized</p>
+<p>ctype = "scale_with_flux"
+~~~~~~~~~~~~~~~~~~~~~~~~~</p>
+<p>This will scale a flux relative to another flux:</p>
+<p>Example::</p>
+<pre><code> Connect(source =  upstream reservoir,
+        sink = downstream reservoir,
+        ctype = "scale_with_flux",
+        ref = flux handle,
+        k_value = a scaling factor, optional, defaults to 1
+        )
+</code></pre>
+<p>ctype = "virtual_flux"
+~~~~~~~~~~~~~~~~~~~~~~~~~</p>
+<p>This will scale a flux relative to another flux, similar to
+scaleflux. However, in this case, the flux will only affect the
+sink, and not the source. This is useful to describe reactions which
+split into two elements (i.e., deprotonation).</p>
+<p>Example::</p>
+<pre><code> Connect(source =  upstream reservoir,
+        sink = downstream reservoir,
+        ctype = "scale_with_flux",
+        ref = flux handle,
+        k_value = a scaling factor, optional, defaults to 1
+        )
+</code></pre>
+<p>ctype = "scale_with_mass" and "scale_with_concentration"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</p>
+<p>This will scale a flux relative to the mass or concentration of a reservoir</p>
+<p>Example::</p>
+<pre><code> Connect(source =  upstream reservoir,
+        sink = downstream reservoir,
+        ctype = "scale_with_mass",
+        ref = reservoir handle,
+        k_value = a scaling factor, optional, defaults to 1
+</code></pre>
+<p>)</p>
+<p>ctype = "scale_relative_to_multiple_reservoirs"
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</p>
+<p>This process scales the flux as a function one or more reservoirs
+or constants which describes the
+strength of relation between the reservoir concentrations and
+the flux scaling</p>
+<p>F = C1 * C2 * k</p>
+<p>where Ci denotes the concentrartion in one
+or more reservoirs, k is one
+or more constants.</p>
+<p>Example::</p>
+<pre><code> Connect(source =  upstream reservoir,
+        sink = downstream reservoir,
+        ctype = "scale_relative_to_multiple_reservoirs"
+        ref_reservoirs = [r1, r2, k etc] # you must provide at least one
+        k_value = a scaling factor, optional, defaults to 1
+</code></pre>
+<p>)</p>
+<p>K_value is an overall scaling factor.</p>
+<p>ctype = "flux_balance"
+~~~~~~~~~~~~~~~~~~~~~~</p>
+<p>This type can be used to express equilibration fluxes
+between two reservoirs. This connection type, takes three parameters:</p>
+<ul>
+<li>=left= is a list which can contain constants and/or reservoirs. The
+list must contain at least one valid element. All elements in this
+list will be multiplied with each other. E.g. if we have a list
+with one constant and one reservoir, the reservoir concentration
+will be multiplied with the constant. If we have two reservoirs,
+the respective reservoir concentrations will be multiplied with
+each other.</li>
+<li>=right= similar to =left= The final flux rate will be computed as
+the difference between =left= and =right=</li>
+<li>=k_value= a constant which will be multiplied with the difference
+between =left=and =right=</li>
+</ul>
+<p>Example::</p>
+<pre><code> Connect(source=R_CO2,         # target of flux
+         sink=R_HCO3,          # source of flux
+         rate="1 mol/s",       # flux rate
+         ctype="flux_balance", # connection type
+         k_value=1,            # global scaling factor, optional
+         left=[K1, R_CO2],     # where K1 is a constant
+         right=[R_HCO3, R_Hplus])
+</code></pre>
+<p>Useful methods in this class</p>
+<hr>
+<p>The following methods might prove useful</p>
+<ul>
+<li>describe() will provide a short description of the connection objects.</li>
+<li>list_processes() which will list all the processes which are associated with this connection.</li>
+<li>update() which allows you to update connection properties after the connection has been created</li>
+</ul>
+<p>The init method of the connector obbjects performs sanity checks e.g.:
+- whether the reservoirs exist
+- correct flux properties (this will be handled by the process object)
+- whether the processes do exist (hmmh, that implies that the optional processes do get registered with the model)
+- creates the correct default processes
+- and connects the reservoirs</p>
+<p>see the class documentation for details and examples</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Connect(esbmtkBase):
+    &#34;&#34;&#34;Two reservoirs connect to each other via at least one flux. This
+     module creates the connecting flux and creates a connector object
+     which stores all connection properties.
+
+     For simple connections, the type flux type is derived implcitly from the specified parameters.
+     For complex connections, the flux type must be set explicitly. See the examples below:
+
+     Parameters:
+         - name: A string which determines the name of this object. Optional, if not provided
+           the connection name will be derived as &#34;Source_2_Sink_Connection&#34;
+         - source: An object handle for a Source or Reservoir
+         - sink: An object handle for a Sink or Reservoir
+         - rate: A quantity (e.g., &#34;1 mol/s&#34;), optional
+         - delta: The isotope ratio, optional
+         - alpha: A fractionation factor, optional
+         - id: A string wich will become part of the object name, optional
+         - plot: &#34;yes&#34; or &#34;no&#34;, defaults to &#34;yes&#34;
+         - signal: An object handle of signal, optional
+         - pl: A list of process objects, optional
+         - ctype: connection type, optional, this allows to scale a flux in response to other
+           reservoirs and fluxes
+
+     Connection Types:
+     -----------------
+     Basic Connections (the advanced ones are below):
+
+     - If both =rate= and =delta= are given, the flux is treated as a
+        fixed flux with a given isotope ratio. This is usually the case for
+        most source objects (they can still be affected by a signal, see
+        above), but makes little sense for reservoirs and sinks.
+
+     - If both the =rate= and =alpha= are given, the flux rate is fixed
+       (subject to any signals), but the isotopic ratio of the output
+       flux depends on the isotopic ratio of the upstream reservoir
+       plus any isotopic fractionation specified by =alpha=. This is
+       typically the case for fluxes which include an isotopic
+       fractionation (i.e., pyrite burial). This combination is not
+       particularly useful for source objects.
+
+     - If the connection specifies only =delta= the flux is treated as a
+       variable flux which is computed in such a way that the reservoir
+       maintains steady state with respect to it&#39;s mass.
+
+     - If the connection specifies only =rate= the flux is treated as a
+       fixed flux which is computed in such a way that the reservoir
+       maintains steady state with respect to it&#39;s isotope ratio.
+
+     Examples of Basic Connections
+     -----------------------------
+
+     Connecting a Source to a Reservoir
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+     Unless you use a Signal, a source typically provides a steady stream with a given isotope ratio (if used)
+
+     Example::
+
+        Connect(source =  Source,
+                sink = downstrean reservoir,
+                rate = &#34;1 mol/s&#34;,
+                delta = optional,
+                signal = optional, see the signal documentation)
+
+     Connecting a Reservoir to Sink or another Reservoir
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+     Here we can distinguish between cases where we use fixed flux, or a flux which reacts to in some way to the
+     upstream reservoir (see the Reservoir to Reservoir section for a more complete treatment):
+
+     Fixed outflux, with no isotope fractionation
+
+     Example::
+
+          Connect(source =  upstream reservoir,
+                sink = Sink,
+                rate = &#34;1 mol/s&#34;,)
+
+     Fixed outflux, with isotope fractionation
+
+     Example::
+
+          Connect(source =  upstream reservoir,
+                sink = Sink,
+                alpha = -28,
+                rate = &#34;1 mol/s&#34;,)
+
+     Advanced Connections
+     --------------------
+
+     You can aditionally define connection properties via the ctype
+     keyword. This requires additional keyword parameters. The following values are
+     recognized
+
+     ctype = &#34;scale_with_flux&#34;
+     ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+     This will scale a flux relative to another flux:
+
+     Example::
+
+         Connect(source =  upstream reservoir,
+                sink = downstream reservoir,
+                ctype = &#34;scale_with_flux&#34;,
+                ref = flux handle,
+                k_value = a scaling factor, optional, defaults to 1
+                )
+
+    ctype = &#34;virtual_flux&#34;
+    ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    This will scale a flux relative to another flux, similar to
+    scaleflux. However, in this case, the flux will only affect the
+    sink, and not the source. This is useful to describe reactions which
+    split into two elements (i.e., deprotonation).
+
+    Example::
+
+         Connect(source =  upstream reservoir,
+                sink = downstream reservoir,
+                ctype = &#34;scale_with_flux&#34;,
+                ref = flux handle,
+                k_value = a scaling factor, optional, defaults to 1
+                )
+
+     ctype = &#34;scale_with_mass&#34; and &#34;scale_with_concentration&#34;
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+     This will scale a flux relative to the mass or concentration of a reservoir
+
+     Example::
+
+         Connect(source =  upstream reservoir,
+                sink = downstream reservoir,
+                ctype = &#34;scale_with_mass&#34;,
+                ref = reservoir handle,
+                k_value = a scaling factor, optional, defaults to 1
+    )
+
+     ctype = &#34;scale_relative_to_multiple_reservoirs&#34;
+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+     This process scales the flux as a function one or more reservoirs
+     or constants which describes the
+     strength of relation between the reservoir concentrations and
+     the flux scaling
+
+     F = C1 * C2 * k
+
+     where Ci denotes the concentrartion in one  or more reservoirs, k is one
+     or more constants.
+
+     Example::
+
+         Connect(source =  upstream reservoir,
+                sink = downstream reservoir,
+                ctype = &#34;scale_relative_to_multiple_reservoirs&#34;
+                ref_reservoirs = [r1, r2, k etc] # you must provide at least one
+                k_value = a scaling factor, optional, defaults to 1
+    )
+
+     K_value is an overall scaling factor.
+
+
+     ctype = &#34;flux_balance&#34;
+     ~~~~~~~~~~~~~~~~~~~~~~
+
+    This type can be used to express equilibration fluxes
+    between two reservoirs. This connection type, takes three parameters:
+
+    - =left= is a list which can contain constants and/or reservoirs. The
+      list must contain at least one valid element. All elements in this
+      list will be multiplied with each other. E.g. if we have a list
+      with one constant and one reservoir, the reservoir concentration
+      will be multiplied with the constant. If we have two reservoirs,
+      the respective reservoir concentrations will be multiplied with
+      each other.
+    - =right= similar to =left= The final flux rate will be computed as
+      the difference between =left= and =right=
+    - =k_value= a constant which will be multiplied with the difference
+      between =left=and =right=
+
+     Example::
+
+         Connect(source=R_CO2,         # target of flux
+                 sink=R_HCO3,          # source of flux
+                 rate=&#34;1 mol/s&#34;,       # flux rate
+                 ctype=&#34;flux_balance&#34;, # connection type
+                 k_value=1,            # global scaling factor, optional
+                 left=[K1, R_CO2],     # where K1 is a constant
+                 right=[R_HCO3, R_Hplus])
+
+
+     Useful methods in this class
+     ----------------------------
+     The following methods might prove useful
+
+      - describe() will provide a short description of the connection objects.
+      - list_processes() which will list all the processes which are associated with this connection.
+      - update() which allows you to update connection properties after the connection has been created
+
+    &#34;&#34;&#34;
+
+    def __init__(self, **kwargs):
+        &#34;&#34;&#34;The init method of the connector obbjects performs sanity checks e.g.:
+               - whether the reservoirs exist
+               - correct flux properties (this will be handled by the process object)
+               - whether the processes do exist (hmmh, that implies that the optional processes do get registered with the model)
+               - creates the correct default processes
+               - and connects the reservoirs
+
+        see the class documentation for details and examples
+
+        &#34;&#34;&#34;
+
+        from . import ureg, Q_
+
+        # provide a dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            &#34;name&#34;: str,
+            &#34;id&#34;: str,
+            &#34;source&#34;: (Source, Reservoir),
+            &#34;sink&#34;: (Sink, Reservoir),
+            &#34;delta&#34;: (Number, str),
+            &#34;rate&#34;: (str, Number, Q_),
+            &#34;pl&#34;: list,
+            &#34;alpha&#34;: (Number, str),
+            &#34;species&#34;: Species,
+            &#34;ctype&#34;: str,
+            &#34;ref&#34;: (Flux, list),
+            &#34;ratio&#34;: Number,
+            &#34;scale&#34;: Number,
+            &#34;ref_value&#34;: (str, Number, Q_),
+            &#34;ref_reservoir&#34;: (list, Reservoir),
+            &#34;k_value&#34;: (Number, str, Q_),
+            &#34;a_value&#34;: Number,
+            &#34;b_value&#34;: Number,
+            &#34;left&#34;: (list, Number, Reservoir),
+            &#34;right&#34;: (list, Number, Reservoir),
+            &#34;plot&#34;: str,
+            &#34;register&#34;: (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            &#34;signal&#34;: (Signal, str),
+        }
+
+        if &#34;name&#34; not in kwargs:
+            n = (
+                kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].n + &#34;_Connector&#34;
+            )  # set the name
+            kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = [&#34;name&#34;, &#34;source&#34;, &#34;sink&#34;]
+
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            &#34;id&#34;: &#34;None&#34;,
+            &#34;plot&#34;: &#34;yes&#34;,
+            &#34;ctype&#34;: &#34;None&#34;,
+            &#34;delta&#34;: &#34;None&#34;,
+            &#34;alpha&#34;: &#34;None&#34;,
+            &#34;rate&#34;: &#34;None&#34;,
+            &#34;k_value&#34;: 1,
+            &#34;signal&#34;: &#34;None&#34;,
+        }
+
+        # validate and initialize instance variables
+        self.__initerrormessages__()
+
+        self.bem.update(
+            {
+                &#34;k_concentration&#34;: &#34;a number&#34;,
+                &#34;k_mass&#34;: &#34;a number&#34;,
+                &#34;k_value&#34;: &#34;a number&#34;,
+                &#34;a_value&#34;: &#34;a number&#34;,
+                &#34;ref_value&#34;: &#34;a number, string, or quantity&#34;,
+                &#34;b_value&#34;: &#34;a number&#34;,
+                &#34;name&#34;: &#34;a string&#34;,
+                &#34;id&#34;: &#34;a string&#34;,
+                &#34;plot&#34;: &#34;a string&#34;,
+                &#34;left&#34;: &#34;Number, list or Reservoir&#34;,
+                &#34;right&#34;: &#34;Number, list or Reservoir&#34;,
+                &#34;signal&#34;: &#34;Signal Handle&#34;,
+            }
+        )
+
+        self.drn = {
+            &#34;alpha&#34;: &#34;_alpha&#34;,
+            &#34;rate&#34;: &#34;_rate&#34;,
+            &#34;delta&#34;: &#34;_delta&#34;,
+        }
+
+        self.__validateandregister__(kwargs)
+
+        if kwargs[&#34;id&#34;] != &#34;None&#34;:
+            self.name = self.name + f&#34;_{self.id}&#34;
+        if &#34;pl&#34; in kwargs:
+            self.lop: list[Process] = self.pl
+        else:
+            self.lop: list[Process] = []
+
+        if self.signal != &#34;None&#34;:
+            self.lop.append(self.signal)
+
+        # if no reference reservoir is specified, default to the upstream
+        # reservoir
+        if &#34;ref_reservoir&#34; not in kwargs:
+            self.ref_reservoir = kwargs[&#34;source&#34;]
+
+        # legacy names
+        self.influx: int = 1
+        self.outflux: int = -1
+        self.n = self.name
+        self.mo = self.source.sp.mo
+        self.p = 0  # the default process handle
+        self.r1: (Process, Reservoir) = self.source
+        self.r2: (Process, Reservoir) = self.sink
+
+        self.get_species(self.r1, self.r2)  #
+        self.mo: Model = self.sp.mo  # the current model handle
+        self.lof: list[Flux] = []  # list of fluxes in this connection
+        # get a list of all reservoirs registered for this species
+        self.lor: list[Reservoir] = self.mo.lor
+
+        self.source.loc.add(self)  # register connector with reservoir
+        self.sink.loc.add(self)  # register connector with reservoir
+        self.mo.loc.add(self)  # register connector with model
+
+        self.__create_flux__()  # Source/Sink/Regular
+
+        self.__set_process_type__()  # derive flux type and create flux(es)
+
+        self.__register_name__()  # register connection in namespace
+
+        # This should probably move to register fluxes
+        self.__register_process__()
+
+        if self.register == &#34;yes&#34;:
+            print(f&#34;Created connection {self.name}&#34;)
+        else:
+            print(f&#34;Created group connection {self.register.name}.{self.name}&#34;)
+
+    def update(self, **kwargs):
+        &#34;&#34;&#34;Update connection properties. This will delete existing processes
+        and fluxes, replace existing key-value pairs in the
+        self.kwargs dict, and then re-initialize the connection.
+
+        &#34;&#34;&#34;
+        self.__delete_process__()
+        self.__delete_flux__()
+        self.kwargs.update(kwargs)
+        self.__init_connection__(self.kwargs)
+        print(f&#34;Updated {self.n}&#34;)
+
+    def get_species(self, r1, r2) -&gt; None:
+        &#34;&#34;&#34;In most cases the species is set by r2. However, if we have
+        backward fluxes the species depends on the r2
+
+        &#34;&#34;&#34;
+        # print(f&#34;r1 = {r1.n}, r2 = {r2.n}&#34;)
+        if isinstance(self.r1, Source):
+            self.r = r1
+        else:  # in this case we do have an upstream reservoir
+            self.r = r2
+
+        # test if species was explicitly given
+        if &#34;species&#34; in self.kwargs:  # this is a quick fix only
+            self.sp = self.kwargs[&#34;species&#34;]
+        else:
+            self.sp = self.r.sp  # get the parent species
+
+    def __create_flux__(self) -&gt; None:
+        &#34;&#34;&#34;Create flux object, and register with reservoir and global namespace&#34;&#34;&#34;
+
+        # test if default arguments present
+        if self.delta == &#34;None&#34;:
+            d = 0
+        else:
+            d = self.delta
+
+        if self.rate == &#34;None&#34;:
+            r = f&#34;1 {self.sp.mo.f_unit}&#34;
+            # self._rate = r
+        else:
+            r = self.rate
+
+        # flux name
+        if self.id == &#34;None&#34;:
+            n = self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_Flux&#34;
+        else:
+            n = (
+                self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_&#34; + self.id + &#34;_Flux&#34;
+            )  # flux name r1_2_r2
+
+        # derive flux unit from species obbject
+        funit = self.sp.mu + &#34;/&#34; + str(self.sp.mo.bu)  # xxx
+
+        self.fh = Flux(
+            name=n,  # flux name
+            species=self.sp,  # Species handle
+            delta=d,  # delta value of flux
+            rate=r,  # flux value
+            plot=self.plot,  # display this flux?
+            register=self.register,  # is this part of a group?
+        )
+
+        # register flux with its reservoirs
+        if isinstance(self.r1, Source):
+            # add the flux name direction/pair
+            self.r2.lio[self.fh] = self.influx
+            # add the handle to the list of fluxes
+            self.r2.lof.append(self.fh)
+            # register flux and element in the reservoir.
+            self.__register_species__(self.r2, self.r1.sp)
+
+        elif isinstance(self.r2, Sink):
+            # add the flux name direction/pair
+            self.r1.lio[self.fh] = self.outflux
+            # add flux to the upstream reservoir
+            self.r1.lof.append(self.fh)
+            # register flux and element in the reservoir.
+            self.__register_species__(self.r1, self.r2.sp)
+
+        elif isinstance(self.r1, Sink):
+            raise NameError(
+                &#34;The Sink must be specified as a destination (i.e., as second argument&#34;
+            )
+
+        elif isinstance(self.r2, Source):
+            raise NameError(&#34;The Source must be specified as first argument&#34;)
+
+        else:  # this is a regular connection
+            # add the flux name direction/pair
+            self.r1.lio[self.fh] = self.outflux
+            # add the flux name direction/pair
+            self.r2.lio[self.fh] = self.influx
+            # add flux to the upstream reservoir
+            self.r1.lof.append(self.fh)
+            # add flux to the downstream reservoir
+            self.r2.lof.append(self.fh)
+            self.__register_species__(self.r1, self.r1.sp)
+            self.__register_species__(self.r2, self.r2.sp)
+
+        self.lof.append(self.fh)
+
+    def __register_species__(self, r, sp) -&gt; None:
+        &#34;&#34;&#34; Add flux to the correct element dictionary&#34;&#34;&#34;
+        # test if element key is present in reservoir
+        if sp.eh in r.doe:
+            # add flux handle to dictionary list
+            r.doe[sp.eh].append(self.fh)
+        else:  # add key and first list value
+            r.doe[sp.eh] = [self.fh]
+
+    def __register_process__(self) -&gt; None:
+        &#34;&#34;&#34; Register all flux related processes&#34;&#34;&#34;
+
+        # first test if we have a signal in the list. If so,
+        # remove signal and replace with process
+
+        p_copy = copy(self.lop)
+        for p in p_copy:  # loop over process list if provided during init
+            if isinstance(p, Signal):
+                self.lop.remove(p)
+                if p.ty == &#34;addition&#34;:
+                    # create AddSignal Process object
+                    n = AddSignal(
+                        name=p.n + &#34;_addition_process&#34;,
+                        reservoir=self.r,
+                        flux=self.fh,
+                        lt=p.data,
+                    )
+                    self.lop.append(n)
+                else:
+                    raise ValueError(f&#34;Signal type {p.ty} is not defined&#34;)
+
+        # nwo we can register everythig on lop
+        for p in self.lop:
+            p.__register__(self.r, self.fh)
+
+    def __set_process_type__(self) -&gt; None:
+        &#34;&#34;&#34;Deduce flux type based on the provided flux properties. The method calls the
+        appropriate method init routine
+        &#34;&#34;&#34;
+
+        if isinstance(self.r1, Source):
+            self.r = self.r2
+        else:
+            self.r = self.r1
+
+        # set process name
+        # if len(self.kwargs[&#34;id&#34;]) &gt; 0:
+        if self.id == &#34;None&#34;:
+            self.pn = self.r1.n + &#34;_2_&#34; + self.r2.n
+        else:
+            self.pn = self.r1.n + &#34;_2_&#34; + self.r2.n + f&#34;_{self.id}&#34;
+
+        # if connection type is not set explicitly
+        if self.ctype == &#34;None&#34;:
+            # set the fundamental flux type based on the flux arguments given
+            if self.delta != &#34;None&#34; and self.rate != &#34;None&#34;:
+                pass  # do nothing but exit this conditional
+            # variable flux with fixed delta
+            elif self.delta != &#34;None&#34;:  # delta must be set
+                self.__passivefluxfixeddelta__()
+            elif self.rate != &#34;None&#34;:  # rate must be set
+                self.__vardeltaout__()  # variable delta with fixed flux
+            else:  # if neither are given -&gt; default varflux type
+                self._delta = 0
+                self.__passiveflux__()
+                print(&#34;passive flux&#34;)
+
+        elif self.ctype == &#34;flux_diff&#34;:
+            self.__vardeltaout__()
+            self.__flux_diff__()
+        elif self.ctype == &#34;scale_with_flux&#34;:
+            self.__scaleflux__()
+        elif self.ctype == &#34;virtual_flux&#34;:
+            self.__virtual_flux__()
+            # self.__vardeltaout__()
+        elif self.ctype == &#34;copy_flux&#34;:
+            self.__scaleflux__()
+            # self.__vardeltaout__()
+        elif self.ctype == &#34;scale_with_mass&#34;:
+            self.__rateconstant__()
+        elif self.ctype == &#34;scale_with_concentration&#34;:
+            self.__rateconstant__()
+        elif self.ctype == &#34;scale_with_concentration_normalized&#34;:
+            self.__rateconstant__()
+        elif self.ctype == &#34;scale_with_mass_normalized&#34;:
+            self.__rateconstant__()
+        elif self.ctype == &#34;scale_relative_to_multiple_reservoirs&#34;:
+            self.__rateconstant__()
+        elif self.ctype == &#34;flux_balance&#34;:
+            self.__rateconstant__()
+        elif self.ctype == &#34;react_with&#34;:
+            self.__reaction__()
+        elif self.ctype == &#34;monod_type_limit&#34;:
+            self.__vardeltaout__()
+            self.__rateconstant__()
+        else:
+            print(f&#34;Connection Type {self.ctype} is unknown&#34;)
+            raise ValueError(f&#34;Unknown connection type {self.ctype}&#34;)
+
+        # Set optional flux processes
+        if self.alpha != &#34;None&#34;:
+            self.__alpha__()  # Set optional flux processes
+
+    def __passivefluxfixeddelta__(self) -&gt; None:
+        &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
+
+        ph = PassiveFlux_fixed_delta(
+            name=self.pn + &#34;_Pfd&#34;,
+            reservoir=self.r,
+            flux=self.fh,
+            register=self.register,
+            delta=self.delta,
+        )  # initialize a passive flux process object
+        self.lop.append(ph)
+
+    def __vardeltaout__(self) -&gt; None:
+        &#34;&#34;&#34;Unlike a passive flux, this process sets the output flux from a
+        reservoir to a fixed value, but the isotopic ratio of the
+        output flux will be set equal to the isotopic ratio of the
+        upstream reservoir.
+
+        &#34;&#34;&#34;
+
+        ph = VarDeltaOut(
+            name=self.pn + &#34;_Pvdo&#34;,
+            reservoir=self.r,
+            flux=self.fh,
+            register=self.register,
+            rate=self.rate,
+        )
+        self.lop.append(ph)
+
+    def __scaleflux__(self) -&gt; None:
+        &#34;&#34;&#34;Scale a flux relative to another flux&#34;&#34;&#34;
+
+        if not isinstance(self.kwargs[&#34;ref&#34;], Flux):
+            raise ValueError(&#34;Scale reference must be a flux&#34;)
+
+        ph = ScaleFlux(
+            name=self.pn + &#34;_PSF&#34;,
+            reservoir=self.r,
+            flux=self.fh,
+            register=self.register,
+            scale=self.k_value,
+            ref=self.ref,
+        )
+        self.lop.append(ph)
+
+        # this flux must not affect the source reservoir
+        # self.r.lof.remove(self.fh)
+
+    def __virtual_flux__(self) -&gt; None:
+        &#34;&#34;&#34;Create a virtual flux. This is similar to __scaleflux__, however the new flux
+        will only affect the sink, and not the source.
+
+        &#34;&#34;&#34;
+
+        if not isinstance(self.kwargs[&#34;ref&#34;], Flux):
+            raise ValueError(&#34;Scale reference must be a flux&#34;)
+
+        ph = ScaleFlux(
+            name=self.pn + &#34;_PSFV&#34;,
+            reservoir=self.r,
+            flux=self.fh,
+            register=self.register,
+            scale=self.k_value,
+            ref=self.ref,
+        )
+        self.lop.append(ph)
+
+        # this flux must not affect the source reservoir
+        self.r.lof.remove(self.fh)
+
+    def __flux_diff__(self) -&gt; None:
+        &#34;&#34;&#34;Scale a flux relative to the difference between
+        two fluxes
+
+        &#34;&#34;&#34;
+
+        if not isinstance(self.kwargs[&#34;ref&#34;], list):
+            raise ValueError(&#34;ref must be a list&#34;)
+
+        ph = FluxDiff(
+            name=self.pn + &#34;_PSF&#34;,
+            reservoir=self.r,
+            flux=self.fh,
+            register=self.register,
+            scale=self.k_value,
+            ref=self.ref,
+        )
+        self.lop.append(ph)
+
+    def __reaction__(self) -&gt; None:
+        &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
+
+        if not isinstance(self.ref, (Flux)):
+            raise ValueError(&#34;Scale reference must be a flux&#34;)
+
+        ph = Reaction(
+            name=self.pn + &#34;_RF&#34;,
+            reservoir=self.r,
+            flux=self.fh,
+            register=self.register,
+            scale=self.k_value,
+            ref=self.ref,
+        )
+
+        # we need to make sure to remove the flux referenced by
+        # react_with is removed from the list of fluxes in this
+        # reservoir. This should probably move in to the React Class
+        self.r2.lof.remove(self.ref)
+        self.lop.append(ph)
+
+    def __passiveflux__(self) -&gt; None:
+        &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
+
+        ph = PassiveFlux(
+            name=self.pn + &#34;_PF&#34;, reservoir=self.r, register=self.register, flux=self.fh
+        )  # initialize a passive flux process object
+        self.lop.append(ph)  # add this process to the process list
+
+    def __alpha__(self) -&gt; None:
+        &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
+
+        ph = Fractionation(
+            name=self.pn + &#34;_Pa&#34;,
+            reservoir=self.r,
+            flux=self.fh,
+            register=self.register,
+            alpha=self.kwargs[&#34;alpha&#34;],
+        )
+        self.lop.append(ph)  #
+
+    def __rateconstant__(self) -&gt; None:
+        &#34;&#34;&#34;Add rate constant type process&#34;&#34;&#34;
+
+        from . import ureg, Q_
+
+        # this process requires that we use the vardeltaout process
+        if self.mo.m_type != &#34;mass_only&#34;:
+            self.__vardeltaout__()
+
+        if self.ctype == &#34;scale_with_mass&#34;:
+            self.k_value = map_units(self.k_value, self.mo.m_unit)
+            ph = ScaleRelativeToMass(
+                name=self.pn + &#34;_PkM&#34;,
+                reservoir=self.ref_reservoir,
+                flux=self.fh,
+                register=self.register,
+                k_value=self.k_value,
+            )
+
+        elif self.ctype == &#34;scale_with_mass_normalized&#34;:
+            self.k_value = map_units(self.k_value, self.mo.m_unit)
+            self.ref_value = map_units(self.ref_value, self.mo.m_unit)
+            ph = ScaleRelativeToNormalizedMass(
+                name=self.pn + &#34;_PknM&#34;,
+                reservoir=self.ref_reservoir,
+                flux=self.fh,
+                register=self.register,
+                ref_value=self.ref_value,
+                k_value=self.k_value,
+            )
+
+        elif self.ctype == &#34;scale_with_concentration&#34;:
+            self.k_value = map_units(
+                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
+            )
+            ph = ScaleRelativeToConcentration(
+                name=self.pn + &#34;_PkC&#34;,
+                reservoir=self.ref_reservoir,
+                flux=self.fh,
+                register=self.register,
+                k_value=self.k_value,
+            )
+
+        elif self.ctype == &#34;scale_relative_to_multiple_reservoirs&#34;:
+            self.k_value = map_units(
+                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
+            )
+            ph = ScaleRelative2otherReservoir(
+                name=self.pn + &#34;_PkC&#34;,
+                reservoir=self.source,
+                ref_reservoir=self.ref_reservoir,
+                flux=self.fh,
+                register=self.register,
+                k_value=self.k_value,
+            )
+
+        elif self.ctype == &#34;flux_balance&#34;:
+            self.k_value = map_units(
+                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
+            )
+            ph = Flux_Balance(
+                name=self.pn + &#34;_Pfb&#34;,
+                reservoir=self.source,
+                left=self.left,
+                right=self.right,
+                flux=self.fh,
+                register=self.register,
+                k_value=self.k_value,
+            )
+
+        elif self.ctype == &#34;scale_with_concentration_normalized&#34;:
+            self.k_value = map_units(
+                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
+            )
+            self.ref_value = map_units(self.ref_value, self.mo.c_unit)
+            ph = ScaleRelativeToNormalizedConcentration(
+                name=self.pn + &#34;_PknC&#34;,
+                reservoir=self.ref_reservoir,
+                flux=self.fh,
+                register=self.register,
+                ref_value=self.ref_value,
+                k_value=self.k_value,
+            )
+
+        elif self.ctype == &#34;monod_ctype_limit&#34;:
+            self.ref_value = map_units(self.ref_value, self.mo.c_unit)
+            ph = Monod(
+                name=self.pn + &#34;_PMonod&#34;,
+                reservoir=self.ref_reservoir,
+                flux=self.fh,
+                register=self.register,
+                ref_value=self.ref_value,
+                a_value=self.a_value,
+                b_value=self.b_value,
+            )
+
+        else:
+            raise ValueError(
+                f&#34;This should not happen,and points to a keywords problem in {self.name}&#34;
+            )
+
+        self.lop.append(ph)
+
+    def describe(self, **kwargs) -&gt; None:
+        &#34;&#34;&#34;Show an overview of the object properties.
+        Optional arguments are
+        index  :int = 0 this will show data at the given index
+        indent :int = 0 indentation
+
+        &#34;&#34;&#34;
+        off: str = &#34;  &#34;
+        if &#34;index&#34; not in kwargs:
+            index = 0
+        else:
+            index = kwargs[&#34;index&#34;]
+
+        if &#34;indent&#34; not in kwargs:
+            indent = 0
+            ind = &#34;&#34;
+        else:
+            indent = kwargs[&#34;indent&#34;]
+            ind = &#34; &#34; * indent
+
+        # print basic data bout this Connection
+        print(f&#34;{ind}{self.__str__(indent=indent)}&#34;)
+
+        print(f&#34;{ind}Fluxes:&#34;)
+        for f in sorted(self.lof):
+            f.describe(indent=indent, index=index)
+
+    def __delete_process__(self) -&gt; None:
+        &#34;&#34;&#34;Updates to the connection properties may change the connection type and thus
+        the processes which are associated with this connection. We thus have to
+        first delete the old processes, before we re-initialize the connection
+
+        &#34;&#34;&#34;
+
+        # identify which processes we need to delete
+        # unregister process from connection.lop, reservoir.lop, flux.lop, model.lmo
+        # delete process from global name space if present
+
+        lop = copy(self.lop)
+        for p in lop:
+            for f in lof:
+                if isinstance(f.register, ConnectionGroup):
+                    # remove from Connection group list of model objects
+                    self.register.lmo.remove(f)
+                else:
+                    self.r1.lop.remove(p)
+                    self.fh.lop.remove(p)
+                    self.lop.remove(p)
+                    self.r1.mo.lmo.remove(p.n)
+                    del p
+
+    def __delete_flux__(self) -&gt; None:
+        &#34;&#34;&#34;Updates to the connection properties may change the connection type and thus
+        the processes which are associated with this connection. We thus have to
+        first delete the old flux, before we re-initialize the connection
+
+        &#34;&#34;&#34;
+
+        # identify which processes we need to delete
+        # unregister process from connection.lop, reservoir.lop, flux.lop, model.lmo
+        # delete process from global name space if present
+
+        lof = copy(self.lof)
+        for f in lof:
+            if isinstance(f.register, ConnectionGroup):
+                # remove from Connection group list of model objects
+                self.register.lmo.remove(f)
+            else:
+                self.r1.lof.remove(f)
+                self.lof.remove(f)
+                self.r1.mo.lmo.remove(f.n)
+                del f
+
+    # ---- Property definitions to allow for connection updates --------
+    &#34;&#34;&#34; Changing the below properties requires that we delete all
+    associated objects (processes), and determines the new flux type,
+    and initialize/register these with the connection and model.
+    We also have to update the keyword arguments as these are used
+    for the log entry
+
+    &#34;&#34;&#34;
+
+    # ---- alpha ----
+    @property
+    def alpha(self) -&gt; Number:
+        return self._alpha
+
+    @alpha.setter
+    def alpha(self, a: Number) -&gt; None:
+        self.__delete_process__()
+        self.__delete_flux__()
+        self._alpha = a
+        self.kwargs[&#34;alpha&#34;] = a
+        self.__set_process_type__()  # derive flux type and create flux(es)
+        self.__register_process__()
+
+    # ---- rate  ----
+    @property
+    def rate(self) -&gt; Number:
+        return self._rate
+
+    @rate.setter
+    def rate(self, r: str) -&gt; None:
+        from . import ureg, Q_
+
+        self.__delete_process__()
+        self.__delete_flux__()
+        self._rate = Q_(r).to(self.mo.f_unit)
+        self.kwargs[&#34;rate&#34;] = r
+        self.__create_flux__()  # Source/Sink/Regular
+        self.__set_process_type__()  # derive flux type and create flux(es)
+        self.__register_process__()
+
+    # ---- delta  ----
+    @property
+    def delta(self) -&gt; Number:
+        return self._delta
+
+    @delta.setter
+    def delta(self, d: Number) -&gt; None:
+        self.__delete_process__()
+        self.__delete_flux__()
+        self._delta = d
+        self.kwargs[&#34;delta&#34;] = d
+        self.__create_flux__()  # Source/Sink/Regular
+        self.__set_process_type__()  # derive flux type and create flux(es)
+        self.__register_process__()</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="esbmtk.esbmtk.esbmtkBase" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="esbmtk.connections.Connection" href="#esbmtk.connections.Connection">Connection</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="esbmtk.connections.Connect.alpha"><code class="name">var <span class="ident">alpha</span> : Number</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def alpha(self) -&gt; Number:
+    return self._alpha</code></pre>
+</details>
+</dd>
+<dt id="esbmtk.connections.Connect.delta"><code class="name">var <span class="ident">delta</span> : Number</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def delta(self) -&gt; Number:
+    return self._delta</code></pre>
+</details>
+</dd>
+<dt id="esbmtk.connections.Connect.rate"><code class="name">var <span class="ident">rate</span> : Number</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def rate(self) -&gt; Number:
+    return self._rate</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="esbmtk.connections.Connect.describe"><code class="name flex">
+<span>def <span class="ident">describe</span></span>(<span>self, **kwargs) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Show an overview of the object properties.
+Optional arguments are
+index
+:int = 0 this will show data at the given index
+indent :int = 0 indentation</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def describe(self, **kwargs) -&gt; None:
+    &#34;&#34;&#34;Show an overview of the object properties.
+    Optional arguments are
+    index  :int = 0 this will show data at the given index
+    indent :int = 0 indentation
+
+    &#34;&#34;&#34;
+    off: str = &#34;  &#34;
+    if &#34;index&#34; not in kwargs:
+        index = 0
+    else:
+        index = kwargs[&#34;index&#34;]
+
+    if &#34;indent&#34; not in kwargs:
+        indent = 0
+        ind = &#34;&#34;
+    else:
+        indent = kwargs[&#34;indent&#34;]
+        ind = &#34; &#34; * indent
+
+    # print basic data bout this Connection
+    print(f&#34;{ind}{self.__str__(indent=indent)}&#34;)
+
+    print(f&#34;{ind}Fluxes:&#34;)
+    for f in sorted(self.lof):
+        f.describe(indent=indent, index=index)</code></pre>
+</details>
+</dd>
+<dt id="esbmtk.connections.Connect.get_species"><code class="name flex">
+<span>def <span class="ident">get_species</span></span>(<span>self, r1, r2) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>In most cases the species is set by r2. However, if we have
+backward fluxes the species depends on the r2</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_species(self, r1, r2) -&gt; None:
+    &#34;&#34;&#34;In most cases the species is set by r2. However, if we have
+    backward fluxes the species depends on the r2
+
+    &#34;&#34;&#34;
+    # print(f&#34;r1 = {r1.n}, r2 = {r2.n}&#34;)
+    if isinstance(self.r1, Source):
+        self.r = r1
+    else:  # in this case we do have an upstream reservoir
+        self.r = r2
+
+    # test if species was explicitly given
+    if &#34;species&#34; in self.kwargs:  # this is a quick fix only
+        self.sp = self.kwargs[&#34;species&#34;]
+    else:
+        self.sp = self.r.sp  # get the parent species</code></pre>
+</details>
+</dd>
+<dt id="esbmtk.connections.Connect.update"><code class="name flex">
+<span>def <span class="ident">update</span></span>(<span>self, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Update connection properties. This will delete existing processes
+and fluxes, replace existing key-value pairs in the
+self.kwargs dict, and then re-initialize the connection.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update(self, **kwargs):
+    &#34;&#34;&#34;Update connection properties. This will delete existing processes
+    and fluxes, replace existing key-value pairs in the
+    self.kwargs dict, and then re-initialize the connection.
+
+    &#34;&#34;&#34;
+    self.__delete_process__()
+    self.__delete_flux__()
+    self.kwargs.update(kwargs)
+    self.__init_connection__(self.kwargs)
+    print(f&#34;Updated {self.n}&#34;)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="esbmtk.connections.Connection"><code class="flex name class">
+<span>class <span class="ident">Connection</span></span>
+<span>(</span><span>**kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Alias for the Connect class</p>
+<p>The init method of the connector obbjects performs sanity checks e.g.:
+- whether the reservoirs exist
+- correct flux properties (this will be handled by the process object)
+- whether the processes do exist (hmmh, that implies that the optional processes do get registered with the model)
+- creates the correct default processes
+- and connects the reservoirs</p>
+<p>see the class documentation for details and examples</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Connection(Connect):
+    &#34;&#34;&#34; Alias for the Connect class
+
+    &#34;&#34;&#34;</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="esbmtk.connections.Connect" href="#esbmtk.connections.Connect">Connect</a></li>
+<li><a title="esbmtk.esbmtk.esbmtkBase" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></li>
+</ul>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="esbmtk.connections.Connect" href="#esbmtk.connections.Connect">Connect</a></b></code>:
+<ul class="hlist">
+<li><code><a title="esbmtk.connections.Connect.describe" href="#esbmtk.connections.Connect.describe">describe</a></code></li>
+<li><code><a title="esbmtk.connections.Connect.get_species" href="#esbmtk.connections.Connect.get_species">get_species</a></code></li>
+<li><code><a title="esbmtk.connections.Connect.update" href="#esbmtk.connections.Connect.update">update</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="esbmtk.connections.ConnectionGroup"><code class="flex name class">
+<span>class <span class="ident">ConnectionGroup</span></span>
+<span>(</span><span>**kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><h2 id="name">Name</h2>
+<p>ConnectionGroup</p>
+<p>Connect reservoir/sink/source groups when at least one of the
+arguments is a reservoirs_group object. This method will
+create regular connections for each matching species. </p>
+<p>Use the connection.update() method to fine tune connections
+after creation</p>
+<p>Example::</p>
+<pre><code>ConnectionGroup(source =  upstream reservoir / upstream reservoir group
+   sink = downstrean reservoir / downstream reservoirs_group
+   delta = defaults to zero and has to be set manually
+   alpha =  defaults to zero and has to be set manually
+   rate = shared between all connections
+   ref = shared between all connections
+   species = list, optional, if present, only these species will be connected
+   ctype = if set it will be shared between all connections. To
+   pl = [list]) process list. optional, shared between all connections
+   id = optional identifier, shared between all connections
+   plot = "yes/no" # defaults to yes, shared between all connections
+)
+
+Notes: if species is given as a list, shared arguments like, delta, alpha, rate, ref,
+ctype pl, and plot can also be provided as list. As long as there is a one to one mapping
+the species list and the list of a shared property, the shared property will be mapped
+to each species, e.g.:
+
+species = [CO, Hplus]
+alpha = [1.02, 1.03]
+
+will create two connections, the first one with an alpha of 1.02, and the second with an alpha of 1.03
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ConnectionGroup(esbmtkBase):
+    &#34;&#34;&#34;Name:
+
+        ConnectionGroup
+
+        Connect reservoir/sink/source groups when at least one of the
+        arguments is a reservoirs_group object. This method will
+        create regular connections for each matching species. 
+
+        Use the connection.update() method to fine tune connections 
+        after creation
+
+    Example::
+
+        ConnectionGroup(source =  upstream reservoir / upstream reservoir group
+           sink = downstrean reservoir / downstream reservoirs_group
+           delta = defaults to zero and has to be set manually
+           alpha =  defaults to zero and has to be set manually
+           rate = shared between all connections
+           ref = shared between all connections
+           species = list, optional, if present, only these species will be connected
+           ctype = if set it will be shared between all connections. To
+           pl = [list]) process list. optional, shared between all connections
+           id = optional identifier, shared between all connections
+           plot = &#34;yes/no&#34; # defaults to yes, shared between all connections
+        )
+
+        Notes: if species is given as a list, shared arguments like, delta, alpha, rate, ref,
+        ctype pl, and plot can also be provided as list. As long as there is a one to one mapping
+        the species list and the list of a shared property, the shared property will be mapped
+        to each species, e.g.:
+
+        species = [CO, Hplus]
+        alpha = [1.02, 1.03]
+
+        will create two connections, the first one with an alpha of 1.02, and the second with an alpha of 1.03
+
+    &#34;&#34;&#34;
+    def __init__(self, **kwargs) -&gt; None:
+
+        # provide a dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            &#34;id&#34;: dict,
+            &#34;name&#34;: str,
+            &#34;source&#34;: (SourceGroup, ReservoirGroup),
+            &#34;sink&#34;: (SinkGroup, ReservoirGroup),
+            &#34;delta&#34;: dict,
+            &#34;rate&#34;: dict,
+            &#34;pl&#34;: dict,
+            &#34;signal&#34;: Signal,
+            &#34;alpha&#34;: dict,
+            &#34;species&#34;: dict,
+            &#34;ctype&#34;: str,
+            &#34;ref&#34;: list,
+            &#34;plot&#34;: dict,
+        }
+
+        self.base_name = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name
+
+        n = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[
+            &#34;sink&#34;].name + &#34;_ConnectionGroup&#34;  # set the name
+
+        # set connection group name
+        kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = [&#34;source&#34;, &#34;sink&#34;]
+
+        # get the number of sub reservoirs in the source and sink
+        nor_sink = len(kwargs[&#34;sink&#34;].species)
+        nor_source = len(kwargs[&#34;source&#34;].species)
+
+        #if nor_source != nor_sink:
+        #    raise ValueError(
+        #        &#34;Number of sub reservoirs does not match. Specify match explicitly&#34;
+        #    )
+
+        cid: dict = {}
+        plot: dict = {}
+        delta: dict = {}
+        alpha: dict = {}
+        rate: dict = {}
+        # loop over names and create dicts
+        for n in kwargs[&#39;sink&#39;].species:
+            cid[n] = &#39;None&#39;
+            plot[n] = &#39;no&#39;
+            delta[n] = &#39;None&#39;
+            alpha[n] = &#39;None&#39;
+            rate[n] = &#39;None&#39;
+
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            &#34;id&#34;: cid,
+            &#34;plot&#34;: plot,
+            &#34;delta&#34;: delta,
+            &#34;alpha&#34;: alpha,
+            &#34;rate&#34;: rate
+        }
+
+        # turn kwargs into instance variables
+        self.__validateandregister__(kwargs)
+
+        self.loc: list = []  # list of connections in this group
+
+        # self.source.lor is a  list with the object names in the group
+        self.mo = self.sink.lor[0].mo
+
+        # loop over sub-reservoirs and create connections
+        for i, r in enumerate(self.source.lor):
+            if not isinstance(r, (Reservoir, Source, Sink)):
+                raise ValueError(
+                    f&#34;{r} must be of type reservoir, source or sink&#34;)
+                # take the species of this sub reservoir
+                # in the source, and find matching
+                # species in the sink
+
+            # loop over sink list until a match is found
+            for j, s in enumerate(self.sink.lor):
+                if not isinstance(s, (Reservoir, Source, Sink)):
+                    raise ValueError(
+                        f&#34;{r} must be of type reservoir, source or sink&#34;)
+
+                if r.species == s.species:  # match found
+                    # name = f&#34;{self.source.name}_{r.species.name}_2_{self.sink.name}_{s.species.name}&#34;
+                    name = f&#34;{r.species.name}_2_{s.species.name}_Connector&#34;
+                    a = Connect(
+                        name=name,
+                        source=r,
+                        sink=s,
+                        rate=self.rate[s.species],
+                        delta=self.delta[s.species],
+                        alpha=self.alpha[s.species],
+                        plot=self.plot[s.species],
+                        id=self.id[s.species],
+                        register=self,
+                    )
+                elif j == nor_sink:  # no match was found
+                    raise ValueError(&#34;{r.species} has no match&#34;)
+
+            # register connection with connection group
+            #this should happen automatically
+            #setattr(self, a.name, a)
+            self.loc.append(a)
+
+        # register connection group in global namespace
+        self.__register_name__()
+
+    def describe(self) -&gt; None:
+        &#34;&#34;&#34; List all connections in this group
+        
+        &#34;&#34;&#34;
+
+        print(f&#34;Group Connection from {self.source.name} to {self.sink.name}\n&#34;)
+        print(&#34;    The following Connections are part of this group\n&#34;)
+
+        for c in self.loc:
+            print(c.name)
+
+        print(&#34;&#34;)
+
+        print(f&#34;        You can query the details of each connection like this:\n&#34;)
+        print(f&#34;          {self.name}.{self.loc[0].name}.describe()&#34;)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="esbmtk.esbmtk.esbmtkBase" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="esbmtk.connections.ConnectionGroup.describe"><code class="name flex">
+<span>def <span class="ident">describe</span></span>(<span>self) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>List all connections in this group</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def describe(self) -&gt; None:
+    &#34;&#34;&#34; List all connections in this group
+    
+    &#34;&#34;&#34;
+
+    print(f&#34;Group Connection from {self.source.name} to {self.sink.name}\n&#34;)
+    print(&#34;    The following Connections are part of this group\n&#34;)
+
+    for c in self.loc:
+        print(c.name)
+
+    print(&#34;&#34;)
+
+    print(f&#34;        You can query the details of each connection like this:\n&#34;)
+    print(f&#34;          {self.name}.{self.loc[0].name}.describe()&#34;)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="esbmtk" href="index.html">esbmtk</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="esbmtk.connections.Connect" href="#esbmtk.connections.Connect">Connect</a></code></h4>
+<ul class="two-column">
+<li><code><a title="esbmtk.connections.Connect.alpha" href="#esbmtk.connections.Connect.alpha">alpha</a></code></li>
+<li><code><a title="esbmtk.connections.Connect.delta" href="#esbmtk.connections.Connect.delta">delta</a></code></li>
+<li><code><a title="esbmtk.connections.Connect.describe" href="#esbmtk.connections.Connect.describe">describe</a></code></li>
+<li><code><a title="esbmtk.connections.Connect.get_species" href="#esbmtk.connections.Connect.get_species">get_species</a></code></li>
+<li><code><a title="esbmtk.connections.Connect.rate" href="#esbmtk.connections.Connect.rate">rate</a></code></li>
+<li><code><a title="esbmtk.connections.Connect.update" href="#esbmtk.connections.Connect.update">update</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="esbmtk.connections.Connection" href="#esbmtk.connections.Connection">Connection</a></code></h4>
+</li>
+<li>
+<h4><code><a title="esbmtk.connections.ConnectionGroup" href="#esbmtk.connections.ConnectionGroup">ConnectionGroup</a></code></h4>
+<ul class="">
+<li><code><a title="esbmtk.connections.ConnectionGroup.describe" href="#esbmtk.connections.ConnectionGroup.describe">describe</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>
