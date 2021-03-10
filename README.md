@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org00aeb23)
-2.  [News](#org74bdce5)
-3.  [Contributing](#org5c979d6)
-4.  [Installation](#orgd117d69)
-5.  [Documentation](#org84ffda9)
-6.  [Todo](#org32bd3df)
-7.  [License](#orgda92131)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org726c8fc)
+2.  [News](#orga42cafa)
+3.  [Contributing](#orgafae407)
+4.  [Installation](#org945b942)
+5.  [Documentation](#org62aa497)
+6.  [Todo](#org758ed8c)
+7.  [License](#orgbac8392)
 
 
-<a id="org00aeb23"></a>
+<a id="org726c8fc"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,7 +30,7 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="org74bdce5"></a>
+<a id="orga42cafa"></a>
 
 # News
 
@@ -127,7 +127,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org5c979d6"></a>
+<a id="orgafae407"></a>
 
 # Contributing
 
@@ -137,7 +137,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orgd117d69"></a>
+<a id="org945b942"></a>
 
 # Installation
 
@@ -158,7 +158,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org84ffda9"></a>
+<a id="org62aa497"></a>
 
 # Documentation
 
@@ -173,7 +173,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org32bd3df"></a>
+<a id="org758ed8c"></a>
 
 # Todo
 
@@ -182,7 +182,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orgda92131"></a>
+<a id="orgbac8392"></a>
 
 # License
 
