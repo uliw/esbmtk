@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org9d94f72)
-2.  [News](#org261b3ce)
-3.  [Contributing](#org1e012d7)
-4.  [Installation](#org69b66a8)
-5.  [Documentation](#org0456c51)
-6.  [Todo](#org5b33014)
-7.  [License](#org2a131e6)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org00aeb23)
+2.  [News](#org74bdce5)
+3.  [Contributing](#org5c979d6)
+4.  [Installation](#orgd117d69)
+5.  [Documentation](#org84ffda9)
+6.  [Todo](#org32bd3df)
+7.  [License](#orgda92131)
 
 
-<a id="org9d94f72"></a>
+<a id="org00aeb23"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,9 +30,11 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="org261b3ce"></a>
+<a id="org74bdce5"></a>
 
 # News
+
+-   March 10<sup>th</sup>, the code documentation is now available at <https://uliw.github.io/esbmtk/esbmtk/index.html>
 
 -   March 6<sup>th</sup>, the plot reservoir function now takes and additional
     filename argument e.g., (fn="foo.pdf"). Signals now accept an
@@ -125,7 +127,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org1e012d7"></a>
+<a id="org5c979d6"></a>
 
 # Contributing
 
@@ -135,7 +137,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org69b66a8"></a>
+<a id="orgd117d69"></a>
 
 # Installation
 
@@ -156,7 +158,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org0456c51"></a>
+<a id="org84ffda9"></a>
 
 # Documentation
 
@@ -171,7 +173,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org5b33014"></a>
+<a id="org32bd3df"></a>
 
 # Todo
 
@@ -180,7 +182,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org2a131e6"></a>
+<a id="orgda92131"></a>
 
 # License
 

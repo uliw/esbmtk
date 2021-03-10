@@ -17,6 +17,8 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - March 10^{th}, the code documentation is now available at https://uliw.github.io/esbmtk/esbmtk/index.html
+
  - March 6^{th}, the plot reservoir function now takes and additional
    filename argument e.g., (fn="foo.pdf"). Signals now accept an
    optional reservoir argument. This simplifies signal creation as the
