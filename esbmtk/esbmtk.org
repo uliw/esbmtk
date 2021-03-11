@@ -2951,6 +2951,219 @@ class ExternalData(esbmtkBase):
 #+END_SRC
 
 
+
+** The Seawater Class
+#+BEGIN_SRC ipython :tangle esbmtk.py
+class Seawater(esbmtkBase):
+    """Provide basic seawater properties as a function of T and Salinity.
+    Pressure may come at a later stage
+
+    Example:
+
+    Seawater(name="SW",
+             model=
+             temperature = optional in C, defaults to 25
+             salinity  = optional in psu, defaults to 35
+            )
+
+    useful methods:
+
+    SW.show() will list all known values
+
+    After initialization this class provides access to each value the following way
+
+    instance_name.variable_name
+
+    """
+
+    def __init__(self, **kwargs: Dict[str, str]):
+
+        import math
+
+        # dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            "name": str,
+            "model": Model,
+            "salinity": (int, float),
+            "temperature": (int, float),
+            "pH": (int, float),
+        }
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = ["name"]
+        # list of default values if none provided
+        self.lod: Dict[str, any] = {"salinity": 35.0, "temperature": 25.0, "pH": 8.1}
+
+        # validate input and initialize instance variables
+        self.__initerrormessages__()
+        self.__validateandregister__(kwargs)  # initialize keyword values
+
+        # legacy names
+        self.n: str = self.name  # string =  name of this instance
+        self.mo: Model = self.model
+        self.hplus = 10 ** -self.pH
+
+        self.__init_std_seawater__()
+        self.__init_carbon__()
+        self.__init_boron__()
+        self.__init_water__()
+
+        # get total alkalinity
+        self.ca = self.hco3 + 2 * self.co3
+        self.ta = self.ca + self.boh4 + self.oh - self.hplus
+
+        self.__register_name__()
+
+    def show(self) -> None:
+        """Printout pK values. """
+
+        from math import log10
+
+        k_values: list = ["K0", "K1", "K2", "KW", "KB"]
+        species: list = [
+            "dic",
+            "ta",
+            "ca",
+            "co2",
+            "hco3",
+            "co3",
+            "boron",
+            "boh4",
+            "boh3",
+            "oh",
+        ]
+
+        for n in species:
+            v = getattr(self, n)
+            print(f"{n} = {v * 1000:.2f} mmol/l")
+
+        print(f"pH = {-log10(self.hplus):.2f}\n")
+        print(f"salinity = {self.salinity:.2f}")
+        print(f"temperature = {self.temperature:.2f}\n")
+
+        for n in k_values:
+            v = getattr(self, n)
+            lv = -log10(v)
+            print(f"{n} = {v:.2e}, p{n} = {lv:.2f}")
+
+    def __init_std_seawater__(self) -> None:
+        """Provide values for standard seawater. Data after Zeebe and Gladrow
+        all values in mol/kg. To convert to seawater these values need to be
+        multiplied by sw
+
+        """
+
+        S = self.salinity
+        swc = (1000 + S) / 1000
+        self.dic = 0.00204 * swc
+        self.boron = 0.00042 * swc
+        self.oh = 0.00001 * swc
+
+    def __init_carbon__(self) -> None:
+        """Calculate the carbon equilibrium values as function of
+        temperature T and salinity S
+
+        """
+
+        from math import exp, log
+
+        T = 273.15 + self.temperature
+        S = self.salinity
+
+        # After Weiss 1974
+        lnK0: float = (
+            93.4517 * 100 / T
+            - 60.2409
+            + 23.3585 * log(T / 100)
+            + S * (0.023517 - 0.023656 * T / 100 + 0.0047036 * (T / 100) ** 2)
+        )
+
+        lnk1: float = (
+            -2307.1266 / T
+            + 2.83655
+            - 1.5529413 * log(T)
+            + S ** 0.5 * (-4.0484 / T - 0.20760841)
+            + S * 0.08468345
+            + S ** (3 / 2) * -0.00654208
+            + log(1 - 0.001006 * S)
+        )
+
+        lnk2: float = (
+            -9.226508
+            - 3351.6106 / T
+            - 0.2005743 * log(T)
+            + (-0.106901773 - 23.9722 / T) * S ** 0.5
+            + 0.1130822 * S
+            - 0.00846934 * S ** 1.5
+            + log(1 - 0.001006 * S)
+        )
+
+        self.K0: float = exp(lnK0)
+        self.K1: float = exp(lnk1)
+        self.K2: float = exp(lnk2)
+
+        self.co2 = self.dic / (
+            1 + self.K1 / self.hplus + self.K1 * self.K2 / self.hplus ** 2
+        )
+        self.hco3 = self.dic / (1 + self.hplus / self.K1 + self.K2 / self.hplus)
+        self.co3 = self.dic / (
+            1 + self.hplus / self.K2 + self.hplus ** 2 / (self.K1 * self.K2)
+        )
+
+    def __init_boron__(self) -> None:
+        """Calculate the boron equilibrium values as function of
+        temperature T and salinity S
+
+        """
+
+        from math import exp, log
+
+        T = 273.15 + self.temperature
+        S = self.salinity
+
+        lnkb = (
+            (
+                -8966.9
+                - 2890.53 * S ** 0.5
+                - 77.942 * S
+                + 1.728 * S ** 1.5
+                - 0.0996 * S ** 2
+            )
+            / T
+            + 148.0248
+            + 137.1942 * S ** 0.5
+            + 1.62142 * S
+            - (24.4344 + 25.085 * S ** 0.5 + 0.247 * S) * log(T)
+            + 0.053105 * S ** 0.5 * T
+        )
+
+        self.KB = exp(lnkb)
+
+        self.boh4 = self.boron * self.KB / (self.hplus + self.KB)
+        self.boh3 = self.boron - self.boh4
+
+    def __init_water__(self) -> None:
+        """Calculate the water equilibrium values as function of
+        temperature T and salinity S
+
+        """
+
+        from math import exp, log
+
+        T = 273.15 + self.temperature
+        S = self.salinity
+
+        lnKW = (
+            148.96502
+            - 13847.27 / T
+            - 23.6521 * log(T)
+            + (118.67 / T - 5.977 + 1.0495 * log(T)) * S ** 0.5
+            - 0.01615 * S
+        )
+        self.KW = exp(lnKW)
+        self.oh = self.KW / self.hplus
+#+End_SRC
+
 * Import the remaining modules
 #+BEGIN_SRC ipython :tangle esbmtk.py
 from .connections import Connection, ConnectionGroup

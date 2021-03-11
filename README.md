@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org726c8fc)
-2.  [News](#orga42cafa)
-3.  [Contributing](#orgafae407)
-4.  [Installation](#org945b942)
-5.  [Documentation](#org62aa497)
-6.  [Todo](#org758ed8c)
-7.  [License](#orgbac8392)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org8d46b54)
+2.  [News](#org8b31d6b)
+3.  [Contributing](#org435dfd4)
+4.  [Installation](#orgdea2441)
+5.  [Documentation](#orga4a0f05)
+6.  [Todo](#orgfb95fbd)
+7.  [License](#orgd4ed4e0)
 
 
-<a id="org726c8fc"></a>
+<a id="org8d46b54"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -30,9 +30,12 @@ generation of graphical results. There is however no support for
 chemical reactions (including equilibrium reactions).
 
 
-<a id="orga42cafa"></a>
+<a id="org8b31d6b"></a>
 
 # News
+
+-   March 11<sup>th</sup>, added a seawater class which provides access to
+    K-values, and concentrations.
 
 -   March 10<sup>th</sup>, the code documentation is now available at <https://uliw.github.io/esbmtk/esbmtk/index.html>
 
@@ -127,7 +130,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgafae407"></a>
+<a id="org435dfd4"></a>
 
 # Contributing
 
@@ -137,7 +140,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org945b942"></a>
+<a id="orgdea2441"></a>
 
 # Installation
 
@@ -158,7 +161,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org62aa497"></a>
+<a id="orga4a0f05"></a>
 
 # Documentation
 
@@ -173,7 +176,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org758ed8c"></a>
+<a id="orgfb95fbd"></a>
 
 # Todo
 
@@ -182,7 +185,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orgbac8392"></a>
+<a id="orgd4ed4e0"></a>
 
 # License
 

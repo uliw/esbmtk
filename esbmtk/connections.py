@@ -1,7 +1,6 @@
 """
 
      esbmtk.connections
-     ~~~~~~~~~~~~~~~~~~
 
      Classes which handle the connections and fluxes between esbmtk objects
      like Reservoirs, Sources, and Sinks.

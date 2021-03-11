@@ -17,6 +17,9 @@ chemical reactions (including equilibrium reactions).
 
 * News
 
+ - March 11^{th}, added a seawater class which provides access to
+   K-values, and concentrations.
+
  - March 10^{th}, the code documentation is now available at https://uliw.github.io/esbmtk/esbmtk/index.html
 
  - March 6^{th}, the plot reservoir function now takes and additional
