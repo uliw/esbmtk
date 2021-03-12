@@ -1,36 +1,33 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org8d46b54)
-2.  [News](#org8b31d6b)
-3.  [Contributing](#org435dfd4)
-4.  [Installation](#orgdea2441)
-5.  [Documentation](#orga4a0f05)
-6.  [Todo](#orgfb95fbd)
-7.  [License](#orgd4ed4e0)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orge1a0c5b)
+2.  [News](#org81fc528)
+3.  [Contributing](#org14bd91a)
+4.  [Installation](#org1bbe29f)
+5.  [Documentation](#org30af897)
+6.  [Todo](#org307ebc6)
+7.  [License](#orga9cfc0a)
 
 
-<a id="org8d46b54"></a>
+<a id="orge1a0c5b"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
 ESBMTK is python library which aims to simplify typical box modeling
-projects the in Earth-Sciences. I started this project to teach myself
-python and explore object oriented programming. The code became
-however functional enough that the focus of this project has shifted
-to make box modeling more approachable for classroom teaching. So
-performance and scalability are not great. Specifically, the solver is
-just a simple forward Euler scheme, so stiff problems are not handled
+projects the in Earth-Sciences. The general focus is to make box
+modeling more approachable for classroom teaching. So performance and
+scalability currently no priority. Specifically, the solver is just a
+simple forward Euler scheme, so stiff problems are not handled
 gracefully.
 
 At present, it will calculate masses/concentrations in reservoirs and
 fluxes including isotope ratios. It provides a variety of classes
 which allow the creation and manipulation of input signals, and the
-generation of graphical results. There is however no support for
-chemical reactions (including equilibrium reactions).
+generation of graphical results.
 
 
-<a id="org8b31d6b"></a>
+<a id="org81fc528"></a>
 
 # News
 
@@ -130,7 +127,7 @@ chemical reactions (including equilibrium reactions).
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org435dfd4"></a>
+<a id="org14bd91a"></a>
 
 # Contributing
 
@@ -140,7 +137,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orgdea2441"></a>
+<a id="org1bbe29f"></a>
 
 # Installation
 
@@ -161,7 +158,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="orga4a0f05"></a>
+<a id="org30af897"></a>
 
 # Documentation
 
@@ -176,7 +173,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orgfb95fbd"></a>
+<a id="org307ebc6"></a>
 
 # Todo
 
@@ -185,7 +182,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orgd4ed4e0"></a>
+<a id="orga9cfc0a"></a>
 
 # License
 
