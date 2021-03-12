@@ -964,9 +964,9 @@ class ConnectionGroup(esbmtkBase):
 
         Connect reservoir/sink/source groups when at least one of the
         arguments is a reservoirs_group object. This method will
-        create regular connections for each matching species. 
+        create regular connections for each matching species.
 
-        Use the connection.update() method to fine tune connections 
+        Use the connection.update() method to fine tune connections
         after creation
 
     Example::
@@ -995,6 +995,7 @@ class ConnectionGroup(esbmtkBase):
         will create two connections, the first one with an alpha of 1.02, and the second with an alpha of 1.03
 
     """
+
     def __init__(self, **kwargs) -> None:
 
         # provide a dict of all known keywords and their type
@@ -1016,8 +1017,9 @@ class ConnectionGroup(esbmtkBase):
 
         self.base_name = kwargs["source"].name + "_2_" + kwargs["sink"].name
 
-        n = kwargs["source"].name + "_2_" + kwargs[
-            "sink"].name + "_ConnectionGroup"  # set the name
+        n = (
+            kwargs["source"].name + "_2_" + kwargs["sink"].name + "_ConnectionGroup"
+        )  # set the name
 
         # set connection group name
         kwargs.update({"name": n})  # and add it to the kwargs
@@ -1029,7 +1031,7 @@ class ConnectionGroup(esbmtkBase):
         nor_sink = len(kwargs["sink"].species)
         nor_source = len(kwargs["source"].species)
 
-        #if nor_source != nor_sink:
+        # if nor_source != nor_sink:
         #    raise ValueError(
         #        "Number of sub reservoirs does not match. Specify match explicitly"
         #    )
@@ -1040,12 +1042,12 @@ class ConnectionGroup(esbmtkBase):
         alpha: dict = {}
         rate: dict = {}
         # loop over names and create dicts
-        for n in kwargs['sink'].species:
-            cid[n] = 'None'
-            plot[n] = 'no'
-            delta[n] = 'None'
-            alpha[n] = 'None'
-            rate[n] = 'None'
+        for n in kwargs["sink"].species:
+            cid[n] = "None"
+            plot[n] = "no"
+            delta[n] = "None"
+            alpha[n] = "None"
+            rate[n] = "None"
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
@@ -1053,7 +1055,7 @@ class ConnectionGroup(esbmtkBase):
             "plot": plot,
             "delta": delta,
             "alpha": alpha,
-            "rate": rate
+            "rate": rate,
         }
 
         # turn kwargs into instance variables
@@ -1067,8 +1069,7 @@ class ConnectionGroup(esbmtkBase):
         # loop over sub-reservoirs and create connections
         for i, r in enumerate(self.source.lor):
             if not isinstance(r, (Reservoir, Source, Sink)):
-                raise ValueError(
-                    f"{r} must be of type reservoir, source or sink")
+                raise ValueError(f"{r} must be of type reservoir, source or sink")
                 # take the species of this sub reservoir
                 # in the source, and find matching
                 # species in the sink
@@ -1076,38 +1077,41 @@ class ConnectionGroup(esbmtkBase):
             # loop over sink list until a match is found
             for j, s in enumerate(self.sink.lor):
                 if not isinstance(s, (Reservoir, Source, Sink)):
-                    raise ValueError(
-                        f"{r} must be of type reservoir, source or sink")
+                    raise ValueError(f"{r} must be of type reservoir, source or sink")
 
+                # the species may be defined, but there may be no rate set yet!
                 if r.species == s.species:  # match found
-                    # name = f"{self.source.name}_{r.species.name}_2_{self.sink.name}_{s.species.name}"
-                    name = f"{r.species.name}_2_{s.species.name}_Connector"
-                    a = Connect(
-                        name=name,
-                        source=r,
-                        sink=s,
-                        rate=self.rate[s.species],
-                        delta=self.delta[s.species],
-                        alpha=self.alpha[s.species],
-                        plot=self.plot[s.species],
-                        id=self.id[s.species],
-                        register=self,
-                    )
+                    if s.species in self.rate:
+                        # name = f"{self.source.name}_{r.species.name}_2_{self.sink.name}_{s.species.name}"
+                        name = f"{r.species.name}_2_{s.species.name}_Connector"
+                        a = Connect(
+                            name=name,
+                            source=r,
+                            sink=s,
+                            rate=self.rate[s.species],
+                            delta=self.delta[s.species],
+                            alpha=self.alpha[s.species],
+                            plot=self.plot[s.species],
+                            id=self.id[s.species],
+                            register=self,
+                        )
+                    else:
+                        print(
+                            f"\n Warning, no rate set for {r.species.n}. Ignoring this connection"
+                        )
                 elif j == nor_sink:  # no match was found
                     raise ValueError("{r.species} has no match")
 
             # register connection with connection group
-            #this should happen automatically
-            #setattr(self, a.name, a)
+            # this should happen automatically
+            # setattr(self, a.name, a)
             self.loc.append(a)
 
         # register connection group in global namespace
         self.__register_name__()
 
     def describe(self) -> None:
-        """ List all connections in this group
-        
-        """
+        """List all connections in this group"""
 
         print(f"Group Connection from {self.source.name} to {self.sink.name}\n")
         print("    The following Connections are part of this group\n")

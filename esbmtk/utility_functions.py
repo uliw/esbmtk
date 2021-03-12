@@ -469,11 +469,11 @@ def get_pco2(dic: float, ta: float, hplus: float) -> float:
     DIC has to be in mmol/l!
 
     """
-    pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
+    pk1 = 5.86  # at this ph value CO2 and HCO3 have the same concentration
     pk2 = 8.92
     K1 = 10 ** -pk1
     K2 = 10 ** -pk2
-    K0 = 36
+    K0 = 2.84e-02
 
     # hplus = get_hplus(dic, ta)
 

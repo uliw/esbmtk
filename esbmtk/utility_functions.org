@@ -576,11 +576,11 @@ def get_pco2(dic: float, ta: float, hplus: float) -> float:
     DIC has to be in mmol/l!
 
     """
-    pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
+    pk1 = 5.86  # at this ph value CO2 and HCO3 have the same concentration
     pk2 = 8.92
     K1 = 10 ** -pk1
     K2 = 10 ** -pk2
-    K0 = 36
+    K0 = 2.84e-02
 
     # hplus = get_hplus(dic, ta)
 
@@ -635,56 +635,3 @@ def sort_by_type(l: list, t: list, m: str) -> list:
     return rl
 #+END_SRC
 
-
-#+BEGIN_SRC ipython  :tangle utility_functions.py
-def carbon_ec(t: float, S: float) -> tuple:
-    """Calculate the carbon equilibrium values as function of
-    temperature T and salinity S
-
-    """
-    from math import exp, log
-
-    T = 273.15 + t
-
-    # After Weiss 1974
-    lnK0 = (
-        93.4517 * 100 / T
-        - 60.2409
-        + 23.3585 * log(T / 100)
-        + S * (0.023517 - 0.023656 * T / 100 + 0.0047036 * (T / 100) ** 2)
-    )
-
-    lnk1 = (
-        -2307.1266 / T
-        + 2.83655
-        - 1.5529413 * log(T)
-        + S ** 0.5 * (-4.0484 / T - 0.20760841)
-        + S * 0.08468345
-        + S ** (3 / 2) * -0.00654208
-        + log(1 - 0.001006 * S)
-    )
-
-    lnk2 = (
-        -9.226508
-        - 3351.6106 / T
-        - 0.2005743 * log(T)
-        + (-0.106901773 - 23.9722 / T) * S ** 0.5
-        + 0.1130822 * S
-        - 0.00846934 * S ** 1.5
-        + log(1 - 0.001006 * S)
-    )
-
-    K0: float = exp(lnK0)
-    K1: float = exp(lnk1)
-    K2: float = exp(lnk2)
-    return (K0, K1, K2)
-
-
-print(carbon_ec(25, 35))
-#+END_SRC
-
-
-#+RESULTS:
-:results:
-# Out [1]: 
-:end:

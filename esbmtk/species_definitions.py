@@ -43,8 +43,13 @@ def carbon(model):
     Species(name="CO3", element=eh, display_as = "CO$_3^{2-}$")
     Species(name="DOC", element=eh)
     Species(name="C", element=eh)
-    Species(name="ALK", element=eh)
-    Species(name="CALK", element=eh)
+    Species(name="ALK", element=eh)  # Alkalinity
+    Species(name="CALK", element=eh) # Carbonate Alkalinity
+    Species(name="CA", element=eh) 
+    Species(name="TALK", element=eh) # Total Alkalinity
+    Species(name="TA", element=eh) 
+    Species(name="PALK", element=eh) # Practical Alkalinity
+    Species(name="PA", element=eh) 
 
 
 def sulfur(model):

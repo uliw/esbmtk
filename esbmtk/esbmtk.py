@@ -99,10 +99,13 @@ class esbmtkBase(object):
                 setattr(builtins, self.name, self)
             else:
                 if self.name in self.mo.lmo:
-                    raise NameError(f"{self.name} is a duplicate name. Please fix")
+                    pass  # we allow duplicate names as long as they are not in the
+                # global namespace
+                # raise NameError(f"{self.name} is a duplicate name. Please fix")
                 else:
                     self.mo.lmo.append(self.name)
                     setattr(builtins, self.name, self)
+                    # self.mo.dmo.update({self.name: self})
 
         else:
             if self in self.register.lmo:
@@ -111,6 +114,7 @@ class esbmtkBase(object):
                 )
             setattr(self.register, self.name, self)
             self.register.lmo.append(self)
+            # self.mo.dmo.update({self.name: self})
 
         logging.info(self.__repr__(1))
 
@@ -485,6 +489,7 @@ class Model(esbmtkBase):
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # empty list which will hold all reservoir references
+        self.dmo : dict ={}
         self.lor: list = []
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
@@ -1017,6 +1022,7 @@ class Reservoir(esbmtkBase):
                             plot_transform_c = a function reference, optional (see below)
                             legend_left = str, optional, useful for plot transform
                             display_precision = number, optional, inherited from Model
+                            register = optional, use to register with Reservoir Group
                             )
 
           you must either give mass or concentration. The result will always be displayed as concentration
