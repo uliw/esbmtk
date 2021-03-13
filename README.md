@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orge1a0c5b)
-2.  [News](#org81fc528)
-3.  [Contributing](#org14bd91a)
-4.  [Installation](#org1bbe29f)
-5.  [Documentation](#org30af897)
-6.  [Todo](#org307ebc6)
-7.  [License](#orga9cfc0a)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org1f3b8ce)
+2.  [News](#orga743241)
+3.  [Contributing](#org123fe19)
+4.  [Installation](#org21fd757)
+5.  [Documentation](#orgb0e96f1)
+6.  [Todo](#orga1378c4)
+7.  [License](#orgad2a0cb)
 
 
-<a id="orge1a0c5b"></a>
+<a id="org1f3b8ce"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,14 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org81fc528"></a>
+<a id="orga743241"></a>
 
 # News
+
+-   March 13<sup>th</sup>, cleaned up the use of the `k_value` keyword which is
+    now restricted to the `flux_balance` connection type. In all other
+    instances use the `scale` keyword instead. The old keyword is still
+    working, but will print a warning message.
 
 -   March 11<sup>th</sup>, added a seawater class which provides access to
     K-values, and concentrations.
@@ -127,7 +132,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org14bd91a"></a>
+<a id="org123fe19"></a>
 
 # Contributing
 
@@ -137,7 +142,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org1bbe29f"></a>
+<a id="org21fd757"></a>
 
 # Installation
 
@@ -158,7 +163,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org30af897"></a>
+<a id="orgb0e96f1"></a>
 
 # Documentation
 
@@ -173,7 +178,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org307ebc6"></a>
+<a id="orga1378c4"></a>
 
 # Todo
 
@@ -182,7 +187,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orga9cfc0a"></a>
+<a id="orgad2a0cb"></a>
 
 # License
 

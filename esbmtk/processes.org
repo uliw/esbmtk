@@ -1,5 +1,3 @@
-
-
 * Global Imports
 #+BEGIN_SRC ipython :tangle processes.py
 from numbers import Number
@@ -694,9 +692,9 @@ class Reaction(ScaleFlux):
        Connect(source=IW_H2S,
                sink=S0,
                ctype = "react_with",
-               k_value=1,
+               scale=1,
                ref = O2_diff_to_S0,
-               k_value =1,
+               scale =1,
        )
     """
 
@@ -817,7 +815,7 @@ class RateConstant(Process):
     ScaleRelativeToConcentration
 
     """
-    __slots__ = ('k_value', 'ref_value')
+    __slots__ = ('scale', 'ref_value')
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this Process
 
@@ -835,7 +833,7 @@ class RateConstant(Process):
 
         # update the allowed keywords
         self.lkk :dict = {
-            "k_value": Number,
+            "scale": Number,
             "ref_value": Number,
             "name": str,
             "reservoir": (Reservoir,Source,Sink),
@@ -848,7 +846,7 @@ class RateConstant(Process):
         }
 
         # new required keywords
-        self.lrk.extend(["reservoir", "k_value"])
+        self.lrk.extend(["reservoir", "scale"])
 
         # dict with default values if none provided
         # self.lod = {r
@@ -857,7 +855,7 @@ class RateConstant(Process):
 
         # add these terms to the known error messages
         self.bem.update({
-            "k_value": "a number",
+            "scale": "a number",
             "reservoir": "Reservoir handle",
             "ref_reservoirs": "List of Reservoir handle(s)",
             "ref_value": "a number or flux quantity",
@@ -893,7 +891,7 @@ class ScaleRelativeToNormalizedConcentration(RateConstant):
                        name = "Name",
                        reservoir= upstream_reservoir_handle,
                        flux = flux handle,
-                       K_value =  1000,
+                       Scale =  1000,
                        ref_value = 2 # reference_concentration
     )
 
@@ -904,7 +902,7 @@ class ScaleRelativeToNormalizedConcentration(RateConstant):
           this will be called by the Model.run() method
           """
 
-        scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.k_value
+        scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.scale
         # scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
 
@@ -926,7 +924,7 @@ class ScaleRelativeToConcentration(RateConstant):
                        name = "Name",
                        reservoir= upstream_reservoir_handle,
                        flux = flux handle,
-                       K_value =  1000,
+                       Scale =  1000,
     )
 
     """
@@ -935,8 +933,8 @@ class ScaleRelativeToConcentration(RateConstant):
         """
           this will be called by the Model.run() method
           """
-        #print(f"k= {self.k_value}")
-        scale: float = reservoir.c[i - 1] * self.k_value
+        #print(f"k= {self.scale}")
+        scale: float = reservoir.c[i - 1] * self.scale
         # scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] * array([scale, scale, scale, 1])
 
@@ -958,13 +956,13 @@ class ScaleRelativeToMass(RateConstant):
 
      This is faster than setting a new flux, computing the isotope
      ratio and setting delta. So you either have to set the initial
-     flux F0 to 1, or calculate the k_value accordingly
+     flux F0 to 1, or calculate the scale accordingly
 
      ScaleRelativeToMass(
                        name = "Name",
                        reservoir= upstream_reservoir_handle,
                        flux = flux handle,
-                       K_value =  1000,
+                       Scale =  1000,
     )
 
     """
@@ -973,7 +971,7 @@ class ScaleRelativeToMass(RateConstant):
         """
           this will be called by the Model.run() method
           """
-        scale: float = reservoir.m[i - 1] * self.k_value
+        scale: float = reservoir.m[i - 1] * self.scale
         self.f[i] = self.f[i] * array([scale, scale, scale, 1])
 
 
@@ -995,7 +993,7 @@ class ScaleRelativeToNormalizedMass(RateConstant):
                        name = "Name",
                        reservoir= upstream_reservoir_handle,
                        flux = flux handle,
-                       K_value =  1,
+                       Scale =  1,
                        ref_value = 1e5 # reference_mass
     )
 
@@ -1005,7 +1003,7 @@ class ScaleRelativeToNormalizedMass(RateConstant):
         """
           this will be called by the Model.run() method
           """
-        scale: float = (reservoir.m[i - 1] / self.ref_value - 1) * self.k_value
+        scale: float = (reservoir.m[i - 1] / self.ref_value - 1) * self.scale
         # scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
 
@@ -1027,7 +1025,7 @@ class ScaleRelative2otherReservoir(RateConstant):
                ctype = "scale_relative_to_multiple_reservoirs"
                ref_reservoirs = [r1, r2, k etc] # you must provide at least one
                                                 # reservoir or constant
-               k_value = a overall scaling factor
+               scale = a overall scaling factor
             )
     """
 
@@ -1057,7 +1055,7 @@ class ScaleRelative2otherReservoir(RateConstant):
         for r in self.rs:
             c = c * r.c[i - 1]
 
-        scale: float = c * self.k_value * self.constant
+        scale: float = c * self.scale * self.constant
         
         # scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] * array([scale, scale, scale, 1])

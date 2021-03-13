@@ -274,8 +274,11 @@ class esbmtkBase(object):
         new: dict = {}
         if len(self.lod) > 0:
             for k, v in lod.items():
-                if k not in kwargs:
-                    new.update({k: v})
+                if isinstance(k, dict):
+                    print(f"v = {v} k = {k}")
+                else:
+                    if k not in kwargs:
+                        new.update({k: v})
 
         kwargs.update(new)
         return kwargs
