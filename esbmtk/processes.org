@@ -937,6 +937,8 @@ class ScaleRelativeToConcentration(RateConstant):
         scale: float = reservoir.c[i - 1] * self.scale
         # scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] * array([scale, scale, scale, 1])
+        self.f.d[i] = reservoir.d[i-1]
+        #self.f[i] = get_flux_data(self.f[i],reservoir.d[i-1],reservoir.rvalue)
 
 
 class ScaleRelativeToMass(RateConstant):
