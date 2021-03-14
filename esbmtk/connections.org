@@ -1210,13 +1210,14 @@ class ConnectionGroup(esbmtkBase):
                 id=self.cd[s]["cid"],
                 register=self,
             )
+            ## add connection to list of connections
+            self.loc.append(a)
 
         # register connection group in global namespace
         
         self.__register_name__()
         print(f"Created {self.name}")
-        ## add connection to list of connections
-        self.loc.append(a)
+        
         
 
     def describe(self) -> None:
