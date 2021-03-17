@@ -392,7 +392,7 @@ class esbmtkBase(object):
 
         return self.n > other.n
 
-    def describe(self, **kwargs) -> None:
+    def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
         Optional arguments are
 
@@ -456,7 +456,7 @@ class Model(esbmtkBase):
     Model_Name.keyword
 
     The user facing methods of the model class are
-       - Model_Name.describe()
+       - Model_Name.info()
        - Model_Name.save_data()
        - Model_Name.plot_data()
        - Model_Name.plot_reservoirs() takes an optional filename as argument
@@ -530,7 +530,7 @@ class Model(esbmtkBase):
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # empty list which will hold all reservoir references
-        self.dmo : dict ={}
+        self.dmo: dict = {}
         self.lor: list = []
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
@@ -628,7 +628,7 @@ class Model(esbmtkBase):
         logging.basicConfig(filename=fn, filemode="w", level=logging.INFO)
         self.__register_name__()
 
-    def describe(self, **kwargs) -> None:
+    def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
@@ -1124,7 +1124,7 @@ class Reservoir(esbmtkBase):
     Useful methods include:
 
     - Name.write_data() # save data to file
-    - Name.describe()   # describe Reservoir
+    - Name.info()   # info Reservoir
     """
 
     __slots__ = ("m", "l", "h", "d", "c", "lio", "rvalue", "lodir", "lof", "lpc")
@@ -1145,6 +1145,7 @@ class Reservoir(esbmtkBase):
             "plot_transform_c": any,
             "legend_left": str,
             "plot": str,
+            "groupname": str,
             "function": any,
             "display_precision": Number,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
@@ -1171,6 +1172,7 @@ class Reservoir(esbmtkBase):
             "plot_transform_c": "None",
             "legend_left": "None",
             "function": "None",
+            "groupname": "None",
             "a1": 0,
             "a2": 0,
             "a3": 0,
@@ -1200,6 +1202,12 @@ class Reservoir(esbmtkBase):
 
         # legacy names
         self.n: str = self.name  # name of reservoir
+        if "register" in self.kwargs:
+            self.pt: str = f"{self.register.name}_{self.n}"
+            self.groupname = self.register.name
+        else:
+            self.pt = self.name
+
         self.sp: Species = self.species  # species handle
         self.mo: Model = self.species.mo  # model handle
         self.rvalue = self.sp.r
@@ -1476,10 +1484,17 @@ class Reservoir(esbmtkBase):
                 plot_object_data(geo, fn, d, ptype)
 
             if geo != [1, 1]:
-                fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
+                if self.groupname == "None":
+                    fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
+                else:
+                    filename =  f"{self.groupname}_{self.n}.pdf"
+                    fig.suptitle(
+                        f"Group: {self.groupname}, Reservoir: {self.n}\n", size=16
+                    )
 
             fig.tight_layout()
             fig.subplots_adjust(top=0.88)
+            print(f"Saving as {filename}")
             fig.savefig(filename)
 
     def __plot_reservoirs__(self, i: int, ptype: int) -> None:
@@ -1507,7 +1522,7 @@ class Reservoir(esbmtkBase):
         # fig.subplots_adjust(top=0.88)
         fig.savefig(filename)
 
-    def describe(self, **kwargs) -> None:
+    def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
@@ -1537,7 +1552,7 @@ class Reservoir(esbmtkBase):
             print(f"{off}{ind}{p.n}")
 
         print()
-        print("Use the describe method on any of the above connections")
+        print("Use the info method on any of the above connections")
         print("to see information on fluxes and processes")
 #+END_SRC
 
@@ -1592,7 +1607,6 @@ class ReservoirGroup(esbmtkBase):
         self.lrk: list = [
             "name",
             "volume",
-            ["mass", "concentration"],
         ]
 
         # Create a list of default values if none provided
@@ -1658,6 +1672,7 @@ class ReservoirGroup(esbmtkBase):
                     mass=self.mass[s],
                     volume=self.volume,
                     plot=self.plot[s],
+                    groupname = self.name,
                 )
             elif self.mass[s] == "None":
                 # create reservoir without registering it in the global name space
@@ -1669,6 +1684,7 @@ class ReservoirGroup(esbmtkBase):
                     concentration=self.concentration[s],
                     volume=self.volume,
                     plot=self.plot[s],
+                    groupname = self.name,
                 )
             else:
                 raise ValueError("You must specify mass or concentration")
@@ -1835,7 +1851,7 @@ class Flux(esbmtkBase):
         self.h = self.h - other.h
         self.d = get_delta(self.l, self.h, self.sp.r)
 
-    def describe(self, **kwargs) -> None:
+    def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
@@ -1922,6 +1938,7 @@ class SourceSink(esbmtkBase):
            Sink(name = "Pyrite",
                species = SO4,
                display_precision = number, optional, inherited from Model
+               delta = number, optional, defaults to 0
            )
 
     where the first argument is a string, and the second is a reservoir handle
@@ -1936,12 +1953,13 @@ class SourceSink(esbmtkBase):
             "species": Species,
             "display_precision": Number,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "delta": Number,
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species"]
         # list of default values if none provided
-        self.lod: Dict[str, any] = {"display_precision": 0}
+        self.lod: Dict[str, any] = {"display_precision": 0, "delta": 0}
 
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -2135,7 +2153,7 @@ class Signal(esbmtkBase):
 
       Signal.repeat()
       Signal.plot()
-      Signal.describe()
+      Signal.info()
 
     """
 

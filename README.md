@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org1f3b8ce)
-2.  [News](#orga743241)
-3.  [Contributing](#org123fe19)
-4.  [Installation](#org21fd757)
-5.  [Documentation](#orgb0e96f1)
-6.  [Todo](#orga1378c4)
-7.  [License](#orgad2a0cb)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org001517e)
+2.  [News](#org6b68d08)
+3.  [Contributing](#org6b6325b)
+4.  [Installation](#org1b9a56e)
+5.  [Documentation](#orge76a088)
+6.  [Todo](#orgc8186bf)
+7.  [License](#orgb8c60b2)
 
 
-<a id="org1f3b8ce"></a>
+<a id="org001517e"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,14 +27,15 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="orga743241"></a>
+<a id="org6b68d08"></a>
 
 # News
 
 -   March 13<sup>th</sup>, cleaned up the use of the `k_value` keyword which is
     now restricted to the `flux_balance` connection type. In all other
     instances use the `scale` keyword instead. The old keyword is still
-    working, but will print a warning message.
+    working, but will print a warning message. The `describe()` method
+    is now called `info()`.
 
 -   March 11<sup>th</sup>, added a seawater class which provides access to
     K-values, and concentrations.
@@ -132,7 +133,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org123fe19"></a>
+<a id="org6b6325b"></a>
 
 # Contributing
 
@@ -142,7 +143,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org21fd757"></a>
+<a id="org1b9a56e"></a>
 
 # Installation
 
@@ -163,7 +164,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="orgb0e96f1"></a>
+<a id="orge76a088"></a>
 
 # Documentation
 
@@ -178,7 +179,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orga1378c4"></a>
+<a id="orgc8186bf"></a>
 
 # Todo
 
@@ -187,7 +188,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orgad2a0cb"></a>
+<a id="orgb8c60b2"></a>
 
 # License
 

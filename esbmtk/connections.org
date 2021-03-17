@@ -288,7 +288,7 @@ class Connect(esbmtkBase):
      ----------------------------
      The following methods might prove useful
 
-      - describe() will provide a short description of the connection objects.
+      - info() will provide a short description of the connection objects.
       - list_processes() which will list all the processes which are associated with this connection.
       - update() which allows you to update connection properties after the connection has been created
 
@@ -322,7 +322,7 @@ class Connect(esbmtkBase):
             "ctype": str,
             "ref": (Flux, list),
             "ratio": Number,
-            "scale": (Number,str),
+            "scale": (Number, str),
             "ref_value": (str, Number, Q_),
             "ref_reservoir": (list, Reservoir),
             "k_value": (Number, str, Q_),
@@ -331,6 +331,7 @@ class Connect(esbmtkBase):
             "left": (list, Number, Reservoir),
             "right": (list, Number, Reservoir),
             "plot": str,
+            "groupname": bool,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "signal": (Signal, str),
         }
@@ -355,6 +356,7 @@ class Connect(esbmtkBase):
             "k_value": "None",
             "scale": 1,
             "signal": "None",
+            "groupname": False,
         }
 
         # validate and initialize instance variables
@@ -375,6 +377,7 @@ class Connect(esbmtkBase):
                 "left": "Number, list or Reservoir",
                 "right": "Number, list or Reservoir",
                 "signal": "Signal Handle",
+                "groupname": "True or False",
             }
         )
 
@@ -473,18 +476,29 @@ class Connect(esbmtkBase):
             d = self.delta
 
         if self.rate == "None":
-            r = f"1 {self.sp.mo.f_unit}"
+            r = f"0 {self.sp.mo.f_unit}"
             # self._rate = r
         else:
             r = self.rate
 
         # flux name
-        if self.id == "None":
-            n = self.r1.n + "_2_" + self.r2.n + "_Flux"
+        if self.groupname == False:
+            if self.id == "None":
+                n = self.r1.n + "_2_" + self.r2.n + "_Flux"
+            else:
+                n = self.r1.n + "_2_" + self.r2.n + "_" + self.id + "_Flux"
         else:
+            print(f"Group name set")
             n = (
-                self.r1.n + "_2_" + self.r2.n + "_" + self.id + "_Flux"
-            )  # flux name r1_2_r2
+                self.r1.groupname
+                + "_"
+                + self.r1.n
+                + "_2_"
+                + self.r2.groupname
+                + "_"
+                + self.r2.n
+                + "_Flux"
+            )
 
         # derive flux unit from species obbject
         funit = self.sp.mu + "/" + str(self.sp.mo.bu)  # xxx
@@ -564,13 +578,24 @@ class Connect(esbmtkBase):
                         flux=self.fh,
                         lt=p.data,
                     )
-                    self.lop.append(n)
+                    self.lop.insert(0, n)  # signals must come first
+                    print(f"Inserting {n.n} in {self.name} for {self.r.n}")
                 else:
                     raise ValueError(f"Signal type {p.ty} is not defined")
 
+        # ensure that vardeltaout is first in list
+        self.__move_process_to_top_of_queue__(self.lop, VarDeltaOut)
         # nwo we can register everythig on lop
         for p in self.lop:
             p.__register__(self.r, self.fh)
+
+    def __move_process_to_top_of_queue__(self, lop: list, ptype: any) -> None:
+        """Return a copy of lop where ptype has been moved to the top of lop"""
+        p_copy = copy(lop)
+        for p in p_copy:  # loop over process list if provided during init
+            if isinstance(p, ptype):
+                lop.remove(p)
+                lop.insert(0, p)  # insert at top
 
     def __set_process_type__(self) -> None:
         """Deduce flux type based on the provided flux properties. The method calls the
@@ -589,15 +614,20 @@ class Connect(esbmtkBase):
         else:
             self.pn = self.r1.n + "_2_" + self.r2.n + f"_{self.id}"
 
+        # if signal is provided but rate is omitted
+        if self.signal != "None" and self.rate == "None":
+            self._rate = "0 mmol/y"
+
         # if connection type is not set explicitly
         if self.ctype == "None":
             # set the fundamental flux type based on the flux arguments given
             if self.delta != "None" and self.rate != "None":
-                pass  # do nothing but exit this conditional
+                # self.__vardeltaout__()
+                pass  # if delta and rate are specified, do nothing
             # variable flux with fixed delta
-            elif self.delta != "None":  # delta must be set
+            elif self.delta != "None":  # if delta is set
                 self.__passivefluxfixeddelta__()
-            elif self.rate != "None":  # rate must be set
+            elif self.rate != "None":  # if rate is set
                 self.__vardeltaout__()  # variable delta with fixed flux
             else:  # if neither are given -> default varflux type
                 self._delta = 0
@@ -619,6 +649,7 @@ class Connect(esbmtkBase):
             self.__rateconstant__()
         elif self.ctype == "scale_with_concentration":
             self.__rateconstant__()
+            # self.__vardeltaout__()
         elif self.ctype == "scale_with_concentration_normalized":
             self.__rateconstant__()
         elif self.ctype == "scale_with_mass_normalized":
@@ -630,8 +661,10 @@ class Connect(esbmtkBase):
         elif self.ctype == "react_with":
             self.__reaction__()
         elif self.ctype == "monod_type_limit":
-            self.__vardeltaout__()
+            # self.__vardeltaout__()
             self.__rateconstant__()
+        elif self.ctype == "manual":
+            pass
         else:
             print(f"Connection Type {self.ctype} is unknown")
             raise ValueError(f"Unknown connection type {self.ctype}")
@@ -639,6 +672,7 @@ class Connect(esbmtkBase):
         # Set optional flux processes
         if self.alpha != "None":
             self.__alpha__()  # Set optional flux processes
+            # self.__vardeltaout__()
 
     def __passivefluxfixeddelta__(self) -> None:
         """Just a wrapper to keep the if statement manageable"""
@@ -662,7 +696,7 @@ class Connect(esbmtkBase):
 
         ph = VarDeltaOut(
             name=self.pn + "_Pvdo",
-            reservoir=self.r,
+            reservoir=self.source,
             flux=self.fh,
             register=self.register,
             rate=self.rate,
@@ -797,7 +831,8 @@ class Connect(esbmtkBase):
 
         # this process requires that we use the vardeltaout process
         if self.mo.m_type != "mass_only":
-            self.__vardeltaout__()
+            # self.__vardeltaout__()
+            pass
 
         if self.ctype == "scale_with_mass":
             if self.k_value != "None":
@@ -928,7 +963,7 @@ class Connect(esbmtkBase):
 
         self.lop.append(ph)
 
-    def describe(self, **kwargs) -> None:
+    def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
@@ -953,7 +988,7 @@ class Connect(esbmtkBase):
 
         print(f"{ind}Fluxes:")
         for f in sorted(self.lof):
-            f.describe(indent=indent, index=index)
+            f.info(indent=indent, index=index)
 
     def __delete_process__(self) -> None:
         """Updates to the connection properties may change the connection type and thus
@@ -967,8 +1002,9 @@ class Connect(esbmtkBase):
         # delete process from global name space if present
 
         lop = copy(self.lop)
+
         for p in lop:
-            for f in lof:
+            for f in self.lof:
                 if isinstance(f.register, ConnectionGroup):
                     # remove from Connection group list of model objects
                     self.register.lmo.remove(f)
@@ -1139,88 +1175,62 @@ class ConnectionGroup(esbmtkBase):
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["source", "sink"]
-
-        # legacy variables and such
-        self.sr: list = []  # dict with connection properties for each sub_reservoir
-        self.connections: list = []
-        self.loc :list =  [] # list of alla connection objects
-
-        # find all sub reservoirnames and append to list of reservoirs
-        rl: list = []
-        for r in kwargs["source"].lor:
-            rl.append(r.n)
-            # print(f"appending {n.sp.n}")
-
-        # compare against the list reservoirs in the sink
-        for r in kwargs["sink"].lor:
-            if r.n in rl:  # we have a match
-                self.connections.append(r.n)
-
         self.__validateandregister__(kwargs)
-
-        # At this point we have a few entries but not enough to create
-        # connections
-        # 1 extract all sub-reservoirs which have some entry.
-        # We do this by scanning for all rate and ctype entries
-        for r in self.connections:
-            if r in self.ctype:
-                self.sr.append(r)
-                print(f"added connection {r}")
-
-        # now we need to create defaults for all connections
-        self.defaults: dict = {
-            "cid": "None",
-            "plot": "yes",
-            "delta": "None",
-            "alpha": "None",
-            "rate": "None",
-            "scale": "None",
-            "ctype": "None",
-        }
-
-        # for each identified connection, create {connection:{kw:value}}
-
-        self.cd: dict = {}  # dictionary with connection entries
-        for r in self.sr:
-            self.cd[r] = {}
-            for k, v in self.defaults.items():
-                if k in self.kwargs:
-                    self.cd[r][k] = self.kwargs[k][r]
-                else:
-                    self.cd[r][k] = self.defaults[k]
-
         # # self.source.lor is a  list with the object names in the group
         self.mo = self.sink.lor[0].mo
+        self.loc :list = [] # list of connection objects
 
-        # this is hack, because above we matched against species, and here we
-        # assume that the species name is also the name of the sub-reservoir
-        for s in self.sr:
-            print(f"s = {s}")
-            name = f"{s}_Connector"
+        # find all sub reservoirs which have been specified by the ctype keyword
+        self.connections: list = []
+        for r in self.source.lor:
+            if r.sp in self.ctype:
+                self.connections.append(r)
+                print(f"found species {r.sp.n}")
+
+        # now we need to create defaults for all connections
+        # we setup a dict like this  {SO4:{cid:xxx,plot:xxx}}
+        self.cd: dict = {}  # connection dictionary
+        for r in self.connections:  # ["SO4", "H2S"]
+            self.cd[r.n] = {
+                "cid": "None",
+                "plot": "yes",
+                "delta": "None",
+                "alpha": "None",
+                "rate": "None",
+                "scale": "None",
+                "ctype": "None",
+            }
+            # now we loop trough all keys for this connection and see
+            # if we find a corresponding item in the kwargs
+            for kcd, vcd in self.cd[r.n].items():
+                if kcd in self.kwargs:  # found entry like ctype
+                    if r.sp in self.kwargs[kcd]:  # {SO4: xxx}
+                        # update the entry
+                        self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
+            # now we can create the connection
+            name = f"{r.n}_Connector"
             a = Connect(
                 name=name,
-                source=getattr(self.source, s),
-                sink=getattr(self.sink, s),
-                rate=self.cd[s]["rate"],
-                delta=self.cd[s]["delta"],
-                alpha=self.cd[s]["alpha"],
-                plot=self.cd[s]["plot"],
-                ctype=self.cd[s]["ctype"],
-                scale=self.cd[s]["scale"],
-                id=self.cd[s]["cid"],
+                source=getattr(self.source, r.n),
+                sink=getattr(self.sink, r.n),
+                rate=self.cd[r.n]["rate"],
+                delta=self.cd[r.n]["delta"],
+                alpha=self.cd[r.n]["alpha"],
+                plot=self.cd[r.n]["plot"],
+                ctype=self.cd[r.n]["ctype"],
+                scale=self.cd[r.n]["scale"],
+                groupname = True,
+                id=self.cd[r.n]["cid"],
                 register=self,
             )
             ## add connection to list of connections
             self.loc.append(a)
 
         # register connection group in global namespace
-        
         self.__register_name__()
         print(f"Created {self.name}")
-        
-        
 
-    def describe(self) -> None:
+    def info(self) -> None:
         """List all connections in this group"""
 
         print(f"Group Connection from {self.source.name} to {self.sink.name}\n")
@@ -1232,5 +1242,5 @@ class ConnectionGroup(esbmtkBase):
         print("")
 
         print(f"        You can query the details of each connection like this:\n")
-        print(f"          {self.name}.{self.loc[0].name}.describe()")
+        print(f"          {self.name}.{self.loc[0].name}.info()")
 #+END_SRC

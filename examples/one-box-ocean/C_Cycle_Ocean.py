@@ -15,7 +15,8 @@ Model(
 
 Signal(name = "ACR",              # Signal name
        species = CO2,             # Species
-       filename = "emissions.csv" # filename
+       filename = "emissions.csv", # filename
+       plot="yes",
 )
 
 Source(name="Fossil_Fuel_Burning", species=CO2)
@@ -37,9 +38,7 @@ Reservoir(
 Connect(
     source=Fossil_Fuel_Burning,  # source of flux
     sink=Ocean,                  # target of flux
-    rate="0 mol/yr",             # weathering flux in 
-    delta=0,                     # set a default flux
-    pl=[ACR],                    # process list, here the anthropogenic carbon release
+    signal=ACR,                    # process list, here the anthropogenic carbon release
     scale=0.5                    # assume that the ocean uptke is half of the ACR
 )
 
@@ -78,10 +77,6 @@ Connect(
     source=Ocean,          # source of flux
     sink=Carbonate_burial, # target of flux
     rate="18.1E12 mol/yr", # burial rate
-    #ctype = "scale_with_concentration_normalized",
-    #ref_value="2.6 mmol/l",
-    #k_value = 1000,
-    alpha=0,               # set the isotope fractionation
 )
 
 ExternalData(name="measured_carbon_isotopes",

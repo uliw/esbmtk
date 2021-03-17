@@ -17,7 +17,8 @@ generation of graphical results.
  - March 13^{th}, cleaned up the use of the =k_value= keyword which is
    now restricted to the =flux_balance= connection type. In all other
    instances use the =scale= keyword instead. The old keyword is still
-   working, but will print a warning message.
+   working, but will print a warning message. The =describe()= method
+   is now called =info()=.
 
  - March 11^{th}, added a seawater class which provides access to
    K-values, and concentrations.

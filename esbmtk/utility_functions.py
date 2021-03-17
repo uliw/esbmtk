@@ -331,7 +331,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
         second_axis = False
 
     # start subplot
-    ax1 = plt.subplot(rows, cols, fn, title=obj.n)
+    ax1 = plt.subplot(rows, cols, fn)
 
     # set color index
     cn = 0
@@ -368,6 +368,16 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
                     False
                 )  # remove unnecessary frame speciess
 
+        elif isinstance(obj, Signal):
+            # use the same units as the associated flux
+            ax2 = ax1.twinx()  # create a second y-axis
+            # plof right y-scale data
+            ln2 = ax2.plot(
+                time[1:-2], obj.data.d[1:-2], color=col, label=obj.legend_right
+            )
+            ax2.set_ylabel(obj.data.ld)  # species object delta label
+            set_y_limits(ax2, model)
+            ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
         else:
             ax2 = ax1.twinx()  # create a second y-axis
             # plof right y-scale data
@@ -377,7 +387,13 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
             ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
 
     # adjust display properties for title and legend
-    ax1.set_title(obj.n)
+
+    if isinstance(obj, (Reservoir)):
+        ax1.set_title(obj.pt)
+    else:
+        ax1.set_title(obj.n)
+        
+
     plt.rcParams["axes.titlepad"] = 14  # offset title upwards
     plt.rcParams["legend.facecolor"] = "0.8"  # show a gray background
     plt.rcParams["legend.edgecolor"] = "0.8"  # make frame the same color
