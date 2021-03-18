@@ -14,6 +14,16 @@ generation of graphical results.
 
 * News
 
+ - March 18^{th} esbmtk 0.4.0.0 now has a carbonate chemistry module
+   which currently includes methods to calculate PCO_{2}, CA, and H^{+}
+   concentrations from TA and DIC. The seawater class has been renamed
+   =SeawaterConstants= and provides access to a limited set of
+   seawater species concentrations and their K and Pk constants at
+   given set of temperature, salinity and pressure conditions. This
+   version also includes some refactoring in the =Connnection= and
+   =ConnectionmGroup= classes. It is likely that this broke some
+   connection types.
+
  - March 13^{th}, cleaned up the use of the =k_value= keyword which is
    now restricted to the =flux_balance= connection type. In all other
    instances use the =scale= keyword instead. The old keyword is still

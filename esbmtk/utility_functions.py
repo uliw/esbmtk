@@ -456,55 +456,6 @@ def get_object_from_list(n: str, l: list) -> any:
             r = o
     return r
 
-def get_hplus(dic: float, ta: float) -> float:
-    """
-    Calculate H+ concentration based on DIC concentration and Alkalinity
-    according to eq 11 in Follows et al 2006
-
-    """
-
-    pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
-    pk2 = 8.92
-    K1 = 10 ** -pk1
-    K2 = 10 ** -pk2
-
-    # F = -1 * Kb * BT / (Kb + hplus)
-    # ta = ta + F
-
-    g = dic / ta
-    hplus = 0.5 * (
-        (g - 1) * K1 + ((1 - g) ** 2 * K1 ** 2 - 4 * K1 * K2 * (1 - 2 * g)) ** 0.5
-    )
-
-    return hplus
-
-
-def get_pco2(dic: float, ta: float, hplus: float) -> float:
-    """Calculate pCO2 in uatm at 25C and a Salinity of 35
-
-    DIC has to be in mmol/l!
-
-    """
-    pk1 = 5.86  # at this ph value CO2 and HCO3 have the same concentration
-    pk2 = 8.92
-    K1 = 10 ** -pk1
-    K2 = 10 ** -pk2
-    K0 = 2.84e-02
-
-    # hplus = get_hplus(dic, ta)
-
-    # get [CO2] in water
-    co2 = dic / (1 + K1 / hplus + K1 * K2 / hplus ** 2)
-
-    # get pco2 as a function of co2 fugacity
-    pco2 = co2 / K0 * 1e6
-
-    # this cam also be expressed in teh following way
-    # pco2a = (ta/K0 * ( K1/hplus + 2*K1*K2/hplus**2)**-1) * 1.e6
-    # pco2b = (dic/K0 * (1 + K1/hplus + (K1*K2)/hplus**2)**-1) * 1.e6
-
-    return pco2
-
 def sort_by_type(l: list, t: list, m: str) -> list:
     """divide a list by type into new lists. This function will return a
     list and it is up to the calling code to unpack the list

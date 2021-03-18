@@ -142,10 +142,13 @@ class esbmtkBase(object):
                 setattr(builtins, self.name, self)
             else:
                 if self.name in self.mo.lmo:
-                    raise NameError(f&#34;{self.name} is a duplicate name. Please fix&#34;)
+                    pass  # we allow duplicate names as long as they are not in the
+                # global namespace
+                # raise NameError(f&#34;{self.name} is a duplicate name. Please fix&#34;)
                 else:
                     self.mo.lmo.append(self.name)
                     setattr(builtins, self.name, self)
+                    # self.mo.dmo.update({self.name: self})
 
         else:
             if self in self.register.lmo:
@@ -154,6 +157,7 @@ class esbmtkBase(object):
                 )
             setattr(self.register, self.name, self)
             self.register.lmo.append(self)
+            # self.mo.dmo.update({self.name: self})
 
         logging.info(self.__repr__(1))
 
@@ -398,7 +402,7 @@ class esbmtkBase(object):
 
         return self.n &gt; other.n
 
-    def describe(self, **kwargs) -&gt; None:
+    def info(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Show an overview of the object properties.
         Optional arguments are
 
@@ -454,7 +458,7 @@ class Model(esbmtkBase):
     Model_Name.keyword
 
     The user facing methods of the model class are
-       - Model_Name.describe()
+       - Model_Name.info()
        - Model_Name.save_data()
        - Model_Name.plot_data()
        - Model_Name.plot_reservoirs() takes an optional filename as argument
@@ -528,6 +532,7 @@ class Model(esbmtkBase):
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # empty list which will hold all reservoir references
+        self.dmo: dict = {}
         self.lor: list = []
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
@@ -625,7 +630,7 @@ class Model(esbmtkBase):
         logging.basicConfig(filename=fn, filemode=&#34;w&#34;, level=logging.INFO)
         self.__register_name__()
 
-    def describe(self, **kwargs) -&gt; None:
+    def info(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
@@ -1060,6 +1065,7 @@ class Reservoir(esbmtkBase):
                             plot_transform_c = a function reference, optional (see below)
                             legend_left = str, optional, useful for plot transform
                             display_precision = number, optional, inherited from Model
+                            register = optional, use to register with Reservoir Group
                             )
 
           you must either give mass or concentration. The result will always be displayed as concentration
@@ -1104,7 +1110,7 @@ class Reservoir(esbmtkBase):
     Useful methods include:
 
     - Name.write_data() # save data to file
-    - Name.describe()   # describe Reservoir
+    - Name.info()   # info Reservoir
     &#34;&#34;&#34;
 
     __slots__ = (&#34;m&#34;, &#34;l&#34;, &#34;h&#34;, &#34;d&#34;, &#34;c&#34;, &#34;lio&#34;, &#34;rvalue&#34;, &#34;lodir&#34;, &#34;lof&#34;, &#34;lpc&#34;)
@@ -1125,6 +1131,7 @@ class Reservoir(esbmtkBase):
             &#34;plot_transform_c&#34;: any,
             &#34;legend_left&#34;: str,
             &#34;plot&#34;: str,
+            &#34;groupname&#34;: str,
             &#34;function&#34;: any,
             &#34;display_precision&#34;: Number,
             &#34;register&#34;: (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
@@ -1151,6 +1158,7 @@ class Reservoir(esbmtkBase):
             &#34;plot_transform_c&#34;: &#34;None&#34;,
             &#34;legend_left&#34;: &#34;None&#34;,
             &#34;function&#34;: &#34;None&#34;,
+            &#34;groupname&#34;: &#34;None&#34;,
             &#34;a1&#34;: 0,
             &#34;a2&#34;: 0,
             &#34;a3&#34;: 0,
@@ -1180,6 +1188,12 @@ class Reservoir(esbmtkBase):
 
         # legacy names
         self.n: str = self.name  # name of reservoir
+        if &#34;register&#34; in self.kwargs:
+            self.pt: str = f&#34;{self.register.name}_{self.n}&#34;
+            self.groupname = self.register.name
+        else:
+            self.pt = self.name
+
         self.sp: Species = self.species  # species handle
         self.mo: Model = self.species.mo  # model handle
         self.rvalue = self.sp.r
@@ -1456,10 +1470,17 @@ class Reservoir(esbmtkBase):
                 plot_object_data(geo, fn, d, ptype)
 
             if geo != [1, 1]:
-                fig.suptitle(f&#34;Model: {model.n}, Reservoir: {self.n}\n&#34;, size=16)
+                if self.groupname == &#34;None&#34;:
+                    fig.suptitle(f&#34;Model: {model.n}, Reservoir: {self.n}\n&#34;, size=16)
+                else:
+                    filename =  f&#34;{self.groupname}_{self.n}.pdf&#34;
+                    fig.suptitle(
+                        f&#34;Group: {self.groupname}, Reservoir: {self.n}\n&#34;, size=16
+                    )
 
             fig.tight_layout()
             fig.subplots_adjust(top=0.88)
+            print(f&#34;Saving as {filename}&#34;)
             fig.savefig(filename)
 
     def __plot_reservoirs__(self, i: int, ptype: int) -&gt; None:
@@ -1487,7 +1508,7 @@ class Reservoir(esbmtkBase):
         # fig.subplots_adjust(top=0.88)
         fig.savefig(filename)
 
-    def describe(self, **kwargs) -&gt; None:
+    def info(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
@@ -1517,7 +1538,7 @@ class Reservoir(esbmtkBase):
             print(f&#34;{off}{ind}{p.n}&#34;)
 
         print()
-        print(&#34;Use the describe method on any of the above connections&#34;)
+        print(&#34;Use the info method on any of the above connections&#34;)
         print(&#34;to see information on fluxes and processes&#34;)
 
 class ReservoirGroup(esbmtkBase):
@@ -1569,7 +1590,6 @@ class ReservoirGroup(esbmtkBase):
         self.lrk: list = [
             &#34;name&#34;,
             &#34;volume&#34;,
-            [&#34;mass&#34;, &#34;concentration&#34;],
         ]
 
         # Create a list of default values if none provided
@@ -1635,6 +1655,7 @@ class ReservoirGroup(esbmtkBase):
                     mass=self.mass[s],
                     volume=self.volume,
                     plot=self.plot[s],
+                    groupname = self.name,
                 )
             elif self.mass[s] == &#34;None&#34;:
                 # create reservoir without registering it in the global name space
@@ -1646,6 +1667,7 @@ class ReservoirGroup(esbmtkBase):
                     concentration=self.concentration[s],
                     volume=self.volume,
                     plot=self.plot[s],
+                    groupname = self.name,
                 )
             else:
                 raise ValueError(&#34;You must specify mass or concentration&#34;)
@@ -1806,7 +1828,7 @@ class Flux(esbmtkBase):
         self.h = self.h - other.h
         self.d = get_delta(self.l, self.h, self.sp.r)
 
-    def describe(self, **kwargs) -&gt; None:
+    def info(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
@@ -1887,6 +1909,7 @@ class SourceSink(esbmtkBase):
            Sink(name = &#34;Pyrite&#34;,
                species = SO4,
                display_precision = number, optional, inherited from Model
+               delta = number, optional, defaults to 0
            )
 
     where the first argument is a string, and the second is a reservoir handle
@@ -1901,12 +1924,13 @@ class SourceSink(esbmtkBase):
             &#34;species&#34;: Species,
             &#34;display_precision&#34;: Number,
             &#34;register&#34;: (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            &#34;delta&#34;: Number,
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = [&#34;name&#34;, &#34;species&#34;]
         # list of default values if none provided
-        self.lod: Dict[str, any] = {&#34;display_precision&#34;: 0}
+        self.lod: Dict[str, any] = {&#34;display_precision&#34;: 0, &#34;delta&#34;: 0}
 
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -2092,7 +2116,7 @@ class Signal(esbmtkBase):
 
       Signal.repeat()
       Signal.plot()
-      Signal.describe()
+      Signal.info()
 
     &#34;&#34;&#34;
 
@@ -2897,218 +2921,10 @@ class ExternalData(esbmtkBase):
         plt.show()
         plt.savefig(self.n + &#34;.pdf&#34;)
 
-class Seawater(esbmtkBase):
-    &#34;&#34;&#34;Provide basic seawater properties as a function of T and Salinity.
-    Pressure may come at a later stage
-
-    Example:
-
-    Seawater(name=&#34;SW&#34;,
-             model=
-             temperature = optional in C, defaults to 25
-             salinity  = optional in psu, defaults to 35
-            )
-
-    useful methods:
-
-    SW.show() will list all known values
-
-    After initialization this class provides access to each value the following way
-
-    instance_name.variable_name
-
-    &#34;&#34;&#34;
-
-    def __init__(self, **kwargs: Dict[str, str]):
-
-        import math
-
-        # dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            &#34;name&#34;: str,
-            &#34;model&#34;: Model,
-            &#34;salinity&#34;: (int, float),
-            &#34;temperature&#34;: (int, float),
-            &#34;pH&#34;: (int, float),
-        }
-
-        # provide a list of absolutely required keywords
-        self.lrk: list = [&#34;name&#34;]
-        # list of default values if none provided
-        self.lod: Dict[str, any] = {&#34;salinity&#34;: 35.0, &#34;temperature&#34;: 25.0, &#34;pH&#34;: 8.1}
-
-        # validate input and initialize instance variables
-        self.__initerrormessages__()
-        self.__validateandregister__(kwargs)  # initialize keyword values
-
-        # legacy names
-        self.n: str = self.name  # string =  name of this instance
-        self.mo: Model = self.model
-        self.hplus = 10 ** -self.pH
-
-        self.__init_std_seawater__()
-        self.__init_carbon__()
-        self.__init_boron__()
-        self.__init_water__()
-
-        # get total alkalinity
-        self.ca = self.hco3 + 2 * self.co3
-        self.ta = self.ca + self.boh4 + self.oh - self.hplus
-
-        self.__register_name__()
-
-    def show(self) -&gt; None:
-        &#34;&#34;&#34;Printout pK values. &#34;&#34;&#34;
-
-        from math import log10
-
-        k_values: list = [&#34;K0&#34;, &#34;K1&#34;, &#34;K2&#34;, &#34;KW&#34;, &#34;KB&#34;]
-        species: list = [
-            &#34;dic&#34;,
-            &#34;ta&#34;,
-            &#34;ca&#34;,
-            &#34;co2&#34;,
-            &#34;hco3&#34;,
-            &#34;co3&#34;,
-            &#34;boron&#34;,
-            &#34;boh4&#34;,
-            &#34;boh3&#34;,
-            &#34;oh&#34;,
-        ]
-
-        for n in species:
-            v = getattr(self, n)
-            print(f&#34;{n} = {v * 1000:.2f} mmol/l&#34;)
-
-        print(f&#34;pH = {-log10(self.hplus):.2f}\n&#34;)
-        print(f&#34;salinity = {self.salinity:.2f}&#34;)
-        print(f&#34;temperature = {self.temperature:.2f}\n&#34;)
-
-        for n in k_values:
-            v = getattr(self, n)
-            lv = -log10(v)
-            print(f&#34;{n} = {v:.2e}, p{n} = {lv:.2f}&#34;)
-
-    def __init_std_seawater__(self) -&gt; None:
-        &#34;&#34;&#34;Provide values for standard seawater. Data after Zeebe and Gladrow
-        all values in mol/kg. To convert to seawater these values need to be
-        multiplied by sw
-
-        &#34;&#34;&#34;
-
-        S = self.salinity
-        swc = (1000 + S) / 1000
-        self.dic = 0.00204 * swc
-        self.boron = 0.00042 * swc
-        self.oh = 0.00001 * swc
-
-    def __init_carbon__(self) -&gt; None:
-        &#34;&#34;&#34;Calculate the carbon equilibrium values as function of
-        temperature T and salinity S
-
-        &#34;&#34;&#34;
-
-        from math import exp, log
-
-        T = 273.15 + self.temperature
-        S = self.salinity
-
-        # After Weiss 1974
-        lnK0: float = (
-            93.4517 * 100 / T
-            - 60.2409
-            + 23.3585 * log(T / 100)
-            + S * (0.023517 - 0.023656 * T / 100 + 0.0047036 * (T / 100) ** 2)
-        )
-
-        lnk1: float = (
-            -2307.1266 / T
-            + 2.83655
-            - 1.5529413 * log(T)
-            + S ** 0.5 * (-4.0484 / T - 0.20760841)
-            + S * 0.08468345
-            + S ** (3 / 2) * -0.00654208
-            + log(1 - 0.001006 * S)
-        )
-
-        lnk2: float = (
-            -9.226508
-            - 3351.6106 / T
-            - 0.2005743 * log(T)
-            + (-0.106901773 - 23.9722 / T) * S ** 0.5
-            + 0.1130822 * S
-            - 0.00846934 * S ** 1.5
-            + log(1 - 0.001006 * S)
-        )
-
-        self.K0: float = exp(lnK0)
-        self.K1: float = exp(lnk1)
-        self.K2: float = exp(lnk2)
-
-        self.co2 = self.dic / (
-            1 + self.K1 / self.hplus + self.K1 * self.K2 / self.hplus ** 2
-        )
-        self.hco3 = self.dic / (1 + self.hplus / self.K1 + self.K2 / self.hplus)
-        self.co3 = self.dic / (
-            1 + self.hplus / self.K2 + self.hplus ** 2 / (self.K1 * self.K2)
-        )
-
-    def __init_boron__(self) -&gt; None:
-        &#34;&#34;&#34;Calculate the boron equilibrium values as function of
-        temperature T and salinity S
-
-        &#34;&#34;&#34;
-
-        from math import exp, log
-
-        T = 273.15 + self.temperature
-        S = self.salinity
-
-        lnkb = (
-            (
-                -8966.9
-                - 2890.53 * S ** 0.5
-                - 77.942 * S
-                + 1.728 * S ** 1.5
-                - 0.0996 * S ** 2
-            )
-            / T
-            + 148.0248
-            + 137.1942 * S ** 0.5
-            + 1.62142 * S
-            - (24.4344 + 25.085 * S ** 0.5 + 0.247 * S) * log(T)
-            + 0.053105 * S ** 0.5 * T
-        )
-
-        self.KB = exp(lnkb)
-
-        self.boh4 = self.boron * self.KB / (self.hplus + self.KB)
-        self.boh3 = self.boron - self.boh4
-
-    def __init_water__(self) -&gt; None:
-        &#34;&#34;&#34;Calculate the water equilibrium values as function of
-        temperature T and salinity S
-
-        &#34;&#34;&#34;
-
-        from math import exp, log
-
-        T = 273.15 + self.temperature
-        S = self.salinity
-
-        lnKW = (
-            148.96502
-            - 13847.27 / T
-            - 23.6521 * log(T)
-            + (118.67 / T - 5.977 + 1.0495 * log(T)) * S ** 0.5
-            - 0.01615 * S
-        )
-        self.KW = exp(lnKW)
-        self.oh = self.KW / self.hplus
-
 from .connections import Connection, ConnectionGroup
 from .processes import *
-from .species_definitions import carbon, sulfur, hydrogen, phosphor, oxygen, nitrogen, boron</code></pre>
+from .species_definitions import carbon, sulfur, hydrogen, phosphor, oxygen, nitrogen, boron
+from .carbonate_chemisrty import *</code></pre>
 </details>
 </section>
 <section>
@@ -3296,7 +3112,7 @@ Name.y1_legend</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.esbmtk.esbmtkBase" href="#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.esbmtk.esbmtkBase.describe" href="#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.esbmtk.esbmtkBase.info" href="#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 </ul>
 </li>
 </ul>
@@ -3424,7 +3240,7 @@ element specific properties</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.esbmtk.esbmtkBase" href="#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.esbmtk.esbmtkBase.describe" href="#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.esbmtk.esbmtkBase.info" href="#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 </ul>
 </li>
 </ul>
@@ -3706,7 +3522,7 @@ methods, but they are available as self.xh,yh</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.esbmtk.esbmtkBase" href="#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.esbmtk.esbmtkBase.describe" href="#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.esbmtk.esbmtkBase.info" href="#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 </ul>
 </li>
 </ul>
@@ -3892,7 +3708,7 @@ display_precision = number, optional, inherited from Model
         self.h = self.h - other.h
         self.d = get_delta(self.l, self.h, self.sp.r)
 
-    def describe(self, **kwargs) -&gt; None:
+    def info(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
@@ -3997,8 +3813,8 @@ display_precision = number, optional, inherited from Model
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="esbmtk.esbmtk.Flux.describe"><code class="name flex">
-<span>def <span class="ident">describe</span></span>(<span>self, **kwargs) ‑> NoneType</span>
+<dt id="esbmtk.esbmtk.Flux.info"><code class="name flex">
+<span>def <span class="ident">info</span></span>(<span>self, **kwargs) ‑> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Show an overview of the object properties.
@@ -4010,7 +3826,7 @@ indent :int = 0 indentation</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def describe(self, **kwargs) -&gt; None:
+<pre><code class="python">def info(self, **kwargs) -&gt; None:
     &#34;&#34;&#34;Show an overview of the object properties.
     Optional arguments are
     index  :int = 0 this will show data at the given index
@@ -4139,7 +3955,7 @@ smaller than the display_precision.</p>
 <p>All of the above keyword values are available as variables with
 Model_Name.keyword</p>
 <p>The user facing methods of the model class are
-- Model_Name.describe()
+- Model_Name.info()
 - Model_Name.save_data()
 - Model_Name.plot_data()
 - Model_Name.plot_reservoirs() takes an optional filename as argument
@@ -4192,7 +4008,7 @@ keyword are either "Carbon", or "Sulfur" or both as a list
     Model_Name.keyword
 
     The user facing methods of the model class are
-       - Model_Name.describe()
+       - Model_Name.info()
        - Model_Name.save_data()
        - Model_Name.plot_data()
        - Model_Name.plot_reservoirs() takes an optional filename as argument
@@ -4266,6 +4082,7 @@ keyword are either "Carbon", or "Sulfur" or both as a list
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # empty list which will hold all reservoir references
+        self.dmo: dict = {}
         self.lor: list = []
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
@@ -4363,7 +4180,7 @@ keyword are either "Carbon", or "Sulfur" or both as a list
         logging.basicConfig(filename=fn, filemode=&#34;w&#34;, level=logging.INFO)
         self.__register_name__()
 
-    def describe(self, **kwargs) -&gt; None:
+    def info(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
@@ -4729,8 +4546,8 @@ def execute(
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="esbmtk.esbmtk.Model.describe"><code class="name flex">
-<span>def <span class="ident">describe</span></span>(<span>self, **kwargs) ‑> NoneType</span>
+<dt id="esbmtk.esbmtk.Model.info"><code class="name flex">
+<span>def <span class="ident">info</span></span>(<span>self, **kwargs) ‑> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Show an overview of the object properties.
@@ -4742,7 +4559,7 @@ indent :int = 0 indentation</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def describe(self, **kwargs) -&gt; None:
+<pre><code class="python">def info(self, **kwargs) -&gt; None:
     &#34;&#34;&#34;Show an overview of the object properties.
     Optional arguments are
     index  :int = 0 this will show data at the given index
@@ -5085,6 +4902,7 @@ time-steps</p></div>
                     plot_transform_c = a function reference, optional (see below)
                     legend_left = str, optional, useful for plot transform
                     display_precision = number, optional, inherited from Model
+                    register = optional, use to register with Reservoir Group
                     )
 
   you must either give mass or concentration. The result will always be displayed as concentration
@@ -5128,8 +4946,8 @@ time-steps</p></div>
 <p>Useful methods include:</p>
 <ul>
 <li>Name.write_data() # save data to file</li>
-<li>Name.describe()
-# describe Reservoir</li>
+<li>Name.info()
+# info Reservoir</li>
 </ul>
 <p>Initialize a reservoir.</p></div>
 <details class="source">
@@ -5150,6 +4968,7 @@ time-steps</p></div>
                             plot_transform_c = a function reference, optional (see below)
                             legend_left = str, optional, useful for plot transform
                             display_precision = number, optional, inherited from Model
+                            register = optional, use to register with Reservoir Group
                             )
 
           you must either give mass or concentration. The result will always be displayed as concentration
@@ -5194,7 +5013,7 @@ time-steps</p></div>
     Useful methods include:
 
     - Name.write_data() # save data to file
-    - Name.describe()   # describe Reservoir
+    - Name.info()   # info Reservoir
     &#34;&#34;&#34;
 
     __slots__ = (&#34;m&#34;, &#34;l&#34;, &#34;h&#34;, &#34;d&#34;, &#34;c&#34;, &#34;lio&#34;, &#34;rvalue&#34;, &#34;lodir&#34;, &#34;lof&#34;, &#34;lpc&#34;)
@@ -5215,6 +5034,7 @@ time-steps</p></div>
             &#34;plot_transform_c&#34;: any,
             &#34;legend_left&#34;: str,
             &#34;plot&#34;: str,
+            &#34;groupname&#34;: str,
             &#34;function&#34;: any,
             &#34;display_precision&#34;: Number,
             &#34;register&#34;: (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
@@ -5241,6 +5061,7 @@ time-steps</p></div>
             &#34;plot_transform_c&#34;: &#34;None&#34;,
             &#34;legend_left&#34;: &#34;None&#34;,
             &#34;function&#34;: &#34;None&#34;,
+            &#34;groupname&#34;: &#34;None&#34;,
             &#34;a1&#34;: 0,
             &#34;a2&#34;: 0,
             &#34;a3&#34;: 0,
@@ -5270,6 +5091,12 @@ time-steps</p></div>
 
         # legacy names
         self.n: str = self.name  # name of reservoir
+        if &#34;register&#34; in self.kwargs:
+            self.pt: str = f&#34;{self.register.name}_{self.n}&#34;
+            self.groupname = self.register.name
+        else:
+            self.pt = self.name
+
         self.sp: Species = self.species  # species handle
         self.mo: Model = self.species.mo  # model handle
         self.rvalue = self.sp.r
@@ -5546,10 +5373,17 @@ time-steps</p></div>
                 plot_object_data(geo, fn, d, ptype)
 
             if geo != [1, 1]:
-                fig.suptitle(f&#34;Model: {model.n}, Reservoir: {self.n}\n&#34;, size=16)
+                if self.groupname == &#34;None&#34;:
+                    fig.suptitle(f&#34;Model: {model.n}, Reservoir: {self.n}\n&#34;, size=16)
+                else:
+                    filename =  f&#34;{self.groupname}_{self.n}.pdf&#34;
+                    fig.suptitle(
+                        f&#34;Group: {self.groupname}, Reservoir: {self.n}\n&#34;, size=16
+                    )
 
             fig.tight_layout()
             fig.subplots_adjust(top=0.88)
+            print(f&#34;Saving as {filename}&#34;)
             fig.savefig(filename)
 
     def __plot_reservoirs__(self, i: int, ptype: int) -&gt; None:
@@ -5577,7 +5411,7 @@ time-steps</p></div>
         # fig.subplots_adjust(top=0.88)
         fig.savefig(filename)
 
-    def describe(self, **kwargs) -&gt; None:
+    def info(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
@@ -5607,7 +5441,7 @@ time-steps</p></div>
             print(f&#34;{off}{ind}{p.n}&#34;)
 
         print()
-        print(&#34;Use the describe method on any of the above connections&#34;)
+        print(&#34;Use the info method on any of the above connections&#34;)
         print(&#34;to see information on fluxes and processes&#34;)</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -5663,8 +5497,8 @@ time-steps</p></div>
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="esbmtk.esbmtk.Reservoir.describe"><code class="name flex">
-<span>def <span class="ident">describe</span></span>(<span>self, **kwargs) ‑> NoneType</span>
+<dt id="esbmtk.esbmtk.Reservoir.info"><code class="name flex">
+<span>def <span class="ident">info</span></span>(<span>self, **kwargs) ‑> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Show an overview of the object properties.
@@ -5676,7 +5510,7 @@ indent :int = 0 indentation</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def describe(self, **kwargs) -&gt; None:
+<pre><code class="python">def info(self, **kwargs) -&gt; None:
     &#34;&#34;&#34;Show an overview of the object properties.
     Optional arguments are
     index  :int = 0 this will show data at the given index
@@ -5706,7 +5540,7 @@ indent :int = 0 indentation</p></div>
         print(f&#34;{off}{ind}{p.n}&#34;)
 
     print()
-    print(&#34;Use the describe method on any of the above connections&#34;)
+    print(&#34;Use the info method on any of the above connections&#34;)
     print(&#34;to see information on fluxes and processes&#34;)</code></pre>
 </details>
 </dd>
@@ -5793,7 +5627,6 @@ matching.</p>
         self.lrk: list = [
             &#34;name&#34;,
             &#34;volume&#34;,
-            [&#34;mass&#34;, &#34;concentration&#34;],
         ]
 
         # Create a list of default values if none provided
@@ -5859,6 +5692,7 @@ matching.</p>
                     mass=self.mass[s],
                     volume=self.volume,
                     plot=self.plot[s],
+                    groupname = self.name,
                 )
             elif self.mass[s] == &#34;None&#34;:
                 # create reservoir without registering it in the global name space
@@ -5870,6 +5704,7 @@ matching.</p>
                     concentration=self.concentration[s],
                     volume=self.volume,
                     plot=self.plot[s],
+                    groupname = self.name,
                 )
             else:
                 raise ValueError(&#34;You must specify mass or concentration&#34;)
@@ -5885,296 +5720,7 @@ matching.</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.esbmtk.esbmtkBase" href="#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.esbmtk.esbmtkBase.describe" href="#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
-</ul>
-</li>
-</ul>
-</dd>
-<dt id="esbmtk.esbmtk.Seawater"><code class="flex name class">
-<span>class <span class="ident">Seawater</span></span>
-<span>(</span><span>**kwargs: Dict[str, str])</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Provide basic seawater properties as a function of T and Salinity.
-Pressure may come at a later stage</p>
-<p>Example:</p>
-<p>Seawater(name="SW",
-model=
-temperature = optional in C, defaults to 25
-salinity
-= optional in psu, defaults to 35
-)</p>
-<p>useful methods:</p>
-<p>SW.show() will list all known values</p>
-<p>After initialization this class provides access to each value the following way</p>
-<p>instance_name.variable_name</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">class Seawater(esbmtkBase):
-    &#34;&#34;&#34;Provide basic seawater properties as a function of T and Salinity.
-    Pressure may come at a later stage
-
-    Example:
-
-    Seawater(name=&#34;SW&#34;,
-             model=
-             temperature = optional in C, defaults to 25
-             salinity  = optional in psu, defaults to 35
-            )
-
-    useful methods:
-
-    SW.show() will list all known values
-
-    After initialization this class provides access to each value the following way
-
-    instance_name.variable_name
-
-    &#34;&#34;&#34;
-
-    def __init__(self, **kwargs: Dict[str, str]):
-
-        import math
-
-        # dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            &#34;name&#34;: str,
-            &#34;model&#34;: Model,
-            &#34;salinity&#34;: (int, float),
-            &#34;temperature&#34;: (int, float),
-            &#34;pH&#34;: (int, float),
-        }
-
-        # provide a list of absolutely required keywords
-        self.lrk: list = [&#34;name&#34;]
-        # list of default values if none provided
-        self.lod: Dict[str, any] = {&#34;salinity&#34;: 35.0, &#34;temperature&#34;: 25.0, &#34;pH&#34;: 8.1}
-
-        # validate input and initialize instance variables
-        self.__initerrormessages__()
-        self.__validateandregister__(kwargs)  # initialize keyword values
-
-        # legacy names
-        self.n: str = self.name  # string =  name of this instance
-        self.mo: Model = self.model
-        self.hplus = 10 ** -self.pH
-
-        self.__init_std_seawater__()
-        self.__init_carbon__()
-        self.__init_boron__()
-        self.__init_water__()
-
-        # get total alkalinity
-        self.ca = self.hco3 + 2 * self.co3
-        self.ta = self.ca + self.boh4 + self.oh - self.hplus
-
-        self.__register_name__()
-
-    def show(self) -&gt; None:
-        &#34;&#34;&#34;Printout pK values. &#34;&#34;&#34;
-
-        from math import log10
-
-        k_values: list = [&#34;K0&#34;, &#34;K1&#34;, &#34;K2&#34;, &#34;KW&#34;, &#34;KB&#34;]
-        species: list = [
-            &#34;dic&#34;,
-            &#34;ta&#34;,
-            &#34;ca&#34;,
-            &#34;co2&#34;,
-            &#34;hco3&#34;,
-            &#34;co3&#34;,
-            &#34;boron&#34;,
-            &#34;boh4&#34;,
-            &#34;boh3&#34;,
-            &#34;oh&#34;,
-        ]
-
-        for n in species:
-            v = getattr(self, n)
-            print(f&#34;{n} = {v * 1000:.2f} mmol/l&#34;)
-
-        print(f&#34;pH = {-log10(self.hplus):.2f}\n&#34;)
-        print(f&#34;salinity = {self.salinity:.2f}&#34;)
-        print(f&#34;temperature = {self.temperature:.2f}\n&#34;)
-
-        for n in k_values:
-            v = getattr(self, n)
-            lv = -log10(v)
-            print(f&#34;{n} = {v:.2e}, p{n} = {lv:.2f}&#34;)
-
-    def __init_std_seawater__(self) -&gt; None:
-        &#34;&#34;&#34;Provide values for standard seawater. Data after Zeebe and Gladrow
-        all values in mol/kg. To convert to seawater these values need to be
-        multiplied by sw
-
-        &#34;&#34;&#34;
-
-        S = self.salinity
-        swc = (1000 + S) / 1000
-        self.dic = 0.00204 * swc
-        self.boron = 0.00042 * swc
-        self.oh = 0.00001 * swc
-
-    def __init_carbon__(self) -&gt; None:
-        &#34;&#34;&#34;Calculate the carbon equilibrium values as function of
-        temperature T and salinity S
-
-        &#34;&#34;&#34;
-
-        from math import exp, log
-
-        T = 273.15 + self.temperature
-        S = self.salinity
-
-        # After Weiss 1974
-        lnK0: float = (
-            93.4517 * 100 / T
-            - 60.2409
-            + 23.3585 * log(T / 100)
-            + S * (0.023517 - 0.023656 * T / 100 + 0.0047036 * (T / 100) ** 2)
-        )
-
-        lnk1: float = (
-            -2307.1266 / T
-            + 2.83655
-            - 1.5529413 * log(T)
-            + S ** 0.5 * (-4.0484 / T - 0.20760841)
-            + S * 0.08468345
-            + S ** (3 / 2) * -0.00654208
-            + log(1 - 0.001006 * S)
-        )
-
-        lnk2: float = (
-            -9.226508
-            - 3351.6106 / T
-            - 0.2005743 * log(T)
-            + (-0.106901773 - 23.9722 / T) * S ** 0.5
-            + 0.1130822 * S
-            - 0.00846934 * S ** 1.5
-            + log(1 - 0.001006 * S)
-        )
-
-        self.K0: float = exp(lnK0)
-        self.K1: float = exp(lnk1)
-        self.K2: float = exp(lnk2)
-
-        self.co2 = self.dic / (
-            1 + self.K1 / self.hplus + self.K1 * self.K2 / self.hplus ** 2
-        )
-        self.hco3 = self.dic / (1 + self.hplus / self.K1 + self.K2 / self.hplus)
-        self.co3 = self.dic / (
-            1 + self.hplus / self.K2 + self.hplus ** 2 / (self.K1 * self.K2)
-        )
-
-    def __init_boron__(self) -&gt; None:
-        &#34;&#34;&#34;Calculate the boron equilibrium values as function of
-        temperature T and salinity S
-
-        &#34;&#34;&#34;
-
-        from math import exp, log
-
-        T = 273.15 + self.temperature
-        S = self.salinity
-
-        lnkb = (
-            (
-                -8966.9
-                - 2890.53 * S ** 0.5
-                - 77.942 * S
-                + 1.728 * S ** 1.5
-                - 0.0996 * S ** 2
-            )
-            / T
-            + 148.0248
-            + 137.1942 * S ** 0.5
-            + 1.62142 * S
-            - (24.4344 + 25.085 * S ** 0.5 + 0.247 * S) * log(T)
-            + 0.053105 * S ** 0.5 * T
-        )
-
-        self.KB = exp(lnkb)
-
-        self.boh4 = self.boron * self.KB / (self.hplus + self.KB)
-        self.boh3 = self.boron - self.boh4
-
-    def __init_water__(self) -&gt; None:
-        &#34;&#34;&#34;Calculate the water equilibrium values as function of
-        temperature T and salinity S
-
-        &#34;&#34;&#34;
-
-        from math import exp, log
-
-        T = 273.15 + self.temperature
-        S = self.salinity
-
-        lnKW = (
-            148.96502
-            - 13847.27 / T
-            - 23.6521 * log(T)
-            + (118.67 / T - 5.977 + 1.0495 * log(T)) * S ** 0.5
-            - 0.01615 * S
-        )
-        self.KW = exp(lnKW)
-        self.oh = self.KW / self.hplus</code></pre>
-</details>
-<h3>Ancestors</h3>
-<ul class="hlist">
-<li><a title="esbmtk.esbmtk.esbmtkBase" href="#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></li>
-</ul>
-<h3>Methods</h3>
-<dl>
-<dt id="esbmtk.esbmtk.Seawater.show"><code class="name flex">
-<span>def <span class="ident">show</span></span>(<span>self) ‑> NoneType</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Printout pK values.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def show(self) -&gt; None:
-    &#34;&#34;&#34;Printout pK values. &#34;&#34;&#34;
-
-    from math import log10
-
-    k_values: list = [&#34;K0&#34;, &#34;K1&#34;, &#34;K2&#34;, &#34;KW&#34;, &#34;KB&#34;]
-    species: list = [
-        &#34;dic&#34;,
-        &#34;ta&#34;,
-        &#34;ca&#34;,
-        &#34;co2&#34;,
-        &#34;hco3&#34;,
-        &#34;co3&#34;,
-        &#34;boron&#34;,
-        &#34;boh4&#34;,
-        &#34;boh3&#34;,
-        &#34;oh&#34;,
-    ]
-
-    for n in species:
-        v = getattr(self, n)
-        print(f&#34;{n} = {v * 1000:.2f} mmol/l&#34;)
-
-    print(f&#34;pH = {-log10(self.hplus):.2f}\n&#34;)
-    print(f&#34;salinity = {self.salinity:.2f}&#34;)
-    print(f&#34;temperature = {self.temperature:.2f}\n&#34;)
-
-    for n in k_values:
-        v = getattr(self, n)
-        lv = -log10(v)
-        print(f&#34;{n} = {v:.2e}, p{n} = {lv:.2f}&#34;)</code></pre>
-</details>
-</dd>
-</dl>
-<h3>Inherited members</h3>
-<ul class="hlist">
-<li><code><b><a title="esbmtk.esbmtk.esbmtkBase" href="#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></b></code>:
-<ul class="hlist">
-<li><code><a title="esbmtk.esbmtk.esbmtkBase.describe" href="#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.esbmtk.esbmtkBase.info" href="#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 </ul>
 </li>
 </ul>
@@ -6237,7 +5783,7 @@ provided source (this can be useful if you use source groups).</p>
 <p>This class has the following methods</p>
 <p>Signal.repeat()
 Signal.plot()
-Signal.describe()</p>
+Signal.info()</p>
 <p>Parse and initialize variables</p></div>
 <details class="source">
 <summary>
@@ -6308,7 +5854,7 @@ Signal.describe()</p>
 
       Signal.repeat()
       Signal.plot()
-      Signal.describe()
+      Signal.info()
 
     &#34;&#34;&#34;
 
@@ -6809,7 +6355,7 @@ times,
 <ul class="hlist">
 <li><code><b><a title="esbmtk.esbmtk.esbmtkBase" href="#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.esbmtk.esbmtkBase.describe" href="#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.esbmtk.esbmtkBase.info" href="#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 </ul>
 </li>
 </ul>
@@ -6847,7 +6393,7 @@ Example::</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.esbmtk.SourceSink" href="#esbmtk.esbmtk.SourceSink">SourceSink</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.esbmtk.SourceSink.describe" href="#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.esbmtk.SourceSink.info" href="#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 </ul>
 </li>
 </ul>
@@ -6885,7 +6431,7 @@ Example::</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.esbmtk.SourceSinkGroup" href="#esbmtk.esbmtk.SourceSinkGroup">SourceSinkGroup</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.esbmtk.SourceSinkGroup.describe" href="#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.esbmtk.SourceSinkGroup.info" href="#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 </ul>
 </li>
 </ul>
@@ -6923,7 +6469,7 @@ Example::</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.esbmtk.SourceSink" href="#esbmtk.esbmtk.SourceSink">SourceSink</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.esbmtk.SourceSink.describe" href="#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.esbmtk.SourceSink.info" href="#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 </ul>
 </li>
 </ul>
@@ -6961,7 +6507,7 @@ Example::</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.esbmtk.SourceSinkGroup" href="#esbmtk.esbmtk.SourceSinkGroup">SourceSinkGroup</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.esbmtk.SourceSinkGroup.describe" href="#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.esbmtk.SourceSinkGroup.info" href="#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 </ul>
 </li>
 </ul>
@@ -6977,6 +6523,7 @@ Example::</p>
 <pre><code>   Sink(name = "Pyrite",
        species = SO4,
        display_precision = number, optional, inherited from Model
+       delta = number, optional, defaults to 0
    )
 </code></pre>
 <p>where the first argument is a string, and the second is a reservoir handle</p></div>
@@ -6993,6 +6540,7 @@ Example::</p>
            Sink(name = &#34;Pyrite&#34;,
                species = SO4,
                display_precision = number, optional, inherited from Model
+               delta = number, optional, defaults to 0
            )
 
     where the first argument is a string, and the second is a reservoir handle
@@ -7007,12 +6555,13 @@ Example::</p>
             &#34;species&#34;: Species,
             &#34;display_precision&#34;: Number,
             &#34;register&#34;: (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            &#34;delta&#34;: Number,
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = [&#34;name&#34;, &#34;species&#34;]
         # list of default values if none provided
-        self.lod: Dict[str, any] = {&#34;display_precision&#34;: 0}
+        self.lod: Dict[str, any] = {&#34;display_precision&#34;: 0, &#34;delta&#34;: 0}
 
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -7044,7 +6593,7 @@ Example::</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.esbmtk.esbmtkBase" href="#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.esbmtk.esbmtkBase.describe" href="#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.esbmtk.esbmtkBase.info" href="#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 </ul>
 </li>
 </ul>
@@ -7136,7 +6685,7 @@ Example::</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.esbmtk.esbmtkBase" href="#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.esbmtk.esbmtkBase.describe" href="#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.esbmtk.esbmtkBase.info" href="#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 </ul>
 </li>
 </ul>
@@ -7232,7 +6781,7 @@ specific properties
 <ul class="hlist">
 <li><code><b><a title="esbmtk.esbmtk.esbmtkBase" href="#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.esbmtk.esbmtkBase.describe" href="#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.esbmtk.esbmtkBase.info" href="#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 </ul>
 </li>
 </ul>
@@ -7436,8 +6985,8 @@ a circular reference.</p>
 <ul class="hlist">
 <li><code><a title="esbmtk.esbmtk.Reservoir.c" href="#esbmtk.esbmtk.Reservoir.c">c</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Reservoir.d" href="#esbmtk.esbmtk.Reservoir.d">d</a></code></li>
-<li><code><a title="esbmtk.esbmtk.Reservoir.describe" href="#esbmtk.esbmtk.Reservoir.describe">describe</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Reservoir.h" href="#esbmtk.esbmtk.Reservoir.h">h</a></code></li>
+<li><code><a title="esbmtk.esbmtk.Reservoir.info" href="#esbmtk.esbmtk.Reservoir.info">info</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Reservoir.l" href="#esbmtk.esbmtk.Reservoir.l">l</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Reservoir.lio" href="#esbmtk.esbmtk.Reservoir.lio">lio</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Reservoir.lodir" href="#esbmtk.esbmtk.Reservoir.lodir">lodir</a></code></li>
@@ -7522,10 +7071,13 @@ arguments, name registration and other common tasks</p></div>
                 setattr(builtins, self.name, self)
             else:
                 if self.name in self.mo.lmo:
-                    raise NameError(f&#34;{self.name} is a duplicate name. Please fix&#34;)
+                    pass  # we allow duplicate names as long as they are not in the
+                # global namespace
+                # raise NameError(f&#34;{self.name} is a duplicate name. Please fix&#34;)
                 else:
                     self.mo.lmo.append(self.name)
                     setattr(builtins, self.name, self)
+                    # self.mo.dmo.update({self.name: self})
 
         else:
             if self in self.register.lmo:
@@ -7534,6 +7086,7 @@ arguments, name registration and other common tasks</p></div>
                 )
             setattr(self.register, self.name, self)
             self.register.lmo.append(self)
+            # self.mo.dmo.update({self.name: self})
 
         logging.info(self.__repr__(1))
 
@@ -7778,7 +7331,7 @@ arguments, name registration and other common tasks</p></div>
 
         return self.n &gt; other.n
 
-    def describe(self, **kwargs) -&gt; None:
+    def info(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Show an overview of the object properties.
         Optional arguments are
 
@@ -7803,6 +7356,7 @@ arguments, name registration and other common tasks</p></div>
 </details>
 <h3>Subclasses</h3>
 <ul class="hlist">
+<li><a title="esbmtk.carbonate_chemisrty.SeawaterConstants" href="carbonate_chemisrty.html#esbmtk.carbonate_chemisrty.SeawaterConstants">SeawaterConstants</a></li>
 <li><a title="esbmtk.connections.Connect" href="connections.html#esbmtk.connections.Connect">Connect</a></li>
 <li><a title="esbmtk.connections.ConnectionGroup" href="connections.html#esbmtk.connections.ConnectionGroup">ConnectionGroup</a></li>
 <li><a title="esbmtk.esbmtk.DataField" href="#esbmtk.esbmtk.DataField">DataField</a></li>
@@ -7812,7 +7366,6 @@ arguments, name registration and other common tasks</p></div>
 <li><a title="esbmtk.esbmtk.Model" href="#esbmtk.esbmtk.Model">Model</a></li>
 <li><a title="esbmtk.esbmtk.Reservoir" href="#esbmtk.esbmtk.Reservoir">Reservoir</a></li>
 <li><a title="esbmtk.esbmtk.ReservoirGroup" href="#esbmtk.esbmtk.ReservoirGroup">ReservoirGroup</a></li>
-<li><a title="esbmtk.esbmtk.Seawater" href="#esbmtk.esbmtk.Seawater">Seawater</a></li>
 <li><a title="esbmtk.esbmtk.Signal" href="#esbmtk.esbmtk.Signal">Signal</a></li>
 <li><a title="esbmtk.esbmtk.SourceSink" href="#esbmtk.esbmtk.SourceSink">SourceSink</a></li>
 <li><a title="esbmtk.esbmtk.SourceSinkGroup" href="#esbmtk.esbmtk.SourceSinkGroup">SourceSinkGroup</a></li>
@@ -7828,8 +7381,8 @@ arguments, name registration and other common tasks</p></div>
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="esbmtk.esbmtk.esbmtkBase.describe"><code class="name flex">
-<span>def <span class="ident">describe</span></span>(<span>self, **kwargs) ‑> NoneType</span>
+<dt id="esbmtk.esbmtk.esbmtkBase.info"><code class="name flex">
+<span>def <span class="ident">info</span></span>(<span>self, **kwargs) ‑> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Show an overview of the object properties.
@@ -7839,7 +7392,7 @@ Optional arguments are</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def describe(self, **kwargs) -&gt; None:
+<pre><code class="python">def info(self, **kwargs) -&gt; None:
     &#34;&#34;&#34;Show an overview of the object properties.
     Optional arguments are
 
@@ -7895,8 +7448,8 @@ Optional arguments are</p>
 <h4><code><a title="esbmtk.esbmtk.Flux" href="#esbmtk.esbmtk.Flux">Flux</a></code></h4>
 <ul class="two-column">
 <li><code><a title="esbmtk.esbmtk.Flux.d" href="#esbmtk.esbmtk.Flux.d">d</a></code></li>
-<li><code><a title="esbmtk.esbmtk.Flux.describe" href="#esbmtk.esbmtk.Flux.describe">describe</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Flux.h" href="#esbmtk.esbmtk.Flux.h">h</a></code></li>
+<li><code><a title="esbmtk.esbmtk.Flux.info" href="#esbmtk.esbmtk.Flux.info">info</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Flux.l" href="#esbmtk.esbmtk.Flux.l">l</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Flux.lpc" href="#esbmtk.esbmtk.Flux.lpc">lpc</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Flux.m" href="#esbmtk.esbmtk.Flux.m">m</a></code></li>
@@ -7907,8 +7460,8 @@ Optional arguments are</p>
 <li>
 <h4><code><a title="esbmtk.esbmtk.Model" href="#esbmtk.esbmtk.Model">Model</a></code></h4>
 <ul class="two-column">
-<li><code><a title="esbmtk.esbmtk.Model.describe" href="#esbmtk.esbmtk.Model.describe">describe</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Model.execute" href="#esbmtk.esbmtk.Model.execute">execute</a></code></li>
+<li><code><a title="esbmtk.esbmtk.Model.info" href="#esbmtk.esbmtk.Model.info">info</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Model.list_species" href="#esbmtk.esbmtk.Model.list_species">list_species</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Model.lor" href="#esbmtk.esbmtk.Model.lor">lor</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Model.plot_data" href="#esbmtk.esbmtk.Model.plot_data">plot_data</a></code></li>
@@ -7924,8 +7477,8 @@ Optional arguments are</p>
 <ul class="two-column">
 <li><code><a title="esbmtk.esbmtk.Reservoir.c" href="#esbmtk.esbmtk.Reservoir.c">c</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Reservoir.d" href="#esbmtk.esbmtk.Reservoir.d">d</a></code></li>
-<li><code><a title="esbmtk.esbmtk.Reservoir.describe" href="#esbmtk.esbmtk.Reservoir.describe">describe</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Reservoir.h" href="#esbmtk.esbmtk.Reservoir.h">h</a></code></li>
+<li><code><a title="esbmtk.esbmtk.Reservoir.info" href="#esbmtk.esbmtk.Reservoir.info">info</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Reservoir.l" href="#esbmtk.esbmtk.Reservoir.l">l</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Reservoir.lio" href="#esbmtk.esbmtk.Reservoir.lio">lio</a></code></li>
 <li><code><a title="esbmtk.esbmtk.Reservoir.lodir" href="#esbmtk.esbmtk.Reservoir.lodir">lodir</a></code></li>
@@ -7937,12 +7490,6 @@ Optional arguments are</p>
 </li>
 <li>
 <h4><code><a title="esbmtk.esbmtk.ReservoirGroup" href="#esbmtk.esbmtk.ReservoirGroup">ReservoirGroup</a></code></h4>
-</li>
-<li>
-<h4><code><a title="esbmtk.esbmtk.Seawater" href="#esbmtk.esbmtk.Seawater">Seawater</a></code></h4>
-<ul class="">
-<li><code><a title="esbmtk.esbmtk.Seawater.show" href="#esbmtk.esbmtk.Seawater.show">show</a></code></li>
-</ul>
 </li>
 <li>
 <h4><code><a title="esbmtk.esbmtk.Signal" href="#esbmtk.esbmtk.Signal">Signal</a></code></h4>
@@ -7985,7 +7532,7 @@ Optional arguments are</p>
 <h4><code><a title="esbmtk.esbmtk.esbmtkBase" href="#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></code></h4>
 <ul class="">
 <li><code><a title="esbmtk.esbmtk.esbmtkBase.Dict" href="#esbmtk.esbmtk.esbmtkBase.Dict">Dict</a></code></li>
-<li><code><a title="esbmtk.esbmtk.esbmtkBase.describe" href="#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.esbmtk.esbmtkBase.info" href="#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 </ul>
 </li>
 </ul>

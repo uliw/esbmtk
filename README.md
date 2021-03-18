@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org001517e)
-2.  [News](#org6b68d08)
-3.  [Contributing](#org6b6325b)
-4.  [Installation](#org1b9a56e)
-5.  [Documentation](#orge76a088)
-6.  [Todo](#orgc8186bf)
-7.  [License](#orgb8c60b2)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgdf00cee)
+2.  [News](#org9ae8582)
+3.  [Contributing](#org20dc123)
+4.  [Installation](#org8bd7ec3)
+5.  [Documentation](#org2b8eeb9)
+6.  [Todo](#org75dfa96)
+7.  [License](#org794af26)
 
 
-<a id="org001517e"></a>
+<a id="orgdf00cee"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,19 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org6b68d08"></a>
+<a id="org9ae8582"></a>
 
 # News
+
+-   March 18<sup>th</sup> esbmtk 0.4.0.0 now has a carbonate chemistry module
+    which currently includes methods to calculate PCO<sub>2</sub>, CA, and H<sup>+</sup>
+    concentrations from TA and DIC. The seawater class has been renamed
+    `SeawaterConstants` and provides access to a limited set of
+    seawater species concentrations and their K and Pk constants at
+    given set of temperature, salinity and pressure conditions. This
+    version also includes some refactoring in the `Connnection` and
+    `ConnectionmGroup` classes. It is likely that this broke some
+    connection types.
 
 -   March 13<sup>th</sup>, cleaned up the use of the `k_value` keyword which is
     now restricted to the `flux_balance` connection type. In all other
@@ -133,7 +143,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org6b6325b"></a>
+<a id="org20dc123"></a>
 
 # Contributing
 
@@ -143,7 +153,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org1b9a56e"></a>
+<a id="org8bd7ec3"></a>
 
 # Installation
 
@@ -164,7 +174,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="orge76a088"></a>
+<a id="org2b8eeb9"></a>
 
 # Documentation
 
@@ -179,7 +189,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orgc8186bf"></a>
+<a id="org75dfa96"></a>
 
 # Todo
 
@@ -188,7 +198,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orgb8c60b2"></a>
+<a id="org794af26"></a>
 
 # License
 

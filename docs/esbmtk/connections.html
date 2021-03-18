@@ -194,7 +194,7 @@ class Connect(esbmtkBase):
                 sink = downstream reservoir,
                 ctype = &#34;scale_with_flux&#34;,
                 ref = flux handle,
-                k_value = a scaling factor, optional, defaults to 1
+                scale = a scaling factor, optional, defaults to 1
                 )
 
     ctype = &#34;virtual_flux&#34;
@@ -211,7 +211,7 @@ class Connect(esbmtkBase):
                 sink = downstream reservoir,
                 ctype = &#34;scale_with_flux&#34;,
                 ref = flux handle,
-                k_value = a scaling factor, optional, defaults to 1
+                scale = a scaling factor, optional, defaults to 1
                 )
 
      ctype = &#34;scale_with_mass&#34; and &#34;scale_with_concentration&#34;
@@ -225,7 +225,7 @@ class Connect(esbmtkBase):
                 sink = downstream reservoir,
                 ctype = &#34;scale_with_mass&#34;,
                 ref = reservoir handle,
-                k_value = a scaling factor, optional, defaults to 1
+                scale = a scaling factor, optional, defaults to 1
     )
 
      ctype = &#34;scale_relative_to_multiple_reservoirs&#34;
@@ -247,10 +247,10 @@ class Connect(esbmtkBase):
                 sink = downstream reservoir,
                 ctype = &#34;scale_relative_to_multiple_reservoirs&#34;
                 ref_reservoirs = [r1, r2, k etc] # you must provide at least one
-                k_value = a scaling factor, optional, defaults to 1
+                scale = a scaling factor, optional, defaults to 1
     )
 
-     K_value is an overall scaling factor.
+     scale is an overall scaling factor.
 
 
      ctype = &#34;flux_balance&#34;
@@ -277,7 +277,7 @@ class Connect(esbmtkBase):
                  sink=R_HCO3,          # source of flux
                  rate=&#34;1 mol/s&#34;,       # flux rate
                  ctype=&#34;flux_balance&#34;, # connection type
-                 k_value=1,            # global scaling factor, optional
+                 scale=1,            # global scaling factor, optional
                  left=[K1, R_CO2],     # where K1 is a constant
                  right=[R_HCO3, R_Hplus])
 
@@ -286,7 +286,7 @@ class Connect(esbmtkBase):
      ----------------------------
      The following methods might prove useful
 
-      - describe() will provide a short description of the connection objects.
+      - info() will provide a short description of the connection objects.
       - list_processes() which will list all the processes which are associated with this connection.
       - update() which allows you to update connection properties after the connection has been created
 
@@ -320,7 +320,7 @@ class Connect(esbmtkBase):
             &#34;ctype&#34;: str,
             &#34;ref&#34;: (Flux, list),
             &#34;ratio&#34;: Number,
-            &#34;scale&#34;: Number,
+            &#34;scale&#34;: (Number, str),
             &#34;ref_value&#34;: (str, Number, Q_),
             &#34;ref_reservoir&#34;: (list, Reservoir),
             &#34;k_value&#34;: (Number, str, Q_),
@@ -329,6 +329,7 @@ class Connect(esbmtkBase):
             &#34;left&#34;: (list, Number, Reservoir),
             &#34;right&#34;: (list, Number, Reservoir),
             &#34;plot&#34;: str,
+            &#34;groupname&#34;: bool,
             &#34;register&#34;: (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             &#34;signal&#34;: (Signal, str),
         }
@@ -350,8 +351,10 @@ class Connect(esbmtkBase):
             &#34;delta&#34;: &#34;None&#34;,
             &#34;alpha&#34;: &#34;None&#34;,
             &#34;rate&#34;: &#34;None&#34;,
-            &#34;k_value&#34;: 1,
+            &#34;k_value&#34;: &#34;None&#34;,
+            &#34;scale&#34;: 1,
             &#34;signal&#34;: &#34;None&#34;,
+            &#34;groupname&#34;: False,
         }
 
         # validate and initialize instance variables
@@ -362,6 +365,7 @@ class Connect(esbmtkBase):
                 &#34;k_concentration&#34;: &#34;a number&#34;,
                 &#34;k_mass&#34;: &#34;a number&#34;,
                 &#34;k_value&#34;: &#34;a number&#34;,
+                &#34;scale&#34;: &#34;a number&#34;,
                 &#34;a_value&#34;: &#34;a number&#34;,
                 &#34;ref_value&#34;: &#34;a number, string, or quantity&#34;,
                 &#34;b_value&#34;: &#34;a number&#34;,
@@ -371,6 +375,7 @@ class Connect(esbmtkBase):
                 &#34;left&#34;: &#34;Number, list or Reservoir&#34;,
                 &#34;right&#34;: &#34;Number, list or Reservoir&#34;,
                 &#34;signal&#34;: &#34;Signal Handle&#34;,
+                &#34;groupname&#34;: &#34;True or False&#34;,
             }
         )
 
@@ -469,18 +474,29 @@ class Connect(esbmtkBase):
             d = self.delta
 
         if self.rate == &#34;None&#34;:
-            r = f&#34;1 {self.sp.mo.f_unit}&#34;
+            r = f&#34;0 {self.sp.mo.f_unit}&#34;
             # self._rate = r
         else:
             r = self.rate
 
         # flux name
-        if self.id == &#34;None&#34;:
-            n = self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_Flux&#34;
+        if self.groupname == False:
+            if self.id == &#34;None&#34;:
+                n = self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_Flux&#34;
+            else:
+                n = self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_&#34; + self.id + &#34;_Flux&#34;
         else:
+            print(f&#34;Group name set&#34;)
             n = (
-                self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_&#34; + self.id + &#34;_Flux&#34;
-            )  # flux name r1_2_r2
+                self.r1.groupname
+                + &#34;_&#34;
+                + self.r1.n
+                + &#34;_2_&#34;
+                + self.r2.groupname
+                + &#34;_&#34;
+                + self.r2.n
+                + &#34;_Flux&#34;
+            )
 
         # derive flux unit from species obbject
         funit = self.sp.mu + &#34;/&#34; + str(self.sp.mo.bu)  # xxx
@@ -560,13 +576,24 @@ class Connect(esbmtkBase):
                         flux=self.fh,
                         lt=p.data,
                     )
-                    self.lop.append(n)
+                    self.lop.insert(0, n)  # signals must come first
+                    print(f&#34;Inserting {n.n} in {self.name} for {self.r.n}&#34;)
                 else:
                     raise ValueError(f&#34;Signal type {p.ty} is not defined&#34;)
 
+        # ensure that vardeltaout is first in list
+        self.__move_process_to_top_of_queue__(self.lop, VarDeltaOut)
         # nwo we can register everythig on lop
         for p in self.lop:
             p.__register__(self.r, self.fh)
+
+    def __move_process_to_top_of_queue__(self, lop: list, ptype: any) -&gt; None:
+        &#34;&#34;&#34;Return a copy of lop where ptype has been moved to the top of lop&#34;&#34;&#34;
+        p_copy = copy(lop)
+        for p in p_copy:  # loop over process list if provided during init
+            if isinstance(p, ptype):
+                lop.remove(p)
+                lop.insert(0, p)  # insert at top
 
     def __set_process_type__(self) -&gt; None:
         &#34;&#34;&#34;Deduce flux type based on the provided flux properties. The method calls the
@@ -585,15 +612,20 @@ class Connect(esbmtkBase):
         else:
             self.pn = self.r1.n + &#34;_2_&#34; + self.r2.n + f&#34;_{self.id}&#34;
 
+        # if signal is provided but rate is omitted
+        if self.signal != &#34;None&#34; and self.rate == &#34;None&#34;:
+            self._rate = &#34;0 mmol/y&#34;
+
         # if connection type is not set explicitly
         if self.ctype == &#34;None&#34;:
             # set the fundamental flux type based on the flux arguments given
             if self.delta != &#34;None&#34; and self.rate != &#34;None&#34;:
-                pass  # do nothing but exit this conditional
+                # self.__vardeltaout__()
+                pass  # if delta and rate are specified, do nothing
             # variable flux with fixed delta
-            elif self.delta != &#34;None&#34;:  # delta must be set
+            elif self.delta != &#34;None&#34;:  # if delta is set
                 self.__passivefluxfixeddelta__()
-            elif self.rate != &#34;None&#34;:  # rate must be set
+            elif self.rate != &#34;None&#34;:  # if rate is set
                 self.__vardeltaout__()  # variable delta with fixed flux
             else:  # if neither are given -&gt; default varflux type
                 self._delta = 0
@@ -615,6 +647,7 @@ class Connect(esbmtkBase):
             self.__rateconstant__()
         elif self.ctype == &#34;scale_with_concentration&#34;:
             self.__rateconstant__()
+            # self.__vardeltaout__()
         elif self.ctype == &#34;scale_with_concentration_normalized&#34;:
             self.__rateconstant__()
         elif self.ctype == &#34;scale_with_mass_normalized&#34;:
@@ -626,8 +659,10 @@ class Connect(esbmtkBase):
         elif self.ctype == &#34;react_with&#34;:
             self.__reaction__()
         elif self.ctype == &#34;monod_type_limit&#34;:
-            self.__vardeltaout__()
+            # self.__vardeltaout__()
             self.__rateconstant__()
+        elif self.ctype == &#34;manual&#34;:
+            pass
         else:
             print(f&#34;Connection Type {self.ctype} is unknown&#34;)
             raise ValueError(f&#34;Unknown connection type {self.ctype}&#34;)
@@ -635,6 +670,7 @@ class Connect(esbmtkBase):
         # Set optional flux processes
         if self.alpha != &#34;None&#34;:
             self.__alpha__()  # Set optional flux processes
+            # self.__vardeltaout__()
 
     def __passivefluxfixeddelta__(self) -&gt; None:
         &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
@@ -658,7 +694,7 @@ class Connect(esbmtkBase):
 
         ph = VarDeltaOut(
             name=self.pn + &#34;_Pvdo&#34;,
-            reservoir=self.r,
+            reservoir=self.source,
             flux=self.fh,
             register=self.register,
             rate=self.rate,
@@ -671,12 +707,16 @@ class Connect(esbmtkBase):
         if not isinstance(self.kwargs[&#34;ref&#34;], Flux):
             raise ValueError(&#34;Scale reference must be a flux&#34;)
 
+        if self.k_value != &#34;None&#34;:
+            self.scale = self.k_value
+            print(f&#34;\n Warning: use scale instead of k_value for scaleflux type\n&#34;)
+
         ph = ScaleFlux(
             name=self.pn + &#34;_PSF&#34;,
             reservoir=self.r,
             flux=self.fh,
             register=self.register,
-            scale=self.k_value,
+            scale=self.scale,
             ref=self.ref,
         )
         self.lop.append(ph)
@@ -690,6 +730,12 @@ class Connect(esbmtkBase):
 
         &#34;&#34;&#34;
 
+        if self.k_value != &#34;None&#34;:
+            self.scale = self.k_value
+            print(
+                f&#34;\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n&#34;
+            )
+
         if not isinstance(self.kwargs[&#34;ref&#34;], Flux):
             raise ValueError(&#34;Scale reference must be a flux&#34;)
 
@@ -698,7 +744,7 @@ class Connect(esbmtkBase):
             reservoir=self.r,
             flux=self.fh,
             register=self.register,
-            scale=self.k_value,
+            scale=self.scale,
             ref=self.ref,
         )
         self.lop.append(ph)
@@ -712,6 +758,12 @@ class Connect(esbmtkBase):
 
         &#34;&#34;&#34;
 
+        if self.k_value != &#34;None&#34;:
+            self.scale = self.k_value
+            print(
+                f&#34;\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n&#34;
+            )
+
         if not isinstance(self.kwargs[&#34;ref&#34;], list):
             raise ValueError(&#34;ref must be a list&#34;)
 
@@ -720,7 +772,7 @@ class Connect(esbmtkBase):
             reservoir=self.r,
             flux=self.fh,
             register=self.register,
-            scale=self.k_value,
+            scale=self.scale,
             ref=self.ref,
         )
         self.lop.append(ph)
@@ -731,12 +783,16 @@ class Connect(esbmtkBase):
         if not isinstance(self.ref, (Flux)):
             raise ValueError(&#34;Scale reference must be a flux&#34;)
 
+        if self.k_value != &#34;None&#34;:
+            self.scale = self.k_value
+            print(f&#34;\n Warning: use scale instead of k_value for reaction type\n&#34;)
+
         ph = Reaction(
             name=self.pn + &#34;_RF&#34;,
             reservoir=self.r,
             flux=self.fh,
             register=self.register,
-            scale=self.k_value,
+            scale=self.scale,
             ref=self.ref,
         )
 
@@ -773,45 +829,74 @@ class Connect(esbmtkBase):
 
         # this process requires that we use the vardeltaout process
         if self.mo.m_type != &#34;mass_only&#34;:
-            self.__vardeltaout__()
+            # self.__vardeltaout__()
+            pass
 
         if self.ctype == &#34;scale_with_mass&#34;:
-            self.k_value = map_units(self.k_value, self.mo.m_unit)
+            if self.k_value != &#34;None&#34;:
+                self.scale = self.k_value
+                print(
+                    f&#34;\n Warning: use scale instead of k_value for scale with mass type\n&#34;
+                )
+
+            self.scale = map_units(self.scale, self.mo.m_unit)
             ph = ScaleRelativeToMass(
                 name=self.pn + &#34;_PkM&#34;,
                 reservoir=self.ref_reservoir,
                 flux=self.fh,
                 register=self.register,
-                k_value=self.k_value,
+                scale=self.scale,
             )
 
         elif self.ctype == &#34;scale_with_mass_normalized&#34;:
-            self.k_value = map_units(self.k_value, self.mo.m_unit)
+
+            if self.k_value != &#34;None&#34;:
+                self.scale = self.k_value
+                print(
+                    f&#34;\n Warning: use scale instead of k_value for scale with mass normalized type\n&#34;
+                )
+
+            self.scale = map_units(self.scale, self.mo.m_unit)
             self.ref_value = map_units(self.ref_value, self.mo.m_unit)
+
             ph = ScaleRelativeToNormalizedMass(
                 name=self.pn + &#34;_PknM&#34;,
                 reservoir=self.ref_reservoir,
                 flux=self.fh,
                 register=self.register,
                 ref_value=self.ref_value,
-                k_value=self.k_value,
+                scale=self.scale,
             )
 
         elif self.ctype == &#34;scale_with_concentration&#34;:
-            self.k_value = map_units(
-                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
+
+            if self.k_value != &#34;None&#34;:
+                self.scale = self.k_value
+                print(
+                    f&#34;\n Warning: use scale instead of k_value for scale with concentration type\n&#34;
+                )
+
+            self.scale = map_units(
+                self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
             )
             ph = ScaleRelativeToConcentration(
                 name=self.pn + &#34;_PkC&#34;,
                 reservoir=self.ref_reservoir,
                 flux=self.fh,
                 register=self.register,
-                k_value=self.k_value,
+                scale=self.scale,
             )
 
         elif self.ctype == &#34;scale_relative_to_multiple_reservoirs&#34;:
-            self.k_value = map_units(
-                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
+
+            if self.k_value != &#34;None&#34;:
+                self.scale = self.k_value
+                print(
+                    f&#34;\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n&#34;
+                )
+
+            self.scale = map_units(
+                self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
             )
             ph = ScaleRelative2otherReservoir(
                 name=self.pn + &#34;_PkC&#34;,
@@ -819,7 +904,7 @@ class Connect(esbmtkBase):
                 ref_reservoir=self.ref_reservoir,
                 flux=self.fh,
                 register=self.register,
-                k_value=self.k_value,
+                scale=self.scale,
             )
 
         elif self.ctype == &#34;flux_balance&#34;:
@@ -837,8 +922,15 @@ class Connect(esbmtkBase):
             )
 
         elif self.ctype == &#34;scale_with_concentration_normalized&#34;:
-            self.k_value = map_units(
-                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
+
+            if self.k_value != &#34;None&#34;:
+                self.scale = self.k_value
+                print(
+                    f&#34;\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n&#34;
+                )
+
+            self.scale = map_units(
+                self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
             )
             self.ref_value = map_units(self.ref_value, self.mo.c_unit)
             ph = ScaleRelativeToNormalizedConcentration(
@@ -847,7 +939,7 @@ class Connect(esbmtkBase):
                 flux=self.fh,
                 register=self.register,
                 ref_value=self.ref_value,
-                k_value=self.k_value,
+                scale=self.scale,
             )
 
         elif self.ctype == &#34;monod_ctype_limit&#34;:
@@ -869,7 +961,7 @@ class Connect(esbmtkBase):
 
         self.lop.append(ph)
 
-    def describe(self, **kwargs) -&gt; None:
+    def info(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
@@ -894,7 +986,7 @@ class Connect(esbmtkBase):
 
         print(f&#34;{ind}Fluxes:&#34;)
         for f in sorted(self.lof):
-            f.describe(indent=indent, index=index)
+            f.info(indent=indent, index=index)
 
     def __delete_process__(self) -&gt; None:
         &#34;&#34;&#34;Updates to the connection properties may change the connection type and thus
@@ -908,8 +1000,9 @@ class Connect(esbmtkBase):
         # delete process from global name space if present
 
         lop = copy(self.lop)
+
         for p in lop:
-            for f in lof:
+            for f in self.lof:
                 if isinstance(f.register, ConnectionGroup):
                     # remove from Connection group list of model objects
                     self.register.lmo.remove(f)
@@ -1009,9 +1102,9 @@ class ConnectionGroup(esbmtkBase):
 
         Connect reservoir/sink/source groups when at least one of the
         arguments is a reservoirs_group object. This method will
-        create regular connections for each matching species. 
+        create regular connections for each matching species.
 
-        Use the connection.update() method to fine tune connections 
+        Use the connection.update() method to fine tune connections
         after creation
 
     Example::
@@ -1023,7 +1116,8 @@ class ConnectionGroup(esbmtkBase):
            rate = shared between all connections
            ref = shared between all connections
            species = list, optional, if present, only these species will be connected
-           ctype = if set it will be shared between all connections. To
+           ctype = needs to be set for all connections. Use &#34;None&#34;
+                   unless you require a specific connection type
            pl = [list]) process list. optional, shared between all connections
            id = optional identifier, shared between all connections
            plot = &#34;yes/no&#34; # defaults to yes, shared between all connections
@@ -1040,6 +1134,7 @@ class ConnectionGroup(esbmtkBase):
         will create two connections, the first one with an alpha of 1.02, and the second with an alpha of 1.03
 
     &#34;&#34;&#34;
+
     def __init__(self, **kwargs) -&gt; None:
 
         # provide a dict of all known keywords and their type
@@ -1054,105 +1149,80 @@ class ConnectionGroup(esbmtkBase):
             &#34;signal&#34;: Signal,
             &#34;alpha&#34;: dict,
             &#34;species&#34;: dict,
-            &#34;ctype&#34;: str,
+            &#34;ctype&#34;: dict,
             &#34;ref&#34;: list,
             &#34;plot&#34;: dict,
+            &#34;scale&#34;: dict,
         }
 
         self.base_name = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name
 
-        n = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[
-            &#34;sink&#34;].name + &#34;_ConnectionGroup&#34;  # set the name
+        n = (
+            kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name + &#34;_ConnectionGroup&#34;
+        )  # set the name
 
         # set connection group name
         kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
 
         # provide a list of absolutely required keywords
         self.lrk: list = [&#34;source&#34;, &#34;sink&#34;]
-
-        # get the number of sub reservoirs in the source and sink
-        nor_sink = len(kwargs[&#34;sink&#34;].species)
-        nor_source = len(kwargs[&#34;source&#34;].species)
-
-        #if nor_source != nor_sink:
-        #    raise ValueError(
-        #        &#34;Number of sub reservoirs does not match. Specify match explicitly&#34;
-        #    )
-
-        cid: dict = {}
-        plot: dict = {}
-        delta: dict = {}
-        alpha: dict = {}
-        rate: dict = {}
-        # loop over names and create dicts
-        for n in kwargs[&#39;sink&#39;].species:
-            cid[n] = &#39;None&#39;
-            plot[n] = &#39;no&#39;
-            delta[n] = &#39;None&#39;
-            alpha[n] = &#39;None&#39;
-            rate[n] = &#39;None&#39;
-
-        # list of default values if none provided
-        self.lod: Dict[any, any] = {
-            &#34;id&#34;: cid,
-            &#34;plot&#34;: plot,
-            &#34;delta&#34;: delta,
-            &#34;alpha&#34;: alpha,
-            &#34;rate&#34;: rate
-        }
-
-        # turn kwargs into instance variables
         self.__validateandregister__(kwargs)
-
-        self.loc: list = []  # list of connections in this group
-
-        # self.source.lor is a  list with the object names in the group
+        # # self.source.lor is a  list with the object names in the group
         self.mo = self.sink.lor[0].mo
+        self.loc :list = [] # list of connection objects
 
-        # loop over sub-reservoirs and create connections
-        for i, r in enumerate(self.source.lor):
-            if not isinstance(r, (Reservoir, Source, Sink)):
-                raise ValueError(
-                    f&#34;{r} must be of type reservoir, source or sink&#34;)
-                # take the species of this sub reservoir
-                # in the source, and find matching
-                # species in the sink
+        # find all sub reservoirs which have been specified by the ctype keyword
+        self.connections: list = []
+        for r in self.source.lor:
+            if r.sp in self.ctype:
+                self.connections.append(r)
+                print(f&#34;found species {r.sp.n}&#34;)
 
-            # loop over sink list until a match is found
-            for j, s in enumerate(self.sink.lor):
-                if not isinstance(s, (Reservoir, Source, Sink)):
-                    raise ValueError(
-                        f&#34;{r} must be of type reservoir, source or sink&#34;)
-
-                if r.species == s.species:  # match found
-                    # name = f&#34;{self.source.name}_{r.species.name}_2_{self.sink.name}_{s.species.name}&#34;
-                    name = f&#34;{r.species.name}_2_{s.species.name}_Connector&#34;
-                    a = Connect(
-                        name=name,
-                        source=r,
-                        sink=s,
-                        rate=self.rate[s.species],
-                        delta=self.delta[s.species],
-                        alpha=self.alpha[s.species],
-                        plot=self.plot[s.species],
-                        id=self.id[s.species],
-                        register=self,
-                    )
-                elif j == nor_sink:  # no match was found
-                    raise ValueError(&#34;{r.species} has no match&#34;)
-
-            # register connection with connection group
-            #this should happen automatically
-            #setattr(self, a.name, a)
+        # now we need to create defaults for all connections
+        # we setup a dict like this  {SO4:{cid:xxx,plot:xxx}}
+        self.cd: dict = {}  # connection dictionary
+        for r in self.connections:  # [&#34;SO4&#34;, &#34;H2S&#34;]
+            self.cd[r.n] = {
+                &#34;cid&#34;: &#34;None&#34;,
+                &#34;plot&#34;: &#34;yes&#34;,
+                &#34;delta&#34;: &#34;None&#34;,
+                &#34;alpha&#34;: &#34;None&#34;,
+                &#34;rate&#34;: &#34;None&#34;,
+                &#34;scale&#34;: &#34;None&#34;,
+                &#34;ctype&#34;: &#34;None&#34;,
+            }
+            # now we loop trough all keys for this connection and see
+            # if we find a corresponding item in the kwargs
+            for kcd, vcd in self.cd[r.n].items():
+                if kcd in self.kwargs:  # found entry like ctype
+                    if r.sp in self.kwargs[kcd]:  # {SO4: xxx}
+                        # update the entry
+                        self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
+            # now we can create the connection
+            name = f&#34;{r.n}_Connector&#34;
+            a = Connect(
+                name=name,
+                source=getattr(self.source, r.n),
+                sink=getattr(self.sink, r.n),
+                rate=self.cd[r.n][&#34;rate&#34;],
+                delta=self.cd[r.n][&#34;delta&#34;],
+                alpha=self.cd[r.n][&#34;alpha&#34;],
+                plot=self.cd[r.n][&#34;plot&#34;],
+                ctype=self.cd[r.n][&#34;ctype&#34;],
+                scale=self.cd[r.n][&#34;scale&#34;],
+                groupname = True,
+                id=self.cd[r.n][&#34;cid&#34;],
+                register=self,
+            )
+            ## add connection to list of connections
             self.loc.append(a)
 
         # register connection group in global namespace
         self.__register_name__()
+        print(f&#34;Created {self.name}&#34;)
 
-    def describe(self) -&gt; None:
-        &#34;&#34;&#34; List all connections in this group
-        
-        &#34;&#34;&#34;
+    def info(self) -&gt; None:
+        &#34;&#34;&#34;List all connections in this group&#34;&#34;&#34;
 
         print(f&#34;Group Connection from {self.source.name} to {self.sink.name}\n&#34;)
         print(&#34;    The following Connections are part of this group\n&#34;)
@@ -1163,7 +1233,7 @@ class ConnectionGroup(esbmtkBase):
         print(&#34;&#34;)
 
         print(f&#34;        You can query the details of each connection like this:\n&#34;)
-        print(f&#34;          {self.name}.{self.loc[0].name}.describe()&#34;)</code></pre>
+        print(f&#34;          {self.name}.{self.loc[0].name}.info()&#34;)</code></pre>
 </details>
 </section>
 <section>
@@ -1271,7 +1341,7 @@ recognized</p>
         sink = downstream reservoir,
         ctype = "scale_with_flux",
         ref = flux handle,
-        k_value = a scaling factor, optional, defaults to 1
+        scale = a scaling factor, optional, defaults to 1
         )
 </code></pre>
 <p>ctype = "virtual_flux"
@@ -1285,7 +1355,7 @@ split into two elements (i.e., deprotonation).</p>
         sink = downstream reservoir,
         ctype = "scale_with_flux",
         ref = flux handle,
-        k_value = a scaling factor, optional, defaults to 1
+        scale = a scaling factor, optional, defaults to 1
         )
 </code></pre>
 <p>ctype = "scale_with_mass" and "scale_with_concentration"
@@ -1296,7 +1366,7 @@ split into two elements (i.e., deprotonation).</p>
         sink = downstream reservoir,
         ctype = "scale_with_mass",
         ref = reservoir handle,
-        k_value = a scaling factor, optional, defaults to 1
+        scale = a scaling factor, optional, defaults to 1
 </code></pre>
 <p>)</p>
 <p>ctype = "scale_relative_to_multiple_reservoirs"
@@ -1314,10 +1384,10 @@ or more constants.</p>
         sink = downstream reservoir,
         ctype = "scale_relative_to_multiple_reservoirs"
         ref_reservoirs = [r1, r2, k etc] # you must provide at least one
-        k_value = a scaling factor, optional, defaults to 1
+        scale = a scaling factor, optional, defaults to 1
 </code></pre>
 <p>)</p>
-<p>K_value is an overall scaling factor.</p>
+<p>scale is an overall scaling factor.</p>
 <p>ctype = "flux_balance"
 ~~~~~~~~~~~~~~~~~~~~~~</p>
 <p>This type can be used to express equilibration fluxes
@@ -1340,7 +1410,7 @@ between =left=and =right=</li>
          sink=R_HCO3,          # source of flux
          rate="1 mol/s",       # flux rate
          ctype="flux_balance", # connection type
-         k_value=1,            # global scaling factor, optional
+         scale=1,            # global scaling factor, optional
          left=[K1, R_CO2],     # where K1 is a constant
          right=[R_HCO3, R_Hplus])
 </code></pre>
@@ -1348,7 +1418,7 @@ between =left=and =right=</li>
 <hr>
 <p>The following methods might prove useful</p>
 <ul>
-<li>describe() will provide a short description of the connection objects.</li>
+<li>info() will provide a short description of the connection objects.</li>
 <li>list_processes() which will list all the processes which are associated with this connection.</li>
 <li>update() which allows you to update connection properties after the connection has been created</li>
 </ul>
@@ -1468,7 +1538,7 @@ between =left=and =right=</li>
                 sink = downstream reservoir,
                 ctype = &#34;scale_with_flux&#34;,
                 ref = flux handle,
-                k_value = a scaling factor, optional, defaults to 1
+                scale = a scaling factor, optional, defaults to 1
                 )
 
     ctype = &#34;virtual_flux&#34;
@@ -1485,7 +1555,7 @@ between =left=and =right=</li>
                 sink = downstream reservoir,
                 ctype = &#34;scale_with_flux&#34;,
                 ref = flux handle,
-                k_value = a scaling factor, optional, defaults to 1
+                scale = a scaling factor, optional, defaults to 1
                 )
 
      ctype = &#34;scale_with_mass&#34; and &#34;scale_with_concentration&#34;
@@ -1499,7 +1569,7 @@ between =left=and =right=</li>
                 sink = downstream reservoir,
                 ctype = &#34;scale_with_mass&#34;,
                 ref = reservoir handle,
-                k_value = a scaling factor, optional, defaults to 1
+                scale = a scaling factor, optional, defaults to 1
     )
 
      ctype = &#34;scale_relative_to_multiple_reservoirs&#34;
@@ -1521,10 +1591,10 @@ between =left=and =right=</li>
                 sink = downstream reservoir,
                 ctype = &#34;scale_relative_to_multiple_reservoirs&#34;
                 ref_reservoirs = [r1, r2, k etc] # you must provide at least one
-                k_value = a scaling factor, optional, defaults to 1
+                scale = a scaling factor, optional, defaults to 1
     )
 
-     K_value is an overall scaling factor.
+     scale is an overall scaling factor.
 
 
      ctype = &#34;flux_balance&#34;
@@ -1551,7 +1621,7 @@ between =left=and =right=</li>
                  sink=R_HCO3,          # source of flux
                  rate=&#34;1 mol/s&#34;,       # flux rate
                  ctype=&#34;flux_balance&#34;, # connection type
-                 k_value=1,            # global scaling factor, optional
+                 scale=1,            # global scaling factor, optional
                  left=[K1, R_CO2],     # where K1 is a constant
                  right=[R_HCO3, R_Hplus])
 
@@ -1560,7 +1630,7 @@ between =left=and =right=</li>
      ----------------------------
      The following methods might prove useful
 
-      - describe() will provide a short description of the connection objects.
+      - info() will provide a short description of the connection objects.
       - list_processes() which will list all the processes which are associated with this connection.
       - update() which allows you to update connection properties after the connection has been created
 
@@ -1594,7 +1664,7 @@ between =left=and =right=</li>
             &#34;ctype&#34;: str,
             &#34;ref&#34;: (Flux, list),
             &#34;ratio&#34;: Number,
-            &#34;scale&#34;: Number,
+            &#34;scale&#34;: (Number, str),
             &#34;ref_value&#34;: (str, Number, Q_),
             &#34;ref_reservoir&#34;: (list, Reservoir),
             &#34;k_value&#34;: (Number, str, Q_),
@@ -1603,6 +1673,7 @@ between =left=and =right=</li>
             &#34;left&#34;: (list, Number, Reservoir),
             &#34;right&#34;: (list, Number, Reservoir),
             &#34;plot&#34;: str,
+            &#34;groupname&#34;: bool,
             &#34;register&#34;: (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             &#34;signal&#34;: (Signal, str),
         }
@@ -1624,8 +1695,10 @@ between =left=and =right=</li>
             &#34;delta&#34;: &#34;None&#34;,
             &#34;alpha&#34;: &#34;None&#34;,
             &#34;rate&#34;: &#34;None&#34;,
-            &#34;k_value&#34;: 1,
+            &#34;k_value&#34;: &#34;None&#34;,
+            &#34;scale&#34;: 1,
             &#34;signal&#34;: &#34;None&#34;,
+            &#34;groupname&#34;: False,
         }
 
         # validate and initialize instance variables
@@ -1636,6 +1709,7 @@ between =left=and =right=</li>
                 &#34;k_concentration&#34;: &#34;a number&#34;,
                 &#34;k_mass&#34;: &#34;a number&#34;,
                 &#34;k_value&#34;: &#34;a number&#34;,
+                &#34;scale&#34;: &#34;a number&#34;,
                 &#34;a_value&#34;: &#34;a number&#34;,
                 &#34;ref_value&#34;: &#34;a number, string, or quantity&#34;,
                 &#34;b_value&#34;: &#34;a number&#34;,
@@ -1645,6 +1719,7 @@ between =left=and =right=</li>
                 &#34;left&#34;: &#34;Number, list or Reservoir&#34;,
                 &#34;right&#34;: &#34;Number, list or Reservoir&#34;,
                 &#34;signal&#34;: &#34;Signal Handle&#34;,
+                &#34;groupname&#34;: &#34;True or False&#34;,
             }
         )
 
@@ -1743,18 +1818,29 @@ between =left=and =right=</li>
             d = self.delta
 
         if self.rate == &#34;None&#34;:
-            r = f&#34;1 {self.sp.mo.f_unit}&#34;
+            r = f&#34;0 {self.sp.mo.f_unit}&#34;
             # self._rate = r
         else:
             r = self.rate
 
         # flux name
-        if self.id == &#34;None&#34;:
-            n = self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_Flux&#34;
+        if self.groupname == False:
+            if self.id == &#34;None&#34;:
+                n = self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_Flux&#34;
+            else:
+                n = self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_&#34; + self.id + &#34;_Flux&#34;
         else:
+            print(f&#34;Group name set&#34;)
             n = (
-                self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_&#34; + self.id + &#34;_Flux&#34;
-            )  # flux name r1_2_r2
+                self.r1.groupname
+                + &#34;_&#34;
+                + self.r1.n
+                + &#34;_2_&#34;
+                + self.r2.groupname
+                + &#34;_&#34;
+                + self.r2.n
+                + &#34;_Flux&#34;
+            )
 
         # derive flux unit from species obbject
         funit = self.sp.mu + &#34;/&#34; + str(self.sp.mo.bu)  # xxx
@@ -1834,13 +1920,24 @@ between =left=and =right=</li>
                         flux=self.fh,
                         lt=p.data,
                     )
-                    self.lop.append(n)
+                    self.lop.insert(0, n)  # signals must come first
+                    print(f&#34;Inserting {n.n} in {self.name} for {self.r.n}&#34;)
                 else:
                     raise ValueError(f&#34;Signal type {p.ty} is not defined&#34;)
 
+        # ensure that vardeltaout is first in list
+        self.__move_process_to_top_of_queue__(self.lop, VarDeltaOut)
         # nwo we can register everythig on lop
         for p in self.lop:
             p.__register__(self.r, self.fh)
+
+    def __move_process_to_top_of_queue__(self, lop: list, ptype: any) -&gt; None:
+        &#34;&#34;&#34;Return a copy of lop where ptype has been moved to the top of lop&#34;&#34;&#34;
+        p_copy = copy(lop)
+        for p in p_copy:  # loop over process list if provided during init
+            if isinstance(p, ptype):
+                lop.remove(p)
+                lop.insert(0, p)  # insert at top
 
     def __set_process_type__(self) -&gt; None:
         &#34;&#34;&#34;Deduce flux type based on the provided flux properties. The method calls the
@@ -1859,15 +1956,20 @@ between =left=and =right=</li>
         else:
             self.pn = self.r1.n + &#34;_2_&#34; + self.r2.n + f&#34;_{self.id}&#34;
 
+        # if signal is provided but rate is omitted
+        if self.signal != &#34;None&#34; and self.rate == &#34;None&#34;:
+            self._rate = &#34;0 mmol/y&#34;
+
         # if connection type is not set explicitly
         if self.ctype == &#34;None&#34;:
             # set the fundamental flux type based on the flux arguments given
             if self.delta != &#34;None&#34; and self.rate != &#34;None&#34;:
-                pass  # do nothing but exit this conditional
+                # self.__vardeltaout__()
+                pass  # if delta and rate are specified, do nothing
             # variable flux with fixed delta
-            elif self.delta != &#34;None&#34;:  # delta must be set
+            elif self.delta != &#34;None&#34;:  # if delta is set
                 self.__passivefluxfixeddelta__()
-            elif self.rate != &#34;None&#34;:  # rate must be set
+            elif self.rate != &#34;None&#34;:  # if rate is set
                 self.__vardeltaout__()  # variable delta with fixed flux
             else:  # if neither are given -&gt; default varflux type
                 self._delta = 0
@@ -1889,6 +1991,7 @@ between =left=and =right=</li>
             self.__rateconstant__()
         elif self.ctype == &#34;scale_with_concentration&#34;:
             self.__rateconstant__()
+            # self.__vardeltaout__()
         elif self.ctype == &#34;scale_with_concentration_normalized&#34;:
             self.__rateconstant__()
         elif self.ctype == &#34;scale_with_mass_normalized&#34;:
@@ -1900,8 +2003,10 @@ between =left=and =right=</li>
         elif self.ctype == &#34;react_with&#34;:
             self.__reaction__()
         elif self.ctype == &#34;monod_type_limit&#34;:
-            self.__vardeltaout__()
+            # self.__vardeltaout__()
             self.__rateconstant__()
+        elif self.ctype == &#34;manual&#34;:
+            pass
         else:
             print(f&#34;Connection Type {self.ctype} is unknown&#34;)
             raise ValueError(f&#34;Unknown connection type {self.ctype}&#34;)
@@ -1909,6 +2014,7 @@ between =left=and =right=</li>
         # Set optional flux processes
         if self.alpha != &#34;None&#34;:
             self.__alpha__()  # Set optional flux processes
+            # self.__vardeltaout__()
 
     def __passivefluxfixeddelta__(self) -&gt; None:
         &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
@@ -1932,7 +2038,7 @@ between =left=and =right=</li>
 
         ph = VarDeltaOut(
             name=self.pn + &#34;_Pvdo&#34;,
-            reservoir=self.r,
+            reservoir=self.source,
             flux=self.fh,
             register=self.register,
             rate=self.rate,
@@ -1945,12 +2051,16 @@ between =left=and =right=</li>
         if not isinstance(self.kwargs[&#34;ref&#34;], Flux):
             raise ValueError(&#34;Scale reference must be a flux&#34;)
 
+        if self.k_value != &#34;None&#34;:
+            self.scale = self.k_value
+            print(f&#34;\n Warning: use scale instead of k_value for scaleflux type\n&#34;)
+
         ph = ScaleFlux(
             name=self.pn + &#34;_PSF&#34;,
             reservoir=self.r,
             flux=self.fh,
             register=self.register,
-            scale=self.k_value,
+            scale=self.scale,
             ref=self.ref,
         )
         self.lop.append(ph)
@@ -1964,6 +2074,12 @@ between =left=and =right=</li>
 
         &#34;&#34;&#34;
 
+        if self.k_value != &#34;None&#34;:
+            self.scale = self.k_value
+            print(
+                f&#34;\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n&#34;
+            )
+
         if not isinstance(self.kwargs[&#34;ref&#34;], Flux):
             raise ValueError(&#34;Scale reference must be a flux&#34;)
 
@@ -1972,7 +2088,7 @@ between =left=and =right=</li>
             reservoir=self.r,
             flux=self.fh,
             register=self.register,
-            scale=self.k_value,
+            scale=self.scale,
             ref=self.ref,
         )
         self.lop.append(ph)
@@ -1986,6 +2102,12 @@ between =left=and =right=</li>
 
         &#34;&#34;&#34;
 
+        if self.k_value != &#34;None&#34;:
+            self.scale = self.k_value
+            print(
+                f&#34;\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n&#34;
+            )
+
         if not isinstance(self.kwargs[&#34;ref&#34;], list):
             raise ValueError(&#34;ref must be a list&#34;)
 
@@ -1994,7 +2116,7 @@ between =left=and =right=</li>
             reservoir=self.r,
             flux=self.fh,
             register=self.register,
-            scale=self.k_value,
+            scale=self.scale,
             ref=self.ref,
         )
         self.lop.append(ph)
@@ -2005,12 +2127,16 @@ between =left=and =right=</li>
         if not isinstance(self.ref, (Flux)):
             raise ValueError(&#34;Scale reference must be a flux&#34;)
 
+        if self.k_value != &#34;None&#34;:
+            self.scale = self.k_value
+            print(f&#34;\n Warning: use scale instead of k_value for reaction type\n&#34;)
+
         ph = Reaction(
             name=self.pn + &#34;_RF&#34;,
             reservoir=self.r,
             flux=self.fh,
             register=self.register,
-            scale=self.k_value,
+            scale=self.scale,
             ref=self.ref,
         )
 
@@ -2047,45 +2173,74 @@ between =left=and =right=</li>
 
         # this process requires that we use the vardeltaout process
         if self.mo.m_type != &#34;mass_only&#34;:
-            self.__vardeltaout__()
+            # self.__vardeltaout__()
+            pass
 
         if self.ctype == &#34;scale_with_mass&#34;:
-            self.k_value = map_units(self.k_value, self.mo.m_unit)
+            if self.k_value != &#34;None&#34;:
+                self.scale = self.k_value
+                print(
+                    f&#34;\n Warning: use scale instead of k_value for scale with mass type\n&#34;
+                )
+
+            self.scale = map_units(self.scale, self.mo.m_unit)
             ph = ScaleRelativeToMass(
                 name=self.pn + &#34;_PkM&#34;,
                 reservoir=self.ref_reservoir,
                 flux=self.fh,
                 register=self.register,
-                k_value=self.k_value,
+                scale=self.scale,
             )
 
         elif self.ctype == &#34;scale_with_mass_normalized&#34;:
-            self.k_value = map_units(self.k_value, self.mo.m_unit)
+
+            if self.k_value != &#34;None&#34;:
+                self.scale = self.k_value
+                print(
+                    f&#34;\n Warning: use scale instead of k_value for scale with mass normalized type\n&#34;
+                )
+
+            self.scale = map_units(self.scale, self.mo.m_unit)
             self.ref_value = map_units(self.ref_value, self.mo.m_unit)
+
             ph = ScaleRelativeToNormalizedMass(
                 name=self.pn + &#34;_PknM&#34;,
                 reservoir=self.ref_reservoir,
                 flux=self.fh,
                 register=self.register,
                 ref_value=self.ref_value,
-                k_value=self.k_value,
+                scale=self.scale,
             )
 
         elif self.ctype == &#34;scale_with_concentration&#34;:
-            self.k_value = map_units(
-                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
+
+            if self.k_value != &#34;None&#34;:
+                self.scale = self.k_value
+                print(
+                    f&#34;\n Warning: use scale instead of k_value for scale with concentration type\n&#34;
+                )
+
+            self.scale = map_units(
+                self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
             )
             ph = ScaleRelativeToConcentration(
                 name=self.pn + &#34;_PkC&#34;,
                 reservoir=self.ref_reservoir,
                 flux=self.fh,
                 register=self.register,
-                k_value=self.k_value,
+                scale=self.scale,
             )
 
         elif self.ctype == &#34;scale_relative_to_multiple_reservoirs&#34;:
-            self.k_value = map_units(
-                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
+
+            if self.k_value != &#34;None&#34;:
+                self.scale = self.k_value
+                print(
+                    f&#34;\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n&#34;
+                )
+
+            self.scale = map_units(
+                self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
             )
             ph = ScaleRelative2otherReservoir(
                 name=self.pn + &#34;_PkC&#34;,
@@ -2093,7 +2248,7 @@ between =left=and =right=</li>
                 ref_reservoir=self.ref_reservoir,
                 flux=self.fh,
                 register=self.register,
-                k_value=self.k_value,
+                scale=self.scale,
             )
 
         elif self.ctype == &#34;flux_balance&#34;:
@@ -2111,8 +2266,15 @@ between =left=and =right=</li>
             )
 
         elif self.ctype == &#34;scale_with_concentration_normalized&#34;:
-            self.k_value = map_units(
-                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
+
+            if self.k_value != &#34;None&#34;:
+                self.scale = self.k_value
+                print(
+                    f&#34;\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n&#34;
+                )
+
+            self.scale = map_units(
+                self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
             )
             self.ref_value = map_units(self.ref_value, self.mo.c_unit)
             ph = ScaleRelativeToNormalizedConcentration(
@@ -2121,7 +2283,7 @@ between =left=and =right=</li>
                 flux=self.fh,
                 register=self.register,
                 ref_value=self.ref_value,
-                k_value=self.k_value,
+                scale=self.scale,
             )
 
         elif self.ctype == &#34;monod_ctype_limit&#34;:
@@ -2143,7 +2305,7 @@ between =left=and =right=</li>
 
         self.lop.append(ph)
 
-    def describe(self, **kwargs) -&gt; None:
+    def info(self, **kwargs) -&gt; None:
         &#34;&#34;&#34;Show an overview of the object properties.
         Optional arguments are
         index  :int = 0 this will show data at the given index
@@ -2168,7 +2330,7 @@ between =left=and =right=</li>
 
         print(f&#34;{ind}Fluxes:&#34;)
         for f in sorted(self.lof):
-            f.describe(indent=indent, index=index)
+            f.info(indent=indent, index=index)
 
     def __delete_process__(self) -&gt; None:
         &#34;&#34;&#34;Updates to the connection properties may change the connection type and thus
@@ -2182,8 +2344,9 @@ between =left=and =right=</li>
         # delete process from global name space if present
 
         lop = copy(self.lop)
+
         for p in lop:
-            for f in lof:
+            for f in self.lof:
                 if isinstance(f.register, ConnectionGroup):
                     # remove from Connection group list of model objects
                     self.register.lmo.remove(f)
@@ -2320,47 +2483,6 @@ def rate(self) -&gt; Number:
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="esbmtk.connections.Connect.describe"><code class="name flex">
-<span>def <span class="ident">describe</span></span>(<span>self, **kwargs) ‑> NoneType</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Show an overview of the object properties.
-Optional arguments are
-index
-:int = 0 this will show data at the given index
-indent :int = 0 indentation</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def describe(self, **kwargs) -&gt; None:
-    &#34;&#34;&#34;Show an overview of the object properties.
-    Optional arguments are
-    index  :int = 0 this will show data at the given index
-    indent :int = 0 indentation
-
-    &#34;&#34;&#34;
-    off: str = &#34;  &#34;
-    if &#34;index&#34; not in kwargs:
-        index = 0
-    else:
-        index = kwargs[&#34;index&#34;]
-
-    if &#34;indent&#34; not in kwargs:
-        indent = 0
-        ind = &#34;&#34;
-    else:
-        indent = kwargs[&#34;indent&#34;]
-        ind = &#34; &#34; * indent
-
-    # print basic data bout this Connection
-    print(f&#34;{ind}{self.__str__(indent=indent)}&#34;)
-
-    print(f&#34;{ind}Fluxes:&#34;)
-    for f in sorted(self.lof):
-        f.describe(indent=indent, index=index)</code></pre>
-</details>
-</dd>
 <dt id="esbmtk.connections.Connect.get_species"><code class="name flex">
 <span>def <span class="ident">get_species</span></span>(<span>self, r1, r2) ‑> NoneType</span>
 </code></dt>
@@ -2387,6 +2509,47 @@ backward fluxes the species depends on the r2</p></div>
         self.sp = self.kwargs[&#34;species&#34;]
     else:
         self.sp = self.r.sp  # get the parent species</code></pre>
+</details>
+</dd>
+<dt id="esbmtk.connections.Connect.info"><code class="name flex">
+<span>def <span class="ident">info</span></span>(<span>self, **kwargs) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Show an overview of the object properties.
+Optional arguments are
+index
+:int = 0 this will show data at the given index
+indent :int = 0 indentation</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def info(self, **kwargs) -&gt; None:
+    &#34;&#34;&#34;Show an overview of the object properties.
+    Optional arguments are
+    index  :int = 0 this will show data at the given index
+    indent :int = 0 indentation
+
+    &#34;&#34;&#34;
+    off: str = &#34;  &#34;
+    if &#34;index&#34; not in kwargs:
+        index = 0
+    else:
+        index = kwargs[&#34;index&#34;]
+
+    if &#34;indent&#34; not in kwargs:
+        indent = 0
+        ind = &#34;&#34;
+    else:
+        indent = kwargs[&#34;indent&#34;]
+        ind = &#34; &#34; * indent
+
+    # print basic data bout this Connection
+    print(f&#34;{ind}{self.__str__(indent=indent)}&#34;)
+
+    print(f&#34;{ind}Fluxes:&#34;)
+    for f in sorted(self.lof):
+        f.info(indent=indent, index=index)</code></pre>
 </details>
 </dd>
 <dt id="esbmtk.connections.Connect.update"><code class="name flex">
@@ -2446,8 +2609,8 @@ self.kwargs dict, and then re-initialize the connection.</p></div>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.connections.Connect" href="#esbmtk.connections.Connect">Connect</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.connections.Connect.describe" href="#esbmtk.connections.Connect.describe">describe</a></code></li>
 <li><code><a title="esbmtk.connections.Connect.get_species" href="#esbmtk.connections.Connect.get_species">get_species</a></code></li>
+<li><code><a title="esbmtk.connections.Connect.info" href="#esbmtk.connections.Connect.info">info</a></code></li>
 <li><code><a title="esbmtk.connections.Connect.update" href="#esbmtk.connections.Connect.update">update</a></code></li>
 </ul>
 </li>
@@ -2462,7 +2625,7 @@ self.kwargs dict, and then re-initialize the connection.</p></div>
 <p>ConnectionGroup</p>
 <p>Connect reservoir/sink/source groups when at least one of the
 arguments is a reservoirs_group object. This method will
-create regular connections for each matching species. </p>
+create regular connections for each matching species.</p>
 <p>Use the connection.update() method to fine tune connections
 after creation</p>
 <p>Example::</p>
@@ -2473,7 +2636,8 @@ after creation</p>
    rate = shared between all connections
    ref = shared between all connections
    species = list, optional, if present, only these species will be connected
-   ctype = if set it will be shared between all connections. To
+   ctype = needs to be set for all connections. Use "None"
+           unless you require a specific connection type
    pl = [list]) process list. optional, shared between all connections
    id = optional identifier, shared between all connections
    plot = "yes/no" # defaults to yes, shared between all connections
@@ -2500,9 +2664,9 @@ will create two connections, the first one with an alpha of 1.02, and the second
 
         Connect reservoir/sink/source groups when at least one of the
         arguments is a reservoirs_group object. This method will
-        create regular connections for each matching species. 
+        create regular connections for each matching species.
 
-        Use the connection.update() method to fine tune connections 
+        Use the connection.update() method to fine tune connections
         after creation
 
     Example::
@@ -2514,7 +2678,8 @@ will create two connections, the first one with an alpha of 1.02, and the second
            rate = shared between all connections
            ref = shared between all connections
            species = list, optional, if present, only these species will be connected
-           ctype = if set it will be shared between all connections. To
+           ctype = needs to be set for all connections. Use &#34;None&#34;
+                   unless you require a specific connection type
            pl = [list]) process list. optional, shared between all connections
            id = optional identifier, shared between all connections
            plot = &#34;yes/no&#34; # defaults to yes, shared between all connections
@@ -2531,6 +2696,7 @@ will create two connections, the first one with an alpha of 1.02, and the second
         will create two connections, the first one with an alpha of 1.02, and the second with an alpha of 1.03
 
     &#34;&#34;&#34;
+
     def __init__(self, **kwargs) -&gt; None:
 
         # provide a dict of all known keywords and their type
@@ -2545,105 +2711,80 @@ will create two connections, the first one with an alpha of 1.02, and the second
             &#34;signal&#34;: Signal,
             &#34;alpha&#34;: dict,
             &#34;species&#34;: dict,
-            &#34;ctype&#34;: str,
+            &#34;ctype&#34;: dict,
             &#34;ref&#34;: list,
             &#34;plot&#34;: dict,
+            &#34;scale&#34;: dict,
         }
 
         self.base_name = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name
 
-        n = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[
-            &#34;sink&#34;].name + &#34;_ConnectionGroup&#34;  # set the name
+        n = (
+            kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name + &#34;_ConnectionGroup&#34;
+        )  # set the name
 
         # set connection group name
         kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
 
         # provide a list of absolutely required keywords
         self.lrk: list = [&#34;source&#34;, &#34;sink&#34;]
-
-        # get the number of sub reservoirs in the source and sink
-        nor_sink = len(kwargs[&#34;sink&#34;].species)
-        nor_source = len(kwargs[&#34;source&#34;].species)
-
-        #if nor_source != nor_sink:
-        #    raise ValueError(
-        #        &#34;Number of sub reservoirs does not match. Specify match explicitly&#34;
-        #    )
-
-        cid: dict = {}
-        plot: dict = {}
-        delta: dict = {}
-        alpha: dict = {}
-        rate: dict = {}
-        # loop over names and create dicts
-        for n in kwargs[&#39;sink&#39;].species:
-            cid[n] = &#39;None&#39;
-            plot[n] = &#39;no&#39;
-            delta[n] = &#39;None&#39;
-            alpha[n] = &#39;None&#39;
-            rate[n] = &#39;None&#39;
-
-        # list of default values if none provided
-        self.lod: Dict[any, any] = {
-            &#34;id&#34;: cid,
-            &#34;plot&#34;: plot,
-            &#34;delta&#34;: delta,
-            &#34;alpha&#34;: alpha,
-            &#34;rate&#34;: rate
-        }
-
-        # turn kwargs into instance variables
         self.__validateandregister__(kwargs)
-
-        self.loc: list = []  # list of connections in this group
-
-        # self.source.lor is a  list with the object names in the group
+        # # self.source.lor is a  list with the object names in the group
         self.mo = self.sink.lor[0].mo
+        self.loc :list = [] # list of connection objects
 
-        # loop over sub-reservoirs and create connections
-        for i, r in enumerate(self.source.lor):
-            if not isinstance(r, (Reservoir, Source, Sink)):
-                raise ValueError(
-                    f&#34;{r} must be of type reservoir, source or sink&#34;)
-                # take the species of this sub reservoir
-                # in the source, and find matching
-                # species in the sink
+        # find all sub reservoirs which have been specified by the ctype keyword
+        self.connections: list = []
+        for r in self.source.lor:
+            if r.sp in self.ctype:
+                self.connections.append(r)
+                print(f&#34;found species {r.sp.n}&#34;)
 
-            # loop over sink list until a match is found
-            for j, s in enumerate(self.sink.lor):
-                if not isinstance(s, (Reservoir, Source, Sink)):
-                    raise ValueError(
-                        f&#34;{r} must be of type reservoir, source or sink&#34;)
-
-                if r.species == s.species:  # match found
-                    # name = f&#34;{self.source.name}_{r.species.name}_2_{self.sink.name}_{s.species.name}&#34;
-                    name = f&#34;{r.species.name}_2_{s.species.name}_Connector&#34;
-                    a = Connect(
-                        name=name,
-                        source=r,
-                        sink=s,
-                        rate=self.rate[s.species],
-                        delta=self.delta[s.species],
-                        alpha=self.alpha[s.species],
-                        plot=self.plot[s.species],
-                        id=self.id[s.species],
-                        register=self,
-                    )
-                elif j == nor_sink:  # no match was found
-                    raise ValueError(&#34;{r.species} has no match&#34;)
-
-            # register connection with connection group
-            #this should happen automatically
-            #setattr(self, a.name, a)
+        # now we need to create defaults for all connections
+        # we setup a dict like this  {SO4:{cid:xxx,plot:xxx}}
+        self.cd: dict = {}  # connection dictionary
+        for r in self.connections:  # [&#34;SO4&#34;, &#34;H2S&#34;]
+            self.cd[r.n] = {
+                &#34;cid&#34;: &#34;None&#34;,
+                &#34;plot&#34;: &#34;yes&#34;,
+                &#34;delta&#34;: &#34;None&#34;,
+                &#34;alpha&#34;: &#34;None&#34;,
+                &#34;rate&#34;: &#34;None&#34;,
+                &#34;scale&#34;: &#34;None&#34;,
+                &#34;ctype&#34;: &#34;None&#34;,
+            }
+            # now we loop trough all keys for this connection and see
+            # if we find a corresponding item in the kwargs
+            for kcd, vcd in self.cd[r.n].items():
+                if kcd in self.kwargs:  # found entry like ctype
+                    if r.sp in self.kwargs[kcd]:  # {SO4: xxx}
+                        # update the entry
+                        self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
+            # now we can create the connection
+            name = f&#34;{r.n}_Connector&#34;
+            a = Connect(
+                name=name,
+                source=getattr(self.source, r.n),
+                sink=getattr(self.sink, r.n),
+                rate=self.cd[r.n][&#34;rate&#34;],
+                delta=self.cd[r.n][&#34;delta&#34;],
+                alpha=self.cd[r.n][&#34;alpha&#34;],
+                plot=self.cd[r.n][&#34;plot&#34;],
+                ctype=self.cd[r.n][&#34;ctype&#34;],
+                scale=self.cd[r.n][&#34;scale&#34;],
+                groupname = True,
+                id=self.cd[r.n][&#34;cid&#34;],
+                register=self,
+            )
+            ## add connection to list of connections
             self.loc.append(a)
 
         # register connection group in global namespace
         self.__register_name__()
+        print(f&#34;Created {self.name}&#34;)
 
-    def describe(self) -&gt; None:
-        &#34;&#34;&#34; List all connections in this group
-        
-        &#34;&#34;&#34;
+    def info(self) -&gt; None:
+        &#34;&#34;&#34;List all connections in this group&#34;&#34;&#34;
 
         print(f&#34;Group Connection from {self.source.name} to {self.sink.name}\n&#34;)
         print(&#34;    The following Connections are part of this group\n&#34;)
@@ -2654,7 +2795,7 @@ will create two connections, the first one with an alpha of 1.02, and the second
         print(&#34;&#34;)
 
         print(f&#34;        You can query the details of each connection like this:\n&#34;)
-        print(f&#34;          {self.name}.{self.loc[0].name}.describe()&#34;)</code></pre>
+        print(f&#34;          {self.name}.{self.loc[0].name}.info()&#34;)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -2662,8 +2803,8 @@ will create two connections, the first one with an alpha of 1.02, and the second
 </ul>
 <h3>Methods</h3>
 <dl>
-<dt id="esbmtk.connections.ConnectionGroup.describe"><code class="name flex">
-<span>def <span class="ident">describe</span></span>(<span>self) ‑> NoneType</span>
+<dt id="esbmtk.connections.ConnectionGroup.info"><code class="name flex">
+<span>def <span class="ident">info</span></span>(<span>self) ‑> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"><p>List all connections in this group</p></div>
@@ -2671,10 +2812,8 @@ will create two connections, the first one with an alpha of 1.02, and the second
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def describe(self) -&gt; None:
-    &#34;&#34;&#34; List all connections in this group
-    
-    &#34;&#34;&#34;
+<pre><code class="python">def info(self) -&gt; None:
+    &#34;&#34;&#34;List all connections in this group&#34;&#34;&#34;
 
     print(f&#34;Group Connection from {self.source.name} to {self.sink.name}\n&#34;)
     print(&#34;    The following Connections are part of this group\n&#34;)
@@ -2685,7 +2824,7 @@ will create two connections, the first one with an alpha of 1.02, and the second
     print(&#34;&#34;)
 
     print(f&#34;        You can query the details of each connection like this:\n&#34;)
-    print(f&#34;          {self.name}.{self.loc[0].name}.describe()&#34;)</code></pre>
+    print(f&#34;          {self.name}.{self.loc[0].name}.info()&#34;)</code></pre>
 </details>
 </dd>
 </dl>
@@ -2711,8 +2850,8 @@ will create two connections, the first one with an alpha of 1.02, and the second
 <ul class="two-column">
 <li><code><a title="esbmtk.connections.Connect.alpha" href="#esbmtk.connections.Connect.alpha">alpha</a></code></li>
 <li><code><a title="esbmtk.connections.Connect.delta" href="#esbmtk.connections.Connect.delta">delta</a></code></li>
-<li><code><a title="esbmtk.connections.Connect.describe" href="#esbmtk.connections.Connect.describe">describe</a></code></li>
 <li><code><a title="esbmtk.connections.Connect.get_species" href="#esbmtk.connections.Connect.get_species">get_species</a></code></li>
+<li><code><a title="esbmtk.connections.Connect.info" href="#esbmtk.connections.Connect.info">info</a></code></li>
 <li><code><a title="esbmtk.connections.Connect.rate" href="#esbmtk.connections.Connect.rate">rate</a></code></li>
 <li><code><a title="esbmtk.connections.Connect.update" href="#esbmtk.connections.Connect.update">update</a></code></li>
 </ul>
@@ -2723,7 +2862,7 @@ will create two connections, the first one with an alpha of 1.02, and the second
 <li>
 <h4><code><a title="esbmtk.connections.ConnectionGroup" href="#esbmtk.connections.ConnectionGroup">ConnectionGroup</a></code></h4>
 <ul class="">
-<li><code><a title="esbmtk.connections.ConnectionGroup.describe" href="#esbmtk.connections.ConnectionGroup.describe">describe</a></code></li>
+<li><code><a title="esbmtk.connections.ConnectionGroup.info" href="#esbmtk.connections.ConnectionGroup.info">info</a></code></li>
 </ul>
 </li>
 </ul>

@@ -66,6 +66,7 @@ def sulfur(model):
 
     # add species
     Species(name="SO4", element=eh, display_as=r"SO$_{4}^{2-}$")
+    Species(name="SO4oxygen", element=eh, display_as=r"SO$_{4}^{2-}{_ox}$")
     Species(name="SO3", element=eh,  display_as=r"SO$_{3}$")
     Species(name="SO2", element=eh, display_as=r"SO$_{2$}")
     Species(name="HS", element=eh, display_as=r"HS$^-$")

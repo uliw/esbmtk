@@ -71,8 +71,13 @@ def carbon(model):
     Species(name=&#34;CO3&#34;, element=eh, display_as = &#34;CO$_3^{2-}$&#34;)
     Species(name=&#34;DOC&#34;, element=eh)
     Species(name=&#34;C&#34;, element=eh)
-    Species(name=&#34;ALK&#34;, element=eh)
-    Species(name=&#34;CALK&#34;, element=eh)
+    Species(name=&#34;ALK&#34;, element=eh)  # Alkalinity
+    Species(name=&#34;CALK&#34;, element=eh) # Carbonate Alkalinity
+    Species(name=&#34;CA&#34;, element=eh) 
+    Species(name=&#34;TALK&#34;, element=eh) # Total Alkalinity
+    Species(name=&#34;TA&#34;, element=eh) 
+    Species(name=&#34;PALK&#34;, element=eh) # Practical Alkalinity
+    Species(name=&#34;PA&#34;, element=eh) 
 
 
 def sulfur(model):
@@ -89,6 +94,7 @@ def sulfur(model):
 
     # add species
     Species(name=&#34;SO4&#34;, element=eh, display_as=r&#34;SO$_{4}^{2-}$&#34;)
+    Species(name=&#34;SO4oxygen&#34;, element=eh, display_as=r&#34;SO$_{4}^{2-}{_ox}$&#34;)
     Species(name=&#34;SO3&#34;, element=eh,  display_as=r&#34;SO$_{3}$&#34;)
     Species(name=&#34;SO2&#34;, element=eh, display_as=r&#34;SO$_{2$}&#34;)
     Species(name=&#34;HS&#34;, element=eh, display_as=r&#34;HS$^-$&#34;)
@@ -259,8 +265,13 @@ def boron(model):
     Species(name=&#34;CO3&#34;, element=eh, display_as = &#34;CO$_3^{2-}$&#34;)
     Species(name=&#34;DOC&#34;, element=eh)
     Species(name=&#34;C&#34;, element=eh)
-    Species(name=&#34;ALK&#34;, element=eh)
-    Species(name=&#34;CALK&#34;, element=eh)</code></pre>
+    Species(name=&#34;ALK&#34;, element=eh)  # Alkalinity
+    Species(name=&#34;CALK&#34;, element=eh) # Carbonate Alkalinity
+    Species(name=&#34;CA&#34;, element=eh) 
+    Species(name=&#34;TALK&#34;, element=eh) # Total Alkalinity
+    Species(name=&#34;TA&#34;, element=eh) 
+    Species(name=&#34;PALK&#34;, element=eh) # Practical Alkalinity
+    Species(name=&#34;PA&#34;, element=eh) </code></pre>
 </details>
 </dd>
 <dt id="esbmtk.species_definitions.hydrogen"><code class="name flex">
@@ -396,6 +407,7 @@ def boron(model):
 
     # add species
     Species(name=&#34;SO4&#34;, element=eh, display_as=r&#34;SO$_{4}^{2-}$&#34;)
+    Species(name=&#34;SO4oxygen&#34;, element=eh, display_as=r&#34;SO$_{4}^{2-}{_ox}$&#34;)
     Species(name=&#34;SO3&#34;, element=eh,  display_as=r&#34;SO$_{3}$&#34;)
     Species(name=&#34;SO2&#34;, element=eh, display_as=r&#34;SO$_{2$}&#34;)
     Species(name=&#34;HS&#34;, element=eh, display_as=r&#34;HS$^-$&#34;)

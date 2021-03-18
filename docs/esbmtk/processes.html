@@ -41,11 +41,13 @@ import pandas as pd
 import logging
 import time
 import builtins
+
 set_printoptions(precision=4)
 # from .utility_functions import *
 from .esbmtk import esbmtkBase, Reservoir, Flux, Signal, Source, Sink
 from .utility_functions import get_imass, get_frac, get_delta, get_flux_data
 from .utility_functions import sort_by_type
+
 # from .connections import ConnnectionGroup
 
 class Process(esbmtkBase):
@@ -137,7 +139,7 @@ class Process(esbmtkBase):
         self.lod: Dict[str, any] = {}
 
         # default type hints
-        self.scale: t
+        self.scale: Number
         self.delta: Number
         self.alpha: Number
 
@@ -347,22 +349,21 @@ class AddSignal(Process):
              lt= contains the flux object we lookup from
 
     &#34;&#34;&#34;
+
     def __init__(self, **kwargs: Dict[str, any]) -&gt; None:
         &#34;&#34;&#34;
         Create a new process object with a given process type and options
         &#34;&#34;&#34;
 
-       
-        
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
         self.lrk.extend([&#34;lt&#34;, &#34;flux&#34;, &#34;reservoir&#34;])  # new required keywords
 
         self.__initerrormessages__()
-        #self.bem.update({&#34;rate&#34;: &#34;a string&#34;})
+        # self.bem.update({&#34;rate&#34;: &#34;a string&#34;})
         self.__validateandregister__(kwargs)  # initialize keyword values
 
-        #legacy variables
+        # legacy variables
         self.mo = self.reservoir.mo
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
@@ -380,16 +381,17 @@ class AddSignal(Process):
     # use this when we do isotopes
     def __with_isotopes__(self, r, i) -&gt; None:
         &#34;&#34;&#34;Each process is associated with a flux (self.f). Here we replace
-          the flux value with the value from the signal object which
-          we use as a lookup-table (self.lt)
+        the flux value with the value from the signal object which
+        we use as a lookup-table (self.lt)
 
         &#34;&#34;&#34;
         # add signal mass to flux mass
-        self.f.m[i] = self.f.m[i] + self.lt.m[i]
-        # add signal delta to flux delta
-        self.f.d[i] = self.f.d[i] + self.lt.d[i]
 
-        self.f.l[i], self.f.h[i] = get_imass(self.f.m[i], self.f.d[i], r.rvalue)
+        self.f.m[i] = self.f.m[i] + self.lt.m[i]
+        self.f.d[i] = self.f.d[i] + self.lt.d[i]
+        if self.f.m[i] != 0:
+            # self.f[i] = self.f[i] + self.lt[i]
+            self.f.l[i], self.f.h[i] = get_imass(self.f.m[i], self.f.d[i], r.rvalue)
         # signals may have zero mass, but may have a delta offset. Thus, we do not know
         # the masses for the light and heavy isotope. As such we have to calculate the masses
         # after we add the signal to a flux
@@ -397,8 +399,8 @@ class AddSignal(Process):
     # use this when we do isotopes
     def __without_isotopes__(self, r, i) -&gt; None:
         &#34;&#34;&#34;Each process is associated with a flux (self.f). Here we replace
-          the flux value with the value from the signal object which
-          we use as a lookup-table (self.lt)
+        the flux value with the value from the signal object which
+        we use as a lookup-table (self.lt)
 
         &#34;&#34;&#34;
         # add signal mass to flux mass
@@ -484,7 +486,7 @@ class PassiveFlux(Process):
         #self.f.m[i] = m
         #self.f.l[i] = l
         #self.f.h[i] = h
-        #self.f.d[i] = reservoir.d[i - 1]
+       #self.f.d[i] = reservoir.d[i - 1]
 
 class PassiveFlux_fixed_delta(Process):
      &#34;&#34;&#34;This process sets the output flux from a reservoir to be equal to
@@ -545,26 +547,22 @@ class PassiveFlux_fixed_delta(Process):
           self.f[i] = array(get_flux_data(newflux, self.delta, r))
 
 class VarDeltaOut(Process):
-    &#34;&#34;&#34;Unlike a passive flux, this process sets the output flux from a
-     reservoir to a fixed value, but the isotopic ratio of the output
-     flux will be set equal to the isotopic ratio of the reservoir The
-     init and register methods are inherited from the process
-     class. The overall result can be scaled, i.e., in order to create
-     a split flow etc.  Example::
+    &#34;&#34;&#34;Unlike a passive flux, this process sets the flux istope ratio
+    equal to the isotopic ratio of the reservoir. The
+    init and register methods are inherited from the process
+    class.
 
-     VarDeltaOut(name = &#34;name&#34;,
-                 reservoir = upstream_reservoir_handle,
-                 flux = flux handle,
-                 rate = rate,)
+    VarDeltaOut(name = &#34;name&#34;,
+                reservoir = upstream_reservoir_handle,
+                flux = flux handle,
+                rate = rate,)
 
-     &#34;&#34;&#34;
+    &#34;&#34;&#34;
 
-    __slots__ = (&#39;rate&#39;)
+    __slots__ = (&#34;rate&#34;, &#34;flux&#34;, &#34;reservoir&#34;)
 
     def __init__(self, **kwargs: Dict[str, any]) -&gt; None:
-        &#34;&#34;&#34; Initialize this Process
-          
-          &#34;&#34;&#34;
+        &#34;&#34;&#34;Initialize this Process&#34;&#34;&#34;
 
         from . import ureg, Q_
         from .connections import ConnectionGroup
@@ -573,45 +571,74 @@ class VarDeltaOut(Process):
         self.__defaultnames__()
         self.lkk: Dict[str, any] = {
             &#34;name&#34;: str,
-            &#34;reservoir&#34;: (Reservoir,Source,Sink),
+            &#34;reservoir&#34;: (Reservoir, Source, Sink),
             &#34;flux&#34;: Flux,
             &#34;rate&#34;: (str, Q_),
             &#34;register&#34;: (ConnectionGroup, str),
         }
-        self.lrk.extend([&#34;reservoir&#34;, &#34;rate&#34;])  # new required keywords
+        self.lrk.extend([&#34;reservoir&#34;, &#34;flux&#34;])  # new required keywords
         self.__initerrormessages__()
-        self.bem.update({&#34;rate&#34;: &#34;a string&#34;})
         self.__validateandregister__(kwargs)  # initialize keyword values
-
-        # parse rate term, and map to legacy name
-        self.rateq = Q_(self.rate)
-        self.rate = Q_(self.rate).to(self.reservoir.mo.f_unit).magnitude
-        #legacy variables
         self.mo = self.reservoir.mo
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
 
-    def __call__(self, reservoir: Reservoir, i: int) -&gt; None:
+        # decide which call function to use
+        if self.mo.m_type == &#34;both&#34;:
+            if isinstance(self.reservoir, Reservoir):
+                self.__execute__ = self.__with_isotopes_reservoir__
+            elif isinstance(self.reservoir, Source):
+                self.__execute__ = self.__with_isotopes_source__
+            else:
+                raise ValueError(
+                    f&#34;{self.name}, reservoir must be of type Source or Reservoir, not {type(self.reservoir)}&#34;
+                )
+        else:
+            self.__execute__ = self.__without_isotopes__
+
+    # setup a placeholder call function
+    def __call__(self, reservoir: Reservoir, i: int):
+        return self.__execute__(reservoir, i)
+
+    def __with_isotopes_reservoir__(self, reservoir: Reservoir, i: int) -&gt; None:
         &#34;&#34;&#34;Here we re-balance the flux. This code will be called by the
-          apply_flux_modifier method of a reservoir which itself is
-          called by the model execute method
+        apply_flux_modifier method of a reservoir which itself is
+        called by the model execute method
 
         &#34;&#34;&#34;
 
-        # set flux according to keyword value
+        m: float = self.flux.m[i]
+        if m != 0:
+            r: float = reservoir.species.element.r
+            d: float = self.reservoir.d[i - 1]
+            l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+            h: float = m - l
 
-        # this explicit expression is siginificantly faster than the below
-        # function call
-        m = self.rate
-        r = reservoir.l[i - 1] / reservoir.m[i - 1]
-        l = m * r
-        h = m - l
-        self.f.m[i] = m
-        self.f.l[i] = l
-        self.f.h[i] = h
-        self.f.d[i] = reservoir.d[i-1]
-       
-        # self.f[i] = get_flux_data(self.rate,reservoir.d[i-1], reservoir.rvalue)
+            self.flux[i] = [m, l, h, d]
+
+    def __with_isotopes_source__(self, reservoir: Reservoir, i: int) -&gt; None:
+        &#34;&#34;&#34;If the source of the flux is a source, there is only a single delta value.
+        Changes to the flux delta are applied through the Signal class.
+
+        &#34;&#34;&#34;
+
+        m: float = self.flux.m[i]
+        if m != 0:
+            d: float = self.reservoir.delta
+            r: float = reservoir.species.element.r
+            l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+            h: float = m - l
+
+            self.flux[i] = [m, l, h, d]
+
+    def __without_isotopes__(self, reservoir: Reservoir, i: int) -&gt; None:
+        &#34;&#34;&#34;Here we re-balance the flux. This code will be called by the
+        apply_flux_modifier method of a reservoir which itself is
+        called by the model execute method
+
+        &#34;&#34;&#34;
+
+        pass
 
 class ScaleFlux(Process):
     &#34;&#34;&#34;This process scales the mass of a flux (m,l,h) relative to another
@@ -685,9 +712,9 @@ class Reaction(ScaleFlux):
        Connect(source=IW_H2S,
                sink=S0,
                ctype = &#34;react_with&#34;,
-               k_value=1,
+               scale=1,
                ref = O2_diff_to_S0,
-               k_value =1,
+               scale =1,
        )
     &#34;&#34;&#34;
 
@@ -732,29 +759,31 @@ class FluxDiff(Process):
 
 class Fractionation(Process):
     &#34;&#34;&#34;This process offsets the isotopic ratio of the flux by a given
-        delta value. In other words, we add a fractionation factor
+       delta value. In other words, we add a fractionation factor
 
-     Example::
-          Fractionation(name = &#34;Name&#34;,
-                        reservoir = upstream_reservoir_handle,
-                        flux = flux handle
-                        alpha = 12 in permil (e.f)
+    Example::
+         Fractionation(name = &#34;Name&#34;,
+                       reservoir = upstream_reservoir_handle,
+                       flux = flux handle
+                       alpha = 12 in permil (e.f)
 
-     &#34;&#34;&#34;
+    &#34;&#34;&#34;
+
+    __slots__ = (&#34;flux&#34;, &#34;reservoir&#34;)
+
     def __init__(self, **kwargs: Dict[str, any]) -&gt; None:
         &#34;&#34;&#34; Initialize this Process &#34;&#34;&#34;
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
-        self.lrk.extend([&#34;reservoir&#34;, &#34;flux&#34;,
-                         &#34;alpha&#34;])  # new required keywords
+        self.lrk.extend([&#34;reservoir&#34;, &#34;flux&#34;, &#34;alpha&#34;])  # new required keywords
 
         self.__validateandregister__(kwargs)  # initialize keyword values
         self.__postinit__()  # do some housekeeping
 
         # alpha is given in permil, but the fractionation routine expects
         # it as 1 + permil, i.e., 70 permil would 1.007
-        #legacy variables
-        self.alpha = 1 + self.alpha / 1000
+        # legacy variables
+        self.alp = 1 + self.alpha / 1000
         self.mo = self.reservoir.mo
         self.__register_name__()
 
@@ -764,7 +793,7 @@ class Fractionation(Process):
         else:
             self.__execute__ = self.__without_isotopes__
 
-    # setup a placeholder call function        
+    # setup a placeholder call function
     def __call__(self, reservoir: Reservoir, i: int):
         return self.__execute__(reservoir, i)
 
@@ -775,11 +804,12 @@ class Fractionation(Process):
 
         &#34;&#34;&#34;
 
-        self.f.l[i], self.f.h[i] = get_frac(self.f.m[i], self.f.l[i],
-                                            self.alpha)
+        if self.f.m[i] != 0 :
+            self.f.l[i], self.f.h[i] = get_frac(self.f.m[i], self.f.l[i], self.alp)
+            # update delta
+            # self.f.d[i] = get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)
+            self.f.d[i] = self.f.d[i] + self.alpha
 
-        #update delta
-        self.f.d[i] = get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)
         return
 
     # use this when we don&#39;t do isotopes
@@ -800,11 +830,11 @@ class RateConstant(Process):
     ScaleRelativeToConcentration
 
     &#34;&#34;&#34;
-    __slots__ = (&#39;k_value&#39;, &#39;ref_value&#39;)
-    def __init__(self, **kwargs: Dict[str, any]) -&gt; None:
-        &#34;&#34;&#34; Initialize this Process
 
-        &#34;&#34;&#34;
+    __slots__ = (&#34;scale&#34;, &#34;ref_value&#34;, &#34;k_value&#34;, &#34;flux&#34;, &#34;reservoir&#34;)
+
+    def __init__(self, **kwargs: Dict[str, any]) -&gt; None:
+        &#34;&#34;&#34;Initialize this Process&#34;&#34;&#34;
 
         from . import ureg, Q_
         from .connections import SourceGroup, SinkGroup, ReservoirGroup
@@ -817,21 +847,20 @@ class RateConstant(Process):
         self.__defaultnames__()  # default kwargs names
 
         # update the allowed keywords
-        self.lkk :dict = {
+        self.lkk: dict = {
+            &#34;scale&#34;: Number,
             &#34;k_value&#34;: Number,
-            &#34;ref_value&#34;: Number,
             &#34;name&#34;: str,
-            &#34;reservoir&#34;: (Reservoir,Source,Sink),
+            &#34;reservoir&#34;: (Reservoir, Source, Sink),
             &#34;flux&#34;: Flux,
             &#34;ref_reservoir&#34;: list,
             &#34;left&#34;: (list, Reservoir, Number),
             &#34;right&#34;: (list, Reservoir, Number),
-            &#34;register&#34;:
-            (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            &#34;register&#34;: (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
         }
 
         # new required keywords
-        self.lrk.extend([&#34;reservoir&#34;, &#34;k_value&#34;])
+        self.lrk.extend([&#34;reservoir&#34;, [&#34;scale&#34;, &#34;k_value&#34;]])
 
         # dict with default values if none provided
         # self.lod = {r
@@ -839,19 +868,25 @@ class RateConstant(Process):
         self.__initerrormessages__()
 
         # add these terms to the known error messages
-        self.bem.update({
-            &#34;k_value&#34;: &#34;a number&#34;,
-            &#34;reservoir&#34;: &#34;Reservoir handle&#34;,
-            &#34;ref_reservoirs&#34;: &#34;List of Reservoir handle(s)&#34;,
-            &#34;ref_value&#34;: &#34;a number or flux quantity&#34;,
-            &#34;name&#34;: &#34;a string value&#34;,
-            &#34;flux&#34;: &#34;a flux handle&#34;,
-            &#34;left&#34;: &#34;list, reservoir or number&#34;,
-            &#34;right&#34;: &#34;list, reservoir or number&#34;,
-        })
+        self.bem.update(
+            {
+                &#34;scale&#34;: &#34;a number&#34;,
+                &#34;reservoir&#34;: &#34;Reservoir handle&#34;,
+                &#34;ref_reservoirs&#34;: &#34;List of Reservoir handle(s)&#34;,
+                &#34;ref_value&#34;: &#34;a number or flux quantity&#34;,
+                &#34;name&#34;: &#34;a string value&#34;,
+                &#34;flux&#34;: &#34;a flux handle&#34;,
+                &#34;left&#34;: &#34;list, reservoir or number&#34;,
+                &#34;right&#34;: &#34;list, reservoir or number&#34;,
+            }
+        )
 
         # initialize keyword values
         self.__validateandregister__(kwargs)
+
+        if self.register != &#34;None&#34;:
+            self.name = f&#34;{self.register}.{self.name}&#34;
+
         self.__postinit__()  # do some housekeeping
         # legacy variables
         self.mo = self.reservoir.mo
@@ -876,7 +911,7 @@ class ScaleRelativeToNormalizedConcentration(RateConstant):
                        name = &#34;Name&#34;,
                        reservoir= upstream_reservoir_handle,
                        flux = flux handle,
-                       K_value =  1000,
+                       Scale =  1000,
                        ref_value = 2 # reference_concentration
     )
 
@@ -884,10 +919,10 @@ class ScaleRelativeToNormalizedConcentration(RateConstant):
 
     def __call__(self, reservoir: Reservoir, i: int) -&gt; None:
         &#34;&#34;&#34;
-          this will be called by the Model.run() method
-          &#34;&#34;&#34;
+        this will be called by the Model.run() method
+        &#34;&#34;&#34;
 
-        scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.k_value
+        scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.scale
         # scale = scale * (scale &gt;= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
 
@@ -909,19 +944,43 @@ class ScaleRelativeToConcentration(RateConstant):
                        name = &#34;Name&#34;,
                        reservoir= upstream_reservoir_handle,
                        flux = flux handle,
-                       K_value =  1000,
+                       Scale =  1000,
     )
 
     &#34;&#34;&#34;
 
     def __call__(self, reservoir: Reservoir, i: int) -&gt; None:
         &#34;&#34;&#34;
-          this will be called by the Model.run() method
-          &#34;&#34;&#34;
-        #print(f&#34;k= {self.k_value}&#34;)
-        scale: float = reservoir.c[i - 1] * self.k_value
+        C = M/V so we express this as relative to mass which allows us to
+        use the isptope data
+        &#34;&#34;&#34;
+
+        m :float = self.reservoir.m[i - 1]
+        if m &gt; 0:  # otherwise there is no flux
+            m = m / self.reservoir.volume * self.scale
+            r: float = reservoir.species.element.r
+            d: float = reservoir.d[i - 1]
+            l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+            self.flux.d[i]: float = d
+            self.flux.l[i]: float = l
+            self.flux.h[i]: float = m - l
+            self.flux.m[i]: float = m
+            # self.flux[i] = [m, l, h, d]
+
+        # m = self.reservoir.m[i - 1] / self.reservoir.volume * self.scale
+        # l = self.reservoir.l[i - 1] / self.reservoir.volume * self.scale
+        # h = self.reservoir.h[i - 1] / self.reservoir.volume * self.scale
+        # self.flux[i] = [m, l, h, self.reservoir.d[i - 1]]
+
+        # print(f&#34;k= {self.scale}&#34;)
         # scale = scale * (scale &gt;= 0)  # prevent negative fluxes.
-        self.f[i] = self.f[i] * array([scale, scale, scale, 1])
+        # self.flux.m[i]  = reservoir.c[i - 1] * self.scale
+        # scale: float = reservoir.c[i - 1] * self.scale
+        # scale = scale * (scale &gt;= 0)  # prevent negative fluxes.
+        # self.f[i] = self.f[i] * array([scale, scale, scale, 1])
+        # self.f[i] = [scale, scale, scale, 1])
+        # self.f.d[i] = reservoir.d[i - 1]
+        # self.f[i] = get_flux_data(self.f[i],reservoir.d[i-1],reservoir.rvalue)
 
 
 class ScaleRelativeToMass(RateConstant):
@@ -941,22 +1000,22 @@ class ScaleRelativeToMass(RateConstant):
 
      This is faster than setting a new flux, computing the isotope
      ratio and setting delta. So you either have to set the initial
-     flux F0 to 1, or calculate the k_value accordingly
+     flux F0 to 1, or calculate the scale accordingly
 
      ScaleRelativeToMass(
                        name = &#34;Name&#34;,
                        reservoir= upstream_reservoir_handle,
                        flux = flux handle,
-                       K_value =  1000,
+                       Scale =  1000,
     )
 
     &#34;&#34;&#34;
 
     def __call__(self, reservoir: Reservoir, i: int) -&gt; None:
         &#34;&#34;&#34;
-          this will be called by the Model.run() method
-          &#34;&#34;&#34;
-        scale: float = reservoir.m[i - 1] * self.k_value
+        this will be called by the Model.run() method
+        &#34;&#34;&#34;
+        scale: float = reservoir.m[i - 1] * self.scale
         self.f[i] = self.f[i] * array([scale, scale, scale, 1])
 
 
@@ -978,7 +1037,7 @@ class ScaleRelativeToNormalizedMass(RateConstant):
                        name = &#34;Name&#34;,
                        reservoir= upstream_reservoir_handle,
                        flux = flux handle,
-                       K_value =  1,
+                       Scale =  1,
                        ref_value = 1e5 # reference_mass
     )
 
@@ -986,42 +1045,40 @@ class ScaleRelativeToNormalizedMass(RateConstant):
 
     def __call__(self, reservoir: Reservoir, i: int) -&gt; None:
         &#34;&#34;&#34;
-          this will be called by the Model.run() method
-          &#34;&#34;&#34;
-        scale: float = (reservoir.m[i - 1] / self.ref_value - 1) * self.k_value
+        this will be called by the Model.run() method
+        &#34;&#34;&#34;
+        scale: float = (reservoir.m[i - 1] / self.ref_value - 1) * self.scale
         # scale = scale * (scale &gt;= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
 
 
 class ScaleRelative2otherReservoir(RateConstant):
     &#34;&#34;&#34;This process scales the flux as a function one or more reservoirs
-     constant which describes the
-     strength of relation between the reservoir concentration and
-     the flux scaling
+    constant which describes the
+    strength of relation between the reservoir concentration and
+    the flux scaling
 
-     F = C1 * C1 * k
+    F = C1 * C1 * k
 
-     where Mi denotes the concentration in one  or more reservoirs, k is one
-     or more constant(s). This process is typically called by the connector
-     instance when you specify the connection as
+    where Mi denotes the concentration in one  or more reservoirs, k is one
+    or more constant(s). This process is typically called by the connector
+    instance when you specify the connection as
 
-     Connect(source =  upstream reservoir,
-               sink = downstream reservoir,
-               ctype = &#34;scale_relative_to_multiple_reservoirs&#34;
-               ref_reservoirs = [r1, r2, k etc] # you must provide at least one
-                                                # reservoir or constant
-               k_value = a overall scaling factor
-            )
+    Connect(source =  upstream reservoir,
+              sink = downstream reservoir,
+              ctype = &#34;scale_relative_to_multiple_reservoirs&#34;
+              ref_reservoirs = [r1, r2, k etc] # you must provide at least one
+                                               # reservoir or constant
+              scale = a overall scaling factor
+           )
     &#34;&#34;&#34;
 
     def __misc_init__(self) -&gt; None:
-        &#34;&#34;&#34; Test that self.reservoir only contains numbers and reservoirs
+        &#34;&#34;&#34;Test that self.reservoir only contains numbers and reservoirs&#34;&#34;&#34;
 
-        &#34;&#34;&#34;
+        self.rs: list = []
+        self.constant: Number = 1
 
-        self.rs :list = []
-        self.constant :Number = 1
-        
         for r in self.ref_reservoir:
             if isinstance(r, (Reservoir)):
                 self.rs.append(r)
@@ -1040,8 +1097,8 @@ class ScaleRelative2otherReservoir(RateConstant):
         for r in self.rs:
             c = c * r.c[i - 1]
 
-        scale: float = c * self.k_value * self.constant
-        
+        scale: float = c * self.scale * self.constant
+
         # scale = scale * (scale &gt;= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] * array([scale, scale, scale, 1])
 
@@ -1251,22 +1308,21 @@ lt= contains the flux object we lookup from</p>
              lt= contains the flux object we lookup from
 
     &#34;&#34;&#34;
+
     def __init__(self, **kwargs: Dict[str, any]) -&gt; None:
         &#34;&#34;&#34;
         Create a new process object with a given process type and options
         &#34;&#34;&#34;
 
-       
-        
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
         self.lrk.extend([&#34;lt&#34;, &#34;flux&#34;, &#34;reservoir&#34;])  # new required keywords
 
         self.__initerrormessages__()
-        #self.bem.update({&#34;rate&#34;: &#34;a string&#34;})
+        # self.bem.update({&#34;rate&#34;: &#34;a string&#34;})
         self.__validateandregister__(kwargs)  # initialize keyword values
 
-        #legacy variables
+        # legacy variables
         self.mo = self.reservoir.mo
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
@@ -1284,16 +1340,17 @@ lt= contains the flux object we lookup from</p>
     # use this when we do isotopes
     def __with_isotopes__(self, r, i) -&gt; None:
         &#34;&#34;&#34;Each process is associated with a flux (self.f). Here we replace
-          the flux value with the value from the signal object which
-          we use as a lookup-table (self.lt)
+        the flux value with the value from the signal object which
+        we use as a lookup-table (self.lt)
 
         &#34;&#34;&#34;
         # add signal mass to flux mass
-        self.f.m[i] = self.f.m[i] + self.lt.m[i]
-        # add signal delta to flux delta
-        self.f.d[i] = self.f.d[i] + self.lt.d[i]
 
-        self.f.l[i], self.f.h[i] = get_imass(self.f.m[i], self.f.d[i], r.rvalue)
+        self.f.m[i] = self.f.m[i] + self.lt.m[i]
+        self.f.d[i] = self.f.d[i] + self.lt.d[i]
+        if self.f.m[i] != 0:
+            # self.f[i] = self.f[i] + self.lt[i]
+            self.f.l[i], self.f.h[i] = get_imass(self.f.m[i], self.f.d[i], r.rvalue)
         # signals may have zero mass, but may have a delta offset. Thus, we do not know
         # the masses for the light and heavy isotope. As such we have to calculate the masses
         # after we add the signal to a flux
@@ -1301,8 +1358,8 @@ lt= contains the flux object we lookup from</p>
     # use this when we do isotopes
     def __without_isotopes__(self, r, i) -&gt; None:
         &#34;&#34;&#34;Each process is associated with a flux (self.f). Here we replace
-          the flux value with the value from the signal object which
-          we use as a lookup-table (self.lt)
+        the flux value with the value from the signal object which
+        we use as a lookup-table (self.lt)
 
         &#34;&#34;&#34;
         # add signal mass to flux mass
@@ -1317,7 +1374,7 @@ lt= contains the flux object we lookup from</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.Process" href="#esbmtk.processes.Process">Process</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.Process.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.Process.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.Process.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -1381,7 +1438,7 @@ lt= contains the flux object we lookup from</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.Process" href="#esbmtk.processes.Process">Process</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.Process.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.Process.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.Process.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -1493,9 +1550,12 @@ k_value = a constant, defaults to 1
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.RateConstant" href="#esbmtk.processes.RateConstant">RateConstant</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.RateConstant.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.flux" href="#esbmtk.processes.RateConstant.flux">flux</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.k_value" href="#esbmtk.processes.RateConstant.k_value">k_value</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.ref_value" href="#esbmtk.processes.RateConstant.ref_value">ref_value</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.reservoir" href="#esbmtk.processes.RateConstant.reservoir">reservoir</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.scale" href="#esbmtk.processes.RateConstant.scale">scale</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -1520,29 +1580,31 @@ alpha = 12 in permil (e.f)</p>
 </summary>
 <pre><code class="python">class Fractionation(Process):
     &#34;&#34;&#34;This process offsets the isotopic ratio of the flux by a given
-        delta value. In other words, we add a fractionation factor
+       delta value. In other words, we add a fractionation factor
 
-     Example::
-          Fractionation(name = &#34;Name&#34;,
-                        reservoir = upstream_reservoir_handle,
-                        flux = flux handle
-                        alpha = 12 in permil (e.f)
+    Example::
+         Fractionation(name = &#34;Name&#34;,
+                       reservoir = upstream_reservoir_handle,
+                       flux = flux handle
+                       alpha = 12 in permil (e.f)
 
-     &#34;&#34;&#34;
+    &#34;&#34;&#34;
+
+    __slots__ = (&#34;flux&#34;, &#34;reservoir&#34;)
+
     def __init__(self, **kwargs: Dict[str, any]) -&gt; None:
         &#34;&#34;&#34; Initialize this Process &#34;&#34;&#34;
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
-        self.lrk.extend([&#34;reservoir&#34;, &#34;flux&#34;,
-                         &#34;alpha&#34;])  # new required keywords
+        self.lrk.extend([&#34;reservoir&#34;, &#34;flux&#34;, &#34;alpha&#34;])  # new required keywords
 
         self.__validateandregister__(kwargs)  # initialize keyword values
         self.__postinit__()  # do some housekeeping
 
         # alpha is given in permil, but the fractionation routine expects
         # it as 1 + permil, i.e., 70 permil would 1.007
-        #legacy variables
-        self.alpha = 1 + self.alpha / 1000
+        # legacy variables
+        self.alp = 1 + self.alpha / 1000
         self.mo = self.reservoir.mo
         self.__register_name__()
 
@@ -1552,7 +1614,7 @@ alpha = 12 in permil (e.f)</p>
         else:
             self.__execute__ = self.__without_isotopes__
 
-    # setup a placeholder call function        
+    # setup a placeholder call function
     def __call__(self, reservoir: Reservoir, i: int):
         return self.__execute__(reservoir, i)
 
@@ -1563,11 +1625,12 @@ alpha = 12 in permil (e.f)</p>
 
         &#34;&#34;&#34;
 
-        self.f.l[i], self.f.h[i] = get_frac(self.f.m[i], self.f.l[i],
-                                            self.alpha)
+        if self.f.m[i] != 0 :
+            self.f.l[i], self.f.h[i] = get_frac(self.f.m[i], self.f.l[i], self.alp)
+            # update delta
+            # self.f.d[i] = get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)
+            self.f.d[i] = self.f.d[i] + self.alpha
 
-        #update delta
-        self.f.d[i] = get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)
         return
 
     # use this when we don&#39;t do isotopes
@@ -1584,11 +1647,22 @@ alpha = 12 in permil (e.f)</p>
 <li><a title="esbmtk.processes.Process" href="#esbmtk.processes.Process">Process</a></li>
 <li><a title="esbmtk.esbmtk.esbmtkBase" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></li>
 </ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="esbmtk.processes.Fractionation.flux"><code class="name">var <span class="ident">flux</span></code></dt>
+<dd>
+<div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
+</dd>
+<dt id="esbmtk.processes.Fractionation.reservoir"><code class="name">var <span class="ident">reservoir</span></code></dt>
+<dd>
+<div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.Process" href="#esbmtk.processes.Process">Process</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.Process.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.Process.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.Process.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -1829,7 +1903,7 @@ template::</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.Process" href="#esbmtk.processes.Process">Process</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.Process.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.Process.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.Process.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -1886,7 +1960,7 @@ lookup table
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.Process" href="#esbmtk.processes.Process">Process</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.Process.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.Process.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.Process.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -2016,7 +2090,7 @@ b_value = constant )</p></div>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.Process" href="#esbmtk.processes.Process">Process</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.Process.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.Process.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.Process.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -2124,7 +2198,7 @@ flux = flux handle)</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.Process" href="#esbmtk.processes.Process">Process</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.Process.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.Process.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.Process.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -2218,7 +2292,7 @@ delta = delta offset)</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.Process" href="#esbmtk.processes.Process">Process</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.Process.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.Process.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.Process.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -2327,7 +2401,7 @@ call method. See 'PassiveFlux as example'</p>
         self.lod: Dict[str, any] = {}
 
         # default type hints
-        self.scale: t
+        self.scale: Number
         self.delta: Number
         self.alpha: Number
 
@@ -2402,7 +2476,7 @@ process_name.show_figure(x,y)</p></div>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.esbmtk.esbmtkBase" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase">esbmtkBase</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.esbmtk.esbmtkBase.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.esbmtk.esbmtkBase.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 </ul>
 </li>
 </ul>
@@ -2431,11 +2505,11 @@ ScaleRelativeToConcentration</p>
     ScaleRelativeToConcentration
 
     &#34;&#34;&#34;
-    __slots__ = (&#39;k_value&#39;, &#39;ref_value&#39;)
-    def __init__(self, **kwargs: Dict[str, any]) -&gt; None:
-        &#34;&#34;&#34; Initialize this Process
 
-        &#34;&#34;&#34;
+    __slots__ = (&#34;scale&#34;, &#34;ref_value&#34;, &#34;k_value&#34;, &#34;flux&#34;, &#34;reservoir&#34;)
+
+    def __init__(self, **kwargs: Dict[str, any]) -&gt; None:
+        &#34;&#34;&#34;Initialize this Process&#34;&#34;&#34;
 
         from . import ureg, Q_
         from .connections import SourceGroup, SinkGroup, ReservoirGroup
@@ -2448,21 +2522,20 @@ ScaleRelativeToConcentration</p>
         self.__defaultnames__()  # default kwargs names
 
         # update the allowed keywords
-        self.lkk :dict = {
+        self.lkk: dict = {
+            &#34;scale&#34;: Number,
             &#34;k_value&#34;: Number,
-            &#34;ref_value&#34;: Number,
             &#34;name&#34;: str,
-            &#34;reservoir&#34;: (Reservoir,Source,Sink),
+            &#34;reservoir&#34;: (Reservoir, Source, Sink),
             &#34;flux&#34;: Flux,
             &#34;ref_reservoir&#34;: list,
             &#34;left&#34;: (list, Reservoir, Number),
             &#34;right&#34;: (list, Reservoir, Number),
-            &#34;register&#34;:
-            (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            &#34;register&#34;: (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
         }
 
         # new required keywords
-        self.lrk.extend([&#34;reservoir&#34;, &#34;k_value&#34;])
+        self.lrk.extend([&#34;reservoir&#34;, [&#34;scale&#34;, &#34;k_value&#34;]])
 
         # dict with default values if none provided
         # self.lod = {r
@@ -2470,19 +2543,25 @@ ScaleRelativeToConcentration</p>
         self.__initerrormessages__()
 
         # add these terms to the known error messages
-        self.bem.update({
-            &#34;k_value&#34;: &#34;a number&#34;,
-            &#34;reservoir&#34;: &#34;Reservoir handle&#34;,
-            &#34;ref_reservoirs&#34;: &#34;List of Reservoir handle(s)&#34;,
-            &#34;ref_value&#34;: &#34;a number or flux quantity&#34;,
-            &#34;name&#34;: &#34;a string value&#34;,
-            &#34;flux&#34;: &#34;a flux handle&#34;,
-            &#34;left&#34;: &#34;list, reservoir or number&#34;,
-            &#34;right&#34;: &#34;list, reservoir or number&#34;,
-        })
+        self.bem.update(
+            {
+                &#34;scale&#34;: &#34;a number&#34;,
+                &#34;reservoir&#34;: &#34;Reservoir handle&#34;,
+                &#34;ref_reservoirs&#34;: &#34;List of Reservoir handle(s)&#34;,
+                &#34;ref_value&#34;: &#34;a number or flux quantity&#34;,
+                &#34;name&#34;: &#34;a string value&#34;,
+                &#34;flux&#34;: &#34;a flux handle&#34;,
+                &#34;left&#34;: &#34;list, reservoir or number&#34;,
+                &#34;right&#34;: &#34;list, reservoir or number&#34;,
+            }
+        )
 
         # initialize keyword values
         self.__validateandregister__(kwargs)
+
+        if self.register != &#34;None&#34;:
+            self.name = f&#34;{self.register}.{self.name}&#34;
+
         self.__postinit__()  # do some housekeeping
         # legacy variables
         self.mo = self.reservoir.mo
@@ -2504,6 +2583,10 @@ ScaleRelativeToConcentration</p>
 </ul>
 <h3>Instance variables</h3>
 <dl>
+<dt id="esbmtk.processes.RateConstant.flux"><code class="name">var <span class="ident">flux</span></code></dt>
+<dd>
+<div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
+</dd>
 <dt id="esbmtk.processes.RateConstant.k_value"><code class="name">var <span class="ident">k_value</span></code></dt>
 <dd>
 <div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
@@ -2512,12 +2595,20 @@ ScaleRelativeToConcentration</p>
 <dd>
 <div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
 </dd>
+<dt id="esbmtk.processes.RateConstant.reservoir"><code class="name">var <span class="ident">reservoir</span></code></dt>
+<dd>
+<div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
+</dd>
+<dt id="esbmtk.processes.RateConstant.scale"><code class="name">var <span class="ident">scale</span></code></dt>
+<dd>
+<div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
+</dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.Process" href="#esbmtk.processes.Process">Process</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.Process.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.Process.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.Process.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -2538,9 +2629,9 @@ ScaleFlux class.</p>
 <p>Connect(source=IW_H2S,
 sink=S0,
 ctype = "react_with",
-k_value=1,
+scale=1,
 ref = O2_diff_to_S0,
-k_value =1,
+scale =1,
 )</p>
 <p>Initialize this Process</p></div>
 <details class="source">
@@ -2560,9 +2651,9 @@ k_value =1,
        Connect(source=IW_H2S,
                sink=S0,
                ctype = &#34;react_with&#34;,
-               k_value=1,
+               scale=1,
                ref = O2_diff_to_S0,
-               k_value =1,
+               scale =1,
        )
     &#34;&#34;&#34;</code></pre>
 </details>
@@ -2576,7 +2667,7 @@ k_value =1,
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.ScaleFlux" href="#esbmtk.processes.ScaleFlux">ScaleFlux</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.ScaleFlux.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.ScaleFlux.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.ScaleFlux.rate" href="#esbmtk.processes.ScaleFlux.rate">rate</a></code></li>
 <li><code><a title="esbmtk.processes.ScaleFlux.ref" href="#esbmtk.processes.ScaleFlux.ref">ref</a></code></li>
 <li><code><a title="esbmtk.processes.ScaleFlux.scale" href="#esbmtk.processes.ScaleFlux.scale">scale</a></code></li>
@@ -2689,7 +2780,7 @@ ref = flux we use for scale)</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.Process" href="#esbmtk.processes.Process">Process</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.Process.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.Process.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.Process.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -2715,7 +2806,7 @@ sink = downstream reservoir,
 ctype = "scale_relative_to_multiple_reservoirs"
 ref_reservoirs = [r1, r2, k etc] # you must provide at least one
 # reservoir or constant
-k_value = a overall scaling factor
+scale = a overall scaling factor
 )</p>
 <p>Initialize this Process</p></div>
 <details class="source">
@@ -2724,33 +2815,31 @@ k_value = a overall scaling factor
 </summary>
 <pre><code class="python">class ScaleRelative2otherReservoir(RateConstant):
     &#34;&#34;&#34;This process scales the flux as a function one or more reservoirs
-     constant which describes the
-     strength of relation between the reservoir concentration and
-     the flux scaling
+    constant which describes the
+    strength of relation between the reservoir concentration and
+    the flux scaling
 
-     F = C1 * C1 * k
+    F = C1 * C1 * k
 
-     where Mi denotes the concentration in one  or more reservoirs, k is one
-     or more constant(s). This process is typically called by the connector
-     instance when you specify the connection as
+    where Mi denotes the concentration in one  or more reservoirs, k is one
+    or more constant(s). This process is typically called by the connector
+    instance when you specify the connection as
 
-     Connect(source =  upstream reservoir,
-               sink = downstream reservoir,
-               ctype = &#34;scale_relative_to_multiple_reservoirs&#34;
-               ref_reservoirs = [r1, r2, k etc] # you must provide at least one
-                                                # reservoir or constant
-               k_value = a overall scaling factor
-            )
+    Connect(source =  upstream reservoir,
+              sink = downstream reservoir,
+              ctype = &#34;scale_relative_to_multiple_reservoirs&#34;
+              ref_reservoirs = [r1, r2, k etc] # you must provide at least one
+                                               # reservoir or constant
+              scale = a overall scaling factor
+           )
     &#34;&#34;&#34;
 
     def __misc_init__(self) -&gt; None:
-        &#34;&#34;&#34; Test that self.reservoir only contains numbers and reservoirs
+        &#34;&#34;&#34;Test that self.reservoir only contains numbers and reservoirs&#34;&#34;&#34;
 
-        &#34;&#34;&#34;
+        self.rs: list = []
+        self.constant: Number = 1
 
-        self.rs :list = []
-        self.constant :Number = 1
-        
         for r in self.ref_reservoir:
             if isinstance(r, (Reservoir)):
                 self.rs.append(r)
@@ -2769,8 +2858,8 @@ k_value = a overall scaling factor
         for r in self.rs:
             c = c * r.c[i - 1]
 
-        scale: float = c * self.k_value * self.constant
-        
+        scale: float = c * self.scale * self.constant
+
         # scale = scale * (scale &gt;= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] * array([scale, scale, scale, 1])</code></pre>
 </details>
@@ -2784,9 +2873,12 @@ k_value = a overall scaling factor
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.RateConstant" href="#esbmtk.processes.RateConstant">RateConstant</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.RateConstant.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.flux" href="#esbmtk.processes.RateConstant.flux">flux</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.k_value" href="#esbmtk.processes.RateConstant.k_value">k_value</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.ref_value" href="#esbmtk.processes.RateConstant.ref_value">ref_value</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.reservoir" href="#esbmtk.processes.RateConstant.reservoir">reservoir</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.scale" href="#esbmtk.processes.RateConstant.scale">scale</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -2809,7 +2901,7 @@ instance. However you can instantiate it manually as</p>
 name = "Name",
 reservoir= upstream_reservoir_handle,
 flux = flux handle,
-K_value =
+Scale =
 1000,
 )</p>
 <p>Initialize this Process</p></div>
@@ -2834,19 +2926,27 @@ K_value =
                        name = &#34;Name&#34;,
                        reservoir= upstream_reservoir_handle,
                        flux = flux handle,
-                       K_value =  1000,
+                       Scale =  1000,
     )
 
     &#34;&#34;&#34;
 
     def __call__(self, reservoir: Reservoir, i: int) -&gt; None:
         &#34;&#34;&#34;
-          this will be called by the Model.run() method
-          &#34;&#34;&#34;
-        #print(f&#34;k= {self.k_value}&#34;)
-        scale: float = reservoir.c[i - 1] * self.k_value
-        # scale = scale * (scale &gt;= 0)  # prevent negative fluxes.
-        self.f[i] = self.f[i] * array([scale, scale, scale, 1])</code></pre>
+        C = M/V so we express this as relative to mass which allows us to
+        use the isptope data
+        &#34;&#34;&#34;
+
+        m :float = self.reservoir.m[i - 1]
+        if m &gt; 0:  # otherwise there is no flux
+            m = m / self.reservoir.volume * self.scale
+            r: float = reservoir.species.element.r
+            d: float = reservoir.d[i - 1]
+            l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+            self.flux.d[i]: float = d
+            self.flux.l[i]: float = l
+            self.flux.h[i]: float = m - l
+            self.flux.m[i]: float = m</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -2858,9 +2958,12 @@ K_value =
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.RateConstant" href="#esbmtk.processes.RateConstant">RateConstant</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.RateConstant.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.flux" href="#esbmtk.processes.RateConstant.flux">flux</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.k_value" href="#esbmtk.processes.RateConstant.k_value">k_value</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.ref_value" href="#esbmtk.processes.RateConstant.ref_value">ref_value</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.reservoir" href="#esbmtk.processes.RateConstant.reservoir">reservoir</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.scale" href="#esbmtk.processes.RateConstant.scale">scale</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -2884,12 +2987,12 @@ instantiate it manually as</p>
 <p>Note that we scale the flux, rather than compute the flux!</p>
 <p>This is faster than setting a new flux, computing the isotope
 ratio and setting delta. So you either have to set the initial
-flux F0 to 1, or calculate the k_value accordingly</p>
+flux F0 to 1, or calculate the scale accordingly</p>
 <p>ScaleRelativeToMass(
 name = "Name",
 reservoir= upstream_reservoir_handle,
 flux = flux handle,
-K_value =
+Scale =
 1000,
 )</p>
 <p>Initialize this Process</p></div>
@@ -2914,22 +3017,22 @@ K_value =
 
      This is faster than setting a new flux, computing the isotope
      ratio and setting delta. So you either have to set the initial
-     flux F0 to 1, or calculate the k_value accordingly
+     flux F0 to 1, or calculate the scale accordingly
 
      ScaleRelativeToMass(
                        name = &#34;Name&#34;,
                        reservoir= upstream_reservoir_handle,
                        flux = flux handle,
-                       K_value =  1000,
+                       Scale =  1000,
     )
 
     &#34;&#34;&#34;
 
     def __call__(self, reservoir: Reservoir, i: int) -&gt; None:
         &#34;&#34;&#34;
-          this will be called by the Model.run() method
-          &#34;&#34;&#34;
-        scale: float = reservoir.m[i - 1] * self.k_value
+        this will be called by the Model.run() method
+        &#34;&#34;&#34;
+        scale: float = reservoir.m[i - 1] * self.scale
         self.f[i] = self.f[i] * array([scale, scale, scale, 1])</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -2942,9 +3045,12 @@ K_value =
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.RateConstant" href="#esbmtk.processes.RateConstant">RateConstant</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.RateConstant.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.flux" href="#esbmtk.processes.RateConstant.flux">flux</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.k_value" href="#esbmtk.processes.RateConstant.k_value">k_value</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.ref_value" href="#esbmtk.processes.RateConstant.ref_value">ref_value</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.reservoir" href="#esbmtk.processes.RateConstant.reservoir">reservoir</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.scale" href="#esbmtk.processes.RateConstant.scale">scale</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -2968,7 +3074,7 @@ instance. However you can instantiate it manually as</p>
 name = "Name",
 reservoir= upstream_reservoir_handle,
 flux = flux handle,
-K_value =
+Scale =
 1000,
 ref_value = 2 # reference_concentration
 )</p>
@@ -2995,7 +3101,7 @@ ref_value = 2 # reference_concentration
                        name = &#34;Name&#34;,
                        reservoir= upstream_reservoir_handle,
                        flux = flux handle,
-                       K_value =  1000,
+                       Scale =  1000,
                        ref_value = 2 # reference_concentration
     )
 
@@ -3003,10 +3109,10 @@ ref_value = 2 # reference_concentration
 
     def __call__(self, reservoir: Reservoir, i: int) -&gt; None:
         &#34;&#34;&#34;
-          this will be called by the Model.run() method
-          &#34;&#34;&#34;
+        this will be called by the Model.run() method
+        &#34;&#34;&#34;
 
-        scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.k_value
+        scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.scale
         # scale = scale * (scale &gt;= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])</code></pre>
 </details>
@@ -3020,9 +3126,12 @@ ref_value = 2 # reference_concentration
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.RateConstant" href="#esbmtk.processes.RateConstant">RateConstant</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.RateConstant.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.flux" href="#esbmtk.processes.RateConstant.flux">flux</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.k_value" href="#esbmtk.processes.RateConstant.k_value">k_value</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.ref_value" href="#esbmtk.processes.RateConstant.ref_value">ref_value</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.reservoir" href="#esbmtk.processes.RateConstant.reservoir">reservoir</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.scale" href="#esbmtk.processes.RateConstant.scale">scale</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -3046,7 +3155,7 @@ instance. However you can instantiate it manually as</p>
 name = "Name",
 reservoir= upstream_reservoir_handle,
 flux = flux handle,
-K_value =
+Scale =
 1,
 ref_value = 1e5 # reference_mass
 )</p>
@@ -3073,7 +3182,7 @@ ref_value = 1e5 # reference_mass
                        name = &#34;Name&#34;,
                        reservoir= upstream_reservoir_handle,
                        flux = flux handle,
-                       K_value =  1,
+                       Scale =  1,
                        ref_value = 1e5 # reference_mass
     )
 
@@ -3081,9 +3190,9 @@ ref_value = 1e5 # reference_mass
 
     def __call__(self, reservoir: Reservoir, i: int) -&gt; None:
         &#34;&#34;&#34;
-          this will be called by the Model.run() method
-          &#34;&#34;&#34;
-        scale: float = (reservoir.m[i - 1] / self.ref_value - 1) * self.k_value
+        this will be called by the Model.run() method
+        &#34;&#34;&#34;
+        scale: float = (reservoir.m[i - 1] / self.ref_value - 1) * self.scale
         # scale = scale * (scale &gt;= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])</code></pre>
 </details>
@@ -3097,9 +3206,12 @@ ref_value = 1e5 # reference_mass
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.RateConstant" href="#esbmtk.processes.RateConstant">RateConstant</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.RateConstant.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.flux" href="#esbmtk.processes.RateConstant.flux">flux</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.k_value" href="#esbmtk.processes.RateConstant.k_value">k_value</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.ref_value" href="#esbmtk.processes.RateConstant.ref_value">ref_value</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.reservoir" href="#esbmtk.processes.RateConstant.reservoir">reservoir</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.scale" href="#esbmtk.processes.RateConstant.scale">scale</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -3110,13 +3222,10 @@ ref_value = 1e5 # reference_mass
 <span>(</span><span>**kwargs: Dict[str, <built-in function any>])</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Unlike a passive flux, this process sets the output flux from a
-reservoir to a fixed value, but the isotopic ratio of the output
-flux will be set equal to the isotopic ratio of the reservoir The
+<div class="desc"><p>Unlike a passive flux, this process sets the flux istope ratio
+equal to the isotopic ratio of the reservoir. The
 init and register methods are inherited from the process
-class. The overall result can be scaled, i.e., in order to create
-a split flow etc.
-Example::</p>
+class.</p>
 <p>VarDeltaOut(name = "name",
 reservoir = upstream_reservoir_handle,
 flux = flux handle,
@@ -3127,26 +3236,22 @@ rate = rate,)</p>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class VarDeltaOut(Process):
-    &#34;&#34;&#34;Unlike a passive flux, this process sets the output flux from a
-     reservoir to a fixed value, but the isotopic ratio of the output
-     flux will be set equal to the isotopic ratio of the reservoir The
-     init and register methods are inherited from the process
-     class. The overall result can be scaled, i.e., in order to create
-     a split flow etc.  Example::
+    &#34;&#34;&#34;Unlike a passive flux, this process sets the flux istope ratio
+    equal to the isotopic ratio of the reservoir. The
+    init and register methods are inherited from the process
+    class.
 
-     VarDeltaOut(name = &#34;name&#34;,
-                 reservoir = upstream_reservoir_handle,
-                 flux = flux handle,
-                 rate = rate,)
+    VarDeltaOut(name = &#34;name&#34;,
+                reservoir = upstream_reservoir_handle,
+                flux = flux handle,
+                rate = rate,)
 
-     &#34;&#34;&#34;
+    &#34;&#34;&#34;
 
-    __slots__ = (&#39;rate&#39;)
+    __slots__ = (&#34;rate&#34;, &#34;flux&#34;, &#34;reservoir&#34;)
 
     def __init__(self, **kwargs: Dict[str, any]) -&gt; None:
-        &#34;&#34;&#34; Initialize this Process
-          
-          &#34;&#34;&#34;
+        &#34;&#34;&#34;Initialize this Process&#34;&#34;&#34;
 
         from . import ureg, Q_
         from .connections import ConnectionGroup
@@ -3155,43 +3260,74 @@ rate = rate,)</p>
         self.__defaultnames__()
         self.lkk: Dict[str, any] = {
             &#34;name&#34;: str,
-            &#34;reservoir&#34;: (Reservoir,Source,Sink),
+            &#34;reservoir&#34;: (Reservoir, Source, Sink),
             &#34;flux&#34;: Flux,
             &#34;rate&#34;: (str, Q_),
             &#34;register&#34;: (ConnectionGroup, str),
         }
-        self.lrk.extend([&#34;reservoir&#34;, &#34;rate&#34;])  # new required keywords
+        self.lrk.extend([&#34;reservoir&#34;, &#34;flux&#34;])  # new required keywords
         self.__initerrormessages__()
-        self.bem.update({&#34;rate&#34;: &#34;a string&#34;})
         self.__validateandregister__(kwargs)  # initialize keyword values
-
-        # parse rate term, and map to legacy name
-        self.rateq = Q_(self.rate)
-        self.rate = Q_(self.rate).to(self.reservoir.mo.f_unit).magnitude
-        #legacy variables
         self.mo = self.reservoir.mo
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
 
-    def __call__(self, reservoir: Reservoir, i: int) -&gt; None:
+        # decide which call function to use
+        if self.mo.m_type == &#34;both&#34;:
+            if isinstance(self.reservoir, Reservoir):
+                self.__execute__ = self.__with_isotopes_reservoir__
+            elif isinstance(self.reservoir, Source):
+                self.__execute__ = self.__with_isotopes_source__
+            else:
+                raise ValueError(
+                    f&#34;{self.name}, reservoir must be of type Source or Reservoir, not {type(self.reservoir)}&#34;
+                )
+        else:
+            self.__execute__ = self.__without_isotopes__
+
+    # setup a placeholder call function
+    def __call__(self, reservoir: Reservoir, i: int):
+        return self.__execute__(reservoir, i)
+
+    def __with_isotopes_reservoir__(self, reservoir: Reservoir, i: int) -&gt; None:
         &#34;&#34;&#34;Here we re-balance the flux. This code will be called by the
-          apply_flux_modifier method of a reservoir which itself is
-          called by the model execute method
+        apply_flux_modifier method of a reservoir which itself is
+        called by the model execute method
 
         &#34;&#34;&#34;
 
-        # set flux according to keyword value
+        m: float = self.flux.m[i]
+        if m != 0:
+            r: float = reservoir.species.element.r
+            d: float = self.reservoir.d[i - 1]
+            l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+            h: float = m - l
 
-        # this explicit expression is siginificantly faster than the below
-        # function call
-        m = self.rate
-        r = reservoir.l[i - 1] / reservoir.m[i - 1]
-        l = m * r
-        h = m - l
-        self.f.m[i] = m
-        self.f.l[i] = l
-        self.f.h[i] = h
-        self.f.d[i] = reservoir.d[i-1]</code></pre>
+            self.flux[i] = [m, l, h, d]
+
+    def __with_isotopes_source__(self, reservoir: Reservoir, i: int) -&gt; None:
+        &#34;&#34;&#34;If the source of the flux is a source, there is only a single delta value.
+        Changes to the flux delta are applied through the Signal class.
+
+        &#34;&#34;&#34;
+
+        m: float = self.flux.m[i]
+        if m != 0:
+            d: float = self.reservoir.delta
+            r: float = reservoir.species.element.r
+            l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+            h: float = m - l
+
+            self.flux[i] = [m, l, h, d]
+
+    def __without_isotopes__(self, reservoir: Reservoir, i: int) -&gt; None:
+        &#34;&#34;&#34;Here we re-balance the flux. This code will be called by the
+        apply_flux_modifier method of a reservoir which itself is
+        called by the model execute method
+
+        &#34;&#34;&#34;
+
+        pass</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -3200,7 +3336,15 @@ rate = rate,)</p>
 </ul>
 <h3>Instance variables</h3>
 <dl>
+<dt id="esbmtk.processes.VarDeltaOut.flux"><code class="name">var <span class="ident">flux</span></code></dt>
+<dd>
+<div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
+</dd>
 <dt id="esbmtk.processes.VarDeltaOut.rate"><code class="name">var <span class="ident">rate</span></code></dt>
+<dd>
+<div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
+</dd>
+<dt id="esbmtk.processes.VarDeltaOut.reservoir"><code class="name">var <span class="ident">reservoir</span></code></dt>
 <dd>
 <div class="desc"><p>Return an attribute of instance, which is of type owner.</p></div>
 </dd>
@@ -3209,7 +3353,7 @@ rate = rate,)</p>
 <ul class="hlist">
 <li><code><b><a title="esbmtk.processes.Process" href="#esbmtk.processes.Process">Process</a></b></code>:
 <ul class="hlist">
-<li><code><a title="esbmtk.processes.Process.describe" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.describe">describe</a></code></li>
+<li><code><a title="esbmtk.processes.Process.info" href="esbmtk.html#esbmtk.esbmtk.esbmtkBase.info">info</a></code></li>
 <li><code><a title="esbmtk.processes.Process.show_figure" href="#esbmtk.processes.Process.show_figure">show_figure</a></code></li>
 </ul>
 </li>
@@ -3242,6 +3386,10 @@ rate = rate,)</p>
 </li>
 <li>
 <h4><code><a title="esbmtk.processes.Fractionation" href="#esbmtk.processes.Fractionation">Fractionation</a></code></h4>
+<ul class="">
+<li><code><a title="esbmtk.processes.Fractionation.flux" href="#esbmtk.processes.Fractionation.flux">flux</a></code></li>
+<li><code><a title="esbmtk.processes.Fractionation.reservoir" href="#esbmtk.processes.Fractionation.reservoir">reservoir</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="esbmtk.processes.GenericFunction" href="#esbmtk.processes.GenericFunction">GenericFunction</a></code></h4>
@@ -3278,8 +3426,11 @@ rate = rate,)</p>
 <li>
 <h4><code><a title="esbmtk.processes.RateConstant" href="#esbmtk.processes.RateConstant">RateConstant</a></code></h4>
 <ul class="">
+<li><code><a title="esbmtk.processes.RateConstant.flux" href="#esbmtk.processes.RateConstant.flux">flux</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.k_value" href="#esbmtk.processes.RateConstant.k_value">k_value</a></code></li>
 <li><code><a title="esbmtk.processes.RateConstant.ref_value" href="#esbmtk.processes.RateConstant.ref_value">ref_value</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.reservoir" href="#esbmtk.processes.RateConstant.reservoir">reservoir</a></code></li>
+<li><code><a title="esbmtk.processes.RateConstant.scale" href="#esbmtk.processes.RateConstant.scale">scale</a></code></li>
 </ul>
 </li>
 <li>
@@ -3311,7 +3462,9 @@ rate = rate,)</p>
 <li>
 <h4><code><a title="esbmtk.processes.VarDeltaOut" href="#esbmtk.processes.VarDeltaOut">VarDeltaOut</a></code></h4>
 <ul class="">
+<li><code><a title="esbmtk.processes.VarDeltaOut.flux" href="#esbmtk.processes.VarDeltaOut.flux">flux</a></code></li>
 <li><code><a title="esbmtk.processes.VarDeltaOut.rate" href="#esbmtk.processes.VarDeltaOut.rate">rate</a></code></li>
+<li><code><a title="esbmtk.processes.VarDeltaOut.reservoir" href="#esbmtk.processes.VarDeltaOut.reservoir">reservoir</a></code></li>
 </ul>
 </li>
 </ul>

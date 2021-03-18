@@ -374,7 +374,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -&gt; None:
         second_axis = False
 
     # start subplot
-    ax1 = plt.subplot(rows, cols, fn, title=obj.n)
+    ax1 = plt.subplot(rows, cols, fn)
 
     # set color index
     cn = 0
@@ -411,6 +411,16 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -&gt; None:
                     False
                 )  # remove unnecessary frame speciess
 
+        elif isinstance(obj, Signal):
+            # use the same units as the associated flux
+            ax2 = ax1.twinx()  # create a second y-axis
+            # plof right y-scale data
+            ln2 = ax2.plot(
+                time[1:-2], obj.data.d[1:-2], color=col, label=obj.legend_right
+            )
+            ax2.set_ylabel(obj.data.ld)  # species object delta label
+            set_y_limits(ax2, model)
+            ax2.spines[&#34;top&#34;].set_visible(False)  # remove unnecessary frame speciess
         else:
             ax2 = ax1.twinx()  # create a second y-axis
             # plof right y-scale data
@@ -420,7 +430,13 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -&gt; None:
             ax2.spines[&#34;top&#34;].set_visible(False)  # remove unnecessary frame speciess
 
     # adjust display properties for title and legend
-    ax1.set_title(obj.n)
+
+    if isinstance(obj, (Reservoir)):
+        ax1.set_title(obj.pt)
+    else:
+        ax1.set_title(obj.n)
+        
+
     plt.rcParams[&#34;axes.titlepad&#34;] = 14  # offset title upwards
     plt.rcParams[&#34;legend.facecolor&#34;] = &#34;0.8&#34;  # show a gray background
     plt.rcParams[&#34;legend.edgecolor&#34;] = &#34;0.8&#34;  # make frame the same color
@@ -482,55 +498,6 @@ def get_object_from_list(n: str, l: list) -&gt; any:
         if o.n == n:
             r = o
     return r
-
-def get_hplus(dic: float, ta: float) -&gt; float:
-    &#34;&#34;&#34;
-    Calculate H+ concentration based on DIC concentration and Alkalinity
-    according to eq 11 in Follows et al 2006
-
-    &#34;&#34;&#34;
-
-    pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
-    pk2 = 8.92
-    K1 = 10 ** -pk1
-    K2 = 10 ** -pk2
-
-    # F = -1 * Kb * BT / (Kb + hplus)
-    # ta = ta + F
-
-    g = dic / ta
-    hplus = 0.5 * (
-        (g - 1) * K1 + ((1 - g) ** 2 * K1 ** 2 - 4 * K1 * K2 * (1 - 2 * g)) ** 0.5
-    )
-
-    return hplus
-
-
-def get_pco2(dic: float, ta: float, hplus: float) -&gt; float:
-    &#34;&#34;&#34;Calculate pCO2 in uatm at 25C and a Salinity of 35
-
-    DIC has to be in mmol/l!
-
-    &#34;&#34;&#34;
-    pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
-    pk2 = 8.92
-    K1 = 10 ** -pk1
-    K2 = 10 ** -pk2
-    K0 = 36
-
-    # hplus = get_hplus(dic, ta)
-
-    # get [CO2] in water
-    co2 = dic / (1 + K1 / hplus + K1 * K2 / hplus ** 2)
-
-    # get pco2 as a function of co2 fugacity
-    pco2 = co2 / K0 * 1e6
-
-    # this cam also be expressed in teh following way
-    # pco2a = (ta/K0 * ( K1/hplus + 2*K1*K2/hplus**2)**-1) * 1.e6
-    # pco2b = (dic/K0 * (1 + K1/hplus + (K1*K2)/hplus**2)**-1) * 1.e6
-
-    return pco2
 
 def sort_by_type(l: list, t: list, m: str) -&gt; list:
     &#34;&#34;&#34;divide a list by type into new lists. This function will return a
@@ -724,39 +691,6 @@ the ratio between the light and heavy isotope.</p></div>
     return li, hi</code></pre>
 </details>
 </dd>
-<dt id="esbmtk.utility_functions.get_hplus"><code class="name flex">
-<span>def <span class="ident">get_hplus</span></span>(<span>dic: float, ta: float) ‑> float</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Calculate H+ concentration based on DIC concentration and Alkalinity
-according to eq 11 in Follows et al 2006</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_hplus(dic: float, ta: float) -&gt; float:
-    &#34;&#34;&#34;
-    Calculate H+ concentration based on DIC concentration and Alkalinity
-    according to eq 11 in Follows et al 2006
-
-    &#34;&#34;&#34;
-
-    pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
-    pk2 = 8.92
-    K1 = 10 ** -pk1
-    K2 = 10 ** -pk2
-
-    # F = -1 * Kb * BT / (Kb + hplus)
-    # ta = ta + F
-
-    g = dic / ta
-    hplus = 0.5 * (
-        (g - 1) * K1 + ((1 - g) ** 2 * K1 ** 2 - 4 * K1 * K2 * (1 - 2 * g)) ** 0.5
-    )
-
-    return hplus</code></pre>
-</details>
-</dd>
 <dt id="esbmtk.utility_functions.get_imass"><code class="name flex">
 <span>def <span class="ident">get_imass</span></span>(<span>m: float, d: float, r: float) ‑> [<class 'float'>, <class 'float'>]</span>
 </code></dt>
@@ -799,43 +733,6 @@ species</p></div>
         if o.n == n:
             r = o
     return r</code></pre>
-</details>
-</dd>
-<dt id="esbmtk.utility_functions.get_pco2"><code class="name flex">
-<span>def <span class="ident">get_pco2</span></span>(<span>dic: float, ta: float, hplus: float) ‑> float</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Calculate pCO2 in uatm at 25C and a Salinity of 35</p>
-<p>DIC has to be in mmol/l!</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_pco2(dic: float, ta: float, hplus: float) -&gt; float:
-    &#34;&#34;&#34;Calculate pCO2 in uatm at 25C and a Salinity of 35
-
-    DIC has to be in mmol/l!
-
-    &#34;&#34;&#34;
-    pk1 = 5.81  # at this ph value CO2 and HCO3 have the same concentration
-    pk2 = 8.92
-    K1 = 10 ** -pk1
-    K2 = 10 ** -pk2
-    K0 = 36
-
-    # hplus = get_hplus(dic, ta)
-
-    # get [CO2] in water
-    co2 = dic / (1 + K1 / hplus + K1 * K2 / hplus ** 2)
-
-    # get pco2 as a function of co2 fugacity
-    pco2 = co2 / K0 * 1e6
-
-    # this cam also be expressed in teh following way
-    # pco2a = (ta/K0 * ( K1/hplus + 2*K1*K2/hplus**2)**-1) * 1.e6
-    # pco2b = (dic/K0 * (1 + K1/hplus + (K1*K2)/hplus**2)**-1) * 1.e6
-
-    return pco2</code></pre>
 </details>
 </dd>
 <dt id="esbmtk.utility_functions.get_plot_layout"><code class="name flex">
@@ -1191,7 +1088,7 @@ ptype: the plot type</p></div>
         second_axis = False
 
     # start subplot
-    ax1 = plt.subplot(rows, cols, fn, title=obj.n)
+    ax1 = plt.subplot(rows, cols, fn)
 
     # set color index
     cn = 0
@@ -1228,6 +1125,16 @@ ptype: the plot type</p></div>
                     False
                 )  # remove unnecessary frame speciess
 
+        elif isinstance(obj, Signal):
+            # use the same units as the associated flux
+            ax2 = ax1.twinx()  # create a second y-axis
+            # plof right y-scale data
+            ln2 = ax2.plot(
+                time[1:-2], obj.data.d[1:-2], color=col, label=obj.legend_right
+            )
+            ax2.set_ylabel(obj.data.ld)  # species object delta label
+            set_y_limits(ax2, model)
+            ax2.spines[&#34;top&#34;].set_visible(False)  # remove unnecessary frame speciess
         else:
             ax2 = ax1.twinx()  # create a second y-axis
             # plof right y-scale data
@@ -1237,7 +1144,13 @@ ptype: the plot type</p></div>
             ax2.spines[&#34;top&#34;].set_visible(False)  # remove unnecessary frame speciess
 
     # adjust display properties for title and legend
-    ax1.set_title(obj.n)
+
+    if isinstance(obj, (Reservoir)):
+        ax1.set_title(obj.pt)
+    else:
+        ax1.set_title(obj.n)
+        
+
     plt.rcParams[&#34;axes.titlepad&#34;] = 14  # offset title upwards
     plt.rcParams[&#34;legend.facecolor&#34;] = &#34;0.8&#34;  # show a gray background
     plt.rcParams[&#34;legend.edgecolor&#34;] = &#34;0.8&#34;  # make frame the same color
@@ -1396,10 +1309,8 @@ m is a string for the error function</p></div>
 <li><code><a title="esbmtk.utility_functions.get_delta" href="#esbmtk.utility_functions.get_delta">get_delta</a></code></li>
 <li><code><a title="esbmtk.utility_functions.get_flux_data" href="#esbmtk.utility_functions.get_flux_data">get_flux_data</a></code></li>
 <li><code><a title="esbmtk.utility_functions.get_frac" href="#esbmtk.utility_functions.get_frac">get_frac</a></code></li>
-<li><code><a title="esbmtk.utility_functions.get_hplus" href="#esbmtk.utility_functions.get_hplus">get_hplus</a></code></li>
 <li><code><a title="esbmtk.utility_functions.get_imass" href="#esbmtk.utility_functions.get_imass">get_imass</a></code></li>
 <li><code><a title="esbmtk.utility_functions.get_object_from_list" href="#esbmtk.utility_functions.get_object_from_list">get_object_from_list</a></code></li>
-<li><code><a title="esbmtk.utility_functions.get_pco2" href="#esbmtk.utility_functions.get_pco2">get_pco2</a></code></li>
 <li><code><a title="esbmtk.utility_functions.get_plot_layout" href="#esbmtk.utility_functions.get_plot_layout">get_plot_layout</a></code></li>
 <li><code><a title="esbmtk.utility_functions.get_ptype" href="#esbmtk.utility_functions.get_ptype">get_ptype</a></code></li>
 <li><code><a title="esbmtk.utility_functions.get_string_between_brackets" href="#esbmtk.utility_functions.get_string_between_brackets">get_string_between_brackets</a></code></li>

@@ -655,7 +655,7 @@ class ScaleFlux(Process):
 
     Example::
          ScaleFlux(name = "Name",
-                   reservoir = upstream_reservoir_handle,
+                   reservoir = reservoir_handle (upstream or downstream)
                    scale = 1
                    ref = flux we use for scale)
 
