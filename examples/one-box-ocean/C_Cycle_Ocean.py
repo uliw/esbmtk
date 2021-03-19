@@ -87,9 +87,9 @@ ExternalData(name="measured_carbon_isotopes",
              )
 
 # Run the model
-C_Cycle.run()
+#C_Cycle.run()
 
 # plot the results
-C_Cycle.plot_data()
+#C_Cycle.plot_data()
 # save the results
-C_Cycle.save_data()
+#C_Cycle.save_data()

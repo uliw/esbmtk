@@ -619,7 +619,7 @@ class ScaleFlux(Process):
 
     Example::
          ScaleFlux(name = "Name",
-                   reservoir = upstream_reservoir_handle,
+                   reservoir = reservoir_handle (upstream or downstream)
                    scale = 1
                    ref = flux we use for scale)
 
@@ -658,8 +658,10 @@ class ScaleFlux(Process):
 
         """
 
+        d = self.f.d[i]
         self.f[i] = self.ref[i] * self.scale
-        self.f[i] = get_flux_data(self.f.m[i], reservoir.d[i - 1], reservoir.rvalue)
+        self.f.d[i] = d
+        #self.f[i] = get_flux_data(self.f.m[i], reservoir.d[i - 1], reservoir.rvalue)
 
     def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """Apply the scale factor. This is typically done through the the
@@ -937,22 +939,7 @@ class ScaleRelativeToConcentration(RateConstant):
             self.flux.l[i]: float = l
             self.flux.h[i]: float = m - l
             self.flux.m[i]: float = m
-            # self.flux[i] = [m, l, h, d]
-
-        # m = self.reservoir.m[i - 1] / self.reservoir.volume * self.scale
-        # l = self.reservoir.l[i - 1] / self.reservoir.volume * self.scale
-        # h = self.reservoir.h[i - 1] / self.reservoir.volume * self.scale
-        # self.flux[i] = [m, l, h, self.reservoir.d[i - 1]]
-
-        # print(f"k= {self.scale}")
-        # scale = scale * (scale >= 0)  # prevent negative fluxes.
-        # self.flux.m[i]  = reservoir.c[i - 1] * self.scale
-        # scale: float = reservoir.c[i - 1] * self.scale
-        # scale = scale * (scale >= 0)  # prevent negative fluxes.
-        # self.f[i] = self.f[i] * array([scale, scale, scale, 1])
-        # self.f[i] = [scale, scale, scale, 1])
-        # self.f.d[i] = reservoir.d[i - 1]
-        # self.f[i] = get_flux_data(self.f[i],reservoir.d[i-1],reservoir.rvalue)
+            
 
 
 class ScaleRelativeToMass(RateConstant):

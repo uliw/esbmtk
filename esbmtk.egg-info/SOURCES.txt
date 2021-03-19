@@ -1,7 +1,7 @@
 README.md
 setup.py
 esbmtk/__init__.py
-esbmtk/carbonate_chemisrty.py
+esbmtk/carbonate_chemistry.py
 esbmtk/connections.py
 esbmtk/esbmtk.py
 esbmtk/processes.py

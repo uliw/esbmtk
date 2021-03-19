@@ -694,8 +694,10 @@ class ScaleFlux(Process):
 
         """
 
+        d = self.f.d[i]
         self.f[i] = self.ref[i] * self.scale
-        self.f[i] = get_flux_data(self.f.m[i], reservoir.d[i - 1], reservoir.rvalue)
+        self.f.d[i] = d
+        #self.f[i] = get_flux_data(self.f.m[i], reservoir.d[i - 1], reservoir.rvalue)
 
     def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """Apply the scale factor. This is typically done through the the

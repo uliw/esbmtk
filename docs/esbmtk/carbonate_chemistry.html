@@ -4,8 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
 <meta name="generator" content="pdoc 0.9.2" />
-<title>esbmtk.carbonate_chemisrty API documentation</title>
-<meta name="description" content="" />
+<title>esbmtk.carbonate_chemistry API documentation</title>
+<meta name="description" content="esbmtk: A general purpose Earth Science box model toolkit
+Copyright (C), 2020-2021 Ulrich G. Wortmann …" />
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
 <link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
 <link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
@@ -19,14 +20,46 @@
 <main>
 <article id="content">
 <header>
-<h1 class="title">Module <code>esbmtk.carbonate_chemisrty</code></h1>
+<h1 class="title">Module <code>esbmtk.carbonate_chemistry</code></h1>
 </header>
 <section id="section-intro">
+<p>esbmtk: A general purpose Earth Science box model toolkit
+Copyright (C), 2020-2021 Ulrich G. Wortmann</p>
+<p>This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.</p>
+<p>This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with this program.
+If not, see <a href="https://www.gnu.org/licenses/">https://www.gnu.org/licenses/</a>.</p>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">from numbers import Number
+<pre><code class="python">&#34;&#34;&#34;
+     esbmtk: A general purpose Earth Science box model toolkit
+     Copyright (C), 2020-2021 Ulrich G. Wortmann
+
+     This program is free software: you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation, either version 3 of the License, or
+     (at your option) any later version.
+
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License for more details.
+
+     You should have received a copy of the GNU General Public License
+     along with this program.  If not, see &lt;https://www.gnu.org/licenses/&gt;.
+&#34;&#34;&#34;
+
+from numbers import Number
 from nptyping import *
 from typing import *
 from numpy import array, set_printoptions, arange, zeros, interp, mean
@@ -379,7 +412,7 @@ def calc_H(
 
     gamm: float = DIC / CA
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
-    m: float = (0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))) + ext_h
+    m: float = (0.5 * ((gamm - 1) * k1 + (dummy ** 0.5)))
     l: float = 1.0
     h: float = 1.0
 
@@ -466,7 +499,6 @@ def calc_pCO2(
     Hplus: Reservoir = H+ concentrations in mol/liter
     SW: Seawater = Seawater object for the model
 
-    Limitations
     Author: T. Tsan
 
     &#34;&#34;&#34;
@@ -491,8 +523,8 @@ def calc_pCO2(
 <section>
 <h2 class="section-title" id="header-functions">Functions</h2>
 <dl>
-<dt id="esbmtk.carbonate_chemisrty.calc_CA"><code class="name flex">
-<span>def <span class="ident">calc_CA</span></span>(<span>i: int, a1: Union[<a title="esbmtk.esbmtk.Reservoir" href="esbmtk.html#esbmtk.esbmtk.Reservoir">Reservoir</a>, <a title="esbmtk.esbmtk.VirtualReservoir" href="esbmtk.html#esbmtk.esbmtk.VirtualReservoir">VirtualReservoir</a>], a2: Union[<a title="esbmtk.esbmtk.Reservoir" href="esbmtk.html#esbmtk.esbmtk.Reservoir">Reservoir</a>, <a title="esbmtk.esbmtk.VirtualReservoir" href="esbmtk.html#esbmtk.esbmtk.VirtualReservoir">VirtualReservoir</a>], a3: <a title="esbmtk.carbonate_chemisrty.SeawaterConstants" href="#esbmtk.carbonate_chemisrty.SeawaterConstants">SeawaterConstants</a>, a4=0, a5=0, a6=0) ‑> tuple</span>
+<dt id="esbmtk.carbonate_chemistry.calc_CA"><code class="name flex">
+<span>def <span class="ident">calc_CA</span></span>(<span>i: int, a1: Union[<a title="esbmtk.esbmtk.Reservoir" href="esbmtk.html#esbmtk.esbmtk.Reservoir">Reservoir</a>, <a title="esbmtk.esbmtk.VirtualReservoir" href="esbmtk.html#esbmtk.esbmtk.VirtualReservoir">VirtualReservoir</a>], a2: Union[<a title="esbmtk.esbmtk.Reservoir" href="esbmtk.html#esbmtk.esbmtk.Reservoir">Reservoir</a>, <a title="esbmtk.esbmtk.VirtualReservoir" href="esbmtk.html#esbmtk.esbmtk.VirtualReservoir">VirtualReservoir</a>], a3: <a title="esbmtk.carbonate_chemistry.SeawaterConstants" href="#esbmtk.carbonate_chemistry.SeawaterConstants">SeawaterConstants</a>, a4=0, a5=0, a6=0) ‑> tuple</span>
 </code></dt>
 <dd>
 <div class="desc"><p>This function will calculate the carbonate alkalinity concentration
@@ -593,8 +625,8 @@ a3=SW,
     return [m, l, h]</code></pre>
 </details>
 </dd>
-<dt id="esbmtk.carbonate_chemisrty.calc_H"><code class="name flex">
-<span>def <span class="ident">calc_H</span></span>(<span>i: int, a1: Union[<a title="esbmtk.esbmtk.Reservoir" href="esbmtk.html#esbmtk.esbmtk.Reservoir">Reservoir</a>, <a title="esbmtk.esbmtk.VirtualReservoir" href="esbmtk.html#esbmtk.esbmtk.VirtualReservoir">VirtualReservoir</a>], a2: Union[<a title="esbmtk.esbmtk.Reservoir" href="esbmtk.html#esbmtk.esbmtk.Reservoir">Reservoir</a>, <a title="esbmtk.esbmtk.VirtualReservoir" href="esbmtk.html#esbmtk.esbmtk.VirtualReservoir">VirtualReservoir</a>], a3: <a title="esbmtk.carbonate_chemisrty.SeawaterConstants" href="#esbmtk.carbonate_chemisrty.SeawaterConstants">SeawaterConstants</a>, a4=0, a5=0, a6=0) ‑> tuple</span>
+<dt id="esbmtk.carbonate_chemistry.calc_H"><code class="name flex">
+<span>def <span class="ident">calc_H</span></span>(<span>i: int, a1: Union[<a title="esbmtk.esbmtk.Reservoir" href="esbmtk.html#esbmtk.esbmtk.Reservoir">Reservoir</a>, <a title="esbmtk.esbmtk.VirtualReservoir" href="esbmtk.html#esbmtk.esbmtk.VirtualReservoir">VirtualReservoir</a>], a2: Union[<a title="esbmtk.esbmtk.Reservoir" href="esbmtk.html#esbmtk.esbmtk.Reservoir">Reservoir</a>, <a title="esbmtk.esbmtk.VirtualReservoir" href="esbmtk.html#esbmtk.esbmtk.VirtualReservoir">VirtualReservoir</a>], a3: <a title="esbmtk.carbonate_chemistry.SeawaterConstants" href="#esbmtk.carbonate_chemistry.SeawaterConstants">SeawaterConstants</a>, a4=0, a5=0, a6=0) ‑> tuple</span>
 </code></dt>
 <dd>
 <div class="desc"><p>This function will calculate the H+ concentration at t=i
@@ -684,15 +716,15 @@ a3=SW,
 
     gamm: float = DIC / CA
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
-    m: float = (0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))) + ext_h
+    m: float = (0.5 * ((gamm - 1) * k1 + (dummy ** 0.5)))
     l: float = 1.0
     h: float = 1.0
 
     return [m, l, h]</code></pre>
 </details>
 </dd>
-<dt id="esbmtk.carbonate_chemisrty.calc_pCO2"><code class="name flex">
-<span>def <span class="ident">calc_pCO2</span></span>(<span>dic: Union[<a title="esbmtk.esbmtk.Reservoir" href="esbmtk.html#esbmtk.esbmtk.Reservoir">Reservoir</a>, <a title="esbmtk.esbmtk.VirtualReservoir" href="esbmtk.html#esbmtk.esbmtk.VirtualReservoir">VirtualReservoir</a>], hplus: Union[<a title="esbmtk.esbmtk.Reservoir" href="esbmtk.html#esbmtk.esbmtk.Reservoir">Reservoir</a>, <a title="esbmtk.esbmtk.VirtualReservoir" href="esbmtk.html#esbmtk.esbmtk.VirtualReservoir">VirtualReservoir</a>], SW: <a title="esbmtk.carbonate_chemisrty.SeawaterConstants" href="#esbmtk.carbonate_chemisrty.SeawaterConstants">SeawaterConstants</a>) ‑> [NDArray[(typing.Any, ...), typing.Any], Float]</span>
+<dt id="esbmtk.carbonate_chemistry.calc_pCO2"><code class="name flex">
+<span>def <span class="ident">calc_pCO2</span></span>(<span>dic: Union[<a title="esbmtk.esbmtk.Reservoir" href="esbmtk.html#esbmtk.esbmtk.Reservoir">Reservoir</a>, <a title="esbmtk.esbmtk.VirtualReservoir" href="esbmtk.html#esbmtk.esbmtk.VirtualReservoir">VirtualReservoir</a>], hplus: Union[<a title="esbmtk.esbmtk.Reservoir" href="esbmtk.html#esbmtk.esbmtk.Reservoir">Reservoir</a>, <a title="esbmtk.esbmtk.VirtualReservoir" href="esbmtk.html#esbmtk.esbmtk.VirtualReservoir">VirtualReservoir</a>], SW: <a title="esbmtk.carbonate_chemistry.SeawaterConstants" href="#esbmtk.carbonate_chemistry.SeawaterConstants">SeawaterConstants</a>) ‑> [NDArray[(typing.Any, ...), typing.Any], Float]</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Calculate the concentration of pCO2 as a function of DIC,
@@ -703,8 +735,7 @@ equations from Follows, 2006. doi:10.1016/j.ocemod.2005.05.004</p>
 = DIC concentrations in mol/liter
 Hplus: Reservoir = H+ concentrations in mol/liter
 SW: Seawater = Seawater object for the model</p>
-<p>Limitations
-Author: T. Tsan</p></div>
+<p>Author: T. Tsan</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -725,7 +756,6 @@ Author: T. Tsan</p></div>
     Hplus: Reservoir = H+ concentrations in mol/liter
     SW: Seawater = Seawater object for the model
 
-    Limitations
     Author: T. Tsan
 
     &#34;&#34;&#34;
@@ -748,7 +778,7 @@ Author: T. Tsan</p></div>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
 <dl>
-<dt id="esbmtk.carbonate_chemisrty.SeawaterConstants"><code class="flex name class">
+<dt id="esbmtk.carbonate_chemistry.SeawaterConstants"><code class="flex name class">
 <span>class <span class="ident">SeawaterConstants</span></span>
 <span>(</span><span>**kwargs: Dict[str, str])</span>
 </code></dt>
@@ -1058,7 +1088,7 @@ pH = optional, defaults to 8.1
 </ul>
 <h3>Methods</h3>
 <dl>
-<dt id="esbmtk.carbonate_chemisrty.SeawaterConstants.show"><code class="name flex">
+<dt id="esbmtk.carbonate_chemistry.SeawaterConstants.show"><code class="name flex">
 <span>def <span class="ident">show</span></span>(<span>self) ‑> NoneType</span>
 </code></dt>
 <dd>
@@ -1086,7 +1116,7 @@ pH = optional, defaults to 8.1
         print(f&#34;{n} = {K:.2e}, p{n} = {pk:.2f}&#34;)</code></pre>
 </details>
 </dd>
-<dt id="esbmtk.carbonate_chemisrty.SeawaterConstants.update"><code class="name flex">
+<dt id="esbmtk.carbonate_chemistry.SeawaterConstants.update"><code class="name flex">
 <span>def <span class="ident">update</span></span>(<span>self, **kwargs: dict) ‑> NoneType</span>
 </code></dt>
 <dd>
@@ -1148,18 +1178,18 @@ pH = optional, defaults to 8.1
 </li>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
-<li><code><a title="esbmtk.carbonate_chemisrty.calc_CA" href="#esbmtk.carbonate_chemisrty.calc_CA">calc_CA</a></code></li>
-<li><code><a title="esbmtk.carbonate_chemisrty.calc_H" href="#esbmtk.carbonate_chemisrty.calc_H">calc_H</a></code></li>
-<li><code><a title="esbmtk.carbonate_chemisrty.calc_pCO2" href="#esbmtk.carbonate_chemisrty.calc_pCO2">calc_pCO2</a></code></li>
+<li><code><a title="esbmtk.carbonate_chemistry.calc_CA" href="#esbmtk.carbonate_chemistry.calc_CA">calc_CA</a></code></li>
+<li><code><a title="esbmtk.carbonate_chemistry.calc_H" href="#esbmtk.carbonate_chemistry.calc_H">calc_H</a></code></li>
+<li><code><a title="esbmtk.carbonate_chemistry.calc_pCO2" href="#esbmtk.carbonate_chemistry.calc_pCO2">calc_pCO2</a></code></li>
 </ul>
 </li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
-<h4><code><a title="esbmtk.carbonate_chemisrty.SeawaterConstants" href="#esbmtk.carbonate_chemisrty.SeawaterConstants">SeawaterConstants</a></code></h4>
+<h4><code><a title="esbmtk.carbonate_chemistry.SeawaterConstants" href="#esbmtk.carbonate_chemistry.SeawaterConstants">SeawaterConstants</a></code></h4>
 <ul class="">
-<li><code><a title="esbmtk.carbonate_chemisrty.SeawaterConstants.show" href="#esbmtk.carbonate_chemisrty.SeawaterConstants.show">show</a></code></li>
-<li><code><a title="esbmtk.carbonate_chemisrty.SeawaterConstants.update" href="#esbmtk.carbonate_chemisrty.SeawaterConstants.update">update</a></code></li>
+<li><code><a title="esbmtk.carbonate_chemistry.SeawaterConstants.show" href="#esbmtk.carbonate_chemistry.SeawaterConstants.show">show</a></code></li>
+<li><code><a title="esbmtk.carbonate_chemistry.SeawaterConstants.update" href="#esbmtk.carbonate_chemistry.SeawaterConstants.update">update</a></code></li>
 </ul>
 </li>
 </ul>

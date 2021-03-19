@@ -54,7 +54,7 @@ class Connect(esbmtkBase):
 
      Parameters:
          - name: A string which determines the name of this object. Optional, if not provided
-           the connection name will be derived as "Source_2_Sink_Connection"
+           the connection name will be derived as "C_Source_2_Sink"
          - source: An object handle for a Source or Reservoir
          - sink: An object handle for a Sink or Reservoir
          - rate: A quantity (e.g., "1 mol/s"), optional
@@ -66,6 +66,7 @@ class Connect(esbmtkBase):
          - pl: A list of process objects, optional
          - ctype: connection type, optional, this allows to scale a flux in response to other
            reservoirs and fluxes
+         - bypass :str optional defaults to "None" see scale with flux
 
      Connection Types:
      -----------------
@@ -150,7 +151,15 @@ class Connect(esbmtkBase):
                 ctype = "scale_with_flux",
                 ref = flux handle,
                 scale = a scaling factor, optional, defaults to 1
+                bypass :str = "source"/"sink"
                 )
+
+    if bypass is set the flux will not affect the upstream or
+    downstream reservoir. This is a more generalized approach than the
+    virtual flux type. This is useful to describe reactions which
+    split into two elements (i.e., deprotonation), or combine fluxes
+    from two reservoirs (say S, and O) into a reservoir which records
+    SO4.
 
     ctype = "virtual_flux"
     ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -287,16 +296,11 @@ class Connect(esbmtkBase):
             "groupname": bool,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "signal": (Signal, str),
+            "bypass": str,
         }
 
-        if "name" not in kwargs:
-            n = (
-                kwargs["source"].name + "_2_" + kwargs["sink"].n + "_Connector"
-            )  # set the name
-            kwargs.update({"name": n})  # and add it to the kwargs
-
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "source", "sink"]
+        self.lrk: list = ["source", "sink"]
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
@@ -310,6 +314,8 @@ class Connect(esbmtkBase):
             "scale": 1,
             "signal": "None",
             "groupname": False,
+            "bypass": "None",
+            "name": "None",
         }
 
         # validate and initialize instance variables
@@ -331,6 +337,7 @@ class Connect(esbmtkBase):
                 "right": "Number, list or Reservoir",
                 "signal": "Signal Handle",
                 "groupname": "True or False",
+                "bypass": "source/sink",
             }
         )
 
@@ -342,8 +349,8 @@ class Connect(esbmtkBase):
 
         self.__validateandregister__(kwargs)
 
-        if kwargs["id"] != "None":
-            self.name = self.name + f"_{self.id}"
+        # if kwargs["id"] != "None":
+        #    self.name = self.name + f"_{self.id}"
         if "pl" in kwargs:
             self.lop: list[Process] = self.pl
         else:
@@ -376,6 +383,30 @@ class Connect(esbmtkBase):
         self.sink.loc.add(self)  # register connector with reservoir
         self.mo.loc.add(self)  # register connector with model
 
+        # if sink and source a regular, the name will be simply C_S_2_S
+        # if we deal with ReservoirGroups we need to reflect this in the
+        # connection name
+        if self.name == "None":
+            if self.source.groupname == "None":
+                son = self.source.name
+                # self.source_ref = self.source
+            else:
+                son = f"{self.source.groupname}_{self.source.name}"
+                # self.source_ref = "{self.source.groupname}.{self.source}"
+
+            if self.sink.groupname == "None":
+                sin = self.sink.name
+                # self.sink_ref = self.sink
+            else:
+                sin = f"{self.sink.groupname}_{self.sink.name}"
+                # source=getattr(self.source, r.n),
+                # self.sink_ref = getattr(self.mo.dmo[])
+
+            if self.id == "None":
+                self.name = f"C_{son}_2_{sin}"
+            else:
+                self.name = f"C_{son}_2_{sin}_{self.id}"
+
         self.__create_flux__()  # Source/Sink/Regular
 
         self.__set_process_type__()  # derive flux type and create flux(es)
@@ -385,7 +416,7 @@ class Connect(esbmtkBase):
         # This should probably move to register fluxes
         self.__register_process__()
 
-        if self.register == "yes":
+        if self.register == "None":
             print(f"Created connection {self.name}")
         else:
             print(f"Created group connection {self.register.name}.{self.name}")
@@ -437,20 +468,20 @@ class Connect(esbmtkBase):
         # flux name
         if self.groupname == False:
             if self.id == "None":
-                n = self.r1.n + "_2_" + self.r2.n + "_Flux"
+                n = f"F_{self.r1.n}_2_{self.r2.n}"
             else:
-                n = self.r1.n + "_2_" + self.r2.n + "_" + self.id + "_Flux"
+                n = f"F_{self.r1.n}_2_{self.r2.n}_{self.id}"
         else:
             print(f"Group name set")
             n = (
-                self.r1.groupname
+                "F_"
+                + self.r1.groupname
                 + "_"
                 + self.r1.n
                 + "_2_"
                 + self.r2.groupname
                 + "_"
                 + self.r2.n
-                + "_Flux"
             )
 
         # derive flux unit from species obbject
@@ -659,12 +690,21 @@ class Connect(esbmtkBase):
     def __scaleflux__(self) -> None:
         """Scale a flux relative to another flux"""
 
-        if not isinstance(self.kwargs["ref"], Flux):
+        if not isinstance(self.ref, Flux):
             raise ValueError("Scale reference must be a flux")
 
         if self.k_value != "None":
             self.scale = self.k_value
             print(f"\n Warning: use scale instead of k_value for scaleflux type\n")
+
+        # if self.bypass == "source":
+        #     target = self.sink
+        # elif self.bypass == "sinks":
+        #     target = self.source
+        # elif self.bypass == "None":
+        #     target = self.r
+        # else:
+        #     raise ValueError(f"bypass must be None/source/sink but not {self.bypass}")
 
         ph = ScaleFlux(
             name=self.pn + "_PSF",
@@ -1112,10 +1152,7 @@ class ConnectionGroup(esbmtkBase):
 
         self.base_name = kwargs["source"].name + "_2_" + kwargs["sink"].name
 
-        n = (
-            kwargs["source"].name + "_2_" + kwargs["sink"].name + "_ConnectionGroup"
-        )  # set the name
-
+        n = f"CG_{kwargs['source'].name}_2_{kwargs['sink'].name}"
         # set connection group name
         kwargs.update({"name": n})  # and add it to the kwargs
 
@@ -1124,7 +1161,7 @@ class ConnectionGroup(esbmtkBase):
         self.__validateandregister__(kwargs)
         # # self.source.lor is a  list with the object names in the group
         self.mo = self.sink.lor[0].mo
-        self.loc :list = [] # list of connection objects
+        self.loc: list = []  # list of connection objects
 
         # find all sub reservoirs which have been specified by the ctype keyword
         self.connections: list = []
@@ -1154,7 +1191,7 @@ class ConnectionGroup(esbmtkBase):
                         # update the entry
                         self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
             # now we can create the connection
-            name = f"{r.n}_Connector"
+            name = f"C_{r.n}"
             a = Connect(
                 name=name,
                 source=getattr(self.source, r.n),
@@ -1165,7 +1202,7 @@ class ConnectionGroup(esbmtkBase):
                 plot=self.cd[r.n]["plot"],
                 ctype=self.cd[r.n]["ctype"],
                 scale=self.cd[r.n]["scale"],
-                groupname = True,
+                groupname=True,
                 id=self.cd[r.n]["cid"],
                 register=self,
             )

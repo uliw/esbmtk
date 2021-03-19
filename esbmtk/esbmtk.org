@@ -87,7 +87,7 @@ class esbmtkBase(object):
         self.lmo: list = []
 
         if "register" not in self.kwargs:
-            self.register = "yes"
+            self.register = "None"
 
     def __validateandregister__(self, kwargs: Dict[str, any]) -> None:
         """Validate the user provided input key-value pairs. For this we need
@@ -96,7 +96,7 @@ class esbmtkBase(object):
         self.lrk = list of mandatory keywords
         self.lod = dictionary of default values for keys
 
-        and register the instance variables and the instance in teh global name space
+        and register the instance variables and the instance in the global name space
 
         """
 
@@ -127,27 +127,32 @@ class esbmtkBase(object):
 
         # if self register is set, it points to the group object which contains
         # this sub object.
-        if self.register == "yes":  # This is part of a group
-            if isinstance(self, Model):  # Model only exist in the global NS
-                setattr(builtins, self.name, self)
-            else:
-                if self.name in self.mo.lmo:
-                    pass  # we allow duplicate names as long as they are not in the
-                # global namespace
-                # raise NameError(f"{self.name} is a duplicate name. Please fix")
-                else:
-                    self.mo.lmo.append(self.name)
-                    setattr(builtins, self.name, self)
-                    # self.mo.dmo.update({self.name: self})
 
-        else:
-            if self in self.register.lmo:
-                raise NameError(
-                    f"{self.name} is a duplicate in {self.register}. Please fix"
-                )
-            setattr(self.register, self.name, self)
-            self.register.lmo.append(self)
-            # self.mo.dmo.update({self.name: self})
+        logging.debug(f"self.register = {self.register}")
+        if self.register == "None":  # Register is global namespace
+            logging.debug(
+                f"Registering {self.name} in global namespace as type {type(self)}"
+            )
+            if isinstance(self, Model):  # Cannot register model with itself
+                setattr(builtins, self.name, self)
+
+            else:
+                if self in self.mo.lmo:
+                    raise NameError(f"{self.name} is a duplicate name. Please fix")
+
+                setattr(builtins, self.name, self)
+                self.mo.lmo.append(self)
+                self.mo.dmo.update({self.name: self})
+
+        else:  # register in group namespace
+            if isinstance(self, (Model, Element)):  # Model only exist in the global NS
+                setattr(builtins, self.name, self)
+            else:  # not a model, and part of group
+                logging.debug(f"Registering {self.name} in {self.register.name} namespace")
+                setattr(self.register, self.name, self)
+                # self.mo.lmo.append(self.name)
+                # setattr(builtins, self.name, self)
+                # self.mo.dmo.update({self.name: self})
 
         logging.info(self.__repr__(1))
 
@@ -530,7 +535,7 @@ class Model(esbmtkBase):
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # empty list which will hold all reservoir references
-        self.dmo: dict = {}
+        self.dmo: dict = {}  # not sure what this is used for
         self.lor: list = []
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
@@ -625,7 +630,7 @@ class Model(esbmtkBase):
             logging.root.removeHandler(handler)
 
         fn: str = f"{kwargs['name']}.log"
-        logging.basicConfig(filename=fn, filemode="w", level=logging.INFO)
+        logging.basicConfig(filename=fn, filemode="w", level=logging.DEBUG)
         self.__register_name__()
 
     def info(self, **kwargs) -> None:
@@ -1173,6 +1178,7 @@ class Reservoir(esbmtkBase):
             "legend_left": "None",
             "function": "None",
             "groupname": "None",
+            "register": "None",
             "a1": 0,
             "a2": 0,
             "a3": 0,
@@ -1202,11 +1208,14 @@ class Reservoir(esbmtkBase):
 
         # legacy names
         self.n: str = self.name  # name of reservoir
-        if "register" in self.kwargs:
+        # if "register" in self.kwargs:
+        if self.register == "None":
+            self.pt = self.name
+        else:
             self.pt: str = f"{self.register.name}_{self.n}"
             self.groupname = self.register.name
-        else:
-            self.pt = self.name
+        # else:
+        #   self.pt = self.name
 
         self.sp: Species = self.species  # species handle
         self.mo: Model = self.species.mo  # model handle
@@ -1487,7 +1496,7 @@ class Reservoir(esbmtkBase):
                 if self.groupname == "None":
                     fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
                 else:
-                    filename =  f"{self.groupname}_{self.n}.pdf"
+                    filename = f"{self.groupname}_{self.n}.pdf"
                     fig.suptitle(
                         f"Group: {self.groupname}, Reservoir: {self.n}\n", size=16
                     )
@@ -1660,7 +1669,7 @@ class ReservoirGroup(esbmtkBase):
         # loop over all entries in species and create the respective reservoirs
         for i, s in enumerate(self.species):
             if not isinstance(s, Species):
-                raise ValueError(f"{s} needs to be a valid species name")
+                raise ValueError(f"{s.n} needs to be a valid species name")
 
             if self.concentration[s] == "None":
                 # create reservoir without registering it in the global name space
@@ -1885,7 +1894,7 @@ class Flux(esbmtkBase):
             print(
                 "Use help on the process name to get an explanation what this process does"
             )
-            if self.register == "yes":
+            if self.register == "None":
                 print(f"e.g., help({self.lop[0].n})")
             else:
                 print(f"e.g., help({self.register.name}.{self.lop[0].n})")
@@ -2041,7 +2050,7 @@ class SourceSinkGroup(esbmtkBase):
         # loop over names and setup sub-objects
         for i, s in enumerate(self.species):
             if not isinstance(s, Species):
-                raise ValueError(f"{s} needs to be a valid species name")
+                raise ValueError(f"{s.n} needs to be a valid species name")
 
             if type(self).__name__ == "SourceGroup":
                 a = Source(
@@ -2981,7 +2990,7 @@ class ExternalData(esbmtkBase):
 from .connections import Connection, ConnectionGroup
 from .processes import *
 from .species_definitions import carbon, sulfur, hydrogen, phosphor, oxygen, nitrogen, boron
-from .carbonate_chemisrty import *
+from .carbonate_chemistry import *
 #+END_SRC
 
 

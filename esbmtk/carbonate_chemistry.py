@@ -1,8 +1,3 @@
-
-* Ocean related modules
-
-** License
-#+BEGIN_SRC ipython :tangle 
 """
      esbmtk: A general purpose Earth Science box model toolkit
      Copyright (C), 2020-2021 Ulrich G. Wortmann
@@ -20,13 +15,7 @@
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-#+END_SRC
 
-
-
-** Global imports 
-
-#+BEGIN_SRC ipython :tangle carbonate_chemisrty.py
 from numbers import Number
 from nptyping import *
 from typing import *
@@ -42,12 +31,7 @@ import logging
 import time
 import builtins
 from .esbmtk import esbmtkBase, Model, Reservoir, VirtualReservoir
-#+END_SRC
 
-
-
-** The Seawater constants
-#+BEGIN_SRC ipython :tangle carbonate_chemisrty.py
 class SeawaterConstants(esbmtkBase):
     """Provide basic seawater properties as a function of T and Salinity.
     Pressure may come at a later stage
@@ -327,13 +311,7 @@ class SeawaterConstants(esbmtkBase):
         # print(lnkp)
 
         return exp(lnkp)
-#+End_SRC
 
-
-** Total alkalinity and pH
-
-
-#+BEGIN_SRC ipython :tangle carbonate_chemisrty.py
 def calc_H(
     i: int,
     a1: Union[Reservoir, VirtualReservoir],
@@ -391,7 +369,7 @@ def calc_H(
 
     gamm: float = DIC / CA
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
-    m: float = (0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))) + ext_h
+    m: float = (0.5 * ((gamm - 1) * k1 + (dummy ** 0.5)))
     l: float = 1.0
     h: float = 1.0
 
@@ -461,10 +439,7 @@ def calc_CA(
     h: float = 1
 
     return [m, l, h]
-#+END_SRC
 
-** pCO2
-#+BEGIN_SRC ipython :tangle carbonate_chemisrty.py
 def calc_pCO2(
     dic: Union[Reservoir, VirtualReservoir],
     hplus: Union[Reservoir, VirtualReservoir],
@@ -481,7 +456,6 @@ def calc_pCO2(
     Hplus: Reservoir = H+ concentrations in mol/liter
     SW: Seawater = Seawater object for the model
 
-    Limitations
     Author: T. Tsan
 
     """
@@ -497,4 +471,3 @@ def calc_pCO2(
     pco2: [NDArray, Float] = co2 / SW.K0 * 1E6
 
     return pco2
-#+END_SRC
