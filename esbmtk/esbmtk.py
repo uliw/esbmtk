@@ -50,11 +50,20 @@ class esbmtkBase(object):
         raise NotImplementedError
 
     def __global_defaults__(self) -> None:
-        """Initial variables which should be present in every object"""
-        self.lmo: list = []
+        """Initial variables which should be present in every object
+        Note that this is executed before we register the kwarhs as instance
+        variables
 
-        if "register" not in self.kwargs:
-            self.register = "None"
+        """
+
+        self.lmo: list = ["full_name", "register", "groupname", "ctype"]
+
+        for n in self.lmo:
+            if n not in self.kwargs:
+                self.kwargs[n] = "None"
+                logging.debug(
+                    f"set {self.kwargs['name']} self.kwargs[{n}] to {self.kwargs[n]}"
+                )
 
     def __validateandregister__(self, kwargs: Dict[str, any]) -> None:
         """Validate the user provided input key-value pairs. For this we need
@@ -96,7 +105,7 @@ class esbmtkBase(object):
         # this sub object.
 
         logging.debug(f"self.register = {self.register}")
-        if self.register == "None":  # Register is global namespace
+        if self.register == "None":  # Register in global namespace
             logging.debug(
                 f"Registering {self.name} in global namespace as type {type(self)}"
             )
@@ -108,19 +117,30 @@ class esbmtkBase(object):
                     raise NameError(f"{self.name} is a duplicate name. Please fix")
 
                 setattr(builtins, self.name, self)
+                self.full_name = self.name
                 self.mo.lmo.append(self)
                 self.mo.dmo.update({self.name: self})
 
         else:  # register in group namespace
             if isinstance(self, (Model, Element)):  # Model only exist in the global NS
                 setattr(builtins, self.name, self)
+                self.full_name = self.name
             else:  # not a model, and part of group
-                logging.debug(f"Registering {self.name} in {self.register.name} namespace")
+                logging.debug(
+                    f"Registering {self.name} in {self.register.name} namespace"
+                )
                 setattr(self.register, self.name, self)
-                # self.mo.lmo.append(self.name)
+                fn: str = f"{self.register.name}.{self.name}"
+                self.full_name = fn
+                if self.full_name in self.mo.lmo:
+                    raise NameError(f"{self.full_name} is a duplicate name. Please fix")
+                self.mo.lmo.append(self.full_name)
                 # setattr(builtins, self.name, self)
                 # self.mo.dmo.update({self.name: self})
 
+        # add fullname to kwargs so it shows up in __repr__
+        # its a dirty hack though
+        self.provided_kwargs["full_name"] = self.full_name
         logging.info(self.__repr__(1))
 
     def __validateinput__(self, kwargs: Dict[str, any]) -> None:
@@ -1097,6 +1117,7 @@ class Reservoir(esbmtkBase):
             "function": any,
             "display_precision": Number,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "full_name" :str,
             "a1": any,
             "a2": any,
             "a3": any,
@@ -1122,6 +1143,7 @@ class Reservoir(esbmtkBase):
             "function": "None",
             "groupname": "None",
             "register": "None",
+            "full_name": "Not Set",
             "a1": 0,
             "a2": 0,
             "a3": 0,

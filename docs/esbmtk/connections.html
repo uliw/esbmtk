@@ -99,7 +99,7 @@ class Connect(esbmtkBase):
 
      Parameters:
          - name: A string which determines the name of this object. Optional, if not provided
-           the connection name will be derived as &#34;Source_2_Sink_Connection&#34;
+           the connection name will be derived as &#34;C_Source_2_Sink&#34;
          - source: An object handle for a Source or Reservoir
          - sink: An object handle for a Sink or Reservoir
          - rate: A quantity (e.g., &#34;1 mol/s&#34;), optional
@@ -196,7 +196,7 @@ class Connect(esbmtkBase):
                 ctype = &#34;scale_with_flux&#34;,
                 ref = flux handle,
                 scale = a scaling factor, optional, defaults to 1
-                bypass :str = &#34;upstream&#34;/&#34;downstream&#34;
+                bypass :str = &#34;source&#34;/&#34;sink&#34;
                 )
 
     if bypass is set the flux will not affect the upstream or
@@ -344,14 +344,8 @@ class Connect(esbmtkBase):
             &#34;bypass&#34;: str,
         }
 
-        if &#34;name&#34; not in kwargs:
-            n = (
-                kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].n + &#34;_Connector&#34;
-            )  # set the name
-            kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
-
         # provide a list of absolutely required keywords
-        self.lrk: list = [&#34;name&#34;, &#34;source&#34;, &#34;sink&#34;]
+        self.lrk: list = [&#34;source&#34;, &#34;sink&#34;]
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
@@ -366,6 +360,7 @@ class Connect(esbmtkBase):
             &#34;signal&#34;: &#34;None&#34;,
             &#34;groupname&#34;: False,
             &#34;bypass&#34;: &#34;None&#34;,
+            &#34;name&#34;: &#34;None&#34;,
         }
 
         # validate and initialize instance variables
@@ -387,7 +382,7 @@ class Connect(esbmtkBase):
                 &#34;right&#34;: &#34;Number, list or Reservoir&#34;,
                 &#34;signal&#34;: &#34;Signal Handle&#34;,
                 &#34;groupname&#34;: &#34;True or False&#34;,
-                &#34;bypass&#34;: &#34;upstream/downstream&#34;,
+                &#34;bypass&#34;: &#34;source/sink&#34;,
             }
         )
 
@@ -399,8 +394,8 @@ class Connect(esbmtkBase):
 
         self.__validateandregister__(kwargs)
 
-        if kwargs[&#34;id&#34;] != &#34;None&#34;:
-            self.name = self.name + f&#34;_{self.id}&#34;
+        # if kwargs[&#34;id&#34;] != &#34;None&#34;:
+        #    self.name = self.name + f&#34;_{self.id}&#34;
         if &#34;pl&#34; in kwargs:
             self.lop: list[Process] = self.pl
         else:
@@ -433,6 +428,30 @@ class Connect(esbmtkBase):
         self.sink.loc.add(self)  # register connector with reservoir
         self.mo.loc.add(self)  # register connector with model
 
+        # if sink and source a regular, the name will be simply C_S_2_S
+        # if we deal with ReservoirGroups we need to reflect this in the
+        # connection name
+        if self.name == &#34;None&#34;:
+            if self.source.groupname == &#34;None&#34;:
+                son = self.source.name
+                # self.source_ref = self.source
+            else:
+                son = f&#34;{self.source.groupname}_{self.source.name}&#34;
+                # self.source_ref = &#34;{self.source.groupname}.{self.source}&#34;
+
+            if self.sink.groupname == &#34;None&#34;:
+                sin = self.sink.name
+                # self.sink_ref = self.sink
+            else:
+                sin = f&#34;{self.sink.groupname}_{self.sink.name}&#34;
+                # source=getattr(self.source, r.n),
+                # self.sink_ref = getattr(self.mo.dmo[])
+
+            if self.id == &#34;None&#34;:
+                self.name = f&#34;C_{son}_2_{sin}&#34;
+            else:
+                self.name = f&#34;C_{son}_2_{sin}_{self.id}&#34;
+
         self.__create_flux__()  # Source/Sink/Regular
 
         self.__set_process_type__()  # derive flux type and create flux(es)
@@ -442,7 +461,7 @@ class Connect(esbmtkBase):
         # This should probably move to register fluxes
         self.__register_process__()
 
-        if self.register == &#34;yes&#34;:
+        if self.register == &#34;None&#34;:
             print(f&#34;Created connection {self.name}&#34;)
         else:
             print(f&#34;Created group connection {self.register.name}.{self.name}&#34;)
@@ -494,20 +513,20 @@ class Connect(esbmtkBase):
         # flux name
         if self.groupname == False:
             if self.id == &#34;None&#34;:
-                n = self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_Flux&#34;
+                n = f&#34;F_{self.r1.n}_2_{self.r2.n}&#34;
             else:
-                n = self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_&#34; + self.id + &#34;_Flux&#34;
+                n = f&#34;F_{self.r1.n}_2_{self.r2.n}_{self.id}&#34;
         else:
             print(f&#34;Group name set&#34;)
             n = (
-                self.r1.groupname
+                &#34;F_&#34;
+                + self.r1.groupname
                 + &#34;_&#34;
                 + self.r1.n
                 + &#34;_2_&#34;
                 + self.r2.groupname
                 + &#34;_&#34;
                 + self.r2.n
-                + &#34;_Flux&#34;
             )
 
         # derive flux unit from species obbject
@@ -629,7 +648,7 @@ class Connect(esbmtkBase):
             self._rate = &#34;0 mmol/y&#34;
 
         # if connection type is not set explicitly
-        if self.ctype == &#34;None&#34;:
+        if self.ctype == &#34;None&#34; or self.ctype == &#34;Regular&#34;:
             # set the fundamental flux type based on the flux arguments given
             if self.delta != &#34;None&#34; and self.rate != &#34;None&#34;:
                 # self.__vardeltaout__()
@@ -723,20 +742,18 @@ class Connect(esbmtkBase):
             self.scale = self.k_value
             print(f&#34;\n Warning: use scale instead of k_value for scaleflux type\n&#34;)
 
-        if self.bypass == &#34;upstream&#34;:
-            target = self.sink
-        elif self.bypass == &#34;downstream&#34;:
-            target = self.source
-        elif self.bypass == &#34;None&#34;:
-            target = self.r
-        else:
-            raise ValueError(
-                f&#34;bypass must be None/upstream/downstream but not {self.bypass}&#34;
-            )
+        # if self.bypass == &#34;source&#34;:
+        #     target = self.sink
+        # elif self.bypass == &#34;sinks&#34;:
+        #     target = self.source
+        # elif self.bypass == &#34;None&#34;:
+        #     target = self.r
+        # else:
+        #     raise ValueError(f&#34;bypass must be None/source/sink but not {self.bypass}&#34;)
 
         ph = ScaleFlux(
             name=self.pn + &#34;_PSF&#34;,
-            reservoir=target,
+            reservoir=self.r,
             flux=self.fh,
             register=self.register,
             scale=self.scale,
@@ -1139,22 +1156,22 @@ class ConnectionGroup(esbmtkBase):
            rate = shared between all connections
            ref = shared between all connections
            species = list, optional, if present, only these species will be connected
-           ctype = needs to be set for all connections. Use &#34;None&#34;
+           ctype = needs to be set for all connections. Use &#34;Regular&#34;
                    unless you require a specific connection type
            pl = [list]) process list. optional, shared between all connections
            id = optional identifier, shared between all connections
            plot = &#34;yes/no&#34; # defaults to yes, shared between all connections
         )
 
-        Notes: if species is given as a list, shared arguments like, delta, alpha, rate, ref,
-        ctype pl, and plot can also be provided as list. As long as there is a one to one mapping
-        the species list and the list of a shared property, the shared property will be mapped
-        to each species, e.g.:
+        ConnectionGroup(
+                  source=OM_Weathering,
+                  sink=Ocean,
+                  rate={DIC: f&#34;{OM_w} Tmol/yr&#34; ,
+                        ALK: f&#34;{0} Tmol/yr&#34;},
+                  ctype = {DIC: &#34;Regular&#34;,
+                           ALK: &#34;Regular&#34;},
+    )
 
-        species = [CO, Hplus]
-        alpha = [1.02, 1.03]
-
-        will create two connections, the first one with an alpha of 1.02, and the second with an alpha of 1.03
 
     &#34;&#34;&#34;
 
@@ -1180,10 +1197,7 @@ class ConnectionGroup(esbmtkBase):
 
         self.base_name = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name
 
-        n = (
-            kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name + &#34;_ConnectionGroup&#34;
-        )  # set the name
-
+        n = f&#34;CG_{kwargs[&#39;source&#39;].name}_2_{kwargs[&#39;sink&#39;].name}&#34;
         # set connection group name
         kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
 
@@ -1192,14 +1206,16 @@ class ConnectionGroup(esbmtkBase):
         self.__validateandregister__(kwargs)
         # # self.source.lor is a  list with the object names in the group
         self.mo = self.sink.lor[0].mo
-        self.loc :list = [] # list of connection objects
+        self.loc: list = []  # list of connection objects
 
         # find all sub reservoirs which have been specified by the ctype keyword
         self.connections: list = []
         for r in self.source.lor:
+            if self.ctype == &#34;None&#34;:
+                raise ValueError(f&#34;Connectiongroup {self.name} must specify &#39;ctype&#39;. See help(Connectiongroup)&#34;)
             if r.sp in self.ctype:
                 self.connections.append(r)
-                print(f&#34;found species {r.sp.n}&#34;)
+                logging.debug(f&#34;found species {r.sp.n}&#34;)
 
         # now we need to create defaults for all connections
         # we setup a dict like this  {SO4:{cid:xxx,plot:xxx}}
@@ -1222,7 +1238,7 @@ class ConnectionGroup(esbmtkBase):
                         # update the entry
                         self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
             # now we can create the connection
-            name = f&#34;{r.n}_Connector&#34;
+            name = f&#34;C_{r.n}&#34;
             a = Connect(
                 name=name,
                 source=getattr(self.source, r.n),
@@ -1233,7 +1249,7 @@ class ConnectionGroup(esbmtkBase):
                 plot=self.cd[r.n][&#34;plot&#34;],
                 ctype=self.cd[r.n][&#34;ctype&#34;],
                 scale=self.cd[r.n][&#34;scale&#34;],
-                groupname = True,
+                groupname=True,
                 id=self.cd[r.n][&#34;cid&#34;],
                 register=self,
             )
@@ -1280,7 +1296,7 @@ which stores all connection properties.</p>
 For complex connections, the flux type must be set explicitly. See the examples below:</p>
 <p>Parameters:
 - name: A string which determines the name of this object. Optional, if not provided
-the connection name will be derived as "Source_2_Sink_Connection"
+the connection name will be derived as "C_Source_2_Sink"
 - source: An object handle for a Source or Reservoir
 - sink: An object handle for a Sink or Reservoir
 - rate: A quantity (e.g., "1 mol/s"), optional
@@ -1366,7 +1382,7 @@ recognized</p>
         ctype = "scale_with_flux",
         ref = flux handle,
         scale = a scaling factor, optional, defaults to 1
-        bypass :str = "upstream"/"downstream"
+        bypass :str = "source"/"sink"
         )
 </code></pre>
 <p>if bypass is set the flux will not affect the upstream or
@@ -1474,7 +1490,7 @@ between =left=and =right=</li>
 
      Parameters:
          - name: A string which determines the name of this object. Optional, if not provided
-           the connection name will be derived as &#34;Source_2_Sink_Connection&#34;
+           the connection name will be derived as &#34;C_Source_2_Sink&#34;
          - source: An object handle for a Source or Reservoir
          - sink: An object handle for a Sink or Reservoir
          - rate: A quantity (e.g., &#34;1 mol/s&#34;), optional
@@ -1571,7 +1587,7 @@ between =left=and =right=</li>
                 ctype = &#34;scale_with_flux&#34;,
                 ref = flux handle,
                 scale = a scaling factor, optional, defaults to 1
-                bypass :str = &#34;upstream&#34;/&#34;downstream&#34;
+                bypass :str = &#34;source&#34;/&#34;sink&#34;
                 )
 
     if bypass is set the flux will not affect the upstream or
@@ -1719,14 +1735,8 @@ between =left=and =right=</li>
             &#34;bypass&#34;: str,
         }
 
-        if &#34;name&#34; not in kwargs:
-            n = (
-                kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].n + &#34;_Connector&#34;
-            )  # set the name
-            kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
-
         # provide a list of absolutely required keywords
-        self.lrk: list = [&#34;name&#34;, &#34;source&#34;, &#34;sink&#34;]
+        self.lrk: list = [&#34;source&#34;, &#34;sink&#34;]
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
@@ -1741,6 +1751,7 @@ between =left=and =right=</li>
             &#34;signal&#34;: &#34;None&#34;,
             &#34;groupname&#34;: False,
             &#34;bypass&#34;: &#34;None&#34;,
+            &#34;name&#34;: &#34;None&#34;,
         }
 
         # validate and initialize instance variables
@@ -1762,7 +1773,7 @@ between =left=and =right=</li>
                 &#34;right&#34;: &#34;Number, list or Reservoir&#34;,
                 &#34;signal&#34;: &#34;Signal Handle&#34;,
                 &#34;groupname&#34;: &#34;True or False&#34;,
-                &#34;bypass&#34;: &#34;upstream/downstream&#34;,
+                &#34;bypass&#34;: &#34;source/sink&#34;,
             }
         )
 
@@ -1774,8 +1785,8 @@ between =left=and =right=</li>
 
         self.__validateandregister__(kwargs)
 
-        if kwargs[&#34;id&#34;] != &#34;None&#34;:
-            self.name = self.name + f&#34;_{self.id}&#34;
+        # if kwargs[&#34;id&#34;] != &#34;None&#34;:
+        #    self.name = self.name + f&#34;_{self.id}&#34;
         if &#34;pl&#34; in kwargs:
             self.lop: list[Process] = self.pl
         else:
@@ -1808,6 +1819,30 @@ between =left=and =right=</li>
         self.sink.loc.add(self)  # register connector with reservoir
         self.mo.loc.add(self)  # register connector with model
 
+        # if sink and source a regular, the name will be simply C_S_2_S
+        # if we deal with ReservoirGroups we need to reflect this in the
+        # connection name
+        if self.name == &#34;None&#34;:
+            if self.source.groupname == &#34;None&#34;:
+                son = self.source.name
+                # self.source_ref = self.source
+            else:
+                son = f&#34;{self.source.groupname}_{self.source.name}&#34;
+                # self.source_ref = &#34;{self.source.groupname}.{self.source}&#34;
+
+            if self.sink.groupname == &#34;None&#34;:
+                sin = self.sink.name
+                # self.sink_ref = self.sink
+            else:
+                sin = f&#34;{self.sink.groupname}_{self.sink.name}&#34;
+                # source=getattr(self.source, r.n),
+                # self.sink_ref = getattr(self.mo.dmo[])
+
+            if self.id == &#34;None&#34;:
+                self.name = f&#34;C_{son}_2_{sin}&#34;
+            else:
+                self.name = f&#34;C_{son}_2_{sin}_{self.id}&#34;
+
         self.__create_flux__()  # Source/Sink/Regular
 
         self.__set_process_type__()  # derive flux type and create flux(es)
@@ -1817,7 +1852,7 @@ between =left=and =right=</li>
         # This should probably move to register fluxes
         self.__register_process__()
 
-        if self.register == &#34;yes&#34;:
+        if self.register == &#34;None&#34;:
             print(f&#34;Created connection {self.name}&#34;)
         else:
             print(f&#34;Created group connection {self.register.name}.{self.name}&#34;)
@@ -1869,20 +1904,20 @@ between =left=and =right=</li>
         # flux name
         if self.groupname == False:
             if self.id == &#34;None&#34;:
-                n = self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_Flux&#34;
+                n = f&#34;F_{self.r1.n}_2_{self.r2.n}&#34;
             else:
-                n = self.r1.n + &#34;_2_&#34; + self.r2.n + &#34;_&#34; + self.id + &#34;_Flux&#34;
+                n = f&#34;F_{self.r1.n}_2_{self.r2.n}_{self.id}&#34;
         else:
             print(f&#34;Group name set&#34;)
             n = (
-                self.r1.groupname
+                &#34;F_&#34;
+                + self.r1.groupname
                 + &#34;_&#34;
                 + self.r1.n
                 + &#34;_2_&#34;
                 + self.r2.groupname
                 + &#34;_&#34;
                 + self.r2.n
-                + &#34;_Flux&#34;
             )
 
         # derive flux unit from species obbject
@@ -2004,7 +2039,7 @@ between =left=and =right=</li>
             self._rate = &#34;0 mmol/y&#34;
 
         # if connection type is not set explicitly
-        if self.ctype == &#34;None&#34;:
+        if self.ctype == &#34;None&#34; or self.ctype == &#34;Regular&#34;:
             # set the fundamental flux type based on the flux arguments given
             if self.delta != &#34;None&#34; and self.rate != &#34;None&#34;:
                 # self.__vardeltaout__()
@@ -2098,20 +2133,18 @@ between =left=and =right=</li>
             self.scale = self.k_value
             print(f&#34;\n Warning: use scale instead of k_value for scaleflux type\n&#34;)
 
-        if self.bypass == &#34;upstream&#34;:
-            target = self.sink
-        elif self.bypass == &#34;downstream&#34;:
-            target = self.source
-        elif self.bypass == &#34;None&#34;:
-            target = self.r
-        else:
-            raise ValueError(
-                f&#34;bypass must be None/upstream/downstream but not {self.bypass}&#34;
-            )
+        # if self.bypass == &#34;source&#34;:
+        #     target = self.sink
+        # elif self.bypass == &#34;sinks&#34;:
+        #     target = self.source
+        # elif self.bypass == &#34;None&#34;:
+        #     target = self.r
+        # else:
+        #     raise ValueError(f&#34;bypass must be None/source/sink but not {self.bypass}&#34;)
 
         ph = ScaleFlux(
             name=self.pn + &#34;_PSF&#34;,
-            reservoir=target,
+            reservoir=self.r,
             flux=self.fh,
             register=self.register,
             scale=self.scale,
@@ -2690,23 +2723,22 @@ after creation</p>
    rate = shared between all connections
    ref = shared between all connections
    species = list, optional, if present, only these species will be connected
-   ctype = needs to be set for all connections. Use "None"
+   ctype = needs to be set for all connections. Use "Regular"
            unless you require a specific connection type
    pl = [list]) process list. optional, shared between all connections
    id = optional identifier, shared between all connections
    plot = "yes/no" # defaults to yes, shared between all connections
 )
 
-Notes: if species is given as a list, shared arguments like, delta, alpha, rate, ref,
-ctype pl, and plot can also be provided as list. As long as there is a one to one mapping
-the species list and the list of a shared property, the shared property will be mapped
-to each species, e.g.:
-
-species = [CO, Hplus]
-alpha = [1.02, 1.03]
-
-will create two connections, the first one with an alpha of 1.02, and the second with an alpha of 1.03
-</code></pre></div>
+ConnectionGroup(
+          source=OM_Weathering,
+          sink=Ocean,
+          rate={DIC: f"{OM_w} Tmol/yr" ,
+                ALK: f"{0} Tmol/yr"},
+          ctype = {DIC: "Regular",
+                   ALK: "Regular"},
+</code></pre>
+<p>)</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
@@ -2732,22 +2764,22 @@ will create two connections, the first one with an alpha of 1.02, and the second
            rate = shared between all connections
            ref = shared between all connections
            species = list, optional, if present, only these species will be connected
-           ctype = needs to be set for all connections. Use &#34;None&#34;
+           ctype = needs to be set for all connections. Use &#34;Regular&#34;
                    unless you require a specific connection type
            pl = [list]) process list. optional, shared between all connections
            id = optional identifier, shared between all connections
            plot = &#34;yes/no&#34; # defaults to yes, shared between all connections
         )
 
-        Notes: if species is given as a list, shared arguments like, delta, alpha, rate, ref,
-        ctype pl, and plot can also be provided as list. As long as there is a one to one mapping
-        the species list and the list of a shared property, the shared property will be mapped
-        to each species, e.g.:
+        ConnectionGroup(
+                  source=OM_Weathering,
+                  sink=Ocean,
+                  rate={DIC: f&#34;{OM_w} Tmol/yr&#34; ,
+                        ALK: f&#34;{0} Tmol/yr&#34;},
+                  ctype = {DIC: &#34;Regular&#34;,
+                           ALK: &#34;Regular&#34;},
+    )
 
-        species = [CO, Hplus]
-        alpha = [1.02, 1.03]
-
-        will create two connections, the first one with an alpha of 1.02, and the second with an alpha of 1.03
 
     &#34;&#34;&#34;
 
@@ -2773,10 +2805,7 @@ will create two connections, the first one with an alpha of 1.02, and the second
 
         self.base_name = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name
 
-        n = (
-            kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name + &#34;_ConnectionGroup&#34;
-        )  # set the name
-
+        n = f&#34;CG_{kwargs[&#39;source&#39;].name}_2_{kwargs[&#39;sink&#39;].name}&#34;
         # set connection group name
         kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
 
@@ -2785,14 +2814,16 @@ will create two connections, the first one with an alpha of 1.02, and the second
         self.__validateandregister__(kwargs)
         # # self.source.lor is a  list with the object names in the group
         self.mo = self.sink.lor[0].mo
-        self.loc :list = [] # list of connection objects
+        self.loc: list = []  # list of connection objects
 
         # find all sub reservoirs which have been specified by the ctype keyword
         self.connections: list = []
         for r in self.source.lor:
+            if self.ctype == &#34;None&#34;:
+                raise ValueError(f&#34;Connectiongroup {self.name} must specify &#39;ctype&#39;. See help(Connectiongroup)&#34;)
             if r.sp in self.ctype:
                 self.connections.append(r)
-                print(f&#34;found species {r.sp.n}&#34;)
+                logging.debug(f&#34;found species {r.sp.n}&#34;)
 
         # now we need to create defaults for all connections
         # we setup a dict like this  {SO4:{cid:xxx,plot:xxx}}
@@ -2815,7 +2846,7 @@ will create two connections, the first one with an alpha of 1.02, and the second
                         # update the entry
                         self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
             # now we can create the connection
-            name = f&#34;{r.n}_Connector&#34;
+            name = f&#34;C_{r.n}&#34;
             a = Connect(
                 name=name,
                 source=getattr(self.source, r.n),
@@ -2826,7 +2857,7 @@ will create two connections, the first one with an alpha of 1.02, and the second
                 plot=self.cd[r.n][&#34;plot&#34;],
                 ctype=self.cd[r.n][&#34;ctype&#34;],
                 scale=self.cd[r.n][&#34;scale&#34;],
-                groupname = True,
+                groupname=True,
                 id=self.cd[r.n][&#34;cid&#34;],
                 register=self,
             )
