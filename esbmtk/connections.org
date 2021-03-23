@@ -519,7 +519,6 @@ class Connect(esbmtkBase):
             else:
                 n = f"F_{self.r1.n}_2_{self.r2.n}_{self.id}"
         else:
-            print(f"Group name set")
             n = (
                 "F_"
                 + self.r1.groupname
@@ -650,7 +649,7 @@ class Connect(esbmtkBase):
             self._rate = "0 mmol/y"
 
         # if connection type is not set explicitly
-        if self.ctype == "None":
+        if self.ctype == "None" or self.ctype == "Regular":
             # set the fundamental flux type based on the flux arguments given
             if self.delta != "None" and self.rate != "None":
                 # self.__vardeltaout__()
@@ -1165,22 +1164,22 @@ class ConnectionGroup(esbmtkBase):
            rate = shared between all connections
            ref = shared between all connections
            species = list, optional, if present, only these species will be connected
-           ctype = needs to be set for all connections. Use "None"
+           ctype = needs to be set for all connections. Use "Regular"
                    unless you require a specific connection type
            pl = [list]) process list. optional, shared between all connections
            id = optional identifier, shared between all connections
            plot = "yes/no" # defaults to yes, shared between all connections
         )
 
-        Notes: if species is given as a list, shared arguments like, delta, alpha, rate, ref,
-        ctype pl, and plot can also be provided as list. As long as there is a one to one mapping
-        the species list and the list of a shared property, the shared property will be mapped
-        to each species, e.g.:
+        ConnectionGroup(
+                  source=OM_Weathering,
+                  sink=Ocean,
+                  rate={DIC: f"{OM_w} Tmol/yr" ,
+                        ALK: f"{0} Tmol/yr"},
+                  ctype = {DIC: "Regular",
+                           ALK: "Regular"},
+    )
 
-        species = [CO, Hplus]
-        alpha = [1.02, 1.03]
-
-        will create two connections, the first one with an alpha of 1.02, and the second with an alpha of 1.03
 
     """
 
@@ -1220,9 +1219,11 @@ class ConnectionGroup(esbmtkBase):
         # find all sub reservoirs which have been specified by the ctype keyword
         self.connections: list = []
         for r in self.source.lor:
+            if self.ctype == "None":
+                raise ValueError(f"Connectiongroup {self.name} must specify 'ctype'. See help(Connectiongroup)")
             if r.sp in self.ctype:
                 self.connections.append(r)
-                print(f"found species {r.sp.n}")
+                logging.debug(f"found species {r.sp.n}")
 
         # now we need to create defaults for all connections
         # we setup a dict like this  {SO4:{cid:xxx,plot:xxx}}
