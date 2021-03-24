@@ -1174,7 +1174,7 @@ class Reservoir(esbmtkBase):
             "function": any,
             "display_precision": Number,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
-            "full_name" :str,
+            "full_name": str,
             "a1": any,
             "a2": any,
             "a3": any,
@@ -1369,7 +1369,7 @@ class Reservoir(esbmtkBase):
 
         sdn = self.sp.dn  # delta name
         sds = f"[{self.sp.ds}]"  # delta scale
-        rn = self.n  # reservoir name
+        rn = self.full_name  # reservoir name
         mn = self.sp.mo.n  # model name
         fn = f"{prefix}{mn}_{rn}.csv"  # file name
 
