@@ -403,9 +403,9 @@ class Connect(esbmtkBase):
                 # self.sink_ref = getattr(self.mo.dmo[])
 
             if self.id == "None":
-                self.name = f"C_{son}_2_{sin}"
+                self.name = f"{son}_2_{sin}"
             else:
-                self.name = f"C_{son}_2_{sin}_{self.id}"
+                self.name = f"{son}_2_{sin}_{self.id}"
 
         self.__create_flux__()  # Source/Sink/Regular
 
@@ -416,10 +416,12 @@ class Connect(esbmtkBase):
         # This should probably move to register fluxes
         self.__register_process__()
 
-        if self.register == "None":
-            print(f"Created connection {self.name}")
-        else:
-            print(f"Created group connection {self.register.name}.{self.name}")
+        # if self.register == "None":
+        #     print(f"Created connection {self.name}")
+        # else:
+        #     print(f"Created connection {self.register.name}.{self.name}")
+
+        print(f"Created {self.full_name}")
 
     def update(self, **kwargs):
         """Update connection properties. This will delete existing processes
@@ -466,23 +468,13 @@ class Connect(esbmtkBase):
             r = self.rate
 
         # flux name
-        if self.groupname == False:
-            if self.id == "None":
-                n = f"F_{self.r1.n}_2_{self.r2.n}"
-            else:
-                n = f"F_{self.r1.n}_2_{self.r2.n}_{self.id}"
+        # if self.groupname == False:
+        if self.id == "None":
+            n = f"{self.r1.n}_2_{self.r2.n}"
         else:
-            print(f"Group name set")
-            n = (
-                "F_"
-                + self.r1.groupname
-                + "_"
-                + self.r1.n
-                + "_2_"
-                + self.r2.groupname
-                + "_"
-                + self.r2.n
-            )
+            n = f"{self.r1.n}_2_{self.r2.n}_{self.id}"
+        # else:
+        #    n = "F_" + self.r1.full_name + "_2_" + self.r2.full_name
 
         # derive flux unit from species obbject
         funit = self.sp.mu + "/" + str(self.sp.mo.bu)  # xxx
@@ -563,7 +555,7 @@ class Connect(esbmtkBase):
                         lt=p.data,
                     )
                     self.lop.insert(0, n)  # signals must come first
-                    print(f"Inserting {n.n} in {self.name} for {self.r.n}")
+                    logging.debug(f"Inserting {n.n} in {self.name} for {self.r.n}")
                 else:
                     raise ValueError(f"Signal type {p.ty} is not defined")
 
@@ -1152,7 +1144,7 @@ class ConnectionGroup(esbmtkBase):
 
         self.base_name = kwargs["source"].name + "_2_" + kwargs["sink"].name
 
-        n = f"CG_{kwargs['source'].name}_2_{kwargs['sink'].name}"
+        n = f"C_{kwargs['source'].name}2{kwargs['sink'].name}"
         # set connection group name
         kwargs.update({"name": n})  # and add it to the kwargs
 
@@ -1167,7 +1159,9 @@ class ConnectionGroup(esbmtkBase):
         self.connections: list = []
         for r in self.source.lor:
             if self.ctype == "None":
-                raise ValueError(f"Connectiongroup {self.name} must specify 'ctype'. See help(Connectiongroup)")
+                raise ValueError(
+                    f"Connectiongroup {self.name} must specify 'ctype'. See help(Connectiongroup)"
+                )
             if r.sp in self.ctype:
                 self.connections.append(r)
                 logging.debug(f"found species {r.sp.n}")
@@ -1193,7 +1187,7 @@ class ConnectionGroup(esbmtkBase):
                         # update the entry
                         self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
             # now we can create the connection
-            name = f"C_{r.n}"
+            name = f"{r.n}"
             a = Connect(
                 name=name,
                 source=getattr(self.source, r.n),

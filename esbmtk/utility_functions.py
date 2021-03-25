@@ -389,10 +389,10 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     # adjust display properties for title and legend
 
     if isinstance(obj, (Reservoir)):
-        ax1.set_title(obj.pt)
+        #ax1.set_title(obj.pt)
+        ax1.set_title(obj.full_name)
     else:
-        ax1.set_title(obj.n)
-        
+        ax1.set_title(obj.full_name)
 
     plt.rcParams["axes.titlepad"] = 14  # offset title upwards
     plt.rcParams["legend.facecolor"] = "0.8"  # show a gray background
@@ -435,26 +435,28 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     # if (yl_max - yl_min) < 0.1:
 
 def is_name_in_list(n: str, l: list) -> bool:
-    """ Test if an object name is part of the object list
-    
-    """
+    """Test if an object name is part of the object list"""
 
     r: bool = False
     for e in l:
-        if e.n == n:
+        if e.full_name == n:
             r = True
     return r
 
 
-def get_object_from_list(n: str, l: list) -> any:
-    """ Match a name to a list of objects. Return the object
-    
-    """
+def get_object_from_list(name: str, l: list) -> any:
+    """Match a name to a list of objects. Return the object"""
 
+    match: bool = False
     for o in l:
-        if o.n == n:
+        if o.full_name == name:
             r = o
-    return r
+            match = True
+
+    if match:
+        return r
+    else:
+        raise ValueError(f"Object = {o.full_name} has no matching flux {name}")
 
 def sort_by_type(l: list, t: list, m: str) -> list:
     """divide a list by type into new lists. This function will return a
