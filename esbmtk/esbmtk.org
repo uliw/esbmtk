@@ -1375,19 +1375,24 @@ class Reservoir(esbmtkBase):
 
         # build the dataframe
         df: pd.dataframe = DataFrame()
+        n: str = self.full_name
 
-        df[f"{self.n} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
-        df[f"{self.n} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
-        df[f"{self.n} {sp.ln} [{smu}]"] = self.l[start:stop:stride]  # light isotope
-        df[f"{self.n} {sp.hn} [{smu}]"] = self.h[start:stop:stride]  # heavy isotope
-        df[f"{self.n} {sdn} [{sds}]"] = self.d[start:stop:stride]  # delta value
-        df[f"{self.n} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
+        df[f"{n} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
+        df[f"{n} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
+        df[f"{n} {sp.ln} [{smu}]"] = self.l[start:stop:stride]  # light isotope
+        df[f"{n} {sp.hn} [{smu}]"] = self.h[start:stop:stride]  # heavy isotope
+        df[f"{n} {sdn} [{sds}]"] = self.d[start:stop:stride]  # delta value
+        df[f"{n} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
 
         for f in self.lof:  # Assemble the headers and data for the reservoir fluxes
-            df[f"{f.n} {sn} [{fmu}]"] = f.m[start:stop:stride]  # mass
-            df[f"{f.n} {sn} [{sp.ln}]"] = f.l[start:stop:stride]  # light isotope
-            df[f"{f.n} {sn} [{sp.hn}]"] = f.h[start:stop:stride]  # heavy isotope
-            df[f"{f.n} {sn} {sdn} [{sds}]"] = f.d[start:stop:stride]  # delta
+            df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]  # mass
+            df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[
+                start:stop:stride
+            ]  # light isotope
+            df[f"{f.full_name} {sn} [{sp.hn}]"] = f.h[
+                start:stop:stride
+            ]  # heavy isotope
+            df[f"{f.full_name} {sn} {sdn} [{sds}]"] = f.d[start:stop:stride]  # delta
 
         df.to_csv(fn, index=False)  # Write dataframe to file
         return df
@@ -1413,19 +1418,23 @@ class Reservoir(esbmtkBase):
         read: set = set()
         curr: set = set()
 
-        # get a set of all current fluxes
-        for e in self.lof:
-            curr.add(e.name)
-
-        fn = "state_" + self.mo.n + "_" + self.n + ".csv"
+        fn = f"state_{self.mo.n}_{self.full_name}.csv"
+        logging.info(f"reading state for {self.full_name} from {fn}")
 
         if not os.path.exists(fn):
-            print(f"Cannot find {fn}\n")
-            raise FileNotFoundError(f"{fn} does not exist")
+            raise FileNotFoundError(
+                f"Flux {fn} does not exist in Reservoir {self.full_name}"
+            )
 
-        df: pd.DataFrame = pd.read_csv(fn)
-        headers = list(df.columns.values)
-        self.df = df
+        # get a set of all current fluxes
+        for f in self.lof:
+            curr.add(f.full_name)
+            logging.debug(f"    Adding Flux {f.full_name} to list of fluxes to read")
+
+        self.df: pd.DataFrame = pd.read_csv(fn)
+        self.headers: list = list(self.df.columns.values)
+        df = self.df
+        headers = self.headers
 
         # the headers contain the object name for each data in the
         # reservoir or flux thus, we must reduce the list to unique
@@ -1441,22 +1450,27 @@ class Reservoir(esbmtkBase):
         i: int = 0
         for n in header_list:
             name = n.split(" ")[0]
+            logging.debug(f"Looking for {name}")
             # this finds the reservoir name
-            if name == self.name:
+            if name == self.full_name:
+                logging.debug(f"found reservoir data for {name}")
                 col = self.__assign__data__(self, df, col, True)
             # this loops over all fluxes in a reservoir
             elif is_name_in_list(name, self.lof):
+                logging.debug(f"{name} is in {self.full_name}.lof")
                 obj = get_object_from_list(name, self.lof)
-                read.add(obj.name)
+                logging.debug(
+                    f"found object {obj.full_name} adding flux data for {name}"
+                )
+                read.add(obj.full_name)
                 col = self.__assign__data__(obj, df, col, False)
                 i += 1
             else:
-                print(f"No '{name}' in {self.n}\n")
-                raise ValueError("Unable to find Reservoir of Flux Name")
+                raise ValueError(f"Unable to find Flux {n} in {self.full_name}")
 
         # test if we missed any fluxes
-        for e in list(curr.difference(read)):
-            print(f"\n Warning: Did not find values for '{e}'\n")
+        for f in list(curr.difference(read)):
+            print(f"\n Warning: Did not find values for {f}\n")
 
     def __assign__data__(self, obj: any, df: pd.DataFrame, col: int, res: bool) -> int:
         """
@@ -1492,7 +1506,7 @@ class Reservoir(esbmtkBase):
         # xl = f"Time [{model.bu}]"
 
         size, geo = get_plot_layout(self)  # adjust layout
-        filename = f"{model.n}_{self.n}.pdf"
+        filename = f"{model.n}_{self.full_name}.pdf"
         fn = 1  # counter for the figure number
 
         plt.style.use(model.plot_style)
@@ -1518,7 +1532,7 @@ class Reservoir(esbmtkBase):
                 if self.groupname == "None":
                     fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
                 else:
-                    filename = f"{self.groupname}_{self.n}.pdf"
+                    # filename = f"{self.groupname}_{self.n}.pdf"
                     fig.suptitle(
                         f"Group: {self.groupname}, Reservoir: {self.n}\n", size=16
                     )
