@@ -2824,7 +2824,8 @@ class VirtualReservoir(Reservoir):
             if key not in allowed_keys:
                 raise ValueError("you can only change a1 to a6")
             else:
-                setattr(self.gfh, key, value)
+                setattr(self, key, value) # update self
+                setattr(self.gfh, key, value) #update function
 #+END_SRC
 
 
