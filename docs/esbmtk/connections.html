@@ -448,9 +448,9 @@ class Connect(esbmtkBase):
                 # self.sink_ref = getattr(self.mo.dmo[])
 
             if self.id == &#34;None&#34;:
-                self.name = f&#34;C_{son}_2_{sin}&#34;
+                self.name = f&#34;{son}_2_{sin}&#34;
             else:
-                self.name = f&#34;C_{son}_2_{sin}_{self.id}&#34;
+                self.name = f&#34;{son}_2_{sin}_{self.id}&#34;
 
         self.__create_flux__()  # Source/Sink/Regular
 
@@ -461,10 +461,12 @@ class Connect(esbmtkBase):
         # This should probably move to register fluxes
         self.__register_process__()
 
-        if self.register == &#34;None&#34;:
-            print(f&#34;Created connection {self.name}&#34;)
-        else:
-            print(f&#34;Created group connection {self.register.name}.{self.name}&#34;)
+        # if self.register == &#34;None&#34;:
+        #     print(f&#34;Created connection {self.name}&#34;)
+        # else:
+        #     print(f&#34;Created connection {self.register.name}.{self.name}&#34;)
+
+        print(f&#34;Created {self.full_name}&#34;)
 
     def update(self, **kwargs):
         &#34;&#34;&#34;Update connection properties. This will delete existing processes
@@ -511,23 +513,13 @@ class Connect(esbmtkBase):
             r = self.rate
 
         # flux name
-        if self.groupname == False:
-            if self.id == &#34;None&#34;:
-                n = f&#34;F_{self.r1.n}_2_{self.r2.n}&#34;
-            else:
-                n = f&#34;F_{self.r1.n}_2_{self.r2.n}_{self.id}&#34;
+        # if self.groupname == False:
+        if self.id == &#34;None&#34;:
+            n = f&#34;{self.r1.n}_2_{self.r2.n}&#34;
         else:
-            print(f&#34;Group name set&#34;)
-            n = (
-                &#34;F_&#34;
-                + self.r1.groupname
-                + &#34;_&#34;
-                + self.r1.n
-                + &#34;_2_&#34;
-                + self.r2.groupname
-                + &#34;_&#34;
-                + self.r2.n
-            )
+            n = f&#34;{self.r1.n}_2_{self.r2.n}_{self.id}&#34;
+        # else:
+        #    n = &#34;F_&#34; + self.r1.full_name + &#34;_2_&#34; + self.r2.full_name
 
         # derive flux unit from species obbject
         funit = self.sp.mu + &#34;/&#34; + str(self.sp.mo.bu)  # xxx
@@ -608,7 +600,7 @@ class Connect(esbmtkBase):
                         lt=p.data,
                     )
                     self.lop.insert(0, n)  # signals must come first
-                    print(f&#34;Inserting {n.n} in {self.name} for {self.r.n}&#34;)
+                    logging.debug(f&#34;Inserting {n.n} in {self.name} for {self.r.n}&#34;)
                 else:
                     raise ValueError(f&#34;Signal type {p.ty} is not defined&#34;)
 
@@ -1197,7 +1189,7 @@ class ConnectionGroup(esbmtkBase):
 
         self.base_name = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name
 
-        n = f&#34;CG_{kwargs[&#39;source&#39;].name}_2_{kwargs[&#39;sink&#39;].name}&#34;
+        n = f&#34;C_{kwargs[&#39;source&#39;].name}2{kwargs[&#39;sink&#39;].name}&#34;
         # set connection group name
         kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
 
@@ -1212,7 +1204,9 @@ class ConnectionGroup(esbmtkBase):
         self.connections: list = []
         for r in self.source.lor:
             if self.ctype == &#34;None&#34;:
-                raise ValueError(f&#34;Connectiongroup {self.name} must specify &#39;ctype&#39;. See help(Connectiongroup)&#34;)
+                raise ValueError(
+                    f&#34;Connectiongroup {self.name} must specify &#39;ctype&#39;. See help(Connectiongroup)&#34;
+                )
             if r.sp in self.ctype:
                 self.connections.append(r)
                 logging.debug(f&#34;found species {r.sp.n}&#34;)
@@ -1238,7 +1232,7 @@ class ConnectionGroup(esbmtkBase):
                         # update the entry
                         self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
             # now we can create the connection
-            name = f&#34;C_{r.n}&#34;
+            name = f&#34;{r.n}&#34;
             a = Connect(
                 name=name,
                 source=getattr(self.source, r.n),
@@ -1839,9 +1833,9 @@ between =left=and =right=</li>
                 # self.sink_ref = getattr(self.mo.dmo[])
 
             if self.id == &#34;None&#34;:
-                self.name = f&#34;C_{son}_2_{sin}&#34;
+                self.name = f&#34;{son}_2_{sin}&#34;
             else:
-                self.name = f&#34;C_{son}_2_{sin}_{self.id}&#34;
+                self.name = f&#34;{son}_2_{sin}_{self.id}&#34;
 
         self.__create_flux__()  # Source/Sink/Regular
 
@@ -1852,10 +1846,12 @@ between =left=and =right=</li>
         # This should probably move to register fluxes
         self.__register_process__()
 
-        if self.register == &#34;None&#34;:
-            print(f&#34;Created connection {self.name}&#34;)
-        else:
-            print(f&#34;Created group connection {self.register.name}.{self.name}&#34;)
+        # if self.register == &#34;None&#34;:
+        #     print(f&#34;Created connection {self.name}&#34;)
+        # else:
+        #     print(f&#34;Created connection {self.register.name}.{self.name}&#34;)
+
+        print(f&#34;Created {self.full_name}&#34;)
 
     def update(self, **kwargs):
         &#34;&#34;&#34;Update connection properties. This will delete existing processes
@@ -1902,23 +1898,13 @@ between =left=and =right=</li>
             r = self.rate
 
         # flux name
-        if self.groupname == False:
-            if self.id == &#34;None&#34;:
-                n = f&#34;F_{self.r1.n}_2_{self.r2.n}&#34;
-            else:
-                n = f&#34;F_{self.r1.n}_2_{self.r2.n}_{self.id}&#34;
+        # if self.groupname == False:
+        if self.id == &#34;None&#34;:
+            n = f&#34;{self.r1.n}_2_{self.r2.n}&#34;
         else:
-            print(f&#34;Group name set&#34;)
-            n = (
-                &#34;F_&#34;
-                + self.r1.groupname
-                + &#34;_&#34;
-                + self.r1.n
-                + &#34;_2_&#34;
-                + self.r2.groupname
-                + &#34;_&#34;
-                + self.r2.n
-            )
+            n = f&#34;{self.r1.n}_2_{self.r2.n}_{self.id}&#34;
+        # else:
+        #    n = &#34;F_&#34; + self.r1.full_name + &#34;_2_&#34; + self.r2.full_name
 
         # derive flux unit from species obbject
         funit = self.sp.mu + &#34;/&#34; + str(self.sp.mo.bu)  # xxx
@@ -1999,7 +1985,7 @@ between =left=and =right=</li>
                         lt=p.data,
                     )
                     self.lop.insert(0, n)  # signals must come first
-                    print(f&#34;Inserting {n.n} in {self.name} for {self.r.n}&#34;)
+                    logging.debug(f&#34;Inserting {n.n} in {self.name} for {self.r.n}&#34;)
                 else:
                     raise ValueError(f&#34;Signal type {p.ty} is not defined&#34;)
 
@@ -2805,7 +2791,7 @@ ConnectionGroup(
 
         self.base_name = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name
 
-        n = f&#34;CG_{kwargs[&#39;source&#39;].name}_2_{kwargs[&#39;sink&#39;].name}&#34;
+        n = f&#34;C_{kwargs[&#39;source&#39;].name}2{kwargs[&#39;sink&#39;].name}&#34;
         # set connection group name
         kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
 
@@ -2820,7 +2806,9 @@ ConnectionGroup(
         self.connections: list = []
         for r in self.source.lor:
             if self.ctype == &#34;None&#34;:
-                raise ValueError(f&#34;Connectiongroup {self.name} must specify &#39;ctype&#39;. See help(Connectiongroup)&#34;)
+                raise ValueError(
+                    f&#34;Connectiongroup {self.name} must specify &#39;ctype&#39;. See help(Connectiongroup)&#34;
+                )
             if r.sp in self.ctype:
                 self.connections.append(r)
                 logging.debug(f&#34;found species {r.sp.n}&#34;)
@@ -2846,7 +2834,7 @@ ConnectionGroup(
                         # update the entry
                         self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
             # now we can create the connection
-            name = f&#34;C_{r.n}&#34;
+            name = f&#34;{r.n}&#34;
             a = Connect(
                 name=name,
                 source=getattr(self.source, r.n),

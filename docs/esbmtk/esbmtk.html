@@ -1160,7 +1160,7 @@ class Reservoir(esbmtkBase):
             &#34;function&#34;: any,
             &#34;display_precision&#34;: Number,
             &#34;register&#34;: (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
-            &#34;full_name&#34; :str,
+            &#34;full_name&#34;: str,
             &#34;a1&#34;: any,
             &#34;a2&#34;: any,
             &#34;a3&#34;: any,
@@ -1355,25 +1355,30 @@ class Reservoir(esbmtkBase):
 
         sdn = self.sp.dn  # delta name
         sds = f&#34;[{self.sp.ds}]&#34;  # delta scale
-        rn = self.n  # reservoir name
+        rn = self.full_name  # reservoir name
         mn = self.sp.mo.n  # model name
         fn = f&#34;{prefix}{mn}_{rn}.csv&#34;  # file name
 
         # build the dataframe
         df: pd.dataframe = DataFrame()
+        n: str = self.full_name
 
-        df[f&#34;{self.n} Time [{mtu}]&#34;] = self.mo.time[start:stop:stride]  # time
-        df[f&#34;{self.n} {sn} [{smu}]&#34;] = self.m[start:stop:stride]  # mass
-        df[f&#34;{self.n} {sp.ln} [{smu}]&#34;] = self.l[start:stop:stride]  # light isotope
-        df[f&#34;{self.n} {sp.hn} [{smu}]&#34;] = self.h[start:stop:stride]  # heavy isotope
-        df[f&#34;{self.n} {sdn} [{sds}]&#34;] = self.d[start:stop:stride]  # delta value
-        df[f&#34;{self.n} {sn} [{cmu}]&#34;] = self.c[start:stop:stride]  # concentration
+        df[f&#34;{n} Time [{mtu}]&#34;] = self.mo.time[start:stop:stride]  # time
+        df[f&#34;{n} {sn} [{smu}]&#34;] = self.m[start:stop:stride]  # mass
+        df[f&#34;{n} {sp.ln} [{smu}]&#34;] = self.l[start:stop:stride]  # light isotope
+        df[f&#34;{n} {sp.hn} [{smu}]&#34;] = self.h[start:stop:stride]  # heavy isotope
+        df[f&#34;{n} {sdn} [{sds}]&#34;] = self.d[start:stop:stride]  # delta value
+        df[f&#34;{n} {sn} [{cmu}]&#34;] = self.c[start:stop:stride]  # concentration
 
         for f in self.lof:  # Assemble the headers and data for the reservoir fluxes
-            df[f&#34;{f.n} {sn} [{fmu}]&#34;] = f.m[start:stop:stride]  # mass
-            df[f&#34;{f.n} {sn} [{sp.ln}]&#34;] = f.l[start:stop:stride]  # light isotope
-            df[f&#34;{f.n} {sn} [{sp.hn}]&#34;] = f.h[start:stop:stride]  # heavy isotope
-            df[f&#34;{f.n} {sn} {sdn} [{sds}]&#34;] = f.d[start:stop:stride]  # delta
+            df[f&#34;{f.full_name} {sn} [{fmu}]&#34;] = f.m[start:stop:stride]  # mass
+            df[f&#34;{f.full_name} {sn} [{sp.ln}]&#34;] = f.l[
+                start:stop:stride
+            ]  # light isotope
+            df[f&#34;{f.full_name} {sn} [{sp.hn}]&#34;] = f.h[
+                start:stop:stride
+            ]  # heavy isotope
+            df[f&#34;{f.full_name} {sn} {sdn} [{sds}]&#34;] = f.d[start:stop:stride]  # delta
 
         df.to_csv(fn, index=False)  # Write dataframe to file
         return df
@@ -1399,19 +1404,23 @@ class Reservoir(esbmtkBase):
         read: set = set()
         curr: set = set()
 
-        # get a set of all current fluxes
-        for e in self.lof:
-            curr.add(e.name)
-
-        fn = &#34;state_&#34; + self.mo.n + &#34;_&#34; + self.n + &#34;.csv&#34;
+        fn = f&#34;state_{self.mo.n}_{self.full_name}.csv&#34;
+        logging.info(f&#34;reading state for {self.full_name} from {fn}&#34;)
 
         if not os.path.exists(fn):
-            print(f&#34;Cannot find {fn}\n&#34;)
-            raise FileNotFoundError(f&#34;{fn} does not exist&#34;)
+            raise FileNotFoundError(
+                f&#34;Flux {fn} does not exist in Reservoir {self.full_name}&#34;
+            )
 
-        df: pd.DataFrame = pd.read_csv(fn)
-        headers = list(df.columns.values)
-        self.df = df
+        # get a set of all current fluxes
+        for f in self.lof:
+            curr.add(f.full_name)
+            logging.debug(f&#34;    Adding Flux {f.full_name} to list of fluxes to read&#34;)
+
+        self.df: pd.DataFrame = pd.read_csv(fn)
+        self.headers: list = list(self.df.columns.values)
+        df = self.df
+        headers = self.headers
 
         # the headers contain the object name for each data in the
         # reservoir or flux thus, we must reduce the list to unique
@@ -1427,22 +1436,27 @@ class Reservoir(esbmtkBase):
         i: int = 0
         for n in header_list:
             name = n.split(&#34; &#34;)[0]
+            logging.debug(f&#34;Looking for {name}&#34;)
             # this finds the reservoir name
-            if name == self.name:
+            if name == self.full_name:
+                logging.debug(f&#34;found reservoir data for {name}&#34;)
                 col = self.__assign__data__(self, df, col, True)
             # this loops over all fluxes in a reservoir
             elif is_name_in_list(name, self.lof):
+                logging.debug(f&#34;{name} is in {self.full_name}.lof&#34;)
                 obj = get_object_from_list(name, self.lof)
-                read.add(obj.name)
+                logging.debug(
+                    f&#34;found object {obj.full_name} adding flux data for {name}&#34;
+                )
+                read.add(obj.full_name)
                 col = self.__assign__data__(obj, df, col, False)
                 i += 1
             else:
-                print(f&#34;No &#39;{name}&#39; in {self.n}\n&#34;)
-                raise ValueError(&#34;Unable to find Reservoir of Flux Name&#34;)
+                raise ValueError(f&#34;Unable to find Flux {n} in {self.full_name}&#34;)
 
         # test if we missed any fluxes
-        for e in list(curr.difference(read)):
-            print(f&#34;\n Warning: Did not find values for &#39;{e}&#39;\n&#34;)
+        for f in list(curr.difference(read)):
+            print(f&#34;\n Warning: Did not find values for {f}\n&#34;)
 
     def __assign__data__(self, obj: any, df: pd.DataFrame, col: int, res: bool) -&gt; int:
         &#34;&#34;&#34;
@@ -1478,7 +1492,7 @@ class Reservoir(esbmtkBase):
         # xl = f&#34;Time [{model.bu}]&#34;
 
         size, geo = get_plot_layout(self)  # adjust layout
-        filename = f&#34;{model.n}_{self.n}.pdf&#34;
+        filename = f&#34;{model.n}_{self.full_name}.pdf&#34;
         fn = 1  # counter for the figure number
 
         plt.style.use(model.plot_style)
@@ -1504,7 +1518,7 @@ class Reservoir(esbmtkBase):
                 if self.groupname == &#34;None&#34;:
                     fig.suptitle(f&#34;Model: {model.n}, Reservoir: {self.n}\n&#34;, size=16)
                 else:
-                    filename = f&#34;{self.groupname}_{self.n}.pdf&#34;
+                    # filename = f&#34;{self.groupname}_{self.n}.pdf&#34;
                     fig.suptitle(
                         f&#34;Group: {self.groupname}, Reservoir: {self.n}\n&#34;, size=16
                     )
@@ -2726,8 +2740,13 @@ class VirtualReservoir(Reservoir):
 
         from .processes import GenericFunction
 
+        # if self.register != &#34;None&#34;:
+        #    self.full_name = f&#34;{self.full_name}.{self.name}&#34;
+        name = f&#34;{self.full_name}_generic_function&#34;.replace(&#34;.&#34;,&#34;_&#34;)
+        print(f&#34;creating {name}&#34;)
+
         self.gfh = GenericFunction(
-            name=f&#34;{self.name}_generic_function&#34;,
+            name=name,
             function=self.function,
             a1=self.a1,
             a2=self.a2,
@@ -2763,7 +2782,8 @@ class VirtualReservoir(Reservoir):
             if key not in allowed_keys:
                 raise ValueError(&#34;you can only change a1 to a6&#34;)
             else:
-                setattr(self.gfh, key, value)
+                setattr(self, key, value)  # update self
+                setattr(self.gfh, key, value)  # update function
 
 class ExternalData(esbmtkBase):
     &#34;&#34;&#34;Instances of this class hold external X/Y data which can be associated with
@@ -5069,7 +5089,7 @@ time-steps</p></div>
             &#34;function&#34;: any,
             &#34;display_precision&#34;: Number,
             &#34;register&#34;: (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
-            &#34;full_name&#34; :str,
+            &#34;full_name&#34;: str,
             &#34;a1&#34;: any,
             &#34;a2&#34;: any,
             &#34;a3&#34;: any,
@@ -5264,25 +5284,30 @@ time-steps</p></div>
 
         sdn = self.sp.dn  # delta name
         sds = f&#34;[{self.sp.ds}]&#34;  # delta scale
-        rn = self.n  # reservoir name
+        rn = self.full_name  # reservoir name
         mn = self.sp.mo.n  # model name
         fn = f&#34;{prefix}{mn}_{rn}.csv&#34;  # file name
 
         # build the dataframe
         df: pd.dataframe = DataFrame()
+        n: str = self.full_name
 
-        df[f&#34;{self.n} Time [{mtu}]&#34;] = self.mo.time[start:stop:stride]  # time
-        df[f&#34;{self.n} {sn} [{smu}]&#34;] = self.m[start:stop:stride]  # mass
-        df[f&#34;{self.n} {sp.ln} [{smu}]&#34;] = self.l[start:stop:stride]  # light isotope
-        df[f&#34;{self.n} {sp.hn} [{smu}]&#34;] = self.h[start:stop:stride]  # heavy isotope
-        df[f&#34;{self.n} {sdn} [{sds}]&#34;] = self.d[start:stop:stride]  # delta value
-        df[f&#34;{self.n} {sn} [{cmu}]&#34;] = self.c[start:stop:stride]  # concentration
+        df[f&#34;{n} Time [{mtu}]&#34;] = self.mo.time[start:stop:stride]  # time
+        df[f&#34;{n} {sn} [{smu}]&#34;] = self.m[start:stop:stride]  # mass
+        df[f&#34;{n} {sp.ln} [{smu}]&#34;] = self.l[start:stop:stride]  # light isotope
+        df[f&#34;{n} {sp.hn} [{smu}]&#34;] = self.h[start:stop:stride]  # heavy isotope
+        df[f&#34;{n} {sdn} [{sds}]&#34;] = self.d[start:stop:stride]  # delta value
+        df[f&#34;{n} {sn} [{cmu}]&#34;] = self.c[start:stop:stride]  # concentration
 
         for f in self.lof:  # Assemble the headers and data for the reservoir fluxes
-            df[f&#34;{f.n} {sn} [{fmu}]&#34;] = f.m[start:stop:stride]  # mass
-            df[f&#34;{f.n} {sn} [{sp.ln}]&#34;] = f.l[start:stop:stride]  # light isotope
-            df[f&#34;{f.n} {sn} [{sp.hn}]&#34;] = f.h[start:stop:stride]  # heavy isotope
-            df[f&#34;{f.n} {sn} {sdn} [{sds}]&#34;] = f.d[start:stop:stride]  # delta
+            df[f&#34;{f.full_name} {sn} [{fmu}]&#34;] = f.m[start:stop:stride]  # mass
+            df[f&#34;{f.full_name} {sn} [{sp.ln}]&#34;] = f.l[
+                start:stop:stride
+            ]  # light isotope
+            df[f&#34;{f.full_name} {sn} [{sp.hn}]&#34;] = f.h[
+                start:stop:stride
+            ]  # heavy isotope
+            df[f&#34;{f.full_name} {sn} {sdn} [{sds}]&#34;] = f.d[start:stop:stride]  # delta
 
         df.to_csv(fn, index=False)  # Write dataframe to file
         return df
@@ -5308,19 +5333,23 @@ time-steps</p></div>
         read: set = set()
         curr: set = set()
 
-        # get a set of all current fluxes
-        for e in self.lof:
-            curr.add(e.name)
-
-        fn = &#34;state_&#34; + self.mo.n + &#34;_&#34; + self.n + &#34;.csv&#34;
+        fn = f&#34;state_{self.mo.n}_{self.full_name}.csv&#34;
+        logging.info(f&#34;reading state for {self.full_name} from {fn}&#34;)
 
         if not os.path.exists(fn):
-            print(f&#34;Cannot find {fn}\n&#34;)
-            raise FileNotFoundError(f&#34;{fn} does not exist&#34;)
+            raise FileNotFoundError(
+                f&#34;Flux {fn} does not exist in Reservoir {self.full_name}&#34;
+            )
 
-        df: pd.DataFrame = pd.read_csv(fn)
-        headers = list(df.columns.values)
-        self.df = df
+        # get a set of all current fluxes
+        for f in self.lof:
+            curr.add(f.full_name)
+            logging.debug(f&#34;    Adding Flux {f.full_name} to list of fluxes to read&#34;)
+
+        self.df: pd.DataFrame = pd.read_csv(fn)
+        self.headers: list = list(self.df.columns.values)
+        df = self.df
+        headers = self.headers
 
         # the headers contain the object name for each data in the
         # reservoir or flux thus, we must reduce the list to unique
@@ -5336,22 +5365,27 @@ time-steps</p></div>
         i: int = 0
         for n in header_list:
             name = n.split(&#34; &#34;)[0]
+            logging.debug(f&#34;Looking for {name}&#34;)
             # this finds the reservoir name
-            if name == self.name:
+            if name == self.full_name:
+                logging.debug(f&#34;found reservoir data for {name}&#34;)
                 col = self.__assign__data__(self, df, col, True)
             # this loops over all fluxes in a reservoir
             elif is_name_in_list(name, self.lof):
+                logging.debug(f&#34;{name} is in {self.full_name}.lof&#34;)
                 obj = get_object_from_list(name, self.lof)
-                read.add(obj.name)
+                logging.debug(
+                    f&#34;found object {obj.full_name} adding flux data for {name}&#34;
+                )
+                read.add(obj.full_name)
                 col = self.__assign__data__(obj, df, col, False)
                 i += 1
             else:
-                print(f&#34;No &#39;{name}&#39; in {self.n}\n&#34;)
-                raise ValueError(&#34;Unable to find Reservoir of Flux Name&#34;)
+                raise ValueError(f&#34;Unable to find Flux {n} in {self.full_name}&#34;)
 
         # test if we missed any fluxes
-        for e in list(curr.difference(read)):
-            print(f&#34;\n Warning: Did not find values for &#39;{e}&#39;\n&#34;)
+        for f in list(curr.difference(read)):
+            print(f&#34;\n Warning: Did not find values for {f}\n&#34;)
 
     def __assign__data__(self, obj: any, df: pd.DataFrame, col: int, res: bool) -&gt; int:
         &#34;&#34;&#34;
@@ -5387,7 +5421,7 @@ time-steps</p></div>
         # xl = f&#34;Time [{model.bu}]&#34;
 
         size, geo = get_plot_layout(self)  # adjust layout
-        filename = f&#34;{model.n}_{self.n}.pdf&#34;
+        filename = f&#34;{model.n}_{self.full_name}.pdf&#34;
         fn = 1  # counter for the figure number
 
         plt.style.use(model.plot_style)
@@ -5413,7 +5447,7 @@ time-steps</p></div>
                 if self.groupname == &#34;None&#34;:
                     fig.suptitle(f&#34;Model: {model.n}, Reservoir: {self.n}\n&#34;, size=16)
                 else:
-                    filename = f&#34;{self.groupname}_{self.n}.pdf&#34;
+                    # filename = f&#34;{self.groupname}_{self.n}.pdf&#34;
                     fig.suptitle(
                         f&#34;Group: {self.groupname}, Reservoir: {self.n}\n&#34;, size=16
                     )
@@ -6932,8 +6966,13 @@ reservoirs have a circular reference. See the documentation of update().</p>
 
         from .processes import GenericFunction
 
+        # if self.register != &#34;None&#34;:
+        #    self.full_name = f&#34;{self.full_name}.{self.name}&#34;
+        name = f&#34;{self.full_name}_generic_function&#34;.replace(&#34;.&#34;,&#34;_&#34;)
+        print(f&#34;creating {name}&#34;)
+
         self.gfh = GenericFunction(
-            name=f&#34;{self.name}_generic_function&#34;,
+            name=name,
             function=self.function,
             a1=self.a1,
             a2=self.a2,
@@ -6969,7 +7008,8 @@ reservoirs have a circular reference. See the documentation of update().</p>
             if key not in allowed_keys:
                 raise ValueError(&#34;you can only change a1 to a6&#34;)
             else:
-                setattr(self.gfh, key, value)</code></pre>
+                setattr(self, key, value)  # update self
+                setattr(self.gfh, key, value)  # update function</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -7012,7 +7052,8 @@ a circular reference.</p>
         if key not in allowed_keys:
             raise ValueError(&#34;you can only change a1 to a6&#34;)
         else:
-            setattr(self.gfh, key, value)</code></pre>
+            setattr(self, key, value)  # update self
+            setattr(self.gfh, key, value)  # update function</code></pre>
 </details>
 </dd>
 </dl>

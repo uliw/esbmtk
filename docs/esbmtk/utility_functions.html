@@ -432,10 +432,10 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -&gt; None:
     # adjust display properties for title and legend
 
     if isinstance(obj, (Reservoir)):
-        ax1.set_title(obj.pt)
+        #ax1.set_title(obj.pt)
+        ax1.set_title(obj.full_name)
     else:
-        ax1.set_title(obj.n)
-        
+        ax1.set_title(obj.full_name)
 
     plt.rcParams[&#34;axes.titlepad&#34;] = 14  # offset title upwards
     plt.rcParams[&#34;legend.facecolor&#34;] = &#34;0.8&#34;  # show a gray background
@@ -478,26 +478,28 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -&gt; None:
     # if (yl_max - yl_min) &lt; 0.1:
 
 def is_name_in_list(n: str, l: list) -&gt; bool:
-    &#34;&#34;&#34; Test if an object name is part of the object list
-    
-    &#34;&#34;&#34;
+    &#34;&#34;&#34;Test if an object name is part of the object list&#34;&#34;&#34;
 
     r: bool = False
     for e in l:
-        if e.n == n:
+        if e.full_name == n:
             r = True
     return r
 
 
-def get_object_from_list(n: str, l: list) -&gt; any:
-    &#34;&#34;&#34; Match a name to a list of objects. Return the object
-    
-    &#34;&#34;&#34;
+def get_object_from_list(name: str, l: list) -&gt; any:
+    &#34;&#34;&#34;Match a name to a list of objects. Return the object&#34;&#34;&#34;
 
+    match: bool = False
     for o in l:
-        if o.n == n:
+        if o.full_name == name:
             r = o
-    return r
+            match = True
+
+    if match:
+        return r
+    else:
+        raise ValueError(f&#34;Object = {o.full_name} has no matching flux {name}&#34;)
 
 def sort_by_type(l: list, t: list, m: str) -&gt; list:
     &#34;&#34;&#34;divide a list by type into new lists. This function will return a
@@ -716,7 +718,7 @@ species</p></div>
 </details>
 </dd>
 <dt id="esbmtk.utility_functions.get_object_from_list"><code class="name flex">
-<span>def <span class="ident">get_object_from_list</span></span>(<span>n: str, l: list) ‑> <built-in function any></span>
+<span>def <span class="ident">get_object_from_list</span></span>(<span>name: str, l: list) ‑> <built-in function any></span>
 </code></dt>
 <dd>
 <div class="desc"><p>Match a name to a list of objects. Return the object</p></div>
@@ -724,15 +726,19 @@ species</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_object_from_list(n: str, l: list) -&gt; any:
-    &#34;&#34;&#34; Match a name to a list of objects. Return the object
-    
-    &#34;&#34;&#34;
+<pre><code class="python">def get_object_from_list(name: str, l: list) -&gt; any:
+    &#34;&#34;&#34;Match a name to a list of objects. Return the object&#34;&#34;&#34;
 
+    match: bool = False
     for o in l:
-        if o.n == n:
+        if o.full_name == name:
             r = o
-    return r</code></pre>
+            match = True
+
+    if match:
+        return r
+    else:
+        raise ValueError(f&#34;Object = {o.full_name} has no matching flux {name}&#34;)</code></pre>
 </details>
 </dd>
 <dt id="esbmtk.utility_functions.get_plot_layout"><code class="name flex">
@@ -844,13 +850,11 @@ contains the list of fluxes in the reservoir</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def is_name_in_list(n: str, l: list) -&gt; bool:
-    &#34;&#34;&#34; Test if an object name is part of the object list
-    
-    &#34;&#34;&#34;
+    &#34;&#34;&#34;Test if an object name is part of the object list&#34;&#34;&#34;
 
     r: bool = False
     for e in l:
-        if e.n == n:
+        if e.full_name == n:
             r = True
     return r</code></pre>
 </details>
@@ -1146,10 +1150,10 @@ ptype: the plot type</p></div>
     # adjust display properties for title and legend
 
     if isinstance(obj, (Reservoir)):
-        ax1.set_title(obj.pt)
+        #ax1.set_title(obj.pt)
+        ax1.set_title(obj.full_name)
     else:
-        ax1.set_title(obj.n)
-        
+        ax1.set_title(obj.full_name)
 
     plt.rcParams[&#34;axes.titlepad&#34;] = 14  # offset title upwards
     plt.rcParams[&#34;legend.facecolor&#34;] = &#34;0.8&#34;  # show a gray background

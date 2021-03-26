@@ -2697,8 +2697,13 @@ class VirtualReservoir(Reservoir):
 
         from .processes import GenericFunction
 
+        # if self.register != "None":
+        #    self.full_name = f"{self.full_name}.{self.name}"
+        name = f"{self.full_name}_generic_function".replace(".","_")
+        print(f"creating {name}")
+
         self.gfh = GenericFunction(
-            name=f"{self.name}_generic_function",
+            name=name,
             function=self.function,
             a1=self.a1,
             a2=self.a2,
@@ -2734,7 +2739,8 @@ class VirtualReservoir(Reservoir):
             if key not in allowed_keys:
                 raise ValueError("you can only change a1 to a6")
             else:
-                setattr(self.gfh, key, value)
+                setattr(self, key, value)  # update self
+                setattr(self.gfh, key, value)  # update function
 
 class ExternalData(esbmtkBase):
     """Instances of this class hold external X/Y data which can be associated with

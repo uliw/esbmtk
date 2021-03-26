@@ -32,6 +32,20 @@ import time
 import builtins
 from .esbmtk import esbmtkBase, Model, Reservoir, VirtualReservoir
 
+# define a transform function to display the Hplus concentration as pH
+def phc(m: float) -> float:
+    """the reservoir class accepts a plot transform. here we use this to
+    display the H+ concentrations as pH. After import, you can use it
+    with like this in the reservoir definition
+
+     plot_transform_c=phc,
+
+    """
+    import numpy as np
+
+    pH = -np.log10(m)
+    return pH
+
 class SeawaterConstants(esbmtkBase):
     """Provide basic seawater properties as a function of T and Salinity.
     Pressure may come at a later stage
@@ -291,7 +305,7 @@ class SeawaterConstants(esbmtkBase):
         A: dict = {}
         A["K1"]: list = [25.50, 0.1271, 0.0, 3.08, 0.0877]
         A["K2"]: list = [15.82, -0.0219, 0.0, -1.13, -0.1475]
-        A["KB"]: list = [29.48, 0.1622, 2.6080, 2.84, 0.0]
+        A["KB"]: list = [29.48, 0.1622, -2.6080, 2.84, 0.0]
         A["KW"]: list = [25.60, 0.2324, -3.6246, 5.13, 0.0794]
         A["KS"]: list = [18.03, 0.0466, 0.3160, 4.53, 0.0900]
         A["KF"]: list = [9.780, -0.0090, -0.942, 3.91, 0.054]
@@ -314,12 +328,13 @@ class SeawaterConstants(esbmtkBase):
 
 def calc_H(
     i: int,
-    a1: Union[Reservoir, VirtualReservoir],
-    a2: Union[Reservoir, VirtualReservoir],
+    a1: Union[Reservoir, VirtualReservoir],  # carbonate alkalinity
+    a2: Union[Reservoir, VirtualReservoir],  # dic
     a3: SeawaterConstants,
     a4=0,
     a5=0,
     a6=0,
+    volume=0,
 ) -> tuple:
 
     """
@@ -360,16 +375,19 @@ def calc_H(
 
     """
 
-    CA: float = a1.c[i - 1]  # mol/L
-    DIC: float = a2.c[i - 1]  # mol/L
-    SW: SeawaterConstants = a3  #
+    ca: float = a1.c[i - 1]  # mol/L
+    dic: float = a2.c[i - 1]  # mol/L
+    sw: SeawaterConstants = a3  #
 
-    k1: float = SW.K1
-    k2: float = SW.K2
+   # print(f"calc_H volume={volume}")
+   # print(f"i = {i} CA={ca*1000:.2f}, DIC={dic*1000:.2f}\n")
 
-    gamm: float = DIC / CA
+    k1: float = sw.K1
+    k2: float = sw.K2
+
+    gamm: float = dic / ca
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
-    m: float = (0.5 * ((gamm - 1) * k1 + (dummy ** 0.5)))
+    m: float = (0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))) * volume
     l: float = 1.0
     h: float = 1.0
 
@@ -378,12 +396,13 @@ def calc_H(
 
 def calc_CA(
     i: int,
-    a1: Union[Reservoir, VirtualReservoir],
-    a2: Union[Reservoir, VirtualReservoir],
+    a1: Union[Reservoir, VirtualReservoir],  # Total Alkalinity
+    a2: Union[Reservoir, VirtualReservoir],  # Hplus
     a3: SeawaterConstants,
     a4=0,
     a5=0,
     a6=0,
+    volume=0,
 ) -> tuple:
 
     """
@@ -416,8 +435,8 @@ def calc_CA(
          plot_transform_c=phc,
          legend_left="pH",
          function=calc_H,
-         a1=V_CA,
-         a2=DIC,
+         a1=TA,
+         a2=H+,
          a3=SW,
     )
 
@@ -427,14 +446,19 @@ def calc_CA(
 
     ta: float = a1.c[i - 1]  # mol/L
     hplus: float = a2.c[i - 1]  # mol/L
-    SW: SeawaterConstants = a3
+    sw: SeawaterConstants = a3
 
-    oh: float = SW.KW / hplus
-    boh4: float = SW.boron * SW.KB / (hplus + SW.KB)
+    from .esbmtk import phc
+
+    #print(f"calc_CA, volume={volume}")
+    #print(f"i = {i} TA={ta*1000:.2f}, H={phc(hplus):.2f}\n")
+
+    oh: float = sw.KW / hplus
+    boh4: float = sw.boron * sw.KB / (hplus + sw.KB)
 
     fg: float = hplus - oh - boh4  # mol/L
 
-    m: float = ta + fg
+    m: float = (ta + fg) * volume
     l: float = 1
     h: float = 1
 

@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgdf00cee)
-2.  [News](#org9ae8582)
-3.  [Contributing](#org20dc123)
-4.  [Installation](#org8bd7ec3)
-5.  [Documentation](#org2b8eeb9)
-6.  [Todo](#org75dfa96)
-7.  [License](#org794af26)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgc17e785)
+2.  [News](#org349f8a4)
+3.  [Contributing](#orgecbff01)
+4.  [Installation](#orgd63163a)
+5.  [Documentation](#org3d5608b)
+6.  [Todo](#orgc94bd40)
+7.  [License](#orgaa857c5)
 
 
-<a id="orgdf00cee"></a>
+<a id="orgc17e785"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,12 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org9ae8582"></a>
+<a id="org349f8a4"></a>
 
 # News
+
+-   March 26<sup>th</sup>, 0.4.0.4 the `write_state` and `read_state` methods are
+    now compatible with ReservoirGroups
 
 -   March 18<sup>th</sup> esbmtk 0.4.0.0 now has a carbonate chemistry module
     which currently includes methods to calculate PCO<sub>2</sub>, CA, and H<sup>+</sup>
@@ -143,7 +146,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org20dc123"></a>
+<a id="orgecbff01"></a>
 
 # Contributing
 
@@ -153,7 +156,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org8bd7ec3"></a>
+<a id="orgd63163a"></a>
 
 # Installation
 
@@ -174,12 +177,15 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org2b8eeb9"></a>
+<a id="org3d5608b"></a>
 
 # Documentation
 
 The documentation is available in org format or in pdf format. 
 See the documentation folder, [specifically the quickstart guide](https://github.com/uliw/esbmtk/blob/master/Documentation/ESBMTK-Quick-Start_Guide.org).
+
+The API documentation is available at
+<https://uliw.github.io/esbmtk/esbmtk/index.html>
 
 At present, I also provide the following example cases (as py-files
 and in jupyter notebook format)
@@ -189,7 +195,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org75dfa96"></a>
+<a id="orgc94bd40"></a>
 
 # Todo
 
@@ -198,7 +204,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org794af26"></a>
+<a id="orgaa857c5"></a>
 
 # License
 

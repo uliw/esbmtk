@@ -155,7 +155,7 @@ class GenericFunction(Process):
     use with the generic function process. This function needs to follow this
     template::
 
-        def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0) -> tuple:
+        def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0, act_on="") -> tuple:
             #
             # i = index of the current timestep
             # a1 to a2 =  optional function parameter. These must be present,
@@ -188,6 +188,7 @@ class GenericFunction(Process):
         "a5",
         "a6",
         "i",
+        "act_on",
     )
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
@@ -269,6 +270,7 @@ class GenericFunction(Process):
             self.a4,
             self.a5,
             self.a6,
+            self.act_on.volume,
         )
 
     # redefine post init

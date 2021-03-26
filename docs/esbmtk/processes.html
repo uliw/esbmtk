@@ -183,7 +183,7 @@ class GenericFunction(Process):
     use with the generic function process. This function needs to follow this
     template::
 
-        def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0) -&gt; tuple:
+        def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0, act_on=&#34;&#34;) -&gt; tuple:
             #
             # i = index of the current timestep
             # a1 to a2 =  optional function parameter. These must be present,
@@ -216,6 +216,7 @@ class GenericFunction(Process):
         &#34;a5&#34;,
         &#34;a6&#34;,
         &#34;i&#34;,
+        &#34;act_on&#34;,
     )
 
     def __init__(self, **kwargs: Dict[str, any]) -&gt; None:
@@ -297,6 +298,7 @@ class GenericFunction(Process):
             self.a4,
             self.a5,
             self.a6,
+            self.act_on.volume,
         )
 
     # redefine post init
@@ -1674,7 +1676,7 @@ as function of e.g., Alkalinity and DIC.</p>
 <p>in order to use this function we need first declare a function we plan to
 use with the generic function process. This function needs to follow this
 template::</p>
-<pre><code>def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0) -&gt; tuple:
+<pre><code>def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0, act_on="") -&gt; tuple:
     #
     # i = index of the current timestep
     # a1 to a2 =  optional function parameter. These must be present,
@@ -1715,7 +1717,7 @@ template::</p>
     use with the generic function process. This function needs to follow this
     template::
 
-        def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0) -&gt; tuple:
+        def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0, act_on=&#34;&#34;) -&gt; tuple:
             #
             # i = index of the current timestep
             # a1 to a2 =  optional function parameter. These must be present,
@@ -1748,6 +1750,7 @@ template::</p>
         &#34;a5&#34;,
         &#34;a6&#34;,
         &#34;i&#34;,
+        &#34;act_on&#34;,
     )
 
     def __init__(self, **kwargs: Dict[str, any]) -&gt; None:
@@ -1829,6 +1832,7 @@ template::</p>
             self.a4,
             self.a5,
             self.a6,
+            self.act_on.volume,
         )
 
     # redefine post init
