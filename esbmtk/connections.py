@@ -402,10 +402,11 @@ class Connect(esbmtkBase):
                 # source=getattr(self.source, r.n),
                 # self.sink_ref = getattr(self.mo.dmo[])
 
-            if self.id == "None":
-                self.name = f"{son}_2_{sin}"
-            else:
-                self.name = f"{son}_2_{sin}_{self.id}"
+            self.name = f"{son}_2_{sin}"
+
+        if self.id != "None":
+            #print(f"id = {self.id}")
+            self.name = f"{self.name}_{self.id}"
 
         self.__create_flux__()  # Source/Sink/Regular
 
@@ -1126,7 +1127,7 @@ class ConnectionGroup(esbmtkBase):
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
-            "id": dict,
+            "id": str,
             "name": str,
             "source": (SourceGroup, ReservoirGroup),
             "sink": (SinkGroup, ReservoirGroup),
@@ -1142,11 +1143,19 @@ class ConnectionGroup(esbmtkBase):
             "scale": dict,
         }
 
-        self.base_name = kwargs["source"].name + "_2_" + kwargs["sink"].name
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            "name": "None",
+            "id": "None",
+        }
 
-        n = f"C_{kwargs['source'].name}2{kwargs['sink'].name}"
-        # set connection group name
-        kwargs.update({"name": n})  # and add it to the kwargs
+        if "name" in kwargs:
+            self.base_name = kwargs["name"]
+        else:
+            self.base_name = kwargs["source"].name + "_2_" + kwargs["sink"].name
+            n = f"C_{kwargs['source'].name}2{kwargs['sink'].name}"
+            # set connection group name
+            kwargs.update({"name": n})  # and add it to the kwargs
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["source", "sink"]
@@ -1171,7 +1180,7 @@ class ConnectionGroup(esbmtkBase):
         self.cd: dict = {}  # connection dictionary
         for r in self.connections:  # ["SO4", "H2S"]
             self.cd[r.n] = {
-                "cid": "None",
+                "cid": self.id,
                 "plot": "yes",
                 "delta": "None",
                 "alpha": "None",
@@ -1187,6 +1196,7 @@ class ConnectionGroup(esbmtkBase):
                         # update the entry
                         self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
             # now we can create the connection
+            # print(f"id = {self.id}")
             name = f"{r.n}"
             a = Connect(
                 name=name,
@@ -1199,9 +1209,10 @@ class ConnectionGroup(esbmtkBase):
                 ctype=self.cd[r.n]["ctype"],
                 scale=self.cd[r.n]["scale"],
                 groupname=True,
-                id=self.cd[r.n]["cid"],
+                id=self.id,
                 register=self,
             )
+          
             ## add connection to list of connections
             self.loc.append(a)
 

@@ -18,3 +18,4 @@ ureg.define("Mol = 1 * mol / liter = M")
 from .esbmtk import *
 from .connections import ConnectionGroup, Connection, Connect
 from .utility_functions import *
+from .sealevel import *

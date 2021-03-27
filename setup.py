@@ -38,5 +38,7 @@ setuptools.setup(
         "pandas",
         "matplotlib",
         "pint",
+        "pickle",
+        "scipy",
     ],
 )

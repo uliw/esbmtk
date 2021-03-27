@@ -2733,7 +2733,7 @@ class VirtualReservoir(Reservoir):
 
         """
 
-        allowed_keys: list = ["a1", "a2", "a3", "a4", "a5", "a6"]
+        allowed_keys: list = ["a1", "a2", "a3", "a4", "a5", "a6", "volume"]
         # loop over provided kwargs
         for key, value in kwargs.items():
             if key not in allowed_keys:
@@ -2933,3 +2933,4 @@ from .connections import Connection, ConnectionGroup
 from .processes import *
 from .species_definitions import carbon, sulfur, hydrogen, phosphor, oxygen, nitrogen, boron
 from .carbonate_chemistry import *
+from .sealevel import *

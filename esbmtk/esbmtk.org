@@ -3033,6 +3033,7 @@ from .connections import Connection, ConnectionGroup
 from .processes import *
 from .species_definitions import carbon, sulfur, hydrogen, phosphor, oxygen, nitrogen, boron
 from .carbonate_chemistry import *
+from .sealevel import *
 #+END_SRC
 
 
