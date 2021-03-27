@@ -2776,7 +2776,7 @@ class VirtualReservoir(Reservoir):
 
         &#34;&#34;&#34;
 
-        allowed_keys: list = [&#34;a1&#34;, &#34;a2&#34;, &#34;a3&#34;, &#34;a4&#34;, &#34;a5&#34;, &#34;a6&#34;]
+        allowed_keys: list = [&#34;a1&#34;, &#34;a2&#34;, &#34;a3&#34;, &#34;a4&#34;, &#34;a5&#34;, &#34;a6&#34;, &#34;volume&#34;]
         # loop over provided kwargs
         for key, value in kwargs.items():
             if key not in allowed_keys:
@@ -2975,7 +2975,8 @@ class ExternalData(esbmtkBase):
 from .connections import Connection, ConnectionGroup
 from .processes import *
 from .species_definitions import carbon, sulfur, hydrogen, phosphor, oxygen, nitrogen, boron
-from .carbonate_chemistry import *</code></pre>
+from .carbonate_chemistry import *
+from .sealevel import *</code></pre>
 </details>
 </section>
 <section>
@@ -7002,7 +7003,7 @@ reservoirs have a circular reference. See the documentation of update().</p>
 
         &#34;&#34;&#34;
 
-        allowed_keys: list = [&#34;a1&#34;, &#34;a2&#34;, &#34;a3&#34;, &#34;a4&#34;, &#34;a5&#34;, &#34;a6&#34;]
+        allowed_keys: list = [&#34;a1&#34;, &#34;a2&#34;, &#34;a3&#34;, &#34;a4&#34;, &#34;a5&#34;, &#34;a6&#34;, &#34;volume&#34;]
         # loop over provided kwargs
         for key, value in kwargs.items():
             if key not in allowed_keys:
@@ -7046,7 +7047,7 @@ a circular reference.</p>
 
     &#34;&#34;&#34;
 
-    allowed_keys: list = [&#34;a1&#34;, &#34;a2&#34;, &#34;a3&#34;, &#34;a4&#34;, &#34;a5&#34;, &#34;a6&#34;]
+    allowed_keys: list = [&#34;a1&#34;, &#34;a2&#34;, &#34;a3&#34;, &#34;a4&#34;, &#34;a5&#34;, &#34;a6&#34;, &#34;volume&#34;]
     # loop over provided kwargs
     for key, value in kwargs.items():
         if key not in allowed_keys:
@@ -7474,6 +7475,7 @@ arguments, name registration and other common tasks</p></div>
 <li><a title="esbmtk.esbmtk.SourceSinkGroup" href="#esbmtk.esbmtk.SourceSinkGroup">SourceSinkGroup</a></li>
 <li><a title="esbmtk.esbmtk.Species" href="#esbmtk.esbmtk.Species">Species</a></li>
 <li><a title="esbmtk.processes.Process" href="processes.html#esbmtk.processes.Process">Process</a></li>
+<li><a title="esbmtk.sealevel.hypsometry" href="sealevel.html#esbmtk.sealevel.hypsometry">hypsometry</a></li>
 </ul>
 <h3>Class variables</h3>
 <dl>

@@ -14,6 +14,12 @@ generation of graphical results.
 
 * News
 
+ - March 27^{th}, 0.4.0.5 added the hypsometry class which provides a
+   spline representation of the hypsometry between -6000 mbsl and 1000
+   asl.This class provides the =area()= method which calculates the
+   seafloor surface area between two depth dates. See the online api
+   documentation for details.
+
  - March 26^{th}, 0.4.0.4 the =write_state= and =read_state= methods are
    now compatible with ReservoirGroups
 

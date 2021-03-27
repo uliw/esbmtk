@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgc17e785)
-2.  [News](#org349f8a4)
-3.  [Contributing](#orgecbff01)
-4.  [Installation](#orgd63163a)
-5.  [Documentation](#org3d5608b)
-6.  [Todo](#orgc94bd40)
-7.  [License](#orgaa857c5)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org290ec5f)
+2.  [News](#org9887f7d)
+3.  [Contributing](#org700015b)
+4.  [Installation](#org9a1752c)
+5.  [Documentation](#org6176b84)
+6.  [Todo](#org985871a)
+7.  [License](#orge613bf8)
 
 
-<a id="orgc17e785"></a>
+<a id="org290ec5f"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,15 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org349f8a4"></a>
+<a id="org9887f7d"></a>
 
 # News
+
+-   March 27<sup>th</sup>, 0.4.0.5 added the hypsometry class which provides a
+    spline representation of the hypsometry between -6000 mbsl and 1000
+    asl.This class provides the `area()` method which calculates the
+    seafloor surface area between two depth dates. See the online api
+    documentation for details.
 
 -   March 26<sup>th</sup>, 0.4.0.4 the `write_state` and `read_state` methods are
     now compatible with ReservoirGroups
@@ -146,7 +152,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgecbff01"></a>
+<a id="org700015b"></a>
 
 # Contributing
 
@@ -156,7 +162,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orgd63163a"></a>
+<a id="org9a1752c"></a>
 
 # Installation
 
@@ -177,7 +183,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org3d5608b"></a>
+<a id="org6176b84"></a>
 
 # Documentation
 
@@ -195,7 +201,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orgc94bd40"></a>
+<a id="org985871a"></a>
 
 # Todo
 
@@ -204,7 +210,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orgaa857c5"></a>
+<a id="orge613bf8"></a>
 
 # License
 

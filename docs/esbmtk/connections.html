@@ -447,10 +447,11 @@ class Connect(esbmtkBase):
                 # source=getattr(self.source, r.n),
                 # self.sink_ref = getattr(self.mo.dmo[])
 
-            if self.id == &#34;None&#34;:
-                self.name = f&#34;{son}_2_{sin}&#34;
-            else:
-                self.name = f&#34;{son}_2_{sin}_{self.id}&#34;
+            self.name = f&#34;{son}_2_{sin}&#34;
+
+        if self.id != &#34;None&#34;:
+            #print(f&#34;id = {self.id}&#34;)
+            self.name = f&#34;{self.name}_{self.id}&#34;
 
         self.__create_flux__()  # Source/Sink/Regular
 
@@ -1171,7 +1172,7 @@ class ConnectionGroup(esbmtkBase):
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
-            &#34;id&#34;: dict,
+            &#34;id&#34;: str,
             &#34;name&#34;: str,
             &#34;source&#34;: (SourceGroup, ReservoirGroup),
             &#34;sink&#34;: (SinkGroup, ReservoirGroup),
@@ -1187,11 +1188,19 @@ class ConnectionGroup(esbmtkBase):
             &#34;scale&#34;: dict,
         }
 
-        self.base_name = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            &#34;name&#34;: &#34;None&#34;,
+            &#34;id&#34;: &#34;None&#34;,
+        }
 
-        n = f&#34;C_{kwargs[&#39;source&#39;].name}2{kwargs[&#39;sink&#39;].name}&#34;
-        # set connection group name
-        kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
+        if &#34;name&#34; in kwargs:
+            self.base_name = kwargs[&#34;name&#34;]
+        else:
+            self.base_name = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name
+            n = f&#34;C_{kwargs[&#39;source&#39;].name}2{kwargs[&#39;sink&#39;].name}&#34;
+            # set connection group name
+            kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
 
         # provide a list of absolutely required keywords
         self.lrk: list = [&#34;source&#34;, &#34;sink&#34;]
@@ -1216,7 +1225,7 @@ class ConnectionGroup(esbmtkBase):
         self.cd: dict = {}  # connection dictionary
         for r in self.connections:  # [&#34;SO4&#34;, &#34;H2S&#34;]
             self.cd[r.n] = {
-                &#34;cid&#34;: &#34;None&#34;,
+                &#34;cid&#34;: self.id,
                 &#34;plot&#34;: &#34;yes&#34;,
                 &#34;delta&#34;: &#34;None&#34;,
                 &#34;alpha&#34;: &#34;None&#34;,
@@ -1232,6 +1241,7 @@ class ConnectionGroup(esbmtkBase):
                         # update the entry
                         self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
             # now we can create the connection
+            # print(f&#34;id = {self.id}&#34;)
             name = f&#34;{r.n}&#34;
             a = Connect(
                 name=name,
@@ -1244,9 +1254,10 @@ class ConnectionGroup(esbmtkBase):
                 ctype=self.cd[r.n][&#34;ctype&#34;],
                 scale=self.cd[r.n][&#34;scale&#34;],
                 groupname=True,
-                id=self.cd[r.n][&#34;cid&#34;],
+                id=self.id,
                 register=self,
             )
+          
             ## add connection to list of connections
             self.loc.append(a)
 
@@ -1832,10 +1843,11 @@ between =left=and =right=</li>
                 # source=getattr(self.source, r.n),
                 # self.sink_ref = getattr(self.mo.dmo[])
 
-            if self.id == &#34;None&#34;:
-                self.name = f&#34;{son}_2_{sin}&#34;
-            else:
-                self.name = f&#34;{son}_2_{sin}_{self.id}&#34;
+            self.name = f&#34;{son}_2_{sin}&#34;
+
+        if self.id != &#34;None&#34;:
+            #print(f&#34;id = {self.id}&#34;)
+            self.name = f&#34;{self.name}_{self.id}&#34;
 
         self.__create_flux__()  # Source/Sink/Regular
 
@@ -2773,7 +2785,7 @@ ConnectionGroup(
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
-            &#34;id&#34;: dict,
+            &#34;id&#34;: str,
             &#34;name&#34;: str,
             &#34;source&#34;: (SourceGroup, ReservoirGroup),
             &#34;sink&#34;: (SinkGroup, ReservoirGroup),
@@ -2789,11 +2801,19 @@ ConnectionGroup(
             &#34;scale&#34;: dict,
         }
 
-        self.base_name = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            &#34;name&#34;: &#34;None&#34;,
+            &#34;id&#34;: &#34;None&#34;,
+        }
 
-        n = f&#34;C_{kwargs[&#39;source&#39;].name}2{kwargs[&#39;sink&#39;].name}&#34;
-        # set connection group name
-        kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
+        if &#34;name&#34; in kwargs:
+            self.base_name = kwargs[&#34;name&#34;]
+        else:
+            self.base_name = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name
+            n = f&#34;C_{kwargs[&#39;source&#39;].name}2{kwargs[&#39;sink&#39;].name}&#34;
+            # set connection group name
+            kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
 
         # provide a list of absolutely required keywords
         self.lrk: list = [&#34;source&#34;, &#34;sink&#34;]
@@ -2818,7 +2838,7 @@ ConnectionGroup(
         self.cd: dict = {}  # connection dictionary
         for r in self.connections:  # [&#34;SO4&#34;, &#34;H2S&#34;]
             self.cd[r.n] = {
-                &#34;cid&#34;: &#34;None&#34;,
+                &#34;cid&#34;: self.id,
                 &#34;plot&#34;: &#34;yes&#34;,
                 &#34;delta&#34;: &#34;None&#34;,
                 &#34;alpha&#34;: &#34;None&#34;,
@@ -2834,6 +2854,7 @@ ConnectionGroup(
                         # update the entry
                         self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
             # now we can create the connection
+            # print(f&#34;id = {self.id}&#34;)
             name = f&#34;{r.n}&#34;
             a = Connect(
                 name=name,
@@ -2846,9 +2867,10 @@ ConnectionGroup(
                 ctype=self.cd[r.n][&#34;ctype&#34;],
                 scale=self.cd[r.n][&#34;scale&#34;],
                 groupname=True,
-                id=self.cd[r.n][&#34;cid&#34;],
+                id=self.id,
                 register=self,
             )
+          
             ## add connection to list of connections
             self.loc.append(a)
 
