@@ -365,7 +365,8 @@ class AddSignal(Process):
         self.__register_name__()
 
         # decide whichh call function to use
-        if self.mo.m_type == "both":
+        # if self.mo.m_type == "both":
+        if self.reservoir.isotopes:
             self.__execute__ = self.__with_isotopes__
         else:
             self.__execute__ = self.__without_isotopes__
@@ -592,7 +593,8 @@ class VarDeltaOut(Process):
         self.__register_name__()
 
         # decide which call function to use
-        if self.mo.m_type == "both":
+        # if self.mo.m_type == "both":
+        if self.reservoir.isotopes:
             if isinstance(self.reservoir, Reservoir):
                 self.__execute__ = self.__with_isotopes_reservoir__
             elif isinstance(self.reservoir, Source):
@@ -680,7 +682,8 @@ class ScaleFlux(Process):
         self.__register_name__()
 
         # decide which call function to use
-        if self.mo.m_type == "both":
+        # if self.mo.m_type == "both":
+        if self.reservoir.isotopes:
             self.__execute__ = self.__with_isotopes__
         else:
             self.__execute__ = self.__without_isotopes__
@@ -806,7 +809,8 @@ class Fractionation(Process):
         self.__register_name__()
 
         # decide which call function to use
-        if self.mo.m_type == "both":
+        if self.reservoir.isotopes:
+        #if self.mo.m_type == "both":
             self.__execute__ = self.__with_isotopes__
         else:
             self.__execute__ = self.__without_isotopes__
