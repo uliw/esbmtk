@@ -469,7 +469,7 @@ class Connect(esbmtkBase):
         # else:
         #     print(f"Created connection {self.register.name}.{self.name}")
 
-        print(f"Created {self.full_name}")
+        logging.info(f"Created {self.full_name}")
 
     def update(self, **kwargs):
         """Update connection properties. This will delete existing processes
@@ -1272,7 +1272,7 @@ class ConnectionGroup(esbmtkBase):
 
         # register connection group in global namespace
         self.__register_name__()
-        print(f"Created {self.name}")
+        logging.info(f"Created {self.name}")
 
     def info(self) -> None:
         """List all connections in this group"""
