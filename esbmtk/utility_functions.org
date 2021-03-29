@@ -255,12 +255,21 @@ def set_y_limits(ax: plt.Axes, obj: any) -> None:
 
 def get_ptype(obj, **kwargs: dict) -> int:
     """
-    Set plot type variable
+    Set plot type variable based on ptype or isotope keyword
 
     """
 
+    from esbmtk import Flux, Reservoir, Signal, DataField, Source, Sink
+    
+   
     ptype: int = 0
-    if "ptype" in kwargs:
+
+    if isinstance(obj, (Reservoir, Source, Sink)):
+        if obj.isotopes:
+            ptype = 0
+        else:
+            ptype = 2
+    elif "ptype" in kwargs:
         if kwargs["ptype"] == "both":
             ptype = 0
         elif kwargs["ptype"] == "iso":
@@ -269,30 +278,22 @@ def get_ptype(obj, **kwargs: dict) -> int:
             ptype = 2
         elif kwargs["ptype"] == "mass_only":
             ptype = 2
-    else:
-        if obj.m_type == "mass_only":
-            ptype = 2
-        elif obj.m_type == "both":
-            ptype = 0
-        else:
-            raise ValueError("ptype must be one of 'both/iso/concentration/mass_only'")
 
     return ptype
 
 
-def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
+def plot_object_data(geo: list, fn: int, obj: any) -> None:
     """collection of commands which will plotqand annotate a reservoir or flux
     object into an existing plot window.
 
     geo: geometry info
     fn: figure number in plot
     obj: the object to plot
-    ptype: the plot type
 
     """
 
     from . import ureg, Q_
-    from esbmtk import Flux, Reservoir, Signal, DataField
+    from esbmtk import Flux, Reservoir, Signal, DataField, Source
 
     # geo = list with rows and cols
     # fn  = figure number
@@ -317,6 +318,9 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     # we do not map isotope values
     yr = obj.d
 
+    # get plot type
+    ptype: int = get_ptype(obj)
+    
     # remap concentration & flux values
     if isinstance(obj, Flux):
         yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
@@ -426,7 +430,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -> None:
     # adjust display properties for title and legend
 
     if isinstance(obj, (Reservoir)):
-        #ax1.set_title(obj.pt)
+        # ax1.set_title(obj.pt)
         ax1.set_title(obj.full_name)
     else:
         ax1.set_title(obj.full_name)
