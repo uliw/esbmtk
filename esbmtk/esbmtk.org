@@ -781,8 +781,6 @@ class Model(esbmtkBase):
 
         """
 
-        
-
         # get number of plot objects
         i = 0
         # get number of signals
@@ -948,7 +946,7 @@ class Model(esbmtkBase):
         Optional parameters:
 
         index :int = i > 1 and i < number of timesteps -1
-        filter_by :str = filter on id-string (or substring) of a flux
+        filter_by :str = filter on flux name or part of flux name
 
         """
 
@@ -970,8 +968,12 @@ class Model(esbmtkBase):
             for f in r.lof:
                 if filter_by in f.full_name and f.m[i] > 0:
                     direction = r.lio[f]
-                    print(f"    - {f.full_name} = {direction * f.m[i]:.2e}")
-
+                    if r.isotopes:
+                        print(
+                            f"    - {f.full_name} = {direction * f.m[i]:.2e} d = {f.d[i]:.2f}"
+                        )
+                    else:
+                        print(f"    - {f.full_name} = {direction * f.m[i]:.2e}")
             print("")
 #+END_SRC
 
