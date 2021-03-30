@@ -1277,9 +1277,9 @@ class Reservoir(esbmtkBase):
 
         # decide whether we use isotopes
         if self.mo.m_type == "both":
-            self.istopes = True
+            self.isotopes = True
         elif self.mo.m_type == "mass_only":
-            self.istopes = False
+            self.isotopes = False
 
         # convert units
         self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
@@ -1726,7 +1726,7 @@ class ReservoirGroup(esbmtkBase):
                 "mass": "None",
                 "concentration": "None",
                 "delta": "None",
-                "plot": "Yes",
+                "plot": "yes",
                 "isotopes": False,
             }
 
