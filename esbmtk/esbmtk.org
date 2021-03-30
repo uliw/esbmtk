@@ -498,6 +498,7 @@ class Model(esbmtkBase):
        - Model_Name.run()
        - Model_Name.list_species()
        - Model_name.flux_summary()
+       - Model_Name.connection_summary()
 
     User facing variable are Model_Name.time which contains the time
     axis.
@@ -956,17 +957,20 @@ class Model(esbmtkBase):
             i: int = -3
 
         if "filter_by" in kwargs:
-            filter_by: str = kwargs["filter_by"]
+            fby: str = kwargs["filter_by"]
         else:
-            filter_by: str = ""
+            fby: str = ""
 
-        print(f"\n --- Flux Summary -- filtered by {filter_by}\n")
+        if "filter" in kwargs:
+            raise ValueError("use filter_by instead of filter")
+
+        print(f"\n --- Flux Summary -- filtered by {fby}\n")
 
         for r in self.lor:
             print(f"- {r.full_name}:")
 
             for f in r.lof:
-                if filter_by in f.full_name and f.m[i] > 0:
+                if fby in f.full_name and f.m[i] > 0:
                     direction = r.lio[f]
                     if r.isotopes:
                         print(
@@ -975,6 +979,32 @@ class Model(esbmtkBase):
                     else:
                         print(f"    - {f.full_name} = {direction * f.m[i]:.2e}")
             print("")
+
+    def connection_summary(self, **kwargs: dict) -> None:
+        """Show a summary of all connections
+
+        Optional parameters:
+
+        filter_by :str = filter on flux name or part of flux name
+
+        """
+
+        if "filter_by" in kwargs:
+            fby: str = kwargs["filter_by"]
+        else:
+            fby: str = ""
+
+        if "filter" in kwargs:
+            raise ValueError("use filter_by instead of filter")
+
+        print(f"\n --- Connection Summary -- filtered by {fby}\n")
+        print(f"       append info() to the connection name to see more details")
+
+        for c in self.loc:
+            if fby in c.full_name:
+                print(f"{c.full_name}")
+
+        print("")
 #+END_SRC
 
 ** Element specific properties
@@ -1811,6 +1841,7 @@ class Flux(esbmtkBase):
             "rate": (str, Q_),
             "plot": str,
             "display_precision": Number,
+            "isotopes": bool,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
         }
 
@@ -1822,6 +1853,7 @@ class Flux(esbmtkBase):
             "delta": 0,
             "plot": "yes",
             "display_precision": 0,
+            "isotopes": False,
         }
 
         # initialize instance
@@ -1876,7 +1908,13 @@ class Flux(esbmtkBase):
         self.__register_name__()
 
         # decide which setitem functions to use
+        # decide whether we use isotopes
         if self.mo.m_type == "both":
+            self.isotopes = True
+        elif self.mo.m_type == "mass_only":
+            self.isotopes = False
+        
+        if self.isotopes:
             self.__set_data__ = self.__set_with_isotopes__
         else:
             self.__set_data__ = self.__set_without_isotopes__

@@ -595,9 +595,14 @@ class VarDeltaOut(Process):
         # decide which call function to use
         # if self.mo.m_type == "both":
         if self.reservoir.isotopes:
+            # print(
+            #    f"vardeltaout with isotopes for {self.reservoir.register.name}.{self.reservoir.name}"
+            # )
             if isinstance(self.reservoir, Reservoir):
+                # print("Using reservoir")
                 self.__execute__ = self.__with_isotopes_reservoir__
             elif isinstance(self.reservoir, Source):
+                # print("Using Source")
                 self.__execute__ = self.__with_isotopes_source__
             else:
                 raise ValueError(
@@ -619,8 +624,10 @@ class VarDeltaOut(Process):
 
         m: float = self.flux.m[i]
         if m != 0:
+            #if reservoir.register.name == "db":
+            #    print(f"{reservoir.name} d={reservoir.d[i-1]}")
             r: float = reservoir.species.element.r
-            d: float = self.reservoir.d[i - 1]
+            d: float = reservoir.d[i - 1]
             l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
             h: float = m - l
 

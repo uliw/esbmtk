@@ -73,11 +73,11 @@ class SeawaterConstants(esbmtkBase):
     Example:
 
     Seawater(name="SW",
-             model=
-             temperature = optional in C, defaults to 25
-             salinity  = optional in psu, defaults to 35
-             pressure = optional, defaults to 0 bars = 1atm
-             pH = optional, defaults to 8.1
+             model=,
+             temperature = optional in C, defaults to 25,
+             salinity  = optional in psu, defaults to 35,
+             pressure = optional, defaults to 0 bars = 1atm,
+             pH = optional, defaults to 8.1,
             )
 
     useful methods:
@@ -508,6 +508,17 @@ def calc_pCO2(
     DIC: Reservoir  = DIC concentrations in mol/liter
     Hplus: Reservoir = H+ concentrations in mol/liter
     SW: Seawater = Seawater object for the model
+
+    it is typically used with a DataField object, e.g.
+    
+    pco2 = calc_pCO2(DIC,H,SW)
+
+     DataField(name = "SurfaceWaterpCO2",
+                       associated_with = reservoir_handle,
+                       y1_data = pco2,
+                       y1_label = r"pCO_{2}",
+                       y1_legend = r"pCO_{2}",
+                       )
 
     Author: T. Tsan
 

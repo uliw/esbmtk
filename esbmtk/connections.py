@@ -297,6 +297,7 @@ class Connect(esbmtkBase):
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "signal": (Signal, str),
             "bypass": str,
+            "isotopes": bool,
         }
 
         # provide a list of absolutely required keywords
@@ -316,6 +317,7 @@ class Connect(esbmtkBase):
             "groupname": False,
             "bypass": "None",
             "name": "None",
+            "isotopes": False,
         }
 
         # validate and initialize instance variables
@@ -364,6 +366,10 @@ class Connect(esbmtkBase):
         if "ref_reservoir" not in kwargs:
             self.ref_reservoir = kwargs["source"]
 
+        # decide if this connection needs isotope calculations
+        if self.source.isotopes or self.sink.isotopes:
+            self.isotopes = True
+
         # legacy names
         self.influx: int = 1
         self.outflux: int = -1
@@ -405,7 +411,7 @@ class Connect(esbmtkBase):
             self.name = f"{son}_2_{sin}"
 
         if self.id != "None":
-            #print(f"id = {self.id}")
+            # print(f"id = {self.id}")
             self.name = f"{self.name}_{self.id}"
 
         self.__create_flux__()  # Source/Sink/Regular
@@ -422,7 +428,7 @@ class Connect(esbmtkBase):
         # else:
         #     print(f"Created connection {self.register.name}.{self.name}")
 
-        print(f"Created {self.full_name}")
+        logging.info(f"Created {self.full_name}")
 
     def update(self, **kwargs):
         """Update connection properties. This will delete existing processes
@@ -487,6 +493,7 @@ class Connect(esbmtkBase):
             rate=r,  # flux value
             plot=self.plot,  # display this flux?
             register=self.register,  # is this part of a group?
+            isotopes=self.isotopes,
         )
 
         # register flux with its reservoirs
@@ -1152,8 +1159,13 @@ class ConnectionGroup(esbmtkBase):
         if "name" in kwargs:
             self.base_name = kwargs["name"]
         else:
-            self.base_name = kwargs["source"].name + "_2_" + kwargs["sink"].name
-            n = f"C_{kwargs['source'].name}2{kwargs['sink'].name}"
+            if "id" in kwargs:
+                name = f"{kwargs['source'].name}2{kwargs['sink'].name}_{kwargs['id']}"
+            else:
+                name = f"{kwargs['source'].name}2{kwargs['sink'].name}"
+
+            self.base_name = kwargs["source"].name + "2" + kwargs["sink"].name
+            n = f"C_{name}"
             # set connection group name
             kwargs.update({"name": n})  # and add it to the kwargs
 
@@ -1209,27 +1221,25 @@ class ConnectionGroup(esbmtkBase):
                 ctype=self.cd[r.n]["ctype"],
                 scale=self.cd[r.n]["scale"],
                 groupname=True,
-                id=self.id,
+                # id=self.id,
                 register=self,
             )
-          
+
             ## add connection to list of connections
             self.loc.append(a)
 
         # register connection group in global namespace
         self.__register_name__()
-        print(f"Created {self.name}")
+        logging.info(f"Created {self.name}")
 
     def info(self) -> None:
         """List all connections in this group"""
 
         print(f"Group Connection from {self.source.name} to {self.sink.name}\n")
-        print("    The following Connections are part of this group\n")
-
+        print("The following Connections are part of this group\n")
+        print(f"You can query the details of each connection like this:\n")
         for c in self.loc:
             print(c.name)
+            print(f"{c.name}: {self.name}.{self.c.name}.info()")
 
         print("")
-
-        print(f"        You can query the details of each connection like this:\n")
-        print(f"          {self.name}.{self.loc[0].name}.info()")

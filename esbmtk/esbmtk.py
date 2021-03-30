@@ -32,7 +32,7 @@ import logging
 import time
 import builtins
 import os
-from .utility_functions import get_imass, get_delta, get_ptype, get_plot_layout
+from .utility_functions import get_imass, get_delta, get_plot_layout
 from .utility_functions import plot_object_data, show_data, plot_geometry
 from .utility_functions import get_string_between_brackets
 
@@ -271,8 +271,10 @@ class esbmtkBase(object):
             if isinstance(k, list):  # If keyword is a list
                 s: int = 0  # loop over allowed substitutions
                 for e in k:  # test how many matches are in this list
-                    s = s + int(e in self.kwargs)
-                if s != 1:  # if none, or more than one match, throw error
+                    if e in self.kwargs:
+                        if self.kwargs[e] != "None":
+                            s = s + 1
+                if s > 1:  # if more than one match
                     raise ValueError(
                         f"You need to specify exactly one from this list: {k}"
                     )
@@ -421,20 +423,26 @@ class Model(esbmtkBase):
                       volume_unit = "mol/l", #required
                       time_label = optional, defaults to "Time"
                       display_precision = optional, defaults to 0.01,
-                      m_type = "mass_only", defaults to both (mass & isotope)
+                      m_type = "mass_only/both"
                       plot_style = 'default', optional defaults to 'default'
                       )
 
-    The 'ref_time' keyword will offset the time axis by the specified
-    amount, when plotting the data, .i.e., the model time runs from to
-    100, but you want to plot data as if where from 2000 to 2100, you would
-    specify a value of 2000. This is for display purposes only, and does not affect
-    the model. Care must be taken that any external data references the model
-    time domain, and not the display time.
+    ref_time:  will offset the time axis by the specified
+                 amount, when plotting the data, .i.e., the model time runs from to
+                 100, but you want to plot data as if where from 2000 to 2100, you would
+                 specify a value of 2000. This is for display purposes only, and does not affect
+                 the model. Care must be taken that any external data references the model
+                 time domain, and not the display time.
 
-    The display precision affects the on-screen display of data. It is
-    also cutoff for the graphicak output. I.e., the interval f the y-axis will not be
-    smaller than the display_precision.
+    display precision: affects the on-screen display of data. It is
+                       also cutoff for the graphicak output. I.e., the interval f the y-axis will not be
+                       smaller than the display_precision.
+
+    m_type: enables or disables isotope calculation for the entire model.
+            The default value  is "Not set" in this case isotopes will only be calculated for
+            reservoirs which set the isotope keyword. 'mass_only' 'both' will override
+            the reservoir settings
+
 
     All of the above keyword values are available as variables with
     Model_Name.keyword
@@ -448,6 +456,8 @@ class Model(esbmtkBase):
        - Model_name.read_state() Initialize with a previous model state
        - Model_Name.run()
        - Model_Name.list_species()
+       - Model_name.flux_summary()
+       - Model_Name.connection_summary()
 
     User facing variable are Model_Name.time which contains the time
     axis.
@@ -492,7 +502,7 @@ class Model(esbmtkBase):
             "offset": "0 years",
             "time_label": "Time",
             "display_precision": 0.01,
-            "m_type": "mass_only",
+            "m_type": "Not Set",
             "plot_style": "default",
         }
 
@@ -514,7 +524,7 @@ class Model(esbmtkBase):
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # empty list which will hold all reservoir references
-        self.dmo: dict = {}  # not sure what this is used for
+        self.dmo: dict = {}  # dict of all model objects. useful for name lookups
         self.lor: list = []
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
@@ -714,19 +724,11 @@ class Model(esbmtkBase):
         Loop over all reservoirs and either plot the data into a
         window, or save it to a pdf
 
-        This method has the optional keyword ptype which can be
-
-        both = plot both, concentraqqtion and isotope data
-        iso  = plot isotope data alone
-        concentration = plot only concentration data.
-
         """
-
-        ptype: int = get_ptype(self)
 
         i = 0
         for r in self.lor:
-            r.__plot__(i, ptype)
+            r.__plot__(i)
             i = i + 1
 
         plt.show()  # create the plot windows
@@ -734,18 +736,10 @@ class Model(esbmtkBase):
     def plot_reservoirs(self, **kwargs: dict) -> None:
         """Plot only Reservoir data
 
-        This method has the optional keyword ptype which can be
-
-        both = plot both, concentration and isotope data
-        iso  = plot isotope data alone
-        concentration = plot only concentration data.
-
         you can further specify a different name for the plot
         fn = "foo.pdf"
 
         """
-
-        ptype: int = get_ptype(self)
 
         # get number of plot objects
         i = 0
@@ -782,21 +776,21 @@ class Model(esbmtkBase):
 
         for r in self.los:  # signals
             if r.plot == "yes":
-                plot_object_data(geo, i, r, ptype)
+                plot_object_data(geo, i, r)
                 i = i + 1
 
         for r in self.lor:  # reservoirs
             if r.plot == "yes":
-                plot_object_data(geo, i, r, ptype)
+                plot_object_data(geo, i, r)
                 i = i + 1
 
         for r in self.lvr:  # virtual reservoirs
             if r.plot == "yes":
-                plot_object_data(geo, i, r, ptype)
+                plot_object_data(geo, i, r)
                 i = i + 1
 
         for r in self.ldf:  # datafields
-            plot_object_data(geo, i, r, ptype)
+            plot_object_data(geo, i, r)
             i = i + 1
 
         fig.tight_layout()
@@ -905,6 +899,71 @@ class Model(esbmtkBase):
         for e in self.lel:
             print(f"{e.n}")
             e.list_species()
+
+    def flux_summary(self, **kwargs: dict) -> None:
+        """Show a summary of all model fluxes
+
+        Optional parameters:
+
+        index :int = i > 1 and i < number of timesteps -1
+        filter_by :str = filter on flux name or part of flux name
+
+        """
+
+        if "index" in kwargs:
+            i: int = kwargs["index"]
+        else:
+            i: int = -3
+
+        if "filter_by" in kwargs:
+            fby: str = kwargs["filter_by"]
+        else:
+            fby: str = ""
+
+        if "filter" in kwargs:
+            raise ValueError("use filter_by instead of filter")
+
+        print(f"\n --- Flux Summary -- filtered by {fby}\n")
+
+        for r in self.lor:
+            print(f"- {r.full_name}:")
+
+            for f in r.lof:
+                if fby in f.full_name and f.m[i] > 0:
+                    direction = r.lio[f]
+                    if r.isotopes:
+                        print(
+                            f"    - {f.full_name} = {direction * f.m[i]:.2e} d = {f.d[i]:.2f}"
+                        )
+                    else:
+                        print(f"    - {f.full_name} = {direction * f.m[i]:.2e}")
+            print("")
+
+    def connection_summary(self, **kwargs: dict) -> None:
+        """Show a summary of all connections
+
+        Optional parameters:
+
+        filter_by :str = filter on flux name or part of flux name
+
+        """
+
+        if "filter_by" in kwargs:
+            fby: str = kwargs["filter_by"]
+        else:
+            fby: str = ""
+
+        if "filter" in kwargs:
+            raise ValueError("use filter_by instead of filter")
+
+        print(f"\n --- Connection Summary -- filtered by {fby}\n")
+        print(f"       append info() to the connection name to see more details")
+
+        for c in self.loc:
+            if fby in c.full_name:
+                print(f"{c.full_name}")
+
+        print("")
 
 class Element(esbmtkBase):
     """Each model, can have one or more elements.  This class sets
@@ -1048,6 +1107,7 @@ class Reservoir(esbmtkBase):
                             legend_left = str, optional, useful for plot transform
                             display_precision = number, optional, inherited from Model
                             register = optional, use to register with Reservoir Group
+                            isotopes = True/False otherwise use Model.m_type
                             )
 
           you must either give mass or concentration. The result will always be displayed as concentration
@@ -1118,6 +1178,7 @@ class Reservoir(esbmtkBase):
             "display_precision": Number,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "full_name": str,
+            "isotopes": bool,
             "a1": any,
             "a2": any,
             "a3": any,
@@ -1138,12 +1199,15 @@ class Reservoir(esbmtkBase):
         self.lod: Dict[any, any] = {
             "delta": "None",
             "plot": "yes",
+            "mass": "None",
+            "concentration": "None",
             "plot_transform_c": "None",
             "legend_left": "None",
             "function": "None",
             "groupname": "None",
             "register": "None",
             "full_name": "Not Set",
+            "isotopes": False,
             "a1": 0,
             "a2": 0,
             "a3": 0,
@@ -1186,6 +1250,12 @@ class Reservoir(esbmtkBase):
         self.mo: Model = self.species.mo  # model handle
         self.rvalue = self.sp.r
 
+        # decide whether we use isotopes
+        if self.mo.m_type == "both":
+            self.isotopes = True
+        elif self.mo.m_type == "mass_only":
+            self.isotopes = False
+
         # convert units
         self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
         self.v: Number = self.volume  # reservoir volume
@@ -1196,13 +1266,13 @@ class Reservoir(esbmtkBase):
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
-        if "concentration" in kwargs:
+        if self.mass == "None":
             c = Q_(self.concentration)
             self.plt_units = c.units
             self.concentration: Number = c.to(self.mo.c_unit).magnitude
             self.mass: Number = self.concentration * self.volume  # caculate mass
             self.display_as = "concentration"
-        elif "mass" in kwargs:
+        elif self.concentration == "None":
             m = Q_(self.mass)
             self.plt_units = self.mo.m_unit
             self.mass: Number = m.to(self.mo.m_unit).magnitude
@@ -1258,7 +1328,7 @@ class Reservoir(esbmtkBase):
         self.__register_name__()
 
         # decide which setitem functions to use
-        if self.mo.m_type == "both":
+        if self.isotopes:
             self.__set_data__ = self.__set_with_isotopes__
         else:
             self.__set_data__ = self.__set_without_isotopes__
@@ -1439,7 +1509,7 @@ class Reservoir(esbmtkBase):
 
         return col
 
-    def __plot__(self, i: int, ptype: int) -> None:
+    def __plot__(self, i: int) -> None:
         """Plot data from reservoirs and fluxes into a multiplot window"""
 
         model = self.sp.mo
@@ -1459,17 +1529,17 @@ class Reservoir(esbmtkBase):
 
         # plot reservoir data
         if self.plot == "yes":
-            plot_object_data(geo, fn, self, ptype)
+            plot_object_data(geo, fn, self)
 
             # plot the fluxes assoiated with this reservoir
             for f in sorted(self.lof):  # plot flux data
                 if f.plot == "yes":
                     fn = fn + 1
-                    plot_object_data(geo, fn, f, ptype)
+                    plot_object_data(geo, fn, f)
 
             for d in sorted(self.ldf):  # plot data fields
                 fn = fn + 1
-                plot_object_data(geo, fn, d, ptype)
+                plot_object_data(geo, fn, d)
 
             if geo != [1, 1]:
                 if self.groupname == "None":
@@ -1485,7 +1555,7 @@ class Reservoir(esbmtkBase):
             print(f"Saving as {filename}")
             fig.savefig(filename)
 
-    def __plot_reservoirs__(self, i: int, ptype: int) -> None:
+    def __plot_reservoirs__(self, i: int) -> None:
         """Plot only the  reservoirs data, and ignore the fluxes"""
 
         model = self.sp.mo
@@ -1504,7 +1574,7 @@ class Reservoir(esbmtkBase):
         fig.set_size_inches(size)
 
         # plt.legend()ot reservoir data
-        plot_object_data(geo, fn, self, ptype)
+        plot_object_data(geo, fn, self)
 
         fig.tight_layout()
         # fig.subplots_adjust(top=0.88)
@@ -1547,7 +1617,7 @@ class ReservoirGroup(esbmtkBase):
     """This class allows the creation of a group of reservoirs which share
     a common volume, and potentially connections. E.g., if we have two
     reservoir groups with the same reservoirs, and we connect them
-    with a flux, this flux will apply to all reservoirs in this group. 
+    with a flux, this flux will apply to all reservoirs in this group.
 
     A typical examples might be ocean water which comprises several
     species.  A reservoir group like ShallowOcean will then contain
@@ -1555,26 +1625,26 @@ class ReservoirGroup(esbmtkBase):
 
     Example::
 
-        ReservoirGroup(name = "ShallowOcean",    # Name of reservoir group
-                    volume = "1E5 l",            # reservoir volume (m^3)
-                    delta   = {DIC:0, ALK:0, PO4:0]            # dict of delta values
-                    mass/concentration = {DIC:"1 unit", ALK: "1 unit", PO$: "1 unit"] # 
-                    plot = {DIC:"yes", ALK:"yes", PO4: "no"] defaults to yes
+        ReservoirGroup(name = "ShallowOcean",         # Name of reservoir group
+                    volume = "1E5 l",                # reservoir volume (m^3)
+                    delta   = {DIC:0, ALK:0, PO4:0]  # dict of delta values
+                    mass/concentration = {DIC:"1 unit", ALK: "1 unit"}
+                    plot = {DIC:"yes", ALK:"yes"}  defaults to yes
+                    isotopes = {DIC: True/False} see Reservoir class for details
                )
 
     Notes: - The subreservoirs are derived from the keys in the concentration or mass
              dictionary. Toward this end, the keys must be valid species handles and
              -- not species names -- !
-    
+
     Connecting two reservoir groups requires that the names in both
     group match, or that you specify a dictionary which delineates the
     matching.
 
     """
-    def __init__(self, **kwargs) -> None:
-        """ Initialize a new reservoir group
 
-        """
+    def __init__(self, **kwargs) -> None:
+        """Initialize a new reservoir group"""
 
         from . import ureg, Q_
 
@@ -1586,6 +1656,7 @@ class ReservoirGroup(esbmtkBase):
             "mass": dict,
             "volume": (str, Q_),
             "plot": dict,
+            "isotopes": dict,
         }
 
         # provide a list of absolutely required keywords
@@ -1594,86 +1665,72 @@ class ReservoirGroup(esbmtkBase):
             "volume",
         ]
 
-        # Create a list of default values if none provided
-        plot: dict = {}
-        delta: dict = {}
-        concentration: dict = {}
-        mass: dict = {}
-
-        if 'concentration' in kwargs:
-            self.species: list = list(kwargs['concentration'].keys())
-        elif 'mass' in kwargs:
-            self.species: list = list(kwargs['mass'].keys())
+        if "concentration" in kwargs:
+            self.species: list = list(kwargs["concentration"].keys())
+        elif "mass" in kwargs:
+            self.species: list = list(kwargs["mass"].keys())
         else:
             raise ValueError("You must provide either mass or concentration")
 
-        # loop over names and create dicts
-        for n in self.species:
-            delta[n] = 'None'
-            plot[n] = 'yes'
-            concentration[n] = 'None'
-            mass[n] = 'None'
-
-        self.lod: Dict[str, any] = {
-            'delta': delta,
-            'concentration': concentration,
-            'mass': concentration,
-            'plot': plot,
-        }
-
         # validate and initialize instance variables
         self.__initerrormessages__()
-        self.bem.update({
-            "mass": "a  string or quantity",
-            "concentration": "a string or quantity",
-            "volume": "a string or quantity",
-            "plot": "yes or no",
-        })
+        self.bem.update(
+            {
+                "mass": "a  string or quantity",
+                "concentration": "a string or quantity",
+                "volume": "a string or quantity",
+                "plot": "yes or no",
+                "isotopes": "dict Species: True/False",
+            }
+        )
 
         self.__validateandregister__(kwargs)
-
         # legacy variable
         self.n = self.name
-        
-        # get model handle
         self.mo = self.species[0].mo
-
         # register this group object in the global namespace
         self.__register_name__()
 
+        # dict with all default values
+        self.cd: dict = {}
+        for s in self.species:
+            self.cd[s.name]: dict = {
+                "mass": "None",
+                "concentration": "None",
+                "delta": "None",
+                "plot": "yes",
+                "isotopes": False,
+            }
+
+            # now we loop trough all keys for this reservoir and see
+            # if we find a corresponding item in the kwargs
+            for kcd, vcd in self.cd[s.name].items():  # kcd  = delta, plot, etc
+                if kcd in self.kwargs:  # found entry delta
+                    # test if delta relates to any species
+                    if s in self.kwargs[kcd]:  # {SO4: xxx}
+                        # update the entry with the value provided in kwargs
+                        # self.cd['SO4_name']['delta'] = self.kwargs['delta'][SO4]
+                        self.cd[s.name][kcd] = self.kwargs[kcd][s]
+
         self.lor: list = []  # list of reservoirs in this group.
         # loop over all entries in species and create the respective reservoirs
-        for i, s in enumerate(self.species):
+        for s in self.species:
             if not isinstance(s, Species):
                 raise ValueError(f"{s.n} needs to be a valid species name")
 
-            if self.concentration[s] == "None":
-                # create reservoir without registering it in the global name space
-                a = Reservoir(
-                    name=f"{s.name}",
-                    register=self,
-                    species=s,
-                    delta=self.delta[s],
-                    mass=self.mass[s],
-                    volume=self.volume,
-                    plot=self.plot[s],
-                    groupname = self.name,
-                )
-            elif self.mass[s] == "None":
-                # create reservoir without registering it in the global name space
-                a = Reservoir(
-                    name=f"{s.name}",
-                    register=self,
-                    species=s,
-                    delta=self.delta[s],
-                    concentration=self.concentration[s],
-                    volume=self.volume,
-                    plot=self.plot[s],
-                    groupname = self.name,
-                )
-            else:
-                raise ValueError("You must specify mass or concentration")
-
+            # create reservoir without registering it in the global name space
+            a = Reservoir(
+                name=f"{s.name}",
+                register=self,
+                species=s,
+                delta=self.cd[s.n]["delta"],
+                mass=self.cd[s.n]["mass"],
+                concentration=self.cd[s.n]["concentration"],
+                volume=self.volume,
+                plot=self.cd[s.n]["plot"],
+                groupname=self.name,
+                isotopes=self.cd[s.n]["isotopes"],
+            )
             # register as part of this group
             self.lor.append(a)
 
@@ -1718,6 +1775,7 @@ class Flux(esbmtkBase):
             "rate": (str, Q_),
             "plot": str,
             "display_precision": Number,
+            "isotopes": bool,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
         }
 
@@ -1729,6 +1787,7 @@ class Flux(esbmtkBase):
             "delta": 0,
             "plot": "yes",
             "display_precision": 0,
+            "isotopes": False,
         }
 
         # initialize instance
@@ -1783,7 +1842,13 @@ class Flux(esbmtkBase):
         self.__register_name__()
 
         # decide which setitem functions to use
+        # decide whether we use isotopes
         if self.mo.m_type == "both":
+            self.isotopes = True
+        elif self.mo.m_type == "mass_only":
+            self.isotopes = False
+        
+        if self.isotopes:
             self.__set_data__ = self.__set_with_isotopes__
         else:
             self.__set_data__ = self.__set_without_isotopes__
@@ -1873,15 +1938,8 @@ class Flux(esbmtkBase):
 
     def plot(self, **kwargs: dict) -> None:
         """Plot the flux data:
-        This method has the optional keyword ptype which can be
-
-        both = plot both, concentration and isotope data
-        iso  = plot isotope data alone
-        concentration = plot only concentration data.
 
         """
-
-        ptype: int = get_ptype(self)
 
         fig, ax1 = plt.subplots()
         fig.set_size_inches(5, 4)  # Set figure size in inches
@@ -1911,7 +1969,7 @@ class SourceSink(esbmtkBase):
            Sink(name = "Pyrite",
                species = SO4,
                display_precision = number, optional, inherited from Model
-               delta = number, optional, defaults to 0
+               delta = number or str. optional defaults to "None"
            )
 
     where the first argument is a string, and the second is a reservoir handle
@@ -1926,13 +1984,18 @@ class SourceSink(esbmtkBase):
             "species": Species,
             "display_precision": Number,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
-            "delta": Number,
+            "delta": (Number, str),
+            "isotopes": bool,
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species"]
         # list of default values if none provided
-        self.lod: Dict[str, any] = {"display_precision": 0, "delta": 0}
+        self.lod: Dict[str, any] = {
+            "display_precision": 0,
+            "delta": "None",
+            "isotopes": False,
+        }
 
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -1945,6 +2008,9 @@ class SourceSink(esbmtkBase):
         self.mo = self.species.mo
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
         self.lio: list = []
+
+        if self.delta != "None":
+            self.isotopes = True
 
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
@@ -1975,27 +2041,31 @@ class Source(SourceSink):
 
 class SourceSinkGroup(esbmtkBase):
     """
-    This is a meta class to setup  Source/Sink Groups. These are not 
+    This is a meta class to setup  Source/Sink Groups. These are not
     actual reservoirs, but we stil need to have them as objects
     Example::
-    
-           Sink(name = "Pyrite",species = SO4)
+
+           Sink(name = "Pyrite",
+                species = [SO42, H2S],
+                delta = {"SO4": 10}
+                )
 
     where the first argument is a string, and the second is a reservoir handle
     """
 
-    
     def __init__(self, **kwargs) -> None:
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
             "species": list,
+            "delta": dict,
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species"]
         # list of default values if none provided
+        self.lod: Dict[any, any] = {"delta": {}}
 
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -2007,26 +2077,33 @@ class SourceSinkGroup(esbmtkBase):
         self.__register_name__()
 
         self.lor: list = []  # list of sub reservoirs in this group
-        # loop over names and setup sub-objects
+
+        # loop over species names and setup sub-objects
         for i, s in enumerate(self.species):
             if not isinstance(s, Species):
                 raise ValueError(f"{s.n} needs to be a valid species name")
+
+            if s in self.delta:
+                delta = self.delta[s]
+            else:
+                delta = "None"
 
             if type(self).__name__ == "SourceGroup":
                 a = Source(
                     name=f"{s.name}",
                     register=self,
                     species=s,
+                    delta=delta,
                 )
             elif type(self).__name__ == "SinkGroup":
                 a = Sink(
                     name=f"{s.name}",
                     register=self,
                     species=s,
+                    delta=delta,
                 )
             else:
-                raise TypeError(
-                    f"{type(self).__name__} is not a valid class type")
+                raise TypeError(f"{type(self).__name__} is not a valid class type")
 
             # register in local namespace
             self.lor.append(a)
@@ -2036,7 +2113,7 @@ class SinkGroup(SourceSinkGroup):
     """
     This is just a wrapper to setup a Sink object
     Example::
-    
+
            Sink(name = "Pyrite",species =SO4)
 
     where the first argument is a string, and the second is a species handle
@@ -2047,7 +2124,7 @@ class SourceGroup(SourceSinkGroup):
     """
     This is just a wrapper to setup a Source object
     Example::
-    
+
            Sink(name = "SO4_diffusion", species ="SO4")
 
     where the first argument is a string, and the second is a species handle
@@ -2700,7 +2777,7 @@ class VirtualReservoir(Reservoir):
         # if self.register != "None":
         #    self.full_name = f"{self.full_name}.{self.name}"
         name = f"{self.full_name}_generic_function".replace(".","_")
-        print(f"creating {name}")
+        logging.info(f"creating {name}")
 
         self.gfh = GenericFunction(
             name=name,

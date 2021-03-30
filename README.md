@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org290ec5f)
-2.  [News](#org9887f7d)
-3.  [Contributing](#org700015b)
-4.  [Installation](#org9a1752c)
-5.  [Documentation](#org6176b84)
-6.  [Todo](#org985871a)
-7.  [License](#orge613bf8)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org7655b7d)
+2.  [News](#org4f756ba)
+3.  [Contributing](#orga058ebd)
+4.  [Installation](#org6ac67fc)
+5.  [Documentation](#org0838499)
+6.  [Todo](#org222e08d)
+7.  [License](#orgfdacb85)
 
 
-<a id="org290ec5f"></a>
+<a id="org7655b7d"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,12 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org9887f7d"></a>
+<a id="org4f756ba"></a>
 
 # News
+
+-   March 28<sup>th</sup> 0.4.0.6 added a `flux_summmary()` method to the model
+    class.
 
 -   March 27<sup>th</sup>, 0.4.0.5 added the hypsometry class which provides a
     spline representation of the hypsometry between -6000 mbsl and 1000
@@ -152,7 +155,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org700015b"></a>
+<a id="orga058ebd"></a>
 
 # Contributing
 
@@ -162,7 +165,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org9a1752c"></a>
+<a id="org6ac67fc"></a>
 
 # Installation
 
@@ -183,7 +186,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org6176b84"></a>
+<a id="org0838499"></a>
 
 # Documentation
 
@@ -201,7 +204,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org985871a"></a>
+<a id="org222e08d"></a>
 
 # Todo
 
@@ -210,7 +213,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orge613bf8"></a>
+<a id="orgfdacb85"></a>
 
 # License
 

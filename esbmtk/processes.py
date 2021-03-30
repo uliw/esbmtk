@@ -155,12 +155,13 @@ class GenericFunction(Process):
     use with the generic function process. This function needs to follow this
     template::
 
-        def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0, act_on="") -> tuple:
+        def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0, volume=0) -> tuple:
             #
             # i = index of the current timestep
             # a1 to a2 =  optional function parameter. These must be present,
             # even if your function will not use it
 
+            # volume will be supplied implicitly, there is no need to specify it
             # calc some stuff and return it as
 
             return [m, l, h] # where m= mass, and l & h are the respective
@@ -174,7 +175,7 @@ class GenericFunction(Process):
                 function=my_func,
                 a1 = some argument,
                 a2 = some argument,
-                act_on = reservoir name)
+                )
 
     """
 
@@ -343,7 +344,8 @@ class AddSignal(Process):
         self.__register_name__()
 
         # decide whichh call function to use
-        if self.mo.m_type == "both":
+        # if self.mo.m_type == "both":
+        if self.reservoir.isotopes:
             self.__execute__ = self.__with_isotopes__
         else:
             self.__execute__ = self.__without_isotopes__
@@ -558,10 +560,16 @@ class VarDeltaOut(Process):
         self.__register_name__()
 
         # decide which call function to use
-        if self.mo.m_type == "both":
+        # if self.mo.m_type == "both":
+        if self.reservoir.isotopes:
+            # print(
+            #    f"vardeltaout with isotopes for {self.reservoir.register.name}.{self.reservoir.name}"
+            # )
             if isinstance(self.reservoir, Reservoir):
+                # print("Using reservoir")
                 self.__execute__ = self.__with_isotopes_reservoir__
             elif isinstance(self.reservoir, Source):
+                # print("Using Source")
                 self.__execute__ = self.__with_isotopes_source__
             else:
                 raise ValueError(
@@ -583,8 +591,10 @@ class VarDeltaOut(Process):
 
         m: float = self.flux.m[i]
         if m != 0:
+            #if reservoir.register.name == "db":
+            #    print(f"{reservoir.name} d={reservoir.d[i-1]}")
             r: float = reservoir.species.element.r
-            d: float = self.reservoir.d[i - 1]
+            d: float = reservoir.d[i - 1]
             l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
             h: float = m - l
 
@@ -643,7 +653,8 @@ class ScaleFlux(Process):
         self.__register_name__()
 
         # decide which call function to use
-        if self.mo.m_type == "both":
+        # if self.mo.m_type == "both":
+        if self.reservoir.isotopes:
             self.__execute__ = self.__with_isotopes__
         else:
             self.__execute__ = self.__without_isotopes__
@@ -764,7 +775,8 @@ class Fractionation(Process):
         self.__register_name__()
 
         # decide which call function to use
-        if self.mo.m_type == "both":
+        if self.reservoir.isotopes:
+        #if self.mo.m_type == "both":
             self.__execute__ = self.__with_isotopes__
         else:
             self.__execute__ = self.__without_isotopes__
