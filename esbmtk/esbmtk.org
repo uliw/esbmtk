@@ -304,8 +304,10 @@ class esbmtkBase(object):
             if isinstance(k, list):  # If keyword is a list
                 s: int = 0  # loop over allowed substitutions
                 for e in k:  # test how many matches are in this list
-                    s = s + int(e in self.kwargs)
-                if s != 1:  # if none, or more than one match, throw error
+                    if e in self.kwargs:
+                        if self.kwargs[e] != "None":
+                            s = s + 1
+                if s > 1:  # if more than one match
                     raise ValueError(
                         f"You need to specify exactly one from this list: {k}"
                     )
@@ -1222,6 +1224,8 @@ class Reservoir(esbmtkBase):
         self.lod: Dict[any, any] = {
             "delta": "None",
             "plot": "yes",
+            "mass": "None",
+            "concentration": "None",
             "plot_transform_c": "None",
             "legend_left": "None",
             "function": "None",
@@ -1287,13 +1291,13 @@ class Reservoir(esbmtkBase):
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
-        if "concentration" in kwargs:
+        if self.mass == "None":
             c = Q_(self.concentration)
             self.plt_units = c.units
             self.concentration: Number = c.to(self.mo.c_unit).magnitude
             self.mass: Number = self.concentration * self.volume  # caculate mass
             self.display_as = "concentration"
-        elif "mass" in kwargs:
+        elif self.concentration == "None":
             m = Q_(self.mass)
             self.plt_units = self.mo.m_unit
             self.mass: Number = m.to(self.mo.m_unit).magnitude
@@ -1641,7 +1645,7 @@ class ReservoirGroup(esbmtkBase):
     """This class allows the creation of a group of reservoirs which share
     a common volume, and potentially connections. E.g., if we have two
     reservoir groups with the same reservoirs, and we connect them
-    with a flux, this flux will apply to all reservoirs in this group. 
+    with a flux, this flux will apply to all reservoirs in this group.
 
     A typical examples might be ocean water which comprises several
     species.  A reservoir group like ShallowOcean will then contain
@@ -1649,26 +1653,26 @@ class ReservoirGroup(esbmtkBase):
 
     Example::
 
-        ReservoirGroup(name = "ShallowOcean",    # Name of reservoir group
-                    volume = "1E5 l",            # reservoir volume (m^3)
-                    delta   = {DIC:0, ALK:0, PO4:0]            # dict of delta values
-                    mass/concentration = {DIC:"1 unit", ALK: "1 unit", PO$: "1 unit"] # 
-                    plot = {DIC:"yes", ALK:"yes", PO4: "no"] defaults to yes
+        ReservoirGroup(name = "ShallowOcean",         # Name of reservoir group
+                    volume = "1E5 l",                # reservoir volume (m^3)
+                    delta   = {DIC:0, ALK:0, PO4:0]  # dict of delta values
+                    mass/concentration = {DIC:"1 unit", ALK: "1 unit"}
+                    plot = {DIC:"yes", ALK:"yes"}  defaults to yes
+                    isotopes = {DIC: True/False} see Reservoir class for details
                )
 
     Notes: - The subreservoirs are derived from the keys in the concentration or mass
              dictionary. Toward this end, the keys must be valid species handles and
              -- not species names -- !
-    
+
     Connecting two reservoir groups requires that the names in both
     group match, or that you specify a dictionary which delineates the
     matching.
 
     """
-    def __init__(self, **kwargs) -> None:
-        """ Initialize a new reservoir group
 
-        """
+    def __init__(self, **kwargs) -> None:
+        """Initialize a new reservoir group"""
 
         from . import ureg, Q_
 
@@ -1680,6 +1684,7 @@ class ReservoirGroup(esbmtkBase):
             "mass": dict,
             "volume": (str, Q_),
             "plot": dict,
+            "isotopes": dict,
         }
 
         # provide a list of absolutely required keywords
@@ -1688,86 +1693,72 @@ class ReservoirGroup(esbmtkBase):
             "volume",
         ]
 
-        # Create a list of default values if none provided
-        plot: dict = {}
-        delta: dict = {}
-        concentration: dict = {}
-        mass: dict = {}
-
-        if 'concentration' in kwargs:
-            self.species: list = list(kwargs['concentration'].keys())
-        elif 'mass' in kwargs:
-            self.species: list = list(kwargs['mass'].keys())
+        if "concentration" in kwargs:
+            self.species: list = list(kwargs["concentration"].keys())
+        elif "mass" in kwargs:
+            self.species: list = list(kwargs["mass"].keys())
         else:
             raise ValueError("You must provide either mass or concentration")
 
-        # loop over names and create dicts
-        for n in self.species:
-            delta[n] = 'None'
-            plot[n] = 'yes'
-            concentration[n] = 'None'
-            mass[n] = 'None'
-
-        self.lod: Dict[str, any] = {
-            'delta': delta,
-            'concentration': concentration,
-            'mass': concentration,
-            'plot': plot,
-        }
-
         # validate and initialize instance variables
         self.__initerrormessages__()
-        self.bem.update({
-            "mass": "a  string or quantity",
-            "concentration": "a string or quantity",
-            "volume": "a string or quantity",
-            "plot": "yes or no",
-        })
+        self.bem.update(
+            {
+                "mass": "a  string or quantity",
+                "concentration": "a string or quantity",
+                "volume": "a string or quantity",
+                "plot": "yes or no",
+                "isotopes": "dict Species: True/False",
+            }
+        )
 
         self.__validateandregister__(kwargs)
-
         # legacy variable
         self.n = self.name
-        
-        # get model handle
         self.mo = self.species[0].mo
-
         # register this group object in the global namespace
         self.__register_name__()
 
+        # dict with all default values
+        self.cd: dict = {}
+        for s in self.species:
+            self.cd[s.name]: dict = {
+                "mass": "None",
+                "concentration": "None",
+                "delta": "None",
+                "plot": "Yes",
+                "isotopes": False,
+            }
+
+            # now we loop trough all keys for this reservoir and see
+            # if we find a corresponding item in the kwargs
+            for kcd, vcd in self.cd[s.name].items():  # kcd  = delta, plot, etc
+                if kcd in self.kwargs:  # found entry delta
+                    # test if delta relates to any species
+                    if s in self.kwargs[kcd]:  # {SO4: xxx}
+                        # update the entry with the value provided in kwargs
+                        # self.cd['SO4_name']['delta'] = self.kwargs['delta'][SO4]
+                        self.cd[s.name][kcd] = self.kwargs[kcd][s]
+
         self.lor: list = []  # list of reservoirs in this group.
         # loop over all entries in species and create the respective reservoirs
-        for i, s in enumerate(self.species):
+        for s in self.species:
             if not isinstance(s, Species):
                 raise ValueError(f"{s.n} needs to be a valid species name")
 
-            if self.concentration[s] == "None":
-                # create reservoir without registering it in the global name space
-                a = Reservoir(
-                    name=f"{s.name}",
-                    register=self,
-                    species=s,
-                    delta=self.delta[s],
-                    mass=self.mass[s],
-                    volume=self.volume,
-                    plot=self.plot[s],
-                    groupname = self.name,
-                )
-            elif self.mass[s] == "None":
-                # create reservoir without registering it in the global name space
-                a = Reservoir(
-                    name=f"{s.name}",
-                    register=self,
-                    species=s,
-                    delta=self.delta[s],
-                    concentration=self.concentration[s],
-                    volume=self.volume,
-                    plot=self.plot[s],
-                    groupname = self.name,
-                )
-            else:
-                raise ValueError("You must specify mass or concentration")
-
+            # create reservoir without registering it in the global name space
+            a = Reservoir(
+                name=f"{s.name}",
+                register=self,
+                species=s,
+                delta=self.cd[s.n]["delta"],
+                mass=self.cd[s.n]["mass"],
+                concentration=self.cd[s.n]["concentration"],
+                volume=self.volume,
+                plot=self.cd[s.n]["plot"],
+                groupname=self.name,
+                isotopes=self.cd[s.n]["isotopes"],
+            )
             # register as part of this group
             self.lor.append(a)
 #+END_SRC
