@@ -224,10 +224,9 @@ def get_ptype(obj, **kwargs: dict) -> int:
 
     from esbmtk import Flux, Reservoir, Signal, DataField, Source, Sink
     
-   
     ptype: int = 0
 
-    if isinstance(obj, (Reservoir, Source, Sink)):
+    if isinstance(obj, (Reservoir, Source, Sink, Flux)):
         if obj.isotopes:
             ptype = 0
         else:

@@ -1005,10 +1005,10 @@ class Element(esbmtkBase):
         self.lrk: list = ["name", "model", "mass_unit"]
         # list of default values if none provided
         self.lod = {
-            'li_label': "NONE",
-            'hi_label': "NONE",
-            'd_label': "NONE",
-            'd_scale': "NONE",
+            'li_label': "None",
+            'hi_label': "None",
+            'd_label': "None",
+            'd_scale': "None",
             'r': 1,
         }
 
@@ -1483,7 +1483,7 @@ class Reservoir(esbmtkBase):
 
         # test if we missed any fluxes
         for f in list(curr.difference(read)):
-            print(f"\n Warning: Did not find values for {f}\n")
+            print(f"\n Warning: Did not find values for {f}\n in saved state")
 
     def __assign__data__(self, obj: any, df: pd.DataFrame, col: int, res: bool) -> int:
         """
@@ -2244,8 +2244,8 @@ class Signal(esbmtkBase):
             "delta": 0,
             "scale": 1,
             "display_precision": 0,
-            "reservoir": "none",
-            "source": "none",
+            "reservoir": "None",
+            "source": "None",
         }
 
         self.__initerrormessages__()
@@ -2300,15 +2300,15 @@ class Signal(esbmtkBase):
         self.__register_name__()
         self.mo.los.append(self)  # register with model
 
-        if self.reservoir != "none":
+        if self.reservoir != "None":
             self.__apply_signal__()
 
-    def __apply_signal__(self)->None:
+    def __apply_signal__(self) -> None:
         """Create a source, and connect signal, source and reservoir"""
 
         from esbmtk import Source, Connect
 
-        if self.source == "none":
+        if self.source == "None":
             self.source = Source(name=f"{self.name}_Source", species=self.sp)
 
         Connect(
@@ -2560,7 +2560,7 @@ class Signal(esbmtkBase):
         [ns.data.l, ns.data.h] = get_imass(ns.data.m, ns.data.d, ns.data.sp.r)
         return ns
 
-    def __register__(self, flux) -> None:
+    def __register_with_flux__(self, flux) -> None:
         """Register this signal with a flux. This should probably be done
         through a process!
 
