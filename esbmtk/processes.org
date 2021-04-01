@@ -110,7 +110,7 @@ class Process(esbmtkBase):
             "lt": Flux,
             "alpha": Number,
             "scale": Number,
-            "ref": (Flux, list),
+            "ref": (Flux, list,str),
             "register": (str, ConnectionGroup),
         }
 
@@ -924,39 +924,50 @@ class RateConstant(Process):
         self.mo = self.reservoir.mo
         self.__register_name__()
 
+        # decide which call function to use
+        # if self.mo.m_type == "both":
+        if self.reservoir.isotopes:
+            self.__execute__ = self.__with_isotopes__
+        else:
+            self.__execute__ = self.__without_isotopes__
 
-class ScaleRelativeToNormalizedConcentration(RateConstant):
-    """This process scales the flux as a function of the upstream
-     reservoir concentration C and a constant which describes the
-     strength of relation between the reservoir concentration and
-     the flux scaling
-
-     F = (C/C0 -1) * k
-
-     where C denotes the concentration in the ustream reservoir, C0
-     denotes the baseline concentration and k is a constant
-     This process is typically called by the connector
-     instance. However you can instantiate it manually as
+    # setup a placeholder call function
+    def __call__(self, reservoir: Reservoir, i: int):
+        return self.__execute__(reservoir, i)
 
 
-     ScaleRelativeToNormalizedConcentration(
-                       name = "Name",
-                       reservoir= upstream_reservoir_handle,
-                       flux = flux handle,
-                       Scale =  1000,
-                       ref_value = 2 # reference_concentration
-    )
+# class ScaleRelativeToNormalizedConcentration(RateConstant):
+#     """This process scales the flux as a function of the upstream
+#      reservoir concentration C and a constant which describes the
+#      strength of relation between the reservoir concentration and
+#      the flux scaling
 
-    """
+#      F = (C/C0 -1) * k
 
-    def __call__(self, reservoir: Reservoir, i: int) -> None:
-        """
-        this will be called by the Model.run() method
-        """
+#      where C denotes the concentration in the ustream reservoir, C0
+#      denotes the baseline concentration and k is a constant
+#      This process is typically called by the connector
+#      instance. However you can instantiate it manually as
 
-        scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.scale
-        # scale = scale * (scale >= 0)  # prevent negative fluxes.
-        self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
+
+#      ScaleRelativeToNormalizedConcentration(
+#                        name = "Name",
+#                        reservoir= upstream_reservoir_handle,
+#                        flux = flux handle,
+#                        Scale =  1000,
+#                        ref_value = 2 # reference_concentration
+#     )
+
+#     """
+
+#     def __call__(self, reservoir: Reservoir, i: int) -> None:
+#         """
+#         this will be called by the Model.run() method
+#         """
+
+#         scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.scale
+#         # scale = scale * (scale >= 0)  # prevent negative fluxes.
+#         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
 
 
 class ScaleRelativeToConcentration(RateConstant):
@@ -981,13 +992,23 @@ class ScaleRelativeToConcentration(RateConstant):
 
     """
 
-    def __call__(self, reservoir: Reservoir, i: int) -> None:
+    def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
+        m: float = self.reservoir.m[i - 1]
+        if m > 0:  # otherwise there is no flux
+            # convert to mass
+            m = m / self.reservoir.volume * self.scale
+            self.flux.m[i] = m
+
+    def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
         C = M/V so we express this as relative to mass which allows us to
-        use the isptope data
+        use the isotope data.
+
+        The below calculates the flux as function of reservoir concentration,
+        rather than scaling the flux.
         """
 
-        m :float = self.reservoir.m[i - 1]
+        m: float = self.reservoir.m[i - 1]
         if m > 0:  # otherwise there is no flux
             m = m / self.reservoir.volume * self.scale
             r: float = reservoir.species.element.r
@@ -997,7 +1018,6 @@ class ScaleRelativeToConcentration(RateConstant):
             self.flux.l[i]: float = l
             self.flux.h[i]: float = m - l
             self.flux.m[i]: float = m
-            
 
 
 class ScaleRelativeToMass(RateConstant):
@@ -1028,45 +1048,59 @@ class ScaleRelativeToMass(RateConstant):
 
     """
 
-    def __call__(self, reservoir: Reservoir, i: int) -> None:
+    def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
+        m: float = self.reservoir.m[i - 1] * self.scale
+        self.flux.m[i]: float = m
+
+    def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
         this will be called by the Model.run() method
         """
-        scale: float = reservoir.m[i - 1] * self.scale
-        self.f[i] = self.f[i] * array([scale, scale, scale, 1])
+        # scale: float = reservoir.m[i - 1] * self.scale
+        # self.f[i] = self.f[i] * array([scale, scale, scale, 1])
+        # self.d[i] =  reservoir.d[i - 1]
+
+        m: float = self.reservoir.m[i - 1] * self.scale
+        r: float = reservoir.species.element.r
+        d: float = reservoir.d[i - 1]
+        l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+        self.flux.d[i]: float = d
+        self.flux.l[i]: float = l
+        self.flux.h[i]: float = m - l
+        self.flux.m[i]: float = m
 
 
-class ScaleRelativeToNormalizedMass(RateConstant):
-    """This process scales the flux as a function of the upstream
-     reservoir mass M and a constant which describes the
-     strength of relation between the reservoir concentration and
-     the flux scaling
+# class ScaleRelativeToNormalizedMass(RateConstant):
+#     """This process scales the flux as a function of the upstream
+#      reservoir mass M and a constant which describes the
+#      strength of relation between the reservoir concentration and
+#      the flux scaling
 
-     F = (M/M0 -1) * k
+#      F = (M/M0 -1) * k
 
-     where M denotes the mass in the ustream reservoir, M0
-     denotes the reference mass, and k is a constant
-     This process is typically called by the connector
-     instance. However you can instantiate it manually as
+#      where M denotes the mass in the ustream reservoir, M0
+#      denotes the reference mass, and k is a constant
+#      This process is typically called by the connector
+#      instance. However you can instantiate it manually as
 
 
-     ScaleRelativeToNormalizedConcentration(
-                       name = "Name",
-                       reservoir= upstream_reservoir_handle,
-                       flux = flux handle,
-                       Scale =  1,
-                       ref_value = 1e5 # reference_mass
-    )
+#      ScaleRelativeToNormalizedConcentration(
+#                        name = "Name",
+#                        reservoir= upstream_reservoir_handle,
+#                        flux = flux handle,
+#                        Scale =  1,
+#                        ref_value = 1e5 # reference_mass
+#     )
 
-    """
+#     """
 
-    def __call__(self, reservoir: Reservoir, i: int) -> None:
-        """
-        this will be called by the Model.run() method
-        """
-        scale: float = (reservoir.m[i - 1] / self.ref_value - 1) * self.scale
-        # scale = scale * (scale >= 0)  # prevent negative fluxes.
-        self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
+#     def __call__(self, reservoir: Reservoir, i: int) -> None:
+#         """
+#         this will be called by the Model.run() method
+#         """
+#         scale: float = (reservoir.m[i - 1] / self.ref_value - 1) * self.scale
+#         # scale = scale * (scale >= 0)  # prevent negative fluxes.
+#         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
 
 
 class ScaleRelative2otherReservoir(RateConstant):
@@ -1104,9 +1138,19 @@ class ScaleRelative2otherReservoir(RateConstant):
             else:
                 raise ValueError(f"{r} must be reservoir or number, not {type(r)}")
 
-    def __call__(self, reservoir: Reservoir, i: int) -> None:
+    def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
+        c: float = 1
+        for r in self.rs:
+            c = c * r.c[i - 1]
+
+        scale: float = c * self.scale * self.constant
+
+        # scale = scale * (scale >= 0)  # prevent negative fluxes.
+        self.f[i] = self.f[i] * array([scale, scale, scale, 1])
+
+    def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
-        this will be called by the Model.run() method
+        not sure that this correct WRT isotopes
 
         """
 

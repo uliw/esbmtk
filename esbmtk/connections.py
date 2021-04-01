@@ -282,7 +282,7 @@ class Connect(esbmtkBase):
             "alpha": (Number, str),
             "species": Species,
             "ctype": str,
-            "ref": (Flux, list),
+            "ref": (Flux, str, list),
             "ratio": Number,
             "scale": (Number, str),
             "ref_value": (str, Number, Q_),
@@ -318,6 +318,7 @@ class Connect(esbmtkBase):
             "bypass": "None",
             "name": "None",
             "isotopes": False,
+            "ref": "None",
         }
 
         # validate and initialize instance variables
@@ -495,6 +496,7 @@ class Connect(esbmtkBase):
             register=self.register,  # is this part of a group?
             isotopes=self.isotopes,
         )
+        print(f"Created Flux {self.fh.name}")
 
         # register flux with its reservoirs
         if isinstance(self.r1, Source):
@@ -634,10 +636,10 @@ class Connect(esbmtkBase):
         elif self.ctype == "scale_with_concentration":
             self.__rateconstant__()
             # self.__vardeltaout__()
-        elif self.ctype == "scale_with_concentration_normalized":
-            self.__rateconstant__()
-        elif self.ctype == "scale_with_mass_normalized":
-            self.__rateconstant__()
+        # elif self.ctype == "scale_with_concentration_normalized":
+        #    self.__rateconstant__()
+        # elif self.ctype == "scale_with_mass_normalized":
+        #     self.__rateconstant__()
         elif self.ctype == "scale_relative_to_multiple_reservoirs":
             self.__rateconstant__()
         elif self.ctype == "flux_balance":
@@ -843,26 +845,6 @@ class Connect(esbmtkBase):
                 scale=self.scale,
             )
 
-        elif self.ctype == "scale_with_mass_normalized":
-
-            if self.k_value != "None":
-                self.scale = self.k_value
-                print(
-                    f"\n Warning: use scale instead of k_value for scale with mass normalized type\n"
-                )
-
-            self.scale = map_units(self.scale, self.mo.m_unit)
-            self.ref_value = map_units(self.ref_value, self.mo.m_unit)
-
-            ph = ScaleRelativeToNormalizedMass(
-                name=self.pn + "_PknM",
-                reservoir=self.ref_reservoir,
-                flux=self.fh,
-                register=self.register,
-                ref_value=self.ref_value,
-                scale=self.scale,
-            )
-
         elif self.ctype == "scale_with_concentration":
 
             if self.k_value != "None":
@@ -914,27 +896,6 @@ class Connect(esbmtkBase):
                 flux=self.fh,
                 register=self.register,
                 k_value=self.k_value,
-            )
-
-        elif self.ctype == "scale_with_concentration_normalized":
-
-            if self.k_value != "None":
-                self.scale = self.k_value
-                print(
-                    f"\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n"
-                )
-
-            self.scale = map_units(
-                self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
-            )
-            self.ref_value = map_units(self.ref_value, self.mo.c_unit)
-            ph = ScaleRelativeToNormalizedConcentration(
-                name=self.pn + "_PknC",
-                reservoir=self.ref_reservoir,
-                flux=self.fh,
-                register=self.register,
-                ref_value=self.ref_value,
-                scale=self.scale,
             )
 
         elif self.ctype == "monod_ctype_limit":
@@ -1145,7 +1106,7 @@ class ConnectionGroup(esbmtkBase):
             "alpha": dict,
             "species": dict,
             "ctype": dict,
-            "ref": list,
+            "ref": dict,
             "plot": dict,
             "scale": dict,
         }
@@ -1199,6 +1160,7 @@ class ConnectionGroup(esbmtkBase):
                 "rate": "None",
                 "scale": "None",
                 "ctype": "None",
+                "ref": "None",
             }
             # now we loop trough all keys for this connection and see
             # if we find a corresponding item in the kwargs
@@ -1220,6 +1182,7 @@ class ConnectionGroup(esbmtkBase):
                 plot=self.cd[r.n]["plot"],
                 ctype=self.cd[r.n]["ctype"],
                 scale=self.cd[r.n]["scale"],
+                ref=self.cd[r.n]["ref"],
                 groupname=True,
                 # id=self.id,
                 register=self,

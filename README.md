@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org7655b7d)
-2.  [News](#org4f756ba)
-3.  [Contributing](#orga058ebd)
-4.  [Installation](#org6ac67fc)
-5.  [Documentation](#org0838499)
-6.  [Todo](#org222e08d)
-7.  [License](#orgfdacb85)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org0d41520)
+2.  [News](#orgf23978a)
+3.  [Contributing](#org0e4b84a)
+4.  [Installation](#org058bc1b)
+5.  [Documentation](#orgc89c4f9)
+6.  [Todo](#org97b188d)
+7.  [License](#orgefef19c)
 
 
-<a id="org7655b7d"></a>
+<a id="org0d41520"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,12 +27,16 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org4f756ba"></a>
+<a id="orgf23978a"></a>
 
 # News
 
--   March 28<sup>th</sup> 0.4.0.6 added a `flux_summmary()` method to the model
-    class.
+-   April 1<sup>st</sup>. Added `carbonate_system()` function to the carbonate
+    chemistry module. This function simplifies the setup of the H<sup>+</sup> and
+    carbonate alkalinity reservoirs. See the api docs for details.
+
+-   March 28<sup>th</sup> added a `flux_summmary()` and
+    `connection_summary()` methods to the model class.
 
 -   March 27<sup>th</sup>, 0.4.0.5 added the hypsometry class which provides a
     spline representation of the hypsometry between -6000 mbsl and 1000
@@ -155,7 +159,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orga058ebd"></a>
+<a id="org0e4b84a"></a>
 
 # Contributing
 
@@ -165,7 +169,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org6ac67fc"></a>
+<a id="org058bc1b"></a>
 
 # Installation
 
@@ -186,7 +190,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org0838499"></a>
+<a id="orgc89c4f9"></a>
 
 # Documentation
 
@@ -204,7 +208,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org222e08d"></a>
+<a id="org97b188d"></a>
 
 # Todo
 
@@ -213,7 +217,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orgfdacb85"></a>
+<a id="orgefef19c"></a>
 
 # License
 

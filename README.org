@@ -14,7 +14,11 @@ generation of graphical results.
 
 * News
 
- - March 28^{th} 0.4.0.6 added a =flux_summmary()= and
+ - April 1^{st}. Added =carbonate_system()= function to the carbonate
+   chemistry module. This function simplifies the setup of the H^{+} and
+   carbonate alkalinity reservoirs. See the api docs for details.
+
+ - March 28^{th} added a =flux_summmary()= and
    =connection_summary()= methods to the model class.
 
  - March 27^{th}, 0.4.0.5 added the hypsometry class which provides a

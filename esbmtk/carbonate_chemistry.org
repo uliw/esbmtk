@@ -536,3 +536,61 @@ def calc_pCO2(
 
     return pco2
 #+END_SRC
+
+** Simplify the setup of the carbonate system
+
+#+BEGIN_SRC ipython  :tangle carbonate_chemistry.py
+def carbonate_system(
+    ca_con: float,
+    hplus_con: float,
+    volume: float,
+    swc: SeawaterConstants,
+    rg: ReservoirGroup = "None",
+) -> tuple:
+
+    """Setup the virtual reservoirs for carbonate alkalinity and H+
+
+    ca_con: initial carbonate concentration. Must be a quantity
+    hplus_con: initial H+ concentration. Must be a quantity
+    volume: volume : Must be a quantity
+    swc : a seawater constants object
+    rg: optional, must be a reservoir group. If present, the below reservoirs
+        will be registered with this group.
+
+    Returns the reservoir handles to VCA and VH
+    """
+
+    from esbmtk import VirtualReservoir, phc, calc_CA, calc_H
+
+    v1 = VirtualReservoir(
+        name="VCA",
+        species=CA,
+        concentration=ca_con,
+        volume=volume,
+        plot="no",
+        function=calc_CA,
+        register=rg,
+    )
+
+    v2 = VirtualReservoir(
+        name="VH",
+        species=Hplus,
+        concentration=hplus_con,
+        volume=volume,
+        plot_transform_c=phc,
+        legend_left="pH",
+        plot="yes",
+        function=calc_H,
+        a1=getattr(rg, "VCA"),
+        a2=getattr(rg, "DIC"),
+        a3=swc,
+        register=rg,
+    )
+    v1.update(
+        a1=getattr(rg, "TA"),
+        a2=getattr(rg, "VH"),
+        a3=swc,
+    )
+
+    return v1, v2
+#+END_SRC
