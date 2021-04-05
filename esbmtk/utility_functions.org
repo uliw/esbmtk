@@ -47,6 +47,8 @@ import time
 import builtins
 import math
 set_printoptions(precision=4)
+
+
 #+END_SRC
 
 *** Get isotope masses from delta
@@ -88,8 +90,6 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
 
     return np.array([m, l, h, d])
 #+END_SRC
-
-
 
 
 *** Get delta from isotope masses
@@ -598,3 +598,70 @@ def sort_by_type(l: list, t: list, m: str) -> list:
     return rl
 #+END_SRC
 
+
+** Some string an dict manipulations
+
+#+BEGIN_SRC ipython :tangle utility_functions.py
+def split_key(k: str, M:any ) -> Union[any, any, str]:
+    """split the string k with letter 2, and test if optional
+    id string is present
+
+    """
+
+    source = k.split("2")[0]
+    sinkandid = k.split("2")[1]
+    if "@" in sinkandid:
+        sink = sinkandid.split("@")[0]
+        cid = sinkandid.split("@")[1]
+    else:
+        cid = "None"
+
+    sink = M.dmo[sink]
+    source = M.dmo[source]
+    return (source, sink, cid)
+
+def make_dict(keys: list, values: list) -> dict:
+    """ Create a dictionary from a list and value, or from
+    two lists
+
+    """
+    if isinstance(values, list):
+        if len(values) == len(keys):
+            d: dict = dict(zip(keys, values))
+        else:
+            raise ValueError(f"key and value list must be of equal length")
+    else:
+        values: list = [values] * len(keys)
+        d: dict = dict(zip(keys, values))
+
+
+    return d
+#+END_SRC
+
+** Misc functions which help with model setup
+
+#+BEGIN_SRC ipython :tangle utility_functions.py
+def create_bulk_connections(ct, los):
+    """Create connections from dictionaries
+
+    ct :dict = connection dictionary which has the following format"
+         {"sb2ib@POP": [0.8, "scale_with_mass"]}
+          source@sink@id: [scale, connection type]
+
+    los :list = list of species to include in connection
+    """
+
+    from esbmtk import split_key, make_dict, ConnectionGroup
+
+    for k, v in ct.items():
+        # get the reservoir handles by splitting the key
+        source, sink, cid = split_key(k, M)
+
+        cg = ConnectionGroup(
+            source=source,
+            sink=sink,
+            ctype=make_dict(los, v[1]),
+            scale=make_dict(los, v[0]),  # get rate from dictionary
+            id=cid,  # get id from dictionary
+        )
+#+END_SRC
