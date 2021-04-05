@@ -641,7 +641,38 @@ def make_dict(keys: list, values: list) -> dict:
 ** Misc functions which help with model setup
 
 #+BEGIN_SRC ipython :tangle utility_functions.py
-def create_bulk_connections(ct, los):
+def create_reservoirs(bn: list, v: list, t: list, p: list, c: dict, M: any) -> None:
+    """
+
+    bn : list of box names e.g., ['surface', 'deep']
+    t: list of box temperatures in C, e.g., [12, 0,]
+    p: list of box pressures in bar, e.g., [5, 500]
+    c: list of dicts with initial concentrations  for each reservoir
+       and species e.g., [{PO4: Q_("2.1 umol/l"), DIC: Q_("2.1 mmol/l"))}]
+       the arguments must be quantities!
+
+    M: Model object handle
+
+    """
+
+    from esbmtk import SeawaterConstants, ReservoirGroup
+
+    for i, n in enumerate(bn):
+        swc = SeawaterConstants(
+            name=f"SW_{n}",
+            model=M,
+            temperature=t[i],
+            pressure=p[i],
+        )
+
+        ReservoirGroup(
+            name=n,
+            volume=v[i],
+            concentration=c[i],
+        )
+
+
+def create_bulk_connections(ct: dict, los: list) -> None:
     """Create connections from dictionaries
 
     ct :dict = connection dictionary which has the following format"
