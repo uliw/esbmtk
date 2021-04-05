@@ -617,6 +617,7 @@ class Model(esbmtkBase):
         self.length = int(abs(self.stop - self.start))
         self.steps = int(abs(round(self.length / self.dt)))
         self.time = (arange(self.steps) * self.dt) + self.start
+        self.state = 0
 
         # set_printoptions(precision=self.display_precision)
 
@@ -910,6 +911,9 @@ class Model(esbmtkBase):
                 p(i)
 
             i = i + 1  # next time step
+
+            # flag that the model has executed
+            self.state = 1
 
     def __step_process__(self, r, i) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -1913,11 +1917,13 @@ class Flux(esbmtkBase):
             self.isotopes = True
         elif self.mo.m_type == "mass_only":
             self.isotopes = False
-        
+
         if self.isotopes:
             self.__set_data__ = self.__set_with_isotopes__
+            # self.__get_data__ = self.__get_with_isotopes__  
         else:
             self.__set_data__ = self.__set_without_isotopes__
+            #self.__get_data__ = self.__get_without_isotopes__
 
     # setup a placeholder setitem function
     def __setitem__(self, i: int, value: [NDArray, float]):
@@ -1925,8 +1931,18 @@ class Flux(esbmtkBase):
 
     def __getitem__(self, i: int) -> NDArray[np.float64]:
         """Get data by index"""
-
+        #return self.__get_data__(i)
         return array([self.m[i], self.l[i], self.h[i], self.d[i]])
+
+    # def __get_with_isotopes__(self, i: int) -> NDArray[np.float64]:
+    #     """Get data by index"""
+
+    #     return array([self.m[i], self.l[i], self.h[i], self.d[i]])
+
+    # def __get_without_isotopes__(self, i: int) -> NDArray[np.float64]:
+    #     """Get data by index"""
+
+    #     return array([self.m[i]])
 
     def __set_with_isotopes__(self, i: int, value: [NDArray, float]) -> None:
         """Write data by index"""
@@ -1934,7 +1950,8 @@ class Flux(esbmtkBase):
         self.m[i] = value[0]
         self.l[i] = value[1]
         self.h[i] = value[2]
-        self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
+        self.d[i] = value[3]
+        # self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
 
     def __set_without_isotopes__(self, i: int, value: [NDArray, float]) -> None:
         """Write data by index"""
@@ -2003,9 +2020,7 @@ class Flux(esbmtkBase):
             print("There are no processes for this flux")
 
     def plot(self, **kwargs: dict) -> None:
-        """Plot the flux data:
-
-        """
+        """Plot the flux data:"""
 
         fig, ax1 = plt.subplots()
         fig.set_size_inches(5, 4)  # Set figure size in inches
@@ -2776,6 +2791,17 @@ class DataField(esbmtkBase):
             self.display_precision = self.mo.display_precision
 
         self.__register_name__()
+        if self.mo.state == 0:
+            print("")
+            print(
+                "---------------------------------------------------------------------------\n\n"
+            )
+            print(
+                "Warning, you are initializing a datafield before the model results are known\n\n"
+            )
+            print(
+                "---------------------------------------------------------------------------"
+            )
 
     def __write_data__(self, prefix: str, start: int, stop: int, stride: int) -> None:
         """To be called by write_data and save_state"""
