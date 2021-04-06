@@ -619,6 +619,9 @@ class Model(esbmtkBase):
         self.time = (arange(self.steps) * self.dt) + self.start
         self.state = 0
 
+        # initialize the hypsometry class
+        hypsometry(name="hyp", model=self, register=self)
+
         # set_printoptions(precision=self.display_precision)
 
         if "element" in self.kwargs:
