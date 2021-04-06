@@ -119,31 +119,44 @@ class hypsometry(esbmtkBase):
         self.__register_name__()
         self.__init_curve__()
 
-    def volume(self, u: float, l: float, dz: float = -1) -> float:
+    def volume(self, u: float, l: float) -> float:
         """Calculate the area between two elevation datums
 
         u = upper limit (e.g., -10)
         l = lower limit (e.g., -100)
-        dz = integration step, defaults to 1 meter
-
-        the interpolation function returns a numpy array with
-        cumulative area percentages. The first derivative contains the
-        relative area per dz. dA*depth*dz is the volume of the water
-        on top of this area, and in a last step we sum all volumes
-        and normalize it to the planetary surface area.
-
+       
         returns the volume in cubic meters
         """
 
-        di: NDArray = np.arange(u + abs(dz), l, dz)
-        cA: NDArray = interpolate.splev(di, self.tck)
-        dA: NDArray = np.diff(cA)
-        dV: NDArray = np.diff(cA) * di[1:] * abs(dz)
-        V: float = np.sum(dV) * self.sa
+        u = abs(u)
+        l = abs(l)
+        if l < u:
+            raise ValueError(f"hyp.volume: {l} must be higher than {u}")
 
-        return V
+        v = np.sum(self.hypdata[u:l])  * self.sa
+        # al = area at lower bound
+        # au = area at lower bound + dz
+        # vol = (al + au)/2 * dz
 
-    def area(self, u: float, l: float) -> float:
+        # di: NDArray = np.arange(u + abs(dz), l, dz)
+        # cA: NDArray = interpolate.splev(di, self.tck)
+        # dA: NDArray = np.diff(cA)
+        # dV: NDArray = np.diff(cA) * di[1:] * abs(dz)
+        # V: float = np.sum(dV) * self.sa
+
+        return v
+
+    def area(self, depth: int) -> float:
+        """Calculate the ocean area at a given depth
+
+        depth must be an integer between 0 and 6000 mbsl
+
+        """
+
+        depth = abs(depth)
+        return self.hypdata[depth] * self.sa
+
+    def area_dz(self, u: float, l: float) -> float:
         """Calculate the area between two elevation datums
 
         u = upper limit
@@ -224,6 +237,8 @@ class hypsometry(esbmtkBase):
         k = 3
 
         self.tck = (t, c, k)
+
+        self.hypdata = interpolate.splev(np.arange(0, -6001, -1), self.tck)
 
     def __bootstrap_curve__(self):
         """Regenerate the spline data based on the hypsometric data in
