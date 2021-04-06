@@ -641,38 +641,82 @@ def make_dict(keys: list, values: list) -> dict:
 ** Misc functions which help with model setup
 
 #+BEGIN_SRC ipython :tangle utility_functions.py
-def create_reservoirs(bn: list, v: list, t: list, p: list, c: dict, M: any) -> None:
-    """
+def create_reservoirs(bg: dict, icd: dict, M: any) -> None:
+    """bg: dict with the box geometries e.g.,
 
-    bn : list of box names e.g., ['surface', 'deep']
-    t: list of box temperatures in C, e.g., [12, 0,]
-    p: list of box pressures in bar, e.g., [5, 500]
-    c: list of dicts with initial concentrations  for each reservoir
-       and species e.g., [{PO4: Q_("2.1 umol/l"), DIC: Q_("2.1 mmol/l"))}]
-       the arguments must be quantities!
+        {  # name: [[geometry], T, P]
+           "hb": [[0, 200, 0.1], 2, 5],
+        }
+
+    icd: dict =
+    #  box_names: [concentrations, isotopes]
+    d= {"bn": [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+
+    If you need box specific initial conditions use the output of
+    build_concentration_dicts as starting point
 
     M: Model object handle
 
     """
 
     from esbmtk import SeawaterConstants, ReservoirGroup
+    from collections import OrderedDict
 
-    for i, n in enumerate(bn):
+    # loop over reservoir names
+    for k, v in bg.items():
         swc = SeawaterConstants(
-            name=f"SW_{n}",
+            name=f"SW_{k}",
             model=M,
-            temperature=t[i],
-            pressure=p[i],
+            temperature=v[1],
+            pressure=v[2],
         )
 
+        # init reservoir group
         ReservoirGroup(
-            name=n,
-            volume=v[i],
-            concentration=c[i],
+            name=k,
+            geometry=v[0],
+            concentration=icd[k][0],
+            isotopes=icd[k][1],
         )
 
 
-def create_bulk_connections(ct: dict, los: list) -> None:
+def build_concentration_dicts(cd: dict, bg: dict) -> dict:
+    """Build a dict which can be used by create_reservoirs
+
+    bg : dict where the box_names are dict keys.
+    cd: dictionary with the following format:
+        cd = {
+             # species: [concentration, isotopes]
+             PO4: [Q_("2.1 * umol/liter"), False],
+             DIC: [Q_("2.1 mmol/liter"), False],
+            }
+
+    This function returns a new dict in the following format
+
+    #  box_names: [concentrations, isotopes]
+    d= {"bn": [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+
+    """
+
+    box_names: list = bg.keys()
+
+    icd: dict = OrderedDict()
+    td1: dict = {}  # temp dictionary
+    td2: dict = {}  # temp dictionary
+
+    # create the dicts for concentration and isotopes
+    for k, v in cd.items():
+        td1.update({k: v[0]})
+        td2.update({k: v[1]})
+
+    box_names: list = bg.keys()
+    for bn in box_names:  # loop over box names
+        icd.update({bn: [td1, td2]})
+
+    return icd
+
+
+def create_bulk_connections(ct: dict, icd: dict) -> None:
     """Create connections from dictionaries
 
     ct :dict = connection dictionary which has the following format"
@@ -683,6 +727,8 @@ def create_bulk_connections(ct: dict, los: list) -> None:
     """
 
     from esbmtk import split_key, make_dict, ConnectionGroup
+
+    los = icd.keys()
 
     for k, v in ct.items():
         # get the reservoir handles by splitting the key
@@ -695,4 +741,38 @@ def create_bulk_connections(ct: dict, los: list) -> None:
             scale=make_dict(los, v[0]),  # get rate from dictionary
             id=cid,  # get id from dictionary
         )
+
+
+def calc_volumes(bg: dict, M: any, h: any) -> list:
+    """Calculate volume contained in a given depth interval
+    bg is an ordered dictionary in the following format
+
+    bg=  {
+          "hb": (0.1, 0, 200),
+          "sb": (0.9, 0, 200),
+         }
+
+    where the key must be a valid box name, the first entry of the list denoted
+    the areal extent in percent, the second number is upper depth limit, and last
+    number is the lower depth limit.
+
+    M must be a model handle
+    h is the hypsometry handle
+
+    The function returns a list with the corresponding volumes
+
+    """
+
+    # from esbmtk import hypsometry
+
+    v: list = []  # list of volumes
+
+    for k, v in bg.items():
+        a = v[0]
+        u = v[1]
+        l = v[2]
+
+        v.append(h.volume(u, l) * a)
+
+    return v
 #+END_SRC
