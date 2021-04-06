@@ -14,12 +14,25 @@ generation of graphical results.
 
 * News
 
+ - April 6^{th}, added several function which aid in the bulk creation of
+   reservoirs and connections (i.e., =create_reservoirs=,
+   =create_bulk_connections=). The hypsometry class is now part of the
+   Model object and now has method to calculate the volume contained
+   in a given depth interval. To calculate the ocean volume you can
+   call e.g., =Model.hyp(0,-6000)= see the api docs for the sealevel
+   module for details. Reservoirs can now be specified by their
+   geometry rather than by volume or mass. See the documentation of
+   the reservoir class.
+
+   The DataField class will now print a warning when used before model
+   results are computed
+
  - April 1^{st}. Added =carbonate_system()= function to the carbonate
    chemistry module. This function simplifies the setup of the H^{+} and
    carbonate alkalinity reservoirs. See the api docs for details.
 
- - March 28^{th} added a =flux_summmary()= and
-   =connection_summary()= methods to the model class.
+   - March 28^{th} added a =flux_summmary()= and
+    =connection_summary()= methods to the model class.
 
  - March 27^{th}, 0.4.0.5 added the hypsometry class which provides a
    spline representation of the hypsometry between -6000 mbsl and 1000

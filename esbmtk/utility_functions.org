@@ -723,12 +723,19 @@ def create_bulk_connections(ct: dict, icd: dict) -> None:
          {"sb2ib@POP": [0.8, "scale_with_mass"]}
           source@sink@id: [scale, connection type]
 
-    los :list = list of species to include in connection
+    icd: dict as returned by  build_concentration_dicts
+         It has the following format:
+
+         #  box_names: [concentrations, isotopes]
+         icd= {"bn": [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+
     """
 
     from esbmtk import split_key, make_dict, ConnectionGroup
 
-    los = icd.keys()
+    # extract the list of species from the first box entry
+    # and then from the first dict in the dict list
+    los = icd[list(icd.keys())[0]][0].keys()
 
     for k, v in ct.items():
         # get the reservoir handles by splitting the key
@@ -741,6 +748,8 @@ def create_bulk_connections(ct: dict, icd: dict) -> None:
             scale=make_dict(los, v[0]),  # get rate from dictionary
             id=cid,  # get id from dictionary
         )
+
+        # print(cg)
 
 
 def calc_volumes(bg: dict, M: any, h: any) -> list:

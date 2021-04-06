@@ -327,7 +327,7 @@ class Connect(esbmtkBase):
             &#34;alpha&#34;: (Number, str),
             &#34;species&#34;: Species,
             &#34;ctype&#34;: str,
-            &#34;ref&#34;: (Flux, list),
+            &#34;ref&#34;: (Flux, str, list),
             &#34;ratio&#34;: Number,
             &#34;scale&#34;: (Number, str),
             &#34;ref_value&#34;: (str, Number, Q_),
@@ -342,6 +342,7 @@ class Connect(esbmtkBase):
             &#34;register&#34;: (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             &#34;signal&#34;: (Signal, str),
             &#34;bypass&#34;: str,
+            &#34;isotopes&#34;: bool,
         }
 
         # provide a list of absolutely required keywords
@@ -361,6 +362,8 @@ class Connect(esbmtkBase):
             &#34;groupname&#34;: False,
             &#34;bypass&#34;: &#34;None&#34;,
             &#34;name&#34;: &#34;None&#34;,
+            &#34;isotopes&#34;: False,
+            &#34;ref&#34;: &#34;None&#34;,
         }
 
         # validate and initialize instance variables
@@ -409,6 +412,10 @@ class Connect(esbmtkBase):
         if &#34;ref_reservoir&#34; not in kwargs:
             self.ref_reservoir = kwargs[&#34;source&#34;]
 
+        # decide if this connection needs isotope calculations
+        if self.source.isotopes or self.sink.isotopes:
+            self.isotopes = True
+
         # legacy names
         self.influx: int = 1
         self.outflux: int = -1
@@ -450,7 +457,7 @@ class Connect(esbmtkBase):
             self.name = f&#34;{son}_2_{sin}&#34;
 
         if self.id != &#34;None&#34;:
-            #print(f&#34;id = {self.id}&#34;)
+            # print(f&#34;id = {self.id}&#34;)
             self.name = f&#34;{self.name}_{self.id}&#34;
 
         self.__create_flux__()  # Source/Sink/Regular
@@ -467,7 +474,7 @@ class Connect(esbmtkBase):
         # else:
         #     print(f&#34;Created connection {self.register.name}.{self.name}&#34;)
 
-        print(f&#34;Created {self.full_name}&#34;)
+        logging.info(f&#34;Created {self.full_name}&#34;)
 
     def update(self, **kwargs):
         &#34;&#34;&#34;Update connection properties. This will delete existing processes
@@ -532,7 +539,9 @@ class Connect(esbmtkBase):
             rate=r,  # flux value
             plot=self.plot,  # display this flux?
             register=self.register,  # is this part of a group?
+            isotopes=self.isotopes,
         )
+        #print(f&#34;Created Flux {self.fh.name}&#34;)
 
         # register flux with its reservoirs
         if isinstance(self.r1, Source):
@@ -672,10 +681,10 @@ class Connect(esbmtkBase):
         elif self.ctype == &#34;scale_with_concentration&#34;:
             self.__rateconstant__()
             # self.__vardeltaout__()
-        elif self.ctype == &#34;scale_with_concentration_normalized&#34;:
-            self.__rateconstant__()
-        elif self.ctype == &#34;scale_with_mass_normalized&#34;:
-            self.__rateconstant__()
+        # elif self.ctype == &#34;scale_with_concentration_normalized&#34;:
+        #    self.__rateconstant__()
+        # elif self.ctype == &#34;scale_with_mass_normalized&#34;:
+        #     self.__rateconstant__()
         elif self.ctype == &#34;scale_relative_to_multiple_reservoirs&#34;:
             self.__rateconstant__()
         elif self.ctype == &#34;flux_balance&#34;:
@@ -881,26 +890,6 @@ class Connect(esbmtkBase):
                 scale=self.scale,
             )
 
-        elif self.ctype == &#34;scale_with_mass_normalized&#34;:
-
-            if self.k_value != &#34;None&#34;:
-                self.scale = self.k_value
-                print(
-                    f&#34;\n Warning: use scale instead of k_value for scale with mass normalized type\n&#34;
-                )
-
-            self.scale = map_units(self.scale, self.mo.m_unit)
-            self.ref_value = map_units(self.ref_value, self.mo.m_unit)
-
-            ph = ScaleRelativeToNormalizedMass(
-                name=self.pn + &#34;_PknM&#34;,
-                reservoir=self.ref_reservoir,
-                flux=self.fh,
-                register=self.register,
-                ref_value=self.ref_value,
-                scale=self.scale,
-            )
-
         elif self.ctype == &#34;scale_with_concentration&#34;:
 
             if self.k_value != &#34;None&#34;:
@@ -952,27 +941,6 @@ class Connect(esbmtkBase):
                 flux=self.fh,
                 register=self.register,
                 k_value=self.k_value,
-            )
-
-        elif self.ctype == &#34;scale_with_concentration_normalized&#34;:
-
-            if self.k_value != &#34;None&#34;:
-                self.scale = self.k_value
-                print(
-                    f&#34;\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n&#34;
-                )
-
-            self.scale = map_units(
-                self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
-            )
-            self.ref_value = map_units(self.ref_value, self.mo.c_unit)
-            ph = ScaleRelativeToNormalizedConcentration(
-                name=self.pn + &#34;_PknC&#34;,
-                reservoir=self.ref_reservoir,
-                flux=self.fh,
-                register=self.register,
-                ref_value=self.ref_value,
-                scale=self.scale,
             )
 
         elif self.ctype == &#34;monod_ctype_limit&#34;:
@@ -1183,7 +1151,7 @@ class ConnectionGroup(esbmtkBase):
             &#34;alpha&#34;: dict,
             &#34;species&#34;: dict,
             &#34;ctype&#34;: dict,
-            &#34;ref&#34;: list,
+            &#34;ref&#34;: dict,
             &#34;plot&#34;: dict,
             &#34;scale&#34;: dict,
         }
@@ -1197,8 +1165,13 @@ class ConnectionGroup(esbmtkBase):
         if &#34;name&#34; in kwargs:
             self.base_name = kwargs[&#34;name&#34;]
         else:
-            self.base_name = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name
-            n = f&#34;C_{kwargs[&#39;source&#39;].name}2{kwargs[&#39;sink&#39;].name}&#34;
+            if &#34;id&#34; in kwargs:
+                name = f&#34;{kwargs[&#39;source&#39;].name}2{kwargs[&#39;sink&#39;].name}_{kwargs[&#39;id&#39;]}&#34;
+            else:
+                name = f&#34;{kwargs[&#39;source&#39;].name}2{kwargs[&#39;sink&#39;].name}&#34;
+
+            self.base_name = kwargs[&#34;source&#34;].name + &#34;2&#34; + kwargs[&#34;sink&#34;].name
+            n = f&#34;C_{name}&#34;
             # set connection group name
             kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
 
@@ -1232,6 +1205,7 @@ class ConnectionGroup(esbmtkBase):
                 &#34;rate&#34;: &#34;None&#34;,
                 &#34;scale&#34;: &#34;None&#34;,
                 &#34;ctype&#34;: &#34;None&#34;,
+                &#34;ref&#34;: &#34;None&#34;,
             }
             # now we loop trough all keys for this connection and see
             # if we find a corresponding item in the kwargs
@@ -1253,31 +1227,30 @@ class ConnectionGroup(esbmtkBase):
                 plot=self.cd[r.n][&#34;plot&#34;],
                 ctype=self.cd[r.n][&#34;ctype&#34;],
                 scale=self.cd[r.n][&#34;scale&#34;],
+                ref=self.cd[r.n][&#34;ref&#34;],
                 groupname=True,
-                id=self.id,
+                # id=self.id,
                 register=self,
             )
-          
+
             ## add connection to list of connections
             self.loc.append(a)
 
         # register connection group in global namespace
         self.__register_name__()
-        print(f&#34;Created {self.name}&#34;)
+        logging.info(f&#34;Created {self.name}&#34;)
 
     def info(self) -&gt; None:
         &#34;&#34;&#34;List all connections in this group&#34;&#34;&#34;
 
         print(f&#34;Group Connection from {self.source.name} to {self.sink.name}\n&#34;)
-        print(&#34;    The following Connections are part of this group\n&#34;)
-
+        print(&#34;The following Connections are part of this group\n&#34;)
+        print(f&#34;You can query the details of each connection like this:\n&#34;)
         for c in self.loc:
             print(c.name)
+            print(f&#34;{c.name}: {self.name}.{self.c.name}.info()&#34;)
 
-        print(&#34;&#34;)
-
-        print(f&#34;        You can query the details of each connection like this:\n&#34;)
-        print(f&#34;          {self.name}.{self.loc[0].name}.info()&#34;)</code></pre>
+        print(&#34;&#34;)</code></pre>
 </details>
 </section>
 <section>
@@ -1723,7 +1696,7 @@ between =left=and =right=</li>
             &#34;alpha&#34;: (Number, str),
             &#34;species&#34;: Species,
             &#34;ctype&#34;: str,
-            &#34;ref&#34;: (Flux, list),
+            &#34;ref&#34;: (Flux, str, list),
             &#34;ratio&#34;: Number,
             &#34;scale&#34;: (Number, str),
             &#34;ref_value&#34;: (str, Number, Q_),
@@ -1738,6 +1711,7 @@ between =left=and =right=</li>
             &#34;register&#34;: (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             &#34;signal&#34;: (Signal, str),
             &#34;bypass&#34;: str,
+            &#34;isotopes&#34;: bool,
         }
 
         # provide a list of absolutely required keywords
@@ -1757,6 +1731,8 @@ between =left=and =right=</li>
             &#34;groupname&#34;: False,
             &#34;bypass&#34;: &#34;None&#34;,
             &#34;name&#34;: &#34;None&#34;,
+            &#34;isotopes&#34;: False,
+            &#34;ref&#34;: &#34;None&#34;,
         }
 
         # validate and initialize instance variables
@@ -1805,6 +1781,10 @@ between =left=and =right=</li>
         if &#34;ref_reservoir&#34; not in kwargs:
             self.ref_reservoir = kwargs[&#34;source&#34;]
 
+        # decide if this connection needs isotope calculations
+        if self.source.isotopes or self.sink.isotopes:
+            self.isotopes = True
+
         # legacy names
         self.influx: int = 1
         self.outflux: int = -1
@@ -1846,7 +1826,7 @@ between =left=and =right=</li>
             self.name = f&#34;{son}_2_{sin}&#34;
 
         if self.id != &#34;None&#34;:
-            #print(f&#34;id = {self.id}&#34;)
+            # print(f&#34;id = {self.id}&#34;)
             self.name = f&#34;{self.name}_{self.id}&#34;
 
         self.__create_flux__()  # Source/Sink/Regular
@@ -1863,7 +1843,7 @@ between =left=and =right=</li>
         # else:
         #     print(f&#34;Created connection {self.register.name}.{self.name}&#34;)
 
-        print(f&#34;Created {self.full_name}&#34;)
+        logging.info(f&#34;Created {self.full_name}&#34;)
 
     def update(self, **kwargs):
         &#34;&#34;&#34;Update connection properties. This will delete existing processes
@@ -1928,7 +1908,9 @@ between =left=and =right=</li>
             rate=r,  # flux value
             plot=self.plot,  # display this flux?
             register=self.register,  # is this part of a group?
+            isotopes=self.isotopes,
         )
+        #print(f&#34;Created Flux {self.fh.name}&#34;)
 
         # register flux with its reservoirs
         if isinstance(self.r1, Source):
@@ -2068,10 +2050,10 @@ between =left=and =right=</li>
         elif self.ctype == &#34;scale_with_concentration&#34;:
             self.__rateconstant__()
             # self.__vardeltaout__()
-        elif self.ctype == &#34;scale_with_concentration_normalized&#34;:
-            self.__rateconstant__()
-        elif self.ctype == &#34;scale_with_mass_normalized&#34;:
-            self.__rateconstant__()
+        # elif self.ctype == &#34;scale_with_concentration_normalized&#34;:
+        #    self.__rateconstant__()
+        # elif self.ctype == &#34;scale_with_mass_normalized&#34;:
+        #     self.__rateconstant__()
         elif self.ctype == &#34;scale_relative_to_multiple_reservoirs&#34;:
             self.__rateconstant__()
         elif self.ctype == &#34;flux_balance&#34;:
@@ -2277,26 +2259,6 @@ between =left=and =right=</li>
                 scale=self.scale,
             )
 
-        elif self.ctype == &#34;scale_with_mass_normalized&#34;:
-
-            if self.k_value != &#34;None&#34;:
-                self.scale = self.k_value
-                print(
-                    f&#34;\n Warning: use scale instead of k_value for scale with mass normalized type\n&#34;
-                )
-
-            self.scale = map_units(self.scale, self.mo.m_unit)
-            self.ref_value = map_units(self.ref_value, self.mo.m_unit)
-
-            ph = ScaleRelativeToNormalizedMass(
-                name=self.pn + &#34;_PknM&#34;,
-                reservoir=self.ref_reservoir,
-                flux=self.fh,
-                register=self.register,
-                ref_value=self.ref_value,
-                scale=self.scale,
-            )
-
         elif self.ctype == &#34;scale_with_concentration&#34;:
 
             if self.k_value != &#34;None&#34;:
@@ -2348,27 +2310,6 @@ between =left=and =right=</li>
                 flux=self.fh,
                 register=self.register,
                 k_value=self.k_value,
-            )
-
-        elif self.ctype == &#34;scale_with_concentration_normalized&#34;:
-
-            if self.k_value != &#34;None&#34;:
-                self.scale = self.k_value
-                print(
-                    f&#34;\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n&#34;
-                )
-
-            self.scale = map_units(
-                self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
-            )
-            self.ref_value = map_units(self.ref_value, self.mo.c_unit)
-            ph = ScaleRelativeToNormalizedConcentration(
-                name=self.pn + &#34;_PknC&#34;,
-                reservoir=self.ref_reservoir,
-                flux=self.fh,
-                register=self.register,
-                ref_value=self.ref_value,
-                scale=self.scale,
             )
 
         elif self.ctype == &#34;monod_ctype_limit&#34;:
@@ -2796,7 +2737,7 @@ ConnectionGroup(
             &#34;alpha&#34;: dict,
             &#34;species&#34;: dict,
             &#34;ctype&#34;: dict,
-            &#34;ref&#34;: list,
+            &#34;ref&#34;: dict,
             &#34;plot&#34;: dict,
             &#34;scale&#34;: dict,
         }
@@ -2810,8 +2751,13 @@ ConnectionGroup(
         if &#34;name&#34; in kwargs:
             self.base_name = kwargs[&#34;name&#34;]
         else:
-            self.base_name = kwargs[&#34;source&#34;].name + &#34;_2_&#34; + kwargs[&#34;sink&#34;].name
-            n = f&#34;C_{kwargs[&#39;source&#39;].name}2{kwargs[&#39;sink&#39;].name}&#34;
+            if &#34;id&#34; in kwargs:
+                name = f&#34;{kwargs[&#39;source&#39;].name}2{kwargs[&#39;sink&#39;].name}_{kwargs[&#39;id&#39;]}&#34;
+            else:
+                name = f&#34;{kwargs[&#39;source&#39;].name}2{kwargs[&#39;sink&#39;].name}&#34;
+
+            self.base_name = kwargs[&#34;source&#34;].name + &#34;2&#34; + kwargs[&#34;sink&#34;].name
+            n = f&#34;C_{name}&#34;
             # set connection group name
             kwargs.update({&#34;name&#34;: n})  # and add it to the kwargs
 
@@ -2845,6 +2791,7 @@ ConnectionGroup(
                 &#34;rate&#34;: &#34;None&#34;,
                 &#34;scale&#34;: &#34;None&#34;,
                 &#34;ctype&#34;: &#34;None&#34;,
+                &#34;ref&#34;: &#34;None&#34;,
             }
             # now we loop trough all keys for this connection and see
             # if we find a corresponding item in the kwargs
@@ -2866,31 +2813,30 @@ ConnectionGroup(
                 plot=self.cd[r.n][&#34;plot&#34;],
                 ctype=self.cd[r.n][&#34;ctype&#34;],
                 scale=self.cd[r.n][&#34;scale&#34;],
+                ref=self.cd[r.n][&#34;ref&#34;],
                 groupname=True,
-                id=self.id,
+                # id=self.id,
                 register=self,
             )
-          
+
             ## add connection to list of connections
             self.loc.append(a)
 
         # register connection group in global namespace
         self.__register_name__()
-        print(f&#34;Created {self.name}&#34;)
+        logging.info(f&#34;Created {self.name}&#34;)
 
     def info(self) -&gt; None:
         &#34;&#34;&#34;List all connections in this group&#34;&#34;&#34;
 
         print(f&#34;Group Connection from {self.source.name} to {self.sink.name}\n&#34;)
-        print(&#34;    The following Connections are part of this group\n&#34;)
-
+        print(&#34;The following Connections are part of this group\n&#34;)
+        print(f&#34;You can query the details of each connection like this:\n&#34;)
         for c in self.loc:
             print(c.name)
+            print(f&#34;{c.name}: {self.name}.{self.c.name}.info()&#34;)
 
-        print(&#34;&#34;)
-
-        print(f&#34;        You can query the details of each connection like this:\n&#34;)
-        print(f&#34;          {self.name}.{self.loc[0].name}.info()&#34;)</code></pre>
+        print(&#34;&#34;)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -2911,15 +2857,13 @@ ConnectionGroup(
     &#34;&#34;&#34;List all connections in this group&#34;&#34;&#34;
 
     print(f&#34;Group Connection from {self.source.name} to {self.sink.name}\n&#34;)
-    print(&#34;    The following Connections are part of this group\n&#34;)
-
+    print(&#34;The following Connections are part of this group\n&#34;)
+    print(f&#34;You can query the details of each connection like this:\n&#34;)
     for c in self.loc:
         print(c.name)
+        print(f&#34;{c.name}: {self.name}.{self.c.name}.info()&#34;)
 
-    print(&#34;&#34;)
-
-    print(f&#34;        You can query the details of each connection like this:\n&#34;)
-    print(f&#34;          {self.name}.{self.loc[0].name}.info()&#34;)</code></pre>
+    print(&#34;&#34;)</code></pre>
 </details>
 </dd>
 </dl>

@@ -51,8 +51,29 @@ from scipy import interpolate
 
 
 class hypsometry(esbmtkBase):
-    """A class to provide hypsometric data for the depth interval between -6000 to 5000 meter
+    """A class to provide hypsometric data for the depth interval between -6000 to 1000 meter
     The data is derived from etopo 5, but internally represented by a spline approximation
+
+    Invoke as:
+               hyspometry(name="hyp", model=M)
+
+    User facing methods:
+
+           h.area(0,-200)
+
+                 will return the surface area between 0 and -200 mbsl (i.e.,
+                 the contintal shelves) in percent. This number has a small
+                 error since we exclude the areas below 6000 mbsl. The error
+                 is however a constant an likely within the uncertainty of
+                 the total surface area. The numbers obtained from
+                 http://www.physicalgeography.net/fundamentals/8o.html for
+                 total ocean area vary between 70.8% for all water covered
+                 areas and 72.5% for ocean surface. This routine returns
+                 70.5%
+
+           h.sa = Earth total surface area in m^2
+
+           h.volume(0,200)
 
     """
 
@@ -82,19 +103,64 @@ class hypsometry(esbmtkBase):
         # legacy variables
         self.pfn = "spline_paramaters.txt"
         self.hfn = "Hypsometric_Curve_05m.csv"
-        self.sa = 510067420E6 # in square meters, http://www.physicalgeography.net/fundamentals/8o.html
+        self.sa = 510067420e6  # in square meters, http://www.physicalgeography.net/fundamentals/8o.html
         self.mo = self.model
         self.__register_name__()
         self.__init_curve__()
 
-    def area(self, depth: list) -> float:
+    def volume(self, u: float, l: float) -> float:
         """Calculate the area between two elevation datums
-        depth = [lower, upper]
+
+        u = upper limit (e.g., -10)
+        l = lower limit (e.g., -100)
+       
+        returns the volume in cubic meters
+        """
+
+        u = abs(u)
+        l = abs(l)
+        if l < u:
+            raise ValueError(f"hyp.volume: {l} must be higher than {u}")
+
+        v = np.sum(self.hypdata[u:l])  * self.sa
+        # al = area at lower bound
+        # au = area at lower bound + dz
+        # vol = (al + au)/2 * dz
+
+        # di: NDArray = np.arange(u + abs(dz), l, dz)
+        # cA: NDArray = interpolate.splev(di, self.tck)
+        # dA: NDArray = np.diff(cA)
+        # dV: NDArray = np.diff(cA) * di[1:] * abs(dz)
+        # V: float = np.sum(dV) * self.sa
+
+        return v
+
+    def area(self, depth: int) -> float:
+        """Calculate the ocean area at a given depth
+
+        depth must be an integer between 0 and 6000 mbsl
 
         """
 
-        a: list = interpolate.splev(depth, self.tck)
-        area: float = a[0] - a[1]
+        depth = abs(depth)
+        return self.hypdata[depth] * self.sa
+
+    def area_dz(self, u: float, l: float) -> float:
+        """Calculate the area between two elevation datums
+
+        u = upper limit
+        l = lower limit
+
+        the interpolation function returns a numpy array with
+        cumulative area percentages do the difference between the
+        lowest and highest value is the area contained between
+        both limits. This number must be scaled by the total area
+        h.sa to get the value in square meters
+
+        """
+
+        a: NDArray = interpolate.splev([u, l], self.tck)
+        area: float = (a[0] - a[-1]) * self.sa
 
         return area
 
@@ -160,6 +226,8 @@ class hypsometry(esbmtkBase):
         k = 3
 
         self.tck = (t, c, k)
+
+        self.hypdata = interpolate.splev(np.arange(0, -6001, -1), self.tck)
 
     def __bootstrap_curve__(self):
         """Regenerate the spline data based on the hypsometric data in

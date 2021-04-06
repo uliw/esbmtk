@@ -491,6 +491,185 @@ def sort_by_type(l: list, t: list, m: str) -> list:
 
     return rl
 
+def split_key(k: str, M:any ) -> Union[any, any, str]:
+    """split the string k with letter 2, and test if optional
+    id string is present
+
+    """
+
+    source = k.split("2")[0]
+    sinkandid = k.split("2")[1]
+    if "@" in sinkandid:
+        sink = sinkandid.split("@")[0]
+        cid = sinkandid.split("@")[1]
+    else:
+        cid = "None"
+
+    sink = M.dmo[sink]
+    source = M.dmo[source]
+    return (source, sink, cid)
+
+def make_dict(keys: list, values: list) -> dict:
+    """ Create a dictionary from a list and value, or from
+    two lists
+
+    """
+    if isinstance(values, list):
+        if len(values) == len(keys):
+            d: dict = dict(zip(keys, values))
+        else:
+            raise ValueError(f"key and value list must be of equal length")
+    else:
+        values: list = [values] * len(keys)
+        d: dict = dict(zip(keys, values))
+
+
+    return d
+
+def create_reservoirs(bg: dict, icd: dict, M: any) -> None:
+    """bg: dict with the box geometries e.g.,
+
+        {  # name: [[geometry], T, P]
+           "hb": [[0, 200, 0.1], 2, 5],
+        }
+
+    icd: dict =
+    #  box_names: [concentrations, isotopes]
+    d= {"bn": [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+
+    If you need box specific initial conditions use the output of
+    build_concentration_dicts as starting point
+
+    M: Model object handle
+
+    """
+
+    from esbmtk import SeawaterConstants, ReservoirGroup
+    from collections import OrderedDict
+
+    # loop over reservoir names
+    for k, v in bg.items():
+        swc = SeawaterConstants(
+            name=f"SW_{k}",
+            model=M,
+            temperature=v[1],
+            pressure=v[2],
+        )
+
+        # init reservoir group
+        ReservoirGroup(
+            name=k,
+            geometry=v[0],
+            concentration=icd[k][0],
+            isotopes=icd[k][1],
+        )
+
+
+def build_concentration_dicts(cd: dict, bg: dict) -> dict:
+    """Build a dict which can be used by create_reservoirs
+
+    bg : dict where the box_names are dict keys.
+    cd: dictionary with the following format:
+        cd = {
+             # species: [concentration, isotopes]
+             PO4: [Q_("2.1 * umol/liter"), False],
+             DIC: [Q_("2.1 mmol/liter"), False],
+            }
+
+    This function returns a new dict in the following format
+
+    #  box_names: [concentrations, isotopes]
+    d= {"bn": [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+
+    """
+
+    box_names: list = bg.keys()
+
+    icd: dict = OrderedDict()
+    td1: dict = {}  # temp dictionary
+    td2: dict = {}  # temp dictionary
+
+    # create the dicts for concentration and isotopes
+    for k, v in cd.items():
+        td1.update({k: v[0]})
+        td2.update({k: v[1]})
+
+    box_names: list = bg.keys()
+    for bn in box_names:  # loop over box names
+        icd.update({bn: [td1, td2]})
+
+    return icd
+
+
+def create_bulk_connections(ct: dict, icd: dict) -> None:
+    """Create connections from dictionaries
+
+    ct :dict = connection dictionary which has the following format"
+         {"sb2ib@POP": [0.8, "scale_with_mass"]}
+          source@sink@id: [scale, connection type]
+
+    icd: dict as returned by  build_concentration_dicts
+         It has the following format:
+
+         #  box_names: [concentrations, isotopes]
+         icd= {"bn": [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+
+    """
+
+    from esbmtk import split_key, make_dict, ConnectionGroup
+
+    # extract the list of species from the first box entry
+    # and then from the first dict in the dict list
+    los = icd[list(icd.keys())[0]][0].keys()
+
+    for k, v in ct.items():
+        # get the reservoir handles by splitting the key
+        source, sink, cid = split_key(k, M)
+
+        cg = ConnectionGroup(
+            source=source,
+            sink=sink,
+            ctype=make_dict(los, v[1]),
+            scale=make_dict(los, v[0]),  # get rate from dictionary
+            id=cid,  # get id from dictionary
+        )
+
+        # print(cg)
+
+
+def calc_volumes(bg: dict, M: any, h: any) -> list:
+    """Calculate volume contained in a given depth interval
+    bg is an ordered dictionary in the following format
+
+    bg=  {
+          "hb": (0.1, 0, 200),
+          "sb": (0.9, 0, 200),
+         }
+
+    where the key must be a valid box name, the first entry of the list denoted
+    the areal extent in percent, the second number is upper depth limit, and last
+    number is the lower depth limit.
+
+    M must be a model handle
+    h is the hypsometry handle
+
+    The function returns a list with the corresponding volumes
+
+    """
+
+    # from esbmtk import hypsometry
+
+    v: list = []  # list of volumes
+
+    for k, v in bg.items():
+        a = v[0]
+        u = v[1]
+        l = v[2]
+
+        v.append(h.volume(u, l) * a)
+
+    return v
+
 def get_string_between_brackets(s :str) -> str:
     """ Parse string and extract substring between square brackets
 

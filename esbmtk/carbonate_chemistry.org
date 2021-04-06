@@ -1,5 +1,5 @@
 
-* Ocean related modules
+* Ocean chemistry related modules
 
 ** License
 #+BEGIN_SRC ipython :tangle carbonate_chemistry.py
@@ -41,7 +41,7 @@ import pandas as pd
 import logging
 import time
 import builtins
-from .esbmtk import esbmtkBase, Model, Reservoir, VirtualReservoir
+from .esbmtk import esbmtkBase, Model, Reservoir, VirtualReservoir, ReservoirGroup
 #+END_SRC
 
 ** plot transforms for pH
@@ -497,7 +497,7 @@ def calc_pCO2(
     dic: Union[Reservoir, VirtualReservoir],
     hplus: Union[Reservoir, VirtualReservoir],
     SW: SeawaterConstants,
-) -> [NDArray, Float]:
+) -> Union[NDArray, Float]:
 
     """
     Calculate the concentration of pCO2 as a function of DIC,
@@ -505,13 +505,13 @@ def calc_pCO2(
     the pCO2 in uatm at each timestep. Calculations are based off
     equations from Follows, 2006. doi:10.1016/j.ocemod.2005.05.004
 
-    DIC: Reservoir  = DIC concentrations in mol/liter
-    Hplus: Reservoir = H+ concentrations in mol/liter
+    dic: Reservoir  = DIC concentrations in mol/liter
+    hplus: Reservoir = H+ concentrations in mol/liter
     SW: Seawater = Seawater object for the model
 
     it is typically used with a DataField object, e.g.
-    
-    pco2 = calc_pCO2(DIC,H,SW)
+
+    pco2 = calc_pCO2(dic,h,SW)
 
      DataField(name = "SurfaceWaterpCO2",
                        associated_with = reservoir_handle,
@@ -532,7 +532,52 @@ def calc_pCO2(
 
     co2: [NDArray, Float] = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c ** 2)))
 
-    pco2: [NDArray, Float] = co2 / SW.K0 * 1E6
+    pco2: [NDArray, Float] = co2 / SW.K0 * 1e6
+
+    return pco2
+
+
+def calc_pCO2b(
+    dic: Union[float, NDArray],
+    hplus: Union[float, NDArray],
+    SW: SeawaterConstants,
+) -> Union[NDArray, Float]:
+
+    """
+    Same as calc_pCO2, but accepts values/arrays rather than Reservoirs.
+
+    Calculate the concentration of pCO2 as a function of DIC,
+    H+, K1 and k2 and returns a numpy array containing
+    the pCO2 in uatm at each timestep. Calculations are based off
+    equations from Follows, 2006. doi:10.1016/j.ocemod.2005.05.004
+
+    dic:  = DIC concentrations in mol/liter
+    hplus: = H+ concentrations in mol/liter
+    SW: Seawater = Seawater object for the model
+
+    it is typically used with a DataField object, e.g.
+
+    pco2 = calc_pCO2b(dic,h,SW)
+
+     DataField(name = "SurfaceWaterpCO2",
+                       associated_with = reservoir_handle,
+                       y1_data = pco2b,
+                       y1_label = r"pCO_{2}",
+                       y1_legend = r"pCO_{2}",
+                       )
+
+    """
+
+    dic_c: [NDArray, Float] = dic
+
+    hplus_c: [NDArray, Float] = hplus
+
+    k1: float = SW.K1
+    k2: float = SW.K2
+
+    co2: [NDArray, Float] = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c ** 2)))
+
+    pco2: [NDArray, Float] = co2 / SW.K0 * 1e6
 
     return pco2
 #+END_SRC

@@ -576,6 +576,10 @@ class Model(esbmtkBase):
         self.length = int(abs(self.stop - self.start))
         self.steps = int(abs(round(self.length / self.dt)))
         self.time = (arange(self.steps) * self.dt) + self.start
+        self.state = 0
+
+        # initialize the hypsometry class
+        hypsometry(name="hyp", model=self, register=self)
 
         # set_printoptions(precision=self.display_precision)
 
@@ -823,6 +827,8 @@ class Model(esbmtkBase):
 
         duration: float = process_time() - start
         print(f"\n Execution took {duration} seconds \n")
+        # flag that the model has executed
+        self.state = 1
 
     @staticmethod
     def execute(
@@ -869,6 +875,8 @@ class Model(esbmtkBase):
                 p(i)
 
             i = i + 1  # next time step
+
+           
 
     def __step_process__(self, r, i) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -1101,7 +1109,7 @@ class Reservoir(esbmtkBase):
                             species = S,          # Species handle
                             delta = 20,           # initial delta - optional (defaults  to 0)
                             mass/concentration = "1 unit"  # species concentration or mass
-                            volume = "1E5 l",      # reservoir volume (m^3)
+                            volume/geometry = "1E5 l",      # reservoir volume (m^3)
                             plot = "yes"/"no", defaults to yes
                             plot_transform_c = a function reference, optional (see below)
                             legend_left = str, optional, useful for plot transform
@@ -1110,7 +1118,23 @@ class Reservoir(esbmtkBase):
                             isotopes = True/False otherwise use Model.m_type
                             )
 
-          you must either give mass or concentration. The result will always be displayed as concentration
+          You must either give mass or concentration.  The result will always be displayed
+          as concentration though.
+
+          You must provide either the volume or the geometry keyword. In the latter case
+          provide a list where the first entry is the upper depth datum, the second entry is
+          the lower depth datum, and the third entry is the area percentage. E.g., to specify
+          the upper 200 meters of the entire ocean, you would write:
+
+                 geometry=[0,-200,1]
+
+          the corresponding ocean volume will then be calculated by the calc_volume method
+          in this case the following instance variables will also be set:
+
+                 self.volume in model units (usually liter)
+                 self.area surface area in m^2 at the upper bounding surface
+                 self.area_dz area of seafloor which is intercepted by this box.
+
 
           Using a transform function
           ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1170,6 +1194,7 @@ class Reservoir(esbmtkBase):
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
+            "geometry": (list, str),
             "plot_transform_c": any,
             "legend_left": str,
             "plot": str,
@@ -1191,7 +1216,7 @@ class Reservoir(esbmtkBase):
         self.lrk: list = [
             "name",
             "species",
-            "volume",
+            ["volume", "geometry"],
             ["mass", "concentration"],
         ]
 
@@ -1200,6 +1225,8 @@ class Reservoir(esbmtkBase):
             "delta": "None",
             "plot": "yes",
             "mass": "None",
+            "volume": "None",
+            "geometry": "None",
             "concentration": "None",
             "plot_transform_c": "None",
             "legend_left": "None",
@@ -1257,9 +1284,24 @@ class Reservoir(esbmtkBase):
             self.isotopes = False
 
         # convert units
-        self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
-        self.v: Number = self.volume  # reservoir volume
+        if self.volume != "None":
+            self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
 
+        elif self.geometry != "None":
+            if not isinstance(self.geometry, list):
+                raise ValueError("geometry must be a list see the docs for details")
+            self.area_percentage = self.geometry[2]
+            volume = (
+                self.mo.hyp.volume(self.geometry[0], self.geometry[1])
+                * self.area_percentage
+            )
+            self.volume = Q_(f"{volume} m**3").to(self.mo.v_unit).magnitude
+            self.area = self.mo.hyp.area(self.geometry[0])
+            self.area_dz = self.mo.hyp.area_dz(self.geometry[0], self.geometry[1])
+        else:
+            raise ValueError("You need to provide volume or geometry!")
+
+        self.v: float = self.volume  # reservoir volume
         # This should probably be species specific?
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
 
@@ -1336,6 +1378,7 @@ class Reservoir(esbmtkBase):
         # any auxilliary init - normally empty, but we use it here to extend the
         # reservoir class in virtual reservoirs
         self.__aux_inits__()
+        self.state = 0
 
     # setup a placeholder setitem function
     def __setitem__(self, i: int, value: float):
@@ -1626,7 +1669,7 @@ class ReservoirGroup(esbmtkBase):
     Example::
 
         ReservoirGroup(name = "ShallowOcean",         # Name of reservoir group
-                    volume = "1E5 l",                # reservoir volume (m^3)
+                    volume/geometry = "1E5 l",                # reservoir volume (m^3)
                     delta   = {DIC:0, ALK:0, PO4:0]  # dict of delta values
                     mass/concentration = {DIC:"1 unit", ALK: "1 unit"}
                     plot = {DIC:"yes", ALK:"yes"}  defaults to yes
@@ -1640,6 +1683,9 @@ class ReservoirGroup(esbmtkBase):
     Connecting two reservoir groups requires that the names in both
     group match, or that you specify a dictionary which delineates the
     matching.
+
+    Most parameters are passed on to the Reservoir class. See the reservoir class
+    documentation for details
 
     """
 
@@ -1655,6 +1701,7 @@ class ReservoirGroup(esbmtkBase):
             "concentration": dict,
             "mass": dict,
             "volume": (str, Q_),
+            "geometry": (str, list),
             "plot": dict,
             "isotopes": dict,
         }
@@ -1662,8 +1709,14 @@ class ReservoirGroup(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: list = [
             "name",
-            "volume",
+            ["volume", "geometry"],
         ]
+
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            "volume": "None",
+            "geometry": "None",
+        }
 
         if "concentration" in kwargs:
             self.species: list = list(kwargs["concentration"].keys())
@@ -1681,10 +1734,12 @@ class ReservoirGroup(esbmtkBase):
                 "volume": "a string or quantity",
                 "plot": "yes or no",
                 "isotopes": "dict Species: True/False",
+                "geometry": "list",
             }
         )
 
         self.__validateandregister__(kwargs)
+
         # legacy variable
         self.n = self.name
         self.mo = self.species[0].mo
@@ -1727,6 +1782,7 @@ class ReservoirGroup(esbmtkBase):
                 mass=self.cd[s.n]["mass"],
                 concentration=self.cd[s.n]["concentration"],
                 volume=self.volume,
+                geometry=self.geometry,
                 plot=self.cd[s.n]["plot"],
                 groupname=self.name,
                 isotopes=self.cd[s.n]["isotopes"],
@@ -1847,11 +1903,13 @@ class Flux(esbmtkBase):
             self.isotopes = True
         elif self.mo.m_type == "mass_only":
             self.isotopes = False
-        
+
         if self.isotopes:
             self.__set_data__ = self.__set_with_isotopes__
+            # self.__get_data__ = self.__get_with_isotopes__  
         else:
             self.__set_data__ = self.__set_without_isotopes__
+            #self.__get_data__ = self.__get_without_isotopes__
 
     # setup a placeholder setitem function
     def __setitem__(self, i: int, value: [NDArray, float]):
@@ -1859,8 +1917,18 @@ class Flux(esbmtkBase):
 
     def __getitem__(self, i: int) -> NDArray[np.float64]:
         """Get data by index"""
-
+        #return self.__get_data__(i)
         return array([self.m[i], self.l[i], self.h[i], self.d[i]])
+
+    # def __get_with_isotopes__(self, i: int) -> NDArray[np.float64]:
+    #     """Get data by index"""
+
+    #     return array([self.m[i], self.l[i], self.h[i], self.d[i]])
+
+    # def __get_without_isotopes__(self, i: int) -> NDArray[np.float64]:
+    #     """Get data by index"""
+
+    #     return array([self.m[i]])
 
     def __set_with_isotopes__(self, i: int, value: [NDArray, float]) -> None:
         """Write data by index"""
@@ -1868,7 +1936,8 @@ class Flux(esbmtkBase):
         self.m[i] = value[0]
         self.l[i] = value[1]
         self.h[i] = value[2]
-        self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
+        self.d[i] = value[3]
+        # self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
 
     def __set_without_isotopes__(self, i: int, value: [NDArray, float]) -> None:
         """Write data by index"""
@@ -1937,9 +2006,7 @@ class Flux(esbmtkBase):
             print("There are no processes for this flux")
 
     def plot(self, **kwargs: dict) -> None:
-        """Plot the flux data:
-
-        """
+        """Plot the flux data:"""
 
         fig, ax1 = plt.subplots()
         fig.set_size_inches(5, 4)  # Set figure size in inches
@@ -2690,6 +2757,17 @@ class DataField(esbmtkBase):
             self.display_precision = self.mo.display_precision
 
         self.__register_name__()
+        if self.mo.state == 0:
+            print("")
+            print(
+                "---------------------------------------------------------------------------\n\n"
+            )
+            print(
+                "Warning, you are initializing a datafield before the model results are known\n\n"
+            )
+            print(
+                "---------------------------------------------------------------------------"
+            )
 
     def __write_data__(self, prefix: str, start: int, stop: int, stride: int) -> None:
         """To be called by write_data and save_state"""

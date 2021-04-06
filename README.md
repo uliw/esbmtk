@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org0d41520)
-2.  [News](#orgf23978a)
-3.  [Contributing](#org0e4b84a)
-4.  [Installation](#org058bc1b)
-5.  [Documentation](#orgc89c4f9)
-6.  [Todo](#org97b188d)
-7.  [License](#orgefef19c)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org69797e3)
+2.  [News](#org14ac8ec)
+3.  [Contributing](#orgeef4870)
+4.  [Installation](#org30f0a8d)
+5.  [Documentation](#org92e2810)
+6.  [Todo](#org680cb58)
+7.  [License](#org68eb089)
 
 
-<a id="org0d41520"></a>
+<a id="org69797e3"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,16 +27,28 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="orgf23978a"></a>
+<a id="org14ac8ec"></a>
 
 # News
+
+-   April 6<sup>th</sup>, added several function which aid in the bulk creation of
+    reservoirs and connections (i.e., `create_reservoirs`,
+    `create_bulk_connections`). The hypsometry class is now part of the
+    Model object and now has method to calculate the volume contained
+    in a given depth interval. To calculate the ocean volume you can
+    call e.g., `Model.hyp(0,-6000)` see the api docs for the sealevel
+    module for details. Reservoirs can now be specified by their
+    geometry rather than by volume or mass. See the documentation of
+    the reservoir class.
+    
+    The DataField class will now print a warning when used before model
+    results are computed
 
 -   April 1<sup>st</sup>. Added `carbonate_system()` function to the carbonate
     chemistry module. This function simplifies the setup of the H<sup>+</sup> and
     carbonate alkalinity reservoirs. See the api docs for details.
-
--   March 28<sup>th</sup> added a `flux_summmary()` and
-    `connection_summary()` methods to the model class.
+    -   March 28<sup>th</sup> added a `flux_summmary()` and
+        `connection_summary()` methods to the model class.
 
 -   March 27<sup>th</sup>, 0.4.0.5 added the hypsometry class which provides a
     spline representation of the hypsometry between -6000 mbsl and 1000
@@ -159,7 +171,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org0e4b84a"></a>
+<a id="orgeef4870"></a>
 
 # Contributing
 
@@ -169,7 +181,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org058bc1b"></a>
+<a id="org30f0a8d"></a>
 
 # Installation
 
@@ -190,7 +202,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="orgc89c4f9"></a>
+<a id="org92e2810"></a>
 
 # Documentation
 
@@ -208,7 +220,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org97b188d"></a>
+<a id="org680cb58"></a>
 
 # Todo
 
@@ -217,7 +229,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orgefef19c"></a>
+<a id="org68eb089"></a>
 
 # License
 

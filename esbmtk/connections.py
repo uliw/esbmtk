@@ -496,7 +496,7 @@ class Connect(esbmtkBase):
             register=self.register,  # is this part of a group?
             isotopes=self.isotopes,
         )
-        print(f"Created Flux {self.fh.name}")
+        #print(f"Created Flux {self.fh.name}")
 
         # register flux with its reservoirs
         if isinstance(self.r1, Source):

@@ -970,10 +970,11 @@ class ScaleRelativeToConcentration(RateConstant):
             r: float = reservoir.species.element.r
             d: float = reservoir.d[i - 1]
             l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-            self.flux.d[i]: float = d
-            self.flux.l[i]: float = l
-            self.flux.h[i]: float = m - l
-            self.flux.m[i]: float = m
+            #self.flux.d[i]: float = d
+            #self.flux.l[i]: float = l
+            #self.flux.h[i]: float = m - l
+            #self.flux.m[i]: float = m
+            self.flux[i]: np.array = [m, l, m - l, d]
 
 
 class ScaleRelativeToMass(RateConstant):
@@ -1020,10 +1021,11 @@ class ScaleRelativeToMass(RateConstant):
         r: float = reservoir.species.element.r
         d: float = reservoir.d[i - 1]
         l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-        self.flux.d[i]: float = d
-        self.flux.l[i]: float = l
-        self.flux.h[i]: float = m - l
-        self.flux.m[i]: float = m
+        # self.flux.d[i]: float = d
+        # self.flux.l[i]: float = l
+        # self.flux.h[i]: float = m - l
+        # self.flux.m[i]: float = m
+        self.flux[i]: np.array = [m, l, m - l, d]
 
 
 # class ScaleRelativeToNormalizedMass(RateConstant):

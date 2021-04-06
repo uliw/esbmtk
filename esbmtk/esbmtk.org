@@ -1186,9 +1186,12 @@ class Reservoir(esbmtkBase):
                  geometry=[0,-200,1]
 
           the corresponding ocean volume will then be calculated by the calc_volume method
-          in this case the following instance variables will also be set
-          self.volume
-          self.area
+          in this case the following instance variables will also be set:
+
+                 self.volume in model units (usually liter)
+                 self.area surface area in m^2 at the upper bounding surface
+                 self.area_dz area of seafloor which is intercepted by this box.
+
 
           Using a transform function
           ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1350,7 +1353,8 @@ class Reservoir(esbmtkBase):
                 ,* self.area_percentage
             )
             self.volume = Q_(f"{volume} m**3").to(self.mo.v_unit).magnitude
-            self.area = self.mo.hyp.area(self.geometry[0], self.geometry[1])
+            self.area = self.mo.hyp.area(self.geometry[0])
+            self.area_dz = self.mo.hyp.area_dz(self.geometry[0], self.geometry[1])
         else:
             raise ValueError("You need to provide volume or geometry!")
 

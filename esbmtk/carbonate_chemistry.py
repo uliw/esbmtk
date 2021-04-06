@@ -30,7 +30,7 @@ import pandas as pd
 import logging
 import time
 import builtins
-from .esbmtk import esbmtkBase, Model, Reservoir, VirtualReservoir
+from .esbmtk import esbmtkBase, Model, Reservoir, VirtualReservoir, ReservoirGroup
 
 # define a transform function to display the Hplus concentration as pH
 def phc(m: float) -> float:
@@ -53,11 +53,11 @@ class SeawaterConstants(esbmtkBase):
     Example:
 
     Seawater(name="SW",
-             model=
-             temperature = optional in C, defaults to 25
-             salinity  = optional in psu, defaults to 35
-             pressure = optional, defaults to 0 bars = 1atm
-             pH = optional, defaults to 8.1
+             model=,
+             temperature = optional in C, defaults to 25,
+             salinity  = optional in psu, defaults to 35,
+             pressure = optional, defaults to 0 bars = 1atm,
+             pH = optional, defaults to 8.1,
             )
 
     useful methods:
@@ -468,7 +468,7 @@ def calc_pCO2(
     dic: Union[Reservoir, VirtualReservoir],
     hplus: Union[Reservoir, VirtualReservoir],
     SW: SeawaterConstants,
-) -> [NDArray, Float]:
+) -> Union[NDArray, Float]:
 
     """
     Calculate the concentration of pCO2 as a function of DIC,
@@ -476,9 +476,20 @@ def calc_pCO2(
     the pCO2 in uatm at each timestep. Calculations are based off
     equations from Follows, 2006. doi:10.1016/j.ocemod.2005.05.004
 
-    DIC: Reservoir  = DIC concentrations in mol/liter
-    Hplus: Reservoir = H+ concentrations in mol/liter
+    dic: Reservoir  = DIC concentrations in mol/liter
+    hplus: Reservoir = H+ concentrations in mol/liter
     SW: Seawater = Seawater object for the model
+
+    it is typically used with a DataField object, e.g.
+
+    pco2 = calc_pCO2(dic,h,SW)
+
+     DataField(name = "SurfaceWaterpCO2",
+                       associated_with = reservoir_handle,
+                       y1_data = pco2,
+                       y1_label = r"pCO_{2}",
+                       y1_legend = r"pCO_{2}",
+                       )
 
     Author: T. Tsan
 
@@ -492,6 +503,105 @@ def calc_pCO2(
 
     co2: [NDArray, Float] = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c ** 2)))
 
-    pco2: [NDArray, Float] = co2 / SW.K0 * 1E6
+    pco2: [NDArray, Float] = co2 / SW.K0 * 1e6
 
     return pco2
+
+
+def calc_pCO2b(
+    dic: Union[float, NDArray],
+    hplus: Union[float, NDArray],
+    SW: SeawaterConstants,
+) -> Union[NDArray, Float]:
+
+    """
+    Same as calc_pCO2, but accepts values/arrays rather than Reservoirs.
+
+    Calculate the concentration of pCO2 as a function of DIC,
+    H+, K1 and k2 and returns a numpy array containing
+    the pCO2 in uatm at each timestep. Calculations are based off
+    equations from Follows, 2006. doi:10.1016/j.ocemod.2005.05.004
+
+    dic:  = DIC concentrations in mol/liter
+    hplus: = H+ concentrations in mol/liter
+    SW: Seawater = Seawater object for the model
+
+    it is typically used with a DataField object, e.g.
+
+    pco2 = calc_pCO2b(dic,h,SW)
+
+     DataField(name = "SurfaceWaterpCO2",
+                       associated_with = reservoir_handle,
+                       y1_data = pco2b,
+                       y1_label = r"pCO_{2}",
+                       y1_legend = r"pCO_{2}",
+                       )
+
+    """
+
+    dic_c: [NDArray, Float] = dic
+
+    hplus_c: [NDArray, Float] = hplus
+
+    k1: float = SW.K1
+    k2: float = SW.K2
+
+    co2: [NDArray, Float] = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c ** 2)))
+
+    pco2: [NDArray, Float] = co2 / SW.K0 * 1e6
+
+    return pco2
+
+def carbonate_system(
+    ca_con: float,
+    hplus_con: float,
+    volume: float,
+    swc: SeawaterConstants,
+    rg: ReservoirGroup = "None",
+) -> tuple:
+
+    """Setup the virtual reservoirs for carbonate alkalinity and H+
+
+    ca_con: initial carbonate concentration. Must be a quantity
+    hplus_con: initial H+ concentration. Must be a quantity
+    volume: volume : Must be a quantity
+    swc : a seawater constants object
+    rg: optional, must be a reservoir group. If present, the below reservoirs
+        will be registered with this group.
+
+    Returns the reservoir handles to VCA and VH
+    """
+
+    from esbmtk import VirtualReservoir, phc, calc_CA, calc_H
+
+    v1 = VirtualReservoir(
+        name="VCA",
+        species=CA,
+        concentration=ca_con,
+        volume=volume,
+        plot="no",
+        function=calc_CA,
+        register=rg,
+    )
+
+    v2 = VirtualReservoir(
+        name="VH",
+        species=Hplus,
+        concentration=hplus_con,
+        volume=volume,
+        plot_transform_c=phc,
+        legend_left="pH",
+        plot="yes",
+        function=calc_H,
+        a1=getattr(rg, "VCA"),
+        a2=getattr(rg, "DIC"),
+        a3=swc,
+        register=rg,
+    )
+    v1.update(
+        a1=getattr(rg, "TA"),
+        a2=getattr(rg, "VH"),
+        a3=swc,
+    )
+
+    return v1, v2

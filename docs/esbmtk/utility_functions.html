@@ -261,12 +261,20 @@ def set_y_limits(ax: plt.Axes, obj: any) -&gt; None:
 
 def get_ptype(obj, **kwargs: dict) -&gt; int:
     &#34;&#34;&#34;
-    Set plot type variable
+    Set plot type variable based on ptype or isotope keyword
 
     &#34;&#34;&#34;
 
+    from esbmtk import Flux, Reservoir, Signal, DataField, Source, Sink
+    
     ptype: int = 0
-    if &#34;ptype&#34; in kwargs:
+
+    if isinstance(obj, (Reservoir, Source, Sink, Flux)):
+        if obj.isotopes:
+            ptype = 0
+        else:
+            ptype = 2
+    elif &#34;ptype&#34; in kwargs:
         if kwargs[&#34;ptype&#34;] == &#34;both&#34;:
             ptype = 0
         elif kwargs[&#34;ptype&#34;] == &#34;iso&#34;:
@@ -275,30 +283,22 @@ def get_ptype(obj, **kwargs: dict) -&gt; int:
             ptype = 2
         elif kwargs[&#34;ptype&#34;] == &#34;mass_only&#34;:
             ptype = 2
-    else:
-        if obj.m_type == &#34;mass_only&#34;:
-            ptype = 2
-        elif obj.m_type == &#34;both&#34;:
-            ptype = 0
-        else:
-            raise ValueError(&#34;ptype must be one of &#39;both/iso/concentration/mass_only&#39;&#34;)
 
     return ptype
 
 
-def plot_object_data(geo: list, fn: int, obj, ptype: int) -&gt; None:
+def plot_object_data(geo: list, fn: int, obj: any) -&gt; None:
     &#34;&#34;&#34;collection of commands which will plotqand annotate a reservoir or flux
     object into an existing plot window.
 
     geo: geometry info
     fn: figure number in plot
     obj: the object to plot
-    ptype: the plot type
 
     &#34;&#34;&#34;
 
     from . import ureg, Q_
-    from esbmtk import Flux, Reservoir, Signal, DataField
+    from esbmtk import Flux, Reservoir, Signal, DataField, Source
 
     # geo = list with rows and cols
     # fn  = figure number
@@ -323,6 +323,9 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -&gt; None:
     # we do not map isotope values
     yr = obj.d
 
+    # get plot type
+    ptype: int = get_ptype(obj)
+    
     # remap concentration &amp; flux values
     if isinstance(obj, Flux):
         yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
@@ -432,7 +435,7 @@ def plot_object_data(geo: list, fn: int, obj, ptype: int) -&gt; None:
     # adjust display properties for title and legend
 
     if isinstance(obj, (Reservoir)):
-        #ax1.set_title(obj.pt)
+        # ax1.set_title(obj.pt)
         ax1.set_title(obj.full_name)
     else:
         ax1.set_title(obj.full_name)
@@ -531,6 +534,185 @@ def sort_by_type(l: list, t: list, m: str) -&gt; list:
 
     return rl
 
+def split_key(k: str, M:any ) -&gt; Union[any, any, str]:
+    &#34;&#34;&#34;split the string k with letter 2, and test if optional
+    id string is present
+
+    &#34;&#34;&#34;
+
+    source = k.split(&#34;2&#34;)[0]
+    sinkandid = k.split(&#34;2&#34;)[1]
+    if &#34;@&#34; in sinkandid:
+        sink = sinkandid.split(&#34;@&#34;)[0]
+        cid = sinkandid.split(&#34;@&#34;)[1]
+    else:
+        cid = &#34;None&#34;
+
+    sink = M.dmo[sink]
+    source = M.dmo[source]
+    return (source, sink, cid)
+
+def make_dict(keys: list, values: list) -&gt; dict:
+    &#34;&#34;&#34; Create a dictionary from a list and value, or from
+    two lists
+
+    &#34;&#34;&#34;
+    if isinstance(values, list):
+        if len(values) == len(keys):
+            d: dict = dict(zip(keys, values))
+        else:
+            raise ValueError(f&#34;key and value list must be of equal length&#34;)
+    else:
+        values: list = [values] * len(keys)
+        d: dict = dict(zip(keys, values))
+
+
+    return d
+
+def create_reservoirs(bg: dict, icd: dict, M: any) -&gt; None:
+    &#34;&#34;&#34;bg: dict with the box geometries e.g.,
+
+        {  # name: [[geometry], T, P]
+           &#34;hb&#34;: [[0, 200, 0.1], 2, 5],
+        }
+
+    icd: dict =
+    #  box_names: [concentrations, isotopes]
+    d= {&#34;bn&#34;: [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+
+    If you need box specific initial conditions use the output of
+    build_concentration_dicts as starting point
+
+    M: Model object handle
+
+    &#34;&#34;&#34;
+
+    from esbmtk import SeawaterConstants, ReservoirGroup
+    from collections import OrderedDict
+
+    # loop over reservoir names
+    for k, v in bg.items():
+        swc = SeawaterConstants(
+            name=f&#34;SW_{k}&#34;,
+            model=M,
+            temperature=v[1],
+            pressure=v[2],
+        )
+
+        # init reservoir group
+        ReservoirGroup(
+            name=k,
+            geometry=v[0],
+            concentration=icd[k][0],
+            isotopes=icd[k][1],
+        )
+
+
+def build_concentration_dicts(cd: dict, bg: dict) -&gt; dict:
+    &#34;&#34;&#34;Build a dict which can be used by create_reservoirs
+
+    bg : dict where the box_names are dict keys.
+    cd: dictionary with the following format:
+        cd = {
+             # species: [concentration, isotopes]
+             PO4: [Q_(&#34;2.1 * umol/liter&#34;), False],
+             DIC: [Q_(&#34;2.1 mmol/liter&#34;), False],
+            }
+
+    This function returns a new dict in the following format
+
+    #  box_names: [concentrations, isotopes]
+    d= {&#34;bn&#34;: [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+
+    &#34;&#34;&#34;
+
+    box_names: list = bg.keys()
+
+    icd: dict = OrderedDict()
+    td1: dict = {}  # temp dictionary
+    td2: dict = {}  # temp dictionary
+
+    # create the dicts for concentration and isotopes
+    for k, v in cd.items():
+        td1.update({k: v[0]})
+        td2.update({k: v[1]})
+
+    box_names: list = bg.keys()
+    for bn in box_names:  # loop over box names
+        icd.update({bn: [td1, td2]})
+
+    return icd
+
+
+def create_bulk_connections(ct: dict, icd: dict) -&gt; None:
+    &#34;&#34;&#34;Create connections from dictionaries
+
+    ct :dict = connection dictionary which has the following format&#34;
+         {&#34;sb2ib@POP&#34;: [0.8, &#34;scale_with_mass&#34;]}
+          source@sink@id: [scale, connection type]
+
+    icd: dict as returned by  build_concentration_dicts
+         It has the following format:
+
+         #  box_names: [concentrations, isotopes]
+         icd= {&#34;bn&#34;: [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+
+    &#34;&#34;&#34;
+
+    from esbmtk import split_key, make_dict, ConnectionGroup
+
+    # extract the list of species from the first box entry
+    # and then from the first dict in the dict list
+    los = icd[list(icd.keys())[0]][0].keys()
+
+    for k, v in ct.items():
+        # get the reservoir handles by splitting the key
+        source, sink, cid = split_key(k, M)
+
+        cg = ConnectionGroup(
+            source=source,
+            sink=sink,
+            ctype=make_dict(los, v[1]),
+            scale=make_dict(los, v[0]),  # get rate from dictionary
+            id=cid,  # get id from dictionary
+        )
+
+        # print(cg)
+
+
+def calc_volumes(bg: dict, M: any, h: any) -&gt; list:
+    &#34;&#34;&#34;Calculate volume contained in a given depth interval
+    bg is an ordered dictionary in the following format
+
+    bg=  {
+          &#34;hb&#34;: (0.1, 0, 200),
+          &#34;sb&#34;: (0.9, 0, 200),
+         }
+
+    where the key must be a valid box name, the first entry of the list denoted
+    the areal extent in percent, the second number is upper depth limit, and last
+    number is the lower depth limit.
+
+    M must be a model handle
+    h is the hypsometry handle
+
+    The function returns a list with the corresponding volumes
+
+    &#34;&#34;&#34;
+
+    # from esbmtk import hypsometry
+
+    v: list = []  # list of volumes
+
+    for k, v in bg.items():
+        a = v[0]
+        u = v[1]
+        l = v[2]
+
+        v.append(h.volume(u, l) * a)
+
+    return v
+
 def get_string_between_brackets(s :str) -&gt; str:
     &#34;&#34;&#34; Parse string and extract substring between square brackets
 
@@ -614,6 +796,226 @@ exception. Otherwise add</p></div>
 
     if not (e in l):  # if not present, append element
         l.append(e)</code></pre>
+</details>
+</dd>
+<dt id="esbmtk.utility_functions.build_concentration_dicts"><code class="name flex">
+<span>def <span class="ident">build_concentration_dicts</span></span>(<span>cd: dict, bg: dict) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Build a dict which can be used by create_reservoirs</p>
+<p>bg : dict where the box_names are dict keys.
+cd: dictionary with the following format:
+cd = {
+# species: [concentration, isotopes]
+PO4: [Q_("2.1 * umol/liter"), False],
+DIC: [Q_("2.1 mmol/liter"), False],
+}</p>
+<p>This function returns a new dict in the following format</p>
+<h1 id="box_names-concentrations-isotopes">box_names: [concentrations, isotopes]</h1>
+<p>d= {"bn": [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_concentration_dicts(cd: dict, bg: dict) -&gt; dict:
+    &#34;&#34;&#34;Build a dict which can be used by create_reservoirs
+
+    bg : dict where the box_names are dict keys.
+    cd: dictionary with the following format:
+        cd = {
+             # species: [concentration, isotopes]
+             PO4: [Q_(&#34;2.1 * umol/liter&#34;), False],
+             DIC: [Q_(&#34;2.1 mmol/liter&#34;), False],
+            }
+
+    This function returns a new dict in the following format
+
+    #  box_names: [concentrations, isotopes]
+    d= {&#34;bn&#34;: [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+
+    &#34;&#34;&#34;
+
+    box_names: list = bg.keys()
+
+    icd: dict = OrderedDict()
+    td1: dict = {}  # temp dictionary
+    td2: dict = {}  # temp dictionary
+
+    # create the dicts for concentration and isotopes
+    for k, v in cd.items():
+        td1.update({k: v[0]})
+        td2.update({k: v[1]})
+
+    box_names: list = bg.keys()
+    for bn in box_names:  # loop over box names
+        icd.update({bn: [td1, td2]})
+
+    return icd</code></pre>
+</details>
+</dd>
+<dt id="esbmtk.utility_functions.calc_volumes"><code class="name flex">
+<span>def <span class="ident">calc_volumes</span></span>(<span>bg: dict, M: <built-in function any>, h: <built-in function any>) ‑> list</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Calculate volume contained in a given depth interval
+bg is an ordered dictionary in the following format</p>
+<p>bg=
+{
+"hb": (0.1, 0, 200),
+"sb": (0.9, 0, 200),
+}</p>
+<p>where the key must be a valid box name, the first entry of the list denoted
+the areal extent in percent, the second number is upper depth limit, and last
+number is the lower depth limit.</p>
+<p>M must be a model handle
+h is the hypsometry handle</p>
+<p>The function returns a list with the corresponding volumes</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def calc_volumes(bg: dict, M: any, h: any) -&gt; list:
+    &#34;&#34;&#34;Calculate volume contained in a given depth interval
+    bg is an ordered dictionary in the following format
+
+    bg=  {
+          &#34;hb&#34;: (0.1, 0, 200),
+          &#34;sb&#34;: (0.9, 0, 200),
+         }
+
+    where the key must be a valid box name, the first entry of the list denoted
+    the areal extent in percent, the second number is upper depth limit, and last
+    number is the lower depth limit.
+
+    M must be a model handle
+    h is the hypsometry handle
+
+    The function returns a list with the corresponding volumes
+
+    &#34;&#34;&#34;
+
+    # from esbmtk import hypsometry
+
+    v: list = []  # list of volumes
+
+    for k, v in bg.items():
+        a = v[0]
+        u = v[1]
+        l = v[2]
+
+        v.append(h.volume(u, l) * a)
+
+    return v</code></pre>
+</details>
+</dd>
+<dt id="esbmtk.utility_functions.create_bulk_connections"><code class="name flex">
+<span>def <span class="ident">create_bulk_connections</span></span>(<span>ct: dict, icd: dict) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create connections from dictionaries</p>
+<p>ct :dict = connection dictionary which has the following format"
+{"sb2ib@POP": [0.8, "scale_with_mass"]}
+source@sink@id: [scale, connection type]</p>
+<p>icd: dict as returned by
+build_concentration_dicts
+It has the following format:</p>
+<pre><code> #  box_names: [concentrations, isotopes]
+ icd= {"bn": [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+</code></pre></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_bulk_connections(ct: dict, icd: dict) -&gt; None:
+    &#34;&#34;&#34;Create connections from dictionaries
+
+    ct :dict = connection dictionary which has the following format&#34;
+         {&#34;sb2ib@POP&#34;: [0.8, &#34;scale_with_mass&#34;]}
+          source@sink@id: [scale, connection type]
+
+    icd: dict as returned by  build_concentration_dicts
+         It has the following format:
+
+         #  box_names: [concentrations, isotopes]
+         icd= {&#34;bn&#34;: [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+
+    &#34;&#34;&#34;
+
+    from esbmtk import split_key, make_dict, ConnectionGroup
+
+    # extract the list of species from the first box entry
+    # and then from the first dict in the dict list
+    los = icd[list(icd.keys())[0]][0].keys()
+
+    for k, v in ct.items():
+        # get the reservoir handles by splitting the key
+        source, sink, cid = split_key(k, M)
+
+        cg = ConnectionGroup(
+            source=source,
+            sink=sink,
+            ctype=make_dict(los, v[1]),
+            scale=make_dict(los, v[0]),  # get rate from dictionary
+            id=cid,  # get id from dictionary
+        )</code></pre>
+</details>
+</dd>
+<dt id="esbmtk.utility_functions.create_reservoirs"><code class="name flex">
+<span>def <span class="ident">create_reservoirs</span></span>(<span>bg: dict, icd: dict, M: <built-in function any>) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>bg: dict with the box geometries e.g.,</p>
+<pre><code>{  # name: [[geometry], T, P]
+   "hb": [[0, 200, 0.1], 2, 5],
+}
+</code></pre>
+<p>icd: dict =</p>
+<h1 id="box_names-concentrations-isotopes">box_names: [concentrations, isotopes]</h1>
+<p>d= {"bn": [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}</p>
+<p>If you need box specific initial conditions use the output of
+build_concentration_dicts as starting point</p>
+<p>M: Model object handle</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_reservoirs(bg: dict, icd: dict, M: any) -&gt; None:
+    &#34;&#34;&#34;bg: dict with the box geometries e.g.,
+
+        {  # name: [[geometry], T, P]
+           &#34;hb&#34;: [[0, 200, 0.1], 2, 5],
+        }
+
+    icd: dict =
+    #  box_names: [concentrations, isotopes]
+    d= {&#34;bn&#34;: [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+
+    If you need box specific initial conditions use the output of
+    build_concentration_dicts as starting point
+
+    M: Model object handle
+
+    &#34;&#34;&#34;
+
+    from esbmtk import SeawaterConstants, ReservoirGroup
+    from collections import OrderedDict
+
+    # loop over reservoir names
+    for k, v in bg.items():
+        swc = SeawaterConstants(
+            name=f&#34;SW_{k}&#34;,
+            model=M,
+            temperature=v[1],
+            pressure=v[2],
+        )
+
+        # init reservoir group
+        ReservoirGroup(
+            name=k,
+            geometry=v[0],
+            concentration=icd[k][0],
+            isotopes=icd[k][1],
+        )</code></pre>
 </details>
 </dd>
 <dt id="esbmtk.utility_functions.get_delta"><code class="name flex">
@@ -780,19 +1182,27 @@ contains the list of fluxes in the reservoir</p></div>
 <span>def <span class="ident">get_ptype</span></span>(<span>obj, **kwargs: dict) ‑> int</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Set plot type variable</p></div>
+<div class="desc"><p>Set plot type variable based on ptype or isotope keyword</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_ptype(obj, **kwargs: dict) -&gt; int:
     &#34;&#34;&#34;
-    Set plot type variable
+    Set plot type variable based on ptype or isotope keyword
 
     &#34;&#34;&#34;
 
+    from esbmtk import Flux, Reservoir, Signal, DataField, Source, Sink
+    
     ptype: int = 0
-    if &#34;ptype&#34; in kwargs:
+
+    if isinstance(obj, (Reservoir, Source, Sink, Flux)):
+        if obj.isotopes:
+            ptype = 0
+        else:
+            ptype = 2
+    elif &#34;ptype&#34; in kwargs:
         if kwargs[&#34;ptype&#34;] == &#34;both&#34;:
             ptype = 0
         elif kwargs[&#34;ptype&#34;] == &#34;iso&#34;:
@@ -801,13 +1211,6 @@ contains the list of fluxes in the reservoir</p></div>
             ptype = 2
         elif kwargs[&#34;ptype&#34;] == &#34;mass_only&#34;:
             ptype = 2
-    else:
-        if obj.m_type == &#34;mass_only&#34;:
-            ptype = 2
-        elif obj.m_type == &#34;both&#34;:
-            ptype = 0
-        else:
-            raise ValueError(&#34;ptype must be one of &#39;both/iso/concentration/mass_only&#39;&#34;)
 
     return ptype</code></pre>
 </details>
@@ -891,6 +1294,34 @@ contains the list of fluxes in the reservoir</p></div>
             print(&#34; &#34;)
             for f in self.lof:
                   f.describe(i) # print out the flux data</code></pre>
+</details>
+</dd>
+<dt id="esbmtk.utility_functions.make_dict"><code class="name flex">
+<span>def <span class="ident">make_dict</span></span>(<span>keys: list, values: list) ‑> dict</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Create a dictionary from a list and value, or from
+two lists</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def make_dict(keys: list, values: list) -&gt; dict:
+    &#34;&#34;&#34; Create a dictionary from a list and value, or from
+    two lists
+
+    &#34;&#34;&#34;
+    if isinstance(values, list):
+        if len(values) == len(keys):
+            d: dict = dict(zip(keys, values))
+        else:
+            raise ValueError(f&#34;key and value list must be of equal length&#34;)
+    else:
+        values: list = [values] * len(keys)
+        d: dict = dict(zip(keys, values))
+
+
+    return d</code></pre>
 </details>
 </dd>
 <dt id="esbmtk.utility_functions.map_units"><code class="name flex">
@@ -991,32 +1422,30 @@ args: one or more quantities (units) see the Model class (e.g., f_unit)</p></div
 </details>
 </dd>
 <dt id="esbmtk.utility_functions.plot_object_data"><code class="name flex">
-<span>def <span class="ident">plot_object_data</span></span>(<span>geo: list, fn: int, obj, ptype: int) ‑> NoneType</span>
+<span>def <span class="ident">plot_object_data</span></span>(<span>geo: list, fn: int, obj: <built-in function any>) ‑> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"><p>collection of commands which will plotqand annotate a reservoir or flux
 object into an existing plot window.</p>
 <p>geo: geometry info
 fn: figure number in plot
-obj: the object to plot
-ptype: the plot type</p></div>
+obj: the object to plot</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def plot_object_data(geo: list, fn: int, obj, ptype: int) -&gt; None:
+<pre><code class="python">def plot_object_data(geo: list, fn: int, obj: any) -&gt; None:
     &#34;&#34;&#34;collection of commands which will plotqand annotate a reservoir or flux
     object into an existing plot window.
 
     geo: geometry info
     fn: figure number in plot
     obj: the object to plot
-    ptype: the plot type
 
     &#34;&#34;&#34;
 
     from . import ureg, Q_
-    from esbmtk import Flux, Reservoir, Signal, DataField
+    from esbmtk import Flux, Reservoir, Signal, DataField, Source
 
     # geo = list with rows and cols
     # fn  = figure number
@@ -1041,6 +1470,9 @@ ptype: the plot type</p></div>
     # we do not map isotope values
     yr = obj.d
 
+    # get plot type
+    ptype: int = get_ptype(obj)
+    
     # remap concentration &amp; flux values
     if isinstance(obj, Flux):
         yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
@@ -1150,7 +1582,7 @@ ptype: the plot type</p></div>
     # adjust display properties for title and legend
 
     if isinstance(obj, (Reservoir)):
-        #ax1.set_title(obj.pt)
+        # ax1.set_title(obj.pt)
         ax1.set_title(obj.full_name)
     else:
         ax1.set_title(obj.full_name)
@@ -1291,6 +1723,35 @@ m is a string for the error function</p></div>
     return rl</code></pre>
 </details>
 </dd>
+<dt id="esbmtk.utility_functions.split_key"><code class="name flex">
+<span>def <span class="ident">split_key</span></span>(<span>k: str, M: <built-in function any>) ‑> Union[<built-in function any>, str]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>split the string k with letter 2, and test if optional
+id string is present</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def split_key(k: str, M:any ) -&gt; Union[any, any, str]:
+    &#34;&#34;&#34;split the string k with letter 2, and test if optional
+    id string is present
+
+    &#34;&#34;&#34;
+
+    source = k.split(&#34;2&#34;)[0]
+    sinkandid = k.split(&#34;2&#34;)[1]
+    if &#34;@&#34; in sinkandid:
+        sink = sinkandid.split(&#34;@&#34;)[0]
+        cid = sinkandid.split(&#34;@&#34;)[1]
+    else:
+        cid = &#34;None&#34;
+
+    sink = M.dmo[sink]
+    source = M.dmo[source]
+    return (source, sink, cid)</code></pre>
+</details>
+</dd>
 </dl>
 </section>
 <section>
@@ -1310,6 +1771,10 @@ m is a string for the error function</p></div>
 <li><h3><a href="#header-functions">Functions</a></h3>
 <ul class="">
 <li><code><a title="esbmtk.utility_functions.add_to" href="#esbmtk.utility_functions.add_to">add_to</a></code></li>
+<li><code><a title="esbmtk.utility_functions.build_concentration_dicts" href="#esbmtk.utility_functions.build_concentration_dicts">build_concentration_dicts</a></code></li>
+<li><code><a title="esbmtk.utility_functions.calc_volumes" href="#esbmtk.utility_functions.calc_volumes">calc_volumes</a></code></li>
+<li><code><a title="esbmtk.utility_functions.create_bulk_connections" href="#esbmtk.utility_functions.create_bulk_connections">create_bulk_connections</a></code></li>
+<li><code><a title="esbmtk.utility_functions.create_reservoirs" href="#esbmtk.utility_functions.create_reservoirs">create_reservoirs</a></code></li>
 <li><code><a title="esbmtk.utility_functions.get_delta" href="#esbmtk.utility_functions.get_delta">get_delta</a></code></li>
 <li><code><a title="esbmtk.utility_functions.get_flux_data" href="#esbmtk.utility_functions.get_flux_data">get_flux_data</a></code></li>
 <li><code><a title="esbmtk.utility_functions.get_frac" href="#esbmtk.utility_functions.get_frac">get_frac</a></code></li>
@@ -1320,12 +1785,14 @@ m is a string for the error function</p></div>
 <li><code><a title="esbmtk.utility_functions.get_string_between_brackets" href="#esbmtk.utility_functions.get_string_between_brackets">get_string_between_brackets</a></code></li>
 <li><code><a title="esbmtk.utility_functions.is_name_in_list" href="#esbmtk.utility_functions.is_name_in_list">is_name_in_list</a></code></li>
 <li><code><a title="esbmtk.utility_functions.list_fluxes" href="#esbmtk.utility_functions.list_fluxes">list_fluxes</a></code></li>
+<li><code><a title="esbmtk.utility_functions.make_dict" href="#esbmtk.utility_functions.make_dict">make_dict</a></code></li>
 <li><code><a title="esbmtk.utility_functions.map_units" href="#esbmtk.utility_functions.map_units">map_units</a></code></li>
 <li><code><a title="esbmtk.utility_functions.plot_geometry" href="#esbmtk.utility_functions.plot_geometry">plot_geometry</a></code></li>
 <li><code><a title="esbmtk.utility_functions.plot_object_data" href="#esbmtk.utility_functions.plot_object_data">plot_object_data</a></code></li>
 <li><code><a title="esbmtk.utility_functions.set_y_limits" href="#esbmtk.utility_functions.set_y_limits">set_y_limits</a></code></li>
 <li><code><a title="esbmtk.utility_functions.show_data" href="#esbmtk.utility_functions.show_data">show_data</a></code></li>
 <li><code><a title="esbmtk.utility_functions.sort_by_type" href="#esbmtk.utility_functions.sort_by_type">sort_by_type</a></code></li>
+<li><code><a title="esbmtk.utility_functions.split_key" href="#esbmtk.utility_functions.split_key">split_key</a></code></li>
 </ul>
 </li>
 </ul>
