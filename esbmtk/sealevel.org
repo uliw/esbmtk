@@ -52,7 +52,7 @@ from .esbmtk import esbmtkBase, Model
 #+END_SRC
 
 
-** Get hypsometry data and establish first derivatives. 
+** Get hypsometry data and establish first derivatives
 
 #+BEGIN_SRC ipython :tangle sealevel.py
 import pandas as pd
@@ -65,9 +65,12 @@ class hypsometry(esbmtkBase):
     """A class to provide hypsometric data for the depth interval between -6000 to 1000 meter
     The data is derived from etopo 5, but internally represented by a spline approximation
 
+    Invoke as:
+               hyspometry(name="hyp", model=M)
+
     User facing methods:
 
-           h.area([0,-200])
+           h.area(0,-200)
 
                  will return the surface area between 0 and -200 mbsl (i.e.,
                  the contintal shelves) in percent. This number has a small
@@ -79,7 +82,9 @@ class hypsometry(esbmtkBase):
                  areas and 72.5% for ocean surface. This routine returns
                  70.5%
 
-           h.sa = total surface area in m^2
+           h.sa = Earth total surface area in m^2
+
+           h.volume(0,200)
 
     """
 
@@ -114,14 +119,46 @@ class hypsometry(esbmtkBase):
         self.__register_name__()
         self.__init_curve__()
 
-    def area(self, depth: list) -> float:
+    def volume(self, u: float, l: float, dz: float = -1) -> float:
         """Calculate the area between two elevation datums
-        depth = [lower, upper]
+
+        u = upper limit (e.g., -10)
+        l = lower limit (e.g., -100)
+        dz = integration step, defaults to 1 meter
+
+        the interpolation function returns a numpy array with
+        cumulative area percentages. The first derivative contains the
+        relative area per dz. dA*depth*dz is the volume of the water
+        on top of this area, and in a last step we sum all volumes
+        and normalize it to the planetary surface area.
+
+        returns the volume in cubic meters
+        """
+
+        di: NDArray = np.arange(u + abs(dz), l, dz)
+        cA: NDArray = interpolate.splev(di, self.tck)
+        dA: NDArray = np.diff(cA)
+        dV: NDArray = np.diff(cA) * di[1:] * abs(dz)
+        V: float = np.sum(dV) * self.sa
+
+        return V
+
+    def area(self, u: float, l: float) -> float:
+        """Calculate the area between two elevation datums
+
+        u = upper limit
+        l = lower limit
+
+        the interpolation function returns a numpy array with
+        cumulative area percentages do the difference between the
+        lowest and highest value is the area contained between
+        both limits. This number must be scaled by the total area
+        h.sa to get the value in square meters
 
         """
 
-        a: list = interpolate.splev(depth, self.tck)
-        area: float = a[0] - a[1]
+        a: NDArray = interpolate.splev([u, l], self.tck)
+        area: float = (a[0] - a[-1]) * self.sa
 
         return area
 
