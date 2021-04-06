@@ -868,6 +868,8 @@ class Model(esbmtkBase):
 
         duration: float = process_time() - start
         print(f"\n Execution took {duration} seconds \n")
+        # flag that the model has executed
+        self.state = 1
 
     @staticmethod
     def execute(
@@ -915,8 +917,7 @@ class Model(esbmtkBase):
 
             i = i + 1  # next time step
 
-            # flag that the model has executed
-            self.state = 1
+           
 
     def __step_process__(self, r, i) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -1165,7 +1166,7 @@ class Reservoir(esbmtkBase):
                             species = S,          # Species handle
                             delta = 20,           # initial delta - optional (defaults  to 0)
                             mass/concentration = "1 unit"  # species concentration or mass
-                            volume = "1E5 l",      # reservoir volume (m^3)
+                            volume/geometry = "1E5 l",      # reservoir volume (m^3)
                             plot = "yes"/"no", defaults to yes
                             plot_transform_c = a function reference, optional (see below)
                             legend_left = str, optional, useful for plot transform
@@ -1174,7 +1175,20 @@ class Reservoir(esbmtkBase):
                             isotopes = True/False otherwise use Model.m_type
                             )
 
-          you must either give mass or concentration. The result will always be displayed as concentration
+          You must either give mass or concentration.  The result will always be displayed
+          as concentration though.
+
+          You must provide either the volume or the geometry keyword. In the latter case
+          provide a list where the first entry is the upper depth datum, the second entry is
+          the lower depth datum, and the third entry is the area percentage. E.g., to specify
+          the upper 200 meters of the entire ocean, you would write:
+
+                 geometry=[0,-200,1]
+
+          the corresponding ocean volume will then be calculated by the calc_volume method
+          in this case the following instance variables will also be set
+          self.volume
+          self.area
 
           Using a transform function
           ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1234,6 +1248,7 @@ class Reservoir(esbmtkBase):
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
+            "geometry": (list, str),
             "plot_transform_c": any,
             "legend_left": str,
             "plot": str,
@@ -1255,7 +1270,7 @@ class Reservoir(esbmtkBase):
         self.lrk: list = [
             "name",
             "species",
-            "volume",
+            ["volume", "geometry"],
             ["mass", "concentration"],
         ]
 
@@ -1264,6 +1279,8 @@ class Reservoir(esbmtkBase):
             "delta": "None",
             "plot": "yes",
             "mass": "None",
+            "volume": "None",
+            "geometry": "None",
             "concentration": "None",
             "plot_transform_c": "None",
             "legend_left": "None",
@@ -1321,9 +1338,23 @@ class Reservoir(esbmtkBase):
             self.isotopes = False
 
         # convert units
-        self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
-        self.v: Number = self.volume  # reservoir volume
+        if self.volume != "None":
+            self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
 
+        elif self.geometry != "None":
+            if not isinstance(self.geometry, list):
+                raise ValueError("geometry must be a list see the docs for details")
+            self.area_percentage = self.geometry[2]
+            volume = (
+                self.mo.hyp.volume(self.geometry[0], self.geometry[1])
+                ,* self.area_percentage
+            )
+            self.volume = Q_(f"{volume} m**3").to(self.mo.v_unit).magnitude
+            self.area = self.mo.hyp.area(self.geometry[0], self.geometry[1])
+        else:
+            raise ValueError("You need to provide volume or geometry!")
+
+        self.v: float = self.volume  # reservoir volume
         # This should probably be species specific?
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
 
@@ -1400,6 +1431,7 @@ class Reservoir(esbmtkBase):
         # any auxilliary init - normally empty, but we use it here to extend the
         # reservoir class in virtual reservoirs
         self.__aux_inits__()
+        self.state = 0
 
     # setup a placeholder setitem function
     def __setitem__(self, i: int, value: float):
@@ -1693,7 +1725,7 @@ class ReservoirGroup(esbmtkBase):
     Example::
 
         ReservoirGroup(name = "ShallowOcean",         # Name of reservoir group
-                    volume = "1E5 l",                # reservoir volume (m^3)
+                    volume/geometry = "1E5 l",                # reservoir volume (m^3)
                     delta   = {DIC:0, ALK:0, PO4:0]  # dict of delta values
                     mass/concentration = {DIC:"1 unit", ALK: "1 unit"}
                     plot = {DIC:"yes", ALK:"yes"}  defaults to yes
@@ -1707,6 +1739,9 @@ class ReservoirGroup(esbmtkBase):
     Connecting two reservoir groups requires that the names in both
     group match, or that you specify a dictionary which delineates the
     matching.
+
+    Most parameters are passed on to the Reservoir class. See the reservoir class
+    documentation for details
 
     """
 
@@ -1722,6 +1757,7 @@ class ReservoirGroup(esbmtkBase):
             "concentration": dict,
             "mass": dict,
             "volume": (str, Q_),
+            "geometry": (str, list),
             "plot": dict,
             "isotopes": dict,
         }
@@ -1729,8 +1765,14 @@ class ReservoirGroup(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: list = [
             "name",
-            "volume",
+            ["volume", "geometry"],
         ]
+
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            "volume": "None",
+            "geometry": "None",
+        }
 
         if "concentration" in kwargs:
             self.species: list = list(kwargs["concentration"].keys())
@@ -1748,10 +1790,12 @@ class ReservoirGroup(esbmtkBase):
                 "volume": "a string or quantity",
                 "plot": "yes or no",
                 "isotopes": "dict Species: True/False",
+                "geometry": "list",
             }
         )
 
         self.__validateandregister__(kwargs)
+
         # legacy variable
         self.n = self.name
         self.mo = self.species[0].mo
@@ -1794,6 +1838,7 @@ class ReservoirGroup(esbmtkBase):
                 mass=self.cd[s.n]["mass"],
                 concentration=self.cd[s.n]["concentration"],
                 volume=self.volume,
+                geometry=self.geometry,
                 plot=self.cd[s.n]["plot"],
                 groupname=self.name,
                 isotopes=self.cd[s.n]["isotopes"],
