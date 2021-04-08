@@ -106,6 +106,7 @@ class Connect(esbmtkBase):
          - sink: An object handle for a Sink or Reservoir
          - rate: A quantity (e.g., "1 mol/s"), optional
          - delta: The isotope ratio, optional
+         - ref: Reservoir or flux reference
          - alpha: A fractionation factor, optional
          - id: A string wich will become part of the object name, optional
          - plot: "yes" or "no", defaults to "yes"
@@ -329,7 +330,7 @@ class Connect(esbmtkBase):
             "alpha": (Number, str),
             "species": Species,
             "ctype": str,
-            "ref": (Flux, str, list),
+            "ref": (Flux, Reservoir, str, list),
             "ratio": Number,
             "scale": (Number, str),
             "ref_value": (str, Number, Q_),
