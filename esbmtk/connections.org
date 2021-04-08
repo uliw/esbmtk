@@ -258,7 +258,7 @@ class Connect(esbmtkBase):
          Connect(source =  upstream reservoir,
                 sink = downstream reservoir,
                 ctype = "scale_relative_to_multiple_reservoirs"
-                ref_reservoirs = [r1, r2, k etc] # you must provide at least one
+                refs = [r1, r2, k etc] # you must provide at least one
                 scale = a scaling factor, optional, defaults to 1
     )
 
@@ -334,7 +334,6 @@ class Connect(esbmtkBase):
             "ratio": Number,
             "scale": (Number, str),
             "ref_value": (str, Number, Q_),
-            "ref_reservoir": (list, Reservoir),
             "k_value": (Number, str, Q_),
             "a_value": Number,
             "b_value": Number,
@@ -412,8 +411,8 @@ class Connect(esbmtkBase):
 
         # if no reference reservoir is specified, default to the upstream
         # reservoir
-        if "ref_reservoir" not in kwargs:
-            self.ref_reservoir = kwargs["source"]
+        if "ref" not in kwargs:
+            self.ref = kwargs["source"]
 
         # decide if this connection needs isotope calculations
         if self.source.isotopes or self.sink.isotopes:
@@ -887,7 +886,7 @@ class Connect(esbmtkBase):
             self.scale = map_units(self.scale, self.mo.m_unit)
             ph = ScaleRelativeToMass(
                 name=self.pn + "_PkM",
-                reservoir=self.ref_reservoir,
+                reservoir=self.ref,
                 flux=self.fh,
                 register=self.register,
                 scale=self.scale,
@@ -906,7 +905,7 @@ class Connect(esbmtkBase):
             )
             ph = ScaleRelativeToConcentration(
                 name=self.pn + "_PkC",
-                reservoir=self.ref_reservoir,
+                reservoir=self.ref,
                 flux=self.fh,
                 register=self.register,
                 scale=self.scale,
@@ -926,7 +925,7 @@ class Connect(esbmtkBase):
             ph = ScaleRelative2otherReservoir(
                 name=self.pn + "_PkC",
                 reservoir=self.source,
-                ref_reservoir=self.ref_reservoir,
+                ref=self.ref,
                 flux=self.fh,
                 register=self.register,
                 scale=self.scale,
@@ -950,7 +949,7 @@ class Connect(esbmtkBase):
             self.ref_value = map_units(self.ref_value, self.mo.c_unit)
             ph = Monod(
                 name=self.pn + "_PMonod",
-                reservoir=self.ref_reservoir,
+                reservoir=self.ref,
                 flux=self.fh,
                 register=self.register,
                 ref_value=self.ref_value,
