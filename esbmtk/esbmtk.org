@@ -84,14 +84,15 @@ class esbmtkBase(object):
 
     def __global_defaults__(self) -> None:
         """Initial variables which should be present in every object
-        Note that this is executed before we register the kwarhs as instance
+        Note that this is executed before we register the kwargs as instance
         variables
 
         """
 
-        self.lmo: list = ["full_name", "register", "groupname", "ctype"]
+        self.lmo: list = []
+        self.ldo: list = ["full_name", "register", "groupname", "ctype"]
 
-        for n in self.lmo:
+        for n in self.ldo:
             if n not in self.kwargs:
                 self.kwargs[n] = "None"
                 logging.debug(
@@ -145,13 +146,13 @@ class esbmtkBase(object):
             if isinstance(self, Model):  # Cannot register model with itself
                 setattr(builtins, self.name, self)
 
-            else:
-                if self in self.mo.lmo:
-                    raise NameError(f"{self.name} is a duplicate name. Please fix")
+            elif self in self.mo.lmo:
+                raise NameError(f"{self.name} is a duplicate name. Please fix")
 
+            else:
                 setattr(builtins, self.name, self)
                 self.full_name = self.name
-                self.mo.lmo.append(self)
+                self.mo.lmo.append(self.full_name)
                 self.mo.dmo.update({self.name: self})
 
         else:  # register in group namespace
@@ -163,11 +164,15 @@ class esbmtkBase(object):
                     f"Registering {self.name} in {self.register.name} namespace"
                 )
                 setattr(self.register, self.name, self)
-                fn: str = f"{self.register.name}.{self.name}"
+                if self.register.full_name != "None":
+                    fn: str = f"{self.register.full_name}.{self.name}"
+                else:
+                    fn: str = f"{self.register.name}.{self.name}"
                 self.full_name = fn
-                if self.full_name in self.mo.lmo:
+
+                if self.full_name in self.register.lmo:
                     raise NameError(f"{self.full_name} is a duplicate name. Please fix")
-                self.mo.lmo.append(self.full_name)
+                self.register.lmo.append(self.full_name)
                 # setattr(builtins, self.name, self)
                 # self.mo.dmo.update({self.name: self})
 
@@ -978,7 +983,7 @@ class Model(esbmtkBase):
             print(f"- {r.full_name}:")
 
             for f in r.lof:
-                if fby in f.full_name and f.m[i] > 0:
+                if fby in f.full_name: # and f.m[i] > 0:
                     direction = r.lio[f]
                     if r.isotopes:
                         print(
@@ -1707,7 +1712,7 @@ class Reservoir(esbmtkBase):
 
         print(f"\n{ind}Connnections:")
         for p in sorted(self.loc):
-            print(f"{off}{ind}{p.n}")
+            print(f"{off}{ind}{p.full_name}")
 
         print()
         print("Use the info method on any of the above connections")
@@ -2129,11 +2134,13 @@ class SourceSink(esbmtkBase):
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species"]
+        
         # list of default values if none provided
         self.lod: Dict[str, any] = {
             "display_precision": 0,
             "delta": "None",
             "isotopes": False,
+            "register": "None",
         }
 
         self.__initerrormessages__()
@@ -2142,6 +2149,9 @@ class SourceSink(esbmtkBase):
         self.loc: set[Connection] = set()  # set of connection objects
 
         # legacy names
+        #if self.register != "None":
+        #    self.full_name = f"{self.name}.{self.register.name}"
+        
         self.n = self.name
         self.sp = self.species
         self.mo = self.species.mo
