@@ -913,6 +913,8 @@ class Model(esbmtkBase):
                 # add to data from last time step
                 r[i] = r[i - 1] + new * dt
 
+                p = (r[i] - r[i - 1]) / r[0]
+
             # update reservoirs which are calculated
             # lrp # list calculated reservoir
             # update all process based fluxes. This can be done in a global lpc list
@@ -921,8 +923,6 @@ class Model(esbmtkBase):
                 p(i)
 
             i = i + 1  # next time step
-
-           
 
     def __step_process__(self, r, i) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -983,7 +983,7 @@ class Model(esbmtkBase):
             print(f"- {r.full_name}:")
 
             for f in r.lof:
-                if fby in f.full_name: # and f.m[i] > 0:
+                if fby in f.full_name:  # and f.m[i] > 0:
                     direction = r.lio[f]
                     if r.isotopes:
                         print(
