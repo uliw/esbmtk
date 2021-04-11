@@ -104,6 +104,7 @@ class Connect(esbmtkBase):
          - sink: An object handle for a Sink or Reservoir
          - rate: A quantity (e.g., &#34;1 mol/s&#34;), optional
          - delta: The isotope ratio, optional
+         - ref: Reservoir or flux reference
          - alpha: A fractionation factor, optional
          - id: A string wich will become part of the object name, optional
          - plot: &#34;yes&#34; or &#34;no&#34;, defaults to &#34;yes&#34;
@@ -255,7 +256,7 @@ class Connect(esbmtkBase):
          Connect(source =  upstream reservoir,
                 sink = downstream reservoir,
                 ctype = &#34;scale_relative_to_multiple_reservoirs&#34;
-                ref_reservoirs = [r1, r2, k etc] # you must provide at least one
+                refs = [r1, r2, k etc] # you must provide at least one
                 scale = a scaling factor, optional, defaults to 1
     )
 
@@ -327,11 +328,10 @@ class Connect(esbmtkBase):
             &#34;alpha&#34;: (Number, str),
             &#34;species&#34;: Species,
             &#34;ctype&#34;: str,
-            &#34;ref&#34;: (Flux, str, list),
+            &#34;ref&#34;: (Flux, Reservoir, str, list),
             &#34;ratio&#34;: Number,
             &#34;scale&#34;: (Number, str),
             &#34;ref_value&#34;: (str, Number, Q_),
-            &#34;ref_reservoir&#34;: (list, Reservoir),
             &#34;k_value&#34;: (Number, str, Q_),
             &#34;a_value&#34;: Number,
             &#34;b_value&#34;: Number,
@@ -409,8 +409,8 @@ class Connect(esbmtkBase):
 
         # if no reference reservoir is specified, default to the upstream
         # reservoir
-        if &#34;ref_reservoir&#34; not in kwargs:
-            self.ref_reservoir = kwargs[&#34;source&#34;]
+        if self.ref == &#34;None&#34;:
+            self.ref = kwargs[&#34;source&#34;]
 
         # decide if this connection needs isotope calculations
         if self.source.isotopes or self.sink.isotopes:
@@ -430,10 +430,6 @@ class Connect(esbmtkBase):
         self.lof: list[Flux] = []  # list of fluxes in this connection
         # get a list of all reservoirs registered for this species
         self.lor: list[Reservoir] = self.mo.lor
-
-        self.source.loc.add(self)  # register connector with reservoir
-        self.sink.loc.add(self)  # register connector with reservoir
-        self.mo.loc.add(self)  # register connector with model
 
         # if sink and source a regular, the name will be simply C_S_2_S
         # if we deal with ReservoirGroups we need to reflect this in the
@@ -465,6 +461,10 @@ class Connect(esbmtkBase):
         self.__set_process_type__()  # derive flux type and create flux(es)
 
         self.__register_name__()  # register connection in namespace
+
+        self.source.loc.add(self)  # register connector with reservoir
+        self.sink.loc.add(self)  # register connector with reservoir
+        self.mo.loc.add(self)  # register connector with model
 
         # This should probably move to register fluxes
         self.__register_process__()
@@ -541,8 +541,7 @@ class Connect(esbmtkBase):
             register=self.register,  # is this part of a group?
             isotopes=self.isotopes,
         )
-        #print(f&#34;Created Flux {self.fh.name}&#34;)
-
+        
         # register flux with its reservoirs
         if isinstance(self.r1, Source):
             # add the flux name direction/pair
@@ -638,13 +637,6 @@ class Connect(esbmtkBase):
         else:
             self.r = self.r1
 
-        # set process name
-        # if len(self.kwargs[&#34;id&#34;]) &gt; 0:
-        if self.id == &#34;None&#34;:
-            self.pn = self.r1.n + &#34;_2_&#34; + self.r2.n
-        else:
-            self.pn = self.r1.n + &#34;_2_&#34; + self.r2.n + f&#34;_{self.id}&#34;
-
         # if signal is provided but rate is omitted
         if self.signal != &#34;None&#34; and self.rate == &#34;None&#34;:
             self._rate = &#34;0 mmol/y&#34;
@@ -663,7 +655,6 @@ class Connect(esbmtkBase):
             else:  # if neither are given -&gt; default varflux type
                 self._delta = 0
                 self.__passiveflux__()
-                print(&#34;passive flux&#34;)
 
         elif self.ctype == &#34;flux_diff&#34;:
             self.__vardeltaout__()
@@ -709,10 +700,10 @@ class Connect(esbmtkBase):
         &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
 
         ph = PassiveFlux_fixed_delta(
-            name=self.pn + &#34;_Pfd&#34;,
+            name=&#34;Pfd&#34;,
             reservoir=self.r,
             flux=self.fh,
-            register=self.register,
+            register=self.fh,
             delta=self.delta,
         )  # initialize a passive flux process object
         self.lop.append(ph)
@@ -726,10 +717,10 @@ class Connect(esbmtkBase):
         &#34;&#34;&#34;
 
         ph = VarDeltaOut(
-            name=self.pn + &#34;_Pvdo&#34;,
+            name=&#34;Pvdo&#34;,
             reservoir=self.source,
             flux=self.fh,
-            register=self.register,
+            register=self.fh,
             rate=self.rate,
         )
         self.lop.append(ph)
@@ -754,10 +745,10 @@ class Connect(esbmtkBase):
         #     raise ValueError(f&#34;bypass must be None/source/sink but not {self.bypass}&#34;)
 
         ph = ScaleFlux(
-            name=self.pn + &#34;_PSF&#34;,
+            name=&#34;PSF&#34;,
             reservoir=self.r,
             flux=self.fh,
-            register=self.register,
+            register=self.fh,
             scale=self.scale,
             ref=self.ref,
         )
@@ -782,10 +773,10 @@ class Connect(esbmtkBase):
             raise ValueError(&#34;Scale reference must be a flux&#34;)
 
         ph = ScaleFlux(
-            name=self.pn + &#34;_PSFV&#34;,
+            name=&#34;PSFV&#34;,
             reservoir=self.r,
             flux=self.fh,
-            register=self.register,
+            register=self.fh,
             scale=self.scale,
             ref=self.ref,
         )
@@ -810,10 +801,10 @@ class Connect(esbmtkBase):
             raise ValueError(&#34;ref must be a list&#34;)
 
         ph = FluxDiff(
-            name=self.pn + &#34;_PSF&#34;,
+            name=&#34;PSF&#34;,
             reservoir=self.r,
             flux=self.fh,
-            register=self.register,
+            register=self.fh,
             scale=self.scale,
             ref=self.ref,
         )
@@ -830,10 +821,10 @@ class Connect(esbmtkBase):
             print(f&#34;\n Warning: use scale instead of k_value for reaction type\n&#34;)
 
         ph = Reaction(
-            name=self.pn + &#34;_RF&#34;,
+            name=&#34;RF&#34;,
             reservoir=self.r,
             flux=self.fh,
-            register=self.register,
+            register=self.fh,
             scale=self.scale,
             ref=self.ref,
         )
@@ -848,7 +839,7 @@ class Connect(esbmtkBase):
         &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
 
         ph = PassiveFlux(
-            name=self.pn + &#34;_PF&#34;, reservoir=self.r, register=self.register, flux=self.fh
+            name=&#34;_PF&#34;, reservoir=self.r, register=self.fh, flux=self.fh
         )  # initialize a passive flux process object
         self.lop.append(ph)  # add this process to the process list
 
@@ -856,10 +847,10 @@ class Connect(esbmtkBase):
         &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
 
         ph = Fractionation(
-            name=self.pn + &#34;_Pa&#34;,
+            name=&#34;_Pa&#34;,
             reservoir=self.r,
             flux=self.fh,
-            register=self.register,
+            register=self.fh,
             alpha=self.kwargs[&#34;alpha&#34;],
         )
         self.lop.append(ph)  #
@@ -883,10 +874,10 @@ class Connect(esbmtkBase):
 
             self.scale = map_units(self.scale, self.mo.m_unit)
             ph = ScaleRelativeToMass(
-                name=self.pn + &#34;_PkM&#34;,
-                reservoir=self.ref_reservoir,
+                name=&#34;_PkM&#34;,
+                reservoir=self.ref,
                 flux=self.fh,
-                register=self.register,
+                register=self.fh,
                 scale=self.scale,
             )
 
@@ -901,13 +892,18 @@ class Connect(esbmtkBase):
             self.scale = map_units(
                 self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
             )
+            #print(
+            #    f&#34;Registering PKC with ref = {self.ref.full_name}, scale = {self.scale}&#34;
+            #)
+
             ph = ScaleRelativeToConcentration(
-                name=self.pn + &#34;_PkC&#34;,
-                reservoir=self.ref_reservoir,
+                name=&#34;PkC&#34;,
+                reservoir=self.ref,
                 flux=self.fh,
-                register=self.register,
+                register=self.fh,
                 scale=self.scale,
             )
+            #print(f&#34;Process Name {ph.full_name}&#34;)
 
         elif self.ctype == &#34;scale_relative_to_multiple_reservoirs&#34;:
 
@@ -921,11 +917,11 @@ class Connect(esbmtkBase):
                 self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
             )
             ph = ScaleRelative2otherReservoir(
-                name=self.pn + &#34;_PkC&#34;,
+                name=&#34;PkC&#34;,
                 reservoir=self.source,
-                ref_reservoir=self.ref_reservoir,
+                ref=self.ref,
                 flux=self.fh,
-                register=self.register,
+                register=self.fh,
                 scale=self.scale,
             )
 
@@ -934,22 +930,22 @@ class Connect(esbmtkBase):
                 self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
             )
             ph = Flux_Balance(
-                name=self.pn + &#34;_Pfb&#34;,
+                name=&#34;_Pfb&#34;,
                 reservoir=self.source,
                 left=self.left,
                 right=self.right,
                 flux=self.fh,
-                register=self.register,
+                register=self.fh,
                 k_value=self.k_value,
             )
 
         elif self.ctype == &#34;monod_ctype_limit&#34;:
             self.ref_value = map_units(self.ref_value, self.mo.c_unit)
             ph = Monod(
-                name=self.pn + &#34;_PMonod&#34;,
-                reservoir=self.ref_reservoir,
+                name=&#34;_PMonod&#34;,
+                reservoir=self.ref,
                 flux=self.fh,
-                register=self.register,
+                register=self.fh,
                 ref_value=self.ref_value,
                 a_value=self.a_value,
                 b_value=self.b_value,
@@ -1215,8 +1211,9 @@ class ConnectionGroup(esbmtkBase):
                         # update the entry
                         self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
             # now we can create the connection
-            # print(f&#34;id = {self.id}&#34;)
+            
             name = f&#34;{r.n}&#34;
+            # print(f&#34;Creating {r.n}&#34;)
             a = Connect(
                 name=name,
                 source=getattr(self.source, r.n),
@@ -1279,6 +1276,7 @@ the connection name will be derived as "C_Source_2_Sink"
 - sink: An object handle for a Sink or Reservoir
 - rate: A quantity (e.g., "1 mol/s"), optional
 - delta: The isotope ratio, optional
+- ref: Reservoir or flux reference
 - alpha: A fractionation factor, optional
 - id: A string wich will become part of the object name, optional
 - plot: "yes" or "no", defaults to "yes"
@@ -1408,7 +1406,7 @@ or more constants.</p>
 <pre><code> Connect(source =  upstream reservoir,
         sink = downstream reservoir,
         ctype = "scale_relative_to_multiple_reservoirs"
-        ref_reservoirs = [r1, r2, k etc] # you must provide at least one
+        refs = [r1, r2, k etc] # you must provide at least one
         scale = a scaling factor, optional, defaults to 1
 </code></pre>
 <p>)</p>
@@ -1473,6 +1471,7 @@ between =left=and =right=</li>
          - sink: An object handle for a Sink or Reservoir
          - rate: A quantity (e.g., &#34;1 mol/s&#34;), optional
          - delta: The isotope ratio, optional
+         - ref: Reservoir or flux reference
          - alpha: A fractionation factor, optional
          - id: A string wich will become part of the object name, optional
          - plot: &#34;yes&#34; or &#34;no&#34;, defaults to &#34;yes&#34;
@@ -1624,7 +1623,7 @@ between =left=and =right=</li>
          Connect(source =  upstream reservoir,
                 sink = downstream reservoir,
                 ctype = &#34;scale_relative_to_multiple_reservoirs&#34;
-                ref_reservoirs = [r1, r2, k etc] # you must provide at least one
+                refs = [r1, r2, k etc] # you must provide at least one
                 scale = a scaling factor, optional, defaults to 1
     )
 
@@ -1696,11 +1695,10 @@ between =left=and =right=</li>
             &#34;alpha&#34;: (Number, str),
             &#34;species&#34;: Species,
             &#34;ctype&#34;: str,
-            &#34;ref&#34;: (Flux, str, list),
+            &#34;ref&#34;: (Flux, Reservoir, str, list),
             &#34;ratio&#34;: Number,
             &#34;scale&#34;: (Number, str),
             &#34;ref_value&#34;: (str, Number, Q_),
-            &#34;ref_reservoir&#34;: (list, Reservoir),
             &#34;k_value&#34;: (Number, str, Q_),
             &#34;a_value&#34;: Number,
             &#34;b_value&#34;: Number,
@@ -1778,8 +1776,8 @@ between =left=and =right=</li>
 
         # if no reference reservoir is specified, default to the upstream
         # reservoir
-        if &#34;ref_reservoir&#34; not in kwargs:
-            self.ref_reservoir = kwargs[&#34;source&#34;]
+        if self.ref == &#34;None&#34;:
+            self.ref = kwargs[&#34;source&#34;]
 
         # decide if this connection needs isotope calculations
         if self.source.isotopes or self.sink.isotopes:
@@ -1799,10 +1797,6 @@ between =left=and =right=</li>
         self.lof: list[Flux] = []  # list of fluxes in this connection
         # get a list of all reservoirs registered for this species
         self.lor: list[Reservoir] = self.mo.lor
-
-        self.source.loc.add(self)  # register connector with reservoir
-        self.sink.loc.add(self)  # register connector with reservoir
-        self.mo.loc.add(self)  # register connector with model
 
         # if sink and source a regular, the name will be simply C_S_2_S
         # if we deal with ReservoirGroups we need to reflect this in the
@@ -1834,6 +1828,10 @@ between =left=and =right=</li>
         self.__set_process_type__()  # derive flux type and create flux(es)
 
         self.__register_name__()  # register connection in namespace
+
+        self.source.loc.add(self)  # register connector with reservoir
+        self.sink.loc.add(self)  # register connector with reservoir
+        self.mo.loc.add(self)  # register connector with model
 
         # This should probably move to register fluxes
         self.__register_process__()
@@ -1910,8 +1908,7 @@ between =left=and =right=</li>
             register=self.register,  # is this part of a group?
             isotopes=self.isotopes,
         )
-        #print(f&#34;Created Flux {self.fh.name}&#34;)
-
+        
         # register flux with its reservoirs
         if isinstance(self.r1, Source):
             # add the flux name direction/pair
@@ -2007,13 +2004,6 @@ between =left=and =right=</li>
         else:
             self.r = self.r1
 
-        # set process name
-        # if len(self.kwargs[&#34;id&#34;]) &gt; 0:
-        if self.id == &#34;None&#34;:
-            self.pn = self.r1.n + &#34;_2_&#34; + self.r2.n
-        else:
-            self.pn = self.r1.n + &#34;_2_&#34; + self.r2.n + f&#34;_{self.id}&#34;
-
         # if signal is provided but rate is omitted
         if self.signal != &#34;None&#34; and self.rate == &#34;None&#34;:
             self._rate = &#34;0 mmol/y&#34;
@@ -2032,7 +2022,6 @@ between =left=and =right=</li>
             else:  # if neither are given -&gt; default varflux type
                 self._delta = 0
                 self.__passiveflux__()
-                print(&#34;passive flux&#34;)
 
         elif self.ctype == &#34;flux_diff&#34;:
             self.__vardeltaout__()
@@ -2078,10 +2067,10 @@ between =left=and =right=</li>
         &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
 
         ph = PassiveFlux_fixed_delta(
-            name=self.pn + &#34;_Pfd&#34;,
+            name=&#34;Pfd&#34;,
             reservoir=self.r,
             flux=self.fh,
-            register=self.register,
+            register=self.fh,
             delta=self.delta,
         )  # initialize a passive flux process object
         self.lop.append(ph)
@@ -2095,10 +2084,10 @@ between =left=and =right=</li>
         &#34;&#34;&#34;
 
         ph = VarDeltaOut(
-            name=self.pn + &#34;_Pvdo&#34;,
+            name=&#34;Pvdo&#34;,
             reservoir=self.source,
             flux=self.fh,
-            register=self.register,
+            register=self.fh,
             rate=self.rate,
         )
         self.lop.append(ph)
@@ -2123,10 +2112,10 @@ between =left=and =right=</li>
         #     raise ValueError(f&#34;bypass must be None/source/sink but not {self.bypass}&#34;)
 
         ph = ScaleFlux(
-            name=self.pn + &#34;_PSF&#34;,
+            name=&#34;PSF&#34;,
             reservoir=self.r,
             flux=self.fh,
-            register=self.register,
+            register=self.fh,
             scale=self.scale,
             ref=self.ref,
         )
@@ -2151,10 +2140,10 @@ between =left=and =right=</li>
             raise ValueError(&#34;Scale reference must be a flux&#34;)
 
         ph = ScaleFlux(
-            name=self.pn + &#34;_PSFV&#34;,
+            name=&#34;PSFV&#34;,
             reservoir=self.r,
             flux=self.fh,
-            register=self.register,
+            register=self.fh,
             scale=self.scale,
             ref=self.ref,
         )
@@ -2179,10 +2168,10 @@ between =left=and =right=</li>
             raise ValueError(&#34;ref must be a list&#34;)
 
         ph = FluxDiff(
-            name=self.pn + &#34;_PSF&#34;,
+            name=&#34;PSF&#34;,
             reservoir=self.r,
             flux=self.fh,
-            register=self.register,
+            register=self.fh,
             scale=self.scale,
             ref=self.ref,
         )
@@ -2199,10 +2188,10 @@ between =left=and =right=</li>
             print(f&#34;\n Warning: use scale instead of k_value for reaction type\n&#34;)
 
         ph = Reaction(
-            name=self.pn + &#34;_RF&#34;,
+            name=&#34;RF&#34;,
             reservoir=self.r,
             flux=self.fh,
-            register=self.register,
+            register=self.fh,
             scale=self.scale,
             ref=self.ref,
         )
@@ -2217,7 +2206,7 @@ between =left=and =right=</li>
         &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
 
         ph = PassiveFlux(
-            name=self.pn + &#34;_PF&#34;, reservoir=self.r, register=self.register, flux=self.fh
+            name=&#34;_PF&#34;, reservoir=self.r, register=self.fh, flux=self.fh
         )  # initialize a passive flux process object
         self.lop.append(ph)  # add this process to the process list
 
@@ -2225,10 +2214,10 @@ between =left=and =right=</li>
         &#34;&#34;&#34;Just a wrapper to keep the if statement manageable&#34;&#34;&#34;
 
         ph = Fractionation(
-            name=self.pn + &#34;_Pa&#34;,
+            name=&#34;_Pa&#34;,
             reservoir=self.r,
             flux=self.fh,
-            register=self.register,
+            register=self.fh,
             alpha=self.kwargs[&#34;alpha&#34;],
         )
         self.lop.append(ph)  #
@@ -2252,10 +2241,10 @@ between =left=and =right=</li>
 
             self.scale = map_units(self.scale, self.mo.m_unit)
             ph = ScaleRelativeToMass(
-                name=self.pn + &#34;_PkM&#34;,
-                reservoir=self.ref_reservoir,
+                name=&#34;_PkM&#34;,
+                reservoir=self.ref,
                 flux=self.fh,
-                register=self.register,
+                register=self.fh,
                 scale=self.scale,
             )
 
@@ -2270,13 +2259,18 @@ between =left=and =right=</li>
             self.scale = map_units(
                 self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
             )
+            #print(
+            #    f&#34;Registering PKC with ref = {self.ref.full_name}, scale = {self.scale}&#34;
+            #)
+
             ph = ScaleRelativeToConcentration(
-                name=self.pn + &#34;_PkC&#34;,
-                reservoir=self.ref_reservoir,
+                name=&#34;PkC&#34;,
+                reservoir=self.ref,
                 flux=self.fh,
-                register=self.register,
+                register=self.fh,
                 scale=self.scale,
             )
+            #print(f&#34;Process Name {ph.full_name}&#34;)
 
         elif self.ctype == &#34;scale_relative_to_multiple_reservoirs&#34;:
 
@@ -2290,11 +2284,11 @@ between =left=and =right=</li>
                 self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
             )
             ph = ScaleRelative2otherReservoir(
-                name=self.pn + &#34;_PkC&#34;,
+                name=&#34;PkC&#34;,
                 reservoir=self.source,
-                ref_reservoir=self.ref_reservoir,
+                ref=self.ref,
                 flux=self.fh,
-                register=self.register,
+                register=self.fh,
                 scale=self.scale,
             )
 
@@ -2303,22 +2297,22 @@ between =left=and =right=</li>
                 self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
             )
             ph = Flux_Balance(
-                name=self.pn + &#34;_Pfb&#34;,
+                name=&#34;_Pfb&#34;,
                 reservoir=self.source,
                 left=self.left,
                 right=self.right,
                 flux=self.fh,
-                register=self.register,
+                register=self.fh,
                 k_value=self.k_value,
             )
 
         elif self.ctype == &#34;monod_ctype_limit&#34;:
             self.ref_value = map_units(self.ref_value, self.mo.c_unit)
             ph = Monod(
-                name=self.pn + &#34;_PMonod&#34;,
-                reservoir=self.ref_reservoir,
+                name=&#34;_PMonod&#34;,
+                reservoir=self.ref,
                 flux=self.fh,
-                register=self.register,
+                register=self.fh,
                 ref_value=self.ref_value,
                 a_value=self.a_value,
                 b_value=self.b_value,
@@ -2801,8 +2795,9 @@ ConnectionGroup(
                         # update the entry
                         self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
             # now we can create the connection
-            # print(f&#34;id = {self.id}&#34;)
+            
             name = f&#34;{r.n}&#34;
+            # print(f&#34;Creating {r.n}&#34;)
             a = Connect(
                 name=name,
                 source=getattr(self.source, r.n),

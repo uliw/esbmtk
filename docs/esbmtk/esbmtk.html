@@ -94,14 +94,15 @@ class esbmtkBase(object):
 
     def __global_defaults__(self) -&gt; None:
         &#34;&#34;&#34;Initial variables which should be present in every object
-        Note that this is executed before we register the kwarhs as instance
+        Note that this is executed before we register the kwargs as instance
         variables
 
         &#34;&#34;&#34;
 
-        self.lmo: list = [&#34;full_name&#34;, &#34;register&#34;, &#34;groupname&#34;, &#34;ctype&#34;]
+        self.lmo: list = []
+        self.ldo: list = [&#34;full_name&#34;, &#34;register&#34;, &#34;groupname&#34;, &#34;ctype&#34;]
 
-        for n in self.lmo:
+        for n in self.ldo:
             if n not in self.kwargs:
                 self.kwargs[n] = &#34;None&#34;
                 logging.debug(
@@ -155,13 +156,13 @@ class esbmtkBase(object):
             if isinstance(self, Model):  # Cannot register model with itself
                 setattr(builtins, self.name, self)
 
-            else:
-                if self in self.mo.lmo:
-                    raise NameError(f&#34;{self.name} is a duplicate name. Please fix&#34;)
+            elif self in self.mo.lmo:
+                raise NameError(f&#34;{self.name} is a duplicate name. Please fix&#34;)
 
+            else:
                 setattr(builtins, self.name, self)
                 self.full_name = self.name
-                self.mo.lmo.append(self)
+                self.mo.lmo.append(self.full_name)
                 self.mo.dmo.update({self.name: self})
 
         else:  # register in group namespace
@@ -173,11 +174,15 @@ class esbmtkBase(object):
                     f&#34;Registering {self.name} in {self.register.name} namespace&#34;
                 )
                 setattr(self.register, self.name, self)
-                fn: str = f&#34;{self.register.name}.{self.name}&#34;
+                if self.register.full_name != &#34;None&#34;:
+                    fn: str = f&#34;{self.register.full_name}.{self.name}&#34;
+                else:
+                    fn: str = f&#34;{self.register.name}.{self.name}&#34;
                 self.full_name = fn
-                if self.full_name in self.mo.lmo:
+
+                if self.full_name in self.register.lmo:
                     raise NameError(f&#34;{self.full_name} is a duplicate name. Please fix&#34;)
-                self.mo.lmo.append(self.full_name)
+                self.register.lmo.append(self.full_name)
                 # setattr(builtins, self.name, self)
                 # self.mo.dmo.update({self.name: self})
 
@@ -910,6 +915,8 @@ class Model(esbmtkBase):
                 # add to data from last time step
                 r[i] = r[i - 1] + new * dt
 
+                # p = (r[i] - r[i - 1]) / r[0]
+
             # update reservoirs which are calculated
             # lrp # list calculated reservoir
             # update all process based fluxes. This can be done in a global lpc list
@@ -918,8 +925,6 @@ class Model(esbmtkBase):
                 p(i)
 
             i = i + 1  # next time step
-
-           
 
     def __step_process__(self, r, i) -&gt; None:
         &#34;&#34;&#34;For debugging. Provide reservoir and step number,&#34;&#34;&#34;
@@ -980,7 +985,7 @@ class Model(esbmtkBase):
             print(f&#34;- {r.full_name}:&#34;)
 
             for f in r.lof:
-                if fby in f.full_name and f.m[i] &gt; 0:
+                if fby in f.full_name:  # and f.m[i] &gt; 0:
                     direction = r.lio[f]
                     if r.isotopes:
                         print(
@@ -1467,31 +1472,30 @@ class Reservoir(esbmtkBase):
         cmu = f&#34;{mo.c_unit:~P}&#34;
 
         sdn = self.sp.dn  # delta name
-        sds = f&#34;[{self.sp.ds}]&#34;  # delta scale
+        sds = self.sp.ds  # delta scale
         rn = self.full_name  # reservoir name
         mn = self.sp.mo.n  # model name
         fn = f&#34;{prefix}{mn}_{rn}.csv&#34;  # file name
 
         # build the dataframe
         df: pd.dataframe = DataFrame()
-        n: str = self.full_name
 
-        df[f&#34;{n} Time [{mtu}]&#34;] = self.mo.time[start:stop:stride]  # time
-        df[f&#34;{n} {sn} [{smu}]&#34;] = self.m[start:stop:stride]  # mass
-        df[f&#34;{n} {sp.ln} [{smu}]&#34;] = self.l[start:stop:stride]  # light isotope
-        df[f&#34;{n} {sp.hn} [{smu}]&#34;] = self.h[start:stop:stride]  # heavy isotope
-        df[f&#34;{n} {sdn} [{sds}]&#34;] = self.d[start:stop:stride]  # delta value
-        df[f&#34;{n} {sn} [{cmu}]&#34;] = self.c[start:stop:stride]  # concentration
+        df[f&#34;{rn} Time [{mtu}]&#34;] = self.mo.time[start:stop:stride]  # time
+        df[f&#34;{rn} {sn} [{smu}]&#34;] = self.m[start:stop:stride]  # mass
+        df[f&#34;{rn} {sp.ln} [{smu}]&#34;] = self.l[start:stop:stride]  # light isotope
+        df[f&#34;{rn} {sp.hn} [{smu}]&#34;] = self.h[start:stop:stride]  # heavy isotope
+        df[f&#34;{rn} {sdn} [{sds}]&#34;] = self.d[start:stop:stride]  # delta value
+        df[f&#34;{rn} {sn} [{cmu}]&#34;] = self.c[start:stop:stride]  # concentration
 
         for f in self.lof:  # Assemble the headers and data for the reservoir fluxes
-            df[f&#34;{f.full_name} {sn} [{fmu}]&#34;] = f.m[start:stop:stride]  # mass
-            df[f&#34;{f.full_name} {sn} [{sp.ln}]&#34;] = f.l[
-                start:stop:stride
-            ]  # light isotope
-            df[f&#34;{f.full_name} {sn} [{sp.hn}]&#34;] = f.h[
-                start:stop:stride
-            ]  # heavy isotope
-            df[f&#34;{f.full_name} {sn} {sdn} [{sds}]&#34;] = f.d[start:stop:stride]  # delta
+            # mass
+            df[f&#34;{f.full_name} {sn} [{fmu}]&#34;] = f.m[start:stop:stride]
+            # light isotope
+            df[f&#34;{f.full_name} {sn} [{sp.ln}]&#34;] = f.l[start:stop:stride]
+            # heavy isotope
+            df[f&#34;{f.full_name} {sn} [{sp.hn}]&#34;] = f.h[start:stop:stride]
+            # delta value
+            df[f&#34;{f.full_name} {sn} {sdn} [{sds}]&#34;] = f.d[start:stop:stride]
 
         df.to_csv(fn, index=False)  # Write dataframe to file
         return df
@@ -1693,7 +1697,7 @@ class Reservoir(esbmtkBase):
 
         print(f&#34;\n{ind}Connnections:&#34;)
         for p in sorted(self.loc):
-            print(f&#34;{off}{ind}{p.n}&#34;)
+            print(f&#34;{off}{ind}{p.full_name}&#34;)
 
         print()
         print(&#34;Use the info method on any of the above connections&#34;)
@@ -2100,11 +2104,13 @@ class SourceSink(esbmtkBase):
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = [&#34;name&#34;, &#34;species&#34;]
+        
         # list of default values if none provided
         self.lod: Dict[str, any] = {
             &#34;display_precision&#34;: 0,
             &#34;delta&#34;: &#34;None&#34;,
             &#34;isotopes&#34;: False,
+            &#34;register&#34;: &#34;None&#34;,
         }
 
         self.__initerrormessages__()
@@ -2113,6 +2119,9 @@ class SourceSink(esbmtkBase):
         self.loc: set[Connection] = set()  # set of connection objects
 
         # legacy names
+        #if self.register != &#34;None&#34;:
+        #    self.full_name = f&#34;{self.name}.{self.register.name}&#34;
+        
         self.n = self.name
         self.sp = self.species
         self.mo = self.species.mo
@@ -4657,6 +4666,8 @@ keyword are either "Carbon", or "Sulfur" or both as a list
                 # add to data from last time step
                 r[i] = r[i - 1] + new * dt
 
+                # p = (r[i] - r[i - 1]) / r[0]
+
             # update reservoirs which are calculated
             # lrp # list calculated reservoir
             # update all process based fluxes. This can be done in a global lpc list
@@ -4665,8 +4676,6 @@ keyword are either "Carbon", or "Sulfur" or both as a list
                 p(i)
 
             i = i + 1  # next time step
-
-           
 
     def __step_process__(self, r, i) -&gt; None:
         &#34;&#34;&#34;For debugging. Provide reservoir and step number,&#34;&#34;&#34;
@@ -4727,7 +4736,7 @@ keyword are either "Carbon", or "Sulfur" or both as a list
             print(f&#34;- {r.full_name}:&#34;)
 
             for f in r.lof:
-                if fby in f.full_name and f.m[i] &gt; 0:
+                if fby in f.full_name:  # and f.m[i] &gt; 0:
                     direction = r.lio[f]
                     if r.isotopes:
                         print(
@@ -4814,6 +4823,8 @@ def execute(
 
             # add to data from last time step
             r[i] = r[i - 1] + new * dt
+
+            # p = (r[i] - r[i - 1]) / r[0]
 
         # update reservoirs which are calculated
         # lrp # list calculated reservoir
@@ -4914,7 +4925,7 @@ filter_by :str = filter on flux name or part of flux name</p></div>
         print(f&#34;- {r.full_name}:&#34;)
 
         for f in r.lof:
-            if fby in f.full_name and f.m[i] &gt; 0:
+            if fby in f.full_name:  # and f.m[i] &gt; 0:
                 direction = r.lio[f]
                 if r.isotopes:
                     print(
@@ -5650,31 +5661,30 @@ time-steps</p></div>
         cmu = f&#34;{mo.c_unit:~P}&#34;
 
         sdn = self.sp.dn  # delta name
-        sds = f&#34;[{self.sp.ds}]&#34;  # delta scale
+        sds = self.sp.ds  # delta scale
         rn = self.full_name  # reservoir name
         mn = self.sp.mo.n  # model name
         fn = f&#34;{prefix}{mn}_{rn}.csv&#34;  # file name
 
         # build the dataframe
         df: pd.dataframe = DataFrame()
-        n: str = self.full_name
 
-        df[f&#34;{n} Time [{mtu}]&#34;] = self.mo.time[start:stop:stride]  # time
-        df[f&#34;{n} {sn} [{smu}]&#34;] = self.m[start:stop:stride]  # mass
-        df[f&#34;{n} {sp.ln} [{smu}]&#34;] = self.l[start:stop:stride]  # light isotope
-        df[f&#34;{n} {sp.hn} [{smu}]&#34;] = self.h[start:stop:stride]  # heavy isotope
-        df[f&#34;{n} {sdn} [{sds}]&#34;] = self.d[start:stop:stride]  # delta value
-        df[f&#34;{n} {sn} [{cmu}]&#34;] = self.c[start:stop:stride]  # concentration
+        df[f&#34;{rn} Time [{mtu}]&#34;] = self.mo.time[start:stop:stride]  # time
+        df[f&#34;{rn} {sn} [{smu}]&#34;] = self.m[start:stop:stride]  # mass
+        df[f&#34;{rn} {sp.ln} [{smu}]&#34;] = self.l[start:stop:stride]  # light isotope
+        df[f&#34;{rn} {sp.hn} [{smu}]&#34;] = self.h[start:stop:stride]  # heavy isotope
+        df[f&#34;{rn} {sdn} [{sds}]&#34;] = self.d[start:stop:stride]  # delta value
+        df[f&#34;{rn} {sn} [{cmu}]&#34;] = self.c[start:stop:stride]  # concentration
 
         for f in self.lof:  # Assemble the headers and data for the reservoir fluxes
-            df[f&#34;{f.full_name} {sn} [{fmu}]&#34;] = f.m[start:stop:stride]  # mass
-            df[f&#34;{f.full_name} {sn} [{sp.ln}]&#34;] = f.l[
-                start:stop:stride
-            ]  # light isotope
-            df[f&#34;{f.full_name} {sn} [{sp.hn}]&#34;] = f.h[
-                start:stop:stride
-            ]  # heavy isotope
-            df[f&#34;{f.full_name} {sn} {sdn} [{sds}]&#34;] = f.d[start:stop:stride]  # delta
+            # mass
+            df[f&#34;{f.full_name} {sn} [{fmu}]&#34;] = f.m[start:stop:stride]
+            # light isotope
+            df[f&#34;{f.full_name} {sn} [{sp.ln}]&#34;] = f.l[start:stop:stride]
+            # heavy isotope
+            df[f&#34;{f.full_name} {sn} [{sp.hn}]&#34;] = f.h[start:stop:stride]
+            # delta value
+            df[f&#34;{f.full_name} {sn} {sdn} [{sds}]&#34;] = f.d[start:stop:stride]
 
         df.to_csv(fn, index=False)  # Write dataframe to file
         return df
@@ -5876,7 +5886,7 @@ time-steps</p></div>
 
         print(f&#34;\n{ind}Connnections:&#34;)
         for p in sorted(self.loc):
-            print(f&#34;{off}{ind}{p.n}&#34;)
+            print(f&#34;{off}{ind}{p.full_name}&#34;)
 
         print()
         print(&#34;Use the info method on any of the above connections&#34;)
@@ -5975,7 +5985,7 @@ indent :int = 0 indentation</p></div>
 
     print(f&#34;\n{ind}Connnections:&#34;)
     for p in sorted(self.loc):
-        print(f&#34;{off}{ind}{p.n}&#34;)
+        print(f&#34;{off}{ind}{p.full_name}&#34;)
 
     print()
     print(&#34;Use the info method on any of the above connections&#34;)
@@ -7002,11 +7012,13 @@ Example::</p>
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = [&#34;name&#34;, &#34;species&#34;]
+        
         # list of default values if none provided
         self.lod: Dict[str, any] = {
             &#34;display_precision&#34;: 0,
             &#34;delta&#34;: &#34;None&#34;,
             &#34;isotopes&#34;: False,
+            &#34;register&#34;: &#34;None&#34;,
         }
 
         self.__initerrormessages__()
@@ -7015,6 +7027,9 @@ Example::</p>
         self.loc: set[Connection] = set()  # set of connection objects
 
         # legacy names
+        #if self.register != &#34;None&#34;:
+        #    self.full_name = f&#34;{self.name}.{self.register.name}&#34;
+        
         self.n = self.name
         self.sp = self.species
         self.mo = self.species.mo
@@ -7493,14 +7508,15 @@ arguments, name registration and other common tasks</p></div>
 
     def __global_defaults__(self) -&gt; None:
         &#34;&#34;&#34;Initial variables which should be present in every object
-        Note that this is executed before we register the kwarhs as instance
+        Note that this is executed before we register the kwargs as instance
         variables
 
         &#34;&#34;&#34;
 
-        self.lmo: list = [&#34;full_name&#34;, &#34;register&#34;, &#34;groupname&#34;, &#34;ctype&#34;]
+        self.lmo: list = []
+        self.ldo: list = [&#34;full_name&#34;, &#34;register&#34;, &#34;groupname&#34;, &#34;ctype&#34;]
 
-        for n in self.lmo:
+        for n in self.ldo:
             if n not in self.kwargs:
                 self.kwargs[n] = &#34;None&#34;
                 logging.debug(
@@ -7554,13 +7570,13 @@ arguments, name registration and other common tasks</p></div>
             if isinstance(self, Model):  # Cannot register model with itself
                 setattr(builtins, self.name, self)
 
-            else:
-                if self in self.mo.lmo:
-                    raise NameError(f&#34;{self.name} is a duplicate name. Please fix&#34;)
+            elif self in self.mo.lmo:
+                raise NameError(f&#34;{self.name} is a duplicate name. Please fix&#34;)
 
+            else:
                 setattr(builtins, self.name, self)
                 self.full_name = self.name
-                self.mo.lmo.append(self)
+                self.mo.lmo.append(self.full_name)
                 self.mo.dmo.update({self.name: self})
 
         else:  # register in group namespace
@@ -7572,11 +7588,15 @@ arguments, name registration and other common tasks</p></div>
                     f&#34;Registering {self.name} in {self.register.name} namespace&#34;
                 )
                 setattr(self.register, self.name, self)
-                fn: str = f&#34;{self.register.name}.{self.name}&#34;
+                if self.register.full_name != &#34;None&#34;:
+                    fn: str = f&#34;{self.register.full_name}.{self.name}&#34;
+                else:
+                    fn: str = f&#34;{self.register.name}.{self.name}&#34;
                 self.full_name = fn
-                if self.full_name in self.mo.lmo:
+
+                if self.full_name in self.register.lmo:
                     raise NameError(f&#34;{self.full_name} is a duplicate name. Please fix&#34;)
-                self.mo.lmo.append(self.full_name)
+                self.register.lmo.append(self.full_name)
                 # setattr(builtins, self.name, self)
                 # self.mo.dmo.update({self.name: self})
 

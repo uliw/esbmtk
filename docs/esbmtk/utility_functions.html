@@ -534,26 +534,32 @@ def sort_by_type(l: list, t: list, m: str) -&gt; list:
 
     return rl
 
-def split_key(k: str, M:any ) -&gt; Union[any, any, str]:
+def split_key(k: str, M: any) -&gt; Union[any, any, str]:
     &#34;&#34;&#34;split the string k with letter 2, and test if optional
     id string is present
 
     &#34;&#34;&#34;
 
-    source = k.split(&#34;2&#34;)[0]
-    sinkandid = k.split(&#34;2&#34;)[1]
+    if &#34;2&#34; in k:
+        source = k.split(&#34;2&#34;)[0]
+        sinkandid = k.split(&#34;2&#34;)[1]
+    else:
+        raise ValueError(&#34;Name must follow &#39;Source2Sink&#39; format&#34;)
+
     if &#34;@&#34; in sinkandid:
         sink = sinkandid.split(&#34;@&#34;)[0]
         cid = sinkandid.split(&#34;@&#34;)[1]
     else:
+        sink = sinkandid
         cid = &#34;None&#34;
 
     sink = M.dmo[sink]
     source = M.dmo[source]
     return (source, sink, cid)
 
+
 def make_dict(keys: list, values: list) -&gt; dict:
-    &#34;&#34;&#34; Create a dictionary from a list and value, or from
+    &#34;&#34;&#34;Create a dictionary from a list and value, or from
     two lists
 
     &#34;&#34;&#34;
@@ -566,10 +572,9 @@ def make_dict(keys: list, values: list) -&gt; dict:
         values: list = [values] * len(keys)
         d: dict = dict(zip(keys, values))
 
-
     return d
 
-def create_reservoirs(bg: dict, icd: dict, M: any) -&gt; None:
+def create_reservoirs(bn: dict, ic: dict, M: any) -&gt; dict:
     &#34;&#34;&#34;bg: dict with the box geometries e.g.,
 
         {  # name: [[geometry], T, P]
@@ -587,25 +592,41 @@ def create_reservoirs(bg: dict, icd: dict, M: any) -&gt; None:
 
     &#34;&#34;&#34;
 
-    from esbmtk import SeawaterConstants, ReservoirGroup
-    from collections import OrderedDict
+    from esbmtk import SeawaterConstants, ReservoirGroup, build_concentration_dicts
+    from esbmtk import SourceGroup, SinkGroup
+
+    # parse for sources and sinks, create these and remove them from the list
+
+    # setup the remaining boxes
+    # icd: dict = build_concentration_dicts(ic, bn)
 
     # loop over reservoir names
-    for k, v in bg.items():
-        swc = SeawaterConstants(
-            name=f&#34;SW_{k}&#34;,
-            model=M,
-            temperature=v[1],
-            pressure=v[2],
-        )
+    for k, v in bn.items():
+        if &#34;ty&#34; in v:  # type is given
+            if v[&#34;ty&#34;] == &#34;Source&#34;:
+                SourceGroup(name=k, species=v[&#34;sp&#34;])
+            elif v[&#34;ty&#34;] == &#34;Sink&#34;:
+                SinkGroup(name=k, species=v[&#34;sp&#34;])
+            else:
+                raise ValueError(&#34;&#39;ty&#39; must be either Source or Sink&#34;)
 
-        # init reservoir group
-        ReservoirGroup(
-            name=k,
-            geometry=v[0],
-            concentration=icd[k][0],
-            isotopes=icd[k][1],
-        )
+        else:  # create reservoirs
+            icd: dict = build_concentration_dicts(ic, k)
+            swc = SeawaterConstants(
+                name=f&#34;SW_{k}&#34;,
+                model=M,
+                temperature=v[&#34;T&#34;],
+                pressure=v[&#34;P&#34;],
+            )
+
+            # init reservoir group
+            rg = ReservoirGroup(
+                name=k,
+                geometry=v[&#34;g&#34;],
+                concentration=icd[k][0],
+                isotopes=icd[k][1],
+            )
+    return icd
 
 
 def build_concentration_dicts(cd: dict, bg: dict) -&gt; dict:
@@ -626,7 +647,14 @@ def build_concentration_dicts(cd: dict, bg: dict) -&gt; dict:
 
     &#34;&#34;&#34;
 
-    box_names: list = bg.keys()
+    if isinstance(bg, dict):
+        box_names: list = bg.keys()
+    elif isinstance(bg, list):
+        box_names: list = bg
+    elif isinstance(bg, str):
+        box_names: list = [bg]
+    else:
+        raise ValueError(&#34;This should never happen&#34;)
 
     icd: dict = OrderedDict()
     td1: dict = {}  # temp dictionary
@@ -637,47 +665,11 @@ def build_concentration_dicts(cd: dict, bg: dict) -&gt; dict:
         td1.update({k: v[0]})
         td2.update({k: v[1]})
 
-    box_names: list = bg.keys()
+    # box_names: list = bg.keys()
     for bn in box_names:  # loop over box names
         icd.update({bn: [td1, td2]})
 
     return icd
-
-
-def create_bulk_connections(ct: dict, icd: dict) -&gt; None:
-    &#34;&#34;&#34;Create connections from dictionaries
-
-    ct :dict = connection dictionary which has the following format&#34;
-         {&#34;sb2ib@POP&#34;: [0.8, &#34;scale_with_mass&#34;]}
-          source@sink@id: [scale, connection type]
-
-    icd: dict as returned by  build_concentration_dicts
-         It has the following format:
-
-         #  box_names: [concentrations, isotopes]
-         icd= {&#34;bn&#34;: [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
-
-    &#34;&#34;&#34;
-
-    from esbmtk import split_key, make_dict, ConnectionGroup
-
-    # extract the list of species from the first box entry
-    # and then from the first dict in the dict list
-    los = icd[list(icd.keys())[0]][0].keys()
-
-    for k, v in ct.items():
-        # get the reservoir handles by splitting the key
-        source, sink, cid = split_key(k, M)
-
-        cg = ConnectionGroup(
-            source=source,
-            sink=sink,
-            ctype=make_dict(los, v[1]),
-            scale=make_dict(los, v[0]),  # get rate from dictionary
-            id=cid,  # get id from dictionary
-        )
-
-        # print(cg)
 
 
 def calc_volumes(bg: dict, M: any, h: any) -&gt; list:
@@ -712,6 +704,115 @@ def calc_volumes(bg: dict, M: any, h: any) -&gt; list:
         v.append(h.volume(u, l) * a)
 
     return v
+
+def create_bulk_connections(ct: dict, M: any) -&gt; None:
+    &#34;&#34;&#34;Create connections from a dictionary. The dict shoudl have the
+    following format:
+
+    # Setup the dict which describes all fluxes
+    # na: names, tuple or str. If lists, all list elements share the same properties
+    # sp: species list or species
+    # ty: type, str
+    # ra: rate, Quantity
+    # sc: scale, Number
+    # re: reference, optional
+    # al: alpha, optional
+    # de: delta, optional
+    # mx: True, optional defaults to False
+    sl: list = list(ic.keys())  # get species list
+    ct = {  # thermohaline circulation
+            # Apply to all boxes in the tuple
+         (&#34;hb2db@thc&#34;, &#34;db2ib@thc&#34;, &#34;ib2hb@thc&#34;): {
+          &#34;ty&#34;: &#34;scale_with_concentration&#34;,
+          &#34;sp&#34;: sl,  # species list
+          &#34;ra&#34;: Q_(&#39;20*Sv&#39;),
+         },
+        # mixing fluxes
+        &#34;sb2ib@mix&#34;: {
+           &#34;ty&#34;: &#34;scale_with_concentration&#34;,
+           &#34;ra&#34;: Q_(&#39;63 Sv&#39;),
+           &#34;sp&#34;: &#34;sl&#34;,
+           &#34;mx&#34;: True,
+       },
+      },
+    # particulate fluxes due to biological production
+    &#34;sb2ib@POP&#34;: {&#34;ty&#34;: &#34;scale_with_mass&#34;, &#34;sc&#34;: 0.8, &#34;re&#34;: sb.PO4, &#34;sp&#34;: PO4},
+    }
+
+    &#34;&#34;&#34;
+
+    from esbmtk import create_connection
+
+    # loop over values in ct dict
+    for k, v in ct.items():
+        if isinstance(k, tuple):
+            # loop over names in tuple
+            for c in k:
+                create_connection(c, v, M)
+        elif isinstance(k, str):
+            create_connection(k, v, M)
+        else:
+            raise ValueError(f&#34;{connection} must be string or tuple&#34;)
+
+
+def create_connection(n: str, p: dict, M: any) -&gt; None:
+
+    &#34;&#34;&#34;called by create_bulk_connections in order to create a connection
+    group It is assumed that all rates are in liter/year or mol per
+    year. This may not be what you want or need.
+
+    You need to provide a connection key e.g., sb2db@mix which will be
+    interpreted as mixing a connection between sb and db and thus
+    create connections in both directions
+
+    &#34;&#34;&#34;
+
+    from esbmtk import ConnectionGroup, Q_
+
+    # get the reservoir handles by splitting the key
+    source, sink, cid = split_key(n, M)
+
+    # create default connections parameters and replace with values in
+    # the parameter dict if present.
+    los = list(p[&#34;sp&#34;]) if isinstance(p[&#34;sp&#34;], list) else [p[&#34;sp&#34;]]
+    typ = &#34;None&#34; if not &#34;ty&#34; in p else p[&#34;ty&#34;]
+    scale = 1 if not &#34;sc&#34; in p else p[&#34;sc&#34;]
+    rate = Q_(&#34;0 mol/a&#34;) if not &#34;ra&#34; in p else p[&#34;ra&#34;]
+    ref = &#34;None&#34; if not &#34;re&#34; in p else p[&#34;re&#34;]
+    alpha = &#34;None&#34; if not &#34;al&#34; in p else p[&#34;al&#34;]
+    delta = &#34;None&#34; if not &#34;de&#34; in p else p[&#34;de&#34;]
+    mix = False if not &#34;mx&#34; in p else p[&#34;mx&#34;]
+    cid = f&#34;{cid}_f&#34; if mix else f&#34;{cid}&#34;
+
+    if isinstance(scale, Q_):
+        scale = scale.to(&#34;l/a&#34;).magnitude
+
+    cg = ConnectionGroup(
+        source=source,
+        sink=sink,
+        ctype=make_dict(los, typ),
+        scale=make_dict(los, scale),  # get rate from dictionary
+        rate=make_dict(los, rate),
+        ref=make_dict(los, ref),
+        alpha=make_dict(los, alpha),
+        delta=make_dict(los, delta),
+        id=cid,  # get id from dictionary
+    )
+
+    # if mixing is set to True create reverse connection
+    if mix:
+        cid = cid.replace(&#34;_f&#34;, &#34;_b&#34;)
+        cg2 = ConnectionGroup(
+            source=sink,
+            sink=source,
+            ctype=make_dict(los, typ),
+            scale=make_dict(los, scale),  # get rate from dictionary
+            rate=make_dict(los, rate),
+            ref=make_dict(los, ref),
+            alpha=make_dict(los, alpha),
+            delta=make_dict(los, delta),
+            id=cid,  # get id from module import symbol
+        )
 
 def get_string_between_brackets(s :str) -&gt; str:
     &#34;&#34;&#34; Parse string and extract substring between square brackets
@@ -835,7 +936,14 @@ DIC: [Q_("2.1 mmol/liter"), False],
 
     &#34;&#34;&#34;
 
-    box_names: list = bg.keys()
+    if isinstance(bg, dict):
+        box_names: list = bg.keys()
+    elif isinstance(bg, list):
+        box_names: list = bg
+    elif isinstance(bg, str):
+        box_names: list = [bg]
+    else:
+        raise ValueError(&#34;This should never happen&#34;)
 
     icd: dict = OrderedDict()
     td1: dict = {}  # temp dictionary
@@ -846,7 +954,7 @@ DIC: [Q_("2.1 mmol/liter"), False],
         td1.update({k: v[0]})
         td2.update({k: v[1]})
 
-    box_names: list = bg.keys()
+    # box_names: list = bg.keys()
     for bn in box_names:  # loop over box names
         icd.update({bn: [td1, td2]})
 
@@ -909,59 +1017,173 @@ h is the hypsometry handle</p>
 </details>
 </dd>
 <dt id="esbmtk.utility_functions.create_bulk_connections"><code class="name flex">
-<span>def <span class="ident">create_bulk_connections</span></span>(<span>ct: dict, icd: dict) ‑> NoneType</span>
+<span>def <span class="ident">create_bulk_connections</span></span>(<span>ct: dict, M: <built-in function any>) ‑> NoneType</span>
 </code></dt>
 <dd>
-<div class="desc"><p>Create connections from dictionaries</p>
-<p>ct :dict = connection dictionary which has the following format"
-{"sb2ib@POP": [0.8, "scale_with_mass"]}
-source@sink@id: [scale, connection type]</p>
-<p>icd: dict as returned by
-build_concentration_dicts
-It has the following format:</p>
-<pre><code> #  box_names: [concentrations, isotopes]
- icd= {"bn": [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
-</code></pre></div>
+<div class="desc"><p>Create connections from a dictionary. The dict shoudl have the
+following format:</p>
+<h1 id="setup-the-dict-which-describes-all-fluxes">Setup the dict which describes all fluxes</h1>
+<h1 id="na-names-tuple-or-str-if-lists-all-list-elements-share-the-same-properties">na: names, tuple or str. If lists, all list elements share the same properties</h1>
+<h1 id="sp-species-list-or-species">sp: species list or species</h1>
+<h1 id="ty-type-str">ty: type, str</h1>
+<h1 id="ra-rate-quantity">ra: rate, Quantity</h1>
+<h1 id="sc-scale-number">sc: scale, Number</h1>
+<h1 id="re-reference-optional">re: reference, optional</h1>
+<h1 id="al-alpha-optional">al: alpha, optional</h1>
+<h1 id="de-delta-optional">de: delta, optional</h1>
+<h1 id="mx-true-optional-defaults-to-false">mx: True, optional defaults to False</h1>
+<p>sl: list = list(ic.keys())
+# get species list
+ct = {
+# thermohaline circulation
+# Apply to all boxes in the tuple
+("hb2db@thc", "db2ib@thc", "ib2hb@thc"): {
+"ty": "scale_with_concentration",
+"sp": sl,
+# species list
+"ra": Q_('20*Sv'),
+},
+# mixing fluxes
+"sb2ib@mix": {
+"ty": "scale_with_concentration",
+"ra": Q_('63 Sv'),
+"sp": "sl",
+"mx": True,
+},
+},</p>
+<h1 id="particulate-fluxes-due-to-biological-production">particulate fluxes due to biological production</h1>
+<p>"sb2ib@POP": {"ty": "scale_with_mass", "sc": 0.8, "re": sb.PO4, "sp": PO4},
+}</p></div>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_bulk_connections(ct: dict, icd: dict) -&gt; None:
-    &#34;&#34;&#34;Create connections from dictionaries
+<pre><code class="python">def create_bulk_connections(ct: dict, M: any) -&gt; None:
+    &#34;&#34;&#34;Create connections from a dictionary. The dict shoudl have the
+    following format:
 
-    ct :dict = connection dictionary which has the following format&#34;
-         {&#34;sb2ib@POP&#34;: [0.8, &#34;scale_with_mass&#34;]}
-          source@sink@id: [scale, connection type]
-
-    icd: dict as returned by  build_concentration_dicts
-         It has the following format:
-
-         #  box_names: [concentrations, isotopes]
-         icd= {&#34;bn&#34;: [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+    # Setup the dict which describes all fluxes
+    # na: names, tuple or str. If lists, all list elements share the same properties
+    # sp: species list or species
+    # ty: type, str
+    # ra: rate, Quantity
+    # sc: scale, Number
+    # re: reference, optional
+    # al: alpha, optional
+    # de: delta, optional
+    # mx: True, optional defaults to False
+    sl: list = list(ic.keys())  # get species list
+    ct = {  # thermohaline circulation
+            # Apply to all boxes in the tuple
+         (&#34;hb2db@thc&#34;, &#34;db2ib@thc&#34;, &#34;ib2hb@thc&#34;): {
+          &#34;ty&#34;: &#34;scale_with_concentration&#34;,
+          &#34;sp&#34;: sl,  # species list
+          &#34;ra&#34;: Q_(&#39;20*Sv&#39;),
+         },
+        # mixing fluxes
+        &#34;sb2ib@mix&#34;: {
+           &#34;ty&#34;: &#34;scale_with_concentration&#34;,
+           &#34;ra&#34;: Q_(&#39;63 Sv&#39;),
+           &#34;sp&#34;: &#34;sl&#34;,
+           &#34;mx&#34;: True,
+       },
+      },
+    # particulate fluxes due to biological production
+    &#34;sb2ib@POP&#34;: {&#34;ty&#34;: &#34;scale_with_mass&#34;, &#34;sc&#34;: 0.8, &#34;re&#34;: sb.PO4, &#34;sp&#34;: PO4},
+    }
 
     &#34;&#34;&#34;
 
-    from esbmtk import split_key, make_dict, ConnectionGroup
+    from esbmtk import create_connection
 
-    # extract the list of species from the first box entry
-    # and then from the first dict in the dict list
-    los = icd[list(icd.keys())[0]][0].keys()
-
+    # loop over values in ct dict
     for k, v in ct.items():
-        # get the reservoir handles by splitting the key
-        source, sink, cid = split_key(k, M)
+        if isinstance(k, tuple):
+            # loop over names in tuple
+            for c in k:
+                create_connection(c, v, M)
+        elif isinstance(k, str):
+            create_connection(k, v, M)
+        else:
+            raise ValueError(f&#34;{connection} must be string or tuple&#34;)</code></pre>
+</details>
+</dd>
+<dt id="esbmtk.utility_functions.create_connection"><code class="name flex">
+<span>def <span class="ident">create_connection</span></span>(<span>n: str, p: dict, M: <built-in function any>) ‑> NoneType</span>
+</code></dt>
+<dd>
+<div class="desc"><p>called by create_bulk_connections in order to create a connection
+group It is assumed that all rates are in liter/year or mol per
+year. This may not be what you want or need.</p>
+<p>You need to provide a connection key e.g., sb2db@mix which will be
+interpreted as mixing a connection between sb and db and thus
+create connections in both directions</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_connection(n: str, p: dict, M: any) -&gt; None:
 
-        cg = ConnectionGroup(
-            source=source,
-            sink=sink,
-            ctype=make_dict(los, v[1]),
-            scale=make_dict(los, v[0]),  # get rate from dictionary
-            id=cid,  # get id from dictionary
+    &#34;&#34;&#34;called by create_bulk_connections in order to create a connection
+    group It is assumed that all rates are in liter/year or mol per
+    year. This may not be what you want or need.
+
+    You need to provide a connection key e.g., sb2db@mix which will be
+    interpreted as mixing a connection between sb and db and thus
+    create connections in both directions
+
+    &#34;&#34;&#34;
+
+    from esbmtk import ConnectionGroup, Q_
+
+    # get the reservoir handles by splitting the key
+    source, sink, cid = split_key(n, M)
+
+    # create default connections parameters and replace with values in
+    # the parameter dict if present.
+    los = list(p[&#34;sp&#34;]) if isinstance(p[&#34;sp&#34;], list) else [p[&#34;sp&#34;]]
+    typ = &#34;None&#34; if not &#34;ty&#34; in p else p[&#34;ty&#34;]
+    scale = 1 if not &#34;sc&#34; in p else p[&#34;sc&#34;]
+    rate = Q_(&#34;0 mol/a&#34;) if not &#34;ra&#34; in p else p[&#34;ra&#34;]
+    ref = &#34;None&#34; if not &#34;re&#34; in p else p[&#34;re&#34;]
+    alpha = &#34;None&#34; if not &#34;al&#34; in p else p[&#34;al&#34;]
+    delta = &#34;None&#34; if not &#34;de&#34; in p else p[&#34;de&#34;]
+    mix = False if not &#34;mx&#34; in p else p[&#34;mx&#34;]
+    cid = f&#34;{cid}_f&#34; if mix else f&#34;{cid}&#34;
+
+    if isinstance(scale, Q_):
+        scale = scale.to(&#34;l/a&#34;).magnitude
+
+    cg = ConnectionGroup(
+        source=source,
+        sink=sink,
+        ctype=make_dict(los, typ),
+        scale=make_dict(los, scale),  # get rate from dictionary
+        rate=make_dict(los, rate),
+        ref=make_dict(los, ref),
+        alpha=make_dict(los, alpha),
+        delta=make_dict(los, delta),
+        id=cid,  # get id from dictionary
+    )
+
+    # if mixing is set to True create reverse connection
+    if mix:
+        cid = cid.replace(&#34;_f&#34;, &#34;_b&#34;)
+        cg2 = ConnectionGroup(
+            source=sink,
+            sink=source,
+            ctype=make_dict(los, typ),
+            scale=make_dict(los, scale),  # get rate from dictionary
+            rate=make_dict(los, rate),
+            ref=make_dict(los, ref),
+            alpha=make_dict(los, alpha),
+            delta=make_dict(los, delta),
+            id=cid,  # get id from module import symbol
         )</code></pre>
 </details>
 </dd>
 <dt id="esbmtk.utility_functions.create_reservoirs"><code class="name flex">
-<span>def <span class="ident">create_reservoirs</span></span>(<span>bg: dict, icd: dict, M: <built-in function any>) ‑> NoneType</span>
+<span>def <span class="ident">create_reservoirs</span></span>(<span>bn: dict, ic: dict, M: <built-in function any>) ‑> dict</span>
 </code></dt>
 <dd>
 <div class="desc"><p>bg: dict with the box geometries e.g.,</p>
@@ -979,7 +1201,7 @@ build_concentration_dicts as starting point</p>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def create_reservoirs(bg: dict, icd: dict, M: any) -&gt; None:
+<pre><code class="python">def create_reservoirs(bn: dict, ic: dict, M: any) -&gt; dict:
     &#34;&#34;&#34;bg: dict with the box geometries e.g.,
 
         {  # name: [[geometry], T, P]
@@ -997,25 +1219,41 @@ build_concentration_dicts as starting point</p>
 
     &#34;&#34;&#34;
 
-    from esbmtk import SeawaterConstants, ReservoirGroup
-    from collections import OrderedDict
+    from esbmtk import SeawaterConstants, ReservoirGroup, build_concentration_dicts
+    from esbmtk import SourceGroup, SinkGroup
+
+    # parse for sources and sinks, create these and remove them from the list
+
+    # setup the remaining boxes
+    # icd: dict = build_concentration_dicts(ic, bn)
 
     # loop over reservoir names
-    for k, v in bg.items():
-        swc = SeawaterConstants(
-            name=f&#34;SW_{k}&#34;,
-            model=M,
-            temperature=v[1],
-            pressure=v[2],
-        )
+    for k, v in bn.items():
+        if &#34;ty&#34; in v:  # type is given
+            if v[&#34;ty&#34;] == &#34;Source&#34;:
+                SourceGroup(name=k, species=v[&#34;sp&#34;])
+            elif v[&#34;ty&#34;] == &#34;Sink&#34;:
+                SinkGroup(name=k, species=v[&#34;sp&#34;])
+            else:
+                raise ValueError(&#34;&#39;ty&#39; must be either Source or Sink&#34;)
 
-        # init reservoir group
-        ReservoirGroup(
-            name=k,
-            geometry=v[0],
-            concentration=icd[k][0],
-            isotopes=icd[k][1],
-        )</code></pre>
+        else:  # create reservoirs
+            icd: dict = build_concentration_dicts(ic, k)
+            swc = SeawaterConstants(
+                name=f&#34;SW_{k}&#34;,
+                model=M,
+                temperature=v[&#34;T&#34;],
+                pressure=v[&#34;P&#34;],
+            )
+
+            # init reservoir group
+            rg = ReservoirGroup(
+                name=k,
+                geometry=v[&#34;g&#34;],
+                concentration=icd[k][0],
+                isotopes=icd[k][1],
+            )
+    return icd</code></pre>
 </details>
 </dd>
 <dt id="esbmtk.utility_functions.get_delta"><code class="name flex">
@@ -1307,7 +1545,7 @@ two lists</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def make_dict(keys: list, values: list) -&gt; dict:
-    &#34;&#34;&#34; Create a dictionary from a list and value, or from
+    &#34;&#34;&#34;Create a dictionary from a list and value, or from
     two lists
 
     &#34;&#34;&#34;
@@ -1319,7 +1557,6 @@ two lists</p></div>
     else:
         values: list = [values] * len(keys)
         d: dict = dict(zip(keys, values))
-
 
     return d</code></pre>
 </details>
@@ -1733,18 +1970,23 @@ id string is present</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def split_key(k: str, M:any ) -&gt; Union[any, any, str]:
+<pre><code class="python">def split_key(k: str, M: any) -&gt; Union[any, any, str]:
     &#34;&#34;&#34;split the string k with letter 2, and test if optional
     id string is present
 
     &#34;&#34;&#34;
 
-    source = k.split(&#34;2&#34;)[0]
-    sinkandid = k.split(&#34;2&#34;)[1]
+    if &#34;2&#34; in k:
+        source = k.split(&#34;2&#34;)[0]
+        sinkandid = k.split(&#34;2&#34;)[1]
+    else:
+        raise ValueError(&#34;Name must follow &#39;Source2Sink&#39; format&#34;)
+
     if &#34;@&#34; in sinkandid:
         sink = sinkandid.split(&#34;@&#34;)[0]
         cid = sinkandid.split(&#34;@&#34;)[1]
     else:
+        sink = sinkandid
         cid = &#34;None&#34;
 
     sink = M.dmo[sink]
@@ -1774,6 +2016,7 @@ id string is present</p></div>
 <li><code><a title="esbmtk.utility_functions.build_concentration_dicts" href="#esbmtk.utility_functions.build_concentration_dicts">build_concentration_dicts</a></code></li>
 <li><code><a title="esbmtk.utility_functions.calc_volumes" href="#esbmtk.utility_functions.calc_volumes">calc_volumes</a></code></li>
 <li><code><a title="esbmtk.utility_functions.create_bulk_connections" href="#esbmtk.utility_functions.create_bulk_connections">create_bulk_connections</a></code></li>
+<li><code><a title="esbmtk.utility_functions.create_connection" href="#esbmtk.utility_functions.create_connection">create_connection</a></code></li>
 <li><code><a title="esbmtk.utility_functions.create_reservoirs" href="#esbmtk.utility_functions.create_reservoirs">create_reservoirs</a></code></li>
 <li><code><a title="esbmtk.utility_functions.get_delta" href="#esbmtk.utility_functions.get_delta">get_delta</a></code></li>
 <li><code><a title="esbmtk.utility_functions.get_flux_data" href="#esbmtk.utility_functions.get_flux_data">get_flux_data</a></code></li>
