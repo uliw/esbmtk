@@ -132,10 +132,10 @@ def phosphor(model):
         name="Phosphor",
         model=model,  # model handle
         mass_unit="mmol",  # base mass unit
-        li_label="None",  # Name of light isotope
-        hi_label="None",  # Name of heavy isotope
-        d_label="None",  # Name of isotope delta
-        d_scale="None",  # Isotope scale. End of plot labels  # needs verification
+        li_label="LI",  # Name of light isotope
+        hi_label="HL",  # Name of heavy isotope
+        d_label="D",  # Name of isotope delta
+        d_scale="DS",  # Isotope scale. End of plot labels  # needs verification
         r=1,  # isotopic abundance ratio for species # needs verification
     )
 
