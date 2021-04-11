@@ -89,6 +89,7 @@ class Process(esbmtkBase):
         """
 
         from .connections import ConnectionGroup
+        from esbmtk import Reservoir, ReservoirGroup, Flux
 
         # provide a dict of known keywords and types
         self.lkk: Dict[str, any] = {
@@ -100,8 +101,8 @@ class Process(esbmtkBase):
             "lt": Flux,
             "alpha": Number,
             "scale": Number,
-            "ref": (Flux, list,str),
-            "register": (str, ConnectionGroup),
+            "ref": (Flux, Reservoir, list, str),
+            "register": (str, ConnectionGroup, Reservoir, ReservoirGroup, Flux),
         }
 
         # provide a list of absolutely required keywords
@@ -542,6 +543,7 @@ class VarDeltaOut(Process):
 
         from . import ureg, Q_
         from .connections import ConnectionGroup
+        from esbmtk import Flux, Reservoir, ReservoirGroup
 
         # get default names and update list for this Process
         self.__defaultnames__()
@@ -550,7 +552,7 @@ class VarDeltaOut(Process):
             "reservoir": (Reservoir, Source, Sink),
             "flux": Flux,
             "rate": (str, Q_),
-            "register": (ConnectionGroup, str),
+            "register": (ConnectionGroup, ReservoirGroup, Reservoir, Flux, str),
         }
         self.lrk.extend(["reservoir", "flux"])  # new required keywords
         self.__initerrormessages__()
@@ -591,7 +593,7 @@ class VarDeltaOut(Process):
 
         m: float = self.flux.m[i]
         if m != 0:
-            #if reservoir.register.name == "db":
+            # if reservoir.register.name == "db":
             #    print(f"{reservoir.name} d={reservoir.d[i-1]}")
             r: float = reservoir.species.element.r
             d: float = reservoir.d[i - 1]
@@ -827,6 +829,7 @@ class RateConstant(Process):
         from . import ureg, Q_
         from .connections import SourceGroup, SinkGroup, ReservoirGroup
         from .connections import ConnectionGroup
+        from esbmtk import Flux
 
         # Note that self.lkk values also need to be added to the lkk
         # list of the connector object.
@@ -844,7 +847,14 @@ class RateConstant(Process):
             "ref_reservoir": list,
             "left": (list, Reservoir, Number),
             "right": (list, Reservoir, Number),
-            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "register": (
+                SourceGroup,
+                SinkGroup,
+                ReservoirGroup,
+                ConnectionGroup,
+                Flux,
+                str,
+            ),
         }
 
         # new required keywords
@@ -872,8 +882,8 @@ class RateConstant(Process):
         # initialize keyword values
         self.__validateandregister__(kwargs)
 
-        if self.register != "None":
-            self.name = f"{self.register}.{self.name}"
+        # xxx if self.register != "None":
+        #    self.name = f"{self.register}.{self.name}"
 
         self.__postinit__()  # do some housekeeping
         # legacy variables
@@ -927,7 +937,7 @@ class RateConstant(Process):
 
 
 class ScaleRelativeToConcentration(RateConstant):
-    """This process scales the flux as a function of the upstream
+    """This process calculates the flux as a function of the upstream
      reservoir concentration C and a constant which describes the
      strength of relation between the reservoir concentration and
      the flux scaling
@@ -948,11 +958,18 @@ class ScaleRelativeToConcentration(RateConstant):
 
     """
 
+   
+    
+    # xxx
     def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         m: float = self.reservoir.m[i - 1]
         if m > 0:  # otherwise there is no flux
-            # convert to mass
-            m = m / self.reservoir.volume * self.scale
+            #print(f"mass in reservoir {m:.2e}")
+            # convert to concentration
+            c = m / self.reservoir.volume
+            #print(f"concentration in reservoir {m:.2e}")
+            m = c * self.scale
+            #print(f"new flux {m:.2e}")
             self.flux.m[i] = m
 
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
@@ -970,10 +987,10 @@ class ScaleRelativeToConcentration(RateConstant):
             r: float = reservoir.species.element.r
             d: float = reservoir.d[i - 1]
             l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-            #self.flux.d[i]: float = d
-            #self.flux.l[i]: float = l
-            #self.flux.h[i]: float = m - l
-            #self.flux.m[i]: float = m
+            # self.flux.d[i]: float = d
+            # self.flux.l[i]: float = l
+            # self.flux.h[i]: float = m - l
+            # self.flux.m[i]: float = m
             self.flux[i]: np.array = [m, l, m - l, d]
 
 

@@ -51,14 +51,15 @@ class esbmtkBase(object):
 
     def __global_defaults__(self) -> None:
         """Initial variables which should be present in every object
-        Note that this is executed before we register the kwarhs as instance
+        Note that this is executed before we register the kwargs as instance
         variables
 
         """
 
-        self.lmo: list = ["full_name", "register", "groupname", "ctype"]
+        self.lmo: list = []
+        self.ldo: list = ["full_name", "register", "groupname", "ctype"]
 
-        for n in self.lmo:
+        for n in self.ldo:
             if n not in self.kwargs:
                 self.kwargs[n] = "None"
                 logging.debug(
@@ -112,13 +113,13 @@ class esbmtkBase(object):
             if isinstance(self, Model):  # Cannot register model with itself
                 setattr(builtins, self.name, self)
 
-            else:
-                if self in self.mo.lmo:
-                    raise NameError(f"{self.name} is a duplicate name. Please fix")
+            elif self in self.mo.lmo:
+                raise NameError(f"{self.name} is a duplicate name. Please fix")
 
+            else:
                 setattr(builtins, self.name, self)
                 self.full_name = self.name
-                self.mo.lmo.append(self)
+                self.mo.lmo.append(self.full_name)
                 self.mo.dmo.update({self.name: self})
 
         else:  # register in group namespace
@@ -130,11 +131,15 @@ class esbmtkBase(object):
                     f"Registering {self.name} in {self.register.name} namespace"
                 )
                 setattr(self.register, self.name, self)
-                fn: str = f"{self.register.name}.{self.name}"
+                if self.register.full_name != "None":
+                    fn: str = f"{self.register.full_name}.{self.name}"
+                else:
+                    fn: str = f"{self.register.name}.{self.name}"
                 self.full_name = fn
-                if self.full_name in self.mo.lmo:
+
+                if self.full_name in self.register.lmo:
                     raise NameError(f"{self.full_name} is a duplicate name. Please fix")
-                self.mo.lmo.append(self.full_name)
+                self.register.lmo.append(self.full_name)
                 # setattr(builtins, self.name, self)
                 # self.mo.dmo.update({self.name: self})
 
@@ -867,6 +872,8 @@ class Model(esbmtkBase):
                 # add to data from last time step
                 r[i] = r[i - 1] + new * dt
 
+                # p = (r[i] - r[i - 1]) / r[0]
+
             # update reservoirs which are calculated
             # lrp # list calculated reservoir
             # update all process based fluxes. This can be done in a global lpc list
@@ -875,8 +882,6 @@ class Model(esbmtkBase):
                 p(i)
 
             i = i + 1  # next time step
-
-           
 
     def __step_process__(self, r, i) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -937,7 +942,7 @@ class Model(esbmtkBase):
             print(f"- {r.full_name}:")
 
             for f in r.lof:
-                if fby in f.full_name and f.m[i] > 0:
+                if fby in f.full_name:  # and f.m[i] > 0:
                     direction = r.lio[f]
                     if r.isotopes:
                         print(
@@ -1424,31 +1429,30 @@ class Reservoir(esbmtkBase):
         cmu = f"{mo.c_unit:~P}"
 
         sdn = self.sp.dn  # delta name
-        sds = f"[{self.sp.ds}]"  # delta scale
+        sds = self.sp.ds  # delta scale
         rn = self.full_name  # reservoir name
         mn = self.sp.mo.n  # model name
         fn = f"{prefix}{mn}_{rn}.csv"  # file name
 
         # build the dataframe
         df: pd.dataframe = DataFrame()
-        n: str = self.full_name
 
-        df[f"{n} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
-        df[f"{n} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
-        df[f"{n} {sp.ln} [{smu}]"] = self.l[start:stop:stride]  # light isotope
-        df[f"{n} {sp.hn} [{smu}]"] = self.h[start:stop:stride]  # heavy isotope
-        df[f"{n} {sdn} [{sds}]"] = self.d[start:stop:stride]  # delta value
-        df[f"{n} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
+        df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
+        df[f"{rn} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
+        df[f"{rn} {sp.ln} [{smu}]"] = self.l[start:stop:stride]  # light isotope
+        df[f"{rn} {sp.hn} [{smu}]"] = self.h[start:stop:stride]  # heavy isotope
+        df[f"{rn} {sdn} [{sds}]"] = self.d[start:stop:stride]  # delta value
+        df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
 
         for f in self.lof:  # Assemble the headers and data for the reservoir fluxes
-            df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]  # mass
-            df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[
-                start:stop:stride
-            ]  # light isotope
-            df[f"{f.full_name} {sn} [{sp.hn}]"] = f.h[
-                start:stop:stride
-            ]  # heavy isotope
-            df[f"{f.full_name} {sn} {sdn} [{sds}]"] = f.d[start:stop:stride]  # delta
+            # mass
+            df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]
+            # light isotope
+            df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]
+            # heavy isotope
+            df[f"{f.full_name} {sn} [{sp.hn}]"] = f.h[start:stop:stride]
+            # delta value
+            df[f"{f.full_name} {sn} {sdn} [{sds}]"] = f.d[start:stop:stride]
 
         df.to_csv(fn, index=False)  # Write dataframe to file
         return df
@@ -1650,7 +1654,7 @@ class Reservoir(esbmtkBase):
 
         print(f"\n{ind}Connnections:")
         for p in sorted(self.loc):
-            print(f"{off}{ind}{p.n}")
+            print(f"{off}{ind}{p.full_name}")
 
         print()
         print("Use the info method on any of the above connections")
@@ -2057,11 +2061,13 @@ class SourceSink(esbmtkBase):
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species"]
+        
         # list of default values if none provided
         self.lod: Dict[str, any] = {
             "display_precision": 0,
             "delta": "None",
             "isotopes": False,
+            "register": "None",
         }
 
         self.__initerrormessages__()
@@ -2070,6 +2076,9 @@ class SourceSink(esbmtkBase):
         self.loc: set[Connection] = set()  # set of connection objects
 
         # legacy names
+        #if self.register != "None":
+        #    self.full_name = f"{self.name}.{self.register.name}"
+        
         self.n = self.name
         self.sp = self.species
         self.mo = self.species.mo

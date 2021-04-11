@@ -602,26 +602,32 @@ def sort_by_type(l: list, t: list, m: str) -> list:
 ** Some string an dict manipulations
 
 #+BEGIN_SRC ipython :tangle utility_functions.py
-def split_key(k: str, M:any ) -> Union[any, any, str]:
+def split_key(k: str, M: any) -> Union[any, any, str]:
     """split the string k with letter 2, and test if optional
     id string is present
 
     """
 
-    source = k.split("2")[0]
-    sinkandid = k.split("2")[1]
+    if "2" in k:
+        source = k.split("2")[0]
+        sinkandid = k.split("2")[1]
+    else:
+        raise ValueError("Name must follow 'Source2Sink' format")
+
     if "@" in sinkandid:
         sink = sinkandid.split("@")[0]
         cid = sinkandid.split("@")[1]
     else:
+        sink = sinkandid
         cid = "None"
 
     sink = M.dmo[sink]
     source = M.dmo[source]
     return (source, sink, cid)
 
+
 def make_dict(keys: list, values: list) -> dict:
-    """ Create a dictionary from a list and value, or from
+    """Create a dictionary from a list and value, or from
     two lists
 
     """
@@ -633,7 +639,6 @@ def make_dict(keys: list, values: list) -> dict:
     else:
         values: list = [values] * len(keys)
         d: dict = dict(zip(keys, values))
-
 
     return d
 #+END_SRC
@@ -660,28 +665,39 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
     """
 
     from esbmtk import SeawaterConstants, ReservoirGroup, build_concentration_dicts
+    from esbmtk import SourceGroup, SinkGroup
 
     # parse for sources and sinks, create these and remove them from the list
 
     # setup the remaining boxes
-    icd: dict = build_concentration_dicts(ic, bn)
+    # icd: dict = build_concentration_dicts(ic, bn)
 
     # loop over reservoir names
     for k, v in bn.items():
-        swc = SeawaterConstants(
-            name=f"SW_{k}",
-            model=M,
-            temperature=v["T"],
-            pressure=v["P"],
-        )
+        if "ty" in v:  # type is given
+            if v["ty"] == "Source":
+                SourceGroup(name=k, species=v["sp"])
+            elif v["ty"] == "Sink":
+                SinkGroup(name=k, species=v["sp"])
+            else:
+                raise ValueError("'ty' must be either Source or Sink")
 
-        # init reservoir group
-        rg = ReservoirGroup(
-            name=k,
-            geometry=v["g"],
-            concentration=icd[k][0],
-            isotopes=icd[k][1],
-        )
+        else:  # create reservoirs
+            icd: dict = build_concentration_dicts(ic, k)
+            swc = SeawaterConstants(
+                name=f"SW_{k}",
+                model=M,
+                temperature=v["T"],
+                pressure=v["P"],
+            )
+
+            # init reservoir group
+            rg = ReservoirGroup(
+                name=k,
+                geometry=v["g"],
+                concentration=icd[k][0],
+                isotopes=icd[k][1],
+            )
     return icd
 
 
@@ -703,7 +719,14 @@ def build_concentration_dicts(cd: dict, bg: dict) -> dict:
 
     """
 
-    box_names: list = bg.keys()
+    if isinstance(bg, dict):
+        box_names: list = bg.keys()
+    elif isinstance(bg, list):
+        box_names: list = bg
+    elif isinstance(bg, str):
+        box_names: list = [bg]
+    else:
+        raise ValueError("This should never happen")
 
     icd: dict = OrderedDict()
     td1: dict = {}  # temp dictionary
@@ -714,7 +737,7 @@ def build_concentration_dicts(cd: dict, bg: dict) -> dict:
         td1.update({k: v[0]})
         td2.update({k: v[1]})
 
-    box_names: list = bg.keys()
+    # box_names: list = bg.keys()
     for bn in box_names:  # loop over box names
         icd.update({bn: [td1, td2]})
 
@@ -818,7 +841,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
 
     """
 
-    from esbmtk import ConnectionGroup
+    from esbmtk import ConnectionGroup, Q_
 
     # get the reservoir handles by splitting the key
     source, sink, cid = split_key(n, M)
@@ -828,16 +851,16 @@ def create_connection(n: str, p: dict, M: any) -> None:
     los = list(p["sp"]) if isinstance(p["sp"], list) else [p["sp"]]
     typ = "None" if not "ty" in p else p["ty"]
     scale = 1 if not "sc" in p else p["sc"]
-    rate = "None" if not "ra" in p else f"{p['ra'].to('l/a').magnitude} mol/a"
+    rate = Q_("0 mol/a") if not "ra" in p else p["ra"]
     ref = "None" if not "re" in p else p["re"]
     alpha = "None" if not "al" in p else p["al"]
     delta = "None" if not "de" in p else p["de"]
     mix = False if not "mx" in p else p["mx"]
     cid = f"{cid}_f" if mix else f"{cid}"
 
-    print(f"type los = {type(los)}, los[0] = {los[0]}")
-    print(make_dict(los, typ))
-    
+    if isinstance(scale, Q_):
+        scale = scale.to("l/a").magnitude
+
     cg = ConnectionGroup(
         source=source,
         sink=sink,
@@ -849,7 +872,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
         delta=make_dict(los, delta),
         id=cid,  # get id from dictionary
     )
-    
+
     # if mixing is set to True create reverse connection
     if mix:
         cid = cid.replace("_f", "_b")
@@ -864,5 +887,4 @@ def create_connection(n: str, p: dict, M: any) -> None:
             delta=make_dict(los, delta),
             id=cid,  # get id from module import symbol
         )
-       
 #+END_SRC

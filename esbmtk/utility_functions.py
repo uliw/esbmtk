@@ -491,26 +491,32 @@ def sort_by_type(l: list, t: list, m: str) -> list:
 
     return rl
 
-def split_key(k: str, M:any ) -> Union[any, any, str]:
+def split_key(k: str, M: any) -> Union[any, any, str]:
     """split the string k with letter 2, and test if optional
     id string is present
 
     """
 
-    source = k.split("2")[0]
-    sinkandid = k.split("2")[1]
+    if "2" in k:
+        source = k.split("2")[0]
+        sinkandid = k.split("2")[1]
+    else:
+        raise ValueError("Name must follow 'Source2Sink' format")
+
     if "@" in sinkandid:
         sink = sinkandid.split("@")[0]
         cid = sinkandid.split("@")[1]
     else:
+        sink = sinkandid
         cid = "None"
 
     sink = M.dmo[sink]
     source = M.dmo[source]
     return (source, sink, cid)
 
+
 def make_dict(keys: list, values: list) -> dict:
-    """ Create a dictionary from a list and value, or from
+    """Create a dictionary from a list and value, or from
     two lists
 
     """
@@ -523,10 +529,9 @@ def make_dict(keys: list, values: list) -> dict:
         values: list = [values] * len(keys)
         d: dict = dict(zip(keys, values))
 
-
     return d
 
-def create_reservoirs(bg: dict, icd: dict, M: any) -> None:
+def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
     """bg: dict with the box geometries e.g.,
 
         {  # name: [[geometry], T, P]
@@ -544,25 +549,41 @@ def create_reservoirs(bg: dict, icd: dict, M: any) -> None:
 
     """
 
-    from esbmtk import SeawaterConstants, ReservoirGroup
-    from collections import OrderedDict
+    from esbmtk import SeawaterConstants, ReservoirGroup, build_concentration_dicts
+    from esbmtk import SourceGroup, SinkGroup
+
+    # parse for sources and sinks, create these and remove them from the list
+
+    # setup the remaining boxes
+    # icd: dict = build_concentration_dicts(ic, bn)
 
     # loop over reservoir names
-    for k, v in bg.items():
-        swc = SeawaterConstants(
-            name=f"SW_{k}",
-            model=M,
-            temperature=v[1],
-            pressure=v[2],
-        )
+    for k, v in bn.items():
+        if "ty" in v:  # type is given
+            if v["ty"] == "Source":
+                SourceGroup(name=k, species=v["sp"])
+            elif v["ty"] == "Sink":
+                SinkGroup(name=k, species=v["sp"])
+            else:
+                raise ValueError("'ty' must be either Source or Sink")
 
-        # init reservoir group
-        ReservoirGroup(
-            name=k,
-            geometry=v[0],
-            concentration=icd[k][0],
-            isotopes=icd[k][1],
-        )
+        else:  # create reservoirs
+            icd: dict = build_concentration_dicts(ic, k)
+            swc = SeawaterConstants(
+                name=f"SW_{k}",
+                model=M,
+                temperature=v["T"],
+                pressure=v["P"],
+            )
+
+            # init reservoir group
+            rg = ReservoirGroup(
+                name=k,
+                geometry=v["g"],
+                concentration=icd[k][0],
+                isotopes=icd[k][1],
+            )
+    return icd
 
 
 def build_concentration_dicts(cd: dict, bg: dict) -> dict:
@@ -583,7 +604,14 @@ def build_concentration_dicts(cd: dict, bg: dict) -> dict:
 
     """
 
-    box_names: list = bg.keys()
+    if isinstance(bg, dict):
+        box_names: list = bg.keys()
+    elif isinstance(bg, list):
+        box_names: list = bg
+    elif isinstance(bg, str):
+        box_names: list = [bg]
+    else:
+        raise ValueError("This should never happen")
 
     icd: dict = OrderedDict()
     td1: dict = {}  # temp dictionary
@@ -594,47 +622,11 @@ def build_concentration_dicts(cd: dict, bg: dict) -> dict:
         td1.update({k: v[0]})
         td2.update({k: v[1]})
 
-    box_names: list = bg.keys()
+    # box_names: list = bg.keys()
     for bn in box_names:  # loop over box names
         icd.update({bn: [td1, td2]})
 
     return icd
-
-
-def create_bulk_connections(ct: dict, icd: dict) -> None:
-    """Create connections from dictionaries
-
-    ct :dict = connection dictionary which has the following format"
-         {"sb2ib@POP": [0.8, "scale_with_mass"]}
-          source@sink@id: [scale, connection type]
-
-    icd: dict as returned by  build_concentration_dicts
-         It has the following format:
-
-         #  box_names: [concentrations, isotopes]
-         icd= {"bn": [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
-
-    """
-
-    from esbmtk import split_key, make_dict, ConnectionGroup
-
-    # extract the list of species from the first box entry
-    # and then from the first dict in the dict list
-    los = icd[list(icd.keys())[0]][0].keys()
-
-    for k, v in ct.items():
-        # get the reservoir handles by splitting the key
-        source, sink, cid = split_key(k, M)
-
-        cg = ConnectionGroup(
-            source=source,
-            sink=sink,
-            ctype=make_dict(los, v[1]),
-            scale=make_dict(los, v[0]),  # get rate from dictionary
-            id=cid,  # get id from dictionary
-        )
-
-        # print(cg)
 
 
 def calc_volumes(bg: dict, M: any, h: any) -> list:
@@ -669,6 +661,115 @@ def calc_volumes(bg: dict, M: any, h: any) -> list:
         v.append(h.volume(u, l) * a)
 
     return v
+
+def create_bulk_connections(ct: dict, M: any) -> None:
+    """Create connections from a dictionary. The dict shoudl have the
+    following format:
+
+    # Setup the dict which describes all fluxes
+    # na: names, tuple or str. If lists, all list elements share the same properties
+    # sp: species list or species
+    # ty: type, str
+    # ra: rate, Quantity
+    # sc: scale, Number
+    # re: reference, optional
+    # al: alpha, optional
+    # de: delta, optional
+    # mx: True, optional defaults to False
+    sl: list = list(ic.keys())  # get species list
+    ct = {  # thermohaline circulation
+            # Apply to all boxes in the tuple
+         ("hb2db@thc", "db2ib@thc", "ib2hb@thc"): {
+          "ty": "scale_with_concentration",
+          "sp": sl,  # species list
+          "ra": Q_('20*Sv'),
+         },
+        # mixing fluxes
+        "sb2ib@mix": {
+           "ty": "scale_with_concentration",
+           "ra": Q_('63 Sv'),
+           "sp": "sl",
+           "mx": True,
+       },
+      },
+    # particulate fluxes due to biological production
+    "sb2ib@POP": {"ty": "scale_with_mass", "sc": 0.8, "re": sb.PO4, "sp": PO4},
+    }
+
+    """
+
+    from esbmtk import create_connection
+
+    # loop over values in ct dict
+    for k, v in ct.items():
+        if isinstance(k, tuple):
+            # loop over names in tuple
+            for c in k:
+                create_connection(c, v, M)
+        elif isinstance(k, str):
+            create_connection(k, v, M)
+        else:
+            raise ValueError(f"{connection} must be string or tuple")
+
+
+def create_connection(n: str, p: dict, M: any) -> None:
+
+    """called by create_bulk_connections in order to create a connection
+    group It is assumed that all rates are in liter/year or mol per
+    year. This may not be what you want or need.
+
+    You need to provide a connection key e.g., sb2db@mix which will be
+    interpreted as mixing a connection between sb and db and thus
+    create connections in both directions
+
+    """
+
+    from esbmtk import ConnectionGroup, Q_
+
+    # get the reservoir handles by splitting the key
+    source, sink, cid = split_key(n, M)
+
+    # create default connections parameters and replace with values in
+    # the parameter dict if present.
+    los = list(p["sp"]) if isinstance(p["sp"], list) else [p["sp"]]
+    typ = "None" if not "ty" in p else p["ty"]
+    scale = 1 if not "sc" in p else p["sc"]
+    rate = Q_("0 mol/a") if not "ra" in p else p["ra"]
+    ref = "None" if not "re" in p else p["re"]
+    alpha = "None" if not "al" in p else p["al"]
+    delta = "None" if not "de" in p else p["de"]
+    mix = False if not "mx" in p else p["mx"]
+    cid = f"{cid}_f" if mix else f"{cid}"
+
+    if isinstance(scale, Q_):
+        scale = scale.to("l/a").magnitude
+
+    cg = ConnectionGroup(
+        source=source,
+        sink=sink,
+        ctype=make_dict(los, typ),
+        scale=make_dict(los, scale),  # get rate from dictionary
+        rate=make_dict(los, rate),
+        ref=make_dict(los, ref),
+        alpha=make_dict(los, alpha),
+        delta=make_dict(los, delta),
+        id=cid,  # get id from dictionary
+    )
+
+    # if mixing is set to True create reverse connection
+    if mix:
+        cid = cid.replace("_f", "_b")
+        cg2 = ConnectionGroup(
+            source=sink,
+            sink=source,
+            ctype=make_dict(los, typ),
+            scale=make_dict(los, scale),  # get rate from dictionary
+            rate=make_dict(los, rate),
+            ref=make_dict(los, ref),
+            alpha=make_dict(los, alpha),
+            delta=make_dict(los, delta),
+            id=cid,  # get id from module import symbol
+        )
 
 def get_string_between_brackets(s :str) -> str:
     """ Parse string and extract substring between square brackets

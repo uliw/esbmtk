@@ -14,6 +14,14 @@ generation of graphical results.
 
 * News
 
+ - April 10^{th}: The hopefully last tweak to the naming scheme. All
+   fluxes belong to a connection (see =model.connection_summmary()=),
+   and registered in the respective connection namespace (i.e.,
+   =sb2ib.flux_name=). All processes are now registered in the
+   respective flux name space, i.e.,
+   =sb2ib.flux_name.process_name=. All of these can be queried with
+   the info method, e.g., =sb2ib.flux_name.process_name.info()=
+
  - April 6^{th}, added several function which aid in the bulk creation of
    reservoirs and connections (i.e., =create_reservoirs=,
    =create_bulk_connections=). The hypsometry class is now part of the
