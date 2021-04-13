@@ -646,26 +646,38 @@ def make_dict(keys: list, values: list) -> dict:
 ** Misc functions which help with model setup
 
 #+BEGIN_SRC ipython :tangle utility_functions.py
-def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
-    """bg: dict with the box geometries e.g.,
+def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
+    """boxes are defined by area and depth interval here we use an ordered
+    dictionary to define the box geometries. The next column is temperature
+    in deg C, followed by pressure in bar
+    the geometry is [upper depth datum, lower depth datum, area percentage]
 
-        {  # name: [[geometry], T, P]
-           "hb": [[0, 200, 0.1], 2, 5],
-        }
+    bn = dictionary with box parameters
+    bn: dict = {  # name: [[geometry], T, P]
+                 "sb": {"g": [0, 200, 0.9], "T": 20, "P": 5},
+                 "ib": {"g": [200, 1200, 1], "T": 10, "P": 100},
+                }
 
-    icd: dict =
-    #  box_names: [concentrations, isotopes]
-    d= {"bn": [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+    ic = dictionary with species default values. This is used to et up
+         initial conditions. Here we use shortcut and use the same conditions
+         in each box. If you need box specific initial conditions
+         use the output of build_concentration_dicts as starting point
 
-    If you need box specific initial conditions use the output of
-    build_concentration_dicts as starting point
+
+    ic: dict = { # species: concentration, Isotopes
+                   PO4: [Q_("2.1 * umol/liter"), False],
+                   DIC: [Q_("2.1 mmol/liter"), False],
+                   ALK: [Q_("2.43 mmol/liter"), False],
+               }
 
     M: Model object handle
+
+    cs: add virtual reservoir for the carbonate system. Defaults to False
 
     """
 
     from esbmtk import SeawaterConstants, ReservoirGroup, build_concentration_dicts
-    from esbmtk import SourceGroup, SinkGroup
+    from esbmtk import SourceGroup, SinkGroup, carbonate_system, Q_
 
     # parse for sources and sinks, create these and remove them from the list
 
@@ -698,6 +710,17 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
                 concentration=icd[k][0],
                 isotopes=icd[k][1],
             )
+
+            if cs:
+                volume = Q_(f"{rg.lor[0].volume} m**3")
+                carbonate_system(
+                    Q_(f"{swc.ca} mol/l"),
+                    Q_(f"{swc.pH} mol/l"),
+                    volume,
+                    swc,
+                    rg,
+                )
+
     return icd
 
 
@@ -887,4 +910,127 @@ def create_connection(n: str, p: dict, M: any) -> None:
             delta=make_dict(los, delta),
             id=cid,  # get id from module import symbol
         )
+#+END_SRC
+
+** Solver test
+
+#+BEGIN_SRC ipython :tangle utility_functions.py
+from numba import jit, float64, void, types, typed
+
+# @jit([float64[:], float64[:], types.ListType(types.float64)])
+def executef(
+    new: [NDArray, Float64],
+    time: [NDArray, Float64],
+    lor: list,
+    lpc_f: list,
+    lpc_r: list,
+) -> None:
+
+    """Moved this code into a separate function to enable numba optimization"""
+
+    i: int = 1  # processes refer to the previous time step -> start at 1
+    dt: float = lor[0].mo.dt
+    ratio: float = lor[0].sp.r
+    ratio = 1
+
+    r_list, f_list, dir_list, v_list, r0_list = build_lists(lor)
+
+    for t in time[0:-1]:  # loop over the time vector except the first
+        # we first need to calculate all fluxes
+        for r in lor:  # loop over all reservoirs
+            for p in r.lop:  # loop over reservoir processes
+                p(r, i)  # update fluxes
+
+        # update all process based fluxes. This can be done in a global lpc list
+        for p in lpc_f:
+            p(i)
+
+        sum_lists(r_list, f_list, dir_list, v_list, r0_list, i, dt)
+
+        # update reservoirs which are calculated
+        # lrp # list calculated reservoir
+        # update all process based fluxes. This can be done in a global lpc list
+        for p in lpc_r:
+            p(i)
+
+        i = i + 1  # next time step
+
+
+from numba import jit
+
+# @jit
+def sum_lists(r_list, f_list, dir_list, v_list, r0_list, i, dt):
+
+    from esbmtk import get_delta
+
+    j = 0  # reservoir counter
+    u = 0  # local entry counter
+    new = [0.0, 0.0, 0.0]
+
+    # loop over reservoirs
+    for j, r in enumerate(f_list):  # this will catch the list for each reservoir
+
+        # sum fluxes in each reservoir
+        new[0] = new[1] = 0.0
+        for u, f in enumerate(r):  # this should catch each flux per reservoir
+            # direction = dir_list[j][u]
+            # l = f_list[j][u][0][i]  # reservoir:flux:mass:index
+            new[0] += f_list[j][u][0][i] * dir_list[j][u]  # mass
+            new[1] += f_list[j][u][1][i] * dir_list[j][u]  # li
+            # new[2] += f_list[j][u][2][i] * dir_list[j][u]  # hi
+
+        r_list[j][0][i] = r_list[j][0][i - 1] + new[0] * dt  # mass
+        r_list[j][1][i] = r_list[j][1][i - 1] + new[1] * dt  # li
+        r_list[j][2][i] = r_list[j][0][i] - r_list[j][1][i]  # hi
+        # update delta
+        r_list[j][3][i] = (
+            1e3 * (r_list[j][2][i] / r_list[j][1][i] - r0_list[j]) / r0_list[j]
+        )
+
+        # if r_list[j][3][i] < -2:
+        #     print(
+        #         f"h = {r_list[j][1][i-1]:.2e} ,l = {r_list[j][1][i-1]:.2e}, r = {r0_list[j]}, d= {r_list[j][3][i-1]:.2f}"
+        #     )
+        #     print(
+        #         f"h = {r_list[j][1][i]:.2e} ,l = {r_list[j][1][i]:.2e}, r = {r0_list[j]}, d= {r_list[j][3][i]:.2f}\n"
+        #     )
+
+        # update concentration
+        r_list[j][4][i] = r_list[j][0][i] / v_list[j]
+
+
+def build_lists(lor):
+    """flux_list :list [] contains all fluxes as
+    [f.m, f.l, f.h, f.d], where each sublist relates to one reservoir
+
+    i.e. per reservoir we have list [f1, f2, f3], where f1 = [m, l, h, d]
+    and m = np.array()
+
+
+    """
+
+    r_list: list = []
+    f_list: list = []
+    dir_list: list = []
+    v_list: list = []
+    r0_list: list = []
+
+    for r in lor:  # loop over all reservoirs
+        r_list.append([r.m, r.l, r.h, r.d, r.c])
+        v_list.append(r.volume)
+        r0_list.append(r.sp.r)
+
+        i = 0
+        # add fluxes for each reservoir entry
+        tf = []  # temp list for flux data
+        td = []  # temp list for direction data
+        for f in r.lof:
+            tf.append([f.m, f.l, f.h, f.d])
+            td.append(r.lodir[i])
+            i = i + 1
+
+        f_list.append(tf)
+        dir_list.append(td)
+
+    return r_list, f_list, dir_list, v_list, r0_list
 #+END_SRC
