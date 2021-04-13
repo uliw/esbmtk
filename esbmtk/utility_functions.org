@@ -35,7 +35,8 @@ from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
 from copy import deepcopy, copy
 from time import process_time
-#from numba import jit, njit
+from numba import jit, njit, prange
+from numba.typed import List
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -53,6 +54,7 @@ set_printoptions(precision=4)
 
 *** Get isotope masses from delta
 #+BEGIN_SRC ipython :exports yes :noweb yes :tangle utility_functions.py
+@njit()
 def get_imass(m: float, d: float, r: float) -> [float, float]:
     """
     Calculate the isotope masses from bulk mass and delta value.
@@ -65,7 +67,7 @@ def get_imass(m: float, d: float, r: float) -> [float, float]:
     hi: float = m - li
     return [li, hi]
 
-
+@njit()
 def get_frac(m: float, l: float, a: float) -> [float, float]:
     """Calculate the effect of the istope fractionation factor alpha on
     the ratio between the light and heavy isotope.
@@ -76,7 +78,7 @@ def get_frac(m: float, l: float, a: float) -> [float, float]:
     hi: float = m - li  # get the new heavy isotope value
     return li, hi
 
-
+@njit()
 def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
     """ 
     Calculate the isotope masses from bulk mass and delta value.
@@ -94,6 +96,7 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
 
 *** Get delta from isotope masses
 #+BEGIN_SRC ipython :tangle utility_functions.py
+@njit()
 def get_delta(l: [NDArray, [Float64]], h: [NDArray, [Float64]],
               r: float) -> [NDArray, [Float64]]:
     """Calculate the delta from the mass of light and heavy isotope
@@ -106,7 +109,7 @@ def get_delta(l: [NDArray, [Float64]], h: [NDArray, [Float64]],
 
    """
 
-    d: float = 1E3 * (abs(h) / abs(l) - r) / r
+    d: float = 1E3 * (np.abs(h) / np.abs(l) - r) / r
     return d
 #+END_SRC
 
@@ -956,48 +959,44 @@ def executef(
         i = i + 1  # next time step
 
 
-from numba import jit
 
-# @jit
+@njit()
 def sum_lists(r_list, f_list, dir_list, v_list, r0_list, i, dt):
 
-    from esbmtk import get_delta
-
-    j = 0  # reservoir counter
-    u = 0  # local entry counter
-    new = [0.0, 0.0, 0.0]
+    mass: float = 0.0
+    li: float = 0.0
+    r_steps: int = len(f_list)
 
     # loop over reservoirs
-    for j, r in enumerate(f_list):  # this will catch the list for each reservoir
+    for j in range(r_steps):
+        # for j, r in enumerate(f_list):  # this will catch the list for each reservoir
 
         # sum fluxes in each reservoir
-        new[0] = new[1] = 0.0
-        for u, f in enumerate(r):  # this should catch each flux per reservoir
-            # direction = dir_list[j][u]
-            # l = f_list[j][u][0][i]  # reservoir:flux:mass:index
-            new[0] += f_list[j][u][0][i] * dir_list[j][u]  # mass
-            new[1] += f_list[j][u][1][i] * dir_list[j][u]  # li
-            # new[2] += f_list[j][u][2][i] * dir_list[j][u]  # hi
+        mass = li = 0.0
+        f_steps = len(f_list[j])
+        for u in range(f_steps):
+            # for u, f in enumerate(r):  # this should catch each flux per reservoir
+            mass += f_list[j][u][0][i] * dir_list[j][u]  # mass
+            li += f_list[j][u][1][i] * dir_list[j][u]  # li
 
-        r_list[j][0][i] = r_list[j][0][i - 1] + new[0] * dt  # mass
-        r_list[j][1][i] = r_list[j][1][i - 1] + new[1] * dt  # li
+        # update masses
+        r_list[j][0][i] = r_list[j][0][i - 1] + mass * dt  # mass
+        r_list[j][1][i] = r_list[j][1][i - 1] + li * dt  # li
         r_list[j][2][i] = r_list[j][0][i] - r_list[j][1][i]  # hi
+
         # update delta
         r_list[j][3][i] = (
             1e3 * (r_list[j][2][i] / r_list[j][1][i] - r0_list[j]) / r0_list[j]
         )
 
-        # if r_list[j][3][i] < -2:
-        #     print(
-        #         f"h = {r_list[j][1][i-1]:.2e} ,l = {r_list[j][1][i-1]:.2e}, r = {r0_list[j]}, d= {r_list[j][3][i-1]:.2f}"
-        #     )
-        #     print(
-        #         f"h = {r_list[j][1][i]:.2e} ,l = {r_list[j][1][i]:.2e}, r = {r0_list[j]}, d= {r_list[j][3][i]:.2f}\n"
-        #     )
-
         # update concentration
         r_list[j][4][i] = r_list[j][0][i] / v_list[j]
+#+END_SRC
 
+
+
+** COMMENT Build List plain style
+#+BEGIN_SRC ipython :tangle utility_functions.py
 
 def build_lists(lor):
     """flux_list :list [] contains all fluxes as
@@ -1010,23 +1009,134 @@ def build_lists(lor):
     """
 
     r_list: list = []
-    f_list: list = []
-    dir_list: list = []
     v_list: list = []
     r0_list: list = []
 
+    f_list: list = []
+    dir_list: list = []
+    rd_list: list = []
+    fd_list: list = []
+
     for r in lor:  # loop over all reservoirs
-        r_list.append([r.m, r.l, r.h, r.d, r.c])
-        v_list.append(r.volume)
-        r0_list.append(r.sp.r)
+        rd_list = [r.m, r.l, r.h, r.d, r.c]
+        
+        r_list.append(rd_list)
+        v_list.append(float(r.volume))
+        r0_list.append(float(r.sp.r))
 
         i = 0
         # add fluxes for each reservoir entry
-        tf = []  # temp list for flux data
-        td = []  # temp list for direction data
+        tf: list = []  # temp list for flux data
+        td: list = []  # temp list for direction data
+
+        # loop over all fluxes
         for f in r.lof:
-            tf.append([f.m, f.l, f.h, f.d])
-            td.append(r.lodir[i])
+            fd_list =[f.m, f.l, f.h, f.d]
+            tf.append(fd_list)
+            td.append(float(r.lodir[i]))
+            i = i + 1
+
+        f_list.append(tf)
+        dir_list.append(td)
+
+    return r_list, f_list, dir_list, v_list, r0_list
+#+END_SRC
+
+
+** Build List regular style
+#+BEGIN_SRC ipython :tangle utility_functions.py
+from numba.typed import List
+def build_lists(lor):
+    """flux_list :list [] contains all fluxes as
+    [f.m, f.l, f.h, f.d], where each sublist relates to one reservoir
+
+    i.e. per reservoir we have list [f1, f2, f3], where f1 = [m, l, h, d]
+    and m = np.array()
+
+
+    """
+
+    r_list: list = List()
+    v_list: list = List()
+    r0_list: list = List()
+
+    f_list: list = List()
+    dir_list: list = List()
+    rd_list: list = List()
+    fd_list: list = List()
+
+    for r in lor:  # loop over all reservoirs
+        rd_list = List([r.m, r.l, r.h, r.d, r.c])
+        
+        r_list.append(rd_list)
+        v_list.append(float(r.volume))
+        r0_list.append(float(r.sp.r))
+
+        i = 0
+        # add fluxes for each reservoir entry
+        tf: list = List()  # temp list for flux data
+        td: list = List()  # temp list for direction data
+
+        # loop over all fluxes
+        for f in r.lof:
+            fd_list = List([f.m, f.l, f.h, f.d])
+            tf.append(fd_list)
+            td.append(float(r.lodir[i]))
+            i = i + 1
+
+        f_list.append(tf)
+        dir_list.append(td)
+
+    return r_list, f_list, dir_list, v_list, r0_list
+#+END_SRC
+
+
+** COMMENT Build Lists Numba style
+
+#+BEGIN_SRC ipython :tangle utility_functions.py
+from numba.typed import List
+from numba import typeof
+def build_lists(lor):
+    """flux_list :list [] contains all fluxes as
+    [f.m, f.l, f.h, f.d], where each sublist relates to one reservoir
+
+    i.e. per reservoir we have list [f1, f2, f3], where f1 = [m, l, h, d]
+    and m = np.array()
+
+
+    """
+
+    r_list: list = List()
+    v_list: list = List()
+    r0_list: list = List()
+
+    f_list: list = List()
+    dir_list: list = List()
+    rd_list: list = List()
+    fd_list: list = List()
+
+    for r in lor:  # loop over all reservoirs
+        fd_list = List()
+        for e in [r.m, r.l, r.h, r.d, r.c]:
+            fd_list.append(List(e))
+
+        r_list.append(fd_list)
+        v_list.append(float(r.volume))
+        r0_list.append(float(r.sp.r))
+
+        i = 0
+        # add fluxes for each reservoir entry
+        tf: list = List()  # temp list for flux data
+        td: list = List()  # temp list for direction data
+
+        # loop over all fluxes
+        for f in r.lof:
+            fd_list = List()
+            for e in [f.m, f.l, f.h, f.d]:
+                fd_list.append(List(e))
+               
+            tf.append(fd_list)
+            td.append(float(r.lodir[i]))
             i = i + 1
 
         f_list.append(tf)
