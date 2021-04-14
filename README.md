@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org69797e3)
-2.  [News](#org14ac8ec)
-3.  [Contributing](#orgeef4870)
-4.  [Installation](#org30f0a8d)
-5.  [Documentation](#org92e2810)
-6.  [Todo](#org680cb58)
-7.  [License](#org68eb089)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org10eda5a)
+2.  [News](#org905794b)
+3.  [Contributing](#orgf94ec5c)
+4.  [Installation](#orge39218e)
+5.  [Documentation](#org7805787)
+6.  [Todo](#org49e1cc7)
+7.  [License](#org178e4b0)
 
 
-<a id="org69797e3"></a>
+<a id="org10eda5a"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,21 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org14ac8ec"></a>
+<a id="org905794b"></a>
 
 # News
+
+-   April 13<sup>th</sup>: rewrote the solver which is now 3 times faster. Added
+    numba to the solver code, however the performance gain is currently
+    only a few percent.
+
+-   April 10<sup>th</sup>: The hopefully last tweak to the naming scheme. All
+    fluxes belong to a connection (see `model.connection_summmary()`),
+    and registered in the respective connection namespace (i.e.,
+    `sb2ib.flux_name`). All processes are now registered in the
+    respective flux name space, i.e.,
+    `sb2ib.flux_name.process_name`. All of these can be queried with
+    the info method, e.g., `sb2ib.flux_name.process_name.info()`
 
 -   April 6<sup>th</sup>, added several function which aid in the bulk creation of
     reservoirs and connections (i.e., `create_reservoirs`,
@@ -171,7 +183,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgeef4870"></a>
+<a id="orgf94ec5c"></a>
 
 # Contributing
 
@@ -181,7 +193,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org30f0a8d"></a>
+<a id="orge39218e"></a>
 
 # Installation
 
@@ -202,7 +214,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org92e2810"></a>
+<a id="org7805787"></a>
 
 # Documentation
 
@@ -220,7 +232,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org680cb58"></a>
+<a id="org49e1cc7"></a>
 
 # Todo
 
@@ -229,7 +241,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org68eb089"></a>
+<a id="org178e4b0"></a>
 
 # License
 

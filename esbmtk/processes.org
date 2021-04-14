@@ -720,7 +720,9 @@ class ScaleFlux(Process):
         r: float = reservoir.species.element.r
         d: float = reservoir.d[i - 1]
         l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-        self.flux[i]: np.array = [m, l, m - l, d]
+        
+        self.flux[i] : np.array = [m, l, m - l, d]
+        #print(f"flux_delta = {d}")
 
     def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """Apply the scale factor. This is typically done through the the
@@ -729,7 +731,7 @@ class ScaleFlux(Process):
         delta according to the reservoir (or the flux?)
 
         """
-        self.f[i] = self.ref[i] * self.scale
+        self.f[i] = self.ref[i-1] * self.scale
 
 
 class Reaction(ScaleFlux):
@@ -787,7 +789,6 @@ class FluxDiff(Process):
         delta according to the reservoir (or the flux?)
 
         """
-
         self.f[i] = (self.ref[0][i] - self.ref[1][i]) * self.scale
 #+END_SRC
 
@@ -844,10 +845,12 @@ class Fractionation(Process):
         """
 
         if self.f.m[i] != 0 :
+            #print(f"delta before = {get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)}")
             self.f.l[i], self.f.h[i] = get_frac(self.f.m[i], self.f.l[i], self.alp)
             # update delta
             # self.f.d[i] = get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)
             self.f.d[i] = self.f.d[i] + self.alpha
+            #print(f"delta after = {get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)}\n")
 
         return
 

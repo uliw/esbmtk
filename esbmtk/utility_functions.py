@@ -24,7 +24,8 @@ from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
 from copy import deepcopy, copy
 from time import process_time
-#from numba import jit, njit
+from numba import jit, njit, prange
+from numba.typed import List
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -37,6 +38,7 @@ import builtins
 import math
 set_printoptions(precision=4)
 
+@njit()
 def get_imass(m: float, d: float, r: float) -> [float, float]:
     """
     Calculate the isotope masses from bulk mass and delta value.
@@ -45,11 +47,11 @@ def get_imass(m: float, d: float, r: float) -> [float, float]:
     
     """
 
-    li: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-    hi: float = m - li
-    return [li, hi]
+    l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+    h: float = m - l
+    return [l, h]
 
-
+@njit()
 def get_frac(m: float, l: float, a: float) -> [float, float]:
     """Calculate the effect of the istope fractionation factor alpha on
     the ratio between the light and heavy isotope.
@@ -60,7 +62,7 @@ def get_frac(m: float, l: float, a: float) -> [float, float]:
     hi: float = m - li  # get the new heavy isotope value
     return li, hi
 
-
+@njit()
 def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
     """ 
     Calculate the isotope masses from bulk mass and delta value.
@@ -74,6 +76,7 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
 
     return np.array([m, l, h, d])
 
+@njit()
 def get_delta(l: [NDArray, [Float64]], h: [NDArray, [Float64]],
               r: float) -> [NDArray, [Float64]]:
     """Calculate the delta from the mass of light and heavy isotope
@@ -85,8 +88,8 @@ def get_delta(l: [NDArray, [Float64]], h: [NDArray, [Float64]],
      delta of zero may no longer be zero)
 
    """
-
-    d: float = 1E3 * (abs(h) / abs(l) - r) / r
+    # d = 1000 * (h / l - r) / r
+    d: float = 1E3 * (np.abs(h) / np.abs(l) - r) / r
     return d
 
 def add_to (l, e):
@@ -223,7 +226,7 @@ def get_ptype(obj, **kwargs: dict) -> int:
     """
 
     from esbmtk import Flux, Reservoir, Signal, DataField, Source, Sink
-    
+
     ptype: int = 0
 
     if isinstance(obj, (Reservoir, Source, Sink, Flux)):
@@ -282,7 +285,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
 
     # get plot type
     ptype: int = get_ptype(obj)
-    
+
     # remap concentration & flux values
     if isinstance(obj, Flux):
         yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
@@ -410,7 +413,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             cn = cn + 1
             col = f"C{cn}"
             leg = f"{obj.lm} {d.legend}"
-            ln3 = ax1.scatter(d.x, d.y, color=col, label=leg)
+            ln3 = ax1.scatter(d.x[1:-2], d.y[1:-2], color=col, label=leg)
         if "z" in dir(d) and second_axis:  # isotope data is present
             cn = cn + 1
             col = f"C{cn}"
@@ -531,26 +534,38 @@ def make_dict(keys: list, values: list) -> dict:
 
     return d
 
-def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
-    """bg: dict with the box geometries e.g.,
+def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
+    """boxes are defined by area and depth interval here we use an ordered
+    dictionary to define the box geometries. The next column is temperature
+    in deg C, followed by pressure in bar
+    the geometry is [upper depth datum, lower depth datum, area percentage]
 
-        {  # name: [[geometry], T, P]
-           "hb": [[0, 200, 0.1], 2, 5],
-        }
+    bn = dictionary with box parameters
+    bn: dict = {  # name: [[geometry], T, P]
+                 "sb": {"g": [0, 200, 0.9], "T": 20, "P": 5},
+                 "ib": {"g": [200, 1200, 1], "T": 10, "P": 100},
+                }
 
-    icd: dict =
-    #  box_names: [concentrations, isotopes]
-    d= {"bn": [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
+    ic = dictionary with species default values. This is used to et up
+         initial conditions. Here we use shortcut and use the same conditions
+         in each box. If you need box specific initial conditions
+         use the output of build_concentration_dicts as starting point
 
-    If you need box specific initial conditions use the output of
-    build_concentration_dicts as starting point
+
+    ic: dict = { # species: concentration, Isotopes
+                   PO4: [Q_("2.1 * umol/liter"), False],
+                   DIC: [Q_("2.1 mmol/liter"), False],
+                   ALK: [Q_("2.43 mmol/liter"), False],
+               }
 
     M: Model object handle
+
+    cs: add virtual reservoir for the carbonate system. Defaults to False
 
     """
 
     from esbmtk import SeawaterConstants, ReservoirGroup, build_concentration_dicts
-    from esbmtk import SourceGroup, SinkGroup
+    from esbmtk import SourceGroup, SinkGroup, carbonate_system, Q_
 
     # parse for sources and sinks, create these and remove them from the list
 
@@ -576,13 +591,24 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
                 pressure=v["P"],
             )
 
-            # init reservoir group
             rg = ReservoirGroup(
                 name=k,
                 geometry=v["g"],
                 concentration=icd[k][0],
                 isotopes=icd[k][1],
+                delta=icd[k][2],
             )
+
+            if cs:
+                volume = Q_(f"{rg.lor[0].volume} m**3")
+                carbonate_system(
+                    Q_(f"{swc.ca} mol/l"),
+                    Q_(f"{swc.pH} mol/l"),
+                    volume,
+                    swc,
+                    rg,
+                )
+
     return icd
 
 
@@ -616,15 +642,17 @@ def build_concentration_dicts(cd: dict, bg: dict) -> dict:
     icd: dict = OrderedDict()
     td1: dict = {}  # temp dictionary
     td2: dict = {}  # temp dictionary
+    td3: dict = {}  # temp dictionary
 
     # create the dicts for concentration and isotopes
     for k, v in cd.items():
         td1.update({k: v[0]})
         td2.update({k: v[1]})
+        td3.update({k: v[2]})
 
     # box_names: list = bg.keys()
     for bn in box_names:  # loop over box names
-        icd.update({bn: [td1, td2]})
+        icd.update({bn: [td1, td2, td3]})
 
     return icd
 
@@ -770,6 +798,140 @@ def create_connection(n: str, p: dict, M: any) -> None:
             delta=make_dict(los, delta),
             id=cid,  # get id from module import symbol
         )
+
+from numba import jit, float64, void, types, typed, config, njit, threading_layer
+import numba
+
+# @jit([float64[:], float64[:], types.ListType(types.float64)])
+def executef(
+    new: [NDArray, Float64],
+    time: [NDArray, Float64],
+    lor: list,
+    lpc_f: list,
+    lpc_r: list,
+) -> None:
+
+    """Moved this code into a separate function to enable numba optimization"""
+    # config.THREADING_LAYER = "threadsafe"
+    # numba.set_num_threads(2)
+
+    i: int = 1  # processes refer to the previous time step -> start at 1
+    dt: float = lor[0].mo.dt
+    ratio: float = lor[0].sp.r
+    ratio = 1
+
+    r_list, f_list, dir_list, v_list, r0_list, i_list = build_lists(lor)
+
+    for t in time[0:-1]:  # loop over the time vector except the first
+        # we first need to calculate all fluxes
+        for r in lor:  # loop over all reservoirs
+            for p in r.lop:  # loop over reservoir processes
+                p(r, i)  # update fluxes
+
+        # update all process based fluxes. This can be done in a global lpc list
+        for p in lpc_f:
+            p(i)
+
+        sum_lists(r_list, f_list, dir_list, v_list, r0_list, i_list, i, dt)
+
+        # update reservoirs which are calculated
+        # lrp # list calculated reservoir
+        # update all process based fluxes. This can be done in a global lpc list
+        for p in lpc_r:
+            p(i)
+
+        i = i + 1  # next time step
+
+    # print("Threading layer chosen: %s" % threading_layer())
+
+
+@njit(parallel=False, nogil=False)
+def sum_lists(r_list, f_list, dir_list, v_list, r0_list, i_list, i, dt):
+
+    mass: float = 0.0
+    li: float = 0.0
+    r_steps: int = len(f_list)
+
+    # loop over reservoirs
+    for j in range(r_steps):
+        # for j, r in enumerate(f_list):  # this will catch the list for each reservoir
+
+        # sum fluxes in each reservoir
+        mass = li = 0.0
+        f_steps = len(f_list[j])
+        if i_list[j]:
+            for u in range(f_steps):
+                direction = dir_list[j][u]
+                # for u, f in enumerate(r):  # this should catch each flux per reservoir
+                mass += f_list[j][u][0][i] * direction  # mass
+                li += f_list[j][u][1][i] * direction  # li
+
+            r_list[j][0][i] = r_list[j][0][i - 1] + mass * dt  # mass
+            r_list[j][1][i] = r_list[j][1][i - 1] + li * dt  # li
+            r_list[j][2][i] = r_list[j][0][i] - r_list[j][1][i]  # hi
+            r_list[j][3][i] = (
+                1e3 * (r_list[j][2][i] / r_list[j][1][i] - r0_list[j]) / r0_list[j]
+            )
+            r_list[j][4][i] = r_list[j][0][i] / v_list[j]
+        else:
+            for u in range(f_steps):
+                mass += f_list[j][u][0][i] * dir_list[j][u]
+
+            # update mass
+            r_list[j][0][i] = r_list[j][0][i - 1] + mass * dt
+            # update concentration
+            r_list[j][4][i] = r_list[j][0][i] / v_list[j]
+
+from numba.typed import List
+
+def build_lists(lor):
+    """flux_list :list [] contains all fluxes as
+    [f.m, f.l, f.h, f.d], where each sublist relates to one reservoir
+
+    i.e. per reservoir we have list [f1, f2, f3], where f1 = [m, l, h, d]
+    and m = np.array()
+
+
+    """
+
+    r_list: list = List()
+    v_list: list = List()
+    r0_list: list = List()
+    i_list :list = List()
+
+    f_list: list = List()
+    dir_list: list = List()
+    rd_list: list = List()
+    fd_list: list = List()
+
+    for r in lor:  # loop over all reservoirs
+        rd_list = List([r.m, r.l, r.h, r.d, r.c])
+
+        r_list.append(rd_list)
+        v_list.append(float(r.volume))
+        r0_list.append(float(r.sp.r))
+        i_list.append(bool(r.isotopes))
+
+        i = 0
+        # add fluxes for each reservoir entry
+        tf: list = List()  # temp list for flux data
+        td: list = List()  # temp list for direction data
+
+        # loop over all fluxes
+        for f in r.lof:
+            fd_list = List([f.m, f.l, f.h, f.d])
+            tf.append(fd_list)
+            td.append(float(r.lodir[i]))
+            i = i + 1
+
+        f_list.append(tf)
+        dir_list.append(td)
+
+    v_list = tuple(v_list)
+    r0_list = tuple(r0_list)
+    #dir_list = tuple(dir_list)
+
+    return r_list, f_list, dir_list, v_list, r0_list, i_list
 
 def get_string_between_brackets(s :str) -> str:
     """ Parse string and extract substring between square brackets

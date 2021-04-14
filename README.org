@@ -14,6 +14,12 @@ generation of graphical results.
 
 * News
 
+ - April 13^{th}: rewrote the solver which is now 3 times faster. Added
+   numba to the solver code, however the performance gain is currently
+   only a few percent.. Added plot method to the model class. This
+   method will plot any object inn a given list. This is useful for
+   larger models where one is only interested in a subset of results.
+
  - April 10^{th}: The hopefully last tweak to the naming scheme. All
    fluxes belong to a connection (see =model.connection_summmary()=),
    and registered in the respective connection namespace (i.e.,

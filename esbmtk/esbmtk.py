@@ -34,7 +34,7 @@ import builtins
 import os
 from .utility_functions import get_imass, get_delta, get_plot_layout
 from .utility_functions import plot_object_data, show_data, plot_geometry
-from .utility_functions import get_string_between_brackets
+from .utility_functions import get_string_between_brackets, executef
 
 class esbmtkBase(object):
     """The esbmtk base class template. This class handles keyword
@@ -44,7 +44,7 @@ class esbmtkBase(object):
 
     __slots__ = "__dict__"
 
-    from typing import Dict
+    # from typing import Dict
 
     def __init__(self) -> None:
         raise NotImplementedError
@@ -66,7 +66,7 @@ class esbmtkBase(object):
                     f"set {self.kwargs['name']} self.kwargs[{n}] to {self.kwargs[n]}"
                 )
 
-    def __validateandregister__(self, kwargs: Dict[str, any]) -> None:
+    def __validateandregister__(self, kwargs: dict) -> None:
         """Validate the user provided input key-value pairs. For this we need
         kwargs = dictionary with the user provided key-value pairs
         self.lkk = dictionary with allowed keys and type
@@ -148,7 +148,7 @@ class esbmtkBase(object):
         self.provided_kwargs["full_name"] = self.full_name
         logging.info(self.__repr__(1))
 
-    def __validateinput__(self, kwargs: Dict[str, any]) -> None:
+    def __validateinput__(self, kwargs: dict) -> None:
         """Validate the user provided input key-value pairs. For this we need
         kwargs = dictionary with the user provided key-value pairs
         self.lkk = dictionary with allowed keys and type
@@ -161,13 +161,13 @@ class esbmtkBase(object):
         self.provided_kwargs = kwargs.copy()  # preserve a copy
 
         if not hasattr(self, "lkk"):
-            self.lkk: Dict[str, any] = {}
+            self.lkk: dict = {}
         if not hasattr(self, "lrk"):
-            self.lrk: List[str] = []
+            self.lrk: list = []
         if not hasattr(self, "lod"):
-            self.lod: Dict[str, any] = []
+            self.lod: dict = []
         if not hasattr(self, "drn"):
-            self.drn: Dict[str, any] = []
+            self.drn: dict = []
 
         # check that mandatory keys are present
         # and that all keys are allowed
@@ -206,7 +206,7 @@ class esbmtkBase(object):
 
     def __initerrormessages__(self):
         """ Init the list of known error messages"""
-        self.bem: Dict[str, str] = {
+        self.bem: dict = {
             "Number": "a number",
             "Model": "a model handle (i.e. the name without quotation marks)",
             "Element": "an element handle (i.e. the name without quotation marks)",
@@ -457,6 +457,7 @@ class Model(esbmtkBase):
        - Model_Name.save_data()
        - Model_Name.plot_data()
        - Model_Name.plot_reservoirs() takes an optional filename as argument
+       - Model_Name.plot([sb.DIC, sb.TA]) plot any object in the list
        - Model_Name.save_state() Save the model state
        - Model_name.read_state() Initialize with a previous model state
        - Model_Name.run()
@@ -742,6 +743,35 @@ class Model(esbmtkBase):
 
         plt.show()  # create the plot windows
 
+    def plot(self, l: list = [], **kwargs) -> None:
+        """Plot all objects specified in list)
+
+        M.plot([sb.PO4, sb.DIC],fn=test.pdf)
+
+        fn is optional
+        """
+        if "fn" in kwargs:
+            filename = kwargs["fn"]
+        else:
+            filename = f"{self.n}.pdf"
+
+        noo: int = len(l)
+        size, geo = plot_geometry(noo)  # adjust layout
+        plt.style.use(self.plot_style)
+        fig = plt.figure(0)  # Initialize a plot window
+        fig.canvas.set_window_title(f"{self.n} Reservoirs")
+        fig.set_size_inches(size)
+
+        i: int = 1
+        for e in l:
+            plot_object_data(geo, i, e)
+            i = i + 1
+
+        fig.tight_layout()
+        plt.show()  # create the plot windows
+        fig.subplots_adjust(top=0.88)
+        fig.savefig(filename)
+
     def plot_reservoirs(self, **kwargs: dict) -> None:
         """Plot only Reservoir data
 
@@ -813,6 +843,7 @@ class Model(esbmtkBase):
         """
 
         # this has nothing todo with self.time below!
+        wts = time.time()
         start: float = process_time()
         new: [NDArray, Float] = zeros(4)
 
@@ -827,61 +858,14 @@ class Model(esbmtkBase):
         for o in self.lto:
             o.__delayed_init__()
 
-        # run the solver
-        i = self.execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
+        executef(new, self.time, self.lor, self.lpc_f, self.lpc_r)
+        # self.execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
 
         duration: float = process_time() - start
-        print(f"\n Execution took {duration} seconds \n")
+        wcd = time.time() - wts
+        print(f"\n Execution took {duration} cpu seconds, wt = {wcd}\n")
         # flag that the model has executed
         self.state = 1
-
-    @staticmethod
-    def execute(
-        new: [NDArray, Float],
-        time: [NDArray, Float],
-        lor: list,
-        lpc_f: list,
-        lpc_r: list,
-    ) -> None:
-
-        """Moved this code into a separate function to enable numba optimization"""
-
-        i = 1  # processes refer to the previous time step -> start at 1
-        dt = lor[0].mo.dt
-
-        for t in time[0:-1]:  # loop over the time vector except the first
-            # we first need to calculate all fluxes
-            for r in lor:  # loop over all reservoirs
-                for p in r.lop:  # loop over reservoir processes
-                    p(r, i)  # update fluxes
-
-            # update all process based fluxes. This can be done in a global lpc list
-            for p in lpc_f:
-                p(i)
-
-            # and then update all reservoirs
-            for r in lor:  # loop over all reservoirs
-                flux_list: List[str] = r.lof
-                direction_list: List[int] = r.lodir
-                new[0] = new[1] = new[2] = new[3] = 0.0
-
-                # sum fluxes
-                for j, f in enumerate(flux_list):
-                    new += f[i] * direction_list[j]
-
-                # add to data from last time step
-                r[i] = r[i - 1] + new * dt
-
-                # p = (r[i] - r[i - 1]) / r[0]
-
-            # update reservoirs which are calculated
-            # lrp # list calculated reservoir
-            # update all process based fluxes. This can be done in a global lpc list
-            for p in lpc_r:
-                # print(f"Calling {p.name}")
-                p(i)
-
-            i = i + 1  # next time step
 
     def __step_process__(self, r, i) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -2673,6 +2657,7 @@ class DataField(esbmtkBase):
     y axis.
 
     Example::
+    
              DataField(name = "Name"
                        associated_with = reservoir_handle
                        y1_data = np.Ndarray

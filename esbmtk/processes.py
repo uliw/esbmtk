@@ -30,6 +30,9 @@ class Process(esbmtkBase):
 
     """
 
+    __slots__ = ('reservoir', 'r', 'flux', 'r', 'mo', 'direction')
+
+    
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
         Create a new process object with a given process type and options
@@ -639,7 +642,7 @@ class ScaleFlux(Process):
 
     """
 
-    __slots__ = ("rate", "scale", "ref")
+    __slots__ = ("rate", "scale", "ref", "reservoir", "flux")
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """Initialize this Process"""
@@ -669,14 +672,21 @@ class ScaleFlux(Process):
         """Apply the scale factor. This is typically done through the the
         model execute method.
         Note that this will use the mass of the reference object, but that we will set the
-        delta according to the reservoir (or the flux?)
+        delta according to the reservoir 
 
         """
 
-        d = self.f.d[i]
-        self.f[i] = self.ref[i] * self.scale
-        self.f.d[i] = d
-        #self.f[i] = get_flux_data(self.f.m[i], reservoir.d[i - 1], reservoir.rvalue)
+        # d = self.f.d[i]
+        # self.f[i] = self.ref[i] * self.scale
+        # self.f.d[i] = d
+        # self.f[i] = get_flux_data(self.f.m[i], reservoir.d[i - 1], reservoir.rvalue)
+        m: float = self.ref.m[i - 1] * self.scale
+        r: float = reservoir.species.element.r
+        d: float = reservoir.d[i - 1]
+        l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+        
+        self.flux[i] : np.array = [m, l, m - l, d]
+        #print(f"flux_delta = {d}")
 
     def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """Apply the scale factor. This is typically done through the the
@@ -685,7 +695,7 @@ class ScaleFlux(Process):
         delta according to the reservoir (or the flux?)
 
         """
-        self.f[i] = self.ref[i] * self.scale
+        self.f[i] = self.ref[i-1] * self.scale
 
 
 class Reaction(ScaleFlux):
@@ -743,7 +753,6 @@ class FluxDiff(Process):
         delta according to the reservoir (or the flux?)
 
         """
-
         self.f[i] = (self.ref[0][i] - self.ref[1][i]) * self.scale
 
 class Fractionation(Process):
@@ -795,10 +804,12 @@ class Fractionation(Process):
         """
 
         if self.f.m[i] != 0 :
+            #print(f"delta before = {get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)}")
             self.f.l[i], self.f.h[i] = get_frac(self.f.m[i], self.f.l[i], self.alp)
             # update delta
             # self.f.d[i] = get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)
             self.f.d[i] = self.f.d[i] + self.alpha
+            #print(f"delta after = {get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)}\n")
 
         return
 
@@ -935,10 +946,29 @@ class RateConstant(Process):
 #         # scale = scale * (scale >= 0)  # prevent negative fluxes.
 #         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
 
+# from numba import typed, typeof, types
+# from numba.experimental import jitclass
+# import numba
 
+# lmo = typed.List()
+# ldo = typed.List()
+# reg_time = types.float64
+
+# spec = [
+#     ("reservoir.m", numba.float64[:]),
+#     ("i", numba.int32),
+#     ("reservoir.volume", numba.float64),
+#     ("scale", numba.float64),
+#     ("flux.m", numba.float64[:]),
+#     ("reservoir.species.element.r", numba.float64),
+#     ("reservoir.d", numba.float64[:]),
+# ]
+
+
+# @jitclass(spec)
 class ScaleRelativeToConcentration(RateConstant):
     """This process calculates the flux as a function of the upstream
-     reservoir concentration C and a constant which describes the
+     reservoir concentration C and a constant which describes thet
      strength of relation between the reservoir concentration and
      the flux scaling
 
@@ -958,19 +988,19 @@ class ScaleRelativeToConcentration(RateConstant):
 
     """
 
-   
-    
     # xxx
     def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         m: float = self.reservoir.m[i - 1]
         if m > 0:  # otherwise there is no flux
-            #print(f"mass in reservoir {m:.2e}")
+            # print(f"mass in reservoir {m:.2e}")
             # convert to concentration
             c = m / self.reservoir.volume
-            #print(f"concentration in reservoir {m:.2e}")
+            # print(f"concentration in reservoir {m:.2e}")
             m = c * self.scale
-            #print(f"new flux {m:.2e}")
+            # print(f"new flux {m:.2e}")
             self.flux.m[i] = m
+
+        #ggg(self.reservoir.m, i, self.flux.m, self.reservoir.volume, self.scale)
 
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
@@ -987,11 +1017,21 @@ class ScaleRelativeToConcentration(RateConstant):
             r: float = reservoir.species.element.r
             d: float = reservoir.d[i - 1]
             l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-            # self.flux.d[i]: float = d
-            # self.flux.l[i]: float = l
-            # self.flux.h[i]: float = m - l
-            # self.flux.m[i]: float = m
             self.flux[i]: np.array = [m, l, m - l, d]
+
+
+# from numba import jit
+# @jit(nopython=True)
+# def ggg(rm, i, fm, volume, scale) -> None:
+#     m: float = rm[i - 1]
+#     if m > 0:  # otherwise there is no flux
+#         # print(f"mass in reservoir {m:.2e}")
+#         # convert to concentration
+#         c = m / volume
+#         # print(f"concentration in reservoir {m:.2e}")
+#         m = c * scale
+#         # print(f"new flux {m:.2e}")
+#         fm[i] = m
 
 
 class ScaleRelativeToMass(RateConstant):
