@@ -884,6 +884,7 @@ class Model(esbmtkBase):
         """
 
         # this has nothing todo with self.time below!
+        wts = time.time()
         start: float = process_time()
         new: [NDArray, Float] = zeros(4)
 
@@ -902,57 +903,10 @@ class Model(esbmtkBase):
         # self.execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
 
         duration: float = process_time() - start
-        print(f"\n Execution took {duration} seconds \n")
+        wcd = time.time() - wts
+        print(f"\n Execution took {duration} cpu seconds, wt = {wcd}\n")
         # flag that the model has executed
         self.state = 1
-
-    @staticmethod
-    def execute(
-        new: [NDArray, Float],
-        time: [NDArray, Float],
-        lor: list,
-        lpc_f: list,
-        lpc_r: list,
-    ) -> None:
-
-        """Moved this code into a separate function to enable numba optimization"""
-
-        i = 1  # processes refer to the previous time step -> start at 1
-        dt = lor[0].mo.dt
-
-        for t in time[0:-1]:  # loop over the time vector except the first
-            # we first need to calculate all fluxes
-            for r in lor:  # loop over all reservoirs
-                for p in r.lop:  # loop over reservoir processes
-                    p(r, i)  # update fluxes
-
-            # update all process based fluxes. This can be done in a global lpc list
-            for p in lpc_f:
-                p(i)
-
-            # and then update all reservoirs
-            for r in lor:  # loop over all reservoirs
-                flux_list: List[str] = r.lof
-                direction_list: List[int] = r.lodir
-                new[0] = new[1] = new[2] = new[3] = 0.0
-
-                # sum fluxes
-                for j, f in enumerate(flux_list):
-                    new += f[i] * direction_list[j]
-
-                # add to data from last time step
-                r[i] = r[i - 1] + new * dt
-
-                # p = (r[i] - r[i - 1]) / r[0]
-
-            # update reservoirs which are calculated
-            # lrp # list calculated reservoir
-            # update all process based fluxes. This can be done in a global lpc list
-            for p in lpc_r:
-                # print(f"Calling {p.name}")
-                p(i)
-
-            i = i + 1  # next time step
 
     def __step_process__(self, r, i) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -2789,6 +2743,7 @@ class DataField(esbmtkBase):
     y axis.
 
     Example::
+    
              DataField(name = "Name"
                        associated_with = reservoir_handle
                        y1_data = np.Ndarray
