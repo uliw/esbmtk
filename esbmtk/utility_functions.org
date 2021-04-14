@@ -988,7 +988,7 @@ def sum_lists(r_list, f_list, dir_list, v_list, r0_list, i_list, i, dt):
                 li += f_list[j][u][1][i] * direction  # li
 
             r_list[j][0][i] = r_list[j][0][i - 1] + mass * dt  # mass
-            r_list[j][1][i] = r_list[j][1][i - 1] + mass * dt  # li
+            r_list[j][1][i] = r_list[j][1][i - 1] + li * dt  # li
             r_list[j][2][i] = r_list[j][0][i] - r_list[j][1][i]  # hi
             r_list[j][3][i] = (
                 1e3 * (r_list[j][2][i] / r_list[j][1][i] - r0_list[j]) / r0_list[j]
