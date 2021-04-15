@@ -940,9 +940,30 @@ def executef(
     dt: float = lor[0].mo.dt
     ratio: float = lor[0].sp.r
     ratio = 1
+    # r_list: list = List()
+    # v_list: list = List()
+    # r0_list: list = List()
 
-    r_list, f_list, dir_list, v_list, r0_list, i_list = build_lists(lor)
+    # f_list: list = List()
+    # dir_list: list = List()
 
+    # tl = [True, False]
+    # for t in tl:
+    #     a, b, c, d, e = build_lists(lor, iso=t)
+    #     r_list.append(a)
+    #     f_list.append(b)
+    #     dir_list.append(c)
+    #     v_list.append(d)
+    #     r0_list.append(e)
+
+    # r_list[0], f_list[0], dir_list[0], v_list[0], r0_list[0] = build_lists(
+    #    lor, iso=True
+    # )
+    # r_list[1], f_list[1], dir_list[1], v_list[1], r0_list[1] = build_lists(
+    #    lor, iso=False
+    # )
+
+    a, b, c, d, e = build_lists_all(lor)
     for t in time[0:-1]:  # loop over the time vector except the first
         # we first need to calculate all fluxes
         for r in lor:  # loop over all reservoirs
@@ -953,7 +974,10 @@ def executef(
         for p in lpc_f:
             p(i)
 
-        sum_lists(r_list, f_list, dir_list, v_list, r0_list, i_list, i, dt)
+        sum_lists(a, b, c, d, e, i, dt)
+        # sum_p(r_list, f_list, dir_list, v_list, r0_list, i, dt)
+        # sum_lists(r_list[0], f_list[0], dir_list[0], v_list[0], r0_list[0], i, dt)
+        # sum_lists_ni(r_list[1], f_list[1], dir_list[1], v_list[1], r0_list[1], i, dt)
 
         # update reservoirs which are calculated
         # lrp # list calculated reservoir
@@ -966,8 +990,49 @@ def executef(
     # print("Threading layer chosen: %s" % threading_layer())
 
 
-@njit(parallel=False, nogil=False)
-def sum_lists(r_list, f_list, dir_list, v_list, r0_list, i_list, i, dt):
+@njit()
+def sum_p(r_list, f_list, dir_list, v_list, r0_list, i, dt):
+
+    j = 0
+    for e in range(2):
+        sum_lists(r_list[j], f_list[j], dir_list[j], v_list[j], r0_list[j], i, dt)
+
+
+@njit()
+def sum_lists(r_list, f_list, dir_list, v_list, r0_list, i, dt):
+    """Sum fluxes in reservoirs with isostopes"""
+    mass: float = 0.0
+    li: float = 0.0
+    r_steps: int = len(f_list)
+
+    # loop over reservoirs
+    for j in range(r_steps):
+        # for j, r in enumerate(f_list):  # this will catch the list for each reservoir
+
+        # sum fluxes in each reservoir
+        mass = li = 0.0
+        f_steps = len(f_list[j])
+        for u in range(f_steps):
+            direction = dir_list[j][u]
+            # for u, f in enumerate(r):  # this should catch each flux per reservoir
+            mass += f_list[j][u][0][i] * direction  # mass
+            li += f_list[j][u][1][i] * direction  # li
+
+        # update masses
+        r_list[j][0][i] = r_list[j][0][i - 1] + mass * dt  # mass
+        r_list[j][1][i] = r_list[j][1][i - 1] + li * dt  # li
+        r_list[j][2][i] = r_list[j][0][i] - r_list[j][1][i]  # hi
+        # update delta
+        r_list[j][3][i] = (
+            1e3 * (r_list[j][2][i] / r_list[j][1][i] - r0_list[j]) / r0_list[j]
+        )
+        # update concentrations
+        r_list[j][4][i] = r_list[j][0][i] / v_list[j]
+
+
+@njit()
+def sum_lists_ni(r_list, f_list, dir_list, v_list, r0_list, i, dt):
+    """Sum fluxes in reservoirs without isostopes"""
 
     mass: float = 0.0
     li: float = 0.0
@@ -980,28 +1045,14 @@ def sum_lists(r_list, f_list, dir_list, v_list, r0_list, i_list, i, dt):
         # sum fluxes in each reservoir
         mass = li = 0.0
         f_steps = len(f_list[j])
-        if i_list[j]:
-            for u in range(f_steps):
-                direction = dir_list[j][u]
-                # for u, f in enumerate(r):  # this should catch each flux per reservoir
-                mass += f_list[j][u][0][i] * direction  # mass
-                li += f_list[j][u][1][i] * direction  # li
+        # update concentrations
+        for u in range(f_steps):
+            mass += f_list[j][u][0][i] * dir_list[j][u]
 
-            r_list[j][0][i] = r_list[j][0][i - 1] + mass * dt  # mass
-            r_list[j][1][i] = r_list[j][1][i - 1] + li * dt  # li
-            r_list[j][2][i] = r_list[j][0][i] - r_list[j][1][i]  # hi
-            r_list[j][3][i] = (
-                1e3 * (r_list[j][2][i] / r_list[j][1][i] - r0_list[j]) / r0_list[j]
-            )
-            r_list[j][4][i] = r_list[j][0][i] / v_list[j]
-        else:
-            for u in range(f_steps):
-                mass += f_list[j][u][0][i] * dir_list[j][u]
-
-            # update mass
-            r_list[j][0][i] = r_list[j][0][i - 1] + mass * dt
-            # update concentration
-            r_list[j][4][i] = r_list[j][0][i] / v_list[j]
+        # update mass
+        r_list[j][0][i] = r_list[j][0][i - 1] + mass * dt
+        # update concentration
+        r_list[j][4][i] = r_list[j][0][i] / v_list[j]
 #+END_SRC
 
 
@@ -1011,20 +1062,71 @@ def sum_lists(r_list, f_list, dir_list, v_list, r0_list, i_list, i, dt):
 #+BEGIN_SRC ipython :tangle utility_functions.py
 from numba.typed import List
 
-def build_lists(lor):
+
+def build_lists(lor, iso: bool = False) -> tuple:
     """flux_list :list [] contains all fluxes as
     [f.m, f.l, f.h, f.d], where each sublist relates to one reservoir
 
     i.e. per reservoir we have list [f1, f2, f3], where f1 = [m, l, h, d]
     and m = np.array()
 
+    iso = False/True
 
     """
 
     r_list: list = List()
     v_list: list = List()
     r0_list: list = List()
-    i_list :list = List()
+
+    f_list: list = List()
+    dir_list: list = List()
+    rd_list: list = List()
+    fd_list: list = List()
+
+    for r in lor:  # loop over all reservoirs
+        if r.isotopes == iso:
+            rd_list = List([r.m, r.l, r.h, r.d, r.c])
+
+            r_list.append(rd_list)
+            v_list.append(float(r.volume))
+            r0_list.append(float(r.sp.r))
+
+            i = 0
+            # add fluxes for each reservoir entry
+            tf: list = List()  # temp list for flux data
+            td: list = List()  # temp list for direction data
+
+            # loop over all fluxes
+            for f in r.lof:
+                fd_list = List([f.m, f.l, f.h, f.d])
+                tf.append(fd_list)
+                td.append(float(r.lodir[i]))
+                i = i + 1
+
+            f_list.append(tf)
+            dir_list.append(td)
+
+    # v_list = tuple(v_list)
+    # r0_list = tuple(r0_list)
+    # dir_list = tuple(dir_list)
+
+    return r_list, f_list, dir_list, v_list, r0_list
+
+
+def build_lists_all(lor, iso: bool = False) -> tuple:
+    """flux_list :list [] contains all fluxes as
+    [f.m, f.l, f.h, f.d], where each sublist relates to one reservoir
+
+    i.e. per reservoir we have list [f1, f2, f3], where f1 = [m, l, h, d]
+    and m = np.array()
+
+    iso = False/True
+
+    """
+
+    r_list: list = List()
+    v_list: list = List()
+    r0_list: list = List()
 
     f_list: list = List()
     dir_list: list = List()
@@ -1037,7 +1139,6 @@ def build_lists(lor):
         r_list.append(rd_list)
         v_list.append(float(r.volume))
         r0_list.append(float(r.sp.r))
-        i_list.append(bool(r.isotopes))
 
         i = 0
         # add fluxes for each reservoir entry
@@ -1054,10 +1155,6 @@ def build_lists(lor):
         f_list.append(tf)
         dir_list.append(td)
 
-    v_list = tuple(v_list)
-    r0_list = tuple(r0_list)
-    #dir_list = tuple(dir_list)
-
-    return r_list, f_list, dir_list, v_list, r0_list, i_list
+    return r_list, f_list, dir_list, v_list, r0_list
 #+END_SRC
 
