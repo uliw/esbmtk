@@ -800,7 +800,7 @@ class Model(esbmtkBase):
         size, geo = plot_geometry(noo)  # adjust layout
         plt.style.use(self.plot_style)
         fig = plt.figure(0)  # Initialize a plot window
-        fig.canvas.set_window_title(f"{self.n} Reservoirs")
+        fig.canvas.manager.set_window_title(f"{self.n} Reservoirs")
         fig.set_size_inches(size)
 
         i: int = 1
@@ -849,7 +849,7 @@ class Model(esbmtkBase):
         plt.style.use(self.plot_style)
 
         fig = plt.figure(0)  # Initialize a plot window
-        fig.canvas.set_window_title(f"{self.n} Reservoirs")
+        fig.canvas.manager.set_window_title(f"{self.n} Reservoirs")
         fig.set_size_inches(size)
 
         i: int = 1
@@ -1612,7 +1612,7 @@ class Reservoir(esbmtkBase):
 
         plt.style.use(model.plot_style)
         fig = plt.figure(i)  # Initialize a plot window
-        fig.canvas.set_window_title(f"Reservoir Name: {self.n}")
+        fig.canvas.manager.set_window_title(f"Reservoir Name: {self.n}")
         fig.set_size_inches(size)
 
         # plot reservoir data
