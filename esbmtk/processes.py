@@ -5,6 +5,7 @@ from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
 from copy import deepcopy, copy
 from time import process_time
+from numba import njit
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -605,6 +606,36 @@ class VarDeltaOut(Process):
 
             self.flux[i] = [m, l, h, d]
 
+    def get_process_args(self, reservoir: Reservoir):
+
+        # if upstream is a source, we only have a single delta value
+        # so we need to patch this. Maybe this should move to source?
+        if isinstance(self.reservoir, Source):
+            delta = reservoir.d
+        else:
+            delta = reservoir.d
+
+        func_name: function = self.p_vardeltaout
+        res_data: list = [
+            reservoir.m,
+            delta,
+            reservoir.c,
+        ]
+        flux_data: list = [self.flux.m, self.flux.l, self.flux.h, self.flux.d]
+        proc_const: list = [float(reservoir.species.element.r), float(0)]
+
+        return func_name, res_data, flux_data, proc_const
+
+    @staticmethod
+    @njit()
+    def p_vardeltaout(res_data, flux_data, proc_const, i) -> tuple:
+        # concentration times scale factor
+        m: float = flux_data[0][i - 1]  # r mass
+        d: float = res_data[1][i - 1]  # delta
+        l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
+
+        return [m, l, m - l, d]
+
     def __with_isotopes_source__(self, reservoir: Reservoir, i: int) -> None:
         """If the source of the flux is a source, there is only a single delta value.
         Changes to the flux delta are applied through the Signal class.
@@ -672,21 +703,16 @@ class ScaleFlux(Process):
         """Apply the scale factor. This is typically done through the the
         model execute method.
         Note that this will use the mass of the reference object, but that we will set the
-        delta according to the reservoir 
+        delta according to the reservoir
 
         """
 
-        # d = self.f.d[i]
-        # self.f[i] = self.ref[i] * self.scale
-        # self.f.d[i] = d
-        # self.f[i] = get_flux_data(self.f.m[i], reservoir.d[i - 1], reservoir.rvalue)
         m: float = self.ref.m[i - 1] * self.scale
         r: float = reservoir.species.element.r
         d: float = reservoir.d[i - 1]
         l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-        
-        self.flux[i] : np.array = [m, l, m - l, d]
-        #print(f"flux_delta = {d}")
+
+        self.flux[i]: np.array = [m, l, m - l, d]
 
     def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """Apply the scale factor. This is typically done through the the
@@ -695,7 +721,32 @@ class ScaleFlux(Process):
         delta according to the reservoir (or the flux?)
 
         """
-        self.f[i] = self.ref[i-1] * self.scale
+        self.f[i] = self.ref[i - 1] * self.scale
+
+    def get_process_args(self, reservoir: Reservoir):
+        """"""
+
+        func_name: function = self.p_scale_flux
+        res_data: list = [
+            self.ref.m,
+            reservoir.d,
+            self.ref.m,
+        ]
+        flux_data: list = [self.flux.m, self.flux.l, self.flux.h, self.flux.d]
+        proc_const: list = [float(reservoir.species.element.r), float(self.scale)]
+
+        return func_name, res_data, flux_data, proc_const
+
+    @staticmethod
+    @njit()
+    def p_scale_flux(res_data, flux_data, proc_const, i) -> tuple:
+
+        m: float = res_data[0][i - 1] * proc_const[1]
+        d: float = res_data[1][i - 1]
+        l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
+        #print(f"ScaleFlux m = {m:.2e}, scale = {proc_const[1]}")
+
+        return [m, l, m - l, d]
 
 
 class Reaction(ScaleFlux):
@@ -785,42 +836,45 @@ class Fractionation(Process):
         self.mo = self.reservoir.mo
         self.__register_name__()
 
-        # decide which call function to use
-        if self.reservoir.isotopes:
-        #if self.mo.m_type == "both":
-            self.__execute__ = self.__with_isotopes__
-        else:
-            self.__execute__ = self.__without_isotopes__
-
-    # setup a placeholder call function
-    def __call__(self, reservoir: Reservoir, i: int):
-        return self.__execute__(reservoir, i)
-
-    # use this when we do isotopes
-    def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
         Set flux isotope masses based on fractionation factor
 
         """
 
-        if self.f.m[i] != 0 :
-            #print(f"delta before = {get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)}")
+        if self.f.m[i] != 0:
+            # print(f"delta before = {get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)}")
             self.f.l[i], self.f.h[i] = get_frac(self.f.m[i], self.f.l[i], self.alp)
             # update delta
             # self.f.d[i] = get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)
             self.f.d[i] = self.f.d[i] + self.alpha
-            #print(f"delta after = {get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)}\n")
+            # print(f"delta after = {get_delta(self.f.l[i], self.f.h[i], self.f.rvalue)}\n")
 
         return
 
-    # use this when we don't do isotopes
-    def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
-        """
-        Set flux isotope masses based on fractionation factor
+    def get_process_args(self, reservoir: Reservoir):
 
-        """
+        func_name: function = self.p_fractionation
+        res_data: list = [
+            reservoir.m,
+            reservoir.d,
+            reservoir.c,
+        ]
+        flux_data: list = [self.flux.m, self.flux.l, self.flux.h, self.flux.d]
+        proc_const: list = [float(reservoir.species.element.r), float(self.alpha)]
 
-        return
+        return func_name, res_data, flux_data, proc_const
+
+    @staticmethod
+    @njit()
+    def p_fractionation(res_data, flux_data, proc_const, i) -> tuple:
+        # 
+        d: float = flux_data[3][i] + proc_const[1]
+        m: float = flux_data[0][i]
+        # get new l
+        l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
+
+        return [m, l, m - l, d]
 
 class RateConstant(Process):
     """This is a wrapper for a variety of processes which depend on rate constants
@@ -978,7 +1032,6 @@ class ScaleRelativeToConcentration(RateConstant):
      constant. This process is typically called by the connector
      instance. However you can instantiate it manually as
 
-
      ScaleRelativeToConcentration(
                        name = "Name",
                        reservoir= upstream_reservoir_handle,
@@ -988,19 +1041,13 @@ class ScaleRelativeToConcentration(RateConstant):
 
     """
 
-    # xxx
     def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         m: float = self.reservoir.m[i - 1]
         if m > 0:  # otherwise there is no flux
-            # print(f"mass in reservoir {m:.2e}")
             # convert to concentration
             c = m / self.reservoir.volume
-            # print(f"concentration in reservoir {m:.2e}")
             m = c * self.scale
-            # print(f"new flux {m:.2e}")
             self.flux.m[i] = m
-
-        #ggg(self.reservoir.m, i, self.flux.m, self.reservoir.volume, self.scale)
 
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
@@ -1011,27 +1058,35 @@ class ScaleRelativeToConcentration(RateConstant):
         rather than scaling the flux.
         """
 
-        m: float = self.reservoir.m[i - 1]
-        if m > 0:  # otherwise there is no flux
-            m = m / self.reservoir.volume * self.scale
+        c: float = self.reservoir.c[i - 1]
+        if c > 0:  # otherwise there is no flux
+            m = c * self.scale
             r: float = reservoir.species.element.r
             d: float = reservoir.d[i - 1]
             l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
             self.flux[i]: np.array = [m, l, m - l, d]
 
+    def get_process_args(self, reservoir: Reservoir):
 
-# from numba import jit
-# @jit(nopython=True)
-# def ggg(rm, i, fm, volume, scale) -> None:
-#     m: float = rm[i - 1]
-#     if m > 0:  # otherwise there is no flux
-#         # print(f"mass in reservoir {m:.2e}")
-#         # convert to concentration
-#         c = m / volume
-#         # print(f"concentration in reservoir {m:.2e}")
-#         m = c * scale
-#         # print(f"new flux {m:.2e}")
-#         fm[i] = m
+        func_name: function = self.p_scale_relative_to_concentration
+        res_data: list = [
+            reservoir.m,
+            reservoir.d,
+            reservoir.c,
+        ]
+        flux_data: list = [self.flux.m, self.flux.l, self.flux.h, self.flux.d]
+        proc_const: list = [float(reservoir.species.element.r), float(self.scale)]
+
+        return func_name, res_data, flux_data, proc_const
+
+    @staticmethod
+    @njit()
+    def p_scale_relative_to_concentration(res_data, flux_data, proc_const, i) -> tuple:
+        # concentration times scale factor
+        m: float = res_data[2][i - 1] * proc_const[1]
+        d: float = res_data[1][i - 1]  # delta
+        l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
+        return [m, l, m - l, d]
 
 
 class ScaleRelativeToMass(RateConstant):
@@ -1069,20 +1124,53 @@ class ScaleRelativeToMass(RateConstant):
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
         this will be called by the Model.run() method
+        
         """
-        # scale: float = reservoir.m[i - 1] * self.scale
-        # self.f[i] = self.f[i] * array([scale, scale, scale, 1])
-        # self.d[i] =  reservoir.d[i - 1]
-
         m: float = self.reservoir.m[i - 1] * self.scale
         r: float = reservoir.species.element.r
         d: float = reservoir.d[i - 1]
         l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-        # self.flux.d[i]: float = d
-        # self.flux.l[i]: float = l
-        # self.flux.h[i]: float = m - l
-        # self.flux.m[i]: float = m
         self.flux[i]: np.array = [m, l, m - l, d]
+
+    def get_process_args(self, reservoir: Reservoir):
+
+        func_name: function = self.p_scale_relative_to_concentration
+        res_data: list = [
+            reservoir.m,
+            reservoir.d,
+            reservoir.c,
+        ]
+        flux_data: list = [self.flux.m, self.flux.l, self.flux.h, self.flux.d]
+        proc_const: list = [float(reservoir.species.element.r), float(self.scale)]
+
+        return func_name, res_data, flux_data, proc_const
+    # def get_process_args(self, reservoir: Reservoir):
+
+    #     func_name: function = self.p_scale_relative_to_mass
+    #     res_data: list = [
+    #         self.reservoir.m,  # we us the mass of the reference reservoir
+    #         reservoir.d,
+    #         reservoir.c,
+    #     ]
+    #     flux_data: list = [self.flux.m, self.flux.l, self.flux.h, self.flux.d]
+    #     proc_const: list = [float(reservoir.species.element.r), float(self.scale)]
+
+    #     return func_name, res_data, flux_data, proc_const
+
+    @staticmethod
+    @njit()
+    def p_scale_relative_to_concentration(res_data, flux_data, proc_const, i) -> tuple:
+        # concentration times scale factor
+        m: float = res_data[2][i - 1] * proc_const[1]
+        d: float = res_data[1][i - 1]  # delta
+        l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
+        return [m, l, m - l, d]
+    # def p_scale_relative_to_mass(res_data, flux_data, proc_const, i) -> tuple:
+
+    #     m: float = res_data[0][i - 1] * proc_const[1]
+    #     d: float = res_data[1][i - 1]
+    #     l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
+    #     return [m, l, m - l, d]
 
 
 # class ScaleRelativeToNormalizedMass(RateConstant):

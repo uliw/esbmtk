@@ -5,3 +5,4 @@ pandas
 matplotlib
 pint
 scipy
+numba

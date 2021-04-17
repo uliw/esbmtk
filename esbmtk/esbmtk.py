@@ -34,7 +34,7 @@ import builtins
 import os
 from .utility_functions import get_imass, get_delta, get_plot_layout
 from .utility_functions import plot_object_data, show_data, plot_geometry
-from .utility_functions import get_string_between_brackets, executef
+from .utility_functions import get_string_between_brackets, execute, execute_h, execute_n
 
 class esbmtkBase(object):
     """The esbmtk base class template. This class handles keyword
@@ -759,7 +759,7 @@ class Model(esbmtkBase):
         size, geo = plot_geometry(noo)  # adjust layout
         plt.style.use(self.plot_style)
         fig = plt.figure(0)  # Initialize a plot window
-        fig.canvas.set_window_title(f"{self.n} Reservoirs")
+        fig.canvas.manager.set_window_title(f"{self.n} Reservoirs")
         fig.set_size_inches(size)
 
         i: int = 1
@@ -808,7 +808,7 @@ class Model(esbmtkBase):
         plt.style.use(self.plot_style)
 
         fig = plt.figure(0)  # Initialize a plot window
-        fig.canvas.set_window_title(f"{self.n} Reservoirs")
+        fig.canvas.manager.set_window_title(f"{self.n} Reservoirs")
         fig.set_size_inches(size)
 
         i: int = 1
@@ -837,7 +837,7 @@ class Model(esbmtkBase):
         fig.subplots_adjust(top=0.88)
         fig.savefig(filename)
 
-    def run(self) -> None:
+    def run(self, **kwargs) -> None:
         """Loop over the time vector, and for each time step, calculate the
         fluxes for each reservoir
         """
@@ -858,7 +858,17 @@ class Model(esbmtkBase):
         for o in self.lto:
             o.__delayed_init__()
 
-        executef(new, self.time, self.lor, self.lpc_f, self.lpc_r)
+        if "solver" not in kwargs:
+            solver = "python"
+        else:
+            solver = kwargs["solver"]
+
+        if solver == "numba":
+            execute_n(new, self.time, self.lor, self.lpc_f, self.lpc_r)
+        elif solver == "hybrid":
+            execute_h(new, self.time, self.lor, self.lpc_f, self.lpc_r)
+        else:
+            execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
         # self.execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
 
         duration: float = process_time() - start
@@ -1555,7 +1565,7 @@ class Reservoir(esbmtkBase):
 
         plt.style.use(model.plot_style)
         fig = plt.figure(i)  # Initialize a plot window
-        fig.canvas.set_window_title(f"Reservoir Name: {self.n}")
+        fig.canvas.manager.set_window_title(f"Reservoir Name: {self.n}")
         fig.set_size_inches(size)
 
         # plot reservoir data
@@ -2045,7 +2055,7 @@ class SourceSink(esbmtkBase):
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species"]
-        
+
         # list of default values if none provided
         self.lod: Dict[str, any] = {
             "display_precision": 0,
@@ -2060,9 +2070,9 @@ class SourceSink(esbmtkBase):
         self.loc: set[Connection] = set()  # set of connection objects
 
         # legacy names
-        #if self.register != "None":
+        # if self.register != "None":
         #    self.full_name = f"{self.name}.{self.register.name}"
-        
+
         self.n = self.name
         self.sp = self.species
         self.mo = self.species.mo
@@ -2071,6 +2081,9 @@ class SourceSink(esbmtkBase):
 
         if self.delta != "None":
             self.isotopes = True
+            self.d = np.full(self.mo.steps, self.delta)
+        else:
+            self.d = np.full(self.mo.steps, 0.0)
 
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
