@@ -650,20 +650,22 @@ class VarDeltaOut(Process):
 
         func_name: function = self.p_vardeltaout
         res_data: list = [
-            reservoir.m,
+            self.flux.m,
             delta,
             reservoir.c,
         ]
         flux_data: list = [self.flux.m, self.flux.l, self.flux.h, self.flux.d]
         proc_const: list = [float(reservoir.species.element.r), float(0)]
 
+        print(f"rd = {res_data[2][0]}, fd = {flux_data[0][0]}")
         return func_name, res_data, flux_data, proc_const
 
     @staticmethod
     @njit()
     def p_vardeltaout(res_data, flux_data, proc_const, i) -> tuple:
         # concentration times scale factor
-        m: float = flux_data[0][i - 1]  # r mass
+        # res_data[0] is actually flux data. See get_process args for details
+        m: float = res_data[0][i - 1]  # r mass 
         d: float = res_data[1][i - 1]  # delta
         l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
 
