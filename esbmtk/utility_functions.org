@@ -941,7 +941,7 @@ def execute(
     """This is the original object oriented solver"""
 
     i = 1  # some processes refer to the previous time step
-    for t in time[0:-1]:  # loop over the time vector except the first
+    for t in time[1:-1]:  # loop over the time vector except the first
         # we first need to calculate all fluxes
         for r in lor:  # loop over all reservoirs
             for p in r.lop:  # loop over reservoir processes
@@ -995,7 +995,7 @@ def execute_h(
     ratio = 1
 
     a, b, c, d, e = build_flux_lists_all(lor)
-    for t in time[0:-1]:  # loop over the time vector except the first
+    for t in time[1:-1]:  # loop over the time vector except the first
         # we first need to calculate all fluxes
         for r in lor:  # loop over all reservoirs
             for p in r.lop:  # loop over reservoir processes
@@ -1034,7 +1034,7 @@ def execute_n(
 
     fn, rd, fd, pc = build_process_list(lor)
     a, b, c, d, e = build_flux_lists_all(lor)
-    for t in time[0:-1]:  # loop over the time vector except the first
+    for t in time[1:-1]:  # loop over the time vector except the first
         # update_fluxes for each reservoir
         update_fluxes(fn, rd, fd, pc, i)
 
@@ -1061,10 +1061,10 @@ def update_fluxes(fn, rd, fd, pc, i):
         for u, function in enumerate(f_list):
             # print(f"function = {function}")
             # print(f"f.m before = {fd[j][u][0][i]}")
-            (fd[j][u][0][i], fd[j][u][1][i], fd[j][u][2][i], fd[j][u][3][i]) = function(
-                rd[j][u], fd[j][u], pc[j][u], i
-            )
             # print(f"j={j}, u = {u}, i={i}")
+            fn[j][u](rd[j][u], fd[j][u], pc[j][u], i)
+            
+           
             # print(f"f.m after = {fd[j][u][0][i]}\n")
 
 
@@ -1229,11 +1229,30 @@ def build_process_list(lor: list) -> tuple:
     # proc_const : list = any constants, must be float
 
     for r in lor:  # loop over reservoirs
+
+        # tfn = numba.typed.List.empty_list(
+        #     types.List(types.void)(  # return value
+        #         types.List(types.float64[:,:,:]),  # parameter 1
+        #         types.List(types.float64[:,:,:,:]),  # parameter 2
+        #         types.List(types.float64[:]),  # parameter 3
+        #         types.int64,  # parameter 4
+        #     ).as_type()
+        # )
+
+        # tfn = numba.typed.List.empty_list(
+        #     types.List(types.void)(  # return value
+        #         types.List(types.float64[:, :, :]),  # parameter 1
+        #         types.List(types.float64[:, :, :, :]),  # parameter 2
+        #         types.List(types.float64[:]),  # parameter 3
+        #         types.int64,  # parameter 4
+        #     ).as_type()
+        # )
+
         tfn = numba.typed.List.empty_list(
-            types.List(types.float64[:, :, :,])(  # return value
-                types.List(types.float64[:, :, :]),  # parameter 1
-                types.List(types.float64[:, :, :, :]),  # parameter 2
-                types.List(types.float64[:]),  # parameter 3
+            types.List(types.void)(  # return value
+                types.List(types.List(types.float64)),  # parameter 1
+                types.List(types.List(types.float64)),  # parameter 2
+                types.List(types.float64),  # parameter 3
                 types.int64,  # parameter 4
             ).as_type()
         )
@@ -1246,10 +1265,9 @@ def build_process_list(lor: list) -> tuple:
             print(f"adding function {p.full_name}  with {r.full_name}")
             func_name, res_data, flux_data, proc_const = p.get_process_args(r)
             tfn.append(func_name)
-            a = get_typed_list(res_data)
-            trd.append(a)
-            tfd.append(get_typed_list(flux_data))
-            tpc.append(get_typed_list(proc_const))
+            trd.append(res_data)
+            tfd.append(flux_data)
+            tpc.append(proc_const)
 
         fn.append(tfn)
         rd.append(trd)
