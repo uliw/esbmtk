@@ -1059,14 +1059,7 @@ def update_fluxes(fn, rd, fd, pc, i):
 
     for j, f_list in enumerate(fn):
         for u, function in enumerate(f_list):
-            # print(f"function = {function}")
-            # print(f"f.m before = {fd[j][u][0][i]}")
-            # print(f"j={j}, u = {u}, i={i}")
             fn[j][u](rd[j][u], fd[j][u], pc[j][u], i)
-            
-           
-            # print(f"f.m after = {fd[j][u][0][i]}\n")
-
 
 @njit()
 def sum_p(r_list, f_list, dir_list, v_list, r0_list, i, dt):
@@ -1230,29 +1223,14 @@ def build_process_list(lor: list) -> tuple:
 
     for r in lor:  # loop over reservoirs
 
-        # tfn = numba.typed.List.empty_list(
-        #     types.List(types.void)(  # return value
-        #         types.List(types.float64[:,:,:]),  # parameter 1
-        #         types.List(types.float64[:,:,:,:]),  # parameter 2
-        #         types.List(types.float64[:]),  # parameter 3
-        #         types.int64,  # parameter 4
-        #     ).as_type()
-        # )
-
-        # tfn = numba.typed.List.empty_list(
-        #     types.List(types.void)(  # return value
-        #         types.List(types.float64[:, :, :]),  # parameter 1
-        #         types.List(types.float64[:, :, :, :]),  # parameter 2
-        #         types.List(types.float64[:]),  # parameter 3
-        #         types.int64,  # parameter 4
-        #     ).as_type()
-        # )
-
+        # note that types.List is differenfr from Types.ListType. Also
+        # note that [::1]  declares C-style arrays see
+        # https://numba.discourse.group/t/list-mistaken-as-list-when-creating-list-of-function-references/677/3
         tfn = numba.typed.List.empty_list(
-            types.List(types.void)(  # return value
-                types.List(types.List(types.float64)),  # parameter 1
-                types.List(types.List(types.float64)),  # parameter 2
-                types.List(types.float64),  # parameter 3
+            types.ListType(types.void)(  # return value
+                types.ListType(types.float64[::1]),
+                types.ListType(types.float64[::1]),
+                types.ListType(types.float64), 
                 types.int64,  # parameter 4
             ).as_type()
         )
