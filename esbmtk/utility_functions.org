@@ -38,7 +38,7 @@ import time
 from time import process_time
 import numba
 from numba.core import types
-from numba import njit
+from numba import njit, prange
 from numba.typed import List
 
 import numpy as np
@@ -1064,8 +1064,8 @@ def execute_e(
 ) -> None:
 
     """Moved this code into a separate function to enable numba optimization"""
-    # config.THREADING_LAYER = "threadsafe"
-    # numba.set_num_threads(2)
+    # numba.config.THREADING_LAYER = "threadsafe"
+    #numba.set_num_threads(2)
 
     # this has nothing todo with self.time below!
     start: float = process_time()
@@ -1086,7 +1086,7 @@ def execute_e(
     print(f"\n Total solver time {duration} cpu seconds, wt = {wcd}\n")
 
 
-@njit
+@njit(parallel=False)
 def foo(fn_vr, a1, a2, a3, a7, fn, rd, fd, pc, a, b, c, d, e, maxt, dt):
 
     i = 1
@@ -1096,7 +1096,29 @@ def foo(fn_vr, a1, a2, a3, a7, fn, rd, fd, pc, a, b, c, d, e, maxt, dt):
                 fn[j][u](rd[j][u], fd[j][u], pc[j][u], i)
 
         # calculate the resulting reservoir concentrations
-        summarize_fluxes(a, b, c, d, e, i, dt)
+        # summarize_fluxes(a, b, c, d, e, i, dt)
+        r_steps: int = len(b)
+        # loop over reservoirs
+        for j in range(r_steps):
+            # for j, r in enumerate(b):  # this will catch the list for each reservoir
+
+            # sum fluxes in each reservoir
+            mass = li = 0.0
+            f_steps = len(b[j])
+            for u in range(f_steps):
+                direction = c[j][u]
+                # for u, f in enumerate(r):  # this should catch each flux per reservoir
+                mass += b[j][u][0][i] * direction  # mass
+                li += b[j][u][1][i] * direction  # li
+
+            # update masses
+            a[j][0][i] = a[j][0][i - 1] + mass * dt  # mass
+            a[j][1][i] = a[j][1][i - 1] + li * dt  # li
+            a[j][2][i] = a[j][0][i] - a[j][1][i]  # hi
+            # update delta
+            a[j][3][i] = 1e3 * (a[j][2][i] / a[j][1][i] - e[j]) / e[j]
+            # update concentrations
+            a[j][4][i] = a[j][0][i] / d[j]
 
         # # update reservoirs which do not depend on fluxes but on
         # # functions
@@ -1131,38 +1153,40 @@ def sum_p(r_list, f_list, dir_list, v_list, r0_list, i, dt):
     j = 0
     for e in range(2):
         sum_lists(r_list[j], f_list[j], dir_list[j], v_list[j], r0_list[j], i, dt)
+ #+END_SRC
 
+*** Summarize Fluxes
+
+#+BEGIN_SRC ipython :tangle utility_functions.py       
 
 @njit()
-def summarize_fluxes(r_list, f_list, dir_list, v_list, r0_list, i, dt):
+def summarize_fluxes(a, b, c, d, e, i, dt):
     """Sum fluxes in reservoirs with isostopes"""
-    mass: float = 0.0
-    li: float = 0.0
-    r_steps: int = len(f_list)
-
+    
+    r_steps: int = len(b)
     # loop over reservoirs
     for j in range(r_steps):
-        # for j, r in enumerate(f_list):  # this will catch the list for each reservoir
+        # for j, r in enumerate(b):  # this will catch the list for each reservoir
 
         # sum fluxes in each reservoir
         mass = li = 0.0
-        f_steps = len(f_list[j])
+        f_steps = len(b[j])
         for u in range(f_steps):
-            direction = dir_list[j][u]
+            direction = c[j][u]
             # for u, f in enumerate(r):  # this should catch each flux per reservoir
-            mass += f_list[j][u][0][i] * direction  # mass
-            li += f_list[j][u][1][i] * direction  # li
+            mass += b[j][u][0][i] * direction  # mass
+            li += b[j][u][1][i] * direction  # li
 
         # update masses
-        r_list[j][0][i] = r_list[j][0][i - 1] + mass * dt  # mass
-        r_list[j][1][i] = r_list[j][1][i - 1] + li * dt  # li
-        r_list[j][2][i] = r_list[j][0][i] - r_list[j][1][i]  # hi
+        a[j][0][i] = a[j][0][i - 1] + mass * dt  # mass
+        a[j][1][i] = a[j][1][i - 1] + li * dt  # li
+        a[j][2][i] = a[j][0][i] - a[j][1][i]  # hi
         # update delta
-        r_list[j][3][i] = (
-            1e3 * (r_list[j][2][i] / r_list[j][1][i] - r0_list[j]) / r0_list[j]
+        a[j][3][i] = (
+            1e3 * (a[j][2][i] / a[j][1][i] - e[j]) / e[j]
         )
         # update concentrations
-        r_list[j][4][i] = r_list[j][0][i] / v_list[j]
+        a[j][4][i] = a[j][0][i] / d[j]
 #+END_SRC
 
 
@@ -1197,23 +1221,14 @@ def build_vr_list(lor: list) -> tuple:
     a1 = List()  # reservoir data
     a2 = List()  # flux data  flux.m flux.l, flux.h, flux.d
     a3 = List()  # list of constants
-    a3 = List()
-    a4 = List()
-    a5 = List()
-    a6 = List()
     a7 = List()
-
-    # func_name : function reference
 
     fn = numba.typed.List.empty_list(
         types.UniTuple(types.float64, 5)(
             types.int64,  # i
             types.float64[::1],  # a1
             types.float64[::1],  # a2
-            types.ListType(types.float64),
-            #types.ListType(types.float64[::1]),  # a1
-            #types.ListType(types.float64[::1]),  # a2
-            #types.ListType(types.float64),       # 3
+            types.ListType(types.float64), # a3
         ).as_type()
     )
 
@@ -1225,9 +1240,6 @@ def build_vr_list(lor: list) -> tuple:
         a1.append(a1d)
         a2.append(a2d)
         a3.append(a3d)
-        # a4.append(a4d)
-        # a5.append(a5d)
-        # a6.append(a6d)
         a7.append(a7d)
 
     return fn, a1, a2, a3, a7
