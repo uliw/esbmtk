@@ -34,6 +34,7 @@ from typing import *
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
 from copy import deepcopy, copy
+import time
 from time import process_time
 import numba
 from numba.core import types
@@ -724,10 +725,10 @@ def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
             )
 
             if cs:
-                volume = Q_(f"{rg.lor[0].volume} m**3")
+                volume = Q_(f"{rg.lor[0].volume} l")
                 carbonate_system(
                     Q_(f"{swc.ca} mol/l"),
-                    Q_(f"{swc.pH} mol/l"),
+                    Q_(f"{swc.hplus} mol/l"),
                     volume,
                     swc,
                     rg,
@@ -962,19 +963,19 @@ def execute(
                 new[1] = new[1] + f.l[i] * direction  # current flux and direction
                 new[2] = new[2] + f.h[i] * direction  # current flux and direction
 
-            #print(f"fsum = {new[0]:.2e}")
+            # print(f"fsum = {new[0]:.2e}")
             # new = array([ms, ls, hs])
             new = new * r.mo.dt  # get flux / timestep
             new = new + r[i - 1]  # add to data from last time step
             new = new * (new > 0)  # set negative values to zero
-            #print(f"updating {r.full_name} from {r.m[i]:.2e}")
+            # print(f"updating {r.full_name} from {r.m[i]:.2e}")
             r[i] = new  # update reservoir data
-            #print(f"to  {r.m[i]:.2e}\n")
+            # print(f"to  {r.m[i]:.2e}\n")
 
         # update reservoirs which do not depend on fluxes but on
         # functions
         for p in lpc_r:
-            p(i)
+            p.act_on[i] = p(i)
 
         i = i + 1
 
@@ -1032,6 +1033,7 @@ def execute_n(
     ratio: float = lor[0].sp.r
     ratio = 1
 
+    fn_vr, a1, a2, a3, a4, a5, a6, a7 = build_vr_list(lpc_r)
     fn, rd, fd, pc = build_process_list(lor)
     a, b, c, d, e = build_flux_lists_all(lor)
     for t in time[1:-1]:  # loop over the time vector except the first
@@ -1039,27 +1041,89 @@ def execute_n(
         update_fluxes(fn, rd, fd, pc, i)
 
         # update all process based fluxes. This can be done in a global lpc list
-        for p in lpc_f:
-            p(i)
+        # for p in lpc_f:
+        #    p(i)
 
         # calculate the resulting reservoir concentrations
         summarize_fluxes(a, b, c, d, e, i, dt)
 
         # update reservoirs which do not depend on fluxes but on
         # functions
-        for p in lpc_r:
-            p(i)
+        # calc_v_reservoir_data()
+        update_virtual_reservoirs(fn_vr, a1, a2, a3, a4, a5, a6, a7, i)
 
         i = i + 1  # next time step
 
 
-@njit()
+def execute_e(
+    new: [NDArray, Float64],
+    time_array: [NDArray, Float64],
+    lor: list,
+    lpc_f: list,
+    lpc_r: list,
+) -> None:
+
+    """Moved this code into a separate function to enable numba optimization"""
+    # config.THREADING_LAYER = "threadsafe"
+    # numba.set_num_threads(2)
+
+    # this has nothing todo with self.time below!
+    start: float = process_time()
+    dt: float = lor[0].mo.dt
+    fn_vr, a1, a2, a3, a7 = build_vr_list(lpc_r)
+    fn, rd, fd, pc = build_process_list(lor)
+    a, b, c, d, e = build_flux_lists_all(lor)
+
+    duration: float = process_time() - start
+    print(f"\n Setup time {duration} cpu seconds\n")
+
+    wts = time.time()
+    start: float = process_time()
+    foo(fn_vr, a1, a2, a3, a7, fn, rd, fd, pc, a, b, c, d, e, time_array[1:-1], dt)
+
+    duration: float = process_time() - start
+    wcd = time.time() - wts
+    print(f"\n Total solver time {duration} cpu seconds, wt = {wcd}\n")
+
+
+@njit
+def foo(fn_vr, a1, a2, a3, a7, fn, rd, fd, pc, a, b, c, d, e, maxt, dt):
+
+    i = 1
+    for t in maxt:
+        for j, f_list in enumerate(fn):
+            for u, function in enumerate(f_list):
+                fn[j][u](rd[j][u], fd[j][u], pc[j][u], i)
+
+        # calculate the resulting reservoir concentrations
+        summarize_fluxes(a, b, c, d, e, i, dt)
+
+        # # update reservoirs which do not depend on fluxes but on
+        # # functions
+        # # calc_v_reservoir_data()
+        for j, f in enumerate(fn_vr):
+            a7[j][0][i], a7[j][1][i], a7[j][2][i], a7[j][3][i], a7[j][3][i] = fn_vr[j](
+                i, a1[j], a2[j], a3[j]
+            )
+
+        i = i + 1  # next time step
+
+
+@njit
+def update_virtual_reservoirs(fn_vr, a1, a2, a3, a4, a5, a6, a7, i):
+    for j, f in enumerate(fn_vr):
+
+        fn_vr[j](i, a7[j], a1[j], a2[j], a3[j], a4[j], a5[j], a6[j])
+
+
+@njit
 def update_fluxes(fn, rd, fd, pc, i):
     """Loop over all processes and update fluxes"""
 
     for j, f_list in enumerate(fn):
         for u, function in enumerate(f_list):
             fn[j][u](rd[j][u], fd[j][u], pc[j][u], i)
+
 
 @njit()
 def sum_p(r_list, f_list, dir_list, v_list, r0_list, i, dt):
@@ -1103,6 +1167,72 @@ def summarize_fluxes(r_list, f_list, dir_list, v_list, r0_list, i, dt):
 
 
 ** Some helper functions
+
+*** Build Virtual Reservoir function and data list
+
+#+BEGIN_SRC ipython :tangle utility_functions.py
+# GenericFunction(
+#      name = 'db_VH_generic_function',
+#      function = <function calc_H at 0x7f8bc474c160>,
+#      a1 = VCA,
+#      a2 = DIC,
+#      a3 = SW_db,
+#      a4 = 0,
+#      a5 = 0,
+#      a6 = 0,
+#      act_on = VH,
+#      full_name = 'db_VH_generic_function',
+#  )]
+
+# a1 to a6 should probably be lists so they can contain any type of data
+
+
+def build_vr_list(lor: list) -> tuple:
+    """Build lists which contain all function references for
+    virtual reservoirs as well aas their input values
+
+    """
+
+    fn = List()  # List() # list of functions
+    a1 = List()  # reservoir data
+    a2 = List()  # flux data  flux.m flux.l, flux.h, flux.d
+    a3 = List()  # list of constants
+    a3 = List()
+    a4 = List()
+    a5 = List()
+    a6 = List()
+    a7 = List()
+
+    # func_name : function reference
+
+    fn = numba.typed.List.empty_list(
+        types.UniTuple(types.float64, 5)(
+            types.int64,  # i
+            types.float64[::1],  # a1
+            types.float64[::1],  # a2
+            types.ListType(types.float64),
+            #types.ListType(types.float64[::1]),  # a1
+            #types.ListType(types.float64[::1]),  # a2
+            #types.ListType(types.float64),       # 3
+        ).as_type()
+    )
+
+    for p in lor:  # loop over reservoir processes
+
+        func_name, a1d, a2d, a3d, a7d = p.get_process_args()
+        print(f"fname = {func_name}")
+        fn.append(func_name)
+        a1.append(a1d)
+        a2.append(a2d)
+        a3.append(a3d)
+        # a4.append(a4d)
+        # a5.append(a5d)
+        # a6.append(a6d)
+        a7.append(a7d)
+
+    return fn, a1, a2, a3, a7
+#+END_SRC
+
 
 *** Build Flux List
 #+BEGIN_SRC ipython :tangle utility_functions.py
@@ -1221,6 +1351,9 @@ def build_process_list(lor: list) -> tuple:
     # flux_data :list = flux data (m,l,h,d)
     # proc_const : list = any constants, must be float
 
+    f_time = 0
+    d_time = 0
+    
     for r in lor:  # loop over reservoirs
 
         # note that types.List is differenfr from Types.ListType. Also
@@ -1241,16 +1374,26 @@ def build_process_list(lor: list) -> tuple:
         for p in r.lop:  # loop over reservoir processes
 
             print(f"adding function {p.full_name}  with {r.full_name}")
+            start: float = process_time()
             func_name, res_data, flux_data, proc_const = p.get_process_args(r)
+            duration =  process_time() - start
+            f_time = f_time +  duration
+            
+            start: float = process_time()
             tfn.append(func_name)
             trd.append(res_data)
             tfd.append(flux_data)
             tpc.append(proc_const)
+            duration =  process_time() - start
+            d_time = d_time +  duration
 
         fn.append(tfn)
         rd.append(trd)
         fd.append(tfd)
         pc.append(tpc)
 
+    print(f"f_time = {f_time}")
+    print(f"d_time = {d_time}")
+    
     return fn, rd, fd, pc
 #+END_SRC
