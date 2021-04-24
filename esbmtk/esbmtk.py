@@ -22,19 +22,23 @@ from typing import *
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
 from copy import deepcopy, copy
+import time
 from time import process_time
+from numba.typed import List
+import numba
+from numba.core import types as nbt
 
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
 import logging
-import time
+
 import builtins
 import os
 from .utility_functions import get_imass, get_delta, get_plot_layout
 from .utility_functions import plot_object_data, show_data, plot_geometry
-from .utility_functions import get_string_between_brackets, execute, execute_h, execute_n
+from .utility_functions import get_string_between_brackets, execute, execute_h, execute_n, execute_e
 
 class esbmtkBase(object):
     """The esbmtk base class template. This class handles keyword
@@ -867,6 +871,8 @@ class Model(esbmtkBase):
             execute_n(new, self.time, self.lor, self.lpc_f, self.lpc_r)
         elif solver == "hybrid":
             execute_h(new, self.time, self.lor, self.lpc_f, self.lpc_r)
+        elif solver == "test":
+            execute_e(new, self.time, self.lor, self.lpc_f, self.lpc_r)
         else:
             execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
         # self.execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
@@ -1234,12 +1240,18 @@ class Reservoir(esbmtkBase):
             "register": "None",
             "full_name": "Not Set",
             "isotopes": False,
-            "a1": 0,
-            "a2": 0,
-            "a3": 0,
-            "a4": 0,
-            "a5": 0,
-            "a6": 0,
+            # "a1": nbt.ListType(nbt.float64),
+            # "a2": nbt.ListType(nbt.float64),
+            # "a3": nbt.ListType(nbt.float64),
+            # "a4": nbt.ListType(nbt.float64),
+            # "a5": nbt.ListType(nbt.float64),
+            #" a6": nbt.ListType(nbt.float64),
+            "a1": numba.typed.List.empty_list(nbt.float64),
+            "a2": numba.typed.List.empty_list(nbt.float64),
+            "a3": numba.typed.List.empty_list(nbt.float64),
+            "a4": numba.typed.List.empty_list(nbt.float64),
+            "a5": numba.typed.List.empty_list(nbt.float64),
+            "a6": numba.typed.List.empty_list(nbt.float64),
             "display_precision": 0,
         }
 
@@ -2861,7 +2873,7 @@ class VirtualReservoir(Reservoir):
 
         # if self.register != "None":
         #    self.full_name = f"{self.full_name}.{self.name}"
-        name = f"{self.full_name}_generic_function".replace(".","_")
+        name = f"{self.full_name}_generic_function".replace(".", "_")
         logging.info(f"creating {name}")
 
         self.gfh = GenericFunction(
@@ -2870,9 +2882,9 @@ class VirtualReservoir(Reservoir):
             a1=self.a1,
             a2=self.a2,
             a3=self.a3,
-            a4=self.a4,
-            a5=self.a5,
-            a6=self.a6,
+            #a4=self.a4,
+            #a5=self.a5,
+            #a6=self.a6,
             act_on=self,
         )
 
@@ -2881,6 +2893,8 @@ class VirtualReservoir(Reservoir):
         self.mo.lor.remove(self)
         # but lets keep track of  virtual reservoir in lvr.
         self.mo.lvr.append(self)
+
+    
 
     def update(self, **kwargs) -> None:
         """This method allows to update GenericFunction parameters after the

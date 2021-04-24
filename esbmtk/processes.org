@@ -199,18 +199,18 @@ class GenericFunction(Process):
 
     """
 
-    # __slots__ = (
-    #     "function",
-    #     "act_on",
-    #     "a1",
-    #     "a2",
-    #     "a3",
-    #     "a4",
-    #     "a5",
-    #     "a6",
-    #     "i",
-    #     "act_on",
-    # )
+    __slots__ = (
+        "function",
+        "act_on",
+        "a1",
+        "a2",
+        "a3",
+        "a4",
+        "a5",
+        "a6",
+        "i",
+        "act_on",
+    )
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
@@ -292,9 +292,9 @@ class GenericFunction(Process):
             self.a1,
             self.a2,
             self.a3,
-            #self.a4,
-            #self.a5,
-            #self.a6,
+            # self.a4,
+            # self.a5,
+            # self.a6,
         )
 
         return r
@@ -320,15 +320,15 @@ class GenericFunction(Process):
             self.a1,
             self.a2,
             self.a3,
-            List(
-                [
-                    self.act_on.m,
-                    self.act_on.l,
-                    self.act_on.h,
-                    self.act_on.d,
-                    self.act_on.c,
-                ]
-            ),
+            # List(
+            [
+                self.act_on.m,
+                self.act_on.l,
+                self.act_on.h,
+                self.act_on.d,
+                self.act_on.c,
+            ]
+            # ),
         )
 #+END_SRC
 

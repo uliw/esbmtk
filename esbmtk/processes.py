@@ -6,6 +6,7 @@ from pandas import DataFrame
 from copy import deepcopy, copy
 from time import process_time
 from numba import njit
+from numba.typed import List
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -203,9 +204,11 @@ class GenericFunction(Process):
         """
 
         self.__defaultnames__()  # default kwargs names
+
+        # list of allowed keywords
         self.lkk: Dict[str, any] = {
             "name": str,
-            "act_on": (Flux, Reservoir),
+            "act_on": (Flux, Reservoir, any),
             "function": any,
             "a1": any,
             "a2": any,
@@ -213,6 +216,7 @@ class GenericFunction(Process):
             "a4": any,
             "a5": any,
             "a6": any,
+            "act_on": any,
         }
 
         # required arguments
@@ -220,12 +224,13 @@ class GenericFunction(Process):
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
-            "a1": 0,
-            "a2": 0,
-            "a3": 0,
-            "a4": 0,
-            "a5": 0,
-            "a6": 0,
+            "a1": List(),
+            "a2": List(),
+            "a3": List(),
+            # "a4": List(),
+            # "a5": List(),
+            # "a6": List(),
+            "act_on": List(),
         }
 
         self.__initerrormessages__()  # default error messages
@@ -268,16 +273,17 @@ class GenericFunction(Process):
 
         """
 
-        self.act_on[i] = self.function(
+        r = self.function(
             i,
             self.a1,
             self.a2,
             self.a3,
-            self.a4,
-            self.a5,
-            self.a6,
-            self.act_on.volume,
+            # self.a4,
+            # self.a5,
+            # self.a6,
         )
+
+        return r
 
     # redefine post init
     def __postinit__(self) -> None:
@@ -285,10 +291,31 @@ class GenericFunction(Process):
 
         # legacy name aliases
         self.n: str = self.name  # display name of species
-        self.m: Model = self.act_on.sp.mo  # the model handle
-        self.mo: Model = self.m
+        self.m: Model = self.act_on.mo  # the model handle
+        self.mo: Model = self.act_on.mo
 
         self.__misc_init__()
+
+    def get_process_args(self) -> tuple:
+        """return the data associated with this object"""
+
+        func_name: function = self.function
+
+        return (
+            func_name,
+            self.a1,
+            self.a2,
+            self.a3,
+            # List(
+            [
+                self.act_on.m,
+                self.act_on.l,
+                self.act_on.h,
+                self.act_on.d,
+                self.act_on.c,
+            ]
+            # ),
+        )
 
 class LookupTable(Process):
      """This process replaces the flux-values with values from a static
@@ -611,30 +638,33 @@ class VarDeltaOut(Process):
         # if upstream is a source, we only have a single delta value
         # so we need to patch this. Maybe this should move to source?
         if isinstance(self.reservoir, Source):
-            delta = reservoir.d
+            delta = self.reservoir.d
         else:
             delta = reservoir.d
 
         func_name: function = self.p_vardeltaout
-        res_data: list = [
-            reservoir.m,
-            delta,
-            reservoir.c,
-        ]
-        flux_data: list = [self.flux.m, self.flux.l, self.flux.h, self.flux.d]
-        proc_const: list = [float(reservoir.species.element.r), float(0)]
 
+        res_data = List([self.flux.m, delta, reservoir.c])
+        flux_data = List([self.flux.m, self.flux.l, self.flux.h, self.flux.d])
+        proc_const = List([float(reservoir.species.element.r), float(0)])
+
+        # print(f"rd = {res_data[2][0]}, fd = {flux_data[0][0]}")
         return func_name, res_data, flux_data, proc_const
 
     @staticmethod
     @njit()
-    def p_vardeltaout(res_data, flux_data, proc_const, i) -> tuple:
+    def p_vardeltaout(res_data, flux_data, proc_const, i) -> None:
         # concentration times scale factor
-        m: float = flux_data[0][i - 1]  # r mass
+        # res_data[0] is actually flux data. See get_process args for details
+
+        m: float = res_data[0][i - 1]  # r mass
         d: float = res_data[1][i - 1]  # delta
         l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
 
-        return [m, l, m - l, d]
+        flux_data[0][i] = m
+        flux_data[1][i] = l
+        flux_data[2][i] = m - l
+        flux_data[3][i] = d
 
     def __with_isotopes_source__(self, reservoir: Reservoir, i: int) -> None:
         """If the source of the flux is a source, there is only a single delta value.
@@ -727,26 +757,26 @@ class ScaleFlux(Process):
         """"""
 
         func_name: function = self.p_scale_flux
-        res_data: list = [
-            self.ref.m,
-            reservoir.d,
-            self.ref.m,
-        ]
-        flux_data: list = [self.flux.m, self.flux.l, self.flux.h, self.flux.d]
-        proc_const: list = [float(reservoir.species.element.r), float(self.scale)]
+
+        res_data = List([self.ref.m, reservoir.d, self.ref.m])
+        flux_data = List([self.flux.m, self.flux.l, self.flux.h, self.flux.d])
+        proc_const = List([float(reservoir.species.element.r), float(self.scale)])
 
         return func_name, res_data, flux_data, proc_const
 
     @staticmethod
     @njit()
-    def p_scale_flux(res_data, flux_data, proc_const, i) -> tuple:
+    def p_scale_flux(res_data, flux_data, proc_const, i) -> None:
 
         m: float = res_data[0][i - 1] * proc_const[1]
         d: float = res_data[1][i - 1]
         l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
-        #print(f"ScaleFlux m = {m:.2e}, scale = {proc_const[1]}")
+        # print(f"ScaleFlux m = {m:.2e}, scale = {proc_const[1]}")
 
-        return [m, l, m - l, d]
+        flux_data[0][i] = m
+        flux_data[1][i] = l
+        flux_data[2][i] = m - l
+        flux_data[3][i] = d
 
 
 class Reaction(ScaleFlux):
@@ -855,26 +885,25 @@ class Fractionation(Process):
     def get_process_args(self, reservoir: Reservoir):
 
         func_name: function = self.p_fractionation
-        res_data: list = [
-            reservoir.m,
-            reservoir.d,
-            reservoir.c,
-        ]
-        flux_data: list = [self.flux.m, self.flux.l, self.flux.h, self.flux.d]
-        proc_const: list = [float(reservoir.species.element.r), float(self.alpha)]
+
+        res_data = List([reservoir.m, reservoir.d, reservoir.c])
+        flux_data = List([self.flux.m, self.flux.l, self.flux.h, self.flux.d])
+        proc_const = List([float(reservoir.species.element.r), float(self.alpha)])
 
         return func_name, res_data, flux_data, proc_const
 
     @staticmethod
     @njit()
-    def p_fractionation(res_data, flux_data, proc_const, i) -> tuple:
-        # 
+    def p_fractionation(res_data, flux_data, proc_const, i) -> None:
+        #
         d: float = flux_data[3][i] + proc_const[1]
         m: float = flux_data[0][i]
-        # get new l
         l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
 
-        return [m, l, m - l, d]
+        flux_data[0][i] = m
+        flux_data[1][i] = l
+        flux_data[2][i] = m - l
+        flux_data[3][i] = d
 
 class RateConstant(Process):
     """This is a wrapper for a variety of processes which depend on rate constants
@@ -1069,24 +1098,24 @@ class ScaleRelativeToConcentration(RateConstant):
     def get_process_args(self, reservoir: Reservoir):
 
         func_name: function = self.p_scale_relative_to_concentration
-        res_data: list = [
-            reservoir.m,
-            reservoir.d,
-            reservoir.c,
-        ]
-        flux_data: list = [self.flux.m, self.flux.l, self.flux.h, self.flux.d]
-        proc_const: list = [float(reservoir.species.element.r), float(self.scale)]
+
+        res_data = List([reservoir.m, reservoir.d, reservoir.c])
+        flux_data = List([self.flux.m, self.flux.l, self.flux.h, self.flux.d])
+        proc_const = List([float(reservoir.species.element.r), float(self.scale)])
 
         return func_name, res_data, flux_data, proc_const
 
     @staticmethod
     @njit()
-    def p_scale_relative_to_concentration(res_data, flux_data, proc_const, i) -> tuple:
+    def p_scale_relative_to_concentration(res_data, flux_data, proc_const, i) -> None:
         # concentration times scale factor
         m: float = res_data[2][i - 1] * proc_const[1]
         d: float = res_data[1][i - 1]  # delta
         l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
-        return [m, l, m - l, d]
+        flux_data[0][i] = m
+        flux_data[1][i] = l
+        flux_data[2][i] = m - l
+        flux_data[3][i] = d
 
 
 class ScaleRelativeToMass(RateConstant):
@@ -1124,7 +1153,7 @@ class ScaleRelativeToMass(RateConstant):
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
         this will be called by the Model.run() method
-        
+
         """
         m: float = self.reservoir.m[i - 1] * self.scale
         r: float = reservoir.species.element.r
@@ -1133,38 +1162,30 @@ class ScaleRelativeToMass(RateConstant):
         self.flux[i]: np.array = [m, l, m - l, d]
 
     def get_process_args(self, reservoir: Reservoir):
+        """ return the data associated with this object 
 
-        func_name: function = self.p_scale_relative_to_concentration
-        res_data: list = [
-            reservoir.m,
-            reservoir.d,
-            reservoir.c,
-        ]
-        flux_data: list = [self.flux.m, self.flux.l, self.flux.h, self.flux.d]
-        proc_const: list = [float(reservoir.species.element.r), float(self.scale)]
+        """
+        
+        func_name: function = self.p_scale_relative_to_mass
+
+        res_data = List([self.reservoir.m, reservoir.d, reservoir.c])
+        flux_data = List([self.flux.m, self.flux.l, self.flux.h, self.flux.d])
+        proc_const = List([float(reservoir.species.element.r), float(self.scale)])
 
         return func_name, res_data, flux_data, proc_const
-    # def get_process_args(self, reservoir: Reservoir):
-
-    #     func_name: function = self.p_scale_relative_to_mass
-    #     res_data: list = [
-    #         self.reservoir.m,  # we us the mass of the reference reservoir
-    #         reservoir.d,
-    #         reservoir.c,
-    #     ]
-    #     flux_data: list = [self.flux.m, self.flux.l, self.flux.h, self.flux.d]
-    #     proc_const: list = [float(reservoir.species.element.r), float(self.scale)]
-
-    #     return func_name, res_data, flux_data, proc_const
 
     @staticmethod
     @njit()
-    def p_scale_relative_to_concentration(res_data, flux_data, proc_const, i) -> tuple:
+    def p_scale_relative_to_mass(res_data, flux_data, proc_const, i) -> None:
         # concentration times scale factor
-        m: float = res_data[2][i - 1] * proc_const[1]
+        m: float = res_data[0][i - 1] * proc_const[1]
         d: float = res_data[1][i - 1]  # delta
         l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
-        return [m, l, m - l, d]
+        flux_data[0][i] = m
+        flux_data[1][i] = l
+        flux_data[2][i] = m - l
+        flux_data[3][i] = d
+
     # def p_scale_relative_to_mass(res_data, flux_data, proc_const, i) -> tuple:
 
     #     m: float = res_data[0][i - 1] * proc_const[1]

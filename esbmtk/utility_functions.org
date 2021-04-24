@@ -1079,7 +1079,7 @@ def execute_e(
 
     wts = time.time()
     start: float = process_time()
-    foo(fn_vr, a1, a2, a3, a7, fn, rd, fd, pc, a, b, c, d, e, time_array[1:-1], dt)
+    foo(fn_vr, a1, a2, a3, a7, fn, rd, fd, pc, a, b, c, d, e, time_array[:-1], dt)
 
     duration: float = process_time() - start
     wcd = time.time() - wts
@@ -1124,18 +1124,10 @@ def foo(fn_vr, a1, a2, a3, a7, fn, rd, fd, pc, a, b, c, d, e, maxt, dt):
         # # functions
         # # calc_v_reservoir_data()
         for j, f in enumerate(fn_vr):
-            a7[j][0][i], a7[j][1][i], a7[j][2][i], a7[j][3][i], a7[j][3][i] = fn_vr[j](
+            a7[j][0][i], a7[j][1][i], a7[j][2][i], a7[j][3][i], a7[j][4][i] = fn_vr[j](
                 i, a1[j], a2[j], a3[j]
             )
-
         i = i + 1  # next time step
-
-
-@njit
-def update_virtual_reservoirs(fn_vr, a1, a2, a3, a4, a5, a6, a7, i):
-    for j, f in enumerate(fn_vr):
-
-        fn_vr[j](i, a7[j], a1[j], a2[j], a3[j], a4[j], a5[j], a6[j])
 
 
 @njit
@@ -1240,7 +1232,7 @@ def build_vr_list(lor: list) -> tuple:
         a1.append(a1d)
         a2.append(a2d)
         a3.append(a3d)
-        a7.append(a7d)
+        a7.append(List(a7d))
 
     return fn, a1, a2, a3, a7
 #+END_SRC

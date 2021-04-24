@@ -22,7 +22,8 @@ from typing import *
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 from copy import deepcopy, copy
 from time import process_time
-
+from numba import njit
+from numba.typed import List
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -326,16 +327,13 @@ class SeawaterConstants(esbmtkBase):
 
         return exp(lnkp)
 
+@njit
 def calc_H(
     i: int,
-    a1: Union[Reservoir, VirtualReservoir],  # carbonate alkalinity
-    a2: Union[Reservoir, VirtualReservoir],  # dic
-    a3: SeawaterConstants,
-    a4=0,
-    a5=0,
-    a6=0,
-    volume=0,
-) -> tuple:
+    a1: NDArray[Float[64]],  # carbonate alkalinity
+    a2: NDArray[Float[64]],  # dic
+    a3: NDArray[Float[64]],
+):
 
     """
 
@@ -345,9 +343,9 @@ def calc_H(
     default to 1. Calculations are based off equations from Follows et al., 2006.
     doi:10.1016/j.ocemod.2005.05.004
 
-    a1 = carbonate alkalinity reservoir object
-    a2 = dic reservoir object
-    a3 = SeawaterConstants object
+    a1 = carbonate alkalinity concentrations
+    a2 = dic concentrations
+    a3 = [ list of SeawaterConstants]
 
     i = index of current timestep
     a1 to a6 = optional fcn parameters. These must be present
@@ -366,44 +364,42 @@ def calc_H(
          plot_transform_c=phc,
          legend_left="pH",
          function=calc_H,
-         a1=V_CA,
-         a2=DIC,
-         a3=SW,
+         a1=V_CA.c,
+         a2=DIC.c,
+         a3=[SW constants],
     )
 
     Author: M. Niazi & T. Tsan, 2021
 
+    The function will not return a value, bur rather write directly to ref!
+
     """
 
-    ca: float = a1.c[i - 1]  # mol/L
-    dic: float = a2.c[i - 1]  # mol/L
-    sw: SeawaterConstants = a3  #
-
-   # print(f"calc_H volume={volume}")
-   # print(f"i = {i} CA={ca*1000:.2f}, DIC={dic*1000:.2f}\n")
-
-    k1: float = sw.K1
-    k2: float = sw.K2
+    #from esbmtk import phc
+    
+    ca: float = a1[i - 1]  # mol/L
+    dic: float = a2[i - 1]  # mol/L
+    k1 = a3[0]
+    k2 = a3[1]
+    volume = a3[2]
 
     gamm: float = dic / ca
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
-    m: float = (0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))) * volume
-    l: float = 1.0
-    h: float = 1.0
+    c: float = 0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))
+    m: float = c * volume
 
-    return [m, l, h]
+    #print(f"DIC = {dic*1000}, ca = {ca*1000}")
+    #print(f"new pH = {phc(c)}")
+   
+    return m, 1.0, 1.0, 1.0, c
 
-
+@njit
 def calc_CA(
     i: int,
-    a1: Union[Reservoir, VirtualReservoir],  # Total Alkalinity
-    a2: Union[Reservoir, VirtualReservoir],  # Hplus
-    a3: SeawaterConstants,
-    a4=0,
-    a5=0,
-    a6=0,
-    volume=0,
-) -> tuple:
+    a1: NDArray[Float[64]],  # Total Alkalinity
+    a2: NDArray[Float[64]],  # Hplus
+    a3: NDArray[Float[64]],
+):
 
     """
     This function will calculate the carbonate alkalinity concentration
@@ -415,9 +411,9 @@ def calc_CA(
     doi:10.1016/j.ocemod.2005.05.004
 
 
-    a1 = total alkalinity reservoir object
-    a2 = H+ reservoir reservoir object
-    a3 = SeawaterConstants object
+    a1 = total alkalinity concentration in model units
+    a2 = H+ concentrations in model units
+    a3 = [list of SeawaterConstants]
 
     i = index of current timestep
     a1 to a6 = optional fcn parameters. These must be present
@@ -435,34 +431,37 @@ def calc_CA(
          plot_transform_c=phc,
          legend_left="pH",
          function=calc_H,
-         a1=TA,
-         a2=H+,
-         a3=SW,
+         a1=TA.c,
+         a2=H+.c,
+         a3=[swc.KW, swc.KB, swc.boron]
     )
 
     Author: M. Niazi & T. Tsan, 2021
 
     """
 
-    ta: float = a1.c[i - 1]  # mol/L
-    hplus: float = a2.c[i - 1]  # mol/L
-    sw: SeawaterConstants = a3
+    ta: float = a1[i - 1]  # mol/L
+    hplus: float = a2[i - 1]  # mol/L
 
-    from .esbmtk import phc
+    KW = a3[0]
+    KB = a3[1]
+    boron = a3[2]
+    volume = a3[3]
 
-    #print(f"calc_CA, volume={volume}")
-    #print(f"i = {i} TA={ta*1000:.2f}, H={phc(hplus):.2f}\n")
-
-    oh: float = sw.KW / hplus
-    boh4: float = sw.boron * sw.KB / (hplus + sw.KB)
+    # print(f"KW = {KW:.2e}, KB={KB:.2e}")
+    oh: float = KW / hplus
+    boh4: float = boron * KB / (hplus + KB)
 
     fg: float = hplus - oh - boh4  # mol/L
 
-    m: float = (ta + fg) * volume
-    l: float = 1
-    h: float = 1
+    # print(f"ta = {ta*1000} mmol, fg ={fg*1000} mmol, hplus = {phc(hplus)}")
+    c: float = ta + fg
+    m: float = c * volume
 
-    return [m, l, h]
+    # print(f" volume = {volume:.2e}")
+    # print(f"CA m = {m:.2e}, c= {c*1000:.2e} mmol")
+
+    return m, 1.0, 1.0, 1.0, c
 
 def calc_pCO2(
     dic: Union[Reservoir, VirtualReservoir],
@@ -564,12 +563,17 @@ def carbonate_system(
 
     ca_con: initial carbonate concentration. Must be a quantity
     hplus_con: initial H+ concentration. Must be a quantity
-    volume: volume : Must be a quantity
+    volume: volume : Must be a quantity for reservoir definition but when  used
+    as argumment to the functionn it muts be converted to magnitude
+    
     swc : a seawater constants object
     rg: optional, must be a reservoir group. If present, the below reservoirs
         will be registered with this group.
 
     Returns the reservoir handles to VCA and VH
+
+    All list type objects must be converted to numba Lists, if the function is to be used with
+    the numba solver.
     """
 
     from esbmtk import VirtualReservoir, phc, calc_CA, calc_H
@@ -593,15 +597,16 @@ def carbonate_system(
         legend_left="pH",
         plot="yes",
         function=calc_H,
-        a1=getattr(rg, "VCA"),
-        a2=getattr(rg, "DIC"),
-        a3=swc,
+        a1=getattr(rg, "VCA").c,
+        a2=getattr(rg, "DIC").c,
+        a3=List([swc.K1, swc.K2, volume.magnitude]),
         register=rg,
     )
+
     v1.update(
-        a1=getattr(rg, "TA"),
-        a2=getattr(rg, "VH"),
-        a3=swc,
+        a1=getattr(rg, "TA").c,
+        a2=getattr(rg, "VH").c,
+        a3=List([swc.KW, swc.KB, swc.boron, volume.magnitude]),
     )
 
     return v1, v2
