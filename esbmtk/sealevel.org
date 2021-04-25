@@ -114,7 +114,8 @@ class hypsometry(esbmtkBase):
         # legacy variables
         self.pfn = "spline_paramaters.txt"
         self.hfn = "Hypsometric_Curve_05m.csv"
-        self.sa = 510067420e6  # in square meters, http://www.physicalgeography.net/fundamentals/8o.html
+        self.sa = 510067420e6  # total surfce area in square meters, http://www.physicalgeography.net/fundamentals/8o.html
+        self.oa = self.area_dz(0,-6000) # total ocean area
         self.mo = self.model
         self.__register_name__()
         self.__init_curve__()
