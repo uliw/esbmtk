@@ -14,6 +14,20 @@ generation of graphical results.
 
 * News
 
+ - April 25^{th} v 0.4.3.0 ESBMTK has now 3 different solvers. The hybrid
+   solver mentioned below, and a full numba solver which is about 10
+   faster. The latter does not yet support all connection properties
+   though. The solver is chosen via the optional solver keyword in the
+   run method: =M.run(solver = "hybrid")=, or =M.run(solver =
+   "numba")=. Both incur a startup overhead of about 3 to 5
+   seconds. In order to make the numba solver work, the interface
+   definition for the =GenericFunction= and =VirtualReservoir= classes
+   changed from 6 to 3 arguments, an all 3 arguments must be present
+   and follow a strict structure (see the class definitions). This
+   also required changes in the carbonate chemistry module,
+   specifically the functions which calculate pH and carbonate
+   alkalinity.
+
  - April 13^{th}: rewrote the solver which is now 3 times faster. Added
    numba to the solver code, however the performance gain is currently
    only a few percent.. Added plot method to the model class. This

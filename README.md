@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org10eda5a)
-2.  [News](#org905794b)
-3.  [Contributing](#orgf94ec5c)
-4.  [Installation](#orge39218e)
-5.  [Documentation](#org7805787)
-6.  [Todo](#org49e1cc7)
-7.  [License](#org178e4b0)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgcffe752)
+2.  [News](#org324db9d)
+3.  [Contributing](#orgf6adb85)
+4.  [Installation](#orgf67fe4b)
+5.  [Documentation](#org25eeb12)
+6.  [Todo](#orgec108bc)
+7.  [License](#org623a061)
 
 
-<a id="org10eda5a"></a>
+<a id="orgcffe752"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,13 +27,29 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org905794b"></a>
+<a id="org324db9d"></a>
 
 # News
 
+-   April 25<sup>th</sup> v 0.4.3.0 ESBMTK has now 3 different solvers. The hybrid
+    solver mentioned below, and a full numba solver which is about 10
+    faster. The latter does not yet support all connection properties
+    though. The solver is chosen via the optional solver keyword in the
+    run method: `M.run(solver = "hybrid")`, or `M.run(solver =
+       "numba")`. Both incur a startup overhead of about 3 to 5
+    seconds. In order to make the numba solver work, the interface
+    definition for the `GenericFunction` and `VirtualReservoir` classes
+    changed from 6 to 3 arguments, an all 3 arguments must be present
+    and follow a strict structure (see the class definitions). This
+    also required changes in the carbonate chemistry module,
+    specifically the functions which calculate pH and carbonate
+    alkalinity.
+
 -   April 13<sup>th</sup>: rewrote the solver which is now 3 times faster. Added
     numba to the solver code, however the performance gain is currently
-    only a few percent.
+    only a few percent.. Added plot method to the model class. This
+    method will plot any object inn a given list. This is useful for
+    larger models where one is only interested in a subset of results.
 
 -   April 10<sup>th</sup>: The hopefully last tweak to the naming scheme. All
     fluxes belong to a connection (see `model.connection_summmary()`),
@@ -183,7 +199,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgf94ec5c"></a>
+<a id="orgf6adb85"></a>
 
 # Contributing
 
@@ -193,7 +209,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orge39218e"></a>
+<a id="orgf67fe4b"></a>
 
 # Installation
 
@@ -214,7 +230,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org7805787"></a>
+<a id="org25eeb12"></a>
 
 # Documentation
 
@@ -232,7 +248,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org49e1cc7"></a>
+<a id="orgec108bc"></a>
 
 # Todo
 
@@ -241,7 +257,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org178e4b0"></a>
+<a id="org623a061"></a>
 
 # License
 

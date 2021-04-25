@@ -169,33 +169,53 @@ class GenericFunction(Process):
      - name = name of process,
      - act_on = name of a reservoir this process will act upon
      - function  = a function reference
-     - a1 to a6, up to 6 optional function arguments
+     - a1 to a3, 
 
     in order to use this function we need first declare a function we plan to
-    use with the generic function process. This function needs to follow this
-    template::
+    use with the generic function process. This function needs to follow the 
+    below template.
 
-        def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0, volume=0) -> tuple:
-            #
-            # i = index of the current timestep
-            # a1 to a2 =  optional function parameter. These must be present,
-            # even if your function will not use it
+   In order to be compatible with the numba solver, a1 and a2 must be
+   an array of 1-D numpy.arrays i.e., [m, l, h, c]. The array can have
+   any number of arrays though. a3 must be single array (or list)
+   containing an arbitrary number of entries. All numbers in a1 to a3
+   _must_ be of type float64.
 
-            # volume will be supplied implicitly, there is no need to specify it
-            # calc some stuff and return it as
+   The function must return a list of numbers which correspond to the
+   data which describe a reservoir i.e., mass, light isotope, heavy
+   isotope, delta, and concentration
 
-            return [m, l, h] # where m= mass, and l & h are the respective
-                             # isotopes. If there are none, dummmy values
-                             # instead
+   In order to use this function we need first declare a function we plan to
+   use with the generic function process. This function needs to follow this
+   template::
 
+       def my_func(i, a1, a2, a3, act_on) -> tuple:
+           #
+           # i = index of the current timestep
+           # a1 to a2 =  optional function parameter. These must be present,
+           # even if your function will not use it
+           # act_on = reservoir reference, i.e., the result of the function
+           # will be applied to this reservoir.
 
-    This function can then be used as::
+           # calc some stuff and return it as
+
+           return [m, l, h, d, c] # where m= mass, and l & h are the respective
+                                  # isotopes. d denotes the delta value and
+                                  # c the concentration
+                                  # Use dummy value as necessary. 
+    
+
+        This function can then be used as::
 
         GenericFunction(name="foo",
                 function=my_func,
                 a1 = some argument,
                 a2 = some argument,
+                a3 = some argument
+                acton_on = reservoir reference
                 )
+
+    see calc_H in the carbonate chemistry module as example
 
     """
 
@@ -205,9 +225,6 @@ class GenericFunction(Process):
         "a1",
         "a2",
         "a3",
-        "a4",
-        "a5",
-        "a6",
         "i",
         "act_on",
     )
@@ -227,9 +244,6 @@ class GenericFunction(Process):
             "a1": any,
             "a2": any,
             "a3": any,
-            "a4": any,
-            "a5": any,
-            "a6": any,
             "act_on": any,
         }
 
@@ -241,9 +255,6 @@ class GenericFunction(Process):
             "a1": List(),
             "a2": List(),
             "a3": List(),
-            # "a4": List(),
-            # "a5": List(),
-            # "a6": List(),
             "act_on": List(),
         }
 
@@ -255,9 +266,6 @@ class GenericFunction(Process):
                 "a1": "a number etc",
                 "a2": "a number etc",
                 "a3": "a number etc",
-                "a4": "a number etc",
-                "a5": "a number etc",
-                "a6": "a number etc",
             }
         )
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -292,9 +300,6 @@ class GenericFunction(Process):
             self.a1,
             self.a2,
             self.a3,
-            # self.a4,
-            # self.a5,
-            # self.a6,
         )
 
         return r

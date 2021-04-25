@@ -505,7 +505,11 @@ class Model(esbmtkBase):
        - Model_Name.plot([sb.DIC, sb.TA]) plot any object in the list
        - Model_Name.save_state() Save the model state
        - Model_name.read_state() Initialize with a previous model state
-       - Model_Name.run()
+       - Model_Name.run(), there are 2 optional arguments here, solver="hybrid"
+         and solver = "numba". Both involve a 3 to 5 second overhead. The hybrid
+         solver is compatible with all connection types, and about 3 times faster
+         than the  regular solver. The numba solver is about 10 faster, but currently
+         only supports a limited set of connection types.
        - Model_Name.list_species()
        - Model_name.flux_summary()
        - Model_Name.connection_summary()
@@ -2904,107 +2908,115 @@ class DataField(esbmtkBase):
 
 #+BEGIN_SRC ipython :tangle esbmtk.py
 class VirtualReservoir(Reservoir):
-    """A virtual reservoir. Unlike regular reservoirs, the mass of a
-    virtual reservoir depends entirely on the return value of a function.
+   """A virtual reservoir. Unlike regular reservoirs, the mass of a
+   virtual reservoir depends entirely on the return value of a function.
 
-    Example::
+   Example::
 
-    VirtualReservoir(name="foo",
-                    volume="10 liter",
-                    concentration="1 mmol",
-                    species=  ,
-                    function=bar,
-                    a1 to a6 = up to 6 optional function arguments,
-                    display_precision = number, optional, inherited from Model,
-                    )
+   VirtualReservoir(name="foo",
+                   volume="10 liter",
+                   concentration="1 mmol",
+                   species=  ,
+                   function=bar,
+                   a1 to a3 =  to 3optional function arguments,
+                   display_precision = number, optional, inherited from Model,
+                   )
 
-    the concentration argument will be used to initialize the reservoir and
-    to determine the display units.
+   the concentration argument will be used to initialize the reservoir and
+   to determine the display units.
 
-    The function definition follows the GenericFunction class.
-    which takes a generic function and up to 6 optional
-    function arguments, and will replace the mass value(s) of the
-    given reservoirs with whatever the function calculates. This is
-    particularly useful e.g., to calculate the pH of a given reservoir
-    as function of e.g., Alkalinity and DIC.
-    Parameters:
-     - name = name of process,
-     - act_on = name of a reservoir this process will act upon
-     - function  = a function reference
-     - a1 to a6, up to 6 optional function arguments
+   The function definition follows the GenericFunction class.
+   which takes a generic function and up to 6 optional
+   function arguments, and will replace the mass value(s) of the
+   given reservoirs with whatever the function calculates. This is
+   particularly useful e.g., to calculate the pH of a given reservoir
+   as function of e.g., Alkalinity and DIC.
+   Parameters:
+    - name = name of process,
+    - act_on = name of a reservoir this process will act upon
+    - function  = a function reference
+    - a1 to a3 function arguments
 
-    in order to use this function we need first declare a function we plan to
-    use with the generic function process. This function needs to follow this
-    template::
+   In order to be compatible with the numba solver, a1 and a2 must be
+   an array of 1-D numpy.arrays i.e., [m, l, h, c]. The array can have
+   any number of arrays though. a3 must be single array (or list)
+   containing an arbitrary number if entries. All numbers in a1 to a3
+   _must_ be of type float64.
 
-        def my_func(i, a1=0, a2=0, a3=0, a4=0, a5=0, a6=0) -> tuple:
-            #
-            # i = index of the current timestep
-            # a1 to a2 =  optional function parameter. These must be present,
-            # even if your function will not use it
+   The function must return a list of numbers which correspond to the
+   data which describe a reservoir i.e., mass, light isotope, heavy
+   isotope, delta, and concentration
 
-            # calc some stuff and return it as
+   In order to use this function we need first declare a function we plan to
+   use with the generic function process. This function needs to follow this
+   template::
 
-            return [m, l, h] # where m= mass, and l & h are the respective
-                             # isotopes. If there are none, dummmy values
-                             # instead
+       def my_func(i, a1, a2, a3) -> tuple:
+           #
+           # i = index of the current timestep
+           # a1 to a2 =  optional function parameter. These must be present,
+           # even if your function will not use it
 
-    This class provides an update method to resolve cases where e.g., two virtual
-    reservoirs have a circular reference. See the documentation of update().
+           # calc some stuff and return it as
 
-    """
+           return [m, l, h, d, c] # where m= mass, and l & h are the respective
+                                  # isotopes. d denotes the delta value and
+                                  # c the concentration
+                                  # Use dummy value as necessary.
 
-    def __aux_inits__(self) -> None:
-        """We us the regular init methods of the Reservoir Class, and extend it in this method"""
+   This class provides an update method to resolve cases where e.g., two virtual
+   reservoirs have a circular reference. See the documentation of update().
 
-        from .processes import GenericFunction
+   """
 
-        # if self.register != "None":
-        #    self.full_name = f"{self.full_name}.{self.name}"
-        name = f"{self.full_name}_generic_function".replace(".", "_")
-        logging.info(f"creating {name}")
+   def __aux_inits__(self) -> None:
+       """We us the regular init methods of the Reservoir Class, and extend it in this method"""
 
-        self.gfh = GenericFunction(
-            name=name,
-            function=self.function,
-            a1=self.a1,
-            a2=self.a2,
-            a3=self.a3,
-            #a4=self.a4,
-            #a5=self.a5,
-            #a6=self.a6,
-            act_on=self,
-        )
+       from .processes import GenericFunction
 
-        # we only depend on the above function. so no need
-        # to be in the reservoir list
-        self.mo.lor.remove(self)
-        # but lets keep track of  virtual reservoir in lvr.
-        self.mo.lvr.append(self)
+       # if self.register != "None":
+       #    self.full_name = f"{self.full_name}.{self.name}"
+       name = f"{self.full_name}_generic_function".replace(".", "_")
+       logging.info(f"creating {name}")
 
-    
+       self.gfh = GenericFunction(
+           name=name,
+           function=self.function,
+           a1=self.a1,
+           a2=self.a2,
+           a3=self.a3,
+           act_on=self,
+       )
 
-    def update(self, **kwargs) -> None:
-        """This method allows to update GenericFunction parameters after the
-        VirtualReservoir has been initialized. This is most useful
-        when parameters have to reference other virtual reservoirs
-        which do not yet exist, e.g., when two virtual reservoirs have
-        a circular reference.
+       # we only depend on the above function. so no need
+       # to be in the reservoir list
+       self.mo.lor.remove(self)
+       # but lets keep track of  virtual reservoir in lvr.
+       self.mo.lvr.append(self)
 
-        Example::
 
-        VR.update(a1=new_parameter, a2=new_parameter)
 
-        """
+   def update(self, **kwargs) -> None:
+       """This method allows to update GenericFunction parameters after the
+       VirtualReservoir has been initialized. This is most useful
+       when parameters have to reference other virtual reservoirs
+       which do not yet exist, e.g., when two virtual reservoirs have
+       a circular reference.
 
-        allowed_keys: list = ["a1", "a2", "a3", "a4", "a5", "a6", "volume"]
-        # loop over provided kwargs
-        for key, value in kwargs.items():
-            if key not in allowed_keys:
-                raise ValueError("you can only change a1 to a6")
-            else:
-                setattr(self, key, value)  # update self
-                setattr(self.gfh, key, value)  # update function
+       Example::
+
+       VR.update(a1=new_parameter, a2=new_parameter)
+
+       """
+
+       allowed_keys: list = ["a1", "a2", "a3", "a4", "a5", "a6", "volume"]
+       # loop over provided kwargs
+       for key, value in kwargs.items():
+           if key not in allowed_keys:
+               raise ValueError("you can only change a1 to a6")
+           else:
+               setattr(self, key, value)  # update self
+               setattr(self.gfh, key, value)  # update function
 #+END_SRC
 
 
