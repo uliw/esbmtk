@@ -26,7 +26,8 @@ generation of graphical results.
    and follow a strict structure (see the class definitions). This
    also required changes in the carbonate chemistry module,
    specifically the functions which calculate pH and carbonate
-   alkalinity.
+   alkalinity. The documentation is now available at
+   https://uliw.github.io/esbmtk/
 
  - April 13^{th}: rewrote the solver which is now 3 times faster. Added
    numba to the solver code, however the performance gain is currently
@@ -90,7 +91,7 @@ generation of graphical results.
  - March 11^{th}, added a seawater class which provides access to
    K-values, and concentrations.
 
- - March 10^{th}, the code documentation is now available at https://uliw.github.io/esbmtk/esbmtk/index.html
+ - March 10^{th}, the code documentation is now available at [[https://uliw.github.io/esbmtk/]]
 
  - March 6^{th}, the plot reservoir function now takes and additional
    filename argument e.g., (fn="foo.pdf"). Signals now accept an

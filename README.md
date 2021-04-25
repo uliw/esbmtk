@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgcffe752)
-2.  [News](#org324db9d)
-3.  [Contributing](#orgf6adb85)
-4.  [Installation](#orgf67fe4b)
-5.  [Documentation](#org25eeb12)
-6.  [Todo](#orgec108bc)
-7.  [License](#org623a061)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgadc18bb)
+2.  [News](#org286ef4b)
+3.  [Contributing](#org53fa6c4)
+4.  [Installation](#org0799ecd)
+5.  [Documentation](#orgd9be312)
+6.  [Todo](#orgac878a0)
+7.  [License](#org9af626f)
 
 
-<a id="orgcffe752"></a>
+<a id="orgadc18bb"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,7 +27,7 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org324db9d"></a>
+<a id="org286ef4b"></a>
 
 # News
 
@@ -43,7 +43,8 @@ generation of graphical results.
     and follow a strict structure (see the class definitions). This
     also required changes in the carbonate chemistry module,
     specifically the functions which calculate pH and carbonate
-    alkalinity.
+    alkalinity. The documentation is now available at
+    <https://uliw.github.io/esbmtk/>
 
 -   April 13<sup>th</sup>: rewrote the solver which is now 3 times faster. Added
     numba to the solver code, however the performance gain is currently
@@ -106,7 +107,7 @@ generation of graphical results.
 -   March 11<sup>th</sup>, added a seawater class which provides access to
     K-values, and concentrations.
 
--   March 10<sup>th</sup>, the code documentation is now available at <https://uliw.github.io/esbmtk/esbmtk/index.html>
+-   March 10<sup>th</sup>, the code documentation is now available at <https://uliw.github.io/esbmtk/>
 
 -   March 6<sup>th</sup>, the plot reservoir function now takes and additional
     filename argument e.g., (fn="foo.pdf"). Signals now accept an
@@ -199,7 +200,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgf6adb85"></a>
+<a id="org53fa6c4"></a>
 
 # Contributing
 
@@ -209,7 +210,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orgf67fe4b"></a>
+<a id="org0799ecd"></a>
 
 # Installation
 
@@ -230,7 +231,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org25eeb12"></a>
+<a id="orgd9be312"></a>
 
 # Documentation
 
@@ -248,7 +249,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orgec108bc"></a>
+<a id="orgac878a0"></a>
 
 # Todo
 
@@ -257,7 +258,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org623a061"></a>
+<a id="org9af626f"></a>
 
 # License
 
