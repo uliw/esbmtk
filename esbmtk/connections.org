@@ -353,7 +353,7 @@ class Connect(esbmtkBase):
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
-            "id": "None",
+            "id": "",
             "plot": "yes",
             "ctype": "None",
             "delta": "None",
@@ -437,27 +437,23 @@ class Connect(esbmtkBase):
         # if sink and source a regular, the name will be simply C_S_2_S
         # if we deal with ReservoirGroups we need to reflect this in the
         # connection name
+
         if self.name == "None":
-            if self.source.groupname == "None":
-                son = self.source.name
-                # self.source_ref = self.source
-            else:
-                son = f"{self.source.groupname}_{self.source.name}"
-                # self.source_ref = "{self.source.groupname}.{self.source}"
+            self.name = f"{self.source.name}_2_{self.sink.name}"
+            # this yields something like PO42PO4
+        # if we are part of connection group we need to add this
+        # to the connectiongroup
 
-            if self.sink.groupname == "None":
-                sin = self.sink.name
-                # self.sink_ref = self.sink
-            else:
-                sin = f"{self.sink.groupname}_{self.sink.name}"
-                # source=getattr(self.source, r.n),
-                # self.sink_ref = getattr(self.mo.dmo[])
-
-            self.name = f"{son}_2_{sin}"
-
-        if self.id != "None":
-            # print(f"id = {self.id}")
+        if self.id == "None" or self.id == "":
+            pass
+        else:
+            print(f"id = '{self.id}'")
             self.name = f"{self.name}_{self.id}"
+
+        if self.register == "None":
+            self.full_name = self.name
+        else:
+            self.full_name = f"{self.register.name}.{self.name}"
 
         self.__create_flux__()  # Source/Sink/Regular
 
@@ -544,7 +540,7 @@ class Connect(esbmtkBase):
             register=self.register,  # is this part of a group?
             isotopes=self.isotopes,
         )
-        
+
         # register flux with its reservoirs
         if isinstance(self.r1, Source):
             # add the flux name direction/pair
@@ -895,9 +891,9 @@ class Connect(esbmtkBase):
             self.scale = map_units(
                 self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
             )
-            #print(
+            # print(
             #    f"Registering PKC with ref = {self.ref.full_name}, scale = {self.scale}"
-            #)
+            # )
 
             ph = ScaleRelativeToConcentration(
                 name="PkC",
@@ -906,7 +902,7 @@ class Connect(esbmtkBase):
                 register=self.fh,
                 scale=self.scale,
             )
-            #print(f"Process Name {ph.full_name}")
+            # print(f"Process Name {ph.full_name}")
 
         elif self.ctype == "scale_relative_to_multiple_reservoirs":
 
@@ -1165,14 +1161,19 @@ class ConnectionGroup(esbmtkBase):
         # list of default values if none provided
         self.lod: Dict[any, any] = {
             "name": "None",
-            "id": "None",
+            "id": "",
         }
 
         if "name" in kwargs:
             self.base_name = kwargs["name"]
         else:
             if "id" in kwargs:
-                name = f"{kwargs['source'].name}2{kwargs['sink'].name}_{kwargs['id']}"
+                if kwargs["id"] != "":
+                    name = (
+                        f"{kwargs['source'].name}2{kwargs['sink'].name}_{kwargs['id']}"
+                    )
+                else:
+                    name = f"{kwargs['source'].name}2{kwargs['sink'].name}"
             else:
                 name = f"{kwargs['source'].name}2{kwargs['sink'].name}"
 
@@ -1221,11 +1222,11 @@ class ConnectionGroup(esbmtkBase):
                         # update the entry
                         self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
             # now we can create the connection
-            
+
             name = f"{r.n}"
-            # print(f"Creating {r.n}")
+
             a = Connect(
-                name=name,
+                # name=name,
                 source=getattr(self.source, r.n),
                 sink=getattr(self.sink, r.n),
                 rate=self.cd[r.n]["rate"],
@@ -1254,8 +1255,7 @@ class ConnectionGroup(esbmtkBase):
         print("The following Connections are part of this group\n")
         print(f"You can query the details of each connection like this:\n")
         for c in self.loc:
-            print(c.name)
-            print(f"{c.name}: {self.name}.{self.c.name}.info()")
+            print(f"{c.name}: {self.name}.{c.name}.info()")
 
         print("")
 #+END_SRC
