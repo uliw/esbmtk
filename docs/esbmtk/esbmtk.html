@@ -214,6 +214,9 @@
                                 <a class="variable" href="#Reservoir.rvalue">rvalue</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Reservoir.volume">volume</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#Reservoir.v">v</a>
                         </li>
                         <li>
@@ -654,6 +657,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="kn">from</span> <span class="nn">.utility_functions</span> <span class="kn">import</span> <span class="n">get_imass</span><span class="p">,</span> <span class="n">get_delta</span><span class="p">,</span> <span class="n">get_plot_layout</span>
 <span class="kn">from</span> <span class="nn">.utility_functions</span> <span class="kn">import</span> <span class="n">plot_object_data</span><span class="p">,</span> <span class="n">show_data</span><span class="p">,</span> <span class="n">plot_geometry</span>
 <span class="kn">from</span> <span class="nn">.utility_functions</span> <span class="kn">import</span> <span class="n">get_string_between_brackets</span><span class="p">,</span> <span class="n">execute</span><span class="p">,</span> <span class="n">execute_h</span><span class="p">,</span> <span class="n">execute_n</span><span class="p">,</span> <span class="n">execute_e</span>
+<span class="c1"># from .sealevel import get_box_geometry_parameters</span>
 
 <span class="k">class</span> <span class="nc">esbmtkBase</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;The esbmtk base class template. This class handles keyword</span>
@@ -1754,9 +1758,10 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">          in this case the following instance variables will also be set:</span>
 
 <span class="sd">                 self.volume in model units (usually liter)</span>
-<span class="sd">                 self.area surface area in m^2 at the upper bounding surface</span>
-<span class="sd">                 self.area_dz area of seafloor which is intercepted by this box.</span>
-
+<span class="sd">                 self.are:a surface area in m^2 at the upper bounding surface</span>
+<span class="sd">                 self.area_dz: area of seafloor which is intercepted by this box.</span>
+<span class="sd">                 self.area_fraction: area of seafloor which is intercepted by this</span>
+<span class="sd">                                    relative to the total ocean floor area</span>
 
 <span class="sd">          Using a transform function</span>
 <span class="sd">          ~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
@@ -1838,7 +1843,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="bp">self</span><span class="o">.</span><span class="n">lrk</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span>
             <span class="s2">&quot;name&quot;</span><span class="p">,</span>
             <span class="s2">&quot;species&quot;</span><span class="p">,</span>
-            <span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">,</span> <span class="s2">&quot;geometry&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;volume&quot;</span><span class="p">,</span>
             <span class="p">[</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="s2">&quot;concentration&quot;</span><span class="p">],</span>
         <span class="p">]</span>
 
@@ -1857,18 +1862,9 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="s2">&quot;full_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Not Set&quot;</span><span class="p">,</span>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="c1"># &quot;a1&quot;: nbt.ListType(nbt.float64),</span>
-            <span class="c1"># &quot;a2&quot;: nbt.ListType(nbt.float64),</span>
-            <span class="c1"># &quot;a3&quot;: nbt.ListType(nbt.float64),</span>
-            <span class="c1"># &quot;a4&quot;: nbt.ListType(nbt.float64),</span>
-            <span class="c1"># &quot;a5&quot;: nbt.ListType(nbt.float64),</span>
-            <span class="c1">#&quot; a6&quot;: nbt.ListType(nbt.float64),</span>
             <span class="s2">&quot;a1&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
             <span class="s2">&quot;a2&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
             <span class="s2">&quot;a3&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
-            <span class="s2">&quot;a4&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
-            <span class="s2">&quot;a5&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
-            <span class="s2">&quot;a6&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
             <span class="s2">&quot;display_precision&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
         <span class="p">}</span>
 
@@ -1911,23 +1907,11 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">m_type</span> <span class="o">==</span> <span class="s2">&quot;mass_only&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">isotopes</span> <span class="o">=</span> <span class="kc">False</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="n">get_box_geometry_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            
         <span class="c1"># convert units</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
-
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;geometry must be a list see the docs for details&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">area_percentage</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-            <span class="n">volume</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">volume</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-                <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_percentage</span>
-            <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">volume</span><span class="si">}</span><span class="s2"> m**3&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">area</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">area_dz</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">area_dz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You need to provide volume or geometry!&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span>  <span class="c1"># reservoir volume</span>
         <span class="c1"># This should probably be species specific?</span>
@@ -2314,12 +2298,22 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">    Most parameters are passed on to the Reservoir class. See the reservoir class</span>
 <span class="sd">    documentation for details</span>
 
+<span class="sd">    If the geometry parameter is supplied, the following instance variables will be</span>
+<span class="sd">    computed</span>
+
+<span class="sd">                 self.volume: in model units (usually liter)</span>
+<span class="sd">                 self.are:a surface area in m^2 at the upper bounding surface</span>
+<span class="sd">                 self.area_dz: area of seafloor which is intercepted by this box.</span>
+<span class="sd">                 self.area_fraction: area of seafloor which is intercepted by this</span>
+<span class="sd">                                    relative to the total ocean floor area</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Initialize a new reservoir group&quot;&quot;&quot;</span>
 
         <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">ureg</span><span class="p">,</span> <span class="n">Q_</span>
+        <span class="kn">from</span> <span class="nn">.sealevel</span> <span class="kn">import</span> <span class="n">get_box_geometry_parameters</span>
 
         <span class="c1"># provide a dict of all known keywords and their type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lkk</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
@@ -2370,6 +2364,13 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="c1"># legacy variable</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mo</span>
+
+        <span class="c1"># geoemtry information</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">volume</span><span class="si">}</span><span class="s2"> m**3&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span>
+            
+        <span class="n">get_box_geometry_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
         <span class="c1"># register this group object in the global namespace</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
 
@@ -2408,7 +2409,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="n">delta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;delta&quot;</span><span class="p">],</span>
                 <span class="n">mass</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;mass&quot;</span><span class="p">],</span>
                 <span class="n">concentration</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;concentration&quot;</span><span class="p">],</span>
-                <span class="n">volume</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span>
+                <span class="n">volume</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="p">,</span>
                 <span class="n">geometry</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span>
                 <span class="n">plot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;plot&quot;</span><span class="p">],</span>
                 <span class="n">groupname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
@@ -2708,6 +2709,12 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="bp">self</span><span class="o">.</span><span class="n">u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">mu</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">bu</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lio</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">register</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">register</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">groupname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">register</span><span class="o">.</span><span class="n">name</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">isotopes</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span>
@@ -2772,6 +2779,9 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="bp">self</span><span class="o">.</span><span class="n">__initerrormessages__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__validateandregister__</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># initialize keyword values</span>
 
+        <span class="c1"># legacy variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">Connection</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># set of connection objects</span>
 
         <span class="c1"># register this object in the global namespace</span>
@@ -2797,6 +2807,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                     <span class="n">species</span><span class="o">=</span><span class="n">s</span><span class="p">,</span>
                     <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">,</span>
                 <span class="p">)</span>
+
             <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;SinkGroup&quot;</span><span class="p">:</span>
                 <span class="n">a</span> <span class="o">=</span> <span class="n">Sink</span><span class="p">(</span>
                     <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -6203,9 +6214,10 @@ specific properties</p>
 <span class="sd">          in this case the following instance variables will also be set:</span>
 
 <span class="sd">                 self.volume in model units (usually liter)</span>
-<span class="sd">                 self.area surface area in m^2 at the upper bounding surface</span>
-<span class="sd">                 self.area_dz area of seafloor which is intercepted by this box.</span>
-
+<span class="sd">                 self.are:a surface area in m^2 at the upper bounding surface</span>
+<span class="sd">                 self.area_dz: area of seafloor which is intercepted by this box.</span>
+<span class="sd">                 self.area_fraction: area of seafloor which is intercepted by this</span>
+<span class="sd">                                    relative to the total ocean floor area</span>
 
 <span class="sd">          Using a transform function</span>
 <span class="sd">          ~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
@@ -6287,7 +6299,7 @@ specific properties</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">lrk</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span>
             <span class="s2">&quot;name&quot;</span><span class="p">,</span>
             <span class="s2">&quot;species&quot;</span><span class="p">,</span>
-            <span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">,</span> <span class="s2">&quot;geometry&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;volume&quot;</span><span class="p">,</span>
             <span class="p">[</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="s2">&quot;concentration&quot;</span><span class="p">],</span>
         <span class="p">]</span>
 
@@ -6306,18 +6318,9 @@ specific properties</p>
             <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="s2">&quot;full_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Not Set&quot;</span><span class="p">,</span>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="c1"># &quot;a1&quot;: nbt.ListType(nbt.float64),</span>
-            <span class="c1"># &quot;a2&quot;: nbt.ListType(nbt.float64),</span>
-            <span class="c1"># &quot;a3&quot;: nbt.ListType(nbt.float64),</span>
-            <span class="c1"># &quot;a4&quot;: nbt.ListType(nbt.float64),</span>
-            <span class="c1"># &quot;a5&quot;: nbt.ListType(nbt.float64),</span>
-            <span class="c1">#&quot; a6&quot;: nbt.ListType(nbt.float64),</span>
             <span class="s2">&quot;a1&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
             <span class="s2">&quot;a2&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
             <span class="s2">&quot;a3&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
-            <span class="s2">&quot;a4&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
-            <span class="s2">&quot;a5&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
-            <span class="s2">&quot;a6&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
             <span class="s2">&quot;display_precision&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
         <span class="p">}</span>
 
@@ -6360,23 +6363,11 @@ specific properties</p>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">m_type</span> <span class="o">==</span> <span class="s2">&quot;mass_only&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">isotopes</span> <span class="o">=</span> <span class="kc">False</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="n">get_box_geometry_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            
         <span class="c1"># convert units</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
-
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;geometry must be a list see the docs for details&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">area_percentage</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-            <span class="n">volume</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">volume</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-                <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_percentage</span>
-            <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">volume</span><span class="si">}</span><span class="s2"> m**3&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">area</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">area_dz</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">area_dz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You need to provide volume or geometry!&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span>  <span class="c1"># reservoir volume</span>
         <span class="c1"># This should probably be species specific?</span>
@@ -6766,9 +6757,10 @@ specific properties</p>
   in this case the following instance variables will also be set:
 
          self.volume in model units (usually liter)
-         self.area surface area in m^2 at the upper bounding surface
-         self.area_dz area of seafloor which is intercepted by this box.
-
+         self.are:a surface area in m^2 at the upper bounding surface
+         self.area_dz: area of seafloor which is intercepted by this box.
+         self.area_fraction: area of seafloor which is intercepted by this
+                            relative to the total ocean floor area
 
   Using a transform function
   ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -6863,7 +6855,7 @@ specific properties</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">lrk</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span>
             <span class="s2">&quot;name&quot;</span><span class="p">,</span>
             <span class="s2">&quot;species&quot;</span><span class="p">,</span>
-            <span class="p">[</span><span class="s2">&quot;volume&quot;</span><span class="p">,</span> <span class="s2">&quot;geometry&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;volume&quot;</span><span class="p">,</span>
             <span class="p">[</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="s2">&quot;concentration&quot;</span><span class="p">],</span>
         <span class="p">]</span>
 
@@ -6882,18 +6874,9 @@ specific properties</p>
             <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="s2">&quot;full_name&quot;</span><span class="p">:</span> <span class="s2">&quot;Not Set&quot;</span><span class="p">,</span>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="c1"># &quot;a1&quot;: nbt.ListType(nbt.float64),</span>
-            <span class="c1"># &quot;a2&quot;: nbt.ListType(nbt.float64),</span>
-            <span class="c1"># &quot;a3&quot;: nbt.ListType(nbt.float64),</span>
-            <span class="c1"># &quot;a4&quot;: nbt.ListType(nbt.float64),</span>
-            <span class="c1"># &quot;a5&quot;: nbt.ListType(nbt.float64),</span>
-            <span class="c1">#&quot; a6&quot;: nbt.ListType(nbt.float64),</span>
             <span class="s2">&quot;a1&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
             <span class="s2">&quot;a2&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
             <span class="s2">&quot;a3&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
-            <span class="s2">&quot;a4&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
-            <span class="s2">&quot;a5&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
-            <span class="s2">&quot;a6&quot;</span><span class="p">:</span> <span class="n">numba</span><span class="o">.</span><span class="n">typed</span><span class="o">.</span><span class="n">List</span><span class="o">.</span><span class="n">empty_list</span><span class="p">(</span><span class="n">nbt</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
             <span class="s2">&quot;display_precision&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
         <span class="p">}</span>
 
@@ -6936,23 +6919,11 @@ specific properties</p>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">m_type</span> <span class="o">==</span> <span class="s2">&quot;mass_only&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">isotopes</span> <span class="o">=</span> <span class="kc">False</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="n">get_box_geometry_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            
         <span class="c1"># convert units</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
-
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;geometry must be a list see the docs for details&quot;</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">area_percentage</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-            <span class="n">volume</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">volume</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-                <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_percentage</span>
-            <span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">volume</span><span class="si">}</span><span class="s2"> m**3&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">area</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">area_dz</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">area_dz</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You need to provide volume or geometry!&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">v</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span>  <span class="c1"># reservoir volume</span>
         <span class="c1"># This should probably be species specific?</span>
@@ -7099,6 +7070,15 @@ specific properties</p>
                                             <div class="attr variable"><a class="headerlink" href="#Reservoir.rvalue">#&nbsp;&nbsp</a>
 
         <span class="name">rvalue</span><span class="default_value"> = &lt;member &#39;rvalue&#39; of &#39;Reservoir&#39; objects&gt;</span>
+    </div>
+
+    
+
+                            </div>
+                            <div id="Reservoir.volume" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Reservoir.volume">#&nbsp;&nbsp</a>
+
+        <span class="name">volume</span><span class="annotation">: nptyping.types._number.Number</span>
     </div>
 
     
@@ -7381,12 +7361,22 @@ indent :int = 0 indentation</p>
 <span class="sd">    Most parameters are passed on to the Reservoir class. See the reservoir class</span>
 <span class="sd">    documentation for details</span>
 
+<span class="sd">    If the geometry parameter is supplied, the following instance variables will be</span>
+<span class="sd">    computed</span>
+
+<span class="sd">                 self.volume: in model units (usually liter)</span>
+<span class="sd">                 self.are:a surface area in m^2 at the upper bounding surface</span>
+<span class="sd">                 self.area_dz: area of seafloor which is intercepted by this box.</span>
+<span class="sd">                 self.area_fraction: area of seafloor which is intercepted by this</span>
+<span class="sd">                                    relative to the total ocean floor area</span>
+
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Initialize a new reservoir group&quot;&quot;&quot;</span>
 
         <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">ureg</span><span class="p">,</span> <span class="n">Q_</span>
+        <span class="kn">from</span> <span class="nn">.sealevel</span> <span class="kn">import</span> <span class="n">get_box_geometry_parameters</span>
 
         <span class="c1"># provide a dict of all known keywords and their type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lkk</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
@@ -7437,6 +7427,13 @@ indent :int = 0 indentation</p>
         <span class="c1"># legacy variable</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mo</span>
+
+        <span class="c1"># geoemtry information</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">volume</span><span class="si">}</span><span class="s2"> m**3&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span>
+            
+        <span class="n">get_box_geometry_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
         <span class="c1"># register this group object in the global namespace</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
 
@@ -7475,7 +7472,7 @@ indent :int = 0 indentation</p>
                 <span class="n">delta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;delta&quot;</span><span class="p">],</span>
                 <span class="n">mass</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;mass&quot;</span><span class="p">],</span>
                 <span class="n">concentration</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;concentration&quot;</span><span class="p">],</span>
-                <span class="n">volume</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span>
+                <span class="n">volume</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="p">,</span>
                 <span class="n">geometry</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span>
                 <span class="n">plot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;plot&quot;</span><span class="p">],</span>
                 <span class="n">groupname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
@@ -7517,6 +7514,16 @@ matching.</p>
 
 <p>Most parameters are passed on to the Reservoir class. See the reservoir class
 documentation for details</p>
+
+<p>If the geometry parameter is supplied, the following instance variables will be
+computed</p>
+
+<pre><code>         self.volume: in model units (usually liter)
+         self.are:a surface area in m^2 at the upper bounding surface
+         self.area_dz: area of seafloor which is intercepted by this box.
+         self.area_fraction: area of seafloor which is intercepted by this
+                            relative to the total ocean floor area
+</code></pre>
 </div>
 
 
@@ -7533,6 +7540,7 @@ documentation for details</p>
         <span class="sd">&quot;&quot;&quot;Initialize a new reservoir group&quot;&quot;&quot;</span>
 
         <span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">ureg</span><span class="p">,</span> <span class="n">Q_</span>
+        <span class="kn">from</span> <span class="nn">.sealevel</span> <span class="kn">import</span> <span class="n">get_box_geometry_parameters</span>
 
         <span class="c1"># provide a dict of all known keywords and their type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lkk</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
@@ -7583,6 +7591,13 @@ documentation for details</p>
         <span class="c1"># legacy variable</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mo</span>
+
+        <span class="c1"># geoemtry information</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">volume</span><span class="si">}</span><span class="s2"> m**3&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span>
+            
+        <span class="n">get_box_geometry_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
         <span class="c1"># register this group object in the global namespace</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
 
@@ -7621,7 +7636,7 @@ documentation for details</p>
                 <span class="n">delta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;delta&quot;</span><span class="p">],</span>
                 <span class="n">mass</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;mass&quot;</span><span class="p">],</span>
                 <span class="n">concentration</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;concentration&quot;</span><span class="p">],</span>
-                <span class="n">volume</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span>
+                <span class="n">volume</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="p">,</span>
                 <span class="n">geometry</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span>
                 <span class="n">plot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;plot&quot;</span><span class="p">],</span>
                 <span class="n">groupname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
@@ -8457,6 +8472,12 @@ indent :int = 0 indentation</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">mu</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">bu</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lio</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
 
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">register</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">register</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">groupname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">register</span><span class="o">.</span><span class="n">name</span>
+
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">isotopes</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">steps</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span>
@@ -8532,6 +8553,12 @@ Example::</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">mo</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">u</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">mu</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">bu</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lio</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">register</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">register</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">groupname</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">register</span><span class="o">.</span><span class="n">name</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">isotopes</span> <span class="o">=</span> <span class="kc">True</span>
@@ -8753,6 +8780,9 @@ Example::</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">__initerrormessages__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__validateandregister__</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># initialize keyword values</span>
 
+        <span class="c1"># legacy variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">Connection</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># set of connection objects</span>
 
         <span class="c1"># register this object in the global namespace</span>
@@ -8778,6 +8808,7 @@ Example::</p>
                     <span class="n">species</span><span class="o">=</span><span class="n">s</span><span class="p">,</span>
                     <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">,</span>
                 <span class="p">)</span>
+
             <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;SinkGroup&quot;</span><span class="p">:</span>
                 <span class="n">a</span> <span class="o">=</span> <span class="n">Sink</span><span class="p">(</span>
                     <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -8834,6 +8865,9 @@ Example::</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">__initerrormessages__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__validateandregister__</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># initialize keyword values</span>
 
+        <span class="c1"># legacy variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">Connection</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># set of connection objects</span>
 
         <span class="c1"># register this object in the global namespace</span>
@@ -8859,6 +8893,7 @@ Example::</p>
                     <span class="n">species</span><span class="o">=</span><span class="n">s</span><span class="p">,</span>
                     <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">,</span>
                 <span class="p">)</span>
+
             <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;SinkGroup&quot;</span><span class="p">:</span>
                 <span class="n">a</span> <span class="o">=</span> <span class="n">Sink</span><span class="p">(</span>
                     <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
@@ -10523,6 +10558,7 @@ a circular reference.</p>
                 <dd id="VirtualReservoir.sp" class="variable"><a href="#Reservoir.sp">sp</a></dd>
                 <dd id="VirtualReservoir.mo" class="variable"><a href="#Reservoir.mo">mo</a></dd>
                 <dd id="VirtualReservoir.rvalue" class="variable"><a href="#Reservoir.rvalue">rvalue</a></dd>
+                <dd id="VirtualReservoir.volume" class="variable"><a href="#Reservoir.volume">volume</a></dd>
                 <dd id="VirtualReservoir.v" class="variable"><a href="#Reservoir.v">v</a></dd>
                 <dd id="VirtualReservoir.mu" class="variable"><a href="#Reservoir.mu">mu</a></dd>
                 <dd id="VirtualReservoir.lof" class="variable"><a href="#Reservoir.lof">lof</a></dd>

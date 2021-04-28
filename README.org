@@ -14,6 +14,16 @@ generation of graphical results.
 
 * News
 
+ - April 26^{th} Further changes to the naming scheme in group
+   connections. A connection group object now consists of the group
+   name followed by the connection name, e.g., =sb2@db.PO4_2_PO4=
+   which denotes a connection from =sb= to =db= transferring the
+   species =PO4=. This conflicts with the previous scheme where the
+   above would reference a flux. The corresponding flux can referenced
+   by adding =_F= to the above connection name. I.e.,
+   =sb2@db.PO4_2_PO4_F=. Since this breaks previous code, the version
+   is updated to 0.5.0.0
+
  - April 25^{th} v 0.4.3.0 ESBMTK has now 3 different solvers. The hybrid
    solver mentioned below, and a full numba solver which is about 10
    faster. The latter does not yet support all connection properties

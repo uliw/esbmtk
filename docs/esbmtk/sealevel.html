@@ -54,6 +54,9 @@
                 </ul>
 
             </li>
+            <li>
+                    <a class="function" href="#get_box_geometry_parameters">get_box_geometry_parameters</a>
+            </li>
     </ul>
 
 
@@ -198,10 +201,11 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="c1"># legacy variables</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pfn</span> <span class="o">=</span> <span class="s2">&quot;spline_paramaters.txt&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hfn</span> <span class="o">=</span> <span class="s2">&quot;Hypsometric_Curve_05m.csv&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sa</span> <span class="o">=</span> <span class="mf">510067420e6</span>  <span class="c1"># in square meters, http://www.physicalgeography.net/fundamentals/8o.html</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sa</span> <span class="o">=</span> <span class="mf">510067420e6</span>  <span class="c1"># total surfce area in square meters, http://www.physicalgeography.net/fundamentals/8o.html</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_curve__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_dz</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">6000</span><span class="p">)</span> <span class="c1"># total ocean area</span>
 
     <span class="k">def</span> <span class="nf">volume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">l</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Calculate the area between two elevation datums</span>
@@ -356,6 +360,22 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">elevation</span><span class="p">,</span> <span class="n">area</span><span class="p">)</span>  <span class="c1"># create a line plot</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">depth</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>  <span class="c1"># create a line plot</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>  <span class="c1"># display figure</span>
+
+<span class="k">def</span> <span class="nf">get_box_geometry_parameters</span><span class="p">(</span><span class="n">box</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">box</span><span class="o">.</span><span class="n">geometry</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;geometry must be a list see the docs for details&quot;</span><span class="p">)</span>
+        <span class="n">box</span><span class="o">.</span><span class="n">area_percentage</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">box</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">box</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">volume</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">box</span><span class="o">.</span><span class="n">area_percentage</span><span class="si">}</span><span class="s2"> m**3&quot;</span>
+        <span class="p">)</span>
+        <span class="n">box</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">area</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="n">box</span><span class="o">.</span><span class="n">area_percentage</span>
+        <span class="n">box</span><span class="o">.</span><span class="n">area_dz</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">box</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">area_dz</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">box</span><span class="o">.</span><span class="n">area_percentage</span>
+        <span class="p">)</span>
+        <span class="n">box</span><span class="o">.</span><span class="n">area_fraction</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">area_dz</span> <span class="o">/</span> <span class="n">box</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">oa</span>
+    <span class="k">elif</span> <span class="n">box</span><span class="o">.</span><span class="n">volume</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You need to provide volume or geometry!&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -425,10 +445,11 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="c1"># legacy variables</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pfn</span> <span class="o">=</span> <span class="s2">&quot;spline_paramaters.txt&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hfn</span> <span class="o">=</span> <span class="s2">&quot;Hypsometric_Curve_05m.csv&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sa</span> <span class="o">=</span> <span class="mf">510067420e6</span>  <span class="c1"># in square meters, http://www.physicalgeography.net/fundamentals/8o.html</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sa</span> <span class="o">=</span> <span class="mf">510067420e6</span>  <span class="c1"># total surfce area in square meters, http://www.physicalgeography.net/fundamentals/8o.html</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_curve__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_dz</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">6000</span><span class="p">)</span> <span class="c1"># total ocean area</span>
 
     <span class="k">def</span> <span class="nf">volume</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">l</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Calculate the area between two elevation datums</span>
@@ -649,10 +670,11 @@ The data is derived from etopo 5, but internally represented by a spline approxi
         <span class="c1"># legacy variables</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pfn</span> <span class="o">=</span> <span class="s2">&quot;spline_paramaters.txt&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hfn</span> <span class="o">=</span> <span class="s2">&quot;Hypsometric_Curve_05m.csv&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">sa</span> <span class="o">=</span> <span class="mf">510067420e6</span>  <span class="c1"># in square meters, http://www.physicalgeography.net/fundamentals/8o.html</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sa</span> <span class="o">=</span> <span class="mf">510067420e6</span>  <span class="c1"># total surfce area in square meters, http://www.physicalgeography.net/fundamentals/8o.html</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_curve__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">oa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">area_dz</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="mi">6000</span><span class="p">)</span> <span class="c1"># total ocean area</span>
 </pre></div>
 
         </details>
@@ -824,6 +846,38 @@ h.sa to get the value in square meters</p>
             </div>
                                 </dl>
                             </div>
+                </section>
+                <section id="get_box_geometry_parameters">
+                            <div class="attr function"><a class="headerlink" href="#get_box_geometry_parameters">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">get_box_geometry_parameters</span><span class="signature">(box)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">get_box_geometry_parameters</span><span class="p">(</span><span class="n">box</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">box</span><span class="o">.</span><span class="n">geometry</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;geometry must be a list see the docs for details&quot;</span><span class="p">)</span>
+        <span class="n">box</span><span class="o">.</span><span class="n">area_percentage</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">box</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">box</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">volume</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">box</span><span class="o">.</span><span class="n">area_percentage</span><span class="si">}</span><span class="s2"> m**3&quot;</span>
+        <span class="p">)</span>
+        <span class="n">box</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">area</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="n">box</span><span class="o">.</span><span class="n">area_percentage</span>
+        <span class="n">box</span><span class="o">.</span><span class="n">area_dz</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">box</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">area_dz</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">box</span><span class="o">.</span><span class="n">area_percentage</span>
+        <span class="p">)</span>
+        <span class="n">box</span><span class="o">.</span><span class="n">area_fraction</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">area_dz</span> <span class="o">/</span> <span class="n">box</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">oa</span>
+    <span class="k">elif</span> <span class="n">box</span><span class="o">.</span><span class="n">volume</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You need to provide volume or geometry!&quot;</span><span class="p">)</span>
+</pre></div>
+
+        </details>
+
+    
+
                 </section>
     </main>
 </body>

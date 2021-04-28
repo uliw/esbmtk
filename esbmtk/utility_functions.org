@@ -625,7 +625,7 @@ def split_key(k: str, M: any) -> Union[any, any, str]:
         cid = sinkandid.split("@")[1]
     else:
         sink = sinkandid
-        cid = "None"
+        cid = ""
 
     sink = M.dmo[sink]
     source = M.dmo[source]
@@ -1076,6 +1076,7 @@ def execute_e(
 
     duration: float = process_time() - start
     print(f"\n Setup time {duration} cpu seconds\n")
+    print("Starting solver")
 
     wts = time.time()
     start: float = process_time()
@@ -1227,7 +1228,7 @@ def build_vr_list(lor: list) -> tuple:
     for p in lor:  # loop over reservoir processes
 
         func_name, a1d, a2d, a3d, a7d = p.get_process_args()
-        print(f"fname = {func_name}")
+        #print(f"fname = {func_name}")
         fn.append(func_name)
         a1.append(a1d)
         a2.append(a2d)
@@ -1357,6 +1358,7 @@ def build_process_list(lor: list) -> tuple:
 
     f_time = 0
     d_time = 0
+    print(f"Building Process List")
     
     for r in lor:  # loop over reservoirs
 
@@ -1377,7 +1379,7 @@ def build_process_list(lor: list) -> tuple:
         tpc = List()
         for p in r.lop:  # loop over reservoir processes
 
-            print(f"adding function {p.full_name}  with {r.full_name}")
+            
             start: float = process_time()
             func_name, res_data, flux_data, proc_const = p.get_process_args(r)
             duration =  process_time() - start

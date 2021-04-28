@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgadc18bb)
-2.  [News](#org286ef4b)
-3.  [Contributing](#org53fa6c4)
-4.  [Installation](#org0799ecd)
-5.  [Documentation](#orgd9be312)
-6.  [Todo](#orgac878a0)
-7.  [License](#org9af626f)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org6ca5ce5)
+2.  [News](#org14b005f)
+3.  [Contributing](#orgb81a91b)
+4.  [Installation](#org2572962)
+5.  [Documentation](#org52657e6)
+6.  [Todo](#org99f7ebb)
+7.  [License](#org249fdad)
 
 
-<a id="orgadc18bb"></a>
+<a id="org6ca5ce5"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,19 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org286ef4b"></a>
+<a id="org14b005f"></a>
 
 # News
+
+-   April 26<sup>th</sup> Further changes to the naming scheme in group
+    connections. A connection group object now consists of the group
+    name followed by the connection name, e.g., `sb2@db.PO4_2_PO4`
+    which denotes a connection from `sb` to `db` transferring the
+    species `PO4`. This conflicts with the previous scheme where the
+    above would reference a flux. The corresponding flux can referenced
+    by adding `_F` to the above connection name. I.e.,
+    `sb2@db.PO4_2_PO4_F`. Since this breaks previous code, the version
+    is updated to 0.5.0.0
 
 -   April 25<sup>th</sup> v 0.4.3.0 ESBMTK has now 3 different solvers. The hybrid
     solver mentioned below, and a full numba solver which is about 10
@@ -200,7 +210,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org53fa6c4"></a>
+<a id="orgb81a91b"></a>
 
 # Contributing
 
@@ -210,7 +220,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org0799ecd"></a>
+<a id="org2572962"></a>
 
 # Installation
 
@@ -231,7 +241,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="orgd9be312"></a>
+<a id="org52657e6"></a>
 
 # Documentation
 
@@ -249,7 +259,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orgac878a0"></a>
+<a id="org99f7ebb"></a>
 
 # Todo
 
@@ -258,7 +268,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org9af626f"></a>
+<a id="org249fdad"></a>
 
 # License
 

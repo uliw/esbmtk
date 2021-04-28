@@ -103,10 +103,11 @@ class hypsometry(esbmtkBase):
         # legacy variables
         self.pfn = "spline_paramaters.txt"
         self.hfn = "Hypsometric_Curve_05m.csv"
-        self.sa = 510067420e6  # in square meters, http://www.physicalgeography.net/fundamentals/8o.html
+        self.sa = 510067420e6  # total surfce area in square meters, http://www.physicalgeography.net/fundamentals/8o.html
         self.mo = self.model
         self.__register_name__()
         self.__init_curve__()
+        self.oa = self.area_dz(0,-6000) # total ocean area
 
     def volume(self, u: float, l: float) -> float:
         """Calculate the area between two elevation datums
@@ -261,3 +262,19 @@ class hypsometry(esbmtkBase):
         ax.plot(elevation, area)  # create a line plot
         ax.plot(depth, a)  # create a line plot
         plt.show()  # display figure
+
+def get_box_geometry_parameters(box):
+    if box.geometry != "None":
+        if not isinstance(box.geometry, list):
+            raise ValueError("geometry must be a list see the docs for details")
+        box.area_percentage = box.geometry[2]
+        box.volume = (
+            f"{box.mo.hyp.volume(box.geometry[0], box.geometry[1]) * box.area_percentage} m**3"
+        )
+        box.area = box.mo.hyp.area(box.geometry[0]) * box.area_percentage
+        box.area_dz = (
+            box.mo.hyp.area_dz(box.geometry[0], box.geometry[1]) * box.area_percentage
+        )
+        box.area_fraction = box.area_dz / box.mo.hyp.oa
+    elif box.volume == "None":
+        raise ValueError("You need to provide volume or geometry!")

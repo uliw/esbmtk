@@ -39,6 +39,7 @@ import os
 from .utility_functions import get_imass, get_delta, get_plot_layout
 from .utility_functions import plot_object_data, show_data, plot_geometry
 from .utility_functions import get_string_between_brackets, execute, execute_h, execute_n, execute_e
+# from .sealevel import get_box_geometry_parameters
 
 class esbmtkBase(object):
     """The esbmtk base class template. This class handles keyword
@@ -1139,9 +1140,10 @@ class Reservoir(esbmtkBase):
           in this case the following instance variables will also be set:
 
                  self.volume in model units (usually liter)
-                 self.area surface area in m^2 at the upper bounding surface
-                 self.area_dz area of seafloor which is intercepted by this box.
-
+                 self.are:a surface area in m^2 at the upper bounding surface
+                 self.area_dz: area of seafloor which is intercepted by this box.
+                 self.area_fraction: area of seafloor which is intercepted by this
+                                    relative to the total ocean floor area
 
           Using a transform function
           ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1223,7 +1225,7 @@ class Reservoir(esbmtkBase):
         self.lrk: list = [
             "name",
             "species",
-            ["volume", "geometry"],
+            "volume",
             ["mass", "concentration"],
         ]
 
@@ -1242,18 +1244,9 @@ class Reservoir(esbmtkBase):
             "register": "None",
             "full_name": "Not Set",
             "isotopes": False,
-            # "a1": nbt.ListType(nbt.float64),
-            # "a2": nbt.ListType(nbt.float64),
-            # "a3": nbt.ListType(nbt.float64),
-            # "a4": nbt.ListType(nbt.float64),
-            # "a5": nbt.ListType(nbt.float64),
-            #" a6": nbt.ListType(nbt.float64),
             "a1": numba.typed.List.empty_list(nbt.float64),
             "a2": numba.typed.List.empty_list(nbt.float64),
             "a3": numba.typed.List.empty_list(nbt.float64),
-            "a4": numba.typed.List.empty_list(nbt.float64),
-            "a5": numba.typed.List.empty_list(nbt.float64),
-            "a6": numba.typed.List.empty_list(nbt.float64),
             "display_precision": 0,
         }
 
@@ -1296,23 +1289,11 @@ class Reservoir(esbmtkBase):
         elif self.mo.m_type == "mass_only":
             self.isotopes = False
 
+        if self.geometry != "None":
+            get_box_geometry_parameters(self)
+            
         # convert units
-        if self.volume != "None":
-            self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
-
-        elif self.geometry != "None":
-            if not isinstance(self.geometry, list):
-                raise ValueError("geometry must be a list see the docs for details")
-            self.area_percentage = self.geometry[2]
-            volume = (
-                self.mo.hyp.volume(self.geometry[0], self.geometry[1])
-                * self.area_percentage
-            )
-            self.volume = Q_(f"{volume} m**3").to(self.mo.v_unit).magnitude
-            self.area = self.mo.hyp.area(self.geometry[0])
-            self.area_dz = self.mo.hyp.area_dz(self.geometry[0], self.geometry[1])
-        else:
-            raise ValueError("You need to provide volume or geometry!")
+        self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
 
         self.v: float = self.volume  # reservoir volume
         # This should probably be species specific?
@@ -1699,12 +1680,22 @@ class ReservoirGroup(esbmtkBase):
     Most parameters are passed on to the Reservoir class. See the reservoir class
     documentation for details
 
+    If the geometry parameter is supplied, the following instance variables will be
+    computed
+
+                 self.volume: in model units (usually liter)
+                 self.are:a surface area in m^2 at the upper bounding surface
+                 self.area_dz: area of seafloor which is intercepted by this box.
+                 self.area_fraction: area of seafloor which is intercepted by this
+                                    relative to the total ocean floor area
+
     """
 
     def __init__(self, **kwargs) -> None:
         """Initialize a new reservoir group"""
 
         from . import ureg, Q_
+        from .sealevel import get_box_geometry_parameters
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -1755,6 +1746,13 @@ class ReservoirGroup(esbmtkBase):
         # legacy variable
         self.n = self.name
         self.mo = self.species[0].mo
+
+        # geoemtry information
+        if self.volume != "None":
+            self.volume = Q_(f"{volume} m**3").to(self.mo.v_unit)
+            
+        get_box_geometry_parameters(self)
+
         # register this group object in the global namespace
         self.__register_name__()
 
@@ -1793,7 +1791,7 @@ class ReservoirGroup(esbmtkBase):
                 delta=self.cd[s.n]["delta"],
                 mass=self.cd[s.n]["mass"],
                 concentration=self.cd[s.n]["concentration"],
-                volume=self.volume,
+                volume=self.volume ,
                 geometry=self.geometry,
                 plot=self.cd[s.n]["plot"],
                 groupname=self.name,
@@ -2093,6 +2091,12 @@ class SourceSink(esbmtkBase):
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
         self.lio: list = []
 
+        if self.register == "None":
+            self.pt = self.name
+        else:
+            self.pt: str = f"{self.register.name}_{self.n}"
+            self.groupname = self.register.name
+
         if self.delta != "None":
             self.isotopes = True
             self.d = np.full(self.mo.steps, self.delta)
@@ -2157,6 +2161,9 @@ class SourceSinkGroup(esbmtkBase):
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
 
+        # legacy variables
+        self.n = self.name
+
         self.loc: set[Connection] = set()  # set of connection objects
 
         # register this object in the global namespace
@@ -2182,6 +2189,7 @@ class SourceSinkGroup(esbmtkBase):
                     species=s,
                     delta=delta,
                 )
+
             elif type(self).__name__ == "SinkGroup":
                 a = Sink(
                     name=f"{s.name}",

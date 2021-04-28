@@ -2179,6 +2179,12 @@ class SourceSink(esbmtkBase):
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
         self.lio: list = []
 
+        if self.register == "None":
+            self.pt = self.name
+        else:
+            self.pt: str = f"{self.register.name}_{self.n}"
+            self.groupname = self.register.name
+
         if self.delta != "None":
             self.isotopes = True
             self.d = np.full(self.mo.steps, self.delta)
@@ -2247,6 +2253,9 @@ class SourceSinkGroup(esbmtkBase):
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
 
+        # legacy variables
+        self.n = self.name
+
         self.loc: set[Connection] = set()  # set of connection objects
 
         # register this object in the global namespace
@@ -2272,6 +2281,7 @@ class SourceSinkGroup(esbmtkBase):
                     species=s,
                     delta=delta,
                 )
+
             elif type(self).__name__ == "SinkGroup":
                 a = Sink(
                     name=f"{s.name}",

@@ -521,10 +521,10 @@ class Connect(esbmtkBase):
 
         # flux name
         # if self.groupname == False:
-        if self.id == "None":
-            n = f"{self.r1.n}_2_{self.r2.n}"
+        if self.id == "None" or self.id == "":
+            n = f"{self.r1.n}_2_{self.r2.n}_F"
         else:
-            n = f"{self.r1.n}_2_{self.r2.n}_{self.id}"
+            n = f"{self.r1.n}_2_{self.r2.n}_{self.id}_F"
         # else:
         #    n = "F_" + self.r1.full_name + "_2_" + self.r2.full_name
 

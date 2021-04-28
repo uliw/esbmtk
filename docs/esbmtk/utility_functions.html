@@ -688,7 +688,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="n">cid</span> <span class="o">=</span> <span class="n">sinkandid</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">sink</span> <span class="o">=</span> <span class="n">sinkandid</span>
-        <span class="n">cid</span> <span class="o">=</span> <span class="s2">&quot;None&quot;</span>
+        <span class="n">cid</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 
     <span class="n">sink</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">dmo</span><span class="p">[</span><span class="n">sink</span><span class="p">]</span>
     <span class="n">source</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">dmo</span><span class="p">[</span><span class="n">source</span><span class="p">]</span>
@@ -1128,6 +1128,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
     <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">process_time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> Setup time </span><span class="si">{</span><span class="n">duration</span><span class="si">}</span><span class="s2"> cpu seconds</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting solver&quot;</span><span class="p">)</span>
 
     <span class="n">wts</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
     <span class="n">start</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">process_time</span><span class="p">()</span>
@@ -1267,7 +1268,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
     <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">lor</span><span class="p">:</span>  <span class="c1"># loop over reservoir processes</span>
 
         <span class="n">func_name</span><span class="p">,</span> <span class="n">a1d</span><span class="p">,</span> <span class="n">a2d</span><span class="p">,</span> <span class="n">a3d</span><span class="p">,</span> <span class="n">a7d</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">get_process_args</span><span class="p">()</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;fname = </span><span class="si">{</span><span class="n">func_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1">#print(f&quot;fname = {func_name}&quot;)</span>
         <span class="n">fn</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func_name</span><span class="p">)</span>
         <span class="n">a1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a1d</span><span class="p">)</span>
         <span class="n">a2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a2d</span><span class="p">)</span>
@@ -1387,6 +1388,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
     <span class="n">f_time</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">d_time</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Building Process List&quot;</span><span class="p">)</span>
     
     <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">lor</span><span class="p">:</span>  <span class="c1"># loop over reservoirs</span>
 
@@ -1407,7 +1409,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="n">tpc</span> <span class="o">=</span> <span class="n">List</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">lop</span><span class="p">:</span>  <span class="c1"># loop over reservoir processes</span>
 
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;adding function </span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">full_name</span><span class="si">}</span><span class="s2">  with </span><span class="si">{</span><span class="n">r</span><span class="o">.</span><span class="n">full_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
             <span class="n">start</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">process_time</span><span class="p">()</span>
             <span class="n">func_name</span><span class="p">,</span> <span class="n">res_data</span><span class="p">,</span> <span class="n">flux_data</span><span class="p">,</span> <span class="n">proc_const</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">get_process_args</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
             <span class="n">duration</span> <span class="o">=</span>  <span class="n">process_time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
@@ -2268,7 +2270,7 @@ m is a string for the error function</p>
         <span class="n">cid</span> <span class="o">=</span> <span class="n">sinkandid</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">sink</span> <span class="o">=</span> <span class="n">sinkandid</span>
-        <span class="n">cid</span> <span class="o">=</span> <span class="s2">&quot;None&quot;</span>
+        <span class="n">cid</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 
     <span class="n">sink</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">dmo</span><span class="p">[</span><span class="n">sink</span><span class="p">]</span>
     <span class="n">source</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">dmo</span><span class="p">[</span><span class="n">source</span><span class="p">]</span>
@@ -3034,6 +3036,7 @@ create connections in both directions</p>
 
     <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">process_time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> Setup time </span><span class="si">{</span><span class="n">duration</span><span class="si">}</span><span class="s2"> cpu seconds</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting solver&quot;</span><span class="p">)</span>
 
     <span class="n">wts</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
     <span class="n">start</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">process_time</span><span class="p">()</span>
@@ -3244,7 +3247,7 @@ create connections in both directions</p>
     <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">lor</span><span class="p">:</span>  <span class="c1"># loop over reservoir processes</span>
 
         <span class="n">func_name</span><span class="p">,</span> <span class="n">a1d</span><span class="p">,</span> <span class="n">a2d</span><span class="p">,</span> <span class="n">a3d</span><span class="p">,</span> <span class="n">a7d</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">get_process_args</span><span class="p">()</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;fname = </span><span class="si">{</span><span class="n">func_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1">#print(f&quot;fname = {func_name}&quot;)</span>
         <span class="n">fn</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func_name</span><span class="p">)</span>
         <span class="n">a1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a1d</span><span class="p">)</span>
         <span class="n">a2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a2d</span><span class="p">)</span>
@@ -3430,6 +3433,7 @@ and m = np.array()</p>
 
     <span class="n">f_time</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">d_time</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Building Process List&quot;</span><span class="p">)</span>
     
     <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">lor</span><span class="p">:</span>  <span class="c1"># loop over reservoirs</span>
 
@@ -3450,7 +3454,7 @@ and m = np.array()</p>
         <span class="n">tpc</span> <span class="o">=</span> <span class="n">List</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">r</span><span class="o">.</span><span class="n">lop</span><span class="p">:</span>  <span class="c1"># loop over reservoir processes</span>
 
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;adding function </span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">full_name</span><span class="si">}</span><span class="s2">  with </span><span class="si">{</span><span class="n">r</span><span class="o">.</span><span class="n">full_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            
             <span class="n">start</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">process_time</span><span class="p">()</span>
             <span class="n">func_name</span><span class="p">,</span> <span class="n">res_data</span><span class="p">,</span> <span class="n">flux_data</span><span class="p">,</span> <span class="n">proc_const</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">get_process_args</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
             <span class="n">duration</span> <span class="o">=</span>  <span class="n">process_time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
