@@ -885,6 +885,11 @@ def create_connection(n: str, p: dict, M: any) -> None:
     # get the reservoir handles by splitting the key
     source, sink, cid = split_key(n, M)
 
+    if cid == "" or cid == "None":
+        name = f"C_{source.name}2{sink.name}"
+    else:
+        name = f"C_{source.name}2{sink.name}_{cid}"
+
     # create default connections parameters and replace with values in
     # the parameter dict if present.
     los = list(p["sp"]) if isinstance(p["sp"], list) else [p["sp"]]
@@ -900,32 +905,56 @@ def create_connection(n: str, p: dict, M: any) -> None:
     if isinstance(scale, Q_):
         scale = scale.to("l/a").magnitude
 
-    cg = ConnectionGroup(
-        source=source,
-        sink=sink,
-        ctype=make_dict(los, typ),
-        scale=make_dict(los, scale),  # get rate from dictionary
-        rate=make_dict(los, rate),
-        ref=make_dict(los, ref),
-        alpha=make_dict(los, alpha),
-        delta=make_dict(los, delta),
-        id=cid,  # get id from dictionary
-    )
-
-    # if mixing is set to True create reverse connection
-    if mix:
-        cid = cid.replace("_f", "_b")
-        cg2 = ConnectionGroup(
-            source=sink,
-            sink=source,
+    # if name in M.dmo: # group already exist in this case we nee to update the
+    # connection group
+    print(f"Name = {name}")
+    if name in M.dmo:
+        print(f"Updating {name}")
+        cg = M.dmo[name]
+        cg.update(
+            name=name,
+            source=source,
+            sink=sink,
             ctype=make_dict(los, typ),
             scale=make_dict(los, scale),  # get rate from dictionary
             rate=make_dict(los, rate),
             ref=make_dict(los, ref),
             alpha=make_dict(los, alpha),
             delta=make_dict(los, delta),
-            id=cid,  # get id from module import symbol
         )
+
+        # if mixing is set to True create reverse connection
+        if mix:
+            raise NotImplementedError(
+                "The update method does not support the automatic creation of mixing fluxes"
+            )
+    else:
+        cg = ConnectionGroup(
+            source=source,
+            sink=sink,
+            ctype=make_dict(los, typ),
+            scale=make_dict(los, scale),  # get rate from dictionary
+            rate=make_dict(los, rate),
+            ref=make_dict(los, ref),
+            alpha=make_dict(los, alpha),
+            delta=make_dict(los, delta),
+            id=cid,  # get id from dictionary
+        )
+
+        # if mixing is set to True create reverse connection
+        if mix:
+            cid = cid.replace("_f", "_b")
+            cg2 = ConnectionGroup(
+                source=sink,
+                sink=source,
+                ctype=make_dict(los, typ),
+                scale=make_dict(los, scale),  # get rate from dictionary
+                rate=make_dict(los, rate),
+                ref=make_dict(los, ref),
+                alpha=make_dict(los, alpha),
+                delta=make_dict(los, delta),
+                id=cid,  # get id from module import symbol
+            )
 #+END_SRC
 
 ** Solver Code
