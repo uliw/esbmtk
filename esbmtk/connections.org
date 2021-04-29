@@ -1140,6 +1140,32 @@ class ConnectionGroup(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
 
+        self.__parse_kwargs__(kwargs)
+
+        # # self.source.lor is a  list with the object names in the group
+        self.mo = self.sink.lor[0].mo
+        self.loc: list = []  # list of connection objects
+
+        self.__create_connections__()
+
+        # register connection group in global namespace
+        self.__register_name__()
+        logging.info(f"Created {self.name}")
+
+    def update(self, **kwargs) -> None:
+        """Add a connection to the connection group
+        This will overwrite the original kwargs though
+
+        """
+
+        self.__parse_kwargs__(kwargs)
+        self.__create_connections__()
+
+    def __parse_kwargs__(self, kwargs) -> None:
+        """
+        Parse and register the keyword arguments
+
+        """
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "id": str,
@@ -1185,10 +1211,9 @@ class ConnectionGroup(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: list = ["source", "sink"]
         self.__validateandregister__(kwargs)
-        # # self.source.lor is a  list with the object names in the group
-        self.mo = self.sink.lor[0].mo
-        self.loc: list = []  # list of connection objects
 
+    def __create_connections__(self) -> None:
+        """Create Connections"""
         # find all sub reservoirs which have been specified by the ctype keyword
         self.connections: list = []
         for r in self.source.lor:
@@ -1243,10 +1268,6 @@ class ConnectionGroup(esbmtkBase):
 
             ## add connection to list of connections
             self.loc.append(a)
-
-        # register connection group in global namespace
-        self.__register_name__()
-        logging.info(f"Created {self.name}")
 
     def info(self) -> None:
         """List all connections in this group"""
