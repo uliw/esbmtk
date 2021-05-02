@@ -447,7 +447,6 @@ class Connect(esbmtkBase):
         if self.id == "None" or self.id == "":
             pass
         else:
-            print(f"id = '{self.id}'")
             self.name = f"{self.name}_{self.id}"
 
         if self.register == "None":
@@ -485,7 +484,6 @@ class Connect(esbmtkBase):
         self.__delete_flux__()
         self.kwargs.update(kwargs)
         self.__init_connection__(self.kwargs)
-        print(f"Updated {self.n}")
 
     def get_species(self, r1, r2) -> None:
         """In most cases the species is set by r2. However, if we have
@@ -1122,7 +1120,7 @@ class ConnectionGroup(esbmtkBase):
            ctype = needs to be set for all connections. Use "Regular"
                    unless you require a specific connection type
            pl = [list]) process list. optional, shared between all connections
-           id = optional identifier, shared between all connections
+           id = optional identifier, passed on to individual connection
            plot = "yes/no" # defaults to yes, shared between all connections
         )
 
@@ -1193,16 +1191,7 @@ class ConnectionGroup(esbmtkBase):
         if "name" in kwargs:
             self.base_name = kwargs["name"]
         else:
-            if "id" in kwargs:
-                if kwargs["id"] != "":
-                    name = (
-                        f"{kwargs['source'].name}2{kwargs['sink'].name}_{kwargs['id']}"
-                    )
-                else:
-                    name = f"{kwargs['source'].name}2{kwargs['sink'].name}"
-            else:
-                name = f"{kwargs['source'].name}2{kwargs['sink'].name}"
-
+            name = f"{kwargs['source'].name}2{kwargs['sink'].name}"
             self.base_name = kwargs["source"].name + "2" + kwargs["sink"].name
             n = f"C_{name}"
             # set connection group name
@@ -1262,7 +1251,7 @@ class ConnectionGroup(esbmtkBase):
                 scale=self.cd[r.n]["scale"],
                 ref=self.cd[r.n]["ref"],
                 groupname=True,
-                # id=self.id,
+                id=self.id,
                 register=self,
             )
 
