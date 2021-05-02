@@ -885,11 +885,6 @@ def create_connection(n: str, p: dict, M: any) -> None:
     # get the reservoir handles by splitting the key
     source, sink, cid = split_key(n, M)
 
-    if cid == "" or cid == "None":
-        name = f"C_{source.name}2{sink.name}"
-    else:
-        name = f"C_{source.name}2{sink.name}_{cid}"
-
     # create default connections parameters and replace with values in
     # the parameter dict if present.
     los = list(p["sp"]) if isinstance(p["sp"], list) else [p["sp"]]
@@ -907,9 +902,42 @@ def create_connection(n: str, p: dict, M: any) -> None:
 
     # if name in M.dmo: # group already exist in this case we nee to update the
     # connection group
-    print(f"Name = {name}")
-    if name in M.dmo:
-        print(f"Updating {name}")
+
+    # Case one, no mixing, test if exist, otherwise create
+    # Case 2, mixing: test if forward connection exists, if not create
+    #                  test if backwards connection exists, or create
+
+    if not mix:
+        name = f"C_{source.name}2{sink.name}"
+        update_or_create(
+            name, source, sink, los, typ, scale, rate, ref, alpha, delta, cid, M
+        )
+
+    else:  # this is a connection with mixing
+        # create forward connection
+        name = f"C_{source.name}2{sink.name}"
+        update_or_create(
+            name, source, sink, los, typ, scale, rate, ref, alpha, delta, cid, M
+        )
+
+        # create backwards connection
+        name = f"C_{sink.name}2{source.name}"
+        cid = cid.replace("_f", "_b")
+        update_or_create(
+            name, sink, source, los, typ, scale, rate, ref, alpha, delta, cid, M
+        )
+
+
+def update_or_create(
+    name, source, sink, los, typ, scale, rate, ref, alpha, delta, cid, M
+):
+    """Create or update connection
+
+    """
+
+    from esbmtk import ConnectionGroup
+    
+    if name in M.dmo:  # update connection
         cg = M.dmo[name]
         cg.update(
             name=name,
@@ -921,15 +949,11 @@ def create_connection(n: str, p: dict, M: any) -> None:
             ref=make_dict(los, ref),
             alpha=make_dict(los, alpha),
             delta=make_dict(los, delta),
+            id=cid,  # get id from dictionary
         )
-
-        # if mixing is set to True create reverse connection
-        if mix:
-            raise NotImplementedError(
-                "The update method does not support the automatic creation of mixing fluxes"
-            )
-    else:
+    else:  # create connection
         cg = ConnectionGroup(
+            name=name,
             source=source,
             sink=sink,
             ctype=make_dict(los, typ),
@@ -940,21 +964,6 @@ def create_connection(n: str, p: dict, M: any) -> None:
             delta=make_dict(los, delta),
             id=cid,  # get id from dictionary
         )
-
-        # if mixing is set to True create reverse connection
-        if mix:
-            cid = cid.replace("_f", "_b")
-            cg2 = ConnectionGroup(
-                source=sink,
-                sink=source,
-                ctype=make_dict(los, typ),
-                scale=make_dict(los, scale),  # get rate from dictionary
-                rate=make_dict(los, rate),
-                ref=make_dict(los, ref),
-                alpha=make_dict(los, alpha),
-                delta=make_dict(los, delta),
-                id=cid,  # get id from module import symbol
-            )
 #+END_SRC
 
 ** Solver Code
@@ -1116,7 +1125,7 @@ def execute_e(
     print(f"\n Total solver time {duration} cpu seconds, wt = {wcd}\n")
 
 
-@njit(parallel=False)
+@njit(parallel=False,fastmath=True)
 def foo(fn_vr, a1, a2, a3, a7, fn, rd, fd, pc, a, b, c, d, e, maxt, dt):
 
     i = 1
