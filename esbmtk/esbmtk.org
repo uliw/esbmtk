@@ -679,7 +679,7 @@ class Model(esbmtkBase):
             logging.root.removeHandler(handler)
 
         fn: str = f"{kwargs['name']}.log"
-        logging.basicConfig(filename=fn, filemode="w", level=logging.DEBUG)
+        logging.basicConfig(filename=fn, filemode="w", level=logging.WARN)
         self.__register_name__()
 
     def info(self, **kwargs) -> None:
@@ -1013,12 +1013,22 @@ class Model(esbmtkBase):
         if "filter" in kwargs:
             raise ValueError("use filter_by instead of filter")
 
+        self.cg_list: list = []
+        # extract all connection groups. Note that loc contains all conections
+        # i.e., not connection groups.
+        for c in list(self.loc):
+            if "." in c.full_name:
+                if c.register not in self.cg_list:
+                    self.cg_list.append(c.register)
+                else:  # this is a regular connnection
+                    self.cg_list.append(c)
+
         print(f"\n --- Connection Summary -- filtered by {fby}\n")
         print(f"       append info() to the connection name to see more details")
 
-        for c in self.loc:
+        for c in self.cg_list:
             if fby in c.full_name:
-                print(f"{c.full_name}")
+                print(f"{c.base_name}.info()")
 
         print("")
 #+END_SRC
