@@ -906,15 +906,15 @@ def expand_dict(d: dict, mt: str = "1:1") -> int:
                 # prep dictionaries
                 if case == 0:
                     nd = cd
-                    print("case 0")
+                    # print("case 0")
                 elif case == 1:  # only parameters present. Expand for each tuple entry
                     length = len(ck)
                     nd = convert_to_lists(cd, length)
-                    print("case 1")
+                    # print("case 1")
                 elif case == 2:  # mixed list present, Expand list
-                    print(f"case 2, length = {length}")
+                    # print(f"case 2, length = {length}")
                     nd = convert_to_lists(cd, length)
-                    print(nd)
+                    # print(nd)
 
                 # for each connection group in the tuple
                 if length != len(ck):
@@ -1033,48 +1033,34 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
           "ra": Q_('20*Sv'),
          }
 
-    print(expand_dict(ct))
+    create_bulk_connections(ct, M, mt="1:N")
 
+    will create a connection for each species in each connectiongroup and all of these connections
+    share the same properties
 
     """
 
-    from esbmtk import create_connection
+    from esbmtk import create_connection, expand_dict
 
-    # loop over values in ct dict
-    # make sure we have enough entries. Otherwise apply to each connnection
-    c_ct = ct.copy()
-    for k, v in c_ct.items():  # loop over connections
-        if isinstance(k, tuple):
-            nk = len(k)
-        else:
-            nk = 1
-        print(f"nk = {nk}")  # get number of connections
-        for k1, p in v.items():  # loop over connection properties
-            # properties are a list, make sure the list can have multiple
-            # values if this is a group connection
-            if isinstance(p, list):
-                print(f"len (p) = {len(p)}, p = {p}")
-                assert len(p) >= nk
-            else:  # if shorter, fill properties
-                l = []
-                for i in range(0, nk):
-                    l.append(p)
-                ct[k][k1] = l
+    # expand dictionary into a well formed dict where each connection
+    # has a fully formed entry
+    c_ct = expand_dict(ct, mt=mt)
 
-    for k, v in ct.items():
+    # loop over dict entries and create the respective connections
+    for k, v in c_ct.items():
         if isinstance(k, tuple):
             # loop over names in tuple
             for c in k:
-                create_connection(c, v, M, nk)
+                create_connection(c, v, M)
         elif isinstance(k, str):
-            create_connection(k, v, M, nk)
+            create_connection(k, v, M)
         else:
             raise ValueError(f"{connection} must be string or tuple")
 
     return ct
 
 
-def create_connection(n: str, p: dict, M: any, nk: int) -> None:
+def create_connection(n: str, p: dict, M: any) -> None:
 
     """called by create_bulk_connections in order to create a connection
     group It is assumed that all rates are in liter/year or mol per
