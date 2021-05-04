@@ -1731,8 +1731,8 @@ class ReservoirGroup(esbmtkBase):
 
     Example::
 
-        ReservoirGroup(name = "ShallowOcean",         # Name of reservoir group
-                    volume/geometry = "1E5 l",                # reservoir volume (m^3)
+        ReservoirGroup(name = "ShallowOcean",        # Name of reservoir group
+                    volume/geometry = "1E5 l",       # see below
                     delta   = {DIC:0, ALK:0, PO4:0]  # dict of delta values
                     mass/concentration = {DIC:"1 unit", ALK: "1 unit"}
                     plot = {DIC:"yes", ALK:"yes"}  defaults to yes
@@ -1749,6 +1749,9 @@ class ReservoirGroup(esbmtkBase):
 
     Most parameters are passed on to the Reservoir class. See the reservoir class
     documentation for details
+
+    The geometry keyword specifies the upper depth interval, the lower
+    depth interval, and the fraction of the total ocean area inhabited by the reservoir
 
     If the geometry parameter is supplied, the following instance variables will be
     computed
@@ -1818,10 +1821,8 @@ class ReservoirGroup(esbmtkBase):
         self.mo = self.species[0].mo
 
         # geoemtry information
-        if self.volume != "None":
-            self.volume = Q_(f"{volume} m**3").to(self.mo.v_unit)
-            
-        get_box_geometry_parameters(self)
+        if self.volume == "None":
+            get_box_geometry_parameters(self)
 
         # register this group object in the global namespace
         self.__register_name__()
@@ -1861,7 +1862,7 @@ class ReservoirGroup(esbmtkBase):
                 delta=self.cd[s.n]["delta"],
                 mass=self.cd[s.n]["mass"],
                 concentration=self.cd[s.n]["concentration"],
-                volume=self.volume ,
+                volume=self.volume,
                 geometry=self.geometry,
                 plot=self.cd[s.n]["plot"],
                 groupname=self.name,
