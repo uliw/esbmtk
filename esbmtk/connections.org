@@ -333,7 +333,7 @@ class Connect(esbmtkBase):
             "ctype": str,
             "ref": (Flux, Reservoir, str, list),
             "ratio": Number,
-            "scale": (Number, str),
+            "scale": (Number, Q_, str),
             "ref_value": (str, Number, Q_),
             "k_value": (Number, str, Q_),
             "a_value": Number,
@@ -377,7 +377,7 @@ class Connect(esbmtkBase):
                 "k_concentration": "a number",
                 "k_mass": "a number",
                 "k_value": "a number",
-                "scale": "a number",
+                "scale": "a number or Quantity",
                 "a_value": "a number",
                 "ref_value": "a number, string, or quantity",
                 "b_value": "a number",
@@ -433,6 +433,21 @@ class Connect(esbmtkBase):
         self.lof: list[Flux] = []  # list of fluxes in this connection
         # get a list of all reservoirs registered for this species
         self.lor: list[Reservoir] = self.mo.lor
+
+        # make sure scale is a number in model units
+        if isinstance(self.scale, str):
+            self.scale = Q_(self.scale)
+
+        if isinstance(self.scale, Q_):
+            # test what type of Quantity we have
+            if self.scale.check(["volume]/[time"]):  # flux
+                self.scale = self.scale.to(self.mo.r_unit)
+            elif self.scale.check(["mass] / [time"]):  # flux
+                self.scale = self.scale.to(self.mo.f_unit)
+            elif self.scale.check("[mass]/[volume]"):  # concentration
+                self.scale = self.scale.to(self.mo.c_unit)
+            else:
+                ValueError(f"No conversion to model units for {self.scale} specified")
 
         # if sink and source a regular, the name will be simply C_S_2_S
         # if we deal with ReservoirGroups we need to reflect this in the

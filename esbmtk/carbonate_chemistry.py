@@ -348,11 +348,10 @@ def calc_H(
     a3 = [ list of SeawaterConstants]
 
     i = index of current timestep
-    a1 to a6 = optional fcn parameters. These must be present
+    a1 to a3 = optional fcn parameters. These must be present
     even if your function will not use it. These will default to 0.
 
     Limitations: Assumes concentrations are in mol/L
-
 
     This function can then be used in conjunction with a VirtualReservoir, e.g.,
 
@@ -416,7 +415,7 @@ def calc_CA(
     a3 = [list of SeawaterConstants]
 
     i = index of current timestep
-    a1 to a6 = optional fcn parameters. These must be present
+    a1 to a3 = optional fcn parameters. These must be present
     even if your function will not use it
 
     Limitations: Assumes concentrations are in mol/L

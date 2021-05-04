@@ -189,12 +189,11 @@ class GenericFunction(Process):
    use with the generic function process. This function needs to follow this
    template::
 
-       def my_func(i, a1, a2, a3, act_on) -> tuple:
+       def my_func(i, a1, a2, a3) -> tuple:
            #
            # i = index of the current timestep
            # a1 to a2 =  optional function parameter. These must be present,
            # even if your function will not use it
-           # act_on = reservoir reference, i.e., the result of the function
            # will be applied to this reservoir.
 
            # calc some stuff and return it as

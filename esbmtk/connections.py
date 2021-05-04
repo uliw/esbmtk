@@ -285,7 +285,7 @@ class Connect(esbmtkBase):
             "ctype": str,
             "ref": (Flux, Reservoir, str, list),
             "ratio": Number,
-            "scale": (Number, str),
+            "scale": (Number, Q_, str),
             "ref_value": (str, Number, Q_),
             "k_value": (Number, str, Q_),
             "a_value": Number,
@@ -329,7 +329,7 @@ class Connect(esbmtkBase):
                 "k_concentration": "a number",
                 "k_mass": "a number",
                 "k_value": "a number",
-                "scale": "a number",
+                "scale": "a number or Quantity",
                 "a_value": "a number",
                 "ref_value": "a number, string, or quantity",
                 "b_value": "a number",
@@ -386,6 +386,21 @@ class Connect(esbmtkBase):
         # get a list of all reservoirs registered for this species
         self.lor: list[Reservoir] = self.mo.lor
 
+        # make sure scale is a number in model units
+        if isinstance(self.scale, str):
+            self.scale = Q_(self.scale)
+
+        if isinstance(self.scale, Q_):
+            # test what type of Quantity we have
+            if self.scale.check(["volume]/[time"]):  # flux
+                self.scale = self.scale.to(self.mo.r_unit)
+            elif self.scale.check(["mass] / [time"]):  # flux
+                self.scale = self.scale.to(self.mo.f_unit)
+            elif self.scale.check("[mass]/[volume]"):  # concentration
+                self.scale = self.scale.to(self.mo.c_unit)
+            else:
+                ValueError(f"No conversion to model units for {self.scale} specified")
+
         # if sink and source a regular, the name will be simply C_S_2_S
         # if we deal with ReservoirGroups we need to reflect this in the
         # connection name
@@ -399,7 +414,6 @@ class Connect(esbmtkBase):
         if self.id == "None" or self.id == "":
             pass
         else:
-            print(f"id = '{self.id}'")
             self.name = f"{self.name}_{self.id}"
 
         if self.register == "None":
@@ -437,7 +451,6 @@ class Connect(esbmtkBase):
         self.__delete_flux__()
         self.kwargs.update(kwargs)
         self.__init_connection__(self.kwargs)
-        print(f"Updated {self.n}")
 
     def get_species(self, r1, r2) -> None:
         """In most cases the species is set by r2. However, if we have
@@ -1067,7 +1080,7 @@ class ConnectionGroup(esbmtkBase):
            ctype = needs to be set for all connections. Use "Regular"
                    unless you require a specific connection type
            pl = [list]) process list. optional, shared between all connections
-           id = optional identifier, shared between all connections
+           id = optional identifier, passed on to individual connection
            plot = "yes/no" # defaults to yes, shared between all connections
         )
 
@@ -1085,6 +1098,32 @@ class ConnectionGroup(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
 
+        self.__parse_kwargs__(kwargs)
+
+        # # self.source.lor is a  list with the object names in the group
+        self.mo = self.sink.lor[0].mo
+        self.loc: list = []  # list of connection objects
+
+        self.__create_connections__()
+
+        # register connection group in global namespace
+        self.__register_name__()
+        logging.info(f"Created {self.name}")
+
+    def update(self, **kwargs) -> None:
+        """Add a connection to the connection group
+        This will overwrite the original kwargs though
+
+        """
+
+        self.__parse_kwargs__(kwargs)
+        self.__create_connections__()
+
+    def __parse_kwargs__(self, kwargs) -> None:
+        """
+        Parse and register the keyword arguments
+
+        """
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "id": str,
@@ -1112,16 +1151,7 @@ class ConnectionGroup(esbmtkBase):
         if "name" in kwargs:
             self.base_name = kwargs["name"]
         else:
-            if "id" in kwargs:
-                if kwargs["id"] != "":
-                    name = (
-                        f"{kwargs['source'].name}2{kwargs['sink'].name}_{kwargs['id']}"
-                    )
-                else:
-                    name = f"{kwargs['source'].name}2{kwargs['sink'].name}"
-            else:
-                name = f"{kwargs['source'].name}2{kwargs['sink'].name}"
-
+            name = f"{kwargs['source'].name}2{kwargs['sink'].name}"
             self.base_name = kwargs["source"].name + "2" + kwargs["sink"].name
             n = f"C_{name}"
             # set connection group name
@@ -1130,10 +1160,9 @@ class ConnectionGroup(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: list = ["source", "sink"]
         self.__validateandregister__(kwargs)
-        # # self.source.lor is a  list with the object names in the group
-        self.mo = self.sink.lor[0].mo
-        self.loc: list = []  # list of connection objects
 
+    def __create_connections__(self) -> None:
+        """Create Connections"""
         # find all sub reservoirs which have been specified by the ctype keyword
         self.connections: list = []
         for r in self.source.lor:
@@ -1182,16 +1211,12 @@ class ConnectionGroup(esbmtkBase):
                 scale=self.cd[r.n]["scale"],
                 ref=self.cd[r.n]["ref"],
                 groupname=True,
-                # id=self.id,
+                id=self.id,
                 register=self,
             )
 
             ## add connection to list of connections
             self.loc.append(a)
-
-        # register connection group in global namespace
-        self.__register_name__()
-        logging.info(f"Created {self.name}")
 
     def info(self) -> None:
         """List all connections in this group"""

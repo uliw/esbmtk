@@ -264,13 +264,16 @@ class hypsometry(esbmtkBase):
         plt.show()  # display figure
 
 def get_box_geometry_parameters(box):
+    from esbmtk import Q_
     if box.geometry != "None":
         if not isinstance(box.geometry, list):
             raise ValueError("geometry must be a list see the docs for details")
         box.area_percentage = box.geometry[2]
-        box.volume = (
+        volume = (
             f"{box.mo.hyp.volume(box.geometry[0], box.geometry[1]) * box.area_percentage} m**3"
         )
+
+        box.volume = Q_(volume).to(box.mo.v_unit)
         box.area = box.mo.hyp.area(box.geometry[0]) * box.area_percentage
         box.area_dz = (
             box.mo.hyp.area_dz(box.geometry[0], box.geometry[1]) * box.area_percentage

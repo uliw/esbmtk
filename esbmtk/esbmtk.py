@@ -638,7 +638,7 @@ class Model(esbmtkBase):
             logging.root.removeHandler(handler)
 
         fn: str = f"{kwargs['name']}.log"
-        logging.basicConfig(filename=fn, filemode="w", level=logging.DEBUG)
+        logging.basicConfig(filename=fn, filemode="w", level=logging.WARN)
         self.__register_name__()
 
     def info(self, **kwargs) -> None:
@@ -972,12 +972,22 @@ class Model(esbmtkBase):
         if "filter" in kwargs:
             raise ValueError("use filter_by instead of filter")
 
+        self.cg_list: list = []
+        # extract all connection groups. Note that loc contains all conections
+        # i.e., not connection groups.
+        for c in list(self.loc):
+            if "." in c.full_name:
+                if c.register not in self.cg_list:
+                    self.cg_list.append(c.register)
+                else:  # this is a regular connnection
+                    self.cg_list.append(c)
+
         print(f"\n --- Connection Summary -- filtered by {fby}\n")
         print(f"       append info() to the connection name to see more details")
 
-        for c in self.loc:
+        for c in self.cg_list:
             if fby in c.full_name:
-                print(f"{c.full_name}")
+                print(f"{c.base_name}.info()")
 
         print("")
 
@@ -1661,8 +1671,8 @@ class ReservoirGroup(esbmtkBase):
 
     Example::
 
-        ReservoirGroup(name = "ShallowOcean",         # Name of reservoir group
-                    volume/geometry = "1E5 l",                # reservoir volume (m^3)
+        ReservoirGroup(name = "ShallowOcean",        # Name of reservoir group
+                    volume/geometry = "1E5 l",       # see below
                     delta   = {DIC:0, ALK:0, PO4:0]  # dict of delta values
                     mass/concentration = {DIC:"1 unit", ALK: "1 unit"}
                     plot = {DIC:"yes", ALK:"yes"}  defaults to yes
@@ -1679,6 +1689,9 @@ class ReservoirGroup(esbmtkBase):
 
     Most parameters are passed on to the Reservoir class. See the reservoir class
     documentation for details
+
+    The geometry keyword specifies the upper depth interval, the lower
+    depth interval, and the fraction of the total ocean area inhabited by the reservoir
 
     If the geometry parameter is supplied, the following instance variables will be
     computed
@@ -1748,10 +1761,8 @@ class ReservoirGroup(esbmtkBase):
         self.mo = self.species[0].mo
 
         # geoemtry information
-        if self.volume != "None":
-            self.volume = Q_(f"{volume} m**3").to(self.mo.v_unit)
-            
-        get_box_geometry_parameters(self)
+        if self.volume == "None":
+            get_box_geometry_parameters(self)
 
         # register this group object in the global namespace
         self.__register_name__()
@@ -1791,7 +1802,7 @@ class ReservoirGroup(esbmtkBase):
                 delta=self.cd[s.n]["delta"],
                 mass=self.cd[s.n]["mass"],
                 concentration=self.cd[s.n]["concentration"],
-                volume=self.volume ,
+                volume=self.volume,
                 geometry=self.geometry,
                 plot=self.cd[s.n]["plot"],
                 groupname=self.name,
@@ -2857,9 +2868,11 @@ class VirtualReservoir(Reservoir):
 
    In order to be compatible with the numba solver, a1 and a2 must be
    an array of 1-D numpy.arrays i.e., [m, l, h, c]. The array can have
-   any number of arrays though. a3 must be single array (or list)
-   containing an arbitrary number if entries. All numbers in a1 to a3
-   _must_ be of type float64.
+   any number of arrays though. a3 must be single array (or list).
+   The a3 array must be passed as List([...]), and List must be imported as
+
+   from numba.typed import List
+   
 
    The function must return a list of numbers which correspond to the
    data which describe a reservoir i.e., mass, light isotope, heavy
@@ -2872,8 +2885,8 @@ class VirtualReservoir(Reservoir):
        def my_func(i, a1, a2, a3) -> tuple:
            #
            # i = index of the current timestep
-           # a1 to a2 =  optional function parameter. These must be present,
-           # even if your function will not use it
+           # a1 to a3 =  optional function parameter. These must be present,
+           # even if your function will not use it See above for details
 
            # calc some stuff and return it as
 

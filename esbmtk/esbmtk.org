@@ -609,7 +609,7 @@ class Model(esbmtkBase):
         self.m_unit = Q_(self.mass_unit).units  # the mass unit
         self.v_unit = Q_(self.volume_unit).units  # the volume unit
         # the concentration unit (mass/volume)
-        self.c_unit = self.m_unit / self.v_unit
+        self.c_unit = self.m_unit / self.v_unit  # concentration
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
         self.r_unit = self.v_unit / self.t_unit  # flux as volume/time
         # this is now defined in __init__.py
@@ -1358,7 +1358,7 @@ class Reservoir(esbmtkBase):
 
         if self.geometry != "None":
             get_box_geometry_parameters(self)
-            
+
         # convert units
         self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
 
@@ -2974,9 +2974,11 @@ class VirtualReservoir(Reservoir):
 
    In order to be compatible with the numba solver, a1 and a2 must be
    an array of 1-D numpy.arrays i.e., [m, l, h, c]. The array can have
-   any number of arrays though. a3 must be single array (or list)
-   containing an arbitrary number if entries. All numbers in a1 to a3
-   _must_ be of type float64.
+   any number of arrays though. a3 must be single array (or list).
+   The a3 array must be passed as List([...]), and List must be imported as
+
+   from numba.typed import List
+   
 
    The function must return a list of numbers which correspond to the
    data which describe a reservoir i.e., mass, light isotope, heavy
@@ -2989,8 +2991,8 @@ class VirtualReservoir(Reservoir):
        def my_func(i, a1, a2, a3) -> tuple:
            #
            # i = index of the current timestep
-           # a1 to a2 =  optional function parameter. These must be present,
-           # even if your function will not use it
+           # a1 to a3 =  optional function parameter. These must be present,
+           # even if your function will not use it See above for details
 
            # calc some stuff and return it as
 

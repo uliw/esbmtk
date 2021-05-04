@@ -530,6 +530,10 @@ def make_dict(keys: list, values: list) -> dict:
         if len(values) == len(keys):
             d: dict = dict(zip(keys, values))
         else:
+            print(f"len values ={len(values)}, len keys ={len(keys)}")
+            print(f"values = {values}")
+            for k in keys:
+                print(f"key = {k}")
             raise ValueError(f"key and value list must be of equal length")
     else:
         values: list = [values] * len(keys)
@@ -700,11 +704,146 @@ def calc_volumes(bg: dict, M: any, h: any) -> list:
 
     return v
 
-def create_bulk_connections(ct: dict, M: any) -> None:
-    """Create connections from a dictionary. The dict shoudl have the
+def get_longest_dict_entry(d: dict) -> int:
+    """Get length of each item in the connection dict"""
+    l_length = 0  # length of  longest list
+    p_length = 0  # length of single parameter
+    for k, v in d.items():
+        if isinstance(v, list):
+            if len(v) > l_length:
+                l_length = len(v)
+        else:
+            p_length = 1
+
+    if l_length > 0 and p_length == 0:
+        case = 0  # Only lists present
+    if l_length == 0 and p_length == 1:
+        case = 1  #  Only parameters present
+    if l_length > 0 and p_length == 1:
+        case = 2  #  Lists and parameters present
+
+    return case, l_length
+
+
+def convert_to_lists(d: dict, l: int) -> dict:
+    """expand mixed dict entries (i.e. list and single value) such
+    that they are all lists of equal length
+
+    """
+    cd = d.copy()
+
+    for k, v in cd.items():
+        if not isinstance(v, list):
+            p = []
+            for i in range(l):
+                p.append(v)
+            d[k] = p
+
+    return d
+
+
+def get_sub_key(d: dict, i: int) -> dict:
+    """take a dict which has where the value is a list, and return the
+    key with the n-th value of that list
+
+    """
+
+    rd: dict = {}
+    for k, v in d.items():
+        rd[k] = v[i]
+
+    return rd
+
+
+def expand_dict(d: dict, mt: str = "1:1") -> int:
+
+    """Determine dict structure
+
+    in case we have mutiple connections with mutiple species, the
+    default action is to map connections to species (t = '1:1'). If
+    you rather want to create mutiple connections (one for each
+    species) in each connection set t = '1:N'
+
+    """
+    # loop over dict entries
+    # ck = connection key
+    # cd = connection dict
+
+    r: dict = {}  # the dict we will return
+
+    for ck, cd in d.items():  # loop over connections
+
+        rd: dict = {}  # temp dict
+        nd: dict = {}  # temp dict
+        case, length = get_longest_dict_entry(cd)
+
+        if isinstance(ck, tuple):
+            # assume 1:1 mapping between tuple and connection parameters
+            if mt == "1:1":
+
+                # prep dictionaries
+                if case == 0:
+                    nd = cd
+                    # print("case 0")
+                elif case == 1:  # only parameters present. Expand for each tuple entry
+                    length = len(ck)
+                    nd = convert_to_lists(cd, length)
+                    # print("case 1")
+                elif case == 2:  # mixed list present, Expand list
+                    # print(f"case 2, length = {length}")
+                    nd = convert_to_lists(cd, length)
+                    # print(nd)
+
+                # for each connection group in the tuple
+                if length != len(ck):
+                    message = (
+                        f"The number of connection properties ({length})\n"
+                        f"does not match the number of connection groups ({len(ck)})\n"
+                        f"did you intend to do a 1:N mapping?"
+                    )
+                    raise ValueError(message)
+
+                # map property dicts to connection group names
+                i = 0
+                for t in ck:
+                    rd[t] = get_sub_key(nd, i)
+                    i = i + 1
+
+            elif mt == "1:N":  # apply each species to each connection
+                if case == 0:
+                    nd = cd
+                elif case == 1:  # only parameters present. Expand for each tuple entry
+                    length = len(ck)
+                    nd = convert_to_lists(cd, length)
+                elif case == 2:  # mixed list present, Expand list
+                    nd = convert_to_lists(cd, length)
+
+                for t in ck:  # apply the entire nd dict to all connections
+                    rd[t] = nd
+            else:
+                raise ValueError(f"{mt} is not defined. must be '1:1' or '1:N'")
+
+        else:
+            if case == 0:  # only lists present, case 3
+                nd = cd
+            elif case == 1:  # only parameters present
+                nd = cd
+            elif case == 2:  # list and parameters present case 4
+                nd = convert_to_lists(cd, length)
+            rd[ck] = nd
+
+        # update the overall dict and move to the next entry
+        r.update(rd)
+
+    return r
+
+
+def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
+    """Create connections from a dictionary. The dict can have the following keys
     following format:
 
-    # Setup the dict which describes all fluxes
+    mt = mapping type. See below for explanation
+
     # na: names, tuple or str. If lists, all list elements share the same properties
     # sp: species list or species
     # ty: type, str
@@ -713,33 +852,78 @@ def create_bulk_connections(ct: dict, M: any) -> None:
     # re: reference, optional
     # al: alpha, optional
     # de: delta, optional
-    # mx: True, optional defaults to False
-    sl: list = list(ic.keys())  # get species list
+    # mx: True, optional defaults to False. If set, it will create forward
+          and backward fluxes (i.e. mixing)
+
+    There are 6 different cases how to specify connections
+
+    Case 1 One connection, one set of parameters
+           ct1 = {"sb2hb": {"ty": "scale", 'ra'....}}
+
+    Case 2 One connection, one set of instructions, one subset with mutiple parameters
+           This will be expanded to create connections for each species
+           ct2 = {"sb2hb": {"ty": "scale", "sp": ["a", "b"]}}
+
+    Case 3 One connection complete set of mutiple characters. Similar to case 2, but now
+           all parameters are given explicitly
+           ct3 = {"sb2hb": {"ty": ["scale", "scale"], "sp": ["a", "b"]}}
+
+    Case 4 Mutiple connections, one set of parameters. This will create
+           identical connection for "sb2hb" and  "ib2db"
+           ct4 = {("sb2hb", "ib2db"): {"ty": "scale", 'ra': ...}}
+
+    Case 5 Mutiple connections, one subset of mutiple set of parameters. This wil
+          create a connection for species 'a' in sb2hb and with species 'b' in ib2db
+           ct5 = {("sb2hb", "ib2db"): {"ty": "scale", "sp": ["a", "b"]}}
+
+    Case 6 Mutiple connections, complete set of parameters of mutiple parameters
+           Same as case 5, but now all parameters are specified explicitly
+           ct6 = {("sb2hb", "ib2db"): {"ty": ["scale", "scale"], "sp": ["a", "b"]}}
+
+
+    The default interpretation for cases 5 and 6 is that each list
+    entry corresponds to connection. However, sometimes we want to
+    create mutiple connections for multiple entries. In this case
+    provide the mt='1:N' parameter which will create a connection for
+    each species in each connection group. See the below example.
+
+    It is easy to shoot yourself in the foot. It is best to try the above first with
+    some simple examples, e.g.,
+
+    from esbmtk import expand_dict
+    ct2 = {"sb2hb": {"ty": "scale", "sp": ["a", "b"]}}
+    print(expand_dict(ct2))
+
+    The below example specifies 3 connection groups which share the rate, and connection type.
+    However, the default mapping is 1:1 so this will fail. You need to explicitly set
+    mt="1:N"
+    Each connection group comprises the species named in the species list, so this will create
+    a total of 3 x 2 = 6 connections
+
+    from esbmtk import expand_dict, Q_
+
+    sl: list = ['PO4', 'DIC']  # get species list
     ct = {  # thermohaline circulation
             # Apply to all boxes in the tuple
          ("hb2db@thc", "db2ib@thc", "ib2hb@thc"): {
           "ty": "scale_with_concentration",
           "sp": sl,  # species list
           "ra": Q_('20*Sv'),
-         },
-        # mixing fluxes
-        "sb2ib@mix": {
-           "ty": "scale_with_concentration",
-           "ra": Q_('63 Sv'),
-           "sp": "sl",
-           "mx": True,
-       },
-      },
-    # particulate fluxes due to biological production
-    "sb2ib@POP": {"ty": "scale_with_mass", "sc": 0.8, "re": sb.PO4, "sp": PO4},
-    }
+         }
+
+    print(expand_dict(ct))
+
 
     """
 
-    from esbmtk import create_connection
+    from esbmtk import create_connection, expand_dict
 
-    # loop over values in ct dict
-    for k, v in ct.items():
+    # expand dictionary into a well formed dict where each connection
+    # has a fully formed entry
+    c_ct = expand_dict(ct, mt=mt)
+
+    # loop over dict entries and create the respective connections
+    for k, v in c_ct.items():
         if isinstance(k, tuple):
             # loop over names in tuple
             for c in k:
@@ -748,6 +932,8 @@ def create_bulk_connections(ct: dict, M: any) -> None:
             create_connection(k, v, M)
         else:
             raise ValueError(f"{connection} must be string or tuple")
+
+    return ct
 
 
 def create_connection(n: str, p: dict, M: any) -> None:
@@ -782,31 +968,67 @@ def create_connection(n: str, p: dict, M: any) -> None:
     if isinstance(scale, Q_):
         scale = scale.to("l/a").magnitude
 
-    cg = ConnectionGroup(
-        source=source,
-        sink=sink,
-        ctype=make_dict(los, typ),
-        scale=make_dict(los, scale),  # get rate from dictionary
-        rate=make_dict(los, rate),
-        ref=make_dict(los, ref),
-        alpha=make_dict(los, alpha),
-        delta=make_dict(los, delta),
-        id=cid,  # get id from dictionary
-    )
+    # if name in M.dmo: # group already exist in this case we nee to update the
+    # connection group
 
-    # if mixing is set to True create reverse connection
-    if mix:
+    # Case one, no mixing, test if exist, otherwise create
+    # Case 2, mixing: test if forward connection exists, if not create
+    #                  test if backwards connection exists, or create
+
+    if not mix:
+        name = f"C_{source.name}2{sink.name}"
+        update_or_create(
+            name, source, sink, los, typ, scale, rate, ref, alpha, delta, cid, M
+        )
+
+    else:  # this is a connection with mixing
+        # create forward connection
+        name = f"C_{source.name}2{sink.name}"
+        update_or_create(
+            name, source, sink, los, typ, scale, rate, ref, alpha, delta, cid, M
+        )
+
+        # create backwards connection
+        name = f"C_{sink.name}2{source.name}"
         cid = cid.replace("_f", "_b")
-        cg2 = ConnectionGroup(
-            source=sink,
-            sink=source,
+        update_or_create(
+            name, sink, source, los, typ, scale, rate, ref, alpha, delta, cid, M
+        )
+
+
+def update_or_create(
+    name, source, sink, los, typ, scale, rate, ref, alpha, delta, cid, M
+):
+    """Create or update connection"""
+
+    from esbmtk import ConnectionGroup
+
+    if name in M.dmo:  # update connection
+        cg = M.dmo[name]
+        cg.update(
+            name=name,
+            source=source,
+            sink=sink,
             ctype=make_dict(los, typ),
             scale=make_dict(los, scale),  # get rate from dictionary
             rate=make_dict(los, rate),
             ref=make_dict(los, ref),
             alpha=make_dict(los, alpha),
             delta=make_dict(los, delta),
-            id=cid,  # get id from module import symbol
+            id=cid,  # get id from dictionary
+        )
+    else:  # create connection
+        cg = ConnectionGroup(
+            name=name,
+            source=source,
+            sink=sink,
+            ctype=make_dict(los, typ),
+            scale=make_dict(los, scale),  # get rate from dictionary
+            rate=make_dict(los, rate),
+            ref=make_dict(los, ref),
+            alpha=make_dict(los, alpha),
+            delta=make_dict(los, delta),
+            id=cid,  # get id from dictionary
         )
 
 def execute(
@@ -965,7 +1187,7 @@ def execute_e(
     print(f"\n Total solver time {duration} cpu seconds, wt = {wcd}\n")
 
 
-@njit(parallel=False)
+@njit(parallel=False,fastmath=True)
 def foo(fn_vr, a1, a2, a3, a7, fn, rd, fd, pc, a, b, c, d, e, maxt, dt):
 
     i = 1
