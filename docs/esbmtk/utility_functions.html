@@ -91,10 +91,25 @@
                     <a class="function" href="#calc_volumes">calc_volumes</a>
             </li>
             <li>
+                    <a class="function" href="#get_longest_dict_entry">get_longest_dict_entry</a>
+            </li>
+            <li>
+                    <a class="function" href="#convert_to_lists">convert_to_lists</a>
+            </li>
+            <li>
+                    <a class="function" href="#get_sub_key">get_sub_key</a>
+            </li>
+            <li>
+                    <a class="function" href="#expand_dict">expand_dict</a>
+            </li>
+            <li>
                     <a class="function" href="#create_bulk_connections">create_bulk_connections</a>
             </li>
             <li>
                     <a class="function" href="#create_connection">create_connection</a>
+            </li>
+            <li>
+                    <a class="function" href="#update_or_create">update_or_create</a>
             </li>
             <li>
                     <a class="function" href="#execute">execute</a>
@@ -521,35 +536,49 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
     <span class="n">col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">cn</span><span class="si">}</span><span class="s2">&quot;</span>
 
     <span class="k">if</span> <span class="n">first_axis</span><span class="p">:</span>
-        <span class="c1"># plot left y-scale data</span>
-        <span class="n">ln1</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">yl</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">legend_left</span><span class="p">)</span>
-        <span class="c1"># set labels</span>
-        <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">time_label</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">d_unit</span><span class="si">:</span><span class="s2">~P</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
-        <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">y_label</span><span class="p">)</span>
-        <span class="c1"># remove unnecessary frame species</span>
-        <span class="n">ax1</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">DataField</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y1_data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y1_data</span><span class="p">):</span>  <span class="c1"># loop over datafield list</span>
+                    <span class="n">yl</span> <span class="o">=</span> <span class="n">d</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">y1_legend</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="n">ln1</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">yl</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+                    <span class="n">cn</span> <span class="o">=</span> <span class="n">cn</span> <span class="o">+</span> <span class="mi">1</span>
+                    <span class="n">col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">cn</span><span class="si">}</span><span class="s2">&quot;</span>
 
-    <span class="c1"># set color index</span>
-    <span class="n">cn</span> <span class="o">=</span> <span class="n">cn</span> <span class="o">+</span> <span class="mi">1</span>
-    <span class="n">col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">cn</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">time_label</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">d_unit</span><span class="si">:</span><span class="s2">~P</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+                <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">y_label</span><span class="p">)</span>
+                <span class="c1"># remove unnecessary frame species</span>
+                <span class="n">ax1</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">second_axis</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">DataField</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">common_y_scale</span> <span class="o">==</span> <span class="s2">&quot;yes&quot;</span><span class="p">:</span>
-                <span class="n">ln2</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">yr</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">legend_right</span><span class="p">)</span>
-                <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-                <span class="n">ax1</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-                <span class="n">second_axis</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y2_data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">common_y_scale</span> <span class="o">==</span> <span class="s2">&quot;yes&quot;</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y2_data</span><span class="p">):</span>  <span class="c1"># loop over datafield list</span>
+                        <span class="n">yl</span> <span class="o">=</span> <span class="n">d</span>
+                        <span class="n">label</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">y2_legend</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                        <span class="n">ln1</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">yl</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+                        <span class="n">cn</span> <span class="o">=</span> <span class="n">cn</span> <span class="o">+</span> <span class="mi">1</span>
+                        <span class="n">col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">cn</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+                        <span class="n">ax1</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+                        <span class="n">second_axis</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">ax2</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">twinx</span><span class="p">()</span>  <span class="c1"># create a second y-axis</span>
+                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y2_data</span><span class="p">):</span>  <span class="c1"># loop over datafield list</span>
+                        <span class="n">yl</span> <span class="o">=</span> <span class="n">d</span>
+                        <span class="n">label</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">y2_legend</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                        <span class="n">ln1</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">yl</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+                        <span class="n">cn</span> <span class="o">=</span> <span class="n">cn</span> <span class="o">+</span> <span class="mi">1</span>
+                        <span class="n">col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">cn</span><span class="si">}</span><span class="s2">&quot;</span>
+
+                    <span class="n">ax2</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">ld</span><span class="p">)</span>  <span class="c1"># species object delta label</span>
+                    <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax2</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+                    <span class="c1"># remove unneeded frame</span>
+                    <span class="n">ax2</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">ax2</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">twinx</span><span class="p">()</span>  <span class="c1"># create a second y-axis</span>
-                <span class="c1"># plof right y-scale data</span>
-                <span class="n">ln2</span> <span class="o">=</span> <span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">yr</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">legend_right</span><span class="p">)</span>
-                <span class="n">ax2</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">ld</span><span class="p">)</span>  <span class="c1"># species object delta label</span>
-                <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax2</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-                <span class="n">ax2</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span>
-                    <span class="kc">False</span>
-                <span class="p">)</span>  <span class="c1"># remove unnecessary frame speciess</span>
+                <span class="n">second_axis</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Signal</span><span class="p">):</span>
             <span class="c1"># use the same units as the associated flux</span>
@@ -704,6 +733,10 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
             <span class="n">d</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">values</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;len values =</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span><span class="si">}</span><span class="s2">, len keys =</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;values = </span><span class="si">{</span><span class="n">values</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;key = </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;key and value list must be of equal length&quot;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">values</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="n">values</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
@@ -874,11 +907,146 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
     <span class="k">return</span> <span class="n">v</span>
 
-<span class="k">def</span> <span class="nf">create_bulk_connections</span><span class="p">(</span><span class="n">ct</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">M</span><span class="p">:</span> <span class="nb">any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create connections from a dictionary. The dict shoudl have the</span>
+<span class="k">def</span> <span class="nf">get_longest_dict_entry</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Get length of each item in the connection dict&quot;&quot;&quot;</span>
+    <span class="n">l_length</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># length of  longest list</span>
+    <span class="n">p_length</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># length of single parameter</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">l_length</span><span class="p">:</span>
+                <span class="n">l_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p_length</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="n">l_length</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">p_length</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">case</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Only lists present</span>
+    <span class="k">if</span> <span class="n">l_length</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">p_length</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">case</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1">#  Only parameters present</span>
+    <span class="k">if</span> <span class="n">l_length</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">p_length</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">case</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1">#  Lists and parameters present</span>
+
+    <span class="k">return</span> <span class="n">case</span><span class="p">,</span> <span class="n">l_length</span>
+
+
+<span class="k">def</span> <span class="nf">convert_to_lists</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">l</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;expand mixed dict entries (i.e. list and single value) such</span>
+<span class="sd">    that they are all lists of equal length</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cd</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">cd</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">l</span><span class="p">):</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span>
+
+    <span class="k">return</span> <span class="n">d</span>
+
+
+<span class="k">def</span> <span class="nf">get_sub_key</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;take a dict which has where the value is a list, and return the</span>
+<span class="sd">    key with the n-th value of that list</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">rd</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">rd</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">rd</span>
+
+
+<span class="k">def</span> <span class="nf">expand_dict</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">mt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;1:1&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;Determine dict structure</span>
+
+<span class="sd">    in case we have mutiple connections with mutiple species, the</span>
+<span class="sd">    default action is to map connections to species (t = &#39;1:1&#39;). If</span>
+<span class="sd">    you rather want to create mutiple connections (one for each</span>
+<span class="sd">    species) in each connection set t = &#39;1:N&#39;</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># loop over dict entries</span>
+    <span class="c1"># ck = connection key</span>
+    <span class="c1"># cd = connection dict</span>
+
+    <span class="n">r</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># the dict we will return</span>
+
+    <span class="k">for</span> <span class="n">ck</span><span class="p">,</span> <span class="n">cd</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>  <span class="c1"># loop over connections</span>
+
+        <span class="n">rd</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># temp dict</span>
+        <span class="n">nd</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># temp dict</span>
+        <span class="n">case</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="n">get_longest_dict_entry</span><span class="p">(</span><span class="n">cd</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ck</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="c1"># assume 1:1 mapping between tuple and connection parameters</span>
+            <span class="k">if</span> <span class="n">mt</span> <span class="o">==</span> <span class="s2">&quot;1:1&quot;</span><span class="p">:</span>
+
+                <span class="c1"># prep dictionaries</span>
+                <span class="k">if</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">nd</span> <span class="o">=</span> <span class="n">cd</span>
+                    <span class="c1"># print(&quot;case 0&quot;)</span>
+                <span class="k">elif</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># only parameters present. Expand for each tuple entry</span>
+                    <span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ck</span><span class="p">)</span>
+                    <span class="n">nd</span> <span class="o">=</span> <span class="n">convert_to_lists</span><span class="p">(</span><span class="n">cd</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+                    <span class="c1"># print(&quot;case 1&quot;)</span>
+                <span class="k">elif</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># mixed list present, Expand list</span>
+                    <span class="c1"># print(f&quot;case 2, length = {length}&quot;)</span>
+                    <span class="n">nd</span> <span class="o">=</span> <span class="n">convert_to_lists</span><span class="p">(</span><span class="n">cd</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+                    <span class="c1"># print(nd)</span>
+
+                <span class="c1"># for each connection group in the tuple</span>
+                <span class="k">if</span> <span class="n">length</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ck</span><span class="p">):</span>
+                    <span class="n">message</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The number of connection properties (</span><span class="si">{</span><span class="n">length</span><span class="si">}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;does not match the number of connection groups (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">ck</span><span class="p">)</span><span class="si">}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;did you intend to do a 1:N mapping?&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+
+                <span class="c1"># map property dicts to connection group names</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ck</span><span class="p">:</span>
+                    <span class="n">rd</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_sub_key</span><span class="p">(</span><span class="n">nd</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+
+            <span class="k">elif</span> <span class="n">mt</span> <span class="o">==</span> <span class="s2">&quot;1:N&quot;</span><span class="p">:</span>  <span class="c1"># apply each species to each connection</span>
+                <span class="k">if</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">nd</span> <span class="o">=</span> <span class="n">cd</span>
+                <span class="k">elif</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># only parameters present. Expand for each tuple entry</span>
+                    <span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ck</span><span class="p">)</span>
+                    <span class="n">nd</span> <span class="o">=</span> <span class="n">convert_to_lists</span><span class="p">(</span><span class="n">cd</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># mixed list present, Expand list</span>
+                    <span class="n">nd</span> <span class="o">=</span> <span class="n">convert_to_lists</span><span class="p">(</span><span class="n">cd</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ck</span><span class="p">:</span>  <span class="c1"># apply the entire nd dict to all connections</span>
+                    <span class="n">rd</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">nd</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mt</span><span class="si">}</span><span class="s2"> is not defined. must be &#39;1:1&#39; or &#39;1:N&#39;&quot;</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># only lists present, case 3</span>
+                <span class="n">nd</span> <span class="o">=</span> <span class="n">cd</span>
+            <span class="k">elif</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># only parameters present</span>
+                <span class="n">nd</span> <span class="o">=</span> <span class="n">cd</span>
+            <span class="k">elif</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># list and parameters present case 4</span>
+                <span class="n">nd</span> <span class="o">=</span> <span class="n">convert_to_lists</span><span class="p">(</span><span class="n">cd</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+            <span class="n">rd</span><span class="p">[</span><span class="n">ck</span><span class="p">]</span> <span class="o">=</span> <span class="n">nd</span>
+
+        <span class="c1"># update the overall dict and move to the next entry</span>
+        <span class="n">r</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">rd</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">r</span>
+
+
+<span class="k">def</span> <span class="nf">create_bulk_connections</span><span class="p">(</span><span class="n">ct</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">M</span><span class="p">:</span> <span class="nb">any</span><span class="p">,</span> <span class="n">mt</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="s2">&quot;1:1&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Create connections from a dictionary. The dict can have the following keys</span>
 <span class="sd">    following format:</span>
 
-<span class="sd">    # Setup the dict which describes all fluxes</span>
+<span class="sd">    mt = mapping type. See below for explanation</span>
+
 <span class="sd">    # na: names, tuple or str. If lists, all list elements share the same properties</span>
 <span class="sd">    # sp: species list or species</span>
 <span class="sd">    # ty: type, str</span>
@@ -887,33 +1055,80 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">    # re: reference, optional</span>
 <span class="sd">    # al: alpha, optional</span>
 <span class="sd">    # de: delta, optional</span>
-<span class="sd">    # mx: True, optional defaults to False</span>
-<span class="sd">    sl: list = list(ic.keys())  # get species list</span>
+<span class="sd">    # mx: True, optional defaults to False. If set, it will create forward</span>
+<span class="sd">          and backward fluxes (i.e. mixing)</span>
+
+<span class="sd">    There are 6 different cases how to specify connections</span>
+
+<span class="sd">    Case 1 One connection, one set of parameters</span>
+<span class="sd">           ct1 = {&quot;sb2hb&quot;: {&quot;ty&quot;: &quot;scale&quot;, &#39;ra&#39;....}}</span>
+
+<span class="sd">    Case 2 One connection, one set of instructions, one subset with mutiple parameters</span>
+<span class="sd">           This will be expanded to create connections for each species</span>
+<span class="sd">           ct2 = {&quot;sb2hb&quot;: {&quot;ty&quot;: &quot;scale&quot;, &quot;sp&quot;: [&quot;a&quot;, &quot;b&quot;]}}</span>
+
+<span class="sd">    Case 3 One connection complete set of mutiple characters. Similar to case 2, but now</span>
+<span class="sd">           all parameters are given explicitly</span>
+<span class="sd">           ct3 = {&quot;sb2hb&quot;: {&quot;ty&quot;: [&quot;scale&quot;, &quot;scale&quot;], &quot;sp&quot;: [&quot;a&quot;, &quot;b&quot;]}}</span>
+
+<span class="sd">    Case 4 Mutiple connections, one set of parameters. This will create</span>
+<span class="sd">           identical connection for &quot;sb2hb&quot; and  &quot;ib2db&quot;</span>
+<span class="sd">           ct4 = {(&quot;sb2hb&quot;, &quot;ib2db&quot;): {&quot;ty&quot;: &quot;scale&quot;, &#39;ra&#39;: ...}}</span>
+
+<span class="sd">    Case 5 Mutiple connections, one subset of mutiple set of parameters. This wil</span>
+<span class="sd">          create a connection for species &#39;a&#39; in sb2hb and with species &#39;b&#39; in ib2db</span>
+<span class="sd">           ct5 = {(&quot;sb2hb&quot;, &quot;ib2db&quot;): {&quot;ty&quot;: &quot;scale&quot;, &quot;sp&quot;: [&quot;a&quot;, &quot;b&quot;]}}</span>
+
+<span class="sd">    Case 6 Mutiple connections, complete set of parameters of mutiple parameters</span>
+<span class="sd">           Same as case 5, but now all parameters are specified explicitly</span>
+<span class="sd">           ct6 = {(&quot;sb2hb&quot;, &quot;ib2db&quot;): {&quot;ty&quot;: [&quot;scale&quot;, &quot;scale&quot;], &quot;sp&quot;: [&quot;a&quot;, &quot;b&quot;]}}</span>
+
+
+<span class="sd">    The default interpretation for cases 5 and 6 is that each list</span>
+<span class="sd">    entry corresponds to connection. However, sometimes we want to</span>
+<span class="sd">    create mutiple connections for multiple entries. In this case</span>
+<span class="sd">    provide the mt=&#39;1:N&#39; parameter which will create a connection for</span>
+<span class="sd">    each species in each connection group. See the below example.</span>
+
+<span class="sd">    It is easy to shoot yourself in the foot. It is best to try the above first with</span>
+<span class="sd">    some simple examples, e.g.,</span>
+
+<span class="sd">    from esbmtk import expand_dict</span>
+<span class="sd">    ct2 = {&quot;sb2hb&quot;: {&quot;ty&quot;: &quot;scale&quot;, &quot;sp&quot;: [&quot;a&quot;, &quot;b&quot;]}}</span>
+<span class="sd">    print(expand_dict(ct2))</span>
+
+<span class="sd">    The below example specifies 3 connection groups which share the rate, and connection type.</span>
+<span class="sd">    However, the default mapping is 1:1 so this will fail. You need to explicitly set</span>
+<span class="sd">    mt=&quot;1:N&quot;</span>
+<span class="sd">    Each connection group comprises the species named in the species list, so this will create</span>
+<span class="sd">    a total of 3 x 2 = 6 connections</span>
+
+<span class="sd">    from esbmtk import expand_dict, Q_</span>
+
+<span class="sd">    sl: list = [&#39;PO4&#39;, &#39;DIC&#39;]  # get species list</span>
 <span class="sd">    ct = {  # thermohaline circulation</span>
 <span class="sd">            # Apply to all boxes in the tuple</span>
 <span class="sd">         (&quot;hb2db@thc&quot;, &quot;db2ib@thc&quot;, &quot;ib2hb@thc&quot;): {</span>
 <span class="sd">          &quot;ty&quot;: &quot;scale_with_concentration&quot;,</span>
 <span class="sd">          &quot;sp&quot;: sl,  # species list</span>
 <span class="sd">          &quot;ra&quot;: Q_(&#39;20*Sv&#39;),</span>
-<span class="sd">         },</span>
-<span class="sd">        # mixing fluxes</span>
-<span class="sd">        &quot;sb2ib@mix&quot;: {</span>
-<span class="sd">           &quot;ty&quot;: &quot;scale_with_concentration&quot;,</span>
-<span class="sd">           &quot;ra&quot;: Q_(&#39;63 Sv&#39;),</span>
-<span class="sd">           &quot;sp&quot;: &quot;sl&quot;,</span>
-<span class="sd">           &quot;mx&quot;: True,</span>
-<span class="sd">       },</span>
-<span class="sd">      },</span>
-<span class="sd">    # particulate fluxes due to biological production</span>
-<span class="sd">    &quot;sb2ib@POP&quot;: {&quot;ty&quot;: &quot;scale_with_mass&quot;, &quot;sc&quot;: 0.8, &quot;re&quot;: sb.PO4, &quot;sp&quot;: PO4},</span>
-<span class="sd">    }</span>
+<span class="sd">         }</span>
+
+<span class="sd">    create_bulk_connections(ct, M, mt=&quot;1:N&quot;)</span>
+
+<span class="sd">    will create a connection for each species in each connectiongroup and all of these connections</span>
+<span class="sd">    share the same properties</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="kn">from</span> <span class="nn">esbmtk</span> <span class="kn">import</span> <span class="n">create_connection</span>
+    <span class="kn">from</span> <span class="nn">esbmtk</span> <span class="kn">import</span> <span class="n">create_connection</span><span class="p">,</span> <span class="n">expand_dict</span>
 
-    <span class="c1"># loop over values in ct dict</span>
-    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ct</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="c1"># expand dictionary into a well formed dict where each connection</span>
+    <span class="c1"># has a fully formed entry</span>
+    <span class="n">c_ct</span> <span class="o">=</span> <span class="n">expand_dict</span><span class="p">(</span><span class="n">ct</span><span class="p">,</span> <span class="n">mt</span><span class="o">=</span><span class="n">mt</span><span class="p">)</span>
+
+    <span class="c1"># loop over dict entries and create the respective connections</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">c_ct</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
             <span class="c1"># loop over names in tuple</span>
             <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">k</span><span class="p">:</span>
@@ -922,6 +1137,8 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">create_connection</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">M</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">connection</span><span class="si">}</span><span class="s2"> must be string or tuple&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ct</span>
 
 
 <span class="k">def</span> <span class="nf">create_connection</span><span class="p">(</span><span class="n">n</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">M</span><span class="p">:</span> <span class="nb">any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -956,31 +1173,67 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">Q_</span><span class="p">):</span>
         <span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;l/a&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
 
-    <span class="n">cg</span> <span class="o">=</span> <span class="n">ConnectionGroup</span><span class="p">(</span>
-        <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
-        <span class="n">sink</span><span class="o">=</span><span class="n">sink</span><span class="p">,</span>
-        <span class="n">ctype</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">),</span>
-        <span class="n">scale</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">scale</span><span class="p">),</span>  <span class="c1"># get rate from dictionary</span>
-        <span class="n">rate</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">rate</span><span class="p">),</span>
-        <span class="n">ref</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">ref</span><span class="p">),</span>
-        <span class="n">alpha</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">alpha</span><span class="p">),</span>
-        <span class="n">delta</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">delta</span><span class="p">),</span>
-        <span class="nb">id</span><span class="o">=</span><span class="n">cid</span><span class="p">,</span>  <span class="c1"># get id from dictionary</span>
-    <span class="p">)</span>
+    <span class="c1"># if name in M.dmo: # group already exist in this case we nee to update the</span>
+    <span class="c1"># connection group</span>
 
-    <span class="c1"># if mixing is set to True create reverse connection</span>
-    <span class="k">if</span> <span class="n">mix</span><span class="p">:</span>
+    <span class="c1"># Case one, no mixing, test if exist, otherwise create</span>
+    <span class="c1"># Case 2, mixing: test if forward connection exists, if not create</span>
+    <span class="c1">#                  test if backwards connection exists, or create</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">mix</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C_</span><span class="si">{</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">sink</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">update_or_create</span><span class="p">(</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">cid</span><span class="p">,</span> <span class="n">M</span>
+        <span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># this is a connection with mixing</span>
+        <span class="c1"># create forward connection</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C_</span><span class="si">{</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">sink</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">update_or_create</span><span class="p">(</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">cid</span><span class="p">,</span> <span class="n">M</span>
+        <span class="p">)</span>
+
+        <span class="c1"># create backwards connection</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C_</span><span class="si">{</span><span class="n">sink</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">cid</span> <span class="o">=</span> <span class="n">cid</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_f&quot;</span><span class="p">,</span> <span class="s2">&quot;_b&quot;</span><span class="p">)</span>
-        <span class="n">cg2</span> <span class="o">=</span> <span class="n">ConnectionGroup</span><span class="p">(</span>
-            <span class="n">source</span><span class="o">=</span><span class="n">sink</span><span class="p">,</span>
-            <span class="n">sink</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
+        <span class="n">update_or_create</span><span class="p">(</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">cid</span><span class="p">,</span> <span class="n">M</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">update_or_create</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">cid</span><span class="p">,</span> <span class="n">M</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create or update connection&quot;&quot;&quot;</span>
+
+    <span class="kn">from</span> <span class="nn">esbmtk</span> <span class="kn">import</span> <span class="n">ConnectionGroup</span>
+
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">M</span><span class="o">.</span><span class="n">dmo</span><span class="p">:</span>  <span class="c1"># update connection</span>
+        <span class="n">cg</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">dmo</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">cg</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
+            <span class="n">sink</span><span class="o">=</span><span class="n">sink</span><span class="p">,</span>
             <span class="n">ctype</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">),</span>
             <span class="n">scale</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">scale</span><span class="p">),</span>  <span class="c1"># get rate from dictionary</span>
             <span class="n">rate</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">rate</span><span class="p">),</span>
             <span class="n">ref</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">ref</span><span class="p">),</span>
             <span class="n">alpha</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">alpha</span><span class="p">),</span>
             <span class="n">delta</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">delta</span><span class="p">),</span>
-            <span class="nb">id</span><span class="o">=</span><span class="n">cid</span><span class="p">,</span>  <span class="c1"># get id from module import symbol</span>
+            <span class="nb">id</span><span class="o">=</span><span class="n">cid</span><span class="p">,</span>  <span class="c1"># get id from dictionary</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># create connection</span>
+        <span class="n">cg</span> <span class="o">=</span> <span class="n">ConnectionGroup</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
+            <span class="n">sink</span><span class="o">=</span><span class="n">sink</span><span class="p">,</span>
+            <span class="n">ctype</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">),</span>
+            <span class="n">scale</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">scale</span><span class="p">),</span>  <span class="c1"># get rate from dictionary</span>
+            <span class="n">rate</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">rate</span><span class="p">),</span>
+            <span class="n">ref</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">ref</span><span class="p">),</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">alpha</span><span class="p">),</span>
+            <span class="n">delta</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">delta</span><span class="p">),</span>
+            <span class="nb">id</span><span class="o">=</span><span class="n">cid</span><span class="p">,</span>  <span class="c1"># get id from dictionary</span>
         <span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span>
@@ -1008,16 +1261,20 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">lor</span><span class="p">:</span>  <span class="c1"># loop over all reservoirs</span>
             <span class="n">flux_list</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">lof</span>
 
-            <span class="n">new</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">new</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">=</span> <span class="mi">0</span>
             <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">flux_list</span><span class="p">:</span>  <span class="c1"># do sum of fluxes in this reservoir</span>
                 <span class="n">direction</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">lio</span><span class="p">[</span><span class="n">f</span><span class="p">]</span>
                 <span class="n">new</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">f</span><span class="o">.</span><span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">direction</span>  <span class="c1"># current flux and direction</span>
                 <span class="n">new</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">f</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">direction</span>  <span class="c1"># current flux and direction</span>
-                <span class="n">new</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">f</span><span class="o">.</span><span class="n">h</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">direction</span>  <span class="c1"># current flux and direction</span>
+                <span class="c1">#new[2] = new[2] + f.h[i] * direction  # current flux and direction</span>
 
             <span class="c1"># print(f&quot;fsum = {new[0]:.2e}&quot;)</span>
             <span class="c1"># new = array([ms, ls, hs])</span>
+            <span class="n">new</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">new</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="c1"># new[3] = delta will be set by the setitem method in the reserevoir</span>
+            <span class="c1"># ditto for the concentration</span>
             <span class="n">new</span> <span class="o">=</span> <span class="n">new</span> <span class="o">*</span> <span class="n">r</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">dt</span>  <span class="c1"># get flux / timestep</span>
+            <span class="c1">#print(f&quot;{i} new = {new}, dt = {r.mo.dt}&quot;)</span>
             <span class="n">new</span> <span class="o">=</span> <span class="n">new</span> <span class="o">+</span> <span class="n">r</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># add to data from last time step</span>
             <span class="n">new</span> <span class="o">=</span> <span class="n">new</span> <span class="o">*</span> <span class="p">(</span><span class="n">new</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># set negative values to zero</span>
             <span class="c1"># print(f&quot;updating {r.full_name} from {r.m[i]:.2e}&quot;)</span>
@@ -1139,7 +1396,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> Total solver time </span><span class="si">{</span><span class="n">duration</span><span class="si">}</span><span class="s2"> cpu seconds, wt = </span><span class="si">{</span><span class="n">wcd</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
 
 
-<span class="nd">@njit</span><span class="p">(</span><span class="n">parallel</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nd">@njit</span><span class="p">(</span><span class="n">parallel</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">fastmath</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">fn_vr</span><span class="p">,</span> <span class="n">a1</span><span class="p">,</span> <span class="n">a2</span><span class="p">,</span> <span class="n">a3</span><span class="p">,</span> <span class="n">a7</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">rd</span><span class="p">,</span> <span class="n">fd</span><span class="p">,</span> <span class="n">pc</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">maxt</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
 
     <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span>
@@ -2028,35 +2285,49 @@ indent :int = 0 indentation</p>
     <span class="n">col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">cn</span><span class="si">}</span><span class="s2">&quot;</span>
 
     <span class="k">if</span> <span class="n">first_axis</span><span class="p">:</span>
-        <span class="c1"># plot left y-scale data</span>
-        <span class="n">ln1</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">yl</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">legend_left</span><span class="p">)</span>
-        <span class="c1"># set labels</span>
-        <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">time_label</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">d_unit</span><span class="si">:</span><span class="s2">~P</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
-        <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">y_label</span><span class="p">)</span>
-        <span class="c1"># remove unnecessary frame species</span>
-        <span class="n">ax1</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-        <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">DataField</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y1_data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y1_data</span><span class="p">):</span>  <span class="c1"># loop over datafield list</span>
+                    <span class="n">yl</span> <span class="o">=</span> <span class="n">d</span>
+                    <span class="n">label</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">y1_legend</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="n">ln1</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">yl</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+                    <span class="n">cn</span> <span class="o">=</span> <span class="n">cn</span> <span class="o">+</span> <span class="mi">1</span>
+                    <span class="n">col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">cn</span><span class="si">}</span><span class="s2">&quot;</span>
 
-    <span class="c1"># set color index</span>
-    <span class="n">cn</span> <span class="o">=</span> <span class="n">cn</span> <span class="o">+</span> <span class="mi">1</span>
-    <span class="n">col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">cn</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">time_label</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">d_unit</span><span class="si">:</span><span class="s2">~P</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+                <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">y_label</span><span class="p">)</span>
+                <span class="c1"># remove unnecessary frame species</span>
+                <span class="n">ax1</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">second_axis</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">DataField</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">common_y_scale</span> <span class="o">==</span> <span class="s2">&quot;yes&quot;</span><span class="p">:</span>
-                <span class="n">ln2</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">yr</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">legend_right</span><span class="p">)</span>
-                <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-                <span class="n">ax1</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
-                <span class="n">second_axis</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y2_data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">obj</span><span class="o">.</span><span class="n">common_y_scale</span> <span class="o">==</span> <span class="s2">&quot;yes&quot;</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y2_data</span><span class="p">):</span>  <span class="c1"># loop over datafield list</span>
+                        <span class="n">yl</span> <span class="o">=</span> <span class="n">d</span>
+                        <span class="n">label</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">y2_legend</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                        <span class="n">ln1</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">yl</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+                        <span class="n">cn</span> <span class="o">=</span> <span class="n">cn</span> <span class="o">+</span> <span class="mi">1</span>
+                        <span class="n">col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">cn</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+                        <span class="n">ax1</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+                        <span class="n">second_axis</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">ax2</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">twinx</span><span class="p">()</span>  <span class="c1"># create a second y-axis</span>
+                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y2_data</span><span class="p">):</span>  <span class="c1"># loop over datafield list</span>
+                        <span class="n">yl</span> <span class="o">=</span> <span class="n">d</span>
+                        <span class="n">label</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">y2_legend</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                        <span class="n">ln1</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">yl</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+                        <span class="n">cn</span> <span class="o">=</span> <span class="n">cn</span> <span class="o">+</span> <span class="mi">1</span>
+                        <span class="n">col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">cn</span><span class="si">}</span><span class="s2">&quot;</span>
+
+                    <span class="n">ax2</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">ld</span><span class="p">)</span>  <span class="c1"># species object delta label</span>
+                    <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax2</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+                    <span class="c1"># remove unneeded frame</span>
+                    <span class="n">ax2</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">ax2</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">twinx</span><span class="p">()</span>  <span class="c1"># create a second y-axis</span>
-                <span class="c1"># plof right y-scale data</span>
-                <span class="n">ln2</span> <span class="o">=</span> <span class="n">ax2</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">yr</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">legend_right</span><span class="p">)</span>
-                <span class="n">ax2</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">ld</span><span class="p">)</span>  <span class="c1"># species object delta label</span>
-                <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax2</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
-                <span class="n">ax2</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span>
-                    <span class="kc">False</span>
-                <span class="p">)</span>  <span class="c1"># remove unnecessary frame speciess</span>
+                <span class="n">second_axis</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Signal</span><span class="p">):</span>
             <span class="c1"># use the same units as the associated flux</span>
@@ -2304,6 +2575,10 @@ id string is present</p>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
             <span class="n">d</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">values</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;len values =</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span><span class="si">}</span><span class="s2">, len keys =</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;values = </span><span class="si">{</span><span class="n">values</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;key = </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;key and value list must be of equal length&quot;</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">values</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="n">values</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
@@ -2613,21 +2888,231 @@ h is the hypsometry handle</p>
 
 
                 </section>
+                <section id="get_longest_dict_entry">
+                            <div class="attr function"><a class="headerlink" href="#get_longest_dict_entry">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">get_longest_dict_entry</span><span class="signature">(d: dict) -&gt; int</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">get_longest_dict_entry</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Get length of each item in the connection dict&quot;&quot;&quot;</span>
+    <span class="n">l_length</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># length of  longest list</span>
+    <span class="n">p_length</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># length of single parameter</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">l_length</span><span class="p">:</span>
+                <span class="n">l_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">p_length</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">if</span> <span class="n">l_length</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">p_length</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">case</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Only lists present</span>
+    <span class="k">if</span> <span class="n">l_length</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">p_length</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">case</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1">#  Only parameters present</span>
+    <span class="k">if</span> <span class="n">l_length</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">p_length</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">case</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1">#  Lists and parameters present</span>
+
+    <span class="k">return</span> <span class="n">case</span><span class="p">,</span> <span class="n">l_length</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Get length of each item in the connection dict</p>
+</div>
+
+
+                </section>
+                <section id="convert_to_lists">
+                            <div class="attr function"><a class="headerlink" href="#convert_to_lists">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">convert_to_lists</span><span class="signature">(d: dict, l: int) -&gt; dict</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">convert_to_lists</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">l</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;expand mixed dict entries (i.e. list and single value) such</span>
+<span class="sd">    that they are all lists of equal length</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cd</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">cd</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">l</span><span class="p">):</span>
+                <span class="n">p</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="n">d</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span>
+
+    <span class="k">return</span> <span class="n">d</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>expand mixed dict entries (i.e. list and single value) such
+that they are all lists of equal length</p>
+</div>
+
+
+                </section>
+                <section id="get_sub_key">
+                            <div class="attr function"><a class="headerlink" href="#get_sub_key">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">get_sub_key</span><span class="signature">(d: dict, i: int) -&gt; dict</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">get_sub_key</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;take a dict which has where the value is a list, and return the</span>
+<span class="sd">    key with the n-th value of that list</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">rd</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">rd</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">rd</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>take a dict which has where the value is a list, and return the
+key with the n-th value of that list</p>
+</div>
+
+
+                </section>
+                <section id="expand_dict">
+                            <div class="attr function"><a class="headerlink" href="#expand_dict">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">expand_dict</span><span class="signature">(d: dict, mt: str = &#39;1:1&#39;) -&gt; int</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">expand_dict</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">mt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;1:1&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot;Determine dict structure</span>
+
+<span class="sd">    in case we have mutiple connections with mutiple species, the</span>
+<span class="sd">    default action is to map connections to species (t = &#39;1:1&#39;). If</span>
+<span class="sd">    you rather want to create mutiple connections (one for each</span>
+<span class="sd">    species) in each connection set t = &#39;1:N&#39;</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># loop over dict entries</span>
+    <span class="c1"># ck = connection key</span>
+    <span class="c1"># cd = connection dict</span>
+
+    <span class="n">r</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># the dict we will return</span>
+
+    <span class="k">for</span> <span class="n">ck</span><span class="p">,</span> <span class="n">cd</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>  <span class="c1"># loop over connections</span>
+
+        <span class="n">rd</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># temp dict</span>
+        <span class="n">nd</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># temp dict</span>
+        <span class="n">case</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="n">get_longest_dict_entry</span><span class="p">(</span><span class="n">cd</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ck</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="c1"># assume 1:1 mapping between tuple and connection parameters</span>
+            <span class="k">if</span> <span class="n">mt</span> <span class="o">==</span> <span class="s2">&quot;1:1&quot;</span><span class="p">:</span>
+
+                <span class="c1"># prep dictionaries</span>
+                <span class="k">if</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">nd</span> <span class="o">=</span> <span class="n">cd</span>
+                    <span class="c1"># print(&quot;case 0&quot;)</span>
+                <span class="k">elif</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># only parameters present. Expand for each tuple entry</span>
+                    <span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ck</span><span class="p">)</span>
+                    <span class="n">nd</span> <span class="o">=</span> <span class="n">convert_to_lists</span><span class="p">(</span><span class="n">cd</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+                    <span class="c1"># print(&quot;case 1&quot;)</span>
+                <span class="k">elif</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># mixed list present, Expand list</span>
+                    <span class="c1"># print(f&quot;case 2, length = {length}&quot;)</span>
+                    <span class="n">nd</span> <span class="o">=</span> <span class="n">convert_to_lists</span><span class="p">(</span><span class="n">cd</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+                    <span class="c1"># print(nd)</span>
+
+                <span class="c1"># for each connection group in the tuple</span>
+                <span class="k">if</span> <span class="n">length</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ck</span><span class="p">):</span>
+                    <span class="n">message</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The number of connection properties (</span><span class="si">{</span><span class="n">length</span><span class="si">}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;does not match the number of connection groups (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">ck</span><span class="p">)</span><span class="si">}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">&quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;did you intend to do a 1:N mapping?&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+
+                <span class="c1"># map property dicts to connection group names</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ck</span><span class="p">:</span>
+                    <span class="n">rd</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_sub_key</span><span class="p">(</span><span class="n">nd</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+
+            <span class="k">elif</span> <span class="n">mt</span> <span class="o">==</span> <span class="s2">&quot;1:N&quot;</span><span class="p">:</span>  <span class="c1"># apply each species to each connection</span>
+                <span class="k">if</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">nd</span> <span class="o">=</span> <span class="n">cd</span>
+                <span class="k">elif</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># only parameters present. Expand for each tuple entry</span>
+                    <span class="n">length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ck</span><span class="p">)</span>
+                    <span class="n">nd</span> <span class="o">=</span> <span class="n">convert_to_lists</span><span class="p">(</span><span class="n">cd</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># mixed list present, Expand list</span>
+                    <span class="n">nd</span> <span class="o">=</span> <span class="n">convert_to_lists</span><span class="p">(</span><span class="n">cd</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+
+                <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ck</span><span class="p">:</span>  <span class="c1"># apply the entire nd dict to all connections</span>
+                    <span class="n">rd</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">nd</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mt</span><span class="si">}</span><span class="s2"> is not defined. must be &#39;1:1&#39; or &#39;1:N&#39;&quot;</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># only lists present, case 3</span>
+                <span class="n">nd</span> <span class="o">=</span> <span class="n">cd</span>
+            <span class="k">elif</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># only parameters present</span>
+                <span class="n">nd</span> <span class="o">=</span> <span class="n">cd</span>
+            <span class="k">elif</span> <span class="n">case</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># list and parameters present case 4</span>
+                <span class="n">nd</span> <span class="o">=</span> <span class="n">convert_to_lists</span><span class="p">(</span><span class="n">cd</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+            <span class="n">rd</span><span class="p">[</span><span class="n">ck</span><span class="p">]</span> <span class="o">=</span> <span class="n">nd</span>
+
+        <span class="c1"># update the overall dict and move to the next entry</span>
+        <span class="n">r</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">rd</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">r</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Determine dict structure</p>
+
+<p>in case we have mutiple connections with mutiple species, the
+default action is to map connections to species (t = '1:1'). If
+you rather want to create mutiple connections (one for each
+species) in each connection set t = '1:N'</p>
+</div>
+
+
+                </section>
                 <section id="create_bulk_connections">
                             <div class="attr function"><a class="headerlink" href="#create_bulk_connections">#&nbsp;&nbsp</a>
 
         
             <span class="def">def</span>
-            <span class="name">create_bulk_connections</span><span class="signature">(ct: dict, M: &lt;built-in function any&gt;) -&gt; None</span>:
+            <span class="name">create_bulk_connections</span><span class="signature">(ct: dict, M: &lt;built-in function any&gt;, mt: int = &#39;1:1&#39;) -&gt; None</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">create_bulk_connections</span><span class="p">(</span><span class="n">ct</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">M</span><span class="p">:</span> <span class="nb">any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Create connections from a dictionary. The dict shoudl have the</span>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">create_bulk_connections</span><span class="p">(</span><span class="n">ct</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">M</span><span class="p">:</span> <span class="nb">any</span><span class="p">,</span> <span class="n">mt</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="s2">&quot;1:1&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Create connections from a dictionary. The dict can have the following keys</span>
 <span class="sd">    following format:</span>
 
-<span class="sd">    # Setup the dict which describes all fluxes</span>
+<span class="sd">    mt = mapping type. See below for explanation</span>
+
 <span class="sd">    # na: names, tuple or str. If lists, all list elements share the same properties</span>
 <span class="sd">    # sp: species list or species</span>
 <span class="sd">    # ty: type, str</span>
@@ -2636,33 +3121,80 @@ h is the hypsometry handle</p>
 <span class="sd">    # re: reference, optional</span>
 <span class="sd">    # al: alpha, optional</span>
 <span class="sd">    # de: delta, optional</span>
-<span class="sd">    # mx: True, optional defaults to False</span>
-<span class="sd">    sl: list = list(ic.keys())  # get species list</span>
+<span class="sd">    # mx: True, optional defaults to False. If set, it will create forward</span>
+<span class="sd">          and backward fluxes (i.e. mixing)</span>
+
+<span class="sd">    There are 6 different cases how to specify connections</span>
+
+<span class="sd">    Case 1 One connection, one set of parameters</span>
+<span class="sd">           ct1 = {&quot;sb2hb&quot;: {&quot;ty&quot;: &quot;scale&quot;, &#39;ra&#39;....}}</span>
+
+<span class="sd">    Case 2 One connection, one set of instructions, one subset with mutiple parameters</span>
+<span class="sd">           This will be expanded to create connections for each species</span>
+<span class="sd">           ct2 = {&quot;sb2hb&quot;: {&quot;ty&quot;: &quot;scale&quot;, &quot;sp&quot;: [&quot;a&quot;, &quot;b&quot;]}}</span>
+
+<span class="sd">    Case 3 One connection complete set of mutiple characters. Similar to case 2, but now</span>
+<span class="sd">           all parameters are given explicitly</span>
+<span class="sd">           ct3 = {&quot;sb2hb&quot;: {&quot;ty&quot;: [&quot;scale&quot;, &quot;scale&quot;], &quot;sp&quot;: [&quot;a&quot;, &quot;b&quot;]}}</span>
+
+<span class="sd">    Case 4 Mutiple connections, one set of parameters. This will create</span>
+<span class="sd">           identical connection for &quot;sb2hb&quot; and  &quot;ib2db&quot;</span>
+<span class="sd">           ct4 = {(&quot;sb2hb&quot;, &quot;ib2db&quot;): {&quot;ty&quot;: &quot;scale&quot;, &#39;ra&#39;: ...}}</span>
+
+<span class="sd">    Case 5 Mutiple connections, one subset of mutiple set of parameters. This wil</span>
+<span class="sd">          create a connection for species &#39;a&#39; in sb2hb and with species &#39;b&#39; in ib2db</span>
+<span class="sd">           ct5 = {(&quot;sb2hb&quot;, &quot;ib2db&quot;): {&quot;ty&quot;: &quot;scale&quot;, &quot;sp&quot;: [&quot;a&quot;, &quot;b&quot;]}}</span>
+
+<span class="sd">    Case 6 Mutiple connections, complete set of parameters of mutiple parameters</span>
+<span class="sd">           Same as case 5, but now all parameters are specified explicitly</span>
+<span class="sd">           ct6 = {(&quot;sb2hb&quot;, &quot;ib2db&quot;): {&quot;ty&quot;: [&quot;scale&quot;, &quot;scale&quot;], &quot;sp&quot;: [&quot;a&quot;, &quot;b&quot;]}}</span>
+
+
+<span class="sd">    The default interpretation for cases 5 and 6 is that each list</span>
+<span class="sd">    entry corresponds to connection. However, sometimes we want to</span>
+<span class="sd">    create mutiple connections for multiple entries. In this case</span>
+<span class="sd">    provide the mt=&#39;1:N&#39; parameter which will create a connection for</span>
+<span class="sd">    each species in each connection group. See the below example.</span>
+
+<span class="sd">    It is easy to shoot yourself in the foot. It is best to try the above first with</span>
+<span class="sd">    some simple examples, e.g.,</span>
+
+<span class="sd">    from esbmtk import expand_dict</span>
+<span class="sd">    ct2 = {&quot;sb2hb&quot;: {&quot;ty&quot;: &quot;scale&quot;, &quot;sp&quot;: [&quot;a&quot;, &quot;b&quot;]}}</span>
+<span class="sd">    print(expand_dict(ct2))</span>
+
+<span class="sd">    The below example specifies 3 connection groups which share the rate, and connection type.</span>
+<span class="sd">    However, the default mapping is 1:1 so this will fail. You need to explicitly set</span>
+<span class="sd">    mt=&quot;1:N&quot;</span>
+<span class="sd">    Each connection group comprises the species named in the species list, so this will create</span>
+<span class="sd">    a total of 3 x 2 = 6 connections</span>
+
+<span class="sd">    from esbmtk import expand_dict, Q_</span>
+
+<span class="sd">    sl: list = [&#39;PO4&#39;, &#39;DIC&#39;]  # get species list</span>
 <span class="sd">    ct = {  # thermohaline circulation</span>
 <span class="sd">            # Apply to all boxes in the tuple</span>
 <span class="sd">         (&quot;hb2db@thc&quot;, &quot;db2ib@thc&quot;, &quot;ib2hb@thc&quot;): {</span>
 <span class="sd">          &quot;ty&quot;: &quot;scale_with_concentration&quot;,</span>
 <span class="sd">          &quot;sp&quot;: sl,  # species list</span>
 <span class="sd">          &quot;ra&quot;: Q_(&#39;20*Sv&#39;),</span>
-<span class="sd">         },</span>
-<span class="sd">        # mixing fluxes</span>
-<span class="sd">        &quot;sb2ib@mix&quot;: {</span>
-<span class="sd">           &quot;ty&quot;: &quot;scale_with_concentration&quot;,</span>
-<span class="sd">           &quot;ra&quot;: Q_(&#39;63 Sv&#39;),</span>
-<span class="sd">           &quot;sp&quot;: &quot;sl&quot;,</span>
-<span class="sd">           &quot;mx&quot;: True,</span>
-<span class="sd">       },</span>
-<span class="sd">      },</span>
-<span class="sd">    # particulate fluxes due to biological production</span>
-<span class="sd">    &quot;sb2ib@POP&quot;: {&quot;ty&quot;: &quot;scale_with_mass&quot;, &quot;sc&quot;: 0.8, &quot;re&quot;: sb.PO4, &quot;sp&quot;: PO4},</span>
-<span class="sd">    }</span>
+<span class="sd">         }</span>
+
+<span class="sd">    create_bulk_connections(ct, M, mt=&quot;1:N&quot;)</span>
+
+<span class="sd">    will create a connection for each species in each connectiongroup and all of these connections</span>
+<span class="sd">    share the same properties</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="kn">from</span> <span class="nn">esbmtk</span> <span class="kn">import</span> <span class="n">create_connection</span>
+    <span class="kn">from</span> <span class="nn">esbmtk</span> <span class="kn">import</span> <span class="n">create_connection</span><span class="p">,</span> <span class="n">expand_dict</span>
 
-    <span class="c1"># loop over values in ct dict</span>
-    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ct</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="c1"># expand dictionary into a well formed dict where each connection</span>
+    <span class="c1"># has a fully formed entry</span>
+    <span class="n">c_ct</span> <span class="o">=</span> <span class="n">expand_dict</span><span class="p">(</span><span class="n">ct</span><span class="p">,</span> <span class="n">mt</span><span class="o">=</span><span class="n">mt</span><span class="p">)</span>
+
+    <span class="c1"># loop over dict entries and create the respective connections</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">c_ct</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
             <span class="c1"># loop over names in tuple</span>
             <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">k</span><span class="p">:</span>
@@ -2671,14 +3203,16 @@ h is the hypsometry handle</p>
             <span class="n">create_connection</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">M</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">connection</span><span class="si">}</span><span class="s2"> must be string or tuple&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ct</span>
 </pre></div>
 
         </details>
 
-            <div class="docstring"><p>Create connections from a dictionary. The dict shoudl have the
+            <div class="docstring"><p>Create connections from a dictionary. The dict can have the following keys
 following format:</p>
 
-<h1 id="setup-the-dict-which-describes-all-fluxes">Setup the dict which describes all fluxes</h1>
+<p>mt = mapping type. See below for explanation</p>
 
 <h1 id="na-names-tuple-or-str-if-lists-all-list-elements-share-the-same-properties">na: names, tuple or str. If lists, all list elements share the same properties</h1>
 
@@ -2696,29 +3230,70 @@ following format:</p>
 
 <h1 id="de-delta-optional">de: delta, optional</h1>
 
-<h1 id="mx-true-optional-defaults-to-false">mx: True, optional defaults to False</h1>
+<h1 id="mx-true-optional-defaults-to-false-if-set-it-will-create-forward">mx: True, optional defaults to False. If set, it will create forward</h1>
 
-<p>sl: list = list(ic.keys())  # get species list
+<pre><code>  and backward fluxes (i.e. mixing)
+</code></pre>
+
+<p>There are 6 different cases how to specify connections</p>
+
+<p>Case 1 One connection, one set of parameters
+       ct1 = {"sb2hb": {"ty": "scale", 'ra'....}}</p>
+
+<p>Case 2 One connection, one set of instructions, one subset with mutiple parameters
+       This will be expanded to create connections for each species
+       ct2 = {"sb2hb": {"ty": "scale", "sp": ["a", "b"]}}</p>
+
+<p>Case 3 One connection complete set of mutiple characters. Similar to case 2, but now
+       all parameters are given explicitly
+       ct3 = {"sb2hb": {"ty": ["scale", "scale"], "sp": ["a", "b"]}}</p>
+
+<p>Case 4 Mutiple connections, one set of parameters. This will create
+       identical connection for "sb2hb" and  "ib2db"
+       ct4 = {("sb2hb", "ib2db"): {"ty": "scale", 'ra': ...}}</p>
+
+<p>Case 5 Mutiple connections, one subset of mutiple set of parameters. This wil
+      create a connection for species 'a' in sb2hb and with species 'b' in ib2db
+       ct5 = {("sb2hb", "ib2db"): {"ty": "scale", "sp": ["a", "b"]}}</p>
+
+<p>Case 6 Mutiple connections, complete set of parameters of mutiple parameters
+       Same as case 5, but now all parameters are specified explicitly
+       ct6 = {("sb2hb", "ib2db"): {"ty": ["scale", "scale"], "sp": ["a", "b"]}}</p>
+
+<p>The default interpretation for cases 5 and 6 is that each list
+entry corresponds to connection. However, sometimes we want to
+create mutiple connections for multiple entries. In this case
+provide the mt='1:N' parameter which will create a connection for
+each species in each connection group. See the below example.</p>
+
+<p>It is easy to shoot yourself in the foot. It is best to try the above first with
+some simple examples, e.g.,</p>
+
+<p>from esbmtk import expand_dict
+ct2 = {"sb2hb": {"ty": "scale", "sp": ["a", "b"]}}
+print(expand_dict(ct2))</p>
+
+<p>The below example specifies 3 connection groups which share the rate, and connection type.
+However, the default mapping is 1:1 so this will fail. You need to explicitly set
+mt="1:N"
+Each connection group comprises the species named in the species list, so this will create
+a total of 3 x 2 = 6 connections</p>
+
+<p>from esbmtk import expand_dict, Q_</p>
+
+<p>sl: list = ['PO4', 'DIC']  # get species list
 ct = {  # thermohaline circulation
         # Apply to all boxes in the tuple
      ("hb2db@thc", "db2ib@thc", "ib2hb@thc"): {
       "ty": "scale_with_concentration",
       "sp": sl,  # species list
       "ra": Q_('20*Sv'),
-     },
-    # mixing fluxes
-    "sb2ib@mix": {
-       "ty": "scale_with_concentration",
-       "ra": Q_('63 Sv'),
-       "sp": "sl",
-       "mx": True,
-   },
-  },</p>
+     }</p>
 
-<h1 id="particulate-fluxes-due-to-biological-production">particulate fluxes due to biological production</h1>
+<p>create_bulk_connections(ct, M, mt="1:N")</p>
 
-<p>"sb2ib@POP": {"ty": "scale_with_mass", "sc": 0.8, "re": sb.PO4, "sp": PO4},
-}</p>
+<p>will create a connection for each species in each connectiongroup and all of these connections
+share the same properties</p>
 </div>
 
 
@@ -2765,31 +3340,31 @@ ct = {  # thermohaline circulation
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">Q_</span><span class="p">):</span>
         <span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;l/a&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
 
-    <span class="n">cg</span> <span class="o">=</span> <span class="n">ConnectionGroup</span><span class="p">(</span>
-        <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
-        <span class="n">sink</span><span class="o">=</span><span class="n">sink</span><span class="p">,</span>
-        <span class="n">ctype</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">),</span>
-        <span class="n">scale</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">scale</span><span class="p">),</span>  <span class="c1"># get rate from dictionary</span>
-        <span class="n">rate</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">rate</span><span class="p">),</span>
-        <span class="n">ref</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">ref</span><span class="p">),</span>
-        <span class="n">alpha</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">alpha</span><span class="p">),</span>
-        <span class="n">delta</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">delta</span><span class="p">),</span>
-        <span class="nb">id</span><span class="o">=</span><span class="n">cid</span><span class="p">,</span>  <span class="c1"># get id from dictionary</span>
-    <span class="p">)</span>
+    <span class="c1"># if name in M.dmo: # group already exist in this case we nee to update the</span>
+    <span class="c1"># connection group</span>
 
-    <span class="c1"># if mixing is set to True create reverse connection</span>
-    <span class="k">if</span> <span class="n">mix</span><span class="p">:</span>
+    <span class="c1"># Case one, no mixing, test if exist, otherwise create</span>
+    <span class="c1"># Case 2, mixing: test if forward connection exists, if not create</span>
+    <span class="c1">#                  test if backwards connection exists, or create</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">mix</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C_</span><span class="si">{</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">sink</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">update_or_create</span><span class="p">(</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">cid</span><span class="p">,</span> <span class="n">M</span>
+        <span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># this is a connection with mixing</span>
+        <span class="c1"># create forward connection</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C_</span><span class="si">{</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">sink</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">update_or_create</span><span class="p">(</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">cid</span><span class="p">,</span> <span class="n">M</span>
+        <span class="p">)</span>
+
+        <span class="c1"># create backwards connection</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C_</span><span class="si">{</span><span class="n">sink</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">cid</span> <span class="o">=</span> <span class="n">cid</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_f&quot;</span><span class="p">,</span> <span class="s2">&quot;_b&quot;</span><span class="p">)</span>
-        <span class="n">cg2</span> <span class="o">=</span> <span class="n">ConnectionGroup</span><span class="p">(</span>
-            <span class="n">source</span><span class="o">=</span><span class="n">sink</span><span class="p">,</span>
-            <span class="n">sink</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
-            <span class="n">ctype</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">),</span>
-            <span class="n">scale</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">scale</span><span class="p">),</span>  <span class="c1"># get rate from dictionary</span>
-            <span class="n">rate</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">rate</span><span class="p">),</span>
-            <span class="n">ref</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">ref</span><span class="p">),</span>
-            <span class="n">alpha</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">alpha</span><span class="p">),</span>
-            <span class="n">delta</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">delta</span><span class="p">),</span>
-            <span class="nb">id</span><span class="o">=</span><span class="n">cid</span><span class="p">,</span>  <span class="c1"># get id from module import symbol</span>
+        <span class="n">update_or_create</span><span class="p">(</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">cid</span><span class="p">,</span> <span class="n">M</span>
         <span class="p">)</span>
 </pre></div>
 
@@ -2802,6 +3377,59 @@ year. This may not be what you want or need.</p>
 <p>You need to provide a connection key e.g., sb2db@mix which will be
 interpreted as mixing a connection between sb and db and thus
 create connections in both directions</p>
+</div>
+
+
+                </section>
+                <section id="update_or_create">
+                            <div class="attr function"><a class="headerlink" href="#update_or_create">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">update_or_create</span><span class="signature">(name, source, sink, los, typ, scale, rate, ref, alpha, delta, cid, M)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">update_or_create</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">cid</span><span class="p">,</span> <span class="n">M</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create or update connection&quot;&quot;&quot;</span>
+
+    <span class="kn">from</span> <span class="nn">esbmtk</span> <span class="kn">import</span> <span class="n">ConnectionGroup</span>
+
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">M</span><span class="o">.</span><span class="n">dmo</span><span class="p">:</span>  <span class="c1"># update connection</span>
+        <span class="n">cg</span> <span class="o">=</span> <span class="n">M</span><span class="o">.</span><span class="n">dmo</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">cg</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
+            <span class="n">sink</span><span class="o">=</span><span class="n">sink</span><span class="p">,</span>
+            <span class="n">ctype</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">),</span>
+            <span class="n">scale</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">scale</span><span class="p">),</span>  <span class="c1"># get rate from dictionary</span>
+            <span class="n">rate</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">rate</span><span class="p">),</span>
+            <span class="n">ref</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">ref</span><span class="p">),</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">alpha</span><span class="p">),</span>
+            <span class="n">delta</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">delta</span><span class="p">),</span>
+            <span class="nb">id</span><span class="o">=</span><span class="n">cid</span><span class="p">,</span>  <span class="c1"># get id from dictionary</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># create connection</span>
+        <span class="n">cg</span> <span class="o">=</span> <span class="n">ConnectionGroup</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
+            <span class="n">sink</span><span class="o">=</span><span class="n">sink</span><span class="p">,</span>
+            <span class="n">ctype</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">),</span>
+            <span class="n">scale</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">scale</span><span class="p">),</span>  <span class="c1"># get rate from dictionary</span>
+            <span class="n">rate</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">rate</span><span class="p">),</span>
+            <span class="n">ref</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">ref</span><span class="p">),</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">alpha</span><span class="p">),</span>
+            <span class="n">delta</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">delta</span><span class="p">),</span>
+            <span class="nb">id</span><span class="o">=</span><span class="n">cid</span><span class="p">,</span>  <span class="c1"># get id from dictionary</span>
+        <span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Create or update connection</p>
 </div>
 
 
@@ -2847,16 +3475,20 @@ create connections in both directions</p>
         <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">lor</span><span class="p">:</span>  <span class="c1"># loop over all reservoirs</span>
             <span class="n">flux_list</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">lof</span>
 
-            <span class="n">new</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">new</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">=</span> <span class="mi">0</span>
             <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">flux_list</span><span class="p">:</span>  <span class="c1"># do sum of fluxes in this reservoir</span>
                 <span class="n">direction</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">lio</span><span class="p">[</span><span class="n">f</span><span class="p">]</span>
                 <span class="n">new</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">f</span><span class="o">.</span><span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">direction</span>  <span class="c1"># current flux and direction</span>
                 <span class="n">new</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">f</span><span class="o">.</span><span class="n">l</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">direction</span>  <span class="c1"># current flux and direction</span>
-                <span class="n">new</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">+</span> <span class="n">f</span><span class="o">.</span><span class="n">h</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">direction</span>  <span class="c1"># current flux and direction</span>
+                <span class="c1">#new[2] = new[2] + f.h[i] * direction  # current flux and direction</span>
 
             <span class="c1"># print(f&quot;fsum = {new[0]:.2e}&quot;)</span>
             <span class="c1"># new = array([ms, ls, hs])</span>
+            <span class="n">new</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">new</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">new</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="c1"># new[3] = delta will be set by the setitem method in the reserevoir</span>
+            <span class="c1"># ditto for the concentration</span>
             <span class="n">new</span> <span class="o">=</span> <span class="n">new</span> <span class="o">*</span> <span class="n">r</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">dt</span>  <span class="c1"># get flux / timestep</span>
+            <span class="c1">#print(f&quot;{i} new = {new}, dt = {r.mo.dt}&quot;)</span>
             <span class="n">new</span> <span class="o">=</span> <span class="n">new</span> <span class="o">+</span> <span class="n">r</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># add to data from last time step</span>
             <span class="n">new</span> <span class="o">=</span> <span class="n">new</span> <span class="o">*</span> <span class="p">(</span><span class="n">new</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># set negative values to zero</span>
             <span class="c1"># print(f&quot;updating {r.full_name} from {r.m[i]:.2e}&quot;)</span>
@@ -3057,7 +3689,7 @@ create connections in both directions</p>
                 <section id="foo">
                             <div class="attr function"><a class="headerlink" href="#foo">#&nbsp;&nbsp</a>
 
-                <div class="decorator">@njit(parallel=False)</div>
+                <div class="decorator">@njit(parallel=False, fastmath=True)</div>
 
             <span class="def">def</span>
             <span class="name">foo</span><span class="signature">(fn_vr, a1, a2, a3, a7, fn, rd, fd, pc, a, b, c, d, e, maxt, dt)</span>:
@@ -3065,7 +3697,7 @@ create connections in both directions</p>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="nd">@njit</span><span class="p">(</span><span class="n">parallel</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <div class="codehilite"><pre><span></span><span class="nd">@njit</span><span class="p">(</span><span class="n">parallel</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">fastmath</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">foo</span><span class="p">(</span><span class="n">fn_vr</span><span class="p">,</span> <span class="n">a1</span><span class="p">,</span> <span class="n">a2</span><span class="p">,</span> <span class="n">a3</span><span class="p">,</span> <span class="n">a7</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">rd</span><span class="p">,</span> <span class="n">fd</span><span class="p">,</span> <span class="n">pc</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">e</span><span class="p">,</span> <span class="n">maxt</span><span class="p">,</span> <span class="n">dt</span><span class="p">):</span>
 
     <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span>

@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org6ca5ce5)
-2.  [News](#org14b005f)
-3.  [Contributing](#orgb81a91b)
-4.  [Installation](#org2572962)
-5.  [Documentation](#org52657e6)
-6.  [Todo](#org99f7ebb)
-7.  [License](#org249fdad)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgbf8c3f6)
+2.  [News](#org48441a9)
+3.  [Contributing](#orgf5c3555)
+4.  [Installation](#orgb286e70)
+5.  [Documentation](#org07413bb)
+6.  [Todo](#org8625aa9)
+7.  [License](#orge678365)
 
 
-<a id="org6ca5ce5"></a>
+<a id="orgbf8c3f6"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,13 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org14b005f"></a>
+<a id="org48441a9"></a>
 
 # News
+
+-   May 5<sup>th</sup>,  0.5.0.1 The Datafield Class now accepts lists of datasets. This
+    facilitates the grouping of data which belong together into a
+    single graph.
 
 -   April 26<sup>th</sup> Further changes to the naming scheme in group
     connections. A connection group object now consists of the group
@@ -210,7 +214,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgb81a91b"></a>
+<a id="orgf5c3555"></a>
 
 # Contributing
 
@@ -220,7 +224,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org2572962"></a>
+<a id="orgb286e70"></a>
 
 # Installation
 
@@ -241,7 +245,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org52657e6"></a>
+<a id="org07413bb"></a>
 
 # Documentation
 
@@ -259,7 +263,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org99f7ebb"></a>
+<a id="org8625aa9"></a>
 
 # Todo
 
@@ -268,7 +272,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org249fdad"></a>
+<a id="orge678365"></a>
 
 # License
 

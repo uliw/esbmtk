@@ -1186,7 +1186,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="bp">self</span><span class="o">.</span><span class="n">m_unit</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mass_unit</span><span class="p">)</span><span class="o">.</span><span class="n">units</span>  <span class="c1"># the mass unit</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">v_unit</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">volume_unit</span><span class="p">)</span><span class="o">.</span><span class="n">units</span>  <span class="c1"># the volume unit</span>
         <span class="c1"># the concentration unit (mass/volume)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">c_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_unit</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_unit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_unit</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_unit</span>  <span class="c1"># concentration</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">f_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_unit</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_unit</span>  <span class="c1"># the flux unit (mass/time)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">r_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_unit</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_unit</span>  <span class="c1"># flux as volume/time</span>
         <span class="c1"># this is now defined in __init__.py</span>
@@ -1256,7 +1256,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">logging</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
 
         <span class="n">fn</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.log&quot;</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">fn</span><span class="p">,</span> <span class="n">filemode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">fn</span><span class="p">,</span> <span class="n">filemode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARN</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -1590,12 +1590,22 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="k">if</span> <span class="s2">&quot;filter&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;use filter_by instead of filter&quot;</span><span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">cg_list</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># extract all connection groups. Note that loc contains all conections</span>
+        <span class="c1"># i.e., not connection groups.</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">):</span>
+            <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">full_name</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">register</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cg_list</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">cg_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">register</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># this is a regular connnection</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">cg_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> --- Connection Summary -- filtered by </span><span class="si">{</span><span class="n">fby</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;       append info() to the connection name to see more details&quot;</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cg_list</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">fby</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">full_name</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">full_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">base_name</span><span class="si">}</span><span class="s2">.info()&quot;</span><span class="p">)</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 
@@ -1909,7 +1919,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
             <span class="n">get_box_geometry_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-            
+
         <span class="c1"># convert units</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
 
@@ -2279,8 +2289,8 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
 <span class="sd">    Example::</span>
 
-<span class="sd">        ReservoirGroup(name = &quot;ShallowOcean&quot;,         # Name of reservoir group</span>
-<span class="sd">                    volume/geometry = &quot;1E5 l&quot;,                # reservoir volume (m^3)</span>
+<span class="sd">        ReservoirGroup(name = &quot;ShallowOcean&quot;,        # Name of reservoir group</span>
+<span class="sd">                    volume/geometry = &quot;1E5 l&quot;,       # see below</span>
 <span class="sd">                    delta   = {DIC:0, ALK:0, PO4:0]  # dict of delta values</span>
 <span class="sd">                    mass/concentration = {DIC:&quot;1 unit&quot;, ALK: &quot;1 unit&quot;}</span>
 <span class="sd">                    plot = {DIC:&quot;yes&quot;, ALK:&quot;yes&quot;}  defaults to yes</span>
@@ -2297,6 +2307,9 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
 <span class="sd">    Most parameters are passed on to the Reservoir class. See the reservoir class</span>
 <span class="sd">    documentation for details</span>
+
+<span class="sd">    The geometry keyword specifies the upper depth interval, the lower</span>
+<span class="sd">    depth interval, and the fraction of the total ocean area inhabited by the reservoir</span>
 
 <span class="sd">    If the geometry parameter is supplied, the following instance variables will be</span>
 <span class="sd">    computed</span>
@@ -2366,10 +2379,8 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="bp">self</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mo</span>
 
         <span class="c1"># geoemtry information</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">volume</span><span class="si">}</span><span class="s2"> m**3&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span>
-            
-        <span class="n">get_box_geometry_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="n">get_box_geometry_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="c1"># register this group object in the global namespace</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
@@ -2409,7 +2420,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="n">delta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;delta&quot;</span><span class="p">],</span>
                 <span class="n">mass</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;mass&quot;</span><span class="p">],</span>
                 <span class="n">concentration</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;concentration&quot;</span><span class="p">],</span>
-                <span class="n">volume</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="p">,</span>
+                <span class="n">volume</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span>
                 <span class="n">geometry</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span>
                 <span class="n">plot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;plot&quot;</span><span class="p">],</span>
                 <span class="n">groupname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
@@ -3307,15 +3318,15 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">    the model finishes in the overview plot windows. Therefore, datafields will</span>
 <span class="sd">    plot in the same window as the reservoir they are associated with.</span>
 <span class="sd">    Datafields must share the same x-axis is the model, and can have up to two</span>
-<span class="sd">    y axis.</span>
+<span class="sd">    y axis. </span>
 
 <span class="sd">    Example::</span>
-<span class="sd">    </span>
+
 <span class="sd">             DataField(name = &quot;Name&quot;</span>
 <span class="sd">                       associated_with = reservoir_handle</span>
-<span class="sd">                       y1_data = np.Ndarray</span>
+<span class="sd">                       y1_data = np.Ndarray or list of arrays</span>
 <span class="sd">                       y1_label = Y-Axis label</span>
-<span class="sd">                       y1_legend = Data legend</span>
+<span class="sd">                       y1_legend = Data legend or list of legends</span>
 <span class="sd">                       y2_data = np.Ndarray    # optional</span>
 <span class="sd">                       y2_label = Y-Axis label # optional</span>
 <span class="sd">                       y2_legend = Data legend # optional</span>
@@ -3343,12 +3354,12 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="bp">self</span><span class="o">.</span><span class="n">lkk</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">&quot;associated_with&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">ReservoirGroup</span><span class="p">),</span>
-            <span class="s2">&quot;y1_data&quot;</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+            <span class="s2">&quot;y1_data&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;y1_label&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;y1_legend&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;y2_data&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">]),</span>
+            <span class="s2">&quot;y1_legend&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
+            <span class="s2">&quot;y2_data&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;y2_label&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;y2_legend&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;y2_legend&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;common_y_scale&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">&quot;display_precision&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
         <span class="p">}</span>
@@ -3396,6 +3407,19 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
         <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">led</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y1_data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y1_data</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y1_data</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y1_legend</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y1_legend</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y1_legend</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y2_data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y2_data</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y2_data</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y2_legend</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y2_legend</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y2_legend</span><span class="p">]</span>
+
         <span class="c1"># register with reservoir</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">associated_with</span><span class="o">.</span><span class="n">ldf</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="c1"># register with model. needed for print_reservoirs</span>
@@ -3475,9 +3499,11 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
 <span class="sd">   In order to be compatible with the numba solver, a1 and a2 must be</span>
 <span class="sd">   an array of 1-D numpy.arrays i.e., [m, l, h, c]. The array can have</span>
-<span class="sd">   any number of arrays though. a3 must be single array (or list)</span>
-<span class="sd">   containing an arbitrary number if entries. All numbers in a1 to a3</span>
-<span class="sd">   _must_ be of type float64.</span>
+<span class="sd">   any number of arrays though. a3 must be single array (or list).</span>
+<span class="sd">   The a3 array must be passed as List([...]), and List must be imported as</span>
+
+<span class="sd">   from numba.typed import List</span>
+<span class="sd">   </span>
 
 <span class="sd">   The function must return a list of numbers which correspond to the</span>
 <span class="sd">   data which describe a reservoir i.e., mass, light isotope, heavy</span>
@@ -3490,8 +3516,8 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">       def my_func(i, a1, a2, a3) -&gt; tuple:</span>
 <span class="sd">           #</span>
 <span class="sd">           # i = index of the current timestep</span>
-<span class="sd">           # a1 to a2 =  optional function parameter. These must be present,</span>
-<span class="sd">           # even if your function will not use it</span>
+<span class="sd">           # a1 to a3 =  optional function parameter. These must be present,</span>
+<span class="sd">           # even if your function will not use it See above for details</span>
 
 <span class="sd">           # calc some stuff and return it as</span>
 
@@ -4366,7 +4392,7 @@ Optional arguments are</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">m_unit</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mass_unit</span><span class="p">)</span><span class="o">.</span><span class="n">units</span>  <span class="c1"># the mass unit</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">v_unit</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">volume_unit</span><span class="p">)</span><span class="o">.</span><span class="n">units</span>  <span class="c1"># the volume unit</span>
         <span class="c1"># the concentration unit (mass/volume)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">c_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_unit</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_unit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_unit</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_unit</span>  <span class="c1"># concentration</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">f_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_unit</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_unit</span>  <span class="c1"># the flux unit (mass/time)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">r_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_unit</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_unit</span>  <span class="c1"># flux as volume/time</span>
         <span class="c1"># this is now defined in __init__.py</span>
@@ -4436,7 +4462,7 @@ Optional arguments are</p>
             <span class="n">logging</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
 
         <span class="n">fn</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.log&quot;</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">fn</span><span class="p">,</span> <span class="n">filemode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">fn</span><span class="p">,</span> <span class="n">filemode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARN</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
 
     <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -4770,12 +4796,22 @@ Optional arguments are</p>
         <span class="k">if</span> <span class="s2">&quot;filter&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;use filter_by instead of filter&quot;</span><span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">cg_list</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># extract all connection groups. Note that loc contains all conections</span>
+        <span class="c1"># i.e., not connection groups.</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">):</span>
+            <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">full_name</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">register</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cg_list</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">cg_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">register</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># this is a regular connnection</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">cg_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> --- Connection Summary -- filtered by </span><span class="si">{</span><span class="n">fby</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;       append info() to the connection name to see more details&quot;</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cg_list</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">fby</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">full_name</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">full_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">base_name</span><span class="si">}</span><span class="s2">.info()&quot;</span><span class="p">)</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 </pre></div>
@@ -4940,7 +4976,7 @@ keyword are either "Carbon", or "Sulfur" or both as a list
         <span class="bp">self</span><span class="o">.</span><span class="n">m_unit</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mass_unit</span><span class="p">)</span><span class="o">.</span><span class="n">units</span>  <span class="c1"># the mass unit</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">v_unit</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">volume_unit</span><span class="p">)</span><span class="o">.</span><span class="n">units</span>  <span class="c1"># the volume unit</span>
         <span class="c1"># the concentration unit (mass/volume)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">c_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_unit</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_unit</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_unit</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_unit</span>  <span class="c1"># concentration</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">f_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m_unit</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_unit</span>  <span class="c1"># the flux unit (mass/time)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">r_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">v_unit</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">t_unit</span>  <span class="c1"># flux as volume/time</span>
         <span class="c1"># this is now defined in __init__.py</span>
@@ -5010,7 +5046,7 @@ keyword are either "Carbon", or "Sulfur" or both as a list
             <span class="n">logging</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
 
         <span class="n">fn</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">.log&quot;</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">fn</span><span class="p">,</span> <span class="n">filemode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">fn</span><span class="p">,</span> <span class="n">filemode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">WARN</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
 </pre></div>
 
@@ -5699,12 +5735,22 @@ filter_by :str = filter on flux name or part of flux name</p>
         <span class="k">if</span> <span class="s2">&quot;filter&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;use filter_by instead of filter&quot;</span><span class="p">)</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">cg_list</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># extract all connection groups. Note that loc contains all conections</span>
+        <span class="c1"># i.e., not connection groups.</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">):</span>
+            <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">full_name</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">register</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cg_list</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">cg_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">register</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># this is a regular connnection</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">cg_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> --- Connection Summary -- filtered by </span><span class="si">{</span><span class="n">fby</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;       append info() to the connection name to see more details&quot;</span><span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cg_list</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">fby</span> <span class="ow">in</span> <span class="n">c</span><span class="o">.</span><span class="n">full_name</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">full_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">base_name</span><span class="si">}</span><span class="s2">.info()&quot;</span><span class="p">)</span>
 
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 </pre></div>
@@ -6365,7 +6411,7 @@ specific properties</p>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
             <span class="n">get_box_geometry_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-            
+
         <span class="c1"># convert units</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
 
@@ -6921,7 +6967,7 @@ specific properties</p>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">geometry</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
             <span class="n">get_box_geometry_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-            
+
         <span class="c1"># convert units</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
 
@@ -7342,8 +7388,8 @@ indent :int = 0 indentation</p>
 
 <span class="sd">    Example::</span>
 
-<span class="sd">        ReservoirGroup(name = &quot;ShallowOcean&quot;,         # Name of reservoir group</span>
-<span class="sd">                    volume/geometry = &quot;1E5 l&quot;,                # reservoir volume (m^3)</span>
+<span class="sd">        ReservoirGroup(name = &quot;ShallowOcean&quot;,        # Name of reservoir group</span>
+<span class="sd">                    volume/geometry = &quot;1E5 l&quot;,       # see below</span>
 <span class="sd">                    delta   = {DIC:0, ALK:0, PO4:0]  # dict of delta values</span>
 <span class="sd">                    mass/concentration = {DIC:&quot;1 unit&quot;, ALK: &quot;1 unit&quot;}</span>
 <span class="sd">                    plot = {DIC:&quot;yes&quot;, ALK:&quot;yes&quot;}  defaults to yes</span>
@@ -7360,6 +7406,9 @@ indent :int = 0 indentation</p>
 
 <span class="sd">    Most parameters are passed on to the Reservoir class. See the reservoir class</span>
 <span class="sd">    documentation for details</span>
+
+<span class="sd">    The geometry keyword specifies the upper depth interval, the lower</span>
+<span class="sd">    depth interval, and the fraction of the total ocean area inhabited by the reservoir</span>
 
 <span class="sd">    If the geometry parameter is supplied, the following instance variables will be</span>
 <span class="sd">    computed</span>
@@ -7429,10 +7478,8 @@ indent :int = 0 indentation</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mo</span>
 
         <span class="c1"># geoemtry information</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">volume</span><span class="si">}</span><span class="s2"> m**3&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span>
-            
-        <span class="n">get_box_geometry_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="n">get_box_geometry_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="c1"># register this group object in the global namespace</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
@@ -7472,7 +7519,7 @@ indent :int = 0 indentation</p>
                 <span class="n">delta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;delta&quot;</span><span class="p">],</span>
                 <span class="n">mass</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;mass&quot;</span><span class="p">],</span>
                 <span class="n">concentration</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;concentration&quot;</span><span class="p">],</span>
-                <span class="n">volume</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="p">,</span>
+                <span class="n">volume</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span>
                 <span class="n">geometry</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span>
                 <span class="n">plot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;plot&quot;</span><span class="p">],</span>
                 <span class="n">groupname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
@@ -7495,8 +7542,8 @@ sub-reservoirs like DIC in the form of ShallowOcean.DIC</p>
 
 <p>Example::</p>
 
-<pre><code>ReservoirGroup(name = "ShallowOcean",         # Name of reservoir group
-            volume/geometry = "1E5 l",                # reservoir volume (m^3)
+<pre><code>ReservoirGroup(name = "ShallowOcean",        # Name of reservoir group
+            volume/geometry = "1E5 l",       # see below
             delta   = {DIC:0, ALK:0, PO4:0]  # dict of delta values
             mass/concentration = {DIC:"1 unit", ALK: "1 unit"}
             plot = {DIC:"yes", ALK:"yes"}  defaults to yes
@@ -7514,6 +7561,9 @@ matching.</p>
 
 <p>Most parameters are passed on to the Reservoir class. See the reservoir class
 documentation for details</p>
+
+<p>The geometry keyword specifies the upper depth interval, the lower
+depth interval, and the fraction of the total ocean area inhabited by the reservoir</p>
 
 <p>If the geometry parameter is supplied, the following instance variables will be
 computed</p>
@@ -7593,10 +7643,8 @@ computed</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mo</span>
 
         <span class="c1"># geoemtry information</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">volume</span><span class="si">}</span><span class="s2"> m**3&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">v_unit</span><span class="p">)</span>
-            
-        <span class="n">get_box_geometry_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="n">get_box_geometry_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
         <span class="c1"># register this group object in the global namespace</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
@@ -7636,7 +7684,7 @@ computed</p>
                 <span class="n">delta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;delta&quot;</span><span class="p">],</span>
                 <span class="n">mass</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;mass&quot;</span><span class="p">],</span>
                 <span class="n">concentration</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;concentration&quot;</span><span class="p">],</span>
-                <span class="n">volume</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span> <span class="p">,</span>
+                <span class="n">volume</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span>
                 <span class="n">geometry</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span>
                 <span class="n">plot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">s</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;plot&quot;</span><span class="p">],</span>
                 <span class="n">groupname</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
@@ -10000,15 +10048,15 @@ Example::</p>
 <span class="sd">    the model finishes in the overview plot windows. Therefore, datafields will</span>
 <span class="sd">    plot in the same window as the reservoir they are associated with.</span>
 <span class="sd">    Datafields must share the same x-axis is the model, and can have up to two</span>
-<span class="sd">    y axis.</span>
+<span class="sd">    y axis. </span>
 
 <span class="sd">    Example::</span>
-<span class="sd">    </span>
+
 <span class="sd">             DataField(name = &quot;Name&quot;</span>
 <span class="sd">                       associated_with = reservoir_handle</span>
-<span class="sd">                       y1_data = np.Ndarray</span>
+<span class="sd">                       y1_data = np.Ndarray or list of arrays</span>
 <span class="sd">                       y1_label = Y-Axis label</span>
-<span class="sd">                       y1_legend = Data legend</span>
+<span class="sd">                       y1_legend = Data legend or list of legends</span>
 <span class="sd">                       y2_data = np.Ndarray    # optional</span>
 <span class="sd">                       y2_label = Y-Axis label # optional</span>
 <span class="sd">                       y2_legend = Data legend # optional</span>
@@ -10036,12 +10084,12 @@ Example::</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">lkk</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">&quot;associated_with&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">ReservoirGroup</span><span class="p">),</span>
-            <span class="s2">&quot;y1_data&quot;</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+            <span class="s2">&quot;y1_data&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;y1_label&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;y1_legend&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;y2_data&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">]),</span>
+            <span class="s2">&quot;y1_legend&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
+            <span class="s2">&quot;y2_data&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;y2_label&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;y2_legend&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;y2_legend&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;common_y_scale&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">&quot;display_precision&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
         <span class="p">}</span>
@@ -10089,6 +10137,19 @@ Example::</p>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">led</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y1_data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y1_data</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y1_data</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y1_legend</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y1_legend</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y1_legend</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y2_data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y2_data</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y2_data</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y2_legend</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y2_legend</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y2_legend</span><span class="p">]</span>
+
         <span class="c1"># register with reservoir</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">associated_with</span><span class="o">.</span><span class="n">ldf</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="c1"># register with model. needed for print_reservoirs</span>
@@ -10143,15 +10204,15 @@ Example::</p>
 the model finishes in the overview plot windows. Therefore, datafields will
 plot in the same window as the reservoir they are associated with.
 Datafields must share the same x-axis is the model, and can have up to two
-y axis.</p>
+y axis. </p>
 
 <p>Example::</p>
 
 <pre><code>     DataField(name = "Name"
                associated_with = reservoir_handle
-               y1_data = np.Ndarray
+               y1_data = np.Ndarray or list of arrays
                y1_label = Y-Axis label
-               y1_legend = Data legend
+               y1_legend = Data legend or list of legends
                y2_data = np.Ndarray    # optional
                y2_label = Y-Axis label # optional
                y2_legend = Data legend # optional
@@ -10190,12 +10251,12 @@ Name.y1_legend</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">lkk</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">&quot;associated_with&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">ReservoirGroup</span><span class="p">),</span>
-            <span class="s2">&quot;y1_data&quot;</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+            <span class="s2">&quot;y1_data&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;y1_label&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;y1_legend&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;y2_data&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">]),</span>
+            <span class="s2">&quot;y1_legend&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
+            <span class="s2">&quot;y2_data&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;y2_label&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;y2_legend&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;y2_legend&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;common_y_scale&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">&quot;display_precision&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
         <span class="p">}</span>
@@ -10243,6 +10304,19 @@ Name.y1_legend</p>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">led</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y1_data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y1_data</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y1_data</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y1_legend</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y1_legend</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y1_legend</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y2_data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y2_data</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y2_data</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y2_legend</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">y2_legend</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">y2_legend</span><span class="p">]</span>
+
         <span class="c1"># register with reservoir</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">associated_with</span><span class="o">.</span><span class="n">ldf</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
         <span class="c1"># register with model. needed for print_reservoirs</span>
@@ -10351,9 +10425,11 @@ Name.y1_legend</p>
 
 <span class="sd">   In order to be compatible with the numba solver, a1 and a2 must be</span>
 <span class="sd">   an array of 1-D numpy.arrays i.e., [m, l, h, c]. The array can have</span>
-<span class="sd">   any number of arrays though. a3 must be single array (or list)</span>
-<span class="sd">   containing an arbitrary number if entries. All numbers in a1 to a3</span>
-<span class="sd">   _must_ be of type float64.</span>
+<span class="sd">   any number of arrays though. a3 must be single array (or list).</span>
+<span class="sd">   The a3 array must be passed as List([...]), and List must be imported as</span>
+
+<span class="sd">   from numba.typed import List</span>
+<span class="sd">   </span>
 
 <span class="sd">   The function must return a list of numbers which correspond to the</span>
 <span class="sd">   data which describe a reservoir i.e., mass, light isotope, heavy</span>
@@ -10366,8 +10442,8 @@ Name.y1_legend</p>
 <span class="sd">       def my_func(i, a1, a2, a3) -&gt; tuple:</span>
 <span class="sd">           #</span>
 <span class="sd">           # i = index of the current timestep</span>
-<span class="sd">           # a1 to a2 =  optional function parameter. These must be present,</span>
-<span class="sd">           # even if your function will not use it</span>
+<span class="sd">           # a1 to a3 =  optional function parameter. These must be present,</span>
+<span class="sd">           # even if your function will not use it See above for details</span>
 
 <span class="sd">           # calc some stuff and return it as</span>
 
@@ -10467,9 +10543,10 @@ Parameters:</p>
 
 <p>In order to be compatible with the numba solver, a1 and a2 must be
 an array of 1-D numpy.arrays i.e., [m, l, h, c]. The array can have
-any number of arrays though. a3 must be single array (or list)
-containing an arbitrary number if entries. All numbers in a1 to a3
-_must_ be of type float64.</p>
+any number of arrays though. a3 must be single array (or list).
+The a3 array must be passed as List([...]), and List must be imported as</p>
+
+<p>from numba.typed import List</p>
 
 <p>The function must return a list of numbers which correspond to the
 data which describe a reservoir i.e., mass, light isotope, heavy
@@ -10482,8 +10559,8 @@ template::</p>
 <pre><code>def my_func(i, a1, a2, a3) -&gt; tuple:
     #
     # i = index of the current timestep
-    # a1 to a2 =  optional function parameter. These must be present,
-    # even if your function will not use it
+    # a1 to a3 =  optional function parameter. These must be present,
+    # even if your function will not use it See above for details
 
     # calc some stuff and return it as
 

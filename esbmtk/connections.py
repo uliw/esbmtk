@@ -387,6 +387,10 @@ class Connect(esbmtkBase):
         self.lor: list[Reservoir] = self.mo.lor
 
         # make sure scale is a number in model units
+
+        if self.scale == "None":
+            self.scale = 1
+        
         if isinstance(self.scale, str):
             self.scale = Q_(self.scale)
 

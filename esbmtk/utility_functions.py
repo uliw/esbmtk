@@ -347,35 +347,49 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
     col = f"C{cn}"
 
     if first_axis:
-        # plot left y-scale data
-        ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=obj.legend_left)
-        # set labels
-        ax1.set_xlabel(f"{model.time_label} [{model.d_unit:~P}]")
-        ax1.set_ylabel(y_label)
-        # remove unnecessary frame species
-        ax1.spines["top"].set_visible(False)
-        set_y_limits(ax1, obj)
+        if isinstance(obj, DataField):
+            if not isinstance(obj.y1_data[0], str):
+                for i, d in enumerate(obj.y1_data):  # loop over datafield list
+                    yl = d
+                    label = obj.y1_legend[i]
+                    ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
+                    cn = cn + 1
+                    col = f"C{cn}"
 
-    # set color index
-    cn = cn + 1
-    col = f"C{cn}"
+                ax1.set_xlabel(f"{model.time_label} [{model.d_unit:~P}]")
+                ax1.set_ylabel(y_label)
+                # remove unnecessary frame species
+                ax1.spines["top"].set_visible(False)
+                set_y_limits(ax1, obj)
 
     if second_axis:
         if isinstance(obj, DataField):
-            if obj.common_y_scale == "yes":
-                ln2 = ax1.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
-                set_y_limits(ax1, model)
-                ax1.legend()
-                second_axis = False
+            if not isinstance(obj.y2_data[0], str):
+                if obj.common_y_scale == "yes":
+                    for i, d in enumerate(obj.y2_data):  # loop over datafield list
+                        yl = d
+                        label = obj.y2_legend[i]
+                        ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
+                        cn = cn + 1
+                        col = f"C{cn}"
+                        set_y_limits(ax1, model)
+                        ax1.legend()
+                        second_axis = False
+                else:
+                    ax2 = ax1.twinx()  # create a second y-axis
+                    for i, d in enumerate(obj.y2_data):  # loop over datafield list
+                        yl = d
+                        label = obj.y2_legend[i]
+                        ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
+                        cn = cn + 1
+                        col = f"C{cn}"
+
+                    ax2.set_ylabel(obj.ld)  # species object delta label
+                    set_y_limits(ax2, model)
+                    # remove unneeded frame
+                    ax2.spines["top"].set_visible(False)
             else:
-                ax2 = ax1.twinx()  # create a second y-axis
-                # plof right y-scale data
-                ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
-                ax2.set_ylabel(obj.ld)  # species object delta label
-                set_y_limits(ax2, model)
-                ax2.spines["top"].set_visible(
-                    False
-                )  # remove unnecessary frame speciess
+                second_axis = False
 
         elif isinstance(obj, Signal):
             # use the same units as the associated flux
@@ -911,8 +925,10 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
           "ra": Q_('20*Sv'),
          }
 
-    print(expand_dict(ct))
+    create_bulk_connections(ct, M, mt="1:N")
 
+    will create a connection for each species in each connectiongroup and all of these connections
+    share the same properties
 
     """
 
@@ -1056,16 +1072,20 @@ def execute(
         for r in lor:  # loop over all reservoirs
             flux_list = r.lof
 
-            new[0] = new[1] = new[2] = 0
+            new[0] = new[1] = new[2] = new[3]= 0
             for f in flux_list:  # do sum of fluxes in this reservoir
                 direction = r.lio[f]
                 new[0] = new[0] + f.m[i] * direction  # current flux and direction
                 new[1] = new[1] + f.l[i] * direction  # current flux and direction
-                new[2] = new[2] + f.h[i] * direction  # current flux and direction
+                #new[2] = new[2] + f.h[i] * direction  # current flux and direction
 
             # print(f"fsum = {new[0]:.2e}")
             # new = array([ms, ls, hs])
+            new[2] = new[0] - new[1]
+            # new[3] = delta will be set by the setitem method in the reserevoir
+            # ditto for the concentration
             new = new * r.mo.dt  # get flux / timestep
+            #print(f"{i} new = {new}, dt = {r.mo.dt}")
             new = new + r[i - 1]  # add to data from last time step
             new = new * (new > 0)  # set negative values to zero
             # print(f"updating {r.full_name} from {r.m[i]:.2e}")

@@ -97,22 +97,10 @@
                                 <a class="function" href="#ConnectionGroup.__init__">ConnectionGroup</a>
                         </li>
                         <li>
-                                <a class="variable" href="#ConnectionGroup.lkk">lkk</a>
-                        </li>
-                        <li>
-                                <a class="variable" href="#ConnectionGroup.lod">lod</a>
-                        </li>
-                        <li>
-                                <a class="variable" href="#ConnectionGroup.lrk">lrk</a>
-                        </li>
-                        <li>
                                 <a class="variable" href="#ConnectionGroup.loc">loc</a>
                         </li>
                         <li>
-                                <a class="variable" href="#ConnectionGroup.connections">connections</a>
-                        </li>
-                        <li>
-                                <a class="variable" href="#ConnectionGroup.cd">cd</a>
+                                <a class="function" href="#ConnectionGroup.update">update</a>
                         </li>
                         <li>
                                 <a class="function" href="#ConnectionGroup.info">info</a>
@@ -446,7 +434,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Flux</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;ratio&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
-            <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
+            <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;ref_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">),</span>
             <span class="s2">&quot;k_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Q_</span><span class="p">),</span>
             <span class="s2">&quot;a_value&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
@@ -490,7 +478,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="s2">&quot;k_concentration&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;k_mass&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;k_value&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="s2">&quot;a number or Quantity&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;a_value&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;ref_value&quot;</span><span class="p">:</span> <span class="s2">&quot;a number, string, or quantity&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;b_value&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
@@ -547,6 +535,25 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="c1"># get a list of all reservoirs registered for this species</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lor</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Reservoir</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">lor</span>
 
+        <span class="c1"># make sure scale is a number in model units</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="mi">1</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="n">Q_</span><span class="p">):</span>
+            <span class="c1"># test what type of Quantity we have</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">check</span><span class="p">([</span><span class="s2">&quot;volume]/[time&quot;</span><span class="p">]):</span>  <span class="c1"># flux</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">r_unit</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">check</span><span class="p">([</span><span class="s2">&quot;mass] / [time&quot;</span><span class="p">]):</span>  <span class="c1"># flux</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">f_unit</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="s2">&quot;[mass]/[volume]&quot;</span><span class="p">):</span>  <span class="c1"># concentration</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">c_unit</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No conversion to model units for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="si">}</span><span class="s2"> specified&quot;</span><span class="p">)</span>
+
         <span class="c1"># if sink and source a regular, the name will be simply C_S_2_S</span>
         <span class="c1"># if we deal with ReservoirGroups we need to reflect this in the</span>
         <span class="c1"># connection name</span>
@@ -560,7 +567,6 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
             <span class="k">pass</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;id = &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">register</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
@@ -598,7 +604,6 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="bp">self</span><span class="o">.</span><span class="n">__delete_flux__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_connection__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Updated </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_species</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r1</span><span class="p">,</span> <span class="n">r2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;In most cases the species is set by r2. However, if we have</span>
@@ -1228,7 +1233,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">           ctype = needs to be set for all connections. Use &quot;Regular&quot;</span>
 <span class="sd">                   unless you require a specific connection type</span>
 <span class="sd">           pl = [list]) process list. optional, shared between all connections</span>
-<span class="sd">           id = optional identifier, shared between all connections</span>
+<span class="sd">           id = optional identifier, passed on to individual connection</span>
 <span class="sd">           plot = &quot;yes/no&quot; # defaults to yes, shared between all connections</span>
 <span class="sd">        )</span>
 
@@ -1246,6 +1251,32 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">__parse_kwargs__</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># # self.source.lor is a  list with the object names in the group</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">lor</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mo</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># list of connection objects</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__create_connections__</span><span class="p">()</span>
+
+        <span class="c1"># register connection group in global namespace</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add a connection to the connection group</span>
+<span class="sd">        This will overwrite the original kwargs though</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__parse_kwargs__</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__create_connections__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__parse_kwargs__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse and register the keyword arguments</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># provide a dict of all known keywords and their type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lkk</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -1273,16 +1304,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="k">if</span> <span class="s2">&quot;name&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s2">&quot;id&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-                    <span class="n">name</span> <span class="o">=</span> <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;sink&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
-                    <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;sink&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;sink&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-
+            <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;sink&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;2&quot;</span> <span class="o">+</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;sink&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
             <span class="n">n</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="c1"># set connection group name</span>
@@ -1291,10 +1313,9 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="c1"># provide a list of absolutely required keywords</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lrk</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="s2">&quot;sink&quot;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__validateandregister__</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="c1"># # self.source.lor is a  list with the object names in the group</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">lor</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mo</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># list of connection objects</span>
 
+    <span class="k">def</span> <span class="nf">__create_connections__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create Connections&quot;&quot;&quot;</span>
         <span class="c1"># find all sub reservoirs which have been specified by the ctype keyword</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">lor</span><span class="p">:</span>
@@ -1343,16 +1364,12 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;scale&quot;</span><span class="p">],</span>
                 <span class="n">ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;ref&quot;</span><span class="p">],</span>
                 <span class="n">groupname</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                <span class="c1"># id=self.id,</span>
+                <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
                 <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="c1">## add connection to list of connections</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
-
-        <span class="c1"># register connection group in global namespace</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;List all connections in this group&quot;&quot;&quot;</span>
@@ -1621,7 +1638,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Flux</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;ratio&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
-            <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
+            <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;ref_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">),</span>
             <span class="s2">&quot;k_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Q_</span><span class="p">),</span>
             <span class="s2">&quot;a_value&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
@@ -1665,7 +1682,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="s2">&quot;k_concentration&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;k_mass&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;k_value&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="s2">&quot;a number or Quantity&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;a_value&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;ref_value&quot;</span><span class="p">:</span> <span class="s2">&quot;a number, string, or quantity&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;b_value&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
@@ -1722,6 +1739,25 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="c1"># get a list of all reservoirs registered for this species</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lor</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Reservoir</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">lor</span>
 
+        <span class="c1"># make sure scale is a number in model units</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="mi">1</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="n">Q_</span><span class="p">):</span>
+            <span class="c1"># test what type of Quantity we have</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">check</span><span class="p">([</span><span class="s2">&quot;volume]/[time&quot;</span><span class="p">]):</span>  <span class="c1"># flux</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">r_unit</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">check</span><span class="p">([</span><span class="s2">&quot;mass] / [time&quot;</span><span class="p">]):</span>  <span class="c1"># flux</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">f_unit</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="s2">&quot;[mass]/[volume]&quot;</span><span class="p">):</span>  <span class="c1"># concentration</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">c_unit</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No conversion to model units for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="si">}</span><span class="s2"> specified&quot;</span><span class="p">)</span>
+
         <span class="c1"># if sink and source a regular, the name will be simply C_S_2_S</span>
         <span class="c1"># if we deal with ReservoirGroups we need to reflect this in the</span>
         <span class="c1"># connection name</span>
@@ -1735,7 +1771,6 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
             <span class="k">pass</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;id = &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">register</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
@@ -1773,7 +1808,6 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="bp">self</span><span class="o">.</span><span class="n">__delete_flux__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_connection__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Updated </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">get_species</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">r1</span><span class="p">,</span> <span class="n">r2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;In most cases the species is set by r2. However, if we have</span>
@@ -2642,7 +2676,7 @@ between =left=and =right=</p>
             <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Flux</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;ratio&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
-            <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
+            <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;ref_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">),</span>
             <span class="s2">&quot;k_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Q_</span><span class="p">),</span>
             <span class="s2">&quot;a_value&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
@@ -2686,7 +2720,7 @@ between =left=and =right=</p>
                 <span class="s2">&quot;k_concentration&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;k_mass&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;k_value&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="s2">&quot;a number or Quantity&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;a_value&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;ref_value&quot;</span><span class="p">:</span> <span class="s2">&quot;a number, string, or quantity&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;b_value&quot;</span><span class="p">:</span> <span class="s2">&quot;a number&quot;</span><span class="p">,</span>
@@ -2743,6 +2777,25 @@ between =left=and =right=</p>
         <span class="c1"># get a list of all reservoirs registered for this species</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lor</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Reservoir</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">lor</span>
 
+        <span class="c1"># make sure scale is a number in model units</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="mi">1</span>
+        
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="n">Q_</span><span class="p">):</span>
+            <span class="c1"># test what type of Quantity we have</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">check</span><span class="p">([</span><span class="s2">&quot;volume]/[time&quot;</span><span class="p">]):</span>  <span class="c1"># flux</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">r_unit</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">check</span><span class="p">([</span><span class="s2">&quot;mass] / [time&quot;</span><span class="p">]):</span>  <span class="c1"># flux</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">f_unit</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="s2">&quot;[mass]/[volume]&quot;</span><span class="p">):</span>  <span class="c1"># concentration</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">c_unit</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No conversion to model units for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="si">}</span><span class="s2"> specified&quot;</span><span class="p">)</span>
+
         <span class="c1"># if sink and source a regular, the name will be simply C_S_2_S</span>
         <span class="c1"># if we deal with ReservoirGroups we need to reflect this in the</span>
         <span class="c1"># connection name</span>
@@ -2756,7 +2809,6 @@ between =left=and =right=</p>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
             <span class="k">pass</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;id = &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">register</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
@@ -2909,7 +2961,6 @@ between =left=and =right=</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">__delete_flux__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_connection__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Updated </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>
@@ -3117,7 +3168,7 @@ indent :int = 0 indentation</p>
 <span class="sd">           ctype = needs to be set for all connections. Use &quot;Regular&quot;</span>
 <span class="sd">                   unless you require a specific connection type</span>
 <span class="sd">           pl = [list]) process list. optional, shared between all connections</span>
-<span class="sd">           id = optional identifier, shared between all connections</span>
+<span class="sd">           id = optional identifier, passed on to individual connection</span>
 <span class="sd">           plot = &quot;yes/no&quot; # defaults to yes, shared between all connections</span>
 <span class="sd">        )</span>
 
@@ -3135,6 +3186,32 @@ indent :int = 0 indentation</p>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">__parse_kwargs__</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># # self.source.lor is a  list with the object names in the group</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">lor</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mo</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># list of connection objects</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__create_connections__</span><span class="p">()</span>
+
+        <span class="c1"># register connection group in global namespace</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add a connection to the connection group</span>
+<span class="sd">        This will overwrite the original kwargs though</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">__parse_kwargs__</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__create_connections__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__parse_kwargs__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse and register the keyword arguments</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># provide a dict of all known keywords and their type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lkk</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3162,16 +3239,7 @@ indent :int = 0 indentation</p>
         <span class="k">if</span> <span class="s2">&quot;name&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s2">&quot;id&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-                    <span class="n">name</span> <span class="o">=</span> <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;sink&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
-                    <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;sink&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;sink&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-
+            <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;sink&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;2&quot;</span> <span class="o">+</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;sink&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
             <span class="n">n</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="c1"># set connection group name</span>
@@ -3180,10 +3248,9 @@ indent :int = 0 indentation</p>
         <span class="c1"># provide a list of absolutely required keywords</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lrk</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="s2">&quot;sink&quot;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__validateandregister__</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="c1"># # self.source.lor is a  list with the object names in the group</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">lor</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mo</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># list of connection objects</span>
 
+    <span class="k">def</span> <span class="nf">__create_connections__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Create Connections&quot;&quot;&quot;</span>
         <span class="c1"># find all sub reservoirs which have been specified by the ctype keyword</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">lor</span><span class="p">:</span>
@@ -3232,16 +3299,12 @@ indent :int = 0 indentation</p>
                 <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;scale&quot;</span><span class="p">],</span>
                 <span class="n">ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;ref&quot;</span><span class="p">],</span>
                 <span class="n">groupname</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                <span class="c1"># id=self.id,</span>
+                <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
                 <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="c1">## add connection to list of connections</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
-
-        <span class="c1"># register connection group in global namespace</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
-        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;List all connections in this group&quot;&quot;&quot;</span>
@@ -3281,7 +3344,7 @@ after creation
    ctype = needs to be set for all connections. Use "Regular"
            unless you require a specific connection type
    pl = [list]) process list. optional, shared between all connections
-   id = optional identifier, shared between all connections
+   id = optional identifier, passed on to individual connection
    plot = "yes/no" # defaults to yes, shared between all connections
 )
 
@@ -3309,109 +3372,13 @@ ConnectionGroup(
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 
-        <span class="c1"># provide a dict of all known keywords and their type</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lkk</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">SourceGroup</span><span class="p">,</span> <span class="n">ReservoirGroup</span><span class="p">),</span>
-            <span class="s2">&quot;sink&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">SinkGroup</span><span class="p">,</span> <span class="n">ReservoirGroup</span><span class="p">),</span>
-            <span class="s2">&quot;delta&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-            <span class="s2">&quot;rate&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-            <span class="s2">&quot;pl&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-            <span class="s2">&quot;signal&quot;</span><span class="p">:</span> <span class="n">Signal</span><span class="p">,</span>
-            <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-            <span class="s2">&quot;species&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-            <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-            <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-            <span class="s2">&quot;plot&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-            <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__parse_kwargs__</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
 
-        <span class="c1"># list of default values if none provided</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lod</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">any</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-        <span class="p">}</span>
-
-        <span class="k">if</span> <span class="s2">&quot;name&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="s2">&quot;id&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
-                    <span class="n">name</span> <span class="o">=</span> <span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;sink&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
-                    <span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;sink&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">2</span><span class="si">{</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;sink&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">base_name</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;2&quot;</span> <span class="o">+</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;sink&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
-            <span class="n">n</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C_</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="c1"># set connection group name</span>
-            <span class="n">kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">n</span><span class="p">})</span>  <span class="c1"># and add it to the kwargs</span>
-
-        <span class="c1"># provide a list of absolutely required keywords</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lrk</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">,</span> <span class="s2">&quot;sink&quot;</span><span class="p">]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">__validateandregister__</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="c1"># # self.source.lor is a  list with the object names in the group</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">lor</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">mo</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># list of connection objects</span>
 
-        <span class="c1"># find all sub reservoirs which have been specified by the ctype keyword</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">lor</span><span class="p">:</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctype</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Connectiongroup </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> must specify &#39;ctype&#39;. See help(Connectiongroup)&quot;</span>
-                <span class="p">)</span>
-            <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">sp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctype</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
-                <span class="n">logging</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;found species </span><span class="si">{</span><span class="n">r</span><span class="o">.</span><span class="n">sp</span><span class="o">.</span><span class="n">n</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="c1"># now we need to create defaults for all connections</span>
-        <span class="c1"># we setup a dict like this  {SO4:{cid:xxx,plot:xxx}}</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># connection dictionary</span>
-        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">connections</span><span class="p">:</span>  <span class="c1"># [&quot;SO4&quot;, &quot;H2S&quot;]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;cid&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-                <span class="s2">&quot;plot&quot;</span><span class="p">:</span> <span class="s2">&quot;yes&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;delta&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;rate&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
-            <span class="p">}</span>
-            <span class="c1"># now we loop trough all keys for this connection and see</span>
-            <span class="c1"># if we find a corresponding item in the kwargs</span>
-            <span class="k">for</span> <span class="n">kcd</span><span class="p">,</span> <span class="n">vcd</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="k">if</span> <span class="n">kcd</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">:</span>  <span class="c1"># found entry like ctype</span>
-                    <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">sp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="n">kcd</span><span class="p">]:</span>  <span class="c1"># {SO4: xxx}</span>
-                        <span class="c1"># update the entry</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="n">kcd</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="n">kcd</span><span class="p">][</span><span class="n">r</span><span class="o">.</span><span class="n">sp</span><span class="p">]</span>
-            <span class="c1"># now we can create the connection</span>
-
-            <span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="si">}</span><span class="s2">&quot;</span>
-
-            <span class="n">a</span> <span class="o">=</span> <span class="n">Connect</span><span class="p">(</span>
-                <span class="c1"># name=name,</span>
-                <span class="n">source</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">),</span>
-                <span class="n">sink</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="p">,</span> <span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">),</span>
-                <span class="n">rate</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;rate&quot;</span><span class="p">],</span>
-                <span class="n">delta</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;delta&quot;</span><span class="p">],</span>
-                <span class="n">alpha</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;alpha&quot;</span><span class="p">],</span>
-                <span class="n">plot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;plot&quot;</span><span class="p">],</span>
-                <span class="n">ctype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;ctype&quot;</span><span class="p">],</span>
-                <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;scale&quot;</span><span class="p">],</span>
-                <span class="n">ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;ref&quot;</span><span class="p">],</span>
-                <span class="n">groupname</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-                <span class="c1"># id=self.id,</span>
-                <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
-            <span class="p">)</span>
-
-            <span class="c1">## add connection to list of connections</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__create_connections__</span><span class="p">()</span>
 
         <span class="c1"># register connection group in global namespace</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__register_name__</span><span class="p">()</span>
@@ -3419,33 +3386,6 @@ ConnectionGroup(
 </pre></div>
 
         </details>
-
-    
-
-                            </div>
-                            <div id="ConnectionGroup.lkk" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#ConnectionGroup.lkk">#&nbsp;&nbsp</a>
-
-        <span class="name">lkk</span><span class="annotation">: Dict[str, &lt;built-in function any&gt;]</span>
-    </div>
-
-    
-
-                            </div>
-                            <div id="ConnectionGroup.lod" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#ConnectionGroup.lod">#&nbsp;&nbsp</a>
-
-        <span class="name">lod</span><span class="annotation">: Dict[&lt;built-in function any&gt;, &lt;built-in function any&gt;]</span>
-    </div>
-
-    
-
-                            </div>
-                            <div id="ConnectionGroup.lrk" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#ConnectionGroup.lrk">#&nbsp;&nbsp</a>
-
-        <span class="name">lrk</span><span class="annotation">: list</span>
-    </div>
 
     
 
@@ -3459,22 +3399,32 @@ ConnectionGroup(
     
 
                             </div>
-                            <div id="ConnectionGroup.connections" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#ConnectionGroup.connections">#&nbsp;&nbsp</a>
+                            <div id="ConnectionGroup.update" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#ConnectionGroup.update">#&nbsp;&nbsp</a>
 
-        <span class="name">connections</span><span class="annotation">: list</span>
+        
+            <span class="def">def</span>
+            <span class="name">update</span><span class="signature">(self, **kwargs) -&gt; NoneType</span>:
     </div>
 
-    
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Add a connection to the connection group</span>
+<span class="sd">        This will overwrite the original kwargs though</span>
 
-                            </div>
-                            <div id="ConnectionGroup.cd" class="classattr">
-                                            <div class="attr variable"><a class="headerlink" href="#ConnectionGroup.cd">#&nbsp;&nbsp</a>
+<span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="name">cd</span><span class="annotation">: dict</span>
-    </div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__parse_kwargs__</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__create_connections__</span><span class="p">()</span>
+</pre></div>
 
-    
+        </details>
+
+            <div class="docstring"><p>Add a connection to the connection group
+This will overwrite the original kwargs though</p>
+</div>
+
 
                             </div>
                             <div id="ConnectionGroup.info" class="classattr">

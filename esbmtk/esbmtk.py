@@ -568,7 +568,7 @@ class Model(esbmtkBase):
         self.m_unit = Q_(self.mass_unit).units  # the mass unit
         self.v_unit = Q_(self.volume_unit).units  # the volume unit
         # the concentration unit (mass/volume)
-        self.c_unit = self.m_unit / self.v_unit
+        self.c_unit = self.m_unit / self.v_unit  # concentration
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
         self.r_unit = self.v_unit / self.t_unit  # flux as volume/time
         # this is now defined in __init__.py
@@ -1301,7 +1301,7 @@ class Reservoir(esbmtkBase):
 
         if self.geometry != "None":
             get_box_geometry_parameters(self)
-            
+
         # convert units
         self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
 
@@ -2700,15 +2700,15 @@ class DataField(esbmtkBase):
     the model finishes in the overview plot windows. Therefore, datafields will
     plot in the same window as the reservoir they are associated with.
     Datafields must share the same x-axis is the model, and can have up to two
-    y axis.
+    y axis. 
 
     Example::
-    
+
              DataField(name = "Name"
                        associated_with = reservoir_handle
-                       y1_data = np.Ndarray
+                       y1_data = np.Ndarray or list of arrays
                        y1_label = Y-Axis label
-                       y1_legend = Data legend
+                       y1_legend = Data legend or list of legends
                        y2_data = np.Ndarray    # optional
                        y2_label = Y-Axis label # optional
                        y2_legend = Data legend # optional
@@ -2736,12 +2736,12 @@ class DataField(esbmtkBase):
         self.lkk: Dict[str, any] = {
             "name": str,
             "associated_with": (Reservoir, ReservoirGroup),
-            "y1_data": NDArray[float],
+            "y1_data": (NDArray[float], list),
             "y1_label": str,
-            "y1_legend": str,
-            "y2_data": (str, NDArray[float]),
+            "y1_legend": (str, list),
+            "y2_data": (str, NDArray[float], list),
             "y2_label": str,
-            "y2_legend": str,
+            "y2_legend": (str, list),
             "common_y_scale": str,
             "display_precision": Number,
         }
@@ -2789,6 +2789,19 @@ class DataField(esbmtkBase):
 
         self.n = self.name
         self.led = []
+
+        if not isinstance(self.y1_data, list):
+            self.y1_data = [self.y1_data]
+
+        if not isinstance(self.y1_legend, list):
+            self.y1_legend = [self.y1_legend]
+
+        if not isinstance(self.y2_data, list):
+            self.y2_data = [self.y2_data]
+
+        if not isinstance(self.y2_legend, list):
+            self.y2_legend = [self.y2_legend]
+
         # register with reservoir
         self.associated_with.ldf.append(self)
         # register with model. needed for print_reservoirs

@@ -14,6 +14,10 @@ generation of graphical results.
 
 * News
 
+ - May 5^{th},  0.5.0.1 The Datafield Class now accepts lists of datasets. This
+   facilitates the grouping of data which belong together into a
+   single graph.
+
  - April 26^{th} Further changes to the naming scheme in group
    connections. A connection group object now consists of the group
    name followed by the connection name, e.g., =sb2@db.PO4_2_PO4=
