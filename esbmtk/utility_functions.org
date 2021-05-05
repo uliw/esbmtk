@@ -385,50 +385,56 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
 
     if first_axis:
         if isinstance(obj, DataField):
-            for i, d in enumerate[obj.y1_data]:  # loop over datafield list
-                yl = d
-                label = obj.legend_left[i]
-                ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=obj.legend_left)
-                cn = cn + 1
-                col = f"C{cn}"
-        else:
-            # plot left y-scale data
-            ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=obj.legend_left)
-            # set color index
-            cn = cn + 1
-            col = f"C{cn}"
+            if not isinstance(obj.y1_data[0], str):
+                for i, d in enumerate(obj.y1_data):  # loop over datafield list
+                    yl = d
+                    label = obj.y1_legend[i]
+                    ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
+                    cn = cn + 1
+                    col = f"C{cn}"
+                else:
+                    # plot left y-scale data
+                    ln1 = ax1.plot(
+                        time[1:-2], yl[1:-2], color=col, label=obj.legend_left
+                    )
+                    # set color index
+                    cn = cn + 1
+                    col = f"C{cn}"
 
-        ax1.set_xlabel(f"{model.time_label} [{model.d_unit:~P}]")
-        ax1.set_ylabel(y_label)
-        # remove unnecessary frame species
-        ax1.spines["top"].set_visible(False)
-        set_y_limits(ax1, obj)
+                ax1.set_xlabel(f"{model.time_label} [{model.d_unit:~P}]")
+                ax1.set_ylabel(y_label)
+                # remove unnecessary frame species
+                ax1.spines["top"].set_visible(False)
+                set_y_limits(ax1, obj)
 
     if second_axis:
         if isinstance(obj, DataField):
-            if obj.common_y_scale == "yes":
-                for i, d in enumerate[obj.y2_data]:  # loop over datafield list
-                    yl = d
-                    label = obj.legend_right[i]
-                    ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
-                    cn = cn + 1
-                    col = f"C{cn}"
-                    set_y_limits(ax1, model)
-                    ax1.legend()
-                    second_axis = False
-            else:
-                ax2 = ax1.twinx()  # create a second y-axis
-                for i, d in enumerate[obj.y2_data]:  # loop over datafield list
-                    yl = d
-                    label = obj.legend_right[i]
-                    ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
-                    cn = cn + 1
-                    col = f"C{cn}"
+            if not isinstance(obj.y2_data[0], str):
+                if obj.common_y_scale == "yes":
+                    for i, d in enumerate(obj.y2_data):  # loop over datafield list
+                        yl = d
+                        label = obj.y2_legend[i]
+                        ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
+                        cn = cn + 1
+                        col = f"C{cn}"
+                        set_y_limits(ax1, model)
+                        ax1.legend()
+                        second_axis = False
+                else:
+                    ax2 = ax1.twinx()  # create a second y-axis
+                    for i, d in enumerate(obj.y2_data):  # loop over datafield list
+                        yl = d
+                        label = obj.y2_legend[i]
+                        ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
+                        cn = cn + 1
+                        col = f"C{cn}"
 
-                ax2.set_ylabel(obj.ld)  # species object delta label
-                set_y_limits(ax2, model)
-                # remove unneeded frame
-                ax2.spines["top"].set_visible(False)
+                    ax2.set_ylabel(obj.ld)  # species object delta label
+                    set_y_limits(ax2, model)
+                    # remove unneeded frame
+                    ax2.spines["top"].set_visible(False)
+            else:
+                second_axis = False
 
         elif isinstance(obj, Signal):
             # use the same units as the associated flux
