@@ -1660,3 +1660,54 @@ def build_process_list(lor: list) -> tuple:
     
     return fn, rd, fd, pc
 #+END_SRC
+
+** Flux management
+
+#+BEGIN_SRC ipython :tangle utility_functions.py
+def get_name_only(o: any) -> any:
+    """Test if item is an esbmtk type. If yes, extract the name"""
+
+    from esbmtk import Flux, Reservoir, ReservoirGroup, Species
+    from esbmtk import Sink, Source, SourceGroup, SinkGroup
+    from esbmtk import Process, DataField, VirtualReservoir
+
+    if isinstance(o, (Flux, Reservoir, ReservoirGroup, Species)):
+        r = o.full_name
+    else:
+        r = o
+
+    return r
+
+
+def get_simple_list(l: list) -> list:
+    """return a list which only has the full name
+    rather than all the object properties
+
+    """
+
+    from esbmtk import Flux, Reservoir, Species
+
+    r: list = []
+    for e in l:
+        r.append(get_name_only(e))
+
+    return r
+
+
+def show_dict(d: dict, mt: str = "1:1") -> None:
+    """show dict entries in an organized manner"""
+
+    from esbmtk import expand_dict, get_simple_list, get_name_only
+
+    ct = expand_dict(d, mt)
+    for ck, cv in ct.items():
+        print(f"{ck}")
+
+        for pk, pv in cv.items():
+            if isinstance(pv, list):
+                x = get_simple_list(pv)
+            else:
+                x = get_name_only(pv)
+            print(f"     {pk} : {x}")
+
+#+END_SRC
