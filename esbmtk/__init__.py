@@ -16,6 +16,8 @@ ureg.define("Mol = 1 * mol / liter = M")
 
 # rom .species_definitions import carbon, sulfur, hydrogen, phosphor
 from .esbmtk import *
+from .extended_classes import *
 from .connections import ConnectionGroup, Connection, Connect
 from .utility_functions import *
 from .sealevel import *
+from .solver import *
