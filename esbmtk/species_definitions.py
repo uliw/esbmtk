@@ -14,14 +14,14 @@ import pandas as pd
 import logging
 import time
 import builtins
+
 set_printoptions(precision=4)
 # from .utility_functions import *
 from .esbmtk import Element, Species
 
+
 def carbon(model):
-    """ Some often used definitions
-    
-    """
+    """Some often used definitions"""
 
     eh = Element(
         name="Carbon",  # Element Name
@@ -29,27 +29,27 @@ def carbon(model):
         mass_unit="mmol",  # base mass unit
         li_label="C^{12}$S",  # Name of light isotope
         hi_label="C^{13}$S",  # Name of heavy isotope
-        d_label= r"$\delta^{13}$C",  # Name of isotope delta
+        d_label=r"$\delta^{13}$C",  # Name of isotope delta
         d_scale="VPDB",  # Isotope scale. End of plot labels
         r=0.0112372,  # VPDB C13/C12 ratio https://www-pub.iaea.org/MTCD/publications/PDF/te_825_prn.pdf
     )
 
     # add species
-    Species(name="CO2", element=eh, display_as = r"CO$_2$" )  # Name & element handle
+    Species(name="CO2", element=eh, display_as=r"CO$_2$")  # Name & element handle
     Species(name="DIC", element=eh)
     Species(name="OM", element=eh)
-    Species(name="CaCO3", element=eh,  display_as= r"CaCO$_3$")
-    Species(name="HCO3", element=eh, display_as= r"HCO$_3^-$")
-    Species(name="CO3", element=eh, display_as = "CO$_3^{2-}$")
+    Species(name="CaCO3", element=eh, display_as=r"CaCO$_3$")
+    Species(name="HCO3", element=eh, display_as=r"HCO$_3^-$")
+    Species(name="CO3", element=eh, display_as="CO$_3^{2-}$")
     Species(name="DOC", element=eh)
     Species(name="C", element=eh)
     Species(name="ALK", element=eh)  # Alkalinity
-    Species(name="CALK", element=eh) # Carbonate Alkalinity
-    Species(name="CA", element=eh) 
-    Species(name="TALK", element=eh) # Total Alkalinity
-    Species(name="TA", element=eh) 
-    Species(name="PALK", element=eh) # Practical Alkalinity
-    Species(name="PA", element=eh) 
+    Species(name="CALK", element=eh)  # Carbonate Alkalinity
+    Species(name="CA", element=eh)
+    Species(name="TALK", element=eh)  # Total Alkalinity
+    Species(name="TA", element=eh)
+    Species(name="PALK", element=eh)  # Practical Alkalinity
+    Species(name="PA", element=eh)
 
 
 def sulfur(model):
@@ -67,15 +67,16 @@ def sulfur(model):
     # add species
     Species(name="SO4", element=eh, display_as=r"SO$_{4}^{2-}$")
     Species(name="SO4oxygen", element=eh, display_as=r"SO$_{4}^{2-}{_ox}$")
-    Species(name="SO3", element=eh,  display_as=r"SO$_{3}$")
+    Species(name="SO3", element=eh, display_as=r"SO$_{3}$")
     Species(name="SO2", element=eh, display_as=r"SO$_{2$}")
     Species(name="HS", element=eh, display_as=r"HS$^-$")
     Species(name="H2S", element=eh, display_as=r"H$_{2}$S")
     Species(name="FeS", element=eh)
-    Species(name="FeS2", element=eh, display_as=r"FeS$_{2}$") 
+    Species(name="FeS2", element=eh, display_as=r"FeS$_{2}$")
     Species(name="S0", element=eh)
     Species(name="S", element=eh)
     Species(name="S2minus", element=eh, display_as=r"S$^{2-}$")
+
 
 def hydrogen(model):
     eh = Element(

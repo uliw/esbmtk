@@ -24,6 +24,7 @@ from .utility_functions import sort_by_type
 
 # from .connections import ConnnectionGroup
 
+
 class Process(esbmtkBase):
     """This class defines template for process which acts on one or more
     reservoir flux combinations. To use it, you need to create an
@@ -32,9 +33,8 @@ class Process(esbmtkBase):
 
     """
 
-    __slots__ = ('reservoir', 'r', 'flux', 'r', 'mo', 'direction')
+    __slots__ = ("reservoir", "r", "flux", "r", "mo", "direction")
 
-    
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
         Create a new process object with a given process type and options
@@ -144,64 +144,64 @@ class Process(esbmtkBase):
         """
         pass
 
+
 class GenericFunction(Process):
     """This Process class takes a generic function and up to 6 optional
-    function arguments, and will replace the mass value(s) of the
-    given reservoirs with whatever the function calculates. This is
-    particularly useful e.g., to calculate the pH of a given reservoir
-    as function of e.g., Alkalinity and DIC.
+     function arguments, and will replace the mass value(s) of the
+     given reservoirs with whatever the function calculates. This is
+     particularly useful e.g., to calculate the pH of a given reservoir
+     as function of e.g., Alkalinity and DIC.
 
-    Parameters:
-     - name = name of process,
-     - act_on = name of a reservoir this process will act upon
-     - function  = a function reference
-     - a1 to a3, 
+     Parameters:
+      - name = name of process,
+      - act_on = name of a reservoir this process will act upon
+      - function  = a function reference
+      - a1 to a3,
 
-    in order to use this function we need first declare a function we plan to
-    use with the generic function process. This function needs to follow the 
-    below template.
+     in order to use this function we need first declare a function we plan to
+     use with the generic function process. This function needs to follow the
+     below template.
 
-   In order to be compatible with the numba solver, a1 and a2 must be
-   an array of 1-D numpy.arrays i.e., [m, l, h, c]. The array can have
-   any number of arrays though. a3 must be single array (or list)
-   containing an arbitrary number of entries. All numbers in a1 to a3
-   _must_ be of type float64.
+    In order to be compatible with the numba solver, a1 and a2 must be
+    an array of 1-D numpy.arrays i.e., [m, l, h, c]. The array can have
+    any number of arrays though. a3 must be single array (or list)
+    containing an arbitrary number of entries. All numbers in a1 to a3
+    _must_ be of type float64.
 
-   The function must return a list of numbers which correspond to the
-   data which describe a reservoir i.e., mass, light isotope, heavy
-   isotope, delta, and concentration
+    The function must return a list of numbers which correspond to the
+    data which describe a reservoir i.e., mass, light isotope, heavy
+    isotope, delta, and concentration
 
-   In order to use this function we need first declare a function we plan to
-   use with the generic function process. This function needs to follow this
-   template::
+    In order to use this function we need first declare a function we plan to
+    use with the generic function process. This function needs to follow this
+    template::
 
-       def my_func(i, a1, a2, a3, act_on) -> tuple:
-           #
-           # i = index of the current timestep
-           # a1 to a2 =  optional function parameter. These must be present,
-           # even if your function will not use it
-           # act_on = reservoir reference, i.e., the result of the function
-           # will be applied to this reservoir.
+        def my_func(i, a1, a2, a3) -> tuple:
+            #
+            # i = index of the current timestep
+            # a1 to a2 =  optional function parameter. These must be present,
+            # even if your function will not use it
+            # will be applied to this reservoir.
 
-           # calc some stuff and return it as
+            # calc some stuff and return it as
 
-           return [m, l, h, d, c] # where m= mass, and l & h are the respective
-                                  # isotopes. d denotes the delta value and
-                                  # c the concentration
-                                  # Use dummy value as necessary. 
-    
+            return [m, l, h, d, c] # where m= mass, and l & h are the respective
+                                   # isotopes. d denotes the delta value and
+                                   # c the concentration
+                                   # Use dummy value as necessary.
 
-        This function can then be used as::
 
-        GenericFunction(name="foo",
-                function=my_func,
-                a1 = some argument,
-                a2 = some argument,
-                a3 = some argument
-                acton_on = reservoir reference
-                )
+         This function can then be used as::
 
-    see calc_H in the carbonate chemistry module as example
+         GenericFunction(name="foo",
+                 function=my_func,
+                 a1 = some argument,
+                 a2 = some argument,
+                 a3 = some argument
+                 acton_on = reservoir reference
+                 )
+
+     see calc_H in the carbonate chemistry module as example
 
     """
 
@@ -322,28 +322,30 @@ class GenericFunction(Process):
             # ),
         )
 
+
 class LookupTable(Process):
-     """This process replaces the flux-values with values from a static
-lookup table
+    """This process replaces the flux-values with values from a static
+    lookup table
 
-     Example::
+         Example::
 
-     LookupTable("name", upstream_reservoir_handle, lt=flux-object)
+         LookupTable("name", upstream_reservoir_handle, lt=flux-object)
 
-     where the flux-object contains the mass, li, hi, and delta values
-     which will replace the current flux values.
+         where the flux-object contains the mass, li, hi, and delta values
+         which will replace the current flux values.
 
-     """
-     
-     def __call__(self, r: Reservoir, i: int) -> None:
-          """Here we replace the flux value with the value from the flux object 
-          which we use as a lookup-table
+    """
 
-          """
-          self.m[i] :float  = self.lt.m[i]
-          self.d[i] :float  = self.lt.d[i]
-          self.l[i] :float = self.lt.l[i]
-          self.h[i] :float = self.lt.h[i]
+    def __call__(self, r: Reservoir, i: int) -> None:
+        """Here we replace the flux value with the value from the flux object
+        which we use as a lookup-table
+
+        """
+        self.m[i]: float = self.lt.m[i]
+        self.d[i]: float = self.lt.d[i]
+        self.l[i]: float = self.lt.l[i]
+        self.h[i]: float = self.lt.h[i]
+
 
 class AddSignal(Process):
     """This process adds values to the current flux based on the values provided by the sifnal object.
@@ -419,20 +421,22 @@ class AddSignal(Process):
         # add signal mass to flux mass
         self.f.m[i] = self.f.m[i] + self.lt.m[i]
 
+
 class PassiveFlux(Process):
     """This process sets the output flux from a reservoir to be equal to
-     the sum of input fluxes, so that the reservoir concentration does
-     not change. Furthermore, the isotopic ratio of the output flux
-     will be set equal to the isotopic ratio of the reservoir The init
-     and register methods are inherited from the process class. The
-     overall result can be scaled, i.e., in order to create a split flow etc.
-     Example::
+    the sum of input fluxes, so that the reservoir concentration does
+    not change. Furthermore, the isotopic ratio of the output flux
+    will be set equal to the isotopic ratio of the reservoir The init
+    and register methods are inherited from the process class. The
+    overall result can be scaled, i.e., in order to create a split flow etc.
+    Example::
 
-     PassiveFlux(name = "name",
-                 reservoir = upstream_reservoir_handle
-                 flux = flux handle)
+    PassiveFlux(name = "name",
+                reservoir = upstream_reservoir_handle
+                flux = flux handle)
 
-     """
+    """
+
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this Process """
 
@@ -440,9 +444,9 @@ class PassiveFlux(Process):
         self.__defaultnames__()  # default kwargs names
         self.lrk.extend(["reservoir", "flux"])  # new required keywords
         self.__initerrormessages__()
-        #self.bem.update({"rate": "a string"})
+        # self.bem.update({"rate": "a string"})
         self.__validateandregister__(kwargs)  # initialize keyword values
-        #legacy variables
+        # legacy variables
         self.mo = self.reservoir.mo
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
@@ -462,7 +466,7 @@ class PassiveFlux(Process):
         """
         Initialize stuff which is only known after the entire model has been defined.
         This will be executed just before running the model.
-        
+
         """
 
         # Create a list of fluxes wich excludes the flux this process
@@ -478,7 +482,7 @@ class PassiveFlux(Process):
         work for outfluxes though.
 
         Should this be done for output fluxes as well?
-          
+
         """
 
         new: float = 0.0
@@ -487,77 +491,81 @@ class PassiveFlux(Process):
         # will be known so we need to use the flux values from the previous times-step
         for j, f in enumerate(self.fws):
             # print(f"{f.n} = {f.m[i-1] * reservoir.lio[f]}")
-            new += f.m[i-1] * reservoir.lio[f]
+            new += f.m[i - 1] * reservoir.lio[f]
 
-        # print(f"sum = {new:.0f}\n")    
-        self.f[i] = get_flux_data(new,reservoir.d[i-1],reservoir.rvalue)
+        # print(f"sum = {new:.0f}\n")
+        self.f[i] = get_flux_data(new, reservoir.d[i - 1], reservoir.rvalue)
 
-        #m = new
-        #r = reservoir.l[i - 1] / reservoir.m[i - 1]
-        #l = m * r
-        #h = m - l
-        #self.f.m[i] = m
-        #self.f.l[i] = l
-        #self.f.h[i] = h
-       #self.f.d[i] = reservoir.d[i - 1]
+        # m = new
+        # r = reservoir.l[i - 1] / reservoir.m[i - 1]
+        # l = m * r
+        # h = m - l
+        # self.f.m[i] = m
+        # self.f.l[i] = l
+        # self.f.h[i] = h
+
+    # self.f.d[i] = reservoir.d[i - 1]
+
 
 class PassiveFlux_fixed_delta(Process):
-     """This process sets the output flux from a reservoir to be equal to
-     the sum of input fluxes, so that the reservoir concentration does
-     not change. However, the isotopic ratio of the output flux is set
-     at a fixed value. The init and register methods are inherited
-     from the process class. The overall result can be scaled, i.e.,
-     in order to create a split flow etc.  Example::
+    """This process sets the output flux from a reservoir to be equal to
+    the sum of input fluxes, so that the reservoir concentration does
+    not change. However, the isotopic ratio of the output flux is set
+    at a fixed value. The init and register methods are inherited
+    from the process class. The overall result can be scaled, i.e.,
+    in order to create a split flow etc.  Example::
 
-     PassiveFlux_fixed_delta(name = "name",
-                             reservoir = upstream_reservoir_handle,
-                             flux handle,
-                             delta = delta offset)
+    PassiveFlux_fixed_delta(name = "name",
+                            reservoir = upstream_reservoir_handle,
+                            flux handle,
+                            delta = delta offset)
 
-     """
+    """
 
-     def __init__(self, **kwargs :Dict[str, any]) -> None:
-          """ Initialize this Process """
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """ Initialize this Process """
 
+        self.__defaultnames__()  # default kwargs names
+        self.lrk.extend(["reservoir", "delta", "flux"])  # new required keywords
 
-          self.__defaultnames__()  # default kwargs names
-          self.lrk.extend(["reservoir","delta", "flux"]) # new required keywords
+        self.__initerrormessages__()
+        # self.bem.update({"rate": "a string"})
+        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__postinit__()  # do some housekeeping
 
-          self.__initerrormessages__()
-          #self.bem.update({"rate": "a string"})
-          self.__validateandregister__(kwargs)  # initialize keyword values
-          self.__postinit__()  # do some housekeeping
+        # legacy names
+        self.f: Flux = self.flux
+        # legacy variables
+        self.mo = self.reservoir.mo
 
-          # legacy names
-          self.f :Flux = self.flux
-          #legacy variables
-          self.mo = self.reservoir.mo
+        print("\nn *** Warning, you selected the PassiveFlux_fixed_delta method ***\n ")
+        print(
+            " This is not a particularly phyiscal process is this really what you want?\n"
+        )
+        print(self.__doc__)
+        self.__register_name__()
 
-          print("\nn *** Warning, you selected the PassiveFlux_fixed_delta method ***\n ")
-          print(" This is not a particularly phyiscal process is this really what you want?\n")
-          print(self.__doc__)
-          self.__register_name__()
-     
-     def __call__(self, reservoir :Reservoir, i :int) -> None:
-          """Here we re-balance the flux. This code will be called by the
-          apply_flux_modifier method of a reservoir which itself is
-          called by the model execute method
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """Here we re-balance the flux. This code will be called by the
+        apply_flux_modifier method of a reservoir which itself is
+        called by the model execute method
 
-          """
+        """
 
-          r :float = reservoir.rvalue # the isotope reference value
+        r: float = reservoir.rvalue  # the isotope reference value
 
-          varflux :Flux = self.f 
-          flux_list :List[Flux] = reservoir.lof.copy()
-          flux_list.remove(varflux)  # remove this handle
+        varflux: Flux = self.f
+        flux_list: List[Flux] = reservoir.lof.copy()
+        flux_list.remove(varflux)  # remove this handle
 
-          # sum up the remaining fluxes
-          newflux :float = 0
-          for f in flux_list:
-               newflux = newflux + f.m[i-1] * reservoir.lio[f]
+        # sum up the remaining fluxes
+        newflux: float = 0
+        for f in flux_list:
+            newflux = newflux + f.m[i - 1] * reservoir.lio[f]
 
-          # set isotope mass according to keyword value
-          self.f[i] = array(get_flux_data(newflux, self.delta, r))
+        # set isotope mass according to keyword value
+        self.f[i] = array(get_flux_data(newflux, self.delta, r))
+
 
 class VarDeltaOut(Process):
     """Unlike a passive flux, this process sets the flux istope ratio
@@ -694,6 +702,7 @@ class VarDeltaOut(Process):
         """
 
         pass
+
 
 class ScaleFlux(Process):
     """This process scales the mass of a flux (m,l,h) relative to another
@@ -841,6 +850,7 @@ class FluxDiff(Process):
         """
         self.f[i] = (self.ref[0][i] - self.ref[1][i]) * self.scale
 
+
 class Fractionation(Process):
     """This process offsets the isotopic ratio of the flux by a given
        delta value. In other words, we add a fractionation factor
@@ -909,6 +919,7 @@ class Fractionation(Process):
         flux_data[1][i] = l
         flux_data[2][i] = m - l
         flux_data[3][i] = d
+
 
 class RateConstant(Process):
     """This is a wrapper for a variety of processes which depend on rate constants
@@ -1167,10 +1178,8 @@ class ScaleRelativeToMass(RateConstant):
         self.flux[i]: np.array = [m, l, m - l, d]
 
     def get_process_args(self, reservoir: Reservoir):
-        """ return the data associated with this object 
+        """return the data associated with this object"""
 
-        """
-        
         func_name: function = self.p_scale_relative_to_mass
 
         res_data = List([self.reservoir.m, reservoir.d, reservoir.c])
@@ -1292,6 +1301,7 @@ class ScaleRelative2otherReservoir(RateConstant):
         # scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] = self.f[i] * array([scale, scale, scale, 1])
 
+
 class Flux_Balance(RateConstant):
     """This process calculates a flux between two reservoirs as a function
     of multiple reservoir concentrations and constants.
@@ -1320,9 +1330,7 @@ class Flux_Balance(RateConstant):
 
     # redefine misc_init which is being called by post-init
     def __misc_init__(self):
-        """ Sort out input variables
-
-        """
+        """Sort out input variables"""
 
         Rl: List[Reservoir] = []
         Rr: List[Reservoir] = []
@@ -1340,8 +1348,8 @@ class Flux_Balance(RateConstant):
 
         """
 
-        kl: NDArray    = np.array([1.0, 1.0, 1.0, 1.0])
-        kr: NDArray    = np.array([1.0, 1.0, 1.0, 1.0])
+        kl: NDArray = np.array([1.0, 1.0, 1.0, 1.0])
+        kr: NDArray = np.array([1.0, 1.0, 1.0, 1.0])
         scale: NDArray = np.array([1.0, 1.0, 1.0, 1.0])
 
         # calculate the product of reservoir concentrations for left side
@@ -1359,87 +1367,88 @@ class Flux_Balance(RateConstant):
             kr *= c
 
         # set flux
-        self.f[i] = (kl - kr) *  self.k_value
+        self.f[i] = (kl - kr) * self.k_value
+
 
 class Monod(Process):
     """This process scales the flux as a function of the upstream
-     reservoir concentration using a Michaelis Menten type
-     relationship
+    reservoir concentration using a Michaelis Menten type
+    relationship
 
-     F = F * a * F0 x C/(b+C)
+    F = F * a * F0 x C/(b+C)
 
-     where F0 denotes the unscaled flux (i.e., at t=0), C denotes
-     the concentration in the ustream reservoir, and a and b are
-     constants.
+    where F0 denotes the unscaled flux (i.e., at t=0), C denotes
+    the concentration in the ustream reservoir, and a and b are
+    constants.
 
-     Example::
-          Monod(name = "Name",
-                reservoir =  upstream_reservoir_handle,
-                flux = flux handle ,
-                ref_value = reference concentration
-                a_value = constant,
-                b_value = constant )
+    Example::
+         Monod(name = "Name",
+               reservoir =  upstream_reservoir_handle,
+               flux = flux handle ,
+               ref_value = reference concentration
+               a_value = constant,
+               b_value = constant )
 
-     """
+    """
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
-        """
-
-        """
+        """"""
 
         from . import ureg, Q_
 
         """ Initialize this Process """
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
-        
+
         # update the allowed keywords
-        self.lkk :dict = {
+        self.lkk: dict = {
             "a_value": Number,
             "b_value": Number,
-            "ref_value": (Number,str, Q_),
+            "ref_value": (Number, str, Q_),
             "name": str,
-            "reservoir": (Reservoir,Source,Sink),
+            "reservoir": (Reservoir, Source, Sink),
             "flux": Flux,
-            "register":
-            (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
         }
 
-        self.lrk.extend(["reservoir", "a_value", "b_value",
-                         "ref_value"])  # new required keywords
+        self.lrk.extend(
+            ["reservoir", "a_value", "b_value", "ref_value"]
+        )  # new required keywords
 
         self.__initerrormessages__()
-        self.bem.update({
-            "a_value": "a number",
-            "b_value": "a number",
-            "reservoir": "Reservoir handle",
-            "ref_value": "a number",
-            "name": "a string value",
-            "flux": "a flux handle",
-        })
+        self.bem.update(
+            {
+                "a_value": "a number",
+                "b_value": "a number",
+                "reservoir": "Reservoir handle",
+                "ref_value": "a number",
+                "name": "a string value",
+                "flux": "a flux handle",
+            }
+        )
 
         self.__validateandregister__(kwargs)  # initialize keyword values
         self.__postinit__()  # do some housekeeping
-        #legacy variables
+        # legacy variables
         self.mo = self.reservoir.mo
         self.__register_name__()
 
     def __call__(self, reservoir: Reservoir, i: int) -> None:
         """
-          this willbe called by Model.execute apply_processes
-          """
+        this willbe called by Model.execute apply_processes
+        """
 
-        scale: float = self.a_value * (self.ref_value * reservoir.c[i - 1]) / (
-            self.b_value + reservoir.c[i - 1])
+        scale: float = (
+            self.a_value
+            * (self.ref_value * reservoir.c[i - 1])
+            / (self.b_value + reservoir.c[i - 1])
+        )
 
         scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] + self.f[i] * scale
 
-    def __plot__(self, start: int, stop: int, ref: float, a: float,
-                 b: float) -> None:
-        """ Test the implementation
-
-          """
+    def __plot__(self, start: int, stop: int, ref: float, a: float, b: float) -> None:
+        """Test the implementation"""
 
         y = []
         x = range(start, stop)

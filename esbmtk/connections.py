@@ -39,10 +39,12 @@ import pandas as pd
 import logging
 import time
 import builtins
+
 set_printoptions(precision=4)
 from .utility_functions import map_units
 from .processes import *
 from .esbmtk import *
+
 
 class Connect(esbmtkBase):
     """Two reservoirs connect to each other via at least one flux. This
@@ -389,8 +391,8 @@ class Connect(esbmtkBase):
         # make sure scale is a number in model units
 
         if self.scale == "None":
-            self.scale = 1
-        
+            self.scale = 1.0
+
         if isinstance(self.scale, str):
             self.scale = Q_(self.scale)
 
@@ -1055,10 +1057,10 @@ class Connect(esbmtkBase):
         self.__set_process_type__()  # derive flux type and create flux(es)
         self.__register_process__()
 
-class Connection(Connect):
-    """ Alias for the Connect class
 
-    """
+class Connection(Connect):
+    """Alias for the Connect class"""
+
 
 class ConnectionGroup(esbmtkBase):
     """Name:

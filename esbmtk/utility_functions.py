@@ -32,9 +32,8 @@ from numba.typed import List
 
 import numpy as np
 import matplotlib.pyplot as plt
-
-# import pandas as pd
-# import mpmath
+import pandas as pd
+import mpmath
 
 import logging
 import time
@@ -43,7 +42,7 @@ import math
 
 set_printoptions(precision=4)
 
-
+# @njit()
 def get_imass(m: float, d: float, r: float) -> [float, float]:
     """
     Calculate the isotope masses from bulk mass and delta value.
@@ -1665,6 +1664,25 @@ def gen_dict_entries(M: any, **kwargs) -> tuple:
     klist: list = get_connection_keys(flist, reference, target, inverse)
 
     return tuple(klist), flist
+
+
+def build_ct_dict(d: dict, p: dict) -> dict:
+    """build a connection dictionary from a dict containing connection
+    keys, and a dict containing connection properties. This is most
+    useful for connections which a characterized by a fixed rate but
+    apply to many species. E.g., mixing fluxes in a complex model etc.
+
+    """
+
+    ct: dict = {}
+
+    for k, v in d.items():
+        td: dict = {}  # temp dict for scale
+        td["sc"] = v
+        td.update(p)
+        ct[k] = td
+
+    return ct
 
 
 def get_string_between_brackets(s: str) -> str:

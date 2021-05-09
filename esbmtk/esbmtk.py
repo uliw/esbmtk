@@ -36,10 +36,24 @@ import logging
 
 import builtins
 import os
-from .utility_functions import get_imass, get_delta, get_plot_layout
-from .utility_functions import plot_object_data, show_data, plot_geometry, show_dict, gen_dict_entries
-from .utility_functions import get_string_between_brackets, execute, execute_h, execute_n, execute_e
+from .utility_functions import get_imass, get_delta, get_plot_layout, build_ct_dict
+from .utility_functions import (
+    plot_object_data,
+    show_data,
+    plot_geometry,
+    show_dict,
+    gen_dict_entries,
+)
+from .utility_functions import (
+    get_string_between_brackets,
+    execute,
+    execute_h,
+    execute_n,
+    execute_e,
+)
+
 # from .sealevel import get_box_geometry_parameters
+
 
 class esbmtkBase(object):
     """The esbmtk base class template. This class handles keyword
@@ -418,6 +432,7 @@ class esbmtkBase(object):
         """Aux initialization code. Not normally used"""
 
         pass
+
 
 class Model(esbmtkBase):
     """This class is used to specify a new model
@@ -991,6 +1006,7 @@ class Model(esbmtkBase):
 
         print("")
 
+
 class Element(esbmtkBase):
     """Each model, can have one or more elements.  This class sets
     element specific properties
@@ -1011,9 +1027,7 @@ class Element(esbmtkBase):
 
     # set element properties
     def __init__(self, **kwargs) -> any:
-        """ Initialize all instance variables
-
-        """
+        """Initialize all instance variables"""
 
         # provide a dict of known keywords and types
         self.lkk = {
@@ -1024,18 +1038,18 @@ class Element(esbmtkBase):
             "hi_label": str,
             "d_label": str,
             "d_scale": str,
-            "r": Number
+            "r": Number,
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["name", "model", "mass_unit"]
         # list of default values if none provided
         self.lod = {
-            'li_label': "None",
-            'hi_label': "None",
-            'd_label': "None",
-            'd_scale': "None",
-            'r': 1,
+            "li_label": "None",
+            "hi_label": "None",
+            "d_label": "None",
+            "d_scale": "None",
+            "r": 1,
         }
 
         self.__initerrormessages__()
@@ -1054,45 +1068,43 @@ class Element(esbmtkBase):
         self.__register_name__()
 
     def list_species(self) -> None:
-        """ List all species which are predefined for this element
-
-        """
+        """List all species which are predefined for this element"""
 
         for e in self.lsp:
             print(e.n)
 
+
 class Species(esbmtkBase):
     """Each model, can have one or more species.  This class sets species
-specific properties
-      
-      Example::
-        
-            Species(name = "SO4",
-                    element = S,
-)
+    specific properties
+
+          Example::
+
+                Species(name = "SO4",
+                        element = S,
+    )
 
     """
 
-    __slots__ = ('r')
+    __slots__ = "r"
 
     # set species properties
     def __init__(self, **kwargs) -> None:
-        """ Initialize all instance variables
-            """
+        """Initialize all instance variables"""
 
         # provide a list of all known keywords
         self.lkk: Dict[any, any] = {
             "name": str,
             "element": Element,
-            'display_as': str,
-            'm_weight': Number
+            "display_as": str,
+            "m_weight": Number,
         }
 
         # provide a list of absolutely required keywords
         self.lrk = ["name", "element"]
 
         # list of default values if none provided
-        self.lod = {"display_as": kwargs["name"], 'm_weight': 0}
+        self.lod = {"display_as": kwargs["name"], "m_weight": 0}
 
         self.__initerrormessages__()
 
@@ -1114,9 +1126,10 @@ specific properties
         self.e = self.element  # element handle
         self.dsa = self.display_as  # the display string.
 
-        #self.mo.lsp.append(self)   # register self on the list of model objects
+        # self.mo.lsp.append(self)   # register self on the list of model objects
         self.e.lsp.append(self)  # register this species with the element
         self.__register_name__()
+
 
 class Reservoir(esbmtkBase):
     """This object holds reservoir specific information.
@@ -1659,6 +1672,7 @@ class Reservoir(esbmtkBase):
         print("Use the info method on any of the above connections")
         print("to see information on fluxes and processes")
 
+
 class ReservoirGroup(esbmtkBase):
     """This class allows the creation of a group of reservoirs which share
     a common volume, and potentially connections. E.g., if we have two
@@ -1811,6 +1825,7 @@ class ReservoirGroup(esbmtkBase):
             # register as part of this group
             self.lor.append(a)
 
+
 class Flux(esbmtkBase):
     """A class which defines a flux object. Flux objects contain
     information which links them to an species, describe things like
@@ -1927,10 +1942,10 @@ class Flux(esbmtkBase):
 
         if self.isotopes:
             self.__set_data__ = self.__set_with_isotopes__
-            # self.__get_data__ = self.__get_with_isotopes__  
+            # self.__get_data__ = self.__get_with_isotopes__
         else:
             self.__set_data__ = self.__set_without_isotopes__
-            #self.__get_data__ = self.__get_without_isotopes__
+            # self.__get_data__ = self.__get_without_isotopes__
 
     # setup a placeholder setitem function
     def __setitem__(self, i: int, value: [NDArray, float]):
@@ -1938,7 +1953,7 @@ class Flux(esbmtkBase):
 
     def __getitem__(self, i: int) -> NDArray[np.float64]:
         """Get data by index"""
-        #return self.__get_data__(i)
+        # return self.__get_data__(i)
         return array([self.m[i], self.l[i], self.h[i], self.d[i]])
 
     # def __get_with_isotopes__(self, i: int) -> NDArray[np.float64]:
@@ -2048,6 +2063,7 @@ class Flux(esbmtkBase):
         plt.show()
         plt.savefig(self.n + ".pdf")
 
+
 class SourceSink(esbmtkBase):
     """
     This is a meta class to setup a Source/Sink objects. These are not
@@ -2140,6 +2156,7 @@ class Source(SourceSink):
 
     where the first argument is a string, and the second is a species handle
     """
+
 
 class SourceSinkGroup(esbmtkBase):
     """
@@ -2235,6 +2252,7 @@ class SourceGroup(SourceSinkGroup):
 
     where the first argument is a string, and the second is a species handle
     """
+
 
 class Signal(esbmtkBase):
     """We use a simple generator which will create a signal which is
@@ -2694,13 +2712,14 @@ class Signal(esbmtkBase):
         """
         self.data.plot()
 
+
 class DataField(esbmtkBase):
     """
     DataField: Datafields can be used to plot data which is computed after
     the model finishes in the overview plot windows. Therefore, datafields will
     plot in the same window as the reservoir they are associated with.
     Datafields must share the same x-axis is the model, and can have up to two
-    y axis. 
+    y axis.
 
     Example::
 
@@ -2849,118 +2868,118 @@ class DataField(esbmtkBase):
         df.to_csv(fn, index=False)  # Write dataframe to file
         return df
 
+
 class VirtualReservoir(Reservoir):
-   """A virtual reservoir. Unlike regular reservoirs, the mass of a
-   virtual reservoir depends entirely on the return value of a function.
+    """A virtual reservoir. Unlike regular reservoirs, the mass of a
+    virtual reservoir depends entirely on the return value of a function.
 
-   Example::
+    Example::
 
-   VirtualReservoir(name="foo",
-                   volume="10 liter",
-                   concentration="1 mmol",
-                   species=  ,
-                   function=bar,
-                   a1 to a3 =  to 3optional function arguments,
-                   display_precision = number, optional, inherited from Model,
-                   )
+    VirtualReservoir(name="foo",
+                    volume="10 liter",
+                    concentration="1 mmol",
+                    species=  ,
+                    function=bar,
+                    a1 to a3 =  to 3optional function arguments,
+                    display_precision = number, optional, inherited from Model,
+                    )
 
-   the concentration argument will be used to initialize the reservoir and
-   to determine the display units.
+    the concentration argument will be used to initialize the reservoir and
+    to determine the display units.
 
-   The function definition follows the GenericFunction class.
-   which takes a generic function and up to 6 optional
-   function arguments, and will replace the mass value(s) of the
-   given reservoirs with whatever the function calculates. This is
-   particularly useful e.g., to calculate the pH of a given reservoir
-   as function of e.g., Alkalinity and DIC.
-   Parameters:
-    - name = name of process,
-    - act_on = name of a reservoir this process will act upon
-    - function  = a function reference
-    - a1 to a3 function arguments
+    The function definition follows the GenericFunction class.
+    which takes a generic function and up to 6 optional
+    function arguments, and will replace the mass value(s) of the
+    given reservoirs with whatever the function calculates. This is
+    particularly useful e.g., to calculate the pH of a given reservoir
+    as function of e.g., Alkalinity and DIC.
+    Parameters:
+     - name = name of process,
+     - act_on = name of a reservoir this process will act upon
+     - function  = a function reference
+     - a1 to a3 function arguments
 
-   In order to be compatible with the numba solver, a1 and a2 must be
-   an array of 1-D numpy.arrays i.e., [m, l, h, c]. The array can have
-   any number of arrays though. a3 must be single array (or list).
-   The a3 array must be passed as List([...]), and List must be imported as
+    In order to be compatible with the numba solver, a1 and a2 must be
+    an array of 1-D numpy.arrays i.e., [m, l, h, c]. The array can have
+    any number of arrays though. a3 must be single array (or list).
+    The a3 array must be passed as List([...]), and List must be imported as
 
-   from numba.typed import List
-   
-
-   The function must return a list of numbers which correspond to the
-   data which describe a reservoir i.e., mass, light isotope, heavy
-   isotope, delta, and concentration
-
-   In order to use this function we need first declare a function we plan to
-   use with the generic function process. This function needs to follow this
-   template::
-
-       def my_func(i, a1, a2, a3) -> tuple:
-           #
-           # i = index of the current timestep
-           # a1 to a3 =  optional function parameter. These must be present,
-           # even if your function will not use it See above for details
-
-           # calc some stuff and return it as
-
-           return [m, l, h, d, c] # where m= mass, and l & h are the respective
-                                  # isotopes. d denotes the delta value and
-                                  # c the concentration
-                                  # Use dummy value as necessary.
-
-   This class provides an update method to resolve cases where e.g., two virtual
-   reservoirs have a circular reference. See the documentation of update().
-
-   """
-
-   def __aux_inits__(self) -> None:
-       """We us the regular init methods of the Reservoir Class, and extend it in this method"""
-
-       from .processes import GenericFunction
-
-       # if self.register != "None":
-       #    self.full_name = f"{self.full_name}.{self.name}"
-       name = f"{self.full_name}_generic_function".replace(".", "_")
-       logging.info(f"creating {name}")
-
-       self.gfh = GenericFunction(
-           name=name,
-           function=self.function,
-           a1=self.a1,
-           a2=self.a2,
-           a3=self.a3,
-           act_on=self,
-       )
-
-       # we only depend on the above function. so no need
-       # to be in the reservoir list
-       self.mo.lor.remove(self)
-       # but lets keep track of  virtual reservoir in lvr.
-       self.mo.lvr.append(self)
+    from numba.typed import List
 
 
+    The function must return a list of numbers which correspond to the
+    data which describe a reservoir i.e., mass, light isotope, heavy
+    isotope, delta, and concentration
 
-   def update(self, **kwargs) -> None:
-       """This method allows to update GenericFunction parameters after the
-       VirtualReservoir has been initialized. This is most useful
-       when parameters have to reference other virtual reservoirs
-       which do not yet exist, e.g., when two virtual reservoirs have
-       a circular reference.
+    In order to use this function we need first declare a function we plan to
+    use with the generic function process. This function needs to follow this
+    template::
 
-       Example::
+        def my_func(i, a1, a2, a3) -> tuple:
+            #
+            # i = index of the current timestep
+            # a1 to a3 =  optional function parameter. These must be present,
+            # even if your function will not use it See above for details
 
-       VR.update(a1=new_parameter, a2=new_parameter)
+            # calc some stuff and return it as
 
-       """
+            return [m, l, h, d, c] # where m= mass, and l & h are the respective
+                                   # isotopes. d denotes the delta value and
+                                   # c the concentration
+                                   # Use dummy value as necessary.
 
-       allowed_keys: list = ["a1", "a2", "a3", "a4", "a5", "a6", "volume"]
-       # loop over provided kwargs
-       for key, value in kwargs.items():
-           if key not in allowed_keys:
-               raise ValueError("you can only change a1 to a6")
-           else:
-               setattr(self, key, value)  # update self
-               setattr(self.gfh, key, value)  # update function
+    This class provides an update method to resolve cases where e.g., two virtual
+    reservoirs have a circular reference. See the documentation of update().
+
+    """
+
+    def __aux_inits__(self) -> None:
+        """We us the regular init methods of the Reservoir Class, and extend it in this method"""
+
+        from .processes import GenericFunction
+
+        # if self.register != "None":
+        #    self.full_name = f"{self.full_name}.{self.name}"
+        name = f"{self.full_name}_generic_function".replace(".", "_")
+        logging.info(f"creating {name}")
+
+        self.gfh = GenericFunction(
+            name=name,
+            function=self.function,
+            a1=self.a1,
+            a2=self.a2,
+            a3=self.a3,
+            act_on=self,
+        )
+
+        # we only depend on the above function. so no need
+        # to be in the reservoir list
+        self.mo.lor.remove(self)
+        # but lets keep track of  virtual reservoir in lvr.
+        self.mo.lvr.append(self)
+
+    def update(self, **kwargs) -> None:
+        """This method allows to update GenericFunction parameters after the
+        VirtualReservoir has been initialized. This is most useful
+        when parameters have to reference other virtual reservoirs
+        which do not yet exist, e.g., when two virtual reservoirs have
+        a circular reference.
+
+        Example::
+
+        VR.update(a1=new_parameter, a2=new_parameter)
+
+        """
+
+        allowed_keys: list = ["a1", "a2", "a3", "a4", "a5", "a6", "volume"]
+        # loop over provided kwargs
+        for key, value in kwargs.items():
+            if key not in allowed_keys:
+                raise ValueError("you can only change a1 to a6")
+            else:
+                setattr(self, key, value)  # update self
+                setattr(self.gfh, key, value)  # update function
+
 
 class ExternalData(esbmtkBase):
     """Instances of this class hold external X/Y data which can be associated with
@@ -3149,8 +3168,17 @@ class ExternalData(esbmtkBase):
         plt.show()
         plt.savefig(self.n + ".pdf")
 
+
 from .connections import Connection, ConnectionGroup
 from .processes import *
-from .species_definitions import carbon, sulfur, hydrogen, phosphor, oxygen, nitrogen, boron
+from .species_definitions import (
+    carbon,
+    sulfur,
+    hydrogen,
+    phosphor,
+    oxygen,
+    nitrogen,
+    boron,
+)
 from .carbonate_chemistry import *
 from .sealevel import *

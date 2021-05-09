@@ -39,6 +39,7 @@ import pandas as pd
 import logging
 import time
 import builtins
+
 set_printoptions(precision=4)
 from .utility_functions import map_units
 from .processes import *
@@ -107,14 +108,14 @@ class hypsometry(esbmtkBase):
         self.mo = self.model
         self.__register_name__()
         self.__init_curve__()
-        self.oa = self.area_dz(0,-6000) # total ocean area
+        self.oa = self.area_dz(0, -6000)  # total ocean area
 
     def volume(self, u: float, l: float) -> float:
         """Calculate the area between two elevation datums
 
         u = upper limit (e.g., -10)
         l = lower limit (e.g., -100)
-       
+
         returns the volume in cubic meters
         """
 
@@ -123,7 +124,7 @@ class hypsometry(esbmtkBase):
         if l < u:
             raise ValueError(f"hyp.volume: {l} must be higher than {u}")
 
-        v = np.sum(self.hypdata[u:l])  * self.sa
+        v = np.sum(self.hypdata[u:l]) * self.sa
         # al = area at lower bound
         # au = area at lower bound + dz
         # vol = (al + au)/2 * dz
@@ -263,17 +264,17 @@ class hypsometry(esbmtkBase):
         ax.plot(depth, a)  # create a line plot
         plt.show()  # display figure
 
+
 def get_box_geometry_parameters(box):
     from esbmtk import Q_
+
     if box.geometry != "None":
         if not isinstance(box.geometry, list):
             raise ValueError("geometry must be a list see the docs for details")
         box.area_percentage = box.geometry[2]
-        volume = (
-            f"{box.mo.hyp.volume(box.geometry[0], box.geometry[1]) * box.area_percentage} m**3"
-        )
+        volume = f"{box.mo.hyp.volume(box.geometry[0], box.geometry[1]) * box.area_percentage} m**3"
 
-        box.volume = Q_(volume).to(box.mo.v_unit)
+        box.volume = Q_(volume)
         box.area = box.mo.hyp.area(box.geometry[0]) * box.area_percentage
         box.area_dz = (
             box.mo.hyp.area_dz(box.geometry[0], box.geometry[1]) * box.area_percentage
