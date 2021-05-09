@@ -389,6 +389,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                 for i, d in enumerate(obj.y1_data):  # loop over datafield list
                     yl = d
                     label = obj.y1_legend[i]
+                    # print(f"label = {label}")
                     ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
                     cn = cn + 1
                     col = f"C{cn}"
@@ -398,6 +399,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                 # remove unnecessary frame species
                 ax1.spines["top"].set_visible(False)
                 set_y_limits(ax1, obj)
+                plt.legend()
 
         else:
             ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=y_label)
@@ -855,12 +857,26 @@ def get_longest_dict_entry(d: dict) -> int:
     """Get length of each item in the connection dict"""
     l_length = 0  # length of  longest list
     p_length = 0  # length of single parameter
+    nl = 0  # number of lists
+    ll = []
+
+    # we need to cover the case where we have two lists of different length
+    # this happens if we have a long list of tuples with matched references,
+    # as well as a list of species
     for k, v in d.items():
         if isinstance(v, list):
+            nl = nl + 1
             if len(v) > l_length:
                 l_length = len(v)
+                ll.append(l_length)
+               
         else:
             p_length = 1
+
+    if nl > 1:
+        # if lists have different lengths
+        if ll.count(l_length) != len(ll):
+            raise ValueError("Mapping for multiple lists is not supported")
 
     if l_length > 0 and p_length == 0:
         case = 0  # Only lists present
@@ -920,9 +936,14 @@ def expand_dict(d: dict, mt: str = "1:1") -> int:
 
     for ck, cd in d.items():  # loop over connections
 
+        #print(f"ck = {ck}")
+        #print(f"cd = {cd}")
+
         rd: dict = {}  # temp dict
         nd: dict = {}  # temp dict
         case, length = get_longest_dict_entry(cd)
+
+        # print(f"length = {length}")
 
         if isinstance(ck, tuple):
             # assume 1:1 mapping between tuple and connection parameters
@@ -931,13 +952,13 @@ def expand_dict(d: dict, mt: str = "1:1") -> int:
                 # prep dictionaries
                 if case == 0:
                     nd = cd
-                    # print("case 0")
+                    #print("case 0")
                 elif case == 1:  # only parameters present. Expand for each tuple entry
                     length = len(ck)
                     nd = convert_to_lists(cd, length)
-                    # print("case 1")
+                    #print("case 1")
                 elif case == 2:  # mixed list present, Expand list
-                    # print(f"case 2, length = {length}")
+                    #print(f"case 2, length = {length}")
                     nd = convert_to_lists(cd, length)
                     # print(nd)
 
@@ -1039,29 +1060,9 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
 
     from esbmtk import expand_dict
     ct2 = {"sb2hb": {"ty": "scale", "sp": ["a", "b"]}}
-    print(expand_dict(ct2))
 
-    The below example specifies 3 connection groups which share the rate, and connection type.
-    However, the default mapping is 1:1 so this will fail. You need to explicitly set
-    mt="1:N"
-    Each connection group comprises the species named in the species list, so this will create
-    a total of 3 x 2 = 6 connections
-
-    from esbmtk import expand_dict, Q_
-
-    sl: list = ['PO4', 'DIC']  # get species list
-    ct = {  # thermohaline circulation
-            # Apply to all boxes in the tuple
-         ("hb2db@thc", "db2ib@thc", "ib2hb@thc"): {
-          "ty": "scale_with_concentration",
-          "sp": sl,  # species list
-          "ra": Q_('20*Sv'),
-         }
-
-    create_bulk_connections(ct, M, mt="1:N")
-
-    will create a connection for each species in each connectiongroup and all of these connections
-    share the same properties
+    It is best to use the show_dict function to verify that your input
+    dictionary produces the corrrect results!
 
     """
 
@@ -1710,4 +1711,111 @@ def show_dict(d: dict, mt: str = "1:1") -> None:
                 x = get_name_only(pv)
             print(f"     {pk} : {x}")
 
+
+def find_matching_fluxes(M: any, filter_by: str) -> list:
+    """Loop over all reservoir, and extract the names of all fluxes
+    which match the filter string. Return the list of names (not objects!)
+
+    """
+
+    lof: set = set()
+
+    for r in M.loc:
+        for f in r.lof:
+            if filter_by in f.full_name:
+                lof.add(f)
+
+    return list(lof)
+
+
+def reverse_key(key: str) -> str:
+    """ reverse a connection key e.g., sb2db@POM becomes db2sb@POM """
+
+    # print(f"key = {key}")
+    l = key.split("@")
+    left = l[0]
+    # right = l[1]
+    rs = left.split("2")
+    r1 = rs[0]
+    r2 = rs[1]
+
+    return f"{r2}2{r1}"
+
+
+def get_connection_keys(s: set, fstr: str, nstr: str, inverse: bool) -> list:
+    """extract connection keys from set of flux names, replace fstr with
+    nstr so that the key can be used in create_bulk_connnections()
+
+    The optional inverse parameter, can be used where in cases where the
+    flux direction needs to be reversed, i.e., the returned key will not read
+    sb2db@POM, but db2s@POM
+
+    """
+
+    cl: list = []
+
+    for n in s:
+        # get connection and flux name
+        l = n.full_name.split(".")
+        cn = l[0][2:]  # get key without leadinf C_
+        if inverse:
+            cn = reverse_key(cn)
+        cn.replace(fstr, nstr)
+        cn = f"{cn}@{nstr}"
+        cl.append(cn)
+
+    return cl
+
+
+def gen_dict_entries(M: any, **kwargs) -> tuple:
+    """find all fluxes which contain the reference string, and create
+    matching keys which contain the target string. The function will
+    return two lists, which can be used to create a dict for the
+    create_bulk_connnection function.
+
+    E.g., to create a dict which will create new fluxes based on
+    existing fluxes
+
+    dk:list, fl:list = gen_dict_entries(ref_id = 'POP', target_id = 'POM')
+
+    this will find all fluxes with the POP-id and put these into
+    fl. It will also generate a list with suitable connections keys
+    (dk) which contain the 'POM' id.
+
+    The optional inverse parameter, can be used where in cases where the
+    flux direction needs to be reversed, i.e., the returned key will not read
+    sb2db@POM, but db2s@POM
+
+    """
+
+    reference = kwargs["ref_id"]
+    target = kwargs["target_id"]
+    if "inverse" in kwargs:
+        inverse = kwargs["inverse"]
+    else:
+        inverse = False
+
+    flist: list = find_matching_fluxes(M, filter_by=reference)
+    klist: list = get_connection_keys(flist, reference, target, inverse)
+
+    return tuple(klist), flist
+
+
+def build_ct_dict(d: dict, p: dict) -> dict:
+    """build a connection dictionary from a dict containing connection
+    keys, and a dict containing connection properties. This is most
+    useful for connections which a characterized by a fixed rate but
+    apply to many species. E.g., mixing fluxes in a complex model etc.
+
+    """
+
+    ct: dict = {}
+
+    for k, v in d.items():
+        td: dict = {}  # temp dict for scale
+        td["sc"] = v
+        td.update(p)
+        ct[k] = td
+
+    return ct
 #+END_SRC

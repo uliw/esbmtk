@@ -37,7 +37,7 @@ import logging
 import builtins
 import os
 from .utility_functions import get_imass, get_delta, get_plot_layout
-from .utility_functions import plot_object_data, show_data, plot_geometry
+from .utility_functions import plot_object_data, show_data, plot_geometry, show_dict, gen_dict_entries
 from .utility_functions import get_string_between_brackets, execute, execute_h, execute_n, execute_e
 # from .sealevel import get_box_geometry_parameters
 

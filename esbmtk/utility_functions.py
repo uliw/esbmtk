@@ -32,27 +32,30 @@ from numba.typed import List
 
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
-import mpmath
+
+# import pandas as pd
+# import mpmath
 
 import logging
 import time
 import builtins
 import math
+
 set_printoptions(precision=4)
 
-# @njit()
+
 def get_imass(m: float, d: float, r: float) -> [float, float]:
     """
     Calculate the isotope masses from bulk mass and delta value.
-    Arguments are m = mass, d= delta value, r = abundance ratio 
+    Arguments are m = mass, d= delta value, r = abundance ratio
     species
-    
+
     """
 
     l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
     h: float = m - l
     return [l, h]
+
 
 # @njit()
 def get_frac(m: float, l: float, a: float) -> [float, float]:
@@ -65,13 +68,14 @@ def get_frac(m: float, l: float, a: float) -> [float, float]:
     hi: float = m - li  # get the new heavy isotope value
     return li, hi
 
+
 # @njit()
 def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
-    """ 
+    """
     Calculate the isotope masses from bulk mass and delta value.
-    Arguments are m = mass, d= delta value, r = abundance ratio 
+    Arguments are m = mass, d= delta value, r = abundance ratio
     species. Unlike get_mass, this function returns the full array
-    
+
     """
 
     l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
@@ -79,30 +83,34 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
 
     return np.array([m, l, h, d])
 
-# @njit()
-def get_delta(l: [NDArray, [Float64]], h: [NDArray, [Float64]],
-              r: float) -> [NDArray, [Float64]]:
-    """Calculate the delta from the mass of light and heavy isotope
-     Arguments are l and h which are the masses of the light and
-     heavy isotopes respectively, r = abundance ratio of the
-     respective element. Note that this equation can result in a
-     siginificant loss of precision (on the order of 1E-13). I
-     therefore round the results to numbers largers 1E12 (otherwise a
-     delta of zero may no longer be zero)
 
-   """
+# @njit()
+def get_delta(
+    l: [NDArray, [Float64]], h: [NDArray, [Float64]], r: float
+) -> [NDArray, [Float64]]:
+    """Calculate the delta from the mass of light and heavy isotope
+    Arguments are l and h which are the masses of the light and
+    heavy isotopes respectively, r = abundance ratio of the
+    respective element. Note that this equation can result in a
+    siginificant loss of precision (on the order of 1E-13). I
+    therefore round the results to numbers largers 1E12 (otherwise a
+    delta of zero may no longer be zero)
+
+    """
     # d = 1000 * (h / l - r) / r
-    d: float = 1E3 * (np.abs(h) / np.abs(l) - r) / r
+    d: float = 1e3 * (np.abs(h) / np.abs(l) - r) / r
     return d
 
-def add_to (l, e):
+
+def add_to(l, e):
     """
-      add element e to list l, but check if the entry already exist. If so, throw
-      exception. Otherwise add
+    add element e to list l, but check if the entry already exist. If so, throw
+    exception. Otherwise add
     """
 
     if not (e in l):  # if not present, append element
         l.append(e)
+
 
 def get_plot_layout(obj):
     """Simple function which selects a row, column layout based on the number of
@@ -160,37 +168,39 @@ def plot_geometry(noo: int) -> tuple():
 
     return size, geo
 
-def list_fluxes(self,name,i) -> None:
-            """
-            Echo all fluxes in the reservoir to the screen
-            """
-            print(f"\nList of fluxes in {self.n}:")
-            
-            for f in self.lof: # show the processes
-                  direction = self.lio[f.n]
-                  if direction == -1:
-                        t1 = "From:"
-                        t2 = "Outflux from"
-                  else:
-                        t1 = "To  :"   
-                        t2 = "Influx to"
 
-                  print(f"\t {t2} {self.n} via {f.n}")
-                  
-                  for p in f.lop:
-                        p.describe()
+def list_fluxes(self, name, i) -> None:
+    """
+    Echo all fluxes in the reservoir to the screen
+    """
+    print(f"\nList of fluxes in {self.n}:")
 
-            print(" ")
-            for f in self.lof:
-                  f.describe(i) # print out the flux data
+    for f in self.lof:  # show the processes
+        direction = self.lio[f.n]
+        if direction == -1:
+            t1 = "From:"
+            t2 = "Outflux from"
+        else:
+            t1 = "To  :"
+            t2 = "Influx to"
+
+        print(f"\t {t2} {self.n} via {f.n}")
+
+        for p in f.lop:
+            p.describe()
+
+    print(" ")
+    for f in self.lof:
+        f.describe(i)  # print out the flux data
+
 
 def show_data(self, **kwargs) -> None:
-    """ Print the 3 lines of the data starting with index
+    """Print the 3 lines of the data starting with index
 
     Optional arguments:
-    
+
     index :int = 0 starting index
-    indent :int = 0 indentation 
+    indent :int = 0 indentation
     """
 
     off: str = "  "
@@ -207,9 +217,8 @@ def show_data(self, **kwargs) -> None:
 
     # show the first 4 entries
     for i in range(index, index + 3):
-        print(
-            f"{off}{ind}i = {i}, Mass = {self.m[i]:.2e}, delta = {self.d[i]:.2f}"
-        )
+        print(f"{off}{ind}i = {i}, Mass = {self.m[i]:.2e}, delta = {self.d[i]:.2f}")
+
 
 def set_y_limits(ax: plt.Axes, obj: any) -> None:
     """Prevent the display or arbitrarily small differences"""
@@ -352,6 +361,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                 for i, d in enumerate(obj.y1_data):  # loop over datafield list
                     yl = d
                     label = obj.y1_legend[i]
+                    # print(f"label = {label}")
                     ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
                     cn = cn + 1
                     col = f"C{cn}"
@@ -361,6 +371,18 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                 # remove unnecessary frame species
                 ax1.spines["top"].set_visible(False)
                 set_y_limits(ax1, obj)
+                plt.legend()
+
+        else:
+            ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=y_label)
+            cn = cn + 1
+            col = f"C{cn}"
+
+            ax1.set_xlabel(f"{model.time_label} [{model.d_unit:~P}]")
+            ax1.set_ylabel(y_label)
+            # remove unnecessary frame species
+            ax1.spines["top"].set_visible(False)
+            set_y_limits(ax1, obj)
 
     if second_axis:
         if isinstance(obj, DataField):
@@ -457,6 +479,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
     # yl_max = max(yl)
     # if (yl_max - yl_min) < 0.1:
 
+
 def is_name_in_list(n: str, l: list) -> bool:
     """Test if an object name is part of the object list"""
 
@@ -481,6 +504,7 @@ def get_object_from_list(name: str, l: list) -> any:
     else:
         raise ValueError(f"Object = {o.full_name} has no matching flux {name}")
 
+
 def sort_by_type(l: list, t: list, m: str) -> list:
     """divide a list by type into new lists. This function will return a
     list and it is up to the calling code to unpack the list
@@ -490,7 +514,7 @@ def sort_by_type(l: list, t: list, m: str) -> list:
     m is a string for the error function
     """
 
-    #from numbers import Number
+    # from numbers import Number
 
     lc = l.copy()
     rl = []
@@ -510,6 +534,7 @@ def sort_by_type(l: list, t: list, m: str) -> list:
         raise TypeError(m)
 
     return rl
+
 
 def split_key(k: str, M: any) -> Union[any, any, str]:
     """split the string k with letter 2, and test if optional
@@ -555,12 +580,14 @@ def make_dict(keys: list, values: list) -> dict:
 
     return d
 
+
 def get_typed_list(data: list) -> list:
 
     tl = List()
     for x in data:
         tl.append(x)
     return tl
+
 
 def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
     """boxes are defined by area and depth interval here we use an ordered
@@ -718,16 +745,31 @@ def calc_volumes(bg: dict, M: any, h: any) -> list:
 
     return v
 
+
 def get_longest_dict_entry(d: dict) -> int:
     """Get length of each item in the connection dict"""
     l_length = 0  # length of  longest list
     p_length = 0  # length of single parameter
+    nl = 0  # number of lists
+    ll = []
+
+    # we need to cover the case where we have two lists of different length
+    # this happens if we have a long list of tuples with matched references,
+    # as well as a list of species
     for k, v in d.items():
         if isinstance(v, list):
+            nl = nl + 1
             if len(v) > l_length:
                 l_length = len(v)
+                ll.append(l_length)
+
         else:
             p_length = 1
+
+    if nl > 1:
+        # if lists have different lengths
+        if ll.count(l_length) != len(ll):
+            raise ValueError("Mapping for multiple lists is not supported")
 
     if l_length > 0 and p_length == 0:
         case = 0  # Only lists present
@@ -787,9 +829,14 @@ def expand_dict(d: dict, mt: str = "1:1") -> int:
 
     for ck, cd in d.items():  # loop over connections
 
+        # print(f"ck = {ck}")
+        # print(f"cd = {cd}")
+
         rd: dict = {}  # temp dict
         nd: dict = {}  # temp dict
         case, length = get_longest_dict_entry(cd)
+
+        # print(f"length = {length}")
 
         if isinstance(ck, tuple):
             # assume 1:1 mapping between tuple and connection parameters
@@ -906,29 +953,9 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
 
     from esbmtk import expand_dict
     ct2 = {"sb2hb": {"ty": "scale", "sp": ["a", "b"]}}
-    print(expand_dict(ct2))
 
-    The below example specifies 3 connection groups which share the rate, and connection type.
-    However, the default mapping is 1:1 so this will fail. You need to explicitly set
-    mt="1:N"
-    Each connection group comprises the species named in the species list, so this will create
-    a total of 3 x 2 = 6 connections
-
-    from esbmtk import expand_dict, Q_
-
-    sl: list = ['PO4', 'DIC']  # get species list
-    ct = {  # thermohaline circulation
-            # Apply to all boxes in the tuple
-         ("hb2db@thc", "db2ib@thc", "ib2hb@thc"): {
-          "ty": "scale_with_concentration",
-          "sp": sl,  # species list
-          "ra": Q_('20*Sv'),
-         }
-
-    create_bulk_connections(ct, M, mt="1:N")
-
-    will create a connection for each species in each connectiongroup and all of these connections
-    share the same properties
+    It is best to use the show_dict function to verify that your input
+    dictionary produces the corrrect results!
 
     """
 
@@ -1047,6 +1074,7 @@ def update_or_create(
             id=cid,  # get id from dictionary
         )
 
+
 def execute(
     new: [NDArray, Float64],
     time: [NDArray, Float64],
@@ -1072,12 +1100,12 @@ def execute(
         for r in lor:  # loop over all reservoirs
             flux_list = r.lof
 
-            new[0] = new[1] = new[2] = new[3]= 0
+            new[0] = new[1] = new[2] = new[3] = 0
             for f in flux_list:  # do sum of fluxes in this reservoir
                 direction = r.lio[f]
                 new[0] = new[0] + f.m[i] * direction  # current flux and direction
                 new[1] = new[1] + f.l[i] * direction  # current flux and direction
-                #new[2] = new[2] + f.h[i] * direction  # current flux and direction
+                # new[2] = new[2] + f.h[i] * direction  # current flux and direction
 
             # print(f"fsum = {new[0]:.2e}")
             # new = array([ms, ls, hs])
@@ -1085,7 +1113,7 @@ def execute(
             # new[3] = delta will be set by the setitem method in the reserevoir
             # ditto for the concentration
             new = new * r.mo.dt  # get flux / timestep
-            #print(f"{i} new = {new}, dt = {r.mo.dt}")
+            # print(f"{i} new = {new}, dt = {r.mo.dt}")
             new = new + r[i - 1]  # add to data from last time step
             new = new * (new > 0)  # set negative values to zero
             # print(f"updating {r.full_name} from {r.m[i]:.2e}")
@@ -1185,7 +1213,7 @@ def execute_e(
 
     """Moved this code into a separate function to enable numba optimization"""
     # numba.config.THREADING_LAYER = "threadsafe"
-    #numba.set_num_threads(2)
+    # numba.set_num_threads(2)
 
     # this has nothing todo with self.time below!
     start: float = process_time()
@@ -1207,7 +1235,7 @@ def execute_e(
     print(f"\n Total solver time {duration} cpu seconds, wt = {wcd}\n")
 
 
-@njit(parallel=False,fastmath=True)
+@njit(parallel=False, fastmath=True)
 def foo(fn_vr, a1, a2, a3, a7, fn, rd, fd, pc, a, b, c, d, e, maxt, dt):
 
     i = 1
@@ -1267,10 +1295,11 @@ def sum_p(r_list, f_list, dir_list, v_list, r0_list, i, dt):
     for e in range(2):
         sum_lists(r_list[j], f_list[j], dir_list[j], v_list[j], r0_list[j], i, dt)
 
+
 @njit()
 def summarize_fluxes(a, b, c, d, e, i, dt):
     """Sum fluxes in reservoirs with isostopes"""
-    
+
     r_steps: int = len(b)
     # loop over reservoirs
     for j in range(r_steps):
@@ -1290,11 +1319,10 @@ def summarize_fluxes(a, b, c, d, e, i, dt):
         a[j][1][i] = a[j][1][i - 1] + li * dt  # li
         a[j][2][i] = a[j][0][i] - a[j][1][i]  # hi
         # update delta
-        a[j][3][i] = (
-            1e3 * (a[j][2][i] / a[j][1][i] - e[j]) / e[j]
-        )
+        a[j][3][i] = 1e3 * (a[j][2][i] / a[j][1][i] - e[j]) / e[j]
         # update concentrations
         a[j][4][i] = a[j][0][i] / d[j]
+
 
 # GenericFunction(
 #      name = 'db_VH_generic_function',
@@ -1329,14 +1357,14 @@ def build_vr_list(lor: list) -> tuple:
             types.int64,  # i
             types.float64[::1],  # a1
             types.float64[::1],  # a2
-            types.ListType(types.float64), # a3
+            types.ListType(types.float64),  # a3
         ).as_type()
     )
 
     for p in lor:  # loop over reservoir processes
 
         func_name, a1d, a2d, a3d, a7d = p.get_process_args()
-        #print(f"fname = {func_name}")
+        # print(f"fname = {func_name}")
         fn.append(func_name)
         a1.append(a1d)
         a2.append(a2d)
@@ -1344,6 +1372,7 @@ def build_vr_list(lor: list) -> tuple:
         a7.append(List(a7d))
 
     return fn, a1, a2, a3, a7
+
 
 def build_flux_lists(lor, iso: bool = False) -> tuple:
     """flux_list :list [] contains all fluxes as
@@ -1439,6 +1468,7 @@ def build_flux_lists_all(lor, iso: bool = False) -> tuple:
 
     return r_list, f_list, dir_list, v_list, r0_list
 
+
 def build_process_list(lor: list) -> tuple:
     from numba.typed import List
     import numba
@@ -1457,7 +1487,7 @@ def build_process_list(lor: list) -> tuple:
     f_time = 0
     d_time = 0
     print(f"Building Process List")
-    
+
     for r in lor:  # loop over reservoirs
 
         # note that types.List is differenfr from Types.ListType. Also
@@ -1467,7 +1497,7 @@ def build_process_list(lor: list) -> tuple:
             types.ListType(types.void)(  # return value
                 types.ListType(types.float64[::1]),
                 types.ListType(types.float64[::1]),
-                types.ListType(types.float64), 
+                types.ListType(types.float64),
                 types.int64,  # parameter 4
             ).as_type()
         )
@@ -1477,19 +1507,18 @@ def build_process_list(lor: list) -> tuple:
         tpc = List()
         for p in r.lop:  # loop over reservoir processes
 
-            
             start: float = process_time()
             func_name, res_data, flux_data, proc_const = p.get_process_args(r)
-            duration =  process_time() - start
-            f_time = f_time +  duration
-            
+            duration = process_time() - start
+            f_time = f_time + duration
+
             start: float = process_time()
             tfn.append(func_name)
             trd.append(res_data)
             tfd.append(flux_data)
             tpc.append(proc_const)
-            duration =  process_time() - start
-            d_time = d_time +  duration
+            duration = process_time() - start
+            d_time = d_time + duration
 
         fn.append(tfn)
         rd.append(trd)
@@ -1498,15 +1527,150 @@ def build_process_list(lor: list) -> tuple:
 
     print(f"f_time = {f_time}")
     print(f"d_time = {d_time}")
-    
+
     return fn, rd, fd, pc
 
-def get_string_between_brackets(s :str) -> str:
-    """ Parse string and extract substring between square brackets
+
+def get_name_only(o: any) -> any:
+    """Test if item is an esbmtk type. If yes, extract the name"""
+
+    from esbmtk import Flux, Reservoir, ReservoirGroup, Species
+    from esbmtk import Sink, Source, SourceGroup, SinkGroup
+    from esbmtk import Process, DataField, VirtualReservoir
+
+    if isinstance(o, (Flux, Reservoir, ReservoirGroup, Species)):
+        r = o.full_name
+    else:
+        r = o
+
+    return r
+
+
+def get_simple_list(l: list) -> list:
+    """return a list which only has the full name
+    rather than all the object properties
 
     """
-    
-    s =  s.split("[")
+
+    from esbmtk import Flux, Reservoir, Species
+
+    r: list = []
+    for e in l:
+        r.append(get_name_only(e))
+
+    return r
+
+
+def show_dict(d: dict, mt: str = "1:1") -> None:
+    """show dict entries in an organized manner"""
+
+    from esbmtk import expand_dict, get_simple_list, get_name_only
+
+    ct = expand_dict(d, mt)
+    for ck, cv in ct.items():
+        print(f"{ck}")
+
+        for pk, pv in cv.items():
+            if isinstance(pv, list):
+                x = get_simple_list(pv)
+            else:
+                x = get_name_only(pv)
+            print(f"     {pk} : {x}")
+
+
+def find_matching_fluxes(M: any, filter_by: str) -> list:
+    """Loop over all reservoir, and extract the names of all fluxes
+    which match the filter string. Return the list of names (not objects!)
+
+    """
+
+    lof: set = set()
+
+    for r in M.loc:
+        for f in r.lof:
+            if filter_by in f.full_name:
+                lof.add(f)
+
+    return list(lof)
+
+
+def reverse_key(key: str) -> str:
+    """ reverse a connection key e.g., sb2db@POM becomes db2sb@POM """
+
+    # print(f"key = {key}")
+    l = key.split("@")
+    left = l[0]
+    # right = l[1]
+    rs = left.split("2")
+    r1 = rs[0]
+    r2 = rs[1]
+
+    return f"{r2}2{r1}"
+
+
+def get_connection_keys(s: set, fstr: str, nstr: str, inverse: bool) -> list:
+    """extract connection keys from set of flux names, replace fstr with
+    nstr so that the key can be used in create_bulk_connnections()
+
+    The optional inverse parameter, can be used where in cases where the
+    flux direction needs to be reversed, i.e., the returned key will not read
+    sb2db@POM, but db2s@POM
+
+    """
+
+    cl: list = []
+
+    for n in s:
+        # get connection and flux name
+        l = n.full_name.split(".")
+        cn = l[0][2:]  # get key without leadinf C_
+        if inverse:
+            cn = reverse_key(cn)
+        cn.replace(fstr, nstr)
+        cn = f"{cn}@{nstr}"
+        cl.append(cn)
+
+    return cl
+
+
+def gen_dict_entries(M: any, **kwargs) -> tuple:
+    """find all fluxes which contain the reference string, and create
+    matching keys which contain the target string. The function will
+    return two lists, which can be used to create a dict for the
+    create_bulk_connnection function.
+
+    E.g., to create a dict which will create new fluxes based on
+    existing fluxes
+
+    dk:list, fl:list = gen_dict_entries(ref_id = 'POP', target_id = 'POM')
+
+    this will find all fluxes with the POP-id and put these into
+    fl. It will also generate a list with suitable connections keys
+    (dk) which contain the 'POM' id.
+
+    The optional inverse parameter, can be used where in cases where the
+    flux direction needs to be reversed, i.e., the returned key will not read
+    sb2db@POM, but db2s@POM
+
+    """
+
+    reference = kwargs["ref_id"]
+    target = kwargs["target_id"]
+    if "inverse" in kwargs:
+        inverse = kwargs["inverse"]
+    else:
+        inverse = False
+
+    flist: list = find_matching_fluxes(M, filter_by=reference)
+    klist: list = get_connection_keys(flist, reference, target, inverse)
+
+    return tuple(klist), flist
+
+
+def get_string_between_brackets(s: str) -> str:
+    """Parse string and extract substring between square brackets"""
+
+    s = s.split("[")
     if len(s) < 2:
         raise ValueError(f"Column header {s} must include units in square brackets")
 
@@ -1519,21 +1683,22 @@ def get_string_between_brackets(s :str) -> str:
 
     return s[0]
 
+
 def map_units(v: any, *args) -> float:
-    """ parse v to see if it is a string. if yes, map to quantity. 
-        parse v to see if it is a quantity, if yes, map to model units
-        and extract magnitude, assign mangitude to return value
-        if not, assign value to return value
-        
-        v : a keyword value number/string/quantity
-        args: one or more quantities (units) see the Model class (e.g., f_unit)
+    """parse v to see if it is a string. if yes, map to quantity.
+    parse v to see if it is a quantity, if yes, map to model units
+    and extract magnitude, assign mangitude to return value
+    if not, assign value to return value
+
+    v : a keyword value number/string/quantity
+    args: one or more quantities (units) see the Model class (e.g., f_unit)
 
     """
 
     from . import Q_
 
     m: float = 0
-    match :bool = False
+    match: bool = False
 
     # test if string, map to quantity if yes
     if isinstance(v, str):

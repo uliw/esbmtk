@@ -551,6 +551,17 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="n">ax1</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
                 <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
 
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ln1</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">yl</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">y_label</span><span class="p">)</span>
+            <span class="n">cn</span> <span class="o">=</span> <span class="n">cn</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">cn</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">time_label</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">d_unit</span><span class="si">:</span><span class="s2">~P</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+            <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">y_label</span><span class="p">)</span>
+            <span class="c1"># remove unnecessary frame species</span>
+            <span class="n">ax1</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+
     <span class="k">if</span> <span class="n">second_axis</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">DataField</span><span class="p">):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">y2_data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">str</span><span class="p">):</span>
@@ -2299,6 +2310,17 @@ indent :int = 0 indentation</p>
                 <span class="c1"># remove unnecessary frame species</span>
                 <span class="n">ax1</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
                 <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ln1</span> <span class="o">=</span> <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">yl</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">col</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">y_label</span><span class="p">)</span>
+            <span class="n">cn</span> <span class="o">=</span> <span class="n">cn</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="n">col</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;C</span><span class="si">{</span><span class="n">cn</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">time_label</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">d_unit</span><span class="si">:</span><span class="s2">~P</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">)</span>
+            <span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">y_label</span><span class="p">)</span>
+            <span class="c1"># remove unnecessary frame species</span>
+            <span class="n">ax1</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="s2">&quot;top&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">set_y_limits</span><span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">obj</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">second_axis</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">DataField</span><span class="p">):</span>

@@ -47,6 +47,7 @@ def phc(m: float) -> float:
     pH = -np.log10(m)
     return pH
 
+
 class SeawaterConstants(esbmtkBase):
     """Provide basic seawater properties as a function of T and Salinity.
     Pressure may come at a later stage
@@ -327,6 +328,7 @@ class SeawaterConstants(esbmtkBase):
 
         return exp(lnkp)
 
+
 @njit
 def calc_H(
     i: int,
@@ -374,8 +376,8 @@ def calc_H(
 
     """
 
-    #from esbmtk import phc
-    
+    # from esbmtk import phc
+
     ca: float = a1[i - 1]  # mol/L
     dic: float = a2[i - 1]  # mol/L
     k1 = a3[0]
@@ -387,10 +389,11 @@ def calc_H(
     c: float = 0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))
     m: float = c * volume
 
-    #print(f"DIC = {dic*1000}, ca = {ca*1000}")
-    #print(f"new pH = {phc(c)}")
-   
+    # print(f"DIC = {dic*1000}, ca = {ca*1000}")
+    # print(f"new pH = {phc(c)}")
+
     return m, 1.0, 1.0, 1.0, c
+
 
 @njit
 def calc_CA(
@@ -461,6 +464,7 @@ def calc_CA(
     # print(f"CA m = {m:.2e}, c= {c*1000:.2e} mmol")
 
     return m, 1.0, 1.0, 1.0, c
+
 
 def calc_pCO2(
     dic: Union[Reservoir, VirtualReservoir],
@@ -550,6 +554,7 @@ def calc_pCO2b(
 
     return pco2
 
+
 def carbonate_system(
     ca_con: float,
     hplus_con: float,
@@ -564,7 +569,7 @@ def carbonate_system(
     hplus_con: initial H+ concentration. Must be a quantity
     volume: volume : Must be a quantity for reservoir definition but when  used
     as argumment to the functionn it muts be converted to magnitude
-    
+
     swc : a seawater constants object
     rg: optional, must be a reservoir group. If present, the below reservoirs
         will be registered with this group.
