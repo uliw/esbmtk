@@ -37,7 +37,6 @@ import logging
 import builtins
 import os
 
-
 from .utility_functions import (
     plot_object_data,
     show_data,
