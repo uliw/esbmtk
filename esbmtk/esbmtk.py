@@ -36,6 +36,8 @@ import logging
 
 import builtins
 import os
+
+
 from .utility_functions import (
     plot_object_data,
     show_data,
@@ -961,19 +963,23 @@ class Model(esbmtkBase):
 
         print(f"\n --- Flux Summary -- filtered by {fby}\n")
 
-        for r in self.lor:
-            print(f"- {r.full_name}:")
-
-            for f in r.lof:
-                if fby in f.full_name:  # and f.m[i] > 0:
-                    direction = r.lio[f]
-                    if r.isotopes:
-                        print(
-                            f"    - {f.full_name} = {direction * f.m[i]:.2e} d = {f.d[i]:.2f}"
-                        )
-                    else:
-                        print(f"    - {f.full_name} = {direction * f.m[i]:.2e}")
-            print("")
+        for r in self.lor:  # loop over reservoirs
+            match = False
+            for f in r.lof:  # test if reservoir has matching fluxes
+                if fby in f.full_name and f.m[-1] > 0:
+                    match = True
+            if match:
+                print(f"- {r.full_name}:")
+                for f in r.lof:  # loop over fluxes in reservoir
+                    if fby in f.full_name and f.m[-1] > 0:
+                        direction = r.lio[f]
+                        if r.isotopes:
+                            print(
+                                f"    - {f.full_name} = {direction * f.m[i]:.2e} d = {f.d[i]:.2f}"
+                            )
+                        else:
+                            print(f"    - {f.full_name} = {direction * f.m[i]:.2e}")
+                print("")
 
     def connection_summary(self, **kwargs: dict) -> None:
         """Show a summary of all connections
@@ -1679,159 +1685,6 @@ class Reservoir(esbmtkBase):
         print("to see information on fluxes and processes")
 
 
-class ReservoirGroup(esbmtkBase):
-    """This class allows the creation of a group of reservoirs which share
-    a common volume, and potentially connections. E.g., if we have two
-    reservoir groups with the same reservoirs, and we connect them
-    with a flux, this flux will apply to all reservoirs in this group.
-
-    A typical examples might be ocean water which comprises several
-    species.  A reservoir group like ShallowOcean will then contain
-    sub-reservoirs like DIC in the form of ShallowOcean.DIC
-
-    Example::
-
-        ReservoirGroup(name = "ShallowOcean",        # Name of reservoir group
-                    volume/geometry = "1E5 l",       # see below
-                    delta   = {DIC:0, ALK:0, PO4:0]  # dict of delta values
-                    mass/concentration = {DIC:"1 unit", ALK: "1 unit"}
-                    plot = {DIC:"yes", ALK:"yes"}  defaults to yes
-                    isotopes = {DIC: True/False} see Reservoir class for details
-               )
-
-    Notes: - The subreservoirs are derived from the keys in the concentration or mass
-             dictionary. Toward this end, the keys must be valid species handles and
-             -- not species names -- !
-
-    Connecting two reservoir groups requires that the names in both
-    group match, or that you specify a dictionary which delineates the
-    matching.
-
-    Most parameters are passed on to the Reservoir class. See the reservoir class
-    documentation for details
-
-    The geometry keyword specifies the upper depth interval, the lower
-    depth interval, and the fraction of the total ocean area inhabited by the reservoir
-
-    If the geometry parameter is supplied, the following instance variables will be
-    computed
-
-                 self.volume: in model units (usually liter)
-                 self.are:a surface area in m^2 at the upper bounding surface
-                 self.area_dz: area of seafloor which is intercepted by this box.
-                 self.area_fraction: area of seafloor which is intercepted by this
-                                    relative to the total ocean floor area
-
-    """
-
-    def __init__(self, **kwargs) -> None:
-        """Initialize a new reservoir group"""
-
-        from . import ureg, Q_
-        from .sealevel import get_box_geometry_parameters
-
-        # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            "name": str,
-            "delta": dict,
-            "concentration": dict,
-            "mass": dict,
-            "volume": (str, Q_),
-            "geometry": (str, list),
-            "plot": dict,
-            "isotopes": dict,
-        }
-
-        # provide a list of absolutely required keywords
-        self.lrk: list = [
-            "name",
-            ["volume", "geometry"],
-        ]
-
-        # list of default values if none provided
-        self.lod: Dict[any, any] = {
-            "volume": "None",
-            "geometry": "None",
-        }
-
-        if "concentration" in kwargs:
-            self.species: list = list(kwargs["concentration"].keys())
-        elif "mass" in kwargs:
-            self.species: list = list(kwargs["mass"].keys())
-        else:
-            raise ValueError("You must provide either mass or concentration")
-
-        # validate and initialize instance variables
-        self.__initerrormessages__()
-        self.bem.update(
-            {
-                "mass": "a  string or quantity",
-                "concentration": "a string or quantity",
-                "volume": "a string or quantity",
-                "plot": "yes or no",
-                "isotopes": "dict Species: True/False",
-                "geometry": "list",
-            }
-        )
-
-        self.__validateandregister__(kwargs)
-
-        # legacy variable
-        self.n = self.name
-        self.mo = self.species[0].mo
-
-        # geoemtry information
-        if self.volume == "None":
-            get_box_geometry_parameters(self)
-
-        # register this group object in the global namespace
-        self.__register_name__()
-
-        # dict with all default values
-        self.cd: dict = {}
-        for s in self.species:
-            self.cd[s.name]: dict = {
-                "mass": "None",
-                "concentration": "None",
-                "delta": "None",
-                "plot": "yes",
-                "isotopes": False,
-            }
-
-            # now we loop trough all keys for this reservoir and see
-            # if we find a corresponding item in the kwargs
-            for kcd, vcd in self.cd[s.name].items():  # kcd  = delta, plot, etc
-                if kcd in self.kwargs:  # found entry delta
-                    # test if delta relates to any species
-                    if s in self.kwargs[kcd]:  # {SO4: xxx}
-                        # update the entry with the value provided in kwargs
-                        # self.cd['SO4_name']['delta'] = self.kwargs['delta'][SO4]
-                        self.cd[s.name][kcd] = self.kwargs[kcd][s]
-
-        self.lor: list = []  # list of reservoirs in this group.
-        # loop over all entries in species and create the respective reservoirs
-        for s in self.species:
-            if not isinstance(s, Species):
-                raise ValueError(f"{s.n} needs to be a valid species name")
-
-            # create reservoir without registering it in the global name space
-            a = Reservoir(
-                name=f"{s.name}",
-                register=self,
-                species=s,
-                delta=self.cd[s.n]["delta"],
-                mass=self.cd[s.n]["mass"],
-                concentration=self.cd[s.n]["concentration"],
-                volume=self.volume,
-                geometry=self.geometry,
-                plot=self.cd[s.n]["plot"],
-                groupname=self.name,
-                isotopes=self.cd[s.n]["isotopes"],
-            )
-            # register as part of this group
-            self.lor.append(a)
-
-
 class Flux(esbmtkBase):
     """A class which defines a flux object. Flux objects contain
     information which links them to an species, describe things like
@@ -2167,6 +2020,7 @@ class Source(SourceSink):
 from .extended_classes import *
 from .connections import Connection, ConnectionGroup
 from .processes import *
+
 from .species_definitions import (
     carbon,
     sulfur,
@@ -2176,6 +2030,7 @@ from .species_definitions import (
     nitrogen,
     boron,
 )
+
 from .carbonate_chemistry import *
 from .sealevel import *
 from .solver import *
