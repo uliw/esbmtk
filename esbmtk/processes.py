@@ -198,6 +198,7 @@ class GenericFunction(Process):
                  a1 = some argument,
                  a2 = some argument,
                  a3 = some argument
+                 a4 = some argument
                  acton_on = reservoir reference
                  )
 
