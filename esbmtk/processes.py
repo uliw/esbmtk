@@ -19,8 +19,8 @@ import builtins
 set_printoptions(precision=4)
 # from .utility_functions import *
 from .esbmtk import esbmtkBase, Reservoir, Flux, Signal, Source, Sink
-from .utility_functions import get_imass, get_frac, get_delta, get_flux_data
 from .utility_functions import sort_by_type
+from .solver import get_imass, get_frac, get_delta, get_flux_data
 
 # from .connections import ConnnectionGroup
 
@@ -211,6 +211,7 @@ class GenericFunction(Process):
         "a1",
         "a2",
         "a3",
+        "a4",
         "i",
         "act_on",
     )
@@ -218,6 +219,7 @@ class GenericFunction(Process):
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
         Create a new process object with a given process type and options
+
         """
 
         self.__defaultnames__()  # default kwargs names
@@ -230,6 +232,7 @@ class GenericFunction(Process):
             "a1": any,
             "a2": any,
             "a3": any,
+            "a4": any,
             "act_on": any,
         }
 
@@ -241,6 +244,7 @@ class GenericFunction(Process):
             "a1": List(),
             "a2": List(),
             "a3": List(),
+            "a4": List(np.zeros(3)),
             "act_on": List(),
         }
 
@@ -249,9 +253,10 @@ class GenericFunction(Process):
             {
                 "act_on": "a reservoir or flux",
                 "function": "a function",
-                "a1": "a number etc",
-                "a2": "a number etc",
-                "a3": "a number etc",
+                "a1": "must be a numpy array",
+                "a2": "must be a numpy array",
+                "a3": "must be a numba List",
+                "a4": "must be a numpy array",
             }
         )
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -286,6 +291,7 @@ class GenericFunction(Process):
             self.a1,
             self.a2,
             self.a3,
+            self.a4,
         )
 
         return r
@@ -311,6 +317,7 @@ class GenericFunction(Process):
             self.a1,
             self.a2,
             self.a3,
+            self.a4,
             # List(
             [
                 self.act_on.m,

@@ -335,6 +335,7 @@ def calc_H(
     a1: NDArray[Float[64]],  # carbonate alkalinity
     a2: NDArray[Float[64]],  # dic
     a3: NDArray[Float[64]],
+    a4: NDArray[Float[64]],
 ):
 
     """
@@ -368,6 +369,7 @@ def calc_H(
          a1=V_CA.c,
          a2=DIC.c,
          a3=[SW constants],
+         a4=[array] # muust be provided, but can be empty
     )
 
     Author: M. Niazi & T. Tsan, 2021
@@ -401,6 +403,7 @@ def calc_CA(
     a1: NDArray[Float[64]],  # Total Alkalinity
     a2: NDArray[Float[64]],  # Hplus
     a3: NDArray[Float[64]],
+    a4: NDArray[Float[64]],
 ):
 
     """
@@ -436,6 +439,7 @@ def calc_CA(
          a1=TA.c,
          a2=H+.c,
          a3=[swc.KW, swc.KB, swc.boron]
+         a4=[] # array, must be provided but can be empty
     )
 
     Author: M. Niazi & T. Tsan, 2021
@@ -604,6 +608,7 @@ def carbonate_system(
         a1=getattr(rg, "VCA").c,
         a2=getattr(rg, "DIC").c,
         a3=List([swc.K1, swc.K2, volume.magnitude]),
+        a4=np.zeros(3),
         register=rg,
     )
 
@@ -611,6 +616,7 @@ def carbonate_system(
         a1=getattr(rg, "TA").c,
         a2=getattr(rg, "VH").c,
         a3=List([swc.KW, swc.KB, swc.boron, volume.magnitude]),
+        a4=np.zeros(3),
     )
 
     return v1, v2
