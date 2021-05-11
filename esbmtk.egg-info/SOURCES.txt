@@ -4,8 +4,10 @@ esbmtk/__init__.py
 esbmtk/carbonate_chemistry.py
 esbmtk/connections.py
 esbmtk/esbmtk.py
+esbmtk/extended_classes.py
 esbmtk/processes.py
 esbmtk/sealevel.py
+esbmtk/solver.py
 esbmtk/species_definitions.py
 esbmtk/utility_functions.py
 esbmtk.egg-info/PKG-INFO

@@ -188,10 +188,12 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="kn">import</span> <span class="nn">logging</span>
 <span class="kn">import</span> <span class="nn">time</span>
 <span class="kn">import</span> <span class="nn">builtins</span>
+
 <span class="n">set_printoptions</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">.utility_functions</span> <span class="kn">import</span> <span class="n">map_units</span>
 <span class="kn">from</span> <span class="nn">.processes</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">.esbmtk</span> <span class="kn">import</span> <span class="o">*</span>
+
 
 <span class="k">class</span> <span class="nc">Connect</span><span class="p">(</span><span class="n">esbmtkBase</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Two reservoirs connect to each other via at least one flux. This</span>
@@ -208,7 +210,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">         - sink: An object handle for a Sink or Reservoir</span>
 <span class="sd">         - rate: A quantity (e.g., &quot;1 mol/s&quot;), optional</span>
 <span class="sd">         - delta: The isotope ratio, optional</span>
-<span class="sd">         - ref: Reservoir or flux reference</span>
+<span class="sd">         - ref_reservoirs: Reservoir or flux reference</span>
 <span class="sd">         - alpha: A fractionation factor, optional</span>
 <span class="sd">         - id: A string wich will become part of the object name, optional</span>
 <span class="sd">         - plot: &quot;yes&quot; or &quot;no&quot;, defaults to &quot;yes&quot;</span>
@@ -299,7 +301,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">         Connect(source =  upstream reservoir,</span>
 <span class="sd">                sink = downstream reservoir,</span>
 <span class="sd">                ctype = &quot;scale_with_flux&quot;,</span>
-<span class="sd">                ref = flux handle,</span>
+<span class="sd">                ref_reservoirs = flux handle,</span>
 <span class="sd">                scale = a scaling factor, optional, defaults to 1</span>
 <span class="sd">                bypass :str = &quot;source&quot;/&quot;sink&quot;</span>
 <span class="sd">                )</span>
@@ -324,7 +326,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">         Connect(source =  upstream reservoir,</span>
 <span class="sd">                sink = downstream reservoir,</span>
 <span class="sd">                ctype = &quot;scale_with_flux&quot;,</span>
-<span class="sd">                ref = flux handle,</span>
+<span class="sd">                ref_reservoirs = flux handle,</span>
 <span class="sd">                scale = a scaling factor, optional, defaults to 1</span>
 <span class="sd">                )</span>
 
@@ -338,7 +340,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">         Connect(source =  upstream reservoir,</span>
 <span class="sd">                sink = downstream reservoir,</span>
 <span class="sd">                ctype = &quot;scale_with_mass&quot;,</span>
-<span class="sd">                ref = reservoir handle,</span>
+<span class="sd">                ref_reservoirs = reservoir handle,</span>
 <span class="sd">                scale = a scaling factor, optional, defaults to 1</span>
 <span class="sd">    )</span>
 
@@ -360,7 +362,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">         Connect(source =  upstream reservoir,</span>
 <span class="sd">                sink = downstream reservoir,</span>
 <span class="sd">                ctype = &quot;scale_relative_to_multiple_reservoirs&quot;</span>
-<span class="sd">                refs = [r1, r2, k etc] # you must provide at least one</span>
+<span class="sd">                ref_reservoirs_reservoirs = [r1, r2, k etc] # you must provide at least one</span>
 <span class="sd">                scale = a scaling factor, optional, defaults to 1</span>
 <span class="sd">    )</span>
 
@@ -432,7 +434,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;species&quot;</span><span class="p">:</span> <span class="n">Species</span><span class="p">,</span>
             <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Flux</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
+            <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Flux</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;ratio&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
             <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;ref_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">),</span>
@@ -467,7 +469,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># validate and initialize instance variables</span>
@@ -513,8 +515,8 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
         <span class="c1"># if no reference reservoir is specified, default to the upstream</span>
         <span class="c1"># reservoir</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ref</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
 
         <span class="c1"># decide if this connection needs isotope calculations</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">isotopes</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">isotopes</span><span class="p">:</span>
@@ -538,8 +540,8 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="c1"># make sure scale is a number in model units</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="mi">1</span>
-        
+            <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="mf">1.0</span>
+
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">)</span>
 
@@ -845,7 +847,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
     <span class="k">def</span> <span class="nf">__scaleflux__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Scale a flux relative to another flux&quot;&quot;&quot;</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span> <span class="n">Flux</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span> <span class="n">Flux</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Scale reference must be a flux&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">k_value</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
@@ -867,7 +869,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
-            <span class="n">ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+            <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lop</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ph</span><span class="p">)</span>
 
@@ -886,7 +888,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> Warning: use scale instead of k_value for scale relative to multiple reservoirs</span><span class="se">\n</span><span class="s2">&quot;</span>
             <span class="p">)</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;ref&quot;</span><span class="p">],</span> <span class="n">Flux</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">],</span> <span class="n">Flux</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Scale reference must be a flux&quot;</span><span class="p">)</span>
 
         <span class="n">ph</span> <span class="o">=</span> <span class="n">ScaleFlux</span><span class="p">(</span>
@@ -895,7 +897,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
-            <span class="n">ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+            <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reservoirs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lop</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ph</span><span class="p">)</span>
 
@@ -914,7 +916,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> Warning: use scale instead of k_value for scale relative to multiple reservoirs</span><span class="se">\n</span><span class="s2">&quot;</span>
             <span class="p">)</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;ref&quot;</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ref must be a list&quot;</span><span class="p">)</span>
 
         <span class="n">ph</span> <span class="o">=</span> <span class="n">FluxDiff</span><span class="p">(</span>
@@ -923,14 +925,14 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
-            <span class="n">ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+            <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lop</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ph</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__reaction__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Just a wrapper to keep the if statement manageable&quot;&quot;&quot;</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span> <span class="p">(</span><span class="n">Flux</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span> <span class="p">(</span><span class="n">Flux</span><span class="p">)):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Scale reference must be a flux&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">k_value</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
@@ -943,13 +945,13 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
-            <span class="n">ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+            <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># we need to make sure to remove the flux referenced by</span>
         <span class="c1"># react_with is removed from the list of fluxes in this</span>
         <span class="c1"># reservoir. This should probably move in to the React Class</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">r2</span><span class="o">.</span><span class="n">lof</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r2</span><span class="o">.</span><span class="n">lof</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lop</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ph</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__passiveflux__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -992,7 +994,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">map_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">m_unit</span><span class="p">)</span>
             <span class="n">ph</span> <span class="o">=</span> <span class="n">ScaleRelativeToMass</span><span class="p">(</span>
                 <span class="n">name</span><span class="o">=</span><span class="s2">&quot;_PkM&quot;</span><span class="p">,</span>
-                <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+                <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
                 <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
@@ -1015,7 +1017,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
             <span class="n">ph</span> <span class="o">=</span> <span class="n">ScaleRelativeToConcentration</span><span class="p">(</span>
                 <span class="n">name</span><span class="o">=</span><span class="s2">&quot;PkC&quot;</span><span class="p">,</span>
-                <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+                <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
                 <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
@@ -1036,7 +1038,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">ph</span> <span class="o">=</span> <span class="n">ScaleRelative2otherReservoir</span><span class="p">(</span>
                 <span class="n">name</span><span class="o">=</span><span class="s2">&quot;PkC&quot;</span><span class="p">,</span>
                 <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
-                <span class="n">ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+                <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
                 <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
@@ -1060,7 +1062,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="bp">self</span><span class="o">.</span><span class="n">ref_value</span> <span class="o">=</span> <span class="n">map_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">c_unit</span><span class="p">)</span>
             <span class="n">ph</span> <span class="o">=</span> <span class="n">Monod</span><span class="p">(</span>
                 <span class="n">name</span><span class="o">=</span><span class="s2">&quot;_PMonod&quot;</span><span class="p">,</span>
-                <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+                <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
                 <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">ref_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_value</span><span class="p">,</span>
@@ -1204,10 +1206,10 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="bp">self</span><span class="o">.</span><span class="n">__set_process_type__</span><span class="p">()</span>  <span class="c1"># derive flux type and create flux(es)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__register_process__</span><span class="p">()</span>
 
-<span class="k">class</span> <span class="nc">Connection</span><span class="p">(</span><span class="n">Connect</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; Alias for the Connect class</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="k">class</span> <span class="nc">Connection</span><span class="p">(</span><span class="n">Connect</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Alias for the Connect class&quot;&quot;&quot;</span>
+
 
 <span class="k">class</span> <span class="nc">ConnectionGroup</span><span class="p">(</span><span class="n">esbmtkBase</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Name:</span>
@@ -1228,7 +1230,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">           delta = defaults to zero and has to be set manually</span>
 <span class="sd">           alpha =  defaults to zero and has to be set manually</span>
 <span class="sd">           rate = shared between all connections</span>
-<span class="sd">           ref = shared between all connections</span>
+<span class="sd">           ref_reservoirs = shared between all connections</span>
 <span class="sd">           species = list, optional, if present, only these species will be connected</span>
 <span class="sd">           ctype = needs to be set for all connections. Use &quot;Regular&quot;</span>
 <span class="sd">                   unless you require a specific connection type</span>
@@ -1290,7 +1292,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
             <span class="s2">&quot;species&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
             <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-            <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
             <span class="s2">&quot;plot&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
             <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
         <span class="p">}</span>
@@ -1339,7 +1341,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="s2">&quot;rate&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="p">}</span>
             <span class="c1"># now we loop trough all keys for this connection and see</span>
             <span class="c1"># if we find a corresponding item in the kwargs</span>
@@ -1362,7 +1364,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="n">plot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;plot&quot;</span><span class="p">],</span>
                 <span class="n">ctype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;ctype&quot;</span><span class="p">],</span>
                 <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;scale&quot;</span><span class="p">],</span>
-                <span class="n">ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;ref&quot;</span><span class="p">],</span>
+                <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">],</span>
                 <span class="n">groupname</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
                 <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
@@ -1412,7 +1414,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">         - sink: An object handle for a Sink or Reservoir</span>
 <span class="sd">         - rate: A quantity (e.g., &quot;1 mol/s&quot;), optional</span>
 <span class="sd">         - delta: The isotope ratio, optional</span>
-<span class="sd">         - ref: Reservoir or flux reference</span>
+<span class="sd">         - ref_reservoirs: Reservoir or flux reference</span>
 <span class="sd">         - alpha: A fractionation factor, optional</span>
 <span class="sd">         - id: A string wich will become part of the object name, optional</span>
 <span class="sd">         - plot: &quot;yes&quot; or &quot;no&quot;, defaults to &quot;yes&quot;</span>
@@ -1503,7 +1505,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">         Connect(source =  upstream reservoir,</span>
 <span class="sd">                sink = downstream reservoir,</span>
 <span class="sd">                ctype = &quot;scale_with_flux&quot;,</span>
-<span class="sd">                ref = flux handle,</span>
+<span class="sd">                ref_reservoirs = flux handle,</span>
 <span class="sd">                scale = a scaling factor, optional, defaults to 1</span>
 <span class="sd">                bypass :str = &quot;source&quot;/&quot;sink&quot;</span>
 <span class="sd">                )</span>
@@ -1528,7 +1530,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">         Connect(source =  upstream reservoir,</span>
 <span class="sd">                sink = downstream reservoir,</span>
 <span class="sd">                ctype = &quot;scale_with_flux&quot;,</span>
-<span class="sd">                ref = flux handle,</span>
+<span class="sd">                ref_reservoirs = flux handle,</span>
 <span class="sd">                scale = a scaling factor, optional, defaults to 1</span>
 <span class="sd">                )</span>
 
@@ -1542,7 +1544,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">         Connect(source =  upstream reservoir,</span>
 <span class="sd">                sink = downstream reservoir,</span>
 <span class="sd">                ctype = &quot;scale_with_mass&quot;,</span>
-<span class="sd">                ref = reservoir handle,</span>
+<span class="sd">                ref_reservoirs = reservoir handle,</span>
 <span class="sd">                scale = a scaling factor, optional, defaults to 1</span>
 <span class="sd">    )</span>
 
@@ -1564,7 +1566,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">         Connect(source =  upstream reservoir,</span>
 <span class="sd">                sink = downstream reservoir,</span>
 <span class="sd">                ctype = &quot;scale_relative_to_multiple_reservoirs&quot;</span>
-<span class="sd">                refs = [r1, r2, k etc] # you must provide at least one</span>
+<span class="sd">                ref_reservoirs_reservoirs = [r1, r2, k etc] # you must provide at least one</span>
 <span class="sd">                scale = a scaling factor, optional, defaults to 1</span>
 <span class="sd">    )</span>
 
@@ -1636,7 +1638,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;species&quot;</span><span class="p">:</span> <span class="n">Species</span><span class="p">,</span>
             <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Flux</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
+            <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Flux</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;ratio&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
             <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;ref_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">),</span>
@@ -1671,7 +1673,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># validate and initialize instance variables</span>
@@ -1717,8 +1719,8 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
         <span class="c1"># if no reference reservoir is specified, default to the upstream</span>
         <span class="c1"># reservoir</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ref</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
 
         <span class="c1"># decide if this connection needs isotope calculations</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">isotopes</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">isotopes</span><span class="p">:</span>
@@ -1742,8 +1744,8 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="c1"># make sure scale is a number in model units</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="mi">1</span>
-        
+            <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="mf">1.0</span>
+
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">)</span>
 
@@ -2049,7 +2051,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
     <span class="k">def</span> <span class="nf">__scaleflux__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Scale a flux relative to another flux&quot;&quot;&quot;</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span> <span class="n">Flux</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span> <span class="n">Flux</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Scale reference must be a flux&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">k_value</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
@@ -2071,7 +2073,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
-            <span class="n">ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+            <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lop</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ph</span><span class="p">)</span>
 
@@ -2090,7 +2092,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> Warning: use scale instead of k_value for scale relative to multiple reservoirs</span><span class="se">\n</span><span class="s2">&quot;</span>
             <span class="p">)</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;ref&quot;</span><span class="p">],</span> <span class="n">Flux</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">],</span> <span class="n">Flux</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Scale reference must be a flux&quot;</span><span class="p">)</span>
 
         <span class="n">ph</span> <span class="o">=</span> <span class="n">ScaleFlux</span><span class="p">(</span>
@@ -2099,7 +2101,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
-            <span class="n">ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+            <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reservoirs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lop</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ph</span><span class="p">)</span>
 
@@ -2118,7 +2120,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2"> Warning: use scale instead of k_value for scale relative to multiple reservoirs</span><span class="se">\n</span><span class="s2">&quot;</span>
             <span class="p">)</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;ref&quot;</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">],</span> <span class="nb">list</span><span class="p">):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;ref must be a list&quot;</span><span class="p">)</span>
 
         <span class="n">ph</span> <span class="o">=</span> <span class="n">FluxDiff</span><span class="p">(</span>
@@ -2127,14 +2129,14 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
-            <span class="n">ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+            <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lop</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ph</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__reaction__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Just a wrapper to keep the if statement manageable&quot;&quot;&quot;</span>
 
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span> <span class="p">(</span><span class="n">Flux</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span> <span class="p">(</span><span class="n">Flux</span><span class="p">)):</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Scale reference must be a flux&quot;</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">k_value</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
@@ -2147,13 +2149,13 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
             <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
-            <span class="n">ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+            <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># we need to make sure to remove the flux referenced by</span>
         <span class="c1"># react_with is removed from the list of fluxes in this</span>
         <span class="c1"># reservoir. This should probably move in to the React Class</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">r2</span><span class="o">.</span><span class="n">lof</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">r2</span><span class="o">.</span><span class="n">lof</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lop</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ph</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">__passiveflux__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -2196,7 +2198,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">map_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">m_unit</span><span class="p">)</span>
             <span class="n">ph</span> <span class="o">=</span> <span class="n">ScaleRelativeToMass</span><span class="p">(</span>
                 <span class="n">name</span><span class="o">=</span><span class="s2">&quot;_PkM&quot;</span><span class="p">,</span>
-                <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+                <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
                 <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
@@ -2219,7 +2221,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
             <span class="n">ph</span> <span class="o">=</span> <span class="n">ScaleRelativeToConcentration</span><span class="p">(</span>
                 <span class="n">name</span><span class="o">=</span><span class="s2">&quot;PkC&quot;</span><span class="p">,</span>
-                <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+                <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
                 <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
@@ -2240,7 +2242,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">ph</span> <span class="o">=</span> <span class="n">ScaleRelative2otherReservoir</span><span class="p">(</span>
                 <span class="n">name</span><span class="o">=</span><span class="s2">&quot;PkC&quot;</span><span class="p">,</span>
                 <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="p">,</span>
-                <span class="n">ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+                <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
                 <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
@@ -2264,7 +2266,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="bp">self</span><span class="o">.</span><span class="n">ref_value</span> <span class="o">=</span> <span class="n">map_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">c_unit</span><span class="p">)</span>
             <span class="n">ph</span> <span class="o">=</span> <span class="n">Monod</span><span class="p">(</span>
                 <span class="n">name</span><span class="o">=</span><span class="s2">&quot;_PMonod&quot;</span><span class="p">,</span>
-                <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+                <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
                 <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
                 <span class="n">ref_value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_value</span><span class="p">,</span>
@@ -2425,7 +2427,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
      - sink: An object handle for a Sink or Reservoir
      - rate: A quantity (e.g., "1 mol/s"), optional
      - delta: The isotope ratio, optional
-     - ref: Reservoir or flux reference
+     - ref_reservoirs: Reservoir or flux reference
      - alpha: A fractionation factor, optional
      - id: A string wich will become part of the object name, optional
      - plot: "yes" or "no", defaults to "yes"
@@ -2522,7 +2524,7 @@ maintains steady state with respect to it's isotope ratio.</p>
 <pre><code> Connect(source =  upstream reservoir,
         sink = downstream reservoir,
         ctype = "scale_with_flux",
-        ref = flux handle,
+        ref_reservoirs = flux handle,
         scale = a scaling factor, optional, defaults to 1
         bypass :str = "source"/"sink"
         )
@@ -2548,7 +2550,7 @@ split into two elements (i.e., deprotonation).</p>
 <pre><code> Connect(source =  upstream reservoir,
         sink = downstream reservoir,
         ctype = "scale_with_flux",
-        ref = flux handle,
+        ref_reservoirs = flux handle,
         scale = a scaling factor, optional, defaults to 1
         )
 </code></pre>
@@ -2563,7 +2565,7 @@ split into two elements (i.e., deprotonation).</p>
 <pre><code> Connect(source =  upstream reservoir,
         sink = downstream reservoir,
         ctype = "scale_with_mass",
-        ref = reservoir handle,
+        ref_reservoirs = reservoir handle,
         scale = a scaling factor, optional, defaults to 1
 </code></pre>
 
@@ -2587,7 +2589,7 @@ split into two elements (i.e., deprotonation).</p>
 <pre><code> Connect(source =  upstream reservoir,
         sink = downstream reservoir,
         ctype = "scale_relative_to_multiple_reservoirs"
-        refs = [r1, r2, k etc] # you must provide at least one
+        ref_reservoirs_reservoirs = [r1, r2, k etc] # you must provide at least one
         scale = a scaling factor, optional, defaults to 1
 </code></pre>
 
@@ -2674,7 +2676,7 @@ between =left=and =right=</p>
             <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;species&quot;</span><span class="p">:</span> <span class="n">Species</span><span class="p">,</span>
             <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Flux</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
+            <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Flux</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;ratio&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
             <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;ref_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">),</span>
@@ -2709,7 +2711,7 @@ between =left=and =right=</p>
             <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-            <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># validate and initialize instance variables</span>
@@ -2755,8 +2757,8 @@ between =left=and =right=</p>
 
         <span class="c1"># if no reference reservoir is specified, default to the upstream</span>
         <span class="c1"># reservoir</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">ref</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">]</span>
 
         <span class="c1"># decide if this connection needs isotope calculations</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">isotopes</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">sink</span><span class="o">.</span><span class="n">isotopes</span><span class="p">:</span>
@@ -2780,8 +2782,8 @@ between =left=and =right=</p>
         <span class="c1"># make sure scale is a number in model units</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="mi">1</span>
-        
+            <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="mf">1.0</span>
+
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">)</span>
 
@@ -3059,7 +3061,7 @@ indent :int = 0 indentation</p>
                             <div id="Connect.alpha" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#Connect.alpha">#&nbsp;&nbsp</a>
 
-        <span class="name">alpha</span><span class="annotation">: nptyping.types._number.Number</span>
+        <span class="name">alpha</span><span class="annotation">: numbers.Number</span>
     </div>
 
     
@@ -3068,7 +3070,7 @@ indent :int = 0 indentation</p>
                             <div id="Connect.rate" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#Connect.rate">#&nbsp;&nbsp</a>
 
-        <span class="name">rate</span><span class="annotation">: nptyping.types._number.Number</span>
+        <span class="name">rate</span><span class="annotation">: numbers.Number</span>
     </div>
 
     
@@ -3077,7 +3079,7 @@ indent :int = 0 indentation</p>
                             <div id="Connect.delta" class="classattr">
                                             <div class="attr variable"><a class="headerlink" href="#Connect.delta">#&nbsp;&nbsp</a>
 
-        <span class="name">delta</span><span class="annotation">: nptyping.types._number.Number</span>
+        <span class="name">delta</span><span class="annotation">: numbers.Number</span>
     </div>
 
     
@@ -3096,9 +3098,7 @@ indent :int = 0 indentation</p>
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Connection</span><span class="p">(</span><span class="n">Connect</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; Alias for the Connect class</span>
-
-<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Alias for the Connect class&quot;&quot;&quot;</span>
 </pre></div>
 
         </details>
@@ -3163,7 +3163,7 @@ indent :int = 0 indentation</p>
 <span class="sd">           delta = defaults to zero and has to be set manually</span>
 <span class="sd">           alpha =  defaults to zero and has to be set manually</span>
 <span class="sd">           rate = shared between all connections</span>
-<span class="sd">           ref = shared between all connections</span>
+<span class="sd">           ref_reservoirs = shared between all connections</span>
 <span class="sd">           species = list, optional, if present, only these species will be connected</span>
 <span class="sd">           ctype = needs to be set for all connections. Use &quot;Regular&quot;</span>
 <span class="sd">                   unless you require a specific connection type</span>
@@ -3225,7 +3225,7 @@ indent :int = 0 indentation</p>
             <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
             <span class="s2">&quot;species&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
             <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
-            <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
             <span class="s2">&quot;plot&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
             <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
         <span class="p">}</span>
@@ -3274,7 +3274,7 @@ indent :int = 0 indentation</p>
                 <span class="s2">&quot;rate&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;ref&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="p">}</span>
             <span class="c1"># now we loop trough all keys for this connection and see</span>
             <span class="c1"># if we find a corresponding item in the kwargs</span>
@@ -3297,7 +3297,7 @@ indent :int = 0 indentation</p>
                 <span class="n">plot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;plot&quot;</span><span class="p">],</span>
                 <span class="n">ctype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;ctype&quot;</span><span class="p">],</span>
                 <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;scale&quot;</span><span class="p">],</span>
-                <span class="n">ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;ref&quot;</span><span class="p">],</span>
+                <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">],</span>
                 <span class="n">groupname</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
                 <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
@@ -3339,7 +3339,7 @@ after creation
    delta = defaults to zero and has to be set manually
    alpha =  defaults to zero and has to be set manually
    rate = shared between all connections
-   ref = shared between all connections
+   ref_reservoirs = shared between all connections
    species = list, optional, if present, only these species will be connected
    ctype = needs to be set for all connections. Use "Regular"
            unless you require a specific connection type
