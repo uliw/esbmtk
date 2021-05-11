@@ -1262,6 +1262,10 @@ class Reservoir(esbmtkBase):
             ["mass", "concentration"],
         ]
 
+        self.drn = {
+            "concentration": "_concentration",
+        }
+
         # list of default values if none provided
         self.lod: Dict[any, any] = {
             "delta": "None",
@@ -1339,8 +1343,8 @@ class Reservoir(esbmtkBase):
         if self.mass == "None":
             c = Q_(self.concentration)
             self.plt_units = c.units
-            self.concentration: Number = c.to(self.mo.c_unit).magnitude
-            self.mass: Number = self.concentration * self.volume  # caculate mass
+            self._concentration: Number = c.to(self.mo.c_unit).magnitude
+            self.mass: Number = self._concentration * self.volume  # caculate mass
             self.display_as = "concentration"
         elif self.concentration == "None":
             m = Q_(self.mass)
@@ -1682,6 +1686,17 @@ class Reservoir(esbmtkBase):
         print()
         print("Use the info method on any of the above connections")
         print("to see information on fluxes and processes")
+
+    @property
+    def concentration(self):
+        return self._concentration
+
+    @concentration.setter
+    def concentration(self, c):
+        self._concentration: Number = c.to(self.mo.c_unit).magnitude
+        self.mass: Number = self.concentration * self.volume  # caculate mass
+        self.c = self.c * 0 + self.concentration
+        self.m = self.m * 0 + self.mass
 
 
 class Flux(esbmtkBase):
