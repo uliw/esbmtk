@@ -1296,7 +1296,7 @@ class ScaleRelative2otherReservoir(RateConstant):
         scale: float = c * self.scale * self.constant
 
         # scale = scale * (scale >= 0)  # prevent negative fluxes.
-        self.f[i] = self.f[i] * array([scale, scale, scale, 1])
+        self.f[i] = [scale, scale, scale, 1]
 
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
@@ -1304,14 +1304,18 @@ class ScaleRelative2otherReservoir(RateConstant):
 
         """
 
-        c: float = 1
-        for r in self.rs:
-            c = c * r.c[i - 1]
+        raise NotImplementedError(
+            "Scale relative to multiple reservoirs is undefined for isotope calculations"
+        )
 
-        scale: float = c * self.scale * self.constant
+        # c: float = 1
+        # for r in self.rs:
+        #     c = c * r.c[i - 1]
 
-        # scale = scale * (scale >= 0)  # prevent negative fluxes.
-        self.f[i] = self.f[i] * array([scale, scale, scale, 1])
+        # scale: float = c * self.scale * self.constant
+
+        # # scale = scale * (scale >= 0)  # prevent negative fluxes.
+        # self.f[i] = [scale, scale, scale, 1]
 
 
 class Flux_Balance(RateConstant):
