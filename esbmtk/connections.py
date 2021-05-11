@@ -298,7 +298,7 @@ class Connect(esbmtkBase):
             "groupname": bool,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "signal": (Signal, str),
-            "bypass": str,
+            "bypass": (str, Reservoir),
             "isotopes": bool,
         }
 
@@ -724,6 +724,9 @@ class Connect(esbmtkBase):
         )
         self.lop.append(ph)
 
+        if self.bypass != "None":
+            self.bypass.lof.remove(self.fh)
+
         # this flux must not affect the source reservoir
         # self.r.lof.remove(self.fh)
 
@@ -1146,12 +1149,14 @@ class ConnectionGroup(esbmtkBase):
             "ref_reservoirs": dict,
             "plot": dict,
             "scale": dict,
+            "bypass": dict,
         }
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
             "name": "None",
             "id": "",
+            "bypass": "None",
         }
 
         if "name" in kwargs:
@@ -1193,6 +1198,7 @@ class ConnectionGroup(esbmtkBase):
                 "scale": "None",
                 "ctype": "None",
                 "ref_reservoirs": "None",
+                "bypass": "None",
             }
             # now we loop trough all keys for this connection and see
             # if we find a corresponding item in the kwargs
@@ -1215,6 +1221,7 @@ class ConnectionGroup(esbmtkBase):
                 plot=self.cd[r.n]["plot"],
                 ctype=self.cd[r.n]["ctype"],
                 scale=self.cd[r.n]["scale"],
+                bypass=self.cd[r.n]["bypass"],
                 ref_reservoirs=self.cd[r.n]["ref_reservoirs"],
                 groupname=True,
                 id=self.id,

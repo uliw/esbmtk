@@ -857,6 +857,7 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
     # re: reference, optional
     # al: alpha, optional
     # de: delta, optional
+    # bp: bypass, see scale_with_flux
     # mx: True, optional defaults to False. If set, it will create forward
           and backward fluxes (i.e. mixing)
 
@@ -951,6 +952,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
     delta = "None" if not "de" in p else p["de"]
     mix = False if not "mx" in p else p["mx"]
     cid = f"{cid}_f" if mix else f"{cid}"
+    bypass = "None" if not "bp" in p else p["bp"]
 
     if isinstance(scale, Q_):
         scale = scale.to("l/a").magnitude
@@ -977,6 +979,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
             delta,
             cid,
             M,
+            bypass,
         )
 
     else:  # this is a connection with mixing
@@ -995,6 +998,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
             delta,
             cid,
             M,
+            bypass,
         )
 
         # create backwards connection
@@ -1013,11 +1017,24 @@ def create_connection(n: str, p: dict, M: any) -> None:
             delta,
             cid,
             M,
+            bypass,
         )
 
 
 def update_or_create(
-    name, source, sink, los, typ, scale, rate, ref_reservoirs, alpha, delta, cid, M
+    name,
+    source,
+    sink,
+    los,
+    typ,
+    scale,
+    rate,
+    ref_reservoirs,
+    alpha,
+    delta,
+    cid,
+    M,
+    bypass,
 ):
     """Create or update connection"""
 
@@ -1035,6 +1052,7 @@ def update_or_create(
             ref_reservoirs=make_dict(los, ref_reservoirs),
             alpha=make_dict(los, alpha),
             delta=make_dict(los, delta),
+            bypass=make_dict(los, bypass),
             id=cid,  # get id from dictionary
         )
     else:  # create connection
@@ -1048,6 +1066,7 @@ def update_or_create(
             ref_reservoirs=make_dict(los, ref_reservoirs),
             alpha=make_dict(los, alpha),
             delta=make_dict(los, delta),
+            bypass=make_dict(los, bypass),
             id=cid,  # get id from dictionary
         )
 
