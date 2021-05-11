@@ -106,7 +106,7 @@ class Process(esbmtkBase):
             "lt": Flux,
             "alpha": Number,
             "scale": Number,
-            "ref": (Flux, Reservoir, list, str),
+            "ref_reservoirs": (Flux, Reservoir, list, str),
             "register": (str, ConnectionGroup, Reservoir, ReservoirGroup, Flux),
         }
 
@@ -198,6 +198,7 @@ class GenericFunction(Process):
                  a1 = some argument,
                  a2 = some argument,
                  a3 = some argument
+                 a4 = some argument
                  acton_on = reservoir reference
                  )
 
@@ -720,17 +721,19 @@ class ScaleFlux(Process):
          ScaleFlux(name = "Name",
                    reservoir = reservoir_handle (upstream or downstream)
                    scale = 1
-                   ref = flux we use for scale)
+                   ref_reservoirs = flux we use for scale)
 
     """
 
-    __slots__ = ("rate", "scale", "ref", "reservoir", "flux")
+    __slots__ = ("rate", "scale", "ref_reservoirs", "reservoir", "flux")
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """Initialize this Process"""
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
-        self.lrk.extend(["reservoir", "flux", "scale", "ref"])  # new required keywords
+        self.lrk.extend(
+            ["reservoir", "flux", "scale", "ref_reservoirs"]
+        )  # new required keywords
 
         self.__validateandregister__(kwargs)  # initialize keyword values
 
@@ -758,7 +761,7 @@ class ScaleFlux(Process):
 
         """
 
-        m: float = self.ref.m[i - 1] * self.scale
+        m: float = self.ref_reservoirs.m[i - 1] * self.scale
         r: float = reservoir.species.element.r
         d: float = reservoir.d[i - 1]
         l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
@@ -772,14 +775,14 @@ class ScaleFlux(Process):
         delta according to the reservoir (or the flux?)
 
         """
-        self.f[i] = self.ref[i - 1] * self.scale
+        self.f[i] = self.ref_reservoirs[i - 1] * self.scale
 
     def get_process_args(self, reservoir: Reservoir):
         """"""
 
         func_name: function = self.p_scale_flux
 
-        res_data = List([self.ref.m, reservoir.d, self.ref.m])
+        res_data = List([self.ref_reservoirs.m, reservoir.d, self.ref_reservoirs.m])
         flux_data = List([self.flux.m, self.flux.l, self.flux.h, self.flux.d])
         proc_const = List([float(reservoir.species.element.r), float(self.scale)])
 
@@ -814,7 +817,7 @@ class Reaction(ScaleFlux):
                sink=S0,
                ctype = "react_with",
                scale=1,
-               ref = O2_diff_to_S0,
+               ref_reservoirs = O2_diff_to_S0,
                scale =1,
        )
     """
@@ -831,7 +834,7 @@ class FluxDiff(Process):
           ScaleFlux(name = "Name",
                     reservoir = upstream_reservoir_handle,
                     scale = 1
-                    ref = flux we use for scale)
+                    ref_reservoirs = flux we use for scale)
 
      """
 
@@ -839,7 +842,9 @@ class FluxDiff(Process):
         """Initialize this Process"""
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
-        self.lrk.extend(["reservoir", "flux", "scale", "ref"])  # new required keywords
+        self.lrk.extend(
+            ["reservoir", "flux", "scale", "ref_reservoirs"]
+        )  # new required keywords
 
         self.__validateandregister__(kwargs)  # initialize keyword values
         self.__postinit__()  # do some housekeeping
@@ -855,7 +860,7 @@ class FluxDiff(Process):
         delta according to the reservoir (or the flux?)
 
         """
-        self.f[i] = (self.ref[0][i] - self.ref[1][i]) * self.scale
+        self.f[i] = (self.ref_reservoirs[0][i] - self.ref_reservoirs[1][i]) * self.scale
 
 
 class Fractionation(Process):
@@ -961,7 +966,7 @@ class RateConstant(Process):
             "name": str,
             "reservoir": (Reservoir, Source, Sink),
             "flux": Flux,
-            "ref_reservoir": list,
+            "ref_reservoirs": list,
             "left": (list, Reservoir, Number),
             "right": (list, Reservoir, Number),
             "register": (
@@ -1275,7 +1280,7 @@ class ScaleRelative2otherReservoir(RateConstant):
         self.rs: list = []
         self.constant: Number = 1
 
-        for r in self.ref_reservoir:
+        for r in self.ref_reservoirs:
             if isinstance(r, (Reservoir)):
                 self.rs.append(r)
             elif isinstance(r, (Number)):
@@ -1291,7 +1296,7 @@ class ScaleRelative2otherReservoir(RateConstant):
         scale: float = c * self.scale * self.constant
 
         # scale = scale * (scale >= 0)  # prevent negative fluxes.
-        self.f[i] = self.f[i] * array([scale, scale, scale, 1])
+        self.f[i] = [scale, scale, scale, 1]
 
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
@@ -1299,14 +1304,18 @@ class ScaleRelative2otherReservoir(RateConstant):
 
         """
 
-        c: float = 1
-        for r in self.rs:
-            c = c * r.c[i - 1]
+        raise NotImplementedError(
+            "Scale relative to multiple reservoirs is undefined for isotope calculations"
+        )
 
-        scale: float = c * self.scale * self.constant
+        # c: float = 1
+        # for r in self.rs:
+        #     c = c * r.c[i - 1]
 
-        # scale = scale * (scale >= 0)  # prevent negative fluxes.
-        self.f[i] = self.f[i] * array([scale, scale, scale, 1])
+        # scale: float = c * self.scale * self.constant
+
+        # # scale = scale * (scale >= 0)  # prevent negative fluxes.
+        # self.f[i] = [scale, scale, scale, 1]
 
 
 class Flux_Balance(RateConstant):
@@ -1454,14 +1463,16 @@ class Monod(Process):
         scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] + self.f[i] * scale
 
-    def __plot__(self, start: int, stop: int, ref: float, a: float, b: float) -> None:
+    def __plot__(
+        self, start: int, stop: int, ref_reservoirs: float, a: float, b: float
+    ) -> None:
         """Test the implementation"""
 
         y = []
         x = range(start, stop)
 
         for e in x:
-            y.append(a * ref * e / (b + e))
+            y.append(a * ref_reservoirs * e / (b + e))
 
         fig, ax = plt.subplots()  #
         ax.plot(x, y)

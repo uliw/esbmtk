@@ -946,7 +946,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
     typ = "None" if not "ty" in p else p["ty"]
     scale = 1 if not "sc" in p else p["sc"]
     rate = Q_("0 mol/a") if not "ra" in p else p["ra"]
-    ref = "None" if not "re" in p else p["re"]
+    ref_reservoirs = "None" if not "re" in p else p["re"]
     alpha = "None" if not "al" in p else p["al"]
     delta = "None" if not "de" in p else p["de"]
     mix = False if not "mx" in p else p["mx"]
@@ -965,26 +965,59 @@ def create_connection(n: str, p: dict, M: any) -> None:
     if not mix:
         name = f"C_{source.name}2{sink.name}"
         update_or_create(
-            name, source, sink, los, typ, scale, rate, ref, alpha, delta, cid, M
+            name,
+            source,
+            sink,
+            los,
+            typ,
+            scale,
+            rate,
+            ref_reservoirs,
+            alpha,
+            delta,
+            cid,
+            M,
         )
 
     else:  # this is a connection with mixing
         # create forward connection
         name = f"C_{source.name}2{sink.name}"
         update_or_create(
-            name, source, sink, los, typ, scale, rate, ref, alpha, delta, cid, M
+            name,
+            source,
+            sink,
+            los,
+            typ,
+            scale,
+            rate,
+            ref_reservoirs,
+            alpha,
+            delta,
+            cid,
+            M,
         )
 
         # create backwards connection
         name = f"C_{sink.name}2{source.name}"
         cid = cid.replace("_f", "_b")
         update_or_create(
-            name, sink, source, los, typ, scale, rate, ref, alpha, delta, cid, M
+            name,
+            sink,
+            source,
+            los,
+            typ,
+            scale,
+            rate,
+            ref_reservoirs,
+            alpha,
+            delta,
+            cid,
+            M,
         )
 
 
 def update_or_create(
-    name, source, sink, los, typ, scale, rate, ref, alpha, delta, cid, M
+    name, source, sink, los, typ, scale, rate, ref_reservoirs, alpha, delta, cid, M
 ):
     """Create or update connection"""
 
@@ -999,7 +1032,7 @@ def update_or_create(
             ctype=make_dict(los, typ),
             scale=make_dict(los, scale),  # get rate from dictionary
             rate=make_dict(los, rate),
-            ref=make_dict(los, ref),
+            ref_reservoirs=make_dict(los, ref_reservoirs),
             alpha=make_dict(los, alpha),
             delta=make_dict(los, delta),
             id=cid,  # get id from dictionary
@@ -1012,7 +1045,7 @@ def update_or_create(
             ctype=make_dict(los, typ),
             scale=make_dict(los, scale),  # get rate from dictionary
             rate=make_dict(los, rate),
-            ref=make_dict(los, ref),
+            ref_reservoirs=make_dict(los, ref_reservoirs),
             alpha=make_dict(los, alpha),
             delta=make_dict(los, delta),
             id=cid,  # get id from dictionary

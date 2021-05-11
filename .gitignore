@@ -1,0 +1,51 @@
+# gitignore file for ESS345 Computational Geology.
+
+# The goal is to only push files which make sense to the students
+# so we exclude everything but the Jupyter Notebooks files
+# and image files
+
+# exclude everything
+
+
+# but add these 2 files
+# none at the moment
+
+# but allow the following directories
+
+
+
+# within this directory, allow for the following file types
+!LICENSE
+!README.md
+!*.png
+!*.jpg
+!*.ipynb
+!*.py
+!*.xlsx
+!*.csv
+!*.txt
+!*.md
+!*.org
+!*.pdf
+!*.html
+!*
+
+# last but not least, make sure the above rules are applied
+# to all subdirs as well
+!*/
+/build/
+/.directory
+/.mypy_cache/
+/Documentation/.directory
+/Documentation/*.tex
+*.log
+*.tex
+/esbmtk/*.py#
+./directory
+/esbmtk/__pycache__/
+/auto/
+/dist/
+/tests/__pycache__/
+/examples/one-box-ocean/.directory
+/package.sh
+/esbmtk/.directory
