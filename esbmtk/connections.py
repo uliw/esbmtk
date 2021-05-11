@@ -61,7 +61,7 @@ class Connect(esbmtkBase):
          - sink: An object handle for a Sink or Reservoir
          - rate: A quantity (e.g., "1 mol/s"), optional
          - delta: The isotope ratio, optional
-         - ref: Reservoir or flux reference
+         - ref_reservoirs: Reservoir or flux reference
          - alpha: A fractionation factor, optional
          - id: A string wich will become part of the object name, optional
          - plot: "yes" or "no", defaults to "yes"
@@ -152,7 +152,7 @@ class Connect(esbmtkBase):
          Connect(source =  upstream reservoir,
                 sink = downstream reservoir,
                 ctype = "scale_with_flux",
-                ref = flux handle,
+                ref_reservoirs = flux handle,
                 scale = a scaling factor, optional, defaults to 1
                 bypass :str = "source"/"sink"
                 )
@@ -177,7 +177,7 @@ class Connect(esbmtkBase):
          Connect(source =  upstream reservoir,
                 sink = downstream reservoir,
                 ctype = "scale_with_flux",
-                ref = flux handle,
+                ref_reservoirs = flux handle,
                 scale = a scaling factor, optional, defaults to 1
                 )
 
@@ -191,7 +191,7 @@ class Connect(esbmtkBase):
          Connect(source =  upstream reservoir,
                 sink = downstream reservoir,
                 ctype = "scale_with_mass",
-                ref = reservoir handle,
+                ref_reservoirs = reservoir handle,
                 scale = a scaling factor, optional, defaults to 1
     )
 
@@ -213,7 +213,7 @@ class Connect(esbmtkBase):
          Connect(source =  upstream reservoir,
                 sink = downstream reservoir,
                 ctype = "scale_relative_to_multiple_reservoirs"
-                refs = [r1, r2, k etc] # you must provide at least one
+                ref_reservoirs_reservoirs = [r1, r2, k etc] # you must provide at least one
                 scale = a scaling factor, optional, defaults to 1
     )
 
@@ -285,7 +285,7 @@ class Connect(esbmtkBase):
             "alpha": (Number, str),
             "species": Species,
             "ctype": str,
-            "ref": (Flux, Reservoir, str, list),
+            "ref_reservoirs": (Flux, Reservoir, str, list),
             "ratio": Number,
             "scale": (Number, Q_, str),
             "ref_value": (str, Number, Q_),
@@ -320,7 +320,7 @@ class Connect(esbmtkBase):
             "bypass": "None",
             "name": "None",
             "isotopes": False,
-            "ref": "None",
+            "ref_reservoirs": "None",
         }
 
         # validate and initialize instance variables
@@ -366,8 +366,8 @@ class Connect(esbmtkBase):
 
         # if no reference reservoir is specified, default to the upstream
         # reservoir
-        if self.ref == "None":
-            self.ref = kwargs["source"]
+        if self.ref_reservoirs == "None":
+            self.ref_reservoirs = kwargs["source"]
 
         # decide if this connection needs isotope calculations
         if self.source.isotopes or self.sink.isotopes:
@@ -698,7 +698,7 @@ class Connect(esbmtkBase):
     def __scaleflux__(self) -> None:
         """Scale a flux relative to another flux"""
 
-        if not isinstance(self.ref, Flux):
+        if not isinstance(self.ref_reservoirs, Flux):
             raise ValueError("Scale reference must be a flux")
 
         if self.k_value != "None":
@@ -720,7 +720,7 @@ class Connect(esbmtkBase):
             flux=self.fh,
             register=self.fh,
             scale=self.scale,
-            ref=self.ref,
+            ref_reservoirs=self.ref_reservoirs,
         )
         self.lop.append(ph)
 
@@ -739,7 +739,7 @@ class Connect(esbmtkBase):
                 f"\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n"
             )
 
-        if not isinstance(self.kwargs["ref"], Flux):
+        if not isinstance(self.kwargs["ref_reservoirs"], Flux):
             raise ValueError("Scale reference must be a flux")
 
         ph = ScaleFlux(
@@ -748,7 +748,7 @@ class Connect(esbmtkBase):
             flux=self.fh,
             register=self.fh,
             scale=self.scale,
-            ref=self.ref,
+            ref_reservoirs=self.reservoirs,
         )
         self.lop.append(ph)
 
@@ -767,7 +767,7 @@ class Connect(esbmtkBase):
                 f"\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n"
             )
 
-        if not isinstance(self.kwargs["ref"], list):
+        if not isinstance(self.kwargs["ref_reservoirs"], list):
             raise ValueError("ref must be a list")
 
         ph = FluxDiff(
@@ -776,14 +776,14 @@ class Connect(esbmtkBase):
             flux=self.fh,
             register=self.fh,
             scale=self.scale,
-            ref=self.ref,
+            ref_reservoirs=self.ref_reservoirs,
         )
         self.lop.append(ph)
 
     def __reaction__(self) -> None:
         """Just a wrapper to keep the if statement manageable"""
 
-        if not isinstance(self.ref, (Flux)):
+        if not isinstance(self.ref_reservoirs, (Flux)):
             raise ValueError("Scale reference must be a flux")
 
         if self.k_value != "None":
@@ -796,13 +796,13 @@ class Connect(esbmtkBase):
             flux=self.fh,
             register=self.fh,
             scale=self.scale,
-            ref=self.ref,
+            ref_reservoirs=self.ref_reservoirs,
         )
 
         # we need to make sure to remove the flux referenced by
         # react_with is removed from the list of fluxes in this
         # reservoir. This should probably move in to the React Class
-        self.r2.lof.remove(self.ref)
+        self.r2.lof.remove(self.ref_reservoirs)
         self.lop.append(ph)
 
     def __passiveflux__(self) -> None:
@@ -845,7 +845,7 @@ class Connect(esbmtkBase):
             self.scale = map_units(self.scale, self.mo.m_unit)
             ph = ScaleRelativeToMass(
                 name="_PkM",
-                reservoir=self.ref,
+                reservoir=self.ref_reservoirs,
                 flux=self.fh,
                 register=self.fh,
                 scale=self.scale,
@@ -868,7 +868,7 @@ class Connect(esbmtkBase):
 
             ph = ScaleRelativeToConcentration(
                 name="PkC",
-                reservoir=self.ref,
+                reservoir=self.ref_reservoirs,
                 flux=self.fh,
                 register=self.fh,
                 scale=self.scale,
@@ -889,7 +889,7 @@ class Connect(esbmtkBase):
             ph = ScaleRelative2otherReservoir(
                 name="PkC",
                 reservoir=self.source,
-                ref=self.ref,
+                ref_reservoirs=self.ref_reservoirs,
                 flux=self.fh,
                 register=self.fh,
                 scale=self.scale,
@@ -913,7 +913,7 @@ class Connect(esbmtkBase):
             self.ref_value = map_units(self.ref_value, self.mo.c_unit)
             ph = Monod(
                 name="_PMonod",
-                reservoir=self.ref,
+                reservoir=self.ref_reservoirs,
                 flux=self.fh,
                 register=self.fh,
                 ref_value=self.ref_value,
@@ -1081,7 +1081,7 @@ class ConnectionGroup(esbmtkBase):
            delta = defaults to zero and has to be set manually
            alpha =  defaults to zero and has to be set manually
            rate = shared between all connections
-           ref = shared between all connections
+           ref_reservoirs = shared between all connections
            species = list, optional, if present, only these species will be connected
            ctype = needs to be set for all connections. Use "Regular"
                    unless you require a specific connection type
@@ -1143,7 +1143,7 @@ class ConnectionGroup(esbmtkBase):
             "alpha": dict,
             "species": dict,
             "ctype": dict,
-            "ref": dict,
+            "ref_reservoirs": dict,
             "plot": dict,
             "scale": dict,
         }
@@ -1192,7 +1192,7 @@ class ConnectionGroup(esbmtkBase):
                 "rate": "None",
                 "scale": "None",
                 "ctype": "None",
-                "ref": "None",
+                "ref_reservoirs": "None",
             }
             # now we loop trough all keys for this connection and see
             # if we find a corresponding item in the kwargs
@@ -1215,7 +1215,7 @@ class ConnectionGroup(esbmtkBase):
                 plot=self.cd[r.n]["plot"],
                 ctype=self.cd[r.n]["ctype"],
                 scale=self.cd[r.n]["scale"],
-                ref=self.cd[r.n]["ref"],
+                ref_reservoirs=self.cd[r.n]["ref_reservoirs"],
                 groupname=True,
                 id=self.id,
                 register=self,
