@@ -164,6 +164,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
     <span class="n">pH</span> <span class="o">=</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">pH</span>
 
+
 <span class="k">class</span> <span class="nc">SeawaterConstants</span><span class="p">(</span><span class="n">esbmtkBase</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Provide basic seawater properties as a function of T and Salinity.</span>
 <span class="sd">    Pressure may come at a later stage</span>
@@ -444,12 +445,14 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
         <span class="k">return</span> <span class="n">exp</span><span class="p">(</span><span class="n">lnkp</span><span class="p">)</span>
 
+
 <span class="nd">@njit</span>
 <span class="k">def</span> <span class="nf">calc_H</span><span class="p">(</span>
     <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">a1</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>  <span class="c1"># carbonate alkalinity</span>
     <span class="n">a2</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>  <span class="c1"># dic</span>
     <span class="n">a3</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>
+    <span class="n">a4</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>
 <span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
@@ -483,6 +486,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">         a1=V_CA.c,</span>
 <span class="sd">         a2=DIC.c,</span>
 <span class="sd">         a3=[SW constants],</span>
+<span class="sd">         a4=[array] # muust be provided, but can be empty</span>
 <span class="sd">    )</span>
 
 <span class="sd">    Author: M. Niazi &amp; T. Tsan, 2021</span>
@@ -491,8 +495,8 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="c1">#from esbmtk import phc</span>
-    
+    <span class="c1"># from esbmtk import phc</span>
+
     <span class="n">ca</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">a1</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># mol/L</span>
     <span class="n">dic</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">a2</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># mol/L</span>
     <span class="n">k1</span> <span class="o">=</span> <span class="n">a3</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -504,10 +508,11 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
     <span class="n">c</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">((</span><span class="n">gamm</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">k1</span> <span class="o">+</span> <span class="p">(</span><span class="n">dummy</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">))</span>
     <span class="n">m</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">c</span> <span class="o">*</span> <span class="n">volume</span>
 
-    <span class="c1">#print(f&quot;DIC = {dic*1000}, ca = {ca*1000}&quot;)</span>
-    <span class="c1">#print(f&quot;new pH = {phc(c)}&quot;)</span>
-   
+    <span class="c1"># print(f&quot;DIC = {dic*1000}, ca = {ca*1000}&quot;)</span>
+    <span class="c1"># print(f&quot;new pH = {phc(c)}&quot;)</span>
+
     <span class="k">return</span> <span class="n">m</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">c</span>
+
 
 <span class="nd">@njit</span>
 <span class="k">def</span> <span class="nf">calc_CA</span><span class="p">(</span>
@@ -515,6 +520,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
     <span class="n">a1</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>  <span class="c1"># Total Alkalinity</span>
     <span class="n">a2</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>  <span class="c1"># Hplus</span>
     <span class="n">a3</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>
+    <span class="n">a4</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>
 <span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
@@ -550,6 +556,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">         a1=TA.c,</span>
 <span class="sd">         a2=H+.c,</span>
 <span class="sd">         a3=[swc.KW, swc.KB, swc.boron]</span>
+<span class="sd">         a4=[] # array, must be provided but can be empty</span>
 <span class="sd">    )</span>
 
 <span class="sd">    Author: M. Niazi &amp; T. Tsan, 2021</span>
@@ -578,6 +585,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
     <span class="c1"># print(f&quot;CA m = {m:.2e}, c= {c*1000:.2e} mmol&quot;)</span>
 
     <span class="k">return</span> <span class="n">m</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">c</span>
+
 
 <span class="k">def</span> <span class="nf">calc_pCO2</span><span class="p">(</span>
     <span class="n">dic</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">VirtualReservoir</span><span class="p">],</span>
@@ -667,6 +675,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
     <span class="k">return</span> <span class="n">pco2</span>
 
+
 <span class="k">def</span> <span class="nf">carbonate_system</span><span class="p">(</span>
     <span class="n">ca_con</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
     <span class="n">hplus_con</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
@@ -681,7 +690,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">    hplus_con: initial H+ concentration. Must be a quantity</span>
 <span class="sd">    volume: volume : Must be a quantity for reservoir definition but when  used</span>
 <span class="sd">    as argumment to the functionn it muts be converted to magnitude</span>
-<span class="sd">    </span>
+
 <span class="sd">    swc : a seawater constants object</span>
 <span class="sd">    rg: optional, must be a reservoir group. If present, the below reservoirs</span>
 <span class="sd">        will be registered with this group.</span>
@@ -716,6 +725,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="n">a1</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">rg</span><span class="p">,</span> <span class="s2">&quot;VCA&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>
         <span class="n">a2</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">rg</span><span class="p">,</span> <span class="s2">&quot;DIC&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>
         <span class="n">a3</span><span class="o">=</span><span class="n">List</span><span class="p">([</span><span class="n">swc</span><span class="o">.</span><span class="n">K1</span><span class="p">,</span> <span class="n">swc</span><span class="o">.</span><span class="n">K2</span><span class="p">,</span> <span class="n">volume</span><span class="o">.</span><span class="n">magnitude</span><span class="p">]),</span>
+        <span class="n">a4</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
         <span class="n">register</span><span class="o">=</span><span class="n">rg</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -723,6 +733,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="n">a1</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">rg</span><span class="p">,</span> <span class="s2">&quot;TA&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>
         <span class="n">a2</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">rg</span><span class="p">,</span> <span class="s2">&quot;VH&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>
         <span class="n">a3</span><span class="o">=</span><span class="n">List</span><span class="p">([</span><span class="n">swc</span><span class="o">.</span><span class="n">KW</span><span class="p">,</span> <span class="n">swc</span><span class="o">.</span><span class="n">KB</span><span class="p">,</span> <span class="n">swc</span><span class="o">.</span><span class="n">boron</span><span class="p">,</span> <span class="n">volume</span><span class="o">.</span><span class="n">magnitude</span><span class="p">]),</span>
+        <span class="n">a4</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">v1</span><span class="p">,</span> <span class="n">v2</span>
@@ -1310,7 +1321,8 @@ Pressure may come at a later stage</p>
     i: int,
     a1: nptyping.types._ndarray.NDArray,
     a2: nptyping.types._ndarray.NDArray,
-    a3: nptyping.types._ndarray.NDArray
+    a3: nptyping.types._ndarray.NDArray,
+    a4: nptyping.types._ndarray.NDArray
 )</span>:
     </div>
 
@@ -1322,6 +1334,7 @@ Pressure may come at a later stage</p>
     <span class="n">a1</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>  <span class="c1"># carbonate alkalinity</span>
     <span class="n">a2</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>  <span class="c1"># dic</span>
     <span class="n">a3</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>
+    <span class="n">a4</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>
 <span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1355,6 +1368,7 @@ Pressure may come at a later stage</p>
 <span class="sd">         a1=V_CA.c,</span>
 <span class="sd">         a2=DIC.c,</span>
 <span class="sd">         a3=[SW constants],</span>
+<span class="sd">         a4=[array] # muust be provided, but can be empty</span>
 <span class="sd">    )</span>
 
 <span class="sd">    Author: M. Niazi &amp; T. Tsan, 2021</span>
@@ -1363,8 +1377,8 @@ Pressure may come at a later stage</p>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="c1">#from esbmtk import phc</span>
-    
+    <span class="c1"># from esbmtk import phc</span>
+
     <span class="n">ca</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">a1</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># mol/L</span>
     <span class="n">dic</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">a2</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># mol/L</span>
     <span class="n">k1</span> <span class="o">=</span> <span class="n">a3</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -1376,9 +1390,9 @@ Pressure may come at a later stage</p>
     <span class="n">c</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">((</span><span class="n">gamm</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">k1</span> <span class="o">+</span> <span class="p">(</span><span class="n">dummy</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">))</span>
     <span class="n">m</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">c</span> <span class="o">*</span> <span class="n">volume</span>
 
-    <span class="c1">#print(f&quot;DIC = {dic*1000}, ca = {ca*1000}&quot;)</span>
-    <span class="c1">#print(f&quot;new pH = {phc(c)}&quot;)</span>
-   
+    <span class="c1"># print(f&quot;DIC = {dic*1000}, ca = {ca*1000}&quot;)</span>
+    <span class="c1"># print(f&quot;new pH = {phc(c)}&quot;)</span>
+
     <span class="k">return</span> <span class="n">m</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">c</span>
 </pre></div>
 
@@ -1413,6 +1427,7 @@ even if your function will not use it. These will default to 0.</p>
      a1=V_CA.c,
      a2=DIC.c,
      a3=[SW constants],
+     a4=[array] # muust be provided, but can be empty
 )</p>
 
 <p>Author: M. Niazi &amp; T. Tsan, 2021</p>
@@ -1432,7 +1447,8 @@ even if your function will not use it. These will default to 0.</p>
     i: int,
     a1: nptyping.types._ndarray.NDArray,
     a2: nptyping.types._ndarray.NDArray,
-    a3: nptyping.types._ndarray.NDArray
+    a3: nptyping.types._ndarray.NDArray,
+    a4: nptyping.types._ndarray.NDArray
 )</span>:
     </div>
 
@@ -1444,6 +1460,7 @@ even if your function will not use it. These will default to 0.</p>
     <span class="n">a1</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>  <span class="c1"># Total Alkalinity</span>
     <span class="n">a2</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>  <span class="c1"># Hplus</span>
     <span class="n">a3</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>
+    <span class="n">a4</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">[</span><span class="n">Float</span><span class="p">[</span><span class="mi">64</span><span class="p">]],</span>
 <span class="p">):</span>
 
     <span class="sd">&quot;&quot;&quot;</span>
@@ -1479,6 +1496,7 @@ even if your function will not use it. These will default to 0.</p>
 <span class="sd">         a1=TA.c,</span>
 <span class="sd">         a2=H+.c,</span>
 <span class="sd">         a3=[swc.KW, swc.KB, swc.boron]</span>
+<span class="sd">         a4=[] # array, must be provided but can be empty</span>
 <span class="sd">    )</span>
 
 <span class="sd">    Author: M. Niazi &amp; T. Tsan, 2021</span>
@@ -1542,6 +1560,7 @@ even if your function will not use it</p>
      a1=TA.c,
      a2=H+.c,
      a3=[swc.KW, swc.KB, swc.boron]
+     a4=[] # array, must be provided but can be empty
 )</p>
 
 <p>Author: M. Niazi &amp; T. Tsan, 2021</p>
@@ -1555,8 +1574,8 @@ even if your function will not use it</p>
         
             <span class="def">def</span>
             <span class="name">calc_pCO2</span><span class="signature">(
-    dic: Union[<a href="esbmtk.html#Reservoir">esbmtk.esbmtk.Reservoir</a>, <a href="esbmtk.html#VirtualReservoir">esbmtk.esbmtk.VirtualReservoir</a>],
-    hplus: Union[<a href="esbmtk.html#Reservoir">esbmtk.esbmtk.Reservoir</a>, <a href="esbmtk.html#VirtualReservoir">esbmtk.esbmtk.VirtualReservoir</a>],
+    dic: Union[<a href="esbmtk.html#Reservoir">esbmtk.esbmtk.Reservoir</a>, <a href="extended_classes.html#VirtualReservoir">esbmtk.extended_classes.VirtualReservoir</a>],
+    hplus: Union[<a href="esbmtk.html#Reservoir">esbmtk.esbmtk.Reservoir</a>, <a href="extended_classes.html#VirtualReservoir">esbmtk.extended_classes.VirtualReservoir</a>],
     SW: <a href="#SeawaterConstants">esbmtk.carbonate_chemistry.SeawaterConstants</a>
 ) -&gt; Union[nptypes._ndarray.NDArray, nptypes._number.Float]</span>:
     </div>
@@ -1730,7 +1749,7 @@ SW: Seawater = Seawater object for the model</p>
     hplus_con: float,
     volume: float,
     swc: <a href="#SeawaterConstants">esbmtk.carbonate_chemistry.SeawaterConstants</a>,
-    rg: <a href="esbmtk.html#ReservoirGroup">esbmtk.esbmtk.ReservoirGroup</a> = &#39;None&#39;
+    rg: <a href="extended_classes.html#ReservoirGroup">esbmtk.extended_classes.ReservoirGroup</a> = &#39;None&#39;
 ) -&gt; tuple</span>:
     </div>
 
@@ -1750,7 +1769,7 @@ SW: Seawater = Seawater object for the model</p>
 <span class="sd">    hplus_con: initial H+ concentration. Must be a quantity</span>
 <span class="sd">    volume: volume : Must be a quantity for reservoir definition but when  used</span>
 <span class="sd">    as argumment to the functionn it muts be converted to magnitude</span>
-<span class="sd">    </span>
+
 <span class="sd">    swc : a seawater constants object</span>
 <span class="sd">    rg: optional, must be a reservoir group. If present, the below reservoirs</span>
 <span class="sd">        will be registered with this group.</span>
@@ -1785,6 +1804,7 @@ SW: Seawater = Seawater object for the model</p>
         <span class="n">a1</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">rg</span><span class="p">,</span> <span class="s2">&quot;VCA&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>
         <span class="n">a2</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">rg</span><span class="p">,</span> <span class="s2">&quot;DIC&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>
         <span class="n">a3</span><span class="o">=</span><span class="n">List</span><span class="p">([</span><span class="n">swc</span><span class="o">.</span><span class="n">K1</span><span class="p">,</span> <span class="n">swc</span><span class="o">.</span><span class="n">K2</span><span class="p">,</span> <span class="n">volume</span><span class="o">.</span><span class="n">magnitude</span><span class="p">]),</span>
+        <span class="n">a4</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
         <span class="n">register</span><span class="o">=</span><span class="n">rg</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -1792,6 +1812,7 @@ SW: Seawater = Seawater object for the model</p>
         <span class="n">a1</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">rg</span><span class="p">,</span> <span class="s2">&quot;TA&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>
         <span class="n">a2</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="n">rg</span><span class="p">,</span> <span class="s2">&quot;VH&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>
         <span class="n">a3</span><span class="o">=</span><span class="n">List</span><span class="p">([</span><span class="n">swc</span><span class="o">.</span><span class="n">KW</span><span class="p">,</span> <span class="n">swc</span><span class="o">.</span><span class="n">KB</span><span class="p">,</span> <span class="n">swc</span><span class="o">.</span><span class="n">boron</span><span class="p">,</span> <span class="n">volume</span><span class="o">.</span><span class="n">magnitude</span><span class="p">]),</span>
+        <span class="n">a4</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">v1</span><span class="p">,</span> <span class="n">v2</span>
