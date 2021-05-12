@@ -1200,7 +1200,7 @@ class ConnectionGroup(esbmtkBase):
                 "bypass": "None",
             }
 
-            print(f"self.cd[r.n] = {self.cd[r.n]}")
+            # print(f"self.cd[r.n] = {self.cd[r.n]}")
 
             # test defaults against actual keyword value
             for kcd, vcd in self.cd[r.n].items():
@@ -1209,11 +1209,11 @@ class ConnectionGroup(esbmtkBase):
                     # print(f"self.kwargs[kcd] = {self.kwargs[kcd]}")
                     if r.sp in self.kwargs[kcd]:  # {SO4: xxx}
                         # update the entry
-                        print(f" self.kwargs[kcd][r.sp] =  {self.kwargs[kcd][r.sp]}")
+                        # print(f" self.kwargs[kcd][r.sp] =  {self.kwargs[kcd][r.sp]}")
                         self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
             # now we can create the connection
 
-            print(self.cd)
+            # print(self.cd)
             name = f"{r.n}"
 
             a = Connect(
