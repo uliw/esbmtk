@@ -1149,14 +1149,13 @@ class ConnectionGroup(esbmtkBase):
             "ref_reservoirs": dict,
             "plot": dict,
             "scale": dict,
-            "bypass": dict,
+            "bypass": (dict, str),
         }
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
             "name": "None",
             "id": "",
-            "bypass": "None",
         }
 
         if "name" in kwargs:
@@ -1200,15 +1199,21 @@ class ConnectionGroup(esbmtkBase):
                 "ref_reservoirs": "None",
                 "bypass": "None",
             }
-            # now we loop trough all keys for this connection and see
-            # if we find a corresponding item in the kwargs
+
+            print(f"self.cd[r.n] = {self.cd[r.n]}")
+
+            # test defaults against actual keyword value
             for kcd, vcd in self.cd[r.n].items():
                 if kcd in self.kwargs:  # found entry like ctype
+                    # print(f"kcd  = {kcd}")
+                    # print(f"self.kwargs[kcd] = {self.kwargs[kcd]}")
                     if r.sp in self.kwargs[kcd]:  # {SO4: xxx}
                         # update the entry
+                        print(f" self.kwargs[kcd][r.sp] =  {self.kwargs[kcd][r.sp]}")
                         self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
             # now we can create the connection
 
+            print(self.cd)
             name = f"{r.n}"
 
             a = Connect(
