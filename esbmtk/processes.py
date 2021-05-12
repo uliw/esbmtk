@@ -1358,11 +1358,7 @@ class Flux_Balance(RateConstant):
         [self.Rl, self.Cl] = sort_by_type(self.left, [Reservoir, Number], em)
         [self.Rr, self.Cr] = sort_by_type(self.right, [Reservoir, Number], em)
 
-    def __call__(self, reservoir: Reservoir, i: int) -> None:
-        """
-        this will be called by the Model.run() method
-
-        """
+    def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
 
         kl: NDArray = np.array([1.0, 1.0, 1.0, 1.0])
         kr: NDArray = np.array([1.0, 1.0, 1.0, 1.0])
@@ -1384,6 +1380,14 @@ class Flux_Balance(RateConstant):
 
         # set flux
         self.f[i] = (kl - kr) * self.k_value
+
+    def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
+        """
+        not sure that this correct WRT isotopes
+
+        """
+
+        raise NotImplementedError("Flux Balance is undefined for isotope calculations")
 
 
 class Monod(Process):
