@@ -1678,11 +1678,7 @@
         <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Rl</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Cl</span><span class="p">]</span> <span class="o">=</span> <span class="n">sort_by_type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="p">[</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">Number</span><span class="p">],</span> <span class="n">em</span><span class="p">)</span>
         <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Rr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Cr</span><span class="p">]</span> <span class="o">=</span> <span class="n">sort_by_type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">,</span> <span class="p">[</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">Number</span><span class="p">],</span> <span class="n">em</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        this will be called by the Model.run() method</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__without_isotopes__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 
         <span class="n">kl</span><span class="p">:</span> <span class="n">NDArray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
         <span class="n">kr</span><span class="p">:</span> <span class="n">NDArray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
@@ -1704,6 +1700,14 @@
 
         <span class="c1"># set flux</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">kl</span> <span class="o">-</span> <span class="n">kr</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">k_value</span>
+
+    <span class="k">def</span> <span class="nf">__with_isotopes__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        not sure that this correct WRT isotopes</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Flux Balance is undefined for isotope calculations&quot;</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">Monod</span><span class="p">(</span><span class="n">Process</span><span class="p">):</span>
@@ -4936,11 +4940,7 @@ instance when you specify the connection as</p>
         <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Rl</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Cl</span><span class="p">]</span> <span class="o">=</span> <span class="n">sort_by_type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="p">[</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">Number</span><span class="p">],</span> <span class="n">em</span><span class="p">)</span>
         <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">Rr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">Cr</span><span class="p">]</span> <span class="o">=</span> <span class="n">sort_by_type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">right</span><span class="p">,</span> <span class="p">[</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">Number</span><span class="p">],</span> <span class="n">em</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        this will be called by the Model.run() method</span>
-
-<span class="sd">        &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__without_isotopes__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 
         <span class="n">kl</span><span class="p">:</span> <span class="n">NDArray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
         <span class="n">kr</span><span class="p">:</span> <span class="n">NDArray</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
@@ -4962,6 +4962,14 @@ instance when you specify the connection as</p>
 
         <span class="c1"># set flux</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">kl</span> <span class="o">-</span> <span class="n">kr</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">k_value</span>
+
+    <span class="k">def</span> <span class="nf">__with_isotopes__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        not sure that this correct WRT isotopes</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Flux Balance is undefined for isotope calculations&quot;</span><span class="p">)</span>
 </pre></div>
 
         </details>

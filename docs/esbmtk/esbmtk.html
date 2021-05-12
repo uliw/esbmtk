@@ -271,6 +271,9 @@
                                 <a class="function" href="#Reservoir.info">info</a>
                         </li>
                         <li>
+                                <a class="variable" href="#Reservoir.concentration">concentration</a>
+                        </li>
+                        <li>
                                 <a class="variable" href="#Reservoir.c">c</a>
                         </li>
                         <li>
@@ -1676,6 +1679,10 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="p">[</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="s2">&quot;concentration&quot;</span><span class="p">],</span>
         <span class="p">]</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">drn</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;concentration&quot;</span><span class="p">:</span> <span class="s2">&quot;_concentration&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
         <span class="c1"># list of default values if none provided</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lod</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">any</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;delta&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
@@ -1753,8 +1760,8 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mass</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
             <span class="n">c</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">concentration</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">plt_units</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">units</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">concentration</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">c_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">concentration</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span>  <span class="c1"># caculate mass</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_concentration</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">c_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_concentration</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span>  <span class="c1"># caculate mass</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">display_as</span> <span class="o">=</span> <span class="s2">&quot;concentration&quot;</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">concentration</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
             <span class="n">m</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
@@ -2096,6 +2103,17 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="nb">print</span><span class="p">()</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Use the info method on any of the above connections&quot;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;to see information on fluxes and processes&quot;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">concentration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_concentration</span>
+
+    <span class="nd">@concentration</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">concentration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_concentration</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">c_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">concentration</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span>  <span class="c1"># caculate mass</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span> <span class="o">*</span> <span class="mi">0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">concentration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">*</span> <span class="mi">0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mass</span>
 
 
 <span class="k">class</span> <span class="nc">Flux</span><span class="p">(</span><span class="n">esbmtkBase</span><span class="p">):</span>
@@ -5022,6 +5040,10 @@ specific properties</p>
             <span class="p">[</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="s2">&quot;concentration&quot;</span><span class="p">],</span>
         <span class="p">]</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">drn</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;concentration&quot;</span><span class="p">:</span> <span class="s2">&quot;_concentration&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
         <span class="c1"># list of default values if none provided</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lod</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">any</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;delta&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
@@ -5099,8 +5121,8 @@ specific properties</p>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mass</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
             <span class="n">c</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">concentration</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">plt_units</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">units</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">concentration</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">c_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">concentration</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span>  <span class="c1"># caculate mass</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_concentration</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">c_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_concentration</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span>  <span class="c1"># caculate mass</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">display_as</span> <span class="o">=</span> <span class="s2">&quot;concentration&quot;</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">concentration</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
             <span class="n">m</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
@@ -5442,6 +5464,17 @@ specific properties</p>
         <span class="nb">print</span><span class="p">()</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Use the info method on any of the above connections&quot;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;to see information on fluxes and processes&quot;</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">concentration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_concentration</span>
+
+    <span class="nd">@concentration</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">concentration</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_concentration</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">c_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">concentration</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span>  <span class="c1"># caculate mass</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">c</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">c</span> <span class="o">*</span> <span class="mi">0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">concentration</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">*</span> <span class="mi">0</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">mass</span>
 </pre></div>
 
         </details>
@@ -5579,6 +5612,10 @@ specific properties</p>
             <span class="p">[</span><span class="s2">&quot;mass&quot;</span><span class="p">,</span> <span class="s2">&quot;concentration&quot;</span><span class="p">],</span>
         <span class="p">]</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">drn</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;concentration&quot;</span><span class="p">:</span> <span class="s2">&quot;_concentration&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
         <span class="c1"># list of default values if none provided</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lod</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">any</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;delta&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
@@ -5656,8 +5693,8 @@ specific properties</p>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mass</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
             <span class="n">c</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">concentration</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">plt_units</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">units</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">concentration</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">c_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">concentration</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span>  <span class="c1"># caculate mass</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_concentration</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">c_unit</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="p">:</span> <span class="n">Number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_concentration</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span>  <span class="c1"># caculate mass</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">display_as</span> <span class="o">=</span> <span class="s2">&quot;concentration&quot;</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">concentration</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
             <span class="n">m</span> <span class="o">=</span> <span class="n">Q_</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="p">)</span>
@@ -6010,6 +6047,15 @@ index  :int = 0 this will show data at the given index
 indent :int = 0 indentation</p>
 </div>
 
+
+                            </div>
+                            <div id="Reservoir.concentration" class="classattr">
+                                            <div class="attr variable"><a class="headerlink" href="#Reservoir.concentration">#&nbsp;&nbsp</a>
+
+        <span class="name">concentration</span>
+    </div>
+
+    
 
                             </div>
                             <div id="Reservoir.c" class="classattr">

@@ -1022,6 +1022,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">    # re: reference, optional</span>
 <span class="sd">    # al: alpha, optional</span>
 <span class="sd">    # de: delta, optional</span>
+<span class="sd">    # bp: bypass, see scale_with_flux</span>
 <span class="sd">    # mx: True, optional defaults to False. If set, it will create forward</span>
 <span class="sd">          and backward fluxes (i.e. mixing)</span>
 
@@ -1116,6 +1117,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
     <span class="n">delta</span> <span class="o">=</span> <span class="s2">&quot;None&quot;</span> <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;de&quot;</span> <span class="ow">in</span> <span class="n">p</span> <span class="k">else</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;de&quot;</span><span class="p">]</span>
     <span class="n">mix</span> <span class="o">=</span> <span class="kc">False</span> <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;mx&quot;</span> <span class="ow">in</span> <span class="n">p</span> <span class="k">else</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;mx&quot;</span><span class="p">]</span>
     <span class="n">cid</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cid</span><span class="si">}</span><span class="s2">_f&quot;</span> <span class="k">if</span> <span class="n">mix</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cid</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">bypass</span> <span class="o">=</span> <span class="s2">&quot;None&quot;</span> <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;bp&quot;</span> <span class="ow">in</span> <span class="n">p</span> <span class="k">else</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;bp&quot;</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">Q_</span><span class="p">):</span>
         <span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;l/a&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
@@ -1142,6 +1144,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">delta</span><span class="p">,</span>
             <span class="n">cid</span><span class="p">,</span>
             <span class="n">M</span><span class="p">,</span>
+            <span class="n">bypass</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">else</span><span class="p">:</span>  <span class="c1"># this is a connection with mixing</span>
@@ -1160,6 +1163,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">delta</span><span class="p">,</span>
             <span class="n">cid</span><span class="p">,</span>
             <span class="n">M</span><span class="p">,</span>
+            <span class="n">bypass</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># create backwards connection</span>
@@ -1178,11 +1182,24 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">delta</span><span class="p">,</span>
             <span class="n">cid</span><span class="p">,</span>
             <span class="n">M</span><span class="p">,</span>
+            <span class="n">bypass</span><span class="p">,</span>
         <span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">update_or_create</span><span class="p">(</span>
-    <span class="n">name</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">ref_reservoirs</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">cid</span><span class="p">,</span> <span class="n">M</span>
+    <span class="n">name</span><span class="p">,</span>
+    <span class="n">source</span><span class="p">,</span>
+    <span class="n">sink</span><span class="p">,</span>
+    <span class="n">los</span><span class="p">,</span>
+    <span class="n">typ</span><span class="p">,</span>
+    <span class="n">scale</span><span class="p">,</span>
+    <span class="n">rate</span><span class="p">,</span>
+    <span class="n">ref_reservoirs</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="p">,</span>
+    <span class="n">delta</span><span class="p">,</span>
+    <span class="n">cid</span><span class="p">,</span>
+    <span class="n">M</span><span class="p">,</span>
+    <span class="n">bypass</span><span class="p">,</span>
 <span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create or update connection&quot;&quot;&quot;</span>
 
@@ -1200,6 +1217,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">ref_reservoirs</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">ref_reservoirs</span><span class="p">),</span>
             <span class="n">alpha</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">alpha</span><span class="p">),</span>
             <span class="n">delta</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">delta</span><span class="p">),</span>
+            <span class="n">bypass</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">bypass</span><span class="p">),</span>
             <span class="nb">id</span><span class="o">=</span><span class="n">cid</span><span class="p">,</span>  <span class="c1"># get id from dictionary</span>
         <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>  <span class="c1"># create connection</span>
@@ -1213,6 +1231,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">ref_reservoirs</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">ref_reservoirs</span><span class="p">),</span>
             <span class="n">alpha</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">alpha</span><span class="p">),</span>
             <span class="n">delta</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">delta</span><span class="p">),</span>
+            <span class="n">bypass</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">bypass</span><span class="p">),</span>
             <span class="nb">id</span><span class="o">=</span><span class="n">cid</span><span class="p">,</span>  <span class="c1"># get id from dictionary</span>
         <span class="p">)</span>
 
@@ -2691,6 +2710,7 @@ species) in each connection set t = '1:N'</p>
 <span class="sd">    # re: reference, optional</span>
 <span class="sd">    # al: alpha, optional</span>
 <span class="sd">    # de: delta, optional</span>
+<span class="sd">    # bp: bypass, see scale_with_flux</span>
 <span class="sd">    # mx: True, optional defaults to False. If set, it will create forward</span>
 <span class="sd">          and backward fluxes (i.e. mixing)</span>
 
@@ -2780,6 +2800,8 @@ following format:</p>
 
 <h1 id="de-delta-optional">de: delta, optional</h1>
 
+<h1 id="bp-bypass-see-scale_with_flux">bp: bypass, see scale_with_flux</h1>
+
 <h1 id="mx-true-optional-defaults-to-false-if-set-it-will-create-forward">mx: True, optional defaults to False. If set, it will create forward</h1>
 
 <pre><code>  and backward fluxes (i.e. mixing)
@@ -2866,6 +2888,7 @@ dictionary produces the corrrect results!</p>
     <span class="n">delta</span> <span class="o">=</span> <span class="s2">&quot;None&quot;</span> <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;de&quot;</span> <span class="ow">in</span> <span class="n">p</span> <span class="k">else</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;de&quot;</span><span class="p">]</span>
     <span class="n">mix</span> <span class="o">=</span> <span class="kc">False</span> <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;mx&quot;</span> <span class="ow">in</span> <span class="n">p</span> <span class="k">else</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;mx&quot;</span><span class="p">]</span>
     <span class="n">cid</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cid</span><span class="si">}</span><span class="s2">_f&quot;</span> <span class="k">if</span> <span class="n">mix</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cid</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">bypass</span> <span class="o">=</span> <span class="s2">&quot;None&quot;</span> <span class="k">if</span> <span class="ow">not</span> <span class="s2">&quot;bp&quot;</span> <span class="ow">in</span> <span class="n">p</span> <span class="k">else</span> <span class="n">p</span><span class="p">[</span><span class="s2">&quot;bp&quot;</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">Q_</span><span class="p">):</span>
         <span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s2">&quot;l/a&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span>
@@ -2892,6 +2915,7 @@ dictionary produces the corrrect results!</p>
             <span class="n">delta</span><span class="p">,</span>
             <span class="n">cid</span><span class="p">,</span>
             <span class="n">M</span><span class="p">,</span>
+            <span class="n">bypass</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">else</span><span class="p">:</span>  <span class="c1"># this is a connection with mixing</span>
@@ -2910,6 +2934,7 @@ dictionary produces the corrrect results!</p>
             <span class="n">delta</span><span class="p">,</span>
             <span class="n">cid</span><span class="p">,</span>
             <span class="n">M</span><span class="p">,</span>
+            <span class="n">bypass</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># create backwards connection</span>
@@ -2928,6 +2953,7 @@ dictionary produces the corrrect results!</p>
             <span class="n">delta</span><span class="p">,</span>
             <span class="n">cid</span><span class="p">,</span>
             <span class="n">M</span><span class="p">,</span>
+            <span class="n">bypass</span><span class="p">,</span>
         <span class="p">)</span>
 </pre></div>
 
@@ -2961,14 +2987,27 @@ create connections in both directions</p>
     alpha,
     delta,
     cid,
-    M
+    M,
+    bypass
 )</span>:
     </div>
 
                 <details>
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="k">def</span> <span class="nf">update_or_create</span><span class="p">(</span>
-    <span class="n">name</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">sink</span><span class="p">,</span> <span class="n">los</span><span class="p">,</span> <span class="n">typ</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span> <span class="n">ref_reservoirs</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="n">cid</span><span class="p">,</span> <span class="n">M</span>
+    <span class="n">name</span><span class="p">,</span>
+    <span class="n">source</span><span class="p">,</span>
+    <span class="n">sink</span><span class="p">,</span>
+    <span class="n">los</span><span class="p">,</span>
+    <span class="n">typ</span><span class="p">,</span>
+    <span class="n">scale</span><span class="p">,</span>
+    <span class="n">rate</span><span class="p">,</span>
+    <span class="n">ref_reservoirs</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="p">,</span>
+    <span class="n">delta</span><span class="p">,</span>
+    <span class="n">cid</span><span class="p">,</span>
+    <span class="n">M</span><span class="p">,</span>
+    <span class="n">bypass</span><span class="p">,</span>
 <span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Create or update connection&quot;&quot;&quot;</span>
 
@@ -2986,6 +3025,7 @@ create connections in both directions</p>
             <span class="n">ref_reservoirs</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">ref_reservoirs</span><span class="p">),</span>
             <span class="n">alpha</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">alpha</span><span class="p">),</span>
             <span class="n">delta</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">delta</span><span class="p">),</span>
+            <span class="n">bypass</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">bypass</span><span class="p">),</span>
             <span class="nb">id</span><span class="o">=</span><span class="n">cid</span><span class="p">,</span>  <span class="c1"># get id from dictionary</span>
         <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>  <span class="c1"># create connection</span>
@@ -2999,6 +3039,7 @@ create connections in both directions</p>
             <span class="n">ref_reservoirs</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">ref_reservoirs</span><span class="p">),</span>
             <span class="n">alpha</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">alpha</span><span class="p">),</span>
             <span class="n">delta</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">delta</span><span class="p">),</span>
+            <span class="n">bypass</span><span class="o">=</span><span class="n">make_dict</span><span class="p">(</span><span class="n">los</span><span class="p">,</span> <span class="n">bypass</span><span class="p">),</span>
             <span class="nb">id</span><span class="o">=</span><span class="n">cid</span><span class="p">,</span>  <span class="c1"># get id from dictionary</span>
         <span class="p">)</span>
 </pre></div>

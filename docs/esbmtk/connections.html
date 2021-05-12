@@ -447,7 +447,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="s2">&quot;groupname&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
             <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">SourceGroup</span><span class="p">,</span> <span class="n">SinkGroup</span><span class="p">,</span> <span class="n">ReservoirGroup</span><span class="p">,</span> <span class="n">ConnectionGroup</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;signal&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Signal</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
-            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">),</span>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="p">}</span>
 
@@ -872,6 +872,9 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lop</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ph</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bypass</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">lof</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">)</span>
 
         <span class="c1"># this flux must not affect the source reservoir</span>
         <span class="c1"># self.r.lof.remove(self.fh)</span>
@@ -1295,12 +1298,14 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
             <span class="s2">&quot;plot&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
             <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># list of default values if none provided</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lod</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">any</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="k">if</span> <span class="s2">&quot;name&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
@@ -1342,6 +1347,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="p">}</span>
             <span class="c1"># now we loop trough all keys for this connection and see</span>
             <span class="c1"># if we find a corresponding item in the kwargs</span>
@@ -1364,6 +1370,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="n">plot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;plot&quot;</span><span class="p">],</span>
                 <span class="n">ctype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;ctype&quot;</span><span class="p">],</span>
                 <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;scale&quot;</span><span class="p">],</span>
+                <span class="n">bypass</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;bypass&quot;</span><span class="p">],</span>
                 <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">],</span>
                 <span class="n">groupname</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
@@ -1651,7 +1658,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="s2">&quot;groupname&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
             <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">SourceGroup</span><span class="p">,</span> <span class="n">SinkGroup</span><span class="p">,</span> <span class="n">ReservoirGroup</span><span class="p">,</span> <span class="n">ConnectionGroup</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;signal&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Signal</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
-            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">),</span>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="p">}</span>
 
@@ -2076,6 +2083,9 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_reservoirs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lop</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ph</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bypass</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">lof</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">)</span>
 
         <span class="c1"># this flux must not affect the source reservoir</span>
         <span class="c1"># self.r.lof.remove(self.fh)</span>
@@ -2689,7 +2699,7 @@ between =left=and =right=</p>
             <span class="s2">&quot;groupname&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
             <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">SourceGroup</span><span class="p">,</span> <span class="n">SinkGroup</span><span class="p">,</span> <span class="n">ReservoirGroup</span><span class="p">,</span> <span class="n">ConnectionGroup</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;signal&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Signal</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
-            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">),</span>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="p">}</span>
 
@@ -3228,12 +3238,14 @@ indent :int = 0 indentation</p>
             <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
             <span class="s2">&quot;plot&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
             <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># list of default values if none provided</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lod</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">any</span><span class="p">,</span> <span class="nb">any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="k">if</span> <span class="s2">&quot;name&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
@@ -3275,6 +3287,7 @@ indent :int = 0 indentation</p>
                 <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="p">}</span>
             <span class="c1"># now we loop trough all keys for this connection and see</span>
             <span class="c1"># if we find a corresponding item in the kwargs</span>
@@ -3297,6 +3310,7 @@ indent :int = 0 indentation</p>
                 <span class="n">plot</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;plot&quot;</span><span class="p">],</span>
                 <span class="n">ctype</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;ctype&quot;</span><span class="p">],</span>
                 <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;scale&quot;</span><span class="p">],</span>
+                <span class="n">bypass</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;bypass&quot;</span><span class="p">],</span>
                 <span class="n">ref_reservoirs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cd</span><span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">n</span><span class="p">][</span><span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">],</span>
                 <span class="n">groupname</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
