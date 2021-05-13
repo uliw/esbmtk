@@ -1306,29 +1306,7 @@ class Reservoir(esbmtkBase):
         if self.delta == "None":
             self.delta = 0
 
-        # legacy names
-        self.n: str = self.name  # name of reservoir
-        # if "register" in self.kwargs:
-        if self.register == "None":
-            self.pt = self.name
-        else:
-            self.pt: str = f"{self.register.name}_{self.n}"
-            self.groupname = self.register.name
-        # else:
-        #   self.pt = self.name
-
-        self.sp: Species = self.species  # species handle
-        self.mo: Model = self.species.mo  # model handle
-        self.rvalue = self.sp.r
-
-        # decide whether we use isotopes
-        if self.mo.m_type == "both":
-            self.isotopes = True
-        elif self.mo.m_type == "mass_only":
-            self.isotopes = False
-
-        if self.geometry != "None":
-            get_box_geometry_parameters(self)
+        self.__set_legacy_names__(kwargs)
 
         # convert units
         self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
@@ -1336,9 +1314,6 @@ class Reservoir(esbmtkBase):
         self.v: float = self.volume  # reservoir volume
         # This should probably be species specific?
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
-
-        if self.display_precision == 0:
-            self.display_precision = self.mo.display_precision
 
         if self.mass == "None":
             c = Q_(self.concentration)
@@ -1356,17 +1331,8 @@ class Reservoir(esbmtkBase):
             raise ValueError("You need to specify mass or concentration")
 
         # save the unit which was provided by the user for display purposes
-
-        self.lof: list[Flux] = []  # flux references
-        self.led: list[ExternalData] = []  # all external data references
-        self.lio: dict[str, int] = {}  # flux name:direction pairs
-        self.lop: list[Process] = []  # list holding all processe references
-        self.loe: list[Element] = []  # list of elements in thiis reservoir
-        self.doe: Dict[Species, Flux] = {}  # species flux pairs
-        self.loc: set[Connection] = set()  # set of connection objects
-        self.ldf: list[DataField] = []  # list of datafield objects
-        # list of processes which calculate reservoirs
-        self.lpc: list[Process] = []
+        # left y-axis label
+        self.lm: str = f"{self.species.n} [{self.mu}/l]"
 
         # initialize mass vector
         self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
@@ -1384,19 +1350,6 @@ class Reservoir(esbmtkBase):
             # delta of reservoir
             self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.species.r)
 
-        # left y-axis label
-        self.lm: str = f"{self.species.n} [{self.mu}/l]"
-        # right y-axis label
-        self.ld: str = f"{self.species.dn} [{self.species.ds}]"
-        self.xl: str = self.mo.xl  # set x-axis lable to model time
-
-        if self.legend_left == "None":
-            self.legend_left = self.species.dsa
-        else:
-            # leave as is
-            pass
-
-        self.legend_right = f"{self.species.dn} [{self.species.ds}]"
         self.mo.lor.append(self)  # add this reservoir to the model
         # register instance name in global name space
         self.__register_name__()
@@ -1411,6 +1364,59 @@ class Reservoir(esbmtkBase):
         # reservoir class in virtual reservoirs
         self.__aux_inits__()
         self.state = 0
+
+    def __set_legacy_names__(self, kwargs) -> None:
+        """
+        Move the below out of the way
+        """
+
+        self.lof: list[Flux] = []  # flux references
+        self.led: list[ExternalData] = []  # all external data references
+        self.lio: dict[str, int] = {}  # flux name:direction pairs
+        self.lop: list[Process] = []  # list holding all processe references
+        self.loe: list[Element] = []  # list of elements in thiis reservoir
+        self.doe: Dict[Species, Flux] = {}  # species flux pairs
+        self.loc: set[Connection] = set()  # set of connection objects
+        self.ldf: list[DataField] = []  # list of datafield objects
+        # list of processes which calculate reservoirs
+        self.lpc: list[Process] = []
+
+        # legacy names
+        self.n: str = self.name  # name of reservoir
+        # if "register" in self.kwargs:
+        if self.register == "None":
+            self.pt = self.name
+        else:
+            self.pt: str = f"{self.register.name}_{self.n}"
+            self.groupname = self.register.name
+        # else:
+        #   self.pt = self.name
+
+        self.sp: Species = self.species  # species handle
+        self.mo: Model = self.species.mo  # model handle
+        self.rvalue = self.sp.r
+
+        # right y-axis label
+        self.ld: str = f"{self.species.dn} [{self.species.ds}]"
+        self.xl: str = self.mo.xl  # set x-axis lable to model time
+
+        if self.legend_left == "None":
+            self.legend_left = self.species.dsa
+
+        self.legend_right = f"{self.species.dn} [{self.species.ds}]"
+        # legend_left is in __init__ !
+
+        # decide whether we use isotopes
+        if self.mo.m_type == "both":
+            self.isotopes = True
+        elif self.mo.m_type == "mass_only":
+            self.isotopes = False
+
+        if self.geometry != "None":
+            get_box_geometry_parameters(self)
+
+        if self.display_precision == 0:
+            self.display_precision = self.mo.display_precision
 
     # setup a placeholder setitem function
     def __setitem__(self, i: int, value: float):
@@ -1699,7 +1705,137 @@ class Reservoir(esbmtkBase):
         self.m = self.m * 0 + self.mass
 
 
+class Reservoir_no_set(Reservoir):
+    """This class is similar to a regular reservoir, but we make no
+    assumptions about the type of data contained. I.e., all data will be
+    left alone
+
+    """
+
+    def __init__(self, **kwargs) -> None:
+
+        """The original class will calculate delta and concentration from mass
+        an d and h and l. Since we want to use this class without a
+        priory knowledge of how the reservoir arrays are being used we
+        overwrite the data generated during initialization with the
+        values provided in the keywords
+
+        """
+        from . import ureg, Q_
+
+        # provide a dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            "name": str,
+            "v1": Number,
+            "v2": Number,
+            "v3": Number,
+            "v4": Number,
+            "v5": Number,
+            "species": Species,
+            "geometry": (list, str),
+            "plot_transform_c": any,
+            "legend_left": str,
+            "plot": str,
+            "groupname": str,
+            "function": any,
+            "display_precision": Number,
+            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "full_name": str,
+            "isotopes": bool,
+            "a1": any,
+            "a2": any,
+            "a3": any,
+            "a4": any,
+            "a5": any,
+            "a6": any,
+            "v1_unit": str,
+            "v2_unit": str,
+            "v3_unit": str,
+            "v4_unit": str,
+            "v5_unit": str,
+        }
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = [
+            "name",
+            "species",
+            "v1",
+        ]
+
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            "plot": "yes",
+            "geometry": "None",
+            "plot_transform_c": "None",
+            "legend_left": "None",
+            "function": "None",
+            "groupname": "None",
+            "register": "None",
+            "full_name": "Not Set",
+            "isotopes": False,
+            "display_precision": 0,
+            "v1": 0,
+            "v2": 0,
+            "v3": 0,
+            "v4": 0,
+            "v5": 0,
+            "v1_unit": "None",
+            "v2_unit": "None",
+            "v3_unit": "None",
+            "v4_unit": "None",
+            "v5_unit": "None",
+        }
+
+        # validate and initialize instance variables
+        self.__initerrormessages__()
+        self.bem.update(
+            {
+                "plot": "yes or no",
+                "register": "Group Object",
+                "legend_left": "A string",
+                "function": "A function",
+            }
+        )
+        self.__validateandregister__(kwargs)
+
+        self.__set_legacy_names__(kwargs)
+
+        self.isotopes = False
+        self.mu: str = self.sp.e.mass_unit  # massunit xxxx
+        self.plt_units = self.mo.c_unit
+        # save the unit which was provided by the user for display purposes
+
+        # ------------------------------------------
+
+        # initialize mass vector
+        self.d1: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v1
+        self.d2: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v2
+        self.d3: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v3
+        self.d4: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v4
+        self.d5: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v5
+
+        # left y-axis label
+        self.lm: str = f"{self.species.n} [{self.mu}/l]"
+        self.mo.lor.append(self)  # add this reservoir to the model
+        # register instance name in global name space
+        self.__register_name__()
+
+        self.__aux_inits__()
+        self.state = 0
+
+    def __setitem__(self, i: int, value: float) -> None:
+
+        """write data by index"""
+
+        self.d1[i]: float = value[0]
+        self.d2[i]: float = value[1]
+        self.d3[i]: float = value[2]
+        self.d4[i]: float = value[3]
+        self.d5[i]: float = value[4]
+
+
 class Flux(esbmtkBase):
+
     """A class which defines a flux object. Flux objects contain
     information which links them to an species, describe things like
     the mass and time unit, and store data of the total flux rate at
