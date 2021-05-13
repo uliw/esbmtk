@@ -402,54 +402,55 @@ def build_vr_list(lor: list) -> tuple:
     return fn, a1, a2, a3, a4, a7
 
 
-def build_flux_lists(lor, iso: bool = False) -> tuple:
-    """flux_list :list [] contains all fluxes as
-    [f.m, f.l, f.h, f.d], where each sublist relates to one reservoir
+# def build_flux_lists(lor, iso: bool = False) -> tuple:
+#     """flux_list :list [] contains all fluxes as
+#     [f.m, f.l, f.h, f.d], where each sublist relates to one reservoir
 
-    i.e. per reservoir we have list [f1, f2, f3], where f1 = [m, l, h, d]
-    and m = np.array()
+#     i.e. per reservoir we have list [f1, f2, f3], where f1 = [m, l, h, d]
+#     and m = np.array()
 
-    iso = False/True
+#     iso = False/True
 
-    """
+#     """
 
-    r_list: list = List()
-    v_list: list = List()
-    r0_list: list = List()
+#     r_list: list = List()
+#     v_list: list = List()
+#     r0_list: list = List()
 
-    f_list: list = List()
-    dir_list: list = List()
-    rd_list: list = List()
-    fd_list: list = List()
+#     f_list: list = List()
+#     dir_list: list = List()
+#     rd_list: list = List()
+#     fd_list: list = List()
 
-    for r in lor:  # loop over all reservoirs
-        if r.isotopes == iso:
-            rd_list = List([r.m, r.l, r.h, r.d, r.c])
+#     for r in lor:  # loop over all reservoirs
+#         if r.isotopes == iso:
+#             rd_list = List([r.m, r.l, r.h, r.d, r.c])
 
-            r_list.append(rd_list)
-            v_list.append(float(r.volume))
-            r0_list.append(float(r.sp.r))
+#             r_list.append(rd_list)
+#             v_list.append(float(r.volume))
+#             r0_list.append(float(r.sp.r))
 
-            i = 0
-            # add fluxes for each reservoir entry
-            tf: list = List()  # temp list for flux data
-            td: list = List()  # temp list for direction data
+#             i = 0
+#             # add fluxes for each reservoir entry
+#             tf: list = List()  # temp list for flux data
+#             td: list = List()  # temp list for direction data
 
-            # loop over all fluxes
-            for f in r.lof:
-                fd_list = List([f.m, f.l, f.h, f.d])
-                tf.append(fd_list)
-                td.append(float(r.lodir[i]))
-                i = i + 1
+#             # loop over all fluxes
+#             for f in r.lof:
+#                 fd_list = List([f.m, f.l, f.h, f.d])
+#                 tf.append(fd_list)
+#                 td.append(float(r.lodir[i]))
+#                 i = i + 1
 
-            f_list.append(tf)
-            dir_list.append(td)
+#             if len(r.lof) > 0:
+#                 f_list.append(tf)
+#                 dir_list.append(td)
 
-    # v_list = tuple(v_list)
-    # r0_list = tuple(r0_list)
-    # dir_list = tuple(dir_list)
+#     # v_list = tuple(v_list)
+#     # r0_list = tuple(r0_list)
+#     # dir_list = tuple(dir_list)
 
-    return r_list, f_list, dir_list, v_list, r0_list
+#     return r_list, f_list, dir_list, v_list, r0_list
 
 
 def build_flux_lists_all(lor, iso: bool = False) -> tuple:
@@ -473,26 +474,27 @@ def build_flux_lists_all(lor, iso: bool = False) -> tuple:
     fd_list: list = List()
 
     for r in lor:  # loop over all reservoirs
-        rd_list = List([r.m, r.l, r.h, r.d, r.c])
+        if len(r.lof) > 0:
+            rd_list = List([r.m, r.l, r.h, r.d, r.c])
 
-        r_list.append(rd_list)
-        v_list.append(float(r.volume))
-        r0_list.append(float(r.sp.r))
+            r_list.append(rd_list)
+            v_list.append(float(r.volume))
+            r0_list.append(float(r.sp.r))
 
-        i = 0
-        # add fluxes for each reservoir entry
-        tf: list = List()  # temp list for flux data
-        td: list = List()  # temp list for direction data
+            i = 0
+            # add fluxes for each reservoir entry
+            tf: list = List()  # temp list for flux data
+            td: list = List()  # temp list for direction data
 
-        # loop over all fluxes
-        for f in r.lof:
-            fd_list = List([f.m, f.l, f.h, f.d])
-            tf.append(fd_list)
-            td.append(float(r.lodir[i]))
-            i = i + 1
+            # loop over all fluxes
+            for f in r.lof:
+                fd_list = List([f.m, f.l, f.h, f.d])
+                tf.append(fd_list)
+                td.append(float(r.lodir[i]))
+                i = i + 1
 
-        f_list.append(tf)
-        dir_list.append(td)
+            f_list.append(tf)
+            dir_list.append(td)
 
     return r_list, f_list, dir_list, v_list, r0_list
 
