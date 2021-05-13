@@ -748,7 +748,7 @@ class Connect(esbmtkBase):
             flux=self.fh,
             register=self.fh,
             scale=self.scale,
-            ref_reservoirs=self.reservoirs,
+            ref_reservoirs=self.ref_reservoirs,
         )
         self.lop.append(ph)
 
