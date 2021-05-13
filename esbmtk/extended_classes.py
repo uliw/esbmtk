@@ -1071,6 +1071,36 @@ class VirtualReservoir(Reservoir):
                 setattr(self.gfh, key, value)  # update function
 
 
+class VirtualReservoir_no_set(VirtualReservoir):
+    """This is the same a regular VR, but adding data to this VR will not
+    recalculate concentrations and isotope values. This is most useful form
+    VR's which use all 5 reservoir arrays to store variables which are only
+    affected by the associated generic function.
+
+    """
+
+    def __set_with_isotopes__(self, i: int, value: float) -> None:
+        """write data by index"""
+
+        self.m[i]: float = value[0]
+        self.l[i]: float = value[1]
+        self.h[i]: float = value[2]
+        self.d[i]: float = value[3]
+        self.c[i]: float = value[4]
+
+    def __set_without_isotopes__(self, i: int, value: float) -> None:
+        """write data by index. Same as above since we do not known
+        if this particular VR uses more than just the first array
+
+        """
+
+        self.m[i]: float = value[0]
+        self.l[i]: float = value[1]
+        self.h[i]: float = value[2]
+        self.d[i]: float = value[3]
+        self.c[i]: float = value[4]
+
+
 class ExternalData(esbmtkBase):
     """Instances of this class hold external X/Y data which can be associated with
     a reservoir.
