@@ -213,7 +213,7 @@ class Connect(esbmtkBase):
          Connect(source =  upstream reservoir,
                 sink = downstream reservoir,
                 ctype = "scale_relative_to_multiple_reservoirs"
-                ref_reservoirs_reservoirs = [r1, r2, k etc] # you must provide at least one
+                ref_reservoirs = [r1, r2, k etc] # you must provide at least one
                 scale = a scaling factor, optional, defaults to 1
     )
 
@@ -751,7 +751,7 @@ class Connect(esbmtkBase):
             flux=self.fh,
             register=self.fh,
             scale=self.scale,
-            ref_reservoirs=self.reservoirs,
+            ref_reservoirs=self.ref_reservoirs,
         )
         self.lop.append(ph)
 
