@@ -620,3 +620,92 @@ def carbonate_system(
     )
 
     return v1, v2
+
+def calc_carbonates(
+    i: int, #current time-step in the model
+    a1: NDArray[Float[64]], #dic
+    a2: NDArray[Float[64]], #TA
+    a3: NDArray[Float[64]], #SeawaterConstant values
+    a4: NDArray[Float[64]], #Hplus
+) -> NDArray[Float[64]]:
+    """ Calculates and returns the carbonate concentrations with the format of
+    [d1, d2, d3, d4, d5] where each variable corresponds to
+    [H+, CA, HCO3, CO3, CO2(aq)], respectively, at the ith time-step of the model.
+
+    LIMITATIONS:
+    - This in used in conjunction with Virtual_Reservoir_no_set objects!
+    - Assumes all concentrations are in mol/L
+
+    Calculations are based off equations from Follows, 2006.
+    doi:10.1016/j.ocemod.2005.05.004
+
+    Parameters:
+    a1 = DIC concentration (mol/L)
+    a2 = Total alkalinity concentration (mol/L)
+    a3 = [k1, k2, KW, KB, boron, SW.hplus]
+        Values taken from SeaWaterConstants object for typical Seawater values
+    a4 = H+ concentration in the virtual reservoir ex. V_combo.m; initialized
+        with numpy.zeros(3) and later updated. See example below.
+
+    Example code:
+    > VirtualReservoir_no_set(
+        name="V_combo",
+        species=CO2,
+        v1=SW.hplus,
+        v2=SW.ca,
+        v3=SW.hco3,
+        v4=SW.co3,
+        v5=SW.co2,
+        plot="yes",
+        function=carbonate_chemistry.calc_carbonates,
+        a1= Ocean.DIC.c,
+        a2= Ocean.ALK.c,
+        a3=List([SW.K1, SW.K2, SW.KW, SW.KB, SW.boron, SW.hplus]),
+        a4=np.zeros(3),
+        register=Ocean
+     )
+    > Ocean.V_combo.update(a4=Ocean.V_combo.d1)
+
+    To plot the other species, please create DataField objects accordingly.
+
+    Sample code for plotting CO3:
+    > DataField(name = "pH",
+          associated_with = Ocean.V_combo,
+          y1_data = -np.log10(Ocean.V_combo.d1),
+          y1_label = "pH",
+          y1_legend = "pH"
+     )
+    > Model_Name.plot([pH])
+
+
+    Author: M. Niazi & T. Tsan, 2021
+    """
+    dic: float = a1[i - 1]
+    ta: float = a2[i - 1]
+
+    # calculates carbonate alkalinity (ca) based on H+ concentration from the
+    # previous time-step
+    hplus: float = a4[i-1]
+
+    k1 = a3[0]
+    k2 = a3[1]
+    KW = a3[2]
+    KB = a3[3]
+    boron = a3[4]
+
+    # ca
+    oh: float = KW / hplus
+    boh4: float = boron * KB / (hplus + KB)
+    fg: float = hplus - oh - boh4
+    ca: float = ta + fg
+    # hplus
+    gamm: float = dic / ca
+    dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
+    hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))
+    # hco3 and co3
+    co3: float = dic / (1 + (hplus / k2) + ((hplus ** 2) / (k1 * k2)))
+    hco3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
+    # co2 (aq)
+    co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
+
+    return [hplus, ca, hco3, co3, co2aq]
