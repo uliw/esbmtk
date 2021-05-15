@@ -1687,7 +1687,11 @@ class Reservoir(esbmtkBase):
 
         print(f"\n{ind}Connnections:")
         for p in sorted(self.loc):
-            print(f"{off}{ind}{p.full_name}")
+            print(f"{off}{ind}{p.full_name}.info()")
+
+        print(f"\n{ind}Fluxes:")
+        for f in sorted(self.lof):
+            print(f"{off}{ind}{f.full_name}: {f.m[-2]:.2e}")
 
         print()
         print("Use the info method on any of the above connections")
