@@ -19,7 +19,7 @@ import logging
 import builtins
 import os
 
-from .esbmtk import esbmtkBase, Reservoir, Reservoir_no_set, Species, Source, Sink
+from .esbmtk import esbmtkBase, ReservoirBase, Reservoir, Species, Source, Sink
 
 
 class ReservoirGroup(esbmtkBase):
@@ -956,6 +956,135 @@ class DataField(esbmtkBase):
 
         df.to_csv(fn, index=False)  # Write dataframe to file
         return df
+
+
+class Reservoir_no_set(ReservoirBase):
+    """This class is similar to a regular reservoir, but we make no
+    assumptions about the type of data contained. I.e., all data will be
+    left alone
+
+    """
+
+    def __init__(self, **kwargs) -> None:
+
+        """The original class will calculate delta and concentration from mass
+        an d and h and l. Since we want to use this class without a
+        priory knowledge of how the reservoir arrays are being used we
+        overwrite the data generated during initialization with the
+        values provided in the keywords
+
+        """
+        from . import ureg, Q_
+
+        # provide a dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            "name": str,
+            "v1": Number,
+            "v2": Number,
+            "v3": Number,
+            "v4": Number,
+            "v5": Number,
+            "species": Species,
+            "geometry": (list, str),
+            "plot_transform_c": any,
+            "legend_left": str,
+            "plot": str,
+            "groupname": str,
+            "function": any,
+            "display_precision": Number,
+            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "full_name": str,
+            "isotopes": bool,
+            "a1": any,
+            "a2": any,
+            "a3": any,
+            "a4": any,
+            "a5": any,
+            "a6": any,
+            "v1_unit": str,
+            "v2_unit": str,
+            "v3_unit": str,
+            "v4_unit": str,
+            "v5_unit": str,
+        }
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = [
+            "name",
+            "species",
+            "v1",
+        ]
+
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            "plot": "yes",
+            "geometry": "None",
+            "plot_transform_c": "None",
+            "legend_left": "None",
+            "function": "None",
+            "groupname": "None",
+            "register": "None",
+            "full_name": "Not Set",
+            "isotopes": False,
+            "display_precision": 0,
+            "v1": 0,
+            "v2": 0,
+            "v3": 0,
+            "v4": 0,
+            "v5": 0,
+            "v1_unit": "None",
+            "v2_unit": "None",
+            "v3_unit": "None",
+            "v4_unit": "None",
+            "v5_unit": "None",
+        }
+
+        # validate and initialize instance variables
+        self.__initerrormessages__()
+        self.bem.update(
+            {
+                "plot": "yes or no",
+                "register": "Group Object",
+                "legend_left": "A string",
+                "function": "A function",
+            }
+        )
+        self.__validateandregister__(kwargs)
+
+        self.__set_legacy_names__(kwargs)
+
+        self.isotopes = False
+        self.mu: str = self.sp.e.mass_unit  # massunit xxxx
+        self.plt_units = self.mo.c_unit
+        # save the unit which was provided by the user for display purposes
+
+        # ------------------------------------------
+
+        # initialize mass vector
+        self.d1: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v1
+        self.d2: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v2
+        self.d3: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v3
+        self.d4: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v4
+        self.d5: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v5
+
+        # left y-axis label
+        self.lm: str = f"{self.species.n} [{self.mu}/l]"
+        self.mo.lor.append(self)  # add this reservoir to the model
+        # register instance name in global name space
+        self.__register_name__()
+
+        self.__aux_inits__()
+        self.state = 0
+
+    def __setitem__(self, i: int, value: float) -> None:
+
+        """write data by index"""
+
+        self.d1[i]: float = value[0]
+        self.d2[i]: float = value[1]
+        self.d3[i]: float = value[2]
+        self.d4[i]: float = value[3]
+        self.d5[i]: float = value[4]
 
 
 class VirtualReservoir(Reservoir):
