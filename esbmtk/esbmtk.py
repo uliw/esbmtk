@@ -1141,229 +1141,16 @@ class Species(esbmtkBase):
         self.__register_name__()
 
 
-class Reservoir(esbmtkBase):
-    """This object holds reservoir specific information.
-
-          Example::
-
-                  Reservoir(name = "foo",      # Name of reservoir
-                            species = S,          # Species handle
-                            delta = 20,           # initial delta - optional (defaults  to 0)
-                            mass/concentration = "1 unit"  # species concentration or mass
-                            volume/geometry = "1E5 l",      # reservoir volume (m^3)
-                            plot = "yes"/"no", defaults to yes
-                            plot_transform_c = a function reference, optional (see below)
-                            legend_left = str, optional, useful for plot transform
-                            display_precision = number, optional, inherited from Model
-                            register = optional, use to register with Reservoir Group
-                            isotopes = True/False otherwise use Model.m_type
-                            )
-
-          You must either give mass or concentration.  The result will always be displayed
-          as concentration though.
-
-          You must provide either the volume or the geometry keyword. In the latter case
-          provide a list where the first entry is the upper depth datum, the second entry is
-          the lower depth datum, and the third entry is the area percentage. E.g., to specify
-          the upper 200 meters of the entire ocean, you would write:
-
-                 geometry=[0,-200,1]
-
-          the corresponding ocean volume will then be calculated by the calc_volume method
-          in this case the following instance variables will also be set:
-
-                 self.volume in model units (usually liter)
-                 self.are:a surface area in m^2 at the upper bounding surface
-                 self.area_dz: area of seafloor which is intercepted by this box.
-                 self.area_fraction: area of seafloor which is intercepted by this
-                                    relative to the total ocean floor area
-
-          Using a transform function
-          ~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-          In some cases, it is useful to transform the reservoir
-          concentration data before plotting it.  A good example is the H+
-          concentration in water which is better displayed as pH.  We can
-          do this by specifying a function to convert the reservoir
-          concentration into pH units::
-
-              def phc(c :float) -> float:
-                  # Calculate concentration as pH. c can be a number or numpy array
-
-                  import numpy as np
-
-                  pH :float = -np.log10(c)
-                  return pH
-
-          this function can then be added to a reservoir as::
-
-          hplus.plot_transform_c = phc
-
-          You can modify the left legend to suit the transform via the legend_left keyword
-
-          Note, at present the plot_transform_c function will only take one
-          argument, which always defaults to the reservoir
-          concentration. The function must return a single argument which
-          will be interpreted as the transformed reservoir concentration.
-
-    Accesing Reservoir Data:
-    ~~~~~~~~~~~~~~~~~~~~~~~~
-
-    You can access the reservoir data as:
-
-    - Name.m # mass
-    - Name.d # delta
-    - Name.c # concentration
-
-    Useful methods include:
-
-    - Name.write_data() # save data to file
-    - Name.info()   # info Reservoir
-    """
+class ReservoirBase(esbmtkBase):
+    """ Base class for all Reservoir objects """
 
     __slots__ = ("m", "l", "h", "d", "c", "lio", "rvalue", "lodir", "lof", "lpc")
 
     def __init__(self, **kwargs) -> None:
-        """Initialize a reservoir."""
 
-        from . import ureg, Q_
-
-        # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            "name": str,
-            "species": Species,
-            "delta": (Number, str),
-            "concentration": (str, Q_),
-            "mass": (str, Q_),
-            "volume": (str, Q_),
-            "geometry": (list, str),
-            "plot_transform_c": any,
-            "legend_left": str,
-            "plot": str,
-            "groupname": str,
-            "function": any,
-            "display_precision": Number,
-            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
-            "full_name": str,
-            "isotopes": bool,
-            "a1": any,
-            "a2": any,
-            "a3": any,
-            "a4": any,
-            "a5": any,
-            "a6": any,
-        }
-
-        # provide a list of absolutely required keywords
-        self.lrk: list = [
-            "name",
-            "species",
-            "volume",
-            ["mass", "concentration"],
-        ]
-
-        self.drn = {
-            "concentration": "_concentration",
-        }
-
-        # list of default values if none provided
-        self.lod: Dict[any, any] = {
-            "delta": "None",
-            "plot": "yes",
-            "mass": "None",
-            "volume": "None",
-            "geometry": "None",
-            "concentration": "None",
-            "plot_transform_c": "None",
-            "legend_left": "None",
-            "function": "None",
-            "groupname": "None",
-            "register": "None",
-            "full_name": "Not Set",
-            "isotopes": False,
-            "a1": numba.typed.List.empty_list(nbt.float64),
-            "a2": numba.typed.List.empty_list(nbt.float64),
-            "a3": numba.typed.List.empty_list(nbt.float64),
-            "a4": List(np.zeros(3)),
-            "display_precision": 0,
-        }
-
-        # validate and initialize instance variables
-        self.__initerrormessages__()
-        self.bem.update(
-            {
-                "mass": "a  string or quantity",
-                "concentration": "a string or quantity",
-                "volume": "a string or quantity",
-                "plot": "yes or no",
-                "register": "Group Object",
-                "legend_left": "A string",
-                "function": "A function",
-            }
+        raise NotImplementedError(
+            "ReservoirBase should never be used. Use the derived classes"
         )
-        self.__validateandregister__(kwargs)
-
-        if self.delta == "None":
-            self.delta = 0
-
-        self.__set_legacy_names__(kwargs)
-
-        # convert units
-        self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
-
-        self.v: float = self.volume  # reservoir volume
-        # This should probably be species specific?
-        self.mu: str = self.sp.e.mass_unit  # massunit xxxx
-
-        if self.mass == "None":
-            c = Q_(self.concentration)
-            self.plt_units = c.units
-            self._concentration: Number = c.to(self.mo.c_unit).magnitude
-            self.mass: Number = self._concentration * self.volume  # caculate mass
-            self.display_as = "concentration"
-        elif self.concentration == "None":
-            m = Q_(self.mass)
-            self.plt_units = self.mo.m_unit
-            self.mass: Number = m.to(self.mo.m_unit).magnitude
-            self.concentration = self.mass / self.volume
-            self.display_as = "mass"
-        else:
-            raise ValueError("You need to specify mass or concentration")
-
-        # save the unit which was provided by the user for display purposes
-        # left y-axis label
-        self.lm: str = f"{self.species.n} [{self.mu}/l]"
-
-        # initialize mass vector
-        self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
-        self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
-        self.h: [NDArray, Float[64]] = zeros(self.mo.steps)
-
-        if self.mass == 0:
-            self.c: [NDArray, Float[64]] = zeros(self.species.mo.steps)
-            self.d: [NDArray, Float[64]] = zeros(self.species.mo.steps)
-        else:
-            # initialize concentration vector
-            self.c: [NDArray, Float[64]] = self.m / self.v
-            # isotope mass
-            [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
-            # delta of reservoir
-            self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.species.r)
-
-        self.mo.lor.append(self)  # add this reservoir to the model
-        # register instance name in global name space
-        self.__register_name__()
-
-        # decide which setitem functions to use
-        if self.isotopes:
-            self.__set_data__ = self.__set_with_isotopes__
-        else:
-            self.__set_data__ = self.__set_without_isotopes__
-
-        # any auxilliary init - normally empty, but we use it here to extend the
-        # reservoir class in virtual reservoirs
-        self.__aux_inits__()
-        self.state = 0
 
     def __set_legacy_names__(self, kwargs) -> None:
         """
@@ -1690,8 +1477,11 @@ class Reservoir(esbmtkBase):
             print(f"{off}{ind}{p.full_name}.info()")
 
         print(f"\n{ind}Fluxes:")
-        for f in sorted(self.lof):
-            print(f"{off}{ind}{f.full_name}: {f.m[-2]:.2e}")
+        from esbmtk import Q_
+
+        # m = Q_("1 Sv").to("l/a").magnitude
+        for i, f in enumerate(self.lof):
+            print(f"{off}{ind}{f.full_name}: {self.lodir[i]*f.m[-2]:.2e}")
 
         print()
         print("Use the info method on any of the above connections")
@@ -1709,33 +1499,101 @@ class Reservoir(esbmtkBase):
         self.m = self.m * 0 + self.mass
 
 
-class Reservoir_no_set(Reservoir):
-    """This class is similar to a regular reservoir, but we make no
-    assumptions about the type of data contained. I.e., all data will be
-    left alone
+class Reservoir(ReservoirBase):
+    """This object holds reservoir specific information.
 
+          Example::
+
+                  Reservoir(name = "foo",      # Name of reservoir
+                            species = S,          # Species handle
+                            delta = 20,           # initial delta - optional (defaults  to 0)
+                            mass/concentration = "1 unit"  # species concentration or mass
+                            volume/geometry = "1E5 l",      # reservoir volume (m^3)
+                            plot = "yes"/"no", defaults to yes
+                            plot_transform_c = a function reference, optional (see below)
+                            legend_left = str, optional, useful for plot transform
+                            display_precision = number, optional, inherited from Model
+                            register = optional, use to register with Reservoir Group
+                            isotopes = True/False otherwise use Model.m_type
+                            )
+
+          You must either give mass or concentration.  The result will always be displayed
+          as concentration though.
+
+          You must provide either the volume or the geometry keyword. In the latter case
+          provide a list where the first entry is the upper depth datum, the second entry is
+          the lower depth datum, and the third entry is the area percentage. E.g., to specify
+          the upper 200 meters of the entire ocean, you would write:
+
+                 geometry=[0,-200,1]
+
+          the corresponding ocean volume will then be calculated by the calc_volume method
+          in this case the following instance variables will also be set:
+
+                 self.volume in model units (usually liter)
+                 self.are:a surface area in m^2 at the upper bounding surface
+                 self.area_dz: area of seafloor which is intercepted by this box.
+                 self.area_fraction: area of seafloor which is intercepted by this
+                                    relative to the total ocean floor area
+
+          Using a transform function
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+          In some cases, it is useful to transform the reservoir
+          concentration data before plotting it.  A good example is the H+
+          concentration in water which is better displayed as pH.  We can
+          do this by specifying a function to convert the reservoir
+          concentration into pH units::
+
+              def phc(c :float) -> float:
+                  # Calculate concentration as pH. c can be a number or numpy array
+
+                  import numpy as np
+
+                  pH :float = -np.log10(c)
+                  return pH
+
+          this function can then be added to a reservoir as::
+
+          hplus.plot_transform_c = phc
+
+          You can modify the left legend to suit the transform via the legend_left keyword
+
+          Note, at present the plot_transform_c function will only take one
+          argument, which always defaults to the reservoir
+          concentration. The function must return a single argument which
+          will be interpreted as the transformed reservoir concentration.
+
+    Accesing Reservoir Data:
+    ~~~~~~~~~~~~~~~~~~~~~~~~
+
+    You can access the reservoir data as:
+
+    - Name.m # mass
+    - Name.d # delta
+    - Name.c # concentration
+
+    Useful methods include:
+
+    - Name.write_data() # save data to file
+    - Name.info()   # info Reservoir
     """
 
+    __slots__ = ("m", "l", "h", "d", "c", "lio", "rvalue", "lodir", "lof", "lpc")
+
     def __init__(self, **kwargs) -> None:
+        """Initialize a reservoir."""
 
-        """The original class will calculate delta and concentration from mass
-        an d and h and l. Since we want to use this class without a
-        priory knowledge of how the reservoir arrays are being used we
-        overwrite the data generated during initialization with the
-        values provided in the keywords
-
-        """
         from . import ureg, Q_
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
-            "v1": Number,
-            "v2": Number,
-            "v3": Number,
-            "v4": Number,
-            "v5": Number,
             "species": Species,
+            "delta": (Number, str),
+            "concentration": (str, Q_),
+            "mass": (str, Q_),
+            "volume": (str, Q_),
             "geometry": (list, str),
             "plot_transform_c": any,
             "legend_left": str,
@@ -1752,24 +1610,28 @@ class Reservoir_no_set(Reservoir):
             "a4": any,
             "a5": any,
             "a6": any,
-            "v1_unit": str,
-            "v2_unit": str,
-            "v3_unit": str,
-            "v4_unit": str,
-            "v5_unit": str,
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = [
             "name",
             "species",
-            "v1",
+            "volume",
+            ["mass", "concentration"],
         ]
+
+        self.drn = {
+            "concentration": "_concentration",
+        }
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
+            "delta": "None",
             "plot": "yes",
+            "mass": "None",
+            "volume": "None",
             "geometry": "None",
+            "concentration": "None",
             "plot_transform_c": "None",
             "legend_left": "None",
             "function": "None",
@@ -1777,23 +1639,20 @@ class Reservoir_no_set(Reservoir):
             "register": "None",
             "full_name": "Not Set",
             "isotopes": False,
+            "a1": numba.typed.List.empty_list(nbt.float64),
+            "a2": numba.typed.List.empty_list(nbt.float64),
+            "a3": numba.typed.List.empty_list(nbt.float64),
+            "a4": List(np.zeros(3)),
             "display_precision": 0,
-            "v1": 0,
-            "v2": 0,
-            "v3": 0,
-            "v4": 0,
-            "v5": 0,
-            "v1_unit": "None",
-            "v2_unit": "None",
-            "v3_unit": "None",
-            "v4_unit": "None",
-            "v5_unit": "None",
         }
 
         # validate and initialize instance variables
         self.__initerrormessages__()
         self.bem.update(
             {
+                "mass": "a  string or quantity",
+                "concentration": "a string or quantity",
+                "volume": "a string or quantity",
                 "plot": "yes or no",
                 "register": "Group Object",
                 "legend_left": "A string",
@@ -1802,40 +1661,67 @@ class Reservoir_no_set(Reservoir):
         )
         self.__validateandregister__(kwargs)
 
+        if self.delta == "None":
+            self.delta = 0
+
         self.__set_legacy_names__(kwargs)
 
-        self.isotopes = False
+        # convert units
+        self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
+
+        self.v: float = self.volume  # reservoir volume
+        # This should probably be species specific?
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
-        self.plt_units = self.mo.c_unit
+
+        if self.mass == "None":
+            c = Q_(self.concentration)
+            self.plt_units = c.units
+            self._concentration: Number = c.to(self.mo.c_unit).magnitude
+            self.mass: Number = self._concentration * self.volume  # caculate mass
+            self.display_as = "concentration"
+        elif self.concentration == "None":
+            m = Q_(self.mass)
+            self.plt_units = self.mo.m_unit
+            self.mass: Number = m.to(self.mo.m_unit).magnitude
+            self.concentration = self.mass / self.volume
+            self.display_as = "mass"
+        else:
+            raise ValueError("You need to specify mass or concentration")
+
         # save the unit which was provided by the user for display purposes
-
-        # ------------------------------------------
-
-        # initialize mass vector
-        self.d1: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v1
-        self.d2: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v2
-        self.d3: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v3
-        self.d4: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v4
-        self.d5: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v5
-
         # left y-axis label
         self.lm: str = f"{self.species.n} [{self.mu}/l]"
+
+        # initialize mass vector
+        self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
+        self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
+        self.h: [NDArray, Float[64]] = zeros(self.mo.steps)
+
+        if self.mass == 0:
+            self.c: [NDArray, Float[64]] = zeros(self.species.mo.steps)
+            self.d: [NDArray, Float[64]] = zeros(self.species.mo.steps)
+        else:
+            # initialize concentration vector
+            self.c: [NDArray, Float[64]] = self.m / self.v
+            # isotope mass
+            [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
+            # delta of reservoir
+            self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.species.r)
+
         self.mo.lor.append(self)  # add this reservoir to the model
         # register instance name in global name space
         self.__register_name__()
 
+        # decide which setitem functions to use
+        if self.isotopes:
+            self.__set_data__ = self.__set_with_isotopes__
+        else:
+            self.__set_data__ = self.__set_without_isotopes__
+
+        # any auxilliary init - normally empty, but we use it here to extend the
+        # reservoir class in virtual reservoirs
         self.__aux_inits__()
         self.state = 0
-
-    def __setitem__(self, i: int, value: float) -> None:
-
-        """write data by index"""
-
-        self.d1[i]: float = value[0]
-        self.d2[i]: float = value[1]
-        self.d3[i]: float = value[2]
-        self.d4[i]: float = value[3]
-        self.d5[i]: float = value[4]
 
 
 class Flux(esbmtkBase):
