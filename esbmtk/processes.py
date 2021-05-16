@@ -33,7 +33,7 @@ class Process(esbmtkBase):
 
     """
 
-    __slots__ = ("reservoir", "r", "flux", "r", "mo", "direction")
+    __slots__ = ("reservoir", "r", "flux", "r", "mo", "direction", "scale")
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
@@ -43,6 +43,7 @@ class Process(esbmtkBase):
         self.__defaultnames__()  # default kwargs names
         self.__initerrormessages__()  # default error messages
         self.bem.update({"rate": "a string"})
+        self.bem.update({"scale": "Number or quantity"})
         self.__validateandregister__(kwargs)  # initialize keyword values
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
@@ -114,12 +115,7 @@ class Process(esbmtkBase):
         self.lrk: list[str] = ["name"]
 
         # list of default values if none provided
-        self.lod: Dict[str, any] = {}
-
-        # default type hints
-        self.scale: Number
-        self.delta: Number
-        self.alpha: Number
+        self.lod: Dict[str, any] = {"scale": 1}
 
     def __register__(self, reservoir: Reservoir, flux: Flux) -> None:
         """Register the flux/reservoir pair we are acting upon, and register
@@ -441,6 +437,7 @@ class PassiveFlux(Process):
 
     PassiveFlux(name = "name",
                 reservoir = upstream_reservoir_handle
+                scale = optional
                 flux = flux handle)
 
     """
@@ -499,7 +496,7 @@ class PassiveFlux(Process):
         # will be known so we need to use the flux values from the previous times-step
         for j, f in enumerate(self.fws):
             # print(f"{f.n} = {f.m[i-1] * reservoir.lio[f]}")
-            new += f.m[i - 1] * reservoir.lio[f]
+            new += f.m[i - 1] * reservoir.lio[f] * self.scale
 
         # print(f"sum = {new:.0f}\n")
         self.f[i] = get_flux_data(new, reservoir.d[i - 1], reservoir.rvalue)
@@ -575,6 +572,47 @@ class PassiveFlux_fixed_delta(Process):
         self.f[i] = array(get_flux_data(newflux, self.delta, r))
 
 
+class ScaleRelativeToInputFluxes(PassiveFlux):
+    """Scale output flux relative to the input fluxes"""
+
+    def __delayed_init__(self) -> None:
+        """
+        Initialize stuff which is only known after the entire model has been defined.
+        This will be executed just before running the model.
+
+        Specifically, find all input fluxes
+        """
+
+        print(f"delayed init for {self.name}")
+
+        self.in_fluxes: list = []
+        for i, f in enumerate(self.r.lof):
+            if self.lodir[f] > 0:
+                self.in_fluxes.append(f)
+
+
+def __call__(self, reservoir: Reservoir, i: int) -> None:
+    """Here we re-balance the flux. That is, we calculate the sum of all fluxes
+    excluding this flux. This sum will be equal to this flux. This will likely only
+    work for outfluxes though.
+
+    Should this be done for output fluxes as well?
+
+    """
+
+    new: float = 0.0
+
+    # calc sum of fluxes in fws. Note that at this point, not all fluxes
+    # will be known so we need to use the flux values from the previous times-step
+    for j, f in enumerate(self.in_fluxes):
+        # print(f"{f.n} = {f.m[i-1] * reservoir.lio[f]}")
+        new += f.m[i - 1]
+
+    new = new * self.scale
+    # print(f"sum = {new:.0f}\n")
+    self.f[i] = [new, 1, 1, 1]
+
+
 class VarDeltaOut(Process):
     """Unlike a passive flux, this process sets the flux istope ratio
     equal to the isotopic ratio of the reservoir. The
@@ -605,6 +643,7 @@ class VarDeltaOut(Process):
             "flux": Flux,
             "rate": (str, Q_),
             "register": (ConnectionGroup, ReservoirGroup, Reservoir, Flux, str),
+            "scale": (Number, str),
         }
         self.lrk.extend(["reservoir", "flux"])  # new required keywords
         self.__initerrormessages__()
