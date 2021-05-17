@@ -19,7 +19,7 @@ import logging
 import builtins
 import os
 
-from .esbmtk import esbmtkBase, Reservoir, Species, Source, Sink
+from .esbmtk import esbmtkBase, Reservoir, Species, Source, Sink, Flux, get_imass
 
 
 class ReservoirGroup(esbmtkBase):
