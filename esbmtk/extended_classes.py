@@ -822,7 +822,7 @@ class DataField(esbmtkBase):
     Example::
 
              DataField(name = "Name"
-                       associated_with = reservoir_handle
+                       associated_with = reservoir_handle, optional
                        y1_data = np.Ndarray or list of arrays
                        y1_label = Y-Axis label
                        y1_legend = Data legend or list of legends
@@ -849,10 +849,18 @@ class DataField(esbmtkBase):
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this instance """
 
+        from . import Reservoir_no_set, VirtualReservoir, VirtualReservoir_no_set
+
         # dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
-            "associated_with": (Reservoir, ReservoirGroup),
+            "associated_with": (
+                Reservoir,
+                ReservoirGroup,
+                Reservoir_no_set,
+                VirtualReservoir,
+                VirtualReservoir_no_set,
+            ),
             "y1_data": (NDArray[float], list),
             "y1_label": str,
             "y1_legend": (str, list),
@@ -875,6 +883,7 @@ class DataField(esbmtkBase):
             "y2_data": "None",
             "common_y_scale": "no",
             "display_precision": 0,
+            "associated_with": "None",
         }
 
         # provide a dictionary entry for a keyword specific error message
@@ -882,7 +891,6 @@ class DataField(esbmtkBase):
         self.__initerrormessages__()
         self.bem.update(
             {
-                "associated_with": "a string",
                 "y1_data": "a numpy array",
                 "y1_label": "a string",
                 "y1_legend": "a string",
@@ -897,6 +905,9 @@ class DataField(esbmtkBase):
 
         # set legacy variables
         self.legend_left = self.y1_legend
+
+        if self.associated_with == "None":
+            self.associated_with = self.mo.lor[0]
 
         self.mo = self.associated_with.mo
         if "self.y2_data" != "None":
@@ -983,7 +994,7 @@ class Reservoir_no_set(ReservoirBase):
         values provided in the keywords
 
         """
-        from . import ureg, Q_
+        from . import ureg, Q_, ConnectionGroup
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -1078,7 +1089,11 @@ class Reservoir_no_set(ReservoirBase):
 
         # left y-axis label
         self.lm: str = f"{self.species.n} [{self.mu}/l]"
+
         self.mo.lor.append(self)  # add this reservoir to the model
+        # self.mo.lor.remove(self)
+        # but lets keep track of  virtual reservoir in lvr.
+        self.mo.lvr.append(self)
         # register instance name in global name space
         self.__register_name__()
 
@@ -1209,13 +1224,62 @@ class VirtualReservoir(Reservoir):
                 setattr(self.gfh, key, value)  # update function
 
 
-class VirtualReservoir_no_set(VirtualReservoir, Reservoir_no_set):
+class VirtualReservoir_no_set(Reservoir_no_set):
     """This is the same a regular VR, but adding data to this VR will not
     recalculate concentrations and isotope values. This is most useful form
     VR's which use all 5 reservoir arrays to store variables which are only
     affected by the associated generic function.
 
     """
+
+    def __aux_inits__(self) -> None:
+        """We us the regular init methods of the Reservoir Class, and extend it in this method"""
+
+        from .processes import GenericFunction
+
+        # if self.register != "None":
+        #    self.full_name = f"{self.full_name}.{self.name}"
+        name = f"{self.full_name}_generic_function".replace(".", "_")
+        logging.info(f"creating {name}")
+
+        self.gfh = GenericFunction(
+            name=name,
+            function=self.function,
+            a1=self.a1,
+            a2=self.a2,
+            a3=self.a3,
+            a4=self.a4,
+            act_on=self,
+        )
+
+        # we only depend on the above function. so no need
+        # to be in the reservoir list
+        print("removing")
+        self.mo.lor.remove(self)
+        # but lets keep track of  virtual reservoir in lvr.
+        self.mo.lvr.append(self)
+
+    def update(self, **kwargs) -> None:
+        """This method allows to update GenericFunction parameters after the
+        VirtualReservoir has been initialized. This is most useful
+        when parameters have to reference other virtual reservoirs
+        which do not yet exist, e.g., when two virtual reservoirs have
+        a circular reference.
+
+        Example::
+
+        VR.update(a1=new_parameter, a2=new_parameter)
+
+        """
+
+        allowed_keys: list = ["a1", "a2", "a3", "a4", "a5", "a6", "volume"]
+        # loop over provided kwargs
+        for key, value in kwargs.items():
+            if key not in allowed_keys:
+                raise ValueError("you can only change a1 to a6")
+            else:
+                setattr(self, key, value)  # update self
+                setattr(self.gfh, key, value)  # update function
 
 
 class ExternalData(esbmtkBase):
