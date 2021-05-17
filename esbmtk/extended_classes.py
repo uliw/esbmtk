@@ -1015,7 +1015,7 @@ class Reservoir_no_set(ReservoirBase):
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "full_name": str,
             "isotopes": bool,
-            "volume" : str, Number,
+            "volume": (str, Number),
             "a1": any,
             "a2": any,
             "a3": any,
