@@ -219,6 +219,8 @@ class GenericFunction(Process):
 
         """
 
+        from . import Reservoir_no_set
+
         self.__defaultnames__()  # default kwargs names
 
         # list of allowed keywords
@@ -265,14 +267,16 @@ class GenericFunction(Process):
         self.__register_name__()  #
 
         # register with reservoir
-        if isinstance(self.act_on, Reservoir):
+        if isinstance(self.act_on, (Reservoir, Reservoir_no_set)):
             self.act_on.lpc.append(self)  # register with Reservoir
             self.act_on.mo.lpc_r.append(self)  # Register with Model
         elif isinstance(self.act_on, Flux):
             self.act_on.lpc.append(self)  # register with Flux
             self.act_on.mo.lpc_f.append(self)  # Register with Model
         else:
-            raise ValueError("functions can only act upon reservoirs or fluxes")
+            raise ValueError(
+                f"functions can only act upon reservoirs or fluxes, not on {type(self.act_on)}"
+            )
 
     def __call__(self, i: int) -> None:
         """Here we execute the user supplied function and assign the
