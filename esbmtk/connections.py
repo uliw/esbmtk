@@ -626,6 +626,8 @@ class Connect(esbmtkBase):
                 self._delta = 0
                 self.__passiveflux__()
 
+        elif self.ctype == "scale_to_input":
+            self.__scale_to_input__()
         elif self.ctype == "flux_diff":
             self.__vardeltaout__()
             self.__flux_diff__()
@@ -812,7 +814,23 @@ class Connect(esbmtkBase):
         """Just a wrapper to keep the if statement manageable"""
 
         ph = PassiveFlux(
-            name="_PF", reservoir=self.r, register=self.fh, flux=self.fh
+            name="_PF",
+            reservoir=self.r,
+            register=self.fh,
+            flux=self.fh,
+            scale=self.scale,
+        )  # initialize a passive flux process object
+        self.lop.append(ph)  # add this process to the process list
+
+    def __scale_to_input__(self) -> None:
+        """Just a wrapper to keep the if statement manageable"""
+
+        ph = ScaleRelativeToInputFluxes(
+            name="_SRTIF",
+            reservoir=self.r,
+            register=self.fh,
+            flux=self.fh,
+            scale=self.scale,
         )  # initialize a passive flux process object
         self.lop.append(ph)  # add this process to the process list
 

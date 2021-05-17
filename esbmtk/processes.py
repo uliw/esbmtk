@@ -512,6 +512,44 @@ class PassiveFlux(Process):
     # self.f.d[i] = reservoir.d[i - 1]
 
 
+class ScaleRelativeToInputFluxes(PassiveFlux):
+    """Scale output flux relative to the input fluxes"""
+
+    def __delayed_init__(self) -> None:
+        """
+        Initialize stuff which is only known after the entire model has been defined.
+        This will be executed just before running the model.
+
+        Specifically, find all input fluxes
+        """
+
+        print(f"delayed init for {self.name}")
+
+        self.in_fluxes: list = []
+        for i, f in enumerate(self.r.lof):
+            if self.r.lodir[i] > 0:
+                self.in_fluxes.append(f)
+
+    def __call__(self, reservoir: Reservoir, i: int) -> None:
+        """Here we re-balance the flux. That is, we calculate the sum of all fluxes
+        excluding this flux. This sum will be equal to this flux. This will likely only
+        work for outfluxes though.
+
+        Should this be done for output fluxes as well?
+
+        """
+
+        new: float = 0.0
+
+        for j, f in enumerate(self.in_fluxes):
+            # print(f"{f.n} = {f.m[i-1] * reservoir.lio[f]}")
+            new += f.m[i - 1]
+
+        new = new * self.scale
+        # print(f"sum = {new:.0f}\n")
+        self.f[i] = [new, 1, 1, 1]
+
+
 class PassiveFlux_fixed_delta(Process):
     """This process sets the output flux from a reservoir to be equal to
     the sum of input fluxes, so that the reservoir concentration does
@@ -570,47 +608,6 @@ class PassiveFlux_fixed_delta(Process):
 
         # set isotope mass according to keyword value
         self.f[i] = array(get_flux_data(newflux, self.delta, r))
-
-
-class ScaleRelativeToInputFluxes(PassiveFlux):
-    """Scale output flux relative to the input fluxes"""
-
-    def __delayed_init__(self) -> None:
-        """
-        Initialize stuff which is only known after the entire model has been defined.
-        This will be executed just before running the model.
-
-        Specifically, find all input fluxes
-        """
-
-        print(f"delayed init for {self.name}")
-
-        self.in_fluxes: list = []
-        for i, f in enumerate(self.r.lof):
-            if self.lodir[f] > 0:
-                self.in_fluxes.append(f)
-
-
-def __call__(self, reservoir: Reservoir, i: int) -> None:
-    """Here we re-balance the flux. That is, we calculate the sum of all fluxes
-    excluding this flux. This sum will be equal to this flux. This will likely only
-    work for outfluxes though.
-
-    Should this be done for output fluxes as well?
-
-    """
-
-    new: float = 0.0
-
-    # calc sum of fluxes in fws. Note that at this point, not all fluxes
-    # will be known so we need to use the flux values from the previous times-step
-    for j, f in enumerate(self.in_fluxes):
-        # print(f"{f.n} = {f.m[i-1] * reservoir.lio[f]}")
-        new += f.m[i - 1]
-
-    new = new * self.scale
-    # print(f"sum = {new:.0f}\n")
-    self.f[i] = [new, 1, 1, 1]
 
 
 class VarDeltaOut(Process):

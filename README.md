@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgbf8c3f6)
-2.  [News](#org48441a9)
-3.  [Contributing](#orgf5c3555)
-4.  [Installation](#orgb286e70)
-5.  [Documentation](#org07413bb)
-6.  [Todo](#org8625aa9)
-7.  [License](#orge678365)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org707e0cc)
+2.  [News](#org959a50f)
+3.  [Contributing](#orgbb14811)
+4.  [Installation](#org3c91e33)
+5.  [Documentation](#org85a30af)
+6.  [Todo](#org59ddbcb)
+7.  [License](#org96513e9)
 
 
-<a id="orgbf8c3f6"></a>
+<a id="org707e0cc"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,17 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org48441a9"></a>
+<a id="org959a50f"></a>
 
 # News
+
+-   May 13<sup>th</sup>, 0.5.1.3 Multiple regression fixes, the `ref` keyword is
+    now called `ref_reservoirs`. Added two new classes
+    `Reservoir_no_set`, and `VirtualReservoir_no_set`. Both classes are
+    agnostic about changes to their data. `=Reservoir_no_set` will only
+    change in response to fluxes, but will not update concentration
+    data etc. Likewise for `VirtualReservoir_no_set` whose values will
+    only change in response to the associated function
 
 -   May 5<sup>th</sup>,  0.5.0.1 The Datafield Class now accepts lists of datasets. This
     facilitates the grouping of data which belong together into a
@@ -214,7 +222,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgf5c3555"></a>
+<a id="orgbb14811"></a>
 
 # Contributing
 
@@ -224,7 +232,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orgb286e70"></a>
+<a id="org3c91e33"></a>
 
 # Installation
 
@@ -245,7 +253,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org07413bb"></a>
+<a id="org85a30af"></a>
 
 # Documentation
 
@@ -263,7 +271,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org8625aa9"></a>
+<a id="org59ddbcb"></a>
 
 # Todo
 
@@ -272,7 +280,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orge678365"></a>
+<a id="org96513e9"></a>
 
 # License
 
