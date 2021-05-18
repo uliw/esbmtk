@@ -17,12 +17,9 @@
 """
 
 # from pint import UnitRegistry
-from numbers import Number
 from nptyping import *
 from typing import *
 from numpy import array, set_printoptions, arange, zeros, interp, mean
-from pandas import DataFrame
-from copy import deepcopy, copy
 import time
 from time import process_time
 import numba
@@ -31,14 +28,11 @@ from numba import njit, prange
 from numba.typed import List
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 # import pandas as pd
 # import mpmath
 
-import logging
 import time
-import builtins
 import math
 
 
@@ -349,22 +343,6 @@ def summarize_fluxes(a, b, c, d, e, i, dt):
         a[j][4][i] = a[j][0][i] / d[j]
 
 
-# GenericFunction(
-#      name = 'db_VH_generic_function',
-#      function = <function calc_H at 0x7f8bc474c160>,
-#      a1 = VCA,
-#      a2 = DIC,
-#      a3 = SW_db,
-#      a4 = 0,
-#      a5 = 0,
-#      a6 = 0,
-#      act_on = VH,
-#      full_name = 'db_VH_generic_function',
-#  )]
-
-# a1 to a6 should probably be lists so they can contain any type of data
-
-
 def build_vr_list(lor: list) -> tuple:
     """Build lists which contain all function references for
     virtual reservoirs as well aas their input values
@@ -400,57 +378,6 @@ def build_vr_list(lor: list) -> tuple:
         a7.append(List(a7d))
 
     return fn, a1, a2, a3, a4, a7
-
-
-# def build_flux_lists(lor, iso: bool = False) -> tuple:
-#     """flux_list :list [] contains all fluxes as
-#     [f.m, f.l, f.h, f.d], where each sublist relates to one reservoir
-
-#     i.e. per reservoir we have list [f1, f2, f3], where f1 = [m, l, h, d]
-#     and m = np.array()
-
-#     iso = False/True
-
-#     """
-
-#     r_list: list = List()
-#     v_list: list = List()
-#     r0_list: list = List()
-
-#     f_list: list = List()
-#     dir_list: list = List()
-#     rd_list: list = List()
-#     fd_list: list = List()
-
-#     for r in lor:  # loop over all reservoirs
-#         if r.isotopes == iso:
-#             rd_list = List([r.m, r.l, r.h, r.d, r.c])
-
-#             r_list.append(rd_list)
-#             v_list.append(float(r.volume))
-#             r0_list.append(float(r.sp.r))
-
-#             i = 0
-#             # add fluxes for each reservoir entry
-#             tf: list = List()  # temp list for flux data
-#             td: list = List()  # temp list for direction data
-
-#             # loop over all fluxes
-#             for f in r.lof:
-#                 fd_list = List([f.m, f.l, f.h, f.d])
-#                 tf.append(fd_list)
-#                 td.append(float(r.lodir[i]))
-#                 i = i + 1
-
-#             if len(r.lof) > 0:
-#                 f_list.append(tf)
-#                 dir_list.append(td)
-
-#     # v_list = tuple(v_list)
-#     # r0_list = tuple(r0_list)
-#     # dir_list = tuple(dir_list)
-
-#     return r_list, f_list, dir_list, v_list, r0_list
 
 
 def build_flux_lists_all(lor, iso: bool = False) -> tuple:
