@@ -621,14 +621,15 @@ def carbonate_system(
 
     return v1, v2
 
+
 def calc_carbonates(
-    i: int, #current time-step in the model
-    a1: NDArray[Float[64]], #dic
-    a2: NDArray[Float[64]], #TA
-    a3: NDArray[Float[64]], #SeawaterConstant values
-    a4: NDArray[Float[64]], #Hplus
+    i: int,  # current time-step in the model
+    a1: NDArray[Float[64]],  # dic
+    a2: NDArray[Float[64]],  # TA
+    a3: NDArray[Float[64]],  # SeawaterConstant values
+    a4: NDArray[Float[64]],  # Hplus
 ) -> NDArray[Float[64]]:
-    """ Calculates and returns the carbonate concentrations with the format of
+    """Calculates and returns the carbonate concentrations with the format of
     [d1, d2, d3, d4, d5] where each variable corresponds to
     [H+, CA, HCO3, CO3, CO2(aq)], respectively, at the ith time-step of the model.
 
@@ -685,7 +686,7 @@ def calc_carbonates(
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
-    hplus: float = a4[i-1]
+    hplus: float = a4[i - 1]
 
     k1 = a3[0]
     k2 = a3[1]
@@ -703,9 +704,16 @@ def calc_carbonates(
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
     hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))
     # hco3 and co3
+    """ Since CA = [hco3] + 2[co3], can the below expression can be simplified
+    """
     co3: float = dic / (1 + (hplus / k2) + ((hplus ** 2) / (k1 * k2)))
     hco3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
     # co2 (aq)
+    """DIC = hco3 + co3 + co2 + H2CO3 The last term is however rather
+    small, so it may be ok to simply write co2aq = dic - hco3 + co3.
+    Let's test this once we have a case where pco2 is calculated from co2aq
+    """
+
     co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
 
     return [hplus, ca, hco3, co3, co2aq]
