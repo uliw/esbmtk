@@ -56,10 +56,6 @@ from .solver import (
     execute_e,
 )
 
-# from .sealevel import get_box_geometry_parameters
-
-# test staging
-
 
 class esbmtkBase(object):
     """The esbmtk base class template. This class handles keyword
