@@ -50,6 +50,7 @@ class ReservoirGroup(esbmtkBase):
                     mass/concentration = {DIC:"1 unit", ALK: "1 unit"}
                     plot = {DIC:"yes", ALK:"yes"}  defaults to yes
                     isotopes = {DIC: True/False} see Reservoir class for details
+                    seawater_parameter = dict, optional, see reservoir help text
                )
 
     Notes: - The subreservoirs are derived from the keys in the concentration or mass
@@ -82,6 +83,7 @@ class ReservoirGroup(esbmtkBase):
 
         from . import ureg, Q_
         from .sealevel import get_box_geometry_parameters
+        from .carbonate_chemistry import SeawaterConstants
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -93,6 +95,7 @@ class ReservoirGroup(esbmtkBase):
             "geometry": (str, list),
             "plot": dict,
             "isotopes": dict,
+            "seawater_parameters": (dict, str),
         }
 
         # provide a list of absolutely required keywords
@@ -105,6 +108,7 @@ class ReservoirGroup(esbmtkBase):
         self.lod: Dict[any, any] = {
             "volume": "None",
             "geometry": "None",
+            "seawater_parameters": "None",
         }
 
         if "concentration" in kwargs:
@@ -136,6 +140,9 @@ class ReservoirGroup(esbmtkBase):
         # geoemtry information
         if self.volume == "None":
             get_box_geometry_parameters(self)
+            # reset values, otherwise creation of Reservoir will complain
+            # about volume and geometry being defined
+            self.geometry = "None"
 
         # register a seawater_parameter instance if necessary
         if self.seawater_parameters != "None":
