@@ -1511,6 +1511,7 @@ class Reservoir(ReservoirBase):
                             display_precision = number, optional, inherited from Model
                             register = optional, use to register with Reservoir Group
                             isotopes = True/False otherwise use Model.m_type
+                            seawater_properties = [T: 25, S:35, P: 1], optional (see below)
                             )
 
           You must either give mass or concentration.  The result will always be displayed
@@ -1531,6 +1532,12 @@ class Reservoir(ReservoirBase):
                  self.area_dz: area of seafloor which is intercepted by this box.
                  self.area_fraction: area of seafloor which is intercepted by this
                                     relative to the total ocean floor area
+
+          Adding seawater_properties:
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          If this optional parameter is specified, a SeaWaterConstants instance will be registered
+          for this Reservoir as Reservoir.swc
+          See the  SeaWaterConstants class for details how to specify the parameters
 
           Using a transform function
           ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1599,6 +1606,7 @@ class Reservoir(ReservoirBase):
             "display_precision": Number,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "full_name": str,
+            "seawater_parameters": dict,
             "isotopes": bool,
             "a1": any,
             "a2": any,
@@ -1635,6 +1643,7 @@ class Reservoir(ReservoirBase):
             "register": "None",
             "full_name": "Not Set",
             "isotopes": False,
+            "seawater_parameters": "None",
             "a1": numba.typed.List.empty_list(nbt.float64),
             "a2": numba.typed.List.empty_list(nbt.float64),
             "a3": numba.typed.List.empty_list(nbt.float64),
@@ -1721,6 +1730,30 @@ class Reservoir(ReservoirBase):
         # any auxilliary init - normally empty, but we use it here to extend the
         # reservoir class in virtual reservoirs
         self.__aux_inits__()
+
+        if self.seawater_parameters != "None":
+            if "temperature" in self.seawater_parameters:
+                temperature = self.seawater_parameters["temperature"]
+            else:
+                temperature = 25
+            if "salinity" in self.seawater_parameters:
+                salinity = self.seawater_parameters["salinity"]
+            else:
+                salinity = 35
+            if "pressure" in self.seawater_parameters:
+                pressure = self.seawater_parameters["pressure"]
+            else:
+                pressure = 1
+
+            SeawaterConstants(
+                name="swc",
+                model=self.mo,
+                temperature=temperature,
+                pressure=pressure,
+                salinity=salinity,
+                register=self,
+            )
+
         self.state = 0
 
 
