@@ -1430,6 +1430,42 @@ class Flux_Balance(RateConstant):
         raise NotImplementedError("Flux Balance is undefined for isotope calculations")
 
 
+class GasExchange(RateConstant):
+    """
+
+    GasExchange(
+          Source =concentration_air,
+          Sink = concentration_water,
+          solubility=Atmosphere.swc.SA_co2
+          scale = # piston velocity * Ocean Area
+    )
+
+
+    """
+
+    # redefine misc_init which is being called by post-init
+    def __misc_init__(self):
+        """Sort out input variables"""
+
+        # calc solubility b(T,S)
+        # calc co2eq_atm (ppm) as pCO2_at * b
+        pass
+
+    def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
+
+        # set flux
+        # note that the sink delta is co2aq as returned by the carbonate VR
+        self.f[i] = self.scale * (self.sink.d - self.source.c * self.solubility)
+
+    def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
+        """
+        not sure that this correct WRT isotopes
+
+        """
+
+        raise NotImplementedError()
+
+
 class Monod(Process):
     """This process scales the flux as a function of the upstream
     reservoir concentration using a Michaelis Menten type
