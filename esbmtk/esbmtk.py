@@ -1612,7 +1612,7 @@ class Reservoir(ReservoirBase):
         self.lrk: list = [
             "name",
             "species",
-            "volume",
+            ["volume", "geometry"],
             ["mass", "concentration"],
         ]
 
@@ -1661,6 +1661,10 @@ class Reservoir(ReservoirBase):
             self.delta = 0
 
         self.__set_legacy_names__(kwargs)
+
+        # geoemtry information
+        if self.volume == "None":
+            get_box_geometry_parameters(self)
 
         # convert units
         self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
