@@ -280,5 +280,6 @@ def get_box_geometry_parameters(box):
             box.mo.hyp.area_dz(box.geometry[0], box.geometry[1]) * box.area_percentage
         )
         box.area_fraction = box.area_dz / box.mo.hyp.oa
+
     elif box.volume == "None":
         raise ValueError("You need to provide volume or geometry!")
