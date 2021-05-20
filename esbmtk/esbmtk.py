@@ -1606,7 +1606,7 @@ class Reservoir(ReservoirBase):
             "display_precision": Number,
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "full_name": str,
-            "seawater_parameters": dict,
+            "seawater_parameters": (dict, str),
             "isotopes": bool,
             "a1": any,
             "a2": any,
