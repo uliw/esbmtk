@@ -596,15 +596,16 @@ def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
                 concentration=icd[k][0],
                 isotopes=icd[k][1],
                 delta=icd[k][2],
+                seawater_parameters={"temperature": v["T"], " pressure": v["P"]},
             )
 
             if cs:
                 volume = Q_(f"{rg.lor[0].volume} l")
                 carbonate_system(
-                    Q_(f"{swc.ca} mol/l"),
-                    Q_(f"{swc.hplus} mol/l"),
+                    Q_(f"{rg.swc.ca} mol/l"),
+                    Q_(f"{rg.swc.hplus} mol/l"),
                     volume,
-                    swc,
+                    rg.swc,
                     rg,
                 )
 
