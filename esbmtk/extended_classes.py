@@ -28,6 +28,7 @@ from .esbmtk import (
     Sink,
     Flux,
     get_imass,
+    get_delta,
 )
 
 
@@ -135,6 +136,30 @@ class ReservoirGroup(esbmtkBase):
         # geoemtry information
         if self.volume == "None":
             get_box_geometry_parameters(self)
+
+        # register a seawater_parameter instance if necessary
+        if self.seawater_parameters != "None":
+            if "temperature" in self.seawater_parameters:
+                temperature = self.seawater_parameters["temperature"]
+            else:
+                temperature = 25
+            if "salinity" in self.seawater_parameters:
+                salinity = self.seawater_parameters["salinity"]
+            else:
+                salinity = 35
+            if "pressure" in self.seawater_parameters:
+                pressure = self.seawater_parameters["pressure"]
+            else:
+                pressure = 1
+
+            SeawaterConstants(
+                name="swc",
+                model=self.mo,
+                temperature=temperature,
+                pressure=pressure,
+                salinity=salinity,
+                register=self,
+            )
 
         # register this group object in the global namespace
         self.__register_name__()
@@ -1110,6 +1135,174 @@ class Reservoir_no_set(ReservoirBase):
         self.d3[i]: float = value[2]
         self.d4[i]: float = value[3]
         self.d5[i]: float = value[4]
+
+
+class GasReservoir(ReservoirBase):
+    """This object holds reservoir specific information similar to the Reservoir class
+
+          Example::
+
+                  Reservoir(name = "foo",     # Name of reservoir
+                            species = CO2,    # Species handle
+                            delta = 20,       # initial delta - optional (defaults  to 0)
+                            reservoir_mass = quantity # total mass of all gases
+                            species_ppm =  number # concentration in ppm
+                            plot = "yes"/"no", defaults to yes
+                            plot_transform_c = a function reference, optional (see below)
+                            legend_left = str, optional, useful for plot transform
+                            display_precision = number, optional, inherited from Model
+                            register = optional, use to register with Reservoir Group
+                            isotopes = True/False otherwise use Model.m_type
+                            )
+
+
+
+    Accesing Reservoir Data:
+    ~~~~~~~~~~~~~~~~~~~~~~~~
+
+    You can access the reservoir data as:
+
+    - Name.m # species mass
+    - Name.d # species delta
+    - Name.c # partial pressure
+    - Name.v # total gas mass
+
+    Useful methods include:
+
+    - Name.write_data() # save data to file
+    - Name.info()   # info Reservoir
+    """
+
+    __slots__ = ("m", "l", "h", "d", "c", "lio", "rvalue", "lodir", "lof", "lpc")
+
+    def __init__(self, **kwargs) -> None:
+        """Initialize a reservoir."""
+
+        from . import ureg, Q_, ConnectionGroup
+
+        # provide a dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            "name": str,
+            "species": Species,
+            "delta": (Number, str),
+            "reservoir_mass": (str, Q_),
+            "species_ppm": (str, Q_),
+            "plot_transform_c": any,
+            "legend_left": str,
+            "plot": str,
+            "groupname": str,
+            "function": any,
+            "display_precision": Number,
+            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "full_name": str,
+            "isotopes": bool,
+            "a1": any,
+            "a2": any,
+            "a3": any,
+            "a4": any,
+            "a5": any,
+            "a6": any,
+            "geometry": str,  # not used but must be present
+        }
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = [
+            "name",
+            "species",
+            "species_ppm",
+            "reservoir_mass",
+        ]
+
+        # setter substitutions
+        # self.drn = {
+        #     "concentration": "_concentration",
+        # }
+
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            "delta": 0,
+            "plot": "yes",
+            "plot_transform_c": "None",
+            "legend_left": "None",
+            "function": "None",
+            "groupname": "None",
+            "register": "None",
+            "full_name": "Not Set",
+            "isotopes": False,
+            "a1": numba.typed.List.empty_list(nbt.float64),
+            "a2": numba.typed.List.empty_list(nbt.float64),
+            "a3": numba.typed.List.empty_list(nbt.float64),
+            "a4": List(np.zeros(3)),
+            "display_precision": 0,
+            "geometry": "None",  # not used but must be there
+        }
+
+        # validate and initialize instance variables
+        self.__initerrormessages__()
+        self.bem.update(
+            {
+                "reservoir_mass": "a  string or quantity",
+                "species_ppm": "a number",
+                "plot": "yes or no",
+                "register": "Group Object",
+                "legend_left": "A string",
+                "function": "A function",
+            }
+        )
+        self.__validateandregister__(kwargs)
+
+        self.__set_legacy_names__(kwargs)
+
+        # setup base data
+        if isinstance(self.reservoir_mass, str):
+            self.reservoir_mass = Q_(self.reservoir_mass)
+        if isinstance(self.species_ppm, str):
+            self.species_ppm = Q_(self.species_ppm)
+
+        self.species_mass = (self.reservoir_mass * self.species_ppm).to("mol")
+
+        # we use the existing approach to calculate concentration
+        # which will divide species_mass/volume.
+        self.volume: Number = (
+            Q_(self.species_mass).magnitude / self.species_ppm.to("dimensionless")
+        ).magnitude
+
+        self.v: float = self.volume  # reservoir volume
+        # This should probably be species specific?
+        self.mu: str = "ppm"  # massunit xxxx
+
+        # save the unit which was provided by the user for display purposes
+        # left y-axis label
+        self.lm: str = f"{self.species.n} [{self.mu}]"
+
+        # initialize vectors
+        self.m: [NDArray, Float[64]] = (
+            zeros(self.species.mo.steps) + self.species_mass.magnitude
+        )
+        self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
+        self.h: [NDArray, Float[64]] = zeros(self.mo.steps)
+        self.c: [NDArray, Float[64]] = self.m / self.v
+        # initialize concentration vector
+        self.c: [NDArray, Float[64]] = self.m / self.v
+        # isotope mass
+        [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
+        # delta of reservoir
+        self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.species.r)
+
+        self.mo.lor.append(self)  # add this reservoir to the model
+        # register instance name in global name space
+        self.__register_name__()
+
+        # decide which setitem functions to use
+        if self.isotopes:
+            self.__set_data__ = self.__set_with_isotopes__
+        else:
+            self.__set_data__ = self.__set_without_isotopes__
+
+        # any auxilliary init - normally empty, but we use it here to extend the
+        # reservoir class in virtual reservoirs
+        self.__aux_inits__()
+        self.state = 0
 
 
 class VirtualReservoir(Reservoir):
