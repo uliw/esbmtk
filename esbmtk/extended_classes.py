@@ -51,6 +51,7 @@ class ReservoirGroup(esbmtkBase):
                     plot = {DIC:"yes", ALK:"yes"}  defaults to yes
                     isotopes = {DIC: True/False} see Reservoir class for details
                     seawater_parameter = dict, optional, see reservoir help text
+                    carbonate_system= False, see below
                )
 
     Notes: - The subreservoirs are derived from the keys in the concentration or mass
@@ -76,6 +77,21 @@ class ReservoirGroup(esbmtkBase):
                  self.area_fraction: area of seafloor which is intercepted by this
                                     relative to the total ocean floor area
 
+
+    carbonate_system:
+    ~~~~~~~~~~~~~~~~~
+
+    If the reservoir group has a DIC and TA reservoir, and if the
+    seawater_parameters key has been supplied as well, this keyword
+    will add a carbonate_chemistry chemistry module to the reservoir
+    group. The values of the carbonate system are available assign
+
+    self.cs.H
+    self.cs.CA
+    self.cs.HCO3
+    self.cs.CO3
+    self.CO2aq
+
     """
 
     def __init__(self, **kwargs) -> None:
@@ -83,7 +99,9 @@ class ReservoirGroup(esbmtkBase):
 
         from . import ureg, Q_
         from .sealevel import get_box_geometry_parameters
-        from .carbonate_chemistry import SeawaterConstants
+        from .carbonate_chemistry import SeawaterConstants, calc_carbonates
+        from .extended_classes import VirtualReservoir_no_set
+        from numba.typed import List
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -96,6 +114,7 @@ class ReservoirGroup(esbmtkBase):
             "plot": dict,
             "isotopes": dict,
             "seawater_parameters": (dict, str),
+            "carbonate_system": bool,
         }
 
         # provide a list of absolutely required keywords
@@ -109,6 +128,7 @@ class ReservoirGroup(esbmtkBase):
             "volume": "None",
             "geometry": "None",
             "seawater_parameters": "None",
+            "carbonate_system": False,
         }
 
         if "concentration" in kwargs:
@@ -214,6 +234,53 @@ class ReservoirGroup(esbmtkBase):
             )
             # register as part of this group
             self.lor.append(a)
+
+        # setup the carbonate system
+
+        if self.carbonate_system:
+            # do some sanity checks:
+            if not hasattr(self, "swc"):
+                raise AttributeError(
+                    f"{self.full_name} has no seawaterconstants instance"
+                )
+            if not hasattr(self, "DIC"):
+                raise AttributeError(f"{self.full_name} has no DIC reservoir")
+
+            if not hasattr(self, "TA"):
+                raise AttributeError(f"{self.full_name} has no TA reservoir")
+
+            VirtualReservoir_no_set(
+                name="cs",
+                species=CO2,
+                v1=self.swc.hplus,
+                v2=self.swc.ca,
+                v3=self.swc.hco3,
+                v4=self.swc.co3,
+                v5=self.swc.co2,
+                function=calc_carbonates,
+                a1=self.DIC.c,
+                a2=self.ALK.c,
+                a3=List(
+                    [
+                        self.swc.K1,
+                        self.swc.K2,
+                        self.swc.KW,
+                        self.swc.KB,
+                        self.swc.boron,
+                        self.swc.hplus,
+                    ]
+                ),
+                a4=np.zeros(3),
+                register=self,
+            )
+            self.cs.update(a4=self.cs.d1)
+
+            # setup aliases
+            self.cs.H = self.cs.d1
+            self.cs.CA = self.cs.d2
+            self.cs.HCO3 = self.cs.d3
+            self.cs.CO3 = self.cs.d4
+            self.cs.CO2aq = self.cs.d5
 
 
 class SourceSink(esbmtkBase):
