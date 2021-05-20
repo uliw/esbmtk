@@ -135,6 +135,7 @@ class SeawaterConstants(esbmtkBase):
         self.__init_carbon__()
         self.__init_boron__()
         self.__init_water__()
+        self.__init_gasexchange__()
 
         # get total alkalinity
 
@@ -177,6 +178,12 @@ class SeawaterConstants(esbmtkBase):
         self.dic = 0.00204 * swc
         self.boron = 0.00042 * swc
         self.oh = 0.00001 * swc
+
+    def __init_gasexchange__(self) -> None:
+        """Initialize constants for gas-exchange processes"""
+
+        self.water_vapor_partial_pressure()
+        self.co2_solubility_constant()
 
     def __init_carbon__(self) -> None:
         """Calculate the carbon equilibrium values as function of
@@ -327,6 +334,48 @@ class SeawaterConstants(esbmtkBase):
         # print(lnkp)
 
         return exp(lnkp)
+
+    def water_vapor_partial_pressure(self) -> None:
+        """Calculate the water vapor partial pressure at sealevel (1 atm) as
+        a function of temperature and salinity. Eq. after Sarmiento and Gruber 2006
+
+        """
+
+        T = self.temperature + 273.15
+        S = self.salinity
+
+        self.p_H2O = np.exp(
+            24.4543 - 67.4509 * (100 / T) - 4.8489 * np.log(T / 100) - 0.000544 * S
+        )
+
+    def co2_solubility_constant(self) -> None:
+        """Calculate the solubility of CO2 at a given temperature and salinity. Coefficients
+        after Sarmiento and Gruber 2006 which includes corrections for CO2 to correct for non
+        ideal gas behavior
+
+        """
+
+        # Calculate the volumetric solubility function in mol/l/m^3
+        S = self.salinity
+        T = 273.15 + self.temperature
+        A1 = -160.7333
+        A2 = 215.4152
+        A3 = 89.892
+        A4 = -1.47759
+        B1 = 0.029941
+        B2 = -0.027455
+        B3 = 0.0053407
+        ln_F = (
+            A1
+            + A2 * (100 / T)
+            + A3 * np.log(T / 100)
+            + A4 * (T / 100) ** 2
+            + S * (B1 + B2 * (T / 100) + B3 * (T / 100) ** 2)
+        )
+        F = np.exp(ln_F) * 1e6
+
+        # correct for water vapor partial pressure
+        self.SA_co2 = F / (1 - self.p_H2O)
 
 
 @njit
