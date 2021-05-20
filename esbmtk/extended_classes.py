@@ -259,7 +259,7 @@ class ReservoirGroup(esbmtkBase):
                 v5=self.swc.co2,
                 function=calc_carbonates,
                 a1=self.DIC.c,
-                a2=self.ALK.c,
+                a2=self.TA.c,
                 a3=List(
                     [
                         self.swc.K1,
@@ -1522,7 +1522,7 @@ class VirtualReservoir_no_set(Reservoir_no_set):
 
         # we only depend on the above function. so no need
         # to be in the reservoir list
-        print("removing")
+
         self.mo.lor.remove(self)
         # but lets keep track of  virtual reservoir in lvr.
         self.mo.lvr.append(self)
