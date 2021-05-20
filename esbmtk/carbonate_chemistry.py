@@ -84,6 +84,7 @@ class SeawaterConstants(esbmtkBase):
             "temperature": (int, float),
             "pH": (int, float),
             "pressure": Number,
+            "register": any,
         }
 
         # provide a list of absolutely required keywords
@@ -94,6 +95,7 @@ class SeawaterConstants(esbmtkBase):
             "temperature": 25.0,
             "pH": 8.1,
             "pressure": 0,
+            "register": "None",
         }
 
         # validate input and initialize instance variables
@@ -729,7 +731,9 @@ def calc_carbonates(
 
 
     Author: M. Niazi & T. Tsan, 2021
+
     """
+
     dic: float = a1[i - 1]
     ta: float = a2[i - 1]
 
