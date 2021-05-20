@@ -7,6 +7,11 @@ Q_ = ureg.Quantity
 
 ureg.define("Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups")
 ureg.define("Mol = 1 * mol / liter = M")
+ureg.define("fraction = [] = frac")
+ureg.define("percent = 1e-2 frac = pct")
+ureg.define("permil = 1e-3 fraction")
+ureg.define("ppm = 1e-6 fraction")
+
 
 # import utility_functions
 # import esbmtk
