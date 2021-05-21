@@ -673,6 +673,56 @@ def carbonate_system(
     return v1, v2
 
 
+def carbonate_system_new(
+    ca_con: float,
+    hplus_con: float,
+    volume: float,
+    swc: SeawaterConstants,
+    rg: ReservoirGroup = "None",
+) -> tuple:
+
+    """Setup the virtual reservoir which will calculate H+, CA, HCO3, CO3, CO2a
+
+    You must provide
+    ca_con: initial carbonate concentration. Must be a quantity
+    hplus_con: initial H+ concentration. Must be a quantity
+    volume: volume : Must be a quantity for reservoir definition but when  used
+    as argumment to the functionn it muts be converted to magnitude
+
+    swc : a seawater constants object
+    rg: optional, must be a reservoir group. If present, the below reservoirs
+        will be registered with this group.
+
+    Returns the reservoir handles to VCA and VH
+
+    All list type objects must be converted to numba Lists, if the function is to be used with
+    the numba solver.
+
+    """
+
+    from esbmtk import VirtualReservoir_no_set, calc_carbonates
+
+    VirtualReservoir_no_set(
+        name="cs",
+        species=CO2,
+        v1=rg.swc.hplus,
+        v2=rg.swc.ca,
+        v3=rg.swc.hco3,
+        v4=rg.swc.co3,
+        v5=rg.swc.co2,
+        function=calc_carbonates,
+        a1=Ocean.DIC.c,
+        a2=Ocean.TA.c,
+        a3=List(
+            [rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, rg.swc.hplus]
+        ),
+        a4=np.zeros(3),
+        register=Ocean,
+    )
+    Ocean.cs.update(a4=Ocean.cs.d1)
+
+
+@njit
 def calc_carbonates(
     i: int,  # current time-step in the model
     a1: NDArray[Float[64]],  # dic
