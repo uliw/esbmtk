@@ -610,7 +610,7 @@ def calc_pCO2b(
     return pco2
 
 
-def carbonate_system(
+def carbonate_system_old(
     ca_con: float,
     hplus_con: float,
     volume: float,
@@ -706,20 +706,16 @@ def carbonate_system_new(
         name="cs",
         species=CO2,
         v1=rg.swc.hplus,
-        v2=rg.swc.ca,
-        v3=rg.swc.hco3,
-        v4=rg.swc.co3,
-        v5=rg.swc.co2,
         function=calc_carbonates,
-        a1=Ocean.DIC.c,
-        a2=Ocean.TA.c,
+        a1=rg.DIC.c,
+        a2=rg.TA.c,
         a3=List(
             [rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, rg.swc.hplus]
         ),
         a4=np.zeros(3),
-        register=Ocean,
+        register=rg,
     )
-    Ocean.cs.update(a4=Ocean.cs.d1)
+    rg.cs.update(a4=rg.cs.d1)
 
 
 @njit
@@ -753,16 +749,12 @@ def calc_carbonates(
     > VirtualReservoir_no_set(
         name="V_combo",
         species=CO2,
-        v1=SW.hplus,
-        v2=SW.ca,
-        v3=SW.hco3,
-        v4=SW.co3,
-        v5=SW.co2,
+        v1=SW.hplus, # initial value for data field 1
         plot="yes",
         function=carbonate_chemistry.calc_carbonates,
         a1= Ocean.DIC.c,
         a2= Ocean.ALK.c,
-        a3=List([SW.K1, SW.K2, SW.KW, SW.KB, SW.boron, SW.hplus]),
+        a3=List([SW.K1, SW.K2, SW.KW, SW.KB, SW.boron]),
         a4=np.zeros(3),
         register=Ocean
      )
@@ -805,6 +797,7 @@ def calc_carbonates(
     # hplus
     gamm: float = dic / ca
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
+
     hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))
     # hco3 and co3
     """ Since CA = [hco3] + 2[co3], can the below expression can be simplified
@@ -819,4 +812,5 @@ def calc_carbonates(
 
     co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
 
-    return [hplus, ca, hco3, co3, co2aq]
+    return hplus, ca, hco3, co3, co2aq
+    # return 1, 2, 3, 4, 5
