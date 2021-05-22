@@ -181,7 +181,9 @@ class GenericFunction(Process):
 
             # calc some stuff and return it as
 
-            return [m, l, h, d, c] # where m= mass, and l & h are the respective
+            # note that the results are _not_ returned as a list!
+
+            return m, l, h, d, c   # where m= mass, and l & h are the respective
                                    # isotopes. d denotes the delta value and
                                    # c the concentration
                                    # Use dummy value as necessary.
