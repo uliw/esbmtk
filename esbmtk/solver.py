@@ -200,7 +200,7 @@ def execute_n(
     ratio: float = lor[0].sp.r
     ratio = 1
 
-    fn_vr, a1, a2, a3, a4, a5, a6, a7, count = build_vr_list(lpc_r)
+    fn_vr, a1, a2, a3, a4, a7, count = build_vr_list(lpc_r)
     fn, rd, fd, pc = build_process_list(lor)
     a, b, c, d, e = build_flux_lists_all(lor)
     for t in time[1:-1]:  # loop over the time vector except the first
@@ -321,7 +321,7 @@ def foo(fn_vr, a1, a2, a3, a4, a7, fn, rd, fd, pc, a, b, c, d, e, maxt, dt):
 
 
 @njit(parallel=False, fastmath=True)
-def foo_no_vr(fn_vr, a1, a2, a3, a4, a7, fn, rd, fd, pc, a, b, c, d, e, maxt, dt):
+def foo_no_vr(fn, rd, fd, pc, a, b, c, d, e, maxt, dt):
     """Same as foo but no virtual reservoirs present."""
     i = 1
     for t in maxt:
