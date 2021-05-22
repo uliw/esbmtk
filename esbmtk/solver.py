@@ -200,7 +200,7 @@ def execute_n(
     ratio: float = lor[0].sp.r
     ratio = 1
 
-    fn_vr, a1, a2, a3, a4, a5, a6, a7 = build_vr_list(lpc_r)
+    fn_vr, a1, a2, a3, a4, a5, a6, a7, count = build_vr_list(lpc_r)
     fn, rd, fd, pc = build_process_list(lor)
     a, b, c, d, e = build_flux_lists_all(lor)
     for t in time[1:-1]:  # loop over the time vector except the first
@@ -237,7 +237,7 @@ def execute_e(
     # this has nothing todo with self.time below!
     start: float = process_time()
     dt: float = lor[0].mo.dt
-    fn_vr, a1, a2, a3, a4, a7 = build_vr_list(lpc_r)
+    fn_vr, a1, a2, a3, a4, a7, count = build_vr_list(lpc_r)
     fn, rd, fd, pc = build_process_list(lor)
     a, b, c, d, e = build_flux_lists_all(lor)
 
@@ -247,7 +247,29 @@ def execute_e(
 
     wts = time.time()
     start: float = process_time()
-    foo(fn_vr, a1, a2, a3, a4, a7, fn, rd, fd, pc, a, b, c, d, e, time_array[:-1], dt)
+
+    if count > 0:
+        foo(
+            fn_vr,
+            a1,
+            a2,
+            a3,
+            a4,
+            a7,
+            fn,
+            rd,
+            fd,
+            pc,
+            a,
+            b,
+            c,
+            d,
+            e,
+            time_array[:-1],
+            dt,
+        )
+    else:
+        foo_no_vr(fn, rd, fd, pc, a, b, c, d, e, time_array[:-1], dt)
 
     duration: float = process_time() - start
     wcd = time.time() - wts
@@ -296,6 +318,41 @@ def foo(fn_vr, a1, a2, a3, a4, a7, fn, rd, fd, pc, a, b, c, d, e, maxt, dt):
                 i, a1[j], a2[j], a3[j], a4[j]
             )
         i = i + 1  # next time step
+
+
+@njit(parallel=False, fastmath=True)
+def foo_no_vr(fn_vr, a1, a2, a3, a4, a7, fn, rd, fd, pc, a, b, c, d, e, maxt, dt):
+    """Same as foo but no virtual reservoirs present."""
+    i = 1
+    for t in maxt:
+        for j, f_list in enumerate(fn):
+            for u, function in enumerate(f_list):
+                fn[j][u](rd[j][u], fd[j][u], pc[j][u], i)
+
+        # calculate the resulting reservoir concentrations
+        # summarize_fluxes(a, b, c, d, e, i, dt)
+        r_steps: int = len(b)
+        # loop over reservoirs
+        for j in range(r_steps):
+            # for j, r in enumerate(b):  # this will catch the list for each reservoir
+
+            # sum fluxes in each reservoir
+            mass = li = 0.0
+            f_steps = len(b[j])
+            for u in range(f_steps):
+                direction = c[j][u]
+                # for u, f in enumerate(r):  # this should catch each flux per reservoir
+                mass += b[j][u][0][i] * direction  # mass
+                li += b[j][u][1][i] * direction  # li
+
+            # update masses
+            a[j][0][i] = a[j][0][i - 1] + mass * dt  # mass
+            a[j][1][i] = a[j][1][i - 1] + li * dt  # li
+            a[j][2][i] = a[j][0][i] - a[j][1][i]  # hi
+            # update delta
+            a[j][3][i] = 1e3 * (a[j][2][i] / a[j][1][i] - e[j]) / e[j]
+            # update concentrations
+            a[j][4][i] = a[j][0][i] / d[j]
 
 
 @njit
@@ -366,6 +423,7 @@ def build_vr_list(lor: list) -> tuple:
         ).as_type()
     )
 
+    count = 0
     for p in lor:  # loop over reservoir processes
 
         func_name, a1d, a2d, a3d, a4d, a7d = p.get_process_args()
@@ -376,8 +434,9 @@ def build_vr_list(lor: list) -> tuple:
         a3.append(a3d)
         a4.append(a4d)
         a7.append(List(a7d))
+        count = count + 1
 
-    return fn, a1, a2, a3, a4, a7
+    return fn, a1, a2, a3, a4, a7, count
 
 
 def build_flux_lists_all(lor, iso: bool = False) -> tuple:
