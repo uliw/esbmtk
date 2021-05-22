@@ -564,7 +564,8 @@ def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
     """
 
     from esbmtk import SeawaterConstants, ReservoirGroup, build_concentration_dicts
-    from esbmtk import SourceGroup, SinkGroup, carbonate_system, Q_
+    from esbmtk import SourceGroup, SinkGroup, carbonate_system_old, Q_
+    from esbmtk import carbonate_system_new
 
     # parse for sources and sinks, create these and remove them from the list
 
@@ -597,17 +598,18 @@ def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
                 isotopes=icd[k][1],
                 delta=icd[k][2],
                 seawater_parameters={"temperature": v["T"], " pressure": v["P"]},
+                carbonate_system=cs,
             )
 
-            if cs:
-                volume = Q_(f"{rg.lor[0].volume} l")
-                carbonate_system(
-                    Q_(f"{rg.swc.ca} mol/l"),
-                    Q_(f"{rg.swc.hplus} mol/l"),
-                    volume,
-                    rg.swc,
-                    rg,
-                )
+            # if cs:
+            #     volume = Q_(f"{rg.lor[0].volume} l")
+            #     carbonate_system(
+            #         Q_(f"{rg.swc.ca} mol/l"),
+            #         Q_(f"{rg.swc.hplus} mol/l"),
+            #         volume,
+            #         rg.swc,
+            #         rg,
+            #     )
 
     return icd
 
