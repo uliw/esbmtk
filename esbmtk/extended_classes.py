@@ -1132,7 +1132,6 @@ class Reservoir_no_set(ReservoirBase):
         self.lrk: list = [
             "name",
             "species",
-            "v1",
         ]
 
         # list of default values if none provided
@@ -1193,7 +1192,10 @@ class Reservoir_no_set(ReservoirBase):
         self.mo.lor.append(self)  # add this reservoir to the model
         # self.mo.lor.remove(self)
         # but lets keep track of  virtual reservoir in lvr.
-        self.mo.lvr.append(self)
+
+        # this should be done in aux-inits of a derived class if necessary
+        # self.mo.lvr.append(self)
+        # print(f"added {self.name} to lvr 1")
         # register instance name in global name space
         self.__register_name__()
 
@@ -1468,6 +1470,7 @@ class VirtualReservoir(Reservoir):
         self.mo.lor.remove(self)
         # but lets keep track of  virtual reservoir in lvr.
         self.mo.lvr.append(self)
+        # print(f"added {self.name} to lvr 2")
 
     def update(self, **kwargs) -> None:
         """This method allows to update GenericFunction parameters after the
@@ -1523,9 +1526,18 @@ class VirtualReservoir_no_set(Reservoir_no_set):
         # we only depend on the above function. so no need
         # to be in the reservoir list
 
+        # set up aliases so that we do not need to modify the numba
+        # solver related code
+        self.m = self.d1
+        self.l = self.d2
+        self.h = self.d3
+        self.d = self.d4
+        self.c = self.d5
+
         self.mo.lor.remove(self)
         # but lets keep track of  virtual reservoir in lvr.
         self.mo.lvr.append(self)
+        # print(f"added {self.name} to lvr 2")
 
     def update(self, **kwargs) -> None:
         """This method allows to update GenericFunction parameters after the
