@@ -717,7 +717,7 @@ class VarDeltaOut(Process):
             ]
         )
 
-        params = List([reservoir.species.element.r])
+        params = List([float(reservoir.species.element.r)])
 
         return func_name, data, params
 
@@ -988,7 +988,7 @@ class Fractionation(Process):
 
     @staticmethod
     @njit()
-    def p_fractionation(res_data, data, params, i) -> None:
+    def p_fractionation(data, params, i) -> None:
         #
         r: float = params[0]
         a: float = params[1]
@@ -1217,8 +1217,8 @@ class ScaleRelativeToConcentration(RateConstant):
         r: float = params[0]
         s: float = params[1]
 
-        m: float = res_data[5][i - 1] * s
-        d: float = res_data[4][i - 1]  # delta
+        m: float = data[5][i - 1] * s
+        d: float = data[4][i - 1]  # delta
         l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
         data[0][i] = m
         data[1][i] = l
@@ -1285,8 +1285,6 @@ class ScaleRelativeToMass(RateConstant):
             ]
         )
 
-        res_data = List([self.reservoir.m, reservoir.d, reservoir.c])
-        flux_data = List([self.flux.m, self.flux.l, self.flux.h, self.flux.d])
         params = List([float(reservoir.species.element.r), float(self.scale)])
 
         return func_name, data, params
@@ -1298,8 +1296,8 @@ class ScaleRelativeToMass(RateConstant):
 
         r: float = params[0]
         s: float = params[1]
-        m: float = res_data[0][i - 1] * s
-        d: float = res_data[1][i - 1]  # delta
+        m: float = data[0][i - 1] * s
+        d: float = data[1][i - 1]  # delta
         l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
 
         data[0][i] = m
