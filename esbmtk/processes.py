@@ -731,10 +731,10 @@ class VarDeltaOut(Process):
         d: float = data[4][i - 1]  # reservoir delta
         l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
 
-        flux_data[0][i] = m
-        flux_data[1][i] = l
-        flux_data[2][i] = m - l
-        flux_data[3][i] = d
+        data[0][i] = m
+        data[1][i] = l
+        data[2][i] = m - l
+        data[3][i] = d
 
     def __with_isotopes_source__(self, reservoir: Reservoir, i: int) -> None:
         """If the source of the flux is a source, there is only a single delta value.
