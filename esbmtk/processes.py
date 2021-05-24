@@ -707,22 +707,29 @@ class VarDeltaOut(Process):
 
         func_name: function = self.p_vardeltaout
 
-        res_data = List([self.flux.m, delta, reservoir.c])
-        flux_data = List([self.flux.m, self.flux.l, self.flux.h, self.flux.d])
-        proc_const = List([float(reservoir.species.element.r), float(0)])
+        data = List(
+            [
+                self.flux.m,  # 0
+                self.flux.l,  # 1
+                self.flux.h,  # 2
+                self.flux.d,  # 3
+                delta,  # 4
+            ]
+        )
 
-        # print(f"rd = {res_data[2][0]}, fd = {flux_data[0][0]}")
-        return func_name, res_data, flux_data, proc_const
+        params = List([reservoir.species.element.r])
+
+        return func_name, data, params
 
     @staticmethod
     @njit()
-    def p_vardeltaout(res_data, flux_data, proc_const, i) -> None:
+    def p_vardeltaout(data, params, i) -> None:
         # concentration times scale factor
-        # res_data[0] is actually flux data. See get_process args for details
 
-        m: float = res_data[0][i - 1]  # r mass
-        d: float = res_data[1][i - 1]  # delta
-        l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
+        r: float = params[0]  # r-value
+        m: float = data[0][i - 1]  # flux mass
+        d: float = data[4][i - 1]  # reservoir delta
+        l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
 
         flux_data[0][i] = m
         flux_data[1][i] = l
@@ -824,25 +831,37 @@ class ScaleFlux(Process):
 
         func_name: function = self.p_scale_flux
 
-        res_data = List([self.ref_reservoirs.m, reservoir.d, self.ref_reservoirs.m])
-        flux_data = List([self.flux.m, self.flux.l, self.flux.h, self.flux.d])
-        proc_const = List([float(reservoir.species.element.r), float(self.scale)])
+        data = List(
+            [
+                self.flux.m,  # 0
+                self.flux.l,  # 1
+                self.flux.h,  # 2
+                self.flux.d,  # 3
+                self.ref_reservoirs.m,  # 4
+                reservoir.d,  # 5
+            ]
+        )
 
-        return func_name, res_data, flux_data, proc_const
+        params = List([float(reservoir.species.element.r), float(self.scale)])
+
+        return func_name, data, params
 
     @staticmethod
     @njit()
-    def p_scale_flux(res_data, flux_data, proc_const, i) -> None:
+    def p_scale_flux(data, params, i) -> None:
 
-        m: float = res_data[0][i - 1] * proc_const[1]
-        d: float = res_data[1][i - 1]
-        l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
+        r: float = params[0]
+        s: float = params[1]
+        m: float = data[4][i - 1] * s
+        d: float = data[5][i - 1]
+
+        l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
         # print(f"ScaleFlux m = {m:.2e}, scale = {proc_const[1]}")
 
-        flux_data[0][i] = m
-        flux_data[1][i] = l
-        flux_data[2][i] = m - l
-        flux_data[3][i] = d
+        data[0][i] = m
+        data[1][i] = l
+        data[2][i] = m - l
+        data[3][i] = d
 
 
 class Reaction(ScaleFlux):
@@ -955,24 +974,32 @@ class Fractionation(Process):
 
         func_name: function = self.p_fractionation
 
-        res_data = List([reservoir.m, reservoir.d, reservoir.c])
-        flux_data = List([self.flux.m, self.flux.l, self.flux.h, self.flux.d])
-        proc_const = List([float(reservoir.species.element.r), float(self.alpha)])
+        data = List(
+            [
+                self.flux.m,  # 0
+                self.flux.l,  # 1
+                self.flux.h,  # 2
+                self.flux.d,  # 3
+            ]
+        )
+        params = List([float(reservoir.species.element.r), float(self.alpha)])
 
-        return func_name, res_data, flux_data, proc_const
+        return func_name, data, params
 
     @staticmethod
     @njit()
-    def p_fractionation(res_data, flux_data, proc_const, i) -> None:
+    def p_fractionation(res_data, data, params, i) -> None:
         #
-        d: float = flux_data[3][i] + proc_const[1]
-        m: float = flux_data[0][i]
-        l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
+        r: float = params[0]
+        a: float = params[1]
+        d: float = data[3][i] + a
+        m: float = data[0][i]
+        l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
 
-        flux_data[0][i] = m
-        flux_data[1][i] = l
-        flux_data[2][i] = m - l
-        flux_data[3][i] = d
+        data[0][i] = m
+        data[1][i] = l
+        data[2][i] = m - l
+        data[3][i] = d
 
 
 class RateConstant(Process):
@@ -1169,23 +1196,34 @@ class ScaleRelativeToConcentration(RateConstant):
 
         func_name: function = self.p_scale_relative_to_concentration
 
-        res_data = List([reservoir.m, reservoir.d, reservoir.c])
-        flux_data = List([self.flux.m, self.flux.l, self.flux.h, self.flux.d])
-        proc_const = List([float(reservoir.species.element.r), float(self.scale)])
+        data = List(
+            [
+                self.flux.m,  # 0
+                self.flux.l,  # 1
+                self.flux.h,  # 2
+                self.flux.d,  # 3
+                reservoir.d,  # 4
+                reservoir.c,  # 5
+            ]
+        )
+        params = List([float(reservoir.species.element.r), float(self.scale)])
 
-        return func_name, res_data, flux_data, proc_const
+        return func_name, data, params
 
     @staticmethod
     @njit()
-    def p_scale_relative_to_concentration(res_data, flux_data, proc_const, i) -> None:
+    def p_scale_relative_to_concentration(data, params, i) -> None:
         # concentration times scale factor
-        m: float = res_data[2][i - 1] * proc_const[1]
-        d: float = res_data[1][i - 1]  # delta
-        l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
-        flux_data[0][i] = m
-        flux_data[1][i] = l
-        flux_data[2][i] = m - l
-        flux_data[3][i] = d
+        r: float = params[0]
+        s: float = params[1]
+
+        m: float = res_data[5][i - 1] * s
+        d: float = res_data[4][i - 1]  # delta
+        l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+        data[0][i] = m
+        data[1][i] = l
+        data[2][i] = m - l
+        data[3][i] = d
 
 
 class ScaleRelativeToMass(RateConstant):
@@ -1236,63 +1274,38 @@ class ScaleRelativeToMass(RateConstant):
 
         func_name: function = self.p_scale_relative_to_mass
 
+        data = List(
+            [
+                self.flux.m,  # 0
+                self.flux.l,  # 1
+                self.flux.h,  # 2
+                self.flux.d,  # 3
+                self.reservoir.m,  # 4
+                reservoir.d,  # 5
+            ]
+        )
+
         res_data = List([self.reservoir.m, reservoir.d, reservoir.c])
         flux_data = List([self.flux.m, self.flux.l, self.flux.h, self.flux.d])
-        proc_const = List([float(reservoir.species.element.r), float(self.scale)])
+        params = List([float(reservoir.species.element.r), float(self.scale)])
 
-        return func_name, res_data, flux_data, proc_const
+        return func_name, data, params
 
     @staticmethod
     @njit()
-    def p_scale_relative_to_mass(res_data, flux_data, proc_const, i) -> None:
+    def p_scale_relative_to_mass(data, params, i) -> None:
         # concentration times scale factor
-        m: float = res_data[0][i - 1] * proc_const[1]
+
+        r: float = params[0]
+        s: float = params[1]
+        m: float = res_data[0][i - 1] * s
         d: float = res_data[1][i - 1]  # delta
-        l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
-        flux_data[0][i] = m
-        flux_data[1][i] = l
-        flux_data[2][i] = m - l
-        flux_data[3][i] = d
+        l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
 
-    # def p_scale_relative_to_mass(res_data, flux_data, proc_const, i) -> tuple:
-
-    #     m: float = res_data[0][i - 1] * proc_const[1]
-    #     d: float = res_data[1][i - 1]
-    #     l: float = (1000.0 * m) / ((d + 1000.0) * proc_const[0] + 1000.0)
-    #     return [m, l, m - l, d]
-
-
-# class ScaleRelativeToNormalizedMass(RateConstant):
-#     """This process scales the flux as a function of the upstream
-#      reservoir mass M and a constant which describes the
-#      strength of relation between the reservoir concentration and
-#      the flux scaling
-
-#      F = (M/M0 -1) * k
-
-#      where M denotes the mass in the ustream reservoir, M0
-#      denotes the reference mass, and k is a constant
-#      This process is typically called by the connector
-#      instance. However you can instantiate it manually as
-
-
-#      ScaleRelativeToNormalizedConcentration(
-#                        name = "Name",
-#                        reservoir= upstream_reservoir_handle,
-#                        flux = flux handle,
-#                        Scale =  1,
-#                        ref_value = 1e5 # reference_mass
-#     )
-
-#     """
-
-#     def __call__(self, reservoir: Reservoir, i: int) -> None:
-#         """
-#         this will be called by the Model.run() method
-#         """
-#         scale: float = (reservoir.m[i - 1] / self.ref_value - 1) * self.scale
-#         # scale = scale * (scale >= 0)  # prevent negative fluxes.
-#         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
+        data[0][i] = m
+        data[1][i] = l
+        data[2][i] = m - l
+        data[3][i] = d
 
 
 class ScaleRelative2otherReservoir(RateConstant):
