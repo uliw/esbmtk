@@ -252,7 +252,7 @@ class ReservoirGroup(esbmtkBase):
             VirtualReservoir_no_set(
                 name="cs",
                 species=CO2,
-                vr_datafields=List([self.swc.hplus, 0, 0, 0, 0]),
+                vr_datafields=List([self.swc.hplus, 0.0, 0.0, 0.0, 0.0]),
                 function=calc_carbonates,
                 function_input_data=List([self.DIC.c, self.TA.c]),
                 function_params=List(

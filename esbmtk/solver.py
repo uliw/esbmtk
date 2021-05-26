@@ -272,7 +272,7 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, 
         # # functions
         # # calc_v_reservoir_data()
         for j, f in enumerate(fn_vr):
-            fn_vr[j](input_data[j], vr_data[j], vr_params[j], i)
+            fn_vr[j](i, input_data[j], vr_data[j], vr_params[j])
 
         i = i + 1  # next time step
 
@@ -323,11 +323,11 @@ def build_vr_list(lvr: list) -> tuple:
     vr_data = List()  # flux data  flux.m flux.l, flux.h, flux.d
     vr_params = List()  # list of constants
     fn = numba.typed.List.empty_list(
-        types.UniTuple(types.float64, 5)(
-            types.float64[::1],  # input data
-            types.float64[::1],  # vr_data
-            types.ListType(types.float64),  # vr_ params
+        types.UniTuple(types.float64, 4)(
             types.int64,  # i
+            types.ListType(types.float64[::1]),
+            types.ListType(types.float64[::1]),
+            types.ListType(types.float64),  # a3
         ).as_type()
     )
 

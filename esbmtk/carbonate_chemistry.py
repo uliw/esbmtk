@@ -426,8 +426,8 @@ def carbonate_system_new(
 
 
 # def calc_carbonates(input_data, vr_data, params, i)
-# @njit
-def calc_carbonates(input_data, vr_data, params, i):
+@njit
+def calc_carbonates(i, input_data, vr_data, params):
     """Calculates and returns the carbonate concentrations with the format of
     [d1, d2, d3, d4, d5] where each variable corresponds to
     [H+, CA, HCO3, CO3, CO2(aq)], respectively, at the ith time-step of the model.
