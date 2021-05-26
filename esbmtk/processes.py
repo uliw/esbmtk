@@ -141,64 +141,14 @@ class Process(esbmtkBase):
 
 
 class GenericFunction(Process):
-    """This Process class takes a generic function and up to 6 optional
-     function arguments, and will replace the mass value(s) of the
-     given reservoirs with whatever the function calculates. This is
-     particularly useful e.g., to calculate the pH of a given reservoir
-     as function of e.g., Alkalinity and DIC.
+    """This Process class creates a GenericFunction instance which is
+    typically used with the VirtualReservoir, and
+    VirtualReservoir_no_set classes. This class is not user facing,
+    please see the VirtualReservoir_no_set class docstring for the
+    function template of a user provided function.
 
-     Parameters:
-      - name = name of process,
-      - act_on = name of a reservoir this process will act upon
-      - function  = a function reference
-      - a1 to a3,
-
-     in order to use this function we need first declare a function we plan to
-     use with the generic function process. This function needs to follow the
-     below template.
-
-    In order to be compatible with the numba solver, a1 and a2 must be
-    an array of 1-D numpy.arrays i.e., [m, l, h, c]. The array can have
-    any number of arrays though. a3 must be single array (or list)
-    containing an arbitrary number of entries. All numbers in a1 to a3
-    _must_ be of type float64.
-
-    The function must return a list of numbers which correspond to the
-    data which describe a reservoir i.e., mass, light isotope, heavy
-    isotope, delta, and concentration
-
-    In order to use this function we need first declare a function we plan to
-    use with the generic function process. This function needs to follow this
-    template::
-
-        def my_func(i, a1, a2, a3) -> tuple:
-            #
-            # i = index of the current timestep
-            # a1 to a2 =  optional function parameter. These must be present,
-            # even if your function will not use it
-            # will be applied to this reservoir.
-
-            # calc some stuff and return it as
-
-            # note that the results are _not_ returned as a list!
-
-            return m, l, h, d, c   # where m= mass, and l & h are the respective
-                                   # isotopes. d denotes the delta value and
-                                   # c the concentration
-                                   # Use dummy value as necessary.
-
-
-         This function can then be used as::
-
-         GenericFunction(name="foo",
-                 function=my_func,
-                 input_data = List([np.array, ,np.array ....])
-                 vr_data = List([np.array, ,np.array ....])
-                 function_params = List([1.0, 2.1, ...])
-                 model = model handle,
-                 )
-
-     see calc_H in the carbonate chemistry module as example
+    see calc_carbonates in the carbonate chemistry for an example how
+    to write a function for this class.
 
     """
 
