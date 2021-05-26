@@ -272,13 +272,13 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, 
         # # functions
         # # calc_v_reservoir_data()
         for j, f in enumerate(fn_vr):
-            fn_vr[j](input_data, vr_data, vr_params, i)
+            fn_vr[j](input_data[j], vr_data[j], vr_params[j], i)
 
         i = i + 1  # next time step
 
 
 @njit(parallel=False, fastmath=True)
-def foo_no_vr(fn, da, fd, pc, a, b, c, d, e, maxt, dt):
+def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
     """Same as foo but no virtual reservoirs present."""
     i = 1
     for t in maxt:
@@ -312,7 +312,7 @@ def foo_no_vr(fn, da, fd, pc, a, b, c, d, e, maxt, dt):
             a[j][4][i] = a[j][0][i] / d[j]
 
 
-def build_vr_list(lor: list) -> tuple:
+def build_vr_list(lvr: list) -> tuple:
     """Build lists which contain all function references for
     virtual reservoirs as well aas their input values
 
@@ -332,9 +332,9 @@ def build_vr_list(lor: list) -> tuple:
     )
 
     count = 0
-    for p in lor:  # loop over reservoir processes
+    for r in lvr:  # loop over reservoir processes
 
-        func_name, in_d, vr_d, params = p.get_process_args()
+        func_name, in_d, vr_d, params = r.get_process_args()
         fn.append(func_name)
         input_data.append(in_d)
         vr_data.append(vr_d)
