@@ -45,6 +45,7 @@ class Process(esbmtkBase):
         self.bem.update({"rate": "a string"})
         self.bem.update({"scale": "Number or quantity"})
         self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__misc_init__()
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
 
@@ -61,8 +62,6 @@ class Process(esbmtkBase):
         # self.rm0: float = self.r.m[0]  # the initial reservoir mass
         if isinstance(self.r, Reservoir):
             self.direction: Dict[Flux, int] = self.r.lio[self.f]
-
-        self.__misc_init__()
 
     def __delayed_init__(self) -> None:
         """
@@ -193,27 +192,17 @@ class GenericFunction(Process):
 
          GenericFunction(name="foo",
                  function=my_func,
-                 a1 = some argument,
-                 a2 = some argument,
-                 a3 = some argument
-                 a4 = some argument
-                 acton_on = reservoir reference
+                 input_data = List([np.array, ,np.array ....])
+                 vr_data = List([np.array, ,np.array ....])
+                 function_params = List([1.0, 2.1, ...])
+                 model = model handle,
                  )
 
      see calc_H in the carbonate chemistry module as example
 
     """
 
-    __slots__ = (
-        "function",
-        "act_on",
-        "a1",
-        "a2",
-        "a3",
-        "a4",
-        "i",
-        "act_on",
-    )
+    __slots__ = ("function", "input_data", "vr_data", "params")
 
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """
@@ -228,39 +217,30 @@ class GenericFunction(Process):
         # list of allowed keywords
         self.lkk: Dict[str, any] = {
             "name": str,
-            "act_on": (Flux, Reservoir, any),
             "function": any,
-            "a1": any,
-            "a2": any,
-            "a3": any,
-            "a4": any,
-            "act_on": any,
+            "input_data": (List, str),
+            "vr_data": (List, str),
+            "function_params": (List, str),
+            "model": any,
         }
 
         # required arguments
-        self.lrk: list = ["name", "act_on", "function"]
+        self.lrk: list = ["name", "input_data", "vr_data", "function_params", "model"]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {
-            "a1": List(),
-            "a2": List(),
-            "a3": List(),
-            "a4": List(np.zeros(3)),
-            "act_on": List(),
-        }
+        self.lod: Dict[any, any] = {}
 
         self.__initerrormessages__()  # default error messages
         self.bem.update(
             {
-                "act_on": "a reservoir or flux",
                 "function": "a function",
-                "a1": "must be a numpy array",
-                "a2": "must be a numpy array",
-                "a3": "must be a numba List",
-                "a4": "must be a numpy array",
+                "input_data": "list of one or more numpy arrays",
+                "vr_data": "list of one or more numpy arrays",
+                "function_params": "a list of float values",
             }
         )
         self.__validateandregister__(kwargs)  # initialize keyword values
+        self.mo = self.model
 
         if not callable(self.function):
             raise ValueError("function must be defined before it can be used here")
@@ -268,68 +248,30 @@ class GenericFunction(Process):
         self.__postinit__()  # do some housekeeping
         self.__register_name__()  #
 
-        # register with reservoir
-        if isinstance(self.act_on, (Reservoir, Reservoir_no_set)):
-            self.act_on.lpc.append(self)  # register with Reservoir
-            self.act_on.mo.lpc_r.append(self)  # Register with Model
-        elif isinstance(self.act_on, Flux):
-            self.act_on.lpc.append(self)  # register with Flux
-            self.act_on.mo.lpc_f.append(self)  # Register with Model
-        else:
-            raise ValueError(
-                f"functions can only act upon reservoirs or fluxes, not on {type(self.act_on)}"
-            )
-
     def __call__(self, i: int) -> None:
-        """Here we execute the user supplied function and assign the
-        return value to the flux or reservoir
-
+        """Here we execute the user supplied function
         Where i = index of the current timestep
-              acting_on = reservoir or flux we are acting on.
 
         """
 
-        r = self.function(
-            i,
-            self.a1,
-            self.a2,
-            self.a3,
-            self.a4,
-        )
-
-        return r
+        self.function(self.input_data, self.vr_data, self.function_params, i)
 
     # redefine post init
     def __postinit__(self) -> None:
         """Do some housekeeping for the process class"""
-
-        # legacy name aliases
-        self.n: str = self.name  # display name of species
-        self.m: Model = self.act_on.mo  # the model handle
-        self.mo: Model = self.act_on.mo
 
         self.__misc_init__()
 
     def get_process_args(self) -> tuple:
         """return the data associated with this object"""
 
-        func_name: function = self.function
+        self.func_name: function = self.function
 
         return (
-            func_name,
-            self.a1,
-            self.a2,
-            self.a3,
-            self.a4,
-            # List(
-            [
-                self.act_on.m,
-                self.act_on.l,
-                self.act_on.h,
-                self.act_on.d,
-                self.act_on.c,
-            ]
-            # ),
+            self.func_name,
+            self.input_data,
+            self.vr_data,
+            self.function_params,
         )
 
 
@@ -1019,7 +961,7 @@ class RateConstant(Process):
 
         from . import ureg, Q_
         from .connections import SourceGroup, SinkGroup, ReservoirGroup
-        from .connections import ConnectionGroup
+        from .connections import ConnectionGroup, GasReservoir
         from esbmtk import Flux
 
         # Note that self.lkk values also need to be added to the lkk
@@ -1046,10 +988,14 @@ class RateConstant(Process):
                 Flux,
                 str,
             ),
+            "atmosphere": (Reservoir, GasReservoir, Source, Sink),
+            "ocean": (Reservoir, Source, Sink),
+            "solubility": (Number, np.float64),
+            "piston_velocity": Number,
         }
 
         # new required keywords
-        self.lrk.extend(["reservoir", ["scale", "k_value"]])
+        self.lrk.extend([["reservoir", "atmosphere"], ["scale", "k_value"]])
 
         # dict with default values if none provided
         # self.lod = {r
@@ -1073,9 +1019,7 @@ class RateConstant(Process):
         # initialize keyword values
         self.__validateandregister__(kwargs)
 
-        # xxx if self.register != "None":
-        #    self.name = f"{self.register}.{self.name}"
-
+        self.__misc_init__()
         self.__postinit__()  # do some housekeeping
         # legacy variables
         self.mo = self.reservoir.mo
@@ -1093,59 +1037,6 @@ class RateConstant(Process):
         return self.__execute__(reservoir, i)
 
 
-# class ScaleRelativeToNormalizedConcentration(RateConstant):
-#     """This process scales the flux as a function of the upstream
-#      reservoir concentration C and a constant which describes the
-#      strength of relation between the reservoir concentration and
-#      the flux scaling
-
-#      F = (C/C0 -1) * k
-
-#      where C denotes the concentration in the ustream reservoir, C0
-#      denotes the baseline concentration and k is a constant
-#      This process is typically called by the connector
-#      instance. However you can instantiate it manually as
-
-
-#      ScaleRelativeToNormalizedConcentration(
-#                        name = "Name",
-#                        reservoir= upstream_reservoir_handle,
-#                        flux = flux handle,
-#                        Scale =  1000,
-#                        ref_value = 2 # reference_concentration
-#     )
-
-#     """
-
-#     def __call__(self, reservoir: Reservoir, i: int) -> None:
-#         """
-#         this will be called by the Model.run() method
-#         """
-
-#         scale: float = (reservoir.c[i - 1] / self.ref_value - 1) * self.scale
-#         # scale = scale * (scale >= 0)  # prevent negative fluxes.
-#         self.f[i] = self.f[i] + self.f[i] * array([scale, scale, scale, 1])
-
-# from numba import typed, typeof, types
-# from numba.experimental import jitclass
-# import numba
-
-# lmo = typed.List()
-# ldo = typed.List()
-# reg_time = types.float64
-
-# spec = [
-#     ("reservoir.m", numba.float64[:]),
-#     ("i", numba.int32),
-#     ("reservoir.volume", numba.float64),
-#     ("scale", numba.float64),
-#     ("flux.m", numba.float64[:]),
-#     ("reservoir.species.element.r", numba.float64),
-#     ("reservoir.d", numba.float64[:]),
-# ]
-
-
-# @jitclass(spec)
 class ScaleRelativeToConcentration(RateConstant):
     """This process calculates the flux as a function of the upstream
      reservoir concentration C and a constant which describes thet
@@ -1447,10 +1338,11 @@ class GasExchange(RateConstant):
     """
 
     GasExchange(
-          Source =concentration_air,
-          Sink = concentration_water,
-          solubility=Atmosphere.swc.SA_co2
-          scale = # piston velocity * Ocean Area
+          atmosphere =concentration_air,
+          ocean = concentration_water,
+          solubility=Atmosphere.swc.SA_co2,
+          area = area, # m^2
+          piston_velocity = m/year
     )
 
 
@@ -1460,9 +1352,9 @@ class GasExchange(RateConstant):
     def __misc_init__(self):
         """Sort out input variables"""
 
-        # calc solubility b(T,S)
-        # calc co2eq_atm (ppm) as pCO2_at * b
         pass
+        # self.scale = self.area * self.piston_velocity
+        # print("setting scale to {self.scale}")
 
     def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
 
@@ -1477,6 +1369,22 @@ class GasExchange(RateConstant):
         """
 
         raise NotImplementedError()
+
+    def __postinit__(self) -> None:
+        """Do some housekeeping for the process class"""
+
+        # legacy name aliases
+        self.n: str = self.name  # display name of species
+        self.r = self.ocean
+        self.reservoir = self.ocean
+        # self.f: Flux = self.flux
+        self.m: Model = self.r.sp.mo  # the model handle
+        self.mo: Model = self.m
+        self.source = self.atmosphere
+        self.sink = self.ocean
+        print(f"self.name= {self.name}")
+        # self.scale = self.area * self.piston_velocity
+        # print("setting scale to {self.scale}")
 
 
 class Monod(Process):

@@ -51,8 +51,6 @@ from .solver import (
     get_imass,
     get_delta,
     execute,
-    execute_h,
-    execute_n,
     execute_e,
 )
 

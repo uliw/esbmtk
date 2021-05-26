@@ -252,15 +252,10 @@ class ReservoirGroup(esbmtkBase):
             VirtualReservoir_no_set(
                 name="cs",
                 species=CO2,
-                v1=self.swc.hplus,
-                v2=self.swc.ca,
-                v3=self.swc.hco3,
-                v4=self.swc.co3,
-                v5=self.swc.co2,
+                vr_datafields=List([self.swc.hplus, 0, 0, 0, 0]),
                 function=calc_carbonates,
-                a1=self.DIC.c,
-                a2=self.TA.c,
-                a3=List(
+                function_input_data=List([self.DIC.c, self.TA.c]),
+                function_params=List(
                     [
                         self.swc.K1,
                         self.swc.K2,
@@ -270,17 +265,15 @@ class ReservoirGroup(esbmtkBase):
                         self.swc.hplus,
                     ]
                 ),
-                a4=np.zeros(3),
                 register=self,
             )
-            self.cs.update(a4=self.cs.d1)
 
             # setup aliases
-            self.cs.H = self.cs.d1
-            self.cs.CA = self.cs.d2
-            self.cs.HCO3 = self.cs.d3
-            self.cs.CO3 = self.cs.d4
-            self.cs.CO2aq = self.cs.d5
+            self.cs.H = self.cs.vr_data[0]
+            self.cs.CA = self.cs.vr_data[1]
+            self.cs.HCO3 = self.cs.vr_data[2]
+            self.cs.CO3 = self.cs.vr_data[3]
+            self.cs.CO2aq = self.cs.vr_data[4]
 
 
 class SourceSink(esbmtkBase):
@@ -1093,18 +1086,13 @@ class Reservoir_no_set(ReservoirBase):
         values provided in the keywords
 
         """
+
         from . import ureg, Q_, ConnectionGroup
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
-            "v1": Number,
-            "v2": Number,
-            "v3": Number,
-            "v4": Number,
-            "v5": Number,
             "species": Species,
-            "geometry": (list, str),
             "plot_transform_c": any,
             "legend_left": str,
             "plot": str,
@@ -1115,17 +1103,10 @@ class Reservoir_no_set(ReservoirBase):
             "full_name": str,
             "isotopes": bool,
             "volume": (str, Number),
-            "a1": any,
-            "a2": any,
-            "a3": any,
-            "a4": any,
-            "a5": any,
-            "a6": any,
-            "v1_unit": str,
-            "v2_unit": str,
-            "v3_unit": str,
-            "v4_unit": str,
-            "v5_unit": str,
+            "vr_datafields": (List, str),
+            "function_input_data": (List, str),
+            "function_params": (List, str),
+            "geometry": (list, str),
         }
 
         # provide a list of absolutely required keywords
@@ -1146,16 +1127,7 @@ class Reservoir_no_set(ReservoirBase):
             "full_name": "Not Set",
             "isotopes": False,
             "display_precision": 0,
-            "v1": 0,
-            "v2": 0,
-            "v3": 0,
-            "v4": 0,
-            "v5": 0,
-            "v1_unit": "None",
-            "v2_unit": "None",
-            "v3_unit": "None",
-            "v4_unit": "None",
-            "v5_unit": "None",
+            "vr_datafields": [0],
         }
 
         # validate and initialize instance variables
@@ -1179,12 +1151,10 @@ class Reservoir_no_set(ReservoirBase):
 
         # ------------------------------------------
 
-        # initialize mass vector
-        self.d1: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v1
-        self.d2: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v2
-        self.d3: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v3
-        self.d4: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v4
-        self.d5: [NDArray, Float[64]] = zeros(self.mo.steps) + self.v5
+        # initialize data fields
+        self.vr_data = List()
+        for e in self.vr_datafields:
+            self.vr_data.append(zeros(self.mo.steps) + e)
 
         # left y-axis label
         self.lm: str = f"{self.species.n} [{self.mu}/l]"
@@ -1202,15 +1172,177 @@ class Reservoir_no_set(ReservoirBase):
         self.__aux_inits__()
         self.state = 0
 
-    def __setitem__(self, i: int, value: float) -> None:
 
-        """write data by index"""
+class VirtualReservoir_no_set(Reservoir_no_set):
+    """This is the same a regular VR, but adding data to this VR will not
+    recalculate concentrations and isotope values. This is most useful form
+    VR's which use all 5 reservoir arrays to store variables which are only
+    affected by the associated generic function.
 
-        self.d1[i]: float = value[0]
-        self.d2[i]: float = value[1]
-        self.d3[i]: float = value[2]
-        self.d4[i]: float = value[3]
-        self.d5[i]: float = value[4]
+    """
+
+    def __aux_inits__(self) -> None:
+        """We us the regular init methods of the Reservoir Class, and extend it in this method"""
+
+        from .processes import GenericFunction
+
+        # if self.register != "None":
+        #    self.full_name = f"{self.full_name}.{self.name}"
+        name = f"{self.full_name}_generic_function".replace(".", "_")
+        logging.info(f"creating {name}")
+
+        self.gfh = GenericFunction(
+            name=name,
+            function=self.function,
+            input_data=self.function_input_data,
+            vr_data=self.vr_data,
+            function_params=self.function_params,
+            model=self.mo,
+        )
+
+        self.mo.lor.remove(self)
+        # but lets keep track of  virtual reservoir in lvr.
+        self.mo.lvr.append(self)
+        # add the function handle to the list of function to be executed
+        self.mo.lpc_r.append(self.gfh)
+        # print(f"added {self.name} to lvr 2")
+
+    def append(self, **kwargs) -> None:
+        """This method allows to update GenericFunction parameters after the
+        VirtualReservoir has been initialized. This is most useful
+        when parameters have to reference other virtual reservoirs
+        which do not yet exist, e.g., when two virtual reservoirs have
+        a circular reference.
+
+        Example::
+
+        VR.update(a1=new_parameter, a2=new_parameter)
+
+        """
+
+        allowed_keys: list = ["function_input_data, function_params"]
+        # loop over provided kwargs
+        for key, value in kwargs.items():
+            if key not in allowed_keys:
+                raise ValueError(
+                    "you can only change function_input_data, or function_params"
+                )
+            else:
+                getattr(self, key).append(value)
+
+
+class VirtualReservoir(Reservoir):
+    """A virtual reservoir. Unlike regular reservoirs, the mass of a
+    virtual reservoir depends entirely on the return value of a function.
+
+    Example::
+
+    VirtualReservoir(name="foo",
+                    volume="10 liter",
+                    concentration="1 mmol",
+                    species=  ,
+                    function=bar,
+                    a1 to a3 =  to 3optional function arguments,
+                    display_precision = number, optional, inherited from Model,
+                    )
+
+    the concentration argument will be used to initialize the reservoir and
+    to determine the display units.
+
+    The function definition follows the GenericFunction class.
+    which takes a generic function and up to 6 optional
+    function arguments, and will replace the mass value(s) of the
+    given reservoirs with whatever the function calculates. This is
+    particularly useful e.g., to calculate the pH of a given reservoir
+    as function of e.g., Alkalinity and DIC.
+    Parameters:
+     - name = name of process,
+     - act_on = name of a reservoir this process will act upon
+     - function  = a function reference
+     - a1 to a3 function arguments
+
+    In order to be compatible with the numba solver, a1 and a2 must be
+    an array of 1-D numpy.arrays i.e., [m, l, h, c]. The array can have
+    any number of arrays though. a3 must be single array (or list).
+    The a3 array must be passed as List([...]), and List must be imported as
+
+    from numba.typed import List
+
+
+    The function must return a list of numbers which correspond to the
+    data which describe a reservoir i.e., mass, light isotope, heavy
+    isotope, delta, and concentration
+
+    In order to use this function we need first declare a function we plan to
+    use with the generic function process. This function needs to follow this
+    template::
+
+        def my_func(i, a1, a2, a3) -> tuple:
+            #
+            # i = index of the current timestep
+            # a1 to a3 =  optional function parameter. These must be present,
+            # even if your function will not use it See above for details
+
+            # calc some stuff and return it as
+
+            return [m, l, h, d, c] # where m= mass, and l & h are the respective
+                                   # isotopes. d denotes the delta value and
+                                   # c the concentration
+                                   # Use dummy value as necessary.
+
+    This class provides an update method to resolve cases where e.g., two virtual
+    reservoirs have a circular reference. See the documentation of update().
+
+    """
+
+    def __aux_inits__(self) -> None:
+        """We us the regular init methods of the Reservoir Class, and extend it in this method"""
+
+        from .processes import GenericFunction
+
+        # if self.register != "None":
+        #    self.full_name = f"{self.full_name}.{self.name}"
+        name = f"{self.full_name}_generic_function".replace(".", "_")
+        logging.info(f"creating {name}")
+
+        self.gfh = GenericFunction(
+            name=name,
+            function=self.function,
+            a1=self.a1,
+            a2=self.a2,
+            a3=self.a3,
+            a4=self.a4,
+            act_on=self,
+        )
+
+        # we only depend on the above function. so no need
+        # to be in the reservoir list
+        self.mo.lor.remove(self)
+        # but lets keep track of  virtual reservoir in lvr.
+        self.mo.lvr.append(self)
+        # print(f"added {self.name} to lvr 2")
+
+    def update(self, **kwargs) -> None:
+        """This method allows to update GenericFunction parameters after the
+        VirtualReservoir has been initialized. This is most useful
+        when parameters have to reference other virtual reservoirs
+        which do not yet exist, e.g., when two virtual reservoirs have
+        a circular reference.
+
+        Example::
+
+        VR.update(a1=new_parameter, a2=new_parameter)
+
+        """
+
+        allowed_keys: list = ["a1", "a2", "a3", "a4", "a5", "a6", "volume"]
+        # loop over provided kwargs
+        for key, value in kwargs.items():
+            if key not in allowed_keys:
+                raise ValueError("you can only change a1 to a6")
+            else:
+                setattr(self, key, value)  # update self
+                setattr(self.gfh, key, value)  # update function
 
 
 class GasReservoir(ReservoirBase):
@@ -1379,187 +1511,6 @@ class GasReservoir(ReservoirBase):
         # reservoir class in virtual reservoirs
         self.__aux_inits__()
         self.state = 0
-
-
-class VirtualReservoir(Reservoir):
-    """A virtual reservoir. Unlike regular reservoirs, the mass of a
-    virtual reservoir depends entirely on the return value of a function.
-
-    Example::
-
-    VirtualReservoir(name="foo",
-                    volume="10 liter",
-                    concentration="1 mmol",
-                    species=  ,
-                    function=bar,
-                    a1 to a3 =  to 3optional function arguments,
-                    display_precision = number, optional, inherited from Model,
-                    )
-
-    the concentration argument will be used to initialize the reservoir and
-    to determine the display units.
-
-    The function definition follows the GenericFunction class.
-    which takes a generic function and up to 6 optional
-    function arguments, and will replace the mass value(s) of the
-    given reservoirs with whatever the function calculates. This is
-    particularly useful e.g., to calculate the pH of a given reservoir
-    as function of e.g., Alkalinity and DIC.
-    Parameters:
-     - name = name of process,
-     - act_on = name of a reservoir this process will act upon
-     - function  = a function reference
-     - a1 to a3 function arguments
-
-    In order to be compatible with the numba solver, a1 and a2 must be
-    an array of 1-D numpy.arrays i.e., [m, l, h, c]. The array can have
-    any number of arrays though. a3 must be single array (or list).
-    The a3 array must be passed as List([...]), and List must be imported as
-
-    from numba.typed import List
-
-
-    The function must return a list of numbers which correspond to the
-    data which describe a reservoir i.e., mass, light isotope, heavy
-    isotope, delta, and concentration
-
-    In order to use this function we need first declare a function we plan to
-    use with the generic function process. This function needs to follow this
-    template::
-
-        def my_func(i, a1, a2, a3) -> tuple:
-            #
-            # i = index of the current timestep
-            # a1 to a3 =  optional function parameter. These must be present,
-            # even if your function will not use it See above for details
-
-            # calc some stuff and return it as
-
-            return [m, l, h, d, c] # where m= mass, and l & h are the respective
-                                   # isotopes. d denotes the delta value and
-                                   # c the concentration
-                                   # Use dummy value as necessary.
-
-    This class provides an update method to resolve cases where e.g., two virtual
-    reservoirs have a circular reference. See the documentation of update().
-
-    """
-
-    def __aux_inits__(self) -> None:
-        """We us the regular init methods of the Reservoir Class, and extend it in this method"""
-
-        from .processes import GenericFunction
-
-        # if self.register != "None":
-        #    self.full_name = f"{self.full_name}.{self.name}"
-        name = f"{self.full_name}_generic_function".replace(".", "_")
-        logging.info(f"creating {name}")
-
-        self.gfh = GenericFunction(
-            name=name,
-            function=self.function,
-            a1=self.a1,
-            a2=self.a2,
-            a3=self.a3,
-            a4=self.a4,
-            act_on=self,
-        )
-
-        # we only depend on the above function. so no need
-        # to be in the reservoir list
-        self.mo.lor.remove(self)
-        # but lets keep track of  virtual reservoir in lvr.
-        self.mo.lvr.append(self)
-        # print(f"added {self.name} to lvr 2")
-
-    def update(self, **kwargs) -> None:
-        """This method allows to update GenericFunction parameters after the
-        VirtualReservoir has been initialized. This is most useful
-        when parameters have to reference other virtual reservoirs
-        which do not yet exist, e.g., when two virtual reservoirs have
-        a circular reference.
-
-        Example::
-
-        VR.update(a1=new_parameter, a2=new_parameter)
-
-        """
-
-        allowed_keys: list = ["a1", "a2", "a3", "a4", "a5", "a6", "volume"]
-        # loop over provided kwargs
-        for key, value in kwargs.items():
-            if key not in allowed_keys:
-                raise ValueError("you can only change a1 to a6")
-            else:
-                setattr(self, key, value)  # update self
-                setattr(self.gfh, key, value)  # update function
-
-
-class VirtualReservoir_no_set(Reservoir_no_set):
-    """This is the same a regular VR, but adding data to this VR will not
-    recalculate concentrations and isotope values. This is most useful form
-    VR's which use all 5 reservoir arrays to store variables which are only
-    affected by the associated generic function.
-
-    """
-
-    def __aux_inits__(self) -> None:
-        """We us the regular init methods of the Reservoir Class, and extend it in this method"""
-
-        from .processes import GenericFunction
-
-        # if self.register != "None":
-        #    self.full_name = f"{self.full_name}.{self.name}"
-        name = f"{self.full_name}_generic_function".replace(".", "_")
-        logging.info(f"creating {name}")
-
-        self.gfh = GenericFunction(
-            name=name,
-            function=self.function,
-            a1=self.a1,
-            a2=self.a2,
-            a3=self.a3,
-            a4=self.a4,
-            act_on=self,
-        )
-
-        # we only depend on the above function. so no need
-        # to be in the reservoir list
-
-        # set up aliases so that we do not need to modify the numba
-        # solver related code
-        self.m = self.d1
-        self.l = self.d2
-        self.h = self.d3
-        self.d = self.d4
-        self.c = self.d5
-
-        self.mo.lor.remove(self)
-        # but lets keep track of  virtual reservoir in lvr.
-        self.mo.lvr.append(self)
-        # print(f"added {self.name} to lvr 2")
-
-    def update(self, **kwargs) -> None:
-        """This method allows to update GenericFunction parameters after the
-        VirtualReservoir has been initialized. This is most useful
-        when parameters have to reference other virtual reservoirs
-        which do not yet exist, e.g., when two virtual reservoirs have
-        a circular reference.
-
-        Example::
-
-        VR.update(a1=new_parameter, a2=new_parameter)
-
-        """
-
-        allowed_keys: list = ["a1", "a2", "a3", "a4", "a5", "a6", "volume"]
-        # loop over provided kwargs
-        for key, value in kwargs.items():
-            if key not in allowed_keys:
-                raise ValueError("you can only change a1 to a6")
-            else:
-                setattr(self, key, value)  # update self
-                setattr(self.gfh, key, value)  # update function
 
 
 class ExternalData(esbmtkBase):

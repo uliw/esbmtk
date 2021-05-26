@@ -380,299 +380,6 @@ class SeawaterConstants(esbmtkBase):
         self.SA_co2 = F / (1 - self.p_H2O)
 
 
-@njit
-def calc_H(
-    i: int,
-    a1: NDArray[Float[64]],  # carbonate alkalinity
-    a2: NDArray[Float[64]],  # dic
-    a3: NDArray[Float[64]],
-    a4: NDArray[Float[64]],
-):
-
-    """
-
-    This function will calculate the H+ concentration at t=i
-    time step. Returns a tuple in the form of [m, l, h] which pertains to
-    the mass, and respective isotopes of the element. l and h will
-    default to 1. Calculations are based off equations from Follows et al., 2006.
-    doi:10.1016/j.ocemod.2005.05.004
-
-    a1 = carbonate alkalinity concentrations
-    a2 = dic concentrations
-    a3 = [ list of SeawaterConstants]
-
-    i = index of current timestep
-    a1 to a3 = optional fcn parameters. These must be present
-    even if your function will not use it. These will default to 0.
-
-    Limitations: Assumes concentrations are in mol/L
-
-    This function can then be used in conjunction with a VirtualReservoir, e.g.,
-
-    VirtualReservoir(
-         name="V_H",
-         species=Hplus,
-         concentration=f"{SW.hplus*1000} mmol/l",
-         volume=volume,
-         plot_transform_c=phc,
-         legend_left="pH",
-         function=calc_H,
-         a1=V_CA.c,
-         a2=DIC.c,
-         a3=[SW constants],
-         a4=[array] # muust be provided, but can be empty
-    )
-
-    Author: M. Niazi & T. Tsan, 2021
-
-    The function will not return a value, bur rather write directly to ref!
-
-    """
-
-    # from esbmtk import phc
-
-    ca: float = a1[i - 1]  # mol/L
-    dic: float = a2[i - 1]  # mol/L
-    k1 = a3[0]
-    k2 = a3[1]
-    volume = a3[2]
-
-    gamm: float = dic / ca
-    dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
-    c: float = 0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))
-    m: float = c * volume
-
-    # print(f"DIC = {dic*1000}, ca = {ca*1000}")
-    # print(f"new pH = {phc(c)}")
-
-    return m, 1.0, 1.0, 1.0, c
-
-
-@njit
-def calc_CA(
-    i: int,
-    a1: NDArray[Float[64]],  # Total Alkalinity
-    a2: NDArray[Float[64]],  # Hplus
-    a3: NDArray[Float[64]],
-    a4: NDArray[Float[64]],
-):
-
-    """
-    This function will calculate the carbonate alkalinity concentration
-    at the ith time step. Returns a tuple in the form of [m, l, h]
-    which pertains to the mass, and respective isotopes. For carbonate
-    alkalinity, m will equal to the amount of carbonate alkalinity in
-    mol/L and l and h will default to 1.  Calculations are based off
-    equations from Follows et al., 2006.
-    doi:10.1016/j.ocemod.2005.05.004
-
-
-    a1 = total alkalinity concentration in model units
-    a2 = H+ concentrations in model units
-    a3 = [list of SeawaterConstants]
-
-    i = index of current timestep
-    a1 to a3 = optional fcn parameters. These must be present
-    even if your function will not use it
-
-    Limitations: Assumes concentrations are in mol/L
-
-    This function can then be used in conjunction with a VirtualReservoir, e.g.,
-
-    VirtualReservoir(
-         name="V_H",
-         species=Hplus,
-         concentration=f"{SW.hplus*1000} mmol/l",
-         volume=volume,
-         plot_transform_c=phc,
-         legend_left="pH",
-         function=calc_H,
-         a1=TA.c,
-         a2=H+.c,
-         a3=[swc.KW, swc.KB, swc.boron]
-         a4=[] # array, must be provided but can be empty
-    )
-
-    Author: M. Niazi & T. Tsan, 2021
-
-    """
-
-    ta: float = a1[i - 1]  # mol/L
-    hplus: float = a2[i - 1]  # mol/L
-
-    KW = a3[0]
-    KB = a3[1]
-    boron = a3[2]
-    volume = a3[3]
-
-    # print(f"KW = {KW:.2e}, KB={KB:.2e}")
-    oh: float = KW / hplus
-    boh4: float = boron * KB / (hplus + KB)
-
-    fg: float = hplus - oh - boh4  # mol/L
-
-    # print(f"ta = {ta*1000} mmol, fg ={fg*1000} mmol, hplus = {phc(hplus)}")
-    c: float = ta + fg
-    m: float = c * volume
-
-    # print(f" volume = {volume:.2e}")
-    # print(f"CA m = {m:.2e}, c= {c*1000:.2e} mmol")
-
-    return m, 1.0, 1.0, 1.0, c
-
-
-def calc_pCO2(
-    dic: Union[Reservoir, VirtualReservoir],
-    hplus: Union[Reservoir, VirtualReservoir],
-    SW: SeawaterConstants,
-) -> Union[NDArray, Float]:
-
-    """
-    Calculate the concentration of pCO2 as a function of DIC,
-    H+, K1 and k2 and returns a numpy array containing
-    the pCO2 in uatm at each timestep. Calculations are based off
-    equations from Follows, 2006. doi:10.1016/j.ocemod.2005.05.004
-
-    dic: Reservoir  = DIC concentrations in mol/liter
-    hplus: Reservoir = H+ concentrations in mol/liter
-    SW: Seawater = Seawater object for the model
-
-    it is typically used with a DataField object, e.g.
-
-    pco2 = calc_pCO2(dic,h,SW)
-
-     DataField(name = "SurfaceWaterpCO2",
-                       associated_with = reservoir_handle,
-                       y1_data = pco2,
-                       y1_label = r"pCO_{2}",
-                       y1_legend = r"pCO_{2}",
-                       )
-
-    Author: T. Tsan
-
-    """
-
-    dic_c: [NDArray, Float] = dic.c
-    hplus_c: [NDArray, Float] = hplus.c
-
-    k1: float = SW.K1
-    k2: float = SW.K2
-
-    co2: [NDArray, Float] = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c ** 2)))
-
-    pco2: [NDArray, Float] = co2 / SW.K0 * 1e6
-
-    return pco2
-
-
-def calc_pCO2b(
-    dic: Union[float, NDArray],
-    hplus: Union[float, NDArray],
-    SW: SeawaterConstants,
-) -> Union[NDArray, Float]:
-
-    """
-    Same as calc_pCO2, but accepts values/arrays rather than Reservoirs.
-
-    Calculate the concentration of pCO2 as a function of DIC,
-    H+, K1 and k2 and returns a numpy array containing
-    the pCO2 in uatm at each timestep. Calculations are based off
-    equations from Follows, 2006. doi:10.1016/j.ocemod.2005.05.004
-
-    dic:  = DIC concentrations in mol/liter
-    hplus: = H+ concentrations in mol/liter
-    SW: Seawater = Seawater object for the model
-
-    it is typically used with a DataField object, e.g.
-
-    pco2 = calc_pCO2b(dic,h,SW)
-
-     DataField(name = "SurfaceWaterpCO2",
-                       associated_with = reservoir_handle,
-                       y1_data = pco2b,
-                       y1_label = r"pCO_{2}",
-                       y1_legend = r"pCO_{2}",
-                       )
-
-    """
-
-    dic_c: [NDArray, Float] = dic
-
-    hplus_c: [NDArray, Float] = hplus
-
-    k1: float = SW.K1
-    k2: float = SW.K2
-
-    co2: [NDArray, Float] = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c ** 2)))
-
-    pco2: [NDArray, Float] = co2 / SW.K0 * 1e6
-
-    return pco2
-
-
-def carbonate_system_old(
-    ca_con: float,
-    hplus_con: float,
-    volume: float,
-    swc: SeawaterConstants,
-    rg: ReservoirGroup = "None",
-) -> tuple:
-
-    """Setup the virtual reservoirs for carbonate alkalinity and H+
-
-    ca_con: initial carbonate concentration. Must be a quantity
-    hplus_con: initial H+ concentration. Must be a quantity
-    volume: volume : Must be a quantity for reservoir definition but when  used
-    as argumment to the functionn it muts be converted to magnitude
-
-    swc : a seawater constants object
-    rg: optional, must be a reservoir group. If present, the below reservoirs
-        will be registered with this group.
-
-    Returns the reservoir handles to VCA and VH
-
-    All list type objects must be converted to numba Lists, if the function is to be used with
-    the numba solver.
-    """
-
-    from esbmtk import VirtualReservoir, phc, calc_CA, calc_H
-
-    v1 = VirtualReservoir(
-        name="VCA",
-        species=CA,
-        concentration=ca_con,
-        volume=volume,
-        plot="no",
-        function=calc_CA,
-        register=rg,
-    )
-
-    v2 = VirtualReservoir(
-        name="VH",
-        species=Hplus,
-        concentration=hplus_con,
-        volume=volume,
-        plot_transform_c=phc,
-        legend_left="pH",
-        plot="yes",
-        function=calc_H,
-        a1=getattr(rg, "VCA").c,
-        a2=getattr(rg, "DIC").c,
-        a3=List([swc.K1, swc.K2, volume.magnitude]),
-        a4=np.zeros(3),
-        register=rg,
-    )
-
-    v1.update(
-        a1=getattr(rg, "TA").c,
-        a2=getattr(rg, "VH").c,
-        a3=List([swc.KW, swc.KB, swc.boron, volume.magnitude]),
-        a4=np.zeros(3),
-    )
-
-    return v1, v2
-
-
 def carbonate_system_new(
     ca_con: float,
     hplus_con: float,
@@ -702,30 +409,25 @@ def carbonate_system_new(
 
     from esbmtk import VirtualReservoir_no_set, calc_carbonates
 
+    print(f"using carbonate_system_new in carbonate_chemistry.py")
+
     VirtualReservoir_no_set(
         name="cs",
         species=CO2,
-        v1=rg.swc.hplus,
         function=calc_carbonates,
-        a1=rg.DIC.c,
-        a2=rg.TA.c,
-        a3=List(
+        # initialize 5 datafield and provide defaults for H+
+        vr_datafields=[rg.swc.hplus, 0, 0, 0, 0],
+        function_input_data=List(rg.DIC.c, rg.TA.c),
+        function_params=List(
             [rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, rg.swc.hplus]
         ),
-        a4=np.zeros(3),
         register=rg,
     )
-    rg.cs.update(a4=rg.cs.d1)
 
 
-@njit
-def calc_carbonates(
-    i: int,  # current time-step in the model
-    a1: NDArray[Float[64]],  # dic
-    a2: NDArray[Float[64]],  # TA
-    a3: NDArray[Float[64]],  # SeawaterConstant values
-    a4: NDArray[Float[64]],  # Hplus
-) -> NDArray[Float[64]]:
+# def calc_carbonates(input_data, vr_data, params, i)
+# @njit
+def calc_carbonates(input_data, vr_data, params, i):
     """Calculates and returns the carbonate concentrations with the format of
     [d1, d2, d3, d4, d5] where each variable corresponds to
     [H+, CA, HCO3, CO3, CO2(aq)], respectively, at the ith time-step of the model.
@@ -737,35 +439,27 @@ def calc_carbonates(
     Calculations are based off equations from Follows, 2006.
     doi:10.1016/j.ocemod.2005.05.004
 
-    Parameters:
-    a1 = DIC concentration (mol/L)
-    a2 = Total alkalinity concentration (mol/L)
-    a3 = [k1, k2, KW, KB, boron, SW.hplus]
-        Values taken from SeaWaterConstants object for typical Seawater values
-    a4 = H+ concentration in the virtual reservoir ex. V_combo.m; initialized
-        with numpy.zeros(3) and later updated. See example below.
-
-    Example code:
-    > VirtualReservoir_no_set(
-        name="V_combo",
+     VirtualReservoir_no_set(
+        name="cs",
         species=CO2,
-        v1=SW.hplus, # initial value for data field 1
-        plot="yes",
-        function=carbonate_chemistry.calc_carbonates,
-        a1= Ocean.DIC.c,
-        a2= Ocean.ALK.c,
-        a3=List([SW.K1, SW.K2, SW.KW, SW.KB, SW.boron]),
-        a4=np.zeros(3),
-        register=Ocean
-     )
-    > Ocean.V_combo.update(a4=Ocean.V_combo.d1)
+        function=calc_carbonates,
+        # initialize 5 datafield and provide defaults for H+
+        vr_datafields=[rg.swc.hplus, 0, 0, 0, 0],
+        function_input_data=List(rg.DIC.c, rg.TA.c),
+        function_params=List(
+            [rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, rg.swc.hplus]
+        ),
+        register=rg,
+    )
+    rg.cs.append(function_input_data=rg.cs.data[0])
+
 
     To plot the other species, please create DataField objects accordingly.
 
     Sample code for plotting CO3:
     > DataField(name = "pH",
           associated_with = Ocean.V_combo,
-          y1_data = -np.log10(Ocean.V_combo.d1),
+          y1_data = -np.log10(Ocean.V_combo.vr_data[0]),
           y1_label = "pH",
           y1_legend = "pH"
      )
@@ -776,18 +470,19 @@ def calc_carbonates(
 
     """
 
-    dic: float = a1[i - 1]
-    ta: float = a2[i - 1]
+    dic: float = input_data[0][i - 1]
+    ta: float = input_data[1][i - 1]
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
-    hplus: float = a4[i - 1]
+    # hplus: float = input_data[2][i - 1]
+    hplus: float = vr_data[0][i - 1]
 
-    k1 = a3[0]
-    k2 = a3[1]
-    KW = a3[2]
-    KB = a3[3]
-    boron = a3[4]
+    k1 = params[0]
+    k2 = params[1]
+    KW = params[2]
+    KB = params[3]
+    boron = params[4]
 
     # ca
     oh: float = KW / hplus
@@ -812,5 +507,8 @@ def calc_carbonates(
 
     co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
 
-    return hplus, ca, hco3, co3, co2aq
-    # return 1, 2, 3, 4, 5
+    vr_data[0][i] = hplus
+    vr_data[1][i] = ca
+    vr_data[2][i] = hco3
+    vr_data[3][i] = co3
+    vr_data[4][i] = co2aq

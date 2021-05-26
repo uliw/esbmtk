@@ -300,10 +300,15 @@ class Connect(esbmtkBase):
             "signal": (Signal, str),
             "bypass": (str, Reservoir),
             "isotopes": bool,
+            "atmosphere": (GasReservoir, ReservoirGroup),
+            "ocean": (Reservoir, ReservoirGroup),
+            "solubility": Number,
+            "area": Number,
+            "piston_velocity": Number,
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["source", "sink"]
+        self.lrk: list = [["source", "atmosphere"], ["sink", "ocean"]]
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
@@ -363,6 +368,13 @@ class Connect(esbmtkBase):
 
         if self.signal != "None":
             self.lop.append(self.signal)
+
+        if "atmosphere" in kwargs:
+            self.source = self.atmosphere
+            self.ref_reservoirs = self.atmosphere
+
+        if "ocean" in kwargs:
+            self.sink = self.ocean
 
         # if no reference reservoir is specified, default to the upstream
         # reservoir
@@ -628,6 +640,8 @@ class Connect(esbmtkBase):
 
         elif self.ctype == "scale_to_input":
             self.__scale_to_input__()
+        elif self.ctype == "gas_exchange":
+            self.__rateconstant__()
         elif self.ctype == "flux_diff":
             self.__vardeltaout__()
             self.__flux_diff__()
@@ -930,6 +944,16 @@ class Connect(esbmtkBase):
                 k_value=self.k_value,
             )
 
+        elif self.ctype == "gas_exchange":
+
+            ph = GasExchange(
+                name="_Pge",
+                atmosphere=self.atmosphere,
+                ocean=self.ocean,
+                solubility=self.solubility,
+                piston_velocity=self.piston_velocity,
+            )
+
         elif self.ctype == "monod_ctype_limit":
             self.ref_value = map_units(self.ref_value, self.mo.c_unit)
             ph = Monod(
@@ -947,6 +971,7 @@ class Connect(esbmtkBase):
                 f"This should not happen,and points to a keywords problem in {self.name}"
             )
 
+        # print(f"adding {ph.name} to {self.name}")
         self.lop.append(ph)
 
     def info(self, **kwargs) -> None:
