@@ -1174,10 +1174,61 @@ class Reservoir_no_set(ReservoirBase):
 
 
 class VirtualReservoir_no_set(Reservoir_no_set):
-    """This is the same a regular VR, but adding data to this VR will not
-    recalculate concentrations and isotope values. This is most useful form
-    VR's which use all 5 reservoir arrays to store variables which are only
-    affected by the associated generic function.
+    """This class can be used to implement user provided functions. The
+    data inside a VR_no_set instance will only change in response to a
+    user provided function but will otherwise remain unaffected. That is,
+    it is up to the user provided function to manage changes in reponse to
+    external fluxes. A VR_no_set is declared in the following way
+
+        VirtualReservoir_no_set(
+                    name="cs",     # instance name
+                    species=CO2,   # species, must be given
+                    # The next line defines the number of datafields and their default values
+                    # It must me provided as numba types List!
+                    vr_datafields=List([self.swc.hplus, 0.0, 0.0, 0.0, 0.0]),
+                    function=calc_carbonates, # function reference, see below
+                    # A numba types List of one ore more np.arrays which are used
+                    # as input values for the user provided function
+                    function_input_data=List([self.DIC.c, self.TA.c]),
+                    # A numba types List of float parameters.
+                    # Note that parameters must be individual float values
+                    function_params=List(
+                        [
+                            self.swc.K1,
+                            self.swc.K2,
+                            self.swc.KW,
+                            self.swc.KB,
+                            self.swc.boron,
+                            self.swc.hplus,
+                        ]
+                    ),
+                    register=rh # reservoir_handle to register with.
+                )
+
+        Once the instance is created, it is often useful to create aliases
+
+         # setup aliases
+         rh.cs.H = self.cs.vr_data[0]
+         rh.cs.CA = self.cs.vr_data[1]
+         rh.cs.HCO3 = self.cs.vr_data[2]
+         rh.cs.CO3 = self.cs.vr_data[3]
+         rh.cs.CO2aq = self.cs.vr_data[4]
+
+    The general template for a user defined function is a follows:
+
+    # @njit Add the njit decorator if you plan to use the numba solver
+    def calc_carbonates(i: int, input_data: List, vr_data: List, params: List) -> None:
+        # i = index of current timestep
+        # input_data = List of np.arrays, typically data from other Reservoirs
+        # vr_data = List of np.arrays created during instance creation (i.e. the vr data)
+        # params = List of float values (at least one!)
+
+        pass
+
+    return
+
+    Note that this function should not return any values, and that all input fields must have
+    at least one entry!
 
     """
 
