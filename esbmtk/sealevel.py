@@ -145,6 +145,10 @@ class hypsometry(esbmtkBase):
         """
 
         depth = abs(depth)
+
+        if depth > 6000:
+            raise ValueError("area() is only defined to a depth of 6000 mbsl")
+
         return self.hypdata[depth] * self.sa
 
     def area_dz(self, u: float, l: float) -> float:
@@ -161,7 +165,11 @@ class hypsometry(esbmtkBase):
 
         """
 
+        if l < -6000:
+            raise ValueError("area_dz() is only defined to a depth of 6000 mbsl")
+
         a: NDArray = interpolate.splev([u, l], self.tck)
+
         area: float = (a[0] - a[-1]) * self.sa
 
         return area
