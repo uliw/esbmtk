@@ -427,7 +427,7 @@ def carbonate_system_new(
 
 # def calc_carbonates(input_data, vr_data, params, i)
 @njit
-def calc_carbonates(i, input_data, vr_data, params):
+def calc_carbonates(i: int, input_data: List, vr_data: List, params: List) -> None:
     """Calculates and returns the carbonate concentrations with the format of
     [d1, d2, d3, d4, d5] where each variable corresponds to
     [H+, CA, HCO3, CO3, CO2(aq)], respectively, at the ith time-step of the model.
@@ -439,19 +439,33 @@ def calc_carbonates(i, input_data, vr_data, params):
     Calculations are based off equations from Follows, 2006.
     doi:10.1016/j.ocemod.2005.05.004
 
-     VirtualReservoir_no_set(
-        name="cs",
-        species=CO2,
-        function=calc_carbonates,
-        # initialize 5 datafield and provide defaults for H+
-        vr_datafields=[rg.swc.hplus, 0, 0, 0, 0],
-        function_input_data=List(rg.DIC.c, rg.TA.c),
-        function_params=List(
-            [rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, rg.swc.hplus]
-        ),
-        register=rg,
-    )
-    rg.cs.append(function_input_data=rg.cs.data[0])
+    Example:
+
+    VirtualReservoir_no_set(
+                name="cs",
+                species=CO2,
+                vr_datafields=List([self.swc.hplus, 0.0, 0.0, 0.0, 0.0]),
+                function=calc_carbonates,
+                function_input_data=List([self.DIC.c, self.TA.c]),
+                function_params=List(
+                    [
+                        self.swc.K1,
+                        self.swc.K2,
+                        self.swc.KW,
+                        self.swc.KB,
+                        self.swc.boron,
+                        self.swc.hplus,
+                    ]
+                ),
+                register= # reservoir_handle to register with
+            )
+
+            # setup aliases
+            self.cs.H = self.cs.vr_data[0]
+            self.cs.CA = self.cs.vr_data[1]
+            self.cs.HCO3 = self.cs.vr_data[2]
+            self.cs.CO3 = self.cs.vr_data[3]
+            self.cs.CO2aq = self.cs.vr_data[4]
 
 
     To plot the other species, please create DataField objects accordingly.
