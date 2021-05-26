@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org707e0cc)
-2.  [News](#org959a50f)
-3.  [Contributing](#orgbb14811)
-4.  [Installation](#org3c91e33)
-5.  [Documentation](#org85a30af)
-6.  [Todo](#org59ddbcb)
-7.  [License](#org96513e9)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org62298c9)
+2.  [News](#orgfbb12de)
+3.  [Contributing](#orga59a9ba)
+4.  [Installation](#org41b4d87)
+5.  [Documentation](#org0c2f8c0)
+6.  [Todo](#org693c26e)
+7.  [License](#orgddbbe5b)
 
 
-<a id="org707e0cc"></a>
+<a id="org62298c9"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,15 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org959a50f"></a>
+<a id="orgfbb12de"></a>
 
 # News
+
+-   May 26<sup>th</sup>, 0.6.0.0 changed data-structure for the `Generic_Function`
+    class. This will break any previous use of
+    `VirtualReservoir_no_set` instances. See the API documentation on
+    how to update. Changed the data-structure of all process
+    classes. There should be no user facing changes.
 
 -   May 13<sup>th</sup>, 0.5.1.3 Multiple regression fixes, the `ref` keyword is
     now called `ref_reservoirs`. Added two new classes
@@ -222,7 +228,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgbb14811"></a>
+<a id="orga59a9ba"></a>
 
 # Contributing
 
@@ -232,7 +238,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org3c91e33"></a>
+<a id="org41b4d87"></a>
 
 # Installation
 
@@ -253,7 +259,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org85a30af"></a>
+<a id="org0c2f8c0"></a>
 
 # Documentation
 
@@ -271,7 +277,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org59ddbcb"></a>
+<a id="org693c26e"></a>
 
 # Todo
 
@@ -280,7 +286,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org96513e9"></a>
+<a id="orgddbbe5b"></a>
 
 # License
 
