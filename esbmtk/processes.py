@@ -204,7 +204,7 @@ class GenericFunction(Process):
 
         """
 
-        self.function(self.input_data, self.vr_data, self.function_params, i)
+        self.function(i, self.input_data, self.vr_data, self.function_params)
 
     # redefine post init
     def __postinit__(self) -> None:
@@ -977,10 +977,13 @@ class RateConstant(Process):
 
         # decide which call function to use
         # if self.mo.m_type == "both":
-        if self.reservoir.isotopes:
-            self.__execute__ = self.__with_isotopes__
-        else:
+        if ocean in kwargs:  # xxx this needs fixing
             self.__execute__ = self.__without_isotopes__
+        else:
+            if self.reservoir.isotopes:
+                self.__execute__ = self.__with_isotopes__
+            else:
+                self.__execute__ = self.__without_isotopes__
 
     # setup a placeholder call function
     def __call__(self, reservoir: Reservoir, i: int):
@@ -1310,7 +1313,7 @@ class GasExchange(RateConstant):
 
         # set flux
         # note that the sink delta is co2aq as returned by the carbonate VR
-        self.f[i] = self.scale * (self.sink.d - self.source.c * self.solubility)
+        self.f[i] = self.scale * (self.co2aq - self.source.c * self.solubility)
 
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
@@ -1332,6 +1335,7 @@ class GasExchange(RateConstant):
         self.mo: Model = self.m
         self.source = self.atmosphere
         self.sink = self.ocean
+        self.co2aq = getattr(getattr(self.ocean, "cs"), "CO2aq")
         print(f"self.name= {self.name}")
         # self.scale = self.area * self.piston_velocity
         # print("setting scale to {self.scale}")
