@@ -106,7 +106,7 @@ class SeawaterConstants(esbmtkBase):
         self.n: str = self.name  # string =  name of this instance
         self.mo: Model = self.model
         self.hplus = 10 ** -self.pH
-        self.constants: list = ["K0", "K1", "K2", "KW", "KB"]
+        self.constants: list = ["K0", "K1", "K2", "KW", "KB", "Ksp"]
         self.species: list = [
             "dic",
             "ta",
@@ -138,6 +138,7 @@ class SeawaterConstants(esbmtkBase):
         self.__init_boron__()
         self.__init_water__()
         self.__init_gasexchange__()
+        self.__init_calcite__()
 
         # get total alkalinity
 
@@ -378,6 +379,17 @@ class SeawaterConstants(esbmtkBase):
 
         # correct for water vapor partial pressure
         self.SA_co2 = F / (1 - self.p_H2O)
+
+    def __init_calcite__(self) -> None:
+        """Calculate Calcite solubility as a function of pressure following
+        Fig 1 in in Boudreau et al, 2010, https://doi.org/10.1029/2009gl041847
+
+        Note that this equation assumes an idealized ocean temperature profile.
+        So it cannot be applied to a warm ocean
+
+        """
+
+        self.Ksp = 4.3513e-7 * np.exp(0.0019585 * self.pressure)
 
 
 def carbonate_system_new(
