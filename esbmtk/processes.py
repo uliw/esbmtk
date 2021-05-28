@@ -977,7 +977,7 @@ class RateConstant(Process):
 
         # decide which call function to use
         # if self.mo.m_type == "both":
-        if ocean in kwargs:  # xxx this needs fixing
+        if "ocean" in kwargs:  # xxx this needs fixing
             self.__execute__ = self.__without_isotopes__
         else:
             if self.reservoir.isotopes:
