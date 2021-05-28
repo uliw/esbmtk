@@ -167,24 +167,24 @@ class ReservoirGroup(esbmtkBase):
         # register a seawater_parameter instance if necessary
         if self.seawater_parameters != "None":
             if "temperature" in self.seawater_parameters:
-                temperature = self.seawater_parameters["temperature"]
+                self.temperature = self.seawater_parameters["temperature"]
             else:
-                temperature = 25
+                self.temperature = 25
             if "salinity" in self.seawater_parameters:
-                salinity = self.seawater_parameters["salinity"]
+                self.salinity = self.seawater_parameters["salinity"]
             else:
-                salinity = 35
+                self.salinity = 35
             if "pressure" in self.seawater_parameters:
-                pressure = self.seawater_parameters["pressure"]
+                self.pressure = self.seawater_parameters["pressure"]
             else:
-                pressure = 1
+                self.pressure = 1
 
             SeawaterConstants(
                 name="swc",
                 model=self.mo,
-                temperature=temperature,
-                pressure=pressure,
-                salinity=salinity,
+                temperature=self.temperature,
+                pressure=self.pressure,
+                salinity=self.salinity,
                 register=self,
             )
 
