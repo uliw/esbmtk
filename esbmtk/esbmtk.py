@@ -81,9 +81,9 @@ class esbmtkBase(object):
         for n in self.ldo:
             if n not in self.kwargs:
                 self.kwargs[n] = "None"
-                logging.debug(
-                    f"set {self.kwargs['name']} self.kwargs[{n}] to {self.kwargs[n]}"
-                )
+                # logging.debug(
+                #    f"set {self.kwargs['name']} self.kwargs[{n}] to {self.kwargs[n]}"
+                # )
 
     def __validateandregister__(self, kwargs: dict) -> None:
         """Validate the user provided input key-value pairs. For this we need
@@ -296,8 +296,11 @@ class esbmtkBase(object):
                 s: int = 0  # loop over allowed substitutions
                 for e in k:  # test how many matches are in this list
                     if e in self.kwargs:
-                        if self.kwargs[e] != "None":
-                            s = s + 1
+                        # print(self.kwargs[e])
+                        if not isinstance(e, (np.ndarray, np.float64, list)):
+                            # print (type(self.kwargs[e]))
+                            if self.kwargs[e] != "None":
+                                s = s + 1
                 if s > 1:  # if more than one match
                     raise ValueError(
                         f"You need to specify exactly one from this list: {k}"
@@ -959,12 +962,12 @@ class Model(esbmtkBase):
         for r in self.lor:  # loop over reservoirs
             match = False
             for f in r.lof:  # test if reservoir has matching fluxes
-                if fby in f.full_name and f.m[-1] > 0:
+                if fby in f.full_name and f.m[-3] != 0:
                     match = True
             if match:
                 print(f"- {r.full_name}:")
                 for f in r.lof:  # loop over fluxes in reservoir
-                    if fby in f.full_name and f.m[-1] > 0:
+                    if fby in f.full_name and f.m[-3] != 0:
                         direction = r.lio[f]
                         if r.isotopes:
                             print(
@@ -1001,7 +1004,7 @@ class Model(esbmtkBase):
                 else:  # this is a regular connnection
                     self.cg_list.append(c)
 
-        print(f"\n --- Connection Summary -- filtered by {fby}\n")
+        print(f"\n --- Connection Group Summary -- filtered by {fby}\n")
         print(f"       append info() to the connection name to see more details")
 
         for c in self.cg_list:
@@ -1509,7 +1512,7 @@ class Reservoir(ReservoirBase):
                             display_precision = number, optional, inherited from Model
                             register = optional, use to register with Reservoir Group
                             isotopes = True/False otherwise use Model.m_type
-                            seawater_properties = [T: 25, S:35, P: 1], optional (see below)
+                            seawater_parameters= dict, optional
                             )
 
           You must either give mass or concentration.  The result will always be displayed
@@ -1535,7 +1538,8 @@ class Reservoir(ReservoirBase):
           ~~~~~~~~~~~~~~~~~~~~~~~~~~~
           If this optional parameter is specified, a SeaWaterConstants instance will be registered
           for this Reservoir as Reservoir.swc
-          See the  SeaWaterConstants class for details how to specify the parameters
+          See the  SeaWaterConstants class for details how to specify the parameters, e.g.:
+          seawater_parameters = {"temperature": 2, "pressure": 240, "salinity" : 35},
 
           Using a transform function
           ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1606,12 +1610,6 @@ class Reservoir(ReservoirBase):
             "full_name": str,
             "seawater_parameters": (dict, str),
             "isotopes": bool,
-            "a1": any,
-            "a2": any,
-            "a3": any,
-            "a4": any,
-            "a5": any,
-            "a6": any,
         }
 
         # provide a list of absolutely required keywords
@@ -1642,10 +1640,6 @@ class Reservoir(ReservoirBase):
             "full_name": "Not Set",
             "isotopes": False,
             "seawater_parameters": "None",
-            "a1": numba.typed.List.empty_list(nbt.float64),
-            "a2": numba.typed.List.empty_list(nbt.float64),
-            "a3": numba.typed.List.empty_list(nbt.float64),
-            "a4": List(np.zeros(3)),
             "display_precision": 0,
         }
 
@@ -1787,7 +1781,7 @@ class Flux(esbmtkBase):
 
         """
 
-        from . import ureg, Q_
+        from . import ureg, Q_, AirSeaExchange
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -1798,7 +1792,15 @@ class Flux(esbmtkBase):
             "plot": str,
             "display_precision": Number,
             "isotopes": bool,
-            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "register": (
+                SourceGroup,
+                SinkGroup,
+                ReservoirGroup,
+                ConnectionGroup,
+                GasReservoir,
+                AirSeaExchange,
+                str,
+            ),
         }
 
         # provide a list of absolutely required keywords
