@@ -998,14 +998,14 @@ class Model(esbmtkBase):
         # extract all connection groups. Note that loc contains all conections
         # i.e., not connection groups.
         for c in list(self.loc):
-            if "." in c.full_name:
-                if c.register not in self.cg_list:
-                    self.cg_list.append(c.register)
-                else:  # this is a regular connnection
-                    self.cg_list.append(c)
+            # if "." in c.full_name:
+            if c.register not in self.cg_list and c.register != "None":
+                self.cg_list.append(c.register)
+            else:  # this is a regular connnection
+                self.cg_list.append(c)
 
         print(f"\n --- Connection Group Summary -- filtered by {fby}\n")
-        print(f"       append info() to the connection name to see more details")
+        print(f"       run the following command to see more details:\n")
 
         for c in self.cg_list:
             if fby in c.full_name:
