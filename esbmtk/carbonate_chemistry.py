@@ -341,7 +341,7 @@ class SeawaterConstants(esbmtkBase):
     def water_vapor_partial_pressure(self) -> None:
         """Calculate the water vapor partial pressure at sealevel (1 atm) as
         a function of temperature and salinity. Eq. after Sarmiento and Gruber 2006
-
+        Eq 8 in panel 3.2.1 p 78
         """
 
         T = self.temperature + 273.15
@@ -356,9 +356,10 @@ class SeawaterConstants(esbmtkBase):
         after Sarmiento and Gruber 2006 which includes corrections for CO2 to correct for non
         ideal gas behavior
 
+        Parameters Ai & Bi from Tab 3.2.2 in  Sarmiento and Gruber 2006
         """
 
-        # Calculate the volumetric solubility function in mol/l/m^3
+        # Calculate the volumetric solubility function F_A in mol/l/m^3
         S = self.salinity
         T = 273.15 + self.temperature
         A1 = -160.7333
@@ -379,6 +380,9 @@ class SeawaterConstants(esbmtkBase):
 
         # correct for water vapor partial pressure
         self.SA_co2 = F / (1 - self.p_H2O)
+
+        # the above number is in mmol/m3 but esbmtk uses mol/l
+        self.SA_co2 = self.SA_co2
 
     def __init_calcite__(self) -> None:
         """Calculate Calcite solubility as a function of pressure following
@@ -428,7 +432,7 @@ def carbonate_system_new(
         species=CO2,
         function=calc_carbonates,
         # initialize 5 datafield and provide defaults for H+
-        vr_datafields=[rg.swc.hplus, 0, 0, 0, 0],
+        vr_datafields=[rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2],
         function_input_data=List(rg.DIC.c, rg.TA.c),
         function_params=List(
             [rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, rg.swc.hplus]
@@ -538,3 +542,80 @@ def calc_carbonates(i: int, input_data: List, vr_data: List, params: List) -> No
     vr_data[2][i] = hco3
     vr_data[3][i] = co3
     vr_data[4][i] = co2aq
+
+
+def calc_pCO2(
+    dic: Union[Reservoir, VirtualReservoir],
+    hplus: Union[Reservoir, VirtualReservoir],
+    SW: SeawaterConstants,
+) -> Union[NDArray, Float]:
+
+    """
+    Calculate the concentration of pCO2 as a function of DIC,
+    H+, K1 and k2 and returns a numpy array containing
+    the pCO2 in uatm at each timestep. Calculations are based off
+    equations from Follows, 2006. doi:10.1016/j.ocemod.2005.05.004
+    dic: Reservoir  = DIC concentrations in mol/liter
+    hplus: Reservoir = H+ concentrations in mol/liter
+    SW: Seawater = Seawater object for the model
+    it is typically used with a DataField object, e.g.
+    pco2 = calc_pCO2(dic,h,SW)
+     DataField(name = "SurfaceWaterpCO2",
+                       associated_with = reservoir_handle,
+                       y1_data = pco2,
+                       y1_label = r"pCO_{2}",
+                       y1_legend = r"pCO_{2}",
+                       )
+    Author: T. Tsan
+    """
+
+    dic_c: [NDArray, Float] = dic.c
+    hplus_c: [NDArray, Float] = hplus.c
+
+    k1: float = SW.K1
+    k2: float = SW.K2
+
+    co2: [NDArray, Float] = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c ** 2)))
+
+    pco2: [NDArray, Float] = co2 / SW.K0 * 1e6
+
+    return pco2
+
+
+def calc_pCO2b(
+    dic: Union[float, NDArray],
+    hplus: Union[float, NDArray],
+    SW: SeawaterConstants,
+) -> Union[NDArray, Float]:
+
+    """
+    Same as calc_pCO2, but accepts values/arrays rather than Reservoirs.
+    Calculate the concentration of pCO2 as a function of DIC,
+    H+, K1 and k2 and returns a numpy array containing
+    the pCO2 in uatm at each timestep. Calculations are based off
+    equations from Follows, 2006. doi:10.1016/j.ocemod.2005.05.004
+    dic:  = DIC concentrations in mol/liter
+    hplus: = H+ concentrations in mol/liter
+    SW: Seawater = Seawater object for the model
+    it is typically used with a DataField object, e.g.
+    pco2 = calc_pCO2b(dic,h,SW)
+     DataField(name = "SurfaceWaterpCO2",
+                       associated_with = reservoir_handle,
+                       y1_data = pco2b,
+                       y1_label = r"pCO_{2}",
+                       y1_legend = r"pCO_{2}",
+                       )
+    """
+
+    dic_c: [NDArray, Float] = dic
+
+    hplus_c: [NDArray, Float] = hplus
+
+    k1: float = SW.K1
+    k2: float = SW.K2
+
+    co2: [NDArray, Float] = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c ** 2)))
+
+    pco2: [NDArray, Float] = co2 / SW.K0 * 1e6
+
+    return pco2
