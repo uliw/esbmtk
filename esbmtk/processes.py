@@ -1369,31 +1369,29 @@ class GasExchange(RateConstant):
 
         params = List(
             [
-                float(self.scale),
-                float(self.water_vapor_pressure),
-                float(self.solubility),
+                float(self.scale * 1e3),
+                float(self.solubility * 1e-6 * (1 - self.water_vapor_pressure)),
             ]
         )
-
-        print(f"scale = {self.scale:.2e}")
-        print(f"pH2O = {self.water_vapor_pressure:.2e}")
-        print(f"solubility = {self.solubility}")
 
         return func_name, data, params
 
     @staticmethod
-    @njit()
+    @njit(fastmath=True)
     def p_gas_exchange(data, params, i) -> None:
-        # concentration times scale factor
+        """the below equation moved as many constants as possible outside of
+        the function compared to the __with/without_isotopes__ method(s). See the
+        __get_process_args__ method for details
+
+        """
 
         scale: float = params[0]
-        pH2O: float = params[1]
-        SA: float = params[2]
+        SA: float = params[1]
 
         liquid = data[4][i - 1]
         gas = data[5][i - 1]
 
-        a = 1e3 * scale * (gas * (1.0 - pH2O) * SA * 1e-6 - liquid)
+        a = scale * (gas * SA - liquid)
 
         data[0][i] = a
         data[1][i] = 1

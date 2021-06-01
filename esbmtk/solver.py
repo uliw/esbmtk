@@ -277,7 +277,7 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, 
         i = i + 1  # next time step
 
 
-@njit(parallel=False, fastmath=False)
+@njit(parallel=False, fastmath=True)
 def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
     """Same as foo but no virtual reservoirs present."""
     i = 1
