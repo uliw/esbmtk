@@ -402,7 +402,7 @@ def build_process_list(lor: list) -> tuple:
     print(f"Building Process List")
 
     for r in lor:  # loop over reservoirs
-
+        # print(f"for {r.full_name}")
         # note that types.List is differenfr from Types.ListType. Also
         # note that [::1]  declares C-style arrays see
         # https://numba.discourse.group/t/list-mistaken-as-list-when-creating-list-of-function-references/677/3
@@ -416,14 +416,18 @@ def build_process_list(lor: list) -> tuple:
 
         tda = List()  # temp list for data
         tpc = List()  # temp list for constants
+        have_data = False
         for p in r.lop:  # loop over reservoir processes
+            # print(f"working on {p.name}")
             func_name, data, proc_const = p.get_process_args(r)
             tfn.append(func_name)
             tda.append(data)
             tpc.append(proc_const)
+            have_data = True
 
-        fn.append(tfn)
-        da.append(tda)
-        pc.append(tpc)
+        if have_data:
+            fn.append(tfn)
+            da.append(tda)
+            pc.append(tpc)
 
     return fn, da, pc
