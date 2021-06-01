@@ -33,6 +33,7 @@ from .esbmtk import (
 
 
 class ReservoirGroup(esbmtkBase):
+
     """This class allows the creation of a group of reservoirs which share
     a common volume, and potentially connections. E.g., if we have two
     reservoir groups with the same reservoirs, and we connect them
@@ -50,7 +51,7 @@ class ReservoirGroup(esbmtkBase):
                     mass/concentration = {DIC:"1 unit", ALK: "1 unit"}
                     plot = {DIC:"yes", ALK:"yes"}  defaults to yes
                     isotopes = {DIC: True/False} see Reservoir class for details
-                    seawater_parameter = dict, optional, see reservoir help text
+                    seawater_parameter = dict, optional, see below
                     carbonate_system= False, see below
                )
 
@@ -91,6 +92,13 @@ class ReservoirGroup(esbmtkBase):
     self.cs.HCO3
     self.cs.CO3
     self.CO2aq
+
+    seawater_parameters:
+    ~~~~~~~~~~~~~~~~~~~
+    If this optional parameter is specified, a SeaWaterConstants instance will be registered
+    for this Reservoir as Reservoir.swc
+    See the  SeaWaterConstants class for details how to specify the parameters, e.g.:
+    seawater_parameters = {"temperature": 2, "pressure": 240, "salinity" : 35},
 
     """
 
@@ -252,7 +260,15 @@ class ReservoirGroup(esbmtkBase):
             VirtualReservoir_no_set(
                 name="cs",
                 species=CO2,
-                vr_datafields=List([self.swc.hplus, 0.0, 0.0, 0.0, 0.0]),
+                vr_datafields=List(
+                    [
+                        self.swc.hplus,
+                        self.swc.ca,
+                        self.swc.hco3,
+                        self.swc.co3,
+                        self.swc.co2,
+                    ]
+                ),
                 function=calc_carbonates,
                 function_input_data=List([self.DIC.c, self.TA.c]),
                 function_params=List(
@@ -1455,13 +1471,7 @@ class GasReservoir(ReservoirBase):
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "full_name": str,
             "isotopes": bool,
-            "a1": any,
-            "a2": any,
-            "a3": any,
-            "a4": any,
-            "a5": any,
-            "a6": any,
-            "geometry": str,  # not used but must be present
+            "geometry": str,
         }
 
         # provide a list of absolutely required keywords
@@ -1471,11 +1481,6 @@ class GasReservoir(ReservoirBase):
             "species_ppm",
             "reservoir_mass",
         ]
-
-        # setter substitutions
-        # self.drn = {
-        #     "concentration": "_concentration",
-        # }
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
@@ -1488,12 +1493,8 @@ class GasReservoir(ReservoirBase):
             "register": "None",
             "full_name": "Not Set",
             "isotopes": False,
-            "a1": numba.typed.List.empty_list(nbt.float64),
-            "a2": numba.typed.List.empty_list(nbt.float64),
-            "a3": numba.typed.List.empty_list(nbt.float64),
-            "a4": List(np.zeros(3)),
             "display_precision": 0,
-            "geometry": "None",  # not used but must be there
+            "geometry": "None",
         }
 
         # validate and initialize instance variables
@@ -1562,6 +1563,21 @@ class GasReservoir(ReservoirBase):
         # reservoir class in virtual reservoirs
         self.__aux_inits__()
         self.state = 0
+
+    def __set_with_isotopes__(self, i: int, value: float) -> None:
+        """write data by index"""
+
+        self.m[i]: float = value[0]
+        self.l[i]: float = value[1]
+        self.h[i]: float = value[2]
+        self.d[i]: float = get_delta(self.l[i], self.h[i], self.sp.r)
+        self.c[i]: float = self.m[i] / self.v  # update concentration
+
+    def __set_without_isotopes__(self, i: int, value: float) -> None:
+        """write data by index"""
+
+        self.m[i]: float = value[0]
+        self.c[i]: float = self.m[i] / self.v  # update concentration
 
 
 class ExternalData(esbmtkBase):

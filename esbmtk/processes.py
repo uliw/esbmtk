@@ -922,14 +922,14 @@ class RateConstant(Process):
 
         # update the allowed keywords
         self.lkk: dict = {
-            "scale": Number,
+            "scale": (Number, np.float64),
             "k_value": Number,
             "name": str,
-            "reservoir": (Reservoir, Source, Sink),
+            "reservoir": (Reservoir, Source, Sink, np.ndarray),
             "flux": Flux,
             "ref_reservoirs": list,
-            "left": (list, Reservoir, Number),
-            "right": (list, Reservoir, Number),
+            "left": (list, Reservoir, Number, np.ndarray),
+            "right": (list, Reservoir, Number, np.ndarray),
             "register": (
                 SourceGroup,
                 SinkGroup,
@@ -938,10 +938,11 @@ class RateConstant(Process):
                 Flux,
                 str,
             ),
-            "atmosphere": (Reservoir, GasReservoir, Source, Sink),
-            "ocean": (Reservoir, Source, Sink),
+            "gas": (Reservoir, GasReservoir, Source, Sink, np.ndarray),
+            "liquid": (Reservoir, Source, Sink, np.ndarray),
             "solubility": (Number, np.float64),
             "piston_velocity": Number,
+            "water_vapor_pressure": (Number, np.float64),
         }
 
         # new required keywords
@@ -972,18 +973,21 @@ class RateConstant(Process):
         self.__misc_init__()
         self.__postinit__()  # do some housekeeping
         # legacy variables
-        self.mo = self.reservoir.mo
+
         self.__register_name__()
 
         # decide which call function to use
         # if self.mo.m_type == "both":
-        if "ocean" in kwargs:  # xxx this needs fixing
+        if "liquid" in kwargs:  # xxx this needs fixing
             self.__execute__ = self.__without_isotopes__
         else:
             if self.reservoir.isotopes:
                 self.__execute__ = self.__with_isotopes__
             else:
                 self.__execute__ = self.__without_isotopes__
+
+    def __postinit__(self) -> "None":
+        self.mo = self.reservoir.mo
 
     # setup a placeholder call function
     def __call__(self, reservoir: Reservoir, i: int):
@@ -1291,11 +1295,12 @@ class GasExchange(RateConstant):
     """
 
     GasExchange(
-          atmosphere =concentration_air,
-          ocean = concentration_water,
+          gas =concentration_air,
+          liquid = concentration_water,
           solubility=Atmosphere.swc.SA_co2,
           area = area, # m^2
           piston_velocity = m/year
+          water_vapor_pressure=Ocean.swc.p_H2O,
     )
 
 
@@ -1313,7 +1318,22 @@ class GasExchange(RateConstant):
 
         # set flux
         # note that the sink delta is co2aq as returned by the carbonate VR
-        self.f[i] = self.scale * (self.co2aq - self.source.c * self.solubility)
+        # this equation is for mmol but esbmtk uses mol, so we need to
+        # multiply by 1E3
+
+        a = (
+            1e3
+            * self.scale
+            * (
+                self.gas[i - 1]  # p Atmosphere
+                * (1 - self.water_vapor_pressure)  # p_H2O
+                * self.solubility  # SA_co2
+                * 1e-6  # convert to mol
+                - self.liquid[i - 1]  # [CO2]aq
+            )
+        )
+        # print(f"a2 = {a:.2e}")
+        self.flux[i] = [a, 1, 1, 1]
 
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
@@ -1328,17 +1348,41 @@ class GasExchange(RateConstant):
 
         # legacy name aliases
         self.n: str = self.name  # display name of species
-        self.r = self.ocean
-        self.reservoir = self.ocean
-        # self.f: Flux = self.flux
-        self.m: Model = self.r.sp.mo  # the model handle
-        self.mo: Model = self.m
-        self.source = self.atmosphere
-        self.sink = self.ocean
-        self.co2aq = getattr(getattr(self.ocean, "cs"), "CO2aq")
-        print(f"self.name= {self.name}")
-        # self.scale = self.area * self.piston_velocity
-        # print("setting scale to {self.scale}")
+        self.r = self.liquid
+        self.reservoir = self.liquid
+
+    def get_process_args(self, reservoir: Reservoir):
+        """return the data associated with this object"""
+
+        func_name: function = self.p_gas_exchange
+
+        data = List(
+            [
+                self.flux.m,  # 0
+                self.liquid.c,  # 4
+                self.liquid.d,  # 5
+            ]
+        )
+
+        params = List([float(reservoir.species.element.r), float(self.scale)])
+
+        return func_name, data, params
+
+    @staticmethod
+    @njit()
+    def p_gs_exchange(data, params, i) -> None:
+        # concentration times scale factor
+
+        r: float = params[0]
+        s: float = params[1]
+        m: float = data[0][i - 1] * s
+        d: float = data[1][i - 1]  # delta
+        l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+
+        data[0][i] = m
+        data[1][i] = l
+        data[2][i] = m - l
+        data[3][i] = d
 
 
 class Monod(Process):

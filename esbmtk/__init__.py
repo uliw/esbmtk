@@ -22,7 +22,7 @@ ureg.define("ppm = 1e-6 fraction")
 # rom .species_definitions import carbon, sulfur, hydrogen, phosphor
 from .esbmtk import *
 from .extended_classes import *
-from .connections import ConnectionGroup, Connection, Connect
+from .connections import ConnectionGroup, Connection, Connect, AirSeaExchange
 from .utility_functions import *
 from .sealevel import *
 from .solver import *

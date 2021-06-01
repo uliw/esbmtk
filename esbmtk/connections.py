@@ -300,15 +300,13 @@ class Connect(esbmtkBase):
             "signal": (Signal, str),
             "bypass": (str, Reservoir),
             "isotopes": bool,
-            "atmosphere": (GasReservoir, ReservoirGroup),
-            "ocean": (Reservoir, ReservoirGroup),
             "solubility": Number,
             "area": Number,
             "piston_velocity": Number,
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = [["source", "atmosphere"], ["sink", "ocean"]]
+        self.lrk: list = ["source", "sink"]
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
@@ -368,13 +366,6 @@ class Connect(esbmtkBase):
 
         if self.signal != "None":
             self.lop.append(self.signal)
-
-        if "atmosphere" in kwargs:
-            self.source = self.atmosphere
-            self.ref_reservoirs = self.atmosphere
-
-        if "ocean" in kwargs:
-            self.sink = self.ocean
 
         # if no reference reservoir is specified, default to the upstream
         # reservoir
@@ -503,7 +494,6 @@ class Connect(esbmtkBase):
             r = self.rate
 
         # flux name
-        # if self.groupname == False:
         if self.id == "None" or self.id == "":
             n = f"{self.r1.n}_2_{self.r2.n}_F"
         else:
@@ -640,8 +630,6 @@ class Connect(esbmtkBase):
 
         elif self.ctype == "scale_to_input":
             self.__scale_to_input__()
-        elif self.ctype == "gas_exchange":
-            self.__rateconstant__()
         elif self.ctype == "flux_diff":
             self.__vardeltaout__()
             self.__flux_diff__()
@@ -942,16 +930,6 @@ class Connect(esbmtkBase):
                 flux=self.fh,
                 register=self.fh,
                 k_value=self.k_value,
-            )
-
-        elif self.ctype == "gas_exchange":
-
-            ph = GasExchange(
-                name="_Pge",
-                atmosphere=self.atmosphere,
-                ocean=self.ocean,
-                solubility=self.solubility,
-                piston_velocity=self.piston_velocity,
             )
 
         elif self.ctype == "monod_ctype_limit":
@@ -1289,3 +1267,162 @@ class ConnectionGroup(esbmtkBase):
             print(f"{c.name}: {self.name}.{c.name}.info()")
 
         print("")
+
+
+class AirSeaExchange(esbmtkBase):
+    """The class creates a connection between liquid reservoir (i.e., an
+    ocean), and a gas reservoir (i.e., the atmosphere).
+
+    Example :
+    ~~~~~~~~
+
+    AirSeaExchange(
+        gas_reservoir= must be a gasreservoir
+        liquid_reservoir = must be a reservoir
+        solubility= as returned by the swc object
+        area = Ocean.area,
+        piston_velocity = 4.8*365,
+        id = str, optional
+        water_vapor_pressure=Ocean.swc.p_H2O,
+        ref_quantity = optional
+
+        )
+
+    In some cases the gas flux does not depend on the main reservoir species
+    but on a derived quantity, e.g., [CO2aq]. Specify the ref_quantity
+    keyword to point to a different species/calculated species.
+
+    """
+
+    def __init__(self, **kwargs) -> None:
+        """initialize instance"""
+
+        self.__check_keywords__(kwargs)
+
+        self.scale = self.area * self.piston_velocity
+
+        # create flux name
+        if self.id == "None" or self.id == "":
+            n = f"{self.lr.name}_2_{self.gr.name}_EX"
+        else:
+            n = f"{self.lr.n}_2_{self.gr.n}_{self.id}_EX"
+
+        # initalize a flux instance
+        self.fh = Flux(
+            name=n,  # flux name
+            species=self.species,  # Species handle
+            delta=0,  # delta value of flux
+            rate="0 mol/a",  # flux value
+            register=self,  # register with this connection
+            isotopes=self.isotopes,
+        )
+        # register flux with liquid reservoir
+        self.lr.lof.append(self.fh)
+        self.lr.lio[self.fh] = 1  # flux direction
+
+        # register flux with gas reservoir
+        self.gr.lof.append(self.fh)
+        self.gr.lio[self.fh] = -1  # flux direction
+
+        # initialize process instance
+        ph = GasExchange(
+            name="_PGex",
+            gas=self.gr.c,  # concentration
+            liquid=self.ref_species,  # concentration
+            flux=self.fh,  # flux handle
+            register=self.fh,
+            scale=self.scale,
+            solubility=self.solubility,
+            water_vapor_pressure=self.water_vapor_pressure,
+        )
+
+        self.__register_name__()
+        # register process with reservoir
+        ph.__register__(self.lr, self.fh)
+
+        # register connector with liquid reservoirgroup
+        # spr = getattr(self.lr, self.lr.name)
+        self.lr.loc.add(self)
+        # register connector with gas reservoir
+        self.gr.loc.add(self)
+        # register connector with model
+        self.mo.loc.add(self)
+        logging.info(f"Created {self.full_name}")
+        print(f"Created {self.name}")
+
+    def __check_keywords__(self, kwargs) -> None:
+        # provide a dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            "gas_reservoir": GasReservoir,
+            "liquid_reservoir": Reservoir,
+            "solubility": float,
+            "piston_velocity": float,
+            "area": float,
+            "id": str,
+            "name": str,
+            "water_vapor_pressure": (Number, np.float64),
+            "ref_species": (Reservoir, Number, np.float64, np.ndarray),
+            "species": (Species, str),
+        }
+
+        # provide a list of absolutely required keywords
+        self.lrk: list[str] = [
+            "gas_reservoir",
+            "liquid_reservoir",
+            "solubility",
+            "piston_velocity",
+            "area",
+            "water_vapor_pressure",
+            "species",
+        ]
+
+        # list of default values if none provided
+        self.lod: Dict[str, any] = {"id": "None"}
+        self.__initerrormessages__()
+        self.bem.update(
+            {
+                "gas_reservoir": "must be a Reservoir",
+                "liquid_reservoir": "must be a Reservoir",
+                "solubility": "must be a float number",
+                "piston_velocity": "must be a float number",
+                "area": "must be a float number",
+                "name": "None",
+                "ref_species": "None",
+            }
+        )
+
+        self.__validateandregister__(kwargs)
+
+        if self.ref_species == "None":
+            self.ref_species = self.species
+
+        self.lr = self.liquid_reservoir
+        self.gr = self.gas_reservoir
+
+        if self.species.name == "CO2" or self.species.name == "DIC":
+            pass
+        else:
+            raise ValueError(f"{self.species.name} not implemented yet")
+
+        self.name = f"GC_{self.lr.name}_2_{self.gr.name}_{self.species.name}"
+
+        if self.id == "None" or self.id == "":
+            pass
+        else:
+            self.name = f"{self.name}_{self.id}"
+
+        if self.register == "None":
+            self.full_name = self.name
+        else:
+            self.full_name = f"{self.register.name}.{self.name}"
+
+        self.base_name = self.name
+
+        # decide if this connection needs isotope calculations
+        if self.gas_reservoir.isotopes:
+            self.isotopes = True
+        else:
+            self.isotopes = False
+
+        self.mo = self.species.mo
+        self.model = self.mo
