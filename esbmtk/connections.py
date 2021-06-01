@@ -1327,7 +1327,7 @@ class AirSeaExchange(esbmtkBase):
         # initialize process instance
         ph = GasExchange(
             name="_PGex",
-            gas=self.gr.c,  # concentration
+            gas=self.gr,  # concentration
             liquid=self.ref_species,  # concentration
             flux=self.fh,  # flux handle
             register=self.fh,

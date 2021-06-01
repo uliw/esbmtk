@@ -1325,14 +1325,14 @@ class GasExchange(RateConstant):
             1e3
             * self.scale
             * (
-                self.gas[i - 1]  # p Atmosphere
+                self.gas.c[i - 1]  # p Atmosphere
                 * (1 - self.water_vapor_pressure)  # p_H2O
                 * self.solubility  # SA_co2
                 * 1e-6  # convert to mol
                 - self.liquid[i - 1]  # [CO2]aq
             )
         )
-        # print(f"a2 = {a:.2e}")
+        # print(self.gas.c[i - 1])
         self.flux[i] = [a, 1, 1, 1]
 
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
@@ -1358,31 +1358,47 @@ class GasExchange(RateConstant):
 
         data = List(
             [
-                self.flux.m,  # 0
-                self.liquid.c,  # 4
-                self.liquid.d,  # 5
+                self.flux.m,
+                self.flux.l,
+                self.flux.h,
+                self.flux.d,
+                self.liquid,  # 4
+                self.gas.c,  # 5
             ]
         )
 
-        params = List([float(reservoir.species.element.r), float(self.scale)])
+        params = List(
+            [
+                float(self.scale),
+                float(self.water_vapor_pressure),
+                float(self.solubility),
+            ]
+        )
+
+        print(f"scale = {self.scale:.2e}")
+        print(f"pH2O = {self.water_vapor_pressure:.2e}")
+        print(f"solubility = {self.solubility}")
 
         return func_name, data, params
 
     @staticmethod
     @njit()
-    def p_gs_exchange(data, params, i) -> None:
+    def p_gas_exchange(data, params, i) -> None:
         # concentration times scale factor
 
-        r: float = params[0]
-        s: float = params[1]
-        m: float = data[0][i - 1] * s
-        d: float = data[1][i - 1]  # delta
-        l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+        scale: float = params[0]
+        pH2O: float = params[1]
+        SA: float = params[2]
 
-        data[0][i] = m
-        data[1][i] = l
-        data[2][i] = m - l
-        data[3][i] = d
+        liquid = data[4][i - 1]
+        gas = data[5][i - 1]
+
+        a = 1e3 * scale * (gas * (1.0 - pH2O) * SA * 1e-6 - liquid)
+
+        data[0][i] = a
+        data[1][i] = 1
+        data[2][i] = 1
+        data[3][i] = 1
 
 
 class Monod(Process):
