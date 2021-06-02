@@ -939,10 +939,12 @@ class RateConstant(Process):
                 str,
             ),
             "gas": (Reservoir, GasReservoir, Source, Sink, np.ndarray),
-            "liquid": (Reservoir, Source, Sink, np.ndarray),
+            "liquid": (Reservoir, Source, Sink),
             "solubility": (Number, np.float64),
             "piston_velocity": Number,
             "water_vapor_pressure": (Number, np.float64),
+            "ref_species": np.ndarray,
+            "seawaterconstants": any,
         }
 
         # new required keywords
@@ -1295,11 +1297,13 @@ class GasExchange(RateConstant):
     """
 
     GasExchange(
-          gas =concentration_air,
-          liquid = concentration_water,
+          gas =GasReservoir, #
+          liquid = Reservoir, #,
+          ref_species = array of concentrations #
           solubility=Atmosphere.swc.SA_co2,
           area = area, # m^2
           piston_velocity = m/year
+          seawaterconstants = Ocean.swc
           water_vapor_pressure=Ocean.swc.p_H2O,
     )
 
@@ -1310,7 +1314,12 @@ class GasExchange(RateConstant):
     def __misc_init__(self):
         """Sort out input variables"""
 
-        pass
+        self.p_H2O = self.seawaterconstants.p_H2O
+        self.a_dg = self.seawaterconstants.a_dg
+        self.a_db = self.seawaterconstants.a_db
+        self.a_u = 1.0
+        self.rvalue = self.liquid.sp.r
+
         # self.scale = self.area * self.piston_velocity
         # print("setting scale to {self.scale}")
 
@@ -1326,10 +1335,10 @@ class GasExchange(RateConstant):
             * self.scale
             * (
                 self.gas.c[i - 1]  # p Atmosphere
-                * (1 - self.water_vapor_pressure)  # p_H2O
+                * (1 - self.p_H2O)  # p_H2O
                 * self.solubility  # SA_co2
                 * 1e-6  # convert to mol
-                - self.liquid[i - 1]  # [CO2]aq
+                - self.ref_species[i - 1]  # [CO2]aq
             )
         )
         # print(self.gas.c[i - 1])
@@ -1340,11 +1349,52 @@ class GasExchange(RateConstant):
         In the following I assume near neutral pH between 7 and 9, so that
         the isotopic composition of HCO3- is approximately equal to the isotopic
         ratio of DIC. The isotopic ratio of [CO2]aq can then be obtained from DIC via
-        swc.e_db (swc.a_db).
+        swc.e_db (swc.a_db)
 
+        The fractionation factor subscripts denote the following:
+
+        g = gaseous
+        d = dissolved
+        b = bicarbonate ion
+        c = carbonate ion
+
+        a_db is thus the fractionation factor between dissolved CO2aq and HCO3-
+        and a_gb between CO2g HCO3-
         """
 
-        raise NotImplementedError()
+        m = (
+            1e3
+            * self.scale
+            * (
+                self.gas.c[i - 1]  # p Atmosphere
+                * (1 - self.p_H2O)  # p_H2O
+                * self.solubility  # SA_co2
+                * 1e-6  # convert to mol
+                - self.ref_species[i - 1]  # [CO2]aq
+            )
+        )
+
+        # we need p13CO2 (i.e., l p13CO2
+        h = (
+            1e3
+            * self.scale
+            * self.a_u
+            * (
+                self.gas.h[i - 1]
+                * self.a_dg  # p Atmosphere
+                * (1 - self.p_H2O)  # p_H2O
+                * self.solubility  # SA_co2
+                * 1e-6  # convert to mol
+                - (self.r.h[i - 1] / self.r.m) * self.ref_species[i - 1]  # [CO2]aq
+            )
+        )
+
+        # update delate
+        l = m - h
+        d = 1000 * (h / l - self.rvalue) / self.rvalue
+        self.flux[i] = [m, h, l, d]
+
+        # raise NotImplementedError()
 
     def __postinit__(self) -> None:
         """Do some housekeeping for the process class"""
@@ -1373,7 +1423,7 @@ class GasExchange(RateConstant):
         params = List(
             [
                 float(self.scale * 1e3),
-                float(self.solubility * 1e-6 * (1 - self.water_vapor_pressure)),
+                float(self.solubility * 1e-6 * (1 - self.p_H2O)),
             ]
         )
 
