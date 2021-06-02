@@ -1337,7 +1337,10 @@ class GasExchange(RateConstant):
 
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
-        not sure that this correct WRT isotopes
+        In the following I assume near neutral pH between 7 and 9, so that
+        the isotopic composition of HCO3- is approximately equal to the isotopic
+        ratio of DIC. The isotopic ratio of [CO2]aq can then be obtained from DIC via
+        swc.e_db (swc.a_db).
 
         """
 

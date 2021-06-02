@@ -139,6 +139,7 @@ class SeawaterConstants(esbmtkBase):
         self.__init_water__()
         self.__init_gasexchange__()
         self.__init_calcite__()
+        self.__init_c_fractionation_factors__()
 
         # get total alkalinity
 
@@ -405,6 +406,9 @@ class SeawaterConstants(esbmtkBase):
 
         e = (a -1) * 1E3
 
+        and
+
+        a =  1 + e / 1E3
         """
 
         T = 273.15 + self.temperature
