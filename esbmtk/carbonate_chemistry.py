@@ -653,3 +653,133 @@ def calc_pCO2b(
     pco2: [NDArray, Float] = co2 / SW.K0 * 1e6
 
     return pco2
+
+
+def calc_horizon(i: int, input_data: List, vr_data: List, params: List) -> None:
+    """ Calculates related carbonate dissolution values and stores them
+     in their respective arrays in vr_data of the VirtualReservoir_no_set object.
+     This function calculates saturation depth (z_sat), carbonate compensation
+     depth (zcc), snowline depth (z_snow), and the saturation state (omega value).
+
+    Calculations from the following papers:
+        (1) Boudreau et al., 2010. doi:10.1029/2009GB003654
+        (2) Boudreau et al., 2010. doi:10.1029/2009GL041847
+        (3) Zeebe, R.E., & Westbroek, P., 2003. doi:10.1029/2003GC000538
+
+    Preconditions: Assumes that users provide all VirtualReservoir data and
+        constants in the same order as well as the units indicated below. Function
+        is used in conjunction with VirtualReservoir_no_set objects!
+
+    Parameters:
+    > input_data = List containing the following:
+        deep_ocean.DIC.m
+        deep_ocean.DIC.c
+        deep_ocean.TA.m
+        deep_ocean.TA.c
+        [CO3 2- concentrations]
+        [Model.hyp.get_lookup_table(min depth, max depth)]
+        ])
+    > vr_data = [zsat, zcc, zsnow, omega] in meters
+    > params = list of Constants in the following order:
+        sa = surface area of model (m^2)
+        AD = total ocean area (m^2)
+        time_step = time-step of Model as a float (yrs)
+        volume = reservoir group volume (L)
+        ksp = solubility product of calcite in the deep ocean box (mol^2/kg^2)
+        Ca 2+ = calcium ion concentration (mol/kg)
+        ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
+        zsat0 = characteristic depth (m)
+        kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
+        B = export of calcite into deep ocean box (mol/yr)
+        pc = characteristic pressure (atm)
+        pg = density of water * acceleration due to gravity (atm/m)
+        I_caco3 = inventory of dissolvable CaCO3 (mol/m^2)
+    """
+    import numpy as np
+
+    #----------------------Model Parameters-------------------------------------
+    co3d: float = input_data[0][i - 1]
+    depth_areas: float = input_data[1]
+
+    sa: float = params[0] #surface area
+    AD: float = params[1] #total ocean area
+    dt: float = params[2] #time-step
+    reservoir_vol: float = params[3] #reservoir volume
+    ksp: float = params[4] #ksp value for deep ocean box
+    ca: float = params[5] #calcium ion concentration
+    ksp0: float = params[6] #ksp at ocean surface interface
+    zsat0: float = params[7] #characteristic depth
+    kc: float = params[8] #rate constant
+    B: float = params[9] #calcite flux
+    pc: float = params[10] #characteristic pressure
+    pg: float = params[11] #seawater density and gravity due to acceleration (atm/m)
+    I_caco3: float = params[12] #dissolvable CaCO3 inventory
+
+    #---------------------Calculate omega---------------------------------------
+    # Equation (1) from paper (3) Zeebe & Westbroek (2003)
+    # omega = [Ca2+]sw * [CO3 2-]sw / Ksp*
+    omega: float = (ca * co3d) / ksp
+
+    # ---------------------Calculate zsat---------------------------------------
+    # Equation (2) from paper (1) Boudreau (2010)
+    # zsat = zsat0 * ln([Ca2+][CO3 2-]D / Ksp0)
+    zsat: float = zsat0 * np.log(ca * co3d / ksp0)
+
+    #------------------------Calculate zcc--------------------------------------
+    # Equation (3) from paper (1) Boudreau (2010)
+    # zsat = zsat0 * ln((B * [Ca2+] / Ksp0 * AD * kc) + ([Ca2+][CO3 2-]D / Ksp0))
+    term1: float = (B * ca) / (ksp0 * AD * kc)
+    term2: float = ca * co3d / ksp0
+    zcc: float = zsat0 * np.log(term1 + (term2))
+
+    #------------------------Calculate zsnow------------------------------------
+    #---Calculating Csat at depths zcc and zsnow---
+    # Equation (1) from paper (2) Boudreau (2010)
+    # Csat = Ksp0 / [Ca] * exp(p(z) / pc)
+    prev_zcc: float = vr_data[1][i - 1] #zcc from previous timestep
+    pz_zcc: float = pg * prev_zcc #gauge pressure (atm) at depth zcc (m)
+    Csat_zcc: float = (ksp0 / ca) * np.exp(pz_zcc/pc)
+
+    prev_zsnow: float = vr_data[2][i-1] #zsnow from previous timestep
+    pz_zsnow: float = pg * prev_zsnow #gauge pressure (atm) at depth zsnow (m)
+    Csat_zsnow: float = (ksp0 / ca) * np.exp(pz_zsnow/pc)
+
+    #---Calculating BPDC---
+    # Equation (10) from paper (1) Boudreau (2010)
+    # BPDC = kc * (integral of (Csat(z,t) - [CO3]D(t)) dz from zsnow(t) to zcc(t))
+    BPDC: float = kc * ((sa * depth_areas[int(prev_zcc)] * (Csat_zcc - co3d)) -
+                          (sa * depth_areas[int(prev_zsnow)] * (Csat_zsnow - co3d)))
+
+    #---Calculating zsnow---
+    # Equation (4) from paper (1) Boudreau (2010)
+    # dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
+    # Note that we use equation (1) from paper (1) Boudreau (2010) as well:
+    # where a'(z) is the differential bathymetric curve: A(z2, z1) = a'(z2) - a'(z1)
+    zsnow_dt: float = BPDC / (sa * depth_areas[int(prev_zsnow)] * I_caco3) #movement of snowline
+    #multiplying change in snowline by the timestep to get the current snowline depth
+    zsnow: float = prev_zsnow + (zsnow_dt * dt)
+
+    #------------Adding CaCO3 flux back into DIC and Total Alkalinity-----------
+    co3_mass: float = BPDC * dt
+    # add/subtract to DIC reservoir mass (moles)
+    # dic mass = non-updated DIC mass + dissolved co3 mass
+    input_data[4][i] = input_data[4][i] + co3_mass
+
+    # update DIC concentration (mol/L)
+    # [dic] = dic mass / reservoir volume
+    input_data[2][i] = input_data[4][i] / reservoir_vol
+
+    # update TA mass (mol)
+    # 1:2 mole ratio for changes in DIC to TA
+    # TA mass = non-updated TA mass + 2 * dissolved co3 mass
+    input_data[5][i] = input_data[5][i] + (2 * co3_mass)
+
+    # update TA concentration (mol/L)
+    # [TA] = TA mass / reservoir volume
+    input_data[3][i] = input_data[5][i] / reservoir_vol
+
+    # -------------Updating values stored in vr_data of the Reservoir-----------
+    vr_data[0][i] = zsat
+    vr_data[1][i] = zcc
+    vr_data[2][i] = zsnow
+    vr_data[3][i] = omega
