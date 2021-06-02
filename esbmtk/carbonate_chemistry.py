@@ -340,8 +340,12 @@ class SeawaterConstants(esbmtkBase):
 
     def water_vapor_partial_pressure(self) -> None:
         """Calculate the water vapor partial pressure at sealevel (1 atm) as
-        a function of temperature and salinity. Eq. after Sarmiento and Gruber 2006
-        Eq 8 in panel 3.2.1 p 78
+        a function of temperature and salinity. Eq. Weiss and Price 1980
+        doi:10.1016/0304-4203(80)90024-9
+
+        Since we assume that we only use this expression at sealevel,
+        we drop the pressure term
+
         """
 
         T = self.temperature + 273.15
@@ -382,7 +386,7 @@ class SeawaterConstants(esbmtkBase):
         self.SA_co2 = F / (1 - self.p_H2O)
 
         # the above number is in mmol/m3 but esbmtk uses mol/l
-        self.SA_co2 = self.SA_co2
+        # self.SA_co2 = self.SA_co2
 
     def __init_calcite__(self) -> None:
         """Calculate Calcite solubility as a function of pressure following
@@ -394,6 +398,32 @@ class SeawaterConstants(esbmtkBase):
         """
 
         self.Ksp = 4.3513e-7 * np.exp(0.0019585 * self.pressure)
+
+    def __init_c_fractionation_factors__(self):
+        """Calculate the fractionation factors for the various carbon species transitions.
+        After Zeebe and Gladrow, 2001, CHapter 3.2.3
+
+        e = (a -1) * 1E3
+
+        """
+
+        T = 273.15 + self.temperature
+
+        # CO2g versus HCO3
+        self.e_gb: float = -9483 / T + 23.89
+        self.a_gb: float = 1 + self.e_gb / 1000
+
+        # CO2 versus CO2g
+        self.e_dg: float = -373 / T + 0.19
+        self.a_dg: float = 1 + self.e_dg / 1000
+
+        # CO2 versus HCO3
+        self.e_db: float = -9866 / T + 24.12
+        self.a_db: float = 1 + self.e_db / 1000
+
+        # CO32- versus HCO3
+        self.e_cb: float = -867 / T + 2.52
+        self.a_cb: float = 1 + self.e_cb / 1000
 
 
 def carbonate_system_new(
