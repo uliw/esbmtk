@@ -945,6 +945,7 @@ class RateConstant(Process):
             "water_vapor_pressure": (Number, np.float64),
             "ref_species": np.ndarray,
             "seawaterconstants": any,
+            "isotopes": bool,
         }
 
         # new required keywords
@@ -952,6 +953,7 @@ class RateConstant(Process):
 
         # dict with default values if none provided
         # self.lod = {r
+        self.lod: dict = {"isotopes": False}
 
         self.__initerrormessages__()
 
@@ -978,15 +980,10 @@ class RateConstant(Process):
 
         self.__register_name__()
 
-        # decide which call function to use
-        # if self.mo.m_type == "both":
-        if "liquid" in kwargs:  # xxx this needs fixing
-            self.__execute__ = self.__without_isotopes__
+        if self.reservoir.isotopes or self.isotopes:
+            self.__execute__ = self.__with_isotopes__
         else:
-            if self.reservoir.isotopes:
-                self.__execute__ = self.__with_isotopes__
-            else:
-                self.__execute__ = self.__without_isotopes__
+            self.__execute__ = self.__without_isotopes__
 
     def __postinit__(self) -> "None":
         self.mo = self.reservoir.mo
@@ -1319,6 +1316,8 @@ class GasExchange(RateConstant):
         self.a_db = self.seawaterconstants.a_db
         self.a_u = 1.0
         self.rvalue = self.liquid.sp.r
+        self.volume = self.gas.volume
+        print(f"volume = { self.volume:.2e}")
 
         # self.scale = self.area * self.piston_velocity
         # print("setting scale to {self.scale}")
@@ -1374,25 +1373,28 @@ class GasExchange(RateConstant):
             )
         )
 
-        # we need p13CO2 (i.e., l p13CO2
+        co2aq_12 = self.ref_species[i - 1] * self.r.l[i - 1] / self.r.m[i - 1]
+        co2aq_13 = self.r.m[i - 1] - co2aq_12
         h = (
             1e3
             * self.scale
             * self.a_u
             * (
-                self.gas.h[i - 1]
-                * self.a_dg  # p Atmosphere
+                self.a_dg
+                * self.gas.h[i - 1]
+                / self.volume  # p Atmosphere
                 * (1 - self.p_H2O)  # p_H2O
                 * self.solubility  # SA_co2
                 * 1e-6  # convert to mol
-                - (self.r.h[i - 1] / self.r.m) * self.ref_species[i - 1]  # [CO2]aq
+                - self.a_db * co2aq_13
             )
         )
 
-        # update delate
         l = m - h
         d = 1000 * (h / l - self.rvalue) / self.rvalue
-        self.flux[i] = [m, h, l, d]
+
+        print(f"m={m:.2e}, l={l:.2e}, h={h:.2e}, d={d:.2f}")
+        self.flux[i] = [m, l, h, d]
 
         # raise NotImplementedError()
 

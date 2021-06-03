@@ -409,6 +409,14 @@ class SeawaterConstants(esbmtkBase):
         and
 
         a =  1 + e / 1E3
+
+        where the subscripts denote:
+
+        g = gaseous CO2
+        d = dissolved CO2
+        b = bicarbonate ion
+        c = carbonate ion
+
         """
 
         T = 273.15 + self.temperature
@@ -417,11 +425,11 @@ class SeawaterConstants(esbmtkBase):
         self.e_gb: float = -9483 / T + 23.89
         self.a_gb: float = 1 + self.e_gb / 1000
 
-        # CO2 versus CO2g
+        # CO2aq versus CO2g
         self.e_dg: float = -373 / T + 0.19
         self.a_dg: float = 1 + self.e_dg / 1000
 
-        # CO2 versus HCO3
+        # CO2aq versus HCO3
         self.e_db: float = -9866 / T + 24.12
         self.a_db: float = 1 + self.e_db / 1000
 

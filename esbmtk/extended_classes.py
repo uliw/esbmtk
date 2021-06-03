@@ -1571,6 +1571,7 @@ class GasReservoir(ReservoirBase):
         self.l[i]: float = value[1]
         self.h[i]: float = value[2]
         self.d[i]: float = get_delta(self.l[i], self.h[i], self.sp.r)
+        print(f"d =  {self.d[i]:.2f}")
         self.c[i]: float = self.m[i] / self.v  # update concentration
 
     def __set_without_isotopes__(self, i: int, value: float) -> None:

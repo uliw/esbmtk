@@ -1324,16 +1324,24 @@ class AirSeaExchange(esbmtkBase):
         self.gr.lof.append(self.fh)
         self.gr.lio[self.fh] = -1  # flux direction
 
+        if self.lr.register == "None":
+            swc = self.lr.swc
+        else:
+            swc = self.lr.register.swc
+
         # initialize process instance
         ph = GasExchange(
             name="_PGex",
-            gas=self.gr,  # concentration
-            liquid=self.ref_species,  # concentration
+            gas=self.gr,  # gas reserevoir
+            liquid=self.lr,  # reserevoir
+            ref_species=self.ref_species,  # concentration
             flux=self.fh,  # flux handle
             register=self.fh,
             scale=self.scale,
             solubility=self.solubility,
             water_vapor_pressure=self.water_vapor_pressure,
+            seawaterconstants=swc,
+            isotopes=True,
         )
 
         self.__register_name__()
