@@ -1418,8 +1418,11 @@ class GasExchange(RateConstant):
                 self.flux.l,
                 self.flux.h,
                 self.flux.d,
-                self.liquid,  # 4
-                self.gas.c,  # 5
+                self.liquid.m,  # 4
+                self.liquid.h,  # 5
+                self.ref_species,  # 6
+                self.gas.c,  # 7
+                self.gas.h,  # 8
             ]
         )
 
@@ -1427,6 +1430,11 @@ class GasExchange(RateConstant):
             [
                 float(self.scale * 1e3),
                 float(self.solubility * 1e-6 * (1 - self.p_H2O)),
+                float(self.rvalue),
+                float(self.gas.volume),
+                float(self.a_u),
+                float(self.a_dg),
+                float(self.a_db),
             ]
         )
 
@@ -1443,11 +1451,19 @@ class GasExchange(RateConstant):
 
         scale: float = params[0]
         SA: float = params[1]
+        r: float = params[2]
+        v: float = params[3]
+        au: float = params[4]
+        dg: float = params[5]
+        db: float = params[6]
 
-        liquid = data[4][i - 1]
-        gas = data[5][i - 1]
+        dic_m = data[4][i - 1]
+        dic_m13 = data[5][i - 1]
+        co2aq_c = data[6][i - 1]
+        co2at_c = data[7][i - 1]
+        co2at_c13 = data[8][i - 1] / v
 
-        a = scale * (gas * SA - liquid)
+        f = scale * (co2at_c * SA - co2aq_c)
 
         data[0][i] = a
         data[1][i] = 1
