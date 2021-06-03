@@ -1375,19 +1375,18 @@ class GasExchange(RateConstant):
 
         co2aq_13 = self.ref_species[i - 1] * self.r.h[i - 1] / self.r.m[i - 1]
         co2at_13 = self.gas.h[i - 1] / self.gas.volume
-        # print(f"co2at_13 c = {co2at_13:.2e},  co2aq_13 = {co2aq_13:.2e}")
 
         f13 = (
             1e3
             * self.scale
             * self.a_u
             * (
-                (2 - self.a_dg)
+                self.a_dg
                 * co2at_13
                 * (1 - self.p_H2O)  # p_H2O
                 * self.solubility  # SA_co2
                 * 1e-6  # convert to mol
-                - (2 - self.a_db) * co2aq_13
+                - self.a_db * co2aq_13
             )
         )
 
