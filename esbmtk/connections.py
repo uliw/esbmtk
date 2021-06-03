@@ -430,6 +430,8 @@ class Connect(esbmtkBase):
         else:
             self.full_name = f"{self.register.name}.{self.name}"
 
+        self.base_name = self.full_name
+
         self.__create_flux__()  # Source/Sink/Regular
 
         self.__set_process_type__()  # derive flux type and create flux(es)
