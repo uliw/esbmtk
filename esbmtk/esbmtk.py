@@ -1009,7 +1009,7 @@ class Model(esbmtkBase):
 
         for c in self.cg_list:
             if fby in c.full_name:
-                print(f"{c.name}.info()")
+                print(f"{c.base_name}.info()")
 
         print("")
 
@@ -1969,7 +1969,7 @@ class Flux(esbmtkBase):
             if self.register == "None":
                 print(f"e.g., help({self.lop[0].n})")
             else:
-                print(f"e.g., help({self.register.name}.{self.lop[0].n})")
+                print(f"e.g., help({self.register.name}.{self.lop[0].name})")
         else:
             print("There are no processes for this flux")
 
