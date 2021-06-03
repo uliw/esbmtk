@@ -1460,15 +1460,19 @@ class GasExchange(RateConstant):
         dic_m = data[4][i - 1]
         dic_m13 = data[5][i - 1]
         co2aq_c = data[6][i - 1]
+        co2aq_c13 = co2aq_c * dic_m13 / dic_m
         co2at_c = data[7][i - 1]
         co2at_c13 = data[8][i - 1] / v
 
         f = scale * (co2at_c * SA - co2aq_c)
+        f13 = scale * au * (dg * SA * co2at_c13 - db * co2aq_c13)
+        f12 = f - f13
+        d = 1000 * (f13 / f12 - r) / r
 
-        data[0][i] = a
-        data[1][i] = 1
-        data[2][i] = 1
-        data[3][i] = 1
+        data[0][i] = f
+        data[1][i] = f12
+        data[2][i] = f13
+        data[3][i] = d
 
 
 class Monod(Process):
