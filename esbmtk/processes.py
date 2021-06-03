@@ -1314,7 +1314,7 @@ class GasExchange(RateConstant):
         self.p_H2O = self.seawaterconstants.p_H2O
         self.a_dg = self.seawaterconstants.a_dg
         self.a_db = self.seawaterconstants.a_db
-        self.a_u = 1.0
+        self.a_u = self.seawaterconstants.a_u
         self.rvalue = self.liquid.sp.r
         self.volume = self.gas.volume
         print(f"volume = { self.volume:.2e}")
@@ -1394,7 +1394,7 @@ class GasExchange(RateConstant):
         f12 = f - f13
         d = 1000 * (f13 / f12 - self.rvalue) / self.rvalue
 
-        print(f"P: f={f:.2e}, f12={f12:.2e}, f13={f13:.2e}, d={d:.2f}")
+        # print(f"P: f={f:.2e}, f12={f12:.2e}, f13={f13:.2e}, d={d:.2f}")
         self.flux[i] = [f, f12, f13, d]
 
         # raise NotImplementedError()
