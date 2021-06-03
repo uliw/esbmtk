@@ -437,6 +437,14 @@ class SeawaterConstants(esbmtkBase):
         self.e_cb: float = -867 / T + 2.52
         self.a_cb: float = 1 + self.e_cb / 1000
 
+        # kinetic fractionation during gas exchange
+        # parameters after Zhang et. al.1995
+        # https://doi.org/10.1016/0016-7037(95)91550-D
+        m = 0.14 / 16
+        c = m * 5 + 0.95
+        self.e_u: float = self.temperature * m - c
+        self.a_u: float = 1 + self.e_u / 1000
+
 
 def carbonate_system_new(
     ca_con: float,
@@ -602,6 +610,7 @@ def calc_pCO2(
     SW: Seawater = Seawater object for the model
     it is typically used with a DataField object, e.g.
     pco2 = calc_pCO2(dic,h,SW)
+
      DataField(name = "SurfaceWaterpCO2",
                        associated_with = reservoir_handle,
                        y1_data = pco2,
@@ -609,6 +618,7 @@ def calc_pCO2(
                        y1_legend = r"pCO_{2}",
                        )
     Author: T. Tsan
+
     """
 
     dic_c: [NDArray, Float] = dic.c
@@ -664,7 +674,7 @@ def calc_pCO2b(
 
 
 def calc_horizon(i: int, input_data: List, vr_data: List, params: List) -> None:
-    """ Calculates related carbonate dissolution values and stores them
+    """Calculates related carbonate dissolution values and stores them
      in their respective arrays in vr_data of the VirtualReservoir_no_set object.
      This function calculates saturation depth (z_sat), carbonate compensation
      depth (zcc), snowline depth (z_snow), and the saturation state (omega value).
@@ -705,25 +715,25 @@ def calc_horizon(i: int, input_data: List, vr_data: List, params: List) -> None:
     """
     import numpy as np
 
-    #----------------------Model Parameters-------------------------------------
+    # ----------------------Model Parameters-------------------------------------
     co3d: float = input_data[0][i - 1]
     depth_areas: float = input_data[1]
 
-    sa: float = params[0] #surface area
-    AD: float = params[1] #total ocean area
-    dt: float = params[2] #time-step
-    reservoir_vol: float = params[3] #reservoir volume
-    ksp: float = params[4] #ksp value for deep ocean box
-    ca: float = params[5] #calcium ion concentration
-    ksp0: float = params[6] #ksp at ocean surface interface
-    zsat0: float = params[7] #characteristic depth
-    kc: float = params[8] #rate constant
-    B: float = params[9] #calcite flux
-    pc: float = params[10] #characteristic pressure
-    pg: float = params[11] #seawater density and gravity due to acceleration (atm/m)
-    I_caco3: float = params[12] #dissolvable CaCO3 inventory
+    sa: float = params[0]  # surface area
+    AD: float = params[1]  # total ocean area
+    dt: float = params[2]  # time-step
+    reservoir_vol: float = params[3]  # reservoir volume
+    ksp: float = params[4]  # ksp value for deep ocean box
+    ca: float = params[5]  # calcium ion concentration
+    ksp0: float = params[6]  # ksp at ocean surface interface
+    zsat0: float = params[7]  # characteristic depth
+    kc: float = params[8]  # rate constant
+    B: float = params[9]  # calcite flux
+    pc: float = params[10]  # characteristic pressure
+    pg: float = params[11]  # seawater density and gravity due to acceleration (atm/m)
+    I_caco3: float = params[12]  # dissolvable CaCO3 inventory
 
-    #---------------------Calculate omega---------------------------------------
+    # ---------------------Calculate omega---------------------------------------
     # Equation (1) from paper (3) Zeebe & Westbroek (2003)
     # omega = [Ca2+]sw * [CO3 2-]sw / Ksp*
     omega: float = (ca * co3d) / ksp
@@ -733,41 +743,45 @@ def calc_horizon(i: int, input_data: List, vr_data: List, params: List) -> None:
     # zsat = zsat0 * ln([Ca2+][CO3 2-]D / Ksp0)
     zsat: float = zsat0 * np.log(ca * co3d / ksp0)
 
-    #------------------------Calculate zcc--------------------------------------
+    # ------------------------Calculate zcc--------------------------------------
     # Equation (3) from paper (1) Boudreau (2010)
     # zsat = zsat0 * ln((B * [Ca2+] / Ksp0 * AD * kc) + ([Ca2+][CO3 2-]D / Ksp0))
     term1: float = (B * ca) / (ksp0 * AD * kc)
     term2: float = ca * co3d / ksp0
     zcc: float = zsat0 * np.log(term1 + (term2))
 
-    #------------------------Calculate zsnow------------------------------------
-    #---Calculating Csat at depths zcc and zsnow---
+    # ------------------------Calculate zsnow------------------------------------
+    # ---Calculating Csat at depths zcc and zsnow---
     # Equation (1) from paper (2) Boudreau (2010)
     # Csat = Ksp0 / [Ca] * exp(p(z) / pc)
-    prev_zcc: float = vr_data[1][i - 1] #zcc from previous timestep
-    pz_zcc: float = pg * prev_zcc #gauge pressure (atm) at depth zcc (m)
-    Csat_zcc: float = (ksp0 / ca) * np.exp(pz_zcc/pc)
+    prev_zcc: float = vr_data[1][i - 1]  # zcc from previous timestep
+    pz_zcc: float = pg * prev_zcc  # gauge pressure (atm) at depth zcc (m)
+    Csat_zcc: float = (ksp0 / ca) * np.exp(pz_zcc / pc)
 
-    prev_zsnow: float = vr_data[2][i-1] #zsnow from previous timestep
-    pz_zsnow: float = pg * prev_zsnow #gauge pressure (atm) at depth zsnow (m)
-    Csat_zsnow: float = (ksp0 / ca) * np.exp(pz_zsnow/pc)
+    prev_zsnow: float = vr_data[2][i - 1]  # zsnow from previous timestep
+    pz_zsnow: float = pg * prev_zsnow  # gauge pressure (atm) at depth zsnow (m)
+    Csat_zsnow: float = (ksp0 / ca) * np.exp(pz_zsnow / pc)
 
-    #---Calculating BPDC---
+    # ---Calculating BPDC---
     # Equation (10) from paper (1) Boudreau (2010)
     # BPDC = kc * (integral of (Csat(z,t) - [CO3]D(t)) dz from zsnow(t) to zcc(t))
-    BPDC: float = kc * ((sa * depth_areas[int(prev_zcc)] * (Csat_zcc - co3d)) -
-                          (sa * depth_areas[int(prev_zsnow)] * (Csat_zsnow - co3d)))
+    BPDC: float = kc * (
+        (sa * depth_areas[int(prev_zcc)] * (Csat_zcc - co3d))
+        - (sa * depth_areas[int(prev_zsnow)] * (Csat_zsnow - co3d))
+    )
 
-    #---Calculating zsnow---
+    # ---Calculating zsnow---
     # Equation (4) from paper (1) Boudreau (2010)
     # dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
     # Note that we use equation (1) from paper (1) Boudreau (2010) as well:
     # where a'(z) is the differential bathymetric curve: A(z2, z1) = a'(z2) - a'(z1)
-    zsnow_dt: float = BPDC / (sa * depth_areas[int(prev_zsnow)] * I_caco3) #movement of snowline
-    #multiplying change in snowline by the timestep to get the current snowline depth
+    zsnow_dt: float = BPDC / (
+        sa * depth_areas[int(prev_zsnow)] * I_caco3
+    )  # movement of snowline
+    # multiplying change in snowline by the timestep to get the current snowline depth
     zsnow: float = prev_zsnow + (zsnow_dt * dt)
 
-    #------------Adding CaCO3 flux back into DIC and Total Alkalinity-----------
+    # ------------Adding CaCO3 flux back into DIC and Total Alkalinity-----------
     co3_mass: float = BPDC * dt
     # add/subtract to DIC reservoir mass (moles)
     # dic mass = non-updated DIC mass + dissolved co3 mass
