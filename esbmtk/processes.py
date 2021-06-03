@@ -1361,7 +1361,7 @@ class GasExchange(RateConstant):
         and a_gb between CO2g HCO3-
         """
 
-        m = (
+        f = (
             1e3
             * self.scale
             * (
@@ -1373,28 +1373,30 @@ class GasExchange(RateConstant):
             )
         )
 
-        co2aq_12 = self.ref_species[i - 1] * self.r.l[i - 1] / self.r.m[i - 1]
-        co2aq_13 = self.r.m[i - 1] - co2aq_12
-        h = (
+        co2aq_13 = self.ref_species[i - 1] * self.r.h[i - 1] / self.r.m[i - 1]
+        co2at_13 = self.gas.h[i - 1] / self.gas.volume
+        # print(f"co2at_13 c = {co2at_13:.2e},  co2aq_13 = {co2aq_13:.2e}")
+
+        f13 = (
             1e3
             * self.scale
             * self.a_u
             * (
-                self.a_dg
-                * self.gas.h[i - 1]
-                / self.volume  # p Atmosphere
+                (2 - self.a_dg)
+                * co2at_13
                 * (1 - self.p_H2O)  # p_H2O
                 * self.solubility  # SA_co2
                 * 1e-6  # convert to mol
-                - self.a_db * co2aq_13
+                - (2 - self.a_db) * co2aq_13
             )
         )
 
-        l = m - h
-        d = 1000 * (h / l - self.rvalue) / self.rvalue
+        # h = flux!
+        f12 = f - f13
+        d = 1000 * (f13 / f12 - self.rvalue) / self.rvalue
 
-        print(f"m={m:.2e}, l={l:.2e}, h={h:.2e}, d={d:.2f}")
-        self.flux[i] = [m, l, h, d]
+        print(f"P: f={f:.2e}, f12={f12:.2e}, f13={f13:.2e}, d={d:.2f}")
+        self.flux[i] = [f, f12, f13, d]
 
         # raise NotImplementedError()
 
