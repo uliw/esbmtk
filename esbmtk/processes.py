@@ -1317,7 +1317,7 @@ class GasExchange(RateConstant):
         self.a_u = self.seawaterconstants.a_u
         self.rvalue = self.liquid.sp.r
         self.volume = self.gas.volume
-        print(f"volume = { self.volume:.2e}")
+        # print(f"volume = { self.volume:.2e}")
 
         # self.scale = self.area * self.piston_velocity
         # print("setting scale to {self.scale}")

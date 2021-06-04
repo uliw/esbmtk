@@ -1358,7 +1358,6 @@ class AirSeaExchange(esbmtkBase):
         # register connector with model
         self.mo.loc.add(self)
         logging.info(f"Created {self.full_name}")
-        print(f"Created {self.name}")
 
     def __check_keywords__(self, kwargs) -> None:
         # provide a dict of all known keywords and their type
@@ -1419,9 +1418,7 @@ class AirSeaExchange(esbmtkBase):
         else:
             n = self.lr.name
 
-        print(f"lf fn = {n}, gr_n = {self.gr.name}")
         self.name = f"GC_{n}_2_{self.gr.name}_{self.species.name}"
-        print(f"name = {self.name}")
 
         if self.id == "None" or self.id == "":
             pass
@@ -1434,9 +1431,6 @@ class AirSeaExchange(esbmtkBase):
             self.full_name = f"{self.register.name}.{self.name}"
 
         self.base_name = self.name
-        print(
-            f"name = {self.name}, base_name {self.base_name}, fullname = {self.full_name}"
-        )
 
         # decide if this connection needs isotope calculations
         if self.gas_reservoir.isotopes:

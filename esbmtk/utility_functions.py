@@ -271,8 +271,8 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
 
     elif isinstance(obj, DataField):
         time = (time * model.t_unit).to(model.d_unit).magnitude
-        yl = obj.y1_data
-        y_label = obj.y1_label
+        # yl = obj.y1_data
+        # y_label = obj.y1_label
         if type(obj.y2_data) == str:
             ptype = 2
         else:
@@ -301,12 +301,12 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
 
     if first_axis:
         if isinstance(obj, DataField):
+            y_label = obj.y1_label
             if not isinstance(obj.y1_data[0], str):
                 for i, d in enumerate(obj.y1_data):  # loop over datafield list
-                    yl = d
                     label = obj.y1_legend[i]
                     # print(f"label = {label}")
-                    ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
+                    ln1 = ax1.plot(time[1:-2], d[1:-2], color=col, label=label)
                     cn = cn + 1
                     col = f"C{cn}"
 
@@ -314,8 +314,8 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                 ax1.set_ylabel(y_label)
                 # remove unnecessary frame species
                 ax1.spines["top"].set_visible(False)
-                set_y_limits(ax1, obj)
-                plt.legend()
+                # set_y_limits(ax1, obj)
+                # plt.legend()
 
         else:
             ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=y_label)
@@ -326,31 +326,30 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             ax1.set_ylabel(y_label)
             # remove unnecessary frame species
             ax1.spines["top"].set_visible(False)
-            set_y_limits(ax1, obj)
+            # set_y_limits(ax1, obj)
 
     if second_axis:
         if isinstance(obj, DataField):
+            y_label = obj.y2_label
             if not isinstance(obj.y2_data[0], str):
                 if obj.common_y_scale == "yes":
                     for i, d in enumerate(obj.y2_data):  # loop over datafield list
-                        yl = d
                         label = obj.y2_legend[i]
-                        ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
+                        ln1 = ax1.plot(time[1:-2], d[1:-2], color=col, label=label)
                         cn = cn + 1
                         col = f"C{cn}"
-                        set_y_limits(ax1, model)
-                        ax1.legend()
+                        # set_y_limits(ax1, model)
+                        # ax1.legend()
                         second_axis = False
                 else:
                     ax2 = ax1.twinx()  # create a second y-axis
                     for i, d in enumerate(obj.y2_data):  # loop over datafield list
-                        yl = d
                         label = obj.y2_legend[i]
-                        ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
+                        ln1 = ax2.plot(time[1:-2], d[1:-2], color=col, label=label)
                         cn = cn + 1
                         col = f"C{cn}"
 
-                    ax2.set_ylabel(obj.ld)  # species object delta label
+                    ax2.set_ylabel(obj.y2_label)  # species object delta label
                     set_y_limits(ax2, model)
                     # remove unneeded frame
                     ax2.spines["top"].set_visible(False)
@@ -367,13 +366,13 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             ax2.set_ylabel(obj.data.ld)  # species object delta label
             set_y_limits(ax2, model)
             ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
-        else:
+        elif isinstance(obj, Reservoir):
             ax2 = ax1.twinx()  # create a second y-axis
             # plof right y-scale data
             ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
             ax2.set_ylabel(obj.ld)  # species object delta label
             set_y_limits(ax2, model)
-            ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
+            ax2.spines["top"].set_visible(False)  # remove unnecessary frame species
 
     # adjust display properties for title and legend
 
@@ -413,15 +412,6 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
 
     if first_axis and second_axis:
         legend = ax2.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(6)
-    # elif first_axis:
-    #    legend = ax1.legend(handler1 + label1, loc=0).set_zorder(6)
-    # elif second_axis:
-    #   legend = ax2.legend(handler2 + label2, loc=0).set_zorder(6)
-
-    # Matplotlib will show arbitrarily small differences which can be confusing
-    # yl_min = min(yl)
-    # yl_max = max(yl)
-    # if (yl_max - yl_min) < 0.1:
 
 
 def is_name_in_list(n: str, l: list) -> bool:
