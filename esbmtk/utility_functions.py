@@ -270,7 +270,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
         y_label = f"{obj.n} [{obj.data.plt_units:~P}]"
 
     elif isinstance(obj, DataField):
-        time = (time * model.t_unit).to(model.d_unit).magnitude
+        # time = (time * model.t_unit).to(model.d_unit).magnitude
         # yl = obj.y1_data
         # y_label = obj.y1_label
         if type(obj.y2_data) == str:
