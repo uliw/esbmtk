@@ -371,7 +371,7 @@ class esbmtkBase(object):
 
         return m
 
-    def __str__(self, **kwargs):
+    def __str__(self, kwargs={}):
         """Print the basic parameters for this class when called via the print method
         Optional arguments
 
@@ -388,6 +388,11 @@ class esbmtkBase(object):
         else:
             ind: str = ""
 
+        if "index" in kwargs:
+            index = int(kwargs["index"])
+        else:
+            index = -2
+
         m = f"{ind}{self.name} ({self.__class__.__name__})\n"
         for k, v in self.provided_kwargs.items():
             if not isinstance({k}, esbmtkBase):
@@ -398,6 +403,8 @@ class esbmtkBase(object):
                     m = m + f"{ind}{off}{k} = {v}\n"
                 elif isinstance(v, Q_):
                     m = m + f"{ind}{off}{k} = {v}\n"
+                elif isinstance(v, np.ndarray):
+                    m = m + f"{ind}{off}{k}[{index}] = {v[index]:.2e}\n"
                 elif k != "name":
                     m = m + f"{ind}{off}{k} = {v}\n"
 
@@ -429,7 +436,7 @@ class esbmtkBase(object):
             ind = " " * indent
 
         # print basic data bout this object
-        print(f"{ind}{self.__str__(indent=indent)}")
+        print(f"{ind}{self.__str__(kwargs)}")
 
     def __aux_inits__(self) -> None:
         """Aux initialization code. Not normally used"""
@@ -1465,7 +1472,7 @@ class ReservoirBase(esbmtkBase):
             ind = " " * indent
 
         # print basic data bout this reservoir
-        print(f"{ind}{self.__str__(indent=indent)}")
+        print(f"{ind}{self.__str__(kwargs)}")
         print(f"{ind}Data sample:")
         show_data(self, index=index, indent=indent)
 
@@ -1953,7 +1960,7 @@ class Flux(esbmtkBase):
             ind = " " * indent
 
         # print basic data bout this object
-        print(f"{ind}{self.__str__(indent=indent)}")
+        print(f"{ind}{self.__str__(kwargs)}")
         print(f"{ind}Data sample:")
         show_data(self, index=index, indent=indent)
 
