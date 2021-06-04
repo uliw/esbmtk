@@ -975,7 +975,7 @@ class Connect(esbmtkBase):
             ind = " " * indent
 
         # print basic data bout this Connection
-        print(f"{ind}{self.__str__(indent=indent)}")
+        print(f"{ind}{self.__str__(kwargs)}")
 
         print(f"{ind}Fluxes:")
         for f in sorted(self.lof):
@@ -1414,7 +1414,14 @@ class AirSeaExchange(esbmtkBase):
         else:
             raise ValueError(f"{self.species.name} not implemented yet")
 
-        self.name = f"GC_{self.lr.name}_2_{self.gr.name}_{self.species.name}"
+        if isinstance(self.lr.register, ReservoirGroup):
+            n = self.lr.register.name
+        else:
+            n = self.lr.name
+
+        print(f"lf fn = {n}, gr_n = {self.gr.name}")
+        self.name = f"GC_{n}_2_{self.gr.name}_{self.species.name}"
+        print(f"name = {self.name}")
 
         if self.id == "None" or self.id == "":
             pass
@@ -1427,6 +1434,9 @@ class AirSeaExchange(esbmtkBase):
             self.full_name = f"{self.register.name}.{self.name}"
 
         self.base_name = self.name
+        print(
+            f"name = {self.name}, base_name {self.base_name}, fullname = {self.full_name}"
+        )
 
         # decide if this connection needs isotope calculations
         if self.gas_reservoir.isotopes:
