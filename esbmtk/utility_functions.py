@@ -304,9 +304,9 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             y_label = obj.y1_label
             if not isinstance(obj.y1_data[0], str):
                 for i, d in enumerate(obj.y1_data):  # loop over datafield list
-                    label = obj.y1_legend[i]
+                    y1_legend = obj.y1_legend[i]
                     # print(f"label = {label}")
-                    ln1 = ax1.plot(time[1:-2], d[1:-2], color=col, label=label)
+                    ln1 = ax1.plot(time[1:-2], d[1:-2], color=col, label=y1_legend)
                     cn = cn + 1
                     col = f"C{cn}"
 
@@ -334,8 +334,8 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             if not isinstance(obj.y2_data[0], str):
                 if obj.common_y_scale == "yes":
                     for i, d in enumerate(obj.y2_data):  # loop over datafield list
-                        label = obj.y2_legend[i]
-                        ln1 = ax1.plot(time[1:-2], d[1:-2], color=col, label=label)
+                        y2_legend = obj.y2_legend[i]
+                        ln1 = ax1.plot(time[1:-2], d[1:-2], color=col, label=y1_legend)
                         cn = cn + 1
                         col = f"C{cn}"
                         # set_y_limits(ax1, model)
@@ -344,8 +344,8 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                 else:
                     ax2 = ax1.twinx()  # create a second y-axis
                     for i, d in enumerate(obj.y2_data):  # loop over datafield list
-                        label = obj.y2_legend[i]
-                        ln1 = ax2.plot(time[1:-2], d[1:-2], color=col, label=label)
+                        y2_legend = obj.y2_legend[i]
+                        ln1 = ax2.plot(time[1:-2], d[1:-2], color=col, label=y2_legend)
                         cn = cn + 1
                         col = f"C{cn}"
 
@@ -412,6 +412,12 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
 
     if first_axis and second_axis:
         legend = ax2.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(6)
+    elif first_axis:
+        legend = ax1.legend(handler1, label1, loc=0).set_zorder(6)
+    elif second_axis:
+        legend = ax2.legend(handler2, label2, loc=0).set_zorder(6)
+    else:
+        raise TypeError("This should never happen!")
 
 
 def is_name_in_list(n: str, l: list) -> bool:
