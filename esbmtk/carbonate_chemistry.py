@@ -362,6 +362,8 @@ class SeawaterConstants(esbmtkBase):
         ideal gas behavior
 
         Parameters Ai & Bi from Tab 3.2.2 in  Sarmiento and Gruber 2006
+
+        The result is in mol/(m^3 atm)
         """
 
         # Calculate the volumetric solubility function F_A in mol/l/m^3
@@ -381,13 +383,10 @@ class SeawaterConstants(esbmtkBase):
             + A4 * (T / 100) ** 2
             + S * (B1 + B2 * (T / 100) + B3 * (T / 100) ** 2)
         )
-        F = np.exp(ln_F) * 1e6
+        F = np.exp(ln_F) * 1000  # to get mol/(m^3 atm)
 
         # correct for water vapor partial pressure
         self.SA_co2 = F / (1 - self.p_H2O)
-
-        # the above number is in mmol/m3 but esbmtk uses mol/l
-        # self.SA_co2 = self.SA_co2
 
     def __init_calcite__(self) -> None:
         """Calculate Calcite solubility as a function of pressure following

@@ -1297,7 +1297,7 @@ class GasExchange(RateConstant):
           gas =GasReservoir, #
           liquid = Reservoir, #,
           ref_species = array of concentrations #
-          solubility=Atmosphere.swc.SA_co2,
+          solubility=Atmosphere.swc.SA_co2 [mol/(m^3 atm)],
           area = area, # m^2
           piston_velocity = m/year
           seawaterconstants = Ocean.swc
@@ -1329,18 +1329,14 @@ class GasExchange(RateConstant):
         # this equation is for mmol but esbmtk uses mol, so we need to
         # multiply by 1E3
 
-        a = (
-            1e3
-            * self.scale
-            * (
-                self.gas.c[i - 1]  # p Atmosphere
-                * (1 - self.p_H2O)  # p_H2O
-                * self.solubility  # SA_co2
-                * 1e-6  # convert to mol
-                - self.ref_species[i - 1]  # [CO2]aq
-            )
+        a = self.scale * (
+            self.gas.c[i - 1]  #  Atmosphere
+            * (1 - self.p_H2O)  # p_H2O
+            * self.solubility  # SA_co2 = mol/(m2 atm dt)
+            - self.ref_species[i - 1] * 1000  # [CO2]aq mol
         )
         # print(self.gas.c[i - 1])
+
         self.flux[i] = [a, 1, 1, 1]
 
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
@@ -1361,32 +1357,25 @@ class GasExchange(RateConstant):
         and a_gb between CO2g HCO3-
         """
 
-        f = (
-            1e3
-            * self.scale
-            * (
-                self.gas.c[i - 1]  # p Atmosphere
-                * (1 - self.p_H2O)  # p_H2O
-                * self.solubility  # SA_co2
-                * 1e-6  # convert to mol
-                - self.ref_species[i - 1]  # [CO2]aq
-            )
+        f = self.scale * (
+            self.gas.c[i - 1]  # p Atmosphere
+            * (1 - self.p_H2O)  # p_H2O
+            * self.solubility  # SA_co2
+            - self.ref_species[i - 1] * 1000  # [CO2]aq
         )
 
         co2aq_13 = self.ref_species[i - 1] * self.r.h[i - 1] / self.r.m[i - 1]
         co2at_13 = self.gas.h[i - 1] / self.gas.volume
 
         f13 = (
-            1e3
-            * self.scale
+            self.scale
             * self.a_u
             * (
                 self.a_dg
                 * co2at_13
                 * (1 - self.p_H2O)  # p_H2O
                 * self.solubility  # SA_co2
-                * 1e-6  # convert to mol
-                - self.a_db * co2aq_13
+                - self.a_db * co2aq_13 * 1000
             )
         )
 
@@ -1394,6 +1383,7 @@ class GasExchange(RateConstant):
         f12 = f - f13
         d = 1000 * (f13 / f12 - self.rvalue) / self.rvalue
 
+        # print(f"f={f:.2e}")
         # print(f"P: f={f:.2e}, f12={f12:.2e}, f13={f13:.2e}, d={d:.2f}")
         self.flux[i] = [f, f12, f13, d]
 
@@ -1428,8 +1418,8 @@ class GasExchange(RateConstant):
 
         params = List(
             [
-                float(self.scale * 1e3),
-                float(self.solubility * 1e-6 * (1 - self.p_H2O)),
+                float(self.scale),
+                float(self.solubility * (1 - self.p_H2O)),
                 float(self.rvalue),
                 float(self.gas.volume),
                 float(self.a_u),
@@ -1464,8 +1454,8 @@ class GasExchange(RateConstant):
         co2at_c = data[7][i - 1]
         co2at_c13 = data[8][i - 1] / v
 
-        f = scale * (co2at_c * SA - co2aq_c)
-        f13 = scale * au * (dg * SA * co2at_c13 - db * co2aq_c13)
+        f = scale * (co2at_c * SA - co2aq_c * 1000)
+        f13 = scale * au * (dg * SA * co2at_c13 - db * co2aq_c13 * 1000)
         f12 = f - f13
         d = 1000 * (f13 / f12 - r) / r
 

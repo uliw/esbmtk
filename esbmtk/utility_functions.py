@@ -40,6 +40,8 @@ import pandas as pd
 import logging
 import time
 
+from esbmtk import Q_
+
 # import builtins
 # import math
 
@@ -1230,6 +1232,25 @@ def get_string_between_brackets(s: str) -> str:
         raise ValueError(f"Column header {s} must include units in square brackets")
 
     return s[0]
+
+
+def check_for_quantity(kw) -> Q_:
+    """check if keyword is quantity or string an convert as necessary
+
+    kw = str or Q_
+
+    """
+
+    from esbmtk import Q_
+
+    if isinstance(kw, str):
+        kw = Q_(kw)
+    elif isinstance(kw, Q_):
+        pass
+    else:
+        raise ValueError(f"kw must be string or Quantity")
+
+    return kw
 
 
 def map_units(v: any, *args) -> float:

@@ -44,6 +44,8 @@ set_printoptions(precision=4)
 from .utility_functions import map_units
 from .processes import *
 from .esbmtk import *
+from esbmtk import Q_
+from .utility_functions import check_for_quantity
 
 
 class Connect(esbmtkBase):
@@ -1282,8 +1284,8 @@ class AirSeaExchange(esbmtkBase):
         gas_reservoir= must be a gasreservoir
         liquid_reservoir = must be a reservoir
         solubility= as returned by the swc object
-        area = Ocean.area,
-        piston_velocity = 4.8*365,
+        area = Ocean.area, [m^2]
+        piston_velocity = 4.8*365, [m/yr]
         id = str, optional
         water_vapor_pressure=Ocean.swc.p_H2O,
         ref_quantity = optional
@@ -1298,6 +1300,8 @@ class AirSeaExchange(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
         """initialize instance"""
+
+        from .utility_functions import check_for_quantity
 
         self.__check_keywords__(kwargs)
 
@@ -1365,7 +1369,7 @@ class AirSeaExchange(esbmtkBase):
             "gas_reservoir": GasReservoir,
             "liquid_reservoir": Reservoir,
             "solubility": float,
-            "piston_velocity": float,
+            "piston_velocity": (str, Q_),
             "area": float,
             "id": str,
             "name": str,
@@ -1401,6 +1405,12 @@ class AirSeaExchange(esbmtkBase):
         )
 
         self.__validateandregister__(kwargs)
+
+        # make sure piston velocity is in the right units
+        self.piston_velocity = check_for_quantity(self.piston_velocity)
+        self.piston_velocity = self.piston_velocity.to(
+            f"meter/{self.liquid_reservoir.mo.t_unit}"
+        ).magnitude
 
         if self.ref_species == "None":
             self.ref_species = self.species

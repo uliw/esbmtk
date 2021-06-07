@@ -1576,7 +1576,6 @@ class GasReservoir(ReservoirBase):
     def __set_without_isotopes__(self, i: int, value: float) -> None:
         """write data by index"""
 
-        print(f"ggg")
         self.m[i]: float = value[0]
         self.c[i]: float = self.m[i] / self.v  # update concentration
 
