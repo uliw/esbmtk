@@ -1291,3 +1291,75 @@ def map_units(v: any, *args) -> float:
         raise ValueError(f"m is {type(m)}, must be float, v={v}. Something is fishy")
 
     return m
+
+
+def add_carbonate_system(rgs: list, cs_type="None", params=[],
+                         model_obj={}, reservoirs=[]) -> None:
+    """ Creates a new carbonate system virtual reservoir for each
+    reservoir in reservoirs. These new virtual reservoirs are registered to
+    their respective ReservoirGroup.
+
+    PRECONDITIONS: Requires a list of parameters as specified in params below.
+
+    Parameters:
+        rgs: list of ReservoirGroup objects
+        cs_type: value of 1 if normal carbonate system needed, value of 2
+            if carbonate compensation depth needed to be calculated.
+
+    Optional Parameters:
+        params: extra parameters that are needed
+            zcc0 = initial carbon compensation depth (m)
+            zsat0 = characteristic depth (m)
+            ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
+            kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
+            AD = total ocean area (m^2)
+            Ca 2+ = calcium ion concentration (mol/kg)
+            dt = time step (yrs)
+            B_fluxname = full_name of the B flux
+        model_obj: dictionary containing all of the model's objects
+        reservoirs: list of all reservoirs (Model.lor)
+    """
+    from esbmtk import carbonate_chemistry
+
+    # set up vr type
+    if cs_type == 1:  # use the current code
+        for rg in rgs:
+            carbonate_chemistry.carbonate_system_new(rg)
+    elif cs_type == 2:  # use your new code
+        if len(params) != 0 and len(model_obj) != 0 and len(reservoirs) != 0:
+            b = __find_flux__(reservoirs, params[7])
+            for rg in rgs:
+                carbonate_chemistry.carbonate_system_v2(params, b, rg)
+        else: #empty params and empty model_obj
+            raise ValueError(f"add_carbonate_system: Please provide a list of "
+                             f"needed extra parameters and dictionary of model "
+                             f"objects!\n"
+                             f"Needed parameters are: "
+                             f"[zcc0, zsat0, ksp0, kc, total area ocean, [Ca 2+], timestep]"
+                             )
+    else:
+        raise ValueError(f"add_carbonate_system: {cs_type} is an unknown type")
+
+
+def __find_flux__(reservoirs: list, full_name: str):
+    """ Helper function to find a Flux object based on its full_name in the reservoirs
+    in the list of provided reservoirs.
+
+    PRECONDITIONS: full_name must contain the full_name of the Flux
+
+    Parameters:
+        reservoirs: List containing all reservoirs
+        full_name: str specifying the full name of the flux (boxes.flux_name)
+    """
+    needed_flux = None
+    for res in reservoirs:
+        for flux in res.lof:
+            if flux.full_name == full_name:
+                needed_flux = flux
+                break
+        if needed_flux != None:
+            break
+    if needed_flux == None:
+        raise NameError(f"add_carbonate_system: Flux {full_name} cannot be found in any of the reservoirs in the Model! ")
+
+    return needed_flux
