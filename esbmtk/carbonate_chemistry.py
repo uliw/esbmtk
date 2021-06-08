@@ -31,7 +31,9 @@ import pandas as pd
 import logging
 import time
 import builtins
-from .esbmtk import esbmtkBase, Model, Reservoir, VirtualReservoir, ReservoirGroup
+from .esbmtk import esbmtkBase, Model, Reservoir, VirtualReservoir, \
+    ReservoirGroup, Flux
+
 
 # define a transform function to display the Hplus concentration as pH
 def phc(m: float) -> float:
@@ -446,10 +448,6 @@ class SeawaterConstants(esbmtkBase):
 
 
 def carbonate_system_new(
-    ca_con: float,
-    hplus_con: float,
-    volume: float,
-    swc: SeawaterConstants,
     rg: ReservoirGroup = "None",
 ) -> tuple:
 
@@ -481,11 +479,10 @@ def carbonate_system_new(
         species=CO2,
         function=calc_carbonates,
         # initialize 5 datafield and provide defaults for H+
-        vr_datafields=[rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2],
-        function_input_data=List(rg.DIC.c, rg.TA.c),
+        vr_datafields=List([rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2]),
+        function_input_data=List([rg.DIC.c, rg.TA.c]),
         function_params=List(
-            [rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, rg.swc.hplus]
-        ),
+            [rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, rg.swc.hplus]),
         register=rg,
     )
 
@@ -548,7 +545,6 @@ def calc_carbonates(i: int, input_data: List, vr_data: List, params: List) -> No
     Author: M. Niazi & T. Tsan, 2021
 
     """
-
     dic: float = input_data[0][i - 1]
     ta: float = input_data[1][i - 1]
 
@@ -804,3 +800,172 @@ def calc_horizon(i: int, input_data: List, vr_data: List, params: List) -> None:
     vr_data[1][i] = zcc
     vr_data[2][i] = zsnow
     vr_data[3][i] = omega
+
+def carbonate_system_v2(
+    constants: List,
+    B: Flux,
+    rg: ReservoirGroup = "None",
+) -> tuple:
+
+    """Setup the virtual reservoir which will calculate H+, CA, HCO3, CO3, CO2a
+    and zcc.
+
+    You must provide
+        params: list containing the following variables:
+            zcc0 = initial carbon compensation depth (m)
+            zsat0 = initial saturation depth (m)
+            ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
+            kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
+            AD = total ocean area (m^2)
+            Ca 2+ = calcium ion concentration (mol/kg)
+            dt = time step (yrs)
+            B_fluxname = full_name of the B flux
+        rg: optional, must be a reservoir group. If present, the below reservoirs
+            will be registered with this group.
+
+    Returns the reservoir handles to VCA and VH
+
+    All list type objects must be converted to numba Lists, if the function is to be used with
+    the numba solver.
+
+    """
+    from esbmtk import VirtualReservoir_no_set, calc_carbonates_v2
+
+    zcc0 = constants[0]
+    zsat0 = constants[1]
+    ksp0 = constants[2]
+    kc = constants[3]
+    AD = constants[4]
+    ca2 = constants[5]
+    dt = constants[6]
+
+    VirtualReservoir_no_set(
+        name="cs",
+        species=CO2,
+        function=calc_carbonates_v2,
+        # initialize 5 datafield and provide defaults for H+
+        vr_datafields=List([rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2, zcc0]),
+        function_input_data=List([rg.DIC.c, rg.TA.c, B.m]),
+        function_params=List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, ksp0, kc, AD, zsat0, ca2, dt]),
+        register=rg,
+    )
+
+
+def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) -> None:
+    """Calculates and returns the carbonate concentrations and carbonate compensation
+    depth (zcc) at the ith time-step of the model.
+
+    The function assumes that vr_data will be in the following order:
+        [H+, CA, HCO3, CO3, CO2(aq), zcc]
+
+    LIMITATIONS:
+    - This in used in conjunction with Virtual_Reservoir_no_set objects!
+    - Assumes all concentrations are in mol/L
+
+    Calculations are based off equations from Follows, 2006.
+    doi:10.1016/j.ocemod.2005.05.004
+
+    Example:
+
+    VirtualReservoir_no_set(
+                name="cs",
+                species=CO2,
+                vr_datafields=List([self.swc.hplus, 0.0, 0.0, 0.0, 0.0]),
+                function=calc_carbonates,
+                function_input_data=List([self.DIC.c, self.TA.c]),
+                function_params=List(
+                    [
+                        self.swc.K1,
+                        self.swc.K2,
+                        self.swc.KW,
+                        self.swc.KB,
+                        self.swc.boron,
+                        self.swc.hplus,
+                    ]
+                ),
+                register= # reservoir_handle to register with
+            )
+
+            # setup aliases
+            self.cs.H = self.cs.vr_data[0]
+            self.cs.CA = self.cs.vr_data[1]
+            self.cs.HCO3 = self.cs.vr_data[2]
+            self.cs.CO3 = self.cs.vr_data[3]
+            self.cs.CO2aq = self.cs.vr_data[4]
+
+
+    To plot the other species, please create DataField objects accordingly.
+
+    Sample code for plotting CO3:
+    > DataField(name = "pH",
+          associated_with = Ocean.V_combo,
+          y1_data = -np.log10(Ocean.V_combo.vr_data[0]),
+          y1_label = "pH",
+          y1_legend = "pH"
+     )
+    > Model_Name.plot([pH])
+
+
+    Author: M. Niazi & T. Tsan, 2021
+
+    """
+    dic: float = input_data[0][i - 1]
+    ta: float = input_data[1][i - 1]
+
+    dt: float = params[10]
+    B: float = input_data[2][i - 1] * dt
+
+    # calculates carbonate alkalinity (ca) based on H+ concentration from the
+    # previous time-step
+    # hplus: float = input_data[2][i - 1]
+    hplus: float = vr_data[0][i - 1]
+
+    # From swc
+    k1 = params[0]
+    k2 = params[1]
+    KW = params[2]
+    KB = params[3]
+    boron = params[4]
+
+    ksp0 = params[5]
+    kc = params[6]
+    AD = params[7]
+    zsat0 = params[8]
+    ca2 = params[9]
+
+    # ca
+    oh: float = KW / hplus
+    boh4: float = boron * KB / (hplus + KB)
+    fg: float = hplus - oh - boh4
+    ca: float = ta + fg
+    # hplus
+    gamm: float = dic / ca
+    dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
+
+    hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))
+    # hco3 and co3
+    """ Since CA = [hco3] + 2[co3], can the below expression can be simplified
+    """
+    co3: float = dic / (1 + (hplus / k2) + ((hplus ** 2) / (k1 * k2)))
+    hco3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
+    # co2 (aq)
+    """DIC = hco3 + co3 + co2 + H2CO3 The last term is however rather
+    small, so it may be ok to simply write co2aq = dic - hco3 + co3.
+    Let's test this once we have a case where pco2 is calculated from co2aq
+    """
+
+    co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
+
+    # ------------------------Calculate zcc--------------------------------------
+    # Equation (3) from paper (1) Boudreau (2010)
+    # zsat = zsat0 * ln((B * [Ca2+] / Ksp0 * AD * kc) + ([Ca2+][CO3 2-]D / Ksp0))
+    term1: float = (B * ca2) / (ksp0 * AD * kc)
+    term2: float = ca2 * co3 / ksp0
+    zcc: float = zsat0 * np.log(term1 + (term2))
+
+    vr_data[0][i] = hplus
+    vr_data[1][i] = ca
+    vr_data[2][i] = hco3
+    vr_data[3][i] = co3
+    vr_data[4][i] = co2aq
+    vr_data[5][i] = zcc
