@@ -1333,7 +1333,7 @@ def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
             temp: tuple = __validate_cs_dict__(extra)
             reservoirs = temp[0]
             params = temp[1]
-            b = __find_flux__(reservoirs, params[8])
+            b = __find_flux__(reservoirs, params[7])
             for rg in rgs:
                 carbonate_chemistry.carbonate_system_v2(params, b, rg)
     else:
