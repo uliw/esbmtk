@@ -486,6 +486,8 @@ def carbonate_system_new(
         register=rg,
     )
 
+    rg.add_cs_aliases()
+
 
 # def calc_carbonates(input_data, vr_data, params, i)
 @njit
@@ -849,6 +851,8 @@ def carbonate_system_v2(
         function_params=List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, ksp0, kc, AD, zsat0, ca2, dt]),
         register=rg,
     )
+
+    rg.add_cs_aliases()
 
 
 def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) -> None:

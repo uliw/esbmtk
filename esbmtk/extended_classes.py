@@ -107,7 +107,7 @@ class ReservoirGroup(esbmtkBase):
 
         from . import ureg, Q_
         from .sealevel import get_box_geometry_parameters
-        from .carbonate_chemistry import SeawaterConstants, calc_carbonates
+        from .carbonate_chemistry import SeawaterConstants, calc_carbonates, carbonate_system_new
         from .extended_classes import VirtualReservoir_no_set
         from numba.typed import List
 
@@ -257,40 +257,25 @@ class ReservoirGroup(esbmtkBase):
             if not hasattr(self, "TA"):
                 raise AttributeError(f"{self.full_name} has no TA reservoir")
 
-            VirtualReservoir_no_set(
-                name="cs",
-                species=CO2,
-                vr_datafields=List(
-                    [
-                        self.swc.hplus,
-                        self.swc.ca,
-                        self.swc.hco3,
-                        self.swc.co3,
-                        self.swc.co2,
-                    ]
-                ),
-                function=calc_carbonates,
-                function_input_data=List([self.DIC.c, self.TA.c]),
-                function_params=List(
-                    [
-                        self.swc.K1,
-                        self.swc.K2,
-                        self.swc.KW,
-                        self.swc.KB,
-                        self.swc.boron,
-                        self.swc.hplus,
-                    ]
-                ),
-                register=self,
-            )
+            self.carbonate_system_new()
 
-            # setup aliases
-            self.cs.H = self.cs.vr_data[0]
-            self.cs.CA = self.cs.vr_data[1]
-            self.cs.HCO3 = self.cs.vr_data[2]
-            self.cs.CO3 = self.cs.vr_data[3]
-            self.cs.CO2aq = self.cs.vr_data[4]
 
+    def add_cs_aliases(self) -> None:
+        """ Method that sets up aliases for the carbonate system, cs, virtual
+        reservoir.
+
+        Method used by carbonate_system_new and carbonate_system_v2.
+        """
+        self.cs.H = self.cs.vr_data[0]
+        self.cs.CA = self.cs.vr_data[1]
+        self.cs.HCO3 = self.cs.vr_data[2]
+        self.cs.CO3 = self.cs.vr_data[3]
+        self.cs.CO2aq = self.cs.vr_data[4]
+
+        try:
+            self.cs.zcc = self.cs.vr_data[5]
+        except:
+            pass
 
 class SourceSink(esbmtkBase):
     """
