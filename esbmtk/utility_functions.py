@@ -1420,11 +1420,11 @@ def __validate_cs_dict__(d: Dict):
             raise TypeError(f"add_carbonate_system: The value for {key} is not the correct type. "
                              f"It needs to be {allowed_key[key]}.")
         d_k[key] = d[key]
-
     # checks if all the needed keys and values are now in d_k
-    if d_k.keys != allowed_key:
+    if d_k.keys() != allowed_key.keys():
         for key in allowed_key:
             if key not in d:
+                print(key)
                 raise KeyError(f"add_carbonate_system: Please provide {key} in the dictionary!")
 
     # if they all correct keys are given:
