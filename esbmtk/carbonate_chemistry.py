@@ -806,6 +806,7 @@ def calc_horizon(i: int, input_data: List, vr_data: List, params: List) -> None:
 def carbonate_system_v2(
     constants: List,
     B: Flux,
+    lookup_table: NDArray,
     rg: ReservoirGroup = "None",
 ) -> tuple:
 
@@ -813,7 +814,7 @@ def carbonate_system_v2(
     and zcc.
 
     You must provide
-        params: list containing the following variables:
+        constants: list containing the following variables:
             zcc0 = initial carbon compensation depth (m)
             zsat0 = initial saturation depth (m)
             ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
@@ -822,6 +823,12 @@ def carbonate_system_v2(
             Ca 2+ = calcium ion concentration (mol/kg)
             dt = time step (yrs)
             B_fluxname = full_name of the B flux
+            pc = characteristic pressure (atm)
+            pg = seawater density multiplied by gravity due to acceleration (atm/m)
+            I = dissolvable CaCO3 inventory
+            alphard = fraction of calcite dissolved above saturation horizon by respirational dissolution
+        B: Flux object for calcite export
+        lookup_table: Lookup table for areas (Model.hyp_get_lookup_table())
         rg: optional, must be a reservoir group. If present, the below reservoirs
             will be registered with this group.
 
@@ -840,6 +847,10 @@ def carbonate_system_v2(
     AD = constants[4]
     ca2 = constants[5]
     dt = constants[6]
+    pc = constants[8]
+    pg = constants[9]
+    I =  constants[10]
+    alphard = constants[11]
 
     VirtualReservoir_no_set(
         name="cs",
@@ -847,8 +858,9 @@ def carbonate_system_v2(
         function=calc_carbonates_v2,
         # initialize 5 datafield and provide defaults for H+
         vr_datafields=List([rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2, zcc0]),
-        function_input_data=List([rg.DIC.c, rg.TA.c, B.m]),
-        function_params=List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, ksp0, kc, AD, zsat0, ca2, dt]),
+        function_input_data=List([rg.DIC.c, rg.TA.c, B.m, lookup_table]),
+        function_params=List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron,
+                              ksp0, kc, AD, zsat0, ca2, dt, pc, pg, I, alphard]),
         register=rg,
     )
 
@@ -860,7 +872,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     depth (zcc) at the ith time-step of the model.
 
     The function assumes that vr_data will be in the following order:
-        [H+, CA, HCO3, CO3, CO2(aq), zcc]
+        [H+, CA, HCO3, CO3, CO2(aq), zsat, zcc, zsnow]
 
     LIMITATIONS:
     - This in used in conjunction with Virtual_Reservoir_no_set objects!
@@ -872,31 +884,15 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     Example:
 
     VirtualReservoir_no_set(
-                name="cs",
-                species=CO2,
-                vr_datafields=List([self.swc.hplus, 0.0, 0.0, 0.0, 0.0]),
-                function=calc_carbonates,
-                function_input_data=List([self.DIC.c, self.TA.c]),
-                function_params=List(
-                    [
-                        self.swc.K1,
-                        self.swc.K2,
-                        self.swc.KW,
-                        self.swc.KB,
-                        self.swc.boron,
-                        self.swc.hplus,
-                    ]
-                ),
-                register= # reservoir_handle to register with
-            )
-
-            # setup aliases
-            self.cs.H = self.cs.vr_data[0]
-            self.cs.CA = self.cs.vr_data[1]
-            self.cs.HCO3 = self.cs.vr_data[2]
-            self.cs.CO3 = self.cs.vr_data[3]
-            self.cs.CO2aq = self.cs.vr_data[4]
-
+        name="cs",
+        species=CO2,
+        function=calc_carbonates_v2,
+        vr_datafields=List([rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2, zcc0]),
+        function_input_data=List([rg.DIC.c, rg.TA.c, B.m]),
+        function_params=List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron,
+                              ksp0, kc, AD, zsat0, ca2, dt, pc, pg, I]),
+        register=rg,
+    )
 
     To plot the other species, please create DataField objects accordingly.
 
@@ -909,7 +905,6 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
      )
     > Model_Name.plot([pH])
 
-
     Author: M. Niazi & T. Tsan, 2021
 
     """
@@ -919,9 +914,10 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     dt: float = params[10]
     B: float = input_data[2][i - 1] * dt
 
+    depths_areas = input_data[3] # look-up table
+
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
-    # hplus: float = input_data[2][i - 1]
     hplus: float = vr_data[0][i - 1]
 
     # From swc
@@ -936,6 +932,11 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     AD = params[7]
     zsat0 = params[8]
     ca2 = params[9]
+
+    pc = params[11]
+    pg = params[12]
+    I =  params[13]
+    alphard = params[14]
 
     # ca
     oh: float = KW / hplus
@@ -957,7 +958,6 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     small, so it may be ok to simply write co2aq = dic - hco3 + co3.
     Let's test this once we have a case where pco2 is calculated from co2aq
     """
-
     co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
 
     # ------------------------Calculate zcc--------------------------------------
@@ -973,3 +973,44 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     vr_data[3][i] = co3
     vr_data[4][i] = co2aq
     vr_data[5][i] = zcc
+
+def __calc_depths_helper__(params: list) -> list:
+    """Helper function used by calc_carbonates_v2() to calculate depths for
+    saturation depth (zcc), carbonate compensation depth (zcc) and snowline
+    (zsnow) depth. It will also calculate the calcite burial flux, Fburial.
+
+    Calculations from the following papers:
+        (1) Boudreau et al., 2010. doi:10.1029/2009GB003654
+        (2) Boudreau et al., 2010. doi:10.1029/2009GL041847
+        (3) Zeebe, R.E., & Westbroek, P., 2003. doi:10.1029/2003GC000538
+
+    Preconditions: Assumes that users provide all VirtualReservoir data and
+        constants in the same order as well as the units indicated below. Function
+        is used in conjunction with VirtualReservoir_no_set objects!
+
+    Parameters:
+    > input_data = List containing the following:
+        deep_ocean.DIC.m
+        deep_ocean.DIC.c
+        deep_ocean.TA.m
+        deep_ocean.TA.c
+        [CO3 2- concentrations]
+        [Model.hyp.get_lookup_table(min depth, max depth)]
+        ])
+    > vr_data = [zsat, zcc, zsnow, omega] in meters
+    > params = list of Constants in the following order:
+        sa = surface area of model (m^2)
+        AD = total ocean area (m^2)
+        time_step = time-step of Model as a float (yrs)
+        volume = reservoir group volume (L)
+        ksp = solubility product of calcite in the deep ocean box (mol^2/kg^2)
+        Ca 2+ = calcium ion concentration (mol/kg)
+        ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
+        zsat0 = characteristic depth (m)
+        kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
+        B = export of calcite into deep ocean box (mol/yr)
+        pc = characteristic pressure (atm)
+        pg = density of water * acceleration due to gravity (atm/m)
+        I_caco3 = inventory of dissolvable CaCO3 (mol/m^2)
+    """
+
