@@ -118,6 +118,8 @@ class SeawaterConstants(esbmtkBase):
             "boh4",
             "boh3",
             "oh",
+            "ca2",
+            "so4",
         ]
 
         self.update()
@@ -182,6 +184,10 @@ class SeawaterConstants(esbmtkBase):
         self.dic = 0.00204 * swc
         self.boron = 0.00042 * swc
         self.oh = 0.00001 * swc
+        self.so4 = 2.7123 / 96 * swc
+        self.ca2 = 0.4121 / 40.08 * swc
+        self.Ksp0 = 4.29e-07 * swc  # after after Boudreau et al 2010
+        self.zsat0 = float(5078)  # # after after Boudreau et al 2010
 
     def __init_gasexchange__(self) -> None:
         """Initialize constants for gas-exchange processes"""
@@ -481,10 +487,26 @@ def carbonate_system_new(
         species=CO2,
         function=calc_carbonates,
         # initialize 5 datafield and provide defaults for H+
-        vr_datafields=[rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2],
+        vr_datafields=[
+            rg.swc.hplus,
+            rg.swc.ca,
+            rg.swc.hco3,
+            rg.swc.co3,
+            rg.swc.co2,
+            0.0,
+            0.0,
+        ],
         function_input_data=List(rg.DIC.c, rg.TA.c),
         function_params=List(
-            [rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, rg.swc.hplus]
+            [
+                rg.swc.K1,
+                rg.swc.K2,
+                rg.swc.KW,
+                rg.swc.KB,
+                rg.swc.boron,
+                rg.swc.hplus,
+                rg.swc.ca2,
+            ]
         ),
         register=rg,
     )
@@ -509,7 +531,7 @@ def calc_carbonates(i: int, input_data: List, vr_data: List, params: List) -> No
     VirtualReservoir_no_set(
                 name="cs",
                 species=CO2,
-                vr_datafields=List([self.swc.hplus, 0.0, 0.0, 0.0, 0.0]),
+                vr_datafields=List([self.swc.hplus, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
                 function=calc_carbonates,
                 function_input_data=List([self.DIC.c, self.TA.c]),
                 function_params=List(
@@ -562,6 +584,11 @@ def calc_carbonates(i: int, input_data: List, vr_data: List, params: List) -> No
     KW = params[2]
     KB = params[3]
     boron = params[4]
+    # hplus = params[5 ]
+    ca2 = params[6]
+    ksp = params[7]
+    ksp0 = params[8]
+    zsat0 = params[9]
 
     # ca
     oh: float = KW / hplus
@@ -585,12 +612,15 @@ def calc_carbonates(i: int, input_data: List, vr_data: List, params: List) -> No
     """
 
     co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
+    omega: float = ca2 * co3 / ksp
 
     vr_data[0][i] = hplus
     vr_data[1][i] = ca
     vr_data[2][i] = hco3
     vr_data[3][i] = co3
     vr_data[4][i] = co2aq
+    vr_data[5][i] = ca2 * co3 / ksp
+    vr_data[6][i] = zsat0 * np.log(ca2 * co3 / ksp0)
 
 
 def calc_pCO2(

@@ -1303,6 +1303,8 @@ class AirSeaExchange(esbmtkBase):
 
         from .utility_functions import check_for_quantity
 
+        self.lof: list = []
+
         self.__check_keywords__(kwargs)
 
         self.scale = self.area * self.piston_velocity

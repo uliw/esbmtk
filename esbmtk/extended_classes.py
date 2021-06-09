@@ -267,18 +267,24 @@ class ReservoirGroup(esbmtkBase):
                         self.swc.hco3,
                         self.swc.co3,
                         self.swc.co2,
+                        0.0,  # omega
+                        0.0,  # zsat
                     ]
                 ),
                 function=calc_carbonates,
                 function_input_data=List([self.DIC.c, self.TA.c]),
                 function_params=List(
                     [
-                        self.swc.K1,
-                        self.swc.K2,
-                        self.swc.KW,
-                        self.swc.KB,
-                        self.swc.boron,
-                        self.swc.hplus,
+                        self.swc.K1,  # 0
+                        self.swc.K2,  # 1
+                        self.swc.KW,  # 2
+                        self.swc.KB,  # 3
+                        self.swc.boron,  # 4
+                        self.swc.hplus,  # 5
+                        self.swc.ca2,  # 6
+                        self.swc.Ksp,  # 7
+                        self.swc.Ksp0,  # 8
+                        self.swc.zsat0,  # zsat0 after Boudreau 2010
                     ]
                 ),
                 register=self,
@@ -290,6 +296,8 @@ class ReservoirGroup(esbmtkBase):
             self.cs.HCO3 = self.cs.vr_data[2]
             self.cs.CO3 = self.cs.vr_data[3]
             self.cs.CO2aq = self.cs.vr_data[4]
+            self.cs.omega = self.cs.vr_data[5]
+            self.cs.zsat = self.cs.vr_data[6]
 
 
 class SourceSink(esbmtkBase):
