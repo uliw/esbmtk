@@ -1109,15 +1109,15 @@ def show_dict(d: dict, mt: str = "1:1") -> None:
             print(f"     {pk} : {x}")
 
 
-def find_matching_fluxes(M: any, filter_by: str) -> list:
-    """Loop over all reservoir, and extract the names of all fluxes
+def find_matching_fluxes(l: list, filter_by: str) -> list:
+    """Loop over all reservoir in l, and extract the names of all fluxes
     which match the filter string. Return the list of names (not objects!)
 
     """
 
     lof: set = set()
 
-    for r in M.loc:
+    for r in l:
         for f in r.lof:
             if filter_by in f.full_name:
                 lof.add(f)
@@ -1185,6 +1185,8 @@ def gen_dict_entries(M: any, **kwargs) -> tuple:
 
     """
 
+    from esbmtk import Model
+
     reference = kwargs["ref_id"]
     target = kwargs["target_id"]
     if "inverse" in kwargs:
@@ -1192,7 +1194,13 @@ def gen_dict_entries(M: any, **kwargs) -> tuple:
     else:
         inverse = False
 
-    flist: list = find_matching_fluxes(M, filter_by=reference)
+    if isinstance(M, Model):
+        flist: list = find_matching_fluxes(M.loc, filter_by=reference)
+    elif isinstance(M, list):
+        flist: list = find_matching_fluxes(M, filter_by=reference)
+    else:
+        raise ValueError(f"gen_dict_entries: M must be list or Model, not {type(M)}")
+
     klist: list = get_connection_keys(flist, reference, target, inverse)
 
     return tuple(klist), flist
