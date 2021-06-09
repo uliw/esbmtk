@@ -1370,17 +1370,23 @@ def __validate_cs_dict__(d: Dict):
     the second list contains all needed parameters needed to be used by
     carbonate_chemistry.carbonate_system_v2().
 
+    PRECONDITIONS:
+    - The default values are from Boudreau, 2010, doi:10.1029/2009GB003654
+    - AD, dt, B_fluxname, reservoirs MUST be provided!
+
     Parameters:
         d: dictionary fed into add_carbonate_system() as an optional parameter
-                AD = total ocean area (m^2)
-                dt = time step (yrs)
-                B_fluxname = full_name of the B flux
-                reservoirs: list of all reservoirs (Model.lor)
-                zcc0 = initial carbon compensation depth (m)
-                zsat0 = characteristic depth (m)
-                ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
-                kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
-                Ca2 = calcium ion concentration (mol/kg)
+          Required keys that need to be provided:
+            AD = total ocean area (m^2)
+            dt = time step (yrs)
+            B_fluxname = full_name of the B flux
+            reservoirs: list of all reservoirs (Model.lor)
+          Optional keys that will have defaulted values not specified:
+            zcc0 = initial carbon compensation depth (m)
+            zsat0 = characteristic depth (m)
+            ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
+            kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
+            Ca2 = calcium ion concentration (mol/kg)
     """
     import numpy as np
 
