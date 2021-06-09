@@ -1109,7 +1109,7 @@ def show_dict(d: dict, mt: str = "1:1") -> None:
             print(f"     {pk} : {x}")
 
 
-def find_matching_fluxes(l: list, filter_by: str) -> list:
+def find_matching_fluxes(l: list, filter_by: str, exclude: str) -> list:
     """Loop over all reservoir in l, and extract the names of all fluxes
     which match the filter string. Return the list of names (not objects!)
 
@@ -1119,7 +1119,7 @@ def find_matching_fluxes(l: list, filter_by: str) -> list:
 
     for r in l:
         for f in r.lof:
-            if filter_by in f.full_name:
+            if filter_by in f.full_name and exclude not in f.full_name:
                 lof.add(f)
 
     return list(lof)
@@ -1139,7 +1139,9 @@ def reverse_key(key: str) -> str:
     return f"{r2}2{r1}"
 
 
-def get_connection_keys(s: set, fstr: str, nstr: str, inverse: bool) -> list:
+def get_connection_keys(
+    s: set, fstr: str, nstr: str, inverse: bool, exclude: str
+) -> list:
     """extract connection keys from set of flux names, replace fstr with
     nstr so that the key can be used in create_bulk_connnections()
 
@@ -1194,14 +1196,25 @@ def gen_dict_entries(M: any, **kwargs) -> tuple:
     else:
         inverse = False
 
+    if "exclude" in kwargs:
+        exclude_str = kwargs["exclude"]
+    else:
+        exclude_str = "None"
+
     if isinstance(M, Model):
-        flist: list = find_matching_fluxes(M.loc, filter_by=reference)
+        flist: list = find_matching_fluxes(
+            M.loc, filter_by=reference, exclude=exclude_str
+        )
     elif isinstance(M, list):
-        flist: list = find_matching_fluxes(M, filter_by=reference)
+        flist: list = find_matching_fluxes(
+            M,
+            filter_by=reference,
+            exclude=exclude_str,
+        )
     else:
         raise ValueError(f"gen_dict_entries: M must be list or Model, not {type(M)}")
 
-    klist: list = get_connection_keys(flist, reference, target, inverse)
+    klist: list = get_connection_keys(flist, reference, target, inverse, exclude_str)
 
     return tuple(klist), flist
 
