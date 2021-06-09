@@ -1387,6 +1387,9 @@ def __validate_cs_dict__(d: Dict):
             ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
             kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
             Ca2 = calcium ion concentration (mol/kg)
+            pc = characteristic pressure (atm)
+            pg = seawater density multiplied by gravity due to acceleration (atm/m)
+            I = dissolvable CaCO3 inventory
     """
     import numpy as np
 
@@ -1401,6 +1404,9 @@ def __validate_cs_dict__(d: Dict):
         "ksp0": [float, int, np.float64],
         "kc": [float, int, np.float64],
         "Ca2": [float, int, np.float64],
+        "pc": [float, int, np.float64],
+        "pg": [float, int, np.float64],
+        "I": [float, int, np.float64]
     }
 
     #dictionary with default keys
@@ -1409,7 +1415,10 @@ def __validate_cs_dict__(d: Dict):
         "zsat0": 5078,  #m
         "ksp0": 4.29E-07,
         "kc": 8.84 * 1000,  #m/yr converted to kg m^-2 yr^-1
-        "Ca2": 0.0103  #mol/kg
+        "Ca2": 0.0103,  #mol/kg
+        "pc": 511, #atm
+        "pg": 0.1, #atm/m
+        "I": 529 #mol/m^2
     }
 
     # checks the keys in d and assigns the provided values into d_k
