@@ -1395,6 +1395,7 @@ def __validate_cs_dict__(d: Dict):
             pc = characteristic pressure (atm)
             pg = seawater density multiplied by gravity due to acceleration (atm/m)
             I = dissolvable CaCO3 inventory
+            alphard = fraction of calcite dissolved above saturation horizon by respirational dissolution
     """
     import numpy as np
 
@@ -1412,6 +1413,7 @@ def __validate_cs_dict__(d: Dict):
         "pc": [float, int, np.float64],
         "pg": [float, int, np.float64],
         "I": [float, int, np.float64],
+        "alphard": [float, int, np.float64],
         "depths_table": [np.ndarray, list, NDArray]
     }
 
@@ -1424,7 +1426,8 @@ def __validate_cs_dict__(d: Dict):
         "Ca2": 0.0103,  #mol/kg
         "pc": 511, #atm
         "pg": 0.1, #atm/m
-        "I": 529 #mol/m^2
+        "I": 529, #mol/m^2
+        "alphard": 0.3
     }
 
     # checks the keys in d and assigns the provided values into d_k
@@ -1445,7 +1448,7 @@ def __validate_cs_dict__(d: Dict):
     # if they all correct keys are given:
     params: list = [d_k["zcc0"], d_k["zsat0"], d_k["ksp0"], d_k["kc"], d_k["AD"],
                     d_k["Ca2"], d_k["dt"], d_k["B_fluxname"], d_k["pc"], d_k["pg"],
-                    d_k["I"]]
+                    d_k["I"], d_k["alphard"]]
     reservoirs: list = d_k["reservoirs"]
     lookup_table: NDArray = d_k["depths_table"]
 
