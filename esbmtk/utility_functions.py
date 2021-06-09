@@ -1312,12 +1312,16 @@ def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
                 dt = time step (yrs)
                 B_fluxname = full_name of the B flux
                 reservoirs: list of all reservoirs (Model.lor)
+                depths_table: ndarray lookup table containing depths (Model.hyp.get_lookup_table(0, -6000)
           Default values exist for the following
                 zcc0 = initial carbon compensation depth (m)
                 zsat0 = characteristic depth (m)
                 ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
                 kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
                 Ca2 = calcium ion concentration (mol/kg)
+                pc = characteristic pressure (atm)
+                pg = seawater density multiplied by gravity due to acceleration (atm/m)
+                I = dissolvable CaCO3 inventory
 
     """
     from esbmtk import carbonate_chemistry
@@ -1332,10 +1336,11 @@ def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
         else:
             temp: tuple = __validate_cs_dict__(extra)
             reservoirs = temp[0]
-            params = temp[1]
+            lookup_table = temp[1]
+            params = temp[2]
             b = __find_flux__(reservoirs, params[7])
             for rg in rgs:
-                carbonate_chemistry.carbonate_system_v2(params, b, rg)
+                carbonate_chemistry.carbonate_system_v2(params, b, lookup_table, rg)
     else:
         raise ValueError(f"add_carbonate_system: {cs_type} is an unknown type")
 
@@ -1406,7 +1411,8 @@ def __validate_cs_dict__(d: Dict):
         "Ca2": [float, int, np.float64],
         "pc": [float, int, np.float64],
         "pg": [float, int, np.float64],
-        "I": [float, int, np.float64]
+        "I": [float, int, np.float64],
+        "depths_table": [np.ndarray, list, NDArray]
     }
 
     #dictionary with default keys
@@ -1438,7 +1444,9 @@ def __validate_cs_dict__(d: Dict):
 
     # if they all correct keys are given:
     params: list = [d_k["zcc0"], d_k["zsat0"], d_k["ksp0"], d_k["kc"], d_k["AD"],
-                    d_k["Ca2"], d_k["dt"], d_k["B_fluxname"]]
+                    d_k["Ca2"], d_k["dt"], d_k["B_fluxname"], d_k["pc"], d_k["pg"],
+                    d_k["I"]]
     reservoirs: list = d_k["reservoirs"]
+    lookup_table: NDArray = d_k["depths_table"]
 
-    return (reservoirs, params)
+    return (reservoirs, lookup_table, params)
