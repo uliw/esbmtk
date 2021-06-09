@@ -1429,7 +1429,7 @@ def __validate_cs_dict__(d: Dict):
 
     # if they all correct keys are given:
     params: list = [d_k["zcc0"], d_k["zsat0"], d_k["ksp0"], d_k["kc"], d_k["AD"],
-                    d_k["Ca2"], d_k["dt"], d_k["dt"], d_k["B_fluxname"]]
+                    d_k["Ca2"], d_k["dt"], d_k["B_fluxname"]]
     reservoirs: list = d_k["reservoirs"]
 
     return (reservoirs, params)
