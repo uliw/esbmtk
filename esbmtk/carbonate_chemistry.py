@@ -862,7 +862,7 @@ def carbonate_system_v2(
         function=calc_carbonates_v2,
         # initialize 5 datafield and provide defaults for H+
         vr_datafields=List([rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2, zsat, zcc, zsnow]),
-        function_input_data=List([rg.DIC.m,rg.DIC.c, rg.TA.m, rg.TA.c, B.m, B.l, B.h, lookup_table]),
+        function_input_data=List([rg.DIC.m, rg.DIC.l, rg.DIC.h, rg.DIC.c, rg.TA.m, rg.TA.l, rg.TA.h, rg.TA.c, B.m, lookup_table]),
         function_params= List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, ksp0, kc, rg.area, rg.volume, AD,
                      zsat0, ca2, dt, pc, pg, I, alphard]),
         register=rg,
@@ -893,7 +893,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
         function=calc_carbonates_v2,
         # initialize 5 datafield and provide defaults for H+
         vr_datafields=List([rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2, zsat, zcc, zsnow]),
-        function_input_data=List([rg.DIC.m,rg.DIC.c, rg.TA.m, rg.TA.c, B.m, B.l, B.h, B.c, lookup_table]),
+        function_input_data=List([rg.DIC.m, rg.DIC.l, rg.DIC.h, rg.DIC.c, rg.TA.m, rg.TA.l, rg.TA.h, rg.TA.c, B.m, lookup_table]),
         function_params= List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, ksp0, kc, SA, AD,
                      zsat0, ca2, dt, pc, pg, I, alphard]),
         register=rg,
@@ -913,21 +913,13 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     Author: M. Niazi & T. Tsan, 2021
 
     """
-    dic_m: list = input_data[0]
-    dic_c: list = input_data[1]
-    ta_m: list = input_data[2]
-    ta_c: list = input_data[3]
-    B_m: list = input_data[4]
-    B_l: list = input_data[5]
-    B_h: list = input_data[6]
-
-    dic: float = input_data[1][i - 1]
-    ta: float = input_data[3][i - 1]
+    dic: float = input_data[3][i - 1]
+    ta: float = input_data[7][i - 1]
 
     dt: float = params[12]
-    B: float = B_m[i - 1] * dt
+    B: float = input_data[8][i - 1] * dt
 
-    depths_areas: list = input_data[7] # look-up table
+    depths_areas: list = input_data[9] # look-up table
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
@@ -993,13 +985,64 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     vr_data[6][i] = depths[1] #zcc
     vr_data[7][i] = depths[2] #zsnow
 
-    BD = depths[3]
-    Fburial = depths[4]
+    #----------------------Updating DIC and TA----------------------------------
+    Fburial = depths[3]
+    Fburial_m = Fburial * dt #mass of the calcite buried
+
+    # dic_m = input_data[0]
+    # dic_l = input_data[1]
+    # dic_h = input_data[2]
+    # dic_c = input_data[3]
+    # ta_m = input_data[4]
+    # ta_l = input_data[5]
+    # ta_h = input_data[6]
+    # ta_c = input_data[7]
+    
+    #----Updating DIC-----
+    old_dic_m = input_data[0][i].copy()
+    # dic mass = non-updated DIC mass + calcite buried
+    input_data[0][i] = input_data[0][i] + Fburial_m
+
+    # ratio = rg.DIC.m[i] / old_value
+    dic_ratio = input_data[0][i] / old_dic_m
+
+    # updating rg.DIC.l (light isotope)
+    # rg.DIC.l[i] = rg.DIC.l[i] * ratio
+    input_data[1][i] = input_data[1][i] * dic_ratio
+
+    # updating rg.DIC.h (heavy isotope)
+    # rg.DIC.h[i] = rg.DIC.m[i] - rg.DIC.l[i]
+    input_data[2][i] = input_data[0][i] - input_data[1][i]
+
+    # [dic] = dic mass / reservoir volume
+    input_data[3][i] = input_data[0][i] / volume
+
+
+    # ----Updating TA-----
+    old_TA_m = input_data[4][i].copy()
+    # TA mass = non-updated TA mass + calcite buried
+    input_data[4][i] = input_data[4][i] + 2 * Fburial_m
+
+    # ratio = rg.TA.m[i] / old_value
+    TA_ratio = input_data[4][i] / old_TA_m
+
+    # updating rg.TA.l (light isotope)
+    # rg.TA.l[i] = rg.TA.l[i] * ratio
+    input_data[5][i] = input_data[5][i] * TA_ratio
+
+    # updating rg.TA.h (heavy isotope)
+    # rg.TA.h[i] = rg.TA.m[i] - rg.TA.l[i]
+    input_data[6][i] = input_data[6][i] - input_data[1][i]
+
+    # [TA] = TA mass / reservoir volume
+    input_data[7][i] = input_data[4][i] / volume
+
 
 def __calc_depths_helper__(i: int, input_data: List, vr_data: List, params: List) -> list:
     """Helper function used by calc_carbonates_v2() to calculate depths for
     saturation depth (zsat), carbonate compensation depth (zcc) and snowline
     (zsnow) depth. It will also calculate the calcite burial flux, Fburial.
+    Returns a list containing the following: [zsat, zcc, zsnow, Fburial]
 
     Calculations from the following papers:
         (1) Boudreau et al., 2010. doi:10.1029/2009GB003654
@@ -1103,7 +1146,7 @@ def __calc_depths_helper__(i: int, input_data: List, vr_data: List, params: List
     # multiplying change in snowline by the timestep to get the current snowline depth
     zsnow: float = prev_zsnow + (zsnow_dt * dt)
 
-    return [zsat, zcc, zsnow, BD, Fburial]
+    return [zsat, zcc, zsnow, Fburial]
 
 
 
