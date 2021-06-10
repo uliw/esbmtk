@@ -856,6 +856,8 @@ def carbonate_system_v2(
     I =  constants[12]
     alphard = constants[13]
 
+    volume = rg.volume.to("m**3").to_tuple()[0]
+
     VirtualReservoir_no_set(
         name="cs",
         species=CO2,
@@ -863,7 +865,7 @@ def carbonate_system_v2(
         # initialize 5 datafield and provide defaults for H+
         vr_datafields=List([rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2, zsat, zcc, zsnow]),
         function_input_data=List([rg.DIC.m, rg.DIC.l, rg.DIC.h, rg.DIC.c, rg.TA.m, rg.TA.l, rg.TA.h, rg.TA.c, B.m, lookup_table]),
-        function_params= List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, ksp0, kc, rg.area, rg.volume, AD,
+        function_params= List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, ksp0, kc, rg.area, volume, AD,
                      zsat0, ca2, dt, pc, pg, I, alphard]),
         register=rg,
     )
@@ -997,7 +999,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     # ta_l = input_data[5]
     # ta_h = input_data[6]
     # ta_c = input_data[7]
-    
+
     #----Updating DIC-----
     old_dic_m = input_data[0][i].copy()
     # dic mass = non-updated DIC mass + calcite buried
