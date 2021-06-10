@@ -73,7 +73,7 @@ class ReservoirGroup(esbmtkBase):
     computed
 
                  self.volume: in model units (usually liter)
-                 self.are:a surface area in m^2 at the upper bounding surface
+                 self.area: surface area in m^2 at the upper bounding surface
                  self.area_dz: area of seafloor which is intercepted by this box.
                  self.area_fraction: area of seafloor which is intercepted by this
                                     relative to the total ocean floor area
@@ -273,7 +273,9 @@ class ReservoirGroup(esbmtkBase):
         self.cs.CO2aq = self.cs.vr_data[4]
 
         try:
-            self.cs.zcc = self.cs.vr_data[5]
+            self.cs.zsat = self.cs.vr_data[5]
+            self.cs.zcc = self.cs.vr_data[6]
+            self.cs.zsnow = self.cs.vr_data[7]
         except:
             pass
 
