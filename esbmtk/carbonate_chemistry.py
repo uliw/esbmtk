@@ -862,7 +862,7 @@ def carbonate_system_v2(
         function=calc_carbonates_v2,
         # initialize 5 datafield and provide defaults for H+
         vr_datafields=List([rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2, zsat, zcc, zsnow]),
-        function_input_data=List([rg.DIC.m,rg.DIC.c, rg.TA.m, rg.TA.c, B.m, B.l, B.h, B.c, lookup_table]),
+        function_input_data=List([rg.DIC.m,rg.DIC.c, rg.TA.m, rg.TA.c, B.m, B.l, B.h, lookup_table]),
         function_params= List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, ksp0, kc, rg.area, rg.volume, AD,
                      zsat0, ca2, dt, pc, pg, I, alphard]),
         register=rg,
@@ -920,7 +920,6 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     B_m: list = input_data[4]
     B_l: list = input_data[5]
     B_h: list = input_data[6]
-    B_c: list = input_data[7]
 
     dic: float = input_data[1][i - 1]
     ta: float = input_data[3][i - 1]
@@ -928,7 +927,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     dt: float = params[12]
     B: float = B_m[i - 1] * dt
 
-    depths_areas: list = input_data[8] # look-up table
+    depths_areas: list = input_data[7] # look-up table
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
