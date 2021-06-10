@@ -864,7 +864,7 @@ def carbonate_system_v2(
         function=calc_carbonates_v2,
         # initialize 5 datafield and provide defaults for H+
         vr_datafields=List([rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2, zsat, zcc, zsnow]),
-        function_input_data=List([rg.DIC.c, rg.TA.c, B.m, lookup_table]),
+        function_input_data=List([rg.DIC.m,rg.DIC.c, rg.TA.m, rg.TA.c, B.m, lookup_table]),
         function_params= List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, ksp0, kc, SA, AD,
                      zsat0, ca2, dt, pc, pg, I, alphard]),
         register=rg,
@@ -894,10 +894,10 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
         species=CO2,
         function=calc_carbonates_v2,
         # initialize 5 datafield and provide defaults for H+
-        vr_datafields=List([rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2, zcc0]),
-        function_input_data=List([rg.DIC.c, rg.TA.c, B.m, lookup_table]),
-        function_params=List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron,
-                              ksp0, kc, AD, zsat0, ca2, dt, pc, pg, I, alphard]),
+        vr_datafields=List([rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2, zsat, zcc, zsnow]),
+        function_input_data=List([rg.DIC.m,rg.DIC.c, rg.TA.m, rg.TA.c, B.m, lookup_table]),
+        function_params= List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, ksp0, kc, SA, AD,
+                     zsat0, ca2, dt, pc, pg, I, alphard]),
         register=rg,
     )
 
@@ -915,14 +915,14 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     Author: M. Niazi & T. Tsan, 2021
 
     """
-    dic: float = input_data[0][i - 1]
-    ta: float = input_data[1][i - 1]
+    dic: float = input_data[1][i - 1]
+    ta: float = input_data[3][i - 1]
 
     dt: float = params[11]
-    B: float = input_data[2][i - 1] * dt
+    B: float = input_data[4][i - 1] * dt
 
-    depths_areas = input_data[3] # look-up table
-
+    depths_areas = input_data[5] # look-up table
+    
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
     hplus: float = vr_data[0][i - 1]
