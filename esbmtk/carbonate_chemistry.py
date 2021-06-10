@@ -820,7 +820,6 @@ def carbonate_system_v2(
             zsat0 = initial saturation depth (m)
             ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
             kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
-            SA = surface area of the box (m^2)
             AD = total ocean area (m^2)
             Ca 2+ = calcium ion concentration (mol/kg)
             dt = time step (yrs)
@@ -848,15 +847,14 @@ def carbonate_system_v2(
     zsat0 = constants[3]
     ksp0 = constants[4]
     kc = constants[5]
-    SA = constants[6]
-    AD = constants[7]
-    ca2 = constants[8]
-    dt = constants[9]
+    AD = constants[6]
+    ca2 = constants[7]
+    dt = constants[8]
 
-    pc = constants[11]
-    pg = constants[12]
-    I =  constants[13]
-    alphard = constants[14]
+    pc = constants[10]
+    pg = constants[11]
+    I =  constants[12]
+    alphard = constants[13]
 
     VirtualReservoir_no_set(
         name="cs",
@@ -864,8 +862,8 @@ def carbonate_system_v2(
         function=calc_carbonates_v2,
         # initialize 5 datafield and provide defaults for H+
         vr_datafields=List([rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2, zsat, zcc, zsnow]),
-        function_input_data=List([rg.DIC.m,rg.DIC.c, rg.TA.m, rg.TA.c, B.m, lookup_table]),
-        function_params= List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, ksp0, kc, SA, AD,
+        function_input_data=List([rg.DIC.m,rg.DIC.c, rg.TA.m, rg.TA.c, B.m, B.l, B.h, B.c, lookup_table]),
+        function_params= List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, ksp0, kc, rg.area, rg.volume, AD,
                      zsat0, ca2, dt, pc, pg, I, alphard]),
         register=rg,
     )
@@ -895,7 +893,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
         function=calc_carbonates_v2,
         # initialize 5 datafield and provide defaults for H+
         vr_datafields=List([rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2, zsat, zcc, zsnow]),
-        function_input_data=List([rg.DIC.m,rg.DIC.c, rg.TA.m, rg.TA.c, B.m, lookup_table]),
+        function_input_data=List([rg.DIC.m,rg.DIC.c, rg.TA.m, rg.TA.c, B.m, B.l, B.h, B.c, lookup_table]),
         function_params= List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, ksp0, kc, SA, AD,
                      zsat0, ca2, dt, pc, pg, I, alphard]),
         register=rg,
@@ -915,14 +913,23 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     Author: M. Niazi & T. Tsan, 2021
 
     """
+    dic_m: list = input_data[0]
+    dic_c: list = input_data[1]
+    ta_m: list = input_data[2]
+    ta_c: list = input_data[3]
+    B_m: list = input_data[4]
+    B_l: list = input_data[5]
+    B_h: list = input_data[6]
+    B_c: list = input_data[7]
+
     dic: float = input_data[1][i - 1]
     ta: float = input_data[3][i - 1]
 
-    dt: float = params[11]
-    B: float = input_data[4][i - 1] * dt
+    dt: float = params[12]
+    B: float = B_m[i - 1] * dt
 
-    depths_areas = input_data[5] # look-up table
-    
+    depths_areas: list = input_data[8] # look-up table
+
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
     hplus: float = vr_data[0][i - 1]
@@ -937,14 +944,15 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     ksp0 = params[5]
     kc = params[6]
     SA = params[7]
-    AD = params[8]
-    zsat0 = params[9]
-    ca2 = params[10]
+    volume = params[8]
+    AD = params[9]
+    zsat0 = params[10]
+    ca2 = params[11]
 
-    pc = params[12]
-    pg = params[13]
-    I =  params[14]
-    alphard = params[15]
+    pc = params[13]
+    pg = params[14]
+    I =  params[15]
+    alphard = params[16]
 
     # ca
     oh: float = KW / hplus

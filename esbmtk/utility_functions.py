@@ -1308,7 +1308,6 @@ def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
     Optional Parameters:
         The following need to be in a Dict object with the following keys:
           These need to be provided:
-                SA = total surface area of the box (m^2)
                 AD = total ocean area (m^2)
                 dt = time step (yrs)
                 B_fluxname = full_name of the B flux
@@ -1341,7 +1340,7 @@ def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
             reservoirs = temp[0]
             lookup_table = temp[1]
             params = temp[2]
-            b = __find_flux__(reservoirs, params[10])
+            b = __find_flux__(reservoirs, params[9])
             for rg in rgs:
                 carbonate_chemistry.carbonate_system_v2(params, b, lookup_table, rg)
     else:
@@ -1385,7 +1384,6 @@ def __validate_cs_dict__(d: Dict) -> list:
     Parameters:
         d: dictionary fed into add_carbonate_system() as an optional parameter
           Required keys that need to be provided:
-            SA = total surface area of the box (m^2)
             AD = total ocean area (m^2)
             dt = time step (yrs)
             B_fluxname = full_name of the B flux
@@ -1408,7 +1406,6 @@ def __validate_cs_dict__(d: Dict) -> list:
 
     #allowed keywords and the types they should be
     allowed_key: Dict = {
-        "SA": [float, int, np.float64],
         "AD": [float, int, np.float64],
         "dt": [float, int, np.float64],
         "B_fluxname": [str],
@@ -1459,7 +1456,7 @@ def __validate_cs_dict__(d: Dict) -> list:
 
     # if they all correct keys are given:
     params: list = [d_k["zsat"], d_k["zcc"], d_k["zsnow"], d_k["zsat0"],
-                    d_k["ksp0"], d_k["kc"], d_k["SA"], d_k["AD"], d_k["Ca2"],
+                    d_k["ksp0"], d_k["kc"], d_k["AD"], d_k["Ca2"],
                     d_k["dt"], d_k["B_fluxname"], d_k["pc"], d_k["pg"],
                     d_k["I"], d_k["alphard"]]
     reservoirs: list = d_k["reservoirs"]
