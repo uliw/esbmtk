@@ -257,7 +257,7 @@ class ReservoirGroup(esbmtkBase):
             if not hasattr(self, "TA"):
                 raise AttributeError(f"{self.full_name} has no TA reservoir")
 
-            self.carbonate_system_new()
+            carbonate_system_new(self)
 
 
     def add_cs_aliases(self) -> None:
