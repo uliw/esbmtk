@@ -1312,3 +1312,175 @@ def map_units(v: any, *args) -> float:
         raise ValueError(f"m is {type(m)}, must be float, v={v}. Something is fishy")
 
     return m
+
+
+def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
+    """ Creates a new carbonate system virtual reservoir for each
+    reservoir in reservoirs. These new virtual reservoirs are registered to
+    their respective ReservoirGroup.
+
+    PRECONDITIONS: Requires a list of parameters as specified in params below.
+
+    Parameters:
+        rgs: list of ReservoirGroup objects
+        cs_type: value of 1 if normal carbonate system needed, value of 2
+            if carbonate compensation depth needed to be calculated.
+
+    Optional Parameters:
+        The following need to be in a Dict object with the following keys:
+          These need to be provided:
+                AD = total ocean area (m^2)
+                dt = time step (yrs)
+                B_fluxname = full_name of the B flux
+                reservoirs: list of all reservoirs (Model.lor)
+                depths_table: ndarray lookup table containing depths (Model.hyp.get_lookup_table(0, -6000))
+          Default values exist for the following
+                zsat = initial saturation depth (m)
+                zcc = initial carbon compensation depth (m)
+                zsnow = initial snowline depth (m)
+                zsat0 = characteristic depth (m)
+                ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
+                kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
+                Ca2 = calcium ion concentration (mol/kg)
+                pc = characteristic pressure (atm)
+                pg = seawater density multiplied by gravity due to acceleration (atm/m)
+                I = dissolvable CaCO3 inventory
+
+    """
+    from esbmtk import carbonate_chemistry
+
+    # set up vr type
+    if cs_type == 1:  # use the current code
+        for rg in rgs:
+            carbonate_chemistry.carbonate_system_new(rg)
+    elif cs_type == 2:  # use your new code
+        if len(extra) == 0:
+            raise ValueError(f"add_carbonate_system: Please provide some additional parameters!")
+        else:
+            temp: list = __validate_cs_dict__(extra)
+            reservoirs = temp[0]
+            lookup_table = temp[1]
+            params = temp[2]
+            b = __find_flux__(reservoirs, params[9])
+            for rg in rgs:
+                carbonate_chemistry.carbonate_system_v2(params, b, lookup_table, rg)
+    else:
+        raise ValueError(f"add_carbonate_system: {cs_type} is an unknown type")
+
+
+def __find_flux__(reservoirs: list, full_name: str):
+    """ Helper function to find a Flux object based on its full_name in the reservoirs
+    in the list of provided reservoirs.
+
+    PRECONDITIONS: full_name must contain the full_name of the Flux
+
+    Parameters:
+        reservoirs: List containing all reservoirs
+        full_name: str specifying the full name of the flux (boxes.flux_name)
+    """
+    needed_flux = None
+    for res in reservoirs:
+        for flux in res.lof:
+            if flux.full_name == full_name:
+                needed_flux = flux
+                break
+        if needed_flux != None:
+            break
+    if needed_flux == None:
+        raise NameError(f"add_carbonate_system: Flux {full_name} cannot be found in any of the reservoirs in the Model!")
+
+    return needed_flux
+
+def __validate_cs_dict__(d: Dict) -> list:
+    """ Helper function that helps validate the optional dictionary parameter
+    used by add_carbonate_system() and returns a list. The list is in the form
+    of [List, List, List] where the first list contains the reservoirs, the
+    second is the lookup table and the third list contains all needed parameters
+    needed to be used by carbonate_chemistry.carbonate_system_v2().
+
+    PRECONDITIONS:
+    - The default values are from Boudreau, 2010, doi:10.1029/2009GB003654
+    - AD, dt, B_fluxname, reservoirs MUST be provided!
+
+    Parameters:
+        d: dictionary fed into add_carbonate_system() as an optional parameter
+          Required keys that need to be provided:
+            AD = total ocean area (m^2)
+            dt = time step (yrs)
+            B_fluxname = full_name of the B flux
+            reservoirs: list of all reservoirs (Model.lor)
+            depths_table: ndarray lookup table containing depths (Model.hyp.get_lookup_table(0, -6000))
+          Optional keys that will have defaulted values not specified:
+            zsat = initial saturation depth (m)
+            zcc = initial carbon compensation depth (m)
+            zsnow = initial snowline depth (m)
+            zsat0 = characteristic depth (m)
+            ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
+            kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
+            Ca2 = calcium ion concentration (mol/kg)
+            pc = characteristic pressure (atm)
+            pg = seawater density multiplied by gravity due to acceleration (atm/m)
+            I = dissolvable CaCO3 inventory
+            alphard = fraction of calcite dissolved above saturation horizon by respirational dissolution
+    """
+    import numpy as np
+
+    #allowed keywords and the types they should be
+    allowed_key: Dict = {
+        "AD": [float, int, np.float64],
+        "dt": [float, int, np.float64],
+        "B_fluxname": [str],
+        "reservoirs": [list],
+        "zcc": [float, int],
+        "zsat": [float, int],
+        "zsnow": [float, int],
+        "zsat0": [float, int],
+        "ksp0": [float, int, np.float64],
+        "kc": [float, int, np.float64],
+        "Ca2": [float, int, np.float64],
+        "pc": [float, int, np.float64],
+        "pg": [float, int, np.float64],
+        "I": [float, int, np.float64],
+        "alphard": [float, int, np.float64],
+        "depths_table": [np.ndarray, list, NDArray]
+    }
+
+    #dictionary with default keys
+    d_k: Dict = {
+        "zsat": 3715, #m
+        "zcc": 4750,  #m
+        "zsnow": 4750, #m
+        "zsat0": 5078,  #m
+        "ksp0": 4.29E-07,
+        "kc": 8.84 * 1000, #m/yr converted to kg m^-2 yr^-1
+        "Ca2": 0.0103, #mol/kg
+        "pc": 511, #atm
+        "pg": 0.1, #atm/m
+        "I": 529, #mol/m^2
+        "alphard": 0.3
+    }
+
+    # checks the keys in d and assigns the provided values into d_k
+    for key in d:
+        if key not in allowed_key: #if key isn't
+            raise KeyError(f"add_carbonate_system: {key} is not a valid key!")
+        if type(d[key]) not in allowed_key[key]:
+            raise TypeError(f"add_carbonate_system: The value for {key} is not the correct type. "
+                             f"It needs to be {allowed_key[key]}.")
+        d_k[key] = d[key]
+    # checks if all the needed keys and values are now in d_k
+    if d_k.keys() != allowed_key.keys():
+        for key in allowed_key:
+            if key not in d_k:
+                print(key)
+                raise KeyError(f"add_carbonate_system: Please provide {key} in the dictionary!")
+
+    # if they all correct keys are given:
+    params: list = [d_k["zsat"], d_k["zcc"], d_k["zsnow"], d_k["zsat0"],
+                    d_k["ksp0"], d_k["kc"], d_k["AD"], d_k["Ca2"],
+                    d_k["dt"], d_k["B_fluxname"], d_k["pc"], d_k["pg"],
+                    d_k["I"], d_k["alphard"]]
+    reservoirs: list = d_k["reservoirs"]
+    lookup_table: NDArray = d_k["depths_table"]
+
+    return [reservoirs, lookup_table, params]

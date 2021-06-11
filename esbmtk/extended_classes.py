@@ -73,7 +73,7 @@ class ReservoirGroup(esbmtkBase):
     computed
 
                  self.volume: in model units (usually liter)
-                 self.are:a surface area in m^2 at the upper bounding surface
+                 self.area: surface area in m^2 at the upper bounding surface
                  self.area_dz: area of seafloor which is intercepted by this box.
                  self.area_fraction: area of seafloor which is intercepted by this
                                     relative to the total ocean floor area
@@ -107,7 +107,12 @@ class ReservoirGroup(esbmtkBase):
 
         from . import ureg, Q_
         from .sealevel import get_box_geometry_parameters
-        from .carbonate_chemistry import SeawaterConstants, calc_carbonates
+        from .carbonate_chemistry import (
+            SeawaterConstants,
+            calc_carbonates,
+            carbonate_system_new,
+            carbonate_system_old,
+        )
         from .extended_classes import VirtualReservoir_no_set
         from numba.typed import List
 
@@ -298,6 +303,25 @@ class ReservoirGroup(esbmtkBase):
             self.cs.CO2aq = self.cs.vr_data[4]
             self.cs.omega = self.cs.vr_data[5]
             self.cs.zsat = self.cs.vr_data[6]
+
+    def add_cs_aliases(self) -> None:
+        """Method that sets up aliases for the carbonate system, cs, virtual
+        reservoir.
+
+        Method used by carbonate_system_new and carbonate_system_v2.
+        """
+        self.cs.H = self.cs.vr_data[0]
+        self.cs.CA = self.cs.vr_data[1]
+        self.cs.HCO3 = self.cs.vr_data[2]
+        self.cs.CO3 = self.cs.vr_data[3]
+        self.cs.CO2aq = self.cs.vr_data[4]
+
+        try:
+            self.cs.zsat = self.cs.vr_data[5]
+            self.cs.zcc = self.cs.vr_data[6]
+            self.cs.zsnow = self.cs.vr_data[7]
+        except:
+            pass
 
 
 class SourceSink(esbmtkBase):
