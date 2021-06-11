@@ -491,7 +491,7 @@ def carbonate_system_old(
             0.0,
             0.0,
         ],
-        function_input_data=List(rg.DIC.c, rg.TA.c),
+        function_input_data=List([rg.DIC.c, rg.TA.c]),
         function_params=List(
             [
                 rg.swc.K1,
@@ -502,6 +502,51 @@ def carbonate_system_old(
                 rg.swc.hplus,
                 rg.swc.ca2,
             ]
+        ),
+        register=rg,
+    )
+
+    rg.add_cs_aliases()
+
+
+def carbonate_system_new(
+    rg: ReservoirGroup = "None",
+) -> tuple:
+
+    """Setup the virtual reservoir which will calculate H+, CA, HCO3, CO3, CO2a
+
+    You must provide
+    ca_con: initial carbonate concentration. Must be a quantity
+    hplus_con: initial H+ concentration. Must be a quantity
+    volume: volume : Must be a quantity for reservoir definition but when  used
+    as argumment to the functionn it muts be converted to magnitude
+
+    swc : a seawater constants object
+    rg: optional, must be a reservoir group. If present, the below reservoirs
+        will be registered with this group.
+
+    Returns the reservoir handles to VCA and VH
+
+    All list type objects must be converted to numba Lists, if the function is to be used with
+    the numba solver.
+
+    """
+
+    from esbmtk import VirtualReservoir_no_set, calc_carbonates
+
+    print(f"using carbonate_system_new in carbonate_chemistry.py")
+
+    VirtualReservoir_no_set(
+        name="cs",
+        species=CO2,
+        function=calc_carbonates,
+        # initialize 5 datafield and provide defaults for H+
+        vr_datafields=List(
+            [rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2]
+        ),
+        function_input_data=List([rg.DIC.c, rg.TA.c]),
+        function_params=List(
+            [rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, rg.swc.hplus]
         ),
         register=rg,
     )

@@ -262,7 +262,6 @@ class ReservoirGroup(esbmtkBase):
             if not hasattr(self, "TA"):
                 raise AttributeError(f"{self.full_name} has no TA reservoir")
 
-<<<<<<< HEAD
             VirtualReservoir_no_set(
                 name="cs",
                 species=CO2,
@@ -295,9 +294,7 @@ class ReservoirGroup(esbmtkBase):
                 ),
                 register=self,
             )
-=======
-            carbonate_system_new(self)
->>>>>>> fff3f7604587b11e0fa6aebb1e1bcad1d92195ce
+            # carbonate_system_old(self)
 
             # setup aliases
             self.cs.H = self.cs.vr_data[0]
