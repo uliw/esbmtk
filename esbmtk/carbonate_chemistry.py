@@ -820,7 +820,7 @@ def calc_horizon(i: int, input_data: List, vr_data: List, params: List) -> None:
     # [dic] = dic mass / reservoir volume
     input_data[2][i] = input_data[4][i] / reservoir_vol
 
-    # update TA mass (mol)
+    # update TA mass (mol)qqq
     # 1:2 mole ratio for changes in DIC to TA
     # TA mass = non-updated TA mass + 2 * dissolved co3 mass
     input_data[5][i] = input_data[5][i] + (2 * co3_mass)
