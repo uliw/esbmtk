@@ -452,7 +452,7 @@ class SeawaterConstants(esbmtkBase):
         self.a_u: float = 1 + self.e_u / 1000
 
 
-def carbonate_system_new(
+def carbonate_system_old(
     rg: ReservoirGroup = "None",
 ) -> tuple:
 
@@ -476,8 +476,6 @@ def carbonate_system_new(
     """
 
     from esbmtk import VirtualReservoir_no_set, calc_carbonates
-
-    print(f"using carbonate_system_new in carbonate_chemistry.py")
 
     VirtualReservoir_no_set(
         name="cs",

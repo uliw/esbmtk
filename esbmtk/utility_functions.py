@@ -563,7 +563,7 @@ def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
 
     from esbmtk import SeawaterConstants, ReservoirGroup, build_concentration_dicts
     from esbmtk import SourceGroup, SinkGroup, Q_
-    from esbmtk import carbonate_system_new
+    from esbmtk import carbonate_system_new, carbonate_system_old
 
     # parse for sources and sinks, create these and remove them from the list
 
@@ -1315,7 +1315,7 @@ def map_units(v: any, *args) -> float:
 
 
 def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
-    """ Creates a new carbonate system virtual reservoir for each
+    """Creates a new carbonate system virtual reservoir for each
     reservoir in reservoirs. These new virtual reservoirs are registered to
     their respective ReservoirGroup.
 
@@ -1355,7 +1355,9 @@ def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
             carbonate_chemistry.carbonate_system_new(rg)
     elif cs_type == 2:  # use your new code
         if len(extra) == 0:
-            raise ValueError(f"add_carbonate_system: Please provide some additional parameters!")
+            raise ValueError(
+                f"add_carbonate_system: Please provide some additional parameters!"
+            )
         else:
             temp: list = __validate_cs_dict__(extra)
             reservoirs = temp[0]
@@ -1369,7 +1371,7 @@ def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
 
 
 def __find_flux__(reservoirs: list, full_name: str):
-    """ Helper function to find a Flux object based on its full_name in the reservoirs
+    """Helper function to find a Flux object based on its full_name in the reservoirs
     in the list of provided reservoirs.
 
     PRECONDITIONS: full_name must contain the full_name of the Flux
@@ -1387,12 +1389,15 @@ def __find_flux__(reservoirs: list, full_name: str):
         if needed_flux != None:
             break
     if needed_flux == None:
-        raise NameError(f"add_carbonate_system: Flux {full_name} cannot be found in any of the reservoirs in the Model!")
+        raise NameError(
+            f"add_carbonate_system: Flux {full_name} cannot be found in any of the reservoirs in the Model!"
+        )
 
     return needed_flux
 
+
 def __validate_cs_dict__(d: Dict) -> list:
-    """ Helper function that helps validate the optional dictionary parameter
+    """Helper function that helps validate the optional dictionary parameter
     used by add_carbonate_system() and returns a list. The list is in the form
     of [List, List, List] where the first list contains the reservoirs, the
     second is the lookup table and the third list contains all needed parameters
@@ -1425,7 +1430,7 @@ def __validate_cs_dict__(d: Dict) -> list:
     """
     import numpy as np
 
-    #allowed keywords and the types they should be
+    # allowed keywords and the types they should be
     allowed_key: Dict = {
         "AD": [float, int, np.float64],
         "dt": [float, int, np.float64],
@@ -1442,44 +1447,60 @@ def __validate_cs_dict__(d: Dict) -> list:
         "pg": [float, int, np.float64],
         "I": [float, int, np.float64],
         "alphard": [float, int, np.float64],
-        "depths_table": [np.ndarray, list, NDArray]
+        "depths_table": [np.ndarray, list, NDArray],
     }
 
-    #dictionary with default keys
+    # dictionary with default keys
     d_k: Dict = {
-        "zsat": 3715, #m
-        "zcc": 4750,  #m
-        "zsnow": 4750, #m
-        "zsat0": 5078,  #m
-        "ksp0": 4.29E-07,
-        "kc": 8.84 * 1000, #m/yr converted to kg m^-2 yr^-1
-        "Ca2": 0.0103, #mol/kg
-        "pc": 511, #atm
-        "pg": 0.1, #atm/m
-        "I": 529, #mol/m^2
-        "alphard": 0.3
+        "zsat": 3715,  # m
+        "zcc": 4750,  # m
+        "zsnow": 4750,  # m
+        "zsat0": 5078,  # m
+        "ksp0": 4.29e-07,
+        "kc": 8.84 * 1000,  # m/yr converted to kg m^-2 yr^-1
+        "Ca2": 0.0103,  # mol/kg
+        "pc": 511,  # atm
+        "pg": 0.1,  # atm/m
+        "I": 529,  # mol/m^2
+        "alphard": 0.3,
     }
 
     # checks the keys in d and assigns the provided values into d_k
     for key in d:
-        if key not in allowed_key: #if key isn't
+        if key not in allowed_key:  # if key isn't
             raise KeyError(f"add_carbonate_system: {key} is not a valid key!")
         if type(d[key]) not in allowed_key[key]:
-            raise TypeError(f"add_carbonate_system: The value for {key} is not the correct type. "
-                             f"It needs to be {allowed_key[key]}.")
+            raise TypeError(
+                f"add_carbonate_system: The value for {key} is not the correct type. "
+                f"It needs to be {allowed_key[key]}."
+            )
         d_k[key] = d[key]
     # checks if all the needed keys and values are now in d_k
     if d_k.keys() != allowed_key.keys():
         for key in allowed_key:
             if key not in d_k:
                 print(key)
-                raise KeyError(f"add_carbonate_system: Please provide {key} in the dictionary!")
+                raise KeyError(
+                    f"add_carbonate_system: Please provide {key} in the dictionary!"
+                )
 
     # if they all correct keys are given:
-    params: list = [d_k["zsat"], d_k["zcc"], d_k["zsnow"], d_k["zsat0"],
-                    d_k["ksp0"], d_k["kc"], d_k["AD"], d_k["Ca2"],
-                    d_k["dt"], d_k["B_fluxname"], d_k["pc"], d_k["pg"],
-                    d_k["I"], d_k["alphard"]]
+    params: list = [
+        d_k["zsat"],
+        d_k["zcc"],
+        d_k["zsnow"],
+        d_k["zsat0"],
+        d_k["ksp0"],
+        d_k["kc"],
+        d_k["AD"],
+        d_k["Ca2"],
+        d_k["dt"],
+        d_k["B_fluxname"],
+        d_k["pc"],
+        d_k["pg"],
+        d_k["I"],
+        d_k["alphard"],
+    ]
     reservoirs: list = d_k["reservoirs"]
     lookup_table: NDArray = d_k["depths_table"]
 
