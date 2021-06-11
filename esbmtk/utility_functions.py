@@ -42,6 +42,7 @@ import time
 
 from esbmtk import Q_
 
+
 # import builtins
 # import math
 
@@ -563,7 +564,7 @@ def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
 
     from esbmtk import SeawaterConstants, ReservoirGroup, build_concentration_dicts
     from esbmtk import SourceGroup, SinkGroup, Q_
-    from esbmtk import carbonate_system_new, carbonate_system_old
+    from esbmtk import carbonate_system_new, carbonate_system_uli
 
     # parse for sources and sinks, create these and remove them from the list
 
@@ -1347,12 +1348,12 @@ def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
                 I = dissolvable CaCO3 inventory
 
     """
-    from esbmtk import carbonate_chemistry
+    from esbmtk import carbonate_chemistry, carbonate_system_new, carbonate_system_uli
 
     # set up vr type
     if cs_type == 1:  # use the current code
         for rg in rgs:
-            carbonate_chemistry.carbonate_system_new(rg)
+            carbonate_system_uli(rg)
     elif cs_type == 2:  # use your new code
         if len(extra) == 0:
             raise ValueError(

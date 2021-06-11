@@ -452,7 +452,7 @@ class SeawaterConstants(esbmtkBase):
         self.a_u: float = 1 + self.e_u / 1000
 
 
-def carbonate_system_old(
+def carbonate_system_uli(
     rg: ReservoirGroup = "None",
 ) -> tuple:
 
@@ -482,25 +482,30 @@ def carbonate_system_old(
         species=CO2,
         function=calc_carbonates,
         # initialize 5 datafield and provide defaults for H+
-        vr_datafields=[
-            rg.swc.hplus,
-            rg.swc.ca,
-            rg.swc.hco3,
-            rg.swc.co3,
-            rg.swc.co2,
-            0.0,
-            0.0,
-        ],
+        vr_datafields=List(
+            [
+                rg.swc.hplus,
+                rg.swc.ca,
+                rg.swc.hco3,
+                rg.swc.co3,
+                rg.swc.co2,
+                0.0,
+                0.0,
+            ]
+        ),
         function_input_data=List([rg.DIC.c, rg.TA.c]),
         function_params=List(
             [
-                rg.swc.K1,
-                rg.swc.K2,
-                rg.swc.KW,
-                rg.swc.KB,
-                rg.swc.boron,
-                rg.swc.hplus,
-                rg.swc.ca2,
+                rg.swc.K1,  # 1
+                rg.swc.K2,  # 2
+                rg.swc.KW,  # 3
+                rg.swc.KB,  # 4
+                rg.swc.boron,  # 5
+                rg.swc.hplus,  # 5
+                rg.swc.ca2,  # 6
+                rg.swc.Ksp,  # 7
+                rg.swc.Ksp0,  # 8
+                rg.swc.zsat0,  # 9
             ]
         ),
         register=rg,
@@ -542,11 +547,24 @@ def carbonate_system_new(
         function=calc_carbonates,
         # initialize 5 datafield and provide defaults for H+
         vr_datafields=List(
-            [rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2]
+            [
+                rg.swc.hplus,
+                rg.swc.ca,
+                rg.swc.hco3,
+                rg.swc.co3,
+                rg.swc.co2,
+            ]
         ),
         function_input_data=List([rg.DIC.c, rg.TA.c]),
         function_params=List(
-            [rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, rg.swc.hplus]
+            [
+                rg.swc.K1,
+                rg.swc.K2,
+                rg.swc.KW,
+                rg.swc.KB,
+                rg.swc.boron,
+                rg.swc.hplus,
+            ]
         ),
         register=rg,
     )

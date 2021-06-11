@@ -111,7 +111,7 @@ class ReservoirGroup(esbmtkBase):
             SeawaterConstants,
             calc_carbonates,
             carbonate_system_new,
-            carbonate_system_old,
+            carbonate_system_uli,
         )
         from .extended_classes import VirtualReservoir_no_set
         from numba.typed import List
@@ -294,7 +294,7 @@ class ReservoirGroup(esbmtkBase):
                 ),
                 register=self,
             )
-            # carbonate_system_old(self)
+            # carbonate_system_uli(self)
 
             # setup aliases
             self.cs.H = self.cs.vr_data[0]
