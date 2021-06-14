@@ -941,15 +941,26 @@ class Model(esbmtkBase):
             print(f"{e.n}")
             e.list_species()
 
-    def flux_summary(self, **kwargs: dict) -> None:
+    def flux_summary(self, **kwargs: dict) -> tuple:
         """Show a summary of all model fluxes
 
         Optional parameters:
 
         index :int = i > 1 and i < number of timesteps -1
         filter_by :str = filter on flux name or part of flux name
+        return: bool = True
+
+        returns the sum of the fluxes, and a list
+        fluxes matching the filter_by string
+
+        Example:
+
+        sum, names = M.flux_summary(filter_by="POP", return=True)
 
         """
+
+        rl: list = []
+        fsum: float = 0
 
         if "index" in kwargs:
             i: int = kwargs["index"]
@@ -975,7 +986,9 @@ class Model(esbmtkBase):
                 print(f"- {r.full_name}:")
                 for f in r.lof:  # loop over fluxes in reservoir
                     if fby in f.full_name and f.m[-3] != 0:
+                        rl.append(f)
                         direction = r.lio[f]
+                        fsum = fsum + f.m[-3] * direction
                         if r.isotopes:
                             print(
                                 f"    - {f.full_name} = {direction * f.m[i]:.2e} d = {f.d[i]:.2f}"
@@ -983,6 +996,11 @@ class Model(esbmtkBase):
                         else:
                             print(f"    - {f.full_name} = {direction * f.m[i]:.2e}")
                 print("")
+
+        if "return" not in kwargs:
+            fsum = None
+            rl = None
+        return fsum, rl
 
     def connection_summary(self, **kwargs: dict) -> None:
         """Show a summary of all connections
