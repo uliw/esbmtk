@@ -584,6 +584,7 @@ class Model(esbmtkBase):
         self.ldf: list = []
         # list of signals
         self.los: list = []
+        self.first_start = True  # keep track of repeated solver calls
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
@@ -709,7 +710,7 @@ class Model(esbmtkBase):
         prefix: str = "state_"
 
         for r in self.lor:
-            r.__write_data__(prefix, start, stop, stride)
+            r.__write_data__(prefix, start, stop, stride, append=False)
 
     def save_data(self, **kwargs) -> None:
         """Save the model results to a CSV file. Each reservoir will have
@@ -719,7 +720,7 @@ class Model(esbmtkBase):
         stride = int  # every nth element
         start = int   # start index
         stop = int    # end index
-
+        append = True/False #
 
         """
 
@@ -755,7 +756,21 @@ class Model(esbmtkBase):
 
         # save data fields
         for r in self.ldf:
-            r.__write_data__(prefix, start, stop, stride)
+            r.__write_data__(prefix, start, stop, stride, append)
+
+    def restart(self):
+        """Restart the model with result of the last run.
+        This is useful for long runs which otherwise would used
+        to much memory
+
+        """
+
+        for r in self.lor:
+            r.__reset_state__()
+            for f in r.lof:
+                f.__reset_state__()
+
+        self.time = (arange(self.steps) * self.dt) + self.start
 
     def read_state(self):
         """This will initialize the model with the result of a previous model
@@ -903,7 +918,14 @@ class Model(esbmtkBase):
             solver = kwargs["solver"]
 
         if solver == "numba":
-            execute_e(new, self.time, self.lor, self.lpc_f, self.lpc_r)
+            execute_e(
+                self,
+                new,
+                self.lor,
+                self.lpc_f,
+                self.lpc_r,
+            )
+
         elif solver == "hybrid":
             execute_h(new, self.time, self.lor, self.lpc_f, self.lpc_r)
         else:
@@ -1315,6 +1337,18 @@ class ReservoirBase(esbmtkBase):
             df.to_csv(file_path, header=True, mode="w", index=False)
 
         return df
+
+    def __reset_state__(self) -> None:
+        """Copy the result of the last computation back to the beginning
+        so that a new run will start with these values
+
+        """
+
+        self.m[0:1] = self.m[-3:-2]
+        self.l[0:1] = self.l[-3:-2]
+        self.h[0:1] = self.h[-3:-2]
+        self.d[0:1] = self.d[-3:-2]
+        self.c[0:1] = self.c[-3:-2]
 
     def __read_state__(self) -> None:
         """read data from csv-file into a dataframe
@@ -2036,6 +2070,17 @@ class Flux(esbmtkBase):
         fig.tight_layout()
         plt.show()
         plt.savefig(self.n + ".pdf")
+
+    def __reset_state__(self) -> None:
+        """Copy the result of the last computation back to the beginning
+        so that a new run will start with these values
+
+        """
+
+        self.m[0:1] = self.m[-3:-2]
+        self.l[0:1] = self.l[-3:-2]
+        self.h[0:1] = self.h[-3:-2]
+        self.d[0:1] = self.d[-3:-2]
 
 
 class SourceSink(esbmtkBase):
