@@ -572,7 +572,7 @@ def carbonate_system_new(
     rg.add_cs_aliases()
 
 
-@njit
+@njit(parallel=False, fastmath=True)
 def calc_carbonates(i: int, input_data: List, vr_data: List, params: List) -> None:
     """Calculates and returns the carbonate concentrations with the format of
     [d1, d2, d3, d4, d5] where each variable corresponds to
@@ -661,15 +661,17 @@ def calc_carbonates(i: int, input_data: List, vr_data: List, params: List) -> No
     # hco3 and co3
     """ Since CA = [hco3] + 2[co3], can the below expression can be simplified
     """
-    co3: float = dic / (1 + (hplus / k2) + ((hplus ** 2) / (k1 * k2)))
+    # co3: float = dic / (1 + (hplus / k2) + ((hplus ** 2) / (k1k2)))
     hco3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
+    co3: float = (ca - hco3) / 2
     # co2 (aq)
     """DIC = hco3 + co3 + co2 + H2CO3 The last term is however rather
     small, so it may be ok to simply write co2aq = dic - hco3 + co3.
     Let's test this once we have a case where pco2 is calculated from co2aq
     """
 
-    co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
+    # co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
+    co2aq: float = dic - hco3 - co3
     omega: float = ca2 * co3 / ksp
 
     vr_data[0][i] = hplus
@@ -677,7 +679,7 @@ def calc_carbonates(i: int, input_data: List, vr_data: List, params: List) -> No
     vr_data[2][i] = hco3
     vr_data[3][i] = co3
     vr_data[4][i] = co2aq
-    vr_data[5][i] = ca2 * co3 / ksp
+    vr_data[5][i] = omega
     vr_data[6][i] = zsat0 * np.log(ca2 * co3 / ksp0)
 
 
@@ -1056,7 +1058,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     dt: float = params[12]
     B: float = input_data[8][i - 1] * dt
 
-    depths_areas: list = input_data[9] # look-up table
+    depths_areas: list = input_data[9]  # look-up table
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
@@ -1079,7 +1081,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
 
     pc = params[13]
     pg = params[14]
-    I =  params[15]
+    I = params[15]
     alphard = params[16]
 
     # ca
@@ -1109,22 +1111,25 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     zcc = vr_data[6]
     zsnow = vr_data[7]
 
-    depths = __calc_depths_helper__(i, [depths_areas],
-                                    [zsat, zcc, zsnow],
-                                    [SA, AD, dt, co3, ca2, ksp0, zsat0, kc, B, pc, pg, I, alphard])
+    depths = __calc_depths_helper__(
+        i,
+        [depths_areas],
+        [zsat, zcc, zsnow],
+        [SA, AD, dt, co3, ca2, ksp0, zsat0, kc, B, pc, pg, I, alphard],
+    )
 
     vr_data[0][i] = hplus
     vr_data[1][i] = ca
     vr_data[2][i] = hco3
     vr_data[3][i] = co3
     vr_data[4][i] = co2aq
-    vr_data[5][i] = depths[0] #zsat
-    vr_data[6][i] = depths[1] #zcc
-    vr_data[7][i] = depths[2] #zsnow
+    vr_data[5][i] = depths[0]  # zsat
+    vr_data[6][i] = depths[1]  # zcc
+    vr_data[7][i] = depths[2]  # zsnow
 
-    #----------------------Updating DIC and TA----------------------------------
+    # ----------------------Updating DIC and TA----------------------------------
     Fburial = depths[3]
-    Fburial_m = Fburial * dt #mass of the calcite buried
+    Fburial_m = Fburial * dt  # mass of the calcite buried
 
     # dic_m = input_data[0]
     # dic_l = input_data[1]
@@ -1135,7 +1140,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     # ta_h = input_data[6]
     # ta_c = input_data[7]
 
-    #----Updating DIC-----
+    # ----Updating DIC-----
 
     old_dic_m = input_data[0][i].copy()
     # dic mass = non-updated DIC mass + calcite buried
@@ -1167,7 +1172,9 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     input_data[7][i] = input_data[4][i] / volume
 
 
-def __calc_depths_helper__(i: int, input_data: List, vr_data: List, params: List) -> list:
+def __calc_depths_helper__(
+    i: int, input_data: List, vr_data: List, params: List
+) -> list:
     """Helper function used by calc_carbonates_v2() to calculate depths for
     saturation depth (zsat), carbonate compensation depth (zcc) and snowline
     (zsnow) depth. It will also calculate the calcite burial flux, Fburial.
@@ -1201,25 +1208,25 @@ def __calc_depths_helper__(i: int, input_data: List, vr_data: List, params: List
         I_caco3 = inventory of dissolvable CaCO3 (mol/m^2)
         alphard = fraction of calcite dissolved above saturation horizon by respirational dissolution
     """
-    depth_areas = input_data[0] # look-up table
+    depth_areas = input_data[0]  # look-up table
 
     prev_zsat: float = vr_data[0][i - 1]
     prev_zcc: float = vr_data[1][i - 1]
     prev_zsnow: float = vr_data[2][i - 1]
 
-    sa: float = params[0]  #surface area
-    AD: float = params[1]  #total ocean area
-    dt: float = params[2]  #time-step
-    co3: float = params[3]  #carbonate ion concentration from previous timestep (mol/l)
-    ca: float = params[4]  #calcium ion concentration
-    ksp0: float = params[5]  #ksp at ocean surface interface
-    zsat0: float = params[6]  #characteristic depth
-    kc: float = params[7]  #rate constant
-    B: float = params[8]  #calcite flux
-    pc: float = params[9]  #characteristic pressure
-    pg: float = params[10]  #seawater density and gravity due to acceleration (atm/m)
-    I_caco3: float = params[11]  #dissolvable CaCO3 inventory
-    alphard: float = params[12] #fraction dissolved calcite
+    sa: float = params[0]  # surface area
+    AD: float = params[1]  # total ocean area
+    dt: float = params[2]  # time-step
+    co3: float = params[3]  # carbonate ion concentration from previous timestep (mol/l)
+    ca: float = params[4]  # calcium ion concentration
+    ksp0: float = params[5]  # ksp at ocean surface interface
+    zsat0: float = params[6]  # characteristic depth
+    kc: float = params[7]  # rate constant
+    B: float = params[8]  # calcite flux
+    pc: float = params[9]  # characteristic pressure
+    pg: float = params[10]  # seawater density and gravity due to acceleration (atm/m)
+    I_caco3: float = params[11]  # dissolvable CaCO3 inventory
+    alphard: float = params[12]  # fraction dissolved calcite
 
     # ---------------------Calculate zsat---------------------------------------
     # Equation (2) from paper (1) Boudreau (2010)
@@ -1245,8 +1252,10 @@ def __calc_depths_helper__(i: int, input_data: List, vr_data: List, params: List
     # BDS_under = kc * ((a'(zsat) * (Csat(zsat, t) - [CO3d](t))) -  (a'(zcc) * (Csat(zcc, t) - [CO3d](t))))
     Csat_zsat: float = (ksp0 / ca) * np.exp((prev_zsat * pg) / pc)
     Csat_zcc: float = (ksp0 / ca) * np.exp((prev_zcc * pg) / pc)
-    BDS_under: float = kc * ((sa * depth_areas[int(prev_zsat)] * (Csat_zsat - co3)) -
-                             (sa * depth_areas[int(prev_zcc)] * (Csat_zcc - co3)))
+    BDS_under: float = kc * (
+        (sa * depth_areas[int(prev_zsat)] * (Csat_zsat - co3))
+        - (sa * depth_areas[int(prev_zcc)] * (Csat_zcc - co3))
+    )
 
     # BDS_resp = alpha_RD * (((A(zsat, zcc) * B) / AD ) - BDS_under)
     A_diff: float = sa * (depth_areas[int(prev_zcc)] - depth_areas[int(prev_zsat)])
@@ -1259,8 +1268,10 @@ def __calc_depths_helper__(i: int, input_data: List, vr_data: List, params: List
     # BPDC = kc * ((a'(zcc) * (Csat(zcc, t) - [CO3d](t))) -  (a'(zsnow) * (Csat(zsnow, t) - [CO3d](t))))
     Csat_zsnow: float = (ksp0 / ca) * np.exp((prev_zsnow * pg) / pc)
 
-    BPDC: float = kc * ((sa * depth_areas[int(prev_zcc)] * (Csat_zcc - co3)) -
-                        (sa * depth_areas[int(prev_zsnow)] * (Csat_zsnow - co3)))
+    BPDC: float = kc * (
+        (sa * depth_areas[int(prev_zcc)] * (Csat_zcc - co3))
+        - (sa * depth_areas[int(prev_zsnow)] * (Csat_zsnow - co3))
+    )
 
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = B - BD
@@ -1270,9 +1281,10 @@ def __calc_depths_helper__(i: int, input_data: List, vr_data: List, params: List
     # dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
     # Note that we use equation (1) from paper (1) Boudreau (2010) as well:
     # where a'(z) is the differential bathymetric curve: A(z2, z1) = a'(z2) - a'(z1)
-    zsnow_dt: float = BPDC / (sa * depth_areas[int(prev_zsnow)] * I_caco3)  # movement of snowline
+    zsnow_dt: float = BPDC / (
+        sa * depth_areas[int(prev_zsnow)] * I_caco3
+    )  # movement of snowline
     # multiplying change in snowline by the timestep to get the current snowline depth
     zsnow: float = prev_zsnow + (zsnow_dt * dt)
 
     return [zsat, zcc, zsnow, Fburial]
-
