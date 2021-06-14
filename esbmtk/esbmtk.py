@@ -743,10 +743,15 @@ class Model(esbmtkBase):
         else:
             stop = None
 
+        if "append" in kwargs:
+            append = kwargs["append"]
+        else:
+            append = False
+
         prefix = ""
         # Save reservoir and flux data
         for r in self.lor:
-            r.__write_data__(prefix, start, stop, stride)
+            r.__write_data__(prefix, start, stop, stride, append)
 
         # save data fields
         for r in self.ldf:
@@ -1257,8 +1262,12 @@ class ReservoirBase(esbmtkBase):
         self.m[i]: float = value[0]
         self.c[i]: float = self.m[i] / self.v  # update concentration
 
-    def __write_data__(self, prefix: str, start: int, stop: int, stride: int) -> None:
+    def __write_data__(
+        self, prefix: str, start: int, stop: int, stride: int, append: bool
+    ) -> None:
         """To be called by write_data and save_state"""
+
+        from pathlib import Path
 
         # some short hands
         sn = self.sp.n  # species name
@@ -1296,7 +1305,15 @@ class ReservoirBase(esbmtkBase):
             # delta value
             df[f"{f.full_name} {sn} {sdn} [{sds}]"] = f.d[start:stop:stride]
 
-        df.to_csv(fn, index=False)  # Write dataframe to file
+        file_path = Path(fn)
+        if append:
+            if file_path.exists():
+                df.to_csv(file_path, header=False, mode="a", index=False)
+            else:
+                df.to_csv(file_path, header=True, mode="w", index=False)
+        else:
+            df.to_csv(file_path, header=True, mode="w", index=False)
+
         return df
 
     def __read_state__(self) -> None:
