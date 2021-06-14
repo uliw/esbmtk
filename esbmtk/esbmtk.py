@@ -955,7 +955,7 @@ class Model(esbmtkBase):
 
         Example:
 
-        sum, names = M.flux_summary(filter_by="POP", return=True)
+        sum, names = M.flux_summary(filter_by="POP", return_sum=True)
 
         """
 
@@ -997,7 +997,7 @@ class Model(esbmtkBase):
                             print(f"    - {f.full_name} = {direction * f.m[i]:.2e}")
                 print("")
 
-        if "return" not in kwargs:
+        if "return_sum" not in kwargs:
             fsum = None
             rl = None
         return fsum, rl
