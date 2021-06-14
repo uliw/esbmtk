@@ -770,6 +770,9 @@ class Model(esbmtkBase):
             for f in r.lof:
                 f.__reset_state__()
 
+        for r in self.lvr:
+            r.__reset_state__()
+
         self.time = (arange(self.steps) * self.dt) + self.start
 
     def read_state(self):
