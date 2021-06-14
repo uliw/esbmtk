@@ -40,5 +40,6 @@ setuptools.setup(
         "pint",
         "scipy",
         "numba",
+        "pathlib",
     ],
 )
