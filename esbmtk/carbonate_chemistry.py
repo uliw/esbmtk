@@ -1089,8 +1089,8 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     ca: float = ta + fg
     # hplus
     gamm: float = dic / ca
-    dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
-
+    dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (
+                1 - (2 * gamm))
     hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))
     # hco3 and co3
     """ Since CA = [hco3] + 2[co3], can the below expression can be simplified
@@ -1122,6 +1122,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     vr_data[6][i] = depths[1] #zcc
     vr_data[7][i] = depths[2] #zsnow
 
+
     #----------------------Updating DIC and TA----------------------------------
     Fburial = depths[3]
     Fburial_m = Fburial * dt #mass of the calcite buried
@@ -1136,10 +1137,9 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     # ta_c = input_data[7]
 
     #----Updating DIC-----
-
     old_dic_m = input_data[0][i].copy()
     # dic mass = non-updated DIC mass + calcite buried
-    input_data[0][i] = input_data[0][i] + Fburial_m
+    input_data[0][i] = input_data[0][i] - Fburial_m
     # ratio = rg.DIC.m[i] / old_value
     dic_ratio = input_data[0][i] / old_dic_m
     # updating rg.DIC.l (light isotope)
@@ -1150,11 +1150,10 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     input_data[2][i] = input_data[0][i] - input_data[1][i]
     # [dic] = dic mass / reservoir volume
     input_data[3][i] = input_data[0][i] / volume
-
     # ----Updating TA-----
     old_TA_m = input_data[4][i].copy()
     # TA mass = non-updated TA mass + calcite buried
-    input_data[4][i] = input_data[4][i] + 2 * Fburial_m
+    input_data[4][i] = input_data[4][i] - 2 * Fburial_m
     # ratio = rg.TA.m[i] / old_value
     TA_ratio = input_data[4][i] / old_TA_m
     # updating rg.TA.l (light isotope)
