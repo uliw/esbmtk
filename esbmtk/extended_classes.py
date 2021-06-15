@@ -1336,6 +1336,37 @@ class VirtualReservoir_no_set(Reservoir_no_set):
         for d in self.vr_data:
             d[0:1] = d[-3:-2]
 
+    def __write_data__(
+        self, prefix: str, start: int, stop: int, stride: int, append: bool
+    ) -> None:
+        """To be called by write_data and save_state"""
+
+        from pathlib import Path
+
+        mo = self.sp.mo  # model handle
+        rn = self.full_name  # reservoir name
+        fn = f"{prefix}{mn}_vr_{rn}.csv"  # file name
+
+        df: pd.dataframe = DataFrame()
+
+        df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
+
+        for i, d in enumerate(self.vr_data):
+            h = f"X{i}"
+            d[0:1] = d[-3:-2]
+            df[h] = d
+
+        file_path = Path(fn)
+        if append:
+            if file_path.exists():
+                df.to_csv(file_path, header=False, mode="a", index=False)
+            else:
+                df.to_csv(file_path, header=True, mode="w", index=False)
+        else:
+            df.to_csv(file_path, header=True, mode="w", index=False)
+
+        return df
+
 
 class VirtualReservoir(Reservoir):
     """A virtual reservoir. Unlike regular reservoirs, the mass of a
