@@ -712,6 +712,9 @@ class Model(esbmtkBase):
         for r in self.lor:
             r.__write_data__(prefix, start, stop, stride, append=False)
 
+        for r in self.lvr:
+            r.__write_data__(prefix, start, stop, stride, append=False)
+
     def save_data(self, **kwargs) -> None:
         """Save the model results to a CSV file. Each reservoir will have
         their own CSV file
@@ -755,7 +758,10 @@ class Model(esbmtkBase):
             r.__write_data__(prefix, start, stop, stride, append)
 
         # save data fields
-        for r in self.ldf:
+        # for r in self.ldf:
+        #     r.__write_data__(prefix, start, stop, stride, append)
+
+        for r in self.lvr:
             r.__write_data__(prefix, start, stop, stride, append)
 
     def restart(self):
@@ -784,6 +790,12 @@ class Model(esbmtkBase):
 
         """
         for r in self.lor:
+            if isinstance(r, Reservoir):
+                # print(f" reading from {r.full_name}")
+                r.__read_state__()
+
+        for r in self.lvr:
+            # print(f"lvr  reading from {r.full_name}")
             r.__read_state__()
 
     def plot_data(self, **kwargs: dict) -> None:
