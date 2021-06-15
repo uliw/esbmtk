@@ -183,24 +183,28 @@ def execute_h(
         i = i + 1  # next time step
 
 
-def execute_e(
-    new: [NDArray, Float64],
-    time_array: [NDArray, Float64],
-    lor: list,
-    lpc_f: list,
-    lpc_r: list,
-) -> None:
+def execute_e(model, new, lor, lpc_f, lpc_r):
 
-    """Moved this code into a separate function to enable numba optimization"""
-    # numba.config.THREADING_LAYER = "threadsafe"
+    """ """
+
     # numba.set_num_threads(2)
 
     # this has nothing todo with self.time below!
     start: float = process_time()
     dt: float = lor[0].mo.dt
-    fn_vr, input_data, vr_data, vr_params, count = build_vr_list(lpc_r)
-    fn, da, pc = build_process_list(lor)
-    a, b, c, d, e = build_flux_lists_all(lor)
+
+    if model.first_start:
+        (
+            model.fn_vr,
+            model.input_data,
+            model.vr_data,
+            model.vr_params,
+            model.count,
+        ) = build_vr_list(lpc_r)
+
+        model.fn, model.da, model.pc = build_process_list(lor)
+        model.a, model.b, model.c, model.d, model.e = build_flux_lists_all(lor)
+        model.first_start = False
 
     duration: float = process_time() - start
     print(f"\n Setup time {duration} cpu seconds\n")
@@ -209,25 +213,36 @@ def execute_e(
     wts = time.time()
     start: float = process_time()
 
-    if count > 0:
+    if model.count > 0:
         foo(
-            fn_vr,
-            input_data,
-            vr_data,
-            vr_params,
-            fn,
-            da,
-            pc,
-            a,
-            b,
-            c,
-            d,
-            e,
-            time_array[:-1],
-            dt,
+            model.fn_vr,
+            model.input_data,
+            model.vr_data,
+            model.vr_params,
+            model.fn,
+            model.da,
+            model.pc,
+            model.a,
+            model.b,
+            model.c,
+            model.d,
+            model.e,
+            model.time[:-1],
+            model.dt,
         )
     else:
-        foo_no_vr(fn, da, pc, a, b, c, d, e, time_array[:-1], dt)
+        foo_no_vr(
+            model.fn,
+            model.da,
+            model.pc,
+            model.a,
+            model.b,
+            model.c,
+            model.d,
+            model.e,
+            model.time[:-1],
+            model.dt,
+        )
 
     duration: float = process_time() - start
     wcd = time.time() - wts

@@ -584,6 +584,7 @@ class Model(esbmtkBase):
         self.ldf: list = []
         # list of signals
         self.los: list = []
+        self.first_start = True  # keep track of repeated solver calls
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
@@ -709,7 +710,7 @@ class Model(esbmtkBase):
         prefix: str = "state_"
 
         for r in self.lor:
-            r.__write_data__(prefix, start, stop, stride)
+            r.__write_data__(prefix, start, stop, stride, append=False)
 
     def save_data(self, **kwargs) -> None:
         """Save the model results to a CSV file. Each reservoir will have
@@ -719,7 +720,7 @@ class Model(esbmtkBase):
         stride = int  # every nth element
         start = int   # start index
         stop = int    # end index
-
+        append = True/False #
 
         """
 
@@ -743,14 +744,36 @@ class Model(esbmtkBase):
         else:
             stop = None
 
+        if "append" in kwargs:
+            append = kwargs["append"]
+        else:
+            append = False
+
         prefix = ""
         # Save reservoir and flux data
         for r in self.lor:
-            r.__write_data__(prefix, start, stop, stride)
+            r.__write_data__(prefix, start, stop, stride, append)
 
         # save data fields
         for r in self.ldf:
-            r.__write_data__(prefix, start, stop, stride)
+            r.__write_data__(prefix, start, stop, stride, append)
+
+    def restart(self):
+        """Restart the model with result of the last run.
+        This is useful for long runs which otherwise would used
+        to much memory
+
+        """
+
+        for r in self.lor:
+            r.__reset_state__()
+            for f in r.lof:
+                f.__reset_state__()
+
+        for r in self.lvr:
+            r.__reset_state__()
+
+        self.time = (arange(self.steps) * self.dt) + self.start
 
     def read_state(self):
         """This will initialize the model with the result of a previous model
@@ -898,7 +921,14 @@ class Model(esbmtkBase):
             solver = kwargs["solver"]
 
         if solver == "numba":
-            execute_e(new, self.time, self.lor, self.lpc_f, self.lpc_r)
+            execute_e(
+                self,
+                new,
+                self.lor,
+                self.lpc_f,
+                self.lpc_r,
+            )
+
         elif solver == "hybrid":
             execute_h(new, self.time, self.lor, self.lpc_f, self.lpc_r)
         else:
@@ -941,15 +971,26 @@ class Model(esbmtkBase):
             print(f"{e.n}")
             e.list_species()
 
-    def flux_summary(self, **kwargs: dict) -> None:
+    def flux_summary(self, **kwargs: dict) -> tuple:
         """Show a summary of all model fluxes
 
         Optional parameters:
 
         index :int = i > 1 and i < number of timesteps -1
         filter_by :str = filter on flux name or part of flux name
+        return: bool = True
+
+        returns the sum of the fluxes, and a list
+        fluxes matching the filter_by string
+
+        Example:
+
+        sum, names = M.flux_summary(filter_by="POP", return_sum=True)
 
         """
+
+        rl: list = []
+        fsum: float = 0
 
         if "index" in kwargs:
             i: int = kwargs["index"]
@@ -975,7 +1016,9 @@ class Model(esbmtkBase):
                 print(f"- {r.full_name}:")
                 for f in r.lof:  # loop over fluxes in reservoir
                     if fby in f.full_name and f.m[-3] != 0:
+                        rl.append(f)
                         direction = r.lio[f]
+                        fsum = fsum + f.m[-3] * direction
                         if r.isotopes:
                             print(
                                 f"    - {f.full_name} = {direction * f.m[i]:.2e} d = {f.d[i]:.2f}"
@@ -983,6 +1026,11 @@ class Model(esbmtkBase):
                         else:
                             print(f"    - {f.full_name} = {direction * f.m[i]:.2e}")
                 print("")
+
+        if "return_sum" not in kwargs:
+            fsum = None
+            rl = None
+        return fsum, rl
 
     def connection_summary(self, **kwargs: dict) -> None:
         """Show a summary of all connections
@@ -1239,8 +1287,12 @@ class ReservoirBase(esbmtkBase):
         self.m[i]: float = value[0]
         self.c[i]: float = self.m[i] / self.v  # update concentration
 
-    def __write_data__(self, prefix: str, start: int, stop: int, stride: int) -> None:
+    def __write_data__(
+        self, prefix: str, start: int, stop: int, stride: int, append: bool
+    ) -> None:
         """To be called by write_data and save_state"""
+
+        from pathlib import Path
 
         # some short hands
         sn = self.sp.n  # species name
@@ -1278,8 +1330,28 @@ class ReservoirBase(esbmtkBase):
             # delta value
             df[f"{f.full_name} {sn} {sdn} [{sds}]"] = f.d[start:stop:stride]
 
-        df.to_csv(fn, index=False)  # Write dataframe to file
+        file_path = Path(fn)
+        if append:
+            if file_path.exists():
+                df.to_csv(file_path, header=False, mode="a", index=False)
+            else:
+                df.to_csv(file_path, header=True, mode="w", index=False)
+        else:
+            df.to_csv(file_path, header=True, mode="w", index=False)
+
         return df
+
+    def __reset_state__(self) -> None:
+        """Copy the result of the last computation back to the beginning
+        so that a new run will start with these values
+
+        """
+
+        self.m[0:1] = self.m[-3:-2]
+        self.l[0:1] = self.l[-3:-2]
+        self.h[0:1] = self.h[-3:-2]
+        self.d[0:1] = self.d[-3:-2]
+        self.c[0:1] = self.c[-3:-2]
 
     def __read_state__(self) -> None:
         """read data from csv-file into a dataframe
@@ -2001,6 +2073,17 @@ class Flux(esbmtkBase):
         fig.tight_layout()
         plt.show()
         plt.savefig(self.n + ".pdf")
+
+    def __reset_state__(self) -> None:
+        """Copy the result of the last computation back to the beginning
+        so that a new run will start with these values
+
+        """
+
+        self.m[0:1] = self.m[-3:-2]
+        self.l[0:1] = self.l[-3:-2]
+        self.h[0:1] = self.h[-3:-2]
+        self.d[0:1] = self.d[-3:-2]
 
 
 class SourceSink(esbmtkBase):

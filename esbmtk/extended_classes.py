@@ -1330,6 +1330,12 @@ class VirtualReservoir_no_set(Reservoir_no_set):
             else:
                 getattr(self, key).append(value)
 
+    def __reset_state__(self):
+        """Copy the last value to the first position so that we can restart the computation"""
+
+        for d in self.vr_data:
+            d[0:1] = d[-3:-2]
+
 
 class VirtualReservoir(Reservoir):
     """A virtual reservoir. Unlike regular reservoirs, the mass of a
