@@ -1091,8 +1091,12 @@ class DataField(esbmtkBase):
                 "---------------------------------------------------------------------------"
             )
 
-    def __write_data__(self, prefix: str, start: int, stop: int, stride: int) -> None:
+    def __write_data__(
+        self, prefix: str, start: int, stop: int, stride: int, append: bool
+    ) -> None:
         """To be called by write_data and save_state"""
+
+        from pathlib import Path
 
         # some short hands
         mo = self.mo  # model handle
@@ -1115,7 +1119,15 @@ class DataField(esbmtkBase):
         if self.y2_data != "None":
             df[f"{self.n} {self.y1_label}"] = self.y2_data[start:stop:stride]  # y2_data
 
-        df.to_csv(fn, index=False)  # Write dataframe to file
+        file_path = Path(fn)
+        if append:
+            if file_path.exists():
+                df.to_csv(file_path, header=False, mode="a", index=False)
+            else:
+                df.to_csv(file_path, header=True, mode="w", index=False)
+        else:
+            df.to_csv(file_path, header=True, mode="w", index=False)
+
         return df
 
 
@@ -1336,6 +1348,38 @@ class VirtualReservoir_no_set(Reservoir_no_set):
         for d in self.vr_data:
             d[0:1] = d[-3:-2]
 
+    def __read_state__(self) -> None:
+        """read virtual reservoir data from csv-file into a dataframe
+
+        The CSV file must have the following columns
+
+        Model Time     t
+        X1
+        X2
+
+        """
+
+        from pathlib import Path
+
+        fn = f"state_{self.mo.n}_vr_{self.full_name}.csv"
+        file_path = Path(fn)
+
+        if not file_path.exists():
+            raise FileNotFoundError(f"File {fn} not found")
+        logging.info(f"reading state for {self.full_name} from {fn}")
+
+        # read csv file into dataframe
+        self.df: pd.DataFrame = pd.read_csv(fn)
+        self.headers: list = list(self.df.columns.values)
+        df = self.df
+        headers = self.headers
+        #  print(f"reading from {fn}")
+        for i, n in enumerate(headers):
+            # first column is time
+            if i > 0:
+                # print(f"i = {i}, header = {n}")
+                self.vr_data[i - 1][:3] = df.iloc[-3:, i]
+
     def __write_data__(
         self, prefix: str, start: int, stop: int, stride: int, append: bool
     ) -> None:
@@ -1345,6 +1389,9 @@ class VirtualReservoir_no_set(Reservoir_no_set):
 
         mo = self.sp.mo  # model handle
         rn = self.full_name  # reservoir name
+        mn = self.sp.mo.n  # model name
+        mtu = f"{mo.t_unit:~P}"
+
         fn = f"{prefix}{mn}_vr_{rn}.csv"  # file name
 
         df: pd.dataframe = DataFrame()
@@ -1353,8 +1400,7 @@ class VirtualReservoir_no_set(Reservoir_no_set):
 
         for i, d in enumerate(self.vr_data):
             h = f"X{i}"
-            d[0:1] = d[-3:-2]
-            df[h] = d
+            df[h] = d[start:stop:stride]
 
         file_path = Path(fn)
         if append:
