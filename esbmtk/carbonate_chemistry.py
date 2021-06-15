@@ -950,7 +950,7 @@ def carbonate_system_v2(
     I = constants[12]
     alphard = constants[13]
 
-    volume = rg.volume.to("m**3").magnitude
+    volume = rg.volume.to("L").magnitude
 
     VirtualReservoir_no_set(
         name="cs",
@@ -1020,6 +1020,8 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     LIMITATIONS:
     - This in used in conjunction with Virtual_Reservoir_no_set objects!
     - Assumes all concentrations are in mol/L
+    - Assumes your Model is in mol/L ! Otherwise, DIC and TA updating will not
+    be correct.
 
     Calculations are based off equations from Follows, 2006.
     doi:10.1016/j.ocemod.2005.05.004
@@ -1058,7 +1060,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     dt: float = params[12]
     B: float = input_data[8][i - 1] * dt
 
-    depths_areas: list = input_data[9]  # look-up table
+    depths_areas: list = input_data[9] # look-up table
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
@@ -1140,11 +1142,10 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     # ta_h = input_data[6]
     # ta_c = input_data[7]
 
-    # ----Updating DIC-----
-
+    #----Updating DIC-----
     old_dic_m = input_data[0][i].copy()
     # dic mass = non-updated DIC mass + calcite buried
-    input_data[0][i] = input_data[0][i] + Fburial_m
+    input_data[0][i] = input_data[0][i] - Fburial_m
     # ratio = rg.DIC.m[i] / old_value
     dic_ratio = input_data[0][i] / old_dic_m
     # updating rg.DIC.l (light isotope)
@@ -1155,11 +1156,10 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     input_data[2][i] = input_data[0][i] - input_data[1][i]
     # [dic] = dic mass / reservoir volume
     input_data[3][i] = input_data[0][i] / volume
-
     # ----Updating TA-----
     old_TA_m = input_data[4][i].copy()
     # TA mass = non-updated TA mass + calcite buried
-    input_data[4][i] = input_data[4][i] + 2 * Fburial_m
+    input_data[4][i] = input_data[4][i] - 2 * Fburial_m
     # ratio = rg.TA.m[i] / old_value
     TA_ratio = input_data[4][i] / old_TA_m
     # updating rg.TA.l (light isotope)
@@ -1208,7 +1208,7 @@ def __calc_depths_helper__(
         I_caco3 = inventory of dissolvable CaCO3 (mol/m^2)
         alphard = fraction of calcite dissolved above saturation horizon by respirational dissolution
     """
-    depth_areas = input_data[0]  # look-up table
+    depth_areas = input_data[0] # look-up table
 
     prev_zsat: float = vr_data[0][i - 1]
     prev_zcc: float = vr_data[1][i - 1]
@@ -1281,10 +1281,9 @@ def __calc_depths_helper__(
     # dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
     # Note that we use equation (1) from paper (1) Boudreau (2010) as well:
     # where a'(z) is the differential bathymetric curve: A(z2, z1) = a'(z2) - a'(z1)
-    zsnow_dt: float = BPDC / (
-        sa * depth_areas[int(prev_zsnow)] * I_caco3
-    )  # movement of snowline
+    zsnow_dt: float = BPDC / (sa * depth_areas[int(prev_zsnow)] * I_caco3)  # movement of snowline
     # multiplying change in snowline by the timestep to get the current snowline depth
     zsnow: float = prev_zsnow + (zsnow_dt * dt)
 
     return [zsat, zcc, zsnow, Fburial]
+
