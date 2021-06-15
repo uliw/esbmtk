@@ -950,7 +950,7 @@ def carbonate_system_v2(
     I = constants[12]
     alphard = constants[13]
 
-    volume = rg.volume.to("m**3").magnitude
+    volume = rg.volume.to("L").magnitude
 
     VirtualReservoir_no_set(
         name="cs",
@@ -1020,6 +1020,8 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     LIMITATIONS:
     - This in used in conjunction with Virtual_Reservoir_no_set objects!
     - Assumes all concentrations are in mol/L
+    - Assumes your Model is in mol/L ! Otherwise, DIC and TA updating will not
+    be correct.
 
     Calculations are based off equations from Follows, 2006.
     doi:10.1016/j.ocemod.2005.05.004
