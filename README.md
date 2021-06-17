@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org62298c9)
-2.  [News](#orgfbb12de)
-3.  [Contributing](#orga59a9ba)
-4.  [Installation](#org41b4d87)
-5.  [Documentation](#org0c2f8c0)
-6.  [Todo](#org693c26e)
-7.  [License](#orgddbbe5b)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org161953b)
+2.  [News](#org1a6982d)
+3.  [Contributing](#orgf56093b)
+4.  [Installation](#orge773896)
+5.  [Documentation](#orgdd54b6b)
+6.  [Todo](#orgad0d353)
+7.  [License](#org67bd59a)
 
 
-<a id="org62298c9"></a>
+<a id="org161953b"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,17 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="orgfbb12de"></a>
+<a id="org1a6982d"></a>
 
 # News
+
+-   June 17<sup>th</sup>, data and state files are now stored in sub
+    directories. Model runs can now be broken down into individual
+    segments which allows for long running models without exhausting
+    memory. See the `step_limit` parameter in `Model`. ESBMTK now
+    automatically reduces the number of datapoints to 1000 before
+    saving (or plotting) data. See the `number_of_datapoints` parameter
+    in `Model`.
 
 -   May 26<sup>th</sup>, 0.6.0.0 changed data-structure for the `Generic_Function`
     class. This will break any previous use of
@@ -228,7 +236,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orga59a9ba"></a>
+<a id="orgf56093b"></a>
 
 # Contributing
 
@@ -238,7 +246,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org41b4d87"></a>
+<a id="orge773896"></a>
 
 # Installation
 
@@ -259,7 +267,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org0c2f8c0"></a>
+<a id="orgdd54b6b"></a>
 
 # Documentation
 
@@ -277,7 +285,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org693c26e"></a>
+<a id="orgad0d353"></a>
 
 # Todo
 
@@ -286,7 +294,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orgddbbe5b"></a>
+<a id="org67bd59a"></a>
 
 # License
 
