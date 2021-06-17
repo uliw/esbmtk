@@ -481,7 +481,7 @@ def carbonate_system_uli(
         name="cs",
         species=CO2,
         function=calc_carbonates,
-        alias_list="H, CA, HCO3, CO3, CO2 CO2aq, Omega, zsat".split(" "),
+        alias_list="H, CA, HCO3, CO3, CO2aq, Omega, zsat".split(", "),
         # initialize 5 datafield and provide defaults for H+
         vr_datafields=List(
             [
@@ -555,6 +555,7 @@ def carbonate_system_new(
             ]
         ),
         function_input_data=List([rg.DIC.c, rg.TA.c]),
+        alias_list=["H", "CA", "HCO3", "CO3", "CO2aq"],
         function_params=List(
             [
                 rg.swc.K1,
@@ -567,8 +568,6 @@ def carbonate_system_new(
         ),
         register=rg,
     )
-
-    rg.add_cs_aliases()
 
 
 @njit(parallel=False, fastmath=True)
@@ -984,6 +983,7 @@ def carbonate_system_v2(
                 lookup_table,
             ]
         ),
+        alias_list=["H", "CA", "HCO3", "CO3", "CO2aq", "zsat", "zcc", "zsnow"],
         function_params=List(
             [
                 rg.swc.K1,
@@ -1007,8 +1007,6 @@ def carbonate_system_v2(
         ),
         register=rg,
     )
-
-    rg.add_cs_aliases()
 
 
 def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) -> None:
