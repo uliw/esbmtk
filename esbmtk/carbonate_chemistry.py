@@ -915,6 +915,7 @@ def carbonate_system_v2(
             ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
             kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
             AD = total ocean area (m^2)
+            sa = surface area (m^2)
             Ca 2+ = calcium ion concentration (mol/kg)
             dt = time step (yrs)
             B_fluxname = full_name of the B flux
@@ -942,13 +943,14 @@ def carbonate_system_v2(
     ksp0 = constants[4]
     kc = constants[5]
     AD = constants[6]
-    ca2 = constants[7]
-    dt = constants[8]
+    sa = constants[7]
+    ca2 = constants[8]
+    dt = constants[9]
 
-    pc = constants[10]
-    pg = constants[11]
-    I = constants[12]
-    alphard = constants[13]
+    pc = constants[11]
+    pg = constants[12]
+    I = constants[13]
+    alphard = constants[14]
 
     volume = rg.volume.to("L").magnitude
 
@@ -992,7 +994,7 @@ def carbonate_system_v2(
                 rg.swc.boron,
                 ksp0,
                 kc,
-                rg.area,
+                sa,
                 volume,
                 AD,
                 zsat0,
@@ -1075,7 +1077,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
 
     ksp0 = params[5]
     kc = params[6]
-    SA = params[7]
+    sa = params[7]
     volume = params[8]
     AD = params[9]
     zsat0 = params[10]
@@ -1117,7 +1119,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
         i,
         [depths_areas],
         [zsat, zcc, zsnow],
-        [SA, AD, dt, co3, ca2, ksp0, zsat0, kc, B, pc, pg, I, alphard],
+        [sa, AD, dt, co3, ca2, ksp0, zsat0, kc, B, pc, pg, I, alphard],
     )
 
     vr_data[0][i] = hplus
@@ -1144,6 +1146,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
 
     #----Updating DIC-----
     old_dic_m = input_data[0][i].copy()
+
     # dic mass = non-updated DIC mass + calcite buried
     input_data[0][i] = input_data[0][i] - Fburial_m
     # ratio = rg.DIC.m[i] / old_value
@@ -1156,6 +1159,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     input_data[2][i] = input_data[0][i] - input_data[1][i]
     # [dic] = dic mass / reservoir volume
     input_data[3][i] = input_data[0][i] / volume
+
     # ----Updating TA-----
     old_TA_m = input_data[4][i].copy()
     # TA mass = non-updated TA mass + calcite buried
@@ -1238,7 +1242,7 @@ def __calc_depths_helper__(
     # zsat = zsat0 * ln((B * [Ca2+] / Ksp0 * AD * kc) + ([Ca2+][CO3 2-]D / Ksp0))
     term1: float = (B * ca) / (ksp0 * AD * kc)
     term2: float = ca * co3 / ksp0
-    zcc: float = zsat0 * np.log(term1 + (term2))
+    zcc: float = zsat0 * np.log(term1 + term2)
 
     # ------------------------Calculate Burial Fluxes------------------------------------
     # BCC = (A(zcc, zmax) / AD) * B
@@ -1264,7 +1268,6 @@ def __calc_depths_helper__(
 
     # BDS = BDS_under + BDS_resp
     BDS = BDS_under + BDS_resp
-
     # BPDC = kc * ((a'(zcc) * (Csat(zcc, t) - [CO3d](t))) -  (a'(zsnow) * (Csat(zsnow, t) - [CO3d](t))))
     Csat_zsnow: float = (ksp0 / ca) * np.exp((prev_zsnow * pg) / pc)
 
