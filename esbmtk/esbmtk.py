@@ -652,6 +652,10 @@ class Model(esbmtkBase):
         self.xl = f"Time [{self.bu}]"  # time axis label
         self.length = int(abs(self.stop - self.start))
         self.steps = int(abs(round(self.length / self.dt)))
+
+        if self.steps < self.number_of_datapoints:
+            self.number_of_datapoints = self.steps
+
         self.time = (np.arange(self.steps) * self.dt) + self.start
         self.timec = np.empty(0)
         self.state = 0
