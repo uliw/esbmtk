@@ -481,6 +481,7 @@ def carbonate_system_uli(
         name="cs",
         species=CO2,
         function=calc_carbonates,
+        alias_list="H, CA, HCO3, CO3, CO2 CO2aq, Omega, zsat".split(" "),
         # initialize 5 datafield and provide defaults for H+
         vr_datafields=List(
             [
@@ -510,8 +511,6 @@ def carbonate_system_uli(
         ),
         register=rg,
     )
-
-    rg.add_cs_aliases()
 
 
 def carbonate_system_new(
@@ -1060,7 +1059,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     dt: float = params[12]
     B: float = input_data[8][i - 1] * dt
 
-    depths_areas: list = input_data[9] # look-up table
+    depths_areas: list = input_data[9]  # look-up table
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
@@ -1142,7 +1141,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     # ta_h = input_data[6]
     # ta_c = input_data[7]
 
-    #----Updating DIC-----
+    # ----Updating DIC-----
     old_dic_m = input_data[0][i].copy()
     # dic mass = non-updated DIC mass + calcite buried
     input_data[0][i] = input_data[0][i] - Fburial_m
@@ -1208,7 +1207,7 @@ def __calc_depths_helper__(
         I_caco3 = inventory of dissolvable CaCO3 (mol/m^2)
         alphard = fraction of calcite dissolved above saturation horizon by respirational dissolution
     """
-    depth_areas = input_data[0] # look-up table
+    depth_areas = input_data[0]  # look-up table
 
     prev_zsat: float = vr_data[0][i - 1]
     prev_zcc: float = vr_data[1][i - 1]
@@ -1281,9 +1280,10 @@ def __calc_depths_helper__(
     # dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
     # Note that we use equation (1) from paper (1) Boudreau (2010) as well:
     # where a'(z) is the differential bathymetric curve: A(z2, z1) = a'(z2) - a'(z1)
-    zsnow_dt: float = BPDC / (sa * depth_areas[int(prev_zsnow)] * I_caco3)  # movement of snowline
+    zsnow_dt: float = BPDC / (
+        sa * depth_areas[int(prev_zsnow)] * I_caco3
+    )  # movement of snowline
     # multiplying change in snowline by the timestep to get the current snowline depth
     zsnow: float = prev_zsnow + (zsnow_dt * dt)
 
     return [zsat, zcc, zsnow, Fburial]
-

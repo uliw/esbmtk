@@ -190,10 +190,11 @@ def execute_e(model, new, lor, lpc_f, lpc_r):
     # numba.set_num_threads(2)
 
     # this has nothing todo with self.time below!
-    start: float = process_time()
+
     dt: float = lor[0].mo.dt
 
     if model.first_start:
+        start: float = process_time()
         (
             model.fn_vr,
             model.input_data,
@@ -206,8 +207,9 @@ def execute_e(model, new, lor, lpc_f, lpc_r):
         model.a, model.b, model.c, model.d, model.e = build_flux_lists_all(lor)
         model.first_start = False
 
-    duration: float = process_time() - start
-    print(f"\n Setup time {duration} cpu seconds\n")
+        duration: float = process_time() - start
+        print(f"\n Setup time {duration} cpu seconds\n")
+
     print("Starting solver")
 
     wts = time.time()

@@ -460,7 +460,9 @@ class Model(esbmtkBase):
                       display_precision = optional, defaults to 0.01,
                       m_type = "mass_only/both"
                       plot_style = 'default', optional defaults to 'default'
-                      )
+                      number_of_datapoints = optional, see below
+                      step_limit = optional, see below
+                    )
 
     ref_time:  will offset the time axis by the specified
                  amount, when plotting the data, .i.e., the model time runs from to
@@ -508,6 +510,36 @@ class Model(esbmtkBase):
     keyword are either "Carbon", or "Sulfur" or both as a list
     ["Carbon", "Sulfur"].
 
+
+    Dealing with large datasets:
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    1) Limiting the size of the data which is being saved with save_data()
+
+         number_of_datapoints = 100 will only write every nth data point to file.
+                                where n = timesteps/ number_of_datapoints
+
+         this defaults to 1000 until set explicitly.
+
+    2) Reducing the memory footprint
+
+    Models with a long runtime can easily exceed the available
+    computer memory, as much if it is goobled up storing the model
+    results. In this case, one can set the optional parameter
+
+       step_limit = 1E6
+
+    The above will limit the total number of iterations to 1E6, then
+    save the data up to this point, and then restart the
+    model. Subsequent results will be appended to the results.
+
+    Caveat Emptor: If your model uses a signal instance, all signal
+    data must fit into a single iteration set. At present, there is no
+    support for signals which extend beyond the step_limit.
+
+    In order to prevent the creation of massive datafiles, number_of_datapoints
+    defaults to 1000. Modify as needed.
+
     """
 
     __slots__ = "lor"
@@ -531,6 +563,8 @@ class Model(esbmtkBase):
             "display_precision": float,
             "m_type": str,
             "plot_style": str,
+            "number_of_datapoints": int,
+            "step_limit": (Number, str),
         }
 
         # provide a list of absolutely required keywords
@@ -544,6 +578,8 @@ class Model(esbmtkBase):
             "display_precision": 0.01,
             "m_type": "Not Set",
             "plot_style": "default",
+            "number_of_datapoints": 1000,
+            "step_limit": "None",
         }
 
         self.__initerrormessages__()
@@ -616,8 +652,22 @@ class Model(esbmtkBase):
         self.xl = f"Time [{self.bu}]"  # time axis label
         self.length = int(abs(self.stop - self.start))
         self.steps = int(abs(round(self.length / self.dt)))
-        self.time = (arange(self.steps) * self.dt) + self.start
+        self.time = (np.arange(self.steps) * self.dt) + self.start
+        self.timec = np.empty(0)
         self.state = 0
+
+        # calculate stride
+        self.stride = int(self.steps / self.number_of_datapoints)
+        self.reset_stride = self.stride
+
+        if self.step_limit == "None":
+            self.number_of_solving_iterations: int = 0
+        else:
+            self.step_limit = int(self.step_limit)
+            self.number_of_solving_iterations = int(round(self.steps / self.step_limit))
+            self.reset_stride = int(round(self.steps / self.number_of_datapoints))
+            self.steps = self.step_limit
+            self.time = (arange(self.steps) * self.dt) + self.start
 
         # initialize the hypsometry class
         hypsometry(name="hyp", model=self, register=self)
@@ -710,10 +760,10 @@ class Model(esbmtkBase):
         prefix: str = "state_"
 
         for r in self.lor:
-            r.__write_data__(prefix, start, stop, stride, append=False)
+            r.__write_data__(prefix, start, stop, stride, False, "state")
 
         for r in self.lvr:
-            r.__write_data__(prefix, start, stop, stride, append=False)
+            r.__write_data__(prefix, start, stop, stride, False, "state")
 
     def save_data(self, **kwargs) -> None:
         """Save the model results to a CSV file. Each reservoir will have
@@ -735,7 +785,7 @@ class Model(esbmtkBase):
         if "stride" in kwargs:
             stride = kwargs["stride"]
         else:
-            stride = 1
+            stride = self.stride
 
         if "start" in kwargs:
             start = kwargs["start"]
@@ -745,7 +795,7 @@ class Model(esbmtkBase):
         if "stop" in kwargs:
             stop = kwargs["stop"]
         else:
-            stop = None
+            stop = self.steps
 
         if "append" in kwargs:
             append = kwargs["append"]
@@ -754,15 +804,20 @@ class Model(esbmtkBase):
 
         prefix = ""
         # Save reservoir and flux data
+        ##print("Writing reservoir data")
+        print(f"start = {start}, stop = {stop}, stride={stride}, append ={append}")
         for r in self.lor:
-            r.__write_data__(prefix, start, stop, stride, append)
+            # print(f"R = {r.full_name}")
+            # print(f"start = {start}, stop = {stop}, stride={stride}, append ={append}")
+            r.__write_data__(prefix, start, stop, stride, append, "data")
 
         # save data fields
         # for r in self.ldf:
         #     r.__write_data__(prefix, start, stop, stride, append)
-
+        print("Writing virtual reservoir data")
         for r in self.lvr:
-            r.__write_data__(prefix, start, stop, stride, append)
+            r.__write_data__(prefix, start, stop, stride, append, "data")
+        print("done writing")
 
     def restart(self):
         """Restart the model with result of the last run.
@@ -779,7 +834,17 @@ class Model(esbmtkBase):
         for r in self.lvr:
             r.__reset_state__()
 
-        self.time = (arange(self.steps) * self.dt) + self.start
+        # print(f"len of time {len(self.time)}, stride = {self.stride}")
+        # print(f"len of time with stride {len(self.time[0 : -2 : self.stride])}")
+        self.timec = np.append(self.timec, self.time[0 : -2 : self.stride])
+        t = int(round((self.stop - self.start) * self.dt))
+        self.start = int(round((self.stop * self.dt)))
+        self.stop = self.start + t
+        self.time = (np.arange(self.steps) * self.dt) + self.start
+        print(f"new start = {self.start}, new stop = {self.stop}")
+        print(f"time[0] = {self.time[0]} time[-1] = {self.time[-1]}")
+        # print(f"len of timec {len(self.timec)}")
+        # self.time = (arange(self.steps) * self.dt) + self.start
 
     def read_state(self):
         """This will initialize the model with the result of a previous model
@@ -792,11 +857,26 @@ class Model(esbmtkBase):
         for r in self.lor:
             if isinstance(r, Reservoir):
                 # print(f" reading from {r.full_name}")
-                r.__read_state__()
+                r.__read_state__("state")
 
         for r in self.lvr:
             # print(f"lvr  reading from {r.full_name}")
-            r.__read_state__()
+            r.__read_state__("state")
+
+    def merge_temp_results(self):
+        """Replace the datafields which were used for an individual iteration
+        with the data we saved from the previous iterations
+
+        """
+
+        self.time = self.timec
+        for r in self.lor:
+            r.__merge_temp_results__()
+            for f in r.lof:
+                f.__merge_temp_results__()
+
+        for r in self.lvr:
+            r.__merge_temp_results__()
 
     def plot_data(self, **kwargs: dict) -> None:
         """
@@ -932,6 +1012,35 @@ class Model(esbmtkBase):
         else:
             solver = kwargs["solver"]
 
+        if self.number_of_solving_iterations > 0:
+
+            for i in range(self.number_of_solving_iterations):
+                print(
+                    f"\n Iteration {i+1} out of {self.number_of_solving_iterations}\n"
+                )
+                self.__run_solver__(solver, new)
+
+                print(f"Restarting model")
+                self.restart()
+
+            duration: float = process_time() - start
+            wcd = time.time() - wts
+            print(f"\n Execution took {duration} cpu seconds, wt = {wcd}\n")
+            print("Merge results")
+            self.merge_temp_results()
+            self.steps = self.number_of_datapoints
+            # after merging, the model steps = number_of_datapoints
+            print("Saving data")
+            self.save_data(start=0, stop=self.number_of_datapoints, stride=1)
+            print("Done Saving")
+        else:
+            self.__run_solver__(solver, new)
+
+        # flag that the model has executed
+        self.state = 1
+
+    def __run_solver__(self, solver, new) -> None:
+
         if solver == "numba":
             execute_e(
                 self,
@@ -946,12 +1055,6 @@ class Model(esbmtkBase):
         else:
             execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
         # self.execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
-
-        duration: float = process_time() - start
-        wcd = time.time() - wts
-        print(f"\n Execution took {duration} cpu seconds, wt = {wcd}\n")
-        # flag that the model has executed
-        self.state = 1
 
     def __step_process__(self, r, i) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -1300,11 +1403,20 @@ class ReservoirBase(esbmtkBase):
         self.c[i]: float = self.m[i] / self.v  # update concentration
 
     def __write_data__(
-        self, prefix: str, start: int, stop: int, stride: int, append: bool
+        self,
+        prefix: str,
+        start: int,
+        stop: int,
+        stride: int,
+        append: bool,
+        directory: str,
     ) -> None:
         """To be called by write_data and save_state"""
 
         from pathlib import Path
+
+        p = Path(directory)
+        p.mkdir(parents=True, exist_ok=True)
 
         # some short hands
         sn = self.sp.n  # species name
@@ -1320,15 +1432,15 @@ class ReservoirBase(esbmtkBase):
         sds = self.sp.ds  # delta scale
         rn = self.full_name  # reservoir name
         mn = self.sp.mo.n  # model name
-        fn = f"{prefix}{mn}_{rn}.csv"  # file name
+        fn = f"{directory}/{prefix}{mn}_{rn}.csv"  # file name
 
         # build the dataframe
         df: pd.dataframe = DataFrame()
 
         df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
         df[f"{rn} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
-        df[f"{rn} {sp.ln} [{smu}]"] = self.l[start:stop:stride]  # light isotope
-        df[f"{rn} {sp.hn} [{smu}]"] = self.h[start:stop:stride]  # heavy isotope
+        # df[f"{rn} {sp.ln} [{smu}]"] = self.l[start:stop:stride]  # light isotope
+        # df[f"{rn} {sp.hn} [{smu}]"] = self.h[start:stop:stride]  # heavy isotope
         df[f"{rn} {sdn} [{sds}]"] = self.d[start:stop:stride]  # delta value
         df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
 
@@ -1336,9 +1448,9 @@ class ReservoirBase(esbmtkBase):
             # mass
             df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]
             # light isotope
-            df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]
+            # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]
             # heavy isotope
-            df[f"{f.full_name} {sn} [{sp.hn}]"] = f.h[start:stop:stride]
+            # df[f"{f.full_name} {sn} [{sp.hn}]"] = f.h[start:stop:stride]
             # delta value
             df[f"{f.full_name} {sn} {sdn} [{sds}]"] = f.d[start:stop:stride]
 
@@ -1357,15 +1469,33 @@ class ReservoirBase(esbmtkBase):
         """Copy the result of the last computation back to the beginning
         so that a new run will start with these values
 
+        save the current results into the temp fields
+
         """
 
-        self.m[0:1] = self.m[-3:-2]
-        self.l[0:1] = self.l[-3:-2]
-        self.h[0:1] = self.h[-3:-2]
-        self.d[0:1] = self.d[-3:-2]
-        self.c[0:1] = self.c[-3:-2]
+        # print(f"Reset data with {len(self.m)}, stride = {self.mo.reset_stride}")
+        self.mc = np.append(self.mc, self.m[0 : -2 : self.mo.reset_stride])
+        self.dc = np.append(self.dc, self.d[0 : -2 : self.mo.reset_stride])
+        self.cc = np.append(self.cc, self.c[0 : -2 : self.mo.reset_stride])
 
-    def __read_state__(self) -> None:
+        # copy last result into first field
+        self.m[0] = self.m[-2]
+        self.l[0] = self.l[-2]
+        self.h[0] = self.h[-2]
+        self.d[0] = self.d[-2]
+        self.c[0] = self.c[-2]
+
+    def __merge_temp_results__(self) -> None:
+        """Once all iterations are done, replace the data fields
+        with the saved values
+
+        """
+
+        self.m = self.mc
+        self.c = self.cc
+        self.d = self.dc
+
+    def __read_state__(self, directory: str) -> None:
         """read data from csv-file into a dataframe
 
         The CSV file must have the following columns
@@ -1386,7 +1516,7 @@ class ReservoirBase(esbmtkBase):
         read: set = set()
         curr: set = set()
 
-        fn = f"state_{self.mo.n}_{self.full_name}.csv"
+        fn = f"{directory}/state_{self.mo.n}_{self.full_name}.csv"
         logging.info(f"reading state for {self.full_name} from {fn}")
 
         if not os.path.exists(fn):
@@ -1800,6 +1930,12 @@ class Reservoir(ReservoirBase):
             # delta of reservoir
             self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.species.r)
 
+        # create temporary memory if we use multiple solver iterations
+        if self.mo.number_of_solving_iterations > 0:
+            self.mc = np.empty(0)
+            self.cc = np.empty(0)
+            self.dc = np.empty(0)
+
         self.mo.lor.append(self)  # add this reservoir to the model
         # register instance name in global name space
         self.__register_name__()
@@ -1933,6 +2069,10 @@ class Flux(esbmtkBase):
         self.l: [NDArray, Float[64]] = zeros(self.model.steps)
         self.h: [NDArray, Float[64]] = zeros(self.model.steps)
         self.d: [NDArray, Float[64]] = zeros(self.model.steps) + self.delta
+
+        if self.mo.number_of_solving_iterations > 0:
+            self.mc = np.empty(0)
+            self.dc = np.empty(0)
 
         if self.rate != 0:
             [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
@@ -2088,14 +2228,28 @@ class Flux(esbmtkBase):
 
     def __reset_state__(self) -> None:
         """Copy the result of the last computation back to the beginning
-        so that a new run will start with these values
+        so that a new run will start with these values.
+
+        Also, copy current results into temp field
+        """
+
+        self.mc = np.append(self.mc, self.m[0 : -2 : self.mo.reset_stride])
+        self.dc = np.append(self.dc, self.d[0 : -2 : self.mo.reset_stride])
+
+        # copy last element to first position
+        self.m[0] = self.m[-2]
+        self.l[0] = self.l[-2]
+        self.h[0] = self.h[-2]
+        self.d[0] = self.d[-2]
+
+    def __merge_temp_results__(self) -> None:
+        """Once all iterations are done, replace the data fields
+        with the saved values
 
         """
 
-        self.m[0:1] = self.m[-3:-2]
-        self.l[0:1] = self.l[-3:-2]
-        self.h[0:1] = self.h[-3:-2]
-        self.d[0:1] = self.d[-3:-2]
+        self.m = self.mc
+        self.d = self.dc
 
 
 class SourceSink(esbmtkBase):

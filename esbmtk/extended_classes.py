@@ -265,6 +265,7 @@ class ReservoirGroup(esbmtkBase):
             VirtualReservoir_no_set(
                 name="cs",
                 species=CO2,
+                alias_list="H CA HCO3 CO3 CO2aq omega zsat".split(" "),
                 vr_datafields=List(
                     [
                         self.swc.hplus,
@@ -295,15 +296,6 @@ class ReservoirGroup(esbmtkBase):
                 register=self,
             )
             # carbonate_system_uli(self)
-
-            # setup aliases
-            self.cs.H = self.cs.vr_data[0]
-            self.cs.CA = self.cs.vr_data[1]
-            self.cs.HCO3 = self.cs.vr_data[2]
-            self.cs.CO3 = self.cs.vr_data[3]
-            self.cs.CO2aq = self.cs.vr_data[4]
-            self.cs.omega = self.cs.vr_data[5]
-            self.cs.zsat = self.cs.vr_data[6]
 
     def add_cs_aliases(self) -> None:
         """Method that sets up aliases for the carbonate system, cs, virtual
@@ -1092,11 +1084,20 @@ class DataField(esbmtkBase):
             )
 
     def __write_data__(
-        self, prefix: str, start: int, stop: int, stride: int, append: bool
+        self,
+        prefix: str,
+        start: int,
+        stop: int,
+        stride: int,
+        append: bool,
+        directorty: str,
     ) -> None:
         """To be called by write_data and save_state"""
 
         from pathlib import Path
+
+        p = Path(directory)
+        p.mkdir(parents=True, exist_ok=True)
 
         # some short hands
         mo = self.mo  # model handle
@@ -1108,7 +1109,7 @@ class DataField(esbmtkBase):
 
         rn = self.n  # reservoir name
         mn = self.mo.n  # model name
-        fn = f"{prefix}{mn}_{rn}.csv"  # file name
+        fn = f"{directory}/{prefix}{mn}_{rn}.csv"  # file name
 
         # build the dataframe
         df: pd.dataframe = DataFrame()
@@ -1168,6 +1169,7 @@ class Reservoir_no_set(ReservoirBase):
             "function_input_data": (List, str),
             "function_params": (List, str),
             "geometry": (list, str),
+            "alias_list": (list, str),
         }
 
         # provide a list of absolutely required keywords
@@ -1189,6 +1191,7 @@ class Reservoir_no_set(ReservoirBase):
             "isotopes": False,
             "display_precision": 0,
             "vr_datafields": [0],
+            "alias_list": "None",
         }
 
         # validate and initialize instance variables
@@ -1252,6 +1255,7 @@ class VirtualReservoir_no_set(Reservoir_no_set):
                     # as input values for the user provided function
                     function_input_data=List([self.DIC.c, self.TA.c]),
                     # A numba types List of float parameters.
+                    alias_list = ["H", "CA", "HCO3", "CO3", "CO2aq"]
                     # Note that parameters must be individual float values
                     function_params=List(
                         [
@@ -1264,16 +1268,11 @@ class VirtualReservoir_no_set(Reservoir_no_set):
                         ]
                     ),
                     register=rh # reservoir_handle to register with.
+
                 )
 
-        Once the instance is created, it is often useful to create aliases
-
-         # setup aliases
-         rh.cs.H = self.cs.vr_data[0]
-         rh.cs.CA = self.cs.vr_data[1]
-         rh.cs.HCO3 = self.cs.vr_data[2]
-         rh.cs.CO3 = self.cs.vr_data[3]
-         rh.cs.CO2aq = self.cs.vr_data[4]
+        if the alias list is provided, the instance will create the respective aliases for
+        for the vr_datafields
 
     The general template for a user defined function is a follows:
 
@@ -1319,6 +1318,20 @@ class VirtualReservoir_no_set(Reservoir_no_set):
         self.mo.lpc_r.append(self.gfh)
         # print(f"added {self.name} to lvr 2")
 
+        # create temporary memory if we use multiple solver iterations
+        if self.mo.number_of_solving_iterations > 0:
+            for i, d in enumerate(self.vr_data):
+                setattr(self, f"vrd_{i}", np.empty(0))
+
+        if self.alias_list != "None":
+            self.create_alialises()
+
+    def create_alialises(self) -> None:
+        """Register  alialises for each vr_datafield"""
+
+        for i, a in enumerate(self.alias_list):
+            setattr(self, a, self.vr_data[i])
+
     def append(self, **kwargs) -> None:
         """This method allows to update GenericFunction parameters after the
         VirtualReservoir has been initialized. This is most useful
@@ -1345,10 +1358,29 @@ class VirtualReservoir_no_set(Reservoir_no_set):
     def __reset_state__(self):
         """Copy the last value to the first position so that we can restart the computation"""
 
-        for d in self.vr_data:
-            d[0:1] = d[-3:-2]
+        for i, d in enumerate(self.vr_data):
+            d[0] = d[-2]
+            setattr(
+                self,
+                f"vrd_{i}",
+                np.append(getattr(self, f"vrd_{i}"), d[0 : -2 : self.mo.reset_stride]),
+            )
 
-    def __read_state__(self) -> None:
+    def __merge_temp_results__(self) -> None:
+        """Once all iterations are done, replace the data fields
+        with the saved values
+
+        """
+
+        # print(f"merging {self.full_name} with whith len of vrd= {len(self.vrd_0)}")
+        for i, d in enumerate(self.vr_data):
+            self.vr_data[i] = getattr(self, f"vrd_{i}")
+
+        # update aliases
+        self.create_alialises()
+        # print(f"new length = {len(self.vr_data[0])}")
+
+    def __read_state__(self, directory: str) -> None:
         """read virtual reservoir data from csv-file into a dataframe
 
         The CSV file must have the following columns
@@ -1361,7 +1393,7 @@ class VirtualReservoir_no_set(Reservoir_no_set):
 
         from pathlib import Path
 
-        fn = f"state_{self.mo.n}_vr_{self.full_name}.csv"
+        fn = f"{directorty}/state_{self.mo.n}_vr_{self.full_name}.csv"
         file_path = Path(fn)
 
         if not file_path.exists():
@@ -1381,18 +1413,27 @@ class VirtualReservoir_no_set(Reservoir_no_set):
                 self.vr_data[i - 1][:3] = df.iloc[-3:, i]
 
     def __write_data__(
-        self, prefix: str, start: int, stop: int, stride: int, append: bool
+        self,
+        prefix: str,
+        start: int,
+        stop: int,
+        stride: int,
+        append: bool,
+        directory: str,
     ) -> None:
         """To be called by write_data and save_state"""
 
         from pathlib import Path
+
+        p = Path(directory)
+        p.mkdir(parents=True, exist_ok=True)
 
         mo = self.sp.mo  # model handle
         rn = self.full_name  # reservoir name
         mn = self.sp.mo.n  # model name
         mtu = f"{mo.t_unit:~P}"
 
-        fn = f"{prefix}{mn}_vr_{rn}.csv"  # file name
+        fn = f"{directory}/{prefix}{mn}_vr_{rn}.csv"  # file name
 
         df: pd.dataframe = DataFrame()
 
@@ -1664,6 +1705,11 @@ class GasReservoir(ReservoirBase):
         [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
         # delta of reservoir
         self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.species.r)
+
+        if self.mo.number_of_solving_iterations > 0:
+            self.mc = np.empty(0)
+            self.cc = np.empty(0)
+            self.dc = np.empty(0)
 
         self.mo.lor.append(self)  # add this reservoir to the model
         # register instance name in global name space

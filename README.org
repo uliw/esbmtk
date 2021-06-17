@@ -14,11 +14,19 @@ generation of graphical results.
 
 * News
 
- -  May 26^{th}, 0.6.0.0 changed data-structure for the =Generic_Function=
-    class. This will break any previous use of
-    =VirtualReservoir_no_set= instances. See the API documentation on
-    how to update. Changed the data-structure of all process
-    classes. There should be no user facing changes.
+ - June 17^{th}, data and state files are now stored in sub
+   directories. Model runs can now be broken down into individual
+   segments which allows for long running models without exhausting
+   memory. See the =step_limit= parameter in =Model=. ESBMTK now
+   automatically reduces the number of datapoints to 1000 before
+   saving (or plotting) data. See the =number_of_datapoints= parameter
+   in =Model=.
+
+ - May 26^{th}, 0.6.0.0 changed data-structure for the =Generic_Function=
+   class. This will break any previous use of
+   =VirtualReservoir_no_set= instances. See the API documentation on
+   how to update. Changed the data-structure of all process
+   classes. There should be no user facing changes.
 
  - May 13^{th}, 0.5.1.3 Multiple regression fixes, the =ref= keyword is
    now called =ref_reservoirs=. Added two new classes
