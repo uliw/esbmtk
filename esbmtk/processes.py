@@ -683,6 +683,9 @@ class ScaleFlux(Process):
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
 
+        if self.ref_reservoirs == "None":
+            raise ValueError("You need reference to scale against")
+
         # decide which call function to use
         # if self.mo.m_type == "both":
         if self.reservoir.isotopes:
