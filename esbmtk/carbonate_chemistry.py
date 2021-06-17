@@ -1246,11 +1246,11 @@ def __calc_depths_helper__(
 
     # ------------------------Calculate Burial Fluxes------------------------------------
     # BCC = (A(zcc, zmax) / AD) * B
-    A_zcc: float = sa * (depth_areas[-6000] - depth_areas[int(prev_zcc)])
+    A_zcc: float = sa * (depth_areas[int(prev_zcc)] - depth_areas[-1])
     BCC: float = (A_zcc / AD) * B
 
     # BNS = alpha_RD * ((A(-200, zsat) * B) / AD)
-    A_zsat: float = sa * (depth_areas[int(prev_zsat)] - depth_areas[-200])
+    A_zsat: float = sa * (depth_areas[200] - depth_areas[int(prev_zsat)])
     BNS: float = alphard * ((A_zsat * B) / AD)
 
     # BDS_under = kc * ((a'(zsat) * (Csat(zsat, t) - [CO3d](t))) -  (a'(zcc) * (Csat(zcc, t) - [CO3d](t))))
@@ -1262,7 +1262,7 @@ def __calc_depths_helper__(
     )
 
     # BDS_resp = alpha_RD * (((A(zsat, zcc) * B) / AD ) - BDS_under)
-    A_diff: float = sa * (depth_areas[int(prev_zcc)] - depth_areas[int(prev_zsat)])
+    A_diff: float = sa * (depth_areas[int(prev_zsat)] - depth_areas[int(prev_zcc)])
 
     BDS_resp = alphard * (((A_diff * B) / AD) - BDS_under)
 
