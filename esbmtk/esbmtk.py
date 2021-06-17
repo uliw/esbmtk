@@ -1439,8 +1439,9 @@ class ReservoirBase(esbmtkBase):
 
         df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
         df[f"{rn} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
-        # df[f"{rn} {sp.ln} [{smu}]"] = self.l[start:stop:stride]  # light isotope
-        # df[f"{rn} {sp.hn} [{smu}]"] = self.h[start:stop:stride]  # heavy isotope
+        df[f"{rn} {sp.ln} [{smu}]"] = self.l[start:stop:stride]  # light isotope
+        df[f"{rn} {sp.hn} [{smu}]"] = self.h[start:stop:stride]  # heavy isotope
+        # if self.isotopes:
         df[f"{rn} {sdn} [{sds}]"] = self.d[start:stop:stride]  # delta value
         df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
 
@@ -1448,10 +1449,11 @@ class ReservoirBase(esbmtkBase):
             # mass
             df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]
             # light isotope
-            # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]
+            df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]
             # heavy isotope
-            # df[f"{f.full_name} {sn} [{sp.hn}]"] = f.h[start:stop:stride]
+            df[f"{f.full_name} {sn} [{sp.hn}]"] = f.h[start:stop:stride]
             # delta value
+            # if self.isotopes:
             df[f"{f.full_name} {sn} {sdn} [{sds}]"] = f.d[start:stop:stride]
 
         file_path = Path(fn)

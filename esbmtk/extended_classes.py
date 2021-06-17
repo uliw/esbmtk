@@ -1393,7 +1393,7 @@ class VirtualReservoir_no_set(Reservoir_no_set):
 
         from pathlib import Path
 
-        fn = f"{directorty}/state_{self.mo.n}_vr_{self.full_name}.csv"
+        fn = f"{directory}/state_{self.mo.n}_vr_{self.full_name}.csv"
         file_path = Path(fn)
 
         if not file_path.exists():
