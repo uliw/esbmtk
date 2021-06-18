@@ -1057,7 +1057,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     ta: float = input_data[7][i - 1]
 
     dt: float = params[12]
-    B: float = input_data[8][i - 1] * dt
+    B: float = input_data[8][i - 1]
 
     depths_areas: list = input_data[9]  # look-up table
 
