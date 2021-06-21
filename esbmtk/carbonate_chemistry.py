@@ -1326,16 +1326,6 @@ def __calc_depths_helper__(
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = B - BD
 
-    print(f"iteration {i}")
-    print(f"b = {B / 1e12} tmol/yr")
-    print(f"bns = {BNS / 1e12} tmol/yr")
-    print(f"bds under = {BDS_under / 1e12}")
-    print(f"bds resp = {BDS_resp / 1e12}")
-    print(f"bds = {BDS / 1e12} tmol/yr")
-    print(f"bcc = {BCC / 1e12} tmol/yr")
-    print(f"bpdc = {BPDC / 1e12} tmol/yr")
-    print(f"bd = {BD / 1e12} tmol/yr")
-    print(f"Fburial = {Fburial / 1e12} Tmol/yr\n")
     # ------------------------Calculate zsnow------------------------------------
     # Equation (4) from paper (1) Boudreau (2010)
     # dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
