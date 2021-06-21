@@ -1414,7 +1414,14 @@ class AirSeaExchange(esbmtkBase):
             f"meter/{self.liquid_reservoir.mo.t_unit}"
         ).magnitude
 
-        if self.ref_species == "None":
+        # ref_species can point to vr_data fields which are of type
+        # numpy array
+        if isinstance(self.ref_species, np.ndarray):
+            testv = self.ref_species[0]
+        else:
+            testv = self.ref_species
+
+        if testv == "None":
             self.ref_species = self.species
 
         self.lr = self.liquid_reservoir

@@ -1406,6 +1406,29 @@ class ReservoirBase(esbmtkBase):
         self.m[i]: float = value[0]
         self.c[i]: float = self.m[i] / self.v  # update concentration
 
+    def __update_mass__() -> None:
+        """Place holder function"""
+
+        raise NotImplementedError("__update_mass__ is not yet implmented")
+
+    def get_process_args(self):
+        """Provide the data structure which needs to be passed to the numba solver"""
+
+        data = List(
+            [
+                self.m,  # 0
+                self.l,  # 1
+                self.h,  # 2
+                self.d,  # 3
+                self.c,  # 4
+            ]
+        )
+
+        func_name: function = self.__update_mass__
+        params = List([float(reservoir.species.element.r)])
+
+        return func_name, data, params
+
     def __write_data__(
         self,
         prefix: str,

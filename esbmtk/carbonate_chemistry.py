@@ -195,6 +195,7 @@ class SeawaterConstants(esbmtkBase):
 
         self.water_vapor_partial_pressure()
         self.co2_solubility_constant()
+        self.o2_solubility_constant()
 
     def __init_carbon__(self) -> None:
         """Calculate the carbon equilibrium values as function of
@@ -383,6 +384,40 @@ class SeawaterConstants(esbmtkBase):
         B1 = 0.029941
         B2 = -0.027455
         B3 = 0.0053407
+
+        F = self.calc_solubility_term(S, T, A1, A2, A3, A4, B1, B2, B3)
+
+        # correct for water vapor partial pressure
+        self.SA_co2 = F / (1 - self.p_H2O)
+
+    def o2_solubility_constant(self) -> None:
+        """Calculate the solubility of CO2 at a given temperature and salinity. Coefficients
+        after Sarmiento and Gruber 2006 which includes corrections for CO2 to correct for non
+        ideal gas behavior
+
+        Parameters Ai & Bi from Tab 3.2.2 in  Sarmiento and Gruber 2006
+
+        The result is in mol/(m^3 atm)
+        """
+
+        # Calculate the volumetric solubility function F_A in mol/l/m^3
+        S = self.salinity
+        T = 273.15 + self.temperature
+        A1 = -58.3877
+        A2 = 85.8079
+        A3 = 23.8439
+        A4 = 0
+        B1 = -0.034892
+        B2 = 0.015568
+        B3 = -0.0019387
+
+        b = self.calc_solubility_term(S, T, A1, A2, A3, A4, B1, B2, B3)
+
+        # and convert from bunsen coefficient to solubility
+        VA = 22.4136
+        self.SA_o2 = b / VA
+
+    def calc_solubility_term(self, S, T, A1, A2, A3, A4, B1, B2, B3) -> float:
         ln_F = (
             A1
             + A2 * (100 / T)
@@ -392,8 +427,7 @@ class SeawaterConstants(esbmtkBase):
         )
         F = np.exp(ln_F) * 1000  # to get mol/(m^3 atm)
 
-        # correct for water vapor partial pressure
-        self.SA_co2 = F / (1 - self.p_H2O)
+        return F
 
     def __init_calcite__(self) -> None:
         """Calculate Calcite solubility as a function of pressure following

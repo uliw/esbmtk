@@ -148,16 +148,17 @@ class hypsometry(esbmtkBase):
     def area(self, depth: int) -> float:
         """Calculate the ocean area at a given depth
 
-        depth must be an integer between 0 and 6000 mbsl
+        depth must be an integer between 0 and 6000 mbsl, or a
+        numpy array of integers between 0 and 6000 mbsl
 
         """
 
-        depth = abs(depth)
+        depth = np.abs(depth).astype(int)
 
-        if depth > 6000:
+        if np.max(depth) > 6000:
             raise ValueError("area() is only defined to a depth of 6000 mbsl")
 
-        return self.hypdata[depth] * self.sa
+        return np.take(self.hypdata, depth) * self.sa
 
     def area_dz(self, u: float, l: float) -> float:
         """Calculate the area between two elevation datums
@@ -168,8 +169,11 @@ class hypsometry(esbmtkBase):
         the interpolation function returns a numpy array with
         cumulative area percentages do the difference between the
         lowest and highest value is the area contained between
-        both limits. This number must be scaled by the total area
-        h.sa to get the value in square meters
+        both limits. The difference between the upper and lower
+        bounds is the area percentage contained between both depths.
+
+        The function returns this value multiplied by total surface area,
+        i.e., in square meters.
 
         """
 
@@ -282,7 +286,7 @@ class hypsometry(esbmtkBase):
 
     def get_lookup_table(self, min_depth: int, max_depth: int) -> NDAarray[Float64]:
         """Generate a vector which contains the area(z) in 1 meter intervals
-        Note that the numbers are area_percentage. To get actual area, you need to_csv
+        Note that the numbers are area_percentage. To get actual area, you need to
         mutiply with the total surface area (hyp.sa)
 
         """
@@ -294,6 +298,16 @@ class hypsometry(esbmtkBase):
             raise ValueError("max_depth must be <= 0 and >= -6000")
 
         return interpolate.splev(np.arange(min_depth, max_depth, -1), self.tck)
+
+    def get_lookup_table_area_dz(
+        self, min_depth: int, max_depth: int
+    ) -> NDAarray[Float64]:
+        """Generate a vector which contains the first derivative of area(z) in 1 meter intervals
+        Note that the numbers are in m^2
+
+        """
+
+        return np.diff(self.get_lookup_table(min_depth, max_depth)) * self.sa
 
 
 def get_box_geometry_parameters(box):

@@ -250,6 +250,7 @@ class ReservoirGroup(esbmtkBase):
 
         # setup the carbonate system
 
+        # depreceated
         if self.carbonate_system:
             # do some sanity checks:
             if not hasattr(self, "swc"):
@@ -297,24 +298,25 @@ class ReservoirGroup(esbmtkBase):
             )
             # carbonate_system_uli(self)
 
-    def add_cs_aliases(self) -> None:
-        """Method that sets up aliases for the carbonate system, cs, virtual
-        reservoir.
+    # depreceated
+    # def add_cs_aliases(self) -> None:
+    #     """Method that sets up aliases for the carbonate system, cs, virtual
+    #     reservoir.
 
-        Method used by carbonate_system_new and carbonate_system_v2.
-        """
-        self.cs.H = self.cs.vr_data[0]
-        self.cs.CA = self.cs.vr_data[1]
-        self.cs.HCO3 = self.cs.vr_data[2]
-        self.cs.CO3 = self.cs.vr_data[3]
-        self.cs.CO2aq = self.cs.vr_data[4]
+    #     Method used by carbonate_system_new and carbonate_system_v2.
+    #     """
+    #     self.cs.H = self.cs.vr_data[0]
+    #     self.cs.CA = self.cs.vr_data[1]
+    #     self.cs.HCO3 = self.cs.vr_data[2]
+    #     self.cs.CO3 = self.cs.vr_data[3]
+    #     self.cs.CO2aq = self.cs.vr_data[4]
 
-        try:
-            self.cs.zsat = self.cs.vr_data[5]
-            self.cs.zcc = self.cs.vr_data[6]
-            self.cs.zsnow = self.cs.vr_data[7]
-        except:
-            pass
+    #     try:
+    #         self.cs.zsat = self.cs.vr_data[5]
+    #         self.cs.zcc = self.cs.vr_data[6]
+    #         self.cs.zsnow = self.cs.vr_data[7]
+    #     except:
+    #         pass
 
 
 class SourceSink(esbmtkBase):
@@ -1680,11 +1682,10 @@ class GasReservoir(ReservoirBase):
 
         # we use the existing approach to calculate concentration
         # which will divide species_mass/volume.
-        self.volume: Number = (
-            Q_(self.species_mass).magnitude / self.species_ppm.to("dimensionless")
-        ).magnitude
+        self.volume: Number = self.reservoir_mass.magnitude
+        #    Q_(self.species_mass).magnitude / self.species_ppm.to("dimensionless")
+        # ).magnitude
 
-        self.v: float = self.volume  # reservoir volume
         # This should probably be species specific?
         self.mu: str = "ppm"  # massunit xxxx
 
@@ -1698,18 +1699,20 @@ class GasReservoir(ReservoirBase):
         )
         self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
         self.h: [NDArray, Float[64]] = zeros(self.mo.steps)
-        self.c: [NDArray, Float[64]] = self.m / self.v
+        self.c: [NDArray, Float[64]] = self.m / self.volume
         # initialize concentration vector
-        self.c: [NDArray, Float[64]] = self.m / self.v
+        self.c: [NDArray, Float[64]] = self.m / self.volume
         # isotope mass
         [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
         # delta of reservoir
         self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.species.r)
+        self.v: float = zeros(self.mo.steps) + self.volume  # mass of atmosphere
 
         if self.mo.number_of_solving_iterations > 0:
             self.mc = np.empty(0)
             self.cc = np.empty(0)
             self.dc = np.empty(0)
+            self.vc = np.empty(0)
 
         self.mo.lor.append(self)  # add this reservoir to the model
         # register instance name in global name space
@@ -1733,13 +1736,13 @@ class GasReservoir(ReservoirBase):
         self.l[i]: float = value[1]
         self.h[i]: float = value[2]
         self.d[i]: float = get_delta(self.l[i], self.h[i], self.sp.r)
-        self.c[i]: float = self.m[i] / self.v  # update concentration
+        self.c[i]: float = self.m[i] / self.v[i]  # update concentration
 
     def __set_without_isotopes__(self, i: int, value: float) -> None:
         """write data by index"""
 
         self.m[i]: float = value[0]
-        self.c[i]: float = self.m[i] / self.v  # update concentration
+        self.c[i]: float = self.m[i] / self.v[i]  # update concentration
 
 
 class ExternalData(esbmtkBase):
