@@ -589,6 +589,7 @@ class VarDeltaOut(Process):
             self.flux[i] = [m, l, h, d]
 
     def get_process_args(self, reservoir: Reservoir):
+        """Provide the data structure which needs to be passed to the numba solver"""
 
         # if upstream is a source, we only have a single delta value
         # so we need to patch this. Maybe this should move to source?
@@ -1340,6 +1341,10 @@ class GasExchange(RateConstant):
         )
         # print(self.gas.c[i - 1])
 
+        # changes in the mass of CO2 also affect changes in the total mass
+        # of the atmosphere. So we need to update the reservoir volume
+        # variable which we use the store the total atmospheric mass
+        reservoir.v[i] = reservoir.v[i] + a * reservoir.mo.dt
         self.flux[i] = [a, 1, 1, 1]
 
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
@@ -1388,7 +1393,12 @@ class GasExchange(RateConstant):
 
         # print(f"f={f:.2e}")
         # print(f"P: f={f:.2e}, f12={f12:.2e}, f13={f13:.2e}, d={d:.2f}")
-        self.flux[i] = [f, f12, f13, d]
+        # self.flux[i] = [f, f12, f13, d]
+
+        # changes in the mass of CO2 also affect changes in the total mass
+        # of the atmosphere. So we need to update the reservoir volume
+        # variable which we use the store the total atmospheric mass
+        reservoir.v[i] = reservoir.v[i] + f * reservoir.mo.dt
 
         # raise NotImplementedError()
 
@@ -1407,27 +1417,29 @@ class GasExchange(RateConstant):
 
         data = List(
             [
-                self.flux.m,
-                self.flux.l,
-                self.flux.h,
-                self.flux.d,
+                self.flux.m,  # 0
+                self.flux.l,  # 1
+                self.flux.h,  # 2
+                self.flux.d,  # 3
                 self.liquid.m,  # 4
                 self.liquid.h,  # 5
                 self.ref_species,  # 6
                 self.gas.c,  # 7
                 self.gas.h,  # 8
+                self.gas.v,  # 9
             ]
         )
 
         params = List(
             [
-                float(self.scale),
-                float(self.solubility * (1 - self.p_H2O)),
-                float(self.rvalue),
-                float(self.gas.volume),
-                float(self.a_u),
-                float(self.a_dg),
-                float(self.a_db),
+                float(self.scale),  # 0
+                float(self.solubility * (1 - self.p_H2O)),  # 1
+                float(self.rvalue),  # 2
+                float(self.gas.volume),  # 3
+                float(self.a_u),  # 4
+                float(self.a_dg),  # 5
+                float(self.a_db),  # 6
+                float(self.reservoir.mo.dt),  # 7
             ]
         )
 
@@ -1449,6 +1461,7 @@ class GasExchange(RateConstant):
         au: float = params[4]
         dg: float = params[5]
         db: float = params[6]
+        dt: float = params[7]
 
         dic_m = data[4][i - 1]
         dic_m13 = data[5][i - 1]
@@ -1466,6 +1479,7 @@ class GasExchange(RateConstant):
         data[1][i] = f12
         data[2][i] = f13
         data[3][i] = d
+        data[9][i] = data[9][i] + f * dt
 
 
 class Monod(Process):
