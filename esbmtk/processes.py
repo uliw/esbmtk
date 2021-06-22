@@ -45,7 +45,7 @@ class Process(esbmtkBase):
         self.bem.update({"rate": "a string"})
         self.bem.update({"scale": "Number or quantity"})
         self.__validateandregister__(kwargs)  # initialize keyword values
-        self.__misc_init__()
+
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
 
@@ -62,6 +62,8 @@ class Process(esbmtkBase):
         # self.rm0: float = self.r.m[0]  # the initial reservoir mass
         if isinstance(self.r, Reservoir):
             self.direction: Dict[Flux, int] = self.r.lio[self.f]
+
+        self.__misc_init__()
 
     def __delayed_init__(self) -> None:
         """
@@ -363,6 +365,7 @@ class PassiveFlux(Process):
         """
 
         # this process requires delayed init.
+        print(f"Added {self.name} to lto")
         self.mo.lto.append(self)
 
     def __delayed_init__(self) -> None:
@@ -375,7 +378,7 @@ class PassiveFlux(Process):
         # Create a list of fluxes wich excludes the flux this process
         # will be acting upon
 
-        print(f"delayed init for {self.name}")
+        # print(f"delayed init for {self.name}")
         self.fws: List[Flux] = self.r.lof.copy()
         self.fws.remove(self.f)  # remove this handle
 
