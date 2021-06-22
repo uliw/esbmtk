@@ -1020,7 +1020,7 @@ def carbonate_system_v2(
                 lookup_table,
             ]
         ),
-        alias_list=["H", "CA", "HCO3", "CO3", "CO2aq", "zsat", "zcc", "zsnow"],
+        alias_list=["H", "CA", "HCO3", "CO3", "CO2aq", "zsat", "zcc", "zsnow", "Fburial"],
         function_params=List(
             [
                 rg.swc.K1,
