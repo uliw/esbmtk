@@ -1398,7 +1398,9 @@ class GasExchange(RateConstant):
         # changes in the mass of CO2 also affect changes in the total mass
         # of the atmosphere. So we need to update the reservoir volume
         # variable which we use the store the total atmospheric mass
-        reservoir.v[i] = reservoir.v[i] + f * reservoir.mo.dt
+
+        # print(f"Name = {reservoir.full_name}")
+        # reservoir.v[i] = reservoir.v[i] + f * reservoir.mo.dt
 
         # raise NotImplementedError()
 
