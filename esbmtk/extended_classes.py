@@ -29,6 +29,7 @@ from .esbmtk import (
     Flux,
     get_imass,
     get_delta,
+    get_string_between_brackets,
 )
 
 
