@@ -325,6 +325,51 @@ class AddSignal(Process):
         # add signal mass to flux mass
         self.f.m[i] = self.f.m[i] + self.lt.m[i]
 
+    def get_process_args(self, reservoir: Reservoir):
+
+        func_name: function = self.p_fractionation
+
+        data = List(
+            [
+                self.flux.m,  # 0
+                self.flux.l,  # 1
+                self.flux.h,  # 2
+                self.flux.d,  # 3
+                self.lt.m,  # 4
+                self.lt.l,  # 5
+                self.lt.h,  # 6
+                self.lt.d,  # 7
+            ]
+        )
+        params = List([float(reservoir.species.element.r)])
+
+        return func_name, data, params
+
+    @staticmethod
+    @njit(fastmath=True)
+    def p_add_signal(data, params, i) -> None:
+
+        r: float = params[0]
+
+        # flux masses and delta
+        fm: float = data[0][i - 1]
+        fl: float = data[1][i - 1]
+        fh: float = data[2][i - 1]
+        fd: float = data[3][i - 1]
+
+        # signal masses and delta
+        sm: float = data[4][i - 1]
+        sl: float = data[5][i - 1]
+        sd: float = data[7][i - 1]
+
+        # new masses and delta. Note that signals may have zero mass
+        # but a non-zero delta. So simply adding h an l won't work
+        fm = fm + sm
+        fd = fd + sd
+        fl = (1000.0 * fm) / ((sd + 1000.0) * r + 1000.0)
+        fh = fm - fl
+        # print(f"ScaleFlux m = {m:.2e}, scale = {proc_const[1]}")
+
 
 class PassiveFlux(Process):
     """This process sets the output flux from a reservoir to be equal to
@@ -618,7 +663,7 @@ class VarDeltaOut(Process):
         return func_name, data, params
 
     @staticmethod
-    @njit()
+    @njit(fastmath=True)
     def p_vardeltaout(data, params, i) -> None:
         # concentration times scale factor
 
@@ -746,7 +791,7 @@ class ScaleFlux(Process):
         return func_name, data, params
 
     @staticmethod
-    @njit()
+    @njit(fastmath=True)
     def p_scale_flux(data, params, i) -> None:
 
         r: float = params[0]
@@ -886,7 +931,7 @@ class Fractionation(Process):
         return func_name, data, params
 
     @staticmethod
-    @njit()
+    @njit(fastmath=True)
     def p_fractionation(data, params, i) -> None:
         #
         r: float = params[0]
@@ -1065,7 +1110,7 @@ class ScaleRelativeToConcentration(RateConstant):
         return func_name, data, params
 
     @staticmethod
-    @njit()
+    @njit(fastmath=True)
     def p_scale_relative_to_concentration(data, params, i) -> None:
         # concentration times scale factor
         r: float = params[0]
@@ -1144,7 +1189,7 @@ class ScaleRelativeToMass(RateConstant):
         return func_name, data, params
 
     @staticmethod
-    @njit()
+    @njit(fastmath=True)
     def p_scale_relative_to_mass(data, params, i) -> None:
         # concentration times scale factor
 
