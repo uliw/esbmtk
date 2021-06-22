@@ -1335,6 +1335,7 @@ def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
                 B_fluxname = full_name of the B flux
                 reservoirs: list of all reservoirs (Model.lor)
                 depths_table: ndarray lookup table containing depths (Model.hyp.get_lookup_table(0, -6000))
+                dz_table: ndarray lookup table containing first derivative for area(z) values (Model.hyp.get_lookup_table_dz(0, -6000))
                 sa: surface area of your model (Model.hyp.sa)
           Default values exist for the following
                 zsat = initial saturation depth (m)
@@ -1365,10 +1366,11 @@ def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
             temp: list = __validate_cs_dict__(extra)
             reservoirs = temp[0]
             lookup_table = temp[1]
-            params = temp[2]
+            dz_table = temp[2]
+            params = temp[3]
             b = __find_flux__(reservoirs, params[10])
             for rg in rgs:
-                carbonate_chemistry.carbonate_system_v2(params, b, lookup_table, rg)
+                carbonate_chemistry.carbonate_system_v2(params, b, lookup_table, dz_table, rg)
     else:
         raise ValueError(f"add_carbonate_system: {cs_type} is an unknown type")
 
@@ -1402,8 +1404,9 @@ def __find_flux__(reservoirs: list, full_name: str):
 def __validate_cs_dict__(d: Dict) -> list:
     """Helper function that helps validate the optional dictionary parameter
     used by add_carbonate_system() and returns a list. The list is in the form
-    of [List, List, List] where the first list contains the reservoirs, the
-    second is the lookup table and the third list contains all needed parameters
+    of [List, List, List, List] where the first list contains the reservoirs, the
+    second is the lookup table for depths, the third list is the lookup table for
+    first derivative area(z) values and the fourth list contains all needed parameters
     needed to be used by carbonate_chemistry.carbonate_system_v2().
 
     PRECONDITIONS:
@@ -1418,6 +1421,7 @@ def __validate_cs_dict__(d: Dict) -> list:
             B_fluxname = full_name of the B flux
             reservoirs: list of all reservoirs (Model.lor)
             depths_table: ndarray lookup table containing depths (Model.hyp.get_lookup_table(0, -6000))
+            dz_table: ndarray lookup table containing first derivative for area(z) values (Model.hyp.get_lookup_table_dz(0, -6000))
             sa: surface area of your model (Model.hyp.sa)
           Optional keys that will have defaulted values not specified:
             zsat = initial saturation depth (m)
@@ -1455,6 +1459,7 @@ def __validate_cs_dict__(d: Dict) -> list:
         "depths_table": [np.ndarray, list, NDArray],
         "sa": [float, int, np.float64],
         "co3": [float, int, np.float64],
+        "dz_table": [np.ndarray, list, NDArray],
     }
 
     # dictionary with default keys
@@ -1513,5 +1518,6 @@ def __validate_cs_dict__(d: Dict) -> list:
     ]
     reservoirs: list = d_k["reservoirs"]
     lookup_table: NDArray = d_k["depths_table"]
+    dz_table: NDArray = d_k["dz_table"]
 
-    return [reservoirs, lookup_table, params]
+    return [reservoirs, lookup_table, dz_table, params]

@@ -932,6 +932,7 @@ def carbonate_system_v2(
     constants: List,
     B: Flux,
     lookup_table: NDArray,
+    dz_table: NDArray,
     rg: ReservoirGroup = "None",
 ) -> tuple:
 
@@ -958,6 +959,7 @@ def carbonate_system_v2(
             co3 = CO3 concentration (mol/kg)
         B: Flux object for calcite export
         lookup_table: Lookup table for areas (Model.hyp_get_lookup_table())
+        dz_table: lookup table for first derivative for area(z) values (Model.hyp.get_lookup_table(0, -6000))
         rg: optional, must be a reservoir group. If present, the below reservoirs
             will be registered with this group.
 
@@ -1018,6 +1020,7 @@ def carbonate_system_v2(
                 rg.TA.c,
                 B.m,
                 lookup_table,
+                dz_table
             ]
         ),
         alias_list=["H", "CA", "HCO3", "CO3", "CO2aq", "zsat", "zcc", "zsnow", "Fburial"],
@@ -1097,6 +1100,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     B: float = input_data[8][i - 1]
 
     depths_areas: list = input_data[9]  # look-up table
+    dz_table: list = input_data[10]
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
@@ -1151,7 +1155,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
 
     depths = __calc_depths_helper__(
         i,
-        [depths_areas],
+        [depths_areas, dz_table],
         [zsat, zcc, zsnow],
         [sa, AD, dt, co3, ca2, ksp0, zsat0, kc, B, pc, pg, I, alphard],
     )
@@ -1231,6 +1235,7 @@ def __calc_depths_helper__(
     Parameters:
     > input_data = List containing the following:
         [Model.hyp.get_lookup_table(min depth, max depth)]
+        [Model.hyp.get_lookup_table_dz(min depth, max depth)]
     > vr_data = [zsat, zcc, zsnow, omega] in meters
     > params = list of Constants in the following order:
         SA = surface area of model (m^2)
@@ -1247,7 +1252,8 @@ def __calc_depths_helper__(
         I_caco3 = inventory of dissolvable CaCO3 (mol/m^2)
         alphard = fraction of calcite dissolved above saturation horizon by respirational dissolution
     """
-    depth_areas = input_data[0]  # look-up table
+    depth_areas: list = input_data[0]  # look-up table
+    area_dz: list = input_data[1]
 
     prev_zsat: float = vr_data[0][i - 1]
     prev_zcc: float = vr_data[1][i - 1]
@@ -1289,13 +1295,20 @@ def __calc_depths_helper__(
     BNS: float = alphard * ((A_zsat * B) / AD)
 
     # BDS_under = kc * integral from zcc(t) to zsat(t) of (a'(z) * (Csat(z, t) - [CO3d](t))
-    BDS_under_integral: float = 0
-    for z in range(int(prev_zsat), int(prev_zcc + 1), 1):
-        csat: float = (ksp0 / ca) * np.exp((z * pg) / pc)
-        actual = (csat - co3) * (sa * depth_areas[int(z)]) - ((csat - co3) * (sa * depth_areas[int(z-1)]))
-        BDS_under_integral += actual
+    # BDS_under_integral: float = 0
+    # for z in range(int(prev_zsat), int(prev_zcc + 1), 1):
+    #     csat: float = (ksp0 / ca) * np.exp((z * pg) / pc)
+    #     actual = (csat - co3) * (sa * depth_areas[int(z)]) - ((csat - co3) * (sa * depth_areas[int(z-1)]))
+    #     BDS_under_integral += actual
+    #
+    # BDS_under: float = kc * BDS_under_integral
 
-    BDS_under: float = kc * BDS_under_integral
+    depth = np.arange(int(prev_zsat), int(prev_zcc), 1, dtype=int)
+    Csat = (ksp0 / ca) * np.exp((depth * pg) / pc)
+    diff = Csat - co3
+    area = area_dz[int(prev_zsat):int(prev_zcc)]
+
+    BDS_under= kc * np.sum(area.dot(diff))
 
     # BDS_resp = alpha_RD * (((A(zsat, zcc) * B) / AD ) - BDS_under)
     A_diff: float = sa * (
