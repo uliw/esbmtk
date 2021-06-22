@@ -104,6 +104,7 @@ def execute(
 
     """This is the original object oriented solver"""
 
+    start: float = process_time()
     i = 1  # some processes refer to the previous time step
     for t in time[1:-1]:  # loop over the time vector except the first
         # we first need to calculate all fluxes
@@ -145,6 +146,8 @@ def execute(
             p(i)
 
         i = i + 1
+    duration: float = process_time() - start
+    print(f"\n Execution time {duration:.2e} cpu seconds\n")
 
 
 def execute_h(
