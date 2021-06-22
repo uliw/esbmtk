@@ -875,33 +875,21 @@ def calc_horizon(i: int, input_data: List, vr_data: List, params: List) -> None:
     # ---Calculating Csat at depths zcc and zsnow---
     # Equation (1) from paper (2) Boudreau (2010)
     # Csat = Ksp0 / [Ca] * exp(p(z) / pc)
-    # prev_zcc: float = vr_data[1][i - 1]  # zcc from previous timestep
-    # old calculations
-    # pz_zcc: float = pg * prev_zcc  # gauge pressure (atm) at depth zcc (m)
-    # Csat_zcc: float = (ksp0 / ca) * np.exp(pz_zcc / pc)
+    prev_zcc: float = vr_data[1][i - 1]  # zcc from previous timestep
 
-    # prev_zsnow: float = vr_data[2][i - 1]  # zsnow from previous timestep
-    # pz_zsnow: float = pg * prev_zsnow  # gauge pressure (atm) at depth zsnow (m)
-    # Csat_zsnow: float = (ksp0 / ca) * np.exp(pz_zsnow / pc)
+    pz_zcc: float = pg * prev_zcc  # gauge pressure (atm) at depth zcc (m)
+    Csat_zcc: float = (ksp0 / ca) * np.exp(pz_zcc / pc)
 
-    # BPDC: float = kc * (
-    #     (sa * depth_areas[int(prev_zcc)] * (Csat_zcc - co3d))
-    #     - (sa * depth_areas[int(prev_zsnow)] * (Csat_zsnow - co3d))
-    # )
+    prev_zsnow: float = vr_data[2][i - 1]  # zsnow from previous timestep
+    pz_zsnow: float = pg * prev_zsnow  # gauge pressure (atm) at depth zsnow (m)
+    Csat_zsnow: float = (ksp0 / ca) * np.exp(pz_zsnow / pc)
 
-    #---updated calculations for BPDC---
     # Equation (10) from paper (1) Boudreau (2010)
     # BPDC = kc * (integral of (Csat(z,t) - [CO3]D(t)) dz from zsnow(t) to zcc(t))
-
-    prev_zcc: float = vr_data[1][i - 1]  # zcc from previous timestep
-    prev_zsnow: float = vr_data[2][i - 1]  # zsnow from previous timestep
-    BPDC_integral: float = 0
-    for z in range(int(prev_zcc), int(prev_zsnow + 1), 1):
-        csat: float = (ksp0 / ca) * np.exp((z * pg) / pc)
-        actual = (csat - co3d) * (sa * depth_areas[int(z)]) - ((csat - co3d) * (sa * depth_areas[int(z-1)]))
-        BPDC_integral += actual
-
-    BPDC: float = kc * BPDC_integral
+    BPDC: float = kc * (
+        (sa * depth_areas[int(prev_zcc)] * (Csat_zcc - co3d))
+        - (sa * depth_areas[int(prev_zsnow)] * (Csat_zsnow - co3d))
+    )
 
     # ------------------------Calculate zsnow-----------------------------------
     # Equation (4) from paper (1) Boudreau (2010)
@@ -967,6 +955,7 @@ def carbonate_system_v2(
             pg = seawater density multiplied by gravity due to acceleration (atm/m)
             I = dissolvable CaCO3 inventory
             alphard = fraction of calcite dissolved above saturation horizon by respirational dissolution
+            co3 = CO3 concentration (mol/kg)
         B: Flux object for calcite export
         lookup_table: Lookup table for areas (Model.hyp_get_lookup_table())
         rg: optional, must be a reservoir group. If present, the below reservoirs
@@ -995,6 +984,7 @@ def carbonate_system_v2(
     pg = constants[12]
     I = constants[13]
     alphard = constants[14]
+    co3 = constants[15]
 
     volume = rg.volume.to("L").magnitude
 
@@ -1008,11 +998,12 @@ def carbonate_system_v2(
                 rg.swc.hplus,
                 rg.swc.ca,
                 rg.swc.hco3,
-                86E-6,#rg.swc.co3,
+                co3,
                 rg.swc.co2,
                 zsat,
                 zcc,
                 zsnow,
+                0.0 #Fburial
             ]
         ),
         function_input_data=List(
@@ -1173,6 +1164,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     vr_data[5][i] = depths[0]  # zsat
     vr_data[6][i] = depths[1]  # zcc
     vr_data[7][i] = depths[2]  # zsnow
+    vr_data[8][i] = depths[3]  # Fburial
 
     # ----------------------Updating DIC and TA----------------------------------
     Fburial = depths[3]
@@ -1315,17 +1307,27 @@ def __calc_depths_helper__(
     BDS = BDS_under + BDS_resp
 
     # BPDC = kc * integral from zsnow(t) to zcc(t) of (a'(z)(Csat(z,t)-[CO3]D(t))dz)
-    BPDC_integral: float = 0
-    for z in range(int(prev_zcc), int(prev_zsnow + 1), 1):
-        csat: float = (ksp0 / ca) * np.exp((z * pg) / pc)
-        actual = (csat - co3) * (sa * depth_areas[int(z)]) - ((csat - co3) * (sa * depth_areas[int(z-1)]))
-        BPDC_integral += actual
+    Csat_zcc: float = (ksp0 / ca) * np.exp((prev_zcc * pg) / pc)
+    Csat_zsnow: float = (ksp0 / ca) * np.exp((prev_zsnow * pg) / pc)
 
-    BPDC: float = kc * BPDC_integral
+    BPDC: float = kc * (
+            (sa * depth_areas[int(prev_zcc)] * (Csat_zcc - co3)) -
+            (sa * depth_areas[int(prev_zsnow)] * (Csat_zsnow - co3))
+    )
 
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = B - BD
 
+    print(f"iteration {i}")
+    print(f"b = {B / 1e12} tmol/yr")
+    print(f"bns = {BNS / 1e12} tmol/yr")
+    print(f"bds under = {BDS_under / 1e12}")
+    print(f"bds resp = {BDS_resp / 1e12}")
+    print(f"bds = {BDS / 1e12} tmol/yr")
+    print(f"bcc = {BCC / 1e12} tmol/yr")
+    print(f"bpdc = {BPDC / 1e12} tmol/yr")
+    print(f"bd = {BD / 1e12} tmol/yr")
+    print(f"Fburial = {Fburial / 1e12} Tmol/yr\n")
     # ------------------------Calculate zsnow------------------------------------
     # Equation (4) from paper (1) Boudreau (2010)
     # dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
