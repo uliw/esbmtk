@@ -1206,8 +1206,8 @@ def __calc_depths_helper__(
 
     BDS_resp = alphard * (((A_diff * B) / AD) - BDS_under)
 
-    # BDS = BDS_under + BDS_resp
     BDS = BDS_under + BDS_resp
+    # BDS = BDS_resp
 
     # BPDC = kc * integral from zsnow(t) to zcc(t) of (a'(z)(Csat(z,t)-[CO3]D(t))dz)
     # Csat_zcc: float = (ksp0 / ca) * np.exp((prev_zcc * pg) / pc)
