@@ -1227,11 +1227,11 @@ def __calc_depths_helper__(
     # area2 = area_dz[int(prev_zsnow): int(prev_zcc): 1]
 
     # BPDC version 2 (using new Csat array list)
-    snow2cc_Csat = Csat[int(prev_zsnow) : int(prev_zcc + 1)]
+    snow2cc_Csat = Csat[int(prev_zcc) : int(prev_zsnow + 1)]
     diff2 = snow2cc_Csat - co3
-    area2 = area_dz[int(prev_zsnow) : int(prev_zcc + 1)]
+    area2 = area_dz[int(prev_zcc) : int(prev_zsnow + 1)]
 
-    BPDC: float = kc * area2.dot(diff2)
+    BPDC: float = -kc * area2.dot(diff2)
 
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = B - BD
