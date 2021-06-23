@@ -805,6 +805,10 @@ def carbonate_system_v2(
     """Setup the virtual reservoir which will calculate H+, CA, HCO3, CO3, CO2a
     and zcc.
 
+    ASSUMPTIONS:
+    - Assumes that calcium ion concentration, characteristic pressure,
+    seawater density and gravity due to accerlation stay constant.
+
     You must provide
         constants: list containing the following variables:
             zsat = initial saturation depth (m)
@@ -855,6 +859,8 @@ def carbonate_system_v2(
     co3 = constants[15]
 
     volume = rg.volume.to("L").magnitude
+    # depths: NDArray = np.arange(0, 6001, 1, dtype=float)
+    # Csat: NDArray = (ksp0 / ca2) * np.exp((depths * pg) / pc)
 
     VirtualReservoir_no_set(
         name="cs",
@@ -887,6 +893,7 @@ def carbonate_system_v2(
                 B.m,
                 lookup_table,
                 dz_table,
+                # Csat,
             ]
         ),
         alias_list=[
@@ -925,7 +932,7 @@ def carbonate_system_v2(
     )
 
 
-@njit(fastmath=True)
+# @njit(fastmath=True)
 def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) -> None:
     """Calculates and returns the carbonate concentrations and carbonate compensation
     depth (zcc) at the ith time-step of the model.
@@ -976,8 +983,9 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     dt: float = params[12]
     B: float = input_data[8][i - 1]
 
-    depths_areas: list = input_data[9]  # look-up table
-    dz_table: list = input_data[10]
+    depths_areas: NDArray = input_data[9]  # look-up table
+    dz_table: NDArray = input_data[10]
+    #Csat: NDArray = input_data[11]
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
@@ -1032,7 +1040,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
 
     depths = __calc_depths_helper__(
         i,
-        [depths_areas, dz_table],
+        [depths_areas, dz_table], # Csat],
         [zsat, zcc, zsnow],
         [sa, AD, dt, co3, ca2, ksp0, zsat0, kc, B, pc, pg, I, alphard],
     )
@@ -1092,9 +1100,9 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     input_data[7][i] = input_data[4][i] / volume
 
 
-@njit(fastmath=True)
+#@njit(fastmath=True)
 def __calc_depths_helper__(
-    i: int, input_data: List, vr_data: List, params: List
+    i: int, input_data: List[NDArray], vr_data: List, params: List
 ) -> list:
     """Helper function used by calc_carbonates_v2() to calculate depths for
     saturation depth (zsat), carbonate compensation depth (zcc) and snowline
@@ -1130,8 +1138,9 @@ def __calc_depths_helper__(
         I_caco3 = inventory of dissolvable CaCO3 (mol/m^2)
         alphard = fraction of calcite dissolved above saturation horizon by respirational dissolution
     """
-    depth_areas: list = input_data[0]  # look-up table
-    area_dz: list = input_data[1]
+    depth_areas: NDArray = input_data[0]  # look-up table
+    area_dz: NDArray = input_data[1]
+    # Csat: NDArray = input_data[2]
 
     prev_zsat: float = vr_data[0][i - 1]
     prev_zcc: float = vr_data[1][i - 1]
@@ -1184,7 +1193,11 @@ def __calc_depths_helper__(
     depth = np.arange(int(prev_zsat), int(prev_zcc), 1, dtype=int)
     Csat = (ksp0 / ca) * np.exp((depth * pg) / pc)
     diff = Csat - co3
-    area = area_dz[int(prev_zsat) : int(prev_zcc)]
+    area = area_dz[int(prev_zsat):int(prev_zcc):1]
+
+    # sat2cc_Csat = Csat[int(prev_zsat):int(prev_zcc + 1)]
+    # diff = sat2cc_Csat - co3
+    # area = area_dz[int(prev_zsat):int(prev_zcc + 1)]
 
     BDS_under = kc * np.sum(area.dot(diff))
 
@@ -1199,6 +1212,8 @@ def __calc_depths_helper__(
     # BPDC = kc * integral from zsnow(t) to zcc(t) of (a'(z)(Csat(z,t)-[CO3]D(t))dz)
     Csat_zcc: float = (ksp0 / ca) * np.exp((prev_zcc * pg) / pc)
     Csat_zsnow: float = (ksp0 / ca) * np.exp((prev_zsnow * pg) / pc)
+    # Csat_zcc: float = Csat[int(prev_zcc)]
+    # Csat_zsnow: float = Csat[int(prev_zsnow)]
 
     BPDC: float = kc * (
         (sa * depth_areas[int(prev_zcc)] * (Csat_zcc - co3))
