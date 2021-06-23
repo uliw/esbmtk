@@ -932,7 +932,7 @@ def carbonate_system_v2(
     )
 
 
-# @njit(fastmath=True)
+@njit(fastmath=True)
 def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) -> None:
     """Calculates and returns the carbonate concentrations and carbonate compensation
     depth (zcc) at the ith time-step of the model.
@@ -1069,7 +1069,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     # ta_c = input_data[7]
 
     # ----Updating DIC-----
-    old_dic_m = input_data[0][i].copy()
+    old_dic_m = input_data[0][i]
 
     # dic mass = non-updated DIC mass + calcite buried
     input_data[0][i] = input_data[0][i] - Fburial_m
@@ -1085,7 +1085,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     input_data[3][i] = input_data[0][i] / volume
 
     # ----Updating TA-----
-    old_TA_m = input_data[4][i].copy()
+    old_TA_m = input_data[4][i]
     # TA mass = non-updated TA mass + calcite buried
     input_data[4][i] = input_data[4][i] - 2 * Fburial_m
     # ratio = rg.TA.m[i] / old_value
@@ -1100,7 +1100,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     input_data[7][i] = input_data[4][i] / volume
 
 
-#@njit(fastmath=True)
+@njit(fastmath=True)
 def __calc_depths_helper__(
     i: int, input_data: List[NDArray], vr_data: List, params: List
 ) -> list:
@@ -1195,11 +1195,11 @@ def __calc_depths_helper__(
     # diff = Csat - co3
     # area = area_dz[int(prev_zsat):int(prev_zcc):1]
 
-    sat2cc_Csat = Csat[int(prev_zsat):int(prev_zcc + 1)]
+    sat2cc_Csat = Csat[int(prev_zsat) : int(prev_zcc + 1)]
     diff = sat2cc_Csat - co3
-    area = area_dz[int(prev_zsat):int(prev_zcc + 1)]
+    area = area_dz[int(prev_zsat) : int(prev_zcc + 1)]
 
-    BDS_under = kc * np.sum(area.dot(diff))
+    BDS_under = kc * area.dot(diff)
 
     # BDS_resp = alpha_RD * (((A(zsat, zcc) * B) / AD ) - BDS_under)
     A_diff: float = sa * (depth_areas[int(prev_zsat)] - depth_areas[int(prev_zcc)])
@@ -1227,11 +1227,11 @@ def __calc_depths_helper__(
     # area2 = area_dz[int(prev_zsnow): int(prev_zcc): 1]
 
     # BPDC version 2 (using new Csat array list)
-    snow2cc_Csat = Csat[int(prev_zsnow):int(prev_zcc + 1)]
+    snow2cc_Csat = Csat[int(prev_zsnow) : int(prev_zcc + 1)]
     diff2 = snow2cc_Csat - co3
-    area2 = area_dz[int(prev_zsnow):int(prev_zcc + 1)]
+    area2 = area_dz[int(prev_zsnow) : int(prev_zcc + 1)]
 
-    BPDC: float = kc * np.sum(area2.dot(diff2))
+    BPDC: float = kc * area2.dot(diff2)
 
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = B - BD
