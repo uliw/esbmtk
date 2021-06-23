@@ -859,8 +859,8 @@ def carbonate_system_v2(
     co3 = constants[15]
 
     volume = rg.volume.to("L").magnitude
-    # depths: NDArray = np.arange(0, 6001, 1, dtype=float)
-    # Csat: NDArray = (ksp0 / ca2) * np.exp((depths * pg) / pc)
+    depths: NDArray = np.arange(0, 6001, 1, dtype=float)
+    Csat: NDArray = (ksp0 / ca2) * np.exp((depths * pg) / pc)
 
     VirtualReservoir_no_set(
         name="cs",
@@ -893,7 +893,7 @@ def carbonate_system_v2(
                 B.m,
                 lookup_table,
                 dz_table,
-                # Csat,
+                Csat,
             ]
         ),
         alias_list=[
@@ -985,7 +985,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
 
     depths_areas: NDArray = input_data[9]  # look-up table
     dz_table: NDArray = input_data[10]
-    #Csat: NDArray = input_data[11]
+    Csat: NDArray = input_data[11]
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
@@ -1040,7 +1040,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
 
     depths = __calc_depths_helper__(
         i,
-        [depths_areas, dz_table], # Csat],
+        [depths_areas, dz_table, Csat],
         [zsat, zcc, zsnow],
         [sa, AD, dt, co3, ca2, ksp0, zsat0, kc, B, pc, pg, I, alphard],
     )
@@ -1140,7 +1140,7 @@ def __calc_depths_helper__(
     """
     depth_areas: NDArray = input_data[0]  # look-up table
     area_dz: NDArray = input_data[1]
-    # Csat: NDArray = input_data[2]
+    Csat: NDArray = input_data[2]
 
     prev_zsat: float = vr_data[0][i - 1]
     prev_zcc: float = vr_data[1][i - 1]
@@ -1190,14 +1190,14 @@ def __calc_depths_helper__(
     #
     # BDS_under: float = kc * BDS_under_integral
 
-    depth = np.arange(int(prev_zsat), int(prev_zcc), 1, dtype=int)
-    Csat = (ksp0 / ca) * np.exp((depth * pg) / pc)
-    diff = Csat - co3
-    area = area_dz[int(prev_zsat):int(prev_zcc):1]
+    # depth = np.arange(int(prev_zsat), int(prev_zcc), 1, dtype=int)
+    # Csat = (ksp0 / ca) * np.exp((depth * pg) / pc)
+    # diff = Csat - co3
+    # area = area_dz[int(prev_zsat):int(prev_zcc):1]
 
-    # sat2cc_Csat = Csat[int(prev_zsat):int(prev_zcc + 1)]
-    # diff = sat2cc_Csat - co3
-    # area = area_dz[int(prev_zsat):int(prev_zcc + 1)]
+    sat2cc_Csat = Csat[int(prev_zsat):int(prev_zcc + 1)]
+    diff = sat2cc_Csat - co3
+    area = area_dz[int(prev_zsat):int(prev_zcc + 1)]
 
     BDS_under = kc * np.sum(area.dot(diff))
 
@@ -1221,10 +1221,16 @@ def __calc_depths_helper__(
     # )
 
     # New BPDC Calc:
-    depth2 = np.arange(int(prev_zcc), int(prev_zsnow), 1, dtype=int)
-    Csat2 = (ksp0 / ca) * np.exp((depth2 * pg) / pc)
-    diff2 = Csat2 - co3
-    area2 = area_dz[int(prev_zcc): int(prev_zsnow): 1]
+    # depth2 = np.arange(int(prev_zsnow), int(prev_zcc), 1, dtype=int)
+    # Csat2 = (ksp0 / ca) * np.exp((depth2 * pg) / pc)
+    # diff2 = Csat2 - co3
+    # area2 = area_dz[int(prev_zsnow): int(prev_zcc): 1]
+
+    # BPDC version 2 (using new Csat array list)
+    snow2cc_Csat = Csat[int(prev_zsnow):int(prev_zcc + 1)]
+    diff2 = snow2cc_Csat - co3
+    area2 = area_dz[int(prev_zsnow):int(prev_zcc + 1)]
+
     BPDC: float = kc * np.sum(area2.dot(diff2))
 
     BD: float = BDS + BCC + BNS + BPDC
