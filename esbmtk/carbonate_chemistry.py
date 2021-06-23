@@ -1210,15 +1210,22 @@ def __calc_depths_helper__(
     BDS = BDS_under + BDS_resp
 
     # BPDC = kc * integral from zsnow(t) to zcc(t) of (a'(z)(Csat(z,t)-[CO3]D(t))dz)
-    Csat_zcc: float = (ksp0 / ca) * np.exp((prev_zcc * pg) / pc)
-    Csat_zsnow: float = (ksp0 / ca) * np.exp((prev_zsnow * pg) / pc)
+    # Csat_zcc: float = (ksp0 / ca) * np.exp((prev_zcc * pg) / pc)
+    # Csat_zsnow: float = (ksp0 / ca) * np.exp((prev_zsnow * pg) / pc)
     # Csat_zcc: float = Csat[int(prev_zcc)]
     # Csat_zsnow: float = Csat[int(prev_zsnow)]
 
-    BPDC: float = kc * (
-        (sa * depth_areas[int(prev_zcc)] * (Csat_zcc - co3))
-        - (sa * depth_areas[int(prev_zsnow)] * (Csat_zsnow - co3))
-    )
+    # BPDC: float = kc * (
+    #     (sa * depth_areas[int(prev_zcc)] * (Csat_zcc - co3))
+    #     - (sa * depth_areas[int(prev_zsnow)] * (Csat_zsnow - co3))
+    # )
+
+    # New BPDC Calc:
+    depth2 = np.arange(int(prev_zcc), int(prev_zsnow), 1, dtype=int)
+    Csat2 = (ksp0 / ca) * np.exp((depth2 * pg) / pc)
+    diff2 = Csat2 - co3
+    area2 = area_dz[int(prev_zcc): int(prev_zsnow): 1]
+    BPDC: float = kc * np.sum(area2.dot(diff2))
 
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = B - BD
