@@ -873,7 +873,16 @@ def carbonate_system_v2(
                 zsat,
                 zcc,
                 zsnow,
-                0.0,  # Fburial
+                12E12,  # Fburial
+                60E12, # B
+                19.1E12, #BNS
+                0.0, #BDS_under
+                0.0, #BDS_resp
+                10.4E12, #BDS
+                18.6E12, #BCC
+                0.0, #BPDC
+                48E12, #BD
+                0.0, #bds_area
             ]
         ),
         function_input_data=List(
@@ -902,6 +911,15 @@ def carbonate_system_v2(
             "zcc",
             "zsnow",
             "Fburial",
+            "B",
+            "BNS",
+            "BDS_under",
+            "BDS_resp",
+            "BDS",
+            "BCC",
+            "BPDC",
+            "BD",
+            "bds_area",
         ],
         function_params=List(
             [
@@ -1050,6 +1068,16 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     vr_data[6][i] = depths[1]  # zcc
     vr_data[7][i] = depths[2]  # zsnow
     vr_data[8][i] = depths[3]  # Fburial
+    #temporary added values for testing
+    vr_data[9][i] = depths[4] # B
+    vr_data[10][i] = depths[5] #BNS
+    vr_data[11][i] = depths[6] #BDS under
+    vr_data[12][i] = depths[7] #BDS resp
+    vr_data[13][i] = depths[8] #BDS
+    vr_data[14][i] = depths[9] #BCC
+    vr_data[15][i] = depths[10] #BDPC
+    vr_data[16][i] = depths[11] #BD
+    vr_data[17][i] = depths[12] #A(zsat, zcc) = sa * (depth_areas[int(prev_zsat)] - depth_areas[int(prev_zcc)])
 
     # ----------------------Updating DIC and TA----------------------------------
     Fburial = depths[3]
@@ -1191,11 +1219,11 @@ def __calc_depths_helper__(
     # diff = Csat - co3
     # area = area_dz[int(prev_zsat):int(prev_zcc):1]
 
-    sat2cc_Csat = Csat[int(prev_zsat) : int(prev_zcc + 1)]
+    sat2cc_Csat = Csat[int(prev_zsat) : int(prev_zcc)]
     diff = sat2cc_Csat - co3
-    area = area_dz[int(prev_zsat) : int(prev_zcc + 1)]
+    area = area_dz[int(prev_zsat) : int(prev_zcc)]
 
-    BDS_under = kc * area.dot(diff)
+    BDS_under = -kc * area.dot(diff)
 
     # BDS_resp = alpha_RD * (((A(zsat, zcc) * B) / AD ) - BDS_under)
     A_diff: float = sa * (depth_areas[int(prev_zsat)] - depth_areas[int(prev_zcc)])
@@ -1223,9 +1251,9 @@ def __calc_depths_helper__(
     # area2 = area_dz[int(prev_zsnow): int(prev_zcc): 1]
 
     # BPDC version 2 (using new Csat array list)
-    snow2cc_Csat = Csat[int(prev_zcc) : int(prev_zsnow + 1)]
+    snow2cc_Csat = Csat[int(prev_zcc) : int(prev_zsnow)]
     diff2 = snow2cc_Csat - co3
-    area2 = area_dz[int(prev_zcc) : int(prev_zsnow + 1)]
+    area2 = area_dz[int(prev_zcc) : int(prev_zsnow)]
 
     BPDC: float = -kc * area2.dot(diff2)
 
@@ -1243,4 +1271,4 @@ def __calc_depths_helper__(
     # multiplying change in snowline by the timestep to get the current snowline depth
     zsnow: float = prev_zsnow + (zsnow_dt * dt)
 
-    return [zsat, zcc, zsnow, Fburial]
+    return [zsat, zcc, zsnow, Fburial, B, BNS, BDS_under, BDS_resp, BDS, BCC, BPDC, BD, A_diff]
