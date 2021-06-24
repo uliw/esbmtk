@@ -859,7 +859,7 @@ def carbonate_system_v2(
     co3 = constants[15]
 
     volume = rg.volume.to("L").magnitude
-    depths: NDArray = np.arange(0, 6001, 1, dtype=float)
+    depths: NDArray = np.arange(0, 6000, 1, dtype=float)
     Csat: NDArray = (ksp0 / ca2) * np.exp((depths * pg) / pc)
 
     VirtualReservoir_no_set(
@@ -1223,9 +1223,9 @@ def __calc_depths_helper__(
     # diff = Csat - co3
     # area = area_dz[int(prev_zsat):int(prev_zcc):1]
 
-    sat2cc_Csat = Csat[int(prev_zsat) : int(prev_zcc + 1)]
+    sat2cc_Csat = Csat[int(prev_zsat) : int(prev_zcc)]
     diff = sat2cc_Csat - co3
-    area = area_dz[int(prev_zsat) : int(prev_zcc + 1)]
+    area = area_dz[int(prev_zsat) : int(prev_zcc)]
 
     BDS_under = -kc * area.dot(diff)
 
@@ -1255,9 +1255,9 @@ def __calc_depths_helper__(
     # area2 = area_dz[int(prev_zsnow): int(prev_zcc): 1]
 
     # BPDC version 2 (using new Csat array list)
-    snow2cc_Csat = Csat[int(prev_zcc) : int(prev_zsnow + 1)]
+    snow2cc_Csat = Csat[int(prev_zcc) : int(prev_zsnow)]
     diff2 = snow2cc_Csat - co3
-    area2 = area_dz[int(prev_zcc) : int(prev_zsnow + 1)]
+    area2 = area_dz[int(prev_zcc) : int(prev_zsnow)]
 
     BPDC: float = -kc * area2.dot(diff2)
 
