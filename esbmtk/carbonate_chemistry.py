@@ -859,7 +859,7 @@ def carbonate_system_v2(
     co3 = constants[15]
 
     volume = rg.volume.to("L").magnitude
-    depths: NDArray = np.arange(0, 6000, 1, dtype=float)
+    depths: NDArray = np.arange(0, 6001, 1, dtype=float)
     Csat: NDArray = (ksp0 / ca2) * np.exp((depths * pg) / pc)
 
     VirtualReservoir_no_set(
