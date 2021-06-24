@@ -1315,6 +1315,65 @@ def map_units(v: any, *args) -> float:
     return m
 
 
+def add_carbonate_chemisrty_1(rlist: list) -> None:
+    """attach a virtual reservoir which calculates the basic carbonate chemistry
+    (i.e., H+, CA, HCO3, CO3, CO2a)
+
+    rlist = list of ReservoirGroup handles. Each entry must have a DIC and TA reservoir
+
+    """
+    from esbmtk import carbonate_chemistry, carbonate_system_new, carbonate_system_uli
+
+    for rg in rlist:
+        if hasattr(rg, "DIC") and hasattr(rg, "TA"):
+            carbonate_system_uli(rg)
+        else:
+            raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
+
+
+def add_carbonate_chemisrty_2(rdict: dict, cs_d: dict) -> None:
+    """attach a virtual reservoir which calculates carbonate export fluxes
+    as a function of the particulate inorganic rain (PIC_DIC) and the
+    carbonate chemistry of the ambient water.
+
+    rdict = dictionary of ReservoirGroup handles and flux_names.
+    cs_d = dictionary with the setup parameters for the carbonate system
+
+    """
+    from esbmtk import carbonate_system_v2
+
+    for rg, f in rdict.items():
+        # test if DIC and TA reservoirs are present
+        if hasattr(rg, "DIC") and hasattr(rg, "TA"):
+            pass
+        else:
+            raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
+
+        # add missing entries to the carbonate system dictionary
+        # most of these parameters are after Boudreau at al 2010
+        cs_d["depths_table"] = rg.mo.hyp.get_lookup_table(0, -6000)
+        cs_d["dz_table"] = rg.mo.hyp.get_lookup_table_area_dz(0, -6000)
+        cs_d["ksp0"] = 4.29e-07  # mol^2/kg^2
+        cs_d["kc"] = 8.84 * 1000  # m/yr converted to kg m^-2 yr^-1
+        cs_d["AD"] = rg.mo.hyp.area_dz(-200, -6000)
+        cs_d["Ca2"] = rg.swc.ca2
+        cs_d["dt"] = rg.mo.dt
+        cs_d["B_fluxname"] = f.full_name
+        cs_d["reservoirs"] = [rg]
+        cs_d["sa"] = rg.mo.hyp.sa
+        cs_d["co3"] = rg.swc.co3
+        cs_d["pc"] = 511  # atm
+        cs_d["pg"] = 0.103  # atm/m
+        cs_d["I"] = 529  # mol/m^2
+
+        temp: list = __validate_cs_dict__(cs_d)
+        reservoirs = temp[0]
+        lookup_table = temp[1]
+        dz_table = temp[2]
+        params = temp[3]
+        carbonate_system_v2(params, f, lookup_table, dz_table, rg)
+
+
 def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
     """Creates a new carbonate system virtual reservoir for each
     reservoir in reservoirs. These new virtual reservoirs are registered to
@@ -1370,7 +1429,9 @@ def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
             params = temp[3]
             b = __find_flux__(reservoirs, params[10])
             for rg in rgs:
-                carbonate_chemistry.carbonate_system_v2(params, b, lookup_table, dz_table, rg)
+                carbonate_chemistry.carbonate_system_v2(
+                    params, b, lookup_table, dz_table, rg
+                )
     else:
         raise ValueError(f"add_carbonate_system: {cs_type} is an unknown type")
 
@@ -1475,7 +1536,7 @@ def __validate_cs_dict__(d: Dict) -> list:
         "pg": 0.1,  # atm/m
         "I": 529,  # mol/m^2
         "alphard": 0.3,
-        "co3": 86E-6 #mol/kg
+        "co3": 86e-6,  # mol/kg
     }
 
     # checks the keys in d and assigns the provided values into d_k
@@ -1514,7 +1575,7 @@ def __validate_cs_dict__(d: Dict) -> list:
         d_k["pg"],
         d_k["I"],
         d_k["alphard"],
-        d_k["co3"]
+        d_k["co3"],
     ]
     reservoirs: list = d_k["reservoirs"]
     lookup_table: NDArray = d_k["depths_table"]

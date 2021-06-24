@@ -486,9 +486,7 @@ class SeawaterConstants(esbmtkBase):
         self.a_u: float = 1 + self.e_u / 1000
 
 
-def carbonate_system_uli(
-    rg: ReservoirGroup = "None",
-) -> tuple:
+def carbonate_system_uli(rg: ReservoirGroup = "None") -> None:
 
     """Setup the virtual reservoir which will calculate H+, CA, HCO3, CO3, CO2a
 
@@ -501,8 +499,6 @@ def carbonate_system_uli(
     swc : a seawater constants object
     rg: optional, must be a reservoir group. If present, the below reservoirs
         will be registered with this group.
-
-    Returns the reservoir handles to VCA and VH
 
     All list type objects must be converted to numba Lists, if the function is to be used with
     the numba solver.
