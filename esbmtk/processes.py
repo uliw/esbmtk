@@ -375,15 +375,9 @@ class AddSignal(Process):
         # sd: float = data[7][i]
 
         # new masses and delta. Note that signals may have zero mass
-        # but a non-zero delta. So simply adding h an l won't work
+        # but a non-zero delta. So simply adding h and l won't work
 
-        print(i)
-        print(data[0][i])
         data[0][i] = data[0][i] + data[4][i]
-        print(data[0][i])
-        print(data[0][i + 1])
-        print()
-
         data[3][i] = data[3][i] + data[7][i]
         # fl = (1000.0 * fm) / ((sd + 1000.0) * r + 1000.0)
         data[1][i] = (1000.0 * data[0][i]) / ((data[3][i] + 1000.0) * r + 1000.0)
