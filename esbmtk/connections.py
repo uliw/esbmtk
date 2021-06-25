@@ -597,7 +597,10 @@ class Connect(esbmtkBase):
                     raise ValueError(f"Signal type {p.ty} is not defined")
 
         # ensure that vardeltaout is first in list
-        self.__move_process_to_top_of_queue__(self.lop, VarDeltaOut)
+        if VarDeltaOut in self.lop:
+            print(f"moving vardelta out to top of queue for {self.full_name}")
+            self.__move_process_to_top_of_queue__(self.lop, VarDeltaOut)
+
         # nwo we can register everythig on lop
         for p in self.lop:
             p.__register__(self.r, self.fh)
@@ -634,7 +637,8 @@ class Connect(esbmtkBase):
             elif self.delta != "None":  # if delta is set
                 self.__passivefluxfixeddelta__()
             elif self.rate != "None":  # if rate is set
-                self.__vardeltaout__()  # variable delta with fixed flux
+                if self.delta != "None" and not isinstance(self.source, Sink):
+                    self.__vardeltaout__()  # variable delta with fixed flux
             else:  # if neither are given -> default varflux type
                 self._delta = 0
                 self.__passiveflux__()
