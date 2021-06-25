@@ -330,11 +330,16 @@ class AddSignal(Process):
 
         """
         # add signal mass to flux mass
+        # print(self.f.m[i])
         self.f.m[i] = self.f.m[i] + self.lt.m[i]
+        # print(self.f.m[i])
+        # print()
 
     def get_process_args(self, reservoir: Reservoir):
 
         func_name: function = self.p_add_signal
+
+        print(f"flux_name = {self.flux.full_name}")
 
         data = List(
             [
@@ -359,23 +364,30 @@ class AddSignal(Process):
         r: float = params[0]
 
         # flux masses and delta
-        fm: float = data[0][i]
-        fl: float = data[1][i]
-        fh: float = data[2][i]
-        fd: float = data[3][i]
+        # fm: float = data[0][i]
+        # fl: float = data[1][i]
+        # fh: float = data[2][i]
+        # fd: float = data[3][i]
 
         # signal masses and delta
-        sm: float = data[4][i]
-        sl: float = data[5][i]
-        sd: float = data[7][i]
+        # sm: float = data[4][i]
+        # sl: float = data[5][i]
+        # sd: float = data[7][i]
 
         # new masses and delta. Note that signals may have zero mass
         # but a non-zero delta. So simply adding h an l won't work
-        fm = fm + sm
-        fd = fd + sd
-        fl = (1000.0 * fm) / ((sd + 1000.0) * r + 1000.0)
-        fh = fm - fl
-        # print(f"ScaleFlux m = {m:.2e}, scale = {proc_const[1]}")
+
+        print(i)
+        print(data[0][i])
+        data[0][i] = data[0][i] + data[4][i]
+        print(data[0][i])
+        print(data[0][i + 1])
+        print()
+
+        data[3][i] = data[3][i] + data[7][i]
+        # fl = (1000.0 * fm) / ((sd + 1000.0) * r + 1000.0)
+        data[1][i] = (1000.0 * data[0][i]) / ((data[3][i] + 1000.0) * r + 1000.0)
+        data[2][i] = data[0][i] - data[1][i]
 
 
 class PassiveFlux(Process):
