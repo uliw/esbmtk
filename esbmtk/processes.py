@@ -387,7 +387,7 @@ class AddSignal(Process):
         data[3][i] = data[3][i] + data[7][i]
         # fl = (1000.0 * fm) / ((sd + 1000.0) * r + 1000.0)
         data[1][i] = (1000.0 * data[0][i]) / ((data[3][i] + 1000.0) * r + 1000.0)
-        data[2][i] = data[0][i] - data[1][i]q
+        data[2][i] = data[0][i] - data[1][i]
 
 
 class PassiveFlux(Process):

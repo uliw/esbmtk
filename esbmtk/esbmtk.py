@@ -218,7 +218,7 @@ class esbmtkBase(object):
             if av[k] != any:
                 # print(f"key = {k}, value  = {v}")
                 if not isinstance(v, av[k]):
-
+                    # print(f"k={k}, v= {v}, av[k] = {av[k]}")
                     raise TypeError(
                         f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
                     )
