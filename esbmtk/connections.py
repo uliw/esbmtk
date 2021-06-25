@@ -598,7 +598,7 @@ class Connect(esbmtkBase):
 
         # ensure that vardeltaout is first in list
         if VarDeltaOut in self.lop:
-            print(f"moving vardelta out to top of queue for {self.full_name}")
+            # print(f"moving vardelta out to top of queue for {self.full_name}")
             self.__move_process_to_top_of_queue__(self.lop, VarDeltaOut)
 
         # nwo we can register everythig on lop
