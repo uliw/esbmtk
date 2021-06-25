@@ -96,20 +96,27 @@ class Process(esbmtkBase):
         """
 
         from .connections import ConnectionGroup
-        from esbmtk import Reservoir, ReservoirGroup, Flux
+        from esbmtk import Reservoir, ReservoirGroup, Flux, GasReservoir
 
         # provide a dict of known keywords and types
         self.lkk: Dict[str, any] = {
             "name": str,
-            "reservoir": (Reservoir, Source, Sink),
+            "reservoir": (Reservoir, Source, Sink, GasReservoir),
             "flux": Flux,
             "rate": Number,
             "delta": Number,
             "lt": Flux,
             "alpha": Number,
             "scale": Number,
-            "ref_reservoirs": (Flux, Reservoir, list, str),
-            "register": (str, ConnectionGroup, Reservoir, ReservoirGroup, Flux),
+            "ref_reservoirs": (Flux, Reservoir, GasReservoir, list, str),
+            "register": (
+                str,
+                ConnectionGroup,
+                Reservoir,
+                ReservoirGroup,
+                GasReservoir,
+                Flux,
+            ),
         }
 
         # provide a list of absolutely required keywords
@@ -327,7 +334,7 @@ class AddSignal(Process):
 
     def get_process_args(self, reservoir: Reservoir):
 
-        func_name: function = self.p_fractionation
+        func_name: function = self.p_add_signal
 
         data = List(
             [
@@ -352,15 +359,15 @@ class AddSignal(Process):
         r: float = params[0]
 
         # flux masses and delta
-        fm: float = data[0][i - 1]
-        fl: float = data[1][i - 1]
-        fh: float = data[2][i - 1]
-        fd: float = data[3][i - 1]
+        fm: float = data[0][i]
+        fl: float = data[1][i]
+        fh: float = data[2][i]
+        fd: float = data[3][i]
 
         # signal masses and delta
-        sm: float = data[4][i - 1]
-        sl: float = data[5][i - 1]
-        sd: float = data[7][i - 1]
+        sm: float = data[4][i]
+        sl: float = data[5][i]
+        sd: float = data[7][i]
 
         # new masses and delta. Note that signals may have zero mass
         # but a non-zero delta. So simply adding h an l won't work
@@ -1392,7 +1399,7 @@ class GasExchange(RateConstant):
         # changes in the mass of CO2 also affect changes in the total mass
         # of the atmosphere. So we need to update the reservoir volume
         # variable which we use the store the total atmospheric mass
-        reservoir.v[i] = reservoir.v[i] + a * reservoir.mo.dt
+        # reservoir.v[i] = reservoir.v[i] + a * reservoir.mo.dt
         self.flux[i] = [a, 1, 1, 1]
 
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
@@ -1441,7 +1448,7 @@ class GasExchange(RateConstant):
 
         # print(f"f={f:.2e}")
         # print(f"P: f={f:.2e}, f12={f12:.2e}, f13={f13:.2e}, d={d:.2f}")
-        # self.flux[i] = [f, f12, f13, d]
+        self.flux[i] = [f, f12, f13, d]
 
         # changes in the mass of CO2 also affect changes in the total mass
         # of the atmosphere. So we need to update the reservoir volume
