@@ -859,7 +859,7 @@ class Model(esbmtkBase):
 
         """
         for r in self.lor:
-            if isinstance(r, Reservoir):
+            if isinstance(r, (Reservoir, GasReservoir)):
                 # print(f" reading from {r.full_name}")
                 r.__read_state__("state")
 
@@ -1547,6 +1547,8 @@ class ReservoirBase(esbmtkBase):
 
         fn = f"{directory}/state_{self.mo.n}_{self.full_name}.csv"
         logging.info(f"reading state for {self.full_name} from {fn}")
+
+        print(f"reading state for {self.full_name} from {fn}")
 
         if not os.path.exists(fn):
             raise FileNotFoundError(
