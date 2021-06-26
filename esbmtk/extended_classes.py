@@ -508,10 +508,11 @@ class Signal(esbmtkBase):
                  duration = "0 yrs",  #
                  delta = 0,           # optional
                  stype = "addition"   # optional, currently the only type
-                 shape = "square"     # square, pyramid
+                 shape = "square/pyramid/filename"
                  mass/magnitude/filename  # give one
                  offset = '0 yrs',     #
                  scale = 1, optional,  #
+                 offset = option #
                  reservoir = r-handle # optional, see below
                  source = s-handle optional, see below
                  display_precision = number, optional, inherited from Model
@@ -815,15 +816,23 @@ class Signal(esbmtkBase):
         # insertion indexes self.si self.ei
 
         self.st: float = x[0]  # start time
-        self.et: float = x[-1]  # end times
-        duration = int(round(self.et - self.st))
+        self.et: float = x[-1]  # end time
+        duration = int(round((self.et - self.st)))
+        # print(f"duration = {duration}")
 
         # map the original time coordinate into model space
         x = x - x[0]
 
-        # since everything has been mapped to dt, time equals index
-        self.si: int = self.offset  # starting index
-        self.ei: int = self.offset + duration  # end index
+        # self.si: int = int(round(self.st / self.mo.dt))  # starting index
+        # self.ei: int = self.si + int(round(self.duration / self.mo.dt))  # end index
+
+        # everything has been mapped according to dt!
+        self.si: int = int(round(self.offset / self.mo.dt))  # starting index
+        self.ei: int = int(round((self.offset + duration) / self.mo.dt))  # end index
+        self.steps = self.ei - self.si
+
+        # print(f"start index = {self.si}")
+        # print(f"stop index = {self.ei}")
 
         # create slice of flux vector
         self.s_m: [NDArray, Float[64]] = array(self.nf.m[self.si : self.ei])
@@ -832,8 +841,9 @@ class Signal(esbmtkBase):
         self.s_d: [NDArray, Float[64]] = array(self.nf.d[self.si : self.ei])
 
         # setup the points at which to interpolate
-        xi = arange(0, duration)
+        xi = np.linspace(0, duration, self.steps)
 
+        # interpolate x/y data at points xi
         h: [NDArray, Float[64]] = interp(xi, x, y)  # interpolate flux
         dy: [NDArray, Float[64]] = interp(xi, x, d)  # interpolate delta
 
