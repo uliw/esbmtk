@@ -1453,7 +1453,11 @@ class VirtualReservoir_no_set(Reservoir_no_set):
         df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
 
         for i, d in enumerate(self.vr_data):
-            h = f"X{i}"
+            if self.alias_list != "None":
+                h = self.alias_list[i]
+            else:
+                h = f"X{i}"
+
             df[h] = d[start:stop:stride]
 
         file_path = Path(fn)
