@@ -1548,8 +1548,6 @@ class ReservoirBase(esbmtkBase):
         fn = f"{directory}/state_{self.mo.n}_{self.full_name}.csv"
         logging.info(f"reading state for {self.full_name} from {fn}")
 
-        print(f"reading state for {self.full_name} from {fn}")
-
         if not os.path.exists(fn):
             raise FileNotFoundError(
                 f"Flux {fn} does not exist in Reservoir {self.full_name}"
