@@ -597,9 +597,10 @@ class Connect(esbmtkBase):
                     raise ValueError(f"Signal type {p.ty} is not defined")
 
         # ensure that vardeltaout is first in list
-        if VarDeltaOut in self.lop:
-            # print(f"moving vardelta out to top of queue for {self.full_name}")
-            self.__move_process_to_top_of_queue__(self.lop, VarDeltaOut)
+        # if VarDeltaOut in self.lop:
+        # print(f"moving vardelta out to top of queue for {self.full_name}")
+
+        self.__move_process_to_top_of_queue__(self.lop, VarDeltaOut)
 
         # nwo we can register everythig on lop
         for p in self.lop:
@@ -1323,8 +1324,13 @@ class AirSeaExchange(esbmtkBase):
         # create flux name
         if self.id == "None" or self.id == "":
             n = f"{self.lr.name}_2_{self.gr.name}_EX"
+            self.name = f"ASGE_{self.lr.name}_2_{self.gr.name}"
         else:
             n = f"{self.lr.n}_2_{self.gr.n}_{self.id}_EX"
+            self.name = f"ASGE_{self.lr.name}_2_{self.gr.name}_{id}"
+
+        self.full_name = self.name
+        self.n = self.name
 
         # initalize a flux instance
         self.fh = Flux(
