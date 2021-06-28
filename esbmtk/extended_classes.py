@@ -1008,9 +1008,11 @@ class DataField(esbmtkBase):
                 VirtualReservoir_no_set,
             ),
             "y1_data": (NDArray[float], list),
+            "x1_data": (NDArray[float], list, str),
             "y1_label": str,
             "y1_legend": (str, list),
             "y2_data": (str, NDArray[float], list),
+            "x2_data": (NDArray[float], list, str),
             "y2_label": str,
             "y2_legend": (str, list),
             "common_y_scale": str,
@@ -1023,10 +1025,12 @@ class DataField(esbmtkBase):
         # list of default values if none provided
         self.lod: Dict[str, any] = {
             "y1_label": "Not Provided",
+            "x1_data": "None",
             "y1_legend": "Not Provided",
             "y2_label": "Not Provided",
             "y2_legend": "Not Provided",
             "y2_data": "None",
+            "x2_data": "None",
             "common_y_scale": "no",
             "display_precision": 0,
             "associated_with": "None",
@@ -1066,6 +1070,29 @@ class DataField(esbmtkBase):
 
         if not isinstance(self.y1_data, list):
             self.y1_data = [self.y1_data]
+
+        # if no x data provided, match with model
+        if self.x1_data == "None":
+            self.x1_data = []
+            if isinstance(self.y1_data, list):
+                for i, e in enumerate(self.y1_data):
+                    self.x1_data.append(self.mo.time)
+            else:
+                self.x1_data.append(self.mo.time)
+        else:
+            if not isinstance(self.x1_data, list):
+                self.x1_data = [self.x1_data]
+
+        if self.x2_data == "None" and self.y2_data != "None":
+            self.x2_data = []
+            if isinstance(self.y2_data, list):
+                for i, e in enumerate(self.y2_data):
+                    self.x2_data.append(self.mo.time)
+            else:
+                self.x2_data.append(self.mo.time)
+        elif self.x2_data != "None":
+            if not isinstance(self.x2_data, list):
+                self.x2_data = [self.x2_data]
 
         if not isinstance(self.y1_legend, list):
             self.y1_legend = [self.y1_legend]
@@ -1791,7 +1818,7 @@ class ExternalData(esbmtkBase):
     By convention, the secon column should contaain the same type of
     data as the reservoir (i.e., a concentration), whereas the third
     column contain isotope delta values. Columns with no data should
-    be left empty (and have no header!) The optional scale argumenty, will
+    be left empty (and have no header!) The optional scale argument, will
     only affect the Y-col data, not the isotope data
 
     The column headers are only used for the time or concentration
@@ -1879,7 +1906,7 @@ class ExternalData(esbmtkBase):
             # add these to the data we are are reading
             self.y: [NDArray] = self.df.iloc[:, 1].to_numpy() * yq
             # map into model units
-            self.y = self.y.to(self.mo.t_unit).magnitude * self.scale
+            self.y = self.y.to(self.mo.c_unit).magnitude * self.scale
 
         # check if z-data is present
         if ncols == 3:
