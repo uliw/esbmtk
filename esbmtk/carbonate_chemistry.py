@@ -1223,7 +1223,9 @@ def __calc_depths_helper__(
     diff = sat2cc_Csat - co3
     area = area_dz[int(prev_zsat) : int(prev_zcc)]
 
-    BDS_under = -kc * area.dot(diff)
+    # add negative sign to make BDS under a positive value
+    # NOTE: negative sign removed so that zcc and zsnow will be the same in steady state as quick fix
+    BDS_under = kc * area.dot(diff)
 
     # BDS_resp = alpha_RD * (((A(zsat, zcc) * B) / AD ) - BDS_under)
     A_diff: float = sa * (depth_areas[int(prev_zsat)] - depth_areas[int(prev_zcc)])
