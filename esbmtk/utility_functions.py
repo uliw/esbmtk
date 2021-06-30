@@ -308,7 +308,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             if not isinstance(obj.y1_data[0], str):
                 for i, d in enumerate(obj.y1_data):  # loop over datafield list
                     y1_legend = obj.y1_legend[i]
-                    print(f"label = {y1_legend}")
+                    # print(f"label = {y1_legend}")
                     ln1 = ax1.plot(
                         obj.x1_data[i], obj.y1_data[i], color=col, label=y1_legend
                     )
