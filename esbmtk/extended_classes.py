@@ -1904,9 +1904,10 @@ class ExternalData(esbmtkBase):
             yh = get_string_between_brackets(yh)
             yq = Q_(yh)
             # add these to the data we are are reading
-            self.y: [NDArray] = self.df.iloc[:, 1].to_numpy() * yq
+            # self.y: [NDArray] = self.df.iloc[:, 1].to_numpy() * yq
+            self.y: [NDArray] = self.df.iloc[:, 1].to_numpy() * self.scale
             # map into model units
-            self.y = self.y.to(self.mo.c_unit).magnitude * self.scale
+            # lf.y = self.y.to(self.mo.c_unit).magnitude * self.scale
 
         # check if z-data is present
         if ncols == 3:
