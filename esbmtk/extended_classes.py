@@ -1073,12 +1073,13 @@ class DataField(esbmtkBase):
 
         # if no x data provided, match with model
         if self.x1_data == "None":
+            time = (self.mo.time * self.mo.t_unit).to(self.mo.d_unit).magnitude
             self.x1_data = []
             if isinstance(self.y1_data, list):
                 for i, e in enumerate(self.y1_data):
-                    self.x1_data.append(self.mo.time)
+                    self.x1_data.append(time)
             else:
-                self.x1_data.append(self.mo.time)
+                self.x1_data.append(time)
         else:
             if not isinstance(self.x1_data, list):
                 self.x1_data = [self.x1_data]
