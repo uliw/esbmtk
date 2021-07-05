@@ -286,9 +286,9 @@ class hypsometry(esbmtkBase):
 
     def get_lookup_table(self, min_depth: int, max_depth: int) -> NDAarray[Float64]:
         """Generate a vector which contains the area(z) in 1 meter intervals
-        Note that the numbers are area_percentage. To get actual area, you need to
-        mutiply with the total surface area (hyp.sa)
+        The numbers are given in m^2 which represent the actual area.
 
+        The calculations multiply the area_percentage by the total surface area (hyp.sa)
         """
 
         if not -6000 <= min_depth <= 0:
@@ -297,7 +297,7 @@ class hypsometry(esbmtkBase):
         if not -6000 <= max_depth <= min_depth:
             raise ValueError("max_depth must be <= 0 and >= -6000")
 
-        return interpolate.splev(np.arange(min_depth, max_depth, -1), self.tck)
+        return interpolate.splev(np.arange(min_depth, max_depth, -1), self.tck) * self.sa
 
     def get_lookup_table_area_dz(
         self, min_depth: int, max_depth: int
@@ -307,7 +307,7 @@ class hypsometry(esbmtkBase):
 
         """
 
-        return np.diff(self.get_lookup_table(min_depth, max_depth)) * self.sa
+        return np.diff(self.get_lookup_table(min_depth, max_depth))
 
 
 def get_box_geometry_parameters(box):
