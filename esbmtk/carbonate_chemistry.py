@@ -1275,4 +1275,8 @@ def __calc_depths_helper__(
     # multiplying change in snowline by the timestep to get the current snowline depth
     zsnow: float = prev_zsnow + (zsnow_dt * dt)
 
+    # if zcc is deeper than zsnow,BPDC area indexing does not work
+    if zcc > zsnow:
+        zcc = zsnow
+
     return [zsat, zcc, zsnow, Fburial, B, BNS, BDS_under, BDS_resp, BDS, BCC, BPDC, BD, A_diff, zsnow_dt]
