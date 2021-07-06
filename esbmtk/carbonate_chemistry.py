@@ -1208,20 +1208,6 @@ def __calc_depths_helper__(
     A_zsat: float = depth_areas[200] - depth_areas[int(prev_zsat)]
     BNS: float = alphard * ((A_zsat * B) / AD)
 
-    # BDS_under = kc * integral from zcc(t) to zsat(t) of (a'(z) * (Csat(z, t) - [CO3d](t))
-    # BDS_under_integral: float = 0
-    # for z in range(int(prev_zsat), int(prev_zcc + 1), 1):
-    #     csat: float = (ksp0 / ca) * np.exp((z * pg) / pc)
-    #     actual = (csat - co3) * (sa * depth_areas[int(z)]) - ((csat - co3) * (sa * depth_areas[int(z-1)]))
-    #     BDS_under_integral += actual
-    #
-    # BDS_under: float = kc * BDS_under_integral
-
-    # depth = np.arange(int(prev_zsat), int(prev_zcc), 1, dtype=int)
-    # Csat = (ksp0 / ca) * np.exp((depth * pg) / pc)
-    # diff = Csat - co3
-    # area = area_dz[int(prev_zsat):int(prev_zcc):1]
-
     sat2cc_Csat = Csat[int(prev_zsat) : int(prev_zcc)]
     diff = sat2cc_Csat - co3
     area = area_dz[int(prev_zsat) : int(prev_zcc)]
@@ -1236,47 +1222,32 @@ def __calc_depths_helper__(
     BDS_resp = alphard * (((A_diff * B) / AD) - BDS_under)
 
     BDS = BDS_under + BDS_resp
-    # BDS = BDS_resp
 
-    # BPDC = kc * integral from zsnow(t) to zcc(t) of (a'(z)(Csat(z,t)-[CO3]D(t))dz)
-    # Csat_zcc: float = (ksp0 / ca) * np.exp((prev_zcc * pg) / pc)
-    # Csat_zsnow: float = (ksp0 / ca) * np.exp((prev_zsnow * pg) / pc)
-    # Csat_zcc: float = Csat[int(prev_zcc)]
-    # Csat_zsnow: float = Csat[int(prev_zsnow)]
-
-    # BPDC: float = kc * (
-    #     (sa * depth_areas[int(prev_zcc)] * (Csat_zcc - co3))
-    #     - (sa * depth_areas[int(prev_zsnow)] * (Csat_zsnow - co3))
-    # )
-
-    # New BPDC Calc:
-    # depth2 = np.arange(int(prev_zsnow), int(prev_zcc), 1, dtype=int)
-    # Csat2 = (ksp0 / ca) * np.exp((depth2 * pg) / pc)
-    # diff2 = Csat2 - co3
-    # area2 = area_dz[int(prev_zsnow): int(prev_zcc): 1]
-
+    if zcc < prev_zsnow:
     # BPDC version 2 (using new Csat array list)
-    snow2cc_Csat = Csat[int(prev_zcc) : int(prev_zsnow)]
-    diff2 = snow2cc_Csat - co3
-    area2 = area_dz[int(prev_zcc) : int(prev_zsnow)]
+        snow2cc_Csat = Csat[int(prev_zcc) : int(prev_zsnow)]
+        diff2 = snow2cc_Csat - co3
+        area2 = area_dz[int(prev_zcc) : int(prev_zsnow)]
 
-    BPDC: float = -kc * area2.dot(diff2)
+        BPDC: float = -kc * area2.dot(diff2)
 
-    BD: float = BDS + BCC + BNS + BPDC
-    Fburial = B - BD
+        BD: float = BDS + BCC + BNS + BPDC
+        Fburial = B - BD
 
     # ------------------------Calculate zsnow------------------------------------
-    # Equation (4) from paper (1) Boudreau (2010)
-    # dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
-    # Note that we use equation (1) from paper (1) Boudreau (2010) as well:
-    # where a'(z) is the differential bathymetric curve: A(z2, z1) = a'(z2) - a'(z1)
-    zsnow_dt: float = BPDC / (depth_areas[int(prev_zsnow)] * I_caco3
-    )  # movement of snowline
-    # multiplying change in snowline by the timestep to get the current snowline depth
-    zsnow: float = prev_zsnow + (zsnow_dt * dt)
+        # Equation (4) from paper (1) Boudreau (2010)
+        # dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
+        # Note that we use equation (1) from paper (1) Boudreau (2010) as well:
+        # where a'(z) is the differential bathymetric curve: A(z2, z1) = a'(z2) - a'(z1)
+        zsnow_dt: float = BPDC / (area_dz[int(prev_zsnow)] * I_caco3)  # movement of snowline
+        # multiplying change in snowline by the timestep to get the current snowline depth
+        zsnow: float = prev_zsnow + (zsnow_dt * dt)
 
-    # if zcc is deeper than zsnow,BPDC area indexing does not work
-    if zcc > zsnow:
-        zcc = zsnow
+    else:
+        zsnow = zcc
+        #dummy values for testing purposes; will be removed later
+        BPDC = 0
+        BD = 0
+        Fburial = 0
 
     return [zsat, zcc, zsnow, Fburial, B, BNS, BDS_under, BDS_resp, BDS, BCC, BPDC, BD, A_diff, zsnow_dt]
