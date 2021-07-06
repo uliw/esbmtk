@@ -1246,6 +1246,7 @@ def __calc_depths_helper__(
     else:
         zsnow = zcc
         #dummy values for testing purposes; will be removed later
+        zsnow_dt = 0
         BPDC = 0
         BD = 0
         Fburial = 0
