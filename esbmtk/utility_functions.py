@@ -341,7 +341,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                     for i, d in enumerate(obj.y2_data):  # loop over datafield list
                         y2_legend = obj.y2_legend[i]
                         ln1 = ax1.plot(
-                            obj.x1_data[i], obj.y1_data[i], color=col, label=y1_legend
+                            obj.x2_data[i], obj.y2_data[i], color=col, label=y2_legend
                         )
                         cn = cn + 1
                         col = f"C{cn}"
