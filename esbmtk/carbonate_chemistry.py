@@ -1231,9 +1231,6 @@ def __calc_depths_helper__(
 
         BPDC: float = -kc * area2.dot(diff2)
 
-        BD: float = BDS + BCC + BNS + BPDC
-        Fburial = B - BD
-
     # ------------------------Calculate zsnow------------------------------------
         # Equation (4) from paper (1) Boudreau (2010)
         # dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
@@ -1248,7 +1245,8 @@ def __calc_depths_helper__(
         #dummy values for testing purposes; will be removed later
         zsnow_dt = 0
         BPDC = 0
-        BD = 0
-        Fburial = 0
+
+    BD: float = BDS + BCC + BNS + BPDC
+    Fburial = B - BD
 
     return [zsat, zcc, zsnow, Fburial, B, BNS, BDS_under, BDS_resp, BDS, BCC, BPDC, BD, A_diff, zsnow_dt]
