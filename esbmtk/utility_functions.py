@@ -1588,3 +1588,85 @@ def __validate_cs_dict__(d: Dict) -> list:
     dz_table: NDArray = d_k["dz_table"]
 
     return [reservoirs, lookup_table, dz_table, params]
+
+
+def __checktypes__(av: Dict[any, any], pv: Dict[any, any]) -> None:
+    """this method will use the the dict key in the user provided
+    key value data (pv) to look up the allowed data type for this key in av
+
+    av = dictinory with the allowed input keys and their type
+    pv = dictionary with the user provided key-value data
+    """
+
+    k: any
+    v: any
+
+    # provide more meaningful error messages
+
+    # loop over provided keywords
+    for k, v in pv.items():
+        # check av if provided value v is of correct type
+        if av[k] != any:
+            # print(f"key = {k}, value  = {v}")
+            if not isinstance(v, av[k]):
+                # print(f"k={k}, v= {v}, av[k] = {av[k]}")
+                raise TypeError(
+                    f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
+                )
+
+def __checkkeys__(lrk:list, lkk:  kwargs: dict) -> None:
+        """ check if the mandatory keys are present
+
+        lrk = list of required keywords
+        lkk = list of all known keywords
+        kwargs = dictionary with key-value pairs
+
+        """
+
+        k: str
+        v: any
+        # test if the required keywords are given
+        for k in lrk:  # loop over required keywords
+            if isinstance(k, list):  # If keyword is a list
+                s: int = 0  # loop over allowed substitutions
+                for e in k:  # test how many matches are in this list
+                    if e in kwargs:
+                        # print(self.kwargs[e])
+                        if not isinstance(e, (np.ndarray, np.float64, list)):
+                            # print (type(self.kwargs[e]))
+                            if kwargs[e] != "None":
+                                s = s + 1
+                if s > 1:  # if more than one match
+                    raise ValueError(
+                        f"You need to specify exactly one from this list: {k}"
+                    )
+
+            else:  # keyword is not in list
+                if k not in kwargs:
+                    raise ValueError(f"You need to specify a value for {k}")
+
+        tl: List[str] = []
+        # create a list of known keywords
+        for k, v in lkk.items():
+            tl.append(k)
+
+        # test if we know all keys
+        for k, v in kwargs.items():
+            if k not in lkk:
+                raise ValueError(f"{k} is not a valid keyword. \n Try any of \n {tl}\n")
+
+def __addmissingdefaults__(lod: dict, kwargs: dict) -> dict:
+        """
+        test if the keys in lod exist in kwargs, otherwise add them with the default values
+        from lod
+
+        """
+        
+        new: dict = {}
+        if len(lod) > 0:
+            for k, v in lod.items():
+                if k not in kwargs:
+                    new.update({k: v})
+
+        kwargs.update(new)
+        return kwargs
