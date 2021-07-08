@@ -59,6 +59,35 @@ class esbmtkBase(object):
     """The esbmtk base class template. This class handles keyword
     arguments, name registration and other common tasks
 
+    Useful methods in this class:
+
+    define required keywords in lrk dict:
+       self.lrk: list = ["name"]
+
+    define allowed type per keyword in lkk dict:
+       self.lkk: Dict[str, any] = {
+                                  "name": str,
+                                  "model": Model,
+                                  "salinity": (int, float), # int or float
+                                  }
+
+    define default values if none provided in lod dict
+       self.lod: Dict[str, any] = {"salinity": 35.0}
+
+    validate keyword input:
+        self.__validateinput__(kwargs)
+
+    add global defaults each esbmtk object should have, even if they are not set or used
+        self.__global_defaults__()
+
+    register all key/value pairs as instance variables
+        self.__registerkeys__()
+
+    register name in global name space. This is only necessary if you want to reference
+    the instance by name from the console, otherwise use the normal python way (i.e.
+    instance = class(keywords)
+        self.__register_name__ ()
+
     """
 
     __slots__ = "__dict__"
