@@ -352,7 +352,8 @@ class esbmtkBase(object):
     def __addmissingdefaults__(self, lod: dict, kwargs: dict) -> dict:
         """
         test if the keys in lod exist in kwargs, otherwise add them with the default values
-        in lod
+        from lod
+
         """
         new: dict = {}
         if len(self.lod) > 0:

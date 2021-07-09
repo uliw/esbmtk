@@ -1380,6 +1380,112 @@ def add_carbonate_chemisrty_2(rdict: dict, cs_d: dict) -> None:
         carbonate_system_v2(params, f, lookup_table, dz_table, rg)
 
 
+def add_carbonate_system_1(rgs: list):
+    """Creates a new carbonate system virtual reservoir for each
+    reservoir in rgs. Note that rgs must be a list of reservoir groups.
+
+    These new virtual reservoirs are registered to their respective ReservoirGroup.
+
+    Required keywords:
+        rgs: list = []  of Reservoir Group objects
+
+    """
+
+    from esbmtk import carbonate_chemistry, carbonate_system_new, carbonate_system_uli
+
+    for rg in rgs:
+        carbonate_system_uli(rg)
+
+
+def add_carbonate_system_2(**kwargs) -> None:
+    """Creates a new carbonate system virtual reservoir
+    which will compute carbon species, saturation, compensation,
+    and snowline depth, and compute the associated crabonate burial fluxes
+
+    reservoir in reservoirs. These new virtual reservoirs are registered to
+    their respective ReservoirGroup.
+
+    Required keywords:
+        rgs: list of ReservoirGroup objects
+        carbonate_export_fluxes: list of flux objects which mus match the
+                                 list of ReservoirGroup objects.
+        AD = total ocean area (m^2)
+
+    Optional Parameters:
+
+        zsat = initial saturation depth (m)
+        zcc = initial carbon compensation depth (m)
+        zsnow = initial snowline depth (m)
+        zsat0 = characteristic depth (m)
+        ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
+        kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
+        Ca2 = calcium ion concentration (mol/kg)
+        pc = characteristic pressure (atm)
+        pg = seawater density multiplied by gravity due to acceleration (atm/m)
+        I = dissolvable CaCO3 inventory
+        co3 = CO3 concentration (mol/kg)
+
+    """
+
+    from esbmtk import carbonate_chemistry, carbonate_system_new, carbonate_system_uli
+    from esbmtk import __checkkeys__, __checktypes__, __addmissingdefaults__
+
+    # list of known keywords
+    lkk: dict = {
+        "rgs": list,
+        "carbonate_export_fluxes": list,
+        "AD": float,
+        "zsat": int,
+        "zcc": int,
+        "zsnow": int,
+        "zsat0": int,
+        "ksp0": float,
+        "kc": float,
+        "Ca2": float,
+        "pc": float,
+        "pg": float,
+        "I": float,
+        "alpha": float,
+    }
+    # provide a list of absolutely required keywords
+    lrk: list[str] = ["rgs", "carbonate_export_fluxes", "AD"]
+
+    # we need the reference to the Model in order to set some
+    # default values.
+
+    model = kwargs["rgs"][0].mo
+    # list of default values if none provided
+    self.lod: dict = {
+        "zsat": 3715,
+        "zcc": 4750,
+        "zsnow": 4750,
+        "zsat0": 5078,
+        "ksp0": 4.29e-07,  # mol^2/kg^2
+        "kc": 8.84 * 1000,  # m/yr converted to kg m^-2 yr^-1
+        "AD": CM.hyp.area_dz(-200, -6000),
+        "alpha": 0.77,  # 0.928771302395292, #0.75,
+    }
+
+    # make sure all mandatory keywords are present
+    __checkkeys__(lrk, lkk, kwargs)
+
+    # add default values for keys which were not specified
+    kwargs = __addmissingdefaults__(lod, kwargs)
+
+    # test that all keyword values are of the correct type
+    __checktypes__(lkk, kwargs)
+
+    # establish some shared parameters
+    depths_table = np.arange(0, 6001, 1)
+    area_table = model.hyp.get_lookup_table(0, -6001)
+    area_dz = model.hyp.get_lookup_table_area_dz(0, -6001)
+    sa = model.hyp.sa
+
+    if cs_type == 1:  # use the current code
+        for rg in rgs:  # Setup the virtual reservoirs
+            pass
+
+
 def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
     """Creates a new carbonate system virtual reservoir for each
     reservoir in reservoirs. These new virtual reservoirs are registered to
@@ -1416,6 +1522,7 @@ def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
                 co3 = CO3 concentration (mol/kg)
 
     """
+
     from esbmtk import carbonate_chemistry, carbonate_system_new, carbonate_system_uli
 
     # set up vr type
@@ -1601,8 +1708,6 @@ def __checktypes__(av: Dict[any, any], pv: Dict[any, any]) -> None:
     k: any
     v: any
 
-    # provide more meaningful error messages
-
     # loop over provided keywords
     for k, v in pv.items():
         # check av if provided value v is of correct type
@@ -1614,59 +1719,59 @@ def __checktypes__(av: Dict[any, any], pv: Dict[any, any]) -> None:
                     f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
                 )
 
-def __checkkeys__(lrk:list, lkk:  kwargs: dict) -> None:
-        """ check if the mandatory keys are present
 
-        lrk = list of required keywords
-        lkk = list of all known keywords
-        kwargs = dictionary with key-value pairs
+def __checkkeys__(lrk: list, lkk: list, kwargs: dict) -> None:
+    """check if the mandatory keys are present
 
-        """
+    lrk = list of required keywords
+    lkk = list of all known keywords
+    kwargs = dictionary with key-value pairs
 
-        k: str
-        v: any
-        # test if the required keywords are given
-        for k in lrk:  # loop over required keywords
-            if isinstance(k, list):  # If keyword is a list
-                s: int = 0  # loop over allowed substitutions
-                for e in k:  # test how many matches are in this list
-                    if e in kwargs:
-                        # print(self.kwargs[e])
-                        if not isinstance(e, (np.ndarray, np.float64, list)):
-                            # print (type(self.kwargs[e]))
-                            if kwargs[e] != "None":
-                                s = s + 1
-                if s > 1:  # if more than one match
-                    raise ValueError(
-                        f"You need to specify exactly one from this list: {k}"
-                    )
+    """
 
-            else:  # keyword is not in list
-                if k not in kwargs:
-                    raise ValueError(f"You need to specify a value for {k}")
+    k: str
+    v: any
+    # test if the required keywords are given
+    for k in lrk:  # loop over required keywords
+        if isinstance(k, list):  # If keyword is a list
+            s: int = 0  # loop over allowed substitutions
+            for e in k:  # test how many matches are in this list
+                if e in kwargs:
+                    # print(self.kwargs[e])
+                    if not isinstance(e, (np.ndarray, np.float64, list)):
+                        # print (type(self.kwargs[e]))
+                        if kwargs[e] != "None":
+                            s = s + 1
+            if s > 1:  # if more than one match
+                raise ValueError(f"You need to specify exactly one from this list: {k}")
 
-        tl: List[str] = []
-        # create a list of known keywords
-        for k, v in lkk.items():
-            tl.append(k)
+        else:  # keyword is not in list
+            if k not in kwargs:
+                raise ValueError(f"You need to specify a value for {k}")
 
-        # test if we know all keys
-        for k, v in kwargs.items():
-            if k not in lkk:
-                raise ValueError(f"{k} is not a valid keyword. \n Try any of \n {tl}\n")
+    tl: List[str] = []
+    # create a list of known keywords
+    for k, v in lkk.items():
+        tl.append(k)
+
+    # test if we know all keys
+    for k, v in kwargs.items():
+        if k not in lkk:
+            raise ValueError(f"{k} is not a valid keyword. \n Try any of \n {tl}\n")
+
 
 def __addmissingdefaults__(lod: dict, kwargs: dict) -> dict:
-        """
-        test if the keys in lod exist in kwargs, otherwise add them with the default values
-        from lod
+    """
+    test if the keys in lod exist in kwargs, otherwise add them with the default values
+    from lod
 
-        """
-        
-        new: dict = {}
-        if len(lod) > 0:
-            for k, v in lod.items():
-                if k not in kwargs:
-                    new.update({k: v})
+    """
 
-        kwargs.update(new)
-        return kwargs
+    new: dict = {}
+    if len(lod) > 0:
+        for k, v in lod.items():
+            if k not in kwargs:
+                new.update({k: v})
+
+    kwargs.update(new)
+    return kwargs

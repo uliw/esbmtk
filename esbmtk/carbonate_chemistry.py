@@ -873,17 +873,17 @@ def carbonate_system_v2(
                 zsat,
                 zcc,
                 zsnow,
-                12E12,  # Fburial
-                60E12, # B
-                19.1E12, #BNS
-                0.0, #BDS_under
-                0.0, #BDS_resp
-                10.4E12, #BDS
-                18.6E12, #BCC
-                0.0, #BPDC
-                48E12, #BD
-                0.0, #bds_area
-                0.0 #zsnow_dt
+                12e12,  # Fburial
+                60e12,  # B
+                19.1e12,  # BNS
+                0.0,  # BDS_under
+                0.0,  # BDS_resp
+                10.4e12,  # BDS
+                18.6e12,  # BCC
+                0.0,  # BPDC
+                48e12,  # BD
+                0.0,  # bds_area
+                0.0,  # zsnow_dt
             ]
         ),
         function_input_data=List(
@@ -921,7 +921,7 @@ def carbonate_system_v2(
             "BPDC",
             "BD",
             "bds_area",
-            "zsnow_dt"
+            "zsnow_dt",
         ],
         function_params=List(
             [
@@ -1070,17 +1070,19 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     vr_data[6][i] = depths[1]  # zcc
     vr_data[7][i] = depths[2]  # zsnow
     vr_data[8][i] = depths[3]  # Fburial
-    #temporary added values for testing
-    vr_data[9][i] = depths[4] # B
-    vr_data[10][i] = depths[5] #BNS
-    vr_data[11][i] = depths[6] #BDS under
-    vr_data[12][i] = depths[7] #BDS resp
-    vr_data[13][i] = depths[8] #BDS
-    vr_data[14][i] = depths[9] #BCC
-    vr_data[15][i] = depths[10] #BDPC
-    vr_data[16][i] = depths[11] #BD
-    vr_data[17][i] = depths[12] #A(zsat, zcc) = sa * (depth_areas[int(prev_zsat)] - depth_areas[int(prev_zcc)])
-    vr_data[18][i] = depths[13] #zsnow_dt
+    # temporary added values for testing
+    vr_data[9][i] = depths[4]  # B
+    vr_data[10][i] = depths[5]  # BNS
+    vr_data[11][i] = depths[6]  # BDS under
+    vr_data[12][i] = depths[7]  # BDS resp
+    vr_data[13][i] = depths[8]  # BDS
+    vr_data[14][i] = depths[9]  # BCC
+    vr_data[15][i] = depths[10]  # BDPC
+    vr_data[16][i] = depths[11]  # BD
+    vr_data[17][i] = depths[
+        12
+    ]  # A(zsat, zcc) = sa * (depth_areas[int(prev_zsat)] - depth_areas[int(prev_zcc)])
+    vr_data[18][i] = depths[13]  # zsnow_dt
 
     # ----------------------Updating DIC and TA----------------------------------
     Fburial = depths[3]
@@ -1224,29 +1226,46 @@ def __calc_depths_helper__(
     BDS = BDS_under + BDS_resp
 
     if zcc < prev_zsnow:
-    # BPDC version 2 (using new Csat array list)
+        # BPDC version 2 (using new Csat array list)
         snow2cc_Csat = Csat[int(prev_zcc) : int(prev_zsnow)]
         diff2 = snow2cc_Csat - co3
         area2 = area_dz[int(prev_zcc) : int(prev_zsnow)]
 
         BPDC: float = -kc * area2.dot(diff2)
 
-    # ------------------------Calculate zsnow------------------------------------
+        # ------------------------Calculate zsnow------------------------------------
         # Equation (4) from paper (1) Boudreau (2010)
         # dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
         # Note that we use equation (1) from paper (1) Boudreau (2010) as well:
         # where a'(z) is the differential bathymetric curve: A(z2, z1) = a'(z2) - a'(z1)
-        zsnow_dt: float = BPDC / (area_dz[int(prev_zsnow)] * I_caco3)  # movement of snowline
+        zsnow_dt: float = BPDC / (
+            area_dz[int(prev_zsnow)] * I_caco3
+        )  # movement of snowline
         # multiplying change in snowline by the timestep to get the current snowline depth
         zsnow: float = prev_zsnow + (zsnow_dt * dt)
 
     else:
         zsnow = zcc
-        #dummy values for testing purposes; will be removed later
+        # dummy values for testing purposes; will be removed later
         zsnow_dt = 0
         BPDC = 0
 
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = B - BD
 
-    return [zsat, zcc, zsnow, Fburial, B, BNS, BDS_under, BDS_resp, BDS, BCC, BPDC, BD, A_diff, zsnow_dt]
+    return [
+        zsat,
+        zcc,
+        zsnow,
+        Fburial,
+        B,
+        BNS,
+        BDS_under,
+        BDS_resp,
+        BDS,
+        BCC,
+        BPDC,
+        BD,
+        A_diff,
+        zsnow_dt,
+    ]
