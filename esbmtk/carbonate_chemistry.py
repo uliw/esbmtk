@@ -1214,14 +1214,14 @@ def __calc_depths_helper__(
 
     # add negative sign to make BDS under a positive value
     # NOTE: negative sign removed so that zcc and zsnow will be the same in steady state as quick fix
-    BDS_under = kc * area.dot(diff)
+    BDS_under = -kc * area.dot(diff)
 
     # BDS_resp = alpha_RD * (((A(zsat, zcc) * B) / AD ) - BDS_under)
     A_diff: float = depth_areas[int(prev_zsat)] - depth_areas[int(prev_zcc)]
 
     BDS_resp = alphard * (((A_diff * B) / AD) - BDS_under)
 
-    BDS = BDS_under + BDS_resp
+    BDS = BDS_resp #BDS_under + BDS_resp
 
     if zcc < prev_zsnow:
     # BPDC version 2 (using new Csat array list)
