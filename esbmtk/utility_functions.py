@@ -1406,7 +1406,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         rgs: list of ReservoirGroup objects
         carbonate_export_fluxes: list of flux objects which mus match the
                                  list of ReservoirGroup objects.
-        zsat_max = depth of the upper boundary of the deep box
+        zsat_min = depth of the upper boundary of the deep box
 
     Optional Parameters:
 
@@ -1433,7 +1433,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "carbonate_export_fluxes": list,
         "AD": float,
         "zsat": int,
-        "zsat_max": int,
+        "zsat_min": int,
         "zcc": int,
         "zsnow": int,
         "zsat0": int,
@@ -1442,11 +1442,12 @@ def add_carbonate_system_2(**kwargs) -> None:
         "Ca2": float,
         "pc": (float, int),
         "pg": (float, int),
-        "I": (float, int),
+        "I_caco3": (float, int),
         "alpha": float,
+        "zmax": (float, int),
     }
     # provide a list of absolutely required keywords
-    lrk: list[str] = ["rgs", "carbonate_export_fluxes", "zsat_max"]
+    lrk: list[str] = ["rgs", "carbonate_export_fluxes", "zsat_min"]
 
     # we need the reference to the Model in order to set some
     # default values.
@@ -1454,17 +1455,18 @@ def add_carbonate_system_2(**kwargs) -> None:
     model = kwargs["rgs"][0].mo
     # list of default values if none provided
     lod: dict = {
-        "zsat": 3715,
-        "zcc": 4750,
-        "zsnow": 4750,
-        "zsat0": 5078,
+        "zsat": -3715,
+        "zcc": -4750,
+        "zsnow": -4750,
+        "zsat0": -5078,
         "ksp0": 4.29e-07,  # mol^2/kg^2
         "kc": 8.84 * 1000,  # m/yr converted to kg/(m^2 yr)
         "AD": CM.hyp.area_dz(-200, -6000),
         "alpha": 0.77,  # 0.928771302395292, #0.75,
         "pg": 0.103,  # pressure in atm/m
         "pc": 511,  # characteristic pressure after Boudreau 2010
-        "I": 529,  #  dissolveable CaCO3 in mol/m^2
+        "I_caco3": 529,  #  dissolveable CaCO3 in mol/m^2
+        "zmax": -6000,  # max model depth
     }
 
     # make sure all mandatory keywords are present
@@ -1488,7 +1490,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     # C saturation(z) after Boudreau 2010
     Csat_table: NDArray = (ksp0 / ca2) * np.exp((depths * pg) / pc)
     area_table = model.hyp.get_lookup_table(0, -6001)  # area in m^2(z)
-    area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6001)  # area'
+    area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6001) * -1  # area'
     sa = model.hyp.sa  # Total earth area
     AD = model.hyp.area_dz(0, -6000)  # Total Ocean Area
     dt = model.dt
@@ -1532,7 +1534,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                     rg.DIC.h,  # 2 DIC heavy isotope mass
                     rg.DIC.c,  # 3 DIC concentration
                     rg.TA.m,  # 4 TA mass
-                    rg.TA.c,  # 5 TA conccentration
+                    rg.TA.c,  # 5 TA concentration
                     kwargs["carbonate_export_fluxes"][i].m,  # 6
                     area_table,  # 7
                     area_dz_table,  # 8
@@ -1572,14 +1574,15 @@ def add_carbonate_system_2(**kwargs) -> None:
                     float(sa),  # 7
                     float(rg.volume.to("liter").magnitude),  # 8
                     float(AD),  # 9
-                    float(kwargs["zsat0"]),  # 10
+                    float(abs(kwargs["zsat0"])),  # 10
                     float(rg.swc.ca2),  # 11
                     rg.mo.dt,  # 12
                     float(kwargs["pc"]),  # 13
                     float(kwargs["pg"]),  # 14
-                    float(kwargs["I"]),  # 15
+                    float(kwargs["I_caco3"]),  # 15
                     float(kwargs["alpha"]),  # 16
-                    float(abs(kwargs["zsat_max"])),  # 17
+                    float(abs(kwargs["zsat_min"])),  # 17
+                    float(abs(kwargs["zmax"])),  # 18
                 ]
             ),
             register=rg,
@@ -1708,7 +1711,7 @@ def __validate_cs_dict__(d: Dict) -> list:
             pc = characteristic pressure (atm)
             pg = seawater density multiplied by gravity due to acceleration (atm/m)
             I = dissolvable CaCO3 inventory
-            alphard = fraction of calcite dissolved above saturation horizon by respirational dissolution
+            alpha = fraction of calcite dissolved above saturation horizon by respirational dissolution
             co3 = concentration of CO3 (mol/kg)
     """
     import numpy as np
@@ -1729,7 +1732,7 @@ def __validate_cs_dict__(d: Dict) -> list:
         "pc": [float, int, np.float64],
         "pg": [float, int, np.float64],
         "I": [float, int, np.float64],
-        "alphard": [float, int, np.float64],
+        "alpha": [float, int, np.float64],
         "depths_table": [np.ndarray, list, NDArray],
         "sa": [float, int, np.float64],
         "co3": [float, int, np.float64],
@@ -1748,7 +1751,7 @@ def __validate_cs_dict__(d: Dict) -> list:
         "pc": 511,  # atm
         "pg": 0.1,  # atm/m
         "I": 529,  # mol/m^2
-        "alphard": 0.3,
+        "alpha": 0.3,
         "co3": 86e-6,  # mol/kg
     }
 
@@ -1787,7 +1790,7 @@ def __validate_cs_dict__(d: Dict) -> list:
         d_k["pc"],
         d_k["pg"],
         d_k["I"],
-        d_k["alphard"],
+        d_k["alpha"],
         d_k["co3"],
     ]
     reservoirs: list = d_k["reservoirs"]
