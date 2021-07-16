@@ -1400,16 +1400,13 @@ def add_carbonate_system_1(rgs: list):
 def add_carbonate_system_2(**kwargs) -> None:
     """Creates a new carbonate system virtual reservoir
     which will compute carbon species, saturation, compensation,
-    and snowline depth, and compute the associated crabonate burial fluxes
-
-    reservoir in reservoirs. These new virtual reservoirs are registered to
-    their respective ReservoirGroup.
+    and snowline depth, and compute the associated carbonate burial fluxes
 
     Required keywords:
         rgs: list of ReservoirGroup objects
         carbonate_export_fluxes: list of flux objects which mus match the
                                  list of ReservoirGroup objects.
-        AD = total ocean area (m^2)
+        zsat_max = depth of the upper boundary of the deep box
 
     Optional Parameters:
 
@@ -1428,7 +1425,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     """
 
     from esbmtk import carbonate_chemistry, carbonate_system_new, carbonate_system_uli
-    from esbmtk import __checkkeys__, __checktypes__, __addmissingdefaults__
+    from esbmtk import VirtualReservoir_no_set, calc_carbonates_v2
 
     # list of known keywords
     lkk: dict = {
@@ -1436,34 +1433,38 @@ def add_carbonate_system_2(**kwargs) -> None:
         "carbonate_export_fluxes": list,
         "AD": float,
         "zsat": int,
+        "zsat_max": int,
         "zcc": int,
         "zsnow": int,
         "zsat0": int,
         "ksp0": float,
         "kc": float,
         "Ca2": float,
-        "pc": float,
-        "pg": float,
-        "I": float,
+        "pc": (float, int),
+        "pg": (float, int),
+        "I": (float, int),
         "alpha": float,
     }
     # provide a list of absolutely required keywords
-    lrk: list[str] = ["rgs", "carbonate_export_fluxes", "AD"]
+    lrk: list[str] = ["rgs", "carbonate_export_fluxes", "zsat_max"]
 
     # we need the reference to the Model in order to set some
     # default values.
 
     model = kwargs["rgs"][0].mo
     # list of default values if none provided
-    self.lod: dict = {
+    lod: dict = {
         "zsat": 3715,
         "zcc": 4750,
         "zsnow": 4750,
         "zsat0": 5078,
         "ksp0": 4.29e-07,  # mol^2/kg^2
-        "kc": 8.84 * 1000,  # m/yr converted to kg m^-2 yr^-1
+        "kc": 8.84 * 1000,  # m/yr converted to kg/(m^2 yr)
         "AD": CM.hyp.area_dz(-200, -6000),
         "alpha": 0.77,  # 0.928771302395292, #0.75,
+        "pg": 0.103,  # pressure in atm/m
+        "pc": 511,  # characteristic pressure after Boudreau 2010
+        "I": 529,  #  dissolveable CaCO3 in mol/m^2
     }
 
     # make sure all mandatory keywords are present
@@ -1476,14 +1477,113 @@ def add_carbonate_system_2(**kwargs) -> None:
     __checktypes__(lkk, kwargs)
 
     # establish some shared parameters
-    depths_table = np.arange(0, 6001, 1)
-    area_table = model.hyp.get_lookup_table(0, -6001)
-    area_dz = model.hyp.get_lookup_table_area_dz(0, -6001)
-    sa = model.hyp.sa
+    # depths_table = np.arange(0, 6001, 1)
+    depths: NDArray = np.arange(0, 6001, 1, dtype=float)
+    rgs = kwargs["rgs"]
+    ksp0 = kwargs["ksp0"]
+    ca2 = rgs[0].swc.ca2
+    pg = kwargs["pg"]
+    pc = kwargs["pc"]
 
-    if cs_type == 1:  # use the current code
-        for rg in rgs:  # Setup the virtual reservoirs
-            pass
+    # C saturation(z) after Boudreau 2010
+    Csat_table: NDArray = (ksp0 / ca2) * np.exp((depths * pg) / pc)
+    area_table = model.hyp.get_lookup_table(0, -6001)  # area in m^2(z)
+    area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6001)  # area'
+    sa = model.hyp.sa  # Total earth area
+    AD = model.hyp.area_dz(0, -6000)  # Total Ocean Area
+    dt = model.dt
+
+    for i, rg in enumerate(rgs):  # Setup the virtual reservoirs
+        VirtualReservoir_no_set(
+            name="cs",
+            species=CO2,
+            function=calc_carbonates_v2,
+            # datafield hold the results of the VR_no_set function
+            # provide a default values which will be use to initialize
+            # the respective datafield/
+            vr_datafields=List(
+                [
+                    rg.swc.hplus,  # 0 H+
+                    rg.swc.ca,  # 1 carbonate alkalinity
+                    rg.swc.hco3,  # 2 HCO3
+                    rg.swc.co3,  # 3 CO3
+                    rg.swc.co2,  # 4 CO2aq
+                    kwargs["zsat"],  # 5 zsat
+                    kwargs["zcc"],  # 6 zcc
+                    kwargs["zsnow"],  # 7 zsnow
+                    0.0,  # 8 Fburial  carbonate burial
+                    0.0,  # 9 B        carbonate export productivity
+                    # temp fields, delete eventually
+                    0.0,  # 10 BNS
+                    0.0,  # 11 BDS_under
+                    0.0,  # 12 BDS_resp
+                    0.0,  # 13 BDS
+                    0.0,  # 14 BCC
+                    0.0,  # 15 BPDC
+                    0.0,  # 16 BD
+                    0.0,  # 17 bds_area
+                    0.0,  # 18 zsnow_dt
+                ]
+            ),
+            function_input_data=List(
+                [
+                    rg.DIC.m,  # 0 DIC mass
+                    rg.DIC.l,  # 1 DIC light isotope mass
+                    rg.DIC.h,  # 2 DIC heavy isotope mass
+                    rg.DIC.c,  # 3 DIC concentration
+                    rg.TA.m,  # 4 TA mass
+                    rg.TA.c,  # 5 TA conccentration
+                    kwargs["carbonate_export_fluxes"][i].m,  # 6
+                    area_table,  # 7
+                    area_dz_table,  # 8
+                    Csat_table,  # 9
+                ]
+            ),
+            alias_list=[  # for vr_datafields
+                "H",  # 0
+                "CA",  # 1
+                "HCO3",  # 2
+                "CO3",  # 3
+                "CO2aq",  # 4
+                "zsat",  # 5
+                "zcc",  # 6
+                "zsnow",  # 7
+                "Fburial",  # 8
+                "B",  # 9
+                "BNS",  # 10
+                "BDS_under",  # 11
+                "BDS_resp",  # 12
+                "BDS",  # 13
+                "BCC",  # 14
+                "BPDC",  # 15
+                "BD",  # 16
+                "bds_area",  # 17
+                "zsnow_dt",  # 18
+            ],
+            function_params=List(
+                [
+                    rg.swc.K1,  # 0
+                    rg.swc.K2,  # 1
+                    rg.swc.KW,  # 2
+                    rg.swc.KB,  # 3
+                    rg.swc.boron,  # 4
+                    kwargs["ksp0"],  # 5
+                    float(kwargs["kc"]),  # 6
+                    float(sa),  # 7
+                    float(rg.volume.to("liter").magnitude),  # 8
+                    float(AD),  # 9
+                    float(kwargs["zsat0"]),  # 10
+                    float(rg.swc.ca2),  # 11
+                    rg.mo.dt,  # 12
+                    float(kwargs["pc"]),  # 13
+                    float(kwargs["pg"]),  # 14
+                    float(kwargs["I"]),  # 15
+                    float(kwargs["alpha"]),  # 16
+                    float(abs(kwargs["zsat_max"])),  # 17
+                ]
+            ),
+            register=rg,
+        )
 
 
 def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:

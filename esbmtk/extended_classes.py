@@ -1259,7 +1259,7 @@ class Reservoir_no_set(ReservoirBase):
         # initialize data fields
         self.vr_data = List()
         for e in self.vr_datafields:
-            self.vr_data.append(zeros(self.mo.steps) + e)
+            self.vr_data.append(np.full(self.mo.steps, e, dtype=float))
 
         # left y-axis label
         self.lm: str = f"{self.species.n} [{self.mu}/l]"

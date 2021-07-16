@@ -893,8 +893,6 @@ def carbonate_system_v2(
                 rg.DIC.h,
                 rg.DIC.c,
                 rg.TA.m,
-                rg.TA.l,
-                rg.TA.h,
                 rg.TA.c,
                 B.m,
                 lookup_table,
@@ -948,7 +946,7 @@ def carbonate_system_v2(
     )
 
 
-@njit(fastmath=True)
+@njit(fastmath=True, error_model="numpy")
 def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) -> None:
     """Calculates and returns the carbonate concentrations and carbonate compensation
     depth (zcc) at the ith time-step of the model.
@@ -993,15 +991,15 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     Author: M. Niazi & T. Tsan, 2021
 
     """
-    dic: float = input_data[3][i - 1]
-    ta: float = input_data[7][i - 1]
+    dic: float = input_data[3][i - 1]  # DIC concentration
+    ta: float = input_data[5][i - 1]  # TA concentration
 
     dt: float = params[12]
-    B: float = input_data[8][i - 1]
+    B: float = input_data[6][i - 1]
 
-    depths_areas: NDArray = input_data[9]  # look-up table
-    dz_table: NDArray = input_data[10]
-    Csat: NDArray = input_data[11]
+    depths_areas: NDArray = input_data[7]  # depth look-up table
+    dz_table: NDArray = input_data[8]  # area_dz table
+    Csat: NDArray = input_data[9]  # Csat table
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
@@ -1026,6 +1024,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     pg = params[14]
     I = params[15]
     alphard = params[16]
+    zsat_max = params[17]
 
     # ca
     oh: float = KW / hplus
@@ -1058,7 +1057,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
         i,
         [depths_areas, dz_table, Csat],
         [zsat, zcc, zsnow],
-        [sa, AD, dt, co3, ca2, ksp0, zsat0, kc, B, pc, pg, I, alphard],
+        [sa, AD, dt, co3, ca2, ksp0, zsat0, kc, B, pc, pg, I, alphard, zsat_max],
     )
 
     vr_data[0][i] = hplus
@@ -1088,15 +1087,6 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     Fburial = depths[3]
     Fburial_m = Fburial * dt  # mass of the calcite buried
 
-    # dic_m = input_data[0]
-    # dic_l = input_data[1]
-    # dic_h = input_data[2]
-    # dic_c = input_data[3]
-    # ta_m = input_data[4]
-    # ta_l = input_data[5]
-    # ta_h = input_data[6]
-    # ta_c = input_data[7]
-
     # ----Updating DIC-----
     old_dic_m = input_data[0][i]
 
@@ -1117,19 +1107,11 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     old_TA_m = input_data[4][i]
     # TA mass = non-updated TA mass + calcite buried
     input_data[4][i] = input_data[4][i] - 2 * Fburial_m
-    # ratio = rg.TA.m[i] / old_value
-    TA_ratio = input_data[4][i] / old_TA_m
-    # updating rg.TA.l (light isotope)
-    # rg.TA.l[i] = rg.TA.l[i] * ratio
-    input_data[5][i] = input_data[5][i] * TA_ratio
-    # updating rg.TA.h (heavy isotope)
-    # rg.TA.h[i] = rg.TA.m[i] - rg.TA.l[i]
-    input_data[6][i] = input_data[6][i] - input_data[1][i]
     # [TA] = TA mass / reservoir volume
-    input_data[7][i] = input_data[4][i] / volume
+    input_data[5][i] = input_data[4][i] / volume
 
 
-@njit(fastmath=True)
+@njit(fastmath=True, error_model="numpy")
 def __calc_depths_helper__(
     i: int, input_data: List[NDArray], vr_data: List, params: List
 ) -> list:
@@ -1188,11 +1170,16 @@ def __calc_depths_helper__(
     pg: float = params[10]  # seawater density and gravity due to acceleration (atm/m)
     I_caco3: float = params[11]  # dissolvable CaCO3 inventory
     alphard: float = params[12]  # fraction dissolved calcite
+    zsat_max: float = params[13]  # min depth for zsat
 
     # ---------------------Calculate zsat---------------------------------------
     # Equation (2) from paper (1) Boudreau (2010)
     # zsat = zsat0 * ln([Ca2+][CO3 2-]D / Ksp0)
-    zsat: float = zsat0 * np.log(ca * co3 / ksp0)
+    # make sure zsat stays within the deep box.
+    zsat: float = max((zsat0 * np.log(ca * co3 / ksp0)), zsat_max)
+
+    # zsat: float = zsat0 * np.log(ca * co3 / ksp0)
+    # print(zsat, zsat_max)
 
     # ------------------------Calculate zcc--------------------------------------
     # Equation (3) from paper (1) Boudreau (2010)
@@ -1223,7 +1210,7 @@ def __calc_depths_helper__(
 
     BDS_resp = alphard * (((A_diff * B) / AD) - BDS_under)
 
-    BDS = BDS_resp #BDS_under + BDS_resp
+    BDS = BDS_resp  # BDS_under + BDS_resp
 
     if zcc < prev_zsnow:
         # BPDC version 2 (using new Csat array list)
