@@ -111,10 +111,10 @@ class ReservoirGroup(esbmtkBase):
         from .carbonate_chemistry import (
             SeawaterConstants,
             calc_carbonates,
-            carbonate_system_new,
-            carbonate_system_uli,
+            # carbonate_system_1,
+            # carbonate_system_2,
         )
-        from .extended_classes import VirtualReservoir_no_set
+        from .extended_classes import ExternalCode
         from numba.typed import List
 
         # provide a dict of all known keywords and their type
@@ -264,7 +264,7 @@ class ReservoirGroup(esbmtkBase):
             if not hasattr(self, "TA"):
                 raise AttributeError(f"{self.full_name} has no TA reservoir")
 
-            VirtualReservoir_no_set(
+            ExternalCode(
                 name="cs",
                 species=CO2,
                 alias_list="H CA HCO3 CO3 CO2aq omega zsat".split(" "),
@@ -995,7 +995,7 @@ class DataField(esbmtkBase):
     def __init__(self, **kwargs: Dict[str, any]) -> None:
         """ Initialize this instance """
 
-        from . import Reservoir_no_set, VirtualReservoir, VirtualReservoir_no_set
+        from . import Reservoir_no_set, VirtualReservoir, ExternalCode
 
         # dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -1005,7 +1005,7 @@ class DataField(esbmtkBase):
                 ReservoirGroup,
                 Reservoir_no_set,
                 VirtualReservoir,
-                VirtualReservoir_no_set,
+                ExternalCode,
             ),
             "y1_data": (NDArray[float], list),
             "x1_data": (NDArray[float], list, str),
@@ -1206,7 +1206,7 @@ class Reservoir_no_set(ReservoirBase):
             "full_name": str,
             "isotopes": bool,
             "volume": (str, Number),
-            "vr_datafields": (List, str),
+            "vr_datafields": (dict, str),
             "function_input_data": (List, str),
             "function_params": (List, str),
             "geometry": (list, str),
@@ -1256,11 +1256,6 @@ class Reservoir_no_set(ReservoirBase):
 
         # ------------------------------------------
 
-        # initialize data fields
-        self.vr_data = List()
-        for e in self.vr_datafields:
-            self.vr_data.append(np.full(self.mo.steps, e, dtype=float))
-
         # left y-axis label
         self.lm: str = f"{self.species.n} [{self.mu}/l]"
 
@@ -1278,23 +1273,28 @@ class Reservoir_no_set(ReservoirBase):
         self.state = 0
 
 
-class VirtualReservoir_no_set(Reservoir_no_set):
+class ExternalCode(Reservoir_no_set):
     """This class can be used to implement user provided functions. The
     data inside a VR_no_set instance will only change in response to a
     user provided function but will otherwise remain unaffected. That is,
     it is up to the user provided function to manage changes in reponse to
     external fluxes. A VR_no_set is declared in the following way
 
-        VirtualReservoir_no_set(
+        ExternalCode(
                     name="cs",     # instance name
                     species=CO2,   # species, must be given
                     # The next line defines the number of datafields and their default values
-                    # It must me provided as numba types List!
-                    vr_datafields=List([self.swc.hplus, 0.0, 0.0, 0.0, 0.0]),
+
+                    data which will be computed by this function
+                    provide alias name and default value
+                    vr_datafields :dict ={"Hplus": self.swc.hplus,
+                                          "Beta": 0.0},
+
                     function=calc_carbonates, # function reference, see below
                     # A numba types List of one ore more np.arrays which are used
                     # as input values for the user provided function
                     function_input_data=List([self.DIC.c, self.TA.c]),
+
                     # A numba types List of float parameters.
                     alias_list = ["H", "CA", "HCO3", "CO3", "CO2aq"]
                     # Note that parameters must be individual float values
@@ -1312,8 +1312,9 @@ class VirtualReservoir_no_set(Reservoir_no_set):
 
                 )
 
-        if the alias list is provided, the instance will create the respective aliases for
-        for the vr_datafields
+        the dict keys of vr_datafields will be used to create alias
+        names which can be used to access the respective variable
+
 
     The general template for a user defined function is a follows:
 
@@ -1333,15 +1334,95 @@ class VirtualReservoir_no_set(Reservoir_no_set):
 
     """
 
-    def __aux_inits__(self) -> None:
-        """We us the regular init methods of the Reservoir Class, and extend it in this method"""
+    def __init__(self, **kwargs) -> None:
 
+        """The original class will calculate delta and concentration from mass
+        an d and h and l. Since we want to use this class without a
+        priory knowledge of how the reservoir arrays are being used we
+        overwrite the data generated during initialization with the
+        values provided in the keywords
+
+        """
+
+        from . import ureg, Q_, ConnectionGroup
         from .processes import GenericFunction
 
-        # if self.register != "None":
-        #    self.full_name = f"{self.full_name}.{self.name}"
+        # provide a dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            "name": str,
+            "species": Species,
+            "plot_transform_c": any,
+            "legend_left": str,
+            "plot": str,
+            "groupname": str,
+            "function": any,
+            "display_precision": Number,
+            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "full_name": str,
+            "isotopes": bool,
+            "volume": (str, Number),
+            "vr_datafields": (dict, str),
+            "function_input_data": (List, str),
+            "function_params": (List, str),
+            "geometry": (list, str),
+            "alias_list": (list, str),
+        }
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = [
+            "name",
+            "species",
+        ]
+
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            "plot": "yes",
+            "geometry": "None",
+            "plot_transform_c": "None",
+            "legend_left": "None",
+            "function": "None",
+            "groupname": "None",
+            "register": "None",
+            "full_name": "Not Set",
+            "isotopes": False,
+            "display_precision": 0,
+            "vr_datafields": [0],
+            "alias_list": "None",
+        }
+
+        # validate and initialize instance variables
+        self.__initerrormessages__()
+        self.bem.update(
+            {
+                "plot": "yes or no",
+                "register": "Group Object",
+                "legend_left": "A string",
+                "function": "A function",
+            }
+        )
+        self.__validateandregister__(kwargs)
+
+        self.__set_legacy_names__(kwargs)
+
+        self.isotopes = False
+        self.mu: str = self.sp.e.mass_unit  # massunit xxxx
+        self.plt_units = self.mo.c_unit
+
+        # left y-axis label
+        self.lm: str = f"{self.species.n} [{self.mu}/l]"
+        self.mo.lor.append(self)  # add this reservoir to the model
+        self.__register_name__()
+        self.state = 0
         name = f"{self.full_name}_generic_function".replace(".", "_")
         logging.info(f"creating {name}")
+
+        # initialize data fields
+        self.vr_data = List()
+        for e in self.vr_datafields.values():
+            self.vr_data.append(np.full(self.mo.steps, e, dtype=float))
+
+        # extract alias names
+        self.alias_list = list(self.vr_datafields.keys())
 
         self.gfh = GenericFunction(
             name=name,
@@ -1498,6 +1579,10 @@ class VirtualReservoir_no_set(Reservoir_no_set):
             df.to_csv(file_path, header=True, mode="w", index=False)
 
         return df
+
+
+class VirtualReservoir_no_set(ExternalCode):
+    """ Alias to ensure backwards compatibility """
 
 
 class VirtualReservoir(Reservoir):

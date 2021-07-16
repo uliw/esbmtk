@@ -152,8 +152,8 @@ class Process(esbmtkBase):
 class GenericFunction(Process):
     """This Process class creates a GenericFunction instance which is
     typically used with the VirtualReservoir, and
-    VirtualReservoir_no_set classes. This class is not user facing,
-    please see the VirtualReservoir_no_set class docstring for the
+    ExternalCode classes. This class is not user facing,
+    please see the ExternalCode class docstring for the
     function template of a user provided function.
 
     see calc_carbonates in the carbonate chemistry for an example how

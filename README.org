@@ -14,6 +14,9 @@ generation of graphical results.
 
 * News
 
+ - July 17^{th}, =ExternalCode= is a new class to allow integration of
+   arbitrary code. This replaces the =VirtualReservoir-no_set= class
+
  - June 17^{th}, data and state files are now stored in sub
    directories. Model runs can now be broken down into individual
    segments which allows for long running models without exhausting

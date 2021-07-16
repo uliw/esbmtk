@@ -570,7 +570,8 @@ def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
 
     from esbmtk import SeawaterConstants, ReservoirGroup, build_concentration_dicts
     from esbmtk import SourceGroup, SinkGroup, Q_
-    from esbmtk import carbonate_system_new, carbonate_system_uli
+
+    # from esbmtk import carbonate_system_new, carbonate_system_uli
 
     # parse for sources and sinks, create these and remove them from the list
 
@@ -603,7 +604,7 @@ def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
                 isotopes=icd[k][1],
                 delta=icd[k][2],
                 seawater_parameters={"temperature": v["T"], "pressure": v["P"]},
-                carbonate_system=cs,
+                # carbonate_system=cs,
             )
 
     return icd
@@ -1321,65 +1322,6 @@ def map_units(v: any, *args) -> float:
     return m
 
 
-def add_carbonate_chemisrty_1(rlist: list) -> None:
-    """attach a virtual reservoir which calculates the basic carbonate chemistry
-    (i.e., H+, CA, HCO3, CO3, CO2a)
-
-    rlist = list of ReservoirGroup handles. Each entry must have a DIC and TA reservoir
-
-    """
-    from esbmtk import carbonate_chemistry, carbonate_system_new, carbonate_system_uli
-
-    for rg in rlist:
-        if hasattr(rg, "DIC") and hasattr(rg, "TA"):
-            carbonate_system_uli(rg)
-        else:
-            raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
-
-
-def add_carbonate_chemisrty_2(rdict: dict, cs_d: dict) -> None:
-    """attach a virtual reservoir which calculates carbonate export fluxes
-    as a function of the particulate inorganic rain (PIC_DIC) and the
-    carbonate chemistry of the ambient water.
-
-    rdict = dictionary of ReservoirGroup handles and flux_names.
-    cs_d = dictionary with the setup parameters for the carbonate system
-
-    """
-    from esbmtk import carbonate_system_v2
-
-    for rg, f in rdict.items():
-        # test if DIC and TA reservoirs are present
-        if hasattr(rg, "DIC") and hasattr(rg, "TA"):
-            pass
-        else:
-            raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
-
-        # add missing entries to the carbonate system dictionary
-        # most of these parameters are after Boudreau at al 2010
-        cs_d["depths_table"] = rg.mo.hyp.get_lookup_table(0, -6000)
-        cs_d["dz_table"] = rg.mo.hyp.get_lookup_table_area_dz(0, -6000)
-        cs_d["ksp0"] = 4.29e-07  # mol^2/kg^2
-        cs_d["kc"] = 8.84 * 1000  # m/yr converted to kg m^-2 yr^-1
-        cs_d["AD"] = rg.mo.hyp.area_dz(-200, -6000)
-        cs_d["Ca2"] = rg.swc.ca2
-        cs_d["dt"] = rg.mo.dt
-        cs_d["B_fluxname"] = f.full_name
-        cs_d["reservoirs"] = [rg]
-        cs_d["sa"] = rg.mo.hyp.sa
-        cs_d["co3"] = rg.swc.co3
-        cs_d["pc"] = 511  # atm
-        cs_d["pg"] = 0.103  # atm/m
-        cs_d["I"] = 529  # mol/m^2
-
-        temp: list = __validate_cs_dict__(cs_d)
-        reservoirs = temp[0]
-        lookup_table = temp[1]
-        dz_table = temp[2]
-        params = temp[3]
-        carbonate_system_v2(params, f, lookup_table, dz_table, rg)
-
-
 def add_carbonate_system_1(rgs: list):
     """Creates a new carbonate system virtual reservoir for each
     reservoir in rgs. Note that rgs must be a list of reservoir groups.
@@ -1391,10 +1333,41 @@ def add_carbonate_system_1(rgs: list):
 
     """
 
-    from esbmtk import carbonate_chemistry, carbonate_system_new, carbonate_system_uli
+    from esbmtk import ExternalCode, calc_carbonates
 
     for rg in rgs:
-        carbonate_system_uli(rg)
+        if hasattr(rg, "DIC") and hasattr(rg, "TA"):
+            ExternalCode(
+                name="cs",
+                species=CO2,
+                function=calc_carbonates,
+                # initialize 5 datafield and provide defaults for H+
+                vr_datafields={
+                    "H": rg.swc.hplus,
+                    "CA": rg.swc.ca,
+                    "HCO3": rg.swc.hco3,
+                    "CO3": rg.swc.co3,
+                    "CO2aq": rg.swc.co2,
+                    "Omaga": 0.0,
+                },
+                function_input_data=List([rg.DIC.c, rg.TA.c]),
+                function_params=List(
+                    [
+                        rg.swc.K1,  # 1
+                        rg.swc.K2,  # 2
+                        rg.swc.KW,  # 3
+                        rg.swc.KB,  # 4
+                        rg.swc.boron,  # 5
+                        rg.swc.hplus,  # 5
+                        rg.swc.ca2,  # 6
+                        rg.swc.Ksp,  # 7
+                        rg.swc.Ksp0,  # 8
+                    ]
+                ),
+                register=rg,
+            )
+        else:
+            raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
 
 def add_carbonate_system_2(**kwargs) -> None:
@@ -1424,8 +1397,8 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     """
 
-    from esbmtk import carbonate_chemistry, carbonate_system_new, carbonate_system_uli
-    from esbmtk import VirtualReservoir_no_set, calc_carbonates_v2
+    from esbmtk import carbonate_chemistry
+    from esbmtk import ExternalCode, calc_carbonates_v2
 
     # list of known keywords
     lkk: dict = {
@@ -1496,37 +1469,35 @@ def add_carbonate_system_2(**kwargs) -> None:
     dt = model.dt
 
     for i, rg in enumerate(rgs):  # Setup the virtual reservoirs
-        VirtualReservoir_no_set(
+        ExternalCode(
             name="cs",
             species=CO2,
             function=calc_carbonates_v2,
             # datafield hold the results of the VR_no_set function
             # provide a default values which will be use to initialize
             # the respective datafield/
-            vr_datafields=List(
-                [
-                    rg.swc.hplus,  # 0 H+
-                    rg.swc.ca,  # 1 carbonate alkalinity
-                    rg.swc.hco3,  # 2 HCO3
-                    rg.swc.co3,  # 3 CO3
-                    rg.swc.co2,  # 4 CO2aq
-                    kwargs["zsat"],  # 5 zsat
-                    kwargs["zcc"],  # 6 zcc
-                    kwargs["zsnow"],  # 7 zsnow
-                    0.0,  # 8 Fburial  carbonate burial
-                    0.0,  # 9 B        carbonate export productivity
-                    # temp fields, delete eventually
-                    0.0,  # 10 BNS
-                    0.0,  # 11 BDS_under
-                    0.0,  # 12 BDS_resp
-                    0.0,  # 13 BDS
-                    0.0,  # 14 BCC
-                    0.0,  # 15 BPDC
-                    0.0,  # 16 BD
-                    0.0,  # 17 bds_area
-                    0.0,  # 18 zsnow_dt
-                ]
-            ),
+            vr_datafields={
+                "H": rg.swc.hplus,  # 0 H+
+                "CA": rg.swc.ca,  # 1 carbonate alkalinity
+                "HCO3": rg.swc.hco3,  # 2 HCO3
+                "CO3": rg.swc.co3,  # 3 CO3
+                "CO2aq": rg.swc.co2,  # 4 CO2aq
+                "zsat": kwargs["zsat"],  # 5 zsat
+                "zcc": kwargs["zcc"],  # 6 zcc
+                "zsnow": kwargs["zsnow"],  # 7 zsnow
+                "Fburial": 0.0,  # 8 carbonate burial
+                "B": 0.0,  # 9 carbonate export productivity
+                # temp fields, delete eventually
+                "BNS": 0.0,  # 10 BNS
+                "BDS_under": 0.0,  # 11 BDS_under
+                "BDS_resp": 0.0,  # 12 BDS_resp
+                "BDS": 0.0,  # 13 BDS
+                "BCC": 0.0,  # 14 BCC
+                "BPDC": 0.0,  # 15 BPDC
+                "BD": 0.0,  # 16 BD
+                "bds_area": 0.0,  # 17 bds_area
+                "zsnow_dt": 0.0,  # 18 zsnow_dt
+            },
             function_input_data=List(
                 [
                     rg.DIC.m,  # 0 DIC mass
@@ -1541,27 +1512,6 @@ def add_carbonate_system_2(**kwargs) -> None:
                     Csat_table,  # 9
                 ]
             ),
-            alias_list=[  # for vr_datafields
-                "H",  # 0
-                "CA",  # 1
-                "HCO3",  # 2
-                "CO3",  # 3
-                "CO2aq",  # 4
-                "zsat",  # 5
-                "zcc",  # 6
-                "zsnow",  # 7
-                "Fburial",  # 8
-                "B",  # 9
-                "BNS",  # 10
-                "BDS_under",  # 11
-                "BDS_resp",  # 12
-                "BDS",  # 13
-                "BCC",  # 14
-                "BPDC",  # 15
-                "BD",  # 16
-                "bds_area",  # 17
-                "zsnow_dt",  # 18
-            ],
             function_params=List(
                 [
                     rg.swc.K1,  # 0
@@ -1587,69 +1537,6 @@ def add_carbonate_system_2(**kwargs) -> None:
             ),
             register=rg,
         )
-
-
-def add_carbonate_system(rgs: list, cs_type="None", extra={}) -> None:
-    """Creates a new carbonate system virtual reservoir for each
-    reservoir in reservoirs. These new virtual reservoirs are registered to
-    their respective ReservoirGroup.
-
-    PRECONDITIONS: Requires a list of parameters as specified in params below.
-
-    Parameters:
-        rgs: list of ReservoirGroup objects
-        cs_type: value of 1 if normal carbonate system needed, value of 2
-            if carbonate compensation depth needed to be calculated.
-
-    Optional Parameters:
-        The following need to be in a Dict object with the following keys:
-          These need to be provided:
-                AD = total ocean area (m^2)
-                dt = time step (yrs)
-                B_fluxname = full_name of the B flux
-                reservoirs: list of all reservoirs (Model.lor)
-                depths_table: ndarray lookup table containing depths (Model.hyp.get_lookup_table(0, -6000))
-                dz_table: ndarray lookup table containing first derivative for area(z) values (Model.hyp.get_lookup_table_dz(0, -6000))
-                sa: surface area of your model (Model.hyp.sa)
-          Default values exist for the following
-                zsat = initial saturation depth (m)
-                zcc = initial carbon compensation depth (m)
-                zsnow = initial snowline depth (m)
-                zsat0 = characteristic depth (m)
-                ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
-                kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
-                Ca2 = calcium ion concentration (mol/kg)
-                pc = characteristic pressure (atm)
-                pg = seawater density multiplied by gravity due to acceleration (atm/m)
-                I = dissolvable CaCO3 inventory
-                co3 = CO3 concentration (mol/kg)
-
-    """
-
-    from esbmtk import carbonate_chemistry, carbonate_system_new, carbonate_system_uli
-
-    # set up vr type
-    if cs_type == 1:  # use the current code
-        for rg in rgs:
-            carbonate_system_uli(rg)
-    elif cs_type == 2:  # use your new code
-        if len(extra) == 0:
-            raise ValueError(
-                f"add_carbonate_system: Please provide some additional parameters!"
-            )
-        else:
-            temp: list = __validate_cs_dict__(extra)
-            reservoirs = temp[0]
-            lookup_table = temp[1]
-            dz_table = temp[2]
-            params = temp[3]
-            b = __find_flux__(reservoirs, params[10])
-            for rg in rgs:
-                carbonate_chemistry.carbonate_system_v2(
-                    params, b, lookup_table, dz_table, rg
-                )
-    else:
-        raise ValueError(f"add_carbonate_system: {cs_type} is an unknown type")
 
 
 def __find_flux__(reservoirs: list, full_name: str):
