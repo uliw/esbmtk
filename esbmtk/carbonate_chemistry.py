@@ -176,17 +176,17 @@ class SeawaterConstants(esbmtkBase):
     def __init_std_seawater__(self) -> None:
         """Provide values for standard seawater. Data after Zeebe and Gladrow
         all values in mol/kg. To convert to seawater these values need to be
-        multiplied by sw
+        multiplied by swc
 
         """
 
         S = self.salinity
-        swc = (1000 + S) / 1000
+        swc = 1000 / (1000 + S)
         self.dic = 0.00204 * swc
         self.boron = 0.00042 * swc
         self.oh = 0.00001 * swc
         self.so4 = 2.7123 / 96 * swc
-        self.ca2 = 0.4121 / 40.08 * swc
+        self.ca2 = 0.0103 * swc  # after after Boudreau et al 2010
         self.Ksp0 = 4.29e-07 * swc  # after after Boudreau et al 2010
         self.zsat0 = float(5078)  # # after after Boudreau et al 2010
 
