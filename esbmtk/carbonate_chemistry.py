@@ -740,6 +740,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     alpha = params[16]
     zsat_min = int(params[17])
     zmax = int(params[18])
+    z0 = int(params[19])
 
     # get lookup up tables
     depth_area_table: NDArray = input_data[7]  # depth look-up table
@@ -785,10 +786,8 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     # BCC = (A(zcc, zmax) / AD) * B, eq 7
     BCC = ((depth_area_table[int(zcc)] - depth_area_table[zmax]) / AD) * B
 
-    # BNS = alpha_RD * ((A(-200, zsat) * B) / AD) eq 8
-    BNS = alpha * (
-        ((depth_area_table[zsat_min] - depth_area_table[int(zsat)]) * B) / AD
-    )
+    # BNS = alpha_RD * ((A(z0, zsat) * B) / AD) eq 8
+    BNS = alpha * (((depth_area_table[z0] - depth_area_table[int(zsat)]) * B) / AD)
 
     # BDS_under = kc int(zcc,zsat) area' Csat(z,t) - [CO3](t) dz, eq 9a
     diff_co3 = Csat_table[int(zsat) : int(zcc)] - co3
