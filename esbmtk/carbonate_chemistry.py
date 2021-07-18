@@ -776,7 +776,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     hplus: float = vr_data[0][i - 1]  # H+ concentration [mol/l]
     zsat = vr_data[5][i - 1]
     zcc = vr_data[6][i - 1]
-    zsnow = int(vr_data[7][i - 1])
+    zsnow = vr_data[7][i - 1]
 
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus
@@ -827,11 +827,14 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
 
     # BPDC =  kc int(zsnow,zcc) area' Csat(z,t) - [CO3](t) dz, eq 10
     if zcc < zsnow:
-        diff = Csat_table[zcc:zsnow] - co3
-        area_p = area_dz_table[zcc:zsnow]
+        diff = Csat_table[zcc : int(zsnow)] - co3
+        area_p = area_dz_table[zcc : int(zsnow)]
         BPDC = kc * area_p.dot(diff)
         # eq 4 dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
-        zsnow = zsnow - BPDC / (area_dz_table[zsnow] * I_caco3) * dt
+        # print(zcc, zsnow)
+        zsnow = zsnow - BPDC / (area_dz_table[int(zsnow)] * I_caco3) * dt
+        # print(zcc, zsnow)
+        # print()
     else:
         zsnow = zcc
         # dummy values for testing purposes; will be removed later
@@ -840,22 +843,22 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
 
     # BD & F_burial
     BD: float = BDS + BCC + BNS + BPDC
-    Fburial = (B - BD) * dt
+    Fburial = B - BD
 
     # ----------------------Update DIC and TA Reservoirs ---------------
     # note that DIC and TA have already been computed. So we use the
     # i, rather than i -1
     # TA mass [mol]
-    input_data[4][i] = input_data[4][i] - 2 * Fburial
+    input_data[4][i] = input_data[4][i] - 2 * Fburial * dt
     # Ta concentration [mol/l]
     input_data[5][i] = input_data[4][i] / volume
 
     # DIC isotopes assuming no fractionation, so no need to update delta
     r = input_data[0][i - 1] / input_data[1][i - 1]  # C/12C ratio
-    input_data[1][i] = input_data[1][i] - Fburial * r  # 12C
+    input_data[1][i] = input_data[1][i] - Fburial * r * dt  # 12C
     input_data[2][i] = input_data[0][i] - input_data[1][i]  # 13C
     # DIC mass
-    input_data[0][i] = input_data[0][i] - Fburial
+    input_data[0][i] = input_data[0][i] - Fburial * dt
     # DIC concentration
     input_data[3][i] = input_data[0][i] / volume
 
