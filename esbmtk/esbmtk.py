@@ -484,8 +484,8 @@ class Model(esbmtkBase):
                       stop     = "1000 yrs", # end time
                       timestep = "2 yrs",    # as a string "2 yrs"
                       offset = "0 yrs",    # optional: time offset for plot
-                      mass_unit = "mol/l",   #required
-                      volume_unit = "mol/l", #required
+                      mass_unit = "mol",   #required
+                      volume_unit = "l", #required
                       time_label = optional, defaults to "Time"
                       display_precision = optional, defaults to 0.01,
                       m_type = "mass_only/both"
@@ -661,6 +661,11 @@ class Model(esbmtkBase):
         self.v_unit = Q_(self.volume_unit).units  # the volume unit
         # the concentration unit (mass/volume)
         self.c_unit = self.m_unit / self.v_unit  # concentration
+        u1 = Q_("mol/liter").units
+        u2 = Q_("mol/kg").units
+        if self.c_unit != u1 and self.c_unit != u2:
+            raise ValueError(f"units must be {u1} or {u2}, not {self.c_unit}")
+
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
         self.r_unit = self.v_unit / self.t_unit  # flux as volume/time
         # this is now defined in __init__.py
@@ -2030,6 +2035,7 @@ class Reservoir(ReservoirBase):
                 pressure=pressure,
                 salinity=salinity,
                 register=self,
+                units=self.mo.c_unit,
             )
 
         self.state = 0

@@ -200,6 +200,7 @@ class ReservoirGroup(esbmtkBase):
                 pressure=self.pressure,
                 salinity=self.salinity,
                 register=self,
+                units=self.mo.c_unit,
             )
 
         # register this group object in the global namespace

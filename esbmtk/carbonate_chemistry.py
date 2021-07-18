@@ -61,6 +61,7 @@ class SeawaterConstants(esbmtkBase):
              salinity  = optional in psu, defaults to 35,
              pressure = optional, defaults to 0 bars = 1atm,
              pH = optional, defaults to 8.1,
+             units = "mol/l" or "mol/kg"
             )
 
     useful methods:
@@ -76,6 +77,7 @@ class SeawaterConstants(esbmtkBase):
     def __init__(self, **kwargs: Dict[str, str]):
 
         import math
+        from esbmtk import Q_
 
         # dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -86,10 +88,11 @@ class SeawaterConstants(esbmtkBase):
             "pH": (int, float),
             "pressure": Number,
             "register": any,
+            "units": (any),
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name"]
+        self.lrk: list = ["name", "units"]
         # list of default values if none provided
         self.lod: Dict[str, any] = {
             "salinity": 35.0,
@@ -103,11 +106,16 @@ class SeawaterConstants(esbmtkBase):
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
 
+        u1 = Q_("mol/liter").units
+        u2 = Q_("mol/kg").units
+        if self.units != u1 and self.units != u2:
+            raise ValueError(f"units must be {u1} or {u2}")
+
         # legacy names
         self.n: str = self.name  # string =  name of this instance
         self.mo: Model = self.model
         self.hplus = 10 ** -self.pH
-        self.constants: list = ["K0", "K1", "K2", "KW", "KB", "Ksp"]
+        self.constants: list = ["K0", "K1", "K2", "KW", "KB", "Ksp", "Ksp0"]
         self.species: list = [
             "dic",
             "ta",
@@ -121,6 +129,7 @@ class SeawaterConstants(esbmtkBase):
             "oh",
             "ca2",
             "so4",
+            "hplus",
         ]
 
         self.update()
@@ -130,6 +139,7 @@ class SeawaterConstants(esbmtkBase):
         """Update values if necessary"""
 
         from math import log10
+        from esbmtk import Q_
 
         if kwargs:
             self.lrk: list = []
@@ -145,9 +155,23 @@ class SeawaterConstants(esbmtkBase):
         self.__init_c_fractionation_factors__()
 
         # get total alkalinity
-
         self.ca = self.hco3 + 2 * self.co3
         self.ta = self.ca + self.boh4 + self.oh - self.hplus
+
+        # convert to mol/liter if necessary
+        if self.units == Q_("1 mole/liter").units:
+            cf = 1000 / (1000 + self.salinity)
+
+            # constants and species are just names, so we need to
+            # retrieve the actual variable first
+            for n in self.constants:
+                v = getattr(self, n)
+                setattr(self, n, v * cf)
+            for n in self.species:
+                v = getattr(self, n)
+                setattr(self, n, v * cf)
+        else:
+            "\n Constants are mol/kg! \n"
 
         # update pk values
         for n in self.constants:
@@ -175,20 +199,16 @@ class SeawaterConstants(esbmtkBase):
 
     def __init_std_seawater__(self) -> None:
         """Provide values for standard seawater. Data after Zeebe and Gladrow
-        all values in mol/kg. To convert to seawater these values need to be
-        multiplied by swc
+        all values in mol/kg.
 
         """
 
-        S = self.salinity
-        swc = 1000 / (1000 + S)
-        self.dic = 0.00204 * swc
-        self.boron = 0.00042 * swc
-        self.oh = 0.00001 * swc
-        self.so4 = 2.7123 / 96 * swc
-        self.ca2 = 0.0103 * swc  # after after Boudreau et al 2010
-        self.Ksp0 = 4.29e-07 * swc  # after after Boudreau et al 2010
-        self.zsat0 = float(5078)  # # after after Boudreau et al 2010
+        self.dic = 0.00204
+        self.boron = 0.00042
+        self.oh = 0.00001
+        self.so4 = 2.7123 / 96
+        self.ca2 = 0.0103  # after after Boudreau et al 2010
+        self.Ksp0 = 4.29e-07  # after after Boudreau et al 2010
 
     def __init_gasexchange__(self) -> None:
         """Initialize constants for gas-exchange processes"""
@@ -756,7 +776,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     hplus: float = vr_data[0][i - 1]  # H+ concentration [mol/l]
     zsat = vr_data[5][i - 1]
     zcc = vr_data[6][i - 1]
-    zsnow = vr_data[7][i - 1]
+    zsnow = int(vr_data[7][i - 1])
 
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus
@@ -779,38 +799,39 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
 
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
-    zsat = max((zsat0 * np.log(ca2 * co3 / ksp0)), zsat_min)  # eq2
-    zcc = zsat0 * np.log(B * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)  # eq3
+    zsat = int(max((zsat0 * np.log(ca2 * co3 / ksp0)), zsat_min))  # eq2
+    zcc = int(zsat0 * np.log(B * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
+
+    # ---- Get fractional areas
+    B_AD = B / AD
+
+    A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
+    A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
+    A_zcc_zmax = depth_area_table[zcc] - depth_area_table[zmax]
 
     # ------------------------Calculate Burial Fluxes------------------------------------
     # BCC = (A(zcc, zmax) / AD) * B, eq 7
-    BCC = ((depth_area_table[int(zcc)] - depth_area_table[zmax]) / AD) * B
+    BCC = A_zcc_zmax * B_AD
 
     # BNS = alpha_RD * ((A(z0, zsat) * B) / AD) eq 8
-    BNS = alpha * (((depth_area_table[z0] - depth_area_table[int(zsat)]) * B) / AD)
+    BNS = alpha * A_z0_zsat * B_AD
 
     # BDS_under = kc int(zcc,zsat) area' Csat(z,t) - [CO3](t) dz, eq 9a
-    diff_co3 = Csat_table[int(zsat) : int(zcc)] - co3
-    area_p = area_dz_table[int(zsat) : int(zcc)]
+    diff_co3 = Csat_table[zsat:zcc] - co3
+    area_p = area_dz_table[zsat:zcc]
     BDS_under = kc * area_p.dot(diff_co3)
 
-    # BDS  = a (A(zsat,zcc) * B/AD - BDS_under, eq 9b
-    BDS = (
-        alpha
-        * (
-            ((depth_area_table[int(zsat)] - depth_area_table[int(zcc)]) * B / AD)
-            - BDS_under
-        )
-        # - BDS_under
-    )
+    # BDS_resp  = a (A(zsat,zcc) * B/AD - BDS_under, eq 9b
+    BDS_resp = alpha * (A_zsat_zcc * B_AD - BDS_under)
+    BDS = BDS_under + BDS_resp
 
     # BPDC =  kc int(zsnow,zcc) area' Csat(z,t) - [CO3](t) dz, eq 10
     if zcc < zsnow:
-        diff = Csat_table[int(zcc) : int(zsnow)] - co3
-        area_p = area_dz_table[int(zcc) : int(zsnow)]
+        diff = Csat_table[zcc:zsnow] - co3
+        area_p = area_dz_table[zcc:zsnow]
         BPDC = kc * area_p.dot(diff)
         # eq 4 dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
-        zsnow = zsnow - (BPDC / (area_dz_table[int(zsnow)] * I_caco3) * dt)
+        zsnow = zsnow - BPDC / (area_dz_table[zsnow] * I_caco3) * dt
     else:
         zsnow = zcc
         # dummy values for testing purposes; will be removed later
@@ -852,7 +873,7 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     vr_data[9][i] = B
     vr_data[10][i] = BNS
     vr_data[11][i] = BDS_under
-    vr_data[12][i] = BDS  # formerly BDS_resp
+    vr_data[12][i] = BDS_resp
     vr_data[13][i] = BDS
     vr_data[14][i] = BCC
     vr_data[15][i] = BPDC

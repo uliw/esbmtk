@@ -571,12 +571,7 @@ def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
     from esbmtk import SeawaterConstants, ReservoirGroup, build_concentration_dicts
     from esbmtk import SourceGroup, SinkGroup, Q_
 
-    # from esbmtk import carbonate_system_new, carbonate_system_uli
-
     # parse for sources and sinks, create these and remove them from the list
-
-    # setup the remaining boxes
-    # icd: dict = build_concentration_dicts(ic, bn)
 
     # loop over reservoir names
     for k, v in bn.items():
@@ -595,6 +590,7 @@ def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
                 model=M,
                 temperature=v["T"],
                 pressure=v["P"],
+                units=M.c_unit,
             )
 
             rg = ReservoirGroup(
@@ -604,7 +600,6 @@ def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
                 isotopes=icd[k][1],
                 delta=icd[k][2],
                 seawater_parameters={"temperature": v["T"], "pressure": v["P"]},
-                # carbonate_system=cs,
             )
 
     return icd
@@ -1429,10 +1424,10 @@ def add_carbonate_system_2(**kwargs) -> None:
     model = kwargs["rgs"][0].mo
     # list of default values if none provided
     lod: dict = {
-        "zsat": -3715,
-        "zcc": -4750,
-        "zsnow": -4750,
-        "zsat0": -5078,
+        "zsat": -3715,  # m
+        "zcc": -4750,  # m
+        "zsnow": -4750,  # m
+        "zsat0": -5078,  # m
         "Ksp0": kwargs["rgs"][0].swc.Ksp0,  # mol^2/kg^2
         "kc": 8.84 * 1000,  # m/yr converted to kg/(m^2 yr)
         "AD": CM.hyp.area_dz(-200, -6000),
@@ -1460,6 +1455,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     ca2 = rgs[0].swc.ca2
     pg = kwargs["pg"]
     pc = kwargs["pc"]
+    z0 = kwargs["z0"]
 
     # C saturation(z) after Boudreau 2010
     Csat_table: NDArray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
