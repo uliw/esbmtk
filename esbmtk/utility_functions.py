@@ -1430,7 +1430,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "zsat0": -5078,  # m
         "Ksp0": kwargs["rgs"][0].swc.Ksp0,  # mol^2/kg^2
         "kc": 8.84 * 1000,  # m/yr converted to kg/(m^2 yr)
-        "AD": CM.hyp.area_dz(-200, -6000),
+        "AD": model.hyp.area_dz(-200, -6000),
         "alpha": 0.77,  # 0.928771302395292, #0.75,
         "pg": 0.103,  # pressure in atm/m
         "pc": 511,  # characteristic pressure after Boudreau 2010
