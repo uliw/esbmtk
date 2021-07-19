@@ -694,7 +694,7 @@ def calc_pCO2b(
     return pco2
 
 
-@njit(fastmath=True, error_model="numpy")
+@njit(fastmath=True)  # , error_model="numpy")
 def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) -> None:
     """Calculates and returns the carbonate concentrations and carbonate compensation
     depth (zcc) at the ith time-step of the model.
@@ -854,13 +854,11 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     input_data[5][i] = input_data[4][i] / volume
 
     # DIC isotopes assuming no fractionation, so no need to update delta
-    r = input_data[0][i - 1] / input_data[1][i - 1]  # C/12C ratio
-    input_data[1][i] = input_data[1][i] - Fburial * r * dt  # 12C
+    r = input_data[1][i] / input_data[0][i]  # C12/C ratio
+    input_data[0][i] = input_data[0][i] - Fburial * dt  # DIC
+    input_data[1][i] = input_data[1][i] - Fburial * dt * r  # 12C
     input_data[2][i] = input_data[0][i] - input_data[1][i]  # 13C
-    # DIC mass
-    input_data[0][i] = input_data[0][i] - Fburial * dt
-    # DIC concentration
-    input_data[3][i] = input_data[0][i] / volume
+    input_data[3][i] = input_data[0][i] / volume  # DIC concentration
 
     # copy results into datafields
     vr_data[0][i] = hplus

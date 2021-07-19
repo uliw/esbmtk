@@ -254,7 +254,7 @@ def execute_e(model, new, lor, lpc_f, lpc_r):
     print(f"\n Total solver time {duration} cpu seconds, wt = {wcd}\n")
 
 
-@njit(parallel=False, fastmath=True)
+@njit(parallel=False, fastmath=True)  # , error_model="numpy")
 def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, dt):
 
     i = 1
@@ -297,7 +297,7 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, 
         i = i + 1  # next time step
 
 
-@njit(parallel=False, fastmath=True)
+@njit(parallel=False, fastmath=True)  # , error_model="numpy")
 def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
     """Same as foo but no virtual reservoirs present."""
     i = 1

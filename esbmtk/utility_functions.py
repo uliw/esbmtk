@@ -1421,16 +1421,17 @@ def add_carbonate_system_2(**kwargs) -> None:
     # we need the reference to the Model in order to set some
     # default values.
 
-    model = kwargs["rgs"][0].mo
+    reservoir = kwargs["rgs"][0]
+    model = reservoir.mo
     # list of default values if none provided
     lod: dict = {
         "zsat": -3715,  # m
         "zcc": -4750,  # m
         "zsnow": -4750,  # m
         "zsat0": -5078,  # m
-        "Ksp0": kwargs["rgs"][0].swc.Ksp0,  # mol^2/kg^2
+        "Ksp0": reservoir.swc.Ksp0,  # mol^2/kg^2
         "kc": 8.84 * 1000,  # m/yr converted to kg/(m^2 yr)
-        "AD": CM.hyp.area_dz(-200, -6000),
+        "AD": model.hyp.area_dz(-200, -6000),
         "alpha": 0.77,  # 0.928771302395292, #0.75,
         "pg": 0.103,  # pressure in atm/m
         "pc": 511,  # characteristic pressure after Boudreau 2010
