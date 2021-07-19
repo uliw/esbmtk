@@ -1535,6 +1535,24 @@ class ExternalCode(Reservoir_no_set):
                 # print(f"i = {i}, header = {n}")
                 self.vr_data[i - 1][:3] = df.iloc[-3:, i]
 
+    def __sub_sample_data__(self) -> None:
+        """There is usually no need to keep more than a thousand data points
+        so we subsample the results before saving, or processing them
+
+        """
+
+        # print(f"subsampling {self.fullname}")
+        stride = int(len(self.vr_data[0]) / self.mo.number_of_datapoints)
+
+        new: list = []
+        for d in self.vr_data:
+            n = d[2:-2:stride]
+            new.append(n)
+
+        self.vr_data = new
+        # update aliases
+        self.create_alialises()
+
     def __write_data__(
         self,
         prefix: str,

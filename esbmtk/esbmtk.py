@@ -651,6 +651,7 @@ class Model(esbmtkBase):
         # list of signals
         self.los: list = []
         self.first_start = True  # keep track of repeated solver calls
+        self.lof: list = []  # list of fluxes
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
@@ -1077,6 +1078,25 @@ class Model(esbmtkBase):
 
         # flag that the model has executed
         self.state = 1
+
+    def sub_sample_data(self):
+        """Subsample the data. No need to save 100k lines of data You need to
+        do this _after_ saving the state, but before plotting and
+        saving the data
+
+        """
+
+        for r in self.lor:
+            r.__sub_sample_data__()
+
+        for vr in self.lvr:
+            vr.__sub_sample_data__()
+
+        for f in self.lof:
+            f.__sub_sample_data__()
+
+        stride = int(len(self.time) / self.number_of_datapoints)
+        self.time = self.time[2:-2:stride]
 
     def __run_solver__(self, solver, new) -> None:
 
@@ -1528,6 +1548,20 @@ class ReservoirBase(esbmtkBase):
             df.to_csv(file_path, header=True, mode="w", index=False)
 
         return df
+
+    def __sub_sample_data__(self) -> None:
+        """There is usually no need to keep more than a thousand data points
+        so we subsample the results before saving, or processing them
+
+        """
+        stride = int(len(self.m) / self.mo.number_of_datapoints)
+
+        # print(f"Reset data with {len(self.m)}, stride = {self.mo.reset_stride}")
+        self.m = self.m[2:-2:stride]
+        self.l = self.m[2:-2:stride]
+        self.h = self.h[2:-2:stride]
+        self.d = self.d[2:-2:stride]
+        self.c = self.c[2:-2:stride]
 
     def __reset_state__(self) -> None:
         """Copy the result of the last computation back to the beginning
@@ -2159,6 +2193,7 @@ class Flux(esbmtkBase):
         self.led: list[ExternalData] = []  # list of ext data
         self.source: str = ""  # Name of reservoir which acts as flux source
         self.sink: str = ""  # Name of reservoir which acts as flux sink
+        self.mo.lof.append(self)  # register with model flux list
         self.__register_name__()
 
         # decide which setitem functions to use
@@ -2290,6 +2325,18 @@ class Flux(esbmtkBase):
         fig.tight_layout()
         plt.show()
         plt.savefig(self.n + ".pdf")
+
+    def __sub_sample_data__(self) -> None:
+        """There is usually no need to keep more than a thousand data points
+        so we subsample the results before saving, or processing them
+
+        """
+        stride = int(len(self.m) / self.mo.number_of_datapoints)
+
+        self.m = self.m[2:-2:stride]
+        self.l = self.m[2:-2:stride]
+        self.h = self.m[2:-2:stride]
+        self.d = self.d[2:-2:stride]
 
     def __reset_state__(self) -> None:
         """Copy the result of the last computation back to the beginning
