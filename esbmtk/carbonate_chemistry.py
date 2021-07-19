@@ -160,7 +160,7 @@ class SeawaterConstants(esbmtkBase):
 
         # convert to mol/liter if necessary
         if self.units == Q_("1 mole/liter").units:
-            cf = 1000 / (1000 + self.salinity)
+            cf = (1000 + self.salinity) / 1000
 
             # constants and species are just names, so we need to
             # retrieve the actual variable first
