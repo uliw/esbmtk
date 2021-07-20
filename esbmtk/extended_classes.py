@@ -1725,6 +1725,7 @@ class GasReservoir(ReservoirBase):
                             species = CO2,    # Species handle
                             delta = 20,       # initial delta - optional (defaults  to 0)
                             reservoir_mass = quantity # total mass of all gases
+                                             defaults to 1.833E20 mol
                             species_ppm =  number # concentration in ppm
                             plot = "yes"/"no", defaults to yes
                             plot_transform_c = a function reference, optional (see below)
@@ -1783,7 +1784,6 @@ class GasReservoir(ReservoirBase):
             "name",
             "species",
             "species_ppm",
-            "reservoir_mass",
         ]
 
         # list of default values if none provided
@@ -1799,6 +1799,7 @@ class GasReservoir(ReservoirBase):
             "isotopes": False,
             "display_precision": 0,
             "geometry": "None",
+            "reservoir_mass": "1.833E20 mol",
         }
 
         # validate and initialize instance variables
@@ -1823,6 +1824,7 @@ class GasReservoir(ReservoirBase):
         if isinstance(self.species_ppm, str):
             self.species_ppm = Q_(self.species_ppm)
 
+        # not sure this universally true but it works for carbon
         self.species_mass = (self.reservoir_mass * self.species_ppm).to("mol")
 
         # we use the existing approach to calculate concentration
