@@ -1389,6 +1389,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         pg = seawater density multiplied by gravity due to acceleration (atm/m)
         I = dissolvable CaCO3 inventory
         co3 = CO3 concentration (mol/kg)
+        Ksp = solubility product of calcite at in situ sea water conditions (mol^2/kg^2)
 
     """
 
@@ -1414,6 +1415,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "alpha": float,
         "zmax": (float, int),
         "z0": (float, int),
+        "Ksp": (float, int),
     }
     # provide a list of absolutely required keywords
     lrk: list[str] = ["rgs", "carbonate_export_fluxes", "zsat_min", "z0"]
@@ -1437,6 +1439,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "pc": 511,  # characteristic pressure after Boudreau 2010
         "I_caco3": 529,  #  dissolveable CaCO3 in mol/m^2
         "zmax": -6000,  # max model depth
+        "Ksp": reservoir.swc.Ksp, # mol^2/kg^2
     }
 
     # make sure all mandatory keywords are present
@@ -1457,6 +1460,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     pg = kwargs["pg"]
     pc = kwargs["pc"]
     z0 = kwargs["z0"]
+    Ksp = kwargs["Ksp"]
 
     # C saturation(z) after Boudreau 2010
     Csat_table: NDArray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
@@ -1495,6 +1499,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                 "BD": 0.0,  # 16 BD
                 "bds_area": 0.0,  # 17 bds_area
                 "zsnow_dt": 0.0,  # 18 zsnow_dt
+                "omega": 0.0, # 19 omega
             },
             function_input_data=List(
                 [
@@ -1532,6 +1537,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                     float(abs(kwargs["zsat_min"])),  # 17
                     float(abs(kwargs["zmax"])),  # 18
                     float(abs(kwargs["z0"])),  # 19
+                    Ksp, # 20
                 ]
             ),
             register=rg,
