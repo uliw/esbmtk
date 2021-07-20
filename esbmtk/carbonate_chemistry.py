@@ -725,7 +725,6 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     boh4: float = boron * KB / (hplus + KB)
     fg: float = hplus - oh - boh4
     ca: float = ta + fg
-    omega: float = (ca2 * co3) / ksp
 
     # calculate carbon speciation at t
     # The following equations are after Follows et al. 2006
@@ -739,6 +738,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # DIC = hco3 + co3 + co2 + H2CO3 The last term is however rather
     # small, so it may be ok to simply write co2aq = dic - hco3 + co3.
     co2aq: float = dic - co3 - hco3
+    omega: float = (ca2 * co3) / ksp
 
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
