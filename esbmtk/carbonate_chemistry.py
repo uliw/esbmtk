@@ -725,6 +725,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     boh4: float = boron * KB / (hplus + KB)
     fg: float = hplus - oh - boh4
     ca: float = ta + fg
+    omega: float = (ca2 * co3) / ksp
 
     # calculate carbon speciation at t
     # The following equations are after Follows et al. 2006
@@ -743,8 +744,6 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(max((zsat0 * np.log(ca2 * co3 / ksp0)), zsat_min))  # eq2
     zcc = int(zsat0 * np.log(B * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
-
-    omega: float = (ca2 * co3) / ksp
 
     # ---- Get fractional areas
     B_AD = B / AD
