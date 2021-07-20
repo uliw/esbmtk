@@ -1,4 +1,4 @@
-"""
+s"""
      esbmtk: A general purpose Earth Science box model toolkit
      Copyright (C), 2020 Ulrich G. Wortmann
 
@@ -1504,7 +1504,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                 "BD": 0.0,  # 16 BD
                 "bds_area": 0.0,  # 17 bds_area
                 "zsnow_dt": 0.0,  # 18 zsnow_dt
-                "omega": 0.0, # 19 omega
+                "Omega": 0.0, # 19 omega
             },
             function_input_data=List(
                 [
