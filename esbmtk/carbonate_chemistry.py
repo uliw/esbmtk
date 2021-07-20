@@ -702,6 +702,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     zsat_min = int(params[17])
     zmax = int(params[18])
     z0 = int(params[19])
+    ksp = params[20]
 
     # get lookup up tables
     depth_area_table: NDArray = input_data[7]  # depth look-up table
@@ -742,6 +743,8 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(max((zsat0 * np.log(ca2 * co3 / ksp0)), zsat_min))  # eq2
     zcc = int(zsat0 * np.log(B * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
+
+    omega: float = (ca2 * co3) / ksp
 
     # ---- Get fractional areas
     B_AD = B / AD
@@ -822,3 +825,4 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[16][i] = BD
     vr_data[17][i] = 0.0
     vr_data[18][i] = 0.0
+    vr_data[19][i] = omega
