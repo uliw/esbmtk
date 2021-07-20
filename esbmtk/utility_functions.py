@@ -1343,7 +1343,7 @@ def add_carbonate_system_1(rgs: list):
                     "HCO3": rg.swc.hco3,
                     "CO3": rg.swc.co3,
                     "CO2aq": rg.swc.co2,
-                    "Omaga": 0.0,
+                    "omega": 0.0,
                 },
                 function_input_data=List([rg.DIC.c, rg.TA.c]),
                 function_params=List(
