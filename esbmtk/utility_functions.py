@@ -1,4 +1,4 @@
-s"""
+"""
      esbmtk: A general purpose Earth Science box model toolkit
      Copyright (C), 2020 Ulrich G. Wortmann
 
