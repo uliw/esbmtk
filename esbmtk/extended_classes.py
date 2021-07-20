@@ -110,9 +110,7 @@ class ReservoirGroup(esbmtkBase):
         from .sealevel import get_box_geometry_parameters
         from .carbonate_chemistry import (
             SeawaterConstants,
-            calc_carbonates,
-            # carbonate_system_1,
-            # carbonate_system_2,
+            calc_carbonates_1,
         )
         from .extended_classes import ExternalCode
         from numba.typed import List

@@ -1321,29 +1321,32 @@ def add_carbonate_system_1(rgs: list):
     """Creates a new carbonate system virtual reservoir for each
     reservoir in rgs. Note that rgs must be a list of reservoir groups.
 
-    These new virtual reservoirs are registered to their respective ReservoirGroup.
-
     Required keywords:
         rgs: list = []  of Reservoir Group objects
 
+    These new virtual reservoirs are registered to their respective Reservoir
+    as 'cs'.
+
+    The respective data fields are available as rgs.r.cs.xxx where xxx stands
+    for a given key key in the  vr_datafields dictionary (i.e., H, CA, etc.)
+
     """
 
-    from esbmtk import ExternalCode, calc_carbonates
+    from esbmtk import ExternalCode, calc_carbonates_1
 
     for rg in rgs:
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):
             ExternalCode(
                 name="cs",
                 species=CO2,
-                function=calc_carbonates,
-                # initialize 5 datafield and provide defaults for H+
+                function=calc_carbonates_1,
                 vr_datafields={
                     "H": rg.swc.hplus,
                     "CA": rg.swc.ca,
                     "HCO3": rg.swc.hco3,
                     "CO3": rg.swc.co3,
                     "CO2aq": rg.swc.co2,
-                    "Omaga": 0.0,
+                    "Omega": 0.0,
                 },
                 function_input_data=List([rg.DIC.c, rg.TA.c]),
                 function_params=List(
@@ -1375,6 +1378,8 @@ def add_carbonate_system_2(**kwargs) -> None:
         carbonate_export_fluxes: list of flux objects which mus match the
                                  list of ReservoirGroup objects.
         zsat_min = depth of the upper boundary of the deep box
+        z0 = upper depth limit for carbonate burial calculations
+             typically the lower boundary of the surface water box
 
     Optional Parameters:
 
@@ -1393,7 +1398,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     """
 
     from esbmtk import carbonate_chemistry
-    from esbmtk import ExternalCode, calc_carbonates_v2
+    from esbmtk import ExternalCode, calc_carbonates_2
 
     # list of known keywords
     lkk: dict = {
@@ -1470,7 +1475,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         ExternalCode(
             name="cs",
             species=CO2,
-            function=calc_carbonates_v2,
+            function=calc_carbonates_2,
             # datafield hold the results of the VR_no_set function
             # provide a default values which will be use to initialize
             # the respective datafield/

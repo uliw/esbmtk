@@ -1,19 +1,20 @@
-"""
-     esbmtk: A general purpose Earth Science box model toolkit
-     Copyright (C), 2020-2021 Ulrich G. Wortmann
+"""esbmtk: A general purpose Earth Science box model toolkit Copyright
+     (C), 2020-2021 Ulrich G. Wortmann
 
-     This program is free software: you can redistribute it and/or modify
-     it under the terms of the GNU General Public License as published by
-     the Free Software Foundation, either version 3 of the License, or
-     (at your option) any later version.
+     This program is free software: you can redistribute it and/or
+     modify it under the terms of the GNU General Public License as
+     published by the Free Software Foundation, either version 3 of
+     the License, or (at your option) any later version.
 
      This program is distributed in the hope that it will be useful,
      but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-     GNU General Public License for more details.
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+     General Public License for more details.
 
      You should have received a copy of the GNU General Public License
-     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+     along with this program.  If not, see
+     <https://www.gnu.org/licenses/>.
+
 """
 
 from numbers import Number
@@ -506,115 +507,6 @@ class SeawaterConstants(esbmtkBase):
         self.a_u: float = 1 + self.e_u / 1000
 
 
-@njit(parallel=False, fastmath=True)
-def calc_carbonates(i: int, input_data: List, vr_data: List, params: List) -> None:
-    """Calculates and returns the carbonate concentrations with the format of
-    [d1, d2, d3, d4, d5] where each variable corresponds to
-    [H+, CA, HCO3, CO3, CO2(aq)], respectively, at the ith time-step of the model.
-
-    LIMITATIONS:
-    - This in used in conjunction with ExternalCode objects!
-    - Assumes all concentrations are in mol/L
-
-    Calculations are based off equations from Follows, 2006.
-    doi:10.1016/j.ocemod.2005.05.004
-
-    Example:
-
-    ExternalCode(
-                name="cs",
-                species=CO2,
-                vr_datafields=List([self.swc.hplus, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-                function=calc_carbonates,
-                function_input_data=List([self.DIC.c, self.TA.c]),
-                function_params=List(
-                    [
-                        self.swc.K1,
-                        self.swc.K2,
-                        self.swc.KW,
-                        self.swc.KB,
-                        self.swc.boron,
-                        self.swc.hplus,
-                    ]
-                ),
-                register= # reservoir_handle to register with
-            )
-
-            # setup aliases
-            self.cs.H = self.cs.vr_data[0]
-            self.cs.CA = self.cs.vr_data[1]
-            self.cs.HCO3 = self.cs.vr_data[2]
-            self.cs.CO3 = self.cs.vr_data[3]
-            self.cs.CO2aq = self.cs.vr_data[4]
-
-
-    To plot the other species, please create DataField objects accordingly.
-
-    Sample code for plotting CO3:
-    > DataField(name = "pH",
-          associated_with = Ocean.V_combo,
-          y1_data = -np.log10(Ocean.V_combo.vr_data[0]),
-          y1_label = "pH",
-          y1_legend = "pH"
-     )
-    > Model_Name.plot([pH])
-
-
-    Author: M. Niazi & T. Tsan, 2021
-
-    """
-    dic: float = input_data[0][i - 1]
-    ta: float = input_data[1][i - 1]
-
-    # calculates carbonate alkalinity (ca) based on H+ concentration from the
-    # previous time-step
-    # hplus: float = input_data[2][i - 1]
-    hplus: float = vr_data[0][i - 1]
-
-    k1 = params[0]
-    k2 = params[1]
-    KW = params[2]
-    KB = params[3]
-    boron = params[4]
-    # hplus = params[5 ]
-    ca2 = params[6]
-    ksp = params[7]
-    ksp0 = params[8]
-
-    # ca
-    oh: float = KW / hplus
-    boh4: float = boron * KB / (hplus + KB)
-    fg: float = hplus - oh - boh4
-    ca: float = ta + fg
-    # hplus
-    gamm: float = dic / ca
-    dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
-
-    hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))
-    # hco3 and co3
-    """ Since CA = [hco3] + 2[co3], can the below expression can be simplified
-    """
-    # co3: float = dic / (1 + (hplus / k2) + ((hplus ** 2) / (k1k2)))
-    hco3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
-    co3: float = (ca - hco3) / 2
-    # co2 (aq)
-    """DIC = hco3 + co3 + co2 + H2CO3 The last term is however rather
-    small, so it may be ok to simply write co2aq = dic - hco3 + co3.
-    Let's test this once we have a case where pco2 is calculated from co2aq
-    """
-
-    # co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
-    co2aq: float = dic - hco3 - co3
-    omega: float = ca2 * co3 / ksp
-
-    vr_data[0][i] = hplus
-    vr_data[1][i] = ca
-    vr_data[2][i] = hco3
-    vr_data[3][i] = co3
-    vr_data[4][i] = co2aq
-    vr_data[5][i] = omega
-
-
 def calc_pCO2(
     dic: Union[Reservoir, VirtualReservoir],
     hplus: Union[Reservoir, VirtualReservoir],
@@ -694,8 +586,78 @@ def calc_pCO2b(
     return pco2
 
 
+@njit(parallel=False, fastmath=True)
+def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> None:
+    """Calculates and returns the carbonate concentrations with the format of
+    [d1, d2, d3, d4, d5] where each variable corresponds to
+    [H+, CA, HCO3, CO3, CO2(aq)], respectively, at the ith time-step of the model.
+
+    LIMITATIONS:
+    - This in used in conjunction with ExternalCode objects!
+    - Assumes all concentrations are in mol/L
+
+    Calculations are based off equations from Follows, 2006.
+    doi:10.1016/j.ocemod.2005.05.004
+
+    Example: see carbonate_system_1 in utility_function.py
+
+    Author: M. Niazi & T. Tsan, 2021
+
+    """
+    dic: float = input_data[0][i - 1]
+    ta: float = input_data[1][i - 1]
+
+    # calculates carbonate alkalinity (ca) based on H+ concentration from the
+    # previous time-step
+    # hplus: float = input_data[2][i - 1]
+    hplus: float = vr_data[0][i - 1]
+
+    k1 = params[0]
+    k2 = params[1]
+    KW = params[2]
+    KB = params[3]
+    boron = params[4]
+    # hplus = params[5 ]
+    ca2 = params[6]
+    ksp = params[7]
+    ksp0 = params[8]
+
+    # ca
+    oh: float = KW / hplus
+    boh4: float = boron * KB / (hplus + KB)
+    fg: float = hplus - oh - boh4
+    ca: float = ta + fg
+    # hplus
+    gamm: float = dic / ca
+    dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
+
+    hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))
+    # hco3 and co3
+    """ Since CA = [hco3] + 2[co3], can the below expression can be simplified
+    """
+    # co3: float = dic / (1 + (hplus / k2) + ((hplus ** 2) / (k1k2)))
+    hco3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
+    co3: float = (ca - hco3) / 2
+    # co2 (aq)
+    """DIC = hco3 + co3 + co2 + H2CO3 The last term is however rather
+    small, so it may be ok to simply write co2aq = dic - hco3 + co3.
+    Let's test this once we have a case where pco2 is calculated from co2aq
+    """
+
+    # co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
+    co2aq: float = dic - hco3 - co3
+    omega: float = ca2 * co3 / ksp
+
+    vr_data[0][i] = hplus
+    vr_data[1][i] = ca
+    vr_data[2][i] = hco3
+    vr_data[3][i] = co3
+    vr_data[4][i] = co2aq
+    vr_data[5][i] = omega
+
+
 @njit(fastmath=True)  # , error_model="numpy")
-def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) -> None:
+def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> None:
     """Calculates and returns the carbonate concentrations and carbonate compensation
     depth (zcc) at the ith time-step of the model.
 
@@ -708,33 +670,12 @@ def calc_carbonates_v2(i: int, input_data: List, vr_data: List, params: List) ->
     - Assumes your Model is in mol/L ! Otherwise, DIC and TA updating will not
     be correct.
 
-    Calculations are based off equations from Follows, 2006.
+    Calculations are based off equations from Follows, 2006 and
+    Boudreau et al 2010,
     doi:10.1016/j.ocemod.2005.05.004
+    http://dx.doi.org/10.1029/2009GB003654
 
-    Example:
-
-    ExternalCode(
-        name="cs",
-        species=CO2,
-        function=calc_carbonates_v2,
-        # initialize 5 datafield and provide defaults for H+
-        vr_datafields=List([rg.swc.hplus, rg.swc.ca, rg.swc.hco3, rg.swc.co3, rg.swc.co2, zsat, zcc, zsnow]),
-        function_input_data=List([rg.DIC.m, rg.DIC.l, rg.DIC.h, rg.DIC.c, rg.TA.m, rg.TA.l, rg.TA.h, rg.TA.c, B.m, lookup_table]),
-        function_params= List([rg.swc.K1, rg.swc.K2, rg.swc.KW, rg.swc.KB, rg.swc.boron, ksp0, kc, SA, AD,
-                     zsat0, ca2, dt, pc, pg, I, alpha]),
-        register=rg,
-    )
-
-    To plot the other species, please create DataField objects accordingly.
-
-    Sample code for plotting CO3:
-    > DataField(name = "pH",
-          associated_with = Ocean.V_combo,
-          y1_data = -np.log10(Ocean.V_combo.vr_data[0]),
-          y1_label = "pH",
-          y1_legend = "pH"
-     )
-    > Model_Name.plot([pH])
+    See carbon_system_2 in utility_functions.py on how to call this function
 
     Author: M. Niazi & T. Tsan, 2021
 
