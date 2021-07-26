@@ -40,6 +40,7 @@ import pandas as pd
 import logging
 import time
 
+
 from esbmtk import Q_
 
 
@@ -489,6 +490,26 @@ def sort_by_type(l: list, t: list, m: str) -> list:
     return rl
 
 
+def get_object_handle(res: str, M: any):
+    """Test if we the key is a global reservoir handle
+    or exists in the model namespace
+
+    """
+
+    # res = global reservoir name
+    if res in M.dmo:
+        name = M.dmo[res]
+
+    # res = local reserevoir name
+    elif res in M.__dict__:
+
+        name = getattr(M, res)
+    else:
+        raise ValueError(f"{res} is not known for model {M.name}")
+
+    return name
+
+
 def split_key(k: str, M: any) -> Union[any, any, str]:
     """split the string k with letter 2, and test if optional
     id string is present
@@ -508,8 +529,9 @@ def split_key(k: str, M: any) -> Union[any, any, str]:
         sink = sinkandid
         cid = ""
 
-    sink = M.dmo[sink]
-    source = M.dmo[source]
+    sink = get_object_handle(sink, M)
+    source = get_object_handle(source, M)
+
     return (source, sink, cid)
 
 
@@ -582,9 +604,9 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
     for k, v in bn.items():
         if "ty" in v:  # type is given
             if v["ty"] == "Source":
-                SourceGroup(name=k, species=v["sp"])
+                SourceGroup(name=k, species=v["sp"], register=register)
             elif v["ty"] == "Sink":
-                SinkGroup(name=k, species=v["sp"])
+                SinkGroup(name=k, species=v["sp"], register=register)
             else:
                 raise ValueError("'ty' must be either Source or Sink")
 
