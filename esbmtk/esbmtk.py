@@ -105,6 +105,7 @@ class esbmtkBase(object):
         """
 
         self.lmo: list = []
+        self.lmo2: list = []
         self.ldo: list = ["full_name", "register", "groupname", "ctype"]
 
         for n in self.ldo:
@@ -168,6 +169,7 @@ class esbmtkBase(object):
                 setattr(builtins, self.name, self)
                 self.full_name = self.name
                 self.mo.lmo.append(self.full_name)
+                self.mo.lmo2.append(self)
                 self.mo.dmo.update({self.name: self})
 
         else:  # register in group namespace
@@ -188,6 +190,8 @@ class esbmtkBase(object):
                 if self.full_name in self.register.lmo:
                     raise NameError(f"{self.full_name} is a duplicate name. Please fix")
                 self.register.lmo.append(self.full_name)
+                # self.register.mo.lmo.append(self.full_name)
+                # self.register.mo.lmo2.append(self)
                 # setattr(builtins, self.name, self)
                 # self.mo.dmo.update({self.name: self})
 
@@ -1241,6 +1245,15 @@ class Model(esbmtkBase):
                 print(f"{c.base_name}.info()")
 
         print("")
+
+    def clear(self):
+        """ delete all model objects """
+
+        import builtins
+
+        for o in self.lmo:
+            print(f"deleting {o}")
+            del __builtins__[o]
 
 
 class Element(esbmtkBase):
