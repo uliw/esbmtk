@@ -14,6 +14,10 @@ generation of graphical results.
 
 * News
 
+ - July 20^{th}, the model object now provides a =sub_sample_data()=
+   which will resample all model data to a default grid of 1000 data
+   points, before plotting.
+
  - July 17^{th}, =ExternalCode= is a new class to allow integration of
    arbitrary code. This replaces the =VirtualReservoir-no_set= class
 
