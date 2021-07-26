@@ -155,45 +155,50 @@ class esbmtkBase(object):
         # this sub object.
 
         logging.debug(f"self.register = {self.register}")
-        if self.register == "None":  # Register in global namespace
-            logging.debug(
-                f"Registering {self.name} in global namespace as type {type(self)}"
-            )
-            if isinstance(self, Model):  # Cannot register model with itself
+
+        # models are either in the global namespace, or do not get registered at all
+        if isinstance(self, Model):
+            if self.register == "None":
                 setattr(builtins, self.name, self)
-
-            elif self in self.mo.lmo:
-                raise NameError(f"{self.name} is a duplicate name. Please fix")
-
             else:
-                setattr(builtins, self.name, self)
-                self.full_name = self.name
-                self.mo.lmo.append(self.full_name)
-                self.mo.lmo2.append(self)
-                self.mo.dmo.update({self.name: self})
+                pass
 
-        else:  # register in group namespace
-            if isinstance(self, (Model, Element)):  # Model only exist in the global NS
+        # all other objects can be either part of another esbmtk object
+        # register=object reference
+        # or be registered globally
+        else:
+            # get model registry
+            if isinstance(self.register, Model):
+                reg = self.register
+            elif isinstance(self.register, str):
+                reg = self.mo
+            else:
+                reg = self.register.mo
+
+            if self.register == "None":  # global registration
                 setattr(builtins, self.name, self)
                 self.full_name = self.name
-            else:  # not a model, and part of group
-                logging.debug(
-                    f"Registering {self.name} in {self.register.name} namespace"
-                )
-                setattr(self.register, self.name, self)
+
+                # check for naming conflicts
+                if self.full_name in reg.lmo:
+                    raise NameError(f"{self.full_name} is a duplicate name. Please fix")
+                else:
+                    # register with model
+                    reg.lmo.append(self.full_name)
+                    reg.lmo2.append(self)
+                    reg.dmo.update({self.name: self})
+
+            else:  # local registration
+                # get full_name of parent object
                 if self.register.full_name != "None":
                     fn: str = f"{self.register.full_name}.{self.name}"
                 else:
                     fn: str = f"{self.register.name}.{self.name}"
-                self.full_name = fn
 
-                if self.full_name in self.register.lmo:
-                    raise NameError(f"{self.full_name} is a duplicate name. Please fix")
-                self.register.lmo.append(self.full_name)
-                # self.register.mo.lmo.append(self.full_name)
-                # self.register.mo.lmo2.append(self)
-                # setattr(builtins, self.name, self)
-                # self.mo.dmo.update({self.name: self})
+                self.full_name = fn
+                setattr(self.register, self.name, self)
+                # register with model
+                reg.lmo.append(self.full_name)
 
         # add fullname to kwargs so it shows up in __repr__
         # its a dirty hack though
@@ -599,6 +604,8 @@ class Model(esbmtkBase):
             "plot_style": str,
             "number_of_datapoints": int,
             "step_limit": (Number, str),
+            "register": str,
+            "full_name": str,
         }
 
         # provide a list of absolutely required keywords
@@ -614,6 +621,8 @@ class Model(esbmtkBase):
             "plot_style": "default",
             "number_of_datapoints": 1000,
             "step_limit": "None",
+            "register": "None",
+            "full_name": "None",
         }
 
         self.__initerrormessages__()
@@ -713,9 +722,6 @@ class Model(esbmtkBase):
             self.steps = self.step_limit
             self.time = (arange(self.steps) * self.dt) + self.start
 
-        # initialize the hypsometry class
-        hypsometry(name="hyp", model=self, register=self)
-
         # set_printoptions(precision=self.display_precision)
 
         if "element" in self.kwargs:
@@ -760,6 +766,9 @@ class Model(esbmtkBase):
         fn: str = f"{kwargs['name']}.log"
         logging.basicConfig(filename=fn, filemode="w", level=logging.WARN)
         self.__register_name__()
+
+        # initialize the hypsometry class
+        hypsometry(name="hyp", model=self, register=self)
 
     def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
@@ -1288,6 +1297,7 @@ class Element(esbmtkBase):
             "d_label": str,
             "d_scale": str,
             "r": Number,
+            "full_name": str,
         }
 
         # provide a list of absolutely required keywords
@@ -1299,6 +1309,7 @@ class Element(esbmtkBase):
             "d_label": "None",
             "d_scale": "None",
             "r": 1,
+            "full_name": "None",
         }
 
         self.__initerrormessages__()
