@@ -345,7 +345,7 @@ class SourceSink(esbmtkBase):
             "name": str,
             "species": Species,
             "display_precision": Number,
-            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "register": any,
             "delta": (Number, str),
             "isotopes": bool,
         }
@@ -415,12 +415,13 @@ class SourceSinkGroup(esbmtkBase):
             "name": str,
             "species": list,
             "delta": dict,
+            "register": any,
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species"]
         # list of default values if none provided
-        self.lod: Dict[any, any] = {"delta": {}}
+        self.lod: Dict[any, any] = {"delta": {}, "register": "None"}
 
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
