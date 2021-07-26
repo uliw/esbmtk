@@ -106,6 +106,7 @@ class ReservoirGroup(esbmtkBase):
     def __init__(self, **kwargs) -> None:
         """Initialize a new reservoir group"""
 
+        from esbmtk import Model
         from . import ureg, Q_
         from .sealevel import get_box_geometry_parameters
         from .carbonate_chemistry import (
@@ -127,6 +128,7 @@ class ReservoirGroup(esbmtkBase):
             "isotopes": dict,
             "seawater_parameters": (dict, str),
             "carbonate_system": bool,
+            "register": (str, Model),
         }
 
         # provide a list of absolutely required keywords
@@ -141,6 +143,7 @@ class ReservoirGroup(esbmtkBase):
             "geometry": "None",
             "seawater_parameters": "None",
             "carbonate_system": False,
+            "register": "None,",
         }
 
         if "concentration" in kwargs:
