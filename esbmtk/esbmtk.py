@@ -715,6 +715,9 @@ class Model(esbmtkBase):
 
         if self.step_limit == "None":
             self.number_of_solving_iterations: int = 0
+        elif self.step_limit > self.steps:
+            self.number_of_solving_iterations: int = 0
+            self.step_limit = "None"
         else:
             self.step_limit = int(self.step_limit)
             self.number_of_solving_iterations = int(round(self.steps / self.step_limit))
