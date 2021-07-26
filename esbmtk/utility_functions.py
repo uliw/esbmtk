@@ -49,6 +49,10 @@ from esbmtk import Q_
 set_printoptions(precision=4)
 
 
+def insert_into_namespace(name, value, name_space=globals()):
+    name_space[name] = value
+
+
 def add_to(l, e):
     """
     add element e to list l, but check if the entry already exist. If so, throw
@@ -538,7 +542,7 @@ def get_typed_list(data: list) -> list:
     return tl
 
 
-def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
+def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dict:
     """boxes are defined by area and depth interval here we use an ordered
     dictionary to define the box geometries. The next column is temperature
     in deg C, followed by pressure in bar
@@ -564,7 +568,8 @@ def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
 
     M: Model object handle
 
-    cs: add virtual reservoir for the carbonate system. Defaults to False
+    register reservoir groups in global name space (default), or with the
+    provided object reference
 
     """
 
@@ -600,6 +605,7 @@ def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
                 isotopes=icd[k][1],
                 delta=icd[k][2],
                 seawater_parameters={"temperature": v["T"], "pressure": v["P"]},
+                register=register,
             )
 
     return icd
@@ -1444,7 +1450,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "pc": 511,  # characteristic pressure after Boudreau 2010
         "I_caco3": 529,  #  dissolveable CaCO3 in mol/m^2
         "zmax": -6000,  # max model depth
-        "Ksp": reservoir.swc.Ksp, # mol^2/kg^2
+        "Ksp": reservoir.swc.Ksp,  # mol^2/kg^2
     }
 
     # make sure all mandatory keywords are present
@@ -1504,7 +1510,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                 "BD": 0.0,  # 16 BD
                 "bds_area": 0.0,  # 17 bds_area
                 "zsnow_dt": 0.0,  # 18 zsnow_dt
-                "Omega": 0.0, # 19 omega
+                "Omega": 0.0,  # 19 omega
             },
             function_input_data=List(
                 [
@@ -1542,7 +1548,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                     float(abs(kwargs["zsat_min"])),  # 17
                     float(abs(kwargs["zmax"])),  # 18
                     float(abs(kwargs["z0"])),  # 19
-                    Ksp, # 20
+                    Ksp,  # 20
                 ]
             ),
             register=rg,
