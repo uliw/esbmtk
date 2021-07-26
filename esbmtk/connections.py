@@ -1324,10 +1324,10 @@ class AirSeaExchange(esbmtkBase):
         # create flux name
         if self.id == "None" or self.id == "":
             n = f"{self.lr.name}_2_{self.gr.name}_EX"
-            self.name = f"ASGE_{self.lr.name}_2_{self.gr.name}"
+            self.name = f"ASGE_{self.lr.name}_2_{self.gr.name}_EX"
         else:
             n = f"{self.lr.n}_2_{self.gr.n}_{self.id}_EX"
-            self.name = f"ASGE_{self.lr.name}_2_{self.gr.name}_{id}"
+            self.name = f"ASGE_{self.lr.name}_2_{self.gr.name}_{self.id}_EX"
 
         self.full_name = self.name
         self.n = self.name
