@@ -205,6 +205,8 @@ class ReservoirGroup(esbmtkBase):
             )
 
         # register this group object in the global namespace
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
         self.__register_name__()
 
         # dict with all default values
@@ -1777,7 +1779,7 @@ class GasReservoir(ReservoirBase):
             "groupname": str,
             "function": any,
             "display_precision": Number,
-            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "register": any,
             "full_name": str,
             "isotopes": bool,
             "geometry": str,
@@ -1867,6 +1869,11 @@ class GasReservoir(ReservoirBase):
 
         self.mo.lor.append(self)  # add this reservoir to the model
         # register instance name in global name space
+
+        # register this group object in the global namespace
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
+
         self.__register_name__()
 
         # decide which setitem functions to use

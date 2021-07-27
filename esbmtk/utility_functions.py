@@ -490,24 +490,31 @@ def sort_by_type(l: list, t: list, m: str) -> list:
     return rl
 
 
-def get_object_handle(res: str, M: any):
+def get_object_handle(res, M):
     """Test if we the key is a global reservoir handle
     or exists in the model namespace
 
+    res: list, str, or reservoir handle
+    M: Model handle
     """
 
-    # res = global reservoir name
-    if res in M.dmo:
-        name = M.dmo[res]
+    rlist: list = []
 
-    # res = local reserevoir name
-    elif res in M.__dict__:
+    if not isinstance(res, list):
+        res = [res]
 
-        name = getattr(M, res)
-    else:
-        raise ValueError(f"{res} is not known for model {M.name}")
+    for o in res:
+        if o in M.dmo:  # is object known in global namespace
+            rlist.append(M.dmo[o])
+        elif o in M.__dict__:  # or does it exist in Model namespace
+            rlist.append(getattr(M, o))
+        else:
+            raise ValueError(f"{o} is not known for model {M.name}")
 
-    return name
+    if len(rlist) == 1:
+        rlist = rlist[0]
+
+    return rlist
 
 
 def split_key(k: str, M: any) -> Union[any, any, str]:
@@ -934,8 +941,7 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
 
     # loop over dict entries and create the respective connections
     for k, v in c_ct.items():
-        if isinstance(k, tuple):
-            # loop over names in tuple
+        if isinstance(k, tuple):  # loop over names in tuple
             for c in k:
                 create_connection(c, v, M)
         elif isinstance(k, str):
@@ -963,6 +969,8 @@ def create_connection(n: str, p: dict, M: any) -> None:
     # get the reservoir handles by splitting the key
     source, sink, cid = split_key(n, M)
 
+    print(f"source = {source.full_name}, sink = {sink.full_name}")
+
     # create default connections parameters and replace with values in
     # the parameter dict if present.
     los = list(p["sp"]) if isinstance(p["sp"], list) else [p["sp"]]
@@ -987,7 +995,11 @@ def create_connection(n: str, p: dict, M: any) -> None:
     #                  test if backwards connection exists, or create
 
     if not mix:
-        name = f"C_{source.name}2{sink.name}"
+        if M.register == "local":
+            name = f"CG_{source.name}2{sink.name}"
+        else:
+            name = f"CG_{source.name}2{sink.name}"
+
         update_or_create(
             name,
             source,
@@ -1006,7 +1018,11 @@ def create_connection(n: str, p: dict, M: any) -> None:
 
     else:  # this is a connection with mixing
         # create forward connection
-        name = f"C_{source.name}2{sink.name}"
+        if M.register == "local":
+            name = f"CG_{source.name}2{sink.name}"
+        else:
+            name = f"CG_{source.name}2{sink.name}"
+
         update_or_create(
             name,
             source,
@@ -1024,7 +1040,11 @@ def create_connection(n: str, p: dict, M: any) -> None:
         )
 
         # create backwards connection
-        name = f"C_{sink.name}2{source.name}"
+        if M.register == "local":
+            name = f"CG_{sink.name}2{source.name}"
+        else:
+            name = f"CG_{sink.name}2{source.name}"
+
         cid = cid.replace("_f", "_b")
         update_or_create(
             name,
@@ -1062,8 +1082,15 @@ def update_or_create(
 
     from esbmtk import ConnectionGroup
 
-    if name in M.dmo:  # update connection
-        cg = M.dmo[name]
+    if M.register == "local":
+        register = M
+    else:
+        register = "None"
+
+    if f"{M.name}.{name}" in M.lmo:  # update connection
+
+        cg = getattr(M, name)
+        print(f"updating {cg.full_name}")
         cg.update(
             name=name,
             source=source,
@@ -1075,6 +1102,7 @@ def update_or_create(
             alpha=make_dict(los, alpha),
             delta=make_dict(los, delta),
             bypass=make_dict(los, bypass),
+            register=register,
             id=cid,  # get id from dictionary
         )
     else:  # create connection
@@ -1089,8 +1117,10 @@ def update_or_create(
             alpha=make_dict(los, alpha),
             delta=make_dict(los, delta),
             bypass=make_dict(los, bypass),
+            register=register,
             id=cid,  # get id from dictionary
         )
+        print(f"creating {cg.full_name}")
 
 
 def get_name_only(o: any) -> any:
@@ -1180,6 +1210,16 @@ def get_connection_keys(
     flux direction needs to be reversed, i.e., the returned key will not read
     sb2db@POM, but db2s@POM
 
+    E.g., if
+
+    s = ( M4.CG_P_sb2P_ib.PO4.POP_F)
+    fstr = "POP"
+    nstr = "POM_DIC"
+
+    M4.CG_P_sb2P_ib.PO4.POP_F will become
+
+    P_sb2P_ib@POM_DIC
+
     """
 
     cl: list = []
@@ -1187,7 +1227,7 @@ def get_connection_keys(
     for n in s:
         # get connection and flux name
         l = n.full_name.split(".")
-        cn = l[0][2:]  # get key without leadinf C_
+        cn = l[1][3:]  # get key without leadinf C_
         if inverse:
             cn = reverse_key(cn)
         cn.replace(fstr, nstr)
@@ -1362,11 +1402,14 @@ def add_carbonate_system_1(rgs: list):
 
     from esbmtk import ExternalCode, calc_carbonates_1
 
+    # get object handle even if it defined in model namespace
+    # rgs = get_object_handle(rgs)
+
     for rg in rgs:
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):
             ExternalCode(
                 name="cs",
-                species=CO2,
+                species=rg.mo.CO2,
                 function=calc_carbonates_1,
                 vr_datafields={
                     "H": rg.swc.hplus,
@@ -1506,7 +1549,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     for i, rg in enumerate(rgs):  # Setup the virtual reservoirs
         ExternalCode(
             name="cs",
-            species=CO2,
+            species=rg.mo.CO2,
             function=calc_carbonates_2,
             # datafield hold the results of the VR_no_set function
             # provide a default values which will be use to initialize

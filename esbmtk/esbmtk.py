@@ -186,7 +186,7 @@ class esbmtkBase(object):
                     # register with model
                     reg.lmo.append(self.full_name)
                     reg.lmo2.append(self)
-                    reg.dmo.update({self.name: self})
+                    reg.dmo.update({self.full_name: self})
 
             else:  # local registration
                 # get full_name of parent object
@@ -622,7 +622,7 @@ class Model(esbmtkBase):
             "number_of_datapoints": 1000,
             "step_limit": "None",
             "register": "None",
-            "full_name": "None",
+            "full_name": kwargs["name"],
         }
 
         self.__initerrormessages__()
@@ -1301,6 +1301,7 @@ class Element(esbmtkBase):
             "d_scale": str,
             "r": Number,
             "full_name": str,
+            "register": any,
         }
 
         # provide a list of absolutely required keywords
@@ -1313,6 +1314,7 @@ class Element(esbmtkBase):
             "d_scale": "None",
             "r": 1,
             "full_name": "None",
+            "register": "None",
         }
 
         self.__initerrormessages__()
@@ -1328,6 +1330,10 @@ class Element(esbmtkBase):
         self.ds: str = self.d_scale  # display string for delta scale
         self.lsp: list = []  # list of species for this element.
         self.mo.lel.append(self)
+
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
+
         self.__register_name__()
 
     def list_species(self) -> None:
@@ -1361,13 +1367,18 @@ class Species(esbmtkBase):
             "element": Element,
             "display_as": str,
             "m_weight": Number,
+            "register": any,
         }
 
         # provide a list of absolutely required keywords
         self.lrk = ["name", "element"]
 
         # list of default values if none provided
-        self.lod = {"display_as": kwargs["name"], "m_weight": 0}
+        self.lod = {
+            "display_as": kwargs["name"],
+            "m_weight": 0,
+            "register": "None",
+        }
 
         self.__initerrormessages__()
 
@@ -1391,6 +1402,9 @@ class Species(esbmtkBase):
 
         # self.mo.lsp.append(self)   # register self on the list of model objects
         self.e.lsp.append(self)  # register this species with the element
+
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
         self.__register_name__()
 
 
@@ -2063,6 +2077,8 @@ class Reservoir(ReservoirBase):
 
         self.mo.lor.append(self)  # add this reservoir to the model
         # register instance name in global name space
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
         self.__register_name__()
 
         # decide which setitem functions to use
@@ -2145,15 +2161,7 @@ class Flux(esbmtkBase):
             "plot": str,
             "display_precision": Number,
             "isotopes": bool,
-            "register": (
-                SourceGroup,
-                SinkGroup,
-                ReservoirGroup,
-                ConnectionGroup,
-                GasReservoir,
-                AirSeaExchange,
-                str,
-            ),
+            "register": any,
         }
 
         # provide a list of absolutely required keywords
@@ -2165,6 +2173,7 @@ class Flux(esbmtkBase):
             "plot": "yes",
             "display_precision": 0,
             "isotopes": False,
+            "register": "None",
         }
 
         # initialize instance
@@ -2221,6 +2230,13 @@ class Flux(esbmtkBase):
         self.source: str = ""  # Name of reservoir which acts as flux source
         self.sink: str = ""  # Name of reservoir which acts as flux sink
         self.mo.lof.append(self)  # register with model flux list
+
+        if self.register == "None":
+            self.full_name = self.name
+        else:
+            self.full_name = f"{self.register.full_name}.{self.name}"
+
+        print(f"Flux full_name = {self.full_name}")
         self.__register_name__()
 
         # decide which setitem functions to use
