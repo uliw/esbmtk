@@ -435,6 +435,10 @@ class SourceSinkGroup(esbmtkBase):
 
         # register this object in the global namespace
         self.mo = self.species[0].mo  # get model handle
+
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
+
         self.__register_name__()
 
         self.lor: list = []  # list of sub reservoirs in this group

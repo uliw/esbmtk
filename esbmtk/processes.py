@@ -205,6 +205,10 @@ class GenericFunction(Process):
             raise ValueError("function must be defined before it can be used here")
 
         self.__postinit__()  # do some housekeeping
+
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
+
         self.__register_name__()  #
 
     def __call__(self, i: int) -> None:

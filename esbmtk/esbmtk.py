@@ -199,6 +199,7 @@ class esbmtkBase(object):
                 setattr(self.register, self.name, self)
                 # register with model
                 reg.lmo.append(self.full_name)
+                reg.dmo.update({self.full_name: self})
 
         # add fullname to kwargs so it shows up in __repr__
         # its a dirty hack though
@@ -2236,7 +2237,6 @@ class Flux(esbmtkBase):
         else:
             self.full_name = f"{self.register.full_name}.{self.name}"
 
-        print(f"Flux full_name = {self.full_name}")
         self.__register_name__()
 
         # decide which setitem functions to use

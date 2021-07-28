@@ -969,8 +969,6 @@ def create_connection(n: str, p: dict, M: any) -> None:
     # get the reservoir handles by splitting the key
     source, sink, cid = split_key(n, M)
 
-    print(f"source = {source.full_name}, sink = {sink.full_name}")
-
     # create default connections parameters and replace with values in
     # the parameter dict if present.
     los = list(p["sp"]) if isinstance(p["sp"], list) else [p["sp"]]
@@ -1090,7 +1088,6 @@ def update_or_create(
     if f"{M.name}.{name}" in M.lmo:  # update connection
 
         cg = getattr(M, name)
-        print(f"updating {cg.full_name}")
         cg.update(
             name=name,
             source=source,
@@ -1120,7 +1117,6 @@ def update_or_create(
             register=register,
             id=cid,  # get id from dictionary
         )
-        print(f"creating {cg.full_name}")
 
 
 def get_name_only(o: any) -> any:

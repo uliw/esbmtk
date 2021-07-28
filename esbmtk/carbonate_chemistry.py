@@ -134,6 +134,10 @@ class SeawaterConstants(esbmtkBase):
         ]
 
         self.update()
+
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
+
         self.__register_name__()
 
     def update(self, **kwargs: dict) -> None:
