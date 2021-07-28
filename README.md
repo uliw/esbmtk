@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org161953b)
-2.  [News](#org1a6982d)
-3.  [Contributing](#orgf56093b)
-4.  [Installation](#orge773896)
-5.  [Documentation](#orgdd54b6b)
-6.  [Todo](#orgad0d353)
-7.  [License](#org67bd59a)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org4cb1dae)
+2.  [News](#orgf45e924)
+3.  [Contributing](#orgf86863a)
+4.  [Installation](#org1926aa5)
+5.  [Documentation](#org32be20b)
+6.  [Todo](#org8c386f2)
+7.  [License](#org262ab0e)
 
 
-<a id="org161953b"></a>
+<a id="org4cb1dae"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,25 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org1a6982d"></a>
+<a id="orgf45e924"></a>
 
 # News
+
+-   July 28<sup>th</sup>, esbmtk now supports python name spaces. The default is
+    still to register all esbmtk objects in the global
+    namespace. However, in cases where models need to be integrated
+    into python code, you can now set the `register = 'local'` keyword
+    in the model declaration. In this case, all model object follow are
+    hierarchical naming scheme e.g., `M.A_sb.DIC` denotes the DIC
+    concentration in the `A_sb` reservoir group which belongs to model
+    `M`.
+
+-   July 20<sup>th</sup>, the model object now provides a `sub_sample_data()`
+    which will resample all model data to a default grid of 1000 data
+    points, before plotting.
+
+-   July 17<sup>th</sup>, `ExternalCode` is a new class to allow integration of
+    arbitrary code. This replaces the `VirtualReservoir-no_set` class
 
 -   June 17<sup>th</sup>, data and state files are now stored in sub
     directories. Model runs can now be broken down into individual
@@ -236,7 +252,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgf56093b"></a>
+<a id="orgf86863a"></a>
 
 # Contributing
 
@@ -246,7 +262,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orge773896"></a>
+<a id="org1926aa5"></a>
 
 # Installation
 
@@ -267,7 +283,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="orgdd54b6b"></a>
+<a id="org32be20b"></a>
 
 # Documentation
 
@@ -285,7 +301,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orgad0d353"></a>
+<a id="org8c386f2"></a>
 
 # Todo
 
@@ -294,7 +310,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org67bd59a"></a>
+<a id="org262ab0e"></a>
 
 # License
 
