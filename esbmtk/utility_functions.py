@@ -609,6 +609,10 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
 
     # loop over reservoir names
     for k, v in bn.items():
+        # test key format
+        if M.name in k:
+            k = k.split(".")[1]
+
         if "ty" in v:  # type is given
             if v["ty"] == "Source":
                 SourceGroup(name=k, species=v["sp"], register=register)
@@ -619,13 +623,14 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
 
         else:  # create reservoirs
             icd: dict = build_concentration_dicts(ic, k)
-            swc = SeawaterConstants(
-                name=f"SW_{k}",
-                model=M,
-                temperature=v["T"],
-                pressure=v["P"],
-                units=M.c_unit,
-            )
+            # swc = SeawaterConstants(
+            #     name="swc",
+            #     model=M,
+            #     temperature=v["T"],
+            #     pressure=v["P"],
+            #     units=M.c_unit,
+            #     register=k,
+            # )
 
             rg = ReservoirGroup(
                 name=k,
