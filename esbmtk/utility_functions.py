@@ -623,15 +623,6 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
 
         else:  # create reservoirs
             icd: dict = build_concentration_dicts(ic, k)
-            # swc = SeawaterConstants(
-            #     name="swc",
-            #     model=M,
-            #     temperature=v["T"],
-            #     pressure=v["P"],
-            #     units=M.c_unit,
-            #     register=k,
-            # )
-
             rg = ReservoirGroup(
                 name=k,
                 geometry=v["g"],
