@@ -768,6 +768,10 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     area_p = area_dz_table[zsat:zcc]
     BDS_under = kc * area_p.dot(diff_co3)
 
+    if len(diff_co3) != len(area_p):
+        print("BDS_under, co3, zsat, zcc")
+        print(zsat, zcc)
+
     # BDS_resp  = a (A(zsat,zcc) * B/AD - BDS_under, eq 9b
     BDS_resp = alpha * (A_zsat_zcc * B_AD - BDS_under)
     BDS = BDS_under + BDS_resp
@@ -776,6 +780,10 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     if zcc < zsnow:
         diff = Csat_table[zcc : int(zsnow)] - co3
         area_p = area_dz_table[zcc : int(zsnow)]
+        if len(diff) != len(area_p):
+            print("BDS_under, zcc, zsnow")
+            print(zcc, zsnow)
+
         BPDC = kc * area_p.dot(diff)
         # eq 4 dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
         # print(zcc, zsnow)
