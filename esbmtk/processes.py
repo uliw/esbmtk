@@ -103,11 +103,11 @@ class Process(esbmtkBase):
             "name": str,
             "reservoir": (Reservoir, Source, Sink, GasReservoir),
             "flux": Flux,
-            "rate": Number,
-            "delta": Number,
+            "rate": (Number, np.float64),
+            "delta": (Number, np.float64),
             "lt": Flux,
-            "alpha": Number,
-            "scale": Number,
+            "alpha": (Number, np.float64),
+            "scale": (Number, np.float64),
             "ref_reservoirs": (Flux, Reservoir, GasReservoir, list, str),
             "register": (
                 str,
@@ -603,7 +603,7 @@ class VarDeltaOut(Process):
             "flux": Flux,
             "rate": (str, Q_),
             "register": (ConnectionGroup, ReservoirGroup, Reservoir, Flux, str),
-            "scale": (Number, str),
+            "scale": (Number, np.float64, str),
         }
         self.lrk.extend(["reservoir", "flux"])  # new required keywords
         self.__initerrormessages__()
@@ -992,12 +992,12 @@ class RateConstant(Process):
         # update the allowed keywords
         self.lkk: dict = {
             "scale": (Number, np.float64),
-            "k_value": Number,
+            "k_value": (Number, np.float64),
             "name": str,
             "reservoir": (Reservoir, Source, Sink, np.ndarray),
             "flux": Flux,
             "ref_reservoirs": list,
-            "left": (list, Reservoir, Number, np.ndarray),
+            "left": (list, Reservoir, Number, np.float64, np.ndarray),
             "right": (list, Reservoir, Number, np.ndarray),
             "register": (
                 SourceGroup,
@@ -1010,7 +1010,7 @@ class RateConstant(Process):
             "gas": (Reservoir, GasReservoir, Source, Sink, np.ndarray),
             "liquid": (Reservoir, Source, Sink),
             "solubility": (Number, np.float64),
-            "piston_velocity": Number,
+            "piston_velocity": (Number, np.float64),
             "water_vapor_pressure": (Number, np.float64),
             "ref_species": np.ndarray,
             "seawaterconstants": any,
@@ -1581,9 +1581,9 @@ class Monod(Process):
 
         # update the allowed keywords
         self.lkk: dict = {
-            "a_value": Number,
-            "b_value": Number,
-            "ref_value": (Number, str, Q_),
+            "a_value": (Number, np.float64),
+            "b_value": (Number, np.float64),
+            "ref_value": ((Number, np.float64), str, Q_),
             "name": str,
             "reservoir": (Reservoir, Source, Sink),
             "flux": Flux,

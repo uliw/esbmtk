@@ -1220,13 +1220,13 @@ class ConnectionGroup(esbmtkBase):
 
         if self.register == "None":
             if self.name == "None":  # set connection group name
-                self.name = f"CG_{self.source.name}2{self.sink.name}"
+                self.name = f"CG_{self.source.name}2{self.sink.name}{self.id}"
 
             self.full_name = self.name
 
         else:  # with registration
             if self.name == "None":
-                self.name = f"CG_{self.source.name}2{self.sink.name}"
+                self.name = f"CG_{self.source.name}2{self.sink.name}{self.id}"
 
             self.full_name = f"{self.register.full_name}.{self.name}"
 

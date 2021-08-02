@@ -1081,9 +1081,13 @@ def update_or_create(
     else:
         register = "None"
 
-    if f"{M.name}.{name}" in M.lmo:  # update connection
+    # update connection if already known
+    if f"{name}" in M.lmo or f"{M.name}.{name}" in M.lmo:
+        if M.register == "local":
+            cg = getattr(M, name)
+        else:
+            cg = __builtins__[name]
 
-        cg = getattr(M, name)
         cg.update(
             name=name,
             source=source,
@@ -1398,10 +1402,16 @@ def add_carbonate_system_1(rgs: list):
     # rgs = get_object_handle(rgs)
 
     for rg in rgs:
+
+        if rg.mo.register == "local":
+            species = rg.mo.CO2
+        else:
+            species = __builtins__["CO2"]
+
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):
             ExternalCode(
                 name="cs",
-                species=rg.mo.CO2,
+                species=species,
                 function=calc_carbonates_1,
                 vr_datafields={
                     "H": rg.swc.hplus,
@@ -1539,9 +1549,15 @@ def add_carbonate_system_2(**kwargs) -> None:
     dt = model.dt
 
     for i, rg in enumerate(rgs):  # Setup the virtual reservoirs
+
+        if rg.mo.register == "local":
+            species = rg.mo.CO2
+        else:
+            species = __builtins__["CO2"]
+
         ExternalCode(
             name="cs",
-            species=rg.mo.CO2,
+            species=species,
             function=calc_carbonates_2,
             # datafield hold the results of the VR_no_set function
             # provide a default values which will be use to initialize
