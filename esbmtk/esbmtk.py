@@ -502,6 +502,7 @@ class Model(esbmtkBase):
                       plot_style = 'default', optional defaults to 'default'
                       number_of_datapoints = optional, see below
                       step_limit = optional, see below
+                      register = 'local', see below
                     )
 
     ref_time:  will offset the time axis by the specified
@@ -520,6 +521,9 @@ class Model(esbmtkBase):
             reservoirs which set the isotope keyword. 'mass_only' 'both' will override
             the reservoir settings
 
+    register = local/None. If set to 'None' all objects are registered
+               in the global namespace the default setting is local,
+               i.e. all objects are registered in the model namespace.
 
     All of the above keyword values are available as variables with
     Model_Name.keyword
@@ -622,7 +626,7 @@ class Model(esbmtkBase):
             "plot_style": "default",
             "number_of_datapoints": 1000,
             "step_limit": "None",
-            "register": "None",
+            "register": "local",
             "full_name": kwargs["name"],
         }
 
