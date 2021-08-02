@@ -1255,7 +1255,7 @@ class Model(esbmtkBase):
 
         for c in self.cg_list:
             if fby in c.full_name:
-                print(f"{c.base_name}.info()")
+                print(f"{c.full_name}.info()")
 
         print("")
 
