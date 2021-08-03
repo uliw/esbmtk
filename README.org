@@ -14,6 +14,15 @@ generation of graphical results.
 
 * News
 
+ - August 2^{nd}, 0.7.0.0 Python namespaces are now the default. Esbmtk
+   now supports carbonate chemistry. Tracers like bicarbonate and
+   carbonate-ion concentration can be calculated for reservoir groups
+   which track total alkalinity and dissolved inorganic carbon. The
+   function =add_carbonate_system_1= will add these tracers to a given
+   reservoir group. The function =add_carbonate_system_2= will
+   additionally compute carbonate burial and dissolution fluxes,
+   following the approach of cite:boudreau-2010-ongoin-trans.
+
  - July 28^{th}, esbmtk now supports python name spaces. The default is
    still to register all esbmtk objects in the global
    namespace. However, in cases where models need to be integrated
@@ -131,7 +140,7 @@ generation of graphical results.
    seawater species concentrations and their K and Pk constants at
    given set of temperature, salinity and pressure conditions. This
    version also includes some refactoring in the =Connnection= and
-   =ConnectionmGroup= classes. It is likely that this broke some
+   =ConnectionGroup= classes. It is likely that this broke some
    connection types.
 
  - March 13^{th}, cleaned up the use of the =k_value= keyword which is

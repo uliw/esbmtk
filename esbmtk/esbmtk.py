@@ -1560,7 +1560,14 @@ class ReservoirBase(esbmtkBase):
         sds = self.sp.ds  # delta scale
         rn = self.full_name  # reservoir name
         mn = self.sp.mo.n  # model name
-        fn = f"{directory}/{prefix}{mn}_{rn}.csv"  # file name
+        if self.sp.mo.register == "None":
+            fn = f"{directory}/{prefix}{mn}_{rn}.csv"  # file name
+        elif self.sp.mo.register == "local":
+            fn = f"{directory}/{prefix}{rn}.csv"  # file name
+        else:
+            raise ValueError(
+                f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
+            )
 
         # build the dataframe
         df: pd.dataframe = DataFrame()

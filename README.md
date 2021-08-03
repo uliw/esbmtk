@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org4cb1dae)
-2.  [News](#orgf45e924)
-3.  [Contributing](#orgf86863a)
-4.  [Installation](#org1926aa5)
-5.  [Documentation](#org32be20b)
-6.  [Todo](#org8c386f2)
-7.  [License](#org262ab0e)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgf8bee9c)
+2.  [News](#org310569a)
+3.  [Contributing](#org97c2b3a)
+4.  [Installation](#orgd6d459c)
+5.  [Documentation](#org744e18f)
+6.  [Todo](#orge0660c1)
+7.  [License](#org9e96894)
 
 
-<a id="org4cb1dae"></a>
+<a id="orgf8bee9c"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,18 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="orgf45e924"></a>
+<a id="org310569a"></a>
 
 # News
+
+-   August 2<sup>nd</sup>, 0.7.0.0 Python namespaces are now the default. Esbmtk
+    now supports carbonate chemistry. Tracers like bicarbonate and
+    carbonate-ion concentration can be calculated for reservoir groups
+    which track total alkalinity and dissolved inorganic carbon. The
+    function `add_carbonate_system_1` will add these tracers to a given
+    reservoir group. The function `add_carbonate_system_2` will
+    additionally compute carbonate burial and dissolution fluxes,
+    following the approach of <sup id="388846f245b537f203fa603cf49f42f1"><a href="#boudreau-2010-ongoin-trans" title="Bernard Boudreau, Jack Middelburg, , Andreas Hofmann \&amp; Filip Meysman, Ongoing Transients in Carbonate Compensation, {Global Biogeochemical Cycles}, v(4), n/a-n/a (2010).">boudreau-2010-ongoin-trans</a></sup>.
 
 -   July 28<sup>th</sup>, esbmtk now supports python name spaces. The default is
     still to register all esbmtk objects in the global
@@ -147,7 +156,7 @@ generation of graphical results.
     seawater species concentrations and their K and Pk constants at
     given set of temperature, salinity and pressure conditions. This
     version also includes some refactoring in the `Connnection` and
-    `ConnectionmGroup` classes. It is likely that this broke some
+    `ConnectionGroup` classes. It is likely that this broke some
     connection types.
 
 -   March 13<sup>th</sup>, cleaned up the use of the `k_value` keyword which is
@@ -252,7 +261,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgf86863a"></a>
+<a id="org97c2b3a"></a>
 
 # Contributing
 
@@ -262,7 +271,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org1926aa5"></a>
+<a id="orgd6d459c"></a>
 
 # Installation
 
@@ -283,7 +292,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org32be20b"></a>
+<a id="org744e18f"></a>
 
 # Documentation
 
@@ -301,7 +310,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org8c386f2"></a>
+<a id="orge0660c1"></a>
 
 # Todo
 
@@ -310,7 +319,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org262ab0e"></a>
+<a id="org9e96894"></a>
 
 # License
 
