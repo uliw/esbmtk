@@ -1590,7 +1590,14 @@ class ExternalCode(Reservoir_no_set):
         mn = self.sp.mo.n  # model name
         mtu = f"{mo.t_unit:~P}"
 
-        fn = f"{directory}/{prefix}{mn}_vr_{rn}.csv"  # file name
+        if self.sp.mo.register == "None":
+            fn = f"{directory}/{prefix}{mn}_vr_{rn}.csv"  # file name
+        elif self.sp.mo.register == "local":
+            fn = f"{directory}/{prefix}{rn}.csv"  # file name
+        else:
+            raise ValueError(
+                f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
+            )
 
         df: pd.dataframe = DataFrame()
 
