@@ -1667,7 +1667,15 @@ class ReservoirBase(esbmtkBase):
         read: set = set()
         curr: set = set()
 
-        fn = f"{directory}/state_{self.mo.n}_{self.full_name}.csv"
+        if self.sp.mo.register == "None":
+            fn = f"{directory}/state_{self.mo.n}_{self.full_name}.csv"
+        elif self.sp.mo.register == "local":
+            fn = f"{directory}/state_{self.full_name}.csv"
+        else:
+            raise ValueError(
+                f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
+            )
+
         logging.info(f"reading state for {self.full_name} from {fn}")
 
         if not os.path.exists(fn):
