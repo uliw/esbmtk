@@ -1091,9 +1091,9 @@ class Model(esbmtkBase):
             self.merge_temp_results()
             self.steps = self.number_of_datapoints
             # after merging, the model steps = number_of_datapoints
-            print("Saving data")
-            self.save_data(start=0, stop=self.number_of_datapoints, stride=1)
-            print("Done Saving")
+        # print("Saving data")
+        # self.save_data(start=0, stop=self.number_of_datapoints, stride=1)
+        # print("Done Saving")
         else:
             self.__run_solver__(solver, new)
 
