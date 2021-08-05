@@ -696,16 +696,16 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     sa = params[7]
     volume = params[8]
     AD = params[9]
-    zsat0 = params[10]
+    zsat0 = int(abs(params[10]))
     ca2 = params[11]
     dt = params[12]
     pc = params[13]
     pg = params[14]
     I_caco3 = params[15]
     alpha = params[16]
-    zsat_min = int(params[17])
-    zmax = int(params[18])
-    z0 = int(params[19])
+    zsat_min = int(abs(params[17]))
+    zmax = int(abs(params[18]))
+    z0 = int(abs(params[19]))
     ksp = params[20]
 
     # get lookup up tables
@@ -747,13 +747,16 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(max((zsat0 * np.log(ca2 * co3 / ksp0)), zsat_min))  # eq2
+    if zsat < zsat_min:
+        zsat = int(zsat_min)
+
     zcc = int(zsat0 * np.log(B * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
 
     # ---- Get fractional areas
     B_AD = B / AD
 
     if zcc > zmax:
-        zcc = zmax
+        zcc = int(zmax)
 
     A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
     A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
@@ -776,7 +779,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     BDS = BDS_under + BDS_resp
 
     # BPDC =  kc int(zsnow,zcc) area' Csat(z,t) - [CO3](t) dz, eq 10
-    if zcc < zsnow:
+    if zcc < zsnow - 1:
         diff = Csat_table[zcc : int(zsnow)] - co3
         area_p = area_dz_table[zcc : int(zsnow)]
         BPDC = kc * area_p.dot(diff)
@@ -785,7 +788,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
         zsnow = zsnow - BPDC / (area_dz_table[int(zsnow)] * I_caco3) * dt
         # print(zcc, zsnow)
         # print()
-    else:
+    else:  # zcc > zsnow
         zsnow = zcc
         # dummy values for testing purposes; will be removed later
         zsnow_dt = 0

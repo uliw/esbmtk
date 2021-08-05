@@ -1532,7 +1532,15 @@ class ExternalCode(Reservoir_no_set):
 
         from pathlib import Path
 
-        fn = f"{directory}/state_{self.mo.n}_vr_{self.full_name}.csv"
+        if self.sp.mo.register == "None":
+            fn = f"{directory}/state_{self.mo.n}_vr_{self.full_name}.csv"
+        elif self.sp.mo.register == "local":
+            fn = f"{directory}/state_{self.full_name}.csv"
+        else:
+            raise ValueError(
+                f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
+            )
+
         file_path = Path(fn)
 
         if not file_path.exists():
@@ -1544,11 +1552,11 @@ class ExternalCode(Reservoir_no_set):
         self.headers: list = list(self.df.columns.values)
         df = self.df
         headers = self.headers
-        #  print(f"reading from {fn}")
+        # print(f"reading from {fn}")
         for i, n in enumerate(headers):
             # first column is time
             if i > 0:
-                # print(f"i = {i}, header = {n}")
+                # print(f"i = {i}, header = {n}, data = {df.iloc[-3:, i]}")
                 self.vr_data[i - 1][:3] = df.iloc[-3:, i]
 
     def __sub_sample_data__(self) -> None:
