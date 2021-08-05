@@ -1249,8 +1249,9 @@ class Model(esbmtkBase):
         # i.e., not connection groups.
         for c in list(self.loc):
             # if "." in c.full_name:
-            if c.register not in self.cg_list and c.register != "None":
-                self.cg_list.append(c.register)
+            # if c.register not in self.cg_list and c.register != "None":
+            if c not in self.cg_list and c.register != "None":
+                self.cg_list.append(c)
             else:  # this is a regular connnection
                 self.cg_list.append(c)
 
