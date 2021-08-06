@@ -445,9 +445,9 @@ class Connect(esbmtkBase):
     def __set_name__(self):
         """ set connection name if not explicitly provided """
 
-        if self.register == "None":
+        if self.mo.register == "None":  # global name_space registration
             if self.name == "None":
-                self.name = f"C_{self.source.name}_2_{self.sink.name}"
+                self.name = f"{self.source.name}_2_{self.sink.name}"
 
             if self.id == "None" or self.id == "":
                 pass
@@ -456,10 +456,10 @@ class Connect(esbmtkBase):
 
             self.full_name = self.name
 
-        else:
+        else:  # local name space registration
             if self.name == "None":
                 self.name = f"{self.source.sp.name}"
-                self.full_name = f"{self.register.full_name}.{self.name}"
+                # print(f" C name = {self.name}, fn = {self.full_name}")
 
         self.base_name = self.full_name
         self.n = self.name
@@ -536,6 +536,7 @@ class Connect(esbmtkBase):
             register=self,  # is this part of a group?
             # register=self.register,  # is this part of a group?
             isotopes=self.isotopes,
+            id=self.id,
         )
 
         # register flux with its reservoirs
@@ -1163,15 +1164,33 @@ class ConnectionGroup(esbmtkBase):
         self.mo = self.sink.lor[0].mo
         self.loc: list = []  # list of connection objects
 
-        self.__create_connections__()
+        if self.mo.register == "None":  # global name space
+            if self.register == "None":
+                if self.name == "None":  # set connection group name
+                    self.name = f"CG_{self.source.name}2{self.sink.name}{self.id}"
+
+                self.full_name = self.name
+
+            else:  # with registration
+                if self.name == "None":
+                    self.name = f"CG_{self.source.name}2{self.sink.name}{self.id}"
+                    self.full_name = f"{self.register.full_name}.{self.name}"
+        else:  # local name_space registration
+            self.name = f"CG_{self.source.name}2{self.sink.name}"
+            self.full_name = self.name
+
+        # print(f"Set CG name {self.name} and fname  to {self.full_name}")
+        self.base_name = self.name
+        kwargs.update({"name": self.name})  # and add it to the kwargs
+        self.__register_name__()
 
         # register connection group in global namespace
         # m_type="mass_only",
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
 
-        self.__register_name__()
         logging.info(f"Created {self.name}")
+        self.__create_connections__()
 
     def update(self, **kwargs) -> None:
         """Add a connection to the connection group
@@ -1217,21 +1236,6 @@ class ConnectionGroup(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: list = ["source", "sink"]
         self.__validateandregister__(kwargs)
-
-        if self.register == "None":
-            if self.name == "None":  # set connection group name
-                self.name = f"CG_{self.source.name}2{self.sink.name}{self.id}"
-
-            self.full_name = self.name
-
-        else:  # with registration
-            if self.name == "None":
-                self.name = f"CG_{self.source.name}2{self.sink.name}{self.id}"
-
-            self.full_name = f"{self.register.full_name}.{self.name}"
-
-        self.base_name = self.name
-        kwargs.update({"name": self.name})  # and add it to the kwargs
 
     def __create_connections__(self) -> None:
         """Create Connections"""
@@ -1345,20 +1349,22 @@ class AirSeaExchange(esbmtkBase):
 
         self.scale = self.area * self.piston_velocity
 
-        # create flux name
-        if self.id == "None" or self.id == "":
-            n = f"{self.lr.name}_2_{self.gr.name}_EX"
-            self.name = f"ASGE_{self.lr.name}_2_{self.gr.name}_EX"
-        else:
-            n = f"{self.lr.n}_2_{self.gr.n}_{self.id}_EX"
-            self.name = f"ASGE_{self.lr.name}_2_{self.gr.name}_{self.id}_EX"
+        # create connection and flux name
+        cname = f"C_{self.lr.register.name}_2_{self.gr.name}"
+        fname = f"{self.gr.sp.name}_F"
 
-        self.full_name = self.name
-        self.n = self.name
+        if self.id == "None" or self.id == "":
+            pass
+        else:
+            fname = f"{fname}_{self.id}"
+
+        # print(f"Using fname = {fname}")
+        self.name = cname
+        self.full_name = cname
 
         # initalize a flux instance
         self.fh = Flux(
-            name=n,  # flux name
+            name=fname,  # flux name
             species=self.species,  # Species handle
             delta=0,  # delta value of flux
             rate="0 mol/a",  # flux value
@@ -1372,6 +1378,8 @@ class AirSeaExchange(esbmtkBase):
         # register flux with gas reservoir
         self.gr.lof.append(self.fh)
         self.gr.lio[self.fh] = -1  # flux direction
+        # register with connection
+        self.lof.append(self.fh)
 
         if self.lr.register == "None":
             swc = self.lr.swc
@@ -1407,6 +1415,7 @@ class AirSeaExchange(esbmtkBase):
         self.gr.loc.add(self)
         # register connector with model
         self.mo.loc.add(self)
+
         logging.info(f"Created {self.full_name}")
 
     def __check_keywords__(self, kwargs) -> None:

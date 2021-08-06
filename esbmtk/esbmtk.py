@@ -1205,12 +1205,12 @@ class Model(esbmtkBase):
         for r in self.lor:  # loop over reservoirs
             match = False
             for f in r.lof:  # test if reservoir has matching fluxes
-                if fby in f.full_name and f.m[-3] != 0:
+                if fby in f.full_name:  # and f.m[-3] != 0:
                     match = True
             if match:
                 print(f"- {r.full_name}:")
                 for f in r.lof:  # loop over fluxes in reservoir
-                    if fby in f.full_name and f.m[-3] != 0:
+                    if fby in f.full_name:  #  and f.m[-3] != 0:
                         rl.append(f)
                         direction = r.lio[f]
                         fsum = fsum + f.m[-3] * direction
@@ -2183,6 +2183,7 @@ class Flux(esbmtkBase):
             "display_precision": Number,
             "isotopes": bool,
             "register": any,
+            "id": str,
         }
 
         # provide a list of absolutely required keywords
@@ -2195,6 +2196,7 @@ class Flux(esbmtkBase):
             "display_precision": 0,
             "isotopes": False,
             "register": "None",
+            "id": "",
         }
 
         # initialize instance
@@ -2250,14 +2252,19 @@ class Flux(esbmtkBase):
         self.led: list[ExternalData] = []  # list of ext data
         self.source: str = ""  # Name of reservoir which acts as flux source
         self.sink: str = ""  # Name of reservoir which acts as flux sink
-        self.mo.lof.append(self)  # register with model flux list
 
-        if self.register == "None":
-            self.full_name = self.name
-        else:
-            self.full_name = f"{self.register.full_name}.{self.name}"
+        if self.name == "None":
+            if self.mo.register == "None":  # global name_space
+                if self.register == "None":
+                    self.full_name = self.name
+                else:
+                    self.full_name = f"{self.register.full_name}.{self.name}"
+            else:  # local name_space
+                self.name = f"{self.id}_F"
 
         self.__register_name__()
+        # print(f"f name set to {self.name}. fn =  {self.full_name}\n")
+        self.mo.lof.append(self)  # register with model flux list
 
         # decide which setitem functions to use
         # decide whether we use isotopes
