@@ -779,7 +779,10 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     BDS = BDS_under + BDS_resp
 
     # BPDC =  kc int(zsnow,zcc) area' Csat(z,t) - [CO3](t) dz, eq 10
-    if zcc < zsnow - 1:
+    if zcc < zsnow:  # zcc cannot
+        if zsnow > zmax:  # zsnow cannot exceed ocean depth
+            zsnow = zmax
+
         diff = Csat_table[zcc : int(zsnow)] - co3
         area_p = area_dz_table[zcc : int(zsnow)]
         BPDC = kc * area_p.dot(diff)
@@ -789,6 +792,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
         # print(zcc, zsnow)
         # print()
     else:  # zcc > zsnow
+        # there is no carbonate below zsnow, so  BPDC = 0
         zsnow = zcc
         # dummy values for testing purposes; will be removed later
         zsnow_dt = 0

@@ -177,7 +177,7 @@ class hypsometry(esbmtkBase):
 
         """
 
-        if l < -6001:
+        if l < -6002:
             raise ValueError("area_dz() is only defined to a depth of 6000 mbsl")
 
         a: NDArray = interpolate.splev([u, l], self.tck)
@@ -291,10 +291,10 @@ class hypsometry(esbmtkBase):
         The calculations multiply the area_percentage by the total surface area (hyp.sa)
         """
 
-        if not -6001 <= min_depth <= 0:
+        if not -6002 <= min_depth <= 0:
             raise ValueError("min_depth must be <= 0 and >= -6000")
 
-        if not -6001 <= max_depth <= min_depth:
+        if not -6002 <= max_depth <= min_depth:
             raise ValueError("max_depth must be <= 0 and >= -6000")
 
         return (
