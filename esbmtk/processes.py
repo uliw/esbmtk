@@ -362,7 +362,7 @@ class AddSignal(Process):
         return func_name, data, params
 
     @staticmethod
-    @njit(fastmath=True)
+    @njit(fastmath=True, error_model="numpy")
     def p_add_signal(data, params, i) -> None:
 
         r: float = params[0]
@@ -680,7 +680,7 @@ class VarDeltaOut(Process):
         return func_name, data, params
 
     @staticmethod
-    @njit(fastmath=True)
+    @njit(fastmath=True, error_model="numpy")
     def p_vardeltaout(data, params, i) -> None:
         # concentration times scale factor
 
@@ -808,7 +808,7 @@ class ScaleFlux(Process):
         return func_name, data, params
 
     @staticmethod
-    @njit(fastmath=True)
+    @njit(fastmath=True, error_model="numpy")
     def p_scale_flux(data, params, i) -> None:
 
         r: float = params[0]
@@ -948,7 +948,7 @@ class Fractionation(Process):
         return func_name, data, params
 
     @staticmethod
-    @njit(fastmath=True)
+    @njit(fastmath=True, error_model="numpy")
     def p_fractionation(data, params, i) -> None:
         #
         r: float = params[0]
@@ -1127,7 +1127,7 @@ class ScaleRelativeToConcentration(RateConstant):
         return func_name, data, params
 
     @staticmethod
-    @njit(fastmath=True)
+    @njit(fastmath=True, error_model="numpy")
     def p_scale_relative_to_concentration(data, params, i) -> None:
         # concentration times scale factor
         r: float = params[0]
@@ -1206,7 +1206,7 @@ class ScaleRelativeToMass(RateConstant):
         return func_name, data, params
 
     @staticmethod
-    @njit(fastmath=True)
+    @njit(fastmath=True, error_model="numpy")
     def p_scale_relative_to_mass(data, params, i) -> None:
         # concentration times scale factor
 
@@ -1398,10 +1398,10 @@ class GasExchange(RateConstant):
         # this equation is for mmol but esbmtk uses mol, so we need to
         # multiply by 1E3
 
-        a = self.scale * (
+        a = self.scale * (  # area in m^2
             self.gas.c[i - 1]  #  Atmosphere
             * (1 - self.p_H2O)  # p_H2O
-            * self.solubility  # SA_co2 = mol/(m2 atm dt)
+            * self.solubility  # SA_co2 = mol/(m^3 atm)
             - self.ref_species[i - 1] * 1000  # [CO2]aq mol
         )
         # print(self.gas.c[i - 1])
@@ -1513,7 +1513,7 @@ class GasExchange(RateConstant):
         return func_name, data, params
 
     @staticmethod
-    @njit(fastmath=True)
+    @njit(fastmath=True, error_model="numpy")
     def p_gas_exchange(data, params, i) -> None:
         """the below equation moved as many constants as possible outside of
         the function compared to the __with/without_isotopes__ method(s). See the

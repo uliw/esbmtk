@@ -380,6 +380,7 @@ class SeawaterConstants(esbmtkBase):
         Since we assume that we only use this expression at sealevel,
         we drop the pressure term
 
+        The result is in p/1atm (i.e., a percentage)
         """
 
         T = self.temperature + 273.15
@@ -390,18 +391,18 @@ class SeawaterConstants(esbmtkBase):
         )
 
     def co2_solubility_constant(self) -> None:
-        """Calculate the solubility of CO2 at a given temperature and salinity. Coefficients
-        after Sarmiento and Gruber 2006 which includes corrections for CO2 to correct for non
-        ideal gas behavior
+        """Calculate the solubility of CO2 at a given temperature and salinity.
+        Coefficients after Sarmiento and Gruber 2006 which includes
+        corrections for CO2 to correct for non ideal gas behavior
 
         Parameters Ai & Bi from Tab 3.2.2 in  Sarmiento and Gruber 2006
 
-        The result is in mol/(m^3 atm)
+        The result is in mol/(m^3 * atm)
         """
 
-        # Calculate the volumetric solubility function F_A in mol/l/m^3
-        S = self.salinity
-        T = 273.15 + self.temperature
+        # Calculate the volumetric solubility function F_A in mol/l
+        S = self.salinity  # unitless
+        T = 273.15 + self.temperature  # C
         A1 = -160.7333
         A2 = 215.4152
         A3 = 89.892
@@ -410,10 +411,11 @@ class SeawaterConstants(esbmtkBase):
         B2 = -0.027455
         B3 = 0.0053407
 
+        # F in mol/(l * atm)
         F = self.calc_solubility_term(S, T, A1, A2, A3, A4, B1, B2, B3)
 
         # correct for water vapor partial pressure
-        self.SA_co2 = F / (1 - self.p_H2O)
+        self.SA_co2 = F / (1 - self.p_H2O)  # mol/(m^3 * atm)
 
     def o2_solubility_constant(self) -> None:
         """Calculate the solubility of CO2 at a given temperature and salinity. Coefficients
@@ -426,8 +428,8 @@ class SeawaterConstants(esbmtkBase):
         """
 
         # Calculate the volumetric solubility function F_A in mol/l/m^3
-        S = self.salinity
-        T = 273.15 + self.temperature
+        S = self.salinity  # unit less
+        T = 273.15 + self.temperature  # in C
         A1 = -58.3877
         A2 = 85.8079
         A3 = 23.8439
@@ -439,7 +441,7 @@ class SeawaterConstants(esbmtkBase):
         b = self.calc_solubility_term(S, T, A1, A2, A3, A4, B1, B2, B3)
 
         # and convert from bunsen coefficient to solubility
-        VA = 22.4136
+        VA = 22.4136  # after Sarmiento & Gruber 2006
         self.SA_o2 = b / VA
 
     def calc_solubility_term(self, S, T, A1, A2, A3, A4, B1, B2, B3) -> float:
@@ -590,7 +592,7 @@ def calc_pCO2b(
     return pco2
 
 
-@njit(parallel=False, fastmath=True)
+@njit(parallel=False, fastmath=True, error_model="numpy")
 def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> None:
     """Calculates and returns the carbonate concentrations with the format of
     [d1, d2, d3, d4, d5] where each variable corresponds to
@@ -660,7 +662,7 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[5][i] = omega
 
 
-@njit(fastmath=True)  # , error_model="numpy")
+@njit(fastmath=True, error_model="numpy")
 def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> None:
     """Calculates and returns the carbonate concentrations and carbonate compensation
     depth (zcc) at the ith time-step of the model.
@@ -746,6 +748,11 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
 
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
+
+    # prevent co3 from becoming zero
+    if co3 <= 0:
+        co3 = 1e-16
+
     zsat = int(max((zsat0 * np.log(ca2 * co3 / ksp0)), zsat_min))  # eq2
     if zsat < zsat_min:
         zsat = int(zsat_min)
@@ -757,6 +764,8 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
 
     if zcc > zmax:
         zcc = int(zmax)
+    if zcc < zsat_min:
+        zcc = zsat_min
 
     A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
     A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
@@ -772,9 +781,8 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # BDS_under = kc int(zcc,zsat) area' Csat(z,t) - [CO3](t) dz, eq 9a
     diff_co3 = Csat_table[zsat:zcc] - co3
     area_p = area_dz_table[zsat:zcc]
-    BDS_under = kc * area_p.dot(diff_co3)
 
-    # BDS_resp  = a (A(zsat,zcc) * B/AD - BDS_under, eq 9b
+    BDS_under = kc * area_p.dot(diff_co3)
     BDS_resp = alpha * (A_zsat_zcc * B_AD - BDS_under)
     BDS = BDS_under + BDS_resp
 
