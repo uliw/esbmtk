@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgf8bee9c)
-2.  [News](#org310569a)
-3.  [Contributing](#org97c2b3a)
-4.  [Installation](#orgd6d459c)
-5.  [Documentation](#org744e18f)
-6.  [Todo](#orge0660c1)
-7.  [License](#org9e96894)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgf72bf37)
+2.  [News](#orgcd094ee)
+3.  [Contributing](#org8bae6b2)
+4.  [Installation](#org5f36e62)
+5.  [Documentation](#org054bfc8)
+6.  [Todo](#org9201f34)
+7.  [License](#org658764b)
 
 
-<a id="orgf8bee9c"></a>
+<a id="orgf72bf37"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,7 +27,7 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org310569a"></a>
+<a id="orgcd094ee"></a>
 
 # News
 
@@ -38,7 +38,10 @@ generation of graphical results.
     function `add_carbonate_system_1` will add these tracers to a given
     reservoir group. The function `add_carbonate_system_2` will
     additionally compute carbonate burial and dissolution fluxes,
-    following the approach of <sup id="388846f245b537f203fa603cf49f42f1"><a href="#boudreau-2010-ongoin-trans" title="Bernard Boudreau, Jack Middelburg, , Andreas Hofmann \&amp; Filip Meysman, Ongoing Transients in Carbonate Compensation, {Global Biogeochemical Cycles}, v(4), n/a-n/a (2010).">boudreau-2010-ongoin-trans</a></sup>.
+    following the approach of <sup id="388846f245b537f203fa603cf49f42f1"><a href="#boudreau-2010-ongoin-trans" title="Bernard Boudreau, Jack Middelburg, , Andreas Hofmann \&amp; Filip Meysman, Ongoing Transients in Carbonate Compensation, {Global Biogeochemical Cycles}, v(4), n/a-n/a (2010).">boudreau-2010-ongoin-trans</a></sup>. Big
+    thanks to Tina and Mahrukh who developed and tested the carbonate
+    chemistry module. Note that the current release has not yet updated
+    the documentation or the examples in the github repository.
 
 -   July 28<sup>th</sup>, esbmtk now supports python name spaces. The default is
     still to register all esbmtk objects in the global
@@ -261,7 +264,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org97c2b3a"></a>
+<a id="org8bae6b2"></a>
 
 # Contributing
 
@@ -271,7 +274,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orgd6d459c"></a>
+<a id="org5f36e62"></a>
 
 # Installation
 
@@ -292,7 +295,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org744e18f"></a>
+<a id="org054bfc8"></a>
 
 # Documentation
 
@@ -310,7 +313,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orge0660c1"></a>
+<a id="org9201f34"></a>
 
 # Todo
 
@@ -319,7 +322,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org9e96894"></a>
+<a id="org658764b"></a>
 
 # License
 

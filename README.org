@@ -21,7 +21,10 @@ generation of graphical results.
    function =add_carbonate_system_1= will add these tracers to a given
    reservoir group. The function =add_carbonate_system_2= will
    additionally compute carbonate burial and dissolution fluxes,
-   following the approach of cite:boudreau-2010-ongoin-trans.
+   following the approach of cite:boudreau-2010-ongoin-trans. Big
+   thanks to Tina and Mahrukh who developed and tested the carbonate
+   chemistry module. Note that the current release has not yet updated
+   the documentation or the examples in the github repository.
 
  - July 28^{th}, esbmtk now supports python name spaces. The default is
    still to register all esbmtk objects in the global
