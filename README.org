@@ -14,6 +14,56 @@ generation of graphical results.
 
 * News
 
+ - August 2^{nd}, 0.7.0.0 Python namespaces are now the default. Esbmtk
+   now supports carbonate chemistry. Tracers like bicarbonate and
+   carbonate-ion concentration can be calculated for reservoir groups
+   which track total alkalinity and dissolved inorganic carbon. The
+   function =add_carbonate_system_1= will add these tracers to a given
+   reservoir group. The function =add_carbonate_system_2= will
+   additionally compute carbonate burial and dissolution fluxes,
+   following the approach of cite:boudreau-2010-ongoin-trans. Big
+   thanks to Tina and Mahrukh who developed and tested the carbonate
+   chemistry module. Note that the current release has not yet updated
+   the documentation or the examples in the github repository.
+
+ - July 28^{th}, esbmtk now supports python name spaces. The default is
+   still to register all esbmtk objects in the global
+   namespace. However, in cases where models need to be integrated
+   into python code, you can now set the =register = 'local'= keyword
+   in the model declaration. In this case, all model object follow are
+   hierarchical naming scheme e.g., =M.A_sb.DIC= denotes the DIC
+   concentration in the =A_sb= reservoir group which belongs to model
+   =M=.
+
+ - July 20^{th}, the model object now provides a =sub_sample_data()=
+   which will resample all model data to a default grid of 1000 data
+   points, before plotting.
+
+ - July 17^{th}, =ExternalCode= is a new class to allow integration of
+   arbitrary code. This replaces the =VirtualReservoir-no_set= class
+
+ - June 17^{th}, data and state files are now stored in sub
+   directories. Model runs can now be broken down into individual
+   segments which allows for long running models without exhausting
+   memory. See the =step_limit= parameter in =Model=. ESBMTK now
+   automatically reduces the number of datapoints to 1000 before
+   saving (or plotting) data. See the =number_of_datapoints= parameter
+   in =Model=.
+
+ - May 26^{th}, 0.6.0.0 changed data-structure for the =Generic_Function=
+   class. This will break any previous use of
+   =VirtualReservoir_no_set= instances. See the API documentation on
+   how to update. Changed the data-structure of all process
+   classes. There should be no user facing changes.
+
+ - May 13^{th}, 0.5.1.3 Multiple regression fixes, the =ref= keyword is
+   now called =ref_reservoirs=. Added two new classes
+   =Reservoir_no_set=, and =VirtualReservoir_no_set=. Both classes are
+   agnostic about changes to their data. ==Reservoir_no_set= will only
+   change in response to fluxes, but will not update concentration
+   data etc. Likewise for =VirtualReservoir_no_set= whose values will
+   only change in response to the associated function
+  
  - May 5^{th},  0.5.0.1 The Datafield Class now accepts lists of datasets. This
    facilitates the grouping of data which belong together into a
    single graph.
@@ -93,7 +143,7 @@ generation of graphical results.
    seawater species concentrations and their K and Pk constants at
    given set of temperature, salinity and pressure conditions. This
    version also includes some refactoring in the =Connnection= and
-   =ConnectionmGroup= classes. It is likely that this broke some
+   =ConnectionGroup= classes. It is likely that this broke some
    connection types.
 
  - March 13^{th}, cleaned up the use of the =k_value= keyword which is

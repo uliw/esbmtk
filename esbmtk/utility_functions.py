@@ -40,10 +40,18 @@ import pandas as pd
 import logging
 import time
 
+
+from esbmtk import Q_
+
+
 # import builtins
 # import math
 
 set_printoptions(precision=4)
+
+
+def insert_into_namespace(name, value, name_space=globals()):
+    name_space[name] = value
 
 
 def add_to(l, e):
@@ -270,9 +278,9 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
         y_label = f"{obj.n} [{obj.data.plt_units:~P}]"
 
     elif isinstance(obj, DataField):
-        time = (time * model.t_unit).to(model.d_unit).magnitude
-        yl = obj.y1_data
-        y_label = obj.y1_label
+        # time = (time * model.t_unit).to(model.d_unit).magnitude
+        # yl = obj.y1_data
+        # y_label = obj.y1_label
         if type(obj.y2_data) == str:
             ptype = 2
         else:
@@ -301,12 +309,14 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
 
     if first_axis:
         if isinstance(obj, DataField):
+            y_label = obj.y1_label
             if not isinstance(obj.y1_data[0], str):
                 for i, d in enumerate(obj.y1_data):  # loop over datafield list
-                    yl = d
-                    label = obj.y1_legend[i]
-                    # print(f"label = {label}")
-                    ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
+                    y1_legend = obj.y1_legend[i]
+                    # print(f"label = {y1_legend}")
+                    ln1 = ax1.plot(
+                        obj.x1_data[i], obj.y1_data[i], color=col, label=y1_legend
+                    )
                     cn = cn + 1
                     col = f"C{cn}"
 
@@ -314,8 +324,8 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                 ax1.set_ylabel(y_label)
                 # remove unnecessary frame species
                 ax1.spines["top"].set_visible(False)
-                set_y_limits(ax1, obj)
-                plt.legend()
+                # set_y_limits(ax1, obj)
+                # plt.legend()
 
         else:
             ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=y_label)
@@ -326,31 +336,34 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             ax1.set_ylabel(y_label)
             # remove unnecessary frame species
             ax1.spines["top"].set_visible(False)
-            set_y_limits(ax1, obj)
+            # set_y_limits(ax1, obj)
 
     if second_axis:
         if isinstance(obj, DataField):
+            y_label = obj.y2_label
             if not isinstance(obj.y2_data[0], str):
                 if obj.common_y_scale == "yes":
                     for i, d in enumerate(obj.y2_data):  # loop over datafield list
-                        yl = d
-                        label = obj.y2_legend[i]
-                        ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
+                        y2_legend = obj.y2_legend[i]
+                        ln1 = ax1.plot(
+                            obj.x2_data[i], obj.y2_data[i], color=col, label=y2_legend
+                        )
                         cn = cn + 1
                         col = f"C{cn}"
-                        set_y_limits(ax1, model)
-                        ax1.legend()
+                        # set_y_limits(ax1, model)
+                        # ax1.legend()
                         second_axis = False
                 else:
                     ax2 = ax1.twinx()  # create a second y-axis
                     for i, d in enumerate(obj.y2_data):  # loop over datafield list
-                        yl = d
-                        label = obj.y2_legend[i]
-                        ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=label)
+                        y2_legend = obj.y2_legend[i]
+                        ln1 = ax2.plot(
+                            obj.x2_data[i], obj.y2_data[i], color=col, label=y2_legend
+                        )
                         cn = cn + 1
                         col = f"C{cn}"
 
-                    ax2.set_ylabel(obj.ld)  # species object delta label
+                    ax2.set_ylabel(obj.y2_label)  # species object delta label
                     set_y_limits(ax2, model)
                     # remove unneeded frame
                     ax2.spines["top"].set_visible(False)
@@ -367,13 +380,13 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             ax2.set_ylabel(obj.data.ld)  # species object delta label
             set_y_limits(ax2, model)
             ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
-        else:
+        elif isinstance(obj, Reservoir):
             ax2 = ax1.twinx()  # create a second y-axis
             # plof right y-scale data
             ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
             ax2.set_ylabel(obj.ld)  # species object delta label
             set_y_limits(ax2, model)
-            ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
+            ax2.spines["top"].set_visible(False)  # remove unnecessary frame species
 
     # adjust display properties for title and legend
 
@@ -413,15 +426,12 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
 
     if first_axis and second_axis:
         legend = ax2.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(6)
-    # elif first_axis:
-    #    legend = ax1.legend(handler1 + label1, loc=0).set_zorder(6)
-    # elif second_axis:
-    #   legend = ax2.legend(handler2 + label2, loc=0).set_zorder(6)
-
-    # Matplotlib will show arbitrarily small differences which can be confusing
-    # yl_min = min(yl)
-    # yl_max = max(yl)
-    # if (yl_max - yl_min) < 0.1:
+    elif first_axis:
+        legend = ax1.legend(handler1, label1, loc=0).set_zorder(6)
+    elif second_axis:
+        legend = ax2.legend(handler2, label2, loc=0).set_zorder(6)
+    else:
+        raise TypeError("This should never happen!")
 
 
 def is_name_in_list(n: str, l: list) -> bool:
@@ -480,6 +490,33 @@ def sort_by_type(l: list, t: list, m: str) -> list:
     return rl
 
 
+def get_object_handle(res, M):
+    """Test if we the key is a global reservoir handle
+    or exists in the model namespace
+
+    res: list, str, or reservoir handle
+    M: Model handle
+    """
+
+    rlist: list = []
+
+    if not isinstance(res, list):
+        res = [res]
+
+    for o in res:
+        if o in M.dmo:  # is object known in global namespace
+            rlist.append(M.dmo[o])
+        elif o in M.__dict__:  # or does it exist in Model namespace
+            rlist.append(getattr(M, o))
+        else:
+            raise ValueError(f"{o} is not known for model {M.name}")
+
+    if len(rlist) == 1:
+        rlist = rlist[0]
+
+    return rlist
+
+
 def split_key(k: str, M: any) -> Union[any, any, str]:
     """split the string k with letter 2, and test if optional
     id string is present
@@ -499,8 +536,9 @@ def split_key(k: str, M: any) -> Union[any, any, str]:
         sink = sinkandid
         cid = ""
 
-    sink = M.dmo[sink]
-    source = M.dmo[source]
+    sink = get_object_handle(sink, M)
+    source = get_object_handle(source, M)
+
     return (source, sink, cid)
 
 
@@ -533,7 +571,7 @@ def get_typed_list(data: list) -> list:
     return tl
 
 
-def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
+def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dict:
     """boxes are defined by area and depth interval here we use an ordered
     dictionary to define the box geometries. The next column is temperature
     in deg C, followed by pressure in bar
@@ -559,54 +597,41 @@ def create_reservoirs(bn: dict, ic: dict, M: any, cs: bool = False) -> dict:
 
     M: Model object handle
 
-    cs: add virtual reservoir for the carbonate system. Defaults to False
+    register reservoir groups in global name space (default), or with the
+    provided object reference
 
     """
 
     from esbmtk import SeawaterConstants, ReservoirGroup, build_concentration_dicts
-    from esbmtk import SourceGroup, SinkGroup, carbonate_system, Q_
+    from esbmtk import SourceGroup, SinkGroup, Q_
 
     # parse for sources and sinks, create these and remove them from the list
 
-    # setup the remaining boxes
-    # icd: dict = build_concentration_dicts(ic, bn)
-
     # loop over reservoir names
     for k, v in bn.items():
+        # test key format
+        if M.name in k:
+            k = k.split(".")[1]
+
         if "ty" in v:  # type is given
             if v["ty"] == "Source":
-                SourceGroup(name=k, species=v["sp"])
+                SourceGroup(name=k, species=v["sp"], register=register)
             elif v["ty"] == "Sink":
-                SinkGroup(name=k, species=v["sp"])
+                SinkGroup(name=k, species=v["sp"], register=register)
             else:
                 raise ValueError("'ty' must be either Source or Sink")
 
         else:  # create reservoirs
             icd: dict = build_concentration_dicts(ic, k)
-            swc = SeawaterConstants(
-                name=f"SW_{k}",
-                model=M,
-                temperature=v["T"],
-                pressure=v["P"],
-            )
-
             rg = ReservoirGroup(
                 name=k,
                 geometry=v["g"],
                 concentration=icd[k][0],
                 isotopes=icd[k][1],
                 delta=icd[k][2],
+                seawater_parameters={"temperature": v["T"], "pressure": v["P"]},
+                register=register,
             )
-
-            if cs:
-                volume = Q_(f"{rg.lor[0].volume} l")
-                carbonate_system(
-                    Q_(f"{swc.ca} mol/l"),
-                    Q_(f"{swc.hplus} mol/l"),
-                    volume,
-                    swc,
-                    rg,
-                )
 
     return icd
 
@@ -857,6 +882,7 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
     # re: reference, optional
     # al: alpha, optional
     # de: delta, optional
+    # bp: bypass, see scale_with_flux
     # mx: True, optional defaults to False. If set, it will create forward
           and backward fluxes (i.e. mixing)
 
@@ -911,8 +937,7 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
 
     # loop over dict entries and create the respective connections
     for k, v in c_ct.items():
-        if isinstance(k, tuple):
-            # loop over names in tuple
+        if isinstance(k, tuple):  # loop over names in tuple
             for c in k:
                 create_connection(c, v, M)
         elif isinstance(k, str):
@@ -951,6 +976,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
     delta = "None" if not "de" in p else p["de"]
     mix = False if not "mx" in p else p["mx"]
     cid = f"{cid}_f" if mix else f"{cid}"
+    bypass = "None" if not "bp" in p else p["bp"]
 
     if isinstance(scale, Q_):
         scale = scale.to("l/a").magnitude
@@ -963,7 +989,11 @@ def create_connection(n: str, p: dict, M: any) -> None:
     #                  test if backwards connection exists, or create
 
     if not mix:
-        name = f"C_{source.name}2{sink.name}"
+        if M.register == "local":
+            name = f"CG_{source.name}2{sink.name}"
+        else:
+            name = f"CG_{source.name}2{sink.name}"
+
         update_or_create(
             name,
             source,
@@ -977,11 +1007,16 @@ def create_connection(n: str, p: dict, M: any) -> None:
             delta,
             cid,
             M,
+            bypass,
         )
 
     else:  # this is a connection with mixing
         # create forward connection
-        name = f"C_{source.name}2{sink.name}"
+        if M.register == "local":
+            name = f"CG_{source.name}2{sink.name}"
+        else:
+            name = f"CG_{source.name}2{sink.name}"
+
         update_or_create(
             name,
             source,
@@ -995,10 +1030,15 @@ def create_connection(n: str, p: dict, M: any) -> None:
             delta,
             cid,
             M,
+            bypass,
         )
 
         # create backwards connection
-        name = f"C_{sink.name}2{source.name}"
+        if M.register == "local":
+            name = f"CG_{sink.name}2{source.name}"
+        else:
+            name = f"CG_{sink.name}2{source.name}"
+
         cid = cid.replace("_f", "_b")
         update_or_create(
             name,
@@ -1013,18 +1053,41 @@ def create_connection(n: str, p: dict, M: any) -> None:
             delta,
             cid,
             M,
+            bypass,
         )
 
 
 def update_or_create(
-    name, source, sink, los, typ, scale, rate, ref_reservoirs, alpha, delta, cid, M
+    name,
+    source,
+    sink,
+    los,
+    typ,
+    scale,
+    rate,
+    ref_reservoirs,
+    alpha,
+    delta,
+    cid,
+    M,
+    bypass,
 ):
     """Create or update connection"""
 
     from esbmtk import ConnectionGroup
 
-    if name in M.dmo:  # update connection
-        cg = M.dmo[name]
+    if M.register == "local":
+        register = M
+    else:
+        register = "None"
+
+    # update connection if already known
+    if f"{name}" in M.lmo or f"{M.name}.{name}" in M.lmo:
+        if M.register == "local":
+            cg = getattr(M, name)
+        else:
+            cg = __builtins__[name]
+
         cg.update(
             name=name,
             source=source,
@@ -1035,6 +1098,8 @@ def update_or_create(
             ref_reservoirs=make_dict(los, ref_reservoirs),
             alpha=make_dict(los, alpha),
             delta=make_dict(los, delta),
+            bypass=make_dict(los, bypass),
+            register=register,
             id=cid,  # get id from dictionary
         )
     else:  # create connection
@@ -1048,6 +1113,8 @@ def update_or_create(
             ref_reservoirs=make_dict(los, ref_reservoirs),
             alpha=make_dict(los, alpha),
             delta=make_dict(los, delta),
+            bypass=make_dict(los, bypass),
+            register=register,
             id=cid,  # get id from dictionary
         )
 
@@ -1099,17 +1166,17 @@ def show_dict(d: dict, mt: str = "1:1") -> None:
             print(f"     {pk} : {x}")
 
 
-def find_matching_fluxes(M: any, filter_by: str) -> list:
-    """Loop over all reservoir, and extract the names of all fluxes
+def find_matching_fluxes(l: list, filter_by: str, exclude: str) -> list:
+    """Loop over all reservoir in l, and extract the names of all fluxes
     which match the filter string. Return the list of names (not objects!)
 
     """
 
     lof: set = set()
 
-    for r in M.loc:
+    for r in l:
         for f in r.lof:
-            if filter_by in f.full_name:
+            if filter_by in f.full_name and exclude not in f.full_name:
                 lof.add(f)
 
     return list(lof)
@@ -1129,13 +1196,25 @@ def reverse_key(key: str) -> str:
     return f"{r2}2{r1}"
 
 
-def get_connection_keys(s: set, fstr: str, nstr: str, inverse: bool) -> list:
+def get_connection_keys(
+    s: set, fstr: str, nstr: str, inverse: bool, exclude: str
+) -> list:
     """extract connection keys from set of flux names, replace fstr with
     nstr so that the key can be used in create_bulk_connnections()
 
     The optional inverse parameter, can be used where in cases where the
     flux direction needs to be reversed, i.e., the returned key will not read
     sb2db@POM, but db2s@POM
+
+    E.g., if
+
+    s = ( M4.CG_P_sb2P_ib.PO4.POP_F)
+    fstr = "POP"
+    nstr = "POM_DIC"
+
+    M4.CG_P_sb2P_ib.PO4.POP_F will become
+
+    P_sb2P_ib@POM_DIC
 
     """
 
@@ -1144,7 +1223,7 @@ def get_connection_keys(s: set, fstr: str, nstr: str, inverse: bool) -> list:
     for n in s:
         # get connection and flux name
         l = n.full_name.split(".")
-        cn = l[0][2:]  # get key without leadinf C_
+        cn = l[1][3:]  # get key without leadinf C_
         if inverse:
             cn = reverse_key(cn)
         cn.replace(fstr, nstr)
@@ -1175,6 +1254,8 @@ def gen_dict_entries(M: any, **kwargs) -> tuple:
 
     """
 
+    from esbmtk import Model
+
     reference = kwargs["ref_id"]
     target = kwargs["target_id"]
     if "inverse" in kwargs:
@@ -1182,8 +1263,25 @@ def gen_dict_entries(M: any, **kwargs) -> tuple:
     else:
         inverse = False
 
-    flist: list = find_matching_fluxes(M, filter_by=reference)
-    klist: list = get_connection_keys(flist, reference, target, inverse)
+    if "exclude" in kwargs:
+        exclude_str = kwargs["exclude"]
+    else:
+        exclude_str = "None"
+
+    if isinstance(M, Model):
+        flist: list = find_matching_fluxes(
+            M.loc, filter_by=reference, exclude=exclude_str
+        )
+    elif isinstance(M, list):
+        flist: list = find_matching_fluxes(
+            M,
+            filter_by=reference,
+            exclude=exclude_str,
+        )
+    else:
+        raise ValueError(f"gen_dict_entries: M must be list or Model, not {type(M)}")
+
+    klist: list = get_connection_keys(flist, reference, target, inverse, exclude_str)
 
     return tuple(klist), flist
 
@@ -1224,6 +1322,25 @@ def get_string_between_brackets(s: str) -> str:
     return s[0]
 
 
+def check_for_quantity(kw) -> Q_:
+    """check if keyword is quantity or string an convert as necessary
+
+    kw = str or Q_
+
+    """
+
+    from esbmtk import Q_
+
+    if isinstance(kw, str):
+        kw = Q_(kw)
+    elif isinstance(kw, Q_):
+        pass
+    else:
+        raise ValueError(f"kw must be string or Quantity")
+
+    return kw
+
+
 def map_units(v: any, *args) -> float:
     """parse v to see if it is a string. if yes, map to quantity.
     parse v to see if it is a quantity, if yes, map to model units
@@ -1262,3 +1379,356 @@ def map_units(v: any, *args) -> float:
         raise ValueError(f"m is {type(m)}, must be float, v={v}. Something is fishy")
 
     return m
+
+
+def add_carbonate_system_1(rgs: list):
+    """Creates a new carbonate system virtual reservoir for each
+    reservoir in rgs. Note that rgs must be a list of reservoir groups.
+
+    Required keywords:
+        rgs: list = []  of Reservoir Group objects
+
+    These new virtual reservoirs are registered to their respective Reservoir
+    as 'cs'.
+
+    The respective data fields are available as rgs.r.cs.xxx where xxx stands
+    for a given key key in the  vr_datafields dictionary (i.e., H, CA, etc.)
+
+    """
+
+    from esbmtk import ExternalCode, calc_carbonates_1
+
+    # get object handle even if it defined in model namespace
+    # rgs = get_object_handle(rgs)
+
+    for rg in rgs:
+
+        if rg.mo.register == "local":
+            species = rg.mo.CO2
+        else:
+            species = __builtins__["CO2"]
+
+        if hasattr(rg, "DIC") and hasattr(rg, "TA"):
+            ExternalCode(
+                name="cs",
+                species=species,
+                function=calc_carbonates_1,
+                vr_datafields={
+                    "H": rg.swc.hplus,
+                    "CA": rg.swc.ca,
+                    "HCO3": rg.swc.hco3,
+                    "CO3": rg.swc.co3,
+                    "CO2aq": rg.swc.co2,
+                    "Omega": 0.0,
+                },
+                function_input_data=List([rg.DIC.c, rg.TA.c]),
+                function_params=List(
+                    [
+                        rg.swc.K1,  # 1
+                        rg.swc.K2,  # 2
+                        rg.swc.KW,  # 3
+                        rg.swc.KB,  # 4
+                        rg.swc.boron,  # 5
+                        rg.swc.hplus,  # 5
+                        rg.swc.ca2,  # 6
+                        rg.swc.Ksp,  # 7
+                        rg.swc.Ksp0,  # 8
+                    ]
+                ),
+                register=rg,
+            )
+        else:
+            raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
+
+
+def add_carbonate_system_2(**kwargs) -> None:
+    """Creates a new carbonate system virtual reservoir
+    which will compute carbon species, saturation, compensation,
+    and snowline depth, and compute the associated carbonate burial fluxes
+
+    Required keywords:
+        rgs: list of ReservoirGroup objects
+        carbonate_export_fluxes: list of flux objects which mus match the
+                                 list of ReservoirGroup objects.
+        zsat_min = depth of the upper boundary of the deep box
+        z0 = upper depth limit for carbonate burial calculations
+             typically the lower boundary of the surface water box
+
+    Optional Parameters:
+
+        zsat = initial saturation depth (m)
+        zcc = initial carbon compensation depth (m)
+        zsnow = initial snowline depth (m)
+        zsat0 = characteristic depth (m)
+        Ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
+        kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
+        Ca2 = calcium ion concentration (mol/kg)
+        pc = characteristic pressure (atm)
+        pg = seawater density multiplied by gravity due to acceleration (atm/m)
+        I = dissolvable CaCO3 inventory
+        co3 = CO3 concentration (mol/kg)
+        Ksp = solubility product of calcite at in situ sea water conditions (mol^2/kg^2)
+
+    """
+
+    from esbmtk import carbonate_chemistry
+    from esbmtk import ExternalCode, calc_carbonates_2
+
+    # list of known keywords
+    lkk: dict = {
+        "rgs": list,
+        "carbonate_export_fluxes": list,
+        "AD": float,
+        "zsat": int,
+        "zsat_min": int,
+        "zcc": int,
+        "zsnow": int,
+        "zsat0": int,
+        "Ksp0": float,
+        "kc": float,
+        "Ca2": float,
+        "pc": (float, int),
+        "pg": (float, int),
+        "I_caco3": (float, int),
+        "alpha": float,
+        "zmax": (float, int),
+        "z0": (float, int),
+        "Ksp": (float, int),
+    }
+    # provide a list of absolutely required keywords
+    lrk: list[str] = ["rgs", "carbonate_export_fluxes", "zsat_min", "z0"]
+
+    # we need the reference to the Model in order to set some
+    # default values.
+
+    reservoir = kwargs["rgs"][0]
+    model = reservoir.mo
+    # list of default values if none provided
+    lod: dict = {
+        "zsat": -3715,  # m
+        "zcc": -4750,  # m
+        "zsnow": -4750,  # m
+        "zsat0": -5078,  # m
+        "Ksp0": reservoir.swc.Ksp0,  # mol^2/kg^2
+        "kc": 8.84 * 1000,  # m/yr converted to kg/(m^2 yr)
+        "AD": model.hyp.area_dz(-200, -6000),
+        "alpha": 0.6,  # 0.928771302395292, #0.75,
+        "pg": 0.103,  # pressure in atm/m
+        "pc": 511,  # characteristic pressure after Boudreau 2010
+        "I_caco3": 529,  #  dissolveable CaCO3 in mol/m^2
+        "zmax": -6000,  # max model depth
+        "Ksp": reservoir.swc.Ksp,  # mol^2/kg^2
+    }
+
+    # make sure all mandatory keywords are present
+    __checkkeys__(lrk, lkk, kwargs)
+
+    # add default values for keys which were not specified
+    kwargs = __addmissingdefaults__(lod, kwargs)
+
+    # test that all keyword values are of the correct type
+    __checktypes__(lkk, kwargs)
+
+    # establish some shared parameters
+    # depths_table = np.arange(0, 6001, 1)
+    depths: NDArray = np.arange(0, 6002, 1, dtype=float)
+    rgs = kwargs["rgs"]
+    Ksp0 = kwargs["Ksp0"]
+    ca2 = rgs[0].swc.ca2
+    pg = kwargs["pg"]
+    pc = kwargs["pc"]
+    z0 = kwargs["z0"]
+    Ksp = kwargs["Ksp"]
+
+    # C saturation(z) after Boudreau 2010
+    Csat_table: NDArray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
+    area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
+    area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area'
+    sa = model.hyp.sa  # Total earth area
+    AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
+    dt = model.dt
+
+    for i, rg in enumerate(rgs):  # Setup the virtual reservoirs
+
+        if rg.mo.register == "local":
+            species = rg.mo.CO2
+        else:
+            species = __builtins__["CO2"]
+
+        ExternalCode(
+            name="cs",
+            species=species,
+            function=calc_carbonates_2,
+            # datafield hold the results of the VR_no_set function
+            # provide a default values which will be use to initialize
+            # the respective datafield/
+            vr_datafields={
+                "H": rg.swc.hplus,  # 0 H+
+                "CA": rg.swc.ca,  # 1 carbonate alkalinity
+                "HCO3": rg.swc.hco3,  # 2 HCO3
+                "CO3": rg.swc.co3,  # 3 CO3
+                "CO2aq": rg.swc.co2,  # 4 CO2aq
+                "zsat": kwargs["zsat"],  # 5 zsat
+                "zcc": kwargs["zcc"],  # 6 zcc
+                "zsnow": kwargs["zsnow"],  # 7 zsnow
+                "Fburial": 0.0,  # 8 carbonate burial
+                "B": 0.0,  # 9 carbonate export productivity
+                # temp fields, delete eventually
+                "BNS": 0.0,  # 10 BNS
+                "BDS_under": 0.0,  # 11 BDS_under
+                "BDS_resp": 0.0,  # 12 BDS_resp
+                "BDS": 0.0,  # 13 BDS
+                "BCC": 0.0,  # 14 BCC
+                "BPDC": 0.0,  # 15 BPDC
+                "BD": 0.0,  # 16 BD
+                "bds_area": 0.0,  # 17 bds_area
+                "zsnow_dt": 0.0,  # 18 zsnow_dt
+                "Omega": 0.0,  # 19 omega
+            },
+            function_input_data=List(
+                [
+                    rg.DIC.m,  # 0 DIC mass
+                    rg.DIC.l,  # 1 DIC light isotope mass
+                    rg.DIC.h,  # 2 DIC heavy isotope mass
+                    rg.DIC.c,  # 3 DIC concentration
+                    rg.TA.m,  # 4 TA mass
+                    rg.TA.c,  # 5 TA concentration
+                    kwargs["carbonate_export_fluxes"][i].m,  # 6
+                    area_table,  # 7
+                    area_dz_table,  # 8
+                    Csat_table,  # 9
+                ]
+            ),
+            function_params=List(
+                [
+                    rg.swc.K1,  # 0
+                    rg.swc.K2,  # 1
+                    rg.swc.KW,  # 2
+                    rg.swc.KB,  # 3
+                    rg.swc.boron,  # 4
+                    Ksp0,  # 5
+                    float(kwargs["kc"]),  # 6
+                    float(sa),  # 7
+                    float(rg.volume.to("liter").magnitude),  # 8
+                    float(AD),  # 9
+                    float(abs(kwargs["zsat0"])),  # 10
+                    float(rg.swc.ca2),  # 11
+                    rg.mo.dt,  # 12
+                    float(kwargs["pc"]),  # 13
+                    float(kwargs["pg"]),  # 14
+                    float(kwargs["I_caco3"]),  # 15
+                    float(kwargs["alpha"]),  # 16
+                    float(abs(kwargs["zsat_min"])),  # 17
+                    float(abs(kwargs["zmax"])),  # 18
+                    float(abs(kwargs["z0"])),  # 19
+                    Ksp,  # 20
+                ]
+            ),
+            register=rg,
+        )
+
+
+def __find_flux__(reservoirs: list, full_name: str):
+    """Helper function to find a Flux object based on its full_name in the reservoirs
+    in the list of provided reservoirs.
+
+    PRECONDITIONS: full_name must contain the full_name of the Flux
+
+    Parameters:
+        reservoirs: List containing all reservoirs
+        full_name: str specifying the full name of the flux (boxes.flux_name)
+    """
+    needed_flux = None
+    for res in reservoirs:
+        for flux in res.lof:
+            if flux.full_name == full_name:
+                needed_flux = flux
+                break
+        if needed_flux != None:
+            break
+    if needed_flux == None:
+        raise NameError(
+            f"add_carbonate_system: Flux {full_name} cannot be found in any of the reservoirs in the Model!"
+        )
+
+    return needed_flux
+
+
+def __checktypes__(av: Dict[any, any], pv: Dict[any, any]) -> None:
+    """this method will use the the dict key in the user provided
+    key value data (pv) to look up the allowed data type for this key in av
+
+    av = dictinory with the allowed input keys and their type
+    pv = dictionary with the user provided key-value data
+    """
+
+    k: any
+    v: any
+
+    # loop over provided keywords
+    for k, v in pv.items():
+        # check av if provided value v is of correct type
+        if av[k] != any:
+            # print(f"key = {k}, value  = {v}")
+            if not isinstance(v, av[k]):
+                # print(f"k={k}, v= {v}, av[k] = {av[k]}")
+                raise TypeError(
+                    f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
+                )
+
+
+def __checkkeys__(lrk: list, lkk: list, kwargs: dict) -> None:
+    """check if the mandatory keys are present
+
+    lrk = list of required keywords
+    lkk = list of all known keywords
+    kwargs = dictionary with key-value pairs
+
+    """
+
+    k: str
+    v: any
+    # test if the required keywords are given
+    for k in lrk:  # loop over required keywords
+        if isinstance(k, list):  # If keyword is a list
+            s: int = 0  # loop over allowed substitutions
+            for e in k:  # test how many matches are in this list
+                if e in kwargs:
+                    # print(self.kwargs[e])
+                    if not isinstance(e, (np.ndarray, np.float64, list)):
+                        # print (type(self.kwargs[e]))
+                        if kwargs[e] != "None":
+                            s = s + 1
+            if s > 1:  # if more than one match
+                raise ValueError(f"You need to specify exactly one from this list: {k}")
+
+        else:  # keyword is not in list
+            if k not in kwargs:
+                raise ValueError(f"You need to specify a value for {k}")
+
+    tl: List[str] = []
+    # create a list of known keywords
+    for k, v in lkk.items():
+        tl.append(k)
+
+    # test if we know all keys
+    for k, v in kwargs.items():
+        if k not in lkk:
+            raise ValueError(f"{k} is not a valid keyword. \n Try any of \n {tl}\n")
+
+
+def __addmissingdefaults__(lod: dict, kwargs: dict) -> dict:
+    """
+    test if the keys in lod exist in kwargs, otherwise add them with the default values
+    from lod
+
+    """
+
+    new: dict = {}
+    if len(lod) > 0:
+        for k, v in lod.items():
+            if k not in kwargs:
+                new.update({k: v})
+
+    kwargs.update(new)
+    return kwargs

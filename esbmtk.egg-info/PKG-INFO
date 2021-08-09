@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: esbmtk
-Version: 0.5.1.6
+Version: 0.5.1.1
 Summary: An Earth Sciences Box Modeling Toolkit
 Home-page: https://github.com/uliw/esbmtk
 Author: Ulrich G. Wortmann
@@ -9,16 +9,16 @@ License: GPL-3.0-or-later
 Description: 
         # Table of Contents
         
-        1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgbf8c3f6)
-        2.  [News](#org48441a9)
-        3.  [Contributing](#orgf5c3555)
-        4.  [Installation](#orgb286e70)
-        5.  [Documentation](#org07413bb)
-        6.  [Todo](#org8625aa9)
-        7.  [License](#orge678365)
+        1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org4cb1dae)
+        2.  [News](#orgf45e924)
+        3.  [Contributing](#orgf86863a)
+        4.  [Installation](#org1926aa5)
+        5.  [Documentation](#org32be20b)
+        6.  [Todo](#org8c386f2)
+        7.  [License](#org262ab0e)
         
         
-        <a id="orgbf8c3f6"></a>
+        <a id="org4cb1dae"></a>
         
         # ESBMTK - An Earth-sciences box modeling toolkit
         
@@ -35,9 +35,47 @@ Description:
         generation of graphical results.
         
         
-        <a id="org48441a9"></a>
+        <a id="orgf45e924"></a>
         
         # News
+        
+        -   July 28<sup>th</sup>, esbmtk now supports python name spaces. The default is
+            still to register all esbmtk objects in the global
+            namespace. However, in cases where models need to be integrated
+            into python code, you can now set the `register = 'local'` keyword
+            in the model declaration. In this case, all model object follow are
+            hierarchical naming scheme e.g., `M.A_sb.DIC` denotes the DIC
+            concentration in the `A_sb` reservoir group which belongs to model
+            `M`.
+        
+        -   July 20<sup>th</sup>, the model object now provides a `sub_sample_data()`
+            which will resample all model data to a default grid of 1000 data
+            points, before plotting.
+        
+        -   July 17<sup>th</sup>, `ExternalCode` is a new class to allow integration of
+            arbitrary code. This replaces the `VirtualReservoir-no_set` class
+        
+        -   June 17<sup>th</sup>, data and state files are now stored in sub
+            directories. Model runs can now be broken down into individual
+            segments which allows for long running models without exhausting
+            memory. See the `step_limit` parameter in `Model`. ESBMTK now
+            automatically reduces the number of datapoints to 1000 before
+            saving (or plotting) data. See the `number_of_datapoints` parameter
+            in `Model`.
+        
+        -   May 26<sup>th</sup>, 0.6.0.0 changed data-structure for the `Generic_Function`
+            class. This will break any previous use of
+            `VirtualReservoir_no_set` instances. See the API documentation on
+            how to update. Changed the data-structure of all process
+            classes. There should be no user facing changes.
+        
+        -   May 13<sup>th</sup>, 0.5.1.3 Multiple regression fixes, the `ref` keyword is
+            now called `ref_reservoirs`. Added two new classes
+            `Reservoir_no_set`, and `VirtualReservoir_no_set`. Both classes are
+            agnostic about changes to their data. `=Reservoir_no_set` will only
+            change in response to fluxes, but will not update concentration
+            data etc. Likewise for `VirtualReservoir_no_set` whose values will
+            only change in response to the associated function
         
         -   May 5<sup>th</sup>,  0.5.0.1 The Datafield Class now accepts lists of datasets. This
             facilitates the grouping of data which belong together into a
@@ -222,7 +260,7 @@ Description:
         -   Oct. 25<sup>th</sup>, Initial release on github.
         
         
-        <a id="orgf5c3555"></a>
+        <a id="orgf86863a"></a>
         
         # Contributing
         
@@ -232,7 +270,7 @@ Description:
         graphical interface ;-) See the todo section for ideas.
         
         
-        <a id="orgb286e70"></a>
+        <a id="org1926aa5"></a>
         
         # Installation
         
@@ -253,7 +291,7 @@ Description:
         -   pip install esbmtk
         
         
-        <a id="org07413bb"></a>
+        <a id="org32be20b"></a>
         
         # Documentation
         
@@ -271,7 +309,7 @@ Description:
         -   
         
         
-        <a id="org8625aa9"></a>
+        <a id="org8c386f2"></a>
         
         # Todo
         
@@ -280,7 +318,7 @@ Description:
         -   do more testing
         
         
-        <a id="orge678365"></a>
+        <a id="org262ab0e"></a>
         
         # License
         

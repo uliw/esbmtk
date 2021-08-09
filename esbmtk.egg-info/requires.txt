@@ -6,3 +6,4 @@ matplotlib
 pint
 scipy
 numba
+pathlib

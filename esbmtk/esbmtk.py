@@ -51,19 +51,42 @@ from .solver import (
     get_imass,
     get_delta,
     execute,
-    execute_h,
-    execute_n,
     execute_e,
 )
-
-# from .sealevel import get_box_geometry_parameters
-
-# test staging
 
 
 class esbmtkBase(object):
     """The esbmtk base class template. This class handles keyword
     arguments, name registration and other common tasks
+
+    Useful methods in this class:
+
+    define required keywords in lrk dict:
+       self.lrk: list = ["name"]
+
+    define allowed type per keyword in lkk dict:
+       self.lkk: Dict[str, any] = {
+                                  "name": str,
+                                  "model": Model,
+                                  "salinity": (int, float), # int or float
+                                  }
+
+    define default values if none provided in lod dict
+       self.lod: Dict[str, any] = {"salinity": 35.0}
+
+    validate keyword input:
+        self.__validateinput__(kwargs)
+
+    add global defaults each esbmtk object should have, even if they are not set or used
+        self.__global_defaults__()
+
+    register all key/value pairs as instance variables
+        self.__registerkeys__()
+
+    register name in global name space. This is only necessary if you want to reference
+    the instance by name from the console, otherwise use the normal python way (i.e.
+    instance = class(keywords)
+        self.__register_name__ ()
 
     """
 
@@ -82,14 +105,15 @@ class esbmtkBase(object):
         """
 
         self.lmo: list = []
+        self.lmo2: list = []
         self.ldo: list = ["full_name", "register", "groupname", "ctype"]
 
         for n in self.ldo:
             if n not in self.kwargs:
                 self.kwargs[n] = "None"
-                logging.debug(
-                    f"set {self.kwargs['name']} self.kwargs[{n}] to {self.kwargs[n]}"
-                )
+                # logging.debug(
+                #    f"set {self.kwargs['name']} self.kwargs[{n}] to {self.kwargs[n]}"
+                # )
 
     def __validateandregister__(self, kwargs: dict) -> None:
         """Validate the user provided input key-value pairs. For this we need
@@ -131,42 +155,51 @@ class esbmtkBase(object):
         # this sub object.
 
         logging.debug(f"self.register = {self.register}")
-        if self.register == "None":  # Register in global namespace
-            logging.debug(
-                f"Registering {self.name} in global namespace as type {type(self)}"
-            )
-            if isinstance(self, Model):  # Cannot register model with itself
+
+        # models are either in the global namespace, or do not get registered at all
+        if isinstance(self, Model):
+            if self.register == "None":
                 setattr(builtins, self.name, self)
-
-            elif self in self.mo.lmo:
-                raise NameError(f"{self.name} is a duplicate name. Please fix")
-
             else:
-                setattr(builtins, self.name, self)
-                self.full_name = self.name
-                self.mo.lmo.append(self.full_name)
-                self.mo.dmo.update({self.name: self})
+                pass
 
-        else:  # register in group namespace
-            if isinstance(self, (Model, Element)):  # Model only exist in the global NS
+        # all other objects can be either part of another esbmtk object
+        # register=object reference
+        # or be registered globally
+        else:
+            # get model registry
+            if isinstance(self.register, Model):
+                reg = self.register
+            elif isinstance(self.register, str):
+                reg = self.mo
+            else:
+                reg = self.register.mo
+
+            if self.register == "None":  # global registration
                 setattr(builtins, self.name, self)
                 self.full_name = self.name
-            else:  # not a model, and part of group
-                logging.debug(
-                    f"Registering {self.name} in {self.register.name} namespace"
-                )
-                setattr(self.register, self.name, self)
+
+                # check for naming conflicts
+                if self.full_name in reg.lmo:
+                    raise NameError(f"{self.full_name} is a duplicate name. Please fix")
+                else:
+                    # register with model
+                    reg.lmo.append(self.full_name)
+                    reg.lmo2.append(self)
+                    reg.dmo.update({self.full_name: self})
+
+            else:  # local registration
+                # get full_name of parent object
                 if self.register.full_name != "None":
                     fn: str = f"{self.register.full_name}.{self.name}"
                 else:
                     fn: str = f"{self.register.name}.{self.name}"
-                self.full_name = fn
 
-                if self.full_name in self.register.lmo:
-                    raise NameError(f"{self.full_name} is a duplicate name. Please fix")
-                self.register.lmo.append(self.full_name)
-                # setattr(builtins, self.name, self)
-                # self.mo.dmo.update({self.name: self})
+                self.full_name = fn
+                setattr(self.register, self.name, self)
+                # register with model
+                reg.lmo.append(self.full_name)
+                reg.dmo.update({self.full_name: self})
 
         # add fullname to kwargs so it shows up in __repr__
         # its a dirty hack though
@@ -224,7 +257,7 @@ class esbmtkBase(object):
             if av[k] != any:
                 # print(f"key = {k}, value  = {v}")
                 if not isinstance(v, av[k]):
-
+                    # print(f"k={k}, v= {v}, av[k] = {av[k]}")
                     raise TypeError(
                         f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
                     )
@@ -302,8 +335,11 @@ class esbmtkBase(object):
                 s: int = 0  # loop over allowed substitutions
                 for e in k:  # test how many matches are in this list
                     if e in self.kwargs:
-                        if self.kwargs[e] != "None":
-                            s = s + 1
+                        # print(self.kwargs[e])
+                        if not isinstance(e, (np.ndarray, np.float64, list)):
+                            # print (type(self.kwargs[e]))
+                            if self.kwargs[e] != "None":
+                                s = s + 1
                 if s > 1:  # if more than one match
                     raise ValueError(
                         f"You need to specify exactly one from this list: {k}"
@@ -326,7 +362,8 @@ class esbmtkBase(object):
     def __addmissingdefaults__(self, lod: dict, kwargs: dict) -> dict:
         """
         test if the keys in lod exist in kwargs, otherwise add them with the default values
-        in lod
+        from lod
+
         """
         new: dict = {}
         if len(self.lod) > 0:
@@ -374,7 +411,7 @@ class esbmtkBase(object):
 
         return m
 
-    def __str__(self, **kwargs):
+    def __str__(self, kwargs={}):
         """Print the basic parameters for this class when called via the print method
         Optional arguments
 
@@ -391,6 +428,11 @@ class esbmtkBase(object):
         else:
             ind: str = ""
 
+        if "index" in kwargs:
+            index = int(kwargs["index"])
+        else:
+            index = -2
+
         m = f"{ind}{self.name} ({self.__class__.__name__})\n"
         for k, v in self.provided_kwargs.items():
             if not isinstance({k}, esbmtkBase):
@@ -401,6 +443,8 @@ class esbmtkBase(object):
                     m = m + f"{ind}{off}{k} = {v}\n"
                 elif isinstance(v, Q_):
                     m = m + f"{ind}{off}{k} = {v}\n"
+                elif isinstance(v, np.ndarray):
+                    m = m + f"{ind}{off}{k}[{index}] = {v[index]:.2e}\n"
                 elif k != "name":
                     m = m + f"{ind}{off}{k} = {v}\n"
 
@@ -432,7 +476,7 @@ class esbmtkBase(object):
             ind = " " * indent
 
         # print basic data bout this object
-        print(f"{ind}{self.__str__(indent=indent)}")
+        print(f"{ind}{self.__str__(kwargs)}")
 
     def __aux_inits__(self) -> None:
         """Aux initialization code. Not normally used"""
@@ -450,13 +494,16 @@ class Model(esbmtkBase):
                       stop     = "1000 yrs", # end time
                       timestep = "2 yrs",    # as a string "2 yrs"
                       offset = "0 yrs",    # optional: time offset for plot
-                      mass_unit = "mol/l",   #required
-                      volume_unit = "mol/l", #required
+                      mass_unit = "mol",   #required
+                      volume_unit = "l", #required
                       time_label = optional, defaults to "Time"
                       display_precision = optional, defaults to 0.01,
                       m_type = "mass_only/both"
                       plot_style = 'default', optional defaults to 'default'
-                      )
+                      number_of_datapoints = optional, see below
+                      step_limit = optional, see below
+                      register = 'local', see below
+                    )
 
     ref_time:  will offset the time axis by the specified
                  amount, when plotting the data, .i.e., the model time runs from to
@@ -474,6 +521,9 @@ class Model(esbmtkBase):
             reservoirs which set the isotope keyword. 'mass_only' 'both' will override
             the reservoir settings
 
+    register = local/None. If set to 'None' all objects are registered
+               in the global namespace the default setting is local,
+               i.e. all objects are registered in the model namespace.
 
     All of the above keyword values are available as variables with
     Model_Name.keyword
@@ -504,6 +554,36 @@ class Model(esbmtkBase):
     keyword are either "Carbon", or "Sulfur" or both as a list
     ["Carbon", "Sulfur"].
 
+
+    Dealing with large datasets:
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    1) Limiting the size of the data which is being saved with save_data()
+
+         number_of_datapoints = 100 will only write every nth data point to file.
+                                where n = timesteps/ number_of_datapoints
+
+         this defaults to 1000 until set explicitly.
+
+    2) Reducing the memory footprint
+
+    Models with a long runtime can easily exceed the available
+    computer memory, as much if it is goobled up storing the model
+    results. In this case, one can set the optional parameter
+
+       step_limit = 1E6
+
+    The above will limit the total number of iterations to 1E6, then
+    save the data up to this point, and then restart the
+    model. Subsequent results will be appended to the results.
+
+    Caveat Emptor: If your model uses a signal instance, all signal
+    data must fit into a single iteration set. At present, there is no
+    support for signals which extend beyond the step_limit.
+
+    In order to prevent the creation of massive datafiles, number_of_datapoints
+    defaults to 1000. Modify as needed.
+
     """
 
     __slots__ = "lor"
@@ -527,6 +607,10 @@ class Model(esbmtkBase):
             "display_precision": float,
             "m_type": str,
             "plot_style": str,
+            "number_of_datapoints": int,
+            "step_limit": (Number, str),
+            "register": str,
+            "full_name": str,
         }
 
         # provide a list of absolutely required keywords
@@ -540,6 +624,10 @@ class Model(esbmtkBase):
             "display_precision": 0.01,
             "m_type": "Not Set",
             "plot_style": "default",
+            "number_of_datapoints": 1000,
+            "step_limit": "None",
+            "register": "local",
+            "full_name": kwargs["name"],
         }
 
         self.__initerrormessages__()
@@ -580,6 +668,8 @@ class Model(esbmtkBase):
         self.ldf: list = []
         # list of signals
         self.los: list = []
+        self.first_start = True  # keep track of repeated solver calls
+        self.lof: list = []  # list of fluxes
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
@@ -590,6 +680,11 @@ class Model(esbmtkBase):
         self.v_unit = Q_(self.volume_unit).units  # the volume unit
         # the concentration unit (mass/volume)
         self.c_unit = self.m_unit / self.v_unit  # concentration
+        u1 = Q_("mol/liter").units
+        u2 = Q_("mol/kg").units
+        if self.c_unit != u1 and self.c_unit != u2:
+            raise ValueError(f"units must be {u1} or {u2}, not {self.c_unit}")
+
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
         self.r_unit = self.v_unit / self.t_unit  # flux as volume/time
         # this is now defined in __init__.py
@@ -611,11 +706,29 @@ class Model(esbmtkBase):
         self.xl = f"Time [{self.bu}]"  # time axis label
         self.length = int(abs(self.stop - self.start))
         self.steps = int(abs(round(self.length / self.dt)))
-        self.time = (arange(self.steps) * self.dt) + self.start
+
+        if self.steps < self.number_of_datapoints:
+            self.number_of_datapoints = self.steps
+
+        self.time = (np.arange(self.steps) * self.dt) + self.start
+        self.timec = np.empty(0)
         self.state = 0
 
-        # initialize the hypsometry class
-        hypsometry(name="hyp", model=self, register=self)
+        # calculate stride
+        self.stride = int(self.steps / self.number_of_datapoints)
+        self.reset_stride = self.stride
+
+        if self.step_limit == "None":
+            self.number_of_solving_iterations: int = 0
+        elif self.step_limit > self.steps:
+            self.number_of_solving_iterations: int = 0
+            self.step_limit = "None"
+        else:
+            self.step_limit = int(self.step_limit)
+            self.number_of_solving_iterations = int(round(self.steps / self.step_limit))
+            self.reset_stride = int(round(self.steps / self.number_of_datapoints))
+            self.steps = self.step_limit
+            self.time = (arange(self.steps) * self.dt) + self.start
 
         # set_printoptions(precision=self.display_precision)
 
@@ -662,6 +775,9 @@ class Model(esbmtkBase):
         logging.basicConfig(filename=fn, filemode="w", level=logging.WARN)
         self.__register_name__()
 
+        # initialize the hypsometry class
+        hypsometry(name="hyp", model=self, register=self)
+
     def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
         Optional arguments are
@@ -705,7 +821,10 @@ class Model(esbmtkBase):
         prefix: str = "state_"
 
         for r in self.lor:
-            r.__write_data__(prefix, start, stop, stride)
+            r.__write_data__(prefix, start, stop, stride, False, "state")
+
+        for r in self.lvr:
+            r.__write_data__(prefix, start, stop, stride, False, "state")
 
     def save_data(self, **kwargs) -> None:
         """Save the model results to a CSV file. Each reservoir will have
@@ -715,7 +834,7 @@ class Model(esbmtkBase):
         stride = int  # every nth element
         start = int   # start index
         stop = int    # end index
-
+        append = True/False #
 
         """
 
@@ -727,7 +846,7 @@ class Model(esbmtkBase):
         if "stride" in kwargs:
             stride = kwargs["stride"]
         else:
-            stride = 1
+            stride = self.stride
 
         if "start" in kwargs:
             start = kwargs["start"]
@@ -737,16 +856,56 @@ class Model(esbmtkBase):
         if "stop" in kwargs:
             stop = kwargs["stop"]
         else:
-            stop = None
+            stop = self.steps
+
+        if "append" in kwargs:
+            append = kwargs["append"]
+        else:
+            append = False
 
         prefix = ""
         # Save reservoir and flux data
+        ##print("Writing reservoir data")
+        print(f"start = {start}, stop = {stop}, stride={stride}, append ={append}")
         for r in self.lor:
-            r.__write_data__(prefix, start, stop, stride)
+            # print(f"R = {r.full_name}")
+            # print(f"start = {start}, stop = {stop}, stride={stride}, append ={append}")
+            r.__write_data__(prefix, start, stop, stride, append, "data")
 
         # save data fields
-        for r in self.ldf:
-            r.__write_data__(prefix, start, stop, stride)
+        # for r in self.ldf:
+        #     r.__write_data__(prefix, start, stop, stride, append)
+        print("Writing virtual reservoir data")
+        for r in self.lvr:
+            r.__write_data__(prefix, start, stop, stride, append, "data")
+        print("done writing")
+
+    def restart(self):
+        """Restart the model with result of the last run.
+        This is useful for long runs which otherwise would used
+        to much memory
+
+        """
+
+        for r in self.lor:
+            r.__reset_state__()
+            for f in r.lof:
+                f.__reset_state__()
+
+        for r in self.lvr:
+            r.__reset_state__()
+
+        # print(f"len of time {len(self.time)}, stride = {self.stride}")
+        # print(f"len of time with stride {len(self.time[0 : -2 : self.stride])}")
+        self.timec = np.append(self.timec, self.time[0 : -2 : self.stride])
+        t = int(round((self.stop - self.start) * self.dt))
+        self.start = int(round((self.stop * self.dt)))
+        self.stop = self.start + t
+        self.time = (np.arange(self.steps) * self.dt) + self.start
+        print(f"new start = {self.start}, new stop = {self.stop}")
+        print(f"time[0] = {self.time[0]} time[-1] = {self.time[-1]}")
+        # print(f"len of timec {len(self.timec)}")
+        # self.time = (arange(self.steps) * self.dt) + self.start
 
     def read_state(self):
         """This will initialize the model with the result of a previous model
@@ -757,7 +916,28 @@ class Model(esbmtkBase):
 
         """
         for r in self.lor:
-            r.__read_state__()
+            if isinstance(r, (Reservoir, GasReservoir)):
+                # print(f" reading from {r.full_name}")
+                r.__read_state__("state")
+
+        for r in self.lvr:
+            # print(f"lvr  reading from {r.full_name}")
+            r.__read_state__("state")
+
+    def merge_temp_results(self):
+        """Replace the datafields which were used for an individual iteration
+        with the data we saved from the previous iterations
+
+        """
+
+        self.time = self.timec
+        for r in self.lor:
+            r.__merge_temp_results__()
+            for f in r.lof:
+                f.__merge_temp_results__()
+
+        for r in self.lvr:
+            r.__merge_temp_results__()
 
     def plot_data(self, **kwargs: dict) -> None:
         """
@@ -893,19 +1073,68 @@ class Model(esbmtkBase):
         else:
             solver = kwargs["solver"]
 
+        if self.number_of_solving_iterations > 0:
+
+            for i in range(self.number_of_solving_iterations):
+                print(
+                    f"\n Iteration {i+1} out of {self.number_of_solving_iterations}\n"
+                )
+                self.__run_solver__(solver, new)
+
+                print(f"Restarting model")
+                self.restart()
+
+            duration: float = process_time() - start
+            wcd = time.time() - wts
+            print(f"\n Execution took {duration} cpu seconds, wt = {wcd}\n")
+            print("Merge results")
+            self.merge_temp_results()
+            self.steps = self.number_of_datapoints
+            # after merging, the model steps = number_of_datapoints
+        # print("Saving data")
+        # self.save_data(start=0, stop=self.number_of_datapoints, stride=1)
+        # print("Done Saving")
+        else:
+            self.__run_solver__(solver, new)
+
+        # flag that the model has executed
+        self.state = 1
+
+    def sub_sample_data(self):
+        """Subsample the data. No need to save 100k lines of data You need to
+        do this _after_ saving the state, but before plotting and
+        saving the data
+
+        """
+
+        for r in self.lor:
+            r.__sub_sample_data__()
+
+        for vr in self.lvr:
+            vr.__sub_sample_data__()
+
+        for f in self.lof:
+            f.__sub_sample_data__()
+
+        stride = int(len(self.time) / self.number_of_datapoints)
+        self.time = self.time[2:-2:stride]
+
+    def __run_solver__(self, solver, new) -> None:
+
         if solver == "numba":
-            execute_e(new, self.time, self.lor, self.lpc_f, self.lpc_r)
+            execute_e(
+                self,
+                new,
+                self.lor,
+                self.lpc_f,
+                self.lpc_r,
+            )
+
         elif solver == "hybrid":
             execute_h(new, self.time, self.lor, self.lpc_f, self.lpc_r)
         else:
             execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
         # self.execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
-
-        duration: float = process_time() - start
-        wcd = time.time() - wts
-        print(f"\n Execution took {duration} cpu seconds, wt = {wcd}\n")
-        # flag that the model has executed
-        self.state = 1
 
     def __step_process__(self, r, i) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -937,15 +1166,26 @@ class Model(esbmtkBase):
             print(f"{e.n}")
             e.list_species()
 
-    def flux_summary(self, **kwargs: dict) -> None:
+    def flux_summary(self, **kwargs: dict) -> tuple:
         """Show a summary of all model fluxes
 
         Optional parameters:
 
         index :int = i > 1 and i < number of timesteps -1
         filter_by :str = filter on flux name or part of flux name
+        return: bool = True
+
+        returns the sum of the fluxes, and a list
+        fluxes matching the filter_by string
+
+        Example:
+
+        sum, names = M.flux_summary(filter_by="POP", return_sum=True)
 
         """
+
+        rl: list = []
+        fsum: float = 0
 
         if "index" in kwargs:
             i: int = kwargs["index"]
@@ -965,13 +1205,15 @@ class Model(esbmtkBase):
         for r in self.lor:  # loop over reservoirs
             match = False
             for f in r.lof:  # test if reservoir has matching fluxes
-                if fby in f.full_name and f.m[-1] > 0:
+                if fby in f.full_name:  # and f.m[-3] != 0:
                     match = True
             if match:
                 print(f"- {r.full_name}:")
                 for f in r.lof:  # loop over fluxes in reservoir
-                    if fby in f.full_name and f.m[-1] > 0:
+                    if fby in f.full_name:  #  and f.m[-3] != 0:
+                        rl.append(f)
                         direction = r.lio[f]
+                        fsum = fsum + f.m[-3] * direction
                         if r.isotopes:
                             print(
                                 f"    - {f.full_name} = {direction * f.m[i]:.2e} d = {f.d[i]:.2f}"
@@ -979,6 +1221,11 @@ class Model(esbmtkBase):
                         else:
                             print(f"    - {f.full_name} = {direction * f.m[i]:.2e}")
                 print("")
+
+        if "return_sum" not in kwargs:
+            fsum = None
+            rl = None
+        return fsum, rl
 
     def connection_summary(self, **kwargs: dict) -> None:
         """Show a summary of all connections
@@ -1001,20 +1248,30 @@ class Model(esbmtkBase):
         # extract all connection groups. Note that loc contains all conections
         # i.e., not connection groups.
         for c in list(self.loc):
-            if "." in c.full_name:
-                if c.register not in self.cg_list:
-                    self.cg_list.append(c.register)
-                else:  # this is a regular connnection
-                    self.cg_list.append(c)
+            # if "." in c.full_name:
+            # if c.register not in self.cg_list and c.register != "None":
+            if c not in self.cg_list and c.register != "None":
+                self.cg_list.append(c)
+            else:  # this is a regular connnection
+                self.cg_list.append(c)
 
-        print(f"\n --- Connection Summary -- filtered by {fby}\n")
-        print(f"       append info() to the connection name to see more details")
+        print(f"\n --- Connection Group Summary -- filtered by {fby}\n")
+        print(f"       run the following command to see more details:\n")
 
         for c in self.cg_list:
             if fby in c.full_name:
-                print(f"{c.base_name}.info()")
+                print(f"{c.full_name}.info()")
 
         print("")
+
+    def clear(self):
+        """ delete all model objects """
+
+        import builtins
+
+        for o in self.lmo:
+            print(f"deleting {o}")
+            del __builtins__[o]
 
 
 class Element(esbmtkBase):
@@ -1049,6 +1306,8 @@ class Element(esbmtkBase):
             "d_label": str,
             "d_scale": str,
             "r": Number,
+            "full_name": str,
+            "register": any,
         }
 
         # provide a list of absolutely required keywords
@@ -1060,6 +1319,8 @@ class Element(esbmtkBase):
             "d_label": "None",
             "d_scale": "None",
             "r": 1,
+            "full_name": "None",
+            "register": "None",
         }
 
         self.__initerrormessages__()
@@ -1075,6 +1336,10 @@ class Element(esbmtkBase):
         self.ds: str = self.d_scale  # display string for delta scale
         self.lsp: list = []  # list of species for this element.
         self.mo.lel.append(self)
+
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
+
         self.__register_name__()
 
     def list_species(self) -> None:
@@ -1108,13 +1373,18 @@ class Species(esbmtkBase):
             "element": Element,
             "display_as": str,
             "m_weight": Number,
+            "register": any,
         }
 
         # provide a list of absolutely required keywords
         self.lrk = ["name", "element"]
 
         # list of default values if none provided
-        self.lod = {"display_as": kwargs["name"], "m_weight": 0}
+        self.lod = {
+            "display_as": kwargs["name"],
+            "m_weight": 0,
+            "register": "None",
+        }
 
         self.__initerrormessages__()
 
@@ -1138,169 +1408,38 @@ class Species(esbmtkBase):
 
         # self.mo.lsp.append(self)   # register self on the list of model objects
         self.e.lsp.append(self)  # register this species with the element
+
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
         self.__register_name__()
 
 
-class Reservoir(esbmtkBase):
-    """This object holds reservoir specific information.
-
-          Example::
-
-                  Reservoir(name = "foo",      # Name of reservoir
-                            species = S,          # Species handle
-                            delta = 20,           # initial delta - optional (defaults  to 0)
-                            mass/concentration = "1 unit"  # species concentration or mass
-                            volume/geometry = "1E5 l",      # reservoir volume (m^3)
-                            plot = "yes"/"no", defaults to yes
-                            plot_transform_c = a function reference, optional (see below)
-                            legend_left = str, optional, useful for plot transform
-                            display_precision = number, optional, inherited from Model
-                            register = optional, use to register with Reservoir Group
-                            isotopes = True/False otherwise use Model.m_type
-                            )
-
-          You must either give mass or concentration.  The result will always be displayed
-          as concentration though.
-
-          You must provide either the volume or the geometry keyword. In the latter case
-          provide a list where the first entry is the upper depth datum, the second entry is
-          the lower depth datum, and the third entry is the area percentage. E.g., to specify
-          the upper 200 meters of the entire ocean, you would write:
-
-                 geometry=[0,-200,1]
-
-          the corresponding ocean volume will then be calculated by the calc_volume method
-          in this case the following instance variables will also be set:
-
-                 self.volume in model units (usually liter)
-                 self.are:a surface area in m^2 at the upper bounding surface
-                 self.area_dz: area of seafloor which is intercepted by this box.
-                 self.area_fraction: area of seafloor which is intercepted by this
-                                    relative to the total ocean floor area
-
-          Using a transform function
-          ~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-          In some cases, it is useful to transform the reservoir
-          concentration data before plotting it.  A good example is the H+
-          concentration in water which is better displayed as pH.  We can
-          do this by specifying a function to convert the reservoir
-          concentration into pH units::
-
-              def phc(c :float) -> float:
-                  # Calculate concentration as pH. c can be a number or numpy array
-
-                  import numpy as np
-
-                  pH :float = -np.log10(c)
-                  return pH
-
-          this function can then be added to a reservoir as::
-
-          hplus.plot_transform_c = phc
-
-          You can modify the left legend to suit the transform via the legend_left keyword
-
-          Note, at present the plot_transform_c function will only take one
-          argument, which always defaults to the reservoir
-          concentration. The function must return a single argument which
-          will be interpreted as the transformed reservoir concentration.
-
-    Accesing Reservoir Data:
-    ~~~~~~~~~~~~~~~~~~~~~~~~
-
-    You can access the reservoir data as:
-
-    - Name.m # mass
-    - Name.d # delta
-    - Name.c # concentration
-
-    Useful methods include:
-
-    - Name.write_data() # save data to file
-    - Name.info()   # info Reservoir
-    """
+class ReservoirBase(esbmtkBase):
+    """ Base class for all Reservoir objects """
 
     __slots__ = ("m", "l", "h", "d", "c", "lio", "rvalue", "lodir", "lof", "lpc")
 
     def __init__(self, **kwargs) -> None:
-        """Initialize a reservoir."""
 
-        from . import ureg, Q_
-
-        # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            "name": str,
-            "species": Species,
-            "delta": (Number, str),
-            "concentration": (str, Q_),
-            "mass": (str, Q_),
-            "volume": (str, Q_),
-            "geometry": (list, str),
-            "plot_transform_c": any,
-            "legend_left": str,
-            "plot": str,
-            "groupname": str,
-            "function": any,
-            "display_precision": Number,
-            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
-            "full_name": str,
-            "isotopes": bool,
-            "a1": any,
-            "a2": any,
-            "a3": any,
-            "a4": any,
-            "a5": any,
-            "a6": any,
-        }
-
-        # provide a list of absolutely required keywords
-        self.lrk: list = [
-            "name",
-            "species",
-            "volume",
-            ["mass", "concentration"],
-        ]
-
-        # list of default values if none provided
-        self.lod: Dict[any, any] = {
-            "delta": "None",
-            "plot": "yes",
-            "mass": "None",
-            "volume": "None",
-            "geometry": "None",
-            "concentration": "None",
-            "plot_transform_c": "None",
-            "legend_left": "None",
-            "function": "None",
-            "groupname": "None",
-            "register": "None",
-            "full_name": "Not Set",
-            "isotopes": False,
-            "a1": numba.typed.List.empty_list(nbt.float64),
-            "a2": numba.typed.List.empty_list(nbt.float64),
-            "a3": numba.typed.List.empty_list(nbt.float64),
-            "a4": List(np.zeros(3)),
-            "display_precision": 0,
-        }
-
-        # validate and initialize instance variables
-        self.__initerrormessages__()
-        self.bem.update(
-            {
-                "mass": "a  string or quantity",
-                "concentration": "a string or quantity",
-                "volume": "a string or quantity",
-                "plot": "yes or no",
-                "register": "Group Object",
-                "legend_left": "A string",
-                "function": "A function",
-            }
+        raise NotImplementedError(
+            "ReservoirBase should never be used. Use the derived classes"
         )
-        self.__validateandregister__(kwargs)
 
-        if self.delta == "None":
-            self.delta = 0
+    def __set_legacy_names__(self, kwargs) -> None:
+        """
+        Move the below out of the way
+        """
+
+        self.lof: list[Flux] = []  # flux references
+        self.led: list[ExternalData] = []  # all external data references
+        self.lio: dict[str, int] = {}  # flux name:direction pairs
+        self.lop: list[Process] = []  # list holding all processe references
+        self.loe: list[Element] = []  # list of elements in thiis reservoir
+        self.doe: Dict[Species, Flux] = {}  # species flux pairs
+        self.loc: set[Connection] = set()  # set of connection objects
+        self.ldf: list[DataField] = []  # list of datafield objects
+        # list of processes which calculate reservoirs
+        self.lpc: list[Process] = []
 
         # legacy names
         self.n: str = self.name  # name of reservoir
@@ -1317,6 +1456,16 @@ class Reservoir(esbmtkBase):
         self.mo: Model = self.species.mo  # model handle
         self.rvalue = self.sp.r
 
+        # right y-axis label
+        self.ld: str = f"{self.species.dn} [{self.species.ds}]"
+        self.xl: str = self.mo.xl  # set x-axis lable to model time
+
+        if self.legend_left == "None":
+            self.legend_left = self.species.dsa
+
+        self.legend_right = f"{self.species.dn} [{self.species.ds}]"
+        # legend_left is in __init__ !
+
         # decide whether we use isotopes
         if self.mo.m_type == "both":
             self.isotopes = True
@@ -1326,87 +1475,8 @@ class Reservoir(esbmtkBase):
         if self.geometry != "None":
             get_box_geometry_parameters(self)
 
-        # convert units
-        self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
-
-        self.v: float = self.volume  # reservoir volume
-        # This should probably be species specific?
-        self.mu: str = self.sp.e.mass_unit  # massunit xxxx
-
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
-
-        if self.mass == "None":
-            c = Q_(self.concentration)
-            self.plt_units = c.units
-            self.concentration: Number = c.to(self.mo.c_unit).magnitude
-            self.mass: Number = self.concentration * self.volume  # caculate mass
-            self.display_as = "concentration"
-        elif self.concentration == "None":
-            m = Q_(self.mass)
-            self.plt_units = self.mo.m_unit
-            self.mass: Number = m.to(self.mo.m_unit).magnitude
-            self.concentration = self.mass / self.volume
-            self.display_as = "mass"
-        else:
-            raise ValueError("You need to specify mass or concentration")
-
-        # save the unit which was provided by the user for display purposes
-
-        self.lof: list[Flux] = []  # flux references
-        self.led: list[ExternalData] = []  # all external data references
-        self.lio: dict[str, int] = {}  # flux name:direction pairs
-        self.lop: list[Process] = []  # list holding all processe references
-        self.loe: list[Element] = []  # list of elements in thiis reservoir
-        self.doe: Dict[Species, Flux] = {}  # species flux pairs
-        self.loc: set[Connection] = set()  # set of connection objects
-        self.ldf: list[DataField] = []  # list of datafield objects
-        # list of processes which calculate reservoirs
-        self.lpc: list[Process] = []
-
-        # initialize mass vector
-        self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
-        self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
-        self.h: [NDArray, Float[64]] = zeros(self.mo.steps)
-
-        if self.mass == 0:
-            self.c: [NDArray, Float[64]] = zeros(self.species.mo.steps)
-            self.d: [NDArray, Float[64]] = zeros(self.species.mo.steps)
-        else:
-            # initialize concentration vector
-            self.c: [NDArray, Float[64]] = self.m / self.v
-            # isotope mass
-            [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
-            # delta of reservoir
-            self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.species.r)
-
-        # left y-axis label
-        self.lm: str = f"{self.species.n} [{self.mu}/l]"
-        # right y-axis label
-        self.ld: str = f"{self.species.dn} [{self.species.ds}]"
-        self.xl: str = self.mo.xl  # set x-axis lable to model time
-
-        if self.legend_left == "None":
-            self.legend_left = self.species.dsa
-        else:
-            # leave as is
-            pass
-
-        self.legend_right = f"{self.species.dn} [{self.species.ds}]"
-        self.mo.lor.append(self)  # add this reservoir to the model
-        # register instance name in global name space
-        self.__register_name__()
-
-        # decide which setitem functions to use
-        if self.isotopes:
-            self.__set_data__ = self.__set_with_isotopes__
-        else:
-            self.__set_data__ = self.__set_without_isotopes__
-
-        # any auxilliary init - normally empty, but we use it here to extend the
-        # reservoir class in virtual reservoirs
-        self.__aux_inits__()
-        self.state = 0
 
     # setup a placeholder setitem function
     def __setitem__(self, i: int, value: float):
@@ -1438,8 +1508,44 @@ class Reservoir(esbmtkBase):
         self.m[i]: float = value[0]
         self.c[i]: float = self.m[i] / self.v  # update concentration
 
-    def __write_data__(self, prefix: str, start: int, stop: int, stride: int) -> None:
+    def __update_mass__() -> None:
+        """Place holder function"""
+
+        raise NotImplementedError("__update_mass__ is not yet implmented")
+
+    def get_process_args(self):
+        """Provide the data structure which needs to be passed to the numba solver"""
+
+        data = List(
+            [
+                self.m,  # 0
+                self.l,  # 1
+                self.h,  # 2
+                self.d,  # 3
+                self.c,  # 4
+            ]
+        )
+
+        func_name: function = self.__update_mass__
+        params = List([float(reservoir.species.element.r)])
+
+        return func_name, data, params
+
+    def __write_data__(
+        self,
+        prefix: str,
+        start: int,
+        stop: int,
+        stride: int,
+        append: bool,
+        directory: str,
+    ) -> None:
         """To be called by write_data and save_state"""
+
+        from pathlib import Path
+
+        p = Path(directory)
+        p.mkdir(parents=True, exist_ok=True)
 
         # some short hands
         sn = self.sp.n  # species name
@@ -1455,7 +1561,14 @@ class Reservoir(esbmtkBase):
         sds = self.sp.ds  # delta scale
         rn = self.full_name  # reservoir name
         mn = self.sp.mo.n  # model name
-        fn = f"{prefix}{mn}_{rn}.csv"  # file name
+        if self.sp.mo.register == "None":
+            fn = f"{directory}/{prefix}{mn}_{rn}.csv"  # file name
+        elif self.sp.mo.register == "local":
+            fn = f"{directory}/{prefix}{rn}.csv"  # file name
+        else:
+            raise ValueError(
+                f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
+            )
 
         # build the dataframe
         df: pd.dataframe = DataFrame()
@@ -1464,6 +1577,7 @@ class Reservoir(esbmtkBase):
         df[f"{rn} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
         df[f"{rn} {sp.ln} [{smu}]"] = self.l[start:stop:stride]  # light isotope
         df[f"{rn} {sp.hn} [{smu}]"] = self.h[start:stop:stride]  # heavy isotope
+        # if self.isotopes:
         df[f"{rn} {sdn} [{sds}]"] = self.d[start:stop:stride]  # delta value
         df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
 
@@ -1475,12 +1589,65 @@ class Reservoir(esbmtkBase):
             # heavy isotope
             df[f"{f.full_name} {sn} [{sp.hn}]"] = f.h[start:stop:stride]
             # delta value
+            # if self.isotopes:
             df[f"{f.full_name} {sn} {sdn} [{sds}]"] = f.d[start:stop:stride]
 
-        df.to_csv(fn, index=False)  # Write dataframe to file
+        file_path = Path(fn)
+        if append:
+            if file_path.exists():
+                df.to_csv(file_path, header=False, mode="a", index=False)
+            else:
+                df.to_csv(file_path, header=True, mode="w", index=False)
+        else:
+            df.to_csv(file_path, header=True, mode="w", index=False)
+
         return df
 
-    def __read_state__(self) -> None:
+    def __sub_sample_data__(self) -> None:
+        """There is usually no need to keep more than a thousand data points
+        so we subsample the results before saving, or processing them
+
+        """
+        stride = int(len(self.m) / self.mo.number_of_datapoints)
+
+        # print(f"Reset data with {len(self.m)}, stride = {self.mo.reset_stride}")
+        self.m = self.m[2:-2:stride]
+        self.l = self.m[2:-2:stride]
+        self.h = self.h[2:-2:stride]
+        self.d = self.d[2:-2:stride]
+        self.c = self.c[2:-2:stride]
+
+    def __reset_state__(self) -> None:
+        """Copy the result of the last computation back to the beginning
+        so that a new run will start with these values
+
+        save the current results into the temp fields
+
+        """
+
+        # print(f"Reset data with {len(self.m)}, stride = {self.mo.reset_stride}")
+        self.mc = np.append(self.mc, self.m[0 : -2 : self.mo.reset_stride])
+        self.dc = np.append(self.dc, self.d[0 : -2 : self.mo.reset_stride])
+        self.cc = np.append(self.cc, self.c[0 : -2 : self.mo.reset_stride])
+
+        # copy last result into first field
+        self.m[0] = self.m[-2]
+        self.l[0] = self.l[-2]
+        self.h[0] = self.h[-2]
+        self.d[0] = self.d[-2]
+        self.c[0] = self.c[-2]
+
+    def __merge_temp_results__(self) -> None:
+        """Once all iterations are done, replace the data fields
+        with the saved values
+
+        """
+
+        self.m = self.mc
+        self.c = self.cc
+        self.d = self.dc
+
+    def __read_state__(self, directory: str) -> None:
         """read data from csv-file into a dataframe
 
         The CSV file must have the following columns
@@ -1501,7 +1668,15 @@ class Reservoir(esbmtkBase):
         read: set = set()
         curr: set = set()
 
-        fn = f"state_{self.mo.n}_{self.full_name}.csv"
+        if self.sp.mo.register == "None":
+            fn = f"{directory}/state_{self.mo.n}_{self.full_name}.csv"
+        elif self.sp.mo.register == "local":
+            fn = f"{directory}/state_{self.full_name}.csv"
+        else:
+            raise ValueError(
+                f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
+            )
+
         logging.info(f"reading state for {self.full_name} from {fn}")
 
         if not os.path.exists(fn):
@@ -1671,20 +1846,301 @@ class Reservoir(esbmtkBase):
             ind = " " * indent
 
         # print basic data bout this reservoir
-        print(f"{ind}{self.__str__(indent=indent)}")
+        print(f"{ind}{self.__str__(kwargs)}")
         print(f"{ind}Data sample:")
         show_data(self, index=index, indent=indent)
 
         print(f"\n{ind}Connnections:")
         for p in sorted(self.loc):
-            print(f"{off}{ind}{p.full_name}")
+            print(f"{off}{ind}{p.full_name}.info()")
+
+        print(f"\n{ind}Fluxes:")
+        from esbmtk import Q_
+
+        # m = Q_("1 Sv").to("l/a").magnitude
+        for i, f in enumerate(self.lof):
+            print(f"{off}{ind}{f.full_name}: {self.lodir[i]*f.m[-2]:.2e}")
 
         print()
         print("Use the info method on any of the above connections")
         print("to see information on fluxes and processes")
 
+    @property
+    def concentration(self):
+        return self._concentration
+
+    @concentration.setter
+    def concentration(self, c):
+        self._concentration: Number = c.to(self.mo.c_unit).magnitude
+        self.mass: Number = self.concentration * self.volume  # caculate mass
+        self.c = self.c * 0 + self.concentration
+        self.m = self.m * 0 + self.mass
+
+
+class Reservoir(ReservoirBase):
+    """This object holds reservoir specific information.
+
+          Example::
+
+                  Reservoir(name = "foo",      # Name of reservoir
+                            species = S,          # Species handle
+                            delta = 20,           # initial delta - optional (defaults  to 0)
+                            mass/concentration = "1 unit"  # species concentration or mass
+                            volume/geometry = "1E5 l",      # reservoir volume (m^3)
+                            plot = "yes"/"no", defaults to yes
+                            plot_transform_c = a function reference, optional (see below)
+                            legend_left = str, optional, useful for plot transform
+                            display_precision = number, optional, inherited from Model
+                            register = optional, use to register with Reservoir Group
+                            isotopes = True/False otherwise use Model.m_type
+                            seawater_parameters= dict, optional
+                            )
+
+          You must either give mass or concentration.  The result will always be displayed
+          as concentration though.
+
+          You must provide either the volume or the geometry keyword. In the latter case
+          provide a list where the first entry is the upper depth datum, the second entry is
+          the lower depth datum, and the third entry is the area percentage. E.g., to specify
+          the upper 200 meters of the entire ocean, you would write:
+
+                 geometry=[0,-200,1]
+
+          the corresponding ocean volume will then be calculated by the calc_volume method
+          in this case the following instance variables will also be set:
+
+                 self.volume in model units (usually liter)
+                 self.are:a surface area in m^2 at the upper bounding surface
+                 self.area_dz: area of seafloor which is intercepted by this box.
+                 self.area_fraction: area of seafloor which is intercepted by this
+                                    relative to the total ocean floor area
+
+          Adding seawater_properties:
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          If this optional parameter is specified, a SeaWaterConstants instance will be registered
+          for this Reservoir as Reservoir.swc
+          See the  SeaWaterConstants class for details how to specify the parameters, e.g.:
+          seawater_parameters = {"temperature": 2, "pressure": 240, "salinity" : 35},
+
+          Using a transform function
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+          In some cases, it is useful to transform the reservoir
+          concentration data before plotting it.  A good example is the H+
+          concentration in water which is better displayed as pH.  We can
+          do this by specifying a function to convert the reservoir
+          concentration into pH units::
+
+              def phc(c :float) -> float:
+                  # Calculate concentration as pH. c can be a number or numpy array
+
+                  import numpy as np
+
+                  pH :float = -np.log10(c)
+                  return pH
+
+          this function can then be added to a reservoir as::
+
+          hplus.plot_transform_c = phc
+
+          You can modify the left legend to suit the transform via the legend_left keyword
+
+          Note, at present the plot_transform_c function will only take one
+          argument, which always defaults to the reservoir
+          concentration. The function must return a single argument which
+          will be interpreted as the transformed reservoir concentration.
+
+    Accesing Reservoir Data:
+    ~~~~~~~~~~~~~~~~~~~~~~~~
+
+    You can access the reservoir data as:
+
+    - Name.m # mass
+    - Name.d # delta
+    - Name.c # concentration
+
+    Useful methods include:
+
+    - Name.write_data() # save data to file
+    - Name.info()   # info Reservoir
+    """
+
+    __slots__ = ("m", "l", "h", "d", "c", "lio", "rvalue", "lodir", "lof", "lpc")
+
+    def __init__(self, **kwargs) -> None:
+        """Initialize a reservoir."""
+
+        from . import ureg, Q_
+
+        # provide a dict of all known keywords and their type
+        self.lkk: Dict[str, any] = {
+            "name": str,
+            "species": Species,
+            "delta": (Number, str),
+            "concentration": (str, Q_),
+            "mass": (str, Q_),
+            "volume": (str, Q_),
+            "geometry": (list, str),
+            "plot_transform_c": any,
+            "legend_left": str,
+            "plot": str,
+            "groupname": str,
+            "function": any,
+            "display_precision": Number,
+            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "full_name": str,
+            "seawater_parameters": (dict, str),
+            "isotopes": bool,
+        }
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = [
+            "name",
+            "species",
+            ["volume", "geometry"],
+            ["mass", "concentration"],
+        ]
+
+        self.drn = {
+            "concentration": "_concentration",
+        }
+
+        # list of default values if none provided
+        self.lod: Dict[any, any] = {
+            "delta": "None",
+            "plot": "yes",
+            "mass": "None",
+            "volume": "None",
+            "geometry": "None",
+            "concentration": "None",
+            "plot_transform_c": "None",
+            "legend_left": "None",
+            "function": "None",
+            "groupname": "None",
+            "register": "None",
+            "full_name": "Not Set",
+            "isotopes": False,
+            "seawater_parameters": "None",
+            "display_precision": 0,
+        }
+
+        # validate and initialize instance variables
+        self.__initerrormessages__()
+        self.bem.update(
+            {
+                "mass": "a  string or quantity",
+                "concentration": "a string or quantity",
+                "volume": "a string or quantity",
+                "plot": "yes or no",
+                "register": "Group Object",
+                "legend_left": "A string",
+                "function": "A function",
+            }
+        )
+        self.__validateandregister__(kwargs)
+
+        if self.delta == "None":
+            self.delta = 0
+
+        self.__set_legacy_names__(kwargs)
+
+        # geoemtry information
+        if self.volume == "None":
+            get_box_geometry_parameters(self)
+
+        # convert units
+        self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
+
+        self.v: float = self.volume  # reservoir volume
+        # This should probably be species specific?
+        self.mu: str = self.sp.e.mass_unit  # massunit xxxx
+
+        if self.mass == "None":
+            c = Q_(self.concentration)
+            self.plt_units = c.units
+            self._concentration: Number = c.to(self.mo.c_unit).magnitude
+            self.mass: Number = self._concentration * self.volume  # caculate mass
+            self.display_as = "concentration"
+        elif self.concentration == "None":
+            m = Q_(self.mass)
+            self.plt_units = self.mo.m_unit
+            self.mass: Number = m.to(self.mo.m_unit).magnitude
+            self.concentration = self.mass / self.volume
+            self.display_as = "mass"
+        else:
+            raise ValueError("You need to specify mass or concentration")
+
+        # save the unit which was provided by the user for display purposes
+        # left y-axis label
+        self.lm: str = f"{self.species.n} [{self.mu}/l]"
+
+        # initialize mass vector
+        self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
+        self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
+        self.h: [NDArray, Float[64]] = zeros(self.mo.steps)
+
+        if self.mass == 0:
+            self.c: [NDArray, Float[64]] = zeros(self.species.mo.steps)
+            self.d: [NDArray, Float[64]] = zeros(self.species.mo.steps)
+        else:
+            # initialize concentration vector
+            self.c: [NDArray, Float[64]] = self.m / self.v
+            # isotope mass
+            [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
+            # delta of reservoir
+            self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.species.r)
+
+        # create temporary memory if we use multiple solver iterations
+        if self.mo.number_of_solving_iterations > 0:
+            self.mc = np.empty(0)
+            self.cc = np.empty(0)
+            self.dc = np.empty(0)
+
+        self.mo.lor.append(self)  # add this reservoir to the model
+        # register instance name in global name space
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
+        self.__register_name__()
+
+        # decide which setitem functions to use
+        if self.isotopes:
+            self.__set_data__ = self.__set_with_isotopes__
+        else:
+            self.__set_data__ = self.__set_without_isotopes__
+
+        # any auxilliary init - normally empty, but we use it here to extend the
+        # reservoir class in virtual reservoirs
+        self.__aux_inits__()
+
+        if self.seawater_parameters != "None":
+            if "temperature" in self.seawater_parameters:
+                temperature = self.seawater_parameters["temperature"]
+            else:
+                temperature = 25
+            if "salinity" in self.seawater_parameters:
+                salinity = self.seawater_parameters["salinity"]
+            else:
+                salinity = 35
+            if "pressure" in self.seawater_parameters:
+                pressure = self.seawater_parameters["pressure"]
+            else:
+                pressure = 1
+
+            SeawaterConstants(
+                name="swc",
+                model=self.mo,
+                temperature=temperature,
+                pressure=pressure,
+                salinity=salinity,
+                register=self,
+                units=self.mo.c_unit,
+            )
+
+        self.state = 0
+
 
 class Flux(esbmtkBase):
+
     """A class which defines a flux object. Flux objects contain
     information which links them to an species, describe things like
     the mass and time unit, and store data of the total flux rate at
@@ -1715,7 +2171,7 @@ class Flux(esbmtkBase):
 
         """
 
-        from . import ureg, Q_
+        from . import ureg, Q_, AirSeaExchange
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
@@ -1726,7 +2182,8 @@ class Flux(esbmtkBase):
             "plot": str,
             "display_precision": Number,
             "isotopes": bool,
-            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "register": any,
+            "id": str,
         }
 
         # provide a list of absolutely required keywords
@@ -1738,6 +2195,8 @@ class Flux(esbmtkBase):
             "plot": "yes",
             "display_precision": 0,
             "isotopes": False,
+            "register": "None",
+            "id": "",
         }
 
         # initialize instance
@@ -1769,6 +2228,10 @@ class Flux(esbmtkBase):
         self.h: [NDArray, Float[64]] = zeros(self.model.steps)
         self.d: [NDArray, Float[64]] = zeros(self.model.steps) + self.delta
 
+        if self.mo.number_of_solving_iterations > 0:
+            self.mc = np.empty(0)
+            self.dc = np.empty(0)
+
         if self.rate != 0:
             [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
 
@@ -1789,7 +2252,19 @@ class Flux(esbmtkBase):
         self.led: list[ExternalData] = []  # list of ext data
         self.source: str = ""  # Name of reservoir which acts as flux source
         self.sink: str = ""  # Name of reservoir which acts as flux sink
+
+        if self.name == "None":
+            if self.mo.register == "None":  # global name_space
+                if self.register == "None":
+                    self.full_name = self.name
+                else:
+                    self.full_name = f"{self.register.full_name}.{self.name}"
+            else:  # local name_space
+                self.name = f"{self.id}_F"
+
         self.__register_name__()
+        # print(f"f name set to {self.name}. fn =  {self.full_name}\n")
+        self.mo.lof.append(self)  # register with model flux list
 
         # decide which setitem functions to use
         # decide whether we use isotopes
@@ -1879,7 +2354,7 @@ class Flux(esbmtkBase):
             ind = " " * indent
 
         # print basic data bout this object
-        print(f"{ind}{self.__str__(indent=indent)}")
+        print(f"{ind}{self.__str__(kwargs)}")
         print(f"{ind}Data sample:")
         show_data(self, index=index, indent=indent)
 
@@ -1895,7 +2370,7 @@ class Flux(esbmtkBase):
             if self.register == "None":
                 print(f"e.g., help({self.lop[0].n})")
             else:
-                print(f"e.g., help({self.register.name}.{self.lop[0].n})")
+                print(f"e.g., help({self.register.name}.{self.lop[0].name})")
         else:
             print("There are no processes for this flux")
 
@@ -1920,6 +2395,43 @@ class Flux(esbmtkBase):
         fig.tight_layout()
         plt.show()
         plt.savefig(self.n + ".pdf")
+
+    def __sub_sample_data__(self) -> None:
+        """There is usually no need to keep more than a thousand data points
+        so we subsample the results before saving, or processing them
+
+        """
+        stride = int(len(self.m) / self.mo.number_of_datapoints)
+
+        self.m = self.m[2:-2:stride]
+        self.l = self.m[2:-2:stride]
+        self.h = self.m[2:-2:stride]
+        self.d = self.d[2:-2:stride]
+
+    def __reset_state__(self) -> None:
+        """Copy the result of the last computation back to the beginning
+        so that a new run will start with these values.
+
+        Also, copy current results into temp field
+        """
+
+        self.mc = np.append(self.mc, self.m[0 : -2 : self.mo.reset_stride])
+        self.dc = np.append(self.dc, self.d[0 : -2 : self.mo.reset_stride])
+
+        # copy last element to first position
+        self.m[0] = self.m[-2]
+        self.l[0] = self.l[-2]
+        self.h[0] = self.h[-2]
+        self.d[0] = self.d[-2]
+
+    def __merge_temp_results__(self) -> None:
+        """Once all iterations are done, replace the data fields
+        with the saved values
+
+        """
+
+        self.m = self.mc
+        self.d = self.dc
 
 
 class SourceSink(esbmtkBase):

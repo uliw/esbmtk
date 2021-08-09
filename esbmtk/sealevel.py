@@ -60,7 +60,9 @@ class hypsometry(esbmtkBase):
 
     User facing methods:
 
-           h.area(0,-200)
+           hyp.area (z) return the ocean area at a given depth in m^2
+
+           hyp.area_dz(0,-200)
 
                  will return the surface area between 0 and -200 mbsl (i.e.,
                  the contintal shelves) in percent. This number has a small
@@ -72,9 +74,15 @@ class hypsometry(esbmtkBase):
                  areas and 72.5% for ocean surface. This routine returns
                  70.5%
 
-           h.sa = Earth total surface area in m^2
+           hyp.sa = Earth total surface area in m^2
 
-           h.volume(0,200)
+           hyp.volume(0,200)
+
+           hyp.get_lookup_table(self, min_depth: int, max_depth: int)
+
+                   Generate a vector which contains the area(z) in 1 meter intervals
+                   Note that the numbers are area_percentage. To get actual area, you need to_csv
+                   multiply with the total surface area (hyp.sa)
 
     """
 
@@ -140,12 +148,17 @@ class hypsometry(esbmtkBase):
     def area(self, depth: int) -> float:
         """Calculate the ocean area at a given depth
 
-        depth must be an integer between 0 and 6000 mbsl
+        depth must be an integer between 0 and 6000 mbsl, or a
+        numpy array of integers between 0 and 6000 mbsl
 
         """
 
-        depth = abs(depth)
-        return self.hypdata[depth] * self.sa
+        depth = np.abs(depth).astype(int)
+
+        if np.max(depth) > 6001:
+            raise ValueError("area() is only defined to a depth of 6001 mbsl")
+
+        return np.take(self.hypdata, depth) * self.sa
 
     def area_dz(self, u: float, l: float) -> float:
         """Calculate the area between two elevation datums
@@ -156,12 +169,19 @@ class hypsometry(esbmtkBase):
         the interpolation function returns a numpy array with
         cumulative area percentages do the difference between the
         lowest and highest value is the area contained between
-        both limits. This number must be scaled by the total area
-        h.sa to get the value in square meters
+        both limits. The difference between the upper and lower
+        bounds is the area percentage contained between both depths.
+
+        The function returns this value multiplied by total surface area,
+        i.e., in square meters.
 
         """
 
+        if l < -6002:
+            raise ValueError("area_dz() is only defined to a depth of 6000 mbsl")
+
         a: NDArray = interpolate.splev([u, l], self.tck)
+
         area: float = (a[0] - a[-1]) * self.sa
 
         return area
@@ -264,6 +284,33 @@ class hypsometry(esbmtkBase):
         ax.plot(depth, a)  # create a line plot
         plt.show()  # display figure
 
+    def get_lookup_table(self, min_depth: int, max_depth: int) -> NDAarray[Float64]:
+        """Generate a vector which contains the area(z) in 1 meter intervals
+        The numbers are given in m^2 which represent the actual area.
+
+        The calculations multiply the area_percentage by the total surface area (hyp.sa)
+        """
+
+        if not -6002 <= min_depth <= 0:
+            raise ValueError("min_depth must be <= 0 and >= -6000")
+
+        if not -6002 <= max_depth <= min_depth:
+            raise ValueError("max_depth must be <= 0 and >= -6000")
+
+        return (
+            interpolate.splev(np.arange(min_depth, max_depth, -1), self.tck) * self.sa
+        )
+
+    def get_lookup_table_area_dz(
+        self, min_depth: int, max_depth: int
+    ) -> NDAarray[Float64]:
+        """Generate a vector which contains the first derivative of area(z) in 1 meter intervals
+        Note that the numbers are in m^2
+
+        """
+
+        return np.diff(self.get_lookup_table(min_depth, max_depth))
+
 
 def get_box_geometry_parameters(box):
     from esbmtk import Q_
@@ -280,5 +327,6 @@ def get_box_geometry_parameters(box):
             box.mo.hyp.area_dz(box.geometry[0], box.geometry[1]) * box.area_percentage
         )
         box.area_fraction = box.area_dz / box.mo.hyp.oa
+
     elif box.volume == "None":
         raise ValueError("You need to provide volume or geometry!")

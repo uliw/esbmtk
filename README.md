@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgbf8c3f6)
-2.  [News](#org48441a9)
-3.  [Contributing](#orgf5c3555)
-4.  [Installation](#orgb286e70)
-5.  [Documentation](#org07413bb)
-6.  [Todo](#org8625aa9)
-7.  [License](#orge678365)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgf72bf37)
+2.  [News](#orgcd094ee)
+3.  [Contributing](#org8bae6b2)
+4.  [Installation](#org5f36e62)
+5.  [Documentation](#org054bfc8)
+6.  [Todo](#org9201f34)
+7.  [License](#org658764b)
 
 
-<a id="orgbf8c3f6"></a>
+<a id="orgf72bf37"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,59 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="org48441a9"></a>
+<a id="orgcd094ee"></a>
 
 # News
+
+-   August 2<sup>nd</sup>, 0.7.0.0 Python namespaces are now the default. Esbmtk
+    now supports carbonate chemistry. Tracers like bicarbonate and
+    carbonate-ion concentration can be calculated for reservoir groups
+    which track total alkalinity and dissolved inorganic carbon. The
+    function `add_carbonate_system_1` will add these tracers to a given
+    reservoir group. The function `add_carbonate_system_2` will
+    additionally compute carbonate burial and dissolution fluxes,
+    following the approach of <sup id="388846f245b537f203fa603cf49f42f1"><a href="#boudreau-2010-ongoin-trans" title="Bernard Boudreau, Jack Middelburg, , Andreas Hofmann \&amp; Filip Meysman, Ongoing Transients in Carbonate Compensation, {Global Biogeochemical Cycles}, v(4), n/a-n/a (2010).">boudreau-2010-ongoin-trans</a></sup>. Big
+    thanks to Tina and Mahrukh who developed and tested the carbonate
+    chemistry module. Note that the current release has not yet updated
+    the documentation or the examples in the github repository.
+
+-   July 28<sup>th</sup>, esbmtk now supports python name spaces. The default is
+    still to register all esbmtk objects in the global
+    namespace. However, in cases where models need to be integrated
+    into python code, you can now set the `register = 'local'` keyword
+    in the model declaration. In this case, all model object follow are
+    hierarchical naming scheme e.g., `M.A_sb.DIC` denotes the DIC
+    concentration in the `A_sb` reservoir group which belongs to model
+    `M`.
+
+-   July 20<sup>th</sup>, the model object now provides a `sub_sample_data()`
+    which will resample all model data to a default grid of 1000 data
+    points, before plotting.
+
+-   July 17<sup>th</sup>, `ExternalCode` is a new class to allow integration of
+    arbitrary code. This replaces the `VirtualReservoir-no_set` class
+
+-   June 17<sup>th</sup>, data and state files are now stored in sub
+    directories. Model runs can now be broken down into individual
+    segments which allows for long running models without exhausting
+    memory. See the `step_limit` parameter in `Model`. ESBMTK now
+    automatically reduces the number of datapoints to 1000 before
+    saving (or plotting) data. See the `number_of_datapoints` parameter
+    in `Model`.
+
+-   May 26<sup>th</sup>, 0.6.0.0 changed data-structure for the `Generic_Function`
+    class. This will break any previous use of
+    `VirtualReservoir_no_set` instances. See the API documentation on
+    how to update. Changed the data-structure of all process
+    classes. There should be no user facing changes.
+
+-   May 13<sup>th</sup>, 0.5.1.3 Multiple regression fixes, the `ref` keyword is
+    now called `ref_reservoirs`. Added two new classes
+    `Reservoir_no_set`, and `VirtualReservoir_no_set`. Both classes are
+    agnostic about changes to their data. `=Reservoir_no_set` will only
+    change in response to fluxes, but will not update concentration
+    data etc. Likewise for `VirtualReservoir_no_set` whose values will
+    only change in response to the associated function
 
 -   May 5<sup>th</sup>,  0.5.0.1 The Datafield Class now accepts lists of datasets. This
     facilitates the grouping of data which belong together into a
@@ -109,7 +159,7 @@ generation of graphical results.
     seawater species concentrations and their K and Pk constants at
     given set of temperature, salinity and pressure conditions. This
     version also includes some refactoring in the `Connnection` and
-    `ConnectionmGroup` classes. It is likely that this broke some
+    `ConnectionGroup` classes. It is likely that this broke some
     connection types.
 
 -   March 13<sup>th</sup>, cleaned up the use of the `k_value` keyword which is
@@ -214,7 +264,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgf5c3555"></a>
+<a id="org8bae6b2"></a>
 
 # Contributing
 
@@ -224,7 +274,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orgb286e70"></a>
+<a id="org5f36e62"></a>
 
 # Installation
 
@@ -245,7 +295,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org07413bb"></a>
+<a id="org054bfc8"></a>
 
 # Documentation
 
@@ -263,7 +313,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org8625aa9"></a>
+<a id="org9201f34"></a>
 
 # Todo
 
@@ -272,7 +322,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orge678365"></a>
+<a id="org658764b"></a>
 
 # License
 
