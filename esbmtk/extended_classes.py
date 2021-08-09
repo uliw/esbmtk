@@ -2059,6 +2059,10 @@ class ExternalData(esbmtkBase):
 
         # register with reservoir
         self.__register__(self.reservoir)
+
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
+
         self.__register_name__()
 
     def __register__(self, obj):

@@ -2488,11 +2488,14 @@ class SourceSink(esbmtkBase):
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
         self.lio: list = []
 
-        if self.register == "None":
-            self.pt = self.name
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
         else:
-            self.pt: str = f"{self.register.name}_{self.n}"
-            self.groupname = self.register.name
+            if self.register == "None":
+                self.pt = self.name
+            else:
+                self.pt: str = f"{self.register.name}_{self.n}"
+                self.groupname = self.register.name
 
         if self.delta != "None":
             self.isotopes = True
