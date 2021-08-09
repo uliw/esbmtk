@@ -116,9 +116,9 @@ def test_external_data(create_model):
         offset="0.1 kyrs",
     )
     assert M1.ED1.x[0] == 100
-    assert "Unnamed" in ED1.df.columns[1]
-    assert round(ED1.z[0], 10) == 2.09512
-    assert round(ED1.z[-1], 10) == 0.968293
+    assert "Unnamed" in M1.ED1.df.columns[1]
+    assert round(M1.ED1.z[0], 10) == 2.09512
+    assert round(M1.ED1.z[-1], 10) == 0.968293
 
 
 def test_sum_fluxes(create_model):
@@ -191,7 +191,7 @@ def test_passive_sum(create_model):
         delta=d0,  # set a default flux
     )
     Connect(
-        source=M1SO2,  # source of flux
+        source=M1.SO2,  # source of flux
         sink=M1.R1,  # target of flux
         rate="300 mol/yr",  # weathering flux in
         delta=d0,  # set a default flux
