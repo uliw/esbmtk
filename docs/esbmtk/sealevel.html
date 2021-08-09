@@ -51,6 +51,12 @@
                         <li>
                                 <a class="function" href="#hypsometry.area_dz">area_dz</a>
                         </li>
+                        <li>
+                                <a class="function" href="#hypsometry.get_lookup_table">get_lookup_table</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#hypsometry.get_lookup_table_area_dz">get_lookup_table_area_dz</a>
+                        </li>
                 </ul>
 
             </li>
@@ -158,7 +164,9 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
 <span class="sd">    User facing methods:</span>
 
-<span class="sd">           h.area(0,-200)</span>
+<span class="sd">           hyp.area (z) return the ocean area at a given depth in m^2</span>
+
+<span class="sd">           hyp.area_dz(0,-200)</span>
 
 <span class="sd">                 will return the surface area between 0 and -200 mbsl (i.e.,</span>
 <span class="sd">                 the contintal shelves) in percent. This number has a small</span>
@@ -170,9 +178,15 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">                 areas and 72.5% for ocean surface. This routine returns</span>
 <span class="sd">                 70.5%</span>
 
-<span class="sd">           h.sa = Earth total surface area in m^2</span>
+<span class="sd">           hyp.sa = Earth total surface area in m^2</span>
 
-<span class="sd">           h.volume(0,200)</span>
+<span class="sd">           hyp.volume(0,200)</span>
+
+<span class="sd">           hyp.get_lookup_table(self, min_depth: int, max_depth: int)</span>
+
+<span class="sd">                   Generate a vector which contains the area(z) in 1 meter intervals</span>
+<span class="sd">                   Note that the numbers are area_percentage. To get actual area, you need to_csv</span>
+<span class="sd">                   multiply with the total surface area (hyp.sa)</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -238,12 +252,17 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
     <span class="k">def</span> <span class="nf">area</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Calculate the ocean area at a given depth</span>
 
-<span class="sd">        depth must be an integer between 0 and 6000 mbsl</span>
+<span class="sd">        depth must be an integer between 0 and 6000 mbsl, or a</span>
+<span class="sd">        numpy array of integers between 0 and 6000 mbsl</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">depth</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypdata</span><span class="p">[</span><span class="n">depth</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sa</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">6001</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;area() is only defined to a depth of 6001 mbsl&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hypdata</span><span class="p">,</span> <span class="n">depth</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sa</span>
 
     <span class="k">def</span> <span class="nf">area_dz</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">l</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Calculate the area between two elevation datums</span>
@@ -254,12 +273,19 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">        the interpolation function returns a numpy array with</span>
 <span class="sd">        cumulative area percentages do the difference between the</span>
 <span class="sd">        lowest and highest value is the area contained between</span>
-<span class="sd">        both limits. This number must be scaled by the total area</span>
-<span class="sd">        h.sa to get the value in square meters</span>
+<span class="sd">        both limits. The difference between the upper and lower</span>
+<span class="sd">        bounds is the area percentage contained between both depths.</span>
+
+<span class="sd">        The function returns this value multiplied by total surface area,</span>
+<span class="sd">        i.e., in square meters.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
+        <span class="k">if</span> <span class="n">l</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">6002</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;area_dz() is only defined to a depth of 6000 mbsl&quot;</span><span class="p">)</span>
+
         <span class="n">a</span><span class="p">:</span> <span class="n">NDArray</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">([</span><span class="n">u</span><span class="p">,</span> <span class="n">l</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">tck</span><span class="p">)</span>
+
         <span class="n">area</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">a</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sa</span>
 
         <span class="k">return</span> <span class="n">area</span>
@@ -362,6 +388,33 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">depth</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>  <span class="c1"># create a line plot</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>  <span class="c1"># display figure</span>
 
+    <span class="k">def</span> <span class="nf">get_lookup_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">min_depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDAarray</span><span class="p">[</span><span class="n">Float64</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Generate a vector which contains the area(z) in 1 meter intervals</span>
+<span class="sd">        The numbers are given in m^2 which represent the actual area.</span>
+
+<span class="sd">        The calculations multiply the area_percentage by the total surface area (hyp.sa)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="o">-</span><span class="mi">6002</span> <span class="o">&lt;=</span> <span class="n">min_depth</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;min_depth must be &lt;= 0 and &gt;= -6000&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="o">-</span><span class="mi">6002</span> <span class="o">&lt;=</span> <span class="n">max_depth</span> <span class="o">&lt;=</span> <span class="n">min_depth</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;max_depth must be &lt;= 0 and &gt;= -6000&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">min_depth</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">tck</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sa</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_lookup_table_area_dz</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">min_depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDAarray</span><span class="p">[</span><span class="n">Float64</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Generate a vector which contains the first derivative of area(z) in 1 meter intervals</span>
+<span class="sd">        Note that the numbers are in m^2</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_lookup_table</span><span class="p">(</span><span class="n">min_depth</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">))</span>
+
 
 <span class="k">def</span> <span class="nf">get_box_geometry_parameters</span><span class="p">(</span><span class="n">box</span><span class="p">):</span>
     <span class="kn">from</span> <span class="nn">esbmtk</span> <span class="kn">import</span> <span class="n">Q_</span>
@@ -378,6 +431,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">box</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">area_dz</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">box</span><span class="o">.</span><span class="n">area_percentage</span>
         <span class="p">)</span>
         <span class="n">box</span><span class="o">.</span><span class="n">area_fraction</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">area_dz</span> <span class="o">/</span> <span class="n">box</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">oa</span>
+
     <span class="k">elif</span> <span class="n">box</span><span class="o">.</span><span class="n">volume</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You need to provide volume or geometry!&quot;</span><span class="p">)</span>
 </pre></div>
@@ -405,7 +459,9 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
 <span class="sd">    User facing methods:</span>
 
-<span class="sd">           h.area(0,-200)</span>
+<span class="sd">           hyp.area (z) return the ocean area at a given depth in m^2</span>
+
+<span class="sd">           hyp.area_dz(0,-200)</span>
 
 <span class="sd">                 will return the surface area between 0 and -200 mbsl (i.e.,</span>
 <span class="sd">                 the contintal shelves) in percent. This number has a small</span>
@@ -417,9 +473,15 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">                 areas and 72.5% for ocean surface. This routine returns</span>
 <span class="sd">                 70.5%</span>
 
-<span class="sd">           h.sa = Earth total surface area in m^2</span>
+<span class="sd">           hyp.sa = Earth total surface area in m^2</span>
 
-<span class="sd">           h.volume(0,200)</span>
+<span class="sd">           hyp.volume(0,200)</span>
+
+<span class="sd">           hyp.get_lookup_table(self, min_depth: int, max_depth: int)</span>
+
+<span class="sd">                   Generate a vector which contains the area(z) in 1 meter intervals</span>
+<span class="sd">                   Note that the numbers are area_percentage. To get actual area, you need to_csv</span>
+<span class="sd">                   multiply with the total surface area (hyp.sa)</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -485,12 +547,17 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
     <span class="k">def</span> <span class="nf">area</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Calculate the ocean area at a given depth</span>
 
-<span class="sd">        depth must be an integer between 0 and 6000 mbsl</span>
+<span class="sd">        depth must be an integer between 0 and 6000 mbsl, or a</span>
+<span class="sd">        numpy array of integers between 0 and 6000 mbsl</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">depth</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypdata</span><span class="p">[</span><span class="n">depth</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sa</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">6001</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;area() is only defined to a depth of 6001 mbsl&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hypdata</span><span class="p">,</span> <span class="n">depth</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sa</span>
 
     <span class="k">def</span> <span class="nf">area_dz</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">l</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Calculate the area between two elevation datums</span>
@@ -501,12 +568,19 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 <span class="sd">        the interpolation function returns a numpy array with</span>
 <span class="sd">        cumulative area percentages do the difference between the</span>
 <span class="sd">        lowest and highest value is the area contained between</span>
-<span class="sd">        both limits. This number must be scaled by the total area</span>
-<span class="sd">        h.sa to get the value in square meters</span>
+<span class="sd">        both limits. The difference between the upper and lower</span>
+<span class="sd">        bounds is the area percentage contained between both depths.</span>
+
+<span class="sd">        The function returns this value multiplied by total surface area,</span>
+<span class="sd">        i.e., in square meters.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
+        <span class="k">if</span> <span class="n">l</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">6002</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;area_dz() is only defined to a depth of 6000 mbsl&quot;</span><span class="p">)</span>
+
         <span class="n">a</span><span class="p">:</span> <span class="n">NDArray</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">([</span><span class="n">u</span><span class="p">,</span> <span class="n">l</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">tck</span><span class="p">)</span>
+
         <span class="n">area</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">a</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sa</span>
 
         <span class="k">return</span> <span class="n">area</span>
@@ -608,6 +682,33 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">elevation</span><span class="p">,</span> <span class="n">area</span><span class="p">)</span>  <span class="c1"># create a line plot</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">depth</span><span class="p">,</span> <span class="n">a</span><span class="p">)</span>  <span class="c1"># create a line plot</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>  <span class="c1"># display figure</span>
+
+    <span class="k">def</span> <span class="nf">get_lookup_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">min_depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDAarray</span><span class="p">[</span><span class="n">Float64</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Generate a vector which contains the area(z) in 1 meter intervals</span>
+<span class="sd">        The numbers are given in m^2 which represent the actual area.</span>
+
+<span class="sd">        The calculations multiply the area_percentage by the total surface area (hyp.sa)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="o">-</span><span class="mi">6002</span> <span class="o">&lt;=</span> <span class="n">min_depth</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;min_depth must be &lt;= 0 and &gt;= -6000&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="o">-</span><span class="mi">6002</span> <span class="o">&lt;=</span> <span class="n">max_depth</span> <span class="o">&lt;=</span> <span class="n">min_depth</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;max_depth must be &lt;= 0 and &gt;= -6000&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">min_depth</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">tck</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sa</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_lookup_table_area_dz</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">min_depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDAarray</span><span class="p">[</span><span class="n">Float64</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Generate a vector which contains the first derivative of area(z) in 1 meter intervals</span>
+<span class="sd">        Note that the numbers are in m^2</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_lookup_table</span><span class="p">(</span><span class="n">min_depth</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">))</span>
 </pre></div>
 
         </details>
@@ -620,7 +721,9 @@ The data is derived from etopo 5, but internally represented by a spline approxi
 
 <p>User facing methods:</p>
 
-<pre><code>   h.area(0,-200)
+<pre><code>   hyp.area (z) return the ocean area at a given depth in m^2
+
+   hyp.area_dz(0,-200)
 
          will return the surface area between 0 and -200 mbsl (i.e.,
          the contintal shelves) in percent. This number has a small
@@ -632,9 +735,15 @@ The data is derived from etopo 5, but internally represented by a spline approxi
          areas and 72.5% for ocean surface. This routine returns
          70.5%
 
-   h.sa = Earth total surface area in m^2
+   hyp.sa = Earth total surface area in m^2
 
-   h.volume(0,200)
+   hyp.volume(0,200)
+
+   hyp.get_lookup_table(self, min_depth: int, max_depth: int)
+
+           Generate a vector which contains the area(z) in 1 meter intervals
+           Note that the numbers are area_percentage. To get actual area, you need to_csv
+           multiply with the total surface area (hyp.sa)
 </code></pre>
 </div>
 
@@ -778,19 +887,25 @@ l = lower limit (e.g., -100)</p>
             <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">area</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Calculate the ocean area at a given depth</span>
 
-<span class="sd">        depth must be an integer between 0 and 6000 mbsl</span>
+<span class="sd">        depth must be an integer between 0 and 6000 mbsl, or a</span>
+<span class="sd">        numpy array of integers between 0 and 6000 mbsl</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">depth</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">hypdata</span><span class="p">[</span><span class="n">depth</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sa</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">depth</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">6001</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;area() is only defined to a depth of 6001 mbsl&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hypdata</span><span class="p">,</span> <span class="n">depth</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sa</span>
 </pre></div>
 
         </details>
 
             <div class="docstring"><p>Calculate the ocean area at a given depth</p>
 
-<p>depth must be an integer between 0 and 6000 mbsl</p>
+<p>depth must be an integer between 0 and 6000 mbsl, or a
+numpy array of integers between 0 and 6000 mbsl</p>
 </div>
 
 
@@ -814,12 +929,19 @@ l = lower limit (e.g., -100)</p>
 <span class="sd">        the interpolation function returns a numpy array with</span>
 <span class="sd">        cumulative area percentages do the difference between the</span>
 <span class="sd">        lowest and highest value is the area contained between</span>
-<span class="sd">        both limits. This number must be scaled by the total area</span>
-<span class="sd">        h.sa to get the value in square meters</span>
+<span class="sd">        both limits. The difference between the upper and lower</span>
+<span class="sd">        bounds is the area percentage contained between both depths.</span>
+
+<span class="sd">        The function returns this value multiplied by total surface area,</span>
+<span class="sd">        i.e., in square meters.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
 
+        <span class="k">if</span> <span class="n">l</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">6002</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;area_dz() is only defined to a depth of 6000 mbsl&quot;</span><span class="p">)</span>
+
         <span class="n">a</span><span class="p">:</span> <span class="n">NDArray</span> <span class="o">=</span> <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">([</span><span class="n">u</span><span class="p">,</span> <span class="n">l</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">tck</span><span class="p">)</span>
+
         <span class="n">area</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">a</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sa</span>
 
         <span class="k">return</span> <span class="n">area</span>
@@ -835,8 +957,78 @@ l = lower limit</p>
 <p>the interpolation function returns a numpy array with
 cumulative area percentages do the difference between the
 lowest and highest value is the area contained between
-both limits. This number must be scaled by the total area
-h.sa to get the value in square meters</p>
+both limits. The difference between the upper and lower
+bounds is the area percentage contained between both depths.</p>
+
+<p>The function returns this value multiplied by total surface area,
+i.e., in square meters.</p>
+</div>
+
+
+                            </div>
+                            <div id="hypsometry.get_lookup_table" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#hypsometry.get_lookup_table">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">get_lookup_table</span><span class="signature">(self, min_depth: int, max_depth: int) -&gt; &#39;NDAarray[Float64]&#39;</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_lookup_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">min_depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDAarray</span><span class="p">[</span><span class="n">Float64</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Generate a vector which contains the area(z) in 1 meter intervals</span>
+<span class="sd">        The numbers are given in m^2 which represent the actual area.</span>
+
+<span class="sd">        The calculations multiply the area_percentage by the total surface area (hyp.sa)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="o">-</span><span class="mi">6002</span> <span class="o">&lt;=</span> <span class="n">min_depth</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;min_depth must be &lt;= 0 and &gt;= -6000&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="o">-</span><span class="mi">6002</span> <span class="o">&lt;=</span> <span class="n">max_depth</span> <span class="o">&lt;=</span> <span class="n">min_depth</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;max_depth must be &lt;= 0 and &gt;= -6000&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">interpolate</span><span class="o">.</span><span class="n">splev</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">min_depth</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">tck</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sa</span>
+        <span class="p">)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Generate a vector which contains the area(z) in 1 meter intervals
+The numbers are given in m^2 which represent the actual area.</p>
+
+<p>The calculations multiply the area_percentage by the total surface area (hyp.sa)</p>
+</div>
+
+
+                            </div>
+                            <div id="hypsometry.get_lookup_table_area_dz" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#hypsometry.get_lookup_table_area_dz">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">get_lookup_table_area_dz</span><span class="signature">(self, min_depth: int, max_depth: int) -&gt; &#39;NDAarray[Float64]&#39;</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_lookup_table_area_dz</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">min_depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDAarray</span><span class="p">[</span><span class="n">Float64</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Generate a vector which contains the first derivative of area(z) in 1 meter intervals</span>
+<span class="sd">        Note that the numbers are in m^2</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_lookup_table</span><span class="p">(</span><span class="n">min_depth</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">))</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Generate a vector which contains the first derivative of area(z) in 1 meter intervals
+Note that the numbers are in m^2</p>
 </div>
 
 
@@ -876,6 +1068,7 @@ h.sa to get the value in square meters</p>
             <span class="n">box</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">area_dz</span><span class="p">(</span><span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">box</span><span class="o">.</span><span class="n">geometry</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">box</span><span class="o">.</span><span class="n">area_percentage</span>
         <span class="p">)</span>
         <span class="n">box</span><span class="o">.</span><span class="n">area_fraction</span> <span class="o">=</span> <span class="n">box</span><span class="o">.</span><span class="n">area_dz</span> <span class="o">/</span> <span class="n">box</span><span class="o">.</span><span class="n">mo</span><span class="o">.</span><span class="n">hyp</span><span class="o">.</span><span class="n">oa</span>
+
     <span class="k">elif</span> <span class="n">box</span><span class="o">.</span><span class="n">volume</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;You need to provide volume or geometry!&quot;</span><span class="p">)</span>
 </pre></div>

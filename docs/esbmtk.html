@@ -65,6 +65,11 @@ esbmtk    </h1>
 
 <span class="n">ureg</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="s2">&quot;Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups&quot;</span><span class="p">)</span>
 <span class="n">ureg</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="s2">&quot;Mol = 1 * mol / liter = M&quot;</span><span class="p">)</span>
+<span class="n">ureg</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="s2">&quot;fraction = [] = frac&quot;</span><span class="p">)</span>
+<span class="n">ureg</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="s2">&quot;percent = 1e-2 frac = pct&quot;</span><span class="p">)</span>
+<span class="n">ureg</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="s2">&quot;permil = 1e-3 fraction&quot;</span><span class="p">)</span>
+<span class="n">ureg</span><span class="o">.</span><span class="n">define</span><span class="p">(</span><span class="s2">&quot;ppm = 1e-6 fraction&quot;</span><span class="p">)</span>
+
 
 <span class="c1"># import utility_functions</span>
 <span class="c1"># import esbmtk</span>
@@ -75,7 +80,7 @@ esbmtk    </h1>
 <span class="c1"># rom .species_definitions import carbon, sulfur, hydrogen, phosphor</span>
 <span class="kn">from</span> <span class="nn">.esbmtk</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">.extended_classes</span> <span class="kn">import</span> <span class="o">*</span>
-<span class="kn">from</span> <span class="nn">.connections</span> <span class="kn">import</span> <span class="n">ConnectionGroup</span><span class="p">,</span> <span class="n">Connection</span><span class="p">,</span> <span class="n">Connect</span>
+<span class="kn">from</span> <span class="nn">.connections</span> <span class="kn">import</span> <span class="n">ConnectionGroup</span><span class="p">,</span> <span class="n">Connection</span><span class="p">,</span> <span class="n">Connect</span><span class="p">,</span> <span class="n">AirSeaExchange</span>
 <span class="kn">from</span> <span class="nn">.utility_functions</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">.sealevel</span> <span class="kn">import</span> <span class="o">*</span>
 <span class="kn">from</span> <span class="nn">.solver</span> <span class="kn">import</span> <span class="o">*</span>

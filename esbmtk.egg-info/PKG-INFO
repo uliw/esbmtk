@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: esbmtk
-Version: 0.5.1.1
+Version: 0.7.0.0
 Summary: An Earth Sciences Box Modeling Toolkit
 Home-page: https://github.com/uliw/esbmtk
 Author: Ulrich G. Wortmann
@@ -9,16 +9,16 @@ License: GPL-3.0-or-later
 Description: 
         # Table of Contents
         
-        1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org4cb1dae)
-        2.  [News](#orgf45e924)
-        3.  [Contributing](#orgf86863a)
-        4.  [Installation](#org1926aa5)
-        5.  [Documentation](#org32be20b)
-        6.  [Todo](#org8c386f2)
-        7.  [License](#org262ab0e)
+        1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgf72bf37)
+        2.  [News](#orgcd094ee)
+        3.  [Contributing](#org8bae6b2)
+        4.  [Installation](#org5f36e62)
+        5.  [Documentation](#org054bfc8)
+        6.  [Todo](#org9201f34)
+        7.  [License](#org658764b)
         
         
-        <a id="org4cb1dae"></a>
+        <a id="orgf72bf37"></a>
         
         # ESBMTK - An Earth-sciences box modeling toolkit
         
@@ -35,9 +35,21 @@ Description:
         generation of graphical results.
         
         
-        <a id="orgf45e924"></a>
+        <a id="orgcd094ee"></a>
         
         # News
+        
+        -   August 2<sup>nd</sup>, 0.7.0.0 Python namespaces are now the default. Esbmtk
+            now supports carbonate chemistry. Tracers like bicarbonate and
+            carbonate-ion concentration can be calculated for reservoir groups
+            which track total alkalinity and dissolved inorganic carbon. The
+            function `add_carbonate_system_1` will add these tracers to a given
+            reservoir group. The function `add_carbonate_system_2` will
+            additionally compute carbonate burial and dissolution fluxes,
+            following the approach of <sup id="388846f245b537f203fa603cf49f42f1"><a href="#boudreau-2010-ongoin-trans" title="Bernard Boudreau, Jack Middelburg, , Andreas Hofmann \&amp; Filip Meysman, Ongoing Transients in Carbonate Compensation, {Global Biogeochemical Cycles}, v(4), n/a-n/a (2010).">boudreau-2010-ongoin-trans</a></sup>. Big
+            thanks to Tina and Mahrukh who developed and tested the carbonate
+            chemistry module. Note that the current release has not yet updated
+            the documentation or the examples in the github repository.
         
         -   July 28<sup>th</sup>, esbmtk now supports python name spaces. The default is
             still to register all esbmtk objects in the global
@@ -155,7 +167,7 @@ Description:
             seawater species concentrations and their K and Pk constants at
             given set of temperature, salinity and pressure conditions. This
             version also includes some refactoring in the `Connnection` and
-            `ConnectionmGroup` classes. It is likely that this broke some
+            `ConnectionGroup` classes. It is likely that this broke some
             connection types.
         
         -   March 13<sup>th</sup>, cleaned up the use of the `k_value` keyword which is
@@ -260,7 +272,7 @@ Description:
         -   Oct. 25<sup>th</sup>, Initial release on github.
         
         
-        <a id="orgf86863a"></a>
+        <a id="org8bae6b2"></a>
         
         # Contributing
         
@@ -270,7 +282,7 @@ Description:
         graphical interface ;-) See the todo section for ideas.
         
         
-        <a id="org1926aa5"></a>
+        <a id="org5f36e62"></a>
         
         # Installation
         
@@ -291,7 +303,7 @@ Description:
         -   pip install esbmtk
         
         
-        <a id="org32be20b"></a>
+        <a id="org054bfc8"></a>
         
         # Documentation
         
@@ -309,7 +321,7 @@ Description:
         -   
         
         
-        <a id="org8c386f2"></a>
+        <a id="org9201f34"></a>
         
         # Todo
         
@@ -318,7 +330,7 @@ Description:
         -   do more testing
         
         
-        <a id="org262ab0e"></a>
+        <a id="org658764b"></a>
         
         # License
         
