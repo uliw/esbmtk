@@ -204,7 +204,7 @@ class SeawaterConstants(esbmtkBase):
 
     def __init_std_seawater__(self) -> None:
         """Provide values for standard seawater. Data after Zeebe and Gladrow
-        all values in mol/kg.
+        all values in mol/kg. All values after Zeebe and Gladrow 2001
 
         """
 
@@ -212,7 +212,7 @@ class SeawaterConstants(esbmtkBase):
         self.boron = 0.00042
         self.oh = 0.00001
         self.so4 = 2.7123 / 96
-        self.ca2 = 0.0103  # after after Boudreau et al 2010
+        self.ca2 = 0.01028
         self.Ksp0 = 4.29e-07  # after after Boudreau et al 2010
 
     def __init_gasexchange__(self) -> None:
@@ -641,7 +641,7 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
     # hco3 and co3
     """ Since CA = [hco3] + 2[co3], can the below expression can be simplified
     """
-    # co3: float = dic / (1 + (hplus / k2) + ((hplus ** 2) / (k1k2)))
+    # co3: float = dic / (1 + (hplus / k2) + ((hplus ** 2) / (k1 * k2)))
     hco3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
     co3: float = (ca - hco3) / 2
     # co2 (aq)
@@ -744,6 +744,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # DIC = hco3 + co3 + co2 + H2CO3 The last term is however rather
     # small, so it may be ok to simply write co2aq = dic - hco3 + co3.
     co2aq: float = dic - co3 - hco3
+    # co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
     omega: float = (ca2 * co3) / ksp
 
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
