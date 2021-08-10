@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgf72bf37)
-2.  [News](#orgcd094ee)
-3.  [Contributing](#org8bae6b2)
-4.  [Installation](#org5f36e62)
-5.  [Documentation](#org054bfc8)
-6.  [Todo](#org9201f34)
-7.  [License](#org658764b)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orge3c4f91)
+2.  [News](#orgd4cec0d)
+3.  [Contributing](#org0a1ff8f)
+4.  [Installation](#org0fa7d07)
+5.  [Documentation](#org244c4c9)
+6.  [Todo](#org3ea6705)
+7.  [License](#orge3fcd07)
 
 
-<a id="orgf72bf37"></a>
+<a id="orge3c4f91"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,12 @@ which allow the creation and manipulation of input signals, and the
 generation of graphical results.
 
 
-<a id="orgcd094ee"></a>
+<a id="orgd4cec0d"></a>
 
 # News
+
+-   August 10<sup>th</sup>, Added KF and KS values for hydrofen fluoride and bisulfate to the
+    seawater chemistry module.
 
 -   August 2<sup>nd</sup>, 0.7.0.0 Python namespaces are now the default. Esbmtk
     now supports carbonate chemistry. Tracers like bicarbonate and
@@ -264,7 +267,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org8bae6b2"></a>
+<a id="org0a1ff8f"></a>
 
 # Contributing
 
@@ -274,7 +277,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org5f36e62"></a>
+<a id="org0fa7d07"></a>
 
 # Installation
 
@@ -295,7 +298,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org054bfc8"></a>
+<a id="org244c4c9"></a>
 
 # Documentation
 
@@ -313,7 +316,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org9201f34"></a>
+<a id="org3ea6705"></a>
 
 # Todo
 
@@ -322,7 +325,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org658764b"></a>
+<a id="orge3fcd07"></a>
 
 # License
 
