@@ -116,7 +116,7 @@ class SeawaterConstants(esbmtkBase):
         self.n: str = self.name  # string =  name of this instance
         self.mo: Model = self.model
         self.hplus = 10 ** -self.pH
-        self.constants: list = ["K0", "K1", "K2", "KW", "KB", "Ksp", "Ksp0"]
+        self.constants: list = ["K0", "K1", "K2", "KW", "KB", "Ksp", "Ksp0", "KS"]
         self.species: list = [
             "dic",
             "ta",
@@ -152,6 +152,7 @@ class SeawaterConstants(esbmtkBase):
 
         # update K values and species concentrations according to P, S, and T
         self.__init_std_seawater__()
+        self.__init_bisulfide__()
         self.__init_carbon__()
         self.__init_boron__()
         self.__init_water__()
@@ -180,7 +181,7 @@ class SeawaterConstants(esbmtkBase):
 
         # update pk values
         for n in self.constants:
-            v = getattr(self, n)
+            v = abs(getattr(self, n))
             pk = f"p{n.lower()}"
             setattr(self, pk, -log10(v))
 
@@ -214,6 +215,28 @@ class SeawaterConstants(esbmtkBase):
         self.so4 = 2.7123 / 96
         self.ca2 = 0.01028
         self.Ksp0 = 4.29e-07  # after after Boudreau et al 2010
+
+    def __init_bisulfide__(self) -> None:
+        """Bisulfide ion concentration after Dickson 1994, cf.
+        Zeebe and Gladrow 2001, p 260
+
+        """
+
+        import numpy as np
+
+        T = 273.15 + self.temperature
+        S = self.salinity
+        I = (19.924 * S) / (1000 - 1.005 * S)
+        self.KS = (
+            -4276.1 / T
+            + 141.328
+            - 23.093 * np.log(T)
+            + (-13856 / T + 324.57 - 47.986 * np.log(T)) * I ** 0.5
+            + (35474 / T - 771.54 + 114.723 * np.log(T)) * I
+            - 2698 / T * I ** 1.5
+            + 1776 / T * I ** 2
+            + np.log(1 - 0.001005 * S)
+        )
 
     def __init_gasexchange__(self) -> None:
         """Initialize constants for gas-exchange processes"""
