@@ -226,7 +226,6 @@ class SeawaterConstants(esbmtkBase):
         import numpy as np
 
         T = 273.15 + self.temperature
-        T = 273.15 + 25
         S = self.salinity
         I = (19.924 * S) / (1000 - 1.005 * S)
 
@@ -250,7 +249,6 @@ class SeawaterConstants(esbmtkBase):
         import numpy as np
 
         T = 273.15 + self.temperature
-        T = 273.15 + 25
         S = self.salinity
         I = (19.924 * S) / (1000 - 1.005 * S)
         lnKS = (
