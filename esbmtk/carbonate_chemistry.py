@@ -116,7 +116,7 @@ class SeawaterConstants(esbmtkBase):
         self.n: str = self.name  # string =  name of this instance
         self.mo: Model = self.model
         self.hplus = 10 ** -self.pH
-        self.constants: list = ["K0", "K1", "K2", "KW", "KB", "Ksp", "Ksp0", "KS"]
+        self.constants: list = ["K0", "K1", "K2", "KW", "KB", "Ksp", "Ksp0", "KS", "KF"]
         self.species: list = [
             "dic",
             "ta",
@@ -153,6 +153,7 @@ class SeawaterConstants(esbmtkBase):
         # update K values and species concentrations according to P, S, and T
         self.__init_std_seawater__()
         self.__init_bisulfide__()
+        self.__init_hydrogen_floride__()
         self.__init_carbon__()
         self.__init_boron__()
         self.__init_water__()
@@ -216,19 +217,30 @@ class SeawaterConstants(esbmtkBase):
         self.ca2 = 0.01028
         self.Ksp0 = 4.29e-07  # after after Boudreau et al 2010
 
-    def __init_hydrogen_florie__ -> None:
+    def __init_hydrogen_floride__(self) -> None:
         """Bisulfide ion concentration after Dickson 1994, cf.
         Zeebe and Gladrow 2001, p 260
 
         """
-        
+
         import numpy as np
 
         T = 273.15 + self.temperature
+        T = 273.15 + 25
         S = self.salinity
         I = (19.924 * S) / (1000 - 1.005 * S)
-        
-        
+
+        lnKF = (
+            1590.2 / T
+            - 12.641
+            + 1.525 * I ** 0.5
+            + np.log(1 - 0.001005 * S)
+            + np.log(1 + self.ST / self.KS)
+        )
+
+        self.KF = np.exp(lnKF)
+        self.FT = 7e-5 * self.salinity / 35
+
     def __init_bisulfide__(self) -> None:
         """Bisulfide ion concentration after Dickson 1994, cf.
         Zeebe and Gladrow 2001, p 260
@@ -238,6 +250,7 @@ class SeawaterConstants(esbmtkBase):
         import numpy as np
 
         T = 273.15 + self.temperature
+        T = 273.15 + 25
         S = self.salinity
         I = (19.924 * S) / (1000 - 1.005 * S)
         lnKS = (
@@ -252,6 +265,7 @@ class SeawaterConstants(esbmtkBase):
         )
 
         self.KS = np.exp(lnKS)
+        self.ST = self.so4 * self.salinity / 35
 
     def __init_gasexchange__(self) -> None:
         """Initialize constants for gas-exchange processes"""
