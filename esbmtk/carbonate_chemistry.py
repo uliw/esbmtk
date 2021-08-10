@@ -181,7 +181,7 @@ class SeawaterConstants(esbmtkBase):
 
         # update pk values
         for n in self.constants:
-            v = abs(getattr(self, n))
+            v = getattr(self, n)
             pk = f"p{n.lower()}"
             setattr(self, pk, -log10(v))
 
@@ -216,6 +216,19 @@ class SeawaterConstants(esbmtkBase):
         self.ca2 = 0.01028
         self.Ksp0 = 4.29e-07  # after after Boudreau et al 2010
 
+    def __init_hydrogen_florie__ -> None:
+        """Bisulfide ion concentration after Dickson 1994, cf.
+        Zeebe and Gladrow 2001, p 260
+
+        """
+        
+        import numpy as np
+
+        T = 273.15 + self.temperature
+        S = self.salinity
+        I = (19.924 * S) / (1000 - 1.005 * S)
+        
+        
     def __init_bisulfide__(self) -> None:
         """Bisulfide ion concentration after Dickson 1994, cf.
         Zeebe and Gladrow 2001, p 260
@@ -227,7 +240,7 @@ class SeawaterConstants(esbmtkBase):
         T = 273.15 + self.temperature
         S = self.salinity
         I = (19.924 * S) / (1000 - 1.005 * S)
-        self.KS = (
+        lnKS = (
             -4276.1 / T
             + 141.328
             - 23.093 * np.log(T)
@@ -237,6 +250,8 @@ class SeawaterConstants(esbmtkBase):
             + 1776 / T * I ** 2
             + np.log(1 - 0.001005 * S)
         )
+
+        self.KS = np.exp(lnKS)
 
     def __init_gasexchange__(self) -> None:
         """Initialize constants for gas-exchange processes"""
