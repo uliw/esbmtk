@@ -891,30 +891,30 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
     Case 1 One connection, one set of parameters
            ct1 = {"sb2hb": {"ty": "scale", 'ra'....}}
 
-    Case 2 One connection, one set of instructions, one subset with mutiple parameters
+    Case 2 One connection, one set of instructions, one subset with multiple parameters
            This will be expanded to create connections for each species
            ct2 = {"sb2hb": {"ty": "scale", "sp": ["a", "b"]}}
 
-    Case 3 One connection complete set of mutiple characters. Similar to case 2, but now
+    Case 3 One connection complete set of multiple characters. Similar to case 2, but now
            all parameters are given explicitly
            ct3 = {"sb2hb": {"ty": ["scale", "scale"], "sp": ["a", "b"]}}
 
-    Case 4 Mutiple connections, one set of parameters. This will create
+    Case 4 Multiple connections, one set of parameters. This will create
            identical connection for "sb2hb" and  "ib2db"
            ct4 = {("sb2hb", "ib2db"): {"ty": "scale", 'ra': ...}}
 
-    Case 5 Mutiple connections, one subset of mutiple set of parameters. This wil
+    Case 5 Multiple connections, one subset of multiple set of parameters. This wil
           create a connection for species 'a' in sb2hb and with species 'b' in ib2db
            ct5 = {("sb2hb", "ib2db"): {"ty": "scale", "sp": ["a", "b"]}}
 
-    Case 6 Mutiple connections, complete set of parameters of mutiple parameters
+    Case 6 Multiple connections, complete set of parameters of multiple parameters
            Same as case 5, but now all parameters are specified explicitly
            ct6 = {("sb2hb", "ib2db"): {"ty": ["scale", "scale"], "sp": ["a", "b"]}}
 
 
     The default interpretation for cases 5 and 6 is that each list
     entry corresponds to connection. However, sometimes we want to
-    create mutiple connections for multiple entries. In this case
+    create multiple connections for multiple entries. In this case
     provide the mt='1:N' parameter which will create a connection for
     each species in each connection group. See the below example.
 
@@ -925,7 +925,7 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
     ct2 = {"sb2hb": {"ty": "scale", "sp": ["a", "b"]}}
 
     It is best to use the show_dict function to verify that your input
-    dictionary produces the corrrect results!
+    dictionary produces the correct results!
 
     """
 
