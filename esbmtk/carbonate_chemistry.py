@@ -676,10 +676,8 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
     KW = params[2]
     KB = params[3]
     boron = params[4]
-    # hplus = params[5]
-    ca2 = params[6]
-    ksp = params[7]
-    ksp0 = params[8]
+    ca2 = params[5]
+    ksp = params[6]
 
     # ca
     oh: float = KW / hplus
@@ -722,7 +720,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
 
     The function assumes that vr_data will be in the following order:
         [H+, CA, HCO3, CO3, CO2(aq), zsat, zcc, zsnow, Fburial,
-        B, BNS, BDS_under, BDS_resp, BDS, BCC, BPDC, BD, BDS_area, zsnow_dt, omega]
+        B, BNS, BDS_under, BDS_resp, BDS, BCC, BPDC, BD,omega]
 
     LIMITATIONS:
     - This in used in conjunction with ExternalCode objects!
@@ -747,20 +745,17 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     boron = params[4]
     ksp0 = params[5]
     kc = params[6]
-    sa = params[7]
-    volume = params[8]
-    AD = params[9]
-    zsat0 = int(abs(params[10]))
-    ca2 = params[11]
-    dt = params[12]
-    pc = params[13]
-    pg = params[14]
-    I_caco3 = params[15]
-    alpha = params[16]
-    zsat_min = int(abs(params[17]))
-    zmax = int(abs(params[18]))
-    z0 = int(abs(params[19]))
-    ksp = params[20]
+    volume = params[7]
+    AD = params[8]
+    zsat0 = int(abs(params[9]))
+    ca2 = params[10]
+    dt = params[11]
+    I_caco3 = params[12]
+    alpha = params[13]
+    zsat_min = int(abs(params[14]))
+    zmax = int(abs(params[15]))
+    z0 = int(abs(params[16]))
+    ksp = params[17]
 
     # get lookup up tables
     depth_area_table: NDArray = input_data[7]  # depth look-up table
@@ -774,9 +769,8 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     ta: float = input_data[5][i - 1]  # TA concentration [mol/l]
     B: float = input_data[6][i - 1]  # Carbonate Export Flux [mol/yr]
     hplus: float = vr_data[0][i - 1]  # H+ concentration [mol/l]
-    zsat = vr_data[5][i - 1]
-    zcc = vr_data[6][i - 1]
-    zsnow = vr_data[7][i - 1]
+
+    zsnow = vr_data[7][i - 1] #previous zsnow
 
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus
@@ -851,10 +845,8 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
         zsnow = zsnow - BPDC / (area_dz_table[int(zsnow)] * I_caco3) * dt
 
     else:  # zcc > zsnow
-        # there is no carbonate below zsnow, so  BPDC = 0
+        # there is no carbonate below zsnow, so BPDC = 0
         zsnow = zcc
-        # dummy values for testing purposes; will be removed later
-        zsnow_dt = 0
         BPDC = 0
 
     # BD & F_burial
@@ -896,6 +888,4 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[14][i] = BCC
     vr_data[15][i] = BPDC
     vr_data[16][i] = BD
-    vr_data[17][i] = 0.0 #BDS_area
-    vr_data[18][i] = 0.0 #zsnow_dt
-    vr_data[19][i] = omega
+    vr_data[17][i] = omega
