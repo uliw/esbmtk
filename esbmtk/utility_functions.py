@@ -1628,6 +1628,13 @@ def add_carbonate_system_2(**kwargs) -> None:
         )
 
 
+def weathering_processes():
+
+    from esbmtk import ExternalCode, calc_carbonates_1
+
+    pass
+
+
 def __find_flux__(reservoirs: list, full_name: str):
     """Helper function to find a Flux object based on its full_name in the reservoirs
     in the list of provided reservoirs.

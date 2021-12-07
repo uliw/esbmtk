@@ -305,6 +305,7 @@ class Connect(esbmtkBase):
             "solubility": Number,
             "area": Number,
             "piston_velocity": Number,
+            "function_ref": any,
         }
 
         # provide a list of absolutely required keywords
@@ -327,6 +328,7 @@ class Connect(esbmtkBase):
             "isotopes": False,
             "ref_reservoirs": "None",
             "register": "None",
+            "function_ref": "None",
         }
 
         # validate and initialize instance variables
@@ -349,6 +351,7 @@ class Connect(esbmtkBase):
                 "signal": "Signal Handle",
                 "groupname": "True or False",
                 "bypass": "source/sink",
+                "function_ref": "A function",
             }
         )
 
@@ -665,6 +668,8 @@ class Connect(esbmtkBase):
             self.__flux_diff__()
         elif self.ctype == "scale_with_flux":
             self.__scaleflux__()
+        elif self.ctype == "scale_with_concentration_generic":
+            self.__rateconstant__()
         elif self.ctype == "virtual_flux":
             self.__virtual_flux__()
             # self.__vardeltaout__()
@@ -760,9 +765,6 @@ class Connect(esbmtkBase):
 
         if self.bypass != "None":
             self.bypass.lof.remove(self.fh)
-
-        # this flux must not affect the source reservoir
-        # self.r.lof.remove(self.fh)
 
     def __virtual_flux__(self) -> None:
         """Create a virtual flux. This is similar to __scaleflux__, however the new flux
@@ -927,6 +929,16 @@ class Connect(esbmtkBase):
                 scale=self.scale,
             )
             # print(f"Process Name {ph.full_name}")
+
+        elif self.ctype == "scale_with_concentration_generic":
+
+            ph = ScaleGeneric(
+                name="PSG",
+                reservoir=self.ref_reservoirs,
+                flux=self.fh,
+                register=self.fh,
+                function_ref=self.function_ref,
+            )
 
         elif self.ctype == "scale_relative_to_multiple_reservoirs":
 

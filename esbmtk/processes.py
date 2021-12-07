@@ -1015,6 +1015,7 @@ class RateConstant(Process):
             "ref_species": np.ndarray,
             "seawaterconstants": any,
             "isotopes": bool,
+            "function_reference": any,
         }
 
         # new required keywords
@@ -1022,7 +1023,7 @@ class RateConstant(Process):
 
         # dict with default values if none provided
         # self.lod = {r
-        self.lod: dict = {"isotopes": False}
+        self.lod: dict = {"isotopes": False, "function_reference": "None"}
 
         self.__initerrormessages__()
 
@@ -1037,6 +1038,7 @@ class RateConstant(Process):
                 "flux": "a flux handle",
                 "left": "list, reservoir or number",
                 "right": "list, reservoir or number",
+                "function_reference": "A function reference",
             }
         )
 
@@ -1060,6 +1062,68 @@ class RateConstant(Process):
     # setup a placeholder call function
     def __call__(self, reservoir: Reservoir, i: int):
         return self.__execute__(reservoir, i)
+
+
+class ScaleGeneric(RateConstant):
+    """This process calculates the flux as a function of the upstream
+     reservoir concentration and a user supplied function f
+
+     F = f(C)
+
+     where C denotes the concentration in the ustream reservoir, f is a
+     function reference.
+     This process is typically called by the connector
+     instance. However you can instantiate it manually as
+
+     ScaleGeneric(
+                       name = "Name",
+                       reservoir= upstream_reservoir_handle,
+                       flux = flux handle,
+                       function_ref = foo
+    )
+
+    """
+
+    def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
+
+        self.flux.m[i] = self.function_ref(self.reservoir.c[i - 1])
+
+    def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
+        """"""
+        raise NotImplementedError("ScaleGeneric with isotopes not implmented")
+
+    def get_process_args(self, reservoir: Reservoir):
+
+        func_name: function = self.p_scale_generic
+
+        data = List(
+            [
+                self.flux.m,  # 0
+                self.flux.l,  # 1
+                self.flux.h,  # 2
+                self.flux.d,  # 3
+                reservoir.d,  # 4
+                reservoir.c,  # 5
+            ]
+        )
+        params = List([float(reservoir.species.element.r), float(self.scale)])
+
+        return func_name, data, params
+
+    @staticmethod
+    @njit(fastmath=True, error_model="numpy")
+    def p_scale_generic(data, params, i) -> None:
+        # concentration times scale factor
+        r: float = params[0]
+        s: float = params[1]
+
+        m: float = data[5][i - 1] * s
+        d: float = data[4][i - 1]  # delta
+        l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+        data[0][i] = m
+        data[1][i] = l
+        data[2][i] = m - l
+        data[3][i] = d
 
 
 class ScaleRelativeToConcentration(RateConstant):
