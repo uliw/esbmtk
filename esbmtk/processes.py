@@ -994,9 +994,10 @@ class RateConstant(Process):
             "scale": (Number, np.float64),
             "k_value": (Number, np.float64),
             "name": str,
-            "reservoir": (Reservoir, Source, Sink, np.ndarray),
+            "reservoir": (Reservoir, Source, Sink, GasReservoir, np.ndarray),
             "flux": Flux,
             "ref_reservoirs": list,
+            "reservoir_ref": (Reservoir, GasReservoir),
             "left": (list, Reservoir, Number, np.float64, np.ndarray),
             "right": (list, Reservoir, Number, np.ndarray),
             "register": (
@@ -1064,37 +1065,62 @@ class RateConstant(Process):
         return self.__execute__(reservoir, i)
 
 
-class ScaleGeneric(RateConstant):
+class weathering(RateConstant):
     """This process calculates the flux as a function of the upstream
-     reservoir concentration and a user supplied function f
+     reservoir concentration C and a constant which describes thet
+     strength of relation between the reservoir concentration and
+     the flux scaling
 
-     F = f(C)
+     F = f_0 * (scale * C/pco2_0)**ncc
 
-     where C denotes the concentration in the ustream reservoir, f is a
-     function reference.
-     This process is typically called by the connector
+     where C denotes the concentration in the ustream reservoir, k is a
+     constant. This process is typically called by the connector
      instance. However you can instantiate it manually as
 
-     ScaleGeneric(
+     weathering(
                        name = "Name",
-                       reservoir= upstream_reservoir_handle,
+                       reservoir = upstream_reservoir_handle,
+                       reservoir_ref = reference_reservoir (Atmosphere)
                        flux = flux handle,
-                       function_ref = foo
+                       ex = exponent
+                       pco2_0 = 280,
+                       f_0 = 12 / 17e12
+                       Scale =  1000,
     )
 
     """
 
     def __without_isotopes__(self, reservoir: Reservoir, i: int) -> None:
 
-        self.flux.m[i] = self.function_ref(self.reservoir.c[i - 1])
+        # print(
+        #    f"f_0={self.f_0}, scale={self.scale}, c={self.reservoir_ref.c[i-1]}, p0={self.pco2_0}, ex={self.ex}"
+        # )
+        self.flux.m[i] = (
+            self.f_0
+            * (self.scale * self.reservoir_ref.c[i - 1] / self.pco2_0) ** self.ex
+        )
 
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
-        """"""
-        raise NotImplementedError("ScaleGeneric with isotopes not implmented")
+        """
+        C = M/V so we express this as relative to mass which allows us to
+        use the isotope data.
+
+        The below calculates the flux as function of reservoir concentration,
+        rather than scaling the flux.
+        """
+
+        raise NotImplementedError("weathering has currently no isotope method")
+        # c: float = self.reservoir.c[i - 1]
+        # if c > 0:  # otherwise there is no flux
+        #     m = c * self.scale
+        #     r: float = reservoir.species.element.r
+        #     d: float = reservoir.d[i - 1]
+        #     l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+        #     self.flux[i]: np.array = [m, l, m - l, d]
 
     def get_process_args(self, reservoir: Reservoir):
 
-        func_name: function = self.p_scale_generic
+        func_name: function = self.p_weathering
 
         data = List(
             [
@@ -1102,28 +1128,38 @@ class ScaleGeneric(RateConstant):
                 self.flux.l,  # 1
                 self.flux.h,  # 2
                 self.flux.d,  # 3
-                reservoir.d,  # 4
-                reservoir.c,  # 5
+                self.reservoir_ref.d,  # 4
+                self.reservoir_ref.c,  # 5
+                self.reservoir_ref.m,  # 6
             ]
         )
-        params = List([float(reservoir.species.element.r), float(self.scale)])
+        params = List(
+            [
+                float(reservoir.species.element.r),  # 0
+                float(self.scale),  # 1
+                float(self.f_0),  # 2
+                float(self.pco2_0),  # 3
+                float(self.ex),  # 4
+            ]
+        )
 
         return func_name, data, params
 
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
-    def p_scale_generic(data, params, i) -> None:
+    def p_weathering(data, params, i) -> None:
         # concentration times scale factor
-        r: float = params[0]
         s: float = params[1]
+        f_0: float = params[2]
+        pco2_0: float = params[3]
+        ex: float = params[4]
 
-        m: float = data[5][i - 1] * s
-        d: float = data[4][i - 1]  # delta
-        l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-        data[0][i] = m
-        data[1][i] = l
-        data[2][i] = m - l
-        data[3][i] = d
+        c: float = data[5][i - 1]
+        f: float = f_0 * (c * s / pco2_0) ** ex
+        data[0][i] = f
+        # data[3][i] = data[4][i - 1]
+        # print(i)
+        # print(" ")
 
 
 class ScaleRelativeToConcentration(RateConstant):
@@ -1152,8 +1188,8 @@ class ScaleRelativeToConcentration(RateConstant):
         if m > 0:  # otherwise there is no flux
             # convert to concentration
             c = m / self.reservoir.volume
-            m = c * self.scale
-            self.flux.m[i] = m
+            f = c * self.scale
+            self.flux.m[i] = f
 
     def __with_isotopes__(self, reservoir: Reservoir, i: int) -> None:
         """
@@ -1184,9 +1220,12 @@ class ScaleRelativeToConcentration(RateConstant):
                 self.flux.d,  # 3
                 reservoir.d,  # 4
                 reservoir.c,  # 5
+                reservoir.m,  # 6
             ]
         )
-        params = List([float(reservoir.species.element.r), float(self.scale)])
+        params = List(
+            [float(reservoir.species.element.r), float(self.scale), float(reservoir.v)]
+        )
 
         return func_name, data, params
 
@@ -1196,14 +1235,20 @@ class ScaleRelativeToConcentration(RateConstant):
         # concentration times scale factor
         r: float = params[0]
         s: float = params[1]
+        m: float = data[6][i - 1]
+        v: float = params[2]
 
-        m: float = data[5][i - 1] * s
+        c: float = m / v
+        f: float = c * s
         d: float = data[4][i - 1]  # delta
         l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-        data[0][i] = m
-        data[1][i] = l
-        data[2][i] = m - l
+        data[0][i] = f
+        # this is wrong we neef to get the flux delta from the reservoir
+        data[1][i] = l * s
+        data[2][i] = (m - l) * s
         data[3][i] = d
+        # print(i)
+        # print(" ")
 
 
 class ScaleRelativeToMass(RateConstant):
