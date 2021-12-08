@@ -243,7 +243,7 @@ along with this program.  If not, see
         <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>  <span class="c1"># string =  name of this instance</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="p">:</span> <span class="n">Model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hplus</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">**</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">pH</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">constants</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;K0&quot;</span><span class="p">,</span> <span class="s2">&quot;K1&quot;</span><span class="p">,</span> <span class="s2">&quot;K2&quot;</span><span class="p">,</span> <span class="s2">&quot;KW&quot;</span><span class="p">,</span> <span class="s2">&quot;KB&quot;</span><span class="p">,</span> <span class="s2">&quot;Ksp&quot;</span><span class="p">,</span> <span class="s2">&quot;Ksp0&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constants</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;K0&quot;</span><span class="p">,</span> <span class="s2">&quot;K1&quot;</span><span class="p">,</span> <span class="s2">&quot;K2&quot;</span><span class="p">,</span> <span class="s2">&quot;KW&quot;</span><span class="p">,</span> <span class="s2">&quot;KB&quot;</span><span class="p">,</span> <span class="s2">&quot;Ksp&quot;</span><span class="p">,</span> <span class="s2">&quot;Ksp0&quot;</span><span class="p">,</span> <span class="s2">&quot;KS&quot;</span><span class="p">,</span> <span class="s2">&quot;KF&quot;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span>
             <span class="s2">&quot;dic&quot;</span><span class="p">,</span>
             <span class="s2">&quot;ta&quot;</span><span class="p">,</span>
@@ -279,6 +279,8 @@ along with this program.  If not, see
 
         <span class="c1"># update K values and species concentrations according to P, S, and T</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_std_seawater__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init_bisulfide__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init_hydrogen_floride__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_carbon__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_boron__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_water__</span><span class="p">()</span>
@@ -341,6 +343,54 @@ along with this program.  If not, see
         <span class="bp">self</span><span class="o">.</span><span class="n">so4</span> <span class="o">=</span> <span class="mf">2.7123</span> <span class="o">/</span> <span class="mi">96</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ca2</span> <span class="o">=</span> <span class="mf">0.01028</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Ksp0</span> <span class="o">=</span> <span class="mf">4.29e-07</span>  <span class="c1"># after after Boudreau et al 2010</span>
+
+    <span class="k">def</span> <span class="nf">__init_hydrogen_floride__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Bisulfide ion concentration after Dickson 1994, cf.</span>
+<span class="sd">        Zeebe and Gladrow 2001, p 260</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+        <span class="n">T</span> <span class="o">=</span> <span class="mf">273.15</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">salinity</span>
+        <span class="n">I</span> <span class="o">=</span> <span class="p">(</span><span class="mf">19.924</span> <span class="o">*</span> <span class="n">S</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1000</span> <span class="o">-</span> <span class="mf">1.005</span> <span class="o">*</span> <span class="n">S</span><span class="p">)</span>
+
+        <span class="n">lnKF</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="mf">1590.2</span> <span class="o">/</span> <span class="n">T</span>
+            <span class="o">-</span> <span class="mf">12.641</span>
+            <span class="o">+</span> <span class="mf">1.525</span> <span class="o">*</span> <span class="n">I</span> <span class="o">**</span> <span class="mf">0.5</span>
+            <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mf">0.001005</span> <span class="o">*</span> <span class="n">S</span><span class="p">)</span>
+            <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ST</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">KS</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">KF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">lnKF</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">FT</span> <span class="o">=</span> <span class="mf">7e-5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">salinity</span> <span class="o">/</span> <span class="mi">35</span>
+
+    <span class="k">def</span> <span class="nf">__init_bisulfide__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Bisulfide ion concentration after Dickson 1994, cf.</span>
+<span class="sd">        Zeebe and Gladrow 2001, p 260</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+        <span class="n">T</span> <span class="o">=</span> <span class="mf">273.15</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">salinity</span>
+        <span class="n">I</span> <span class="o">=</span> <span class="p">(</span><span class="mf">19.924</span> <span class="o">*</span> <span class="n">S</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1000</span> <span class="o">-</span> <span class="mf">1.005</span> <span class="o">*</span> <span class="n">S</span><span class="p">)</span>
+        <span class="n">lnKS</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="o">-</span><span class="mf">4276.1</span> <span class="o">/</span> <span class="n">T</span>
+            <span class="o">+</span> <span class="mf">141.328</span>
+            <span class="o">-</span> <span class="mf">23.093</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+            <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="mi">13856</span> <span class="o">/</span> <span class="n">T</span> <span class="o">+</span> <span class="mf">324.57</span> <span class="o">-</span> <span class="mf">47.986</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">T</span><span class="p">))</span> <span class="o">*</span> <span class="n">I</span> <span class="o">**</span> <span class="mf">0.5</span>
+            <span class="o">+</span> <span class="p">(</span><span class="mi">35474</span> <span class="o">/</span> <span class="n">T</span> <span class="o">-</span> <span class="mf">771.54</span> <span class="o">+</span> <span class="mf">114.723</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">T</span><span class="p">))</span> <span class="o">*</span> <span class="n">I</span>
+            <span class="o">-</span> <span class="mi">2698</span> <span class="o">/</span> <span class="n">T</span> <span class="o">*</span> <span class="n">I</span> <span class="o">**</span> <span class="mf">1.5</span>
+            <span class="o">+</span> <span class="mi">1776</span> <span class="o">/</span> <span class="n">T</span> <span class="o">*</span> <span class="n">I</span> <span class="o">**</span> <span class="mi">2</span>
+            <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mf">0.001005</span> <span class="o">*</span> <span class="n">S</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">KS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">lnKS</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ST</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">so4</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">salinity</span> <span class="o">/</span> <span class="mi">35</span>
 
     <span class="k">def</span> <span class="nf">__init_gasexchange__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Initialize constants for gas-exchange processes&quot;&quot;&quot;</span>
@@ -721,28 +771,31 @@ along with this program.  If not, see
 
 <span class="nd">@njit</span><span class="p">(</span><span class="n">parallel</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fastmath</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">error_model</span><span class="o">=</span><span class="s2">&quot;numpy&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">calc_carbonates_1</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span> <span class="n">vr_data</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">List</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Calculates and returns the carbonate concentrations with the format of</span>
-<span class="sd">    [d1, d2, d3, d4, d5] where each variable corresponds to</span>
-<span class="sd">    [H+, CA, HCO3, CO3, CO2(aq)], respectively, at the ith time-step of the model.</span>
+    <span class="sd">&quot;&quot;&quot;Calculates and returns the carbonate concentrations and saturation state</span>
+<span class="sd">     at the ith time-step of the model.</span>
+
+<span class="sd">    The function assumes that vr_data will be in the following order:</span>
+<span class="sd">        [H+, CA, HCO3, CO3, CO2(aq), omega]</span>
 
 <span class="sd">    LIMITATIONS:</span>
 <span class="sd">    - This in used in conjunction with ExternalCode objects!</span>
 <span class="sd">    - Assumes all concentrations are in mol/L</span>
+<span class="sd">    - Assumes your Model is in mol/L ! Otherwise, DIC and TA updating will not</span>
+<span class="sd">    be correct.</span>
 
-<span class="sd">    Calculations are based off equations from Follows, 2006.</span>
-<span class="sd">    doi:10.1016/j.ocemod.2005.05.004</span>
+<span class="sd">    Calculations are based off equations from:</span>
+<span class="sd">    Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654</span>
+<span class="sd">    Follows, 2006, doi:10.1016/j.ocemod.2005.05.004</span>
 
-<span class="sd">    Example: see carbonate_system_1 in utility_function.py</span>
+<span class="sd">    See add_carbonate_system_1 in utility_functions.py on how to call this function</span>
 
 <span class="sd">    Author: M. Niazi &amp; T. Tsan, 2021</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">dic</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
     <span class="n">ta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
 
     <span class="c1"># calculates carbonate alkalinity (ca) based on H+ concentration from the</span>
     <span class="c1"># previous time-step</span>
-    <span class="c1"># hplus: float = input_data[2][i - 1]</span>
     <span class="n">hplus</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">vr_data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
 
     <span class="n">k1</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -750,16 +803,15 @@ along with this program.  If not, see
     <span class="n">KW</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
     <span class="n">KB</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
     <span class="n">boron</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
-    <span class="c1"># hplus = params[5 ]</span>
-    <span class="n">ca2</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
-    <span class="n">ksp</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>
-    <span class="n">ksp0</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span>
+    <span class="n">ca2</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+    <span class="n">ksp</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
 
     <span class="c1"># ca</span>
     <span class="n">oh</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">KW</span> <span class="o">/</span> <span class="n">hplus</span>
     <span class="n">boh4</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">boron</span> <span class="o">*</span> <span class="n">KB</span> <span class="o">/</span> <span class="p">(</span><span class="n">hplus</span> <span class="o">+</span> <span class="n">KB</span><span class="p">)</span>
     <span class="n">fg</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">hplus</span> <span class="o">-</span> <span class="n">oh</span> <span class="o">-</span> <span class="n">boh4</span>
     <span class="n">ca</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">ta</span> <span class="o">+</span> <span class="n">fg</span>
+
     <span class="c1"># hplus</span>
     <span class="n">gamm</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">dic</span> <span class="o">/</span> <span class="n">ca</span>
     <span class="n">dummy</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">gamm</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">gamm</span><span class="p">)</span> <span class="o">*</span> <span class="n">k1</span> <span class="o">*</span> <span class="n">k1</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">k1</span> <span class="o">*</span> <span class="n">k2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">gamm</span><span class="p">))</span>
@@ -776,7 +828,6 @@ along with this program.  If not, see
 <span class="sd">    small, so it may be ok to simply write co2aq = dic - hco3 + co3.</span>
 <span class="sd">    Let&#39;s test this once we have a case where pco2 is calculated from co2aq</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
     <span class="c1"># co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))</span>
     <span class="n">co2aq</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">dic</span> <span class="o">-</span> <span class="n">hco3</span> <span class="o">-</span> <span class="n">co3</span>
     <span class="n">omega</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">ca2</span> <span class="o">*</span> <span class="n">co3</span> <span class="o">/</span> <span class="n">ksp</span>
@@ -795,7 +846,8 @@ along with this program.  If not, see
 <span class="sd">    depth (zcc) at the ith time-step of the model.</span>
 
 <span class="sd">    The function assumes that vr_data will be in the following order:</span>
-<span class="sd">        [H+, CA, HCO3, CO3, CO2(aq), zsat, zcc, zsnow]</span>
+<span class="sd">        [H+, CA, HCO3, CO3, CO2(aq), zsat, zcc, zsnow, Fburial,</span>
+<span class="sd">        B, BNS, BDS_under, BDS_resp, BDS, BCC, BPDC, BD,omega]</span>
 
 <span class="sd">    LIMITATIONS:</span>
 <span class="sd">    - This in used in conjunction with ExternalCode objects!</span>
@@ -803,15 +855,13 @@ along with this program.  If not, see
 <span class="sd">    - Assumes your Model is in mol/L ! Otherwise, DIC and TA updating will not</span>
 <span class="sd">    be correct.</span>
 
-<span class="sd">    Calculations are based off equations from Follows, 2006 and</span>
-<span class="sd">    Boudreau et al 2010,</span>
-<span class="sd">    doi:10.1016/j.ocemod.2005.05.004</span>
-<span class="sd">    http://dx.doi.org/10.1029/2009GB003654</span>
+<span class="sd">    Calculations are based off equations from:</span>
+<span class="sd">    Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654</span>
+<span class="sd">    Follows, 2006, doi:10.1016/j.ocemod.2005.05.004</span>
 
-<span class="sd">    See carbon_system_2 in utility_functions.py on how to call this function</span>
+<span class="sd">    See add_carbonate_system_2 in utility_functions.py on how to call this function</span>
 
 <span class="sd">    Author: M. Niazi &amp; T. Tsan, 2021</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># get constants</span>
@@ -822,20 +872,17 @@ along with this program.  If not, see
     <span class="n">boron</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
     <span class="n">ksp0</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
     <span class="n">kc</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
-    <span class="n">sa</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>
-    <span class="n">volume</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span>
-    <span class="n">AD</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span>
-    <span class="n">zsat0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">10</span><span class="p">]))</span>
-    <span class="n">ca2</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span>
-    <span class="n">dt</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">12</span><span class="p">]</span>
-    <span class="n">pc</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">13</span><span class="p">]</span>
-    <span class="n">pg</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">14</span><span class="p">]</span>
-    <span class="n">I_caco3</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">15</span><span class="p">]</span>
-    <span class="n">alpha</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">16</span><span class="p">]</span>
-    <span class="n">zsat_min</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">17</span><span class="p">]))</span>
-    <span class="n">zmax</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">18</span><span class="p">]))</span>
-    <span class="n">z0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">19</span><span class="p">]))</span>
-    <span class="n">ksp</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">20</span><span class="p">]</span>
+    <span class="n">volume</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>
+    <span class="n">AD</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span>
+    <span class="n">zsat0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">9</span><span class="p">]))</span>
+    <span class="n">ca2</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span>
+    <span class="n">I_caco3</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">12</span><span class="p">]</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">13</span><span class="p">]</span>
+    <span class="n">zsat_min</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">14</span><span class="p">]))</span>
+    <span class="n">zmax</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">15</span><span class="p">]))</span>
+    <span class="n">z0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">16</span><span class="p">]))</span>
+    <span class="n">ksp</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">17</span><span class="p">]</span>
 
     <span class="c1"># get lookup up tables</span>
     <span class="n">depth_area_table</span><span class="p">:</span> <span class="n">NDArray</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>  <span class="c1"># depth look-up table</span>
@@ -849,9 +896,8 @@ along with this program.  If not, see
     <span class="n">ta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">[</span><span class="mi">5</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># TA concentration [mol/l]</span>
     <span class="n">B</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">[</span><span class="mi">6</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># Carbonate Export Flux [mol/yr]</span>
     <span class="n">hplus</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">vr_data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># H+ concentration [mol/l]</span>
-    <span class="n">zsat</span> <span class="o">=</span> <span class="n">vr_data</span><span class="p">[</span><span class="mi">5</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
-    <span class="n">zcc</span> <span class="o">=</span> <span class="n">vr_data</span><span class="p">[</span><span class="mi">6</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
-    <span class="n">zsnow</span> <span class="o">=</span> <span class="n">vr_data</span><span class="p">[</span><span class="mi">7</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">zsnow</span> <span class="o">=</span> <span class="n">vr_data</span><span class="p">[</span><span class="mi">7</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="c1">#previous zsnow</span>
 
     <span class="c1"># calc carbonate alkalinity based t-1</span>
     <span class="n">oh</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">KW</span> <span class="o">/</span> <span class="n">hplus</span>
@@ -923,15 +969,11 @@ along with this program.  If not, see
         <span class="n">area_p</span> <span class="o">=</span> <span class="n">area_dz_table</span><span class="p">[</span><span class="n">zcc</span> <span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">zsnow</span><span class="p">)]</span>
         <span class="n">BPDC</span> <span class="o">=</span> <span class="n">kc</span> <span class="o">*</span> <span class="n">area_p</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span>
         <span class="c1"># eq 4 dzsnow/dt = Bpdc(t) / (a&#39;(zsnow(t)) * ICaCO3</span>
-        <span class="c1"># print(zcc, zsnow)</span>
         <span class="n">zsnow</span> <span class="o">=</span> <span class="n">zsnow</span> <span class="o">-</span> <span class="n">BPDC</span> <span class="o">/</span> <span class="p">(</span><span class="n">area_dz_table</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">zsnow</span><span class="p">)]</span> <span class="o">*</span> <span class="n">I_caco3</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
-        <span class="c1"># print(zcc, zsnow)</span>
-        <span class="c1"># print()</span>
+
     <span class="k">else</span><span class="p">:</span>  <span class="c1"># zcc &gt; zsnow</span>
-        <span class="c1"># there is no carbonate below zsnow, so  BPDC = 0</span>
+        <span class="c1"># there is no carbonate below zsnow, so BPDC = 0</span>
         <span class="n">zsnow</span> <span class="o">=</span> <span class="n">zcc</span>
-        <span class="c1"># dummy values for testing purposes; will be removed later</span>
-        <span class="n">zsnow_dt</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">BPDC</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="c1"># BD &amp; F_burial</span>
@@ -963,6 +1005,7 @@ along with this program.  If not, see
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">6</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">zcc</span>
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">7</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">zsnow</span>
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">8</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">Fburial</span>
+
     <span class="c1"># temporary added values for testing</span>
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">9</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">B</span>
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">10</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">BNS</span>
@@ -972,9 +1015,7 @@ along with this program.  If not, see
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">14</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">BCC</span>
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">15</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">BPDC</span>
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">BD</span>
-    <span class="n">vr_data</span><span class="p">[</span><span class="mi">17</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-    <span class="n">vr_data</span><span class="p">[</span><span class="mi">18</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-    <span class="n">vr_data</span><span class="p">[</span><span class="mi">19</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">omega</span>
+    <span class="n">vr_data</span><span class="p">[</span><span class="mi">17</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">omega</span>
 </pre></div>
 
         </details>
@@ -1092,7 +1133,7 @@ with like this in the reservoir definition</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>  <span class="c1"># string =  name of this instance</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="p">:</span> <span class="n">Model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hplus</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">**</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">pH</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">constants</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;K0&quot;</span><span class="p">,</span> <span class="s2">&quot;K1&quot;</span><span class="p">,</span> <span class="s2">&quot;K2&quot;</span><span class="p">,</span> <span class="s2">&quot;KW&quot;</span><span class="p">,</span> <span class="s2">&quot;KB&quot;</span><span class="p">,</span> <span class="s2">&quot;Ksp&quot;</span><span class="p">,</span> <span class="s2">&quot;Ksp0&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constants</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;K0&quot;</span><span class="p">,</span> <span class="s2">&quot;K1&quot;</span><span class="p">,</span> <span class="s2">&quot;K2&quot;</span><span class="p">,</span> <span class="s2">&quot;KW&quot;</span><span class="p">,</span> <span class="s2">&quot;KB&quot;</span><span class="p">,</span> <span class="s2">&quot;Ksp&quot;</span><span class="p">,</span> <span class="s2">&quot;Ksp0&quot;</span><span class="p">,</span> <span class="s2">&quot;KS&quot;</span><span class="p">,</span> <span class="s2">&quot;KF&quot;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span>
             <span class="s2">&quot;dic&quot;</span><span class="p">,</span>
             <span class="s2">&quot;ta&quot;</span><span class="p">,</span>
@@ -1128,6 +1169,8 @@ with like this in the reservoir definition</p>
 
         <span class="c1"># update K values and species concentrations according to P, S, and T</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_std_seawater__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init_bisulfide__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init_hydrogen_floride__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_carbon__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_boron__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_water__</span><span class="p">()</span>
@@ -1190,6 +1233,54 @@ with like this in the reservoir definition</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">so4</span> <span class="o">=</span> <span class="mf">2.7123</span> <span class="o">/</span> <span class="mi">96</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ca2</span> <span class="o">=</span> <span class="mf">0.01028</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Ksp0</span> <span class="o">=</span> <span class="mf">4.29e-07</span>  <span class="c1"># after after Boudreau et al 2010</span>
+
+    <span class="k">def</span> <span class="nf">__init_hydrogen_floride__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Bisulfide ion concentration after Dickson 1994, cf.</span>
+<span class="sd">        Zeebe and Gladrow 2001, p 260</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+        <span class="n">T</span> <span class="o">=</span> <span class="mf">273.15</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">salinity</span>
+        <span class="n">I</span> <span class="o">=</span> <span class="p">(</span><span class="mf">19.924</span> <span class="o">*</span> <span class="n">S</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1000</span> <span class="o">-</span> <span class="mf">1.005</span> <span class="o">*</span> <span class="n">S</span><span class="p">)</span>
+
+        <span class="n">lnKF</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="mf">1590.2</span> <span class="o">/</span> <span class="n">T</span>
+            <span class="o">-</span> <span class="mf">12.641</span>
+            <span class="o">+</span> <span class="mf">1.525</span> <span class="o">*</span> <span class="n">I</span> <span class="o">**</span> <span class="mf">0.5</span>
+            <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mf">0.001005</span> <span class="o">*</span> <span class="n">S</span><span class="p">)</span>
+            <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ST</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">KS</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">KF</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">lnKF</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">FT</span> <span class="o">=</span> <span class="mf">7e-5</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">salinity</span> <span class="o">/</span> <span class="mi">35</span>
+
+    <span class="k">def</span> <span class="nf">__init_bisulfide__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Bisulfide ion concentration after Dickson 1994, cf.</span>
+<span class="sd">        Zeebe and Gladrow 2001, p 260</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+        <span class="n">T</span> <span class="o">=</span> <span class="mf">273.15</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">temperature</span>
+        <span class="n">S</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">salinity</span>
+        <span class="n">I</span> <span class="o">=</span> <span class="p">(</span><span class="mf">19.924</span> <span class="o">*</span> <span class="n">S</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1000</span> <span class="o">-</span> <span class="mf">1.005</span> <span class="o">*</span> <span class="n">S</span><span class="p">)</span>
+        <span class="n">lnKS</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="o">-</span><span class="mf">4276.1</span> <span class="o">/</span> <span class="n">T</span>
+            <span class="o">+</span> <span class="mf">141.328</span>
+            <span class="o">-</span> <span class="mf">23.093</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+            <span class="o">+</span> <span class="p">(</span><span class="o">-</span><span class="mi">13856</span> <span class="o">/</span> <span class="n">T</span> <span class="o">+</span> <span class="mf">324.57</span> <span class="o">-</span> <span class="mf">47.986</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">T</span><span class="p">))</span> <span class="o">*</span> <span class="n">I</span> <span class="o">**</span> <span class="mf">0.5</span>
+            <span class="o">+</span> <span class="p">(</span><span class="mi">35474</span> <span class="o">/</span> <span class="n">T</span> <span class="o">-</span> <span class="mf">771.54</span> <span class="o">+</span> <span class="mf">114.723</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">T</span><span class="p">))</span> <span class="o">*</span> <span class="n">I</span>
+            <span class="o">-</span> <span class="mi">2698</span> <span class="o">/</span> <span class="n">T</span> <span class="o">*</span> <span class="n">I</span> <span class="o">**</span> <span class="mf">1.5</span>
+            <span class="o">+</span> <span class="mi">1776</span> <span class="o">/</span> <span class="n">T</span> <span class="o">*</span> <span class="n">I</span> <span class="o">**</span> <span class="mi">2</span>
+            <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mf">0.001005</span> <span class="o">*</span> <span class="n">S</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">KS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">lnKS</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ST</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">so4</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">salinity</span> <span class="o">/</span> <span class="mi">35</span>
 
     <span class="k">def</span> <span class="nf">__init_gasexchange__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Initialize constants for gas-exchange processes&quot;&quot;&quot;</span>
@@ -1565,7 +1656,7 @@ Pressure may come at a later stage</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>  <span class="c1"># string =  name of this instance</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mo</span><span class="p">:</span> <span class="n">Model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hplus</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">**</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">pH</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">constants</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;K0&quot;</span><span class="p">,</span> <span class="s2">&quot;K1&quot;</span><span class="p">,</span> <span class="s2">&quot;K2&quot;</span><span class="p">,</span> <span class="s2">&quot;KW&quot;</span><span class="p">,</span> <span class="s2">&quot;KB&quot;</span><span class="p">,</span> <span class="s2">&quot;Ksp&quot;</span><span class="p">,</span> <span class="s2">&quot;Ksp0&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">constants</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;K0&quot;</span><span class="p">,</span> <span class="s2">&quot;K1&quot;</span><span class="p">,</span> <span class="s2">&quot;K2&quot;</span><span class="p">,</span> <span class="s2">&quot;KW&quot;</span><span class="p">,</span> <span class="s2">&quot;KB&quot;</span><span class="p">,</span> <span class="s2">&quot;Ksp&quot;</span><span class="p">,</span> <span class="s2">&quot;Ksp0&quot;</span><span class="p">,</span> <span class="s2">&quot;KS&quot;</span><span class="p">,</span> <span class="s2">&quot;KF&quot;</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[</span>
             <span class="s2">&quot;dic&quot;</span><span class="p">,</span>
             <span class="s2">&quot;ta&quot;</span><span class="p">,</span>
@@ -1680,6 +1771,8 @@ Pressure may come at a later stage</p>
 
         <span class="c1"># update K values and species concentrations according to P, S, and T</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_std_seawater__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init_bisulfide__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__init_hydrogen_floride__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_carbon__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_boron__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__init_water__</span><span class="p">()</span>
@@ -2109,28 +2202,31 @@ pco2 = calc_pCO2b(dic,h,SW)
             <summary>View Source</summary>
             <div class="codehilite"><pre><span></span><span class="nd">@njit</span><span class="p">(</span><span class="n">parallel</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fastmath</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">error_model</span><span class="o">=</span><span class="s2">&quot;numpy&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">calc_carbonates_1</span><span class="p">(</span><span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">input_data</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span> <span class="n">vr_data</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">List</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;Calculates and returns the carbonate concentrations with the format of</span>
-<span class="sd">    [d1, d2, d3, d4, d5] where each variable corresponds to</span>
-<span class="sd">    [H+, CA, HCO3, CO3, CO2(aq)], respectively, at the ith time-step of the model.</span>
+    <span class="sd">&quot;&quot;&quot;Calculates and returns the carbonate concentrations and saturation state</span>
+<span class="sd">     at the ith time-step of the model.</span>
+
+<span class="sd">    The function assumes that vr_data will be in the following order:</span>
+<span class="sd">        [H+, CA, HCO3, CO3, CO2(aq), omega]</span>
 
 <span class="sd">    LIMITATIONS:</span>
 <span class="sd">    - This in used in conjunction with ExternalCode objects!</span>
 <span class="sd">    - Assumes all concentrations are in mol/L</span>
+<span class="sd">    - Assumes your Model is in mol/L ! Otherwise, DIC and TA updating will not</span>
+<span class="sd">    be correct.</span>
 
-<span class="sd">    Calculations are based off equations from Follows, 2006.</span>
-<span class="sd">    doi:10.1016/j.ocemod.2005.05.004</span>
+<span class="sd">    Calculations are based off equations from:</span>
+<span class="sd">    Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654</span>
+<span class="sd">    Follows, 2006, doi:10.1016/j.ocemod.2005.05.004</span>
 
-<span class="sd">    Example: see carbonate_system_1 in utility_function.py</span>
+<span class="sd">    See add_carbonate_system_1 in utility_functions.py on how to call this function</span>
 
 <span class="sd">    Author: M. Niazi &amp; T. Tsan, 2021</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">dic</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
     <span class="n">ta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
 
     <span class="c1"># calculates carbonate alkalinity (ca) based on H+ concentration from the</span>
     <span class="c1"># previous time-step</span>
-    <span class="c1"># hplus: float = input_data[2][i - 1]</span>
     <span class="n">hplus</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">vr_data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
 
     <span class="n">k1</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -2138,16 +2234,15 @@ pco2 = calc_pCO2b(dic,h,SW)
     <span class="n">KW</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
     <span class="n">KB</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
     <span class="n">boron</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
-    <span class="c1"># hplus = params[5 ]</span>
-    <span class="n">ca2</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
-    <span class="n">ksp</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>
-    <span class="n">ksp0</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span>
+    <span class="n">ca2</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
+    <span class="n">ksp</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
 
     <span class="c1"># ca</span>
     <span class="n">oh</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">KW</span> <span class="o">/</span> <span class="n">hplus</span>
     <span class="n">boh4</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">boron</span> <span class="o">*</span> <span class="n">KB</span> <span class="o">/</span> <span class="p">(</span><span class="n">hplus</span> <span class="o">+</span> <span class="n">KB</span><span class="p">)</span>
     <span class="n">fg</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">hplus</span> <span class="o">-</span> <span class="n">oh</span> <span class="o">-</span> <span class="n">boh4</span>
     <span class="n">ca</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">ta</span> <span class="o">+</span> <span class="n">fg</span>
+
     <span class="c1"># hplus</span>
     <span class="n">gamm</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">dic</span> <span class="o">/</span> <span class="n">ca</span>
     <span class="n">dummy</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">gamm</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">gamm</span><span class="p">)</span> <span class="o">*</span> <span class="n">k1</span> <span class="o">*</span> <span class="n">k1</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">k1</span> <span class="o">*</span> <span class="n">k2</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">gamm</span><span class="p">))</span>
@@ -2164,7 +2259,6 @@ pco2 = calc_pCO2b(dic,h,SW)
 <span class="sd">    small, so it may be ok to simply write co2aq = dic - hco3 + co3.</span>
 <span class="sd">    Let&#39;s test this once we have a case where pco2 is calculated from co2aq</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
     <span class="c1"># co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))</span>
     <span class="n">co2aq</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">dic</span> <span class="o">-</span> <span class="n">hco3</span> <span class="o">-</span> <span class="n">co3</span>
     <span class="n">omega</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">ca2</span> <span class="o">*</span> <span class="n">co3</span> <span class="o">/</span> <span class="n">ksp</span>
@@ -2179,21 +2273,26 @@ pco2 = calc_pCO2b(dic,h,SW)
 
         </details>
 
-            <div class="docstring"><p>Calculates and returns the carbonate concentrations with the format of
-[d1, d2, d3, d4, d5] where each variable corresponds to
-[H+, CA, HCO3, CO3, CO2(aq)], respectively, at the ith time-step of the model.</p>
+            <div class="docstring"><p>Calculates and returns the carbonate concentrations and saturation state
+ at the ith time-step of the model.</p>
+
+<p>The function assumes that vr_data will be in the following order:
+    [H+, CA, HCO3, CO3, CO2(aq), omega]</p>
 
 <p>LIMITATIONS:</p>
 
 <ul>
 <li>This in used in conjunction with ExternalCode objects!</li>
 <li>Assumes all concentrations are in mol/L</li>
+<li>Assumes your Model is in mol/L ! Otherwise, DIC and TA updating will not
+be correct.</li>
 </ul>
 
-<p>Calculations are based off equations from Follows, 2006.
-doi:10.1016/j.ocemod.2005.05.004</p>
+<p>Calculations are based off equations from:
+Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
+Follows, 2006, doi:10.1016/j.ocemod.2005.05.004</p>
 
-<p>Example: see carbonate_system_1 in utility_function.py</p>
+<p>See add_carbonate_system_1 in utility_functions.py on how to call this function</p>
 
 <p>Author: M. Niazi &amp; T. Tsan, 2021</p>
 </div>
@@ -2222,7 +2321,8 @@ doi:10.1016/j.ocemod.2005.05.004</p>
 <span class="sd">    depth (zcc) at the ith time-step of the model.</span>
 
 <span class="sd">    The function assumes that vr_data will be in the following order:</span>
-<span class="sd">        [H+, CA, HCO3, CO3, CO2(aq), zsat, zcc, zsnow]</span>
+<span class="sd">        [H+, CA, HCO3, CO3, CO2(aq), zsat, zcc, zsnow, Fburial,</span>
+<span class="sd">        B, BNS, BDS_under, BDS_resp, BDS, BCC, BPDC, BD,omega]</span>
 
 <span class="sd">    LIMITATIONS:</span>
 <span class="sd">    - This in used in conjunction with ExternalCode objects!</span>
@@ -2230,15 +2330,13 @@ doi:10.1016/j.ocemod.2005.05.004</p>
 <span class="sd">    - Assumes your Model is in mol/L ! Otherwise, DIC and TA updating will not</span>
 <span class="sd">    be correct.</span>
 
-<span class="sd">    Calculations are based off equations from Follows, 2006 and</span>
-<span class="sd">    Boudreau et al 2010,</span>
-<span class="sd">    doi:10.1016/j.ocemod.2005.05.004</span>
-<span class="sd">    http://dx.doi.org/10.1029/2009GB003654</span>
+<span class="sd">    Calculations are based off equations from:</span>
+<span class="sd">    Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654</span>
+<span class="sd">    Follows, 2006, doi:10.1016/j.ocemod.2005.05.004</span>
 
-<span class="sd">    See carbon_system_2 in utility_functions.py on how to call this function</span>
+<span class="sd">    See add_carbonate_system_2 in utility_functions.py on how to call this function</span>
 
 <span class="sd">    Author: M. Niazi &amp; T. Tsan, 2021</span>
-
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="c1"># get constants</span>
@@ -2249,20 +2347,17 @@ doi:10.1016/j.ocemod.2005.05.004</p>
     <span class="n">boron</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
     <span class="n">ksp0</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span>
     <span class="n">kc</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
-    <span class="n">sa</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>
-    <span class="n">volume</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span>
-    <span class="n">AD</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">9</span><span class="p">]</span>
-    <span class="n">zsat0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">10</span><span class="p">]))</span>
-    <span class="n">ca2</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span>
-    <span class="n">dt</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">12</span><span class="p">]</span>
-    <span class="n">pc</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">13</span><span class="p">]</span>
-    <span class="n">pg</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">14</span><span class="p">]</span>
-    <span class="n">I_caco3</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">15</span><span class="p">]</span>
-    <span class="n">alpha</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">16</span><span class="p">]</span>
-    <span class="n">zsat_min</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">17</span><span class="p">]))</span>
-    <span class="n">zmax</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">18</span><span class="p">]))</span>
-    <span class="n">z0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">19</span><span class="p">]))</span>
-    <span class="n">ksp</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">20</span><span class="p">]</span>
+    <span class="n">volume</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>
+    <span class="n">AD</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">8</span><span class="p">]</span>
+    <span class="n">zsat0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">9</span><span class="p">]))</span>
+    <span class="n">ca2</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span>
+    <span class="n">dt</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">11</span><span class="p">]</span>
+    <span class="n">I_caco3</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">12</span><span class="p">]</span>
+    <span class="n">alpha</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">13</span><span class="p">]</span>
+    <span class="n">zsat_min</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">14</span><span class="p">]))</span>
+    <span class="n">zmax</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">15</span><span class="p">]))</span>
+    <span class="n">z0</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">params</span><span class="p">[</span><span class="mi">16</span><span class="p">]))</span>
+    <span class="n">ksp</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">17</span><span class="p">]</span>
 
     <span class="c1"># get lookup up tables</span>
     <span class="n">depth_area_table</span><span class="p">:</span> <span class="n">NDArray</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span>  <span class="c1"># depth look-up table</span>
@@ -2276,9 +2371,8 @@ doi:10.1016/j.ocemod.2005.05.004</p>
     <span class="n">ta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">[</span><span class="mi">5</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># TA concentration [mol/l]</span>
     <span class="n">B</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">[</span><span class="mi">6</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># Carbonate Export Flux [mol/yr]</span>
     <span class="n">hplus</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">vr_data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># H+ concentration [mol/l]</span>
-    <span class="n">zsat</span> <span class="o">=</span> <span class="n">vr_data</span><span class="p">[</span><span class="mi">5</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
-    <span class="n">zcc</span> <span class="o">=</span> <span class="n">vr_data</span><span class="p">[</span><span class="mi">6</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
-    <span class="n">zsnow</span> <span class="o">=</span> <span class="n">vr_data</span><span class="p">[</span><span class="mi">7</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+
+    <span class="n">zsnow</span> <span class="o">=</span> <span class="n">vr_data</span><span class="p">[</span><span class="mi">7</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="c1">#previous zsnow</span>
 
     <span class="c1"># calc carbonate alkalinity based t-1</span>
     <span class="n">oh</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">KW</span> <span class="o">/</span> <span class="n">hplus</span>
@@ -2350,15 +2444,11 @@ doi:10.1016/j.ocemod.2005.05.004</p>
         <span class="n">area_p</span> <span class="o">=</span> <span class="n">area_dz_table</span><span class="p">[</span><span class="n">zcc</span> <span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">zsnow</span><span class="p">)]</span>
         <span class="n">BPDC</span> <span class="o">=</span> <span class="n">kc</span> <span class="o">*</span> <span class="n">area_p</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">diff</span><span class="p">)</span>
         <span class="c1"># eq 4 dzsnow/dt = Bpdc(t) / (a&#39;(zsnow(t)) * ICaCO3</span>
-        <span class="c1"># print(zcc, zsnow)</span>
         <span class="n">zsnow</span> <span class="o">=</span> <span class="n">zsnow</span> <span class="o">-</span> <span class="n">BPDC</span> <span class="o">/</span> <span class="p">(</span><span class="n">area_dz_table</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">zsnow</span><span class="p">)]</span> <span class="o">*</span> <span class="n">I_caco3</span><span class="p">)</span> <span class="o">*</span> <span class="n">dt</span>
-        <span class="c1"># print(zcc, zsnow)</span>
-        <span class="c1"># print()</span>
+
     <span class="k">else</span><span class="p">:</span>  <span class="c1"># zcc &gt; zsnow</span>
-        <span class="c1"># there is no carbonate below zsnow, so  BPDC = 0</span>
+        <span class="c1"># there is no carbonate below zsnow, so BPDC = 0</span>
         <span class="n">zsnow</span> <span class="o">=</span> <span class="n">zcc</span>
-        <span class="c1"># dummy values for testing purposes; will be removed later</span>
-        <span class="n">zsnow_dt</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="n">BPDC</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="c1"># BD &amp; F_burial</span>
@@ -2390,6 +2480,7 @@ doi:10.1016/j.ocemod.2005.05.004</p>
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">6</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">zcc</span>
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">7</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">zsnow</span>
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">8</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">Fburial</span>
+
     <span class="c1"># temporary added values for testing</span>
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">9</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">B</span>
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">10</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">BNS</span>
@@ -2399,9 +2490,7 @@ doi:10.1016/j.ocemod.2005.05.004</p>
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">14</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">BCC</span>
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">15</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">BPDC</span>
     <span class="n">vr_data</span><span class="p">[</span><span class="mi">16</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">BD</span>
-    <span class="n">vr_data</span><span class="p">[</span><span class="mi">17</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-    <span class="n">vr_data</span><span class="p">[</span><span class="mi">18</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
-    <span class="n">vr_data</span><span class="p">[</span><span class="mi">19</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">omega</span>
+    <span class="n">vr_data</span><span class="p">[</span><span class="mi">17</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">omega</span>
 </pre></div>
 
         </details>
@@ -2410,7 +2499,8 @@ doi:10.1016/j.ocemod.2005.05.004</p>
 depth (zcc) at the ith time-step of the model.</p>
 
 <p>The function assumes that vr_data will be in the following order:
-    [H+, CA, HCO3, CO3, CO2(aq), zsat, zcc, zsnow]</p>
+    [H+, CA, HCO3, CO3, CO2(aq), zsat, zcc, zsnow, Fburial,
+    B, BNS, BDS_under, BDS_resp, BDS, BCC, BPDC, BD,omega]</p>
 
 <p>LIMITATIONS:</p>
 
@@ -2421,12 +2511,11 @@ depth (zcc) at the ith time-step of the model.</p>
 be correct.</li>
 </ul>
 
-<p>Calculations are based off equations from Follows, 2006 and
-Boudreau et al 2010,
-doi:10.1016/j.ocemod.2005.05.004
-http://dx.doi.org/10.1029/2009GB003654</p>
+<p>Calculations are based off equations from:
+Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
+Follows, 2006, doi:10.1016/j.ocemod.2005.05.004</p>
 
-<p>See carbon_system_2 in utility_functions.py on how to call this function</p>
+<p>See add_carbonate_system_2 in utility_functions.py on how to call this function</p>
 
 <p>Author: M. Niazi &amp; T. Tsan, 2021</p>
 </div>

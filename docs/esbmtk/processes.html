@@ -262,6 +262,18 @@
 
             </li>
             <li>
+                    <a class="class" href="#weathering">weathering</a>
+                            <ul class="memberlist">
+                        <li>
+                                <a class="function" href="#weathering.get_process_args">get_process_args</a>
+                        </li>
+                        <li>
+                                <a class="function" href="#weathering.p_weathering">p_weathering</a>
+                        </li>
+                </ul>
+
+            </li>
+            <li>
                     <a class="class" href="#ScaleRelativeToConcentration">ScaleRelativeToConcentration</a>
                             <ul class="memberlist">
                         <li>
@@ -1335,9 +1347,10 @@
             <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
             <span class="s2">&quot;k_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
             <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;reservoir&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">Source</span><span class="p">,</span> <span class="n">Sink</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span>
+            <span class="s2">&quot;reservoir&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">Source</span><span class="p">,</span> <span class="n">Sink</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span>
             <span class="s2">&quot;flux&quot;</span><span class="p">:</span> <span class="n">Flux</span><span class="p">,</span>
             <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;reservoir_ref&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">),</span>
             <span class="s2">&quot;left&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span>
             <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span>
             <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="p">(</span>
@@ -1356,6 +1369,7 @@
             <span class="s2">&quot;ref_species&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
             <span class="s2">&quot;seawaterconstants&quot;</span><span class="p">:</span> <span class="nb">any</span><span class="p">,</span>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="s2">&quot;function_reference&quot;</span><span class="p">:</span> <span class="nb">any</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># new required keywords</span>
@@ -1363,7 +1377,7 @@
 
         <span class="c1"># dict with default values if none provided</span>
         <span class="c1"># self.lod = {r</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lod</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lod</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;function_reference&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">}</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">__initerrormessages__</span><span class="p">()</span>
 
@@ -1378,6 +1392,7 @@
                 <span class="s2">&quot;flux&quot;</span><span class="p">:</span> <span class="s2">&quot;a flux handle&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;left&quot;</span><span class="p">:</span> <span class="s2">&quot;list, reservoir or number&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="s2">&quot;list, reservoir or number&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;function_reference&quot;</span><span class="p">:</span> <span class="s2">&quot;A function reference&quot;</span><span class="p">,</span>
             <span class="p">}</span>
         <span class="p">)</span>
 
@@ -1401,6 +1416,103 @@
     <span class="c1"># setup a placeholder call function</span>
     <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__execute__</span><span class="p">(</span><span class="n">reservoir</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">weathering</span><span class="p">(</span><span class="n">RateConstant</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This process calculates the flux as a function of the upstream</span>
+<span class="sd">     reservoir concentration C and a constant which describes thet</span>
+<span class="sd">     strength of relation between the reservoir concentration and</span>
+<span class="sd">     the flux scaling</span>
+
+<span class="sd">     F = f_0 * (scale * C/pco2_0)**ncc</span>
+
+<span class="sd">     where C denotes the concentration in the ustream reservoir, k is a</span>
+<span class="sd">     constant. This process is typically called by the connector</span>
+<span class="sd">     instance. However you can instantiate it manually as</span>
+
+<span class="sd">     weathering(</span>
+<span class="sd">                       name = &quot;Name&quot;,</span>
+<span class="sd">                       reservoir = upstream_reservoir_handle,</span>
+<span class="sd">                       reservoir_ref = reference_reservoir (Atmosphere)</span>
+<span class="sd">                       flux = flux handle,</span>
+<span class="sd">                       ex = exponent</span>
+<span class="sd">                       pco2_0 = 280,</span>
+<span class="sd">                       f_0 = 12 / 17e12</span>
+<span class="sd">                       Scale =  1000,</span>
+<span class="sd">    )</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__without_isotopes__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="c1"># print(</span>
+        <span class="c1">#    f&quot;f_0={self.f_0}, scale={self.scale}, c={self.reservoir_ref.c[i-1]}, p0={self.pco2_0}, ex={self.ex}&quot;</span>
+        <span class="c1"># )</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">f_0</span>
+            <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">reservoir_ref</span><span class="o">.</span><span class="n">c</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">pco2_0</span><span class="p">)</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">ex</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__with_isotopes__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        C = M/V so we express this as relative to mass which allows us to</span>
+<span class="sd">        use the isotope data.</span>
+
+<span class="sd">        The below calculates the flux as function of reservoir concentration,</span>
+<span class="sd">        rather than scaling the flux.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;weathering has currently no isotope method&quot;</span><span class="p">)</span>
+        <span class="c1"># c: float = self.reservoir.c[i - 1]</span>
+        <span class="c1"># if c &gt; 0:  # otherwise there is no flux</span>
+        <span class="c1">#     m = c * self.scale</span>
+        <span class="c1">#     r: float = reservoir.species.element.r</span>
+        <span class="c1">#     d: float = reservoir.d[i - 1]</span>
+        <span class="c1">#     l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)</span>
+        <span class="c1">#     self.flux[i]: np.array = [m, l, m - l, d]</span>
+
+    <span class="k">def</span> <span class="nf">get_process_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">):</span>
+
+        <span class="n">func_name</span><span class="p">:</span> <span class="n">function</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_weathering</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">List</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">m</span><span class="p">,</span>  <span class="c1"># 0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">l</span><span class="p">,</span>  <span class="c1"># 1</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">h</span><span class="p">,</span>  <span class="c1"># 2</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>  <span class="c1"># 3</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reservoir_ref</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>  <span class="c1"># 4</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reservoir_ref</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>  <span class="c1"># 5</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reservoir_ref</span><span class="o">.</span><span class="n">m</span><span class="p">,</span>  <span class="c1"># 6</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">List</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">reservoir</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">r</span><span class="p">),</span>  <span class="c1"># 0</span>
+                <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">),</span>  <span class="c1"># 1</span>
+                <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">f_0</span><span class="p">),</span>  <span class="c1"># 2</span>
+                <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pco2_0</span><span class="p">),</span>  <span class="c1"># 3</span>
+                <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ex</span><span class="p">),</span>  <span class="c1"># 4</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">func_name</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">params</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@njit</span><span class="p">(</span><span class="n">fastmath</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">error_model</span><span class="o">=</span><span class="s2">&quot;numpy&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">p_weathering</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># concentration times scale factor</span>
+        <span class="n">s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">f_0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">pco2_0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">ex</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+
+        <span class="n">c</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">f</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">f_0</span> <span class="o">*</span> <span class="p">(</span><span class="n">c</span> <span class="o">*</span> <span class="n">s</span> <span class="o">/</span> <span class="n">pco2_0</span><span class="p">)</span> <span class="o">**</span> <span class="n">ex</span>
+        <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span>
+        <span class="c1"># data[3][i] = data[4][i - 1]</span>
+        <span class="c1"># print(i)</span>
+        <span class="c1"># print(&quot; &quot;)</span>
 
 
 <span class="k">class</span> <span class="nc">ScaleRelativeToConcentration</span><span class="p">(</span><span class="n">RateConstant</span><span class="p">):</span>
@@ -1429,8 +1541,8 @@
         <span class="k">if</span> <span class="n">m</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># otherwise there is no flux</span>
             <span class="c1"># convert to concentration</span>
             <span class="n">c</span> <span class="o">=</span> <span class="n">m</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">reservoir</span><span class="o">.</span><span class="n">volume</span>
-            <span class="n">m</span> <span class="o">=</span> <span class="n">c</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">c</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span>
 
     <span class="k">def</span> <span class="nf">__with_isotopes__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1461,9 +1573,12 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>  <span class="c1"># 3</span>
                 <span class="n">reservoir</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>  <span class="c1"># 4</span>
                 <span class="n">reservoir</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>  <span class="c1"># 5</span>
+                <span class="n">reservoir</span><span class="o">.</span><span class="n">m</span><span class="p">,</span>  <span class="c1"># 6</span>
             <span class="p">]</span>
         <span class="p">)</span>
-        <span class="n">params</span> <span class="o">=</span> <span class="n">List</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">reservoir</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">r</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">)])</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">List</span><span class="p">(</span>
+            <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">reservoir</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">r</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">reservoir</span><span class="o">.</span><span class="n">v</span><span class="p">)]</span>
+        <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">func_name</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">params</span>
 
@@ -1473,14 +1588,20 @@
         <span class="c1"># concentration times scale factor</span>
         <span class="n">r</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">m</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">6</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">v</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
 
-        <span class="n">m</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">s</span>
+        <span class="n">c</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">m</span> <span class="o">/</span> <span class="n">v</span>
+        <span class="n">f</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">c</span> <span class="o">*</span> <span class="n">s</span>
         <span class="n">d</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># delta</span>
         <span class="n">l</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1000.0</span> <span class="o">*</span> <span class="n">m</span><span class="p">)</span> <span class="o">/</span> <span class="p">((</span><span class="n">d</span> <span class="o">+</span> <span class="mf">1000.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">r</span> <span class="o">+</span> <span class="mf">1000.0</span><span class="p">)</span>
-        <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span>
-        <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span>
-        <span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span> <span class="o">-</span> <span class="n">l</span>
+        <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span>
+        <span class="c1"># this is wrong we neef to get the flux delta from the reservoir</span>
+        <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span> <span class="o">*</span> <span class="n">s</span>
+        <span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">m</span> <span class="o">-</span> <span class="n">l</span><span class="p">)</span> <span class="o">*</span> <span class="n">s</span>
         <span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span>
+        <span class="c1"># print(i)</span>
+        <span class="c1"># print(&quot; &quot;)</span>
 
 
 <span class="k">class</span> <span class="nc">ScaleRelativeToMass</span><span class="p">(</span><span class="n">RateConstant</span><span class="p">):</span>
@@ -3005,6 +3126,16 @@ This class is typically invoked through the connector object</p>
 
         <span class="c1"># print(f&quot;sum = {new:.0f}\n&quot;)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">f</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_flux_data</span><span class="p">(</span><span class="n">new</span><span class="p">,</span> <span class="n">reservoir</span><span class="o">.</span><span class="n">d</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="n">reservoir</span><span class="o">.</span><span class="n">rvalue</span><span class="p">)</span>
+
+        <span class="c1"># m = new</span>
+        <span class="c1"># r = reservoir.l[i - 1] / reservoir.m[i - 1]</span>
+        <span class="c1"># l = m * r</span>
+        <span class="c1"># h = m - l</span>
+        <span class="c1"># self.f.m[i] = m</span>
+        <span class="c1"># self.f.l[i] = l</span>
+        <span class="c1"># self.f.h[i] = h</span>
+
+    <span class="c1"># self.f.d[i] = reservoir.d[i - 1]</span>
 </pre></div>
 
         </details>
@@ -4445,9 +4576,10 @@ ScaleFlux class.</p>
             <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
             <span class="s2">&quot;k_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
             <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;reservoir&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">Source</span><span class="p">,</span> <span class="n">Sink</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span>
+            <span class="s2">&quot;reservoir&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">Source</span><span class="p">,</span> <span class="n">Sink</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span>
             <span class="s2">&quot;flux&quot;</span><span class="p">:</span> <span class="n">Flux</span><span class="p">,</span>
             <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;reservoir_ref&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">),</span>
             <span class="s2">&quot;left&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span>
             <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span>
             <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="p">(</span>
@@ -4466,6 +4598,7 @@ ScaleFlux class.</p>
             <span class="s2">&quot;ref_species&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
             <span class="s2">&quot;seawaterconstants&quot;</span><span class="p">:</span> <span class="nb">any</span><span class="p">,</span>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="s2">&quot;function_reference&quot;</span><span class="p">:</span> <span class="nb">any</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># new required keywords</span>
@@ -4473,7 +4606,7 @@ ScaleFlux class.</p>
 
         <span class="c1"># dict with default values if none provided</span>
         <span class="c1"># self.lod = {r</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lod</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lod</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;function_reference&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">}</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">__initerrormessages__</span><span class="p">()</span>
 
@@ -4488,6 +4621,7 @@ ScaleFlux class.</p>
                 <span class="s2">&quot;flux&quot;</span><span class="p">:</span> <span class="s2">&quot;a flux handle&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;left&quot;</span><span class="p">:</span> <span class="s2">&quot;list, reservoir or number&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="s2">&quot;list, reservoir or number&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;function_reference&quot;</span><span class="p">:</span> <span class="s2">&quot;A function reference&quot;</span><span class="p">,</span>
             <span class="p">}</span>
         <span class="p">)</span>
 
@@ -4552,9 +4686,10 @@ ScaleRelativeToConcentration</p>
             <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
             <span class="s2">&quot;k_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
             <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;reservoir&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">Source</span><span class="p">,</span> <span class="n">Sink</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span>
+            <span class="s2">&quot;reservoir&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">Source</span><span class="p">,</span> <span class="n">Sink</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span>
             <span class="s2">&quot;flux&quot;</span><span class="p">:</span> <span class="n">Flux</span><span class="p">,</span>
             <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span>
+            <span class="s2">&quot;reservoir_ref&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Reservoir</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">),</span>
             <span class="s2">&quot;left&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span>
             <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">),</span>
             <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="p">(</span>
@@ -4573,6 +4708,7 @@ ScaleRelativeToConcentration</p>
             <span class="s2">&quot;ref_species&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
             <span class="s2">&quot;seawaterconstants&quot;</span><span class="p">:</span> <span class="nb">any</span><span class="p">,</span>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+            <span class="s2">&quot;function_reference&quot;</span><span class="p">:</span> <span class="nb">any</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># new required keywords</span>
@@ -4580,7 +4716,7 @@ ScaleRelativeToConcentration</p>
 
         <span class="c1"># dict with default values if none provided</span>
         <span class="c1"># self.lod = {r</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">lod</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lod</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;function_reference&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">}</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">__initerrormessages__</span><span class="p">()</span>
 
@@ -4595,6 +4731,7 @@ ScaleRelativeToConcentration</p>
                 <span class="s2">&quot;flux&quot;</span><span class="p">:</span> <span class="s2">&quot;a flux handle&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;left&quot;</span><span class="p">:</span> <span class="s2">&quot;list, reservoir or number&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="s2">&quot;list, reservoir or number&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;function_reference&quot;</span><span class="p">:</span> <span class="s2">&quot;A function reference&quot;</span><span class="p">,</span>
             <span class="p">}</span>
         <span class="p">)</span>
 
@@ -4700,6 +4837,245 @@ ScaleRelativeToConcentration</p>
                                 </dl>
                             </div>
                 </section>
+                <section id="weathering">
+                                <div class="attr class">
+        <a class="headerlink" href="#weathering">#&nbsp;&nbsp</a>
+
+        
+        <span class="def">class</span>
+        <span class="name">weathering</span>(<span class="base"><a href="#RateConstant">RateConstant</a></span>):
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">weathering</span><span class="p">(</span><span class="n">RateConstant</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This process calculates the flux as a function of the upstream</span>
+<span class="sd">     reservoir concentration C and a constant which describes thet</span>
+<span class="sd">     strength of relation between the reservoir concentration and</span>
+<span class="sd">     the flux scaling</span>
+
+<span class="sd">     F = f_0 * (scale * C/pco2_0)**ncc</span>
+
+<span class="sd">     where C denotes the concentration in the ustream reservoir, k is a</span>
+<span class="sd">     constant. This process is typically called by the connector</span>
+<span class="sd">     instance. However you can instantiate it manually as</span>
+
+<span class="sd">     weathering(</span>
+<span class="sd">                       name = &quot;Name&quot;,</span>
+<span class="sd">                       reservoir = upstream_reservoir_handle,</span>
+<span class="sd">                       reservoir_ref = reference_reservoir (Atmosphere)</span>
+<span class="sd">                       flux = flux handle,</span>
+<span class="sd">                       ex = exponent</span>
+<span class="sd">                       pco2_0 = 280,</span>
+<span class="sd">                       f_0 = 12 / 17e12</span>
+<span class="sd">                       Scale =  1000,</span>
+<span class="sd">    )</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__without_isotopes__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="c1"># print(</span>
+        <span class="c1">#    f&quot;f_0={self.f_0}, scale={self.scale}, c={self.reservoir_ref.c[i-1]}, p0={self.pco2_0}, ex={self.ex}&quot;</span>
+        <span class="c1"># )</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">f_0</span>
+            <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">reservoir_ref</span><span class="o">.</span><span class="n">c</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">pco2_0</span><span class="p">)</span> <span class="o">**</span> <span class="bp">self</span><span class="o">.</span><span class="n">ex</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__with_isotopes__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        C = M/V so we express this as relative to mass which allows us to</span>
+<span class="sd">        use the isotope data.</span>
+
+<span class="sd">        The below calculates the flux as function of reservoir concentration,</span>
+<span class="sd">        rather than scaling the flux.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;weathering has currently no isotope method&quot;</span><span class="p">)</span>
+        <span class="c1"># c: float = self.reservoir.c[i - 1]</span>
+        <span class="c1"># if c &gt; 0:  # otherwise there is no flux</span>
+        <span class="c1">#     m = c * self.scale</span>
+        <span class="c1">#     r: float = reservoir.species.element.r</span>
+        <span class="c1">#     d: float = reservoir.d[i - 1]</span>
+        <span class="c1">#     l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)</span>
+        <span class="c1">#     self.flux[i]: np.array = [m, l, m - l, d]</span>
+
+    <span class="k">def</span> <span class="nf">get_process_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">):</span>
+
+        <span class="n">func_name</span><span class="p">:</span> <span class="n">function</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_weathering</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">List</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">m</span><span class="p">,</span>  <span class="c1"># 0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">l</span><span class="p">,</span>  <span class="c1"># 1</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">h</span><span class="p">,</span>  <span class="c1"># 2</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>  <span class="c1"># 3</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reservoir_ref</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>  <span class="c1"># 4</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reservoir_ref</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>  <span class="c1"># 5</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reservoir_ref</span><span class="o">.</span><span class="n">m</span><span class="p">,</span>  <span class="c1"># 6</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">List</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">reservoir</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">r</span><span class="p">),</span>  <span class="c1"># 0</span>
+                <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">),</span>  <span class="c1"># 1</span>
+                <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">f_0</span><span class="p">),</span>  <span class="c1"># 2</span>
+                <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pco2_0</span><span class="p">),</span>  <span class="c1"># 3</span>
+                <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ex</span><span class="p">),</span>  <span class="c1"># 4</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">func_name</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">params</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@njit</span><span class="p">(</span><span class="n">fastmath</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">error_model</span><span class="o">=</span><span class="s2">&quot;numpy&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">p_weathering</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># concentration times scale factor</span>
+        <span class="n">s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">f_0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">pco2_0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">ex</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+
+        <span class="n">c</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">f</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">f_0</span> <span class="o">*</span> <span class="p">(</span><span class="n">c</span> <span class="o">*</span> <span class="n">s</span> <span class="o">/</span> <span class="n">pco2_0</span><span class="p">)</span> <span class="o">**</span> <span class="n">ex</span>
+        <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span>
+        <span class="c1"># data[3][i] = data[4][i - 1]</span>
+        <span class="c1"># print(i)</span>
+        <span class="c1"># print(&quot; &quot;)</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>This process calculates the flux as a function of the upstream
+ reservoir concentration C and a constant which describes thet
+ strength of relation between the reservoir concentration and
+ the flux scaling</p>
+
+<p>F = f_0 * (scale * C/pco2_0)**ncc</p>
+
+<p>where C denotes the concentration in the ustream reservoir, k is a
+ constant. This process is typically called by the connector
+ instance. However you can instantiate it manually as</p>
+
+<p>weathering(
+                   name = "Name",
+                   reservoir = upstream_reservoir_handle,
+                   reservoir_ref = reference_reservoir (Atmosphere)
+                   flux = flux handle,
+                   ex = exponent
+                   pco2_0 = 280,
+                   f_0 = 12 / 17e12
+                   Scale =  1000,
+)</p>
+</div>
+
+
+                            <div id="weathering.get_process_args" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#weathering.get_process_args">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">def</span>
+            <span class="name">get_process_args</span><span class="signature">(self, reservoir: <a href="esbmtk.html#Reservoir">esbmtk.esbmtk.Reservoir</a>)</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">def</span> <span class="nf">get_process_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">):</span>
+
+        <span class="n">func_name</span><span class="p">:</span> <span class="n">function</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_weathering</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">List</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">m</span><span class="p">,</span>  <span class="c1"># 0</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">l</span><span class="p">,</span>  <span class="c1"># 1</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">h</span><span class="p">,</span>  <span class="c1"># 2</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>  <span class="c1"># 3</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reservoir_ref</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>  <span class="c1"># 4</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reservoir_ref</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>  <span class="c1"># 5</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">reservoir_ref</span><span class="o">.</span><span class="n">m</span><span class="p">,</span>  <span class="c1"># 6</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">List</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">reservoir</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">r</span><span class="p">),</span>  <span class="c1"># 0</span>
+                <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">),</span>  <span class="c1"># 1</span>
+                <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">f_0</span><span class="p">),</span>  <span class="c1"># 2</span>
+                <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pco2_0</span><span class="p">),</span>  <span class="c1"># 3</span>
+                <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ex</span><span class="p">),</span>  <span class="c1"># 4</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">func_name</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">params</span>
+</pre></div>
+
+        </details>
+
+    
+
+                            </div>
+                            <div id="weathering.p_weathering" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#weathering.p_weathering">#&nbsp;&nbsp</a>
+
+                <div class="decorator">@staticmethod</div>
+        <div class="decorator">@njit(fastmath=True, error_model=&#39;numpy&#39;)</div>
+
+            <span class="def">def</span>
+            <span class="name">p_weathering</span><span class="signature">(data, params, i) -&gt; None</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="nd">@staticmethod</span>
+    <span class="nd">@njit</span><span class="p">(</span><span class="n">fastmath</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">error_model</span><span class="o">=</span><span class="s2">&quot;numpy&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">p_weathering</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># concentration times scale factor</span>
+        <span class="n">s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">f_0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">pco2_0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">ex</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+
+        <span class="n">c</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">f</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">f_0</span> <span class="o">*</span> <span class="p">(</span><span class="n">c</span> <span class="o">*</span> <span class="n">s</span> <span class="o">/</span> <span class="n">pco2_0</span><span class="p">)</span> <span class="o">**</span> <span class="n">ex</span>
+        <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span>
+        <span class="c1"># data[3][i] = data[4][i - 1]</span>
+        <span class="c1"># print(i)</span>
+        <span class="c1"># print(&quot; &quot;)</span>
+</pre></div>
+
+        </details>
+
+    
+
+                            </div>
+                            <div class="inherited">
+                                <h5>Inherited Members</h5>
+                                <dl>
+                                    <div><dt><a href="#RateConstant">RateConstant</a></dt>
+                                <dd id="weathering.__init__" class="function"><a href="#RateConstant.__init__">RateConstant</a></dd>
+                <dd id="weathering.lkk" class="variable"><a href="#RateConstant.lkk">lkk</a></dd>
+                <dd id="weathering.lod" class="variable"><a href="#RateConstant.lod">lod</a></dd>
+                <dd id="weathering.flux" class="variable"><a href="#RateConstant.flux">flux</a></dd>
+                <dd id="weathering.k_value" class="variable"><a href="#RateConstant.k_value">k_value</a></dd>
+                <dd id="weathering.ref_value" class="variable"><a href="#RateConstant.ref_value">ref_value</a></dd>
+                <dd id="weathering.reservoir" class="variable"><a href="#RateConstant.reservoir">reservoir</a></dd>
+                <dd id="weathering.scale" class="variable"><a href="#RateConstant.scale">scale</a></dd>
+
+            </div>
+            <div><dt><a href="#Process">Process</a></dt>
+                                <dd id="weathering.show_figure" class="function"><a href="#Process.show_figure">show_figure</a></dd>
+                <dd id="weathering.direction" class="variable"><a href="#Process.direction">direction</a></dd>
+                <dd id="weathering.mo" class="variable"><a href="#Process.mo">mo</a></dd>
+                <dd id="weathering.r" class="variable"><a href="#Process.r">r</a></dd>
+
+            </div>
+            <div><dt><a href="esbmtk.html#esbmtkBase">esbmtk.esbmtk.esbmtkBase</a></dt>
+                                <dd id="weathering.info" class="function"><a href="esbmtk.html#esbmtkBase.info">info</a></dd>
+
+            </div>
+                                </dl>
+                            </div>
+                </section>
                 <section id="ScaleRelativeToConcentration">
                                 <div class="attr class">
         <a class="headerlink" href="#ScaleRelativeToConcentration">#&nbsp;&nbsp</a>
@@ -4737,8 +5113,8 @@ ScaleRelativeToConcentration</p>
         <span class="k">if</span> <span class="n">m</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># otherwise there is no flux</span>
             <span class="c1"># convert to concentration</span>
             <span class="n">c</span> <span class="o">=</span> <span class="n">m</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">reservoir</span><span class="o">.</span><span class="n">volume</span>
-            <span class="n">m</span> <span class="o">=</span> <span class="n">c</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">c</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span>
 
     <span class="k">def</span> <span class="nf">__with_isotopes__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reservoir</span><span class="p">:</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -4769,9 +5145,12 @@ ScaleRelativeToConcentration</p>
                 <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>  <span class="c1"># 3</span>
                 <span class="n">reservoir</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>  <span class="c1"># 4</span>
                 <span class="n">reservoir</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>  <span class="c1"># 5</span>
+                <span class="n">reservoir</span><span class="o">.</span><span class="n">m</span><span class="p">,</span>  <span class="c1"># 6</span>
             <span class="p">]</span>
         <span class="p">)</span>
-        <span class="n">params</span> <span class="o">=</span> <span class="n">List</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">reservoir</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">r</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">)])</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">List</span><span class="p">(</span>
+            <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">reservoir</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">r</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">reservoir</span><span class="o">.</span><span class="n">v</span><span class="p">)]</span>
+        <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">func_name</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">params</span>
 
@@ -4781,14 +5160,20 @@ ScaleRelativeToConcentration</p>
         <span class="c1"># concentration times scale factor</span>
         <span class="n">r</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">m</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">6</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">v</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
 
-        <span class="n">m</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">s</span>
+        <span class="n">c</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">m</span> <span class="o">/</span> <span class="n">v</span>
+        <span class="n">f</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">c</span> <span class="o">*</span> <span class="n">s</span>
         <span class="n">d</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># delta</span>
         <span class="n">l</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1000.0</span> <span class="o">*</span> <span class="n">m</span><span class="p">)</span> <span class="o">/</span> <span class="p">((</span><span class="n">d</span> <span class="o">+</span> <span class="mf">1000.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">r</span> <span class="o">+</span> <span class="mf">1000.0</span><span class="p">)</span>
-        <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span>
-        <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span>
-        <span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span> <span class="o">-</span> <span class="n">l</span>
+        <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span>
+        <span class="c1"># this is wrong we neef to get the flux delta from the reservoir</span>
+        <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span> <span class="o">*</span> <span class="n">s</span>
+        <span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">m</span> <span class="o">-</span> <span class="n">l</span><span class="p">)</span> <span class="o">*</span> <span class="n">s</span>
         <span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span>
+        <span class="c1"># print(i)</span>
+        <span class="c1"># print(&quot; &quot;)</span>
 </pre></div>
 
         </details>
@@ -4835,9 +5220,12 @@ ScaleRelativeToConcentration</p>
                 <span class="bp">self</span><span class="o">.</span><span class="n">flux</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>  <span class="c1"># 3</span>
                 <span class="n">reservoir</span><span class="o">.</span><span class="n">d</span><span class="p">,</span>  <span class="c1"># 4</span>
                 <span class="n">reservoir</span><span class="o">.</span><span class="n">c</span><span class="p">,</span>  <span class="c1"># 5</span>
+                <span class="n">reservoir</span><span class="o">.</span><span class="n">m</span><span class="p">,</span>  <span class="c1"># 6</span>
             <span class="p">]</span>
         <span class="p">)</span>
-        <span class="n">params</span> <span class="o">=</span> <span class="n">List</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">reservoir</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">r</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">)])</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">List</span><span class="p">(</span>
+            <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">reservoir</span><span class="o">.</span><span class="n">species</span><span class="o">.</span><span class="n">element</span><span class="o">.</span><span class="n">r</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="n">reservoir</span><span class="o">.</span><span class="n">v</span><span class="p">)]</span>
+        <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">func_name</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">params</span>
 </pre></div>
@@ -4865,14 +5253,20 @@ ScaleRelativeToConcentration</p>
         <span class="c1"># concentration times scale factor</span>
         <span class="n">r</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">s</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">m</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">6</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">v</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
 
-        <span class="n">m</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">s</span>
+        <span class="n">c</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">m</span> <span class="o">/</span> <span class="n">v</span>
+        <span class="n">f</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">c</span> <span class="o">*</span> <span class="n">s</span>
         <span class="n">d</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">][</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># delta</span>
         <span class="n">l</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1000.0</span> <span class="o">*</span> <span class="n">m</span><span class="p">)</span> <span class="o">/</span> <span class="p">((</span><span class="n">d</span> <span class="o">+</span> <span class="mf">1000.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">r</span> <span class="o">+</span> <span class="mf">1000.0</span><span class="p">)</span>
-        <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span>
-        <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span>
-        <span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">m</span> <span class="o">-</span> <span class="n">l</span>
+        <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span>
+        <span class="c1"># this is wrong we neef to get the flux delta from the reservoir</span>
+        <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">l</span> <span class="o">*</span> <span class="n">s</span>
+        <span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">m</span> <span class="o">-</span> <span class="n">l</span><span class="p">)</span> <span class="o">*</span> <span class="n">s</span>
         <span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span>
+        <span class="c1"># print(i)</span>
+        <span class="c1"># print(&quot; &quot;)</span>
 </pre></div>
 
         </details>
@@ -5193,6 +5587,15 @@ ScaleRelativeToConcentration</p>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
             <span class="s2">&quot;Scale relative to multiple reservoirs is undefined for isotope calculations&quot;</span>
         <span class="p">)</span>
+
+        <span class="c1"># c: float = 1</span>
+        <span class="c1"># for r in self.rs:</span>
+        <span class="c1">#     c = c * r.c[i - 1]</span>
+
+        <span class="c1"># scale: float = c * self.scale * self.constant</span>
+
+        <span class="c1"># # scale = scale * (scale &gt;= 0)  # prevent negative fluxes.</span>
+        <span class="c1"># self.f[i] = [scale, scale, scale, 1]</span>
 </pre></div>
 
         </details>

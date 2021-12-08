@@ -448,24 +448,25 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;species&quot;</span><span class="p">:</span> <span class="n">Species</span><span class="p">,</span>
             <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Flux</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
+            <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Flux</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;ratio&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
             <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;ref_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">),</span>
             <span class="s2">&quot;k_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Q_</span><span class="p">),</span>
             <span class="s2">&quot;a_value&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
             <span class="s2">&quot;b_value&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
-            <span class="s2">&quot;left&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">),</span>
-            <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">),</span>
+            <span class="s2">&quot;left&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">),</span>
+            <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">),</span>
             <span class="s2">&quot;plot&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">&quot;groupname&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
             <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="nb">any</span><span class="p">,</span>
             <span class="s2">&quot;signal&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Signal</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
-            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">),</span>
+            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">),</span>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
             <span class="s2">&quot;solubility&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
             <span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
             <span class="s2">&quot;piston_velocity&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
+            <span class="s2">&quot;function_ref&quot;</span><span class="p">:</span> <span class="nb">any</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># provide a list of absolutely required keywords</span>
@@ -488,6 +489,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
             <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;function_ref&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># validate and initialize instance variables</span>
@@ -510,6 +512,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="s2">&quot;signal&quot;</span><span class="p">:</span> <span class="s2">&quot;Signal Handle&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;groupname&quot;</span><span class="p">:</span> <span class="s2">&quot;True or False&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="s2">&quot;source/sink&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;function_ref&quot;</span><span class="p">:</span> <span class="s2">&quot;A function&quot;</span><span class="p">,</span>
             <span class="p">}</span>
         <span class="p">)</span>
 
@@ -618,6 +621,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="bp">self</span><span class="o">.</span><span class="n">full_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># local name space registration</span>
+
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">sp</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="c1"># print(f&quot; C name = {self.name}, fn = {self.full_name}&quot;)</span>
@@ -826,6 +830,8 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="bp">self</span><span class="o">.</span><span class="n">__flux_diff__</span><span class="p">()</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctype</span> <span class="o">==</span> <span class="s2">&quot;scale_with_flux&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">__scaleflux__</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctype</span> <span class="o">==</span> <span class="s2">&quot;weathering&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__rateconstant__</span><span class="p">()</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctype</span> <span class="o">==</span> <span class="s2">&quot;virtual_flux&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">__virtual_flux__</span><span class="p">()</span>
             <span class="c1"># self.__vardeltaout__()</span>
@@ -921,9 +927,6 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bypass</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">lof</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">)</span>
-
-        <span class="c1"># this flux must not affect the source reservoir</span>
-        <span class="c1"># self.r.lof.remove(self.fh)</span>
 
     <span class="k">def</span> <span class="nf">__virtual_flux__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Create a virtual flux. This is similar to __scaleflux__, however the new flux</span>
@@ -1088,6 +1091,20 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="c1"># print(f&quot;Process Name {ph.full_name}&quot;)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctype</span> <span class="o">==</span> <span class="s2">&quot;weathering&quot;</span><span class="p">:</span>
+
+            <span class="n">ph</span> <span class="o">=</span> <span class="n">weathering</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Pw&quot;</span><span class="p">,</span>
+                <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="p">,</span>
+                <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
+                <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
+                <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
+                <span class="n">reservoir_ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reservoir_ref</span><span class="p">,</span>
+                <span class="n">ex</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ex</span><span class="p">,</span>
+                <span class="n">pco2_0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pco2_0</span><span class="p">,</span>
+                <span class="n">f_0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">f_0</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctype</span> <span class="o">==</span> <span class="s2">&quot;scale_relative_to_multiple_reservoirs&quot;</span><span class="p">:</span>
 
@@ -1550,8 +1567,8 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="c1"># initialize process instance</span>
         <span class="n">ph</span> <span class="o">=</span> <span class="n">GasExchange</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;_PGex&quot;</span><span class="p">,</span>
-            <span class="n">gas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gr</span><span class="p">,</span>  <span class="c1"># gas reserevoir</span>
-            <span class="n">liquid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lr</span><span class="p">,</span>  <span class="c1"># reserevoir</span>
+            <span class="n">gas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gr</span><span class="p">,</span>  <span class="c1"># gas reservoir</span>
+            <span class="n">liquid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lr</span><span class="p">,</span>  <span class="c1"># reservoir</span>
             <span class="n">ref_species</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_species</span><span class="p">,</span>  <span class="c1"># concentration</span>
             <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>  <span class="c1"># flux handle</span>
             <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
@@ -1928,24 +1945,25 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;species&quot;</span><span class="p">:</span> <span class="n">Species</span><span class="p">,</span>
             <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Flux</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
+            <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Flux</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;ratio&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
             <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;ref_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">),</span>
             <span class="s2">&quot;k_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Q_</span><span class="p">),</span>
             <span class="s2">&quot;a_value&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
             <span class="s2">&quot;b_value&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
-            <span class="s2">&quot;left&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">),</span>
-            <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">),</span>
+            <span class="s2">&quot;left&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">),</span>
+            <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">),</span>
             <span class="s2">&quot;plot&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">&quot;groupname&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
             <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="nb">any</span><span class="p">,</span>
             <span class="s2">&quot;signal&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Signal</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
-            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">),</span>
+            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">),</span>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
             <span class="s2">&quot;solubility&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
             <span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
             <span class="s2">&quot;piston_velocity&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
+            <span class="s2">&quot;function_ref&quot;</span><span class="p">:</span> <span class="nb">any</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># provide a list of absolutely required keywords</span>
@@ -1968,6 +1986,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
             <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;function_ref&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># validate and initialize instance variables</span>
@@ -1990,6 +2009,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="s2">&quot;signal&quot;</span><span class="p">:</span> <span class="s2">&quot;Signal Handle&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;groupname&quot;</span><span class="p">:</span> <span class="s2">&quot;True or False&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="s2">&quot;source/sink&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;function_ref&quot;</span><span class="p">:</span> <span class="s2">&quot;A function&quot;</span><span class="p">,</span>
             <span class="p">}</span>
         <span class="p">)</span>
 
@@ -2098,6 +2118,7 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="bp">self</span><span class="o">.</span><span class="n">full_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
 
         <span class="k">else</span><span class="p">:</span>  <span class="c1"># local name space registration</span>
+
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">source</span><span class="o">.</span><span class="n">sp</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="c1"># print(f&quot; C name = {self.name}, fn = {self.full_name}&quot;)</span>
@@ -2306,6 +2327,8 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="bp">self</span><span class="o">.</span><span class="n">__flux_diff__</span><span class="p">()</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctype</span> <span class="o">==</span> <span class="s2">&quot;scale_with_flux&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">__scaleflux__</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctype</span> <span class="o">==</span> <span class="s2">&quot;weathering&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__rateconstant__</span><span class="p">()</span>
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctype</span> <span class="o">==</span> <span class="s2">&quot;virtual_flux&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">__virtual_flux__</span><span class="p">()</span>
             <span class="c1"># self.__vardeltaout__()</span>
@@ -2401,9 +2424,6 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bypass</span> <span class="o">!=</span> <span class="s2">&quot;None&quot;</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">lof</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">)</span>
-
-        <span class="c1"># this flux must not affect the source reservoir</span>
-        <span class="c1"># self.r.lof.remove(self.fh)</span>
 
     <span class="k">def</span> <span class="nf">__virtual_flux__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Create a virtual flux. This is similar to __scaleflux__, however the new flux</span>
@@ -2568,6 +2588,20 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
                 <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="c1"># print(f&quot;Process Name {ph.full_name}&quot;)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctype</span> <span class="o">==</span> <span class="s2">&quot;weathering&quot;</span><span class="p">:</span>
+
+            <span class="n">ph</span> <span class="o">=</span> <span class="n">weathering</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Pw&quot;</span><span class="p">,</span>
+                <span class="n">reservoir</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="p">,</span>
+                <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
+                <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
+                <span class="n">scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span>
+                <span class="n">reservoir_ref</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">reservoir_ref</span><span class="p">,</span>
+                <span class="n">ex</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ex</span><span class="p">,</span>
+                <span class="n">pco2_0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pco2_0</span><span class="p">,</span>
+                <span class="n">f_0</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">f_0</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">ctype</span> <span class="o">==</span> <span class="s2">&quot;scale_relative_to_multiple_reservoirs&quot;</span><span class="p">:</span>
 
@@ -3018,24 +3052,25 @@ between =left=and =right=</p>
             <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;species&quot;</span><span class="p">:</span> <span class="n">Species</span><span class="p">,</span>
             <span class="s2">&quot;ctype&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-            <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Flux</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
+            <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Flux</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">),</span>
             <span class="s2">&quot;ratio&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
             <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
             <span class="s2">&quot;ref_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Q_</span><span class="p">),</span>
             <span class="s2">&quot;k_value&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Number</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Q_</span><span class="p">),</span>
             <span class="s2">&quot;a_value&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
             <span class="s2">&quot;b_value&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
-            <span class="s2">&quot;left&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">),</span>
-            <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">),</span>
+            <span class="s2">&quot;left&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">),</span>
+            <span class="s2">&quot;right&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">Number</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">),</span>
             <span class="s2">&quot;plot&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
             <span class="s2">&quot;groupname&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
             <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="nb">any</span><span class="p">,</span>
             <span class="s2">&quot;signal&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">Signal</span><span class="p">,</span> <span class="nb">str</span><span class="p">),</span>
-            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">),</span>
+            <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Reservoir</span><span class="p">,</span> <span class="n">GasReservoir</span><span class="p">),</span>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
             <span class="s2">&quot;solubility&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
             <span class="s2">&quot;area&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
             <span class="s2">&quot;piston_velocity&quot;</span><span class="p">:</span> <span class="n">Number</span><span class="p">,</span>
+            <span class="s2">&quot;function_ref&quot;</span><span class="p">:</span> <span class="nb">any</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># provide a list of absolutely required keywords</span>
@@ -3058,6 +3093,7 @@ between =left=and =right=</p>
             <span class="s2">&quot;isotopes&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
             <span class="s2">&quot;ref_reservoirs&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
             <span class="s2">&quot;register&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;function_ref&quot;</span><span class="p">:</span> <span class="s2">&quot;None&quot;</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># validate and initialize instance variables</span>
@@ -3080,6 +3116,7 @@ between =left=and =right=</p>
                 <span class="s2">&quot;signal&quot;</span><span class="p">:</span> <span class="s2">&quot;Signal Handle&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;groupname&quot;</span><span class="p">:</span> <span class="s2">&quot;True or False&quot;</span><span class="p">,</span>
                 <span class="s2">&quot;bypass&quot;</span><span class="p">:</span> <span class="s2">&quot;source/sink&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;function_ref&quot;</span><span class="p">:</span> <span class="s2">&quot;A function&quot;</span><span class="p">,</span>
             <span class="p">}</span>
         <span class="p">)</span>
 
@@ -3927,8 +3964,8 @@ This will overwrite the original kwargs though</p>
         <span class="c1"># initialize process instance</span>
         <span class="n">ph</span> <span class="o">=</span> <span class="n">GasExchange</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;_PGex&quot;</span><span class="p">,</span>
-            <span class="n">gas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gr</span><span class="p">,</span>  <span class="c1"># gas reserevoir</span>
-            <span class="n">liquid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lr</span><span class="p">,</span>  <span class="c1"># reserevoir</span>
+            <span class="n">gas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gr</span><span class="p">,</span>  <span class="c1"># gas reservoir</span>
+            <span class="n">liquid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lr</span><span class="p">,</span>  <span class="c1"># reservoir</span>
             <span class="n">ref_species</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_species</span><span class="p">,</span>  <span class="c1"># concentration</span>
             <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>  <span class="c1"># flux handle</span>
             <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>
@@ -4139,8 +4176,8 @@ keyword to point to a different species/calculated species.</p>
         <span class="c1"># initialize process instance</span>
         <span class="n">ph</span> <span class="o">=</span> <span class="n">GasExchange</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="s2">&quot;_PGex&quot;</span><span class="p">,</span>
-            <span class="n">gas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gr</span><span class="p">,</span>  <span class="c1"># gas reserevoir</span>
-            <span class="n">liquid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lr</span><span class="p">,</span>  <span class="c1"># reserevoir</span>
+            <span class="n">gas</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">gr</span><span class="p">,</span>  <span class="c1"># gas reservoir</span>
+            <span class="n">liquid</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lr</span><span class="p">,</span>  <span class="c1"># reservoir</span>
             <span class="n">ref_species</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ref_species</span><span class="p">,</span>  <span class="c1"># concentration</span>
             <span class="n">flux</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>  <span class="c1"># flux handle</span>
             <span class="n">register</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">fh</span><span class="p">,</span>

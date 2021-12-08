@@ -690,18 +690,27 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="n">k</span><span class="p">:</span> <span class="nb">any</span>
         <span class="n">v</span><span class="p">:</span> <span class="nb">any</span>
 
-        <span class="c1"># provide more meaningful error messages</span>
+        <span class="c1"># loop over known keywords in av</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">av</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">pv</span><span class="p">:</span>  <span class="c1"># check type of k</span>
+                <span class="c1"># check if entry matches required type</span>
+                <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="nb">any</span><span class="p">:</span>
+                    <span class="c1"># print()</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pv</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">v</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">pv</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="si">}</span><span class="s2"> is the wrong type for &#39;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">&#39;, should be &#39;</span><span class="si">{</span><span class="n">av</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+                        <span class="p">)</span>
 
         <span class="c1"># loop over provided keywords</span>
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">pv</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="c1"># check av if provided value v is of correct type</span>
-            <span class="k">if</span> <span class="n">av</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">any</span><span class="p">:</span>
-                <span class="c1"># print(f&quot;key = {k}, value  = {v}&quot;)</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">av</span><span class="p">[</span><span class="n">k</span><span class="p">]):</span>
-                    <span class="c1"># print(f&quot;k={k}, v= {v}, av[k] = {av[k]}&quot;)</span>
-                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="si">}</span><span class="s2"> is the wrong type for &#39;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">&#39;, should be &#39;</span><span class="si">{</span><span class="n">av</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
-                    <span class="p">)</span>
+        <span class="c1"># for k, v in pv.items():</span>
+        <span class="c1">#     # check av if provided value v is of correct type</span>
+        <span class="c1">#     if av[k] != any:</span>
+        <span class="c1">#         # print(f&quot;key = {k}, value  = {v}&quot;)</span>
+        <span class="c1">#         if not isinstance(v, av[k]):</span>
+        <span class="c1">#             # print(f&quot;k={k}, v= {v}, av[k] = {av[k]}&quot;)</span>
+        <span class="c1">#             raise TypeError(</span>
+        <span class="c1">#                 f&quot;{type(v)} is the wrong type for &#39;{k}&#39;, should be &#39;{av[k]}&#39;&quot;</span>
+        <span class="c1">#             )</span>
 
     <span class="k">def</span> <span class="nf">__initerrormessages__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Init the list of known error messages&quot;&quot;&quot;</span>
@@ -796,9 +805,9 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">tl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
 
         <span class="c1"># test if we know all keys</span>
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lkk</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> is not a valid keyword. </span><span class="se">\n</span><span class="s2"> Try any of </span><span class="se">\n</span><span class="s2"> </span><span class="si">{</span><span class="n">tl</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># for k, v in self.kwargs.items():</span>
+        <span class="c1">#     if k not in self.lkk:</span>
+        <span class="c1">#         raise ValueError(f&quot;{k} is not a valid keyword. \n Try any of \n {tl}\n&quot;)</span>
 
     <span class="k">def</span> <span class="nf">__addmissingdefaults__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lod</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -3199,18 +3208,27 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
         <span class="n">k</span><span class="p">:</span> <span class="nb">any</span>
         <span class="n">v</span><span class="p">:</span> <span class="nb">any</span>
 
-        <span class="c1"># provide more meaningful error messages</span>
+        <span class="c1"># loop over known keywords in av</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">av</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">pv</span><span class="p">:</span>  <span class="c1"># check type of k</span>
+                <span class="c1"># check if entry matches required type</span>
+                <span class="k">if</span> <span class="n">v</span> <span class="o">!=</span> <span class="nb">any</span><span class="p">:</span>
+                    <span class="c1"># print()</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pv</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">v</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">pv</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="si">}</span><span class="s2"> is the wrong type for &#39;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">&#39;, should be &#39;</span><span class="si">{</span><span class="n">av</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+                        <span class="p">)</span>
 
         <span class="c1"># loop over provided keywords</span>
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">pv</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="c1"># check av if provided value v is of correct type</span>
-            <span class="k">if</span> <span class="n">av</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">any</span><span class="p">:</span>
-                <span class="c1"># print(f&quot;key = {k}, value  = {v}&quot;)</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">av</span><span class="p">[</span><span class="n">k</span><span class="p">]):</span>
-                    <span class="c1"># print(f&quot;k={k}, v= {v}, av[k] = {av[k]}&quot;)</span>
-                    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="si">}</span><span class="s2"> is the wrong type for &#39;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">&#39;, should be &#39;</span><span class="si">{</span><span class="n">av</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
-                    <span class="p">)</span>
+        <span class="c1"># for k, v in pv.items():</span>
+        <span class="c1">#     # check av if provided value v is of correct type</span>
+        <span class="c1">#     if av[k] != any:</span>
+        <span class="c1">#         # print(f&quot;key = {k}, value  = {v}&quot;)</span>
+        <span class="c1">#         if not isinstance(v, av[k]):</span>
+        <span class="c1">#             # print(f&quot;k={k}, v= {v}, av[k] = {av[k]}&quot;)</span>
+        <span class="c1">#             raise TypeError(</span>
+        <span class="c1">#                 f&quot;{type(v)} is the wrong type for &#39;{k}&#39;, should be &#39;{av[k]}&#39;&quot;</span>
+        <span class="c1">#             )</span>
 
     <span class="k">def</span> <span class="nf">__initerrormessages__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Init the list of known error messages&quot;&quot;&quot;</span>
@@ -3305,9 +3323,9 @@ along with this program.  If not, see <a href="https://www.gnu.org/licenses/">ht
             <span class="n">tl</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
 
         <span class="c1"># test if we know all keys</span>
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lkk</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> is not a valid keyword. </span><span class="se">\n</span><span class="s2"> Try any of </span><span class="se">\n</span><span class="s2"> </span><span class="si">{</span><span class="n">tl</span><span class="si">}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># for k, v in self.kwargs.items():</span>
+        <span class="c1">#     if k not in self.lkk:</span>
+        <span class="c1">#         raise ValueError(f&quot;{k} is not a valid keyword. \n Try any of \n {tl}\n&quot;)</span>
 
     <span class="k">def</span> <span class="nf">__addmissingdefaults__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lod</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -5006,6 +5024,8 @@ append = True/False #</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">steps</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;new start = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="si">}</span><span class="s2">, new stop = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;time[0] = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> time[-1] = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="c1"># print(f&quot;len of timec {len(self.timec)}&quot;)</span>
+        <span class="c1"># self.time = (arange(self.steps) * self.dt) + self.start</span>
 </pre></div>
 
         </details>
@@ -7920,6 +7940,7 @@ is typically handled through the Connect object. If you set it up manually</p>
             <span class="c1"># self.__get_data__ = self.__get_with_isotopes__</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">__set_data__</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__set_without_isotopes__</span>
+            <span class="c1"># self.__get_data__ = self.__get_without_isotopes__</span>
 </pre></div>
 
         </details>
