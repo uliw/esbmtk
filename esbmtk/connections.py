@@ -287,24 +287,25 @@ class Connect(esbmtkBase):
             "alpha": (Number, str),
             "species": Species,
             "ctype": str,
-            "ref_reservoirs": (Flux, Reservoir, str, list),
+            "ref_reservoirs": (Flux, Reservoir, GasReservoir, str, list),
             "ratio": Number,
             "scale": (Number, Q_, str),
             "ref_value": (str, Number, Q_),
             "k_value": (Number, str, Q_),
             "a_value": Number,
             "b_value": Number,
-            "left": (list, Number, Reservoir),
-            "right": (list, Number, Reservoir),
+            "left": (list, Number, Reservoir, GasReservoir),
+            "right": (list, Number, Reservoir, GasReservoir),
             "plot": str,
             "groupname": bool,
             "register": any,
             "signal": (Signal, str),
-            "bypass": (str, Reservoir),
+            "bypass": (str, Reservoir, GasReservoir),
             "isotopes": bool,
             "solubility": Number,
             "area": Number,
             "piston_velocity": Number,
+            "function_ref": any,
         }
 
         # provide a list of absolutely required keywords
@@ -327,6 +328,7 @@ class Connect(esbmtkBase):
             "isotopes": False,
             "ref_reservoirs": "None",
             "register": "None",
+            "function_ref": "None",
         }
 
         # validate and initialize instance variables
@@ -349,6 +351,7 @@ class Connect(esbmtkBase):
                 "signal": "Signal Handle",
                 "groupname": "True or False",
                 "bypass": "source/sink",
+                "function_ref": "A function",
             }
         )
 
@@ -457,6 +460,7 @@ class Connect(esbmtkBase):
             self.full_name = self.name
 
         else:  # local name space registration
+
             if self.name == "None":
                 self.name = f"{self.source.sp.name}"
                 # print(f" C name = {self.name}, fn = {self.full_name}")
@@ -665,6 +669,8 @@ class Connect(esbmtkBase):
             self.__flux_diff__()
         elif self.ctype == "scale_with_flux":
             self.__scaleflux__()
+        elif self.ctype == "weathering":
+            self.__rateconstant__()
         elif self.ctype == "virtual_flux":
             self.__virtual_flux__()
             # self.__vardeltaout__()
@@ -760,9 +766,6 @@ class Connect(esbmtkBase):
 
         if self.bypass != "None":
             self.bypass.lof.remove(self.fh)
-
-        # this flux must not affect the source reservoir
-        # self.r.lof.remove(self.fh)
 
     def __virtual_flux__(self) -> None:
         """Create a virtual flux. This is similar to __scaleflux__, however the new flux
@@ -927,6 +930,20 @@ class Connect(esbmtkBase):
                 scale=self.scale,
             )
             # print(f"Process Name {ph.full_name}")
+
+        elif self.ctype == "weathering":
+
+            ph = weathering(
+                name="Pw",
+                reservoir=self.r,
+                flux=self.fh,
+                register=self.fh,
+                scale=self.scale,
+                reservoir_ref=self.reservoir_ref,
+                ex=self.ex,
+                pco2_0=self.pco2_0,
+                f_0=self.f_0,
+            )
 
         elif self.ctype == "scale_relative_to_multiple_reservoirs":
 
@@ -1389,8 +1406,8 @@ class AirSeaExchange(esbmtkBase):
         # initialize process instance
         ph = GasExchange(
             name="_PGex",
-            gas=self.gr,  # gas reserevoir
-            liquid=self.lr,  # reserevoir
+            gas=self.gr,  # gas reservoir
+            liquid=self.lr,  # reservoir
             ref_species=self.ref_species,  # concentration
             flux=self.fh,  # flux handle
             register=self.fh,

@@ -891,30 +891,30 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
     Case 1 One connection, one set of parameters
            ct1 = {"sb2hb": {"ty": "scale", 'ra'....}}
 
-    Case 2 One connection, one set of instructions, one subset with mutiple parameters
+    Case 2 One connection, one set of instructions, one subset with multiple parameters
            This will be expanded to create connections for each species
            ct2 = {"sb2hb": {"ty": "scale", "sp": ["a", "b"]}}
 
-    Case 3 One connection complete set of mutiple characters. Similar to case 2, but now
+    Case 3 One connection complete set of multiple characters. Similar to case 2, but now
            all parameters are given explicitly
            ct3 = {"sb2hb": {"ty": ["scale", "scale"], "sp": ["a", "b"]}}
 
-    Case 4 Mutiple connections, one set of parameters. This will create
+    Case 4 Multiple connections, one set of parameters. This will create
            identical connection for "sb2hb" and  "ib2db"
            ct4 = {("sb2hb", "ib2db"): {"ty": "scale", 'ra': ...}}
 
-    Case 5 Mutiple connections, one subset of mutiple set of parameters. This wil
+    Case 5 Multiple connections, one subset of multiple set of parameters. This wil
           create a connection for species 'a' in sb2hb and with species 'b' in ib2db
            ct5 = {("sb2hb", "ib2db"): {"ty": "scale", "sp": ["a", "b"]}}
 
-    Case 6 Mutiple connections, complete set of parameters of mutiple parameters
+    Case 6 Multiple connections, complete set of parameters of multiple parameters
            Same as case 5, but now all parameters are specified explicitly
            ct6 = {("sb2hb", "ib2db"): {"ty": ["scale", "scale"], "sp": ["a", "b"]}}
 
 
     The default interpretation for cases 5 and 6 is that each list
     entry corresponds to connection. However, sometimes we want to
-    create mutiple connections for multiple entries. In this case
+    create multiple connections for multiple entries. In this case
     provide the mt='1:N' parameter which will create a connection for
     each species in each connection group. See the below example.
 
@@ -925,7 +925,7 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
     ct2 = {"sb2hb": {"ty": "scale", "sp": ["a", "b"]}}
 
     It is best to use the show_dict function to verify that your input
-    dictionary produces the corrrect results!
+    dictionary produces the correct results!
 
     """
 
@@ -1424,15 +1424,13 @@ def add_carbonate_system_1(rgs: list):
                 function_input_data=List([rg.DIC.c, rg.TA.c]),
                 function_params=List(
                     [
-                        rg.swc.K1,  # 1
-                        rg.swc.K2,  # 2
-                        rg.swc.KW,  # 3
-                        rg.swc.KB,  # 4
-                        rg.swc.boron,  # 5
-                        rg.swc.hplus,  # 5
-                        rg.swc.ca2,  # 6
-                        rg.swc.Ksp,  # 7
-                        rg.swc.Ksp0,  # 8
+                        rg.swc.K1,  # 0
+                        rg.swc.K2,  # 1
+                        rg.swc.KW,  # 2
+                        rg.swc.KB,  # 3
+                        rg.swc.boron,  # 4
+                        rg.swc.ca2,  # 5
+                        rg.swc.Ksp,  # 6
                     ]
                 ),
                 register=rg,
@@ -1544,9 +1542,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     Csat_table: NDArray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
     area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
     area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area'
-    sa = model.hyp.sa  # Total earth area
     AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
-    dt = model.dt
 
     for i, rg in enumerate(rgs):  # Setup the virtual reservoirs
 
@@ -1581,9 +1577,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                 "BCC": 0.0,  # 14 BCC
                 "BPDC": 0.0,  # 15 BPDC
                 "BD": 0.0,  # 16 BD
-                "bds_area": 0.0,  # 17 bds_area
-                "zsnow_dt": 0.0,  # 18 zsnow_dt
-                "Omega": 0.0,  # 19 omega
+                "Omega": 0.0,  # 17 omega
             },
             function_input_data=List(
                 [
@@ -1608,24 +1602,28 @@ def add_carbonate_system_2(**kwargs) -> None:
                     rg.swc.boron,  # 4
                     Ksp0,  # 5
                     float(kwargs["kc"]),  # 6
-                    float(sa),  # 7
-                    float(rg.volume.to("liter").magnitude),  # 8
-                    float(AD),  # 9
-                    float(abs(kwargs["zsat0"])),  # 10
-                    float(rg.swc.ca2),  # 11
-                    rg.mo.dt,  # 12
-                    float(kwargs["pc"]),  # 13
-                    float(kwargs["pg"]),  # 14
-                    float(kwargs["I_caco3"]),  # 15
-                    float(kwargs["alpha"]),  # 16
-                    float(abs(kwargs["zsat_min"])),  # 17
-                    float(abs(kwargs["zmax"])),  # 18
-                    float(abs(kwargs["z0"])),  # 19
-                    Ksp,  # 20
+                    float(rg.volume.to("liter").magnitude),  # 7
+                    float(AD),  # 8
+                    float(abs(kwargs["zsat0"])),  # 9
+                    float(rg.swc.ca2),  # 10
+                    rg.mo.dt,  # 11
+                    float(kwargs["I_caco3"]),  # 12
+                    float(kwargs["alpha"]),  # 13
+                    float(abs(kwargs["zsat_min"])),  # 14
+                    float(abs(kwargs["zmax"])),  # 15
+                    float(abs(kwargs["z0"])),  # 16
+                    Ksp,  # 17
                 ]
             ),
             register=rg,
         )
+
+
+def weathering_processes():
+
+    from esbmtk import ExternalCode, calc_carbonates_1
+
+    pass
 
 
 def __find_flux__(reservoirs: list, full_name: str):

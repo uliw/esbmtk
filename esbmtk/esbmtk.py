@@ -249,18 +249,27 @@ class esbmtkBase(object):
         k: any
         v: any
 
-        # provide more meaningful error messages
+        # loop over known keywords in av
+        for k, v in av.items():
+            if k in pv:  # check type of k
+                # check if entry matches required type
+                if v != any:
+                    # print()
+                    if not isinstance(pv[k], v):
+                        raise TypeError(
+                            f"{type(pv[k])} is the wrong type for '{k}', should be '{av[k]}'"
+                        )
 
         # loop over provided keywords
-        for k, v in pv.items():
-            # check av if provided value v is of correct type
-            if av[k] != any:
-                # print(f"key = {k}, value  = {v}")
-                if not isinstance(v, av[k]):
-                    # print(f"k={k}, v= {v}, av[k] = {av[k]}")
-                    raise TypeError(
-                        f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
-                    )
+        # for k, v in pv.items():
+        #     # check av if provided value v is of correct type
+        #     if av[k] != any:
+        #         # print(f"key = {k}, value  = {v}")
+        #         if not isinstance(v, av[k]):
+        #             # print(f"k={k}, v= {v}, av[k] = {av[k]}")
+        #             raise TypeError(
+        #                 f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
+        #             )
 
     def __initerrormessages__(self):
         """ Init the list of known error messages"""
@@ -355,9 +364,9 @@ class esbmtkBase(object):
             tl.append(k)
 
         # test if we know all keys
-        for k, v in self.kwargs.items():
-            if k not in self.lkk:
-                raise ValueError(f"{k} is not a valid keyword. \n Try any of \n {tl}\n")
+        # for k, v in self.kwargs.items():
+        #     if k not in self.lkk:
+        #         raise ValueError(f"{k} is not a valid keyword. \n Try any of \n {tl}\n")
 
     def __addmissingdefaults__(self, lod: dict, kwargs: dict) -> dict:
         """

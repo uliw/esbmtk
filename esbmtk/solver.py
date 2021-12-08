@@ -112,11 +112,9 @@ def execute(
             for p in r.lop:  # loop over reservoir processes
                 p(r, i)  # update fluxes
 
-        # update all process based fluxes. This can be done in a global lpc list
-        for p in lpc_f:
+        for p in lpc_f:  # update all process based fluxes.
             p(i)
 
-        # and then update all reservoirs
         for r in lor:  # loop over all reservoirs
             flux_list = r.lof
 
@@ -125,20 +123,14 @@ def execute(
                 direction = r.lio[f]
                 new[0] = new[0] + f.m[i] * direction  # current flux and direction
                 new[1] = new[1] + f.l[i] * direction  # current flux and direction
-                # new[2] = new[2] + f.h[i] * direction  # current flux and direction
 
-            # print(f"fsum = {new[0]:.2e}")
-            # new = array([ms, ls, hs])
             new[2] = new[0] - new[1]
             # new[3] = delta will be set by the setitem method in the reserevoir
             # ditto for the concentration
             new = new * r.mo.dt  # get flux / timestep
-            # print(f"{i} new = {new}, dt = {r.mo.dt}")
             new = new + r[i - 1]  # add to data from last time step
             new = new * (new > 0)  # set negative values to zero
-            # print(f"updating {r.full_name} from {r.m[i]:.2e}")
             r[i] = new  # update reservoir data
-            # print(f"to  {r.m[i]:.2e}\n")
 
         # update reservoirs which do not depend on fluxes but on
         # functions
@@ -146,6 +138,7 @@ def execute(
             p(i)
 
         i = i + 1
+
     duration: float = process_time() - start
     print(f"\n Execution time {duration:.2e} cpu seconds\n")
 
@@ -261,6 +254,7 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, 
     for t in maxt:
         for j, f_list in enumerate(fn):
             for u, function in enumerate(f_list):
+                # print(i)
                 fn[j][u](da[j][u], pc[j][u], i)
 
         # calculate the resulting reservoir concentrations
@@ -330,6 +324,8 @@ def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
             a[j][3][i] = 1e3 * (a[j][2][i] / a[j][1][i] - e[j]) / e[j]
             # update concentrations
             a[j][4][i] = a[j][0][i] / d[j]
+
+        i = i + 1
 
 
 def build_vr_list(lvr: list) -> tuple:

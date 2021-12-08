@@ -116,7 +116,7 @@ class SeawaterConstants(esbmtkBase):
         self.n: str = self.name  # string =  name of this instance
         self.mo: Model = self.model
         self.hplus = 10 ** -self.pH
-        self.constants: list = ["K0", "K1", "K2", "KW", "KB", "Ksp", "Ksp0"]
+        self.constants: list = ["K0", "K1", "K2", "KW", "KB", "Ksp", "Ksp0", "KS", "KF"]
         self.species: list = [
             "dic",
             "ta",
@@ -152,6 +152,8 @@ class SeawaterConstants(esbmtkBase):
 
         # update K values and species concentrations according to P, S, and T
         self.__init_std_seawater__()
+        self.__init_bisulfide__()
+        self.__init_hydrogen_floride__()
         self.__init_carbon__()
         self.__init_boron__()
         self.__init_water__()
@@ -214,6 +216,54 @@ class SeawaterConstants(esbmtkBase):
         self.so4 = 2.7123 / 96
         self.ca2 = 0.01028
         self.Ksp0 = 4.29e-07  # after after Boudreau et al 2010
+
+    def __init_hydrogen_floride__(self) -> None:
+        """Bisulfide ion concentration after Dickson 1994, cf.
+        Zeebe and Gladrow 2001, p 260
+
+        """
+
+        import numpy as np
+
+        T = 273.15 + self.temperature
+        S = self.salinity
+        I = (19.924 * S) / (1000 - 1.005 * S)
+
+        lnKF = (
+            1590.2 / T
+            - 12.641
+            + 1.525 * I ** 0.5
+            + np.log(1 - 0.001005 * S)
+            + np.log(1 + self.ST / self.KS)
+        )
+
+        self.KF = np.exp(lnKF)
+        self.FT = 7e-5 * self.salinity / 35
+
+    def __init_bisulfide__(self) -> None:
+        """Bisulfide ion concentration after Dickson 1994, cf.
+        Zeebe and Gladrow 2001, p 260
+
+        """
+
+        import numpy as np
+
+        T = 273.15 + self.temperature
+        S = self.salinity
+        I = (19.924 * S) / (1000 - 1.005 * S)
+        lnKS = (
+            -4276.1 / T
+            + 141.328
+            - 23.093 * np.log(T)
+            + (-13856 / T + 324.57 - 47.986 * np.log(T)) * I ** 0.5
+            + (35474 / T - 771.54 + 114.723 * np.log(T)) * I
+            - 2698 / T * I ** 1.5
+            + 1776 / T * I ** 2
+            + np.log(1 - 0.001005 * S)
+        )
+
+        self.KS = np.exp(lnKS)
+        self.ST = self.so4 * self.salinity / 35
 
     def __init_gasexchange__(self) -> None:
         """Initialize constants for gas-exchange processes"""
@@ -594,28 +644,31 @@ def calc_pCO2b(
 
 @njit(parallel=False, fastmath=True, error_model="numpy")
 def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> None:
-    """Calculates and returns the carbonate concentrations with the format of
-    [d1, d2, d3, d4, d5] where each variable corresponds to
-    [H+, CA, HCO3, CO3, CO2(aq)], respectively, at the ith time-step of the model.
+    """Calculates and returns the carbonate concentrations and saturation state
+     at the ith time-step of the model.
+
+    The function assumes that vr_data will be in the following order:
+        [H+, CA, HCO3, CO3, CO2(aq), omega]
 
     LIMITATIONS:
     - This in used in conjunction with ExternalCode objects!
     - Assumes all concentrations are in mol/L
+    - Assumes your Model is in mol/L ! Otherwise, DIC and TA updating will not
+    be correct.
 
-    Calculations are based off equations from Follows, 2006.
-    doi:10.1016/j.ocemod.2005.05.004
+    Calculations are based off equations from:
+    Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
+    Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
 
-    Example: see carbonate_system_1 in utility_function.py
+    See add_carbonate_system_1 in utility_functions.py on how to call this function
 
     Author: M. Niazi & T. Tsan, 2021
-
     """
     dic: float = input_data[0][i - 1]
     ta: float = input_data[1][i - 1]
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
-    # hplus: float = input_data[2][i - 1]
     hplus: float = vr_data[0][i - 1]
 
     k1 = params[0]
@@ -623,16 +676,15 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
     KW = params[2]
     KB = params[3]
     boron = params[4]
-    # hplus = params[5 ]
-    ca2 = params[6]
-    ksp = params[7]
-    ksp0 = params[8]
+    ca2 = params[5]
+    ksp = params[6]
 
     # ca
     oh: float = KW / hplus
     boh4: float = boron * KB / (hplus + KB)
     fg: float = hplus - oh - boh4
     ca: float = ta + fg
+
     # hplus
     gamm: float = dic / ca
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
@@ -649,7 +701,6 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
     small, so it may be ok to simply write co2aq = dic - hco3 + co3.
     Let's test this once we have a case where pco2 is calculated from co2aq
     """
-
     # co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
     co2aq: float = dic - hco3 - co3
     omega: float = ca2 * co3 / ksp
@@ -668,7 +719,8 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     depth (zcc) at the ith time-step of the model.
 
     The function assumes that vr_data will be in the following order:
-        [H+, CA, HCO3, CO3, CO2(aq), zsat, zcc, zsnow]
+        [H+, CA, HCO3, CO3, CO2(aq), zsat, zcc, zsnow, Fburial,
+        B, BNS, BDS_under, BDS_resp, BDS, BCC, BPDC, BD,omega]
 
     LIMITATIONS:
     - This in used in conjunction with ExternalCode objects!
@@ -676,15 +728,13 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     - Assumes your Model is in mol/L ! Otherwise, DIC and TA updating will not
     be correct.
 
-    Calculations are based off equations from Follows, 2006 and
-    Boudreau et al 2010,
-    doi:10.1016/j.ocemod.2005.05.004
-    http://dx.doi.org/10.1029/2009GB003654
+    Calculations are based off equations from:
+    Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
+    Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
 
-    See carbon_system_2 in utility_functions.py on how to call this function
+    See add_carbonate_system_2 in utility_functions.py on how to call this function
 
     Author: M. Niazi & T. Tsan, 2021
-
     """
 
     # get constants
@@ -695,20 +745,17 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     boron = params[4]
     ksp0 = params[5]
     kc = params[6]
-    sa = params[7]
-    volume = params[8]
-    AD = params[9]
-    zsat0 = int(abs(params[10]))
-    ca2 = params[11]
-    dt = params[12]
-    pc = params[13]
-    pg = params[14]
-    I_caco3 = params[15]
-    alpha = params[16]
-    zsat_min = int(abs(params[17]))
-    zmax = int(abs(params[18]))
-    z0 = int(abs(params[19]))
-    ksp = params[20]
+    volume = params[7]
+    AD = params[8]
+    zsat0 = int(abs(params[9]))
+    ca2 = params[10]
+    dt = params[11]
+    I_caco3 = params[12]
+    alpha = params[13]
+    zsat_min = int(abs(params[14]))
+    zmax = int(abs(params[15]))
+    z0 = int(abs(params[16]))
+    ksp = params[17]
 
     # get lookup up tables
     depth_area_table: NDArray = input_data[7]  # depth look-up table
@@ -722,9 +769,8 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     ta: float = input_data[5][i - 1]  # TA concentration [mol/l]
     B: float = input_data[6][i - 1]  # Carbonate Export Flux [mol/yr]
     hplus: float = vr_data[0][i - 1]  # H+ concentration [mol/l]
-    zsat = vr_data[5][i - 1]
-    zcc = vr_data[6][i - 1]
-    zsnow = vr_data[7][i - 1]
+
+    zsnow = vr_data[7][i - 1] #previous zsnow
 
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus
@@ -796,15 +842,11 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
         area_p = area_dz_table[zcc : int(zsnow)]
         BPDC = kc * area_p.dot(diff)
         # eq 4 dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
-        # print(zcc, zsnow)
         zsnow = zsnow - BPDC / (area_dz_table[int(zsnow)] * I_caco3) * dt
-        # print(zcc, zsnow)
-        # print()
+
     else:  # zcc > zsnow
-        # there is no carbonate below zsnow, so  BPDC = 0
+        # there is no carbonate below zsnow, so BPDC = 0
         zsnow = zcc
-        # dummy values for testing purposes; will be removed later
-        zsnow_dt = 0
         BPDC = 0
 
     # BD & F_burial
@@ -836,6 +878,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[6][i] = zcc
     vr_data[7][i] = zsnow
     vr_data[8][i] = Fburial
+
     # temporary added values for testing
     vr_data[9][i] = B
     vr_data[10][i] = BNS
@@ -845,6 +888,4 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[14][i] = BCC
     vr_data[15][i] = BPDC
     vr_data[16][i] = BD
-    vr_data[17][i] = 0.0
-    vr_data[18][i] = 0.0
-    vr_data[19][i] = omega
+    vr_data[17][i] = omega
