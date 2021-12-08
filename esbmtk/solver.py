@@ -254,6 +254,7 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, 
     for t in maxt:
         for j, f_list in enumerate(fn):
             for u, function in enumerate(f_list):
+                # print(i)
                 fn[j][u](da[j][u], pc[j][u], i)
 
         # calculate the resulting reservoir concentrations
@@ -323,6 +324,8 @@ def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
             a[j][3][i] = 1e3 * (a[j][2][i] / a[j][1][i] - e[j]) / e[j]
             # update concentrations
             a[j][4][i] = a[j][0][i] / d[j]
+
+        i = i + 1
 
 
 def build_vr_list(lvr: list) -> tuple:
