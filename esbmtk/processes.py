@@ -771,7 +771,7 @@ class ScaleFlux(Process):
 
         """
 
-        m: float = self.ref_reservoirs.m[i - 1] * self.scale
+        m: float = self.ref_reservoirs.m[i] * self.scale
         r: float = reservoir.species.element.r
         d: float = reservoir.d[i - 1]
         l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
@@ -785,7 +785,7 @@ class ScaleFlux(Process):
         delta according to the reservoir (or the flux?)
 
         """
-        self.f[i] = self.ref_reservoirs[i - 1] * self.scale
+        self.f[i] = self.ref_reservoirs[i] * self.scale
 
     def get_process_args(self, reservoir: Reservoir):
         """"""
@@ -813,7 +813,7 @@ class ScaleFlux(Process):
 
         r: float = params[0]
         s: float = params[1]
-        m: float = data[4][i - 1] * s
+        m: float = data[4][i] * s
         d: float = data[5][i - 1]
 
         l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
