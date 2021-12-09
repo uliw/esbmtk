@@ -426,6 +426,7 @@ class Connect(esbmtkBase):
 
         self.__set_process_type__()  # derive flux type and create flux(es)
 
+        # print(f"mo.reg = {self.mo.register}, slf reg = {self.register}")
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
 
@@ -448,9 +449,13 @@ class Connect(esbmtkBase):
     def __set_name__(self):
         """ set connection name if not explicitly provided """
 
-        if self.mo.register == "None":  # global name_space registration
+        if self.groupname:
+            self.name = f"{self.source.sp.name}"
+        else:
             if self.name == "None":
-                self.name = f"{self.source.name}_2_{self.sink.name}"
+                self.name = f"C_{self.source.name}_2_{self.sink.name}"
+            else:
+                self.name = f"{self.name}"
 
             if self.id == "None" or self.id == "":
                 pass
@@ -458,12 +463,6 @@ class Connect(esbmtkBase):
                 self.name = f"{self.name}_{self.id}"
 
             self.full_name = self.name
-
-        else:  # local name space registration
-
-            if self.name == "None":
-                self.name = f"{self.source.sp.name}"
-                # print(f" C name = {self.name}, fn = {self.full_name}")
 
         self.base_name = self.full_name
         self.n = self.name
