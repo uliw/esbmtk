@@ -14,8 +14,14 @@ generation of graphical results.
 
 * News
 
- - August 10^{th}, Added KF and KS values for hydrofen fluoride and bisulfate to the
-   seawater chemistry module.
+ - December 10^{th}, 0.7.1.1 Keyword parsing now only checks known
+   keywords, but will ignore all unknown keywords. This simplifies
+   passing keywords to underlying instances. Fixed some indexation
+   problems in seldom used routines. Fluxes are now processed in the
+   order they are created. Added =weathering= as new connection type.
+
+ - August 10^{th}, Added KF and KS values for hydrogen fluoride and
+   bisulfate to the seawater chemistry module.
 
  - August 2^{nd}, 0.7.0.0 Python namespaces are now the default. Esbmtk
    now supports carbonate chemistry. Tracers like bicarbonate and
