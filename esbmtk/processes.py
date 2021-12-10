@@ -137,6 +137,8 @@ class Process(esbmtkBase):
         # add this process to the list of processes acting on this reservoir
         reservoir.lop.append(self)
         flux.lop.append(self)
+        # Add to model flux list
+        reservoir.mo.lop.append(self)
 
     def show_figure(self, x, y) -> None:
         """Apply the current process to the vector x, and show the result as y.
@@ -785,6 +787,7 @@ class ScaleFlux(Process):
         delta according to the reservoir (or the flux?)
 
         """
+
         self.f[i] = self.ref_reservoirs[i] * self.scale
 
     def get_process_args(self, reservoir: Reservoir):
