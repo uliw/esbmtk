@@ -257,10 +257,11 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, 
 
     i = 1
     for t in maxt:
-        for j, f_list in enumerate(fn):
-            for u, function in enumerate(f_list):
-                # print(i)
-                fn[j][u](da[j][u], pc[j][u], i)
+
+        j = 0
+        for f in enumerate(fn):
+            fn[j](da[j], pc[j], i)
+            j = j + 1
 
         # calculate the resulting reservoir concentrations
         # summarize_fluxes(a, b, c, d, e, i, dt)
@@ -301,9 +302,14 @@ def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
     """Same as foo but no virtual reservoirs present."""
     i = 1
     for t in maxt:
-        for j, f_list in enumerate(fn):
-            for u, function in enumerate(f_list):
-                fn[j][u](da[j][u], pc[j][u], i)
+        ### for j, f_list in enumerate(fn):
+        ###     for u, function in enumerate(f_list):
+        ###         fn[j][u](da[j][u], pc[j][u], i)
+
+        j = 0
+        for function in enumerate(fn):
+            function(da[j], pc[j], i)
+            j = j + 1
 
         # calculate the resulting reservoir concentrations
         # summarize_fluxes(a, b, c, d, e, i, dt)
@@ -411,49 +417,6 @@ def build_flux_lists_all(lor, iso: bool = False) -> tuple:
     return r_list, f_list, dir_list, v_list, r0_list
 
 
-def build_process_list(lor: list, lop: list) -> tuple:
-    from numba.typed import List
-    import numba
-    from numba.core import types
-
-    fn = List()  # List() # list of functions
-    da = List()  # data
-    pc = List()  # list of constants
-
-    print(f"Building Process List")
-
-    for r in lor:  # loop over reservoirs
-        # print(f"for {r.full_name}")
-        # note that types.List is differenfr from Types.ListType. Also
-        # note that [::1]  declares C-style arrays see
-        # https://numba.discourse.group/t/list-mistaken-as-list-when-creating-list-of-function-references/677/3
-        tfn = numba.typed.List.empty_list(
-            types.ListType(types.void)(  # return value
-                types.ListType(types.float64[::1]),
-                types.ListType(types.float64),
-                types.int64,  # parameter 4
-            ).as_type()
-        )
-
-        tda = List()  # temp list for data
-        tpc = List()  # temp list for constants
-        have_data = False
-        for p in r.lop:  # loop over reservoir processes
-            # print(f"working on {p.name}")
-            func_name, data, proc_const = p.get_process_args(r)
-            tfn.append(func_name)
-            tda.append(data)
-            tpc.append(proc_const)
-            have_data = True
-
-        if have_data:
-            fn.append(tfn)
-            da.append(tda)
-            pc.append(tpc)
-
-    return fn, da, pc
-
-
 def build_process_list_old(lor: list, lop: list) -> tuple:
     from numba.typed import List
     import numba
@@ -472,8 +435,8 @@ def build_process_list_old(lor: list, lop: list) -> tuple:
         # https://numba.discourse.group/t/list-mistaken-as-list-when-creating-list-of-function-references/677/3
         tfn = numba.typed.List.empty_list(
             types.ListType(types.void)(  # return value
-                types.ListType(types.float64[::1]),
-                types.ListType(types.float64),
+                types.ListType(types.float64[::1]),  # data array
+                types.ListType(types.float64),  # parameter list
                 types.int64,  # parameter 4
             ).as_type()
         )
@@ -495,3 +458,39 @@ def build_process_list_old(lor: list, lop: list) -> tuple:
             pc.append(tpc)
 
     return fn, da, pc
+
+
+def build_process_list(lor: list, lop: list) -> tuple:
+    from numba.typed import List
+    import numba
+    from numba.core import types
+
+    fn = List()  # List() # list of functions
+    da = List()  # data
+    pc = List()  # list of constants
+
+    print(f"Building Process List")
+
+    tfn = numba.typed.List.empty_list(
+        types.ListType(types.void)(  # return value
+            types.ListType(types.float64[::1]),  # data array
+            types.ListType(types.float64),  # parameter list
+            types.int64,  # parameter 4
+        ).as_type()
+    )
+
+    tda = List()  # temp list for data
+    tpc = List()  # temp list for constants
+
+    # note that types.List is differenfr from Types.ListType. Also
+    # note that [::1]  declares C-style arrays see
+    # https://numba.discourse.group/t/list-mistaken-as-list-when-creating-list-of-function-references/677/3
+
+    for p in lop:  # loop over reservoir processes
+        # print(f"working on {p.name}")
+        func_name, data, proc_const = p.get_process_args()
+        tfn.append(func_name)
+        tda.append(data)
+        tpc.append(proc_const)
+
+    return tfn, tda, tpc
