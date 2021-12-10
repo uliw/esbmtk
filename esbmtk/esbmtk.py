@@ -663,7 +663,7 @@ class Model(esbmtkBase):
         self.loc: set = set()  # set with connection handles
         self.lel: list = []  # list which will hold all element references
         self.lsp: list = []  # list which will hold all species references
-        self.lop: list = []  # list flux processe
+        self.lop: list = []  # set of flux processes
         self.lpc_f: list = []  # list of external functions affecting fluxes
         # list of external functions affecting virtual reservoirs
         self.lpc_r: list = []
@@ -1134,15 +1134,16 @@ class Model(esbmtkBase):
             execute_e(
                 self,
                 new,
+                self.lop,
                 self.lor,
                 self.lpc_f,
                 self.lpc_r,
             )
 
         elif solver == "hybrid":
-            execute_h(new, self.time, self.lor, self.lpc_f, self.lpc_r)
+            execute_h(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
         else:
-            execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
+            execute(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
         # self.execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
 
     def __step_process__(self, r, i) -> None:
