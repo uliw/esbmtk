@@ -97,6 +97,7 @@ def get_delta(
 def execute(
     new: [NDArray, Float64],
     time: [NDArray, Float64],
+    lop: list,
     lor: list,
     lpc_f: list,
     lpc_r: list,
@@ -146,6 +147,7 @@ def execute(
 def execute_h(
     new: [NDArray, Float64],
     time: [NDArray, Float64],
+    lop: list,
     lor: list,
     lpc_f: list,
     lpc_r: list,
@@ -179,7 +181,7 @@ def execute_h(
         i = i + 1  # next time step
 
 
-def execute_e(model, new, lor, lpc_f, lpc_r):
+def execute_e(model, new, lop, lor, lpc_f, lpc_r):
 
     """ """
 
