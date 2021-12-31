@@ -1,6 +1,6 @@
 * ESBMTK - An Earth-sciences box modeling toolkit
 
-ESBMTK is a python library that  aims to simplify typical box modeling
+ESBMTK is a python library that aims to simplify typical box modeling
 projects in the Earth-Sciences. The general focus is to make box
 modeling more approachable for classroom teaching. Performance and
 scalability are currently no priority. Specifically, the solver is just a
