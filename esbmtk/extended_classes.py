@@ -13,11 +13,10 @@ from numba.core import types as nbt
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-
 import logging
-
 import builtins
 import os
+import math
 
 from .esbmtk import (
     esbmtkBase,
@@ -507,7 +506,7 @@ class Signal(esbmtkBase):
                  duration = "0 yrs",  #
                  delta = 0,           # optional
                  stype = "addition"   # optional, currently the only type
-                 shape = "square/pyramid/filename"
+                 shape = "square/pyramid/bell/filename"
                  mass/magnitude/filename  # give one
                  offset = '0 yrs',     #
                  scale = 1, optional,  #
@@ -686,7 +685,8 @@ class Signal(esbmtkBase):
 
         elif self.sh == "pyramid":
             self.__pyramid__(0, self.length)
-
+        elif self.sh == "bell":
+            self.__bell__(0, self.length)
         elif "filename" in self.kwargs:  # use an external data set
             self.length = self.__int_ext_data__()
             print(f"lengths = {self.length}")
@@ -709,12 +709,12 @@ class Signal(esbmtkBase):
 
         dt1 = int((self.st - self.mo.offset - self.mo.start))
         dt2 = int((self.st + self.duration - self.mo.stop - self.mo.offset))
-        
+
         model_start_index = int(max(insert_start_time / self.mo.dt, 0))
         model_stop_index = int(min(self.mo.steps + dt2, self.mo.steps))
         signal_start_index = int(min(dt1, 0) * -1)
         signal_stop_index = int(self.length - max(0, dt2))
-        
+
         if signal_start_index < signal_stop_index:
             self.nf.m[model_start_index:model_stop_index] = self.s_m[
                 signal_start_index:signal_stop_index]
@@ -769,6 +769,36 @@ class Signal(esbmtkBase):
         self.s_m: [NDArray, Float[64]] = interp(xi, x, y)  # interpolate flux
         self.s_d: [NDArray, Float[64]] = interp(xi, x, d)  # interpolate delta
 
+    def __bell__(self, s, e) -> None:
+        """Create a bell curve type signal
+
+        s = start index
+        e = end index
+
+        Note that the area under the curve equals one.
+        So we can scale the result simply with mass
+        """
+
+        c: int = int(round((e - s) / 2))  # get the center index for the peak
+        x: [NDArray, Float[64]] = np.arange(-c, c + 1, 1)
+        
+        e :float = math.e
+        pi :float = math.pi
+        mu :float = 0
+        phi :float = c/4
+
+        a = -((x - mu)**2) / (2 * phi**2)
+        self.s_m = 1 / (phi * math.sqrt(2 * pi)) * e**a
+        self.s_d = np.zeros(2 * c)
+
+        if "mass" in self.kwargs:
+            self.s_m = self.s_m * self.mass
+        elif "magnitude" in self.kwargs:
+            self.s_m = self.s_m * self.magnitude/max(self.s_m)
+        else:
+            raise ValueError("Bell type signal require either mass or magnitude")
+            
+            
     def __int_ext_data__(self) -> None:
         """Interpolate External data as a signal. Unlike the other signals,
         this will replace the values in the flux with those read from the
@@ -801,7 +831,7 @@ class Signal(esbmtkBase):
         # create the associated quantities
         xq = Q_(xh)
         yq = Q_(yh)
-      
+
         # add these to the data we are are reading
         self.s_time: [NDArray, Float[64]] = df.iloc[:, 0].to_numpy() * xq
         self.s_data: [NDArray, Float[64]] = df.iloc[:, 1].to_numpy() * yq
