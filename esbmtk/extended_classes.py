@@ -688,7 +688,8 @@ class Signal(esbmtkBase):
             self.__pyramid__(0, self.length)
 
         elif "filename" in self.kwargs:  # use an external data set
-            self.__int_ext_data__(0, self.length)
+            self.length = self.__int_ext_data__()
+            print(f"lengths = {self.length}")
         else:
             raise ValueError(f"argument needs to be either square/pyramid, "
                              f"or an ExternalData object. ")
@@ -708,24 +709,17 @@ class Signal(esbmtkBase):
 
         dt1 = int((self.st - self.mo.offset - self.mo.start))
         dt2 = int((self.st + self.duration - self.mo.stop - self.mo.offset))
-        # print(f"dt1 = {dt1}")
-        # print(f"dt2 = {dt2}")
-
+        
         model_start_index = int(max(insert_start_time / self.mo.dt, 0))
         model_stop_index = int(min(self.mo.steps + dt2, self.mo.steps))
-        # print(f"Start index model = {model_start_index}")
-        # print(f"Stop index model = {model_stop_index}")
-
         signal_start_index = int(min(dt1, 0) * -1)
         signal_stop_index = int(self.length - max(0, dt2))
-        # print(f"signal start index {signal_start_index}")
-        # print(f"signal stop index {signal_stop_index}")
-        # self.fn[model_start_index:model_stop_index] = signal(signal_start_index, signal_stop_index)
-
-        self.nf.m[model_start_index:model_stop_index] = self.s_m[
-            signal_start_index:signal_stop_index]
-        self.nf.d[model_start_index:model_stop_index] = self.s_d[
-            signal_start_index:signal_stop_index]
+        
+        if signal_start_index < signal_stop_index:
+            self.nf.m[model_start_index:model_stop_index] = self.s_m[
+                signal_start_index:signal_stop_index]
+            self.nf.d[model_start_index:model_stop_index] = self.s_d[
+                signal_start_index:signal_stop_index]
 
         return self.nf
 
@@ -734,7 +728,7 @@ class Signal(esbmtkBase):
 
         self.s_m: [NDArray, Float[64]] = np.zeros(e - s)
         self.s_d: [NDArray, Float[64]] = np.zeros(e - s)
-        
+
         if "mass" in self.kwd:
             h = self.mass / self.duration  # get the height of the square
 
@@ -775,7 +769,7 @@ class Signal(esbmtkBase):
         self.s_m: [NDArray, Float[64]] = interp(xi, x, y)  # interpolate flux
         self.s_d: [NDArray, Float[64]] = interp(xi, x, d)  # interpolate delta
 
-    def __int_ext_data__(self, s, e) -> None:
+    def __int_ext_data__(self) -> None:
         """Interpolate External data as a signal. Unlike the other signals,
         this will replace the values in the flux with those read from the
         external data source. The external data need to be in the following format
@@ -792,77 +786,50 @@ class Signal(esbmtkBase):
         if not os.path.exists(
                 self.filename):  # check if the file is actually there
             raise FileNotFoundError(f"Cannot find file {self.filename}")
-        
+
         # read external dataset
         df = pd.read_csv(self.filename)
 
         # get unit information from each header
         xh = df.columns[0].split("[")[1].split("]")[0]
         yh = df.columns[1].split("[")[1].split("]")[0]
-        # zh = df.iloc[0,2].split("[")[1].split("]")[0]
+        if len(df.columns) > 2:
+            zh = df.columns[2].split("[")[1].split("]")[0]
+        else:
+            zh = None
 
         # create the associated quantities
         xq = Q_(xh)
         yq = Q_(yh)
-        # zq = Q_(zh)
-
+      
         # add these to the data we are are reading
-        x = df.iloc[:, 0].to_numpy() * xq
-        y = df.iloc[:, 1].to_numpy() * yq
-        d = df.iloc[:, 2].to_numpy()
+        self.s_time: [NDArray, Float[64]] = df.iloc[:, 0].to_numpy() * xq
+        self.s_data: [NDArray, Float[64]] = df.iloc[:, 1].to_numpy() * yq
+        if zh:
+            # delta is assumed to be without units
+            self.s_delta: [NDArray, Float[64]] = df.iloc[:, 2].to_numpy()
 
         # map into model units, and strip unit information
-        x = x.to(self.mo.t_unit).magnitude
-        y = y.to(self.mo.f_unit).magnitude * self.scale
+        self.s_time = self.s_time.to(self.mo.t_unit).magnitude
+        self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
 
-        """
-        the data can contain 1 to n data points (i.e., index
-        values[0,1,n]) each index value contains a time
-        coordinate. So the duration is x[-1] - X[0]. Duration/dt
-        gives us the steps, so we can setup a vector for
-        interpolation. Insertion off this vector depends on the time
-        offset defined by offset keyword which defines the
-        insertion indexes self.si self.ei
-        """
-
-        self.st: float = x[0]  # start time
-        self.et: float = x[-1]  # end time
-        duration = int(round((self.et - self.st)))
-
-        
-        # print(f"duration = {duration}")
-
-        # map the original time coordinate into model space
-        x = x - x[0]
-
-        # self.si: int = int(round(self.st / self.mo.dt))  # starting index
-        # self.ei: int = self.si + int(round(self.duration / self.mo.dt))  # end index
-
-        # everything has been mapped according to dt!
-        self.si: int = int(round(self.offset / self.mo.dt))  # starting index
-        self.ei: int = int(round(
-            (self.offset + duration) / self.mo.dt))  # end index
-        self.steps = self.ei - self.si
-
-        # print(f"start index = {self.si}")
-        # print(f"stop index = {self.ei}")
-
-        # create slice of flux vector
-        self.s_m: [NDArray, Float[64]] = array(self.nf.m[self.si:self.ei])
-
-        # create slice of delta vector
-        self.s_d: [NDArray, Float[64]] = array(self.nf.d[self.si:self.ei])
-
+        self.st: float = self.s_time[0]  # start time
+        self.et: float = self.s_time[-1]  # end time
+        self.duration = int(round((self.et - self.st)))
+        num_steps = int(self.duration / self.mo.dt)
         # setup the points at which to interpolate
-        xi = np.linspace(0, duration, self.steps)
+        xi = np.linspace(0, self.duration, num_steps)
 
-        # interpolate x/y data at points xi
-        h: [NDArray, Float[64]] = interp(xi, x, y)  # interpolate flux
-        dy: [NDArray, Float[64]] = interp(xi, x, d)  # interpolate delta
+        self.s_m: [NDArray,
+                   Float[64]] = interp(xi, self.s_time,
+                                       self.s_data)  # interpolate flux
+        if zh:
+            self.s_d: [NDArray, Float[64]] = interp(xi, self.s_time,
+                                                    self.s_delta)
+        else:
+            self.s_d: [NDArray, Float[64]] = np.zeros(num_steps)
 
-        # add this to the corresponding section off the flux
-        self.s_m: [NDArray, Float[64]] = self.s_m + h
-        self.s_d: [NDArray, Float[64]] = self.s_d + dy  # ditto for delta
+        return int(num_steps)
 
     def __apply_signal__(self) -> None:
         """ In case we deal with a source  signal, we need
