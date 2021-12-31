@@ -1,48 +1,58 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orge3c4f91)
-2.  [News](#orgd4cec0d)
-3.  [Contributing](#org0a1ff8f)
-4.  [Installation](#org0fa7d07)
-5.  [Documentation](#org244c4c9)
-6.  [Todo](#org3ea6705)
-7.  [License](#orge3fcd07)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org4321971)
+2.  [News](#orgd3933aa)
+3.  [Contributing](#orge006275)
+4.  [Installation](#org4accfdf)
+5.  [Documentation](#org0e3acf3)
+6.  [Todo](#org4ea9506)
+7.  [License](#org4185610)
 
 
-<a id="orge3c4f91"></a>
+<a id="org4321971"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
-ESBMTK is python library which aims to simplify typical box modeling
-projects the in Earth-Sciences. The general focus is to make box
-modeling more approachable for classroom teaching. So performance and
-scalability currently no priority. Specifically, the solver is just a
+ESBMTK is a python library that  aims to simplify typical box modeling
+projects in the Earth-Sciences. The general focus is to make box
+modeling more approachable for classroom teaching. Performance and
+scalability are currently no priority. Specifically, the solver is just a
 simple forward Euler scheme, so stiff problems are not handled
 gracefully.
 
 At present, it will calculate masses/concentrations in reservoirs and
-fluxes including isotope ratios. It provides a variety of classes
-which allow the creation and manipulation of input signals, and the
+fluxes, including isotope ratios. It provides a variety of classes
+that allow the creation and manipulation of input signals and the
 generation of graphical results.
 
 
-<a id="orgd4cec0d"></a>
+<a id="orgd3933aa"></a>
 
 # News
 
--   August 10<sup>th</sup>, Added KF and KS values for hydrofen fluoride and bisulfate to the
-    seawater chemistry module.
+-   December 31<sup>st</sup>, 0.7.1.2 Rewrote the signal class. It now supports
+    bell curve type signals and clips signals that exceed the model
+    domain. It is recommended to update to python 3.9
+
+-   December 10<sup>th</sup>, 0.7.1.1 Keyword parsing now only checks known
+    keywords but will ignore all unknown keywords. This simplifies
+    passing keywords to underlying instances. Fixed some indexation
+    problems in seldom-used routines. Fluxes are now processed in the
+    order they are created. Added `weathering` as new connection type.
+
+-   August 10<sup>th</sup>, Added KF and KS values for hydrogen fluoride and
+    bisulfate to the seawater chemistry module.
 
 -   August 2<sup>nd</sup>, 0.7.0.0 Python namespaces are now the default. Esbmtk
     now supports carbonate chemistry. Tracers like bicarbonate and
     carbonate-ion concentration can be calculated for reservoir groups
-    which track total alkalinity and dissolved inorganic carbon. The
+    that track total alkalinity and dissolved inorganic carbon. The
     function `add_carbonate_system_1` will add these tracers to a given
     reservoir group. The function `add_carbonate_system_2` will
     additionally compute carbonate burial and dissolution fluxes,
-    following the approach of <sup id="388846f245b537f203fa603cf49f42f1"><a href="#boudreau-2010-ongoin-trans" title="Bernard Boudreau, Jack Middelburg, , Andreas Hofmann \&amp; Filip Meysman, Ongoing Transients in Carbonate Compensation, {Global Biogeochemical Cycles}, v(4), n/a-n/a (2010).">boudreau-2010-ongoin-trans</a></sup>. Big
-    thanks to Tina and Mahrukh who developed and tested the carbonate
+    following the approach of <boudreau-2010-ongoin-trans>. Big
+    thanks to Tina and Mahrukh, who developed and tested the carbonate
     chemistry module. Note that the current release has not yet updated
     the documentation or the examples in the github repository.
 
@@ -50,14 +60,14 @@ generation of graphical results.
     still to register all esbmtk objects in the global
     namespace. However, in cases where models need to be integrated
     into python code, you can now set the `register = 'local'` keyword
-    in the model declaration. In this case, all model object follow are
+    in the model declaration. In this case, all model objects follow a
     hierarchical naming scheme e.g., `M.A_sb.DIC` denotes the DIC
-    concentration in the `A_sb` reservoir group which belongs to model
+    concentration in the `A_sb` reservoir group that belongs to model
     `M`.
 
 -   July 20<sup>th</sup>, the model object now provides a `sub_sample_data()`
     which will resample all model data to a default grid of 1000 data
-    points, before plotting.
+    points before plotting.
 
 -   July 17<sup>th</sup>, `ExternalCode` is a new class to allow integration of
     arbitrary code. This replaces the `VirtualReservoir-no_set` class
@@ -74,7 +84,7 @@ generation of graphical results.
     class. This will break any previous use of
     `VirtualReservoir_no_set` instances. See the API documentation on
     how to update. Changed the data-structure of all process
-    classes. There should be no user facing changes.
+    classes. There should be no user-facing changes.
 
 -   May 13<sup>th</sup>, 0.5.1.3 Multiple regression fixes, the `ref` keyword is
     now called `ref_reservoirs`. Added two new classes
@@ -85,7 +95,7 @@ generation of graphical results.
     only change in response to the associated function
 
 -   May 5<sup>th</sup>,  0.5.0.1 The Datafield Class now accepts lists of datasets. This
-    facilitates the grouping of data which belong together into a
+    facilitates the grouping of data that belong together into a
     single graph.
 
 -   April 26<sup>th</sup> Further changes to the naming scheme in group
@@ -93,30 +103,30 @@ generation of graphical results.
     name followed by the connection name, e.g., `sb2@db.PO4_2_PO4`
     which denotes a connection from `sb` to `db` transferring the
     species `PO4`. This conflicts with the previous scheme where the
-    above would reference a flux. The corresponding flux can referenced
+    above would reference a flux. The corresponding flux can be referenced
     by adding `_F` to the above connection name. I.e.,
     `sb2@db.PO4_2_PO4_F`. Since this breaks previous code, the version
     is updated to 0.5.0.0
 
 -   April 25<sup>th</sup> v 0.4.3.0 ESBMTK has now 3 different solvers. The hybrid
-    solver mentioned below, and a full numba solver which is about 10
-    faster. The latter does not yet support all connection properties
+    solver mentioned below, and a full numba solver that is about 10
+    faster. The latter does not yet support all connection properties,
     though. The solver is chosen via the optional solver keyword in the
     run method: `M.run(solver = "hybrid")`, or `M.run(solver =
        "numba")`. Both incur a startup overhead of about 3 to 5
     seconds. In order to make the numba solver work, the interface
     definition for the `GenericFunction` and `VirtualReservoir` classes
-    changed from 6 to 3 arguments, an all 3 arguments must be present
+    changed from 6 to 3 arguments, and all 3 arguments must be present
     and follow a strict structure (see the class definitions). This
     also required changes in the carbonate chemistry module,
     specifically the functions which calculate pH and carbonate
     alkalinity. The documentation is now available at
     <https://uliw.github.io/esbmtk/>
 
--   April 13<sup>th</sup>: rewrote the solver which is now 3 times faster. Added
-    numba to the solver code, however the performance gain is currently
-    only a few percent.. Added plot method to the model class. This
-    method will plot any object inn a given list. This is useful for
+-   April 13<sup>th</sup>: rewrote the solver that is now 3 times faster. Added
+    numba to the solver code, however, the performance gain is currently
+    only a few percent. Added plot method to the model class. This
+    method will plot any object in a given list. This is useful for
     larger models where one is only interested in a subset of results.
 
 -   April 10<sup>th</sup>: The hopefully last tweak to the naming scheme. All
@@ -127,11 +137,11 @@ generation of graphical results.
     `sb2ib.flux_name.process_name`. All of these can be queried with
     the info method, e.g., `sb2ib.flux_name.process_name.info()`
 
--   April 6<sup>th</sup>, added several function which aid in the bulk creation of
+-   April 6<sup>th</sup>, added several functions which aid in the bulk creation of
     reservoirs and connections (i.e., `create_reservoirs`,
     `create_bulk_connections`). The hypsometry class is now part of the
-    Model object and now has method to calculate the volume contained
-    in a given depth interval. To calculate the ocean volume you can
+    Model object and now has a method to calculate the volume contained
+    in a given depth interval. To calculate the ocean volume, you can
     call e.g., `Model.hyp(0,-6000)` see the api docs for the sealevel
     module for details. Reservoirs can now be specified by their
     geometry rather than by volume or mass. See the documentation of
@@ -146,7 +156,7 @@ generation of graphical results.
     -   March 28<sup>th</sup> added a `flux_summmary()` and
         `connection_summary()` methods to the model class.
 
--   March 27<sup>th</sup>, 0.4.0.5 added the hypsometry class which provides a
+-   March 27<sup>th</sup>, 0.4.0.5 added the hypsometry class, which provides a
     spline representation of the hypsometry between -6000 mbsl and 1000
     asl.This class provides the `area()` method which calculates the
     seafloor surface area between two depth dates. See the online api
@@ -160,7 +170,7 @@ generation of graphical results.
     concentrations from TA and DIC. The seawater class has been renamed
     `SeawaterConstants` and provides access to a limited set of
     seawater species concentrations and their K and Pk constants at
-    given set of temperature, salinity and pressure conditions. This
+    given set of temperature, salinity, and pressure conditions. This
     version also includes some refactoring in the `Connnection` and
     `ConnectionGroup` classes. It is likely that this broke some
     connection types.
@@ -171,7 +181,7 @@ generation of graphical results.
     working, but will print a warning message. The `describe()` method
     is now called `info()`.
 
--   March 11<sup>th</sup>, added a seawater class which provides access to
+-   March 11<sup>th</sup>, added a seawater class that provides access to
     K-values, and concentrations.
 
 -   March 10<sup>th</sup>, the code documentation is now available at <https://uliw.github.io/esbmtk/>
@@ -182,7 +192,7 @@ generation of graphical results.
     source and reservoir connection can be created implicitly.
 
 -   Feb. 28<sup>th</sup>, added a VirtualReservoir class. This class allows the
-    definition of reservoirs which depend on the execution of a
+    definition of reservoirs that depend on the execution of a
     user-defined function. See the class documentation for details.
     
     Display precision can now be set independently for each Reservoir,
@@ -207,7 +217,7 @@ generation of graphical results.
     behavior.
 
 -   Dec. 30<sup>th</sup>, the connection object has now a generalized update
-    method which allows to update all or a subset of all parameters
+    method that allows to update all or a subset of all parameters
 
 -   Dec. 23<sup>rd</sup>, the connection object has now the basic machinery to
     allow updates to the connection properties after the connection has
@@ -235,19 +245,19 @@ generation of graphical results.
     plots.
 
 -   Nov. 26<sup>th</sup>  Species definitions now accept an optional display string. This
-    allows pretty printed output for chemical formulas.
+    allows pretty-printed output for chemical formulas.
 
 -   Nov. 24<sup>th</sup> New functions to list all connections of a reservoir, and
     to list all processes associated with a connection. This allows the
     use of the help system on process names. New interface to specify
     connections with more complex characteristics (e.g., scale a flux
     in response to reservoir concentration). This will breaks existing
-    scripts which use these kind of connections. See the Quickstart
-    guide how to change the connection definition.
+    scripts that use these kind of connections. See the Quickstart
+    guide on how to change the connection definition.
 
--   Nov. 23<sup>rd</sup> A model can now save it's state, which can then be used
+-   Nov. 23<sup>rd</sup> A model can now save its state, which can then be used
     to initialize a subsequent model run. This is particularly useful
-    for models which require a spin up phase to reach equilibrium
+    for models which require a spin-up phase to reach equilibrium
 
 -   Nov. 18<sup>th</sup>, started to add unit tests for selected modules. Added
     unit conversions to external data sets. External data can now be
@@ -261,13 +271,14 @@ generation of graphical results.
     documentation until I have time to update it.
 
 -   Oct. 27<sup>th</sup>, added documentation on how to integrate user written
-    process classes, added a class which allows for concentration
-    dependent flux. Updated the documentation, added examples
+    process classes, added a class that allows for
+    concentration-dependent flux. Updated the documentation, added
+    examples
 
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org0a1ff8f"></a>
+<a id="orge006275"></a>
 
 # Contributing
 
@@ -277,13 +288,13 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org0fa7d07"></a>
+<a id="org4accfdf"></a>
 
 # Installation
 
 ESBMTK relies on the following python versions and libraries
 
--   python > 3.6
+-   python > 3.9
 -   matplotlib
 -   numpy
 -   pandas
@@ -298,7 +309,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org244c4c9"></a>
+<a id="org0e3acf3"></a>
 
 # Documentation
 
@@ -316,7 +327,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org3ea6705"></a>
+<a id="org4ea9506"></a>
 
 # Todo
 
@@ -325,7 +336,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orge3fcd07"></a>
+<a id="org4185610"></a>
 
 # License
 
@@ -339,9 +350,9 @@ the Free Software Foundation, either version 3 of the License, or
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
+along with this program. If not, see <https://www.gnu.org/licenses/>.
 
