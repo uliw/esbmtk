@@ -97,6 +97,7 @@ def get_delta(
 def execute(
     new: [NDArray, Float64],
     time: [NDArray, Float64],
+    lop: list,
     lor: list,
     lpc_f: list,
     lpc_r: list,
@@ -108,9 +109,12 @@ def execute(
     i = 1  # some processes refer to the previous time step
     for t in time[1:-1]:  # loop over the time vector except the first
         # we first need to calculate all fluxes
-        for r in lor:  # loop over all reservoirs
-            for p in r.lop:  # loop over reservoir processes
-                p(r, i)  # update fluxes
+        # for r in lor:  # loop over all reservoirs
+        #     for p in r.lop:  # loop over reservoir processes
+        #         p(i)  # update fluxes
+
+        for p in lop:  # loop over reservoir processes
+            p(i)  # update fluxes
 
         for p in lpc_f:  # update all process based fluxes.
             p(i)
@@ -146,6 +150,7 @@ def execute(
 def execute_h(
     new: [NDArray, Float64],
     time: [NDArray, Float64],
+    lop: list,
     lor: list,
     lpc_f: list,
     lpc_r: list,
@@ -163,7 +168,7 @@ def execute_h(
         # we first need to calculate all fluxes
         for r in lor:  # loop over all reservoirs
             for p in r.lop:  # loop over reservoir processes
-                p(r, i)  # update fluxes
+                p(i)  # update fluxes
 
         # update all process based fluxes. This can be done in a global lpc list
         for p in lpc_f:
@@ -179,7 +184,7 @@ def execute_h(
         i = i + 1  # next time step
 
 
-def execute_e(model, new, lor, lpc_f, lpc_r):
+def execute_e(model, new, lop, lor, lpc_f, lpc_r):
 
     """ """
 
@@ -199,7 +204,7 @@ def execute_e(model, new, lor, lpc_f, lpc_r):
             model.count,
         ) = build_vr_list(lpc_r)
 
-        model.fn, model.da, model.pc = build_process_list(lor)
+        model.fn, model.da, model.pc = build_process_list(lor, lop)
         model.a, model.b, model.c, model.d, model.e = build_flux_lists_all(lor)
         model.first_start = False
 
@@ -252,10 +257,11 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, 
 
     i = 1
     for t in maxt:
-        for j, f_list in enumerate(fn):
-            for u, function in enumerate(f_list):
-                # print(i)
-                fn[j][u](da[j][u], pc[j][u], i)
+
+        j = 0
+        for f in enumerate(fn):
+            fn[j](da[j], pc[j], i)
+            j = j + 1
 
         # calculate the resulting reservoir concentrations
         # summarize_fluxes(a, b, c, d, e, i, dt)
@@ -296,9 +302,14 @@ def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
     """Same as foo but no virtual reservoirs present."""
     i = 1
     for t in maxt:
-        for j, f_list in enumerate(fn):
-            for u, function in enumerate(f_list):
-                fn[j][u](da[j][u], pc[j][u], i)
+        ### for j, f_list in enumerate(fn):
+        ###     for u, function in enumerate(f_list):
+        ###         fn[j][u](da[j][u], pc[j][u], i)
+
+        j = 0
+        for function in enumerate(fn):
+            function(da[j], pc[j], i)
+            j = j + 1
 
         # calculate the resulting reservoir concentrations
         # summarize_fluxes(a, b, c, d, e, i, dt)
@@ -406,7 +417,7 @@ def build_flux_lists_all(lor, iso: bool = False) -> tuple:
     return r_list, f_list, dir_list, v_list, r0_list
 
 
-def build_process_list(lor: list) -> tuple:
+def build_process_list_old(lor: list, lop: list) -> tuple:
     from numba.typed import List
     import numba
     from numba.core import types
@@ -424,8 +435,8 @@ def build_process_list(lor: list) -> tuple:
         # https://numba.discourse.group/t/list-mistaken-as-list-when-creating-list-of-function-references/677/3
         tfn = numba.typed.List.empty_list(
             types.ListType(types.void)(  # return value
-                types.ListType(types.float64[::1]),
-                types.ListType(types.float64),
+                types.ListType(types.float64[::1]),  # data array
+                types.ListType(types.float64),  # parameter list
                 types.int64,  # parameter 4
             ).as_type()
         )
@@ -447,3 +458,39 @@ def build_process_list(lor: list) -> tuple:
             pc.append(tpc)
 
     return fn, da, pc
+
+
+def build_process_list(lor: list, lop: list) -> tuple:
+    from numba.typed import List
+    import numba
+    from numba.core import types
+
+    fn = List()  # List() # list of functions
+    da = List()  # data
+    pc = List()  # list of constants
+
+    print(f"Building Process List")
+
+    tfn = numba.typed.List.empty_list(
+        types.ListType(types.void)(  # return value
+            types.ListType(types.float64[::1]),  # data array
+            types.ListType(types.float64),  # parameter list
+            types.int64,  # parameter 4
+        ).as_type()
+    )
+
+    tda = List()  # temp list for data
+    tpc = List()  # temp list for constants
+
+    # note that types.List is differenfr from Types.ListType. Also
+    # note that [::1]  declares C-style arrays see
+    # https://numba.discourse.group/t/list-mistaken-as-list-when-creating-list-of-function-references/677/3
+
+    for p in lop:  # loop over reservoir processes
+        # print(f"working on {p.name}")
+        func_name, data, proc_const = p.get_process_args()
+        tfn.append(func_name)
+        tda.append(data)
+        tpc.append(proc_const)
+
+    return tfn, tda, tpc
