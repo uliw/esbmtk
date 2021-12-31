@@ -652,7 +652,7 @@ class Signal(esbmtkBase):
 
         # initialize signal data
         # self.data = self.__init_signal_data__()
-        
+
         self.data.n: str = self.name + "_data"  # update the name of the signal data
         self.legend_left = self.data.legend_left
         self.legend_right = self.data.legend_right
@@ -729,10 +729,12 @@ class Signal(esbmtkBase):
 
         return self.nf
 
-
     def __square__(self, s, e) -> None:
         """Create Square Signal"""
 
+        self.s_m: [NDArray, Float[64]] = np.zeros(e - s)
+        self.s_d: [NDArray, Float[64]] = np.zeros(e - s)
+        
         if "mass" in self.kwd:
             h = self.mass / self.duration  # get the height of the square
 
@@ -742,8 +744,8 @@ class Signal(esbmtkBase):
             raise ValueError(
                 "You must specify mass or magnitude of the signal")
 
-        self.s_m: float = h  # add this to the section
-        self.s_d: float = self.d  # add the delta offset
+        self.s_m = self.s_m + h  # add this to the section
+        self.s_d = self.s_d + d  # add the delta offset
 
     def __pyramid__(self, s, e) -> None:
         """Create pyramid type Signal
@@ -752,9 +754,6 @@ class Signal(esbmtkBase):
         e = end index
         """
 
-        self.s_m:  [NDArray, Float[64]] =  np.zeros(e-s)
-        self.s_d:  [NDArray, Float[64]] =  np.zeros(e-s)
-        
         if "mass" in self.kwd:
             h = 2 * self.mass / self.duration  # get the height of the pyramid
 
@@ -773,17 +772,12 @@ class Signal(esbmtkBase):
                                          0])  # setup the d coordinates
         xi = np.arange(0, e - s)  # setup the points at which to interpolate
 
-        # todo: this can be simplified by directly using s_m and s_d
-        # todo: change arange etc to np.arange to be explicit 
-        h: [NDArray, Float[64]] = interp(xi, x, y)  # interpolate flux
-        dy: [NDArray, Float[64]] = interp(xi, x, d)  # interpolate delta
-        self.s_m: [NDArray,
-                   Float[64]] = self.s_m + h  # add this to the section
-        self.s_d: [NDArray, Float[64]] = self.s_d + dy  # ditto for delta
+        self.s_m: [NDArray, Float[64]] = interp(xi, x, y)  # interpolate flux
+        self.s_d: [NDArray, Float[64]] = interp(xi, x, d)  # interpolate delta
 
     def __int_ext_data__(self, s, e) -> None:
         """Interpolate External data as a signal. Unlike the other signals,
-        thiw will replace the values in the flux with those read from the
+        this will replace the values in the flux with those read from the
         external data source. The external data need to be in the following format
 
         Time [units], Rate [units], delta value [units]
@@ -798,6 +792,7 @@ class Signal(esbmtkBase):
         if not os.path.exists(
                 self.filename):  # check if the file is actually there
             raise FileNotFoundError(f"Cannot find file {self.filename}")
+        
         # read external dataset
         df = pd.read_csv(self.filename)
 
@@ -820,17 +815,21 @@ class Signal(esbmtkBase):
         x = x.to(self.mo.t_unit).magnitude
         y = y.to(self.mo.f_unit).magnitude * self.scale
 
-        # the data can contain 1 to n data points (i.e., index
-        # values[0,1,n]) each index value contains a time
-        # coordinate. So the duration is x[-1] - X[0]. Duration/dt
-        # gives us the steps, so we can setup a vector for
-        # interpolation. Insertion off this vector depends on the time
-        # offset defined by offset keyword which defines the
-        # insertion indexes self.si self.ei
+        """
+        the data can contain 1 to n data points (i.e., index
+        values[0,1,n]) each index value contains a time
+        coordinate. So the duration is x[-1] - X[0]. Duration/dt
+        gives us the steps, so we can setup a vector for
+        interpolation. Insertion off this vector depends on the time
+        offset defined by offset keyword which defines the
+        insertion indexes self.si self.ei
+        """
 
         self.st: float = x[0]  # start time
         self.et: float = x[-1]  # end time
         duration = int(round((self.et - self.st)))
+
+        
         # print(f"duration = {duration}")
 
         # map the original time coordinate into model space
