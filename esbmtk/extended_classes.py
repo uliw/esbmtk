@@ -579,6 +579,7 @@ class Signal(esbmtkBase):
             "display_precision": Number,
             "reservoir": (Reservoir, str),
             "source": (Source, str),
+            "legend_right": str,
         }
 
         # provide a list of absolutely required keywords
@@ -603,6 +604,7 @@ class Signal(esbmtkBase):
             "display_precision": 0,
             "reservoir": "None",
             "source": "None",
+            "legend_right": "delta",
         }
 
         self.__initerrormessages__()
@@ -646,26 +648,25 @@ class Signal(esbmtkBase):
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
-        self.data = self.__init_signal_data_new__()
+        self.data = self.__init_signal_data__()
 
         # initialize signal data
         # self.data = self.__init_signal_data__()
-
-        # self.data = self.__init_signal_data__()
-        # self.data.n: str = self.name + "_data"  # update the name of the signal data
-        # self.legend_left = self.data.legend_left
-        # self.legend_right = self.data.legend_right
-        # # update isotope values
-        # self.data.li, self.data.hi = get_imass(self.data.m, self.data.d,
-        #                                        self.sp.r)
+        
+        self.data.n: str = self.name + "_data"  # update the name of the signal data
+        self.legend_left = self.data.legend_left
+        self.legend_right = self.data.legend_right
+        # update isotope values
+        self.data.li, self.data.hi = get_imass(self.data.m, self.data.d,
+                                               self.sp.r)
         self.__register_name__()
         self.mo.los.append(self)  # register with model
 
-        # #in case we deal with a sink or source signal
-        # if self.reservoir != "None":
-        #     self.__apply_signal__()
+        #in case we deal with a sink or source signal
+        if self.reservoir != "None":
+            self.__apply_signal__()
 
-    def __init_signal_data_new__(self) -> None:
+    def __init_signal_data__(self) -> None:
         """ 1. Create a vector which contains the signal data. The vector length
            can exceed the modelling domain.
         2. Trim the signal vector in such a way that it fits within the
@@ -707,18 +708,18 @@ class Signal(esbmtkBase):
 
         dt1 = int((self.st - self.mo.offset - self.mo.start))
         dt2 = int((self.st + self.duration - self.mo.stop - self.mo.offset))
-        print(f"dt1 = {dt1}")
-        print(f"dt2 = {dt2}")
+        # print(f"dt1 = {dt1}")
+        # print(f"dt2 = {dt2}")
 
         model_start_index = int(max(insert_start_time / self.mo.dt, 0))
         model_stop_index = int(min(self.mo.steps + dt2, self.mo.steps))
-        print(f"Start index model = {model_start_index}")
-        print(f"Stop index model = {model_stop_index}")
+        # print(f"Start index model = {model_start_index}")
+        # print(f"Stop index model = {model_stop_index}")
 
         signal_start_index = int(min(dt1, 0) * -1)
         signal_stop_index = int(self.length - max(0, dt2))
-        print(f"signal start index {signal_start_index}")
-        print(f"signal stop index {signal_stop_index}")
+        # print(f"signal start index {signal_start_index}")
+        # print(f"signal stop index {signal_stop_index}")
         # self.fn[model_start_index:model_stop_index] = signal(signal_start_index, signal_stop_index)
 
         self.nf.m[model_start_index:model_stop_index] = self.s_m[
@@ -728,79 +729,6 @@ class Signal(esbmtkBase):
 
         return self.nf
 
-    def __init_signal_data__(self) -> None:
-        """ 1. Create a vector which contains the signal data. The vector length can exceed
-        the modelling domain.
-        2. Trim the signal vector in such a way that it fits within the modelling domain
-        3. Create an empty flux and replace it with the signal vector data.
-
-        Note that this flux will then be added to an existing flux.
-
-        """
-
-        # create a dummy flux we can act up
-        self.nf: Flux = Flux(
-            name=self.n + "_data",
-            species=self.sp,
-            rate=f"0 {self.sp.mo.f_unit}",
-            delta=0,
-        )
-
-        # since the flux is zero, the delta value will be undefined. So we set it explicitly
-        # this will avoid having additions with Nan values.
-        self.nf.d[0:]: float = 0.0
-
-        # these are signal times, not model time
-        self.si: int = int(round(self.st / self.mo.dt))  # starting index
-        self.ei: int = self.si + int(round(
-            self.duration / self.mo.dt))  # end index
-
-        # create slice of flux vector
-        self.s_m: [NDArray, Float[64]] = array(self.nf.m[self.si:self.ei])
-        # create slice of delta vector
-        self.s_d: [NDArray, Float[64]] = array(self.nf.d[self.si:self.ei])
-
-        # create signal vector
-        if self.sh == "square":
-            self.__square__(self.si, self.ei)
-
-        elif self.sh == "pyramid":
-            self.__pyramid__(self.si, self.ei)
-
-        elif "filename" in self.kwargs:  # use an external data set
-            self.__int_ext_data__(self.si, self.ei)
-
-        else:
-            raise ValueError(f"argument needs to be either square/pyramid, "
-                             f"or an ExternalData object. "
-                             f"shape = {self.sh} is not a valid Value")
-
-        # Map signal data into model space. What about offset?
-        print(
-            f"Model start time and index = {self.mo.start+self.mo.offset}, {0}"
-        )
-        print(
-            f"Model end time end index = {self.mo.stop+self.mo.offset}, {self.mo.steps}"
-        )
-
-        print(f"signal start time and index = {self.st}, {self.si}")
-        print(
-            f"signal end time end index =  {self.st+self.duration}, {self.ei}")
-
-        # get index positions.
-        # start :int =
-
-        # Signal is entirely within model domain
-
-        # Signal is partly within model doamin
-
-        # signal is outside model domain
-
-        # now add the signal into the flux slice
-        #self.nf.m[self.si:self.ei] = self.s_m
-        #self.nf.d[self.si:self.ei] = self.s_d
-
-        return self.nf
 
     def __square__(self, s, e) -> None:
         """Create Square Signal"""
@@ -838,10 +766,10 @@ class Signal(esbmtkBase):
 
         # create pyramid
         c: int = int(round((e - s) / 2))  # get the center index for the peak
-        x: [NDArray, Float[64]] = np.array([0, c,
+        x: [NDArray, Float[64]] = array([0, c,
                                          e - s])  # setup the x coordinates
-        y: [NDArray, Float[64]] = np.array([0, h, 0])  # setup the y coordinates
-        d: [NDArray, Float[64]] = np.array([0, self.d,
+        y: [NDArray, Float[64]] = array([0, h, 0])  # setup the y coordinates
+        d: [NDArray, Float[64]] = array([0, self.d,
                                          0])  # setup the d coordinates
         xi = np.arange(0, e - s)  # setup the points at which to interpolate
 
