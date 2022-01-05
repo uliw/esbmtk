@@ -1078,8 +1078,6 @@ def create_connection(n: str, p: dict, M: any) -> None:
             bypass,
             species,
         )
-    print("")
-
 
 def update_or_create(
     name,

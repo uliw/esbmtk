@@ -711,7 +711,7 @@ class Signal(esbmtkBase):
         dt2 = int((self.st + self.duration - self.mo.stop - self.mo.offset))
 
         model_start_index = int(max(insert_start_time / self.mo.dt, 0))
-        model_stop_index = int(min((self.mo.steps + dt2/self.mo.dt -1), self.mo.steps))
+        model_stop_index = int(min((self.mo.steps + dt2/self.mo.dt), self.mo.steps))
         signal_start_index = int(min(dt1, 0) * -1)
         signal_stop_index = int(self.length - max(0, dt2))
 

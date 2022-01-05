@@ -947,7 +947,7 @@ class Fractionation(Process):
                 self.flux.d,  # 3
             ]
         )
-        params = List([float(reservoir.species.element.r), float(self.alpha)])
+        params = List([float(self.reservoir.species.element.r), float(self.alpha)])
 
         return func_name, data, params
 

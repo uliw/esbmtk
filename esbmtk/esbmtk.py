@@ -679,6 +679,7 @@ class Model(esbmtkBase):
         self.los: list = []
         self.first_start = True  # keep track of repeated solver calls
         self.lof: list = []  # list of fluxes
+        self.debug :bool = False
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
@@ -726,7 +727,7 @@ class Model(esbmtkBase):
         # calculate stride
         self.stride = int(self.steps / self.number_of_datapoints)
         self.reset_stride = self.stride
-
+        
         if self.step_limit == "None":
             self.number_of_solving_iterations: int = 0
         elif self.step_limit > self.steps:
@@ -1459,6 +1460,7 @@ class ReservoirBase(esbmtkBase):
         else:
             self.pt: str = f"{self.register.name}_{self.n}"
             self.groupname = self.register.name
+            self.full_name = f"{self.register.name}.{self.n}"
         # else:
         #   self.pt = self.name
 
