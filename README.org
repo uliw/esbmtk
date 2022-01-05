@@ -14,7 +14,7 @@ generation of graphical results.
 
 * News
 
- - January 5th, 0.7.2.0 Reowrked the naming scheme for fluxes and
+ - January 5th, 0.7.2.0 Reworked the naming scheme for fluxes and
    connections.  THis will break existing model definitions. Several
    bugfixes, isotope calculations are currently broken.
 

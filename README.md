@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orged12e33)
-2.  [News](#org0ff6c52)
-3.  [Contributing](#org07d2af8)
-4.  [Installation](#org70094a6)
-5.  [Documentation](#org50b6795)
-6.  [Todo](#orgbc33cef)
-7.  [License](#org152708b)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org78ec44a)
+2.  [News](#org1da5f3c)
+3.  [Contributing](#orgbed4786)
+4.  [Installation](#org3140b14)
+5.  [Documentation](#orgc0ed856)
+6.  [Todo](#orgc5a4018)
+7.  [License](#org6469fd2)
 
 
-<a id="orged12e33"></a>
+<a id="org78ec44a"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,11 +27,11 @@ that allow the creation and manipulation of input signals and the
 generation of graphical results.
 
 
-<a id="org0ff6c52"></a>
+<a id="org1da5f3c"></a>
 
 # News
 
--   January 5th, 0.7.2.0 Reowrked the naming scheme for fluxes and
+-   January 5th, 0.7.2.0 Reworked the naming scheme for fluxes and
     connections.  THis will break existing model definitions. Several
     bugfixes, isotope calculations are currently broken.
 
@@ -282,7 +282,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org07d2af8"></a>
+<a id="orgbed4786"></a>
 
 # Contributing
 
@@ -292,7 +292,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org70094a6"></a>
+<a id="org3140b14"></a>
 
 # Installation
 
@@ -313,7 +313,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org50b6795"></a>
+<a id="orgc0ed856"></a>
 
 # Documentation
 
@@ -331,7 +331,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orgbc33cef"></a>
+<a id="orgc5a4018"></a>
 
 # Todo
 
@@ -340,7 +340,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org152708b"></a>
+<a id="org6469fd2"></a>
 
 # License
 
