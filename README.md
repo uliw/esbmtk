@@ -1,20 +1,20 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org4321971)
-2.  [News](#orgd3933aa)
-3.  [Contributing](#orge006275)
-4.  [Installation](#org4accfdf)
-5.  [Documentation](#org0e3acf3)
-6.  [Todo](#org4ea9506)
-7.  [License](#org4185610)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orged12e33)
+2.  [News](#org0ff6c52)
+3.  [Contributing](#org07d2af8)
+4.  [Installation](#org70094a6)
+5.  [Documentation](#org50b6795)
+6.  [Todo](#orgbc33cef)
+7.  [License](#org152708b)
 
 
-<a id="org4321971"></a>
+<a id="orged12e33"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
-ESBMTK is a python library that  aims to simplify typical box modeling
+ESBMTK is a python library that aims to simplify typical box modeling
 projects in the Earth-Sciences. The general focus is to make box
 modeling more approachable for classroom teaching. Performance and
 scalability are currently no priority. Specifically, the solver is just a
@@ -27,9 +27,13 @@ that allow the creation and manipulation of input signals and the
 generation of graphical results.
 
 
-<a id="orgd3933aa"></a>
+<a id="org0ff6c52"></a>
 
 # News
+
+-   January 5th, 0.7.2.0 Reowrked the naming scheme for fluxes and
+    connections.  THis will break existing model definitions. Several
+    bugfixes, isotope calculations are currently broken.
 
 -   December 31<sup>st</sup>, 0.7.1.2 Rewrote the signal class. It now supports
     bell curve type signals and clips signals that exceed the model
@@ -278,7 +282,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orge006275"></a>
+<a id="org07d2af8"></a>
 
 # Contributing
 
@@ -288,7 +292,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org4accfdf"></a>
+<a id="org70094a6"></a>
 
 # Installation
 
@@ -309,7 +313,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org0e3acf3"></a>
+<a id="org50b6795"></a>
 
 # Documentation
 
@@ -327,7 +331,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org4ea9506"></a>
+<a id="orgbc33cef"></a>
 
 # Todo
 
@@ -336,7 +340,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org4185610"></a>
+<a id="org152708b"></a>
 
 # License
 

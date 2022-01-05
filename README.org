@@ -14,6 +14,10 @@ generation of graphical results.
 
 * News
 
+ - January 5th, 0.7.2.0 Reowrked the naming scheme for fluxes and
+   connections.  THis will break existing model definitions. Several
+   bugfixes, isotope calculations are currently broken.
+
  - December 31^{st}, 0.7.1.2 Rewrote the signal class. It now supports
    bell curve type signals and clips signals that exceed the model
    domain. It is recommended to update to python 3.9
