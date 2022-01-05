@@ -260,7 +260,6 @@ class Connect(esbmtkBase):
       - update() which allows you to update connection properties after the connection has been created
 
     """
-
     def __init__(self, **kwargs):
         """The init method of the connector obbjects performs sanity checks e.g.:
                - whether the reservoirs exist
@@ -334,26 +333,24 @@ class Connect(esbmtkBase):
         # validate and initialize instance variables
         self.__initerrormessages__()
 
-        self.bem.update(
-            {
-                "k_concentration": "a number",
-                "k_mass": "a number",
-                "k_value": "a number",
-                "scale": "a number or Quantity",
-                "a_value": "a number",
-                "ref_value": "a number, string, or quantity",
-                "b_value": "a number",
-                "name": "a string",
-                "id": "a string",
-                "plot": "a string",
-                "left": "Number, list or Reservoir",
-                "right": "Number, list or Reservoir",
-                "signal": "Signal Handle",
-                "groupname": "True or False",
-                "bypass": "source/sink",
-                "function_ref": "A function",
-            }
-        )
+        self.bem.update({
+            "k_concentration": "a number",
+            "k_mass": "a number",
+            "k_value": "a number",
+            "scale": "a number or Quantity",
+            "a_value": "a number",
+            "ref_value": "a number, string, or quantity",
+            "b_value": "a number",
+            "name": "a string",
+            "id": "a string",
+            "plot": "a string",
+            "left": "Number, list or Reservoir",
+            "right": "Number, list or Reservoir",
+            "signal": "Signal Handle",
+            "groupname": "True or False",
+            "bypass": "source/sink",
+            "function_ref": "A function",
+        })
 
         self.drn = {
             "alpha": "_alpha",
@@ -414,7 +411,8 @@ class Connect(esbmtkBase):
             elif self.scale.check("[mass]/[volume]"):  # concentration
                 self.scale = self.scale.to(self.mo.c_unit)
             else:
-                ValueError(f"No conversion to model units for {self.scale} specified")
+                ValueError(
+                    f"No conversion to model units for {self.scale} specified")
 
         # if sink and source a regular, the name will be simply C_S_2_S
         # if we deal with ReservoirGroups we need to reflect this in the
@@ -449,23 +447,44 @@ class Connect(esbmtkBase):
     def __set_name__(self):
         """ set connection name if not explicitly provided """
 
-        if self.groupname:
-            self.name = f"{self.source.sp.name}"
-        else:
-            if self.name == "None":
-                self.name = f"C_{self.source.name}_2_{self.sink.name}"
-            else:
-                self.name = f"{self.name}"
-
+        if self.name == "None":
+            self.name = f"C_{self.source.name}_2_{self.sink.name}"
             if self.id == "None" or self.id == "":
                 pass
             else:
                 self.name = f"{self.name}_{self.id}"
 
-            self.full_name = self.name
-
+        if self.register ==  "None":
+            self.full_name = f"{self.mo.name}.{self.name}"
+        else:
+            self.full_name = f"{self.register.full_name}.{self.name}"
+            
         self.base_name = self.full_name
         self.n = self.name
+
+        # if self.groupname: # if we are part of a group connection
+        #     self.name = f"C_{self.source.name}_2_{self.sink.name}"
+        #     if self.id == "None" or self.id == "":
+        #         pass
+        #     else:
+        #         self.name = f"{self.name}_{self.id}"
+
+        #     self.full_name = f"{self.register.full_name}.{self.name}"
+        # else:
+        #     if self.name == "None":
+        #         self.name = f"C_{self.source.name}_2_{self.sink.name}"
+        #     else:
+        #         self.name = f"{self.name}"
+
+        #     if self.id == "None" or self.id == "":
+        #         pass
+        #     else:
+        #         self.name = f"{self.name}_{self.id}"
+
+        #     self.full_name = self.name
+
+        # self.base_name = self.full_name
+        # self.n = self.name
 
     def update(self, **kwargs):
         """Update connection properties. This will delete existing processes
@@ -609,7 +628,8 @@ class Connect(esbmtkBase):
                         lt=p.data,
                     )
                     self.lop.insert(0, n)  # signals must come first
-                    logging.debug(f"Inserting {n.n} in {self.name} for {self.r.n}")
+                    logging.debug(
+                        f"Inserting {n.n} in {self.name} for {self.r.n}")
                 else:
                     raise ValueError(f"Signal type {p.ty} is not defined")
 
@@ -742,7 +762,9 @@ class Connect(esbmtkBase):
 
         if self.k_value != "None":
             self.scale = self.k_value
-            print(f"\n Warning: use scale instead of k_value for scaleflux type\n")
+            print(
+                f"\n Warning: use scale instead of k_value for scaleflux type\n"
+            )
 
         # if self.bypass == "source":
         #     target = self.sink
@@ -827,7 +849,9 @@ class Connect(esbmtkBase):
 
         if self.k_value != "None":
             self.scale = self.k_value
-            print(f"\n Warning: use scale instead of k_value for reaction type\n")
+            print(
+                f"\n Warning: use scale instead of k_value for reaction type\n"
+            )
 
         ph = Reaction(
             name="RF",
@@ -914,9 +938,8 @@ class Connect(esbmtkBase):
                     f"\n Warning: use scale instead of k_value for scale with concentration type\n"
                 )
 
-            self.scale = map_units(
-                self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
-            )
+            self.scale = map_units(self.scale, self.mo.c_unit, self.mo.f_unit,
+                                   self.mo.r_unit)
             # print(
             #    f"Registering PKC with ref = {self.ref.full_name}, scale = {self.scale}"
             # )
@@ -952,9 +975,8 @@ class Connect(esbmtkBase):
                     f"\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n"
                 )
 
-            self.scale = map_units(
-                self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
-            )
+            self.scale = map_units(self.scale, self.mo.c_unit, self.mo.f_unit,
+                                   self.mo.r_unit)
             ph = ScaleRelative2otherReservoir(
                 name="PkC",
                 reservoir=self.source,
@@ -965,9 +987,8 @@ class Connect(esbmtkBase):
             )
 
         elif self.ctype == "flux_balance":
-            self.k_value = map_units(
-                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
-            )
+            self.k_value = map_units(self.k_value, self.mo.c_unit,
+                                     self.mo.f_unit, self.mo.r_unit)
             ph = Flux_Balance(
                 name="_Pfb",
                 reservoir=self.source,
@@ -1171,7 +1192,6 @@ class ConnectionGroup(esbmtkBase):
 
 
     """
-
     def __init__(self, **kwargs) -> None:
 
         self.__parse_kwargs__(kwargs)
@@ -1180,22 +1200,35 @@ class ConnectionGroup(esbmtkBase):
         self.mo = self.sink.lor[0].mo
         self.loc: list = []  # list of connection objects
 
+        if self.mo.debug:
+            print(
+                f"mo.register = {self.mo.register}, register ={self.register.name}"
+            )
+            print(f"name = {self.name}")
+
         if self.mo.register == "None":  # global name space
             if self.register == "None":
                 if self.name == "None":  # set connection group name
                     self.name = f"CG_{self.source.name}2{self.sink.name}{self.id}"
 
-                self.full_name = self.name
-
+                self.full_name = f"{self.mo.name}.{self.name}"
+                if self.mo.debug: print(f"1 fn = {self.full_name}")
             else:  # with registration
                 if self.name == "None":
                     self.name = f"CG_{self.source.name}2{self.sink.name}{self.id}"
-                    self.full_name = f"{self.register.full_name}.{self.name}"
-        else:  # local name_space registration
-            self.name = f"CG_{self.source.name}2{self.sink.name}"
-            self.full_name = self.name
 
-        # print(f"Set CG name {self.name} and fname  to {self.full_name}")
+                self.full_name = f"{self.mo.name}.{self.name}"
+                if self.mo.debug: print(f"2 fn = {self.full_name}")
+        else:  # local name_space registration
+            if self.name == "None":
+                self.name = f"CG_{self.source.name}2{self.sink.name}"
+                if self.mo.debug: print(f"3 setting name = {self.name}")
+            self.full_name = f"{self.mo.name}.{self.name}"
+            if self.mo.debug: print(f"4 fn = {self.full_name}")
+
+        if self.mo.debug:
+            print(f"5 fn = {self.full_name}")
+
         self.base_name = self.name
         kwargs.update({"name": self.name})  # and add it to the kwargs
         self.__register_name__()
@@ -1214,7 +1247,9 @@ class ConnectionGroup(esbmtkBase):
 
         """
 
+        full_name = self.full_name
         self.__parse_kwargs__(kwargs)
+        self.full_name =  full_name
         self.__create_connections__()
 
     def __parse_kwargs__(self, kwargs) -> None:
@@ -1296,7 +1331,12 @@ class ConnectionGroup(esbmtkBase):
             # now we can create the connection
 
             # print(self.cd)
-            name = f"{r.n}"
+            #name = f"{r.n}"
+
+            if self.full_name == "None":
+                register = self.mo
+            else:
+                register = self
 
             a = Connect(
                 source=getattr(self.source, r.n),
@@ -1311,16 +1351,22 @@ class ConnectionGroup(esbmtkBase):
                 ref_reservoirs=self.cd[r.n]["ref_reservoirs"],
                 groupname=True,
                 id=self.id,
-                register=self,
+                register=register,
             )
 
             ## add connection to list of connections
             self.loc.append(a)
+            if self.mo.debug:
+                print(
+                    f"created connection with full name {a.full_name}, registered to {self.name} "
+                    f"fn = {self.full_name}"
+                )
 
     def info(self) -> None:
         """List all connections in this group"""
 
-        print(f"Group Connection from {self.source.name} to {self.sink.name}\n")
+        print(
+            f"Group Connection from {self.source.name} to {self.sink.name}\n")
         print("The following Connections are part of this group\n")
         print(f"You can query the details of each connection like this:\n")
         for c in self.loc:
@@ -1353,7 +1399,6 @@ class AirSeaExchange(esbmtkBase):
     keyword to point to a different species/calculated species.
 
     """
-
     def __init__(self, **kwargs) -> None:
         """initialize instance"""
 
@@ -1463,25 +1508,22 @@ class AirSeaExchange(esbmtkBase):
         # list of default values if none provided
         self.lod: Dict[str, any] = {"id": "None"}
         self.__initerrormessages__()
-        self.bem.update(
-            {
-                "gas_reservoir": "must be a Reservoir",
-                "liquid_reservoir": "must be a Reservoir",
-                "solubility": "must be a float number",
-                "piston_velocity": "must be a float number",
-                "area": "must be a float number",
-                "name": "None",
-                "ref_species": "None",
-            }
-        )
+        self.bem.update({
+            "gas_reservoir": "must be a Reservoir",
+            "liquid_reservoir": "must be a Reservoir",
+            "solubility": "must be a float number",
+            "piston_velocity": "must be a float number",
+            "area": "must be a float number",
+            "name": "None",
+            "ref_species": "None",
+        })
 
         self.__validateandregister__(kwargs)
 
         # make sure piston velocity is in the right units
         self.piston_velocity = check_for_quantity(self.piston_velocity)
         self.piston_velocity = self.piston_velocity.to(
-            f"meter/{self.liquid_reservoir.mo.t_unit}"
-        ).magnitude
+            f"meter/{self.liquid_reservoir.mo.t_unit}").magnitude
 
         # ref_species can point to vr_data fields which are of type
         # numpy array
