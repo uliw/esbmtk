@@ -711,9 +711,20 @@ class Signal(esbmtkBase):
         dt2 = int((self.st + self.duration - self.mo.stop - self.mo.offset))
 
         model_start_index = int(max(insert_start_time / self.mo.dt, 0))
-        model_stop_index = int(min(self.mo.steps + dt2, self.mo.steps))
+        model_stop_index = int(min((self.mo.steps + dt2/self.mo.dt -1), self.mo.steps))
         signal_start_index = int(min(dt1, 0) * -1)
         signal_stop_index = int(self.length - max(0, dt2))
+
+        if self.mo.debug:
+            print(
+                f"dt1 = {dt1}, dt2 = {dt2}, offset = {self.mo.offset}"
+                f"insert start time = {insert_start_time} "
+                f"insert_stop time = {insert_stop_time} "
+                f"duration = {self.duration}\n"
+                f"msi = {model_start_index}, msp = {model_stop_index} "
+                f"model num_steps = {model_stop_index-model_start_index}\n"
+                f"ssi = {signal_start_index}, ssp = {signal_stop_index} "
+                f"signal num_steps = {signal_stop_index-signal_start_index}\n")
 
         if signal_start_index < signal_stop_index:
             self.nf.m[model_start_index:model_stop_index] = self.s_m[
@@ -781,11 +792,11 @@ class Signal(esbmtkBase):
 
         c: int = int(round((e - s) / 2))  # get the center index for the peak
         x: [NDArray, Float[64]] = np.arange(-c, c + 1, 1)
-        
-        e :float = math.e
-        pi :float = math.pi
-        mu :float = 0
-        phi :float = c/4
+
+        e: float = math.e
+        pi: float = math.pi
+        mu: float = 0
+        phi: float = c / 4
 
         a = -((x - mu)**2) / (2 * phi**2)
         self.s_m = 1 / (phi * math.sqrt(2 * pi)) * e**a
@@ -794,11 +805,11 @@ class Signal(esbmtkBase):
         if "mass" in self.kwargs:
             self.s_m = self.s_m * self.mass
         elif "magnitude" in self.kwargs:
-            self.s_m = self.s_m * self.magnitude/max(self.s_m)
+            self.s_m = self.s_m * self.magnitude / max(self.s_m)
         else:
-            raise ValueError("Bell type signal require either mass or magnitude")
-            
-            
+            raise ValueError(
+                "Bell type signal require either mass or magnitude")
+
     def __int_ext_data__(self) -> None:
         """Interpolate External data as a signal. Unlike the other signals,
         this will replace the values in the flux with those read from the
@@ -848,7 +859,7 @@ class Signal(esbmtkBase):
         self.duration = int(round((self.et - self.st)))
         num_steps = int(self.duration / self.mo.dt)
         # setup the points at which to interpolate
-        xi = np.linspace(0, self.duration, num_steps)
+        xi = np.linspace(self.st, self.et, num_steps)
 
         self.s_m: [NDArray,
                    Float[64]] = interp(xi, self.s_time,
