@@ -40,9 +40,7 @@ import pandas as pd
 import logging
 import time
 
-
 from esbmtk import Q_
-
 
 # import builtins
 # import math
@@ -169,7 +167,9 @@ def show_data(self, **kwargs) -> None:
 
     # show the first 4 entries
     for i in range(index, index + 3):
-        print(f"{off}{ind}i = {i}, Mass = {self.m[i]:.2e}, delta = {self.d[i]:.2f}")
+        print(
+            f"{off}{ind}i = {i}, Mass = {self.m[i]:.2e}, delta = {self.d[i]:.2f}"
+        )
 
 
 def set_y_limits(ax: plt.Axes, obj: any) -> None:
@@ -314,9 +314,10 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                 for i, d in enumerate(obj.y1_data):  # loop over datafield list
                     y1_legend = obj.y1_legend[i]
                     # print(f"label = {y1_legend}")
-                    ln1 = ax1.plot(
-                        obj.x1_data[i], obj.y1_data[i], color=col, label=y1_legend
-                    )
+                    ln1 = ax1.plot(obj.x1_data[i],
+                                   obj.y1_data[i],
+                                   color=col,
+                                   label=y1_legend)
                     cn = cn + 1
                     col = f"C{cn}"
 
@@ -343,11 +344,13 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             y_label = obj.y2_label
             if not isinstance(obj.y2_data[0], str):
                 if obj.common_y_scale == "yes":
-                    for i, d in enumerate(obj.y2_data):  # loop over datafield list
+                    for i, d in enumerate(
+                            obj.y2_data):  # loop over datafield list
                         y2_legend = obj.y2_legend[i]
-                        ln1 = ax1.plot(
-                            obj.x2_data[i], obj.y2_data[i], color=col, label=y2_legend
-                        )
+                        ln1 = ax1.plot(obj.x2_data[i],
+                                       obj.y2_data[i],
+                                       color=col,
+                                       label=y2_legend)
                         cn = cn + 1
                         col = f"C{cn}"
                         # set_y_limits(ax1, model)
@@ -355,11 +358,13 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                         second_axis = False
                 else:
                     ax2 = ax1.twinx()  # create a second y-axis
-                    for i, d in enumerate(obj.y2_data):  # loop over datafield list
+                    for i, d in enumerate(
+                            obj.y2_data):  # loop over datafield list
                         y2_legend = obj.y2_legend[i]
-                        ln1 = ax2.plot(
-                            obj.x2_data[i], obj.y2_data[i], color=col, label=y2_legend
-                        )
+                        ln1 = ax2.plot(obj.x2_data[i],
+                                       obj.y2_data[i],
+                                       color=col,
+                                       label=y2_legend)
                         cn = cn + 1
                         col = f"C{cn}"
 
@@ -374,19 +379,25 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             # use the same units as the associated flux
             ax2 = ax1.twinx()  # create a second y-axis
             # plof right y-scale data
-            ln2 = ax2.plot(
-                time[1:-2], obj.data.d[1:-2], color=col, label=obj.legend_right
-            )
+            ln2 = ax2.plot(time[1:-2],
+                           obj.data.d[1:-2],
+                           color=col,
+                           label=obj.legend_right)
             ax2.set_ylabel(obj.data.ld)  # species object delta label
             set_y_limits(ax2, model)
-            ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
+            ax2.spines["top"].set_visible(
+                False)  # remove unnecessary frame speciess
         elif isinstance(obj, Reservoir):
             ax2 = ax1.twinx()  # create a second y-axis
             # plof right y-scale data
-            ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
+            ln2 = ax2.plot(time[1:-2],
+                           yr[1:-2],
+                           color=col,
+                           label=obj.legend_right)
             ax2.set_ylabel(obj.ld)  # species object delta label
             set_y_limits(ax2, model)
-            ax2.spines["top"].set_visible(False)  # remove unnecessary frame species
+            ax2.spines["top"].set_visible(
+                False)  # remove unnecessary frame species
 
     # adjust display properties for title and legend
 
@@ -425,7 +436,8 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
         handler2, label2 = ax2.get_legend_handles_labels()
 
     if first_axis and second_axis:
-        legend = ax2.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(6)
+        legend = ax2.legend(handler1 + handler2, label1 + label2,
+                            loc=0).set_zorder(6)
     elif first_axis:
         legend = ax1.legend(handler1, label1, loc=0).set_zorder(6)
     elif second_axis:
@@ -571,7 +583,10 @@ def get_typed_list(data: list) -> list:
     return tl
 
 
-def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dict:
+def create_reservoirs(bn: dict,
+                      ic: dict,
+                      M: any,
+                      register: any = "None") -> dict:
     """boxes are defined by area and depth interval here we use an ordered
     dictionary to define the box geometries. The next column is temperature
     in deg C, followed by pressure in bar
@@ -629,7 +644,10 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
                 concentration=icd[k][0],
                 isotopes=icd[k][1],
                 delta=icd[k][2],
-                seawater_parameters={"temperature": v["T"], "pressure": v["P"]},
+                seawater_parameters={
+                    "temperature": v["T"],
+                    "pressure": v["P"]
+                },
                 register=register,
             )
 
@@ -781,7 +799,6 @@ def get_sub_key(d: dict, i: int) -> dict:
 
 
 def expand_dict(d: dict, mt: str = "1:1") -> int:
-
     """Determine dict structure
 
     in case we have mutiple connections with mutiple species, the
@@ -829,8 +846,7 @@ def expand_dict(d: dict, mt: str = "1:1") -> int:
                     message = (
                         f"The number of connection properties ({length})\n"
                         f"does not match the number of connection groups ({len(ck)})\n"
-                        f"did you intend to do a 1:N mapping?"
-                    )
+                        f"did you intend to do a 1:N mapping?")
                     raise ValueError(message)
 
                 # map property dicts to connection group names
@@ -851,7 +867,8 @@ def expand_dict(d: dict, mt: str = "1:1") -> int:
                 for t in ck:  # apply the entire nd dict to all connections
                     rd[t] = nd
             else:
-                raise ValueError(f"{mt} is not defined. must be '1:1' or '1:N'")
+                raise ValueError(
+                    f"{mt} is not defined. must be '1:1' or '1:N'")
 
         else:
             if case == 0:  # only lists present, case 3
@@ -949,20 +966,25 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
 
 
 def create_connection(n: str, p: dict, M: any) -> None:
-
     """called by create_bulk_connections in order to create a connection
     group It is assumed that all rates are in liter/year or mol per
     year. This may not be what you want or need.
 
-    You need to provide a connection key e.g., sb2db@mix which will be
+    n: a connection key e.g., sb2db@mix which will be
     interpreted as mixing a connection between sb and db and thus
     create connections in both directions
+
+    p: a dictionary holding  the connection properties
+    
+    M: the model handle
 
     """
 
     from esbmtk import ConnectionGroup, Q_
 
     # get the reservoir handles by splitting the key
+    if M.debug:
+        print(f"key = {n}")
     source, sink, cid = split_key(n, M)
 
     # create default connections parameters and replace with values in
@@ -977,6 +999,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
     mix = False if not "mx" in p else p["mx"]
     cid = f"{cid}_f" if mix else f"{cid}"
     bypass = "None" if not "bp" in p else p["bp"]
+    species = "None" if not "sp" in p else p["sp"]
 
     if isinstance(scale, Q_):
         scale = scale.to("l/a").magnitude
@@ -989,10 +1012,13 @@ def create_connection(n: str, p: dict, M: any) -> None:
     #                  test if backwards connection exists, or create
 
     if not mix:
-        if M.register == "local":
-            name = f"CG_{source.name}2{sink.name}"
-        else:
-            name = f"CG_{source.name}2{sink.name}"
+
+        name = f"CG_{source.name}2{sink.name}"
+
+        if M.debug:
+            print(
+                f"n = {n}, source: {source.full_name}, sink: {sink.full_name}, cid: {cid}, name = {name}"
+            )
 
         update_or_create(
             name,
@@ -1008,14 +1034,12 @@ def create_connection(n: str, p: dict, M: any) -> None:
             cid,
             M,
             bypass,
+            species,
         )
 
     else:  # this is a connection with mixing
         # create forward connection
-        if M.register == "local":
-            name = f"CG_{source.name}2{sink.name}"
-        else:
-            name = f"CG_{source.name}2{sink.name}"
+        name = f"CG_{source.name}2{sink.name}"
 
         update_or_create(
             name,
@@ -1031,15 +1055,13 @@ def create_connection(n: str, p: dict, M: any) -> None:
             cid,
             M,
             bypass,
+            species,
         )
 
         # create backwards connection
-        if M.register == "local":
-            name = f"CG_{sink.name}2{source.name}"
-        else:
-            name = f"CG_{sink.name}2{source.name}"
-
+        name = f"CG_{sink.name}2{source.name}"
         cid = cid.replace("_f", "_b")
+
         update_or_create(
             name,
             sink,
@@ -1054,7 +1076,9 @@ def create_connection(n: str, p: dict, M: any) -> None:
             cid,
             M,
             bypass,
+            species,
         )
+    print("")
 
 
 def update_or_create(
@@ -1071,40 +1095,73 @@ def update_or_create(
     cid,
     M,
     bypass,
+    species,
 ):
     """Create or update connection"""
 
-    from esbmtk import ConnectionGroup
+    from esbmtk import ConnectionGroup, Connect
 
     if M.register == "local":
         register = M
     else:
         register = "None"
 
+    if M.debug: print(f"Looking up {name}")
     # update connection if already known
     if f"{name}" in M.lmo or f"{M.name}.{name}" in M.lmo:
+
         if M.register == "local":
             cg = getattr(M, name)
         else:
             cg = __builtins__[name]
 
-        cg.update(
-            name=name,
-            source=source,
-            sink=sink,
-            ctype=make_dict(los, typ),
-            scale=make_dict(los, scale),  # get rate from dictionary
-            rate=make_dict(los, rate),
-            ref_reservoirs=make_dict(los, ref_reservoirs),
-            alpha=make_dict(los, alpha),
-            delta=make_dict(los, delta),
-            bypass=make_dict(los, bypass),
-            register=register,
-            id=cid,  # get id from dictionary
-        )
-    else:  # create connection
+        if M.debug:
+            print(
+                f"Connectiongroup is already known with full_name = {cg.full_name}"
+            )
+
+        if isinstance(species, list):
+            cg.update(
+                name=name,
+                source=source,
+                sink=sink,
+                ctype=make_dict(los, typ),
+                scale=make_dict(los, scale),  # get rate from dictionary
+                rate=make_dict(los, rate),
+                ref_reservoirs=make_dict(los, ref_reservoirs),
+                alpha=make_dict(los, alpha),
+                delta=make_dict(los, delta),
+                bypass=make_dict(los, bypass),
+                register=register,
+                id=cid,  # get id from dictionary
+            )
+
+        else:
+            source = getattr(cg.source, f"{species.name}")
+            sink = getattr(cg.sink, f"{species.name}")
+            if M.debug:
+                print(f"source = {source.full_name},  sink = {sink.full_name}")
+
+            # #add new connection to the existing connection group
+            g = Connect(
+                #name=f"C_{id}",
+                source=source,
+                sink=sink,
+                ctype=typ,
+                scale=scale,  # get rate from dictionary
+                rate=rate,
+                ref_reservoirs=ref_reservoirs,
+                alpha=alpha,
+                delta=delta,
+                bypass=bypass,
+                register=cg,
+                id=cid,  # get id from dictionary
+            )
+            if M.debug: print(f"Added {g.name} to {cg.full_name}")
+
+    else:  # create new connection group
         cg = ConnectionGroup(
-            name=name,
+            #name=name,
             source=source,
             sink=sink,
             ctype=make_dict(los, typ),
@@ -1114,9 +1171,12 @@ def update_or_create(
             alpha=make_dict(los, alpha),
             delta=make_dict(los, delta),
             bypass=make_dict(los, bypass),
-            register=register,
+            register=M,
             id=cid,  # get id from dictionary
         )
+        if M.debug:
+            print(
+                f"created new connectiongroup with full_name = {cg.full_name}")
 
 
 def get_name_only(o: any) -> any:
@@ -1196,9 +1256,8 @@ def reverse_key(key: str) -> str:
     return f"{r2}2{r1}"
 
 
-def get_connection_keys(
-    s: set, fstr: str, nstr: str, inverse: bool, exclude: str
-) -> list:
+def get_connection_keys(s: set, fstr: str, nstr: str, inverse: bool,
+                        exclude: str) -> list:
     """extract connection keys from set of flux names, replace fstr with
     nstr so that the key can be used in create_bulk_connnections()
 
@@ -1269,9 +1328,9 @@ def gen_dict_entries(M: any, **kwargs) -> tuple:
         exclude_str = "None"
 
     if isinstance(M, Model):
-        flist: list = find_matching_fluxes(
-            M.loc, filter_by=reference, exclude=exclude_str
-        )
+        flist: list = find_matching_fluxes(M.loc,
+                                           filter_by=reference,
+                                           exclude=exclude_str)
     elif isinstance(M, list):
         flist: list = find_matching_fluxes(
             M,
@@ -1279,9 +1338,11 @@ def gen_dict_entries(M: any, **kwargs) -> tuple:
             exclude=exclude_str,
         )
     else:
-        raise ValueError(f"gen_dict_entries: M must be list or Model, not {type(M)}")
+        raise ValueError(
+            f"gen_dict_entries: M must be list or Model, not {type(M)}")
 
-    klist: list = get_connection_keys(flist, reference, target, inverse, exclude_str)
+    klist: list = get_connection_keys(flist, reference, target, inverse,
+                                      exclude_str)
 
     return tuple(klist), flist
 
@@ -1310,14 +1371,16 @@ def get_string_between_brackets(s: str) -> str:
 
     s = s.split("[")
     if len(s) < 2:
-        raise ValueError(f"Column header {s} must include units in square brackets")
+        raise ValueError(
+            f"Column header {s} must include units in square brackets")
 
     s = s[1]
 
     s = s.split("]")
 
     if len(s) < 2:
-        raise ValueError(f"Column header {s} must include units in square brackets")
+        raise ValueError(
+            f"Column header {s} must include units in square brackets")
 
     return s[0]
 
@@ -1376,7 +1439,8 @@ def map_units(v: any, *args) -> float:
         m = v
 
     if not isinstance(m, Number):
-        raise ValueError(f"m is {type(m)}, must be float, v={v}. Something is fishy")
+        raise ValueError(
+            f"m is {type(m)}, must be float, v={v}. Something is fishy")
 
     return m
 
@@ -1422,21 +1486,20 @@ def add_carbonate_system_1(rgs: list):
                     "Omega": 0.0,
                 },
                 function_input_data=List([rg.DIC.c, rg.TA.c]),
-                function_params=List(
-                    [
-                        rg.swc.K1,  # 0
-                        rg.swc.K2,  # 1
-                        rg.swc.KW,  # 2
-                        rg.swc.KB,  # 3
-                        rg.swc.boron,  # 4
-                        rg.swc.ca2,  # 5
-                        rg.swc.Ksp,  # 6
-                    ]
-                ),
+                function_params=List([
+                    rg.swc.K1,  # 0
+                    rg.swc.K2,  # 1
+                    rg.swc.KW,  # 2
+                    rg.swc.KB,  # 3
+                    rg.swc.boron,  # 4
+                    rg.swc.ca2,  # 5
+                    rg.swc.Ksp,  # 6
+                ]),
                 register=rg,
             )
         else:
-            raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
+            raise AttributeError(
+                f"{rg.full_name} must have a TA and DIC reservoir")
 
 
 def add_carbonate_system_2(**kwargs) -> None:
@@ -1579,42 +1642,38 @@ def add_carbonate_system_2(**kwargs) -> None:
                 "BD": 0.0,  # 16 BD
                 "Omega": 0.0,  # 17 omega
             },
-            function_input_data=List(
-                [
-                    rg.DIC.m,  # 0 DIC mass
-                    rg.DIC.l,  # 1 DIC light isotope mass
-                    rg.DIC.h,  # 2 DIC heavy isotope mass
-                    rg.DIC.c,  # 3 DIC concentration
-                    rg.TA.m,  # 4 TA mass
-                    rg.TA.c,  # 5 TA concentration
-                    kwargs["carbonate_export_fluxes"][i].m,  # 6
-                    area_table,  # 7
-                    area_dz_table,  # 8
-                    Csat_table,  # 9
-                ]
-            ),
-            function_params=List(
-                [
-                    rg.swc.K1,  # 0
-                    rg.swc.K2,  # 1
-                    rg.swc.KW,  # 2
-                    rg.swc.KB,  # 3
-                    rg.swc.boron,  # 4
-                    Ksp0,  # 5
-                    float(kwargs["kc"]),  # 6
-                    float(rg.volume.to("liter").magnitude),  # 7
-                    float(AD),  # 8
-                    float(abs(kwargs["zsat0"])),  # 9
-                    float(rg.swc.ca2),  # 10
-                    rg.mo.dt,  # 11
-                    float(kwargs["I_caco3"]),  # 12
-                    float(kwargs["alpha"]),  # 13
-                    float(abs(kwargs["zsat_min"])),  # 14
-                    float(abs(kwargs["zmax"])),  # 15
-                    float(abs(kwargs["z0"])),  # 16
-                    Ksp,  # 17
-                ]
-            ),
+            function_input_data=List([
+                rg.DIC.m,  # 0 DIC mass
+                rg.DIC.l,  # 1 DIC light isotope mass
+                rg.DIC.h,  # 2 DIC heavy isotope mass
+                rg.DIC.c,  # 3 DIC concentration
+                rg.TA.m,  # 4 TA mass
+                rg.TA.c,  # 5 TA concentration
+                kwargs["carbonate_export_fluxes"][i].m,  # 6
+                area_table,  # 7
+                area_dz_table,  # 8
+                Csat_table,  # 9
+            ]),
+            function_params=List([
+                rg.swc.K1,  # 0
+                rg.swc.K2,  # 1
+                rg.swc.KW,  # 2
+                rg.swc.KB,  # 3
+                rg.swc.boron,  # 4
+                Ksp0,  # 5
+                float(kwargs["kc"]),  # 6
+                float(rg.volume.to("liter").magnitude),  # 7
+                float(AD),  # 8
+                float(abs(kwargs["zsat0"])),  # 9
+                float(rg.swc.ca2),  # 10
+                rg.mo.dt,  # 11
+                float(kwargs["I_caco3"]),  # 12
+                float(kwargs["alpha"]),  # 13
+                float(abs(kwargs["zsat_min"])),  # 14
+                float(abs(kwargs["zmax"])),  # 15
+                float(abs(kwargs["z0"])),  # 16
+                Ksp,  # 17
+            ]),
             register=rg,
         )
 
@@ -1698,7 +1757,8 @@ def __checkkeys__(lrk: list, lkk: list, kwargs: dict) -> None:
                         if kwargs[e] != "None":
                             s = s + 1
             if s > 1:  # if more than one match
-                raise ValueError(f"You need to specify exactly one from this list: {k}")
+                raise ValueError(
+                    f"You need to specify exactly one from this list: {k}")
 
         else:  # keyword is not in list
             if k not in kwargs:
@@ -1712,7 +1772,8 @@ def __checkkeys__(lrk: list, lkk: list, kwargs: dict) -> None:
     # test if we know all keys
     for k, v in kwargs.items():
         if k not in lkk:
-            raise ValueError(f"{k} is not a valid keyword. \n Try any of \n {tl}\n")
+            raise ValueError(
+                f"{k} is not a valid keyword. \n Try any of \n {tl}\n")
 
 
 def __addmissingdefaults__(lod: dict, kwargs: dict) -> dict:
