@@ -311,10 +311,10 @@ class AddSignal(Process):
 
     # setup a placeholder call function
     def __call__(self, i: int):
-        return self.__execute__(r, i)
+        return self.__execute__(i)
 
     # use this when we do isotopes
-    def __with_isotopes__(self, r, i) -> None:
+    def __with_isotopes__(self, i) -> None:
         """Each process is associated with a flux (self.f). Here we replace
         the flux value with the value from the signal object which
         we use as a lookup-table (self.lt)
@@ -327,13 +327,13 @@ class AddSignal(Process):
         if self.f.m[i] != 0:
             # self.f[i] = self.f[i] + self.lt[i]
             self.f.l[i], self.f.h[i] = get_imass(self.f.m[i], self.f.d[i],
-                                                 r.rvalue)
+                                                 self.r.rvalue)
         # signals may have zero mass, but may have a delta offset. Thus, we do not know
         # the masses for the light and heavy isotope. As such we have to calculate the masses
         # after we add the signal to a flux
 
     # use this when we do isotopes
-    def __without_isotopes__(self, r, i) -> None:
+    def __without_isotopes__(self, i) -> None:
         """Each process is associated with a flux (self.f). Here we replace
         the flux value with the value from the signal object which
         we use as a lookup-table (self.lt)
