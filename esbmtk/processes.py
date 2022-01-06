@@ -1218,7 +1218,7 @@ class ScaleRelativeToConcentration(RateConstant):
         c: float = self.reservoir.c[i - 1]
         if c > 0:  # otherwise there is no flux
             m = c * self.scale
-            r: float = reservoir.species.element.r
+            r: float = self.reservoir.species.element.r
             d: float = self.reservoir.d[i - 1]
             l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
             self.flux[i]: np.array = [m, l, m - l, d]
