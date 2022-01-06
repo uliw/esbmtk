@@ -90,7 +90,6 @@ def create_model():
 
     return v0, c0, d0, M1
 
-
 def test_reservoir_creation(create_model):
     """Test that reservoir is initialized correctly"""
     v0, c0, d0, M1 = create_model
@@ -99,6 +98,87 @@ def test_reservoir_creation(create_model):
     assert M1.R1.c[2] == c0
     assert M1.R1.m[2] == mass
     assert abs(M1.R1.d[2] - d0) < 1e-10
+
+
+def test_fractionation(create_model):
+    """Test that isotope fractionation from a flux out of a reserevoir
+    results in the corrrect fractionation
+
+    """
+
+    from esbmtk import Source, Sink, Connect, Reservoir
+    
+    v0, c0, d0, M1 = create_model
+    
+    Source(name = "SO1",species =M1.DIC)
+    Reservoir(
+        name="R1",  # Name of reservoir
+        species=M1.DIC,  # Species handle
+        delta=d0,  # initial delta
+        concentration=f"{c0} mol/l",  # concentration
+        volume=f"{v0} l",  # reservoir size (m^3)
+    )
+    
+    Sink(name = "SI1",species =M1.DIC)
+
+    Connect(
+        source=M1.SO1,  # source of flux
+        sink=M1.R1,  # target of flux
+        rate="100 mol/yr",  # weathering flux in
+        delta=d0,  # set a default flux
+    )
+
+    Connect(
+        source=M1.R1,  # source of flux
+        sink=M1.SI1,  # target of flux
+        ctype="Regular",
+        rate="100 mol/yr",  # weathering flux in
+        alpha=-28,  # set a default flux
+    )
+
+    M1.run()
+
+    assert round(M1.R1.d[-2],6) == 28
+
+def test_fractionation_numba(create_model):
+    """Test that isotope fractionation from a flux out of a reserevoir
+    results in the corrrect fractionation, when using the numba solver
+    
+    """
+    
+    from esbmtk import Source, Sink, Connect, Reservoir
+    
+    v0, c0, d0, M1 = create_model
+    
+    Source(name = "SO1",species =M1.DIC)
+    Reservoir(
+        name="R1",  # Name of reservoir
+        species=M1.DIC,  # Species handle
+        delta=d0,  # initial delta
+        concentration=f"{c0} mol/l",  # concentration
+        volume=f"{v0} l",  # reservoir size (m^3)
+    )
+    
+    Sink(name = "SI1",species =M1.DIC)
+
+    Connect(
+        source=M1.SO1,  # source of flux
+        sink=M1.R1,  # target of flux
+        rate="100 mol/yr",  # weathering flux in
+        delta=d0,  # set a default flux
+    )
+
+    Connect(
+        source=M1.R1,  # source of flux
+        sink=M1.SI1,  # target of flux
+        ctype="Regular",
+        rate="100 mol/yr",  # weathering flux in
+        alpha=-28,  # set a default flux
+    )
+
+    M1.run(solver="numba")
+
+    assert round(M1.R1.d[-2],6) == 28
 
 
 def test_external_data(create_model):
