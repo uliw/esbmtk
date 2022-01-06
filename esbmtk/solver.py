@@ -258,6 +258,7 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, 
     i = 1
     for t in maxt:
 
+        # loop over processes
         j = 0
         for f in enumerate(fn):
             fn[j](da[j], pc[j], i)
@@ -302,13 +303,11 @@ def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
     """Same as foo but no virtual reservoirs present."""
     i = 1
     for t in maxt:
-        ### for j, f_list in enumerate(fn):
-        ###     for u, function in enumerate(f_list):
-        ###         fn[j][u](da[j][u], pc[j][u], i)
-
+        
+         # loop over processes
         j = 0
-        for function in enumerate(fn):
-            function(da[j], pc[j], i)
+        for f in enumerate(fn):
+            fn[j](da[j], pc[j], i)
             j = j + 1
 
         # calculate the resulting reservoir concentrations
