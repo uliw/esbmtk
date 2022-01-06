@@ -14,8 +14,12 @@ generation of graphical results.
 
 * News
 
+ - January 6^{th} 0.7.2.1 Fixed several regressions in the process
+   module. Added unit-tests for =scale_with_flux=,
+   =scale_with_concentration=, =fractionation=.
+
  - January 5th, 0.7.2.0 Reworked the naming scheme for fluxes and
-   connections.  THis will break existing model definitions. Several
+   connections. This will break existing model definitions. Several
    bugfixes, isotope calculations are currently broken.
 
  - December 31^{st}, 0.7.1.2 Rewrote the signal class. It now supports
