@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org78ec44a)
-2.  [News](#org1da5f3c)
-3.  [Contributing](#orgbed4786)
-4.  [Installation](#org3140b14)
-5.  [Documentation](#orgc0ed856)
-6.  [Todo](#orgc5a4018)
-7.  [License](#org6469fd2)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org1eafb3b)
+2.  [News](#orgcd60c00)
+3.  [Contributing](#orgaeda051)
+4.  [Installation](#orgb3b4f1a)
+5.  [Documentation](#org35d8bdb)
+6.  [Todo](#orgcd57318)
+7.  [License](#org08b84dc)
 
 
-<a id="org78ec44a"></a>
+<a id="org1eafb3b"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,12 +27,16 @@ that allow the creation and manipulation of input signals and the
 generation of graphical results.
 
 
-<a id="org1da5f3c"></a>
+<a id="orgcd60c00"></a>
 
 # News
 
+-   January 6<sup>th</sup> 0.7.2.1 Fixed several regressions in the process
+    module. Added unit-tests for `scale_with_flux`,
+    `scale_with_concentration`, `fractionation`.
+
 -   January 5th, 0.7.2.0 Reworked the naming scheme for fluxes and
-    connections.  THis will break existing model definitions. Several
+    connections. This will break existing model definitions. Several
     bugfixes, isotope calculations are currently broken.
 
 -   December 31<sup>st</sup>, 0.7.1.2 Rewrote the signal class. It now supports
@@ -282,7 +286,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgbed4786"></a>
+<a id="orgaeda051"></a>
 
 # Contributing
 
@@ -292,7 +296,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org3140b14"></a>
+<a id="orgb3b4f1a"></a>
 
 # Installation
 
@@ -313,7 +317,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="orgc0ed856"></a>
+<a id="org35d8bdb"></a>
 
 # Documentation
 
@@ -331,7 +335,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orgc5a4018"></a>
+<a id="orgcd57318"></a>
 
 # Todo
 
@@ -340,7 +344,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org6469fd2"></a>
+<a id="org08b84dc"></a>
 
 # License
 

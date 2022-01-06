@@ -816,11 +816,13 @@ class ScaleFlux(Process):
     @njit(fastmath=True, error_model="numpy")
     def p_scale_flux(data, params, i) -> None:
 
-        r: float = params[0]
-        s: float = params[1]
-        m: float = data[4][i] * s
-        d: float = data[5][i - 1]
+        r: float = params[0] # r value
+        s: float = params[1] # scale
+        
+        m: float = data[4][i]  # mass of reference object
+        d: float = data[5][i - 1] # delta of reservoir_ref
 
+        m = m * s
         l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
         # print(f"ScaleFlux m = {m:.2e}, scale = {proc_const[1]}")
 
@@ -914,7 +916,7 @@ class Fractionation(Process):
 
         # alpha is given in permil, but the fractionation routine expects
         # it as 1 + permil, i.e., 70 permil would 1.007
-      
+
         self.alp = 1 + self.alpha / 1000
         self.mo = self.reservoir.mo
         self.__register_name__()
@@ -940,7 +942,7 @@ class Fractionation(Process):
             self.flux.m,  # 0
             self.flux.l,  # 1
             self.flux.h,  # 2
-            self.flux.d,   # 3
+            self.flux.d,  # 3
             self.reservoir.d,  # 4
         ])
         params = List(
@@ -953,15 +955,15 @@ class Fractionation(Process):
     @njit(fastmath=True, error_model="numpy")
     def p_fractionation(data, params, i) -> None:
         #
-        r: float = params[0]        # rvalue
-        a: float = params[1]        # alpha
-        d: float = data[4][i-1] + a # reservoir delta 
-        m: float = data[0][i]       # flux mass
+        r: float = params[0]  # rvalue
+        a: float = params[1]  # alpha
+        d: float = data[4][i - 1] + a  # reservoir delta
+        m: float = data[0][i]  # flux mass
         l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
 
-        data[1][i] = l      # flux li
+        data[1][i] = l  # flux li
         data[2][i] = m - l  # flux hi
-        data[3][i] = d      # flux d
+        data[3][i] = d  # flux d
 
 
 class RateConstant(Process):
@@ -1256,11 +1258,11 @@ class ScaleRelativeToConcentration(RateConstant):
         c: float = m / v
         f: float = c * s
         d: float = data[4][i - 1]  # delta
-        l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+        l: float = (1000.0 * f) / ((d + 1000.0) * r + 1000.0)
         data[0][i] = f
         # this is wrong we neef to get the flux delta from the reservoir
-        data[1][i] = l * s
-        data[2][i] = (m - l) * s
+        data[1][i] = l
+        data[2][i] = m - l
         data[3][i] = d
         # print(i)
         # print(" ")
@@ -1508,11 +1510,7 @@ class GasExchange(RateConstant):
         self.a_u = self.seawaterconstants.a_u
         self.rvalue = self.liquid.sp.r
         self.volume = self.gas.volume
-        # print(f"volume = { self.volume:.2e}")
-
-        # self.scale = self.area * self.piston_velocity
-        # print("setting scale to {self.scale}")
-
+       
     def __without_isotopes__(self, i: int) -> None:
 
         # set flux
@@ -1559,18 +1557,18 @@ class GasExchange(RateConstant):
             - self.ref_species[i - 1] * 1000  # [CO2]aq
         )
 
-        co2aq_13 = self.ref_species[i - 1] * self.r.h[i - 1] / self.r.m[i - 1]
-        co2at_13 = self.gas.h[i - 1] / self.gas.volume
+        co2aq_c13 = self.ref_species[i - 1] * self.r.h[i - 1] / self.r.m[i - 1]
+        co2at_c13 = self.gas.h[i - 1] / self.gas.volume
 
         f13 = (
             self.scale * self.a_u * (
-                self.a_dg * co2at_13 * (1 - self.p_H2O)  # p_H2O
+                self.a_dg * co2at_c13 * (1 - self.p_H2O)  # p_H2O
                 * self.solubility  # SA_co2
-                - self.a_db * co2aq_13 * 1000))
+                - self.a_db * co2aq_c13 * 1000))
 
         # h = flux!
         f12 = f - f13
-        d = 1000 * (f13 / f12 - self.rvalue) / self.rvalue
+        d = (f13 / f12 / self.rvalue - 1) * 1000
 
         # print(f"f={f:.2e}")
         # print(f"P: f={f:.2e}, f12={f12:.2e}, f13={f13:.2e}, d={d:.2f}")
@@ -1609,6 +1607,8 @@ class GasExchange(RateConstant):
             self.gas.c,  # 7
             self.gas.h,  # 8
             self.gas.v,  # 9
+            self.r.m,  # 10
+            self.r.h,  # 11
         ])
 
         params = List([
@@ -1620,8 +1620,11 @@ class GasExchange(RateConstant):
             float(self.a_dg),  # 5
             float(self.a_db),  # 6
             float(self.reservoir.mo.dt),  # 7
+            float(self.p_H2O),  # 8
+            float(self.solubility),  #9 
         ])
 
+        self.params = params
         return func_name, data, params
 
     @staticmethod
@@ -1631,28 +1634,35 @@ class GasExchange(RateConstant):
         the function compared to the __with/without_isotopes__ method(s). See the
         __get_process_args__ method for details
 
+        This process does not yet work with variable volumes
+
         """
 
-        scale: float = params[0]
-        SA: float = params[1]
-        r: float = params[2]
-        v: float = params[3]
-        au: float = params[4]
-        dg: float = params[5]
-        db: float = params[6]
-        dt: float = params[7]
+        scale: float = params[0]  # scale
+        SA: float = params[1]  # solubility
+        r: float = params[2]  # r value
+        gv: float = params[3]  # gas volume
+        au: float = params[4]  #
+        dg: float = params[5]  #
+        db: float = params[6]  #
+        dt: float = params[7]  # dt
+        pH2O: float = params[8]  # p_H2O
+        solubility: float = params[9]  # solubility
 
-        dic_m = data[4][i - 1]
-        dic_m13 = data[5][i - 1]
-        co2aq_c = data[6][i - 1]
-        co2aq_c13 = co2aq_c * dic_m13 / dic_m
-        co2at_c = data[7][i - 1]
-        co2at_c13 = data[8][i - 1] / v
+        rs = data[6][i - 1]  # ref species
+        rm = data[10][i - 1]
+        rh = data[11][i - 1]
+        gc = data[7][i - 1]
+        gh = data[8][i - 1]  # gas.h
 
-        f = scale * (co2at_c * SA - co2aq_c * 1000)
-        f13 = scale * au * (dg * SA * co2at_c13 - db * co2aq_c13 * 1000)
+        f = scale * (gc * (1 - pH2O) * solubility - rs * 1000)
+        co2aq_c13 = rs * rh / rm  #
+        co2at_c13 = gh / gv
+
+        f13 = scale * au * (dg * co2at_c13 *
+                            (1 - pH2O) * solubility - db * co2aq_c13 * 1000)
         f12 = f - f13
-        d = 1000 * (f13 / f12 - r) / r
+        d = (f13 / f12 / r - 1) * 1000
 
         data[0][i] = f
         data[1][i] = f12
