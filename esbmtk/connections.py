@@ -454,11 +454,11 @@ class Connect(esbmtkBase):
             else:
                 self.name = f"{self.name}_{self.id}"
 
-        if self.register ==  "None":
+        if self.register == "None":
             self.full_name = f"{self.mo.name}.{self.name}"
         else:
             self.full_name = f"{self.register.full_name}.{self.name}"
-            
+
         self.base_name = self.full_name
         self.n = self.name
 
@@ -623,6 +623,17 @@ class Connect(esbmtkBase):
                     # create AddSignal Process object
                     n = AddSignal(
                         name=p.n + "_addition_process",
+                        reservoir=self.r,
+                        flux=self.fh,
+                        lt=p.data,
+                    )
+                    self.lop.insert(0, n)  # signals must come first
+                    logging.debug(
+                        f"Inserting {n.n} in {self.name} for {self.r.n}")
+                elif p.ty == "multiplication":
+                    # create AddSignal Process object
+                    n = MultiplySignal(
+                        name=p.n + "_multiplication_process",
                         reservoir=self.r,
                         flux=self.fh,
                         lt=p.data,
@@ -1249,7 +1260,7 @@ class ConnectionGroup(esbmtkBase):
 
         full_name = self.full_name
         self.__parse_kwargs__(kwargs)
-        self.full_name =  full_name
+        self.full_name = full_name
         self.__create_connections__()
 
     def __parse_kwargs__(self, kwargs) -> None:
@@ -1359,8 +1370,7 @@ class ConnectionGroup(esbmtkBase):
             if self.mo.debug:
                 print(
                     f"created connection with full name {a.full_name}, registered to {self.name} "
-                    f"fn = {self.full_name}"
-                )
+                    f"fn = {self.full_name}")
 
     def info(self) -> None:
         """List all connections in this group"""
