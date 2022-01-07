@@ -269,7 +269,7 @@ class LookupTable(Process):
 
 
 class AddSignal(Process):
-    """This process adds values to the current flux based on the values provided by the sifnal object.
+    """This process adds values to the current flux based on the values provided by the signal object.
     This class is typically invoked through the connector object
 
      Example::
@@ -304,17 +304,30 @@ class AddSignal(Process):
 
         # decide whichh call function to use
         # if self.mo.m_type == "both":
-        if self.reservoir.isotopes:
-            self.__execute__ = self.__with_isotopes__
-        else:
-            self.__execute__ = self.__without_isotopes__
 
+        if self.stype == "addition":        
+            if self.reservoir.isotopes:
+                self.__execute__ = self.__add_with_isotopes__
+            else:
+                self.__execute__ = self.__add_without_isotopes__
+        elif self.stype == "multiplication":
+            if self.reservoir.isotopes:
+                self.__execute__ = self.__multiply_with_isotopes__
+            else:
+                self.__execute__ = self.__multiply_without_isotopes__
+                
     # setup a placeholder call function
     def __call__(self, i: int):
         return self.__execute__(i)
 
+    def __multiply_with_isotopes__(self, i) -> None:
+        raise NotImplementedError("signal __multiply_with_isotopes__ is not implemented")
+
+     def __multiply_without_isotopes__(self, i) -> None:
+         raise NotImplementedError("signal __multiply_without_isotopes__ is not implemented")
+    
     # use this when we do isotopes
-    def __with_isotopes__(self, i) -> None:
+    def __add_with_isotopes__(self, i) -> None:
         """Each process is associated with a flux (self.f). Here we replace
         the flux value with the value from the signal object which
         we use as a lookup-table (self.lt)
@@ -333,7 +346,7 @@ class AddSignal(Process):
         # after we add the signal to a flux
 
     # use this when we do isotopes
-    def __without_isotopes__(self, i) -> None:
+    def __add_without_isotopes__(self, i) -> None:
         """Each process is associated with a flux (self.f). Here we replace
         the flux value with the value from the signal object which
         we use as a lookup-table (self.lt)
