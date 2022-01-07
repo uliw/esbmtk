@@ -553,6 +553,7 @@ class Model(esbmtkBase):
        - Model_Name.list_species()
        - Model_name.flux_summary()
        - Model_Name.connection_summary()
+       
 
     User facing variable are Model_Name.time which contains the time
     axis.
@@ -1143,6 +1144,8 @@ class Model(esbmtkBase):
 
         elif solver == "hybrid":
             execute_h(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
+        elif solver == "python":
+            execute(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
         else:
             execute(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
         # self.execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
@@ -1358,7 +1361,6 @@ class Element(esbmtkBase):
 
         for e in self.lsp:
             print(e.n)
-
 
 class Species(esbmtkBase):
     """Each model, can have one or more species.  This class sets species
