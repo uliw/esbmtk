@@ -647,10 +647,8 @@ class Signal(esbmtkBase):
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
-        self.data = self.__init_signal_data__()
-
         # initialize signal data
-        # self.data = self.__init_signal_data__()
+        self.data = self.__init_signal_data__()
 
         self.data.n: str = self.name + "_data"  # update the name of the signal data
         self.legend_left = self.data.legend_left
@@ -658,6 +656,8 @@ class Signal(esbmtkBase):
         # update isotope values
         self.data.li, self.data.hi = get_imass(self.data.m, self.data.d,
                                                self.sp.r)
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
         self.__register_name__()
         self.mo.los.append(self)  # register with model
 
@@ -750,7 +750,7 @@ class Signal(esbmtkBase):
                 "You must specify mass or magnitude of the signal")
 
         self.s_m = self.s_m + h  # add this to the section
-        self.s_d = self.s_d + d  # add the delta offset
+        self.s_d = self.s_d + self.d  # add the delta offset
 
     def __pyramid__(self, s, e) -> None:
         """Create pyramid type Signal
