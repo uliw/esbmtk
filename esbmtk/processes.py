@@ -305,27 +305,15 @@ class AddSignal(Process):
         # decide whichh call function to use
         # if self.mo.m_type == "both":
 
-        if self.stype == "addition":        
-            if self.reservoir.isotopes:
-                self.__execute__ = self.__add_with_isotopes__
-            else:
-                self.__execute__ = self.__add_without_isotopes__
-        elif self.stype == "multiplication":
-            if self.reservoir.isotopes:
-                self.__execute__ = self.__multiply_with_isotopes__
-            else:
-                self.__execute__ = self.__multiply_without_isotopes__
-                
+        if self.reservoir.isotopes:
+            self.__execute__ = self.__add_with_isotopes__
+        else:
+            self.__execute__ = self.__add_without_isotopes__
+
     # setup a placeholder call function
     def __call__(self, i: int):
         return self.__execute__(i)
 
-    def __multiply_with_isotopes__(self, i) -> None:
-        raise NotImplementedError("signal __multiply_with_isotopes__ is not implemented")
-
-     def __multiply_without_isotopes__(self, i) -> None:
-         raise NotImplementedError("signal __multiply_without_isotopes__ is not implemented")
-    
     # use this when we do isotopes
     def __add_with_isotopes__(self, i) -> None:
         """Each process is associated with a flux (self.f). Here we replace
@@ -353,10 +341,7 @@ class AddSignal(Process):
 
         """
         # add signal mass to flux mass
-        # print(self.f.m[i])
         self.f.m[i] = self.f.m[i] + self.lt.m[i]
-        # print(self.f.m[i])
-        # print()
 
     def get_process_args(self):
 
@@ -403,6 +388,118 @@ class AddSignal(Process):
         # fl = (1000.0 * fm) / ((sd + 1000.0) * r + 1000.0)
         data[1][i] = (1000.0 * data[0][i]) / (
             (data[3][i] + 1000.0) * r + 1000.0)
+        data[2][i] = data[0][i] - data[1][i]
+
+
+class MultiplySignal(Process):
+    """This process mulitplies a given flux witthe the data in the signal.
+    This class is typically invoked through the connector object:
+
+    Note that this process will not modify the delta value of a given flux.
+    If you needto vary the delta value it is best to add a second signal which uses the
+    add signal type.
+
+     Example::
+
+     MultiplySignal(name = "name",
+               reservoir = upstream_reservoir_handle,
+               flux = flux_to_act_upon,
+               lt = flux with lookup values)
+
+     where - the upstream reservoir is the reservoir the process belongs too
+             the flux is the flux to act upon
+             lt= contains the flux object we lookup from
+
+    """
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """
+        Create a new process object with a given process type and options
+        """
+
+        # get default names and update list for this Process
+        self.__defaultnames__()  # default kwargs names
+        self.lrk.extend(["lt", "flux", "reservoir"])  # new required keywords
+
+        self.__initerrormessages__()
+        # self.bem.update({"rate": "a string"})
+        self.__validateandregister__(kwargs)  # initialize keyword values
+
+        # legacy variables
+        self.mo = self.reservoir.mo
+        self.__postinit__()  # do some housekeeping
+        self.__register_name__()
+
+        # decide whichh call function to use
+        # if self.mo.m_type == "both":
+
+        if self.reservoir.isotopes:
+            self.__execute__ = self.__multiply_with_isotopes__
+        else:
+            self.__execute__ = self.__multiply_without_isotopes__
+
+    # setup a placeholder call function
+    def __call__(self, i: int):
+        return self.__execute__(i)
+
+    # use this when we do isotopes
+    def __multiply_with_isotopes__(self, i) -> None:
+        """Each process is associated with a flux (self.f). Here we replace
+        the flux value with the value from the signal object which
+        we use as a lookup-table (self.lt)
+        """
+        # multiply flux mass with signal
+        self.f.m[i] = self.f.m[i] * self.lt.m[i]
+        self.f.l[i] = self.f.l[i] * self.lt.m[i]
+        self.f.h[i] = self.f.m[i] - self.f.l[i]
+        #self.f.d[i] = get_delta(self.f.l[i], self.f.h[i],self.f.species.r)
+        #self.f.l[i], self.f.h[i]  = get_imass(self.f.m[i], self.f.d[i], self.f.species.r)
+
+    # use this when we do isotopes
+    def __multiply_without_isotopes__(self, i) -> None:
+        """Each process is associated with a flux (self.f). Here we replace
+        the flux value with the value from the signal object which
+        we use as a lookup-table (self.lt)
+
+        """
+        # multiply flux mass with signal
+        self.f.m[i] = self.f.m[i] * self.lt.m[i]
+
+    def get_process_args(self):
+
+        func_name: function = self.p_multiply_signal
+        data = List([
+            self.flux.m,  # 0
+            self.flux.l,  # 1
+            self.flux.h,  # 2
+            self.flux.d,  # 3
+            self.lt.m,  # 4
+            self.lt.l,  # 5
+            self.lt.h,  # 6
+            self.lt.d,  # 7
+        ])
+        params = List([float(self.reservoir.species.element.r)])
+
+        return func_name, data, params
+
+    @staticmethod
+    @njit(fastmath=True, error_model="numpy")
+    def p_multiply_signal(data, params, i) -> None:
+
+        r: float = params[0]
+
+        # flux masses and delta
+        # fm: float = data[0][i]
+        # fl: float = data[1][i]
+        # fh: float = data[2][i]
+        # fd: float = data[3][i]
+
+        # signal masses and delta
+        # sm: float = data[4][i]
+        # sl: float = data[5][i]
+        # sd: float = data[7][i]
+
+        data[0][i] = data[0][i] * data[4][i]
+        data[1][i] = data[1][i] * data[4][i]
         data[2][i] = data[0][i] - data[1][i]
 
 
@@ -829,11 +926,11 @@ class ScaleFlux(Process):
     @njit(fastmath=True, error_model="numpy")
     def p_scale_flux(data, params, i) -> None:
 
-        r: float = params[0] # r value
-        s: float = params[1] # scale
-        
+        r: float = params[0]  # r value
+        s: float = params[1]  # scale
+
         m: float = data[4][i]  # mass of reference object
-        d: float = data[5][i - 1] # delta of reservoir_ref
+        d: float = data[5][i - 1]  # delta of reservoir_ref
 
         m = m * s
         l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
@@ -944,6 +1041,8 @@ class Fractionation(Process):
             self.f.l[i], self.f.h[i] = get_imass(
                 self.f.m[i], self.reservoir.d[i - 1] + self.alpha,
                 self.f.rvalue)
+            
+        self.f.d[i] = self.reservoir.d[i - 1]
 
         return
 
@@ -1523,7 +1622,7 @@ class GasExchange(RateConstant):
         self.a_u = self.seawaterconstants.a_u
         self.rvalue = self.liquid.sp.r
         self.volume = self.gas.volume
-       
+
     def __without_isotopes__(self, i: int) -> None:
 
         # set flux
