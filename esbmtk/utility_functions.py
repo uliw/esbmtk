@@ -185,7 +185,12 @@ def set_y_limits(ax: plt.Axes, obj: any) -> None:
 
 def get_ptype(obj, **kwargs: dict) -> int:
     """
-    Set plot type variable based on ptype or isotope keyword
+    Set plot type variable based on ptype or isotope keyword returns
+
+    0 mass/concentration and isotope data
+    1 isotopes only
+    2 concentrartion only
+    3 mass only
 
     """
 
@@ -398,6 +403,18 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             set_y_limits(ax2, model)
             ax2.spines["top"].set_visible(
                 False)  # remove unnecessary frame species
+        elif isinstance(obj, Flux):
+            # use the same units as the associated flux
+            ax2 = ax1.twinx()  # create a second y-axis
+            # plof right y-scale data
+            ln2 = ax2.plot(time[1:-2],
+                           obj.d[1:-2],
+                           color=col,
+                           label=obj.legend_right)
+            ax2.set_ylabel(obj.ld)  # species object delta label
+            set_y_limits(ax2, model)
+            ax2.spines["top"].set_visible(
+                False)  # remove unnecessary frame speciess
 
     # adjust display properties for title and legend
 
