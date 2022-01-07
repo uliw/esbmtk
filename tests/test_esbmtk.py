@@ -342,6 +342,53 @@ def test_pyramid_signal(create_model,solver):
     assert np.argmax(M1.R1.d) == 702
     # M1.plot([M1.R1, M1.foo, M1.C_R1_2_SI1.R1_2_SI1_F])
 
+@pytest.mark.parametrize("solver", ["numba","python"])
+def test_pyramid_signal_multiplication(create_model,solver):
+    from esbmtk import Source, Sink, Reservoir, Connect, Signal
+    import numpy as np
+
+    v0, c0, d0, M1 = create_model
+    
+    Source(name = "SO1",species =M1.DIC)
+    Sink(name = "SI1",species =M1.DIC)
+    Sink(name = "SI2",species =M1.DIC)
+
+    Connect(
+        source=M1.SO1,  # source of flux
+        sink=M1.R1,  # target of flux
+        rate="100 mol/yr",  # weathering flux in
+        delta=d0,  # set a default flux
+    )
+
+    Signal(
+        name="foo",
+        species=M1.DIC,
+        start="100 yrs",
+        duration="800 yrs",
+        shape="pyramid",
+        magnitude="1 mol/year",
+        stype="multiplication",
+        register=M1,
+    )
+
+    Connect(
+        source=M1.R1,  # source of flux
+        sink=M1.SI1,  # target of flux
+        ctype="Regular",
+        rate="50 mol/yr",  # weathering flux in
+        delta=10,
+        signal=M1.foo,
+        #alpha=-28,  # set a default flux
+    )
+
+    M1.run(solver=solver)
+    assert round(M1.R1.c[-2])== 81
+    assert np.argmin(M1.R1.d) == 708
+    assert round(M1.R1.d[-2],2) ==  -2.41
+    #M1.plot([M1.R1, M1.foo, M1.C_R1_2_SI1.R1_2_SI1_F])
+
+
+    
 def test_external_data(create_model):
     """test the creation of an external data object"""
 
