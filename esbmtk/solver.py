@@ -77,9 +77,22 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
 
 
 # @njit()
-def get_delta(
-    l: [NDArray, [Float64]], h: [NDArray, [Float64]], r: float
-) -> [NDArray, [Float64]]:
+def get_delta(l: [NDArray, [Float64]], h: [NDArray, [Float64]],
+              r: float) -> [NDArray, [Float64]]:
+    """Calculate the delta from the mass of light and heavy isotope
+    Arguments are l and h which are the masses of the light and
+    heavy isotopes respectively, r = abundance ratio of the
+    respective element. Note that this equation can result in a
+    siginificant loss of precision (on the order of 1E-13). I
+    therefore round the results to numbers largers 1E12 (otherwise a
+    delta of zero may no longer be zero)
+
+    """
+
+    return 1000 * (h / l - r) / r
+
+
+def get_delta_i(l: float, h: float, r: float) -> float:
     """Calculate the delta from the mass of light and heavy isotope
     Arguments are l and h which are the masses of the light and
     heavy isotopes respectively, r = abundance ratio of the
@@ -90,7 +103,10 @@ def get_delta(
 
     """
     # d = 1000 * (h / l - r) / r
-    d: float = 1e3 * (np.abs(h) / np.abs(l) - r) / r
+    if l > 0:
+        d: float = 1e3 * (h / l - r) / r
+    else:
+        d = 0
     return d
 
 
@@ -102,7 +118,6 @@ def execute(
     lpc_f: list,
     lpc_r: list,
 ) -> None:
-
     """This is the original object oriented solver"""
 
     start: float = process_time()
@@ -125,8 +140,10 @@ def execute(
             new[0] = new[1] = new[2] = new[3] = 0
             for f in flux_list:  # do sum of fluxes in this reservoir
                 direction = r.lio[f]
-                new[0] = new[0] + f.m[i] * direction  # current flux and direction
-                new[1] = new[1] + f.l[i] * direction  # current flux and direction
+                new[0] = new[
+                    0] + f.m[i] * direction  # current flux and direction
+                new[1] = new[
+                    1] + f.l[i] * direction  # current flux and direction
 
             new[2] = new[0] - new[1]
             # new[3] = delta will be set by the setitem method in the reserevoir
@@ -155,7 +172,6 @@ def execute_h(
     lpc_f: list,
     lpc_r: list,
 ) -> None:
-
     """Moved this code into a separate function to enable numba optimization"""
 
     i: int = 1  # processes refer to the previous time step -> start at 1
@@ -185,7 +201,6 @@ def execute_h(
 
 
 def execute_e(model, new, lop, lor, lpc_f, lpc_r):
-
     """ """
 
     # numba.set_num_threads(2)
@@ -253,7 +268,8 @@ def execute_e(model, new, lop, lor, lpc_f, lpc_r):
 
 
 @njit(parallel=False, fastmath=True, error_model="numpy")
-def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, dt):
+def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt,
+        dt):
 
     i = 1
     for t in maxt:
@@ -303,8 +319,8 @@ def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
     """Same as foo but no virtual reservoirs present."""
     i = 1
     for t in maxt:
-        
-         # loop over processes
+
+        # loop over processes
         j = 0
         for f in enumerate(fn):
             fn[j](da[j], pc[j], i)
@@ -354,8 +370,7 @@ def build_vr_list(lvr: list) -> tuple:
             types.ListType(types.float64[::1]),
             types.ListType(types.float64[::1]),
             types.ListType(types.float64),  # a3
-        ).as_type()
-    )
+        ).as_type())
 
     count = 0
     for r in lvr:  # loop over reservoir processes
@@ -437,8 +452,7 @@ def build_process_list_old(lor: list, lop: list) -> tuple:
                 types.ListType(types.float64[::1]),  # data array
                 types.ListType(types.float64),  # parameter list
                 types.int64,  # parameter 4
-            ).as_type()
-        )
+            ).as_type())
 
         tda = List()  # temp list for data
         tpc = List()  # temp list for constants
@@ -475,8 +489,7 @@ def build_process_list(lor: list, lop: list) -> tuple:
             types.ListType(types.float64[::1]),  # data array
             types.ListType(types.float64),  # parameter list
             types.int64,  # parameter 4
-        ).as_type()
-    )
+        ).as_type())
 
     tda = List()  # temp list for data
     tpc = List()  # temp list for constants

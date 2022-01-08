@@ -451,10 +451,7 @@ class MultiplySignal(Process):
         self.f.m[i] = self.f.m[i] * self.lt.m[i]
         self.f.l[i] = self.f.l[i] * self.lt.m[i]
         self.f.h[i] = self.f.m[i] - self.f.l[i]
-        #self.f.d[i] = get_delta(self.f.l[i], self.f.h[i],self.f.species.r)
-        #self.f.l[i], self.f.h[i]  = get_imass(self.f.m[i], self.f.d[i], self.f.species.r)
 
-    # use this when we do isotopes
     def __multiply_without_isotopes__(self, i) -> None:
         """Each process is associated with a flux (self.f). Here we replace
         the flux value with the value from the signal object which
@@ -484,8 +481,6 @@ class MultiplySignal(Process):
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_multiply_signal(data, params, i) -> None:
-
-        r: float = params[0]
 
         # flux masses and delta
         # fm: float = data[0][i]
@@ -1042,7 +1037,7 @@ class Fractionation(Process):
                 self.f.m[i], self.reservoir.d[i - 1] + self.alpha,
                 self.f.rvalue)
             
-        self.f.d[i] = self.reservoir.d[i - 1]
+        self.f.d[i] = self.reservoir.d[i - 1]  + self.alpha
 
         return
 
@@ -1367,17 +1362,15 @@ class ScaleRelativeToConcentration(RateConstant):
         m: float = data[6][i - 1]
         v: float = params[2]
 
-        c: float = m / v
-        f: float = c * s
-        d: float = data[4][i - 1]  # delta
-        l: float = (1000.0 * f) / ((d + 1000.0) * r + 1000.0)
-        data[0][i] = f
-        # this is wrong we neef to get the flux delta from the reservoir
-        data[1][i] = l
-        data[2][i] = m - l
-        data[3][i] = d
-        # print(i)
-        # print(" ")
+        if m > 0:
+            c: float = m / v
+            f: float = c * s
+            d: float = data[4][i - 1]  # delta
+            l: float = (1000.0 * f) / ((d + 1000.0) * r + 1000.0)
+            data[0][i] = f
+            data[1][i] = l
+            data[2][i] = m - l
+            data[3][i] = d
 
 
 class ScaleRelativeToMass(RateConstant):

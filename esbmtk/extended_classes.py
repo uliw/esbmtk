@@ -742,9 +742,11 @@ class Signal(esbmtkBase):
 
         if "mass" in self.kwd:
             h = self.mass / self.duration  # get the height of the square
+            self.magnitude = h 
 
         elif "magnitude" in self.kwd:
             h = self.magnitude
+            self.mass = h * self.duration
         else:
             raise ValueError(
                 "You must specify mass or magnitude of the signal")

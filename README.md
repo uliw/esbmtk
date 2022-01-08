@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org1eafb3b)
-2.  [News](#orgcd60c00)
-3.  [Contributing](#orgaeda051)
-4.  [Installation](#orgb3b4f1a)
-5.  [Documentation](#org35d8bdb)
-6.  [Todo](#orgcd57318)
-7.  [License](#org08b84dc)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgff20cb6)
+2.  [News](#org50d0d90)
+3.  [Contributing](#org0d703c9)
+4.  [Installation](#org5d0866e)
+5.  [Documentation](#org7531840)
+6.  [Todo](#orgf9b9e44)
+7.  [License](#org76f2747)
 
 
-<a id="org1eafb3b"></a>
+<a id="orgff20cb6"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,13 +27,12 @@ that allow the creation and manipulation of input signals and the
 generation of graphical results.
 
 
-<a id="orgcd60c00"></a>
+<a id="org50d0d90"></a>
 
 # News
 
--   January 6<sup>th</sup> 0.7.2.1 Fixed several regressions in the process
-    module. Added unit-tests for `scale_with_flux`,
-    `scale_with_concentration`, `fractionation`.
+-   January 8<sup>th</sup> 0.7.2.2 Fixed several isotope calculation regressions. 
+    module. Added 31 Unit tests.
 
 -   January 5th, 0.7.2.0 Reworked the naming scheme for fluxes and
     connections. This will break existing model definitions. Several
@@ -286,7 +285,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgaeda051"></a>
+<a id="org0d703c9"></a>
 
 # Contributing
 
@@ -296,7 +295,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orgb3b4f1a"></a>
+<a id="org5d0866e"></a>
 
 # Installation
 
@@ -317,7 +316,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org35d8bdb"></a>
+<a id="org7531840"></a>
 
 # Documentation
 
@@ -335,7 +334,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orgcd57318"></a>
+<a id="orgf9b9e44"></a>
 
 # Todo
 
@@ -344,7 +343,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="org08b84dc"></a>
+<a id="org76f2747"></a>
 
 # License
 

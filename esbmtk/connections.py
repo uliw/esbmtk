@@ -117,7 +117,7 @@ class Connect(esbmtkBase):
      Connecting a Reservoir to Sink or another Reservoir
      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-     Here we can distinguish between cases where we use fixed flux, or a flux which reacts to in some way to the
+     Here we can distinguish between cases where we use fixed flux, or a flux that reacts to in some way to the
      upstream reservoir (see the Reservoir to Reservoir section for a more complete treatment):
 
      Fixed outflux, with no isotope fractionation
@@ -638,7 +638,7 @@ class Connect(esbmtkBase):
                         flux=self.fh,
                         lt=p.data,
                     )
-                    self.lop.insert(0, n)  # signals must come first
+                    self.lop.insert(len(self.lop), n)  # multiplaction should come last
                     logging.debug(
                         f"Inserting {n.n} in {self.name} for {self.r.n}")
                 else:

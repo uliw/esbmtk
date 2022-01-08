@@ -14,9 +14,8 @@ generation of graphical results.
 
 * News
 
- - January 6^{th} 0.7.2.1 Fixed several regressions in the process
-   module. Added unit-tests for =scale_with_flux=,
-   =scale_with_concentration=, =fractionation=.
+  - January 8^{th} 0.7.2.2 Fixed several isotope calculation regressions. 
+   module. Added 31 Unit tests.
 
  - January 5th, 0.7.2.0 Reworked the naming scheme for fluxes and
    connections. This will break existing model definitions. Several

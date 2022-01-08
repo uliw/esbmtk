@@ -334,6 +334,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                 # plt.legend()
 
         else:
+            #print(f"yl[2] = {yl[1:-2]}")
             ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=y_label)
             cn = cn + 1
             col = f"C{cn}"
@@ -417,18 +418,14 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                 False)  # remove unnecessary frame speciess
 
     # adjust display properties for title and legend
+    
 
-    if isinstance(obj, (Reservoir)):
-        # ax1.set_title(obj.pt)
-        ax1.set_title(obj.full_name)
-    else:
-        ax1.set_title(obj.full_name)
-
-    plt.rcParams["axes.titlepad"] = 14  # offset title upwards
+    plt.rcParams["axes.titlepad"] = 20  # offset title upwards
     plt.rcParams["legend.facecolor"] = "0.8"  # show a gray background
     plt.rcParams["legend.edgecolor"] = "0.8"  # make frame the same color
     plt.rcParams["legend.framealpha"] = 0.4  # set transparency
-
+    ax1.set_title(obj.full_name)
+    
     for d in obj.led:  # loop over external data objects if present
 
         if isinstance(d.x[0], str):  # if string, something is off
