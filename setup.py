@@ -12,7 +12,11 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="esbmtk",  # Replace with your own username
+<<<<<<< HEAD
     version="0.7.1.2",
+=======
+    version="0.7.2.2",
+>>>>>>> origin/master
     author="Ulrich G. Wortmann",
     license="GPL-3.0-or-later",
     author_email="uli.wortmann@utoronto.ca",

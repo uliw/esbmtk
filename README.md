@@ -1,6 +1,7 @@
 
 # Table of Contents
 
+<<<<<<< HEAD
 1.  [ESBMTK - An Earth-sciences box modeling toolkit](#org4321971)
 2.  [News](#orgd3933aa)
 3.  [Contributing](#orge006275)
@@ -15,6 +16,22 @@
 # ESBMTK - An Earth-sciences box modeling toolkit
 
 ESBMTK is a python library that  aims to simplify typical box modeling
+=======
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgff20cb6)
+2.  [News](#org50d0d90)
+3.  [Contributing](#org0d703c9)
+4.  [Installation](#org5d0866e)
+5.  [Documentation](#org7531840)
+6.  [Todo](#orgf9b9e44)
+7.  [License](#org76f2747)
+
+
+<a id="orgff20cb6"></a>
+
+# ESBMTK - An Earth-sciences box modeling toolkit
+
+ESBMTK is a python library that aims to simplify typical box modeling
+>>>>>>> origin/master
 projects in the Earth-Sciences. The general focus is to make box
 modeling more approachable for classroom teaching. Performance and
 scalability are currently no priority. Specifically, the solver is just a
@@ -27,10 +44,24 @@ that allow the creation and manipulation of input signals and the
 generation of graphical results.
 
 
+<<<<<<< HEAD
 <a id="orgd3933aa"></a>
 
 # News
 
+=======
+<a id="org50d0d90"></a>
+
+# News
+
+-   January 8<sup>th</sup> 0.7.2.2 Fixed several isotope calculation regressions. 
+    module. Added 31 Unit tests.
+
+-   January 5th, 0.7.2.0 Reworked the naming scheme for fluxes and
+    connections. This will break existing model definitions. Several
+    bugfixes, isotope calculations are currently broken.
+
+>>>>>>> origin/master
 -   December 31<sup>st</sup>, 0.7.1.2 Rewrote the signal class. It now supports
     bell curve type signals and clips signals that exceed the model
     domain. It is recommended to update to python 3.9
@@ -278,7 +309,11 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
+<<<<<<< HEAD
 <a id="orge006275"></a>
+=======
+<a id="org0d703c9"></a>
+>>>>>>> origin/master
 
 # Contributing
 
@@ -288,7 +323,11 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
+<<<<<<< HEAD
 <a id="org4accfdf"></a>
+=======
+<a id="org5d0866e"></a>
+>>>>>>> origin/master
 
 # Installation
 
@@ -309,7 +348,11 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
+<<<<<<< HEAD
 <a id="org0e3acf3"></a>
+=======
+<a id="org7531840"></a>
+>>>>>>> origin/master
 
 # Documentation
 
@@ -327,7 +370,11 @@ and in jupyter notebook format)
 -   
 
 
+<<<<<<< HEAD
 <a id="org4ea9506"></a>
+=======
+<a id="orgf9b9e44"></a>
+>>>>>>> origin/master
 
 # Todo
 
@@ -336,7 +383,11 @@ and in jupyter notebook format)
 -   do more testing
 
 
+<<<<<<< HEAD
 <a id="org4185610"></a>
+=======
+<a id="org76f2747"></a>
+>>>>>>> origin/master
 
 # License
 

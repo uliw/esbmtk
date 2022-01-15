@@ -649,15 +649,23 @@ class Signal(esbmtkBase):
 
         self.data = self.__init_signal_data__()
 
+<<<<<<< HEAD
         # initialize signal data
         # self.data = self.__init_signal_data__()
 
+=======
+>>>>>>> origin/master
         self.data.n: str = self.name + "_data"  # update the name of the signal data
         self.legend_left = self.data.legend_left
         self.legend_right = self.data.legend_right
         # update isotope values
         self.data.li, self.data.hi = get_imass(self.data.m, self.data.d,
                                                self.sp.r)
+<<<<<<< HEAD
+=======
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
+>>>>>>> origin/master
         self.__register_name__()
         self.mo.los.append(self)  # register with model
 
@@ -711,10 +719,28 @@ class Signal(esbmtkBase):
         dt2 = int((self.st + self.duration - self.mo.stop - self.mo.offset))
 
         model_start_index = int(max(insert_start_time / self.mo.dt, 0))
+<<<<<<< HEAD
         model_stop_index = int(min(self.mo.steps + dt2, self.mo.steps))
         signal_start_index = int(min(dt1, 0) * -1)
         signal_stop_index = int(self.length - max(0, dt2))
 
+=======
+        model_stop_index = int(min((self.mo.steps + dt2/self.mo.dt), self.mo.steps))
+        signal_start_index = int(min(dt1, 0) * -1)
+        signal_stop_index = int(self.length - max(0, dt2))
+
+        if self.mo.debug:
+            print(
+                f"dt1 = {dt1}, dt2 = {dt2}, offset = {self.mo.offset}"
+                f"insert start time = {insert_start_time} "
+                f"insert_stop time = {insert_stop_time} "
+                f"duration = {self.duration}\n"
+                f"msi = {model_start_index}, msp = {model_stop_index} "
+                f"model num_steps = {model_stop_index-model_start_index}\n"
+                f"ssi = {signal_start_index}, ssp = {signal_stop_index} "
+                f"signal num_steps = {signal_stop_index-signal_start_index}\n")
+
+>>>>>>> origin/master
         if signal_start_index < signal_stop_index:
             self.nf.m[model_start_index:model_stop_index] = self.s_m[
                 signal_start_index:signal_stop_index]
@@ -731,15 +757,21 @@ class Signal(esbmtkBase):
 
         if "mass" in self.kwd:
             h = self.mass / self.duration  # get the height of the square
+            self.magnitude = h 
 
         elif "magnitude" in self.kwd:
             h = self.magnitude
+            self.mass = h * self.duration
         else:
             raise ValueError(
                 "You must specify mass or magnitude of the signal")
 
         self.s_m = self.s_m + h  # add this to the section
+<<<<<<< HEAD
         self.s_d = self.s_d + d  # add the delta offset
+=======
+        self.s_d = self.s_d + self.d  # add the delta offset
+>>>>>>> origin/master
 
     def __pyramid__(self, s, e) -> None:
         """Create pyramid type Signal
@@ -781,6 +813,7 @@ class Signal(esbmtkBase):
 
         c: int = int(round((e - s) / 2))  # get the center index for the peak
         x: [NDArray, Float[64]] = np.arange(-c, c + 1, 1)
+<<<<<<< HEAD
         
         e :float = math.e
         pi :float = math.pi
@@ -790,15 +823,36 @@ class Signal(esbmtkBase):
         a = -((x - mu)**2) / (2 * phi**2)
         self.s_m = 1 / (phi * math.sqrt(2 * pi)) * e**a
         self.s_d = np.zeros(2 * c)
+=======
+
+        e: float = math.e
+        pi: float = math.pi
+        mu: float = 0
+        phi: float = c / 4
+
+        a = -((x - mu)**2) / (2 * phi**2)
+
+        # get bell curve 
+        self.s_m = 1 / (phi * math.sqrt(2 * pi)) * e**a
+        self.s_d = self.s_m * self.delta/max(self.s_m)
+>>>>>>> origin/master
 
         if "mass" in self.kwargs:
             self.s_m = self.s_m * self.mass
         elif "magnitude" in self.kwargs:
+<<<<<<< HEAD
             self.s_m = self.s_m * self.magnitude/max(self.s_m)
         else:
             raise ValueError("Bell type signal require either mass or magnitude")
             
             
+=======
+            self.s_m = self.s_m * self.magnitude / max(self.s_m)
+        else:
+            raise ValueError(
+                "Bell type signal require either mass or magnitude")
+
+>>>>>>> origin/master
     def __int_ext_data__(self) -> None:
         """Interpolate External data as a signal. Unlike the other signals,
         this will replace the values in the flux with those read from the
@@ -848,7 +902,11 @@ class Signal(esbmtkBase):
         self.duration = int(round((self.et - self.st)))
         num_steps = int(self.duration / self.mo.dt)
         # setup the points at which to interpolate
+<<<<<<< HEAD
         xi = np.linspace(0, self.duration, num_steps)
+=======
+        xi = np.linspace(self.st, self.et, num_steps)
+>>>>>>> origin/master
 
         self.s_m: [NDArray,
                    Float[64]] = interp(xi, self.s_time,
