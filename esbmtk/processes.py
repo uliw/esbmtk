@@ -821,6 +821,72 @@ class VarDeltaOut(Process):
         pass
 
 
+class SaveFluxData(Process):
+    """This process scales the mass of a flux (m,l,h) relative to another
+    flux but does not affect delta. The scale factor "scale" and flux
+    reference must be present when the object is being initalized
+
+    Example::
+         ScaleFlux(name = "Name",
+                   flux = Flux Handle)
+
+    """
+
+    __slots__ = ("flux")
+
+    def __init__(self, **kwargs: Dict[str, any]) -> None:
+        """Initialize this Process"""
+        # get default names and update list for this Process
+        self.__defaultnames__()  # default kwargs names
+        self.lrk.extend(["flux"])  # new required keywords
+
+        self.__validateandregister__(kwargs)  # initialize keyword values
+
+        # legacy variables
+        self.__postinit__()  # do some housekeeping
+        self.__register_name__()
+
+    # setup a placeholder call function
+    def __call__(self, i: int):
+        self.f[i] = self.fa
+
+    def get_process_args(self):
+        """"""
+
+        func_name: function = self.p_save_flux
+
+        data = List([
+            self.flux.m,  # 0
+            self.flux.l,  # 1
+            self.flux.h,  # 2
+            self.flux.d,  # 3
+            self.fa,  # 4
+        ])
+
+        params = List()
+
+        return func_name, data, params
+
+    @staticmethod
+    @njit(fastmath=True, error_model="numpy")
+    def p_scale_flux(data, params, i) -> None:
+
+        r: float = params[0]  # r value
+        s: float = params[1]  # scale
+
+        m: float = data[4][i]  # mass of reference object
+        d: float = data[5][i - 1]  # delta of reservoir_ref
+
+        m = m * s
+        l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+        # print(f"ScaleFlux m = {m:.2e}, scale = {proc_const[1]}")
+
+        data[0][i] = data[4][0]
+        data[1][i] = data[4][1]
+        data[2][i] = data[4][2]
+        data[3][i] = data[4][3]
+
+
 class ScaleFlux(Process):
     """This process scales the mass of a flux (m,l,h) relative to another
     flux but does not affect delta. The scale factor "scale" and flux
