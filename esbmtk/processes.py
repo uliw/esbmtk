@@ -257,10 +257,6 @@ class LookupTable(Process):
          which will replace the current flux values.
 
     """
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/master
     def __call__(self, i: int) -> None:
         """Here we replace the flux value with the value from the flux object
         which we use as a lookup-table
@@ -316,11 +312,7 @@ class AddSignal(Process):
 
     # setup a placeholder call function
     def __call__(self, i: int):
-<<<<<<< HEAD
-        return self.__execute__(r, i)
-=======
         return self.__execute__(i)
->>>>>>> origin/master
 
     # use this when we do isotopes
     def __add_with_isotopes__(self, i) -> None:
@@ -357,20 +349,6 @@ class AddSignal(Process):
 
         print(f"flux_name = {self.flux.full_name}")
 
-<<<<<<< HEAD
-        data = List(
-            [
-                self.flux.m,  # 0
-                self.flux.l,  # 1
-                self.flux.h,  # 2
-                self.flux.d,  # 3
-                self.lt.m,  # 4
-                self.lt.l,  # 5
-                self.lt.h,  # 6
-                self.lt.d,  # 7
-            ]
-        )
-=======
         data = List([
             self.flux.m,  # 0
             self.flux.l,  # 1
@@ -381,7 +359,7 @@ class AddSignal(Process):
             self.lt.h,  # 6
             self.lt.d,  # 7
         ])
->>>>>>> origin/master
+
         params = List([float(self.reservoir.species.element.r)])
 
         return func_name, data, params
@@ -594,22 +572,9 @@ class PassiveFlux(Process):
             new += f.m[i - 1] * self.reservoir.lio[f] * self.scale
 
         # print(f"sum = {new:.0f}\n")
-<<<<<<< HEAD
-        self.f[i] = get_flux_data(new, self.reservoir.d[i - 1], self.reservoir.rvalue)
-=======
+
         self.f[i] = get_flux_data(new, self.reservoir.d[i - 1],
                                   self.reservoir.rvalue)
->>>>>>> origin/master
-
-        # m = new
-        # r = reservoir.l[i - 1] / reservoir.m[i - 1]
-        # l = m * r
-        # h = m - l
-        # self.f.m[i] = m
-        # self.f.l[i] = l
-        # self.f.h[i] = h
-
-    # self.f.d[i] = reservoir.d[i - 1]
 
 
 class ScaleRelativeToInputFluxes(PassiveFlux):
@@ -929,20 +894,6 @@ class ScaleFlux(Process):
 
         func_name: function = self.p_scale_flux
 
-<<<<<<< HEAD
-        data = List(
-            [
-                self.flux.m,  # 0
-                self.flux.l,  # 1
-                self.flux.h,  # 2
-                self.flux.d,  # 3
-                self.ref_reservoirs.m,  # 4
-                self.reservoir.d,  # 5
-            ]
-        )
-
-        params = List([float(self.reservoir.species.element.r), float(self.scale)])
-=======
         data = List([
             self.flux.m,  # 0
             self.flux.l,  # 1
@@ -955,7 +906,6 @@ class ScaleFlux(Process):
         params = List(
             [float(self.reservoir.species.element.r),
              float(self.scale)])
->>>>>>> origin/master
 
         return func_name, data, params
 
@@ -963,18 +913,11 @@ class ScaleFlux(Process):
     @njit(fastmath=True, error_model="numpy")
     def p_scale_flux(data, params, i) -> None:
 
-<<<<<<< HEAD
-        r: float = params[0]
-        s: float = params[1]
-        m: float = data[4][i] * s
-        d: float = data[5][i - 1]
-=======
         r: float = params[0]  # r value
         s: float = params[1]  # scale
 
         m: float = data[4][i]  # mass of reference object
         d: float = data[5][i - 1]  # delta of reservoir_ref
->>>>>>> origin/master
 
         m = m * s
         l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
@@ -1085,8 +1028,8 @@ class Fractionation(Process):
             self.f.l[i], self.f.h[i] = get_imass(
                 self.f.m[i], self.reservoir.d[i - 1] + self.alpha,
                 self.f.rvalue)
-            
-        self.f.d[i] = self.reservoir.d[i - 1]  + self.alpha
+
+        self.f.d[i] = self.reservoir.d[i - 1] + self.alpha
 
         return
 
@@ -1175,15 +1118,6 @@ class RateConstant(Process):
             "solubility": (Number, np.float64),
             "piston_velocity": (Number, np.float64),
             "water_vapor_pressure": (Number, np.float64),
-<<<<<<< HEAD
-            "ref_species": np.ndarray,
-            "seawaterconstants": any,
-            "isotopes": bool,
-            "function_reference": any,
-            "f_0": (str),
-            "pco2_0": (str),
-            "ex": Number,
-=======
             "ref_species":
             np.ndarray,
             "seawaterconstants":
@@ -1196,7 +1130,6 @@ class RateConstant(Process):
             "pco2_0": (str),
             "ex":
             Number,
->>>>>>> origin/master
         }
 
         # new required keywords
@@ -1276,14 +1209,6 @@ class weathering(RateConstant):
         Scale the reference flux into the model flux units
         """
 
-<<<<<<< HEAD
-    def __misc_init__(self):
-        """
-        Scale the reference flux into the model flux units
-        """
-
-=======
->>>>>>> origin/master
         self.f_0: float = Q_(self.f_0).to(self.mo.f_unit).magnitude
         self.pco2_0 = Q_(self.pco2_0).to("ppm").magnitude * 1e-6
 
@@ -1318,28 +1243,6 @@ class weathering(RateConstant):
 
         func_name: function = self.p_weathering
 
-<<<<<<< HEAD
-        data = List(
-            [
-                self.flux.m,  # 0
-                self.flux.l,  # 1
-                self.flux.h,  # 2
-                self.flux.d,  # 3
-                self.reservoir_ref.d,  # 4
-                self.reservoir_ref.c,  # 5
-                self.reservoir_ref.m,  # 6
-            ]
-        )
-        params = List(
-            [
-                float(self.reservoir.species.element.r),  # 0
-                float(self.scale),  # 1
-                float(self.f_0),  # 2
-                float(self.pco2_0),  # 3
-                float(self.ex),  # 4
-            ]
-        )
-=======
         data = List([
             self.flux.m,  # 0
             self.flux.l,  # 1
@@ -1356,7 +1259,6 @@ class weathering(RateConstant):
             float(self.pco2_0),  # 3
             float(self.ex),  # 4
         ])
->>>>>>> origin/master
 
         return func_name, data, params
 
@@ -1397,10 +1299,6 @@ class ScaleRelativeToConcentration(RateConstant):
     )
 
     """
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/master
     def __without_isotopes__(self, i: int) -> None:
         m: float = self.reservoir.m[i - 1]
         if m > 0:  # otherwise there is no flux
@@ -1421,11 +1319,7 @@ class ScaleRelativeToConcentration(RateConstant):
         c: float = self.reservoir.c[i - 1]
         if c > 0:  # otherwise there is no flux
             m = c * self.scale
-<<<<<<< HEAD
-            r: float = reservoir.species.element.r
-=======
             r: float = self.reservoir.species.element.r
->>>>>>> origin/master
             d: float = self.reservoir.d[i - 1]
             l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
             self.flux[i]: np.array = [m, l, m - l, d]
@@ -1434,26 +1328,6 @@ class ScaleRelativeToConcentration(RateConstant):
 
         func_name: function = self.p_scale_relative_to_concentration
 
-<<<<<<< HEAD
-        data = List(
-            [
-                self.flux.m,  # 0
-                self.flux.l,  # 1
-                self.flux.h,  # 2
-                self.flux.d,  # 3
-                self.reservoir.d,  # 4
-                self.reservoir.c,  # 5
-                self.reservoir.m,  # 6
-            ]
-        )
-        params = List(
-            [
-                float(self.reservoir.species.element.r),
-                float(self.scale),
-                float(self.reservoir.v),
-            ]
-        )
-=======
         data = List([
             self.flux.m,  # 0
             self.flux.l,  # 1
@@ -1468,7 +1342,6 @@ class ScaleRelativeToConcentration(RateConstant):
             float(self.scale),
             float(self.reservoir.v),
         ])
->>>>>>> origin/master
 
         return func_name, data, params
 
@@ -1519,10 +1392,6 @@ class ScaleRelativeToMass(RateConstant):
     )
 
     """
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/master
     def __without_isotopes__(self, i: int) -> None:
         m: float = self.reservoir.m[i - 1] * self.scale
         self.flux.m[i]: float = m
@@ -1543,18 +1412,6 @@ class ScaleRelativeToMass(RateConstant):
 
         func_name: function = self.p_scale_relative_to_mass
 
-<<<<<<< HEAD
-        data = List(
-            [
-                self.flux.m,  # 0
-                self.flux.l,  # 1
-                self.flux.h,  # 2
-                self.flux.d,  # 3
-                self.reservoir.m,  # 4
-                self.reservoir.d,  # 5
-            ]
-        )
-=======
         data = List([
             self.flux.m,  # 0
             self.flux.l,  # 1
@@ -1563,7 +1420,6 @@ class ScaleRelativeToMass(RateConstant):
             self.reservoir.m,  # 4
             self.reservoir.d,  # 5
         ])
->>>>>>> origin/master
 
         params = List([float(reservoir.species.element.r), float(self.scale)])
 
@@ -1978,17 +1834,9 @@ class Monod(Process):
         this willbe called by Model.execute apply_processes
         """
 
-<<<<<<< HEAD
-        scale: float = (
-            self.a_value
-            * (self.ref_value * self.reservoir.c[i - 1])
-            / (self.b_value + self.reservoir.c[i - 1])
-        )
-=======
         scale: float = (self.a_value *
                         (self.ref_value * self.reservoir.c[i - 1]) /
                         (self.b_value + self.reservoir.c[i - 1]))
->>>>>>> origin/master
 
         scale = scale * (scale >= 0)  # prevent negative fluxes.
         self.f[i] + self.f[i] * scale

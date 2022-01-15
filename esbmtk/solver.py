@@ -201,10 +201,6 @@ def execute_h(
 
 
 def execute_e(model, new, lop, lor, lpc_f, lpc_r):
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/master
     """ """
 
     # numba.set_num_threads(2)
@@ -278,10 +274,7 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt,
     i = 1
     for t in maxt:
 
-<<<<<<< HEAD
-=======
         # loop over processes
->>>>>>> origin/master
         j = 0
         for f in enumerate(fn):
             fn[j](da[j], pc[j], i)
@@ -326,21 +319,11 @@ def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
     """Same as foo but no virtual reservoirs present."""
     i = 1
     for t in maxt:
-<<<<<<< HEAD
-        ### for j, f_list in enumerate(fn):
-        ###     for u, function in enumerate(f_list):
-        ###         fn[j][u](da[j][u], pc[j][u], i)
-
-        j = 0
-        for function in enumerate(fn):
-            function(da[j], pc[j], i)
-=======
 
         # loop over processes
         j = 0
         for f in enumerate(fn):
             fn[j](da[j], pc[j], i)
->>>>>>> origin/master
             j = j + 1
 
         # calculate the resulting reservoir concentrations
@@ -506,12 +489,7 @@ def build_process_list(lor: list, lop: list) -> tuple:
             types.ListType(types.float64[::1]),  # data array
             types.ListType(types.float64),  # parameter list
             types.int64,  # parameter 4
-<<<<<<< HEAD
-        ).as_type()
-    )
-=======
         ).as_type())
->>>>>>> origin/master
 
     tda = List()  # temp list for data
     tpc = List()  # temp list for constants

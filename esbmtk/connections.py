@@ -447,32 +447,18 @@ class Connect(esbmtkBase):
     def __set_name__(self):
         """ set connection name if not explicitly provided """
 
-<<<<<<< HEAD
-        if self.groupname:
-            self.name = f"{self.source.sp.name}"
-        else:
-            if self.name == "None":
-                self.name = f"C_{self.source.name}_2_{self.sink.name}"
-            else:
-                self.name = f"{self.name}"
-
-=======
         if self.name == "None":
             self.name = f"C_{self.source.name}_2_{self.sink.name}"
->>>>>>> origin/master
+            
             if self.id == "None" or self.id == "":
                 pass
             else:
                 self.name = f"{self.name}_{self.id}"
 
-<<<<<<< HEAD
-            self.full_name = self.name
-=======
         if self.register == "None":
             self.full_name = f"{self.mo.name}.{self.name}"
         else:
             self.full_name = f"{self.register.full_name}.{self.name}"
->>>>>>> origin/master
 
         self.base_name = self.full_name
         self.n = self.name

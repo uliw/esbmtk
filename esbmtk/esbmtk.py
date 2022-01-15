@@ -2235,6 +2235,7 @@ class Flux(esbmtkBase):
             "display_precision": Number,
             "isotopes": bool,
             "register": any,
+            "save": bool,
             "id": str,
         }
 
@@ -2249,6 +2250,7 @@ class Flux(esbmtkBase):
             "isotopes": False,
             "register": "None",
             "id": "",
+            "save" : True,
         }
 
         # initialize instance
@@ -2273,11 +2275,14 @@ class Flux(esbmtkBase):
         # and convert flux into model units
         fluxrate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
 
-        self.m: [NDArray, Float[64]] = (zeros(self.model.steps) + fluxrate
+        self.fa:  [NDArray, Float[64]] = zeros(4)
+        # in case we want to keep the flux data
+        if self.save:
+            self.m: [NDArray, Float[64]] = (zeros(self.model.steps) + fluxrate
                                         )  # add the flux
-        self.l: [NDArray, Float[64]] = zeros(self.model.steps)
-        self.h: [NDArray, Float[64]] = zeros(self.model.steps)
-        self.d: [NDArray, Float[64]] = zeros(self.model.steps) + self.delta
+            self.l: [NDArray, Float[64]] = zeros(self.model.steps)
+            self.h: [NDArray, Float[64]] = zeros(self.model.steps)
+            self.d: [NDArray, Float[64]] = zeros(self.model.steps) + self.delta
 
         if self.mo.number_of_solving_iterations > 0:
             self.mc = np.empty(0)
@@ -2285,6 +2290,7 @@ class Flux(esbmtkBase):
 
         if self.rate != 0:
             [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
+            self.fa[1], self.fa[2] = get_imass(self.fa[0], self.fa[3], self.species.r)
 
         # if self.delta == 0:
         #     self.d: [NDArray, Float[64]] = zeros(self.model.steps)
@@ -2338,7 +2344,8 @@ class Flux(esbmtkBase):
     def __getitem__(self, i: int) -> NDArray[np.float64]:
         """Get data by index"""
         # return self.__get_data__(i)
-        return array([self.m[i], self.l[i], self.h[i], self.d[i]])
+        return self.fa
+        # return array([self.m[i], self.l[i], self.h[i], self.d[i]])
 
     # def __get_with_isotopes__(self, i: int) -> NDArray[np.float64]:
     #     """Get data by index"""
@@ -2353,17 +2360,19 @@ class Flux(esbmtkBase):
     def __set_with_isotopes__(self, i: int, value: [NDArray, float]) -> None:
         """Write data by index"""
 
-        self.m[i] = value[0]
-        self.l[i] = value[1]
-        self.h[i] = value[2]
-        self.d[i] = value[3]
+        #self.m[i] = value[0]
+        #self.l[i] = value[1]
+        #self.h[i] = value[2]
+        #self.d[i] = value[3]
+        self.fa = value[0:4]
         # self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
 
     def __set_without_isotopes__(self, i: int, value: [NDArray,
                                                        float]) -> None:
         """Write data by index"""
 
-        self.m[i] = value[0]
+        self.fa = [value[0], 0 , 0 ,0]
+        #self.m[i] = value[0]
 
     def __call__(self) -> None:  # what to do when called as a function ()
         pass
@@ -2372,18 +2381,23 @@ class Flux(esbmtkBase):
     def __add__(self, other):
         """adding two fluxes works for the masses, but not for delta"""
 
-        self.m = self.m + other.m
-        self.l = self.l + other.l
-        self.h = self.h + other.h
-        self.d = get_delta(self.l, self.h, self.sp.r)
+        self.fa = self.fa + other.fa
+        self.d = get_delta(self.fa[1], self.fa[2], self.sp.r)
+        # self.m = self.m + other.m
+        # self.l = self.l + other.l
+        # self.h = self.h + other.h
+        # self.d = get_delta(self.l, self.h, self.sp.r)
 
     def __sub__(self, other):
-        """adding two fluxes works for the masses, but not for delta"""
+        """substracting two fluxes works for the masses, but not for delta"""
 
-        self.m = self.m - other.m
-        self.l = self.l - other.l
-        self.h = self.h - other.h
-        self.d = get_delta(self.l, self.h, self.sp.r)
+        self.fa = self.fa - other.fa
+        self.d = get_delta(self.fa[1], self.fa[2], self.sp.r)
+        
+        # self.m = self.m - other.m
+        # self.l = self.l - other.l
+        # self.h = self.h - other.h
+        # self.d = get_delta(self.l, self.h, self.sp.r)
 
     def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
