@@ -977,6 +977,7 @@ class Model(esbmtkBase):
             r.__plot__(i)
             i = i + 1
 
+        fig.tight_layout()
         plt.show()  # create the plot windows
 
     def plot(self, l: list = [], **kwargs) -> None:
@@ -1003,9 +1004,9 @@ class Model(esbmtkBase):
             plot_object_data(geo, i, e)
             i = i + 1
 
+        fig.subplots_adjust(top=0.88)
         fig.tight_layout()
         plt.show()  # create the plot windows
-        fig.subplots_adjust(top=0.88)
         fig.savefig(filename)
 
     def plot_reservoirs(self, **kwargs: dict) -> None:
