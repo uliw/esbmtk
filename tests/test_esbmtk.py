@@ -217,7 +217,7 @@ def test_fractionation(create_model, solver):
         alpha=-28,  # set a default flux
     )
     M1.run(solver=solver)
-    assert round(M1.R1.d[-2], 6) == 28
+    assert round(M1.R1.d[-2], 4) == 28.8066
 
 
 @pytest.mark.parametrize("solver", ["numba", "python"])
@@ -255,6 +255,7 @@ def test_scale_flux(create_model, solver):
         sink=M1.SI1,  # target of flux
         ctype="Regular",
         rate="50 mol/yr",  # weathering flux in
+        delta=10,
         alpha=-28,  # set a default flux
     )
 
@@ -266,7 +267,7 @@ def test_scale_flux(create_model, solver):
         scale=1,  # weathering flux in
     )
     M1.run(solver=solver)
-    assert round(M1.R1.d[-2], 2) == 14
+    assert round(M1.R1.d[-2], 2) == 14.2
 
 
 @pytest.mark.parametrize("solver", ["numba", "python"])
@@ -549,8 +550,8 @@ def test_pyramid_signal_multiply(create_model, solver):
     M1.run(solver="solver")
     diff = M1.C_R1_2_SI1.R1_2_SI1_F.d[500] - M1.R1.d[500]
     assert round(M1.R1.c[-2]) == 81
-    assert np.argmax(M1.R1.d) == 691
-    assert round(diff) == -70
+    assert np.argmax(M1.R1.d) == 692
+    assert round(diff) == -71
     #M1.plot([M1.R1, M1.foo, M1.C_R1_2_SI1.R1_2_SI1_F])
 
 
@@ -585,16 +586,16 @@ def test_scale_with_flux_and_signal_multiplication(create_model, solver):
         sink=M1.SI1,  # target of flux
         ctype="scale_with_flux",
         ref_reservoirs=M1.C_SO1_2_R1.SO1_2_R1_F,
-        alpha=-70,
+        alpha=-72,
         signal=M1.foo,
         #alpha=-28,  # set a default flux
     )
     M1.run(solver=solver)
     diff = M1.C_R1_2_SI1.R1_2_SI1_F.d[500] - M1.R1.d[500]
-    assert round(diff) == -70
+    assert round(diff) == -74
     assert round(M1.R1.c[-2]) == 61
-    assert np.argmax(M1.R1.d) == 669
-    assert round(max(M1.R1.d)) == 40
+    assert np.argmax(M1.R1.d) == 672
+    assert round(max(M1.R1.d)) == 43
 
     # M1.plot([M1.R1, M1.foo, M1.C_R1_2_SI1.R1_2_SI1_F])
 
