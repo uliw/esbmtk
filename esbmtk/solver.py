@@ -54,7 +54,13 @@ def get_frac(m: float, l: float, a: float) -> [float, float]:
     """Calculate the effect of the istope fractionation factor alpha on
     the ratio between the light and heavy isotope.
 
+    Note that alpha needs to be given as fractional value, i.e., 1.07 rather
+    than 70 (i.e., (alpha-1) * 1000
+
     """
+
+    if a > 1.1 or a < 0.9:
+        raise ValueError("alpha needs to be given as fractional value not in permil")
 
     li: float = -l * m / (a * l - a * m - l)
     hi: float = m - li  # get the new heavy isotope value
