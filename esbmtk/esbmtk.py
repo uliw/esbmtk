@@ -2360,19 +2360,19 @@ class Flux(esbmtkBase):
     def __set_with_isotopes__(self, i: int, value: [NDArray, float]) -> None:
         """Write data by index"""
 
-        #self.m[i] = value[0]
-        #self.l[i] = value[1]
-        #self.h[i] = value[2]
-        #self.d[i] = value[3]
+        self.m[i] = value[0]
+        self.l[i] = value[1]
+        self.h[i] = value[2]
+        self.d[i] = value[3]
         self.fa = value[0:4]
-        # self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
+                # self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
 
     def __set_without_isotopes__(self, i: int, value: [NDArray,
                                                        float]) -> None:
         """Write data by index"""
 
         self.fa = [value[0], 0 , 0 ,0]
-        #self.m[i] = value[0]
+        self.m[i] = value[0]
 
     def __call__(self) -> None:  # what to do when called as a function ()
         pass
