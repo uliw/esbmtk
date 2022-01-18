@@ -1101,7 +1101,7 @@ class Fractionation(Process):
             # retire the next two lines
             self.f.h[i] = self.f.m[i] - self.f.l[i]
             self.f.d[i] = get_delta(self.f.l[i], self.f.h[i],
-                                    self.reservoir.species.element)
+                                    self.reservoir.species.element.r)
         return
 
     def get_process_args(self):
