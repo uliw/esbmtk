@@ -1091,12 +1091,17 @@ class Fractionation(Process):
         """
         #print(f"self.f.m[i] =  {self.f.m[i]}")
         if self.f.m[i] != 0:
-            self.f.l[i], self.f.h[i] = get_imass(
-                self.f.m[i], self.reservoir.d[i - 1] + self.alpha,
-                self.f.rvalue)
+            # get target ratio based on reservoir ratio
+            c = (
+                self.reservoir.l[i - 1] /
+                (self.reservoir.m[i - 1] - self.reservoir.l[i - 1])) / self.alp
 
-        self.f.d[i] = self.reservoir.d[i - 1] + self.alpha
-
+            # calculate 32S in flux
+            self.f.l[i] = self.f.m[i] * c / (c + 1)
+            # retire the next two lines
+            self.f.h[i] = self.f.m[i] - self.f.l[i]
+            self.f.d[i] = get_delta(self.f.l[i], self.f.h[i],
+                                    self.reservoir.species.element)
         return
 
     def get_process_args(self):
@@ -1108,27 +1113,32 @@ class Fractionation(Process):
             self.flux.l,  # 1
             self.flux.h,  # 2
             self.flux.d,  # 3
-            self.reservoir.d,  # 4
+            self.reservoir.m,  # 4
+            self.reservoir.l,  # 5
         ])
         params = List(
             [float(self.reservoir.species.element.r),
-             float(self.alpha)])
+             float(self.alp)])
 
         return func_name, data, params
 
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_fractionation(data, params, i) -> None:
-        #
+        # params
         r: float = params[0]  # rvalue
         a: float = params[1]  # alpha
-        d: float = data[4][i - 1] + a  # reservoir delta
-        m: float = data[0][i]  # flux mass
-        l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
 
-        data[1][i] = l  # flux li
-        data[2][i] = m - l  # flux hi
-        data[3][i] = d  # flux d
+        # data
+        rm: float = data[4][i - 1]  # 4 reservoir mass
+        rl: float = data[5][i - 1]  # 4 reservoir light isotope
+        fm: float = data[0][i]  # flux mass
+
+        c = (rl / (rm - rl)) / a
+
+        data[1][i] = data[0][i] * c / (c + 1)  # flux li
+        data[2][i] = data[0][i] - data[1][i]  # flux hi
+        data[3][i] = 1000 * (data[2][i] / data[1][i] - r) / r  # flux d
 
 
 class RateConstant(Process):
