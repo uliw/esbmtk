@@ -182,8 +182,7 @@ class esbmtkBase(object):
 
                 # check for naming conflicts
                 if self.full_name in reg.lmo:
-                    raise NameError(
-                        f"{self.full_name} is a duplicate name. Please fix")
+                    raise NameError(f"{self.full_name} is a duplicate name. Please fix")
                 else:
                     # register with model
                     reg.lmo.append(self.full_name)
@@ -274,21 +273,16 @@ class esbmtkBase(object):
         #             )
 
     def __initerrormessages__(self):
-        """ Init the list of known error messages"""
+        """Init the list of known error messages"""
         self.bem: dict = {
             "Number": "a number",
             "Model": "a model handle (i.e. the name without quotation marks)",
-            "Element":
-            "an element handle (i.e. the name without quotation marks)",
-            "Species":
-            "a species handle (i.e. the name without quotation marks)",
+            "Element": "an element handle (i.e. the name without quotation marks)",
+            "Species": "a species handle (i.e. the name without quotation marks)",
             "Flux": "a flux handle (i.e. the name without quotation marks)",
-            "Reservoir":
-            "a reservoir handle (i.e. the name without quotation marks)",
-            "Signal":
-            "a signal handle (i.e. the name without quotation marks)",
-            "Process":
-            "a process handle (i.e. the name without quotation marks)",
+            "Reservoir": "a reservoir handle (i.e. the name without quotation marks)",
+            "Signal": "a signal handle (i.e. the name without quotation marks)",
+            "Process": "a process handle (i.e. the name without quotation marks)",
             "Unit": "a string",
             "File": "a filename inb the local directory",
             "Legend": " a string",
@@ -301,17 +295,12 @@ class esbmtkBase(object):
             "Ratio": " a Number",
             "number": "a number",
             "model": "a model handle (i.e. the name without quotation marks)",
-            "element":
-            "an element handle (i.e. the name without quotation marks)",
-            "species":
-            "a species handle (i.e. the name without quotation marks)",
+            "element": "an element handle (i.e. the name without quotation marks)",
+            "species": "a species handle (i.e. the name without quotation marks)",
             "flux": "a flux handle (i.e. the name without quotation marks)",
-            "reservoir":
-            "a reservoir handle (i.e. the name without quotation marks)",
-            "signal":
-            "a signal handle (i.e. the name without quotation marks)",
-            "Process":
-            "a process handle (i.e. the name without quotation marks)",
+            "reservoir": "a reservoir handle (i.e. the name without quotation marks)",
+            "signal": "a signal handle (i.e. the name without quotation marks)",
+            "Process": "a process handle (i.e. the name without quotation marks)",
             "unit": "a string",
             "file": "a filename inb the local directory",
             "legend": " a string",
@@ -346,7 +335,7 @@ class esbmtkBase(object):
             setattr(self, k, v)
 
     def __checkkeys__(self) -> None:
-        """ check if the mandatory keys are present"""
+        """check if the mandatory keys are present"""
 
         k: str
         v: any
@@ -363,7 +352,8 @@ class esbmtkBase(object):
                                 s = s + 1
                 if s > 1:  # if more than one match
                     raise ValueError(
-                        f"You need to specify exactly one from this list: {k}")
+                        f"You need to specify exactly one from this list: {k}"
+                    )
 
             else:  # keyword is not a list
                 if k not in self.kwargs:
@@ -564,7 +554,7 @@ class Model(esbmtkBase):
        - Model_Name.list_species()
        - Model_name.flux_summary()
        - Model_Name.connection_summary()
-       
+
 
     User facing variable are Model_Name.time which contains the time
     axis.
@@ -635,9 +625,7 @@ class Model(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list[str] = [
-            "name", "stop", "timestep", "mass_unit", "volume_unit"
-        ]
+        self.lrk: list[str] = ["name", "stop", "timestep", "mass_unit", "volume_unit"]
 
         # list of default values if none provided
         self.lod: Dict[str, any] = {
@@ -654,23 +642,24 @@ class Model(esbmtkBase):
         }
 
         self.__initerrormessages__()
-        self.bem.update({
-            "offset": "a string",
-            "timesetp": "a string",
-            "element": "element name or list of names",
-            "mass_unit": "a string",
-            "volume_unit": "a string",
-            "time_label": "a string",
-            "display_precision": "a number",
-            "m_type": "a string",
-            "plot_style": "a string",
-        })
+        self.bem.update(
+            {
+                "offset": "a string",
+                "timesetp": "a string",
+                "element": "element name or list of names",
+                "mass_unit": "a string",
+                "volume_unit": "a string",
+                "time_label": "a string",
+                "display_precision": "a number",
+                "m_type": "a string",
+                "plot_style": "a string",
+            }
+        )
 
         self.__validateandregister__(kwargs)  # initialize keyword values
 
         # empty list which will hold all reservoir references
-        self.dmo: dict = {
-        }  # dict of all model objects. useful for name lookups
+        self.dmo: dict = {}  # dict of all model objects. useful for name lookups
         self.lor: list = []
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
@@ -748,10 +737,8 @@ class Model(esbmtkBase):
             self.step_limit = "None"
         else:
             self.step_limit = int(self.step_limit)
-            self.number_of_solving_iterations = int(
-                round(self.steps / self.step_limit))
-            self.reset_stride = int(
-                round(self.steps / self.number_of_datapoints))
+            self.number_of_solving_iterations = int(round(self.steps / self.step_limit))
+            self.reset_stride = int(round(self.steps / self.number_of_datapoints))
             self.steps = self.step_limit
             self.time = (arange(self.steps) * self.dt) + self.start
 
@@ -788,7 +775,8 @@ class Model(esbmtkBase):
             f"This program comes with ABSOLUTELY NO WARRANTY\n"
             f"For details see the LICENSE file\n"
             f"This is free software, and you are welcome to redistribute it\n"
-            f"under certain conditions; See the LICENSE file for details.\n")
+            f"under certain conditions; See the LICENSE file for details.\n"
+        )
         print(warranty)
 
         # start a log file
@@ -890,9 +878,7 @@ class Model(esbmtkBase):
         prefix = ""
         # Save reservoir and flux data
         ##print("Writing reservoir data")
-        print(
-            f"start = {start}, stop = {stop}, stride={stride}, append ={append}"
-        )
+        print(f"start = {start}, stop = {stop}, stride={stride}, append ={append}")
         for r in self.lor:
             # print(f"R = {r.full_name}")
             # print(f"start = {start}, stop = {stop}, stride={stride}, append ={append}")
@@ -923,7 +909,7 @@ class Model(esbmtkBase):
 
         # print(f"len of time {len(self.time)}, stride = {self.stride}")
         # print(f"len of time with stride {len(self.time[0 : -2 : self.stride])}")
-        self.timec = np.append(self.timec, self.time[0:-2:self.stride])
+        self.timec = np.append(self.timec, self.time[0 : -2 : self.stride])
         t = int(round((self.stop - self.start) * self.dt))
         self.start = int(round((self.stop * self.dt)))
         self.stop = self.start + t
@@ -1159,8 +1145,7 @@ class Model(esbmtkBase):
             )
 
         elif solver == "hybrid":
-            execute_h(new, self.time, self.lop, self.lor, self.lpc_f,
-                      self.lpc_r)
+            execute_h(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
         elif solver == "python":
             execute(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
         else:
@@ -1297,7 +1282,7 @@ class Model(esbmtkBase):
         print("")
 
     def clear(self):
-        """ delete all model objects """
+        """delete all model objects"""
 
         import builtins
 
@@ -1447,15 +1432,15 @@ class Species(esbmtkBase):
 
 
 class ReservoirBase(esbmtkBase):
-    """ Base class for all Reservoir objects """
+    """Base class for all Reservoir objects"""
 
-    __slots__ = ("m", "l", "h", "d", "c", "lio", "rvalue", "lodir", "lof",
-                 "lpc")
+    __slots__ = ("m", "l", "h", "d", "c", "lio", "rvalue", "lodir", "lof", "lpc")
 
     def __init__(self, **kwargs) -> None:
 
         raise NotImplementedError(
-            "ReservoirBase should never be used. Use the derived classes")
+            "ReservoirBase should never be used. Use the derived classes"
+        )
 
     def __set_legacy_names__(self, kwargs) -> None:
         """
@@ -1549,13 +1534,15 @@ class ReservoirBase(esbmtkBase):
     def get_process_args(self):
         """Provide the data structure which needs to be passed to the numba solver"""
 
-        data = List([
-            self.m,  # 0
-            self.l,  # 1
-            self.h,  # 2
-            self.d,  # 3
-            self.c,  # 4
-        ])
+        data = List(
+            [
+                self.m,  # 0
+                self.l,  # 1
+                self.h,  # 2
+                self.d,  # 3
+                self.c,  # 4
+            ]
+        )
 
         func_name: function = self.__update_mass__
         params = List([float(reservoir.species.element.r)])
@@ -1606,10 +1593,8 @@ class ReservoirBase(esbmtkBase):
 
         df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
         df[f"{rn} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
-        df[f"{rn} {sp.ln} [{smu}]"] = self.l[start:stop:
-                                             stride]  # light isotope
-        df[f"{rn} {sp.hn} [{smu}]"] = self.h[start:stop:
-                                             stride]  # heavy isotope
+        df[f"{rn} {sp.ln} [{smu}]"] = self.l[start:stop:stride]  # light isotope
+        df[f"{rn} {sp.hn} [{smu}]"] = self.h[start:stop:stride]  # heavy isotope
         # if self.isotopes:
         df[f"{rn} {sdn} [{sds}]"] = self.d[start:stop:stride]  # delta value
         df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
@@ -1665,9 +1650,9 @@ class ReservoirBase(esbmtkBase):
         """
 
         # print(f"Reset data with {len(self.m)}, stride = {self.mo.reset_stride}")
-        self.mc = np.append(self.mc, self.m[0:-2:self.mo.reset_stride])
-        self.dc = np.append(self.dc, self.d[0:-2:self.mo.reset_stride])
-        self.cc = np.append(self.cc, self.c[0:-2:self.mo.reset_stride])
+        self.mc = np.append(self.mc, self.m[0 : -2 : self.mo.reset_stride])
+        self.dc = np.append(self.dc, self.d[0 : -2 : self.mo.reset_stride])
+        self.cc = np.append(self.cc, self.c[0 : -2 : self.mo.reset_stride])
 
         # copy last result into first field
         self.m[0] = self.m[-2]
@@ -1720,13 +1705,13 @@ class ReservoirBase(esbmtkBase):
 
         if not os.path.exists(fn):
             raise FileNotFoundError(
-                f"Flux {fn} does not exist in Reservoir {self.full_name}")
+                f"Flux {fn} does not exist in Reservoir {self.full_name}"
+            )
 
         # get a set of all current fluxes
         for f in self.lof:
             curr.add(f.full_name)
-            logging.debug(
-                f"    Adding Flux {f.full_name} to list of fluxes to read")
+            logging.debug(f"    Adding Flux {f.full_name} to list of fluxes to read")
 
         self.df: pd.DataFrame = pd.read_csv(fn)
         self.headers: list = list(self.df.columns.values)
@@ -1763,15 +1748,13 @@ class ReservoirBase(esbmtkBase):
                 col = self.__assign__data__(obj, df, col, False)
                 i += 1
             else:
-                raise ValueError(
-                    f"Unable to find Flux {n} in {self.full_name}")
+                raise ValueError(f"Unable to find Flux {n} in {self.full_name}")
 
         # test if we missed any fluxes
         for f in list(curr.difference(read)):
             print(f"\n Warning: Did not find values for {f}\n in saved state")
 
-    def __assign__data__(self, obj: any, df: pd.DataFrame, col: int,
-                         res: bool) -> int:
+    def __assign__data__(self, obj: any, df: pd.DataFrame, col: int, res: bool) -> int:
         """
         Assign the third last entry data to all values in flux or reservoir
 
@@ -1829,13 +1812,12 @@ class ReservoirBase(esbmtkBase):
 
             if geo != [1, 1]:
                 if self.groupname == "None":
-                    fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n",
-                                 size=16)
+                    fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
                 else:
                     # filename = f"{self.groupname}_{self.n}.pdf"
                     fig.suptitle(
-                        f"Group: {self.groupname}, Reservoir: {self.n}\n",
-                        size=16)
+                        f"Group: {self.groupname}, Reservoir: {self.n}\n", size=16
+                    )
 
             fig.tight_layout()
             fig.subplots_adjust(top=0.88)
@@ -2007,8 +1989,7 @@ class Reservoir(ReservoirBase):
     - Name.info()   # info Reservoir
     """
 
-    __slots__ = ("m", "l", "h", "d", "c", "lio", "rvalue", "lodir", "lof",
-                 "lpc")
+    __slots__ = ("m", "l", "h", "d", "c", "lio", "rvalue", "lodir", "lof", "lpc")
 
     def __init__(self, **kwargs) -> None:
         """Initialize a reservoir."""
@@ -2017,34 +1998,23 @@ class Reservoir(ReservoirBase):
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
-            "name":
-            str,
-            "species":
-            Species,
+            "name": str,
+            "species": Species,
             "delta": (Number, str),
             "concentration": (str, Q_),
             "mass": (str, Q_),
             "volume": (str, Q_),
             "geometry": (list, str),
-            "plot_transform_c":
-            any,
-            "legend_left":
-            str,
-            "plot":
-            str,
-            "groupname":
-            str,
-            "function":
-            any,
-            "display_precision":
-            Number,
-            "register":
-            (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
-            "full_name":
-            str,
+            "plot_transform_c": any,
+            "legend_left": str,
+            "plot": str,
+            "groupname": str,
+            "function": any,
+            "display_precision": Number,
+            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "full_name": str,
             "seawater_parameters": (dict, str),
-            "isotopes":
-            bool,
+            "isotopes": bool,
         }
 
         # provide a list of absolutely required keywords
@@ -2080,15 +2050,17 @@ class Reservoir(ReservoirBase):
 
         # validate and initialize instance variables
         self.__initerrormessages__()
-        self.bem.update({
-            "mass": "a  string or quantity",
-            "concentration": "a string or quantity",
-            "volume": "a string or quantity",
-            "plot": "yes or no",
-            "register": "Group Object",
-            "legend_left": "A string",
-            "function": "A function",
-        })
+        self.bem.update(
+            {
+                "mass": "a  string or quantity",
+                "concentration": "a string or quantity",
+                "volume": "a string or quantity",
+                "plot": "yes or no",
+                "register": "Group Object",
+                "legend_left": "A string",
+                "function": "A function",
+            }
+        )
         self.__validateandregister__(kwargs)
 
         if self.delta == "None":
@@ -2140,8 +2112,7 @@ class Reservoir(ReservoirBase):
             # isotope mass
             [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
             # delta of reservoir
-            self.d: [NDArray, Float[64]] = get_delta(self.l, self.h,
-                                                     self.species.r)
+            self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.species.r)
 
         # create temporary memory if we use multiple solver iterations
         if self.mo.number_of_solving_iterations > 0:
@@ -2250,7 +2221,7 @@ class Flux(esbmtkBase):
             "isotopes": False,
             "register": "None",
             "id": "",
-            "save" : True,
+            "save": True,
         }
 
         # initialize instance
@@ -2275,11 +2246,12 @@ class Flux(esbmtkBase):
         # and convert flux into model units
         fluxrate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
 
-        self.fa:  [NDArray, Float[64]] = zeros(4)
+        self.fa: [NDArray, Float[64]] = zeros(4)
         # in case we want to keep the flux data
         if self.save:
-            self.m: [NDArray, Float[64]] = (zeros(self.model.steps) + fluxrate
-                                        )  # add the flux
+            self.m: [NDArray, Float[64]] = (
+                zeros(self.model.steps) + fluxrate
+            )  # add the flux
             self.l: [NDArray, Float[64]] = zeros(self.model.steps)
             self.h: [NDArray, Float[64]] = zeros(self.model.steps)
             self.d: [NDArray, Float[64]] = zeros(self.model.steps) + self.delta
@@ -2365,13 +2337,12 @@ class Flux(esbmtkBase):
         self.h[i] = value[2]
         self.d[i] = value[3]
         self.fa = value[0:4]
-                # self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
+        # self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
 
-    def __set_without_isotopes__(self, i: int, value: [NDArray,
-                                                       float]) -> None:
+    def __set_without_isotopes__(self, i: int, value: [NDArray, float]) -> None:
         """Write data by index"""
 
-        self.fa = [value[0], 0 , 0 ,0]
+        self.fa = [value[0], 0, 0, 0]
         self.m[i] = value[0]
 
     def __call__(self) -> None:  # what to do when called as a function ()
@@ -2393,7 +2364,7 @@ class Flux(esbmtkBase):
 
         self.fa = self.fa - other.fa
         self.d = get_delta(self.fa[1], self.fa[2], self.sp.r)
-        
+
         # self.m = self.m - other.m
         # self.l = self.l - other.l
         # self.h = self.h - other.h
@@ -2481,8 +2452,8 @@ class Flux(esbmtkBase):
         Also, copy current results into temp field
         """
 
-        self.mc = np.append(self.mc, self.m[0:-2:self.mo.reset_stride])
-        self.dc = np.append(self.dc, self.d[0:-2:self.mo.reset_stride])
+        self.mc = np.append(self.mc, self.m[0 : -2 : self.mo.reset_stride])
+        self.dc = np.append(self.dc, self.d[0 : -2 : self.mo.reset_stride])
 
         # copy last element to first position
         self.m[0] = self.m[-2]
@@ -2515,21 +2486,17 @@ class SourceSink(esbmtkBase):
     where the first argument is a string, and the second is a reservoir handle
 
     """
+
     def __init__(self, **kwargs) -> None:
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
-            "name":
-            str,
-            "species":
-            Species,
-            "display_precision":
-            Number,
-            "register":
-            (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "name": str,
+            "species": Species,
+            "display_precision": Number,
+            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "delta": (Number, str),
-            "isotopes":
-            bool,
+            "isotopes": bool,
         }
 
         # provide a list of absolutely required keywords
