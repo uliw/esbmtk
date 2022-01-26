@@ -648,6 +648,54 @@ def test_scale_with_flux_and_signal_multiplication(create_model, solver):
 
     # M1.plot([M1.R1, M1.foo, M1.C_R1_2_SI1.R1_2_SI1_F])
 
+@pytest.mark.parametrize("solver", ["numba", "python"])
+def test_scale_with_flux_and_signal_addition(create_model, solver):
+
+    from esbmtk import Source, Sink, Reservoir, Connect, Signal
+    import numpy as np
+    v0, c0, d0, M1 = create_model
+
+    Source(name="SO1", species=M1.DIC)
+    Sink(name="SI1", species=M1.DIC)
+
+    Connect(
+        source=M1.SO1,  # source of flux
+        sink=M1.R1,  # target of flux
+        rate="100 mol/yr",  # weathering flux in
+        delta=d0,  # set a default flux
+    )
+    Signal(
+        name="foo",
+        species=M1.DIC,
+        start="100 yrs",
+        duration="800 yrs",
+        shape="pyramid",
+        magnitude="100 mol/year",
+        stype="addition",
+    )
+
+    Connect(
+        source=M1.R1,  # source of flux
+        sink=M1.SI1,  # target of flux
+        ctype="scale_with_flux",
+        ref_flux=M1.C_SO1_2_R1.SO1_2_R1_F,
+        alpha=-72,
+        signal=M1.foo,
+        scale = 0.1
+        #alpha=-28,  # set a default flux
+    )
+    #M1.run(solver='python')
+    M1.run(solver='numba')
+    diff = M1.C_R1_2_SI1.R1_2_SI1_F.d[500] - M1.R1.d[500]
+    assert round(diff) == -75
+    assert round(M1.R1.c[-2]) == 52
+    assert np.argmax(M1.R1.d) == 658
+    assert round(max(M1.R1.d))  == 53
+
+    # M1.plot([M1.R1, M1.foo, 
+    #          M1.C_SO1_2_R1.SO1_2_R1_F,
+    #          M1.C_R1_2_SI1.R1_2_SI1_F])
+
 
 def test_external_data(create_model):
     """test the creation of an external data object"""

@@ -283,20 +283,16 @@ class AddSignal(Process):
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
 
-        # decide whichh call function to use
-        # if self.mo.m_type == "both":
-
-        if self.reservoir.isotopes:
-            self.__execute__ = self.__add_with_isotopes__
-        else:
-            self.__execute__ = self.__add_without_isotopes__
+        # defaults
+        self.__execute__ = self.__add_with_fi__
+        self.__get_process_args__ = self.__get_process_args_fi__
 
     # setup a placeholder call function
     def __call__(self, i: int):
         return self.__execute__(i)
 
     # use this when we do isotopes
-    def __add_with_isotopes__(self, i) -> None:
+    def __add_with_fi__(self, i) -> None:
         """Each process is associated with a flux (self.f). Here we replace
         the flux value with the value from the signal object which
         we use as a lookup-table (self.lt)
@@ -327,20 +323,33 @@ class AddSignal(Process):
         h = m - l
         self.f.fa = np.array([m, l, h, d])
 
-    # use this when we do isotopes
-    def __add_without_isotopes__(self, i) -> None:
-        """Each process is associated with a flux (self.f). Here we replace
-        the flux value with the value from the signal object which
-        we use as a lookup-table (self.lt)
+    def __add_with_fa__(self, i) -> None:
+        """same as above but use fa instead of flux data"""
 
-        """
         # add signal mass to flux mass
-        self.f.m[i] = self.f.m[i] + self.lt.m[i]
-        self.f.fa = [self.f.m[i], 0, 0, 0]
+        r = self.f.species.r
+        m = self.f.fa[0]  # flux rate
+        l = self.f.fa[1]  # flux rate light isotope
+        sd = self.lt.d[i]  # signal delta
+
+        # get new delta
+        if m > 0:
+            d = 1000 * ((m - l) / l - r) / r + sd
+        else:
+            d = sd
+
+        # set new flux rate
+        m += self.lt.m[i]  # add signal mass
+        l = 1000.0 * m / ((d + 1000.0) * r + 1000.0)
+        h = m - l
+        self.f.fa = np.array([m, l, h, d])
 
     def get_process_args(self):
+        return self.__get_process_args__()
 
-        func_name: function = self.p_add_signal
+    def __get_process_args_fi__(self):
+
+        func_name: function = self.p_add_signal_fi
 
         print(f"flux_name = {self.flux.full_name}")
 
@@ -364,13 +373,14 @@ class AddSignal(Process):
 
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
-    def p_add_signal(data, params, i) -> None:
+    def p_add_signal_fi(data, params, i) -> None:
 
         r: float = params[0]
-        m: float = data[0][i]
-        l: float = data[1][i]
-        sm: float = data[4][i]
-        sd: float = data[7][i]
+
+        m: float = data[0][i] # fm
+        l: float = data[1][i] # fi
+        sm: float = data[4][i] # sm
+        sd: float = data[7][i] # sd 
         if m > 0:
             d = 1000 * ((m - l) / l - r) / r + sd
         else:
@@ -381,6 +391,47 @@ class AddSignal(Process):
         l = 1000.0 * m / ((d + 1000.0) * r + 1000.0)
         h = m - l
         data[8][:] = [m, l, h, d]
+
+    def __get_process_args_fa__(self):
+
+        func_name: function = self.p_add_signal_fa
+
+        print(f"flux_name = {self.flux.full_name}")
+
+        data = List(
+            [
+                self.lt.m,  # 0
+                self.lt.l,  # 1
+                self.lt.h,  # 2
+                self.lt.d,  # 3
+                self.flux.fa,  # 4
+            ]
+        )
+
+        params = List([float(self.reservoir.species.element.r)])
+
+        return func_name, data, params
+
+    @staticmethod
+    @njit(fastmath=True, error_model="numpy")
+    def p_add_signal_fa(data, params, i) -> None:
+
+        r: float = params[0]
+
+        m: float = data[4][0]
+        l: float = data[4][1]
+        sm: float = data[0][i]
+        sd: float = data[3][i]
+        if m > 0:
+            d = 1000 * ((m - l) / l - r) / r + sd
+        else:
+            d = sd
+
+        # set new flux rate
+        m += sm  # add signal mass
+        l = 1000.0 * m / ((d + 1000.0) * r + 1000.0)
+        h = m - l
+        data[4][:] = [m, l, h, d]
 
 
 class SaveFluxData(Process):

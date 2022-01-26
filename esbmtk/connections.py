@@ -662,8 +662,12 @@ class Connect(esbmtkBase):
         # nwo we can register everythig on lop
         i = 0
         for p in self.lop:
-            if isinstance(p, MultiplySignal) and i > 0:
+            if isinstance(p, (MultiplySignal)) and i > 0:
                 p.__execute__ = p.__multiply_with_flux_fa__
+                p.__get_process_args__ = p.__get_process_args_fa__
+            if isinstance(p, (AddSignal)) and i > 0:
+                print(f"Found Add signal")
+                p.__execute__ = p.__add_with_fa__
                 p.__get_process_args__ = p.__get_process_args_fa__
 
             p.__register__(self.r, self.fh)
