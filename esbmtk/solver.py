@@ -83,8 +83,9 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
 
 
 # @njit()
-def get_delta(l: [NDArray, [Float64]], h: [NDArray, [Float64]],
-              r: float) -> [NDArray, [Float64]]:
+def get_delta(
+    l: [NDArray, [Float64]], h: [NDArray, [Float64]], r: float
+) -> [NDArray, [Float64]]:
     """Calculate the delta from the mass of light and heavy isotope
     Arguments are l and h which are the masses of the light and
     heavy isotopes respectively, r = abundance ratio of the
@@ -113,6 +114,22 @@ def get_delta_i(l: float, h: float, r: float) -> float:
         d: float = 1e3 * (h / l - r) / r
     else:
         d = 0
+    return d
+
+
+def get_delta_h(h) -> float:
+    """Calculate the delta of a flux or reserevoir from total mass
+    and mass of light isotope.
+
+    h = flux or reserevoir handle
+
+    returns d a vector of delta values
+
+    """
+
+    r = h.species.r
+    d = np.where(h.l > 0, 1e3 * ((h.m - h.l) / h.l - r) / r, 0)
+
     return d
 
 
@@ -146,10 +163,8 @@ def execute(
             new[0] = new[1] = new[2] = new[3] = 0
             for f in flux_list:  # do sum of fluxes in this reservoir
                 direction = r.lio[f]
-                new[0] = new[
-                    0] + f.m[i] * direction  # current flux and direction
-                new[1] = new[
-                    1] + f.l[i] * direction  # current flux and direction
+                new[0] = new[0] + f.fa[0] * direction  # current flux and direction
+                new[1] = new[1] + f.fa[1] * direction  # current flux and direction
 
             new[2] = new[0] - new[1]
             # new[3] = delta will be set by the setitem method in the reserevoir
@@ -168,42 +183,6 @@ def execute(
 
     duration: float = process_time() - start
     print(f"\n Execution time {duration:.2e} cpu seconds\n")
-
-
-def execute_h(
-    new: [NDArray, Float64],
-    time: [NDArray, Float64],
-    lop: list,
-    lor: list,
-    lpc_f: list,
-    lpc_r: list,
-) -> None:
-    """Moved this code into a separate function to enable numba optimization"""
-
-    i: int = 1  # processes refer to the previous time step -> start at 1
-    dt: float = lor[0].mo.dt
-    ratio: float = lor[0].sp.r
-    ratio = 1
-
-    a, b, c, d, e = build_flux_lists_all(lor)
-    for t in time[1:-1]:  # loop over the time vector except the first
-        # we first need to calculate all fluxes
-        for r in lor:  # loop over all reservoirs
-            for p in r.lop:  # loop over reservoir processes
-                p(i)  # update fluxes
-
-        # update all process based fluxes. This can be done in a global lpc list
-        for p in lpc_f:
-            p(i)
-
-        summarize_fluxes(a, b, c, d, e, i, dt)
-
-        # update reservoirs which do not depend on fluxes but on
-        # functions
-        for p in lpc_r:
-            p(i)
-
-        i = i + 1  # next time step
 
 
 def execute_e(model, new, lop, lor, lpc_f, lpc_r):
@@ -227,6 +206,16 @@ def execute_e(model, new, lop, lor, lpc_f, lpc_r):
 
         model.fn, model.da, model.pc = build_process_list(lor, lop)
         model.a, model.b, model.c, model.d, model.e = build_flux_lists_all(lor)
+        """
+        fn = typed list of functions (processes)
+        da = process data
+        pc = process parameters
+        a = reservoir_list
+        b = flux list
+        c = direction list
+        d = virtual reserevoir list
+        e = r0 list ???
+        """
         model.first_start = False
 
         duration: float = process_time() - start
@@ -246,10 +235,10 @@ def execute_e(model, new, lop, lor, lpc_f, lpc_r):
             model.fn,
             model.da,
             model.pc,
-            model.a,
-            model.b,
-            model.c,
-            model.d,
+            model.a,  # reserevoir list
+            model.b,  # flux list
+            model.c,  # direction list
+            model.d,  # r0 list
             model.e,
             model.time[:-1],
             model.dt,
@@ -274,13 +263,23 @@ def execute_e(model, new, lop, lor, lpc_f, lpc_r):
 
 
 @njit(parallel=False, fastmath=True, error_model="numpy")
-def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt,
-        dt):
+def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, dt):
+    """
+    fn = flux process list
+    fn = typed list of functions (processes)
+    da = process data
+    pc = process parameters
+    a = reservoir_list
+    b = flux list
+    c = direction list
+    d = virtual reserevoir list
+    e = r0 list ???
+    """
 
     i = 1
     for t in maxt:
 
-        # loop over processes
+        # loop over function (process) list and compute fluxes
         j = 0
         for f in enumerate(fn):
             fn[j](da[j], pc[j], i)
@@ -299,8 +298,10 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt,
             for u in range(f_steps):
                 direction = c[j][u]
                 # for u, f in enumerate(r):  # this should catch each flux per reservoir
-                mass += b[j][u][0][i] * direction  # mass
-                li += b[j][u][1][i] * direction  # li
+                # mass += b[j][u][0][i] * direction  # mass
+                # li += b[j][u][1][i] * direction  # li
+                mass += b[j][u][0] * direction  # mass
+                li += b[j][u][1] * direction  # li
 
             # update masses
             a[j][0][i] = a[j][0][i - 1] + mass * dt  # mass
@@ -322,7 +323,19 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt,
 
 @njit(parallel=False, fastmath=True, error_model="numpy")
 def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
-    """Same as foo but no virtual reservoirs present."""
+    """Same as foo but no virtual reservoirs present
+
+    fn = flux process list
+    fn = typed list of functions (processes)
+    da = process data
+    pc = process parameters
+    a = reservoir_list
+    b = flux list
+    c = direction list
+    d = virtual reserevoir list
+    e = r0 list ???
+    """
+
     i = 1
     for t in maxt:
 
@@ -345,8 +358,10 @@ def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
             for u in range(f_steps):
                 direction = c[j][u]
                 # for u, f in enumerate(r):  # this should catch each flux per reservoir
-                mass += b[j][u][0][i] * direction  # mass
-                li += b[j][u][1][i] * direction  # li
+                # mass += b[j][u][0][i] * direction  # mass
+                # li += b[j][u][1][i] * direction  # li
+                mass += b[j][u][0] * direction  # mass
+                li += b[j][u][1] * direction  # li
 
             # update masses
             a[j][0][i] = a[j][0][i - 1] + mass * dt  # mass
@@ -376,7 +391,8 @@ def build_vr_list(lvr: list) -> tuple:
             types.ListType(types.float64[::1]),
             types.ListType(types.float64[::1]),
             types.ListType(types.float64),  # a3
-        ).as_type())
+        ).as_type()
+    )
 
     count = 0
     for r in lvr:  # loop over reservoir processes
@@ -405,11 +421,9 @@ def build_flux_lists_all(lor, iso: bool = False) -> tuple:
     r_list: list = List()
     v_list: list = List()
     r0_list: list = List()
-
-    f_list: list = List()
     dir_list: list = List()
     rd_list: list = List()
-    fd_list: list = List()
+    f_list: List = List()
 
     for r in lor:  # loop over all reservoirs
         if len(r.lof) > 0:
@@ -426,8 +440,7 @@ def build_flux_lists_all(lor, iso: bool = False) -> tuple:
 
             # loop over all fluxes
             for f in r.lof:
-                fd_list = List([f.m, f.l, f.h, f.d])
-                tf.append(fd_list)
+                tf.append(f.fa)
                 td.append(float(r.lodir[i]))
                 i = i + 1
 
@@ -435,48 +448,6 @@ def build_flux_lists_all(lor, iso: bool = False) -> tuple:
             dir_list.append(td)
 
     return r_list, f_list, dir_list, v_list, r0_list
-
-
-def build_process_list_old(lor: list, lop: list) -> tuple:
-    from numba.typed import List
-    import numba
-    from numba.core import types
-
-    fn = List()  # List() # list of functions
-    da = List()  # data
-    pc = List()  # list of constants
-
-    print(f"Building Process List")
-
-    for r in lor:  # loop over reservoirs
-        # print(f"for {r.full_name}")
-        # note that types.List is differenfr from Types.ListType. Also
-        # note that [::1]  declares C-style arrays see
-        # https://numba.discourse.group/t/list-mistaken-as-list-when-creating-list-of-function-references/677/3
-        tfn = numba.typed.List.empty_list(
-            types.ListType(types.void)(  # return value
-                types.ListType(types.float64[::1]),  # data array
-                types.ListType(types.float64),  # parameter list
-                types.int64,  # parameter 4
-            ).as_type())
-
-        tda = List()  # temp list for data
-        tpc = List()  # temp list for constants
-        have_data = False
-        for p in r.lop:  # loop over reservoir processes
-            # print(f"working on {p.name}")
-            func_name, data, proc_const = p.get_process_args(r)
-            tfn.append(func_name)
-            tda.append(data)
-            tpc.append(proc_const)
-            have_data = True
-
-        if have_data:
-            fn.append(tfn)
-            da.append(tda)
-            pc.append(tpc)
-
-    return fn, da, pc
 
 
 def build_process_list(lor: list, lop: list) -> tuple:
@@ -495,7 +466,8 @@ def build_process_list(lor: list, lop: list) -> tuple:
             types.ListType(types.float64[::1]),  # data array
             types.ListType(types.float64),  # parameter list
             types.int64,  # parameter 4
-        ).as_type())
+        ).as_type()
+    )
 
     tda = List()  # temp list for data
     tpc = List()  # temp list for constants

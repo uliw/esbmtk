@@ -1645,14 +1645,14 @@ def add_carbonate_system_2(**kwargs) -> None:
                 "Fburial": 0.0,  # 8 carbonate burial
                 "B": 0.0,  # 9 carbonate export productivity
                 # temp fields, delete eventually
-                "BNS": 0.0,  # 10 BNS
-                "BDS_under": 0.0,  # 11 BDS_under
-                "BDS_resp": 0.0,  # 12 BDS_resp
-                "BDS": 0.0,  # 13 BDS
-                "BCC": 0.0,  # 14 BCC
-                "BPDC": 0.0,  # 15 BPDC
-                "BD": 0.0,  # 16 BD
-                "Omega": 0.0,  # 17 omega
+                # "BNS": 0.0,  # 10 BNS
+                # "BDS_under": 0.0,  # 11 BDS_under
+                # "BDS_resp": 0.0,  # 12 BDS_resp
+                # "BDS": 0.0,  # 13 BDS
+                # "BCC": 0.0,  # 14 BCC
+                # "BPDC": 0.0,  # 15 BPDC
+                # "BD": 0.0,  # 16 BD
+                # "Omega": 0.0,  # 17 omega
             },
             function_input_data=List([
                 rg.DIC.m,  # 0 DIC mass

@@ -263,7 +263,7 @@ def test_scale_flux(create_model, solver):
         source=M1.R1,  # source of flux
         sink=M1.SI2,  # target of flux
         ctype="scale_with_flux",
-        ref_reservoirs=M1.C_R1_2_SI1.R1_2_SI1_F,
+        ref_flux=M1.C_R1_2_SI1.R1_2_SI1_F,
         scale=1,  # weathering flux in
     )
     M1.run(solver=solver)
@@ -634,7 +634,7 @@ def test_scale_with_flux_and_signal_multiplication(create_model, solver):
         source=M1.R1,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="scale_with_flux",
-        ref_reservoirs=M1.C_SO1_2_R1.SO1_2_R1_F,
+        ref_flux=M1.C_SO1_2_R1.SO1_2_R1_F,
         alpha=-72,
         signal=M1.foo,
         #alpha=-28,  # set a default flux

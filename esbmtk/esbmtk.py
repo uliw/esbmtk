@@ -1070,6 +1070,17 @@ class Model(esbmtkBase):
         start: float = process_time()
         new: [NDArray, Float] = zeros(4)
 
+        # # ensure that all signal processes rund first
+        # # and savel_flux_data processes run last
+        # pl = self.lop.copy()
+        # for p in pl:
+        #     if isinstance(p, SaveFluxData):
+        #         self.lop.remove(p)
+        #         self.lop.append(p)
+        #     if isinstance(p, (MultiplySignal, AddSignal)):
+        #         self.lop.remove(p)
+        #         self.lop.insert(0, p)
+
         # put direction dictionary into a list
         for r in self.lor:  # loop over reservoirs
             r.lodir = []
@@ -1143,14 +1154,8 @@ class Model(esbmtkBase):
                 self.lpc_f,
                 self.lpc_r,
             )
-
-        elif solver == "hybrid":
-            execute_h(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
-        elif solver == "python":
-            execute(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
         else:
             execute(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
-        # self.execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
 
     def __step_process__(self, r, i) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -2206,7 +2211,7 @@ class Flux(esbmtkBase):
             "display_precision": Number,
             "isotopes": bool,
             "register": any,
-            "save": bool,
+            "save_flux_data": bool,
             "id": str,
         }
 
@@ -2221,7 +2226,7 @@ class Flux(esbmtkBase):
             "isotopes": False,
             "register": "None",
             "id": "",
-            "save": True,
+            "save_flux_data": True,
         }
 
         # initialize instance
@@ -2246,15 +2251,16 @@ class Flux(esbmtkBase):
         # and convert flux into model units
         fluxrate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
 
-        self.fa: [NDArray, Float[64]] = zeros(4)
+        self.fa: [NDArray, Float[64]] = np.array([fluxrate, 0, 0, 0])
+
         # in case we want to keep the flux data
-        if self.save:
+        if self.save_flux_data:
             self.m: [NDArray, Float[64]] = (
                 zeros(self.model.steps) + fluxrate
             )  # add the flux
-            self.l: [NDArray, Float[64]] = zeros(self.model.steps)
-            self.h: [NDArray, Float[64]] = zeros(self.model.steps)
-            self.d: [NDArray, Float[64]] = zeros(self.model.steps) + self.delta
+            self.l: [NDArray, Float[64]] = np.zeros(self.model.steps)
+            self.h: [NDArray, Float[64]] = np.zeros(self.model.steps)
+            self.d: [NDArray, Float[64]] = np.zeros(self.model.steps) + self.delta
 
         if self.mo.number_of_solving_iterations > 0:
             self.mc = np.empty(0)

@@ -879,13 +879,13 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[7][i] = zsnow
     vr_data[8][i] = Fburial
 
-    # temporary added values for testing
-    vr_data[9][i] = B
-    vr_data[10][i] = BNS
-    vr_data[11][i] = BDS_under
-    vr_data[12][i] = BDS_resp
-    vr_data[13][i] = BDS
-    vr_data[14][i] = BCC
-    vr_data[15][i] = BPDC
-    vr_data[16][i] = BD
-    vr_data[17][i] = omega
+    # # temporary added values for testing
+    # vr_data[9][i] = B
+    # vr_data[10][i] = BNS
+    # vr_data[11][i] = BDS_under
+    # vr_data[12][i] = BDS_resp
+    # vr_data[13][i] = BDS
+    # vr_data[14][i] = BCC
+    # vr_data[15][i] = BPDC
+    # vr_data[16][i] = BD
+    # vr_data[17][i] = omega
