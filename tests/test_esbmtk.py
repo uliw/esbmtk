@@ -1,8 +1,7 @@
 import pytest
 
-
-@pytest.fixture
-def create_model():
+@pytest.fixture(params=[True, False])
+def create_model(request):
 
     # from module import symbol
     from esbmtk import Model, Reservoir
@@ -19,6 +18,7 @@ def create_model():
         volume_unit="l",  # base unit for volume
         element="Carbon",  # load default element and species definitions
         m_type="both",
+        save_flux_data=request.param,
     )
     Reservoir(
         name="R1",  # Name of reservoir
@@ -255,7 +255,6 @@ def test_scale_flux(create_model, solver):
         sink=M1.SI1,  # target of flux
         ctype="Regular",
         rate="50 mol/yr",  # weathering flux in
-        delta=10,
         alpha=-28,  # set a default flux
     )
 
@@ -298,9 +297,9 @@ def test_scale_with_concentration_empty(create_model, solver):
     assert M1.R2.c[500] == 0
     assert M1.R1.c[500] == 3.1
     assert round(M1.R1.d[500], 10) == 0
-    assert M1.C_R2_2_R1.R2_2_R1_F.m[500] == 0
-    assert M1.C_R2_2_R1.R2_2_R1_F.l[500] == 0
-    assert M1.C_R2_2_R1.R2_2_R1_F.h[500] == 0
+    assert M1.C_R2_2_R1.R2_2_R1_F.fa[0] == 0
+    assert M1.C_R2_2_R1.R2_2_R1_F.fa[1] == 0
+    assert M1.C_R2_2_R1.R2_2_R1_F.fa[2] == 0
 
 
 @pytest.mark.parametrize("solver", ["numba", "python"])
