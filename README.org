@@ -15,7 +15,8 @@ generation of graphical results.
 * News
 
   - 0.7.3.0 Flux data is no longer kept by default. This results in
-    huge memory savings.
+    huge memory savings. esbmtk now requires python 3.9 or higher, and
+    also depends on =os= and =psutil=
 
   - January 8^{th} 0.7.2.2 Fixed several isotope calculation
     regressions. Added 31 Unit tests.

@@ -187,7 +187,7 @@ class SeawaterConstants(esbmtkBase):
             setattr(self, pk, -log10(v))
 
     def show(self) -> None:
-        """Printout pK values. """
+        """Printout pK values."""
 
         from math import log10
 
@@ -767,10 +767,11 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # vr_data is data which is calculated in this module
     dic: float = input_data[3][i - 1]  # DIC concentration [mol/l]
     ta: float = input_data[5][i - 1]  # TA concentration [mol/l]
-    B: float = input_data[6][i - 1]  # Carbonate Export Flux [mol/yr]
+    # B: float = input_data[6][i]  # Carbonate Export Flux [mol/yr]
+    B: float = input_data[6][0]  # Carbonate Export Flux [mol/yr]
     hplus: float = vr_data[0][i - 1]  # H+ concentration [mol/l]
 
-    zsnow = vr_data[7][i - 1] #previous zsnow
+    zsnow = vr_data[7][i - 1]  # previous zsnow
 
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus

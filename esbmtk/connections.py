@@ -72,7 +72,7 @@ class Connect(esbmtkBase):
          - ctype: connection type, optional, this allows to scale a flux in response to other
            reservoirs and fluxes
          - bypass :str optional defaults to "None" see scale with flux
-         - keep_flux_data: bool, defaults to F
+         - save_flux_data: bool, defaults to model setting, unles specified
 
      Connection Types:
      -----------------
@@ -308,7 +308,7 @@ class Connect(esbmtkBase):
             "area": Number,
             "piston_velocity": Number,
             "function_ref": any,
-            "keep_flux_data": bool,
+            "save_flux_data": (bool, str),
         }
 
         # provide a list of absolutely required keywords
@@ -333,7 +333,7 @@ class Connect(esbmtkBase):
             "ref_flux": "None",
             "register": "None",
             "function_ref": "None",
-            "keep_flux_data": True,
+            "save_flux_data": "None",
         }
 
         # validate and initialize instance variables
@@ -377,6 +377,13 @@ class Connect(esbmtkBase):
 
         if self.signal != "None":
             self.lop.append(self.signal)
+
+        # if we have a signal, save flux data
+        if self.signal != "None":
+            self.save_flux_data = True
+        # else if save_flux_data is unsepcified, use model default
+        elif self.save_flux_data == "None":
+            self.save_flux_data = self.source.sp.mo.save_flux_data
 
         # if no reference reservoir is specified, default to the upstream
         # reservoir
@@ -567,6 +574,7 @@ class Connect(esbmtkBase):
             # register=self.register,  # is this part of a group?
             isotopes=self.isotopes,
             id=self.id,
+            save_flux_data=self.save_flux_data,
         )
 
         # register flux with its reservoirs
@@ -758,13 +766,13 @@ class Connect(esbmtkBase):
             self.__alpha__()  # Set optional flux processes
             # self.__vardeltaout__()
 
-        if self.keep_flux_data:
+        if self.save_flux_data:
             ph = SaveFluxData(
                 name=f"{self.fh.full_name}_Pfd",
                 flux=self.fh,
                 register=self.fh,
             )
-        self.lop.append(ph)
+            self.lop.append(ph)
 
     def __passivefluxfixeddelta__(self) -> None:
         """Just a wrapper to keep the if statement manageable"""
@@ -1220,7 +1228,7 @@ class ConnectionGroup(esbmtkBase):
            pl = [list]) process list. optional, shared between all connections
            id = optional identifier, passed on to individual connection
            plot = "yes/no" # defaults to yes, shared between all connections
-           keep_flux_data = False, optional
+           save_flux_data = True/False, use model default if not set
         )
 
         ConnectionGroup(
@@ -1321,7 +1329,7 @@ class ConnectionGroup(esbmtkBase):
             "scale": dict,
             "bypass": (dict, str),
             "register": any,
-            "keep_flux_data": bool,
+            "save_flux_data": (bool, str),
         }
 
         # list of default values if none provided
@@ -1329,12 +1337,16 @@ class ConnectionGroup(esbmtkBase):
             "name": "None",
             "id": "",
             "register": "None",
-            "keep_flux_data": True,
+            "save_flux_data": "None",
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["source", "sink"]
         self.__validateandregister__(kwargs)
+
+        if self.save_flux_data == "None":
+            self.save_flux_data = self.register.save_flux_data
+            self.kwargs.update({"save_flux_data": self.register.save_flux_data})
 
     def __create_connections__(self) -> None:
         """Create Connections"""
@@ -1371,11 +1383,8 @@ class ConnectionGroup(esbmtkBase):
             # test defaults against actual keyword value
             for kcd, vcd in self.cd[r.n].items():
                 if kcd in self.kwargs:  # found entry like ctype
-                    # print(f"kcd  = {kcd}")
-                    # print(f"self.kwargs[kcd] = {self.kwargs[kcd]}")
                     if r.sp in self.kwargs[kcd]:  # {SO4: xxx}
                         # update the entry
-                        # print(f" self.kwargs[kcd][r.sp] =  {self.kwargs[kcd][r.sp]}")
                         self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
             # now we can create the connection
 
@@ -1399,6 +1408,7 @@ class ConnectionGroup(esbmtkBase):
                 bypass=self.cd[r.n]["bypass"],
                 ref_reservoirs=self.cd[r.n]["ref_reservoirs"],
                 ref_flux=self.cd[r.n]["ref_flux"],
+                save_flux_data = self.save_flux_data,
                 groupname=True,
                 id=self.id,
                 register=register,

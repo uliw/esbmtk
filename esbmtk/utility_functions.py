@@ -1007,7 +1007,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
     typ = "None" if not "ty" in p else p["ty"]
     scale = 1 if not "sc" in p else p["sc"]
     rate = Q_("0 mol/a") if not "ra" in p else p["ra"]
-    ref_reservoirs = "None" if not "re" in p else p["re"]
+    ref_flux = "None" if not "re" in p else p["re"]
     alpha = "None" if not "al" in p else p["al"]
     delta = "None" if not "de" in p else p["de"]
     mix = False if not "mx" in p else p["mx"]
@@ -1042,7 +1042,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
             typ,
             scale,
             rate,
-            ref_reservoirs,
+            ref_flux,
             alpha,
             delta,
             cid,
@@ -1063,7 +1063,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
             typ,
             scale,
             rate,
-            ref_reservoirs,
+            ref_flux,
             alpha,
             delta,
             cid,
@@ -1084,7 +1084,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
             typ,
             scale,
             rate,
-            ref_reservoirs,
+            ref_flux,
             alpha,
             delta,
             cid,
@@ -1101,7 +1101,7 @@ def update_or_create(
     typ,
     scale,
     rate,
-    ref_reservoirs,
+    ref_flux,
     alpha,
     delta,
     cid,
@@ -1140,7 +1140,7 @@ def update_or_create(
                 ctype=make_dict(los, typ),
                 scale=make_dict(los, scale),  # get rate from dictionary
                 rate=make_dict(los, rate),
-                ref_reservoirs=make_dict(los, ref_reservoirs),
+                ref_flux=make_dict(los, ref_flux),
                 alpha=make_dict(los, alpha),
                 delta=make_dict(los, delta),
                 bypass=make_dict(los, bypass),
@@ -1162,7 +1162,7 @@ def update_or_create(
                 ctype=typ,
                 scale=scale,  # get rate from dictionary
                 rate=rate,
-                ref_reservoirs=ref_reservoirs,
+                ref_flux=ref_flux,
                 alpha=alpha,
                 delta=delta,
                 bypass=bypass,
@@ -1179,7 +1179,7 @@ def update_or_create(
             ctype=make_dict(los, typ),
             scale=make_dict(los, scale),  # get rate from dictionary
             rate=make_dict(los, rate),
-            ref_reservoirs=make_dict(los, ref_reservoirs),
+            ref_flux=make_dict(los, ref_flux),
             alpha=make_dict(los, alpha),
             delta=make_dict(los, delta),
             bypass=make_dict(los, bypass),
@@ -1626,6 +1626,8 @@ def add_carbonate_system_2(**kwargs) -> None:
         else:
             species = __builtins__["CO2"]
 
+        print(f'CaCO3 exp F = {kwargs["carbonate_export_fluxes"][i].full_name}')
+
         ExternalCode(
             name="cs",
             species=species,
@@ -1661,7 +1663,8 @@ def add_carbonate_system_2(**kwargs) -> None:
                 rg.DIC.c,  # 3 DIC concentration
                 rg.TA.m,  # 4 TA mass
                 rg.TA.c,  # 5 TA concentration
-                kwargs["carbonate_export_fluxes"][i].m,  # 6
+                #kwargs["carbonate_export_fluxes"][i].m,  # 6
+                kwargs["carbonate_export_fluxes"][i].fa,  # 6
                 area_table,  # 7
                 area_dz_table,  # 8
                 Csat_table,  # 9
@@ -1685,6 +1688,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                 float(abs(kwargs["zmax"])),  # 15
                 float(abs(kwargs["z0"])),  # 16
                 Ksp,  # 17
+                kwargs["carbonate_export_fluxes"][i].fa[0], #18
             ]),
             register=rg,
         )

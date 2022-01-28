@@ -35,7 +35,7 @@ import pandas as pd
 import logging
 
 import builtins
-import os
+import os, psutil
 
 from .utility_functions import (
     plot_object_data,
@@ -513,6 +513,7 @@ class Model(esbmtkBase):
                       number_of_datapoints = optional, see below
                       step_limit = optional, see below
                       register = 'local', see below
+                      save_flux_data = False, see below
                     )
 
     ref_time:  will offset the time axis by the specified
@@ -534,6 +535,11 @@ class Model(esbmtkBase):
     register = local/None. If set to 'None' all objects are registered
                in the global namespace the default setting is local,
                i.e. all objects are registered in the model namespace.
+
+    save_flux_data: Normally, flux data is not stored. Set this to True
+               for debugging puposes. Note, Fluxes with signals are always
+               stored. You can also enable this option for inidividual
+               connections (fluxes).
 
     All of the above keyword values are available as variables with
     Model_Name.keyword
@@ -622,6 +628,7 @@ class Model(esbmtkBase):
             "step_limit": (Number, str),
             "register": str,
             "full_name": str,
+            "save_flux_data": bool,
         }
 
         # provide a list of absolutely required keywords
@@ -639,6 +646,7 @@ class Model(esbmtkBase):
             "step_limit": "None",
             "register": "local",
             "full_name": kwargs["name"],
+            "save_flux_data": False,
         }
 
         self.__initerrormessages__()
@@ -1123,6 +1131,9 @@ class Model(esbmtkBase):
 
         # flag that the model has executed
         self.state = 1
+
+        process = psutil.Process(os.getpid())
+        print(f"This run used {process.memory_info().rss/1e6:.0n} Mbytes of memory \n")
 
     def sub_sample_data(self):
         """Subsample the data. No need to save 100k lines of data You need to
@@ -1611,15 +1622,16 @@ class ReservoirBase(esbmtkBase):
                 raise ValueError(f"{f.full_name} is a double")
             fullname.append(f.full_name)
 
-            # mass
-            df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]
-            # light isotope
-            df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]
-            # heavy isotope
-            df[f"{f.full_name} {sn} [{sp.hn}]"] = f.h[start:stop:stride]
-            # delta value
-            # if self.isotopes:
-            df[f"{f.full_name} {sn} {sdn} [{sds}]"] = f.d[start:stop:stride]
+            if f.save_flux_data:
+                df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]  # m
+                df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]  #  l
+                df[f"{f.full_name} {sn} [{sp.hn}]"] = f.h[start:stop:stride]  # h
+                df[f"{f.full_name} {sn} {sdn} [{sds}]"] = f.d[start:stop:stride]  # d
+            else:
+                df[f"{f.full_name} {sn} [{fmu}]"] = f.fa[0]  # m
+                df[f"{f.full_name} {sn} [{sp.ln}]"] = f.fa[2]  # l
+                df[f"{f.full_name} {sn} [{sp.hn}]"] = f.fa[3]  # h
+                df[f"{f.full_name} {sn} {sdn} [{sds}]"] = f.fa[4]  # d
 
         file_path = Path(fn)
         if append:
@@ -1741,7 +1753,7 @@ class ReservoirBase(esbmtkBase):
             # this finds the reservoir name
             if name == self.full_name:
                 logging.debug(f"found reservoir data for {name}")
-                col = self.__assign__data__(self, df, col, True)
+                col = self.__assign_reservoir_data__(self, df, col, True)
             # this loops over all fluxes in a reservoir
             elif is_name_in_list(name, self.lof):
                 logging.debug(f"{name} is in {self.full_name}.lof")
@@ -1750,7 +1762,7 @@ class ReservoirBase(esbmtkBase):
                     f"found object {obj.full_name} adding flux data for {name}"
                 )
                 read.add(obj.full_name)
-                col = self.__assign__data__(obj, df, col, False)
+                col = self.__assign_flux_data__(obj, df, col, False)
                 i += 1
             else:
                 raise ValueError(f"Unable to find Flux {n} in {self.full_name}")
@@ -1759,9 +1771,11 @@ class ReservoirBase(esbmtkBase):
         for f in list(curr.difference(read)):
             print(f"\n Warning: Did not find values for {f}\n in saved state")
 
-    def __assign__data__(self, obj: any, df: pd.DataFrame, col: int, res: bool) -> int:
+    def __assign_flux_data__(
+        self, obj: any, df: pd.DataFrame, col: int, res: bool
+    ) -> int:
         """
-        Assign the third last entry data to all values in flux or reservoir
+        Assign the third last entry data to all values in flux
 
         parameters: df = dataframe
                     col = column number
@@ -1769,17 +1783,32 @@ class ReservoirBase(esbmtkBase):
 
         """
 
-        ovars: list = ["m", "l", "h", "d"]
+        obj.fa[0] = df.iloc[0, col]
+        obj.fa[1] = df.iloc[0, col + 1]
+        obj.fa[2] = df.iloc[0, col + 2]
+        obj.fa[3] = df.iloc[0, col + 3]
+        col = col + 4
+
+        return col
+
+    def __assign_reservoir_data__(
+        self, obj: any, df: pd.DataFrame, col: int, res: bool
+    ) -> int:
+        """
+        Assign the third last entry data to all values in reservoir
+
+        parameters: df = dataframe
+                    col = column number
+                    res = true if reservoir
+
+        """
 
         obj.m[:] = df.iloc[-3, col]
         obj.l[:] = df.iloc[-3, col + 1]
         obj.h[:] = df.iloc[-3, col + 2]
         obj.d[:] = df.iloc[-3, col + 3]
-        col = col + 4
-
-        if res:  # if type is reservoir
-            obj.c[:] = df.iloc[-3, col]
-            col += 1
+        obj.c[:] = df.iloc[-3, col + 4]
+        col = col + 5
 
         return col
 
@@ -2211,7 +2240,7 @@ class Flux(esbmtkBase):
             "display_precision": Number,
             "isotopes": bool,
             "register": any,
-            "save_flux_data": bool,
+            "save_flux_data": (bool, str),
             "id": str,
         }
 
@@ -2226,13 +2255,17 @@ class Flux(esbmtkBase):
             "isotopes": False,
             "register": "None",
             "id": "",
-            "save_flux_data": True,
+            "save_flux_data": "None",
         }
 
         # initialize instance
         self.__initerrormessages__()
         self.bem.update({"rate": "a string", "plot": "a string"})
         self.__validateandregister__(kwargs)  # initialize keyword values
+
+        # if save_flux_data is unsepcified, use model default
+        if self.save_flux_data == "None":
+            self.save_flux_data = self.species.mo.save_flux_data
 
         # legacy names
         self.n: str = self.name  # name of flux
@@ -2262,18 +2295,26 @@ class Flux(esbmtkBase):
             self.h: [NDArray, Float[64]] = np.zeros(self.model.steps)
             self.d: [NDArray, Float[64]] = np.zeros(self.model.steps) + self.delta
 
-        if self.mo.number_of_solving_iterations > 0:
-            self.mc = np.empty(0)
-            self.dc = np.empty(0)
+            if self.mo.number_of_solving_iterations > 0:
+                self.mc = np.empty(0)
+                self.dc = np.empty(0)
 
-        if self.rate != 0:
-            [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
-            self.fa[1], self.fa[2] = get_imass(self.fa[0], self.fa[3], self.species.r)
+            if self.rate != 0:
+                [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
+                [self.fa[1], self.fa[2]] = get_imass(
+                    self.fa[0], self.fa[3], self.species.r
+                )
+        else:
+            # setup dummy variables to keep existing numba data structures
+            self.m = np.zeros(2)
+            self.l = np.zeros(2)
+            self.h = np.zeros(2)
+            self.d = np.zeros(2)
 
-        # if self.delta == 0:
-        #     self.d: [NDArray, Float[64]] = zeros(self.model.steps)
-        # else:  # update delta
-        #     self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.sp.r)
+            if self.rate != 0:
+                [self.fa[1], self.fa[2]] = get_imass(
+                    self.fa[0], self.fa[3], self.species.r
+                )
 
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
@@ -2444,12 +2485,15 @@ class Flux(esbmtkBase):
         so we subsample the results before saving, or processing them
 
         """
-        stride = int(len(self.m) / self.mo.number_of_datapoints)
 
-        self.m = self.m[2:-2:stride]
-        self.l = self.m[2:-2:stride]
-        self.h = self.m[2:-2:stride]
-        self.d = self.d[2:-2:stride]
+        if self.save_flux_data:
+            stride = int(len(self.m) / self.mo.number_of_datapoints)
+            
+            self.m = self.m[2:-2:stride]
+            self.l = self.m[2:-2:stride]
+            self.h = self.m[2:-2:stride]
+            self.d = self.d[2:-2:stride]
+            
 
     def __reset_state__(self) -> None:
         """Copy the result of the last computation back to the beginning

@@ -698,6 +698,8 @@ class Signal(esbmtkBase):
             species=self.sp,
             rate=f"0 {self.sp.mo.f_unit}",
             delta=0,
+            save_flux_data=True,
+            register=self,
         )
         self.nf.d[0:]: float = 0.0  # initialize delta
 

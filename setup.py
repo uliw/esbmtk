@@ -30,7 +30,7 @@ setuptools.setup(
         "Topic :: Scientific/Engineering :: Chemistry",
         "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.9",
     install_requires=[
         "nptyping",
         "typing",
@@ -41,5 +41,7 @@ setuptools.setup(
         "scipy",
         "numba",
         "pathlib",
+        "os",
+        "psutil",
     ],
 )

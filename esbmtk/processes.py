@@ -377,10 +377,10 @@ class AddSignal(Process):
 
         r: float = params[0]
 
-        m: float = data[0][i] # fm
-        l: float = data[1][i] # fi
-        sm: float = data[4][i] # sm
-        sd: float = data[7][i] # sd 
+        m: float = data[0][i]  # fm
+        l: float = data[1][i]  # fi
+        sm: float = data[4][i]  # sm
+        sd: float = data[7][i]  # sd
         if m > 0:
             d = 1000 * ((m - l) / l - r) / r + sd
         else:
@@ -590,6 +590,7 @@ class ScaleFlux(Process):
                 self.reservoir.l,  # 6 Upstream reservoir li
                 self.reservoir.d,  # 7 Upstream reservoir d
                 self.flux.fa,  # 8
+                self.ref_flux.fa, # 9
             ]
         )
 
@@ -606,7 +607,7 @@ class ScaleFlux(Process):
         s: float = params[1]  # scale
 
         # data
-        mf: float = data[4][i] * s  # mass of reference flux
+        mf: float = data[9][0] * s  # mass of reference flux
         mr: float = data[5][i - 1]  # mass upstream reserevoir
         lr: float = data[6][i - 1]  # li upstream reserevoir
         d: float = data[7][i - 1]  # d upstream reserevoir
