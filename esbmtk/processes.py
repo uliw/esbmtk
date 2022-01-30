@@ -5,7 +5,7 @@ from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
 from copy import deepcopy, copy
 from time import process_time
-from numba import njit
+from numba import njit, jit
 from numba.typed import List
 
 import numpy as np
@@ -307,42 +307,52 @@ class AddSignal(Process):
 
         # add signal mass to flux mass
         r = self.f.species.r
-        m = self.f.m[i]  # flux rate
-        l = self.f.l[i]  # flux rate light isotope
-        sd = self.lt.d[i]  # signal delta
+        fm = self.f.m[i]  # flux rate
+        fl = self.f.l[i]  # flux rate light isotope
+        sm = self.lt.m[i]  # signal mass
+        sl = self.lt.l[i]  # signal li
 
-        # get new delta
-        if m > 0:
-            d = 1000 * ((m - l) / l - r) / r + sd
+        # get signal delta
+        if sm > 0:
+            sd = 1000 * ((sm - sl) / sl - r) / r
         else:
-            d = sd
+            sd = 0
+        # print(f"Signal delta = {sd}")
 
-        # set new flux rate
-        m += self.lt.m[i]  # add signal mass
-        l = 1000.0 * m / ((d + 1000.0) * r + 1000.0)
-        h = m - l
-        self.f.fa = np.array([m, l, h, d])
+        if fm > 0:  # get flux delta
+            fd = 1000 * ((fm - fl) / fl - r) / r + sd
+        else:
+            fd = sd
+
+        fm += sm  # add signal mass
+        fl = 1000.0 * fm / ((fd + 1000.0) * r + 1000.0)
+
+        self.f.fa = np.array([fm, fl])
+        # print(f"fa = {self.f.fa}\n")
 
     def __add_with_fa__(self, i) -> None:
         """same as above but use fa instead of flux data"""
 
         # add signal mass to flux mass
         r = self.f.species.r
-        m = self.f.fa[0]  # flux rate
-        l = self.f.fa[1]  # flux rate light isotope
-        sd = self.lt.d[i]  # signal delta
+        fm = self.f.fa[0]  # flux rate
+        fl = self.f.fa[1]  # flux rate light isotope
+        sm = self.lt.m[i]  # signal mass
+        sl = self.lt.l[i]  # signal li
 
-        # get new delta
-        if m > 0:
-            d = 1000 * ((m - l) / l - r) / r + sd
+        # get signal delta
+        sd = 1000 * ((sm - sl) / sl - r) / r
+
+        if fm > 0:  # get flux delta
+            fd = 1000 * ((fm - fl) / fl - r) / r + sd
         else:
-            d = sd
+            fd = sd
 
         # set new flux rate
-        m += self.lt.m[i]  # add signal mass
-        l = 1000.0 * m / ((d + 1000.0) * r + 1000.0)
-        h = m - l
-        self.f.fa = np.array([m, l, h, d])
+        fm += sm  # add signal mass
+        fl = 1000.0 * fm / ((fd + 1000.0) * r + 1000.0)
+
+        self.f.fa = np.array([fm, fl])
 
     def get_process_args(self):
         return self.__get_process_args__()
@@ -357,13 +367,9 @@ class AddSignal(Process):
             [
                 self.flux.m,  # 0
                 self.flux.l,  # 1
-                self.flux.h,  # 2
-                self.flux.d,  # 3
-                self.lt.m,  # 4
-                self.lt.l,  # 5
-                self.lt.h,  # 6
-                self.lt.d,  # 7
-                self.flux.fa,  # 8
+                self.lt.m,  # 2
+                self.lt.l,  # 3
+                self.flux.fa,  # 4
             ]
         )
 
@@ -376,21 +382,27 @@ class AddSignal(Process):
     def p_add_signal_fi(data, params, i) -> None:
 
         r: float = params[0]
+        fm: float = data[0][i]  # fm
+        fl: float = data[1][i]  # fl
+        sm: float = data[2][i]  # sm
+        sl: float = data[3][i]  # sd
 
-        m: float = data[0][i]  # fm
-        l: float = data[1][i]  # fi
-        sm: float = data[4][i]  # sm
-        sd: float = data[7][i]  # sd
-        if m > 0:
-            d = 1000 * ((m - l) / l - r) / r + sd
+        # get signal delta
+        if sm > 0:
+            sd = 1000 * ((sm - sl) / sl - r) / r
         else:
-            d = sd
+            sd = 0
+
+        if fm > 0:  # get flux delta
+            fd = 1000 * ((fm - fl) / fl - r) / r + sd
+        else:
+            fd = sd
 
         # set new flux rate
-        m += sm  # add signal mass
-        l = 1000.0 * m / ((d + 1000.0) * r + 1000.0)
-        h = m - l
-        data[8][:] = [m, l, h, d]
+        fm += sm  # add signal mass
+        fl = 1000.0 * fm / ((fd + 1000.0) * r + 1000.0)
+
+        data[4][:] = [fm, fl]
 
     def __get_process_args_fa__(self):
 
@@ -402,9 +414,7 @@ class AddSignal(Process):
             [
                 self.lt.m,  # 0
                 self.lt.l,  # 1
-                self.lt.h,  # 2
-                self.lt.d,  # 3
-                self.flux.fa,  # 4
+                self.flux.fa,  #  2
             ]
         )
 
@@ -417,21 +427,25 @@ class AddSignal(Process):
     def p_add_signal_fa(data, params, i) -> None:
 
         r: float = params[0]
-
-        m: float = data[4][0]
-        l: float = data[4][1]
+        fm: float = data[2][0]
+        fl: float = data[2][1]
         sm: float = data[0][i]
-        sd: float = data[3][i]
-        if m > 0:
-            d = 1000 * ((m - l) / l - r) / r + sd
-        else:
-            d = sd
+        sl: float = data[1][i]
 
-        # set new flux rate
-        m += sm  # add signal mass
-        l = 1000.0 * m / ((d + 1000.0) * r + 1000.0)
-        h = m - l
-        data[4][:] = [m, l, h, d]
+        # get signal delta
+        if sm > 0:
+            sd = 1000 * ((sm - sl) / sl - r) / r
+        else:
+            sd = 0
+
+        if fm > 0:  # get flux delta
+            fd = 1000 * ((fm - fl) / fl - r) / r + sd
+        else:
+            fd = sd
+
+        fm += sm  # add signal mass
+        fl = 1000.0 * fm / ((fd + 1000.0) * r + 1000.0)
+        data[2][:] = [fm, fl]
 
 
 class SaveFluxData(Process):
@@ -473,9 +487,9 @@ class SaveFluxData(Process):
             [
                 self.flux.m,  # 0
                 self.flux.l,  # 1
-                self.flux.h,  # 2
-                self.flux.d,  # 3
-                self.flux.fa,  # 4
+                # self.flux.h,  # 2
+                # self.flux.d,  # 3
+                self.flux.fa,  # 4 2
             ]
         )
 
@@ -487,10 +501,8 @@ class SaveFluxData(Process):
     @njit(fastmath=True, error_model="numpy")
     def p_save_flux(data, params, i) -> None:
 
-        data[0][i] = data[4][0]
-        data[1][i] = data[4][1]
-        data[2][i] = data[4][2]
-        data[3][i] = data[4][3]
+        data[0][i] = data[2][0]
+        data[1][i] = data[2][1]
 
 
 class ScaleFlux(Process):
@@ -558,11 +570,11 @@ class ScaleFlux(Process):
         )
 
         l: float = m * c / (c + 1)
-        h: float = m - l
-        d: float = self.reservoir.d[i - 1]
+        # h: float = m - l
+        # d: float = self.reservoir.d[i - 1]
 
         # old self.flux[i]: np.array = [m, l, h, d]
-        self.flux.fa = [m, l, h, d]
+        self.flux.fa = [m, l]
 
     def __without_isotopes__(self, i: int) -> None:
         """Apply the scale factor. This is typically done through the the
@@ -572,7 +584,12 @@ class ScaleFlux(Process):
 
         """
 
-        self.f.fa = np.array([self.ref_flux.fa[0] * self.scale, 0, 0, 0])
+        self.f.fa = np.array(
+            [
+                self.ref_flux.fa[0] * self.scale,
+                0,
+            ]
+        )
 
     def get_process_args(self):
         """"""
@@ -583,14 +600,14 @@ class ScaleFlux(Process):
             [
                 self.flux.m,  # 0
                 self.flux.l,  # 1
-                self.flux.h,  # 2
-                self.flux.d,  # 3
-                self.ref_flux.m,  # 4 Reference Flux
-                self.reservoir.m,  # 5  Upstream reservoir
-                self.reservoir.l,  # 6 Upstream reservoir li
-                self.reservoir.d,  # 7 Upstream reservoir d
-                self.flux.fa,  # 8
-                self.ref_flux.fa, # 9
+                # self.flux.h,  # 2
+                # self.flux.d,  # 3
+                self.ref_flux.m,  # 4 2 Reference Flux
+                self.reservoir.m,  # 5 3 Upstream reservoir
+                self.reservoir.l,  # 6 4 Upstream reservoir li
+                # self.reservoir.d,  # 7  Upstream reservoir d
+                self.flux.fa,  # 8 5
+                self.ref_flux.fa,  # 9 6
             ]
         )
 
@@ -607,10 +624,9 @@ class ScaleFlux(Process):
         s: float = params[1]  # scale
 
         # data
-        mf: float = data[9][0] * s  # mass of reference flux
-        mr: float = data[5][i - 1]  # mass upstream reserevoir
-        lr: float = data[6][i - 1]  # li upstream reserevoir
-        d: float = data[7][i - 1]  # d upstream reserevoir
+        mf: float = data[6][0] * s  # mass of reference flux
+        mr: float = data[3][i - 1]  # mass upstream reserevoir
+        lr: float = data[4][i - 1]  # li upstream reserevoir
 
         # get the target isotope ratio based on upstream delta
         c = lr / (mr - lr)
@@ -620,7 +636,7 @@ class ScaleFlux(Process):
         # data[1][i] = l
         # data[2][i] = mf - l
         # data[3][i] = d
-        data[8][:] = [mf, l, mf - l, d]
+        data[5][:] = [mf, l]
 
 
 class Fractionation(Process):
@@ -671,12 +687,15 @@ class Fractionation(Process):
             ) / self.alp
 
             l = m * c / (c + 1)
-            h = m - l
-            d = 1000 * (h / l - r) / r
+            # h = m - l
+            # d = 1000 * (h / l - r) / r
 
-            self.f.fa = [m, l, m - l, d]
+            self.f.fa = [m, l]
         else:
-            self.f.fa = [0, 0, 0, 0]
+            self.f.fa = [
+                0,
+                0,
+            ]
 
         return
 
@@ -688,11 +707,11 @@ class Fractionation(Process):
             [
                 self.flux.m,  # 0
                 self.flux.l,  # 1
-                self.flux.h,  # 2
-                self.flux.d,  # 3
-                self.reservoir.m,  # 4
-                self.reservoir.l,  # 5
-                self.flux.fa,  # 6
+                # self.flux.h,  # 2
+                # self.flux.d,  # 3
+                self.reservoir.m,  # 4 2
+                self.reservoir.l,  # 5 3
+                self.flux.fa,  # 6 4
             ]
         )
         params = List([float(self.reservoir.species.element.r), float(self.alp)])
@@ -707,16 +726,16 @@ class Fractionation(Process):
         a: float = params[1]  # alpha
 
         # data
-        fm: float = data[6][0]  # flux mass
-        rm: float = data[4][i - 1]  # 4 reservoir mass
-        rl: float = data[5][i - 1]  # 4 reservoir light isotope
+        fm: float = data[4][0]  # flux mass
+        rm: float = data[2][i - 1]  # 4 reservoir mass
+        rl: float = data[3][i - 1]  # 4 reservoir light isotope
 
         c = (rl / (rm - rl)) / a
         fl = fm * c / (c + 1)  # flux li
-        fh = fm - fl  # flux hi
-        fd = 1000 * (fh / fl - r) / r  # flux d
+        # fh = fm - fl  # flux hi
+        # fd = 1000 * (fh / fl - r) / r  # flux d
 
-        data[6][:] = [fm, fl, fh, fd]
+        data[4][:] = [fm, fl]
 
 
 class RateConstant(Process):
@@ -866,7 +885,7 @@ class weathering(RateConstant):
             self.f_0
             * (self.scale * self.reservoir_ref.c[i - 1] / self.pco2_0) ** self.ex
         )
-        self.flux.fa = [f, 0, 0, 0]
+        self.flux.fa = [f, 0]
 
     def __with_isotopes__(self, i: int) -> None:
         """
@@ -894,12 +913,12 @@ class weathering(RateConstant):
             [
                 self.flux.m,  # 0
                 self.flux.l,  # 1
-                self.flux.h,  # 2
-                self.flux.d,  # 3
-                self.reservoir_ref.d,  # 4
-                self.reservoir_ref.c,  # 5
-                self.reservoir_ref.m,  # 6
-                self.flux.fa,  # 7
+                # self.flux.h,  # 2
+                # self.flux.d,  # 3
+                # self.reservoir_ref.d,  # 4
+                self.reservoir_ref.c,  # 5 2
+                self.reservoir_ref.m,  # 6 3
+                self.flux.fa,  # 7 4
             ]
         )
         params = List(
@@ -923,9 +942,9 @@ class weathering(RateConstant):
         pco2_0: float = params[3]
         ex: float = params[4]
 
-        c: float = data[5][i - 1]
+        c: float = data[2][i - 1]
         f: float = f_0 * (c * s / pco2_0) ** ex
-        data[7][:] = [f, 0, 0, 0]
+        data[4][:] = [f, 0]
 
 
 class ScaleRelativeToConcentration(RateConstant):
@@ -955,7 +974,10 @@ class ScaleRelativeToConcentration(RateConstant):
             # convert to concentration
             c = m / self.reservoir.volume
             f = c * self.scale
-            self.flux.fa = [f, 0, 0, 0]
+            self.flux.fa = [
+                f,
+                0,
+            ]
 
     def __with_isotopes__(self, i: int) -> None:
         """
@@ -974,8 +996,8 @@ class ScaleRelativeToConcentration(RateConstant):
             )
             m = rc * self.scale
             l = m * c / (c + 1)
-            d = self.reservoir.d[i - 1]
-            self.f.fa = [m, l, m - l, d]
+            # d = self.reservoir.d[i - 1]
+            self.f.fa = [m, l]
 
     def get_process_args(self):
 
@@ -985,20 +1007,20 @@ class ScaleRelativeToConcentration(RateConstant):
             [
                 self.flux.m,  # 0
                 self.flux.l,  # 1
-                self.flux.h,  # 2
-                self.flux.d,  # 3
-                self.reservoir.d,  # 4
-                self.reservoir.c,  # 5
-                self.reservoir.m,  # 6
-                self.reservoir.l,  # 7
-                self.flux.fa,  # 8
+                # self.flux.h,  # 2
+                # self.flux.d,  # 3
+                # self.reservoir.d,  # 4
+                self.reservoir.c,  # 5 2
+                self.reservoir.m,  # 6 3
+                self.reservoir.l,  # 7 4
+                self.flux.fa,  # 8 5
             ]
         )
         params = List(
             [
                 float(self.reservoir.species.element.r),
                 float(self.scale),
-                float(self.reservoir.v),
+                float(self.reservoir.volume),
             ]
         )
 
@@ -1014,19 +1036,19 @@ class ScaleRelativeToConcentration(RateConstant):
         v: float = params[2]  # res volume
 
         # # data 0 to 3 = flux data
-        rd: float = data[4][i - 1]  # res delta
-        rc: float = data[5][i - 1]  # res concentration
-        rm: float = data[6][i - 1]  # res mass
-        rl: float = data[7][i - 1]  # res li
+        # rd: float = data[4][i - 1]  # res delta
+        rc: float = data[2][i - 1]  # res concentration
+        rm: float = data[3][i - 1]  # res mass
+        rl: float = data[4][i - 1]  # res li
 
         if rc > 0:
             m: float = rc * s
             c: float = rl / (rm - rl)
             l: float = m * c / (c + 1)
-            data[8][:] = [m, l, m - l, rd]
+            data[5][:] = [m, l]
 
         else:
-            data[8][:] = [0.0, 0.0, 0.0, 0.0]
+            data[5][:] = [0.0, 0.0]
 
 
 class ScaleRelativeToMass(RateConstant):
@@ -1068,12 +1090,12 @@ class ScaleRelativeToMass(RateConstant):
         """
         m: float = self.reservoir.m[i - 1] * self.scale
         r: float = self.reservoir.species.element.r
-        d: float = self.reservoir.d[i - 1]
+        # d: float = self.reservoir.d[i - 1]
         c = self.reservoir.l[i - 1] / (
             self.reservoir.m[i - 1] - self.reservoir.l[i - 1]
         )
         l = m * c / (c + 1)
-        self.flux.fa = [m, l, m - l, d]
+        self.flux.fa = [m, l]
 
     def get_process_args(self):
         """return the data associated with this object"""
@@ -1084,12 +1106,12 @@ class ScaleRelativeToMass(RateConstant):
             [
                 self.flux.m,  # 0
                 self.flux.l,  # 1
-                self.flux.h,  # 2
-                self.flux.d,  # 3
-                self.reservoir.m,  # 4
-                self.reservoir.l,  # 5
-                self.reservoir.d,  # 6
-                self.flux.fa,  # 7
+                # self.flux.h,  # 2
+                # self.flux.d,  # 3
+                self.reservoir.m,  # 4 2
+                self.reservoir.l,  # 5 3
+                # self.reservoir.d,  # 6
+                self.flux.fa,  # 7 4
             ]
         )
 
@@ -1107,81 +1129,81 @@ class ScaleRelativeToMass(RateConstant):
         s: float = params[1]  # scale factor
 
         # data
-        rm = data[4][i - 1]
-        rl = data[5][i - 1]
-        rd = data[6][i - 1]
+        rm = data[2][i - 1]
+        rl = data[3][i - 1]
+        # rd = data[6][i - 1]
 
         m: float = rm * s  # new flux
         c: float = rl / (rm - rl)
         l: float = m * c / (c + 1)
-        d: float = data[1][i - 1]  # flux delta
+        # d: float = data[1][i - 1]  # flux delta
 
-        data[7][:] = [m, l, m - l, d]
+        data[4][:] = [m, l]
 
 
-class ScaleRelative2otherReservoir(RateConstant):
-    """This process scales the flux as a function one or more reservoirs
-    constant which describes the
-    strength of relation between the reservoir concentration and
-    the flux scaling
+# class ScaleRelative2otherReservoir(RateConstant):
+#     """This process scales the flux as a function one or more reservoirs
+#     constant which describes the
+#     strength of relation between the reservoir concentration and
+#     the flux scaling
 
-    F = C1 * C1 * k
+#     F = C1 * C1 * k
 
-    where Mi denotes the concentration in one  or more reservoirs, k is one
-    or more constant(s). This process is typically called by the connector
-    instance when you specify the connection as
+#     where Mi denotes the concentration in one  or more reservoirs, k is one
+#     or more constant(s). This process is typically called by the connector
+#     instance when you specify the connection as
 
-    Connect(source =  upstream reservoir,
-              sink = downstream reservoir,
-              ctype = "scale_relative_to_multiple_reservoirs"
-              ref_reservoirs = [r1, r2, k etc] # you must provide at least one
-                                               # reservoir or constant
-              scale = a overall scaling factor
-           )
-    """
+#     Connect(source =  upstream reservoir,
+#               sink = downstream reservoir,
+#               ctype = "scale_relative_to_multiple_reservoirs"
+#               ref_reservoirs = [r1, r2, k etc] # you must provide at least one
+#                                                # reservoir or constant
+#               scale = a overall scaling factor
+#            )
+#     """
 
-    def __misc_init__(self) -> None:
-        """Test that self.reservoir only contains numbers and reservoirs"""
+#     def __misc_init__(self) -> None:
+#         """Test that self.reservoir only contains numbers and reservoirs"""
 
-        self.rs: list = []
-        self.constant: Number = 1
+#         self.rs: list = []
+#         self.constant: Number = 1
 
-        for r in self.ref_reservoirs:
-            if isinstance(r, (Reservoir)):
-                self.rs.append(r)
-            elif isinstance(r, (Number)):
-                self.constant = self.constant * r
-            else:
-                raise ValueError(f"{r} must be reservoir or number, not {type(r)}")
+#         for r in self.ref_reservoirs:
+#             if isinstance(r, (Reservoir)):
+#                 self.rs.append(r)
+#             elif isinstance(r, (Number)):
+#                 self.constant = self.constant * r
+#             else:
+#                 raise ValueError(f"{r} must be reservoir or number, not {type(r)}")
 
-    def __without_isotopes__(self, i: int) -> None:
-        c: float = 1
-        for r in self.rs:
-            c = c * r.c[i - 1]
+#     def __without_isotopes__(self, i: int) -> None:
+#         c: float = 1
+#         for r in self.rs:
+#             c = c * r.c[i - 1]
 
-        scale: float = c * self.scale * self.constant
+#         scale: float = c * self.scale * self.constant
 
-        # scale = scale * (scale >= 0)  # prevent negative fluxes.
-        self.f[i] = [scale, scale, scale, 1]
+#         # scale = scale * (scale >= 0)  # prevent negative fluxes.
+#         self.f[i] = [scale, scale, scale, 1]
 
-    def __with_isotopes__(self, i: int) -> None:
-        """
-        not sure that this correct WRT isotopes
+#     def __with_isotopes__(self, i: int) -> None:
+#         """
+#         not sure that this correct WRT isotopes
 
-        """
+#         """
 
-        raise NotImplementedError(
-            "Scale relative to multiple reservoirs is undefined for isotope calculations"
-        )
+#         raise NotImplementedError(
+#             "Scale relative to multiple reservoirs is undefined for isotope calculations"
+#         )
 
-        # c: float = 1
-        # for r in self.rs:
-        #     c = c * r.c[i - 1]
+#         # c: float = 1
+#         # for r in self.rs:
+#         #     c = c * r.c[i - 1]
 
-        # scale: float = c * self.scale * self.constant
+#         # scale: float = c * self.scale * self.constant
 
-        # # scale = scale * (scale >= 0)  # prevent negative fluxes.
-        # self.f[i] = [scale, scale, scale, 1]
+#         # # scale = scale * (scale >= 0)  # prevent negative fluxes.
+#         # self.f[i] = [scale, scale, scale, 1]
 
 
 class GasExchange(RateConstant):
@@ -1203,7 +1225,7 @@ class GasExchange(RateConstant):
 
     # redefine misc_init which is being called by post-init
     def __misc_init__(self):
-        """Sort out input variables"""
+        """Set up input variables"""
 
         self.p_H2O = self.seawaterconstants.p_H2O
         self.a_dg = self.seawaterconstants.a_dg
@@ -1230,9 +1252,9 @@ class GasExchange(RateConstant):
         # changes in the mass of CO2 also affect changes in the total mass
         # of the atmosphere. So we need to update the reservoir volume
         # variable which we use the store the total atmospheric mass
-        # reservoir.v[i] = reservoir.v[i] + a * reservoir.mo.dt
+        reservoir.v[i] = reservoir.v[i] + a * reservoir.mo.dt
         # self.flux[i] = [a, 1, 1, 1]
-        self.flux.fa = [a, 1, 1, 1]
+        self.flux.fa = [a, 1]
 
     def __with_isotopes__(self, i: int) -> None:
         """
@@ -1259,8 +1281,13 @@ class GasExchange(RateConstant):
             - self.ref_species[i - 1] * 1000  # [CO2]aq
         )
 
-        co2aq_c13 = self.ref_species[i - 1] * self.r.h[i - 1] / self.r.m[i - 1]
-        co2at_c13 = self.gas.h[i - 1] / self.gas.volume
+        # this seems backward, -> fix
+        co2aq_c13 = (
+            self.ref_species[i - 1] * self.r.m[i - 1]
+            - self.r.l[i - 1] / self.r.m[i - 1]
+        )
+        gh = self.gas.m[i - 1] - self.gas.l[i - 1]
+        co2at_c13 = self.gas.m[i - 1] - gh / self.gas.volume
 
         f13 = (
             self.scale
@@ -1276,20 +1303,12 @@ class GasExchange(RateConstant):
 
         # h = flux!
         f12 = f - f13
-        d = (f13 / f12 / self.rvalue - 1) * 1000
+        # d = (f13 / f12 / self.rvalue - 1) * 1000
 
         # print(f"f={f:.2e}")
         # print(f"P: f={f:.2e}, f12={f12:.2e}, f13={f13:.2e}, d={d:.2f}")
-        self.flux.fa = [f, f12, f13, d]
-
-        # changes in the mass of CO2 also affect changes in the total mass
-        # of the atmosphere. So we need to update the reservoir volume
-        # variable which we use the store the total atmospheric mass
-
-        # print(f"Name = {reservoir.full_name}")
-        # reservoir.v[i] = reservoir.v[i] + f * reservoir.mo.dt
-
-        # raise NotImplementedError()
+        self.flux.fa[0:2] = [f, f12]
+        self.reservoir.v[i] = self.reservoir.v[i] + f * self.reservoir.mo.dt
 
     def __postinit__(self) -> None:
         """Do some housekeeping for the process class"""
@@ -1306,19 +1325,16 @@ class GasExchange(RateConstant):
 
         data = List(
             [
-                self.flux.m,  # 0
-                self.flux.l,  # 1
-                self.flux.h,  # 2
-                self.flux.d,  # 3
-                self.liquid.m,  # 4
-                self.liquid.h,  # 5
-                self.ref_species,  # 6
-                self.gas.c,  # 7
-                self.gas.h,  # 8
-                self.gas.v,  # 9
-                self.r.m,  # 10
-                self.r.h,  # 11
-                self.flux.fa,  # 12
+                self.flux.fa,  # 0
+                self.liquid.m,  # 1
+                self.liquid.l,  # 2
+                self.gas.m,  # 3
+                self.gas.l,  # 4
+                self.gas.c,  # 5
+                self.gas.v,  # 6
+                self.r.m,  # 7
+                self.r.l,  # 8
+                self.ref_species,  # 9
             ]
         )
 
@@ -1347,8 +1363,6 @@ class GasExchange(RateConstant):
         the function compared to the __with/without_isotopes__ method(s). See the
         __get_process_args__ method for details
 
-        This process does not yet work with variable volumes
-
         """
 
         scale: float = params[0]  # scale
@@ -1362,11 +1376,17 @@ class GasExchange(RateConstant):
         pH2O: float = params[8]  # p_H2O
         solubility: float = params[9]  # solubility
 
-        rs = data[6][i - 1]  # ref species
-        rm = data[10][i - 1]
-        rh = data[11][i - 1]
-        gc = data[7][i - 1]
-        gh = data[8][i - 1]  # gas.h
+        lm = data[1][i - 1]
+        ll = data[2][i - 1]
+        gm = data[3][i - 1]
+        gl = data[4][i - 1]
+        gc = data[5][i - 1]
+        gv = data[6][i - 1]
+        rm = data[7][i - 1]
+        rl = data[8][i - 1]
+        rs = data[9][i - 1]
+        gh = gm - gl  # gas.h
+        rh = rm - rl
 
         f = scale * (gc * (1 - pH2O) * solubility - rs * 1000)
         co2aq_c13 = rs * rh / rm  #
@@ -1378,14 +1398,9 @@ class GasExchange(RateConstant):
             * (dg * co2at_c13 * (1 - pH2O) * solubility - db * co2aq_c13 * 1000)
         )
         f12 = f - f13
-        d = (f13 / f12 / r - 1) * 1000
-
-        # data[0][i] = f
-        # data[1][i] = f12
-        # data[2][i] = f13
-        # data[3][i] = d
-        data[12][:] = [f, f12, f13, d]
-        data[9][i] = data[9][i] + f * dt
+        data[0][:] = [f, f12]  # fa
+        # fix: verifyf that this works?
+        # data[6][i] = data[6][i - 1] + f * dt  # gas volume
 
 
 class VarDeltaOut(Process):
@@ -1456,35 +1471,29 @@ class VarDeltaOut(Process):
 
         m: float = self.flux.m[i]
         if m != 0:
-            # if reservoir.register.name == "db":
-            #    print(f"{reservoir.name} d={reservoir.d[i-1]}")
-            r: float = self.reservoir.species.element.r
-            d: float = self.reservoir.d[i - 1]
-            l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-            h: float = m - l
-
-            self.flux.fa = [m, l, h, d]
+            c = self.reservoir.l[i - 1] / (
+                self.reservoir.m[i - 1] - self.reservoir.l[i - 1]
+            )
+            self.flux.fa = [m, m * c]
 
     def get_process_args(self):
         """Provide the data structure which needs to be passed to the numba solver"""
 
         # if upstream is a source, we only have a single delta value
         # so we need to patch this. Maybe this should move to source?
-        if isinstance(self.reservoir, Source):
-            delta = self.reservoir.d
-        else:
-            delta = self.reservoir.d
 
         func_name: function = self.p_vardeltaout
 
         data = List(
             [
                 self.flux.m,  # 0
-                self.flux.l,  # 1
-                self.flux.h,  # 2
-                self.flux.d,  # 3
-                delta,  # 4
-                self.flux.fa,  # 5
+                # self.flux.l,  # 1
+                # self.flux.h,  # 2
+                # self.flux.d,  # 3
+                # delta,  # 4
+                self.reservoir.m,  # 1
+                self.reservoir.l,  # 2
+                self.flux.fa,  # 5 3
             ]
         )
 
@@ -1497,16 +1506,12 @@ class VarDeltaOut(Process):
     def p_vardeltaout(data, params, i) -> None:
         # concentration times scale factor
 
-        r: float = params[0]  # r-value
-        m: float = data[0][i - 1]  # flux mass
-        d: float = data[4][i - 1]  # reservoir delta
-        l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+        mf: float = data[0][i - 1]  # flux mass
+        mr: float = data[1][i - 1]  # reservoir mass
+        lr: float = data[2][i - 1]  # reservoir l
 
-        # data[0][i] = m
-        # data[1][i] = l
-        # data[2][i] = m - l
-        # data[3][i] = d
-        data[5][:] = [m, l, m - l, d]
+        c = lr / (mr - lr)
+        data[3][:] = [mf, mf * c]
 
     def __with_isotopes_source__(self, i: int) -> None:
         """If the source of the flux is a source, there is only a single delta value.
@@ -1515,12 +1520,10 @@ class VarDeltaOut(Process):
 
         m: float = self.flux.m[i]
         if m != 0:
-            d: float = self.reservoir.delta
-            r: float = self.reservoir.species.element.r
-            l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-            h: float = m - l
-
-            self.flux.fa = [m, l, h, d]
+            c = self.reservoir.l[i - 1] / (
+                self.reservoir.m[i - 1] - self.reservoir.l[i - 1]
+            )
+            self.flux.fa = [m, m * c]
 
     def __without_isotopes__(self, i: int) -> None:
         """Here we re-balance the flux. This code will be called by the
@@ -1590,9 +1593,9 @@ class MultiplySignal(Process):
         c = self.lt.m[i]
         m = self.f.m[i] * c
         l = self.f.l[i] * c
-        h = self.f.h[i] * c
-        d = self.f.d[i]
-        self.flux.fa = np.array([m, l, h, d])
+        # h = self.f.h[i] * c
+        # d = self.f.d[i]
+        self.flux.fa = np.array([m, l])
         print(f"multiply fa {self.flux.fa}, f. = {self.f.m[i]}, c = {c} ")
 
     def __multiply_with_flux_fa__(self, i) -> None:
@@ -1605,9 +1608,7 @@ class MultiplySignal(Process):
         c = self.lt.m[i]
         m = self.f.fa[0] * c
         l = self.f.fa[1] * c
-        h = self.f.fa[2] * c
-        d = self.f.fa[3]
-        self.flux.fa = np.array([m, l, h, d])
+        self.flux.fa = np.array([m, l])
 
     def __get_process_args_fi__(self):
         func_name: function = self.p_multiply_signal_fi
@@ -1615,10 +1616,10 @@ class MultiplySignal(Process):
             [
                 self.flux.m,  # 0
                 self.flux.l,  # 1
-                self.flux.h,  # 2
-                self.flux.d,  # 3
-                self.lt.m,  # 4
-                self.flux.fa,  # 5
+                # self.lt.l,  # 2
+                # self.flux.d,  # 3
+                self.lt.m,  # 2
+                self.flux.fa,  # 3
             ]
         )
         params = List([float(self.reservoir.species.element.r)])
@@ -1647,13 +1648,11 @@ class MultiplySignal(Process):
 
         r = params[0]
 
-        c = data[4][i]
+        c = data[2][i]
         m = data[0][i] * c
         l = data[1][i] * c
-        h = data[2][i] * c
-        d = data[3][i]
 
-        data[5][:] = [m, l, h, d]
+        data[3][:] = [m, l]
 
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
@@ -1664,7 +1663,5 @@ class MultiplySignal(Process):
         c = data[0][i]
         m = data[1][0] * c  # m
         l = data[1][1] * c  # l
-        h = data[1][2] * c  # h
-        d = data[1][3]  # d
 
-        data[1][:] = [m, l, h, d]
+        data[1][:] = [m, l]

@@ -12,6 +12,8 @@ ureg.define("percent = 1e-2 frac = pct")
 ureg.define("permil = 1e-3 fraction")
 ureg.define("ppm = 1e-6 fraction")
 
+import numpy as np
+np.seterr(invalid='ignore')
 
 # import utility_functions
 # import esbmtk

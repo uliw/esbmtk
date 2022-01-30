@@ -664,20 +664,21 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
 
     Author: M. Niazi & T. Tsan, 2021
     """
-    dic: float = input_data[0][i - 1]
-    ta: float = input_data[1][i - 1]
 
-    # calculates carbonate alkalinity (ca) based on H+ concentration from the
-    # previous time-step
-    hplus: float = vr_data[0][i - 1]
-
-    k1 = params[0]
+    k1 = params[0] 
     k2 = params[1]
     KW = params[2]
     KB = params[3]
     boron = params[4]
     ca2 = params[5]
     ksp = params[6]
+    
+    dic: float = input_data[0][i - 1]
+    ta: float = input_data[1][i - 1]
+
+    # calculates carbonate alkalinity (ca) based on H+ concentration from the
+    # previous time-step
+    hplus: float = vr_data[0][i - 1]
 
     # ca
     oh: float = KW / hplus
@@ -703,15 +704,14 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
     """
     # co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
     co2aq: float = dic - hco3 - co3
-    omega: float = ca2 * co3 / ksp
+    #omega: float = ca2 * co3 / ksp
 
     vr_data[0][i] = hplus
     vr_data[1][i] = ca
     vr_data[2][i] = hco3
     vr_data[3][i] = co3
     vr_data[4][i] = co2aq
-    vr_data[5][i] = omega
-
+    # vr_data[5][i] = omega
 
 @njit(fastmath=True, error_model="numpy")
 def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> None:
@@ -757,21 +757,20 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     z0 = int(abs(params[16]))
     ksp = params[17]
 
-    # get lookup up tables
-    depth_area_table: NDArray = input_data[7]  # depth look-up table
-    area_dz_table: NDArray = input_data[8]  # area_dz table
-    Csat_table: NDArray = input_data[9]  # Csat table
-
-    # get data from previous time steps
-    # input data is data which calculated elsewhere
-    # vr_data is data which is calculated in this module
-    dic: float = input_data[3][i - 1]  # DIC concentration [mol/l]
-    ta: float = input_data[5][i - 1]  # TA concentration [mol/l]
-    # B: float = input_data[6][i]  # Carbonate Export Flux [mol/yr]
-    B: float = input_data[6][0]  # Carbonate Export Flux [mol/yr]
+    # vr_data
     hplus: float = vr_data[0][i - 1]  # H+ concentration [mol/l]
-
     zsnow = vr_data[7][i - 1]  # previous zsnow
+
+    # reservoir data
+    dic: float = input_data[2][i - 1]  # DIC concentration [mol/l]
+    ta: float = input_data[4][i - 1]  # TA concentration [mol/l]
+    B: float = input_data[5][0]  # Carbonate Export Flux [mol/yr]
+    v: float = input_data[9][i - 1]  # volume
+
+    # lookup tables
+    depth_area_table: NDArray = input_data[6]  # depth look-up table
+    area_dz_table: NDArray = input_data[7]  # area_dz table
+    Csat_table: NDArray = input_data[8]  # Csat table
 
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus
@@ -792,7 +791,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # small, so it may be ok to simply write co2aq = dic - hco3 + co3.
     co2aq: float = dic - co3 - hco3
     # co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
-    omega: float = (ca2 * co3) / ksp
+    # omega: float = (ca2 * co3) / ksp
 
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
@@ -853,40 +852,27 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # BD & F_burial
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = B - BD
-
+    
     # ----------------------Update DIC and TA Reservoirs ---------------
     # note that DIC and TA have already been computed. So we use the
     # i, rather than i -1
     # TA mass [mol]
-    input_data[4][i] = input_data[4][i] - 2 * Fburial * dt
-    # Ta concentration [mol/l]
-    input_data[5][i] = input_data[4][i] / volume
+    input_data[3][i] = input_data[3][i] - 2 * Fburial * dt  # TA
+    input_data[4][i] = input_data[3][i] / v  # TA concentration
 
     # DIC isotopes assuming no fractionation, so no need to update delta
     r = input_data[1][i] / input_data[0][i]  # C12/C ratio
     input_data[0][i] = input_data[0][i] - Fburial * dt  # DIC
     input_data[1][i] = input_data[1][i] - Fburial * dt * r  # 12C
-    input_data[2][i] = input_data[0][i] - input_data[1][i]  # 13C
-    input_data[3][i] = input_data[0][i] / volume  # DIC concentration
+    input_data[2][i] = input_data[0][i] / v  # DIC concentration
 
     # copy results into datafields
-    vr_data[0][i] = hplus
-    vr_data[1][i] = ca
-    vr_data[2][i] = hco3
-    vr_data[3][i] = co3
-    vr_data[4][i] = co2aq
-    vr_data[5][i] = zsat
-    vr_data[6][i] = zcc
-    vr_data[7][i] = zsnow
-    vr_data[8][i] = Fburial
-
-    # # temporary added values for testing
-    # vr_data[9][i] = B
-    # vr_data[10][i] = BNS
-    # vr_data[11][i] = BDS_under
-    # vr_data[12][i] = BDS_resp
-    # vr_data[13][i] = BDS
-    # vr_data[14][i] = BCC
-    # vr_data[15][i] = BPDC
-    # vr_data[16][i] = BD
-    # vr_data[17][i] = omega
+    vr_data[0][i] = hplus  # 0
+    vr_data[1][i] = ca  # 1
+    vr_data[2][i] = hco3  # 2
+    vr_data[3][i] = co3  # 3
+    vr_data[4][i] = co2aq  # 4
+    vr_data[5][i] = zsat  # 5
+    vr_data[6][i] = zcc  # 6
+    vr_data[7][i] = zsnow  # 7
+    vr_data[8][i] = Fburial  # 8

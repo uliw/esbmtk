@@ -36,6 +36,16 @@ import time
 import math
 
 
+def get_l_mass(m: float, d: float, r: float) -> [float, float]:
+    """
+    Calculate the light isotope masses from bulk mass and delta value.
+    Arguments are m = mass, d= delta value, r = abundance ratio
+    """
+
+    l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+    return l
+
+
 def get_imass(m: float, d: float, r: float) -> [float, float]:
     """
     Calculate the isotope masses from bulk mass and delta value.
@@ -160,19 +170,15 @@ def execute(
         for r in lor:  # loop over all reservoirs
             flux_list = r.lof
 
-            new[0] = new[1] = new[2] = new[3] = 0
+            m = l = 0
             for f in flux_list:  # do sum of fluxes in this reservoir
                 direction = r.lio[f]
-                new[0] = new[0] + f.fa[0] * direction  # current flux and direction
-                new[1] = new[1] + f.fa[1] * direction  # current flux and direction
+                m += f.fa[0] * direction  # current flux and direction
+                l += f.fa[1] * direction  # current flux and direction
 
-            new[2] = new[0] - new[1]
-            # new[3] = delta will be set by the setitem method in the reserevoir
-            # ditto for the concentration
-            new = new * r.mo.dt  # get flux / timestep
-            new = new + r[i - 1]  # add to data from last time step
-            new = new * (new > 0)  # set negative values to zero
-            r[i] = new  # update reservoir data
+            r.m[i] = r.m[i - 1] + m * r.mo.dt
+            r.l[i] = r.l[i - 1] + l * r.mo.dt
+            r.c[i] = r.m[i] / r.v[i]
 
         # update reservoirs which do not depend on fluxes but on
         # functions
@@ -227,22 +233,38 @@ def execute_e(model, new, lop, lor, lpc_f, lpc_r):
     start: float = process_time()
 
     if model.count > 0:
-        foo(
-            model.fn_vr,
-            model.input_data,
-            model.vr_data,
-            model.vr_params,
-            model.fn,
-            model.da,
-            model.pc,
-            model.a,  # reserevoir list
-            model.b,  # flux list
-            model.c,  # direction list
-            model.d,  # r0 list
-            model.e,
-            model.time[:-1],
-            model.dt,
-        )
+        if len(model.lop) > 0:
+            foo(
+                model.fn_vr,
+                model.input_data,
+                model.vr_data,
+                model.vr_params,
+                model.fn,
+                model.da,
+                model.pc,
+                model.a,  # reserevoir list
+                model.b,  # flux list
+                model.c,  # direction list
+                model.d,  # r0 list
+                model.e,
+                model.time[:-1],
+                model.dt,
+            )
+        else:
+            foo_no_p(
+                model.fn_vr,
+                model.input_data,
+                model.vr_data,
+                model.vr_params,
+                model.fn,
+                model.a,  # reserevoir list
+                model.b,  # flux list
+                model.c,  # direction list
+                model.d,  # r0 list
+                model.e,
+                model.time[:-1],
+                model.dt,
+            )
     else:
         foo_no_vr(
             model.fn,
@@ -262,6 +284,7 @@ def execute_e(model, new, lop, lor, lpc_f, lpc_r):
     print(f"\n Total solver time {duration} cpu seconds, wt = {wcd}\n")
 
 
+# from numba import jit
 @njit(parallel=False, fastmath=True, error_model="numpy")
 def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, dt):
     """
@@ -272,7 +295,7 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, 
     a = reservoir_list
     b = flux list
     c = direction list
-    d = virtual reserevoir list
+    d = virtual reservoir list
     e = r0 list ???
     """
 
@@ -297,24 +320,61 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, 
             f_steps = len(b[j])
             for u in range(f_steps):
                 direction = c[j][u]
-                # for u, f in enumerate(r):  # this should catch each flux per reservoir
-                # mass += b[j][u][0][i] * direction  # mass
-                # li += b[j][u][1][i] * direction  # li
                 mass += b[j][u][0] * direction  # mass
                 li += b[j][u][1] * direction  # li
 
             # update masses
             a[j][0][i] = a[j][0][i - 1] + mass * dt  # mass
             a[j][1][i] = a[j][1][i - 1] + li * dt  # li
-            a[j][2][i] = a[j][0][i] - a[j][1][i]  # hi
-            # update delta
-            a[j][3][i] = 1e3 * (a[j][2][i] / a[j][1][i] - e[j]) / e[j]
-            # update concentrations
-            a[j][4][i] = a[j][0][i] / d[j]
+            a[j][2][i] = a[j][0][i] / a[j][3][i]  # c
 
         # # update reservoirs which do not depend on fluxes but on
         # # functions
-        # # calc_v_reservoir_data()
+        for j, f in enumerate(fn_vr):
+            fn_vr[j](i, input_data[j], vr_data[j], vr_params[j])
+
+        i = i + 1  # next time step
+
+
+@njit(parallel=False, fastmath=True, error_model="numpy")
+def foo_no_p(fn_vr, input_data, vr_data, vr_params, fn, a, b, c, d, e, maxt, dt):
+    """
+    fn = flux process list
+    fn = typed list of functions (processes)
+    da = process data
+    pc = process parameters
+    a = reservoir_list
+    b = flux list
+    c = direction list
+    d = virtual reservoir list
+    e = r0 list ???
+    """
+
+    i = 1
+    for t in maxt:
+
+        # calculate the resulting reservoir concentrations
+        # summarize_fluxes(a, b, c, d, e, i, dt)
+        r_steps: int = len(b)
+        # loop over reservoirs
+        for j in range(r_steps):
+            # for j, r in enumerate(b):  # this will catch the list for each reservoir
+
+            # sum fluxes in each reservoir
+            mass = li = 0.0
+            f_steps = len(b[j])
+            for u in range(f_steps):
+                direction = c[j][u]
+                mass += b[j][u][0] * direction  # mass
+                li += b[j][u][1] * direction  # li
+
+            # update masses
+            a[j][0][i] = a[j][0][i - 1] + mass * dt  # mass
+            a[j][1][i] = a[j][1][i - 1] + li * dt  # li
+            a[j][2][i] = a[j][0][i] / a[j][3][i]  # c
+
+        # # update reservoirs which do not depend on fluxes but on
+        # # functions
         for j, f in enumerate(fn_vr):
             fn_vr[j](i, input_data[j], vr_data[j], vr_params[j])
 
@@ -350,27 +410,55 @@ def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
         r_steps: int = len(b)
         # loop over reservoirs
         for j in range(r_steps):
-            # for j, r in enumerate(b):  # this will catch the list for each reservoir
-
-            # sum fluxes in each reservoir
             mass = li = 0.0
             f_steps = len(b[j])
             for u in range(f_steps):
                 direction = c[j][u]
-                # for u, f in enumerate(r):  # this should catch each flux per reservoir
-                # mass += b[j][u][0][i] * direction  # mass
-                # li += b[j][u][1][i] * direction  # li
                 mass += b[j][u][0] * direction  # mass
                 li += b[j][u][1] * direction  # li
 
             # update masses
             a[j][0][i] = a[j][0][i - 1] + mass * dt  # mass
             a[j][1][i] = a[j][1][i - 1] + li * dt  # li
-            a[j][2][i] = a[j][0][i] - a[j][1][i]  # hi
-            # update delta
-            a[j][3][i] = 1e3 * (a[j][2][i] / a[j][1][i] - e[j]) / e[j]
-            # update concentrations
-            a[j][4][i] = a[j][0][i] / d[j]
+            a[j][2][i] = a[j][0][i] / a[j][3][i]  # c
+
+        i = i + 1
+
+
+@njit(parallel=False, fastmath=True, error_model="numpy")
+def foo_no_vr_no_p(fn, a, b, c, d, e, maxt, dt):
+    """Same as foo but no virtual reservoirs present
+
+    fn = flux process list
+    fn = typed list of functions (processes)
+    da = process data
+    pc = process parameters
+    a = reservoir_list
+    b = flux list
+    c = direction list
+    d = virtual reserevoir list
+    e = r0 list ???
+    """
+
+    i = 1
+    for t in maxt:
+
+        # calculate the resulting reservoir concentrations
+        # summarize_fluxes(a, b, c, d, e, i, dt)
+        r_steps: int = len(b)
+        # loop over reservoirs
+        for j in range(r_steps):
+            mass = li = 0.0
+            f_steps = len(b[j])
+            for u in range(f_steps):
+                direction = c[j][u]
+                mass += b[j][u][0] * direction  # mass
+                li += b[j][u][1] * direction  # li
+
+            # update masses
+            a[j][0][i] = a[j][0][i - 1] + mass * dt  # mass
+            a[j][1][i] = a[j][1][i - 1] + li * dt  # li
+            a[j][2][i] = a[j][0][i] / a[j][3][i]  # c
 
         i = i + 1
 
@@ -411,8 +499,8 @@ def build_flux_lists_all(lor, iso: bool = False) -> tuple:
     """flux_list :list [] contains all fluxes as
     [f.m, f.l, f.h, f.d], where each sublist relates to one reservoir
 
-    i.e. per reservoir we have list [f1, f2, f3], where f1 = [m, l, h, d]
-    and m = np.array()
+    i.e. per reservoir we have list [f1, f2, f3], where fi = [m, l]
+    and m & l  = np.array()
 
     iso = False/True
 
@@ -427,7 +515,7 @@ def build_flux_lists_all(lor, iso: bool = False) -> tuple:
 
     for r in lor:  # loop over all reservoirs
         if len(r.lof) > 0:
-            rd_list = List([r.m, r.l, r.h, r.d, r.c])
+            rd_list = List([r.m, r.l, r.c, r.v])
 
             r_list.append(rd_list)
             v_list.append(float(r.volume))
