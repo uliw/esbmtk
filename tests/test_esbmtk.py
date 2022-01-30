@@ -1,5 +1,6 @@
 import pytest
 
+
 @pytest.fixture(params=[True, False])
 def create_model(request):
 
@@ -98,11 +99,13 @@ def test_reservoir_creation(create_model):
     mass = v0 * c0
     assert M1.R1.c[2] == c0
     assert M1.R1.m[2] == mass
+    M1.get_delta_values()
     assert abs(M1.R1.d[2] - d0) < 1e-10
 
 
 @pytest.mark.parametrize(
-    "idx", [[0, 200], [100, 200], [200, 400], [200, 1200], [1100, 1000]])
+    "idx", [[0, 200], [100, 200], [200, 400], [200, 1200], [1100, 1000]]
+)
 @pytest.mark.parametrize("stype", ["square", "pyramid", "bell"])
 def test_signal_indexing(idx, stype):
     """
@@ -174,7 +177,7 @@ def test_signal_indexing(idx, stype):
         rate="50 mol/yr",  # weathering flux in
         delta=0,
         signal=M1.foo,
-        #alpha=-28,  # set a default flux
+        # alpha=-28,  # set a default flux
     )
 
     M1.run()
@@ -217,6 +220,7 @@ def test_fractionation(create_model, solver):
         alpha=-28,  # set a default flux
     )
     M1.run(solver=solver)
+    M1.get_delta_values()
     assert round(M1.R1.d[-2], 4) == 28.8066
 
 
@@ -224,7 +228,7 @@ def test_fractionation(create_model, solver):
 def test_scale_flux(create_model, solver):
     """Test that isotope fractionation from a flux out of a reserevoir
     results in the corrrect fractionation, when using the numba solver
-    
+
     """
 
     from esbmtk import Source, Sink, Connect, Reservoir
@@ -266,6 +270,7 @@ def test_scale_flux(create_model, solver):
         scale=1,  # weathering flux in
     )
     M1.run(solver=solver)
+    M1.get_delta_values()
     assert round(M1.R1.d[-2], 2) == 14.2
 
 
@@ -274,6 +279,7 @@ def test_scale_with_concentration_empty(create_model, solver):
 
     from esbmtk import Source, Sink, Connect, Reservoir
     import numpy as np
+
     v0, c0, d0, M1 = create_model
     Source(name="SO1", species=M1.DIC)
     Sink(name="SI1", species=M1.DIC)
@@ -291,22 +297,22 @@ def test_scale_with_concentration_empty(create_model, solver):
         alpha=-70,
     )
     M1.run(solver="solver")
+    M1.get_delta_values()
+
     assert M1.R2.m[500] == 0
     assert M1.R2.l[500] == 0
-    assert M1.R2.h[500] == 0
     assert M1.R2.c[500] == 0
     assert M1.R1.c[500] == 3.1
     assert round(M1.R1.d[500], 10) == 0
     assert M1.C_R2_2_R1.R2_2_R1_F.fa[0] == 0
     assert M1.C_R2_2_R1.R2_2_R1_F.fa[1] == 0
-    assert M1.C_R2_2_R1.R2_2_R1_F.fa[2] == 0
 
 
 @pytest.mark.parametrize("solver", ["numba", "python"])
 def test_scale_with_concentration(create_model, solver):
     """Test that isotope fractionation from a flux out of a reserevoir
     results in the corrrect fractionation, when using the numba solver
-    
+
     """
 
     from esbmtk import Source, Sink, Connect, Reservoir
@@ -347,14 +353,17 @@ def test_scale_with_concentration(create_model, solver):
         scale=1,
     )
     M1.run(solver=solver)
+    M1.get_delta_values()
+
     assert round(M1.R1.d[-2]) == 14
     assert round(M1.R1.c[-2]) == 32
+
 
 @pytest.mark.parametrize("solver", ["numba", "python"])
 def test_scale_with_mass(create_model, solver):
     """Test that isotope fractionation from a flux out of a reserevoir
     results in the corrrect fractionation, when using the numba solver
-    
+
     """
 
     from esbmtk import Source, Sink, Connect, Reservoir
@@ -392,19 +401,21 @@ def test_scale_with_mass(create_model, solver):
         source=M1.R1,  # source of flux
         sink=M1.SI2,  # target of flux
         ctype="scale_with_mass",
-        scale=1/1025,
+        scale=1 / 1025,
     )
     M1.run(solver=solver)
+    M1.get_delta_values()
+
     assert round(M1.R1.d[-2]) == 14
     assert round(M1.R1.c[-2]) == 32
 
-    
 
 # should add tests for magnitude vs mass
 @pytest.mark.parametrize("solver", ["numba", "python"])
 def test_square_signal(create_model, solver):
     from esbmtk import Source, Sink, Reservoir, Connect, Signal
     import numpy as np
+
     v0, c0, d0, M1 = create_model
 
     Source(name="SO1", species=M1.DIC)
@@ -444,10 +455,12 @@ def test_square_signal(create_model, solver):
         rate="50 mol/yr",  # weathering flux in
         delta=0,
         signal=M1.foo,
-        #alpha=-28,  # set a default flux
+        # alpha=-28,  # set a default flux
     )
 
     M1.run(solver=solver)
+    M1.get_delta_values()
+
     assert round(M1.R1.d[90], 0) == 0
     assert round(max(M1.R1.d)) == 277
     assert round(M1.R1.c[200]) == 8
@@ -501,9 +514,11 @@ def test_pyramid_signal(create_model, solver):
         rate="50 mol/yr",  # weathering flux in
         delta=0,
         signal=M1.foo,
-        #alpha=-28,  # set a default flux
+        # alpha=-28,  # set a default flux
     )
     M1.run(solver=solver)
+    M1.get_delta_values()
+
     assert round(max(M1.R1.d)) == 41
     assert round(max(M1.R1.c)) == 32
     assert np.argmax(M1.R1.d) == 702
@@ -546,14 +561,16 @@ def test_pyramid_signal_multiplication(create_model, solver):
         rate="50 mol/yr",  # weathering flux in
         delta=10,
         signal=M1.foo,
-        #alpha=-28,  # set a default flux
+        # alpha=-28,  # set a default flux
     )
 
     M1.run(solver=solver)
+    M1.get_delta_values()
+
     assert round(M1.R1.c[-2]) == 81
     assert np.argmin(M1.R1.d) == 708
     assert round(M1.R1.d[-2], 2) == -2.41
-    #M1.plot([M1.R1, M1.foo, M1.C_R1_2_SI1.R1_2_SI1_F])
+    # M1.plot([M1.R1, M1.foo, M1.C_R1_2_SI1.R1_2_SI1_F])
 
 
 @pytest.mark.parametrize("solver", ["numba", "python"])
@@ -592,15 +609,16 @@ def test_pyramid_signal_multiply(create_model, solver):
         rate="50 mol/yr",  # weathering flux in
         alpha=-70,
         signal=M1.foo,
-        #alpha=-28,  # set a default flux
+        # alpha=-28,  # set a default flux
     )
 
     M1.run(solver="solver")
+    M1.get_delta_values()
     diff = M1.C_R1_2_SI1.R1_2_SI1_F.d[500] - M1.R1.d[500]
     assert round(M1.R1.c[-2]) == 81
     assert np.argmax(M1.R1.d) == 692
     assert round(diff) == -71
-    #M1.plot([M1.R1, M1.foo, M1.C_R1_2_SI1.R1_2_SI1_F])
+    # M1.plot([M1.R1, M1.foo, M1.C_R1_2_SI1.R1_2_SI1_F])
 
 
 @pytest.mark.parametrize("solver", ["numba", "python"])
@@ -608,6 +626,7 @@ def test_scale_with_flux_and_signal_multiplication(create_model, solver):
 
     from esbmtk import Source, Sink, Reservoir, Connect, Signal
     import numpy as np
+
     v0, c0, d0, M1 = create_model
 
     Source(name="SO1", species=M1.DIC)
@@ -636,9 +655,11 @@ def test_scale_with_flux_and_signal_multiplication(create_model, solver):
         ref_flux=M1.C_SO1_2_R1.SO1_2_R1_F,
         alpha=-72,
         signal=M1.foo,
-        #alpha=-28,  # set a default flux
+        # alpha=-28,  # set a default flux
     )
     M1.run(solver=solver)
+    M1.get_delta_values()
+
     diff = M1.C_R1_2_SI1.R1_2_SI1_F.d[500] - M1.R1.d[500]
     assert round(diff) == -74
     assert round(M1.R1.c[-2]) == 61
@@ -647,11 +668,13 @@ def test_scale_with_flux_and_signal_multiplication(create_model, solver):
 
     # M1.plot([M1.R1, M1.foo, M1.C_R1_2_SI1.R1_2_SI1_F])
 
+
 @pytest.mark.parametrize("solver", ["numba", "python"])
 def test_scale_with_flux_and_signal_addition(create_model, solver):
 
     from esbmtk import Source, Sink, Reservoir, Connect, Signal
     import numpy as np
+
     v0, c0, d0, M1 = create_model
 
     Source(name="SO1", species=M1.DIC)
@@ -680,20 +703,170 @@ def test_scale_with_flux_and_signal_addition(create_model, solver):
         ref_flux=M1.C_SO1_2_R1.SO1_2_R1_F,
         alpha=-72,
         signal=M1.foo,
-        scale = 0.1
-        #alpha=-28,  # set a default flux
+        scale=0.1
+        # alpha=-28,  # set a default flux
     )
-    #M1.run(solver='python')
-    M1.run(solver='numba')
+    # M1.run(solver='python')
+    M1.run(solver="solver")
+    M1.get_delta_values()
+
     diff = M1.C_R1_2_SI1.R1_2_SI1_F.d[500] - M1.R1.d[500]
     assert round(diff) == -75
     assert round(M1.R1.c[-2]) == 52
     assert np.argmax(M1.R1.d) == 658
-    assert round(max(M1.R1.d))  == 53
+    assert round(max(M1.R1.d)) == 53
 
-    # M1.plot([M1.R1, M1.foo, 
+    # M1.plot([M1.R1, M1.foo,
     #          M1.C_SO1_2_R1.SO1_2_R1_F,
     #          M1.C_R1_2_SI1.R1_2_SI1_F])
+
+
+@pytest.mark.parametrize("solver", ["numba", "python"])
+def test_carbonate_system1_constants(create_model, solver):
+    """Test that isotope fractionation from a flux out of a reserevoir
+    results in the corrrect fractionation, when using the numba solver
+
+    """
+
+    from esbmtk import Source, Sink, Connect, Reservoir
+
+    v0, c0, d0, M1 = create_model
+
+    from esbmtk import ExternalCode, ReservoirGroup, add_carbonate_system_1
+    import numpy as np
+
+    ReservoirGroup(
+        name="S",  # Name of reservoir group
+        volume="1E5 l",  # see below
+        delta={M1.DIC: 0, M1.TA: 0},  # dict of delta values
+        concentration={M1.DIC: "2.1 mmol/l", M1.TA: "2.4 mmol/l"},
+        isotopes={M1.DIC: True},
+        seawater_parameters={"temperature": 25, "pressure": 1, "salinity": 35},
+        # @carbonate_system= True,
+        register=M1,
+    )
+
+    add_carbonate_system_1([M1.S])
+
+    Source(name="SO1", species=M1.DIC)
+
+    Sink(name="SI1", species=M1.DIC)
+
+    # DIC influx
+    Connect(
+        source=M1.SO1,  # source of flux
+        sink=M1.S.DIC,  # target of flux
+        rate="100 mol/yr",  # weathering flux in
+    )
+    # TA influx
+    Connect(
+        source=M1.SO1,  # source of flux
+        sink=M1.S.TA,  # target of flux
+        rate="100 mol/yr",  # weathering flux in
+    )
+
+    # DIC outflux
+    Connect(
+        source=M1.S.DIC,  # source of flux
+        sink=M1.SI1,  # target of flux
+        ctype="Regular",
+        rate="100 mol/yr",  # weathering flux in
+    )
+    # TA out
+    Connect(
+        source=M1.S.TA,  # source of flux
+        sink=M1.SI1,  # target of flux
+        ctype="Regular",
+        rate="100 mol/yr",  # weathering flux in
+        # alpha=-28,  # set a default flux
+    )
+
+    M1.run(solver=solver)
+    i = 200
+    assert round(M1.S.DIC.c[i] * 1000, 2) == 2.1  # DIC
+    assert round(M1.S.TA.c[i] * 1000, 2) == 2.4  # TA
+    assert round(-np.log10(M1.S.cs.H[i]), 2) == 7.98  # pH
+    assert round(M1.S.cs.HCO3[i] * 1000, 2) == 1.87
+    assert round(M1.S.cs.CO3[i] * 1000, 2) == 0.22
+    assert round(M1.S.cs.CO2aq[i] * 1000, 4) == 0.0135
+
+@pytest.mark.parametrize("solver", ["numba", "python"])
+def test_carbonate_system2_(create_model, solver):
+    """Test that isotope fractionation from a flux out of a reserevoir
+    results in the corrrect fractionation, when using the numba solver
+
+    """
+
+    from esbmtk import Source, Sink, Connect, Reservoir
+
+    v0, c0, d0, M1 = create_model
+
+    from esbmtk import ExternalCode, ReservoirGroup, add_carbonate_system_2
+    import numpy as np
+
+    ReservoirGroup(name = "S",        # Name of reservoir group
+                    #volume = "1E5 l",       # see below
+                    geometry = [0, 6000, 1],
+                    delta   = {M1.DIC:0, M1.TA:0},  # dict of delta values
+                    concentration = {M1.DIC:"2.3 mmol/l", M1.TA: "2.4 mmol/l"},
+                    isotopes = {M1.DIC: True},
+                    seawater_parameters = {"temperature": 2, "pressure": 240, "salinity" : 35},
+                    #@carbonate_system= True,
+                    register=M1,
+               )
+
+
+
+    Source(name="SO1", species=M1.DIC)
+
+    Sink(name="SI1", species=M1.DIC)
+
+    # DIC influx
+    Connect(
+        source=M1.SO1,  # source of flux
+        sink=M1.S.DIC,  # target of flux
+        rate="100 mol/yr",  # weathering flux in
+    )
+    # TA influx
+    Connect(
+        source=M1.SO1,  # source of flux
+        sink=M1.S.TA,  # target of flux
+        rate="100 mol/yr",  # weathering flux in
+    )
+
+    # DIC outflux
+    Connect(
+        source=M1.S.DIC,  # source of flux
+        sink=M1.SI1,  # target of flux
+        ctype="Regular",
+        rate="100 mol/yr",  # weathering flux in
+    )
+    # TA x
+    Connect(
+        source=M1.S.TA,  # source of flux
+        sink=M1.SI1,  # target of flux
+        ctype="Regular",
+        rate="100 mol/yr",  # weathering flux in
+        #alpha=-28,  # set a default flux
+    )
+    exp = M1.C_SO1_2_DIC.SO1_2_DIC_F
+    exp.fa = np.array([60E12, 60E12])
+    add_carbonate_system_2(rgs=[M1.S],
+                           carbonate_export_fluxes=[exp],
+                           alpha=0.6,
+                           zsat_min = -200,
+                           z0 = -200)
+    M1.run(solver=solver)
+    
+    assert round(M1.S.DIC.c[i] * 1000, 2) == 2.36  # DIC
+    assert round(M1.S.TA.c[i] * 1000, 2) == 2.42  # TA
+    assert round(-np.log10(M1.S.cs.H[i]), 2) == 7.2  # pH
+    assert round(M1.S.cs.HCO3[i] * 1000, 2) == 2.25
+    assert round(M1.S.cs.CO3[i] * 1000, 4) == 0.0661
+    assert round(M1.S.cs.CO2aq[i] * 1000, 4) == 0.0386
+    assert round(M1.S.cs.zsat[i]) == 2337
+    assert round(M1.S.cs.zsat[i]) == 3712
+    assert round(M1.S.cs.zsnow[i]) == 4607
 
 
 def test_external_data(create_model):
@@ -761,6 +934,8 @@ def test_external_data(create_model):
 #     )
 
 #     M1.run(solver=solver)
+# M1.get_delta_values()
+
 #     assert M1.R1.c[-2] == c0
 #     M1.R1.d[-2] == d0
 
@@ -808,5 +983,7 @@ def test_external_data(create_model):
 #     )
 
 #     M1.run(solver=solver)
+# M1.get_delta_values()
+
 #     assert M1.R1.c[-2] == c0
 #     assert abs(M1.R1.d[-2] - d0) < 1e-10
