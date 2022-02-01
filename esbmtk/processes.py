@@ -570,7 +570,7 @@ class ScaleFlux(Process):
         )
 
         fl: float = rm * c / (c + 1)
-       
+
         self.flux.fa[:] = [rm, fl]
 
     def __without_isotopes__(self, i: int) -> None:
@@ -625,7 +625,7 @@ class ScaleFlux(Process):
         # get the target isotope ratio based on upstream delta
         c = lr / (mr - lr)
         l = mf * c / (c + 1)
-   
+
         data[5][:] = [mf, l]
 
 
@@ -1109,7 +1109,7 @@ class ScaleRelativeToMass(RateConstant):
         # d: float = data[1][i - 1]  # flux delta
 
         data[4][:] = [m, l]
-       
+
 
 class GasExchange(RateConstant):
     """
@@ -1179,7 +1179,6 @@ class GasExchange(RateConstant):
         and a_gb between CO2g HCO3-
         """
 
-        # get flux rate across interface
         f = self.scale * (
             self.gas.c[i - 1]  # p Atmosphere
             * (1 - self.p_H2O)  # p_H2O
@@ -1187,43 +1186,28 @@ class GasExchange(RateConstant):
             - self.ref_species[i - 1] * 1000  # [CO2]aq
         )
 
-        # this seems backward, -> fix
-        co2aq_c13 = (
-            self.ref_species[i - 1] * self.r.m[i - 1]
-            - self.r.l[i - 1] / self.r.m[i - 1]
-        )
+        rh = self.r.m[i - 1] - self.r.l[i - 1]
+        gh = self.gas.m[i - 1] - self.gas.l[i - 1]
+        co2aq_c13 = self.ref_species[i - 1] * rh / self.r.m[i - 1]
+        co2at_c13 = gh / self.gas.volume
 
-        # get C12 value of CO2aq = [CO2aq] * HCO3.li/HCO3.m
-        co2aq_c12 = self.ref_species[i - 1] - co2aq_c13
-
-        dhco3 = (
-            (self.r.m[i - 1] - self.r.l[i - 1]) / self.r.l[i - 1] / self.r.sp.r - 1
-        ) * 1000
-
-        dco2aq = (
-            (self.ref_species[i - 1] - co2aq_c12) / co2aq_c12 / self.r.sp.r - 1
-        ) * 1000
-
-        print(f"d HCO3 = {dhco3}")
-        print(f"d CO2aq = {dco2aq}")
-
-        co2at_c12 = self.gas.l[i - 1] / self.gas.v[i - 1]
-
-        f12 = (
+        f13 = (
             self.scale
             * self.a_u
             * (
                 self.a_dg
-                * co2at_c12
+                * co2at_c13
                 * (1 - self.p_H2O)  # p_H2O
                 * self.solubility  # SA_co2
-                - self.a_db * co2aq_c12 * 1000
+                - self.a_db * co2aq_c13 * 1000
             )
         )
 
-        df = ((f - f12) / f12 / self.r.sp.r - 1) * 1000
-        print(f" df = {df}\n")
-
+        # h = flux!
+        f12 = f - f13
+        d = (f13 / f12 / self.rvalue - 1) * 1000
+        print(f"flux d = {d}")
+        
         self.flux.fa[0:2] = [f, f12]
         self.reservoir.v[i] = self.reservoir.v[i] + f * self.reservoir.mo.dt
 
