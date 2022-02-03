@@ -519,7 +519,7 @@ class SeawaterConstants(esbmtkBase):
 
     def __init_c_fractionation_factors__(self):
         """Calculate the fractionation factors for the various carbon species transitions.
-        After Zeebe and Gladrow, 2001, CHapter 3.2.3
+        After Zeebe and Gladrow, 2001, Chapter 3.2.3, page 186
 
         e = (a -1) * 1E3
 
@@ -538,7 +538,7 @@ class SeawaterConstants(esbmtkBase):
 
         T = 273.15 + self.temperature
 
-        # CO2g versus HCO3
+        # CO2g versus HCO3, e = epsilon, a = alpha
         self.e_gb: float = -9483 / T + 23.89
         self.a_gb: float = 1 + self.e_gb / 1000
 
@@ -702,7 +702,7 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
     small, so it may be ok to simply write co2aq = dic - hco3 + co3.
     Let's test this once we have a case where pco2 is calculated from co2aq
     """
-    # co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
+    #  co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
     co2aq: float = dic - hco3 - co3
     #omega: float = ca2 * co3 / ksp
 

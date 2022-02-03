@@ -1159,7 +1159,7 @@ class GasExchange(RateConstant):
         # variable which we use the store the total atmospheric mass
         reservoir.v[i] = reservoir.v[i] + a * reservoir.mo.dt
         # self.flux[i] = [a, 1, 1, 1]
-        self.flux.fa = [a, 1]
+        self.flux.fa[:] = [a, 1]
 
     def __with_isotopes__(self, i: int) -> None:
         """
@@ -1179,37 +1179,45 @@ class GasExchange(RateConstant):
         and a_gb between CO2g HCO3-
         """
 
-        f = self.scale * (
+        # equilibrium concentration of CO2 in water based on pCO2
+        eco2_at = (
             self.gas.c[i - 1]  # p Atmosphere
             * (1 - self.p_H2O)  # p_H2O
-            * self.solubility  # SA_co2
-            - self.ref_species[i - 1] * 1000  # [CO2]aq
+            * self.solubility
+        )
+        # equilibrium concentration of CO2 in water based on CO2aq
+        eco2_aq = self.ref_species[i - 1] * 1000
+
+        #  eco2_aq >  eco2_at, the ocean
+        f = self.scale * (eco2_at - eco2_aq)
+
+        # get 13C CO2 equlibrium concentration
+        eco2_at_13 = (
+            (self.gas.m[i - 1] - self.gas.l[i - 1])
+            / self.gas.v[i - 1]
+            * (1 - self.p_H2O)  # p_H2O
+            * self.solubility
+            * self.a_dg
+        )
+        # get 13C in CO2aq
+        eco2_aq_13 = (
+            self.a_db
+            * eco2_aq
+            * (self.r.m[i - 1] - self.r.l[i - 1])
+            / self.r.m[i - 1]
         )
 
-        rh = self.r.m[i - 1] - self.r.l[i - 1]
-        gh = self.gas.m[i - 1] - self.gas.l[i - 1]
-        co2aq_c13 = self.ref_species[i - 1] * rh / self.r.m[i - 1]
-        co2at_c13 = gh / self.gas.volume
-
-        f13 = (
-            self.scale
-            * self.a_u
-            * (
-                self.a_dg
-                * co2at_c13
-                * (1 - self.p_H2O)  # p_H2O
-                * self.solubility  # SA_co2
-                - self.a_db * co2aq_c13 * 1000
-            )
-        )
+        f13 = self.scale * self.a_u * (eco2_at_13 - eco2_aq_13)
 
         # h = flux!
         f12 = f - f13
-        d = (f13 / f12 / self.rvalue - 1) * 1000
-        print(f"flux d = {d}")
-        
+        #print(f"f={f}, f12={f12}, f13={f13}, sum = {f-f12-f13}")
+        df = (f13 / f12 / self.rvalue - 1) * 1000
+        # print(f"flux d = {df}")
+
         self.flux.fa[0:2] = [f, f12]
-        self.reservoir.v[i] = self.reservoir.v[i] + f * self.reservoir.mo.dt
+        self.reservoir.v[i] = self.reservoir.v[i - 1] + f * self.reservoir.mo.dt
+        #print()
 
     def __postinit__(self) -> None:
         """Do some housekeeping for the process class"""

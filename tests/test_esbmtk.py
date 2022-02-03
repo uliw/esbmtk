@@ -857,16 +857,15 @@ def test_carbonate_system2_(create_model, solver):
                            zsat_min = -200,
                            z0 = -200)
     M1.run(solver=solver)
-    
+    i = 997
     assert round(M1.S.DIC.c[i] * 1000, 2) == 2.36  # DIC
     assert round(M1.S.TA.c[i] * 1000, 2) == 2.42  # TA
-    assert round(-np.log10(M1.S.cs.H[i]), 2) == 7.2  # pH
+    assert round(-np.log10(M1.S.cs.H[i]), 2) == 7.72  # pH
     assert round(M1.S.cs.HCO3[i] * 1000, 2) == 2.25
     assert round(M1.S.cs.CO3[i] * 1000, 4) == 0.0661
     assert round(M1.S.cs.CO2aq[i] * 1000, 4) == 0.0386
-    assert round(M1.S.cs.zsat[i]) == 2337
-    assert round(M1.S.cs.zsat[i]) == 3712
-    assert round(M1.S.cs.zsnow[i]) == 4607
+    assert round(M1.S.cs.zsat[i]) == 2339
+    assert round(M1.S.cs.zsnow[i]) == 4608
 
 
 def test_external_data(create_model):
