@@ -867,7 +867,79 @@ def test_carbonate_system2_(create_model, solver):
     assert round(M1.S.cs.zsat[i]) == 2339
     assert round(M1.S.cs.zsnow[i]) == 4608
 
+@pytest.mark.parametrize("solver", ["numba", "python"])
+def test_gas_exchange(create_model, solver):
+    """Test that isotope fractionation from a flux out of a reserevoir
+    results in the corrrect fractionation, when using the numba solver
 
+    """
+   
+    from esbmtk import Source, Sink, Connect, Reservoir, GasReservoir
+    from esbmtk import ExternalCode, ReservoirGroup, AirSeaExchange
+    from esbmtk import add_carbonate_system_1
+    import numpy as np
+
+    v0, c0, d0, M1 = create_model
+
+    Source(name="SO1", species=M1.DIC)
+    Sink(name="SI1", species=M1.DIC)
+
+    ReservoirGroup(name = "S",        # Name of reservoir group
+                        #volume = "1E5 l",       # see below
+                        geometry = [0, 6000, 1],
+                        delta   = {M1.DIC:0, M1.TA:0},  # dict of delta values
+                        concentration = {M1.DIC:"2.1 mmol/l", M1.TA: "2.36 mmol/l"},
+                        isotopes = {M1.DIC: True},
+                        seawater_parameters = {"temperature": 25, "pressure": 1, "salinity" : 35},
+                        #@carbonate_system= True,
+                        register=M1,
+                   )
+
+    add_carbonate_system_1(rgs=[M1.S])
+
+    GasReservoir(
+            name="CO2_At",
+            species=M1.CO2,
+            reservoir_mass="1.833E20 mol",
+            species_ppm="280 ppm",
+            isotopes=True,
+            delta = -7,
+        )
+
+    # DIC influx
+    Connect(
+        source=M1.SO1,  # source of flux
+        sink=M1.S.DIC,  # target of flux
+        rate="0 mol/yr",  # weathering flux in
+        delta=0,
+    )
+
+    AirSeaExchange(
+            gas_reservoir=M1.CO2_At,  # Reservoir
+            liquid_reservoir=M1.S.DIC,  # ReservoirGroup
+            species=M1.CO2,
+            ref_species=M1.S.cs.CO2aq,
+            solubility=M1.S.swc.SA_co2,  # float
+            area=M1.S.area,
+            piston_velocity="4.8 m/d",
+            water_vapor_pressure=M1.S.swc.p_H2O,
+            id ="A_sb",
+        )   
+
+    M1.run(solver=solver)
+
+    M1.get_delta_values()
+    # calculate theoretical equlibrium pCO2 based on pCO2
+    epco2_at = M1.CO2_At.c*(1- M1.S.swc.p_H2O) *1e6
+    # calculate equilibrium pCO2 based on CO2aq
+    epco2_aq = M1.S.cs.CO2aq/M1.S.swc.K0 * 1e6
+    
+    diff_c = epco2_at[-3] - epco2_aq[-3]
+    diff_d = M1.S.DIC.d[-3] - M1.CO2_At.d[-3]
+
+    assert round(abs(diff_c),3) == 6.661
+    assert  round(diff_d,1) == 8.0
+    
 def test_external_data(create_model):
     """test the creation of an external data object"""
 

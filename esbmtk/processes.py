@@ -1157,8 +1157,7 @@ class GasExchange(RateConstant):
         # changes in the mass of CO2 also affect changes in the total mass
         # of the atmosphere. So we need to update the reservoir volume
         # variable which we use the store the total atmospheric mass
-        reservoir.v[i] = reservoir.v[i] + a * reservoir.mo.dt
-        # self.flux[i] = [a, 1, 1, 1]
+        self.gas.v[i] = self.gas.v[i] + a * self.gas.mo.dt
         self.flux.fa[:] = [a, 1]
 
     def __with_isotopes__(self, i: int) -> None:
@@ -1188,7 +1187,7 @@ class GasExchange(RateConstant):
         # equilibrium concentration of CO2 in water based on CO2aq
         eco2_aq = self.ref_species[i - 1] * 1000
 
-        #  eco2_aq >  eco2_at, the ocean
+        #  flux
         f = self.scale * (eco2_at - eco2_aq)
 
         # get 13C CO2 equlibrium concentration
@@ -1203,21 +1202,21 @@ class GasExchange(RateConstant):
         eco2_aq_13 = (
             self.a_db
             * eco2_aq
-            * (self.r.m[i - 1] - self.r.l[i - 1])
-            / self.r.m[i - 1]
+            * (self.liquid.m[i - 1] - self.liquid.l[i - 1])
+            / self.liquid.m[i - 1]
         )
-
+        # 13C flux
         f13 = self.scale * self.a_u * (eco2_at_13 - eco2_aq_13)
-
-        # h = flux!
         f12 = f - f13
-        #print(f"f={f}, f12={f12}, f13={f13}, sum = {f-f12-f13}")
-        df = (f13 / f12 / self.rvalue - 1) * 1000
+        # print(f"f={f}, f12={f12}, f13={f13}, sum = {f-f12-f13}")
+        # df = (f13 / f12 / self.rvalue - 1) * 1000
         # print(f"flux d = {df}")
 
         self.flux.fa[0:2] = [f, f12]
-        self.reservoir.v[i] = self.reservoir.v[i - 1] + f * self.reservoir.mo.dt
-        #print()
+        # Gas reserevoirs track total gas pressure in the volume variable. This
+        # will not be updated by the solver. So we need to do it ourseleves
+        self.gas.v[i] = self.gas.v[i - 1] + f * self.gas.mo.dt
+        # print()
 
     def __postinit__(self) -> None:
         """Do some housekeeping for the process class"""
@@ -1241,9 +1240,7 @@ class GasExchange(RateConstant):
                 self.gas.l,  # 4
                 self.gas.c,  # 5
                 self.gas.v,  # 6
-                self.r.m,  # 7
-                self.r.l,  # 8
-                self.ref_species,  # 9
+                self.ref_species,  # 7
             ]
         )
 
@@ -1251,14 +1248,11 @@ class GasExchange(RateConstant):
             [
                 float(self.scale),  # 0
                 float(self.solubility * (1 - self.p_H2O)),  # 1
-                float(self.rvalue),  # 2
-                float(self.gas.volume),  # 3
-                float(self.a_u),  # 4
-                float(self.a_dg),  # 5
-                float(self.a_db),  # 6
-                float(self.reservoir.mo.dt),  # 7
-                float(self.p_H2O),  # 8
-                float(self.solubility),  # 9
+                float(self.gas.volume),  # 3 2
+                float(self.a_u),  # 4 3
+                float(self.a_dg),  # 5 4
+                float(self.a_db),  # 6 5
+                float(self.gas.mo.dt),  # 7
             ]
         )
 
@@ -1275,41 +1269,37 @@ class GasExchange(RateConstant):
         """
 
         scale: float = params[0]  # scale
-        SA: float = params[1]  # solubility
-        r: float = params[2]  # r value
-        gv: float = params[3]  # gas volume
-        au: float = params[4]  #
-        dg: float = params[5]  #
-        db: float = params[6]  #
-        dt: float = params[7]  # dt
-        pH2O: float = params[8]  # p_H2O
-        solubility: float = params[9]  # solubility
+        SA: float = params[1]  # solubility as  (1 - pH2O) * S
+        gv: float = params[2]  # gas volume
+        au: float = params[3]  #
+        dg: float = params[4]  #
+        db: float = params[5]  #
+        dt: float = params[6]
 
-        lm = data[1][i - 1]
-        ll = data[2][i - 1]
-        gm = data[3][i - 1]
-        gl = data[4][i - 1]
-        gc = data[5][i - 1]
-        gv = data[6][i - 1]
-        rm = data[7][i - 1]
-        rl = data[8][i - 1]
-        rs = data[9][i - 1]
-        gh = gm - gl  # gas.h
-        rh = rm - rl
+        lm = data[1][i - 1]  # mass in liquid
+        ll = data[2][i - 1]  # mass of light isotope in liquid_reservoir
+        gm = data[3][i - 1]  # mass in gas reserevoir
+        gl = data[4][i - 1]  # mass of light isotope in gas reserevoir
+        gc = data[5][i - 1]  # concentration in gas reserevoir
+        gv = data[6][i - 1]  # total mass of atmosphere
+        rs = data[7][i - 1]  # concentrartion of reference species in liquid_reservoir
+        gh = gm - gl  # mass of heavy isotope in gas reserevoir
+        lh = lm - ll  # mass of heavy isotope in liquid reserevoir
 
-        f = scale * (gc * (1 - pH2O) * solubility - rs * 1000)
-        co2aq_c13 = rs * rh / rm  #
-        co2at_c13 = gh / gv
-
-        f13 = (
-            scale
-            * au
-            * (dg * co2at_c13 * (1 - pH2O) * solubility - db * co2aq_c13 * 1000)
-        )
+        # equilibrium concentration of CO2 in water based on pCO2
+        eco2_at = gc * SA  # p Atmosphere  # p_H2O
+        # equilibrium concentration of CO2 in water based on CO2aq
+        eco2_aq = rs * 1000
+        f = scale * (eco2_at - eco2_aq)
+        # get 13C CO2 equlibrium concentration
+        eco2_at_13 = gh / gv * SA * dg  # p_H2O
+        # get 13C in CO2aq
+        eco2_aq_13 = db * eco2_aq * lh / lm
+        # flux od 13C
+        f13 = scale * au * (eco2_at_13 - eco2_aq_13)
         f12 = f - f13
         data[0][:] = [f, f12]  # fa
-        # fix: verifyf that this works?
-        # data[6][i] = data[6][i - 1] + f * dt  # gas volume
+        data[6][i] = data[6][i - 1] + f * dt 
 
 
 class VarDeltaOut(Process):
