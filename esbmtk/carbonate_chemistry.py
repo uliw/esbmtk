@@ -151,6 +151,7 @@ class SeawaterConstants(esbmtkBase):
             self.__validateandregister__(kwargs)
 
         # update K values and species concentrations according to P, S, and T
+        self.__get_density__()
         self.__init_std_seawater__()
         self.__init_bisulfide__()
         self.__init_hydrogen_floride__()
@@ -167,7 +168,7 @@ class SeawaterConstants(esbmtkBase):
 
         # convert to mol/liter if necessary
         if self.units == Q_("1 mole/liter").units:
-            cf = (1000 + self.salinity) / 1000
+            cf = self.density / 1000  # convert to kg/liter
 
             # constants and species are just names, so we need to
             # retrieve the actual variable first
@@ -203,6 +204,71 @@ class SeawaterConstants(esbmtkBase):
             K = getattr(self, n)
             pk = getattr(self, f"p{n.lower()}")
             print(f"{n} = {K:.2e}, p{n} = {pk:.2f}")
+
+    def __get_density__(self):
+        """Calculate seawater density as function of temperature,
+        pressure and salinity in kg/m^3. Shamelessy copied
+        from R. Zeebes equic.m mathlab file.
+
+        TC = temp in C
+        P = pressure
+        S = salinity
+        """
+
+        TC = self.temperature
+        P = self.pressure
+        S = self.salinity
+        # density of pure water
+        rhow = (
+            999.842594
+            + 6.793952e-2 * TC
+            - 9.095290e-3 * TC ** 2
+            + 1.001685e-4 * TC ** 3
+            - 1.120083e-6 * TC ** 4
+            + 6.536332e-9 * TC ** 5
+        )
+
+        # density of of seawater at 1 atm, P=0
+        A = (
+            8.24493e-1
+            - 4.0899e-3 * TC
+            + 7.6438e-5 * TC ** 2
+            - 8.2467e-7 * TC ** 3
+            + 5.3875e-9 * TC ** 4
+        )
+        B = -5.72466e-3 + 1.0227e-4 * TC - 1.6546e-6 * TC ** 2
+        C = 4.8314e-4
+        rho0 = rhow + A * S + B * S ** (3 / 2) + C * S ** 2
+
+        """Secant bulk modulus of pure water is the average change in
+        pressure divided by the total change in volume per unit of
+        initial volume.
+        """
+        Ksbmw = (
+            19652.21
+            + 148.4206 * TC
+            - 2.327105 * TC ** 2
+            + 1.360477e-2 * TC ** 3
+            - 5.155288e-5 * TC ** 4
+        )
+        # Secant bulk modulus of seawater at 1 atm
+        Ksbm0 = (
+            Ksbmw
+            + S * (54.6746 - 0.603459 * TC + 1.09987e-2 * TC ** 2 - 6.1670e-5 * TC ** 3)
+            + S ** (3 / 2) * (7.944e-2 + 1.6483e-2 * TC - 5.3009e-4 * TC ** 2)
+        )
+        # Secant modulus of seawater at S,T,P
+        Ksbm = (
+            Ksbm0
+            + P
+            * (3.239908 + 1.43713e-3 * TC + 1.16092e-4 * TC ** 2 - 5.77905e-7 * TC ** 3)
+            + P * S * (2.2838e-3 - 1.0981e-5 * TC - 1.6078e-6 * TC ** 2)
+            + P * S ** (3 / 2) * 1.91075e-4
+            + P * P * (8.50935e-5 - 6.12293e-6 * TC + 5.2787e-8 * TC ** 2)
+            + P ** 2 * S * (-9.9348e-7 + 2.0816e-8 * TC + 9.1697e-10 * TC ** 2)
+        )
+        # Density of seawater at S,T,P in kg/m^3
+        self.density = rho0 / (1.0 - P / Ksbm)
 
     def __init_std_seawater__(self) -> None:
         """Provide values for standard seawater. Data after Zeebe and Gladrow
@@ -665,22 +731,20 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
     Author: M. Niazi & T. Tsan, 2021
     """
 
-    k1 = params[0] 
-    k2 = params[1]
-    KW = params[2]
-    KB = params[3]
-    boron = params[4]
-    ca2 = params[5]
-    ksp = params[6]
-    
+    k1 = params[0]  # K1
+    k2 = params[1]  # K2
+    KW = params[2]  # KW
+    KB = params[3]  # KB
+    boron = params[4]  # boron
+    ca2 = params[5]  # Ca2+
+    ksp = params[6]  # Ksp
+
     dic: float = input_data[0][i - 1]
     ta: float = input_data[1][i - 1]
+    hplus: float = vr_data[0][i - 1]
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
-    hplus: float = vr_data[0][i - 1]
-
-    # ca
     oh: float = KW / hplus
     boh4: float = boron * KB / (hplus + KB)
     fg: float = hplus - oh - boh4
@@ -704,7 +768,7 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
     """
     #  co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
     co2aq: float = dic - hco3 - co3
-    #omega: float = ca2 * co3 / ksp
+    # omega: float = ca2 * co3 / ksp
 
     vr_data[0][i] = hplus
     vr_data[1][i] = ca
@@ -712,6 +776,7 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[3][i] = co3
     vr_data[4][i] = co2aq
     # vr_data[5][i] = omega
+
 
 @njit(fastmath=True, error_model="numpy")
 def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> None:
@@ -852,7 +917,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # BD & F_burial
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = B - BD
-    
+
     # ----------------------Update DIC and TA Reservoirs ---------------
     # note that DIC and TA have already been computed. So we use the
     # i, rather than i -1
