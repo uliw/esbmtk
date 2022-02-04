@@ -721,6 +721,43 @@ def test_scale_with_flux_and_signal_addition(create_model, solver):
     #          M1.C_R1_2_SI1.R1_2_SI1_F])
 
 
+def test_seawaterconstants(create_model):
+    from esbmtk import Source, Sink, Reservoir, Connect, Signal
+    from esbmtk import ExternalCode, ReservoirGroup, add_carbonate_system_1
+    from esbmtk import GasReservoir, AirSeaExchange
+    import numpy as np
+    import sys
+
+    v0, c0, d0, M1 = create_model
+    Source(name="SO1", species=M1.DIC)
+    Sink(name="SI1", species=M1.DIC)
+
+    ReservoirGroup(name = "S",        # Name of reservoir group
+                        #volume = "1E5 l",       # see below
+                        geometry = [0, 6000, 1],
+                        delta   = {M1.DIC:0, M1.TA:0},  # dict of delta values
+                        concentration = {M1.DIC:"2.1 mmol/l", M1.TA: "2.36 mmol/l"},
+                        isotopes = {M1.DIC: True},
+                        seawater_parameters = {"temperature": 5, "pressure": 0, "salinity" : 0},
+                        #@carbonate_system= True,
+                        register=M1,
+                   )
+    assert round(M1.S.swc.density, 6) ==  999.966751
+
+    ReservoirGroup(name = "S",        # Name of reservoir group
+                        #volume = "1E5 l",       # see below
+                        geometry = [0, 6000, 1],
+                        delta   = {M1.DIC:0, M1.TA:0},  # dict of delta values
+                        concentration = {M1.DIC:"2.1 mmol/l", M1.TA: "2.36 mmol/l"},
+                        isotopes = {M1.DIC: True},
+                        seawater_parameters = {"temperature": 25, "pressure": 1000, "salinity" : 35},
+                        #@carbonate_system= True,
+                        register=M1,
+                   )
+
+    assert round(M1.S.swc.density, 6) ==  1062.538172 # kg/m^3
+    assert round(M1.S.swc.so4,6) == 0.03002 # mol/liter
+
 @pytest.mark.parametrize("solver", ["numba", "python"])
 def test_carbonate_system1_constants(create_model, solver):
     """Test that isotope fractionation from a flux out of a reserevoir
@@ -785,10 +822,10 @@ def test_carbonate_system1_constants(create_model, solver):
     i = 200
     assert round(M1.S.DIC.c[i] * 1000, 2) == 2.1  # DIC
     assert round(M1.S.TA.c[i] * 1000, 2) == 2.4  # TA
-    assert round(-np.log10(M1.S.cs.H[i]), 2) == 7.98  # pH
+    assert round(-np.log10(M1.S.cs.H[i]), 2) == 7.99  # pH
     assert round(M1.S.cs.HCO3[i] * 1000, 2) == 1.87
     assert round(M1.S.cs.CO3[i] * 1000, 2) == 0.22
-    assert round(M1.S.cs.CO2aq[i] * 1000, 4) == 0.0135
+    assert round(M1.S.cs.CO2aq[i] * 1000, 4) == 0.0134
 
 @pytest.mark.parametrize("solver", ["numba", "python"])
 def test_carbonate_system2_(create_model, solver):
@@ -864,8 +901,8 @@ def test_carbonate_system2_(create_model, solver):
     assert round(M1.S.cs.HCO3[i] * 1000, 2) == 2.25
     assert round(M1.S.cs.CO3[i] * 1000, 4) == 0.0661
     assert round(M1.S.cs.CO2aq[i] * 1000, 4) == 0.0386
-    assert round(M1.S.cs.zsat[i]) == 2339
-    assert round(M1.S.cs.zsnow[i]) == 4608
+    assert round(M1.S.cs.zsat[i]) == 2335
+    assert round(M1.S.cs.zsnow[i]) == 4605
 
 @pytest.mark.parametrize("solver", ["numba", "python"])
 def test_gas_exchange(create_model, solver):
@@ -937,7 +974,7 @@ def test_gas_exchange(create_model, solver):
     diff_c = epco2_at[-3] - epco2_aq[-3]
     diff_d = M1.S.DIC.d[-3] - M1.CO2_At.d[-3]
 
-    assert round(abs(diff_c),3) == 6.661
+    assert round(abs(diff_c),3) == 1.344 # ppm
     assert  round(diff_d,1) == 8.0
     
 def test_external_data(create_model):
