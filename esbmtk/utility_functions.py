@@ -166,8 +166,8 @@ def show_data(self, **kwargs) -> None:
         ind: str = ""
 
     # show the first 4 entries
-    for i in range(index, index + 3):
-        print(f"{off}{ind}i = {i}, Mass = {self.m[i]:.2e}, delta = {self.d[i]:.2f}")
+    # for i in range(index, index + 3):
+    #     print(f"{off}{ind}i = {i}, Mass = {self.m[i]:.2e}, li= {self.l[i]:.2f}")
 
 
 def set_y_limits(ax: plt.Axes, obj: any) -> None:

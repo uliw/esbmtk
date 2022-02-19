@@ -20,7 +20,7 @@ set_printoptions(precision=4)
 # from .utility_functions import *
 from .esbmtk import esbmtkBase, Reservoir, Flux, Signal, Source, Sink
 from .utility_functions import sort_by_type
-from .solver import get_imass, get_frac, get_delta, get_flux_data
+from .solver import get_imass, get_frac, get_delta, get_flux_data, get_l_mass
 from . import ureg, Q_
 
 # from .connections import ConnnectionGroup
@@ -846,6 +846,8 @@ class weathering(RateConstant):
                        pco2_0 = 280,
                        f_0 = 12 / 17e12
                        Scale =  1000,
+                       delta = 0,
+
     )
 
     """
@@ -857,6 +859,16 @@ class weathering(RateConstant):
 
         self.f_0: float = Q_(self.f_0).to(self.mo.f_unit).magnitude
         self.pco2_0 = Q_(self.pco2_0).to("ppm").magnitude * 1e-6
+
+        if "delta" in self.kwargs:
+            self.d = self.kwargs["delta"]
+            self.isotopes = True
+            # get ratio between mass and light isotope
+            self.c = get_l_mass(self.f_0, self.d, self.reservoir.species.r) / self.f_0
+        else:
+            self.d = 0
+            self.c = 0
+            self.isotopes = False
 
     def __without_isotopes__(self, i: int) -> None:
 
@@ -875,14 +887,12 @@ class weathering(RateConstant):
         rather than scaling the flux.
         """
 
-        raise NotImplementedError("weathering has currently no isotope method")
-        # c: float = self.reservoir.c[i - 1]
-        # if c > 0:  # otherwise there is no flux
-        #     m = c * self.scale
-        #     r: float = reservoir.species.element.r
-        #     d: float = reservoir.d[i - 1]
-        #     l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-        #     self.flux[i]: np.array = [m, l, m - l, d]
+        f = (
+            self.f_0
+            * (self.scale * self.reservoir_ref.c[i - 1] / self.pco2_0) ** self.ex
+        )
+        fl = f * self.c
+        self.flux.fa = [f, fl]
 
     def get_process_args(self):
 
@@ -892,12 +902,10 @@ class weathering(RateConstant):
             [
                 self.flux.m,  # 0
                 self.flux.l,  # 1
-                # self.flux.h,  # 2
-                # self.flux.d,  # 3
-                # self.reservoir_ref.d,  # 4
-                self.reservoir_ref.c,  # 5 2
-                self.reservoir_ref.m,  # 6 3
-                self.flux.fa,  # 7 4
+                self.reservoir_ref.c,  # 2
+                self.reservoir_ref.m,  # 3
+                self.reservoir_ref.l,  # 4
+                self.flux.fa,  # 5
             ]
         )
         params = List(
@@ -907,6 +915,7 @@ class weathering(RateConstant):
                 float(self.f_0),  # 2
                 float(self.pco2_0),  # 3
                 float(self.ex),  # 4
+                float(self.c),  # 5
             ]
         )
 
@@ -920,10 +929,12 @@ class weathering(RateConstant):
         f_0: float = params[2]
         pco2_0: float = params[3]
         ex: float = params[4]
+        ic: float = params[5]
 
         c: float = data[2][i - 1]
         f: float = f_0 * (c * s / pco2_0) ** ex
-        data[4][:] = [f, 0]
+        fl = f * ic
+        data[5][:] = [f, fl]
 
 
 class ScaleRelativeToConcentration(RateConstant):
@@ -1299,7 +1310,7 @@ class GasExchange(RateConstant):
         f13 = scale * au * (eco2_at_13 - eco2_aq_13)
         f12 = f - f13
         data[0][:] = [f, f12]  # fa
-        data[6][i] = data[6][i - 1] + f * dt 
+        data[6][i] = data[6][i - 1] + f * dt
 
 
 class VarDeltaOut(Process):

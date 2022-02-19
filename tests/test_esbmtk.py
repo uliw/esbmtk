@@ -732,31 +732,34 @@ def test_seawaterconstants(create_model):
     Source(name="SO1", species=M1.DIC)
     Sink(name="SI1", species=M1.DIC)
 
-    ReservoirGroup(name = "S",        # Name of reservoir group
-                        #volume = "1E5 l",       # see below
-                        geometry = [0, 6000, 1],
-                        delta   = {M1.DIC:0, M1.TA:0},  # dict of delta values
-                        concentration = {M1.DIC:"2.1 mmol/l", M1.TA: "2.36 mmol/l"},
-                        isotopes = {M1.DIC: True},
-                        seawater_parameters = {"temperature": 5, "pressure": 0, "salinity" : 0},
-                        #@carbonate_system= True,
-                        register=M1,
-                   )
-    assert round(M1.S.swc.density, 6) ==  999.966751
+    ReservoirGroup(
+        name="S",  # Name of reservoir group
+        # volume = "1E5 l",       # see below
+        geometry=[0, 6000, 1],
+        delta={M1.DIC: 0, M1.TA: 0},  # dict of delta values
+        concentration={M1.DIC: "2.1 mmol/l", M1.TA: "2.36 mmol/l"},
+        isotopes={M1.DIC: True},
+        seawater_parameters={"temperature": 5, "pressure": 0, "salinity": 0},
+        # @carbonate_system= True,
+        register=M1,
+    )
+    assert round(M1.S.swc.density, 6) == 999.966751
 
-    ReservoirGroup(name = "S",        # Name of reservoir group
-                        #volume = "1E5 l",       # see below
-                        geometry = [0, 6000, 1],
-                        delta   = {M1.DIC:0, M1.TA:0},  # dict of delta values
-                        concentration = {M1.DIC:"2.1 mmol/l", M1.TA: "2.36 mmol/l"},
-                        isotopes = {M1.DIC: True},
-                        seawater_parameters = {"temperature": 25, "pressure": 1000, "salinity" : 35},
-                        #@carbonate_system= True,
-                        register=M1,
-                   )
+    ReservoirGroup(
+        name="S",  # Name of reservoir group
+        # volume = "1E5 l",       # see below
+        geometry=[0, 6000, 1],
+        delta={M1.DIC: 0, M1.TA: 0},  # dict of delta values
+        concentration={M1.DIC: "2.1 mmol/l", M1.TA: "2.36 mmol/l"},
+        isotopes={M1.DIC: True},
+        seawater_parameters={"temperature": 25, "pressure": 1000, "salinity": 35},
+        # @carbonate_system= True,
+        register=M1,
+    )
 
-    assert round(M1.S.swc.density, 6) ==  1062.538172 # kg/m^3
-    assert round(M1.S.swc.so4,6) == 0.03002 # mol/liter
+    assert round(M1.S.swc.density, 6) == 1062.538172  # kg/m^3
+    assert round(M1.S.swc.so4, 6) == 0.03002  # mol/liter
+
 
 @pytest.mark.parametrize("solver", ["numba", "python"])
 def test_carbonate_system1_constants(create_model, solver):
@@ -827,6 +830,7 @@ def test_carbonate_system1_constants(create_model, solver):
     assert round(M1.S.cs.CO3[i] * 1000, 2) == 0.22
     assert round(M1.S.cs.CO2aq[i] * 1000, 4) == 0.0134
 
+
 @pytest.mark.parametrize("solver", ["numba", "python"])
 def test_carbonate_system2_(create_model, solver):
     """Test that isotope fractionation from a flux out of a reserevoir
@@ -841,18 +845,17 @@ def test_carbonate_system2_(create_model, solver):
     from esbmtk import ExternalCode, ReservoirGroup, add_carbonate_system_2
     import numpy as np
 
-    ReservoirGroup(name = "S",        # Name of reservoir group
-                    #volume = "1E5 l",       # see below
-                    geometry = [0, 6000, 1],
-                    delta   = {M1.DIC:0, M1.TA:0},  # dict of delta values
-                    concentration = {M1.DIC:"2.3 mmol/l", M1.TA: "2.4 mmol/l"},
-                    isotopes = {M1.DIC: True},
-                    seawater_parameters = {"temperature": 2, "pressure": 240, "salinity" : 35},
-                    #@carbonate_system= True,
-                    register=M1,
-               )
-
-
+    ReservoirGroup(
+        name="S",  # Name of reservoir group
+        # volume = "1E5 l",       # see below
+        geometry=[0, 6000, 1],
+        delta={M1.DIC: 0, M1.TA: 0},  # dict of delta values
+        concentration={M1.DIC: "2.3 mmol/l", M1.TA: "2.4 mmol/l"},
+        isotopes={M1.DIC: True},
+        seawater_parameters={"temperature": 2, "pressure": 240, "salinity": 35},
+        # @carbonate_system= True,
+        register=M1,
+    )
 
     Source(name="SO1", species=M1.DIC)
 
@@ -884,15 +887,13 @@ def test_carbonate_system2_(create_model, solver):
         sink=M1.SI1,  # target of flux
         ctype="Regular",
         rate="100 mol/yr",  # weathering flux in
-        #alpha=-28,  # set a default flux
+        # alpha=-28,  # set a default flux
     )
     exp = M1.C_SO1_2_DIC.SO1_2_DIC_F
-    exp.fa = np.array([60E12, 60E12])
-    add_carbonate_system_2(rgs=[M1.S],
-                           carbonate_export_fluxes=[exp],
-                           alpha=0.6,
-                           zsat_min = -200,
-                           z0 = -200)
+    exp.fa = np.array([60e12, 60e12])
+    add_carbonate_system_2(
+        rgs=[M1.S], carbonate_export_fluxes=[exp], alpha=0.6, zsat_min=-200, z0=-200
+    )
     M1.run(solver=solver)
     i = 997
     assert round(M1.S.DIC.c[i] * 1000, 2) == 2.36  # DIC
@@ -904,13 +905,14 @@ def test_carbonate_system2_(create_model, solver):
     assert round(M1.S.cs.zsat[i]) == 2335
     assert round(M1.S.cs.zsnow[i]) == 4605
 
+
 @pytest.mark.parametrize("solver", ["numba", "python"])
 def test_gas_exchange(create_model, solver):
     """Test that isotope fractionation from a flux out of a reserevoir
     results in the corrrect fractionation, when using the numba solver
 
     """
-   
+
     from esbmtk import Source, Sink, Connect, Reservoir, GasReservoir
     from esbmtk import ExternalCode, ReservoirGroup, AirSeaExchange
     from esbmtk import add_carbonate_system_1
@@ -921,27 +923,28 @@ def test_gas_exchange(create_model, solver):
     Source(name="SO1", species=M1.DIC)
     Sink(name="SI1", species=M1.DIC)
 
-    ReservoirGroup(name = "S",        # Name of reservoir group
-                        #volume = "1E5 l",       # see below
-                        geometry = [0, 6000, 1],
-                        delta   = {M1.DIC:0, M1.TA:0},  # dict of delta values
-                        concentration = {M1.DIC:"2.1 mmol/l", M1.TA: "2.36 mmol/l"},
-                        isotopes = {M1.DIC: True},
-                        seawater_parameters = {"temperature": 25, "pressure": 1, "salinity" : 35},
-                        #@carbonate_system= True,
-                        register=M1,
-                   )
+    ReservoirGroup(
+        name="S",  # Name of reservoir group
+        # volume = "1E5 l",       # see below
+        geometry=[0, 6000, 1],
+        delta={M1.DIC: 0, M1.TA: 0},  # dict of delta values
+        concentration={M1.DIC: "2.1 mmol/l", M1.TA: "2.36 mmol/l"},
+        isotopes={M1.DIC: True},
+        seawater_parameters={"temperature": 25, "pressure": 1, "salinity": 35},
+        # @carbonate_system= True,
+        register=M1,
+    )
 
     add_carbonate_system_1(rgs=[M1.S])
 
     GasReservoir(
-            name="CO2_At",
-            species=M1.CO2,
-            reservoir_mass="1.833E20 mol",
-            species_ppm="280 ppm",
-            isotopes=True,
-            delta = -7,
-        )
+        name="CO2_At",
+        species=M1.CO2,
+        reservoir_mass="1.833E20 mol",
+        species_ppm="280 ppm",
+        isotopes=True,
+        delta=-7,
+    )
 
     # DIC influx
     Connect(
@@ -952,49 +955,90 @@ def test_gas_exchange(create_model, solver):
     )
 
     AirSeaExchange(
-            gas_reservoir=M1.CO2_At,  # Reservoir
-            liquid_reservoir=M1.S.DIC,  # ReservoirGroup
-            species=M1.CO2,
-            ref_species=M1.S.cs.CO2aq,
-            solubility=M1.S.swc.SA_co2,  # float
-            area=M1.S.area,
-            piston_velocity="4.8 m/d",
-            water_vapor_pressure=M1.S.swc.p_H2O,
-            id ="A_sb",
-        )   
+        gas_reservoir=M1.CO2_At,  # Reservoir
+        liquid_reservoir=M1.S.DIC,  # ReservoirGroup
+        species=M1.CO2,
+        ref_species=M1.S.cs.CO2aq,
+        solubility=M1.S.swc.SA_co2,  # float
+        area=M1.S.area,
+        piston_velocity="4.8 m/d",
+        water_vapor_pressure=M1.S.swc.p_H2O,
+        id="A_sb",
+    )
 
     M1.run(solver=solver)
 
     M1.get_delta_values()
     # calculate theoretical equlibrium pCO2 based on pCO2
-    epco2_at = M1.CO2_At.c*(1- M1.S.swc.p_H2O) *1e6
+    epco2_at = M1.CO2_At.c * (1 - M1.S.swc.p_H2O) * 1e6
     # calculate equilibrium pCO2 based on CO2aq
-    epco2_aq = M1.S.cs.CO2aq/M1.S.swc.K0 * 1e6
-    
+    epco2_aq = M1.S.cs.CO2aq / M1.S.swc.K0 * 1e6
+
     diff_c = epco2_at[-3] - epco2_aq[-3]
     diff_d = M1.S.DIC.d[-3] - M1.CO2_At.d[-3]
 
-    assert round(abs(diff_c),3) == 1.344 # ppm
-    assert  round(diff_d,1) == 8.0
-    
-def test_external_data(create_model):
-    """test the creation of an external data object"""
+    assert round(abs(diff_c), 3) == 1.344  # ppm
+    assert round(diff_d, 1) == 8.0
 
-    from esbmtk import ExternalData
+
+@pytest.mark.parametrize("solver", ["numba", "python"])
+def test_weathering(create_model, solver):
+    """Test that isotope fractionation from a flux out of a reserevoir
+    results in the corrrect fractionation, when using the numba solver
+
+    """
+
+    from esbmtk import Source, Sink, Connect, Reservoir, GasReservoir
+    from esbmtk import ExternalCode, ReservoirGroup, AirSeaExchange
+    from esbmtk import get_delta_i
+    import numpy as np
 
     v0, c0, d0, M1 = create_model
 
-    ExternalData(
-        name="ED1",
-        filename="measured_c_isotopes.csv",
-        legend="ED1",
-        reservoir=M1.R1,
-        offset="0.1 kyrs",
+    ReservoirGroup(
+        name="S",  # Name of reservoir group
+        # volume = "1E5 l",       # see below
+        geometry=[0, 6000, 1],
+        delta={M1.DIC: 0, M1.TA: 0},  # dict of delta values
+        concentration={M1.DIC: "2.3 mmol/l", M1.TA: "2.4 mmol/l"},
+        isotopes={M1.DIC: True},
+        register=M1,
     )
-    assert M1.ED1.x[0] == 100
-    assert "Unnamed" in M1.ED1.df.columns[1]
-    assert round(M1.ED1.z[0], 10) == 2.09512
-    assert round(M1.ED1.z[-1], 10) == 0.968293
+
+    Source(name="Fw", species=M1.DIC)
+
+    GasReservoir(
+        name="CO2_At",
+        species=M1.CO2,
+        reservoir_mass="1.833E20 mol",
+        species_ppm="400 ppm",
+        isotopes=True,
+        delta=0,
+    )
+
+    Connect(
+        source=M1.Fw,  # source of flux
+        sink=M1.S.DIC,
+        reservoir_ref=M1.CO2_At,
+        ctype="weathering",
+        id="we",
+        scale=1,
+        ex=0.4,
+        pco2_0="280 ppm",
+        f_0="1E13 mol/yr",
+        delta=5,
+    )
+
+    M1.run(solver=solver)
+    # flux computed at 400ppm
+    tf = 1e13 * (400 / 280) ** 0.4
+    f = M1.C_Fw_2_DIC_we.Fw_2_DIC_we_F.fa[0]
+    # test that flux calculation is correct
+    assert tf - f == 0
+    fl = M1.C_Fw_2_DIC_we.Fw_2_DIC_we_F.fa[1]
+    d = get_delta_i(fl, f - fl, M1.DIC.r)
+    # test that isotope calculation is correct
+    assert d - 5 < 0.000001
 
 
 # the following do currently not work with numba

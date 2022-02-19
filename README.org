@@ -16,7 +16,11 @@ generation of graphical results.
 
   - 0.7.3.0 Flux data is no longer kept by default. This results in
     huge memory savings. esbmtk now requires python 3.9 or higher, and
-    also depends on =os= and =psutil=
+    also depends on =os= and =psutil=. the scale with flux process now
+    uses the =ref_flux= keyword instead of =ref_reservoirs=. Models
+    must adapt their scripts accordingly. esbmtk objects no longer
+    provide delta values by default. Rather they need to be calculated
+    in the post-processing step via =M.get_delta_values()=.
 
   - January 8^{th} 0.7.2.2 Fixed several isotope calculation
     regressions. Added 31 Unit tests.

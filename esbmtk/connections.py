@@ -1011,6 +1011,7 @@ class Connect(esbmtkBase):
                 ex=self.ex,
                 pco2_0=self.pco2_0,
                 f_0=self.f_0,
+                delta=self.delta,
             )
 
         elif self.ctype == "scale_relative_to_multiple_reservoirs":
