@@ -748,6 +748,7 @@ class RateConstant(Process):
             "k_value": (Number, np.float64),
             "name": str,
             "reservoir": (Reservoir, Source, Sink, GasReservoir, np.ndarray),
+            "source": (Reservoir, Source, GasReservoir),
             "flux": Flux,
             "ref_reservoirs": list,
             "reservoir_ref": (Reservoir, GasReservoir),
@@ -863,12 +864,18 @@ class weathering(RateConstant):
         if "delta" in self.kwargs:
             self.d = self.kwargs["delta"]
             self.isotopes = True
-            # get ratio between mass and light isotope
-            self.c = get_l_mass(self.f_0, self.d, self.reservoir.species.r) / self.f_0
         else:
             self.d = 0
-            self.c = 0
             self.isotopes = False
+
+        """ test if upstream is a reserevoir or gas-reserevoir
+        in wthis case we need to calculate the isotope ratio
+        based on the upstream reservoir. We also need to overide their
+        initial isotope ratio of the flux 
+        """
+        if not isinstance(self.source, Source):
+            self.isotopes = self.source.isotopes
+            self.flux.fa = np.array([self.source.m[0], self.source.l[0]])
 
     def __without_isotopes__(self, i: int) -> None:
 
@@ -876,7 +883,7 @@ class weathering(RateConstant):
             self.f_0
             * (self.scale * self.reservoir_ref.c[i - 1] / self.pco2_0) ** self.ex
         )
-        self.flux.fa = [f, 0]
+        self.flux.fa = np.array([f, 0])
 
     def __with_isotopes__(self, i: int) -> None:
         """
@@ -887,12 +894,13 @@ class weathering(RateConstant):
         rather than scaling the flux.
         """
 
+        c = self.flux.fa[1] / self.flux.fa[0]
         f = (
             self.f_0
             * (self.scale * self.reservoir_ref.c[i - 1] / self.pco2_0) ** self.ex
         )
-        fl = f * self.c
-        self.flux.fa = [f, fl]
+        fl = f * c
+        self.flux.fa = np.array([f, fl])
 
     def get_process_args(self):
 
@@ -900,12 +908,8 @@ class weathering(RateConstant):
 
         data = List(
             [
-                self.flux.m,  # 0
-                self.flux.l,  # 1
-                self.reservoir_ref.c,  # 2
-                self.reservoir_ref.m,  # 3
-                self.reservoir_ref.l,  # 4
-                self.flux.fa,  # 5
+                self.flux.fa,  # 0
+                self.reservoir_ref.c,  # 1
             ]
         )
         params = List(
@@ -915,7 +919,6 @@ class weathering(RateConstant):
                 float(self.f_0),  # 2
                 float(self.pco2_0),  # 3
                 float(self.ex),  # 4
-                float(self.c),  # 5
             ]
         )
 
@@ -924,17 +927,21 @@ class weathering(RateConstant):
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_weathering(data, params, i) -> None:
-        # concentration times scale factor
+        
+        # params
         s: float = params[1]
         f_0: float = params[2]
         pco2_0: float = params[3]
         ex: float = params[4]
-        ic: float = params[5]
 
-        c: float = data[2][i - 1]
+        # data 
+        fm = data[0][0]
+        fi = data[0][1]
+
+        c: float = data[1][i - 1]
         f: float = f_0 * (c * s / pco2_0) ** ex
-        fl = f * ic
-        data[5][:] = [f, fl]
+        fl = f * fi / fm
+        data[0][:] = [f, fl]
 
 
 class ScaleRelativeToConcentration(RateConstant):

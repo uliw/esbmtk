@@ -536,6 +536,9 @@ class Connect(esbmtkBase):
         """Create flux object, and register with reservoir and global namespace"""
 
         # test if default arguments present
+
+        print(f"flux with d = {self.delta}")
+        
         if self.delta == "None":
             d = 0
         else:
@@ -1003,6 +1006,7 @@ class Connect(esbmtkBase):
 
             ph = weathering(
                 name="Pw",
+                source=self.source,
                 reservoir=self.r,
                 flux=self.fh,
                 register=self.fh,
@@ -1010,7 +1014,7 @@ class Connect(esbmtkBase):
                 reservoir_ref=self.reservoir_ref,
                 ex=self.ex,
                 pco2_0=self.pco2_0,
-                f_0=self.f_0,
+                f_0=self.rate,
                 delta=self.delta,
             )
 

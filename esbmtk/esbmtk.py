@@ -2279,7 +2279,11 @@ class Flux(esbmtkBase):
         # and convert flux into model units
         fluxrate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
 
-        self.fa: [NDArray, Float[64]] = np.array([fluxrate, 0])
+        if self.delta:
+            li = get_l_mass(fluxrate, self.delta, self.sp.r)
+        else:
+            li = 0
+        self.fa: [NDArray, Float[64]] = np.array([fluxrate, li])
 
         # in case we want to keep the flux data
         if self.save_flux_data:
@@ -2287,8 +2291,6 @@ class Flux(esbmtkBase):
                 zeros(self.model.steps) + fluxrate
             )  # add the flux
             self.l: [NDArray, Float[64]] = np.zeros(self.model.steps)
-            # self.h: [NDArray, Float[64]] = np.zeros(self.model.steps)
-            # self.d: [NDArray, Float[64]] = np.zeros(self.model.steps) + self.delta
 
             if self.mo.number_of_solving_iterations > 0:
                 self.mc = np.empty(0)
@@ -2302,8 +2304,6 @@ class Flux(esbmtkBase):
             # setup dummy variables to keep existing numba data structures
             self.m = np.zeros(2)
             self.l = np.zeros(2)
-            # self.h = np.zeros(2)
-            # self.d = np.zeros(2)
 
             if self.rate != 0:
                 self.fa[1] = get_l_mass(self.fa[0], self.delta, self.species.r)

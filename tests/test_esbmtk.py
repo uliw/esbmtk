@@ -1025,7 +1025,7 @@ def test_weathering(create_model, solver):
         scale=1,
         ex=0.4,
         pco2_0="280 ppm",
-        f_0="1E13 mol/yr",
+        rate="1E13 mol/yr",
         delta=5,
     )
 
@@ -1039,6 +1039,63 @@ def test_weathering(create_model, solver):
     d = get_delta_i(fl, f - fl, M1.DIC.r)
     # test that isotope calculation is correct
     assert d - 5 < 0.000001
+
+@pytest.mark.parametrize("solver", ["numba", "python"])
+def test_weathering_with_atmosphere_as_source(create_model, solver):
+    """Test that isotope fractionation from a flux out of a reserevoir
+    results in the corrrect fractionation, when using the numba solver
+
+    """
+
+    from esbmtk import Source, Sink, Connect, Reservoir, GasReservoir
+    from esbmtk import ExternalCode, ReservoirGroup, AirSeaExchange
+    from esbmtk import get_delta_i
+    import numpy as np
+
+    v0, c0, d0, M1 = create_model
+
+    ReservoirGroup(
+        name="S",  # Name of reservoir group
+        # volume = "1E5 l",       # see below
+        geometry=[0, 6000, 1],
+        delta={M1.DIC: 0, M1.TA: 0},  # dict of delta values
+        concentration={M1.DIC: "2.3 mmol/l", M1.TA: "2.4 mmol/l"},
+        isotopes={M1.DIC: True},
+        register=M1,
+    )
+
+    Source(name="Fw", species=M1.DIC)
+
+    GasReservoir(
+        name="CO2_At",
+        species=M1.CO2,
+        reservoir_mass="1.833E20 mol",
+        species_ppm="400 ppm",
+        isotopes=True,
+        delta=12,
+    )
+
+    Connect(
+        source=M1.CO2_At,  # source of flux
+        sink=M1.S.DIC,
+        reservoir_ref=M1.CO2_At,
+        ctype="weathering",
+        id="we",
+        scale=1,
+        ex=0.4,
+        pco2_0="280 ppm",
+        rate="1 mol/yr",
+        delta=5,
+    )
+
+    M1.run(solver=solver)
+    f = M1.C_CO2_At_2_DIC_we.CO2_At_2_DIC_we_F.fa[0]
+    fl = M1.C_CO2_At_2_DIC_we.CO2_At_2_DIC_we_F.fa[1]
+    d = get_delta_i(fl, f-fl, M1.DIC.r)
+
+    tf = 1 * (400 / 280) ** 0.4
+    assert tf - f == 0
+    assert d - 12 < 0.00001
 
 
 # the following do currently not work with numba
