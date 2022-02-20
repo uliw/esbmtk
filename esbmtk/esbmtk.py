@@ -2477,12 +2477,11 @@ class Flux(esbmtkBase):
         Also, copy current results into temp field
         """
 
-        self.mc = np.append(self.mc, self.m[0 : -2 : self.mo.reset_stride])
-        self.dc = np.append(self.dc, self.d[0 : -2 : self.mo.reset_stride])
-
-        # copy last element to first position
-        self.m[0] = self.m[-2]
-        self.l[0] = self.l[-2]
+        if self.save_flux_data:
+            self.mc = np.append(self.mc, self.m[0 : -2 : self.mo.reset_stride])
+            # copy last element to first position
+            self.m[0] = self.m[-2]
+            self.l[0] = self.l[-2]
 
     def __merge_temp_results__(self) -> None:
         """Once all iterations are done, replace the data fields
