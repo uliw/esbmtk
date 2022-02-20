@@ -5,6 +5,7 @@ esbmtk/carbonate_chemistry.py
 esbmtk/connections.py
 esbmtk/esbmtk.py
 esbmtk/extended_classes.py
+esbmtk/processes-old.py
 esbmtk/processes.py
 esbmtk/scratch.py
 esbmtk/sealevel.py

@@ -35,7 +35,7 @@ import pandas as pd
 import logging
 
 import builtins
-import os
+import os, psutil
 
 from .utility_functions import (
     plot_object_data,
@@ -50,6 +50,7 @@ from .utility_functions import (
 from .solver import (
     get_imass,
     get_delta,
+    get_l_mass,
     execute,
     execute_e,
 )
@@ -513,6 +514,7 @@ class Model(esbmtkBase):
                       number_of_datapoints = optional, see below
                       step_limit = optional, see below
                       register = 'local', see below
+                      save_flux_data = False, see below
                     )
 
     ref_time:  will offset the time axis by the specified
@@ -534,6 +536,13 @@ class Model(esbmtkBase):
     register = local/None. If set to 'None' all objects are registered
                in the global namespace the default setting is local,
                i.e. all objects are registered in the model namespace.
+
+    save_flux_data: Normally, flux data is not stored. Set this to True
+               for debugging puposes. Note, Fluxes with signals are always
+               stored. You can also enable this option for inidividual
+               connections (fluxes).
+
+    get_delta_values: Compute delta values as postprocessing step.
 
     All of the above keyword values are available as variables with
     Model_Name.keyword
@@ -622,6 +631,7 @@ class Model(esbmtkBase):
             "step_limit": (Number, str),
             "register": str,
             "full_name": str,
+            "save_flux_data": bool,
         }
 
         # provide a list of absolutely required keywords
@@ -639,6 +649,7 @@ class Model(esbmtkBase):
             "step_limit": "None",
             "register": "local",
             "full_name": kwargs["name"],
+            "save_flux_data": False,
         }
 
         self.__initerrormessages__()
@@ -1113,6 +1124,23 @@ class Model(esbmtkBase):
         # flag that the model has executed
         self.state = 1
 
+        process = psutil.Process(os.getpid())
+        print(f"This run used {process.memory_info().rss/1e9:n} Gbytes of memory \n")
+
+    def get_delta_values(self):
+        """Calculate the isotope ratios in the usual delta notation"""
+
+        for r in self.lor:
+            if r.isotopes:
+                r.d = get_delta_h(r)
+
+        # for vr in self.lvr:
+        #     vr.d = get_delta_h(vr)
+
+        for f in self.lof:
+            if f.save_flux_data:
+                f.d = get_delta_h(f)
+
     def sub_sample_data(self):
         """Subsample the data. No need to save 100k lines of data You need to
         do this _after_ saving the state, but before plotting and
@@ -1143,14 +1171,8 @@ class Model(esbmtkBase):
                 self.lpc_f,
                 self.lpc_r,
             )
-
-        elif solver == "hybrid":
-            execute_h(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
-        elif solver == "python":
-            execute(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
         else:
             execute(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
-        # self.execute(new, self.time, self.lor, self.lpc_f, self.lpc_r)
 
     def __step_process__(self, r, i) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -1196,7 +1218,7 @@ class Model(esbmtkBase):
 
         Example:
 
-        sum, names = M.flux_summary(filter_by="POP", return_sum=True)
+        sum, names = M.flux_summary(filter_by="POP", return_list=True)
 
         """
 
@@ -1216,32 +1238,25 @@ class Model(esbmtkBase):
         if "filter" in kwargs:
             raise ValueError("use filter_by instead of filter")
 
-        print(f"\n --- Flux Summary -- filtered by {fby}\n")
+        if "return_list" in kwargs:
+            return_list = True
+        else:
+            return_list = False
+            print(f"\n --- Flux Summary -- filtered by {fby}\n")
 
         match = False
         for f in self.lof:  # loop over reservoirs
             if fby in f.full_name:  # and f.m[-3] != 0:
-                print(f"{f.full_name}")
-                # match = True
-                # print(f"- {r.full_name}:")
-                # for f in r.lof:  # loop over fluxes in reservoir
-                #     if fby in f.full_name:  #  and f.m[-3] != 0:
-                #         rl.append(f)
-                #         direction = r.lio[f]
-                #         fsum = fsum + f.m[-3] * direction
-                #         if r.isotopes:
-                #             print(
-                #                 f"    - {f.full_name} = {direction * f.m[i]:.2e} d = {f.d[i]:.2f}"
-                #             )
-                #         else:
-                #             print(
-                #                 f"    - {f.full_name} = {direction * f.m[i]:.2e}"
-                #             )
-                print("")
+                rl.append(f)
+                fsum += f.fa[0]
+                if not return_list:
+                    print(f"{f.full_name}")
+                    print("")
 
-        if "return_sum" not in kwargs:
+        if not return_list:
             fsum = None
             rl = None
+            
         return fsum, rl
 
     def connection_summary(self, **kwargs: dict) -> None:
@@ -1507,24 +1522,22 @@ class ReservoirBase(esbmtkBase):
     def __getitem__(self, i: int) -> NDArray[np.float64]:
         """Get flux data by index"""
 
-        return np.array([self.m[i], self.l[i], self.h[i], self.d[i]])
+        return np.array([self.m[i], self.l[i], self.c[i]])
 
     def __set_with_isotopes__(self, i: int, value: float) -> None:
         """write data by index"""
 
         self.m[i]: float = value[0]
-        self.l[i]: float = value[1]
-        self.h[i]: float = value[2]
         # update concentration and delta next. This is computationally inefficient
         # but the next time step may depend on on both variables.
-        self.d[i]: float = get_delta(self.l[i], self.h[i], self.sp.r)
-        self.c[i]: float = self.m[i] / self.v  # update concentration
+        self.c[i]: float = value[0] / self.v[i]  # update concentration
+        self.l[i]: float = value[1]
 
     def __set_without_isotopes__(self, i: int, value: float) -> None:
         """write data by index"""
 
         self.m[i]: float = value[0]
-        self.c[i]: float = self.m[i] / self.v  # update concentration
+        self.c[i]: float = self.m[i] / self.v[i]  # update concentration
 
     def __update_mass__() -> None:
         """Place holder function"""
@@ -1538,9 +1551,8 @@ class ReservoirBase(esbmtkBase):
             [
                 self.m,  # 0
                 self.l,  # 1
-                self.h,  # 2
-                self.d,  # 3
-                self.c,  # 4
+                self.c,  # 2
+                self.v,  # 3
             ]
         )
 
@@ -1594,9 +1606,6 @@ class ReservoirBase(esbmtkBase):
         df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
         df[f"{rn} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
         df[f"{rn} {sp.ln} [{smu}]"] = self.l[start:stop:stride]  # light isotope
-        df[f"{rn} {sp.hn} [{smu}]"] = self.h[start:stop:stride]  # heavy isotope
-        # if self.isotopes:
-        df[f"{rn} {sdn} [{sds}]"] = self.d[start:stop:stride]  # delta value
         df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
 
         fullname: list = []
@@ -1606,15 +1615,12 @@ class ReservoirBase(esbmtkBase):
                 raise ValueError(f"{f.full_name} is a double")
             fullname.append(f.full_name)
 
-            # mass
-            df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]
-            # light isotope
-            df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]
-            # heavy isotope
-            df[f"{f.full_name} {sn} [{sp.hn}]"] = f.h[start:stop:stride]
-            # delta value
-            # if self.isotopes:
-            df[f"{f.full_name} {sn} {sdn} [{sds}]"] = f.d[start:stop:stride]
+            if f.save_flux_data:
+                df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]  # m
+                df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]  #  l
+            else:
+                df[f"{f.full_name} {sn} [{fmu}]"] = f.fa[0]  # m
+                df[f"{f.full_name} {sn} [{sp.ln}]"] = f.fa[1]  # l
 
         file_path = Path(fn)
         if append:
@@ -1636,9 +1642,9 @@ class ReservoirBase(esbmtkBase):
 
         # print(f"Reset data with {len(self.m)}, stride = {self.mo.reset_stride}")
         self.m = self.m[2:-2:stride]
-        self.l = self.m[2:-2:stride]
-        self.h = self.h[2:-2:stride]
-        self.d = self.d[2:-2:stride]
+        self.l = self.l[2:-2:stride]
+        # self.h = self.h[2:-2:stride]
+        # self.d = self.d[2:-2:stride]
         self.c = self.c[2:-2:stride]
 
     def __reset_state__(self) -> None:
@@ -1651,14 +1657,14 @@ class ReservoirBase(esbmtkBase):
 
         # print(f"Reset data with {len(self.m)}, stride = {self.mo.reset_stride}")
         self.mc = np.append(self.mc, self.m[0 : -2 : self.mo.reset_stride])
-        self.dc = np.append(self.dc, self.d[0 : -2 : self.mo.reset_stride])
+        # self.dc = np.append(self.dc, self.d[0 : -2 : self.mo.reset_stride])
         self.cc = np.append(self.cc, self.c[0 : -2 : self.mo.reset_stride])
 
         # copy last result into first field
         self.m[0] = self.m[-2]
         self.l[0] = self.l[-2]
-        self.h[0] = self.h[-2]
-        self.d[0] = self.d[-2]
+        # self.h[0] = self.h[-2]
+        # self.d[0] = self.d[-2]
         self.c[0] = self.c[-2]
 
     def __merge_temp_results__(self) -> None:
@@ -1669,7 +1675,7 @@ class ReservoirBase(esbmtkBase):
 
         self.m = self.mc
         self.c = self.cc
-        self.d = self.dc
+        # self.d = self.dc
 
     def __read_state__(self, directory: str) -> None:
         """read data from csv-file into a dataframe
@@ -1736,7 +1742,7 @@ class ReservoirBase(esbmtkBase):
             # this finds the reservoir name
             if name == self.full_name:
                 logging.debug(f"found reservoir data for {name}")
-                col = self.__assign__data__(self, df, col, True)
+                col = self.__assign_reservoir_data__(self, df, col, True)
             # this loops over all fluxes in a reservoir
             elif is_name_in_list(name, self.lof):
                 logging.debug(f"{name} is in {self.full_name}.lof")
@@ -1745,7 +1751,7 @@ class ReservoirBase(esbmtkBase):
                     f"found object {obj.full_name} adding flux data for {name}"
                 )
                 read.add(obj.full_name)
-                col = self.__assign__data__(obj, df, col, False)
+                col = self.__assign_flux_data__(obj, df, col, False)
                 i += 1
             else:
                 raise ValueError(f"Unable to find Flux {n} in {self.full_name}")
@@ -1754,9 +1760,11 @@ class ReservoirBase(esbmtkBase):
         for f in list(curr.difference(read)):
             print(f"\n Warning: Did not find values for {f}\n in saved state")
 
-    def __assign__data__(self, obj: any, df: pd.DataFrame, col: int, res: bool) -> int:
+    def __assign_flux_data__(
+        self, obj: any, df: pd.DataFrame, col: int, res: bool
+    ) -> int:
         """
-        Assign the third last entry data to all values in flux or reservoir
+        Assign the third last entry data to all values in flux
 
         parameters: df = dataframe
                     col = column number
@@ -1764,17 +1772,32 @@ class ReservoirBase(esbmtkBase):
 
         """
 
-        ovars: list = ["m", "l", "h", "d"]
+        obj.fa[0] = df.iloc[0, col]
+        obj.fa[1] = df.iloc[0, col + 1]
+        # obj.fa[2] = df.iloc[0, col + 2]
+        # obj.fa[3] = df.iloc[0, col + 3]
+        col = col + 2
+
+        return col
+
+    def __assign_reservoir_data__(
+        self, obj: any, df: pd.DataFrame, col: int, res: bool
+    ) -> int:
+        """
+        Assign the third last entry data to all values in reservoir
+
+        parameters: df = dataframe
+                    col = column number
+                    res = true if reservoir
+
+        """
 
         obj.m[:] = df.iloc[-3, col]
         obj.l[:] = df.iloc[-3, col + 1]
-        obj.h[:] = df.iloc[-3, col + 2]
-        obj.d[:] = df.iloc[-3, col + 3]
-        col = col + 4
-
-        if res:  # if type is reservoir
-            obj.c[:] = df.iloc[-3, col]
-            col += 1
+        # obj.h[:] = df.iloc[-3, col + 2]
+        # obj.d[:] = df.iloc[-3, col + 3]
+        obj.c[:] = df.iloc[-3, col + 2]
+        col = col + 3
 
         return col
 
@@ -2075,7 +2098,6 @@ class Reservoir(ReservoirBase):
         # convert units
         self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
 
-        self.v: float = self.volume  # reservoir volume
         # This should probably be species specific?
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
 
@@ -2101,18 +2123,18 @@ class Reservoir(ReservoirBase):
         # initialize mass vector
         self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
         self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
-        self.h: [NDArray, Float[64]] = zeros(self.mo.steps)
+        self.v: [NDArray, Float[64]] = (
+            np.zeros(self.mo.steps) + self.volume
+        )  # reservoir volume
 
         if self.mass == 0:
             self.c: [NDArray, Float[64]] = zeros(self.species.mo.steps)
-            self.d: [NDArray, Float[64]] = zeros(self.species.mo.steps)
         else:
             # initialize concentration vector
             self.c: [NDArray, Float[64]] = self.m / self.v
             # isotope mass
-            [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
+            self.l = get_l_mass(self.m, self.delta, self.species.r)
             # delta of reservoir
-            self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.species.r)
 
         # create temporary memory if we use multiple solver iterations
         if self.mo.number_of_solving_iterations > 0:
@@ -2206,7 +2228,7 @@ class Flux(esbmtkBase):
             "display_precision": Number,
             "isotopes": bool,
             "register": any,
-            "save": bool,
+            "save_flux_data": (bool, str),
             "id": str,
         }
 
@@ -2221,13 +2243,17 @@ class Flux(esbmtkBase):
             "isotopes": False,
             "register": "None",
             "id": "",
-            "save": True,
+            "save_flux_data": "None",
         }
 
         # initialize instance
         self.__initerrormessages__()
         self.bem.update({"rate": "a string", "plot": "a string"})
         self.__validateandregister__(kwargs)  # initialize keyword values
+
+        # if save_flux_data is unsepcified, use model default
+        if self.save_flux_data == "None":
+            self.save_flux_data = self.species.mo.save_flux_data
 
         # legacy names
         self.n: str = self.name  # name of flux
@@ -2246,28 +2272,34 @@ class Flux(esbmtkBase):
         # and convert flux into model units
         fluxrate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
 
-        self.fa: [NDArray, Float[64]] = zeros(4)
+        if self.delta:
+            li = get_l_mass(fluxrate, self.delta, self.sp.r)
+        else:
+            li = 0
+        self.fa: [NDArray, Float[64]] = np.array([fluxrate, li])
+
         # in case we want to keep the flux data
-        if self.save:
+        if self.save_flux_data:
             self.m: [NDArray, Float[64]] = (
                 zeros(self.model.steps) + fluxrate
             )  # add the flux
-            self.l: [NDArray, Float[64]] = zeros(self.model.steps)
-            self.h: [NDArray, Float[64]] = zeros(self.model.steps)
-            self.d: [NDArray, Float[64]] = zeros(self.model.steps) + self.delta
+            self.l: [NDArray, Float[64]] = np.zeros(self.model.steps)
 
-        if self.mo.number_of_solving_iterations > 0:
-            self.mc = np.empty(0)
-            self.dc = np.empty(0)
+            if self.mo.number_of_solving_iterations > 0:
+                self.mc = np.empty(0)
+                self.dc = np.empty(0)
 
-        if self.rate != 0:
-            [self.l, self.h] = get_imass(self.m, self.delta, self.species.r)
-            self.fa[1], self.fa[2] = get_imass(self.fa[0], self.fa[3], self.species.r)
+            if self.rate != 0:
+                self.l = get_l_mass(self.m, self.delta, self.species.r)
+                self.fa[1] = self.l[0]
 
-        # if self.delta == 0:
-        #     self.d: [NDArray, Float[64]] = zeros(self.model.steps)
-        # else:  # update delta
-        #     self.d: [NDArray, Float[64]] = get_delta(self.l, self.h, self.sp.r)
+        else:
+            # setup dummy variables to keep existing numba data structures
+            self.m = np.zeros(2)
+            self.l = np.zeros(2)
+
+            if self.rate != 0:
+                self.fa[1] = get_l_mass(self.fa[0], self.delta, self.species.r)
 
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
@@ -2334,15 +2366,13 @@ class Flux(esbmtkBase):
 
         self.m[i] = value[0]
         self.l[i] = value[1]
-        self.h[i] = value[2]
-        self.d[i] = value[3]
         self.fa = value[0:4]
         # self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
 
     def __set_without_isotopes__(self, i: int, value: [NDArray, float]) -> None:
         """Write data by index"""
 
-        self.fa = [value[0], 0, 0, 0]
+        self.fa = [value[0], 0]
         self.m[i] = value[0]
 
     def __call__(self) -> None:  # what to do when called as a function ()
@@ -2353,20 +2383,15 @@ class Flux(esbmtkBase):
         """adding two fluxes works for the masses, but not for delta"""
 
         self.fa = self.fa + other.fa
-        self.d = get_delta(self.fa[1], self.fa[2], self.sp.r)
-        # self.m = self.m + other.m
-        # self.l = self.l + other.l
-        # self.h = self.h + other.h
-        # self.d = get_delta(self.l, self.h, self.sp.r)
+        self.m = self.m + other.m
+        self.l = self.l + other.l
 
     def __sub__(self, other):
         """substracting two fluxes works for the masses, but not for delta"""
 
         self.fa = self.fa - other.fa
-        self.d = get_delta(self.fa[1], self.fa[2], self.sp.r)
-
-        # self.m = self.m - other.m
-        # self.l = self.l - other.l
+        self.m = self.m - other.m
+        self.l = self.l - other.l
         # self.h = self.h - other.h
         # self.d = get_delta(self.l, self.h, self.sp.r)
 
@@ -2438,12 +2463,12 @@ class Flux(esbmtkBase):
         so we subsample the results before saving, or processing them
 
         """
-        stride = int(len(self.m) / self.mo.number_of_datapoints)
 
-        self.m = self.m[2:-2:stride]
-        self.l = self.m[2:-2:stride]
-        self.h = self.m[2:-2:stride]
-        self.d = self.d[2:-2:stride]
+        if self.save_flux_data:
+            stride = int(len(self.m) / self.mo.number_of_datapoints)
+
+            self.m = self.m[2:-2:stride]
+            self.l = self.m[2:-2:stride]
 
     def __reset_state__(self) -> None:
         """Copy the result of the last computation back to the beginning
@@ -2452,14 +2477,11 @@ class Flux(esbmtkBase):
         Also, copy current results into temp field
         """
 
-        self.mc = np.append(self.mc, self.m[0 : -2 : self.mo.reset_stride])
-        self.dc = np.append(self.dc, self.d[0 : -2 : self.mo.reset_stride])
-
-        # copy last element to first position
-        self.m[0] = self.m[-2]
-        self.l[0] = self.l[-2]
-        self.h[0] = self.h[-2]
-        self.d[0] = self.d[-2]
+        if self.save_flux_data:
+            self.mc = np.append(self.mc, self.m[0 : -2 : self.mo.reset_stride])
+            # copy last element to first position
+            self.m[0] = self.m[-2]
+            self.l[0] = self.l[-2]
 
     def __merge_temp_results__(self) -> None:
         """Once all iterations are done, replace the data fields
@@ -2468,7 +2490,6 @@ class Flux(esbmtkBase):
         """
 
         self.m = self.mc
-        self.d = self.dc
 
 
 class SourceSink(esbmtkBase):
@@ -2536,9 +2557,6 @@ class SourceSink(esbmtkBase):
 
         if self.delta != "None":
             self.isotopes = True
-            self.d = np.full(self.mo.steps, self.delta)
-        else:
-            self.d = np.full(self.mo.steps, 0.0)
 
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
