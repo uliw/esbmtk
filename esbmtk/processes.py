@@ -879,9 +879,8 @@ class weathering(RateConstant):
 
     def __without_isotopes__(self, i: int) -> None:
 
-        f = (
-            self.f_0
-            * (self.scale * self.reservoir_ref.c[i - 1] / self.pco2_0) ** self.ex
+        f = self.scale * (
+            self.f_0 * (self.reservoir_ref.c[i - 1] / self.pco2_0) ** self.ex
         )
         self.flux.fa = np.array([f, 0])
 
@@ -895,9 +894,8 @@ class weathering(RateConstant):
         """
 
         c = self.flux.fa[1] / self.flux.fa[0]
-        f = (
-            self.f_0
-            * (self.scale * self.reservoir_ref.c[i - 1] / self.pco2_0) ** self.ex
+        f = self.scale * (
+            self.f_0 * (self.reservoir_ref.c[i - 1] / self.pco2_0) ** self.ex
         )
         fl = f * c
         self.flux.fa = np.array([f, fl])
@@ -927,19 +925,19 @@ class weathering(RateConstant):
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_weathering(data, params, i) -> None:
-        
+
         # params
         s: float = params[1]
         f_0: float = params[2]
         pco2_0: float = params[3]
         ex: float = params[4]
 
-        # data 
+        # data
         fm = data[0][0]
         fi = data[0][1]
 
         c: float = data[1][i - 1]
-        f: float = f_0 * (c * s / pco2_0) ** ex
+        f: float = s* f_0 * (c / pco2_0) ** ex
         fl = f * fi / fm
         data[0][:] = [f, fl]
 
