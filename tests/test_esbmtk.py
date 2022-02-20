@@ -981,8 +981,8 @@ def test_gas_exchange(create_model, solver):
     assert round(diff_d, 1) == 8.0
 
 
-@pytest.mark.parametrize("solver", ["numba", "python"])
-def test_weathering(create_model, solver):
+@pytest.mark.parametrize("solver", ["numba", "python"], "scale", [1, 0.5])
+def test_weathering(create_model, solver, scale):
     """Test that isotope fractionation from a flux out of a reserevoir
     results in the corrrect fractionation, when using the numba solver
 
@@ -1022,7 +1022,7 @@ def test_weathering(create_model, solver):
         reservoir_ref=M1.CO2_At,
         ctype="weathering",
         id="we",
-        scale=1,
+        scale=scale,
         ex=0.4,
         pco2_0="280 ppm",
         rate="1E13 mol/yr",
@@ -1031,7 +1031,7 @@ def test_weathering(create_model, solver):
 
     M1.run(solver=solver)
     # flux computed at 400ppm
-    tf = 1e13 * (400 / 280) ** 0.4
+    tf = scale * 1e13 * (400 / 280) ** 0.4
     f = M1.C_Fw_2_DIC_we.Fw_2_DIC_we_F.fa[0]
     # test that flux calculation is correct
     assert tf - f == 0
