@@ -50,3 +50,6 @@
 /package.sh
 /esbmtk/.directory
 /esbmtk.egg-info/PKG-INFO
+/tests/.coverage
+/tests/TAGS
+/tests/foo.py
