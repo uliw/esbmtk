@@ -536,9 +536,6 @@ class Connect(esbmtkBase):
         """Create flux object, and register with reservoir and global namespace"""
 
         # test if default arguments present
-
-        print(f"flux with d = {self.delta}")
-        
         if self.delta == "None":
             d = 0
         else:
