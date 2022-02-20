@@ -12,7 +12,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="esbmtk",  # Replace with your own username
-    version="0.7.3.0",
+    version="0.7.3.1",
     author="Ulrich G. Wortmann",
     license="GPL-3.0-or-later",
     author_email="uli.wortmann@utoronto.ca",
@@ -41,7 +41,6 @@ setuptools.setup(
         "scipy",
         "numba",
         "pathlib",
-        "os",
         "psutil",
     ],
 )
