@@ -1218,7 +1218,7 @@ class Model(esbmtkBase):
 
         Example:
 
-        sum, names = M.flux_summary(filter_by="POP", return_sum=True)
+        sum, names = M.flux_summary(filter_by="POP", return_list=True)
 
         """
 
@@ -1238,32 +1238,25 @@ class Model(esbmtkBase):
         if "filter" in kwargs:
             raise ValueError("use filter_by instead of filter")
 
-        print(f"\n --- Flux Summary -- filtered by {fby}\n")
+        if "return_list" in kwargs:
+            return_list = True
+        else:
+            return_list = False
+            print(f"\n --- Flux Summary -- filtered by {fby}\n")
 
         match = False
         for f in self.lof:  # loop over reservoirs
             if fby in f.full_name:  # and f.m[-3] != 0:
-                print(f"{f.full_name}")
-                # match = True
-                # print(f"- {r.full_name}:")
-                # for f in r.lof:  # loop over fluxes in reservoir
-                #     if fby in f.full_name:  #  and f.m[-3] != 0:
-                #         rl.append(f)
-                #         direction = r.lio[f]
-                #         fsum = fsum + f.m[-3] * direction
-                #         if r.isotopes:
-                #             print(
-                #                 f"    - {f.full_name} = {direction * f.m[i]:.2e} d = {f.d[i]:.2f}"
-                #             )
-                #         else:
-                #             print(
-                #                 f"    - {f.full_name} = {direction * f.m[i]:.2e}"
-                #             )
-                print("")
+                rl.append(f)
+                fsum += f.fa[0]
+                if not return_list:
+                    print(f"{f.full_name}")
+                    print("")
 
-        if "return_sum" not in kwargs:
+        if not return_list:
             fsum = None
             rl = None
+            
         return fsum, rl
 
     def connection_summary(self, **kwargs: dict) -> None:
