@@ -1602,7 +1602,7 @@ class AirSeaExchange(esbmtkBase):
         self.lr = self.liquid_reservoir
         self.gr = self.gas_reservoir
 
-        if self.species.name == "CO2" or self.species.name == "DIC":
+        if self.species.name in ["CO2", "DIC", "O2"]:
             pass
         else:
             raise ValueError(f"{self.species.name} not implemented yet")

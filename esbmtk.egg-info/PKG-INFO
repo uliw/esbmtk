@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: esbmtk
-Version: 0.7.2.3
+Version: 0.7.3.1
 Summary: An Earth Sciences Box Modeling Toolkit
 Home-page: https://github.com/uliw/esbmtk
 Author: Ulrich G. Wortmann
@@ -14,7 +14,7 @@ Classifier: Intended Audience :: Education
 Classifier: Intended Audience :: Science/Research
 Classifier: Topic :: Scientific/Engineering :: Chemistry
 Classifier: License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)
-Requires-Python: >=3.7
+Requires-Python: >=3.9
 Description-Content-Type: text/markdown
 
 

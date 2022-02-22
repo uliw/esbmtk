@@ -7,7 +7,6 @@ esbmtk/esbmtk.py
 esbmtk/extended_classes.py
 esbmtk/processes-old.py
 esbmtk/processes.py
-esbmtk/scratch.py
 esbmtk/sealevel.py
 esbmtk/solver.py
 esbmtk/species_definitions.py
