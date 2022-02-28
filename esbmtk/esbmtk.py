@@ -1211,6 +1211,7 @@ class Model(esbmtkBase):
 
         index :int = i > 1 and i < number of timesteps -1
         filter_by :str = filter on flux name or part of flux name
+        exclude :str = None
         return: bool = True
 
         returns the sum of the fluxes, and a list
@@ -1223,7 +1224,6 @@ class Model(esbmtkBase):
         """
 
         rl: list = []
-        fsum: float = 0
 
         if "index" in kwargs:
             i: int = kwargs["index"]
@@ -1235,6 +1235,13 @@ class Model(esbmtkBase):
         else:
             fby: str = ""
 
+        if "exclude" in kwargs:
+            ex: str = kwargs["exclude"]
+            do_ex: bool = True
+        else:
+            do_ex: bool = False
+            ex = ""
+
         if "filter" in kwargs:
             raise ValueError("use filter_by instead of filter")
 
@@ -1244,20 +1251,27 @@ class Model(esbmtkBase):
             return_list = False
             print(f"\n --- Flux Summary -- filtered by {fby}\n")
 
-        match = False
-        for f in self.lof:  # loop over reservoirs
-            if fby in f.full_name:  # and f.m[-3] != 0:
-                rl.append(f)
-                fsum += f.fa[0]
-                if not return_list:
-                    print(f"{f.full_name}")
-                    print("")
+        for f in self.lof:  # loop over flux list
+            if fby in f.full_name:  # match on fby
+                # print(f"{fby} in {f.full_name}")
+                if do_ex:  # exclude argument present
+                    # print("do_ex = True")
+                    if ex in f.full_name:  # exclude if string matches
+                        # print(f"found {ex} in {f.full_name}")
+                        continue
+                    else:  # otherwise append
+                        rl.append(f)
+                        if not return_list:
+                            print(f"{f.full_name}")
+                else:
+                    rl.append(f)
+                    if not return_list:
+                        print(f"{f.full_name}")
 
         if not return_list:
-            fsum = None
             rl = None
-            
-        return fsum, rl
+
+        return rl
 
     def connection_summary(self, **kwargs: dict) -> None:
         """Show a summary of all connections
