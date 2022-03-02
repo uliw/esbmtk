@@ -1934,7 +1934,7 @@ class GasReservoir(ReservoirBase):
         if self.mo.number_of_solving_iterations > 0:
             self.mc = np.empty(0)
             self.cc = np.empty(0)
-            self.lc = np.empty(0) 
+            self.lc = np.empty(0)
             self.vc = np.empty(0)
 
         self.mo.lor.append(self)  # add this reservoir to the model
@@ -1960,7 +1960,8 @@ class GasReservoir(ReservoirBase):
     def __set_with_isotopes__(self, i: int, value: float) -> None:
         """write data by index"""
 
-        self.m[i]: float = value[0]
+        self.m[i]: float = self.m[i - 1] + value[0]
+        self.v[i]: float = self.v[i - 1] + value[0]
         self.l[i]: float = value[1]
         # self.h[i]: float = value[2]
         # self.d[i]: float = get_delta(self.l[i], self.h[i], self.sp.r)
@@ -1969,7 +1970,8 @@ class GasReservoir(ReservoirBase):
     def __set_without_isotopes__(self, i: int, value: float) -> None:
         """write data by index"""
 
-        self.m[i]: float = value[0]
+        self.m[i]: float = self.m[i - 1] + value[0]
+        self.v[i]: float = self.v[i - 1] + value[0]
         self.c[i]: float = self.m[i] / self.v[i]  # update concentration
 
 
