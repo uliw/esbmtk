@@ -1162,7 +1162,7 @@ class GasExchange(RateConstant):
         # this equation is for mmol but esbmtk uses mol, so we need to
         # multiply by 1E3
 
-        a = self.scale * (  # area in m^2
+        f = self.scale * (  # area in m^2
             self.gas.c[i - 1]  #  Atmosphere
             * (1 - self.p_H2O)  # p_H2O
             * self.solubility  # SA_co2 = mol/(m^3 atm)
@@ -1173,7 +1173,14 @@ class GasExchange(RateConstant):
         # changes in the mass of CO2 also affect changes in the total mass
         # of the atmosphere. So we need to update the reservoir volume
         # variable which we use the store the total atmospheric mass
-        self.gas.v[i] = self.gas.v[i] + a * self.gas.mo.dt
+        """The solver will use f and f12 to update mass, light
+        isotope and concentration values in the Gas
+        reserevoir. However, Gas reserevoirs track total gas pressure
+        in the volume variable. This will not be updated by the
+        solver. So we need to do it ourseleves
+
+        """
+        # self.gas.v[i] = self.gas.v[i - 1] + f * self.gas.mo.dt
         self.flux.fa[:] = [a, 1]
 
     def __with_isotopes__(self, i: int) -> None:
@@ -1229,9 +1236,15 @@ class GasExchange(RateConstant):
         # print(f"flux d = {df}")
 
         self.flux.fa[0:2] = [f, f12]
-        # Gas reserevoirs track total gas pressure in the volume variable. This
-        # will not be updated by the solver. So we need to do it ourseleves
-        self.gas.v[i] = self.gas.v[i - 1] + f * self.gas.mo.dt
+        """The solver will use f and f12 to update mass, light
+        isotope and concentration values in the Gas
+        reserevoir. However, Gas reserevoirs track total gas pressure
+        in the volume variable. This will not be updated by the
+        solver. So we need to do it ourseleves
+
+        not working, see note below
+        """
+        #self.gas.v[i] = self.gas.v[i - 1] + f * self.gas.mo.dt
         # print()
 
     def __postinit__(self) -> None:
@@ -1278,8 +1291,9 @@ class GasExchange(RateConstant):
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_gas_exchange(data, params, i) -> None:
-        """the below equation moved as many constants as possible outside of
-        the function compared to the __with/without_isotopes__ method(s). See the
+        """the below equation moved as many constants as possible
+        outside of the function compared to the
+        __with/without_isotopes__ method(s). See the
         __get_process_args__ method for details
 
         """
@@ -1315,7 +1329,16 @@ class GasExchange(RateConstant):
         f13 = scale * au * (eco2_at_13 - eco2_aq_13)
         f12 = f - f13
         data[0][:] = [f, f12]  # fa
-        data[6][i] = data[6][i - 1] + f * dt
+        """The solver will use f and f12 to update mass, light
+        isotope and concentration values in the Gas
+        reserevoir. However, Gas reserevoirs track total gas pressure
+        in the volume variable. This will not be updated by the
+        solver. So we need to do it ourseleves
+
+        This is currently not working, as the total mass increases faster
+        than the species mass
+        """
+        #data[6][i] = data[6][i - 1] + f * dt * -1
 
 
 class VarDeltaOut(Process):
