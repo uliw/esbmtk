@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgddb360f)
-2.  [News](#orgcbc50a0)
-3.  [Contributing](#org704b823)
-4.  [Installation](#org2e2fa00)
-5.  [Documentation](#orgb11f93a)
-6.  [Todo](#org48911ee)
-7.  [License](#orgce83df0)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orge41dbc9)
+2.  [News](#org9bc3ba7)
+3.  [Contributing](#org1805f12)
+4.  [Installation](#org0fc7498)
+5.  [Documentation](#org80f63a6)
+6.  [Todo](#orgd9b63fc)
+7.  [License](#orgd715a7b)
 
 
-<a id="orgddb360f"></a>
+<a id="orge41dbc9"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,12 +27,24 @@ that allow the creation and manipulation of input signals and the
 generation of graphical results.
 
 
-<a id="orgcbc50a0"></a>
+<a id="org9bc3ba7"></a>
 
 # News
 
+-   March 2<sup>nd</sup> 0.7.3.4 `Flux_summary` now supports an `exclude`
+    keyword. Hot fixed an error in the gas exchange code, which
+    affected the total mass of atmosphere calculations. For the time
+    being, the mass of the atmosphere is treated as constant.
+
 -   0.7.3.0 Flux data is no longer kept by default. This results in
-    huge memory savings.
+    huge memory savings. esbmtk now requires python 3.9 or higher, and
+    also depends on `os` and `psutil`. the scale with flux process now
+    uses the `ref_flux` keyword instead of `ref_reservoirs`. Models must
+    adapt their scripts accordingly. esbmtk objects no longer provide
+    delta values by default. Rather they need to be calculated in the
+    post-processing step via `M.get_delta_values()`. The `f_0` keyword in
+    the weathering connection is now called `rate`. Using the old
+    keyword will result in a unit error.
 
 -   January 8<sup>th</sup> 0.7.2.2 Fixed several isotope calculation
     regressions. Added 31 Unit tests.
@@ -288,7 +300,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org704b823"></a>
+<a id="org1805f12"></a>
 
 # Contributing
 
@@ -298,7 +310,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org2e2fa00"></a>
+<a id="org0fc7498"></a>
 
 # Installation
 
@@ -319,7 +331,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="orgb11f93a"></a>
+<a id="org80f63a6"></a>
 
 # Documentation
 
@@ -337,7 +349,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="org48911ee"></a>
+<a id="orgd9b63fc"></a>
 
 # Todo
 
@@ -346,7 +358,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orgce83df0"></a>
+<a id="orgd715a7b"></a>
 
 # License
 
