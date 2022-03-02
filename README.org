@@ -14,6 +14,11 @@ generation of graphical results.
 
 * News
 
+  - March 2^{nd} 0.7.3.4 =Flux_summary= now supports an =exclude=
+    keyword. Hot fixed an error in the gas exchange code, which
+    affected the total mass of atmosphere calculations. For the time
+    being, the mass of the atmosphere is treated as constant.
+
   - 0.7.3.0 Flux data is no longer kept by default. This results in
     huge memory savings. esbmtk now requires python 3.9 or higher, and
     also depends on =os= and =psutil=. the scale with flux process now
