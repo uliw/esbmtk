@@ -544,9 +544,22 @@ class ScaleFlux(Process):
         # decide which call function to use
         # if self.mo.m_type == "both":
         if self.reservoir.isotopes:
-            self.__execute__ = self.__with_isotopes__
+            if isinstance(self.source, Source):
+                self.__execute__ = self.__with_source__
+            else:
+                self.__execute__ = self.__with_isotopes__
         else:
             self.__execute__ = self.__without_isotopes__
+
+    # create stubs
+    def __with_source__():
+        raise NotImplementedError()
+
+    def __with_isotopes__():
+        raise NotImplementedError()
+
+    def __without_isotopes__():
+        raise NotImplementedError()
 
     # setup a placeholder call function
     def __call__(self, i: int):
@@ -573,6 +586,22 @@ class ScaleFlux(Process):
 
         self.flux.fa[:] = [rm, fl]
 
+    def __with_source__(self, i: int) -> None:
+        """similar to with isotopes, but this time we take the
+        isotope value of the source (which has no array, just a fixed
+        value"""
+
+        # get reference flux
+        rm: float = self.ref_flux.fa[0] * self.scale
+        r: float = self.reservoir.species.element.r
+
+        # get the target isotope ratio based on upstream delta
+        c = self.source.c
+
+        fl: float = rm * c / (c + 1)
+
+        self.flux.fa[:] = [rm, fl]
+
     def __without_isotopes__(self, i: int) -> None:
         """Apply the scale factor. This is typically done through the the
         model execute method.
@@ -589,9 +618,11 @@ class ScaleFlux(Process):
         )
 
     def get_process_args(self):
-        """"""
+        """we need to decide between cases where the reservoir is an
+        actual reserevoir or just a source, since sources do not have
+        arrays
 
-        func_name: function = self.p_scale_flux
+        """
 
         data = List(
             [
@@ -605,17 +636,39 @@ class ScaleFlux(Process):
             ]
         )
 
-        params = List([float(self.reservoir.species.element.r), float(self.scale)])
+        if isinstance(self.source, Source) and self.source.isotopes:
+            
+            func_name: function = self.p_scale_flux_s
+            # print(f"R = {self.source.full_name} = Source, using self.p_scale_flux_s")
+            # print(f"c = {self.source.c}")
+            
+            params = List(
+                [
+                    float(self.reservoir.species.element.r),
+                    float(self.scale),
+                    float(self.source.c),
+                ]
+            )
+           
+        else:
+            func_name: function = self.p_scale_flux_r
+            params = List(
+                [
+                    float(self.reservoir.species.element.r),
+                    float(self.scale),
+                ]
+            )
 
         return func_name, data, params
 
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
-    def p_scale_flux(data, params, i) -> None:
+    def p_scale_flux_r(data, params, i) -> None:
 
         # params
         r: float = params[0]  # r value
         s: float = params[1]  # scale
+       
 
         # data
         mf: float = data[6][0] * s  # mass of reference flux
@@ -624,6 +677,25 @@ class ScaleFlux(Process):
 
         # get the target isotope ratio based on upstream delta
         c = lr / (mr - lr)
+        l = mf * c / (c + 1)
+
+        data[5][:] = [mf, l]
+
+    @staticmethod
+    @njit(fastmath=True, error_model="numpy")
+    def p_scale_flux_s(data, params, i) -> None:
+
+        # params
+        r: float = params[0]  # r value
+        s: float = params[1]  # scale
+        c: float = params[2]  # l/h ratio
+
+        # data
+        mf: float = data[6][0] * s  # mass of reference flux
+        mr: float = data[3][i - 1]  # mass upstream reserevoir
+        lr: float = data[4][i - 1]  # li upstream reserevoir
+
+        # get the target isotope ratio based on upstream delta
         l = mf * c / (c + 1)
 
         data[5][:] = [mf, l]
@@ -937,7 +1009,7 @@ class weathering(RateConstant):
         fi = data[0][1]
 
         c: float = data[1][i - 1]
-        f: float = s* f_0 * (c / pco2_0) ** ex
+        f: float = s * f_0 * (c / pco2_0) ** ex
         fl = f * fi / fm
         data[0][:] = [f, fl]
 
@@ -1244,7 +1316,7 @@ class GasExchange(RateConstant):
 
         not working, see note below
         """
-        #self.gas.v[i] = self.gas.v[i - 1] + f * self.gas.mo.dt
+        # self.gas.v[i] = self.gas.v[i - 1] + f * self.gas.mo.dt
         # print()
 
     def __postinit__(self) -> None:
@@ -1338,7 +1410,7 @@ class GasExchange(RateConstant):
         This is currently not working, as the total mass increases faster
         than the species mass
         """
-        #data[6][i] = data[6][i - 1] + f * dt * -1
+        # data[6][i] = data[6][i - 1] + f * dt * -1
 
 
 class VarDeltaOut(Process):
