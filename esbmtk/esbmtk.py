@@ -2524,6 +2524,7 @@ class SourceSink(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
 
+        self._delta = "None"
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
             "name": str,
@@ -2569,13 +2570,28 @@ class SourceSink(esbmtkBase):
                 self.pt: str = f"{self.register.name}_{self.n}"
                 self.groupname = self.register.name
 
-        if self.delta != "None":
-            self.isotopes = True
+        # if self.delta != "None":
+        #     self.isotopes = True
 
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
         self.__register_name__()
+
+    @property
+    def delta(self):
+        return self._delta
+
+    @delta.setter
+    def delta(self, d):
+        if d != "None":
+            d = 0
+            self._delta = d
+            self.isotopes = True
+            self.m = 1
+            self.l = get_l_mass(self.m, d, self.species.r)
+            self.c = self.l / (self.m - self.l)
+            self.provided_kwargs.update({"delta": d})
 
 
 class Sink(SourceSink):
