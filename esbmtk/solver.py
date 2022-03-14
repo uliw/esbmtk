@@ -36,7 +36,7 @@ import time
 import math
 
 
-def get_l_mass(m: float, d: float, r: float) -> [float, float]:
+def get_l_mass(m: float, d: float, r: float) -> float:
     """
     Calculate the light isotope masses from bulk mass and delta value.
     Arguments are m = mass, d= delta value, r = abundance ratio
