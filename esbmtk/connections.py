@@ -824,6 +824,7 @@ class Connect(esbmtkBase):
 
         ph = ScaleFlux(
             name="PSF",
+            source=self.source,
             reservoir=self.r,
             flux=self.fh,
             register=self.fh,
