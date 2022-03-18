@@ -2584,14 +2584,16 @@ class SourceSink(esbmtkBase):
 
     @delta.setter
     def delta(self, d):
+        print(f"Before: d={d}, _delta = {self._delta}, delta = {self.delta}")
         if d != "None":
-            d = 0
             self._delta = d
             self.isotopes = True
             self.m = 1
             self.l = get_l_mass(self.m, d, self.species.r)
             self.c = self.l / (self.m - self.l)
             self.provided_kwargs.update({"delta": d})
+
+        print(f"After: d={d}, _delta = {self._delta}, delta = {self.delta}") 
 
 
 class Sink(SourceSink):
