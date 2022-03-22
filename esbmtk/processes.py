@@ -71,6 +71,11 @@ class Process(esbmtkBase):
             if isinstance(self.r, Reservoir):
                 self.direction: Dict[Flux, int] = self.r.lio[self.f]
 
+        if "delta" in self.kwargs:
+            self.delta = self.kwargs["delta"]
+        else:
+            self.delta = "None"
+
         self.__misc_init__()
 
     def __delayed_init__(self) -> None:
@@ -112,7 +117,7 @@ class Process(esbmtkBase):
             "reservoir": (Reservoir, Source, Sink, GasReservoir),
             "flux": Flux,
             "rate": (Number, np.float64),
-            "delta": (Number, np.float64),
+            "delta": (Number, np.float64, str),
             "lt": Flux,
             "alpha": (Number, np.float64),
             "scale": (Number, np.float64),
@@ -506,8 +511,9 @@ class SaveFluxData(Process):
 
 
 class ScaleFlux(Process):
-    """This process scales the mass of a flux (m,l,h) relative to another
-    flux but does not affect delta. The scale factor "scale" and flux
+    """This process scales the mass of a flux (m,l,h) relative to
+    another flux. Delta is either taken from the upstream reserevoir
+    or set to a fixed value.  The scale factor "scale" and flux
     reference must be present when the object is being initalized
 
     Example::
@@ -543,9 +549,15 @@ class ScaleFlux(Process):
 
         # decide which call function to use
         # if self.mo.m_type == "both":
+        if isinstance(self.source, Source):
+            self.delta = self.source.delta
+
         if self.reservoir.isotopes:
-            if isinstance(self.source, Source):
-                self.__execute__ = self.__with_source__
+            if self.delta != "None":
+                print(f"delta = {self.delta}")
+                self.__execute__ = self.__with_fixed_delta__
+                l = get_l_mass(1, self.delta, self.reservoir.species.element.r)
+                self.c = l / (1 - l)
             else:
                 self.__execute__ = self.__with_isotopes__
         else:
@@ -586,7 +598,7 @@ class ScaleFlux(Process):
 
         self.flux.fa[:] = [rm, fl]
 
-    def __with_source__(self, i: int) -> None:
+    def __with_fixed_delta__(self, i: int) -> None:
         """similar to with isotopes, but this time we take the
         isotope value of the source (which has no array, just a fixed
         value"""
@@ -596,7 +608,7 @@ class ScaleFlux(Process):
         r: float = self.reservoir.species.element.r
 
         # get the target isotope ratio based on upstream delta
-        c = self.source.c
+        c = self.c
 
         fl: float = rm * c / (c + 1)
 
@@ -637,19 +649,19 @@ class ScaleFlux(Process):
         )
 
         if isinstance(self.source, Source) and self.source.isotopes:
-            
-            func_name: function = self.p_scale_flux_s
+
+            func_name: function = self.p_scale_flux_fd
             # print(f"R = {self.source.full_name} = Source, using self.p_scale_flux_s")
             # print(f"c = {self.source.c}")
-            
+
             params = List(
                 [
                     float(self.reservoir.species.element.r),
                     float(self.scale),
-                    float(self.source.c),
+                    float(self.c),
                 ]
             )
-           
+
         else:
             func_name: function = self.p_scale_flux_r
             params = List(
@@ -664,11 +676,11 @@ class ScaleFlux(Process):
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_scale_flux_r(data, params, i) -> None:
+        """delta is derived from upstream reservoir"""
 
         # params
         r: float = params[0]  # r value
         s: float = params[1]  # scale
-       
 
         # data
         mf: float = data[6][0] * s  # mass of reference flux
@@ -683,7 +695,8 @@ class ScaleFlux(Process):
 
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
-    def p_scale_flux_s(data, params, i) -> None:
+    def p_scale_flux_fd(data, params, i) -> None:
+        """delta is set to a fixed value"""
 
         # params
         r: float = params[0]  # r value
@@ -1293,6 +1306,7 @@ class GasExchange(RateConstant):
             * self.solubility
             * self.a_dg
         )
+
         # get 13C in CO2aq
         eco2_aq_13 = (
             self.a_db
@@ -1300,14 +1314,12 @@ class GasExchange(RateConstant):
             * (self.liquid.m[i - 1] - self.liquid.l[i - 1])
             / self.liquid.m[i - 1]
         )
+
         # 13C flux
         f13 = self.scale * self.a_u * (eco2_at_13 - eco2_aq_13)
         f12 = f - f13
-        # print(f"f={f}, f12={f12}, f13={f13}, sum = {f-f12-f13}")
-        # df = (f13 / f12 / self.rvalue - 1) * 1000
-        # print(f"flux d = {df}")
 
-        self.flux.fa[0:2] = [f, f12]
+        self.flux.fa = [f, f12]
         """The solver will use f and f12 to update mass, light
         isotope and concentration values in the Gas
         reserevoir. However, Gas reserevoirs track total gas pressure
@@ -1403,7 +1415,7 @@ class GasExchange(RateConstant):
         data[0][:] = [f, f12]  # fa
         """The solver will use f and f12 to update mass, light
         isotope and concentration values in the Gas
-        reserevoir. However, Gas reserevoirs track total gas pressure
+        reservoir. However, Gas reserevoirs track total gas pressure
         in the volume variable. This will not be updated by the
         solver. So we need to do it ourseleves
 
