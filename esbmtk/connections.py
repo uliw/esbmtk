@@ -830,6 +830,7 @@ class Connect(esbmtkBase):
             register=self.fh,
             scale=self.scale,
             ref_flux=self.ref_flux,
+            delta=self.delta,
         )
         self.lop.append(ph)
 
@@ -858,6 +859,7 @@ class Connect(esbmtkBase):
             register=self.fh,
             scale=self.scale,
             ref_flux=self.ref_flux,
+            delta=self.delta,
         )
         self.lop.append(ph)
 
