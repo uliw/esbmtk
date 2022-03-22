@@ -1413,7 +1413,7 @@ class ConnectionGroup(esbmtkBase):
                 bypass=self.cd[r.n]["bypass"],
                 ref_reservoirs=self.cd[r.n]["ref_reservoirs"],
                 ref_flux=self.cd[r.n]["ref_flux"],
-                save_flux_data = self.save_flux_data,
+                save_flux_data=self.save_flux_data,
                 groupname=True,
                 id=self.id,
                 register=register,
