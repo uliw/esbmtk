@@ -1927,16 +1927,17 @@ class ReservoirBase(esbmtkBase):
         print("to see information on fluxes and processes")
 
     @property
-    def concentration(self):
+    def concentration(self) -> float:
         return self._concentration
 
     @concentration.setter
-    def concentration(self, c):
+    def concentration(self, c) -> None:
         self._concentration: Number = c.to(self.mo.c_unit).magnitude
         self.mass: Number = self.concentration * self.volume  # caculate mass
         self.c = self.c * 0 + self.concentration
         self.m = self.m * 0 + self.mass
 
+   
 
 class Reservoir(ReservoirBase):
     """This object holds reservoir specific information.
@@ -2064,6 +2065,7 @@ class Reservoir(ReservoirBase):
 
         self.drn = {
             "concentration": "_concentration",
+            "delta": "_delta",
         }
 
         # list of default values if none provided
@@ -2197,6 +2199,17 @@ class Reservoir(ReservoirBase):
             )
 
         self.state = 0
+
+    @property
+    def delta(self) -> float:
+        return self._delta
+
+    @delta.setter
+    def delta(self, d: float) -> None:
+        self._delta: float = d
+        self.isotopes = True
+        self.l = get_l_mass(self.m, d, self.species.r)
+
 
 
 class Flux(esbmtkBase):
@@ -2535,6 +2548,11 @@ class SourceSink(esbmtkBase):
             "isotopes": bool,
         }
 
+        # variables which are properties
+        self.drn = {
+            "delta": "_delta",
+        }
+        
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species"]
 
@@ -2584,13 +2602,15 @@ class SourceSink(esbmtkBase):
 
     @delta.setter
     def delta(self, d):
-        if d != "None":
-            self._delta = d
-            self.isotopes = True
-            self.m = 1
-            self.l = get_l_mass(self.m, d, self.species.r)
-            self.c = self.l / (self.m - self.l)
-            self.provided_kwargs.update({"delta": d})
+        
+        # if d != "None":
+        self._delta = d
+        self.isotopes = True
+        self.m = 1
+        self.l = get_l_mass(self.m, d, self.species.r)
+        self.c = self.l / (self.m - self.l)
+        # self.provided_kwargs.update({"delta": d})
+
 
 class Sink(SourceSink):
     """
