@@ -941,3 +941,4 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[6][i] = zcc  # 6
     vr_data[7][i] = zsnow  # 7
     vr_data[8][i] = Fburial  # 8
+    vr_data[9][i] = Fburial * r # 9

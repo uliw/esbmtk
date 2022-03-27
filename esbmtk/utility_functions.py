@@ -595,7 +595,6 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
          in each box. If you need box specific initial conditions
          use the output of build_concentration_dicts as starting point
 
-
     ic: dict = { # species: concentration, Isotopes
                    PO4: [Q_("2.1 * umol/liter"), False],
                    DIC: [Q_("2.1 mmol/liter"), False],
@@ -606,7 +605,6 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
 
     register reservoir groups in global name space (default), or with the
     provided object reference
-
     """
 
     from esbmtk import SeawaterConstants, ReservoirGroup, build_concentration_dicts
@@ -629,7 +627,9 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
                 raise ValueError("'ty' must be either Source or Sink")
 
         else:  # create reservoirs
+
             icd: dict = build_concentration_dicts(ic, k)
+            # print(f"isotopes= {icd[k][1]}, delta = {icd[k][2]}")
             rg = ReservoirGroup(
                 name=k,
                 geometry=v["g"],
@@ -1614,6 +1614,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                 "zcc": kwargs["zcc"],  # 6 zcc
                 "zsnow": kwargs["zsnow"],  # 7 zsnow
                 "Fburial": 0.0,  # 8 carbonate burial
+                "Fburial_12C": 0.0,  # 9 carbonate burial 12C
             },
             function_input_data=List(
                 [

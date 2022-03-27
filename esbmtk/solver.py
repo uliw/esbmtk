@@ -127,17 +127,31 @@ def get_delta_i(l: float, h: float, r: float) -> float:
     return d
 
 
+def get_flux_delta(f) -> float:
+    """Calculate the delta of flux f
+
+    """
+
+    m = f.fa[0]
+    l = f.fa[1]
+    h = m - l
+    r = f.species.r
+    d = 1e3 * (h / l - r) / r
+    return d
+
+
 def get_delta_h(h) -> float:
     """Calculate the delta of a flux or reserevoir from total mass
     and mass of light isotope.
 
-    h = flux or reserevoir handle
+    f = flux or reserevoir handle
 
     returns d a vector of delta values
 
     """
 
     r = h.species.r
+    
     d = np.where(h.l > 0, 1e3 * ((h.m - h.l) / h.l - r) / r, 0)
 
     return d

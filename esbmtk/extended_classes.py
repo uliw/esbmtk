@@ -1937,7 +1937,7 @@ class GasReservoir(ReservoirBase):
             self.lc = np.empty(0)
             self.vc = np.empty(0)
 
-        self.mo.lor.append(self)  # add this reservoir to the model
+        self.mo.lor.append(self)  # add fthis reservoir to the model
         # register instance name in global name space
 
         # register this group object in the global namespace

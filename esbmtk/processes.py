@@ -1484,8 +1484,20 @@ class GasExchange(RateConstant):
 
         a_db is thus the fractionation factor between dissolved CO2aq and HCO3-
         and a_gb between CO2g HCO3-
+        
+        ref_species = DIC.cs.CO2aq
+        liquid.m = DIC.m (used to get the isotope ratio)
+
+        gas.m = mass of CO2
+        gas.l = mass of 12CO2
+        gas.c = CO2 concentration
+        gas.v = total mass of atmosphere
+        
         """
 
+        from esbmtk import get_delta
+        r = self.liquid.sp.r
+        
         # equilibrium concentration of CO2 in water based on pCO2
         eco2_at = (
             self.gas.c[i - 1]  # p Atmosphere
@@ -1498,26 +1510,40 @@ class GasExchange(RateConstant):
         #  flux
         f = self.scale * (eco2_at - eco2_aq)
 
-        # get 13C CO2 equlibrium concentration
+        c13g =  (1 - self.gas.l[i - 1] / self.gas.m[i - 1])
+        c13aq = (1 - self.liquid.l[i - 1] / self.liquid.m[i - 1])
+        # get 13C CO2 equlibrium concentration  CO2 in water based on pCO2
         eco2_at_13 = (
-            (self.gas.m[i - 1] - self.gas.l[i - 1])
-            / self.gas.v[i - 1]
+            self.gas.c[i-1] * c13g
             * (1 - self.p_H2O)  # p_H2O
             * self.solubility
             * self.a_dg
         )
 
-        # get 13C in CO2aq
+        # get 13C equilibrium  CO2 in water based on DIC m & l
         eco2_aq_13 = (
             self.a_db
             * eco2_aq
-            * (self.liquid.m[i - 1] - self.liquid.l[i - 1])
-            / self.liquid.m[i - 1]
+            * c13aq
         )
 
+        # l =  eco2_aq - eco2_aq_13
+        # d = get_delta(l, eco2_aq_13, r)
+        # print(f"d based on CO2aq = {d:.2f}")
+
+        l = eco2_at - eco2_at_13
+        d = get_delta(l, eco2_at_13, r)
+        # print(f"d based on CO2at = {d:.2f}")
+                        
         # 13C flux
         f13 = self.scale * self.a_u * (eco2_at_13 - eco2_aq_13)
         f12 = f - f13
+
+        # print(f"e13c at = {eco2_at_13:.2e} e13c aq = {eco2_aq_13:.2e}")
+        # print(f"diff =  {eco2_at - eco2_aq:.2e}")
+        # print(f"diff 13c =  {eco2_at_13 - eco2_aq_13:.2e}")
+        #d = get_delta(f12, f13, r)
+        # print(f"i = {i} d gex = {d:.2f}, f = {f:.2e}, f13: {f13:.2e} fr = {f/f12:.2e}\n")
 
         self.flux.fa = [f, f12]
         """The solver will use f and f12 to update mass, light
@@ -1528,7 +1554,7 @@ class GasExchange(RateConstant):
 
         not working, see note below
         """
-        # self.gas.v[i] = self.gas.v[i - 1] + f * self.gas.mo.dt
+        self.gas.v[i] = self.gas.v[i - 1] + f * self.gas.mo.dt
         # print()
 
     def __postinit__(self) -> None:
