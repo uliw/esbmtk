@@ -922,13 +922,15 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # note that DIC and TA have already been computed. So we use the
     # i, rather than i -1
     # TA mass [mol]
-    input_data[3][i] = input_data[3][i] - 2 * Fburial * dt  # TA
+    # input_data[3][i] = input_data[3][i] - 2 * Fburial * dt  # TA
+    input_data[3][i] = input_data[3][i] + 2 * (B - Fburial) * dt  # TA
     input_data[4][i] = input_data[3][i] / v  # TA concentration
 
     # DIC isotopes assuming no fractionation, so no need to update delta
     r = input_data[1][i] / input_data[0][i]  # C12/C ratio
-    input_data[0][i] = input_data[0][i] - Fburial * dt  # DIC
-    input_data[1][i] = input_data[1][i] - Fburial * dt * r  # 12C
+    # input_data[0][i] = input_data[0][i] - Fburial * dt  # DIC
+    input_data[0][i] = input_data[0][i] + (B - Fburial) * dt  # DIC
+    input_data[1][i] = input_data[1][i] + (B - Fburial) * dt * r  # 12C
     input_data[2][i] = input_data[0][i] / v  # DIC concentration
 
     # copy results into datafields
@@ -941,4 +943,4 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[6][i] = zcc  # 6
     vr_data[7][i] = zsnow  # 7
     vr_data[8][i] = Fburial  # 8
-    vr_data[9][i] = Fburial * r # 9
+    vr_data[9][i] = Fburial * r  # 9
