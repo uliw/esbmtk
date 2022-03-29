@@ -225,7 +225,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
     """
 
     from . import ureg, Q_
-    from esbmtk import Flux, Reservoir, Signal, DataField, Source
+    from esbmtk import Flux, Reservoir, Signal, DataField, Source, GasReservoir
 
     # geo = list with rows and cols
     # fn  = figure number
@@ -258,11 +258,13 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
         yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
         y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
 
-    elif isinstance(obj, (Reservoir)):
+    elif isinstance(obj, (Reservoir, GasReservoir)):
         if obj.display_as == "mass":
             yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
-
+        elif obj.display_as == "ppm":
+            yl = obj.m * 1e6
+            y_label = f"ppm"
         elif obj.plot_transform_c != "None":
             if callable(obj.plot_transform_c):
                 # yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
@@ -384,7 +386,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             ax2.set_ylabel(obj.data.ld)  # species object delta label
             set_y_limits(ax2, model)
             ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
-        elif isinstance(obj, Reservoir):
+        elif isinstance(obj, (Reservoir, GasReservoir)):
             ax2 = ax1.twinx()  # create a second y-axis
             # plof right y-scale data
             ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
