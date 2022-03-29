@@ -1905,6 +1905,8 @@ class GasReservoir(ReservoirBase):
 
         # not sure this universally true but it works for carbon
         self.species_mass = (self.reservoir_mass * self.species_ppm).to("mol")
+        self.display_as = "ppm"
+        self.plt_units = "ppm"
 
         # we use the existing approach to calculate concentration
         # which will divide species_mass/volume.
