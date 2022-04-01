@@ -797,12 +797,24 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
     Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
 
-    See add_carbonate_system_2 in utility_functions.py on how to call this function
+    See add_carbonate_system_2 in utility_functions.py on how to call this function.
+    The input data is a follows
+
+        reservoir DIC.m,  # 0
+        reservoir DIC.l,  # 1
+        reservoir DIC.c,  # 2
+        reservoir TA.m,  # 3 TA mass
+        reservoir.TA.c,  # 4 TA concentration
+        Export_flux.fa,  # 5
+        area_table,  # 6
+        area_dz_table,  # 7
+        Csat_table,  # 8
+        reservoir.DIC.v,  # 9 reservoir volume
 
     Author: M. Niazi & T. Tsan, 2021
     """
 
-    # get constants
+    # Parameters
     k1 = params[0]
     k2 = params[1]
     KW = params[2]
@@ -822,20 +834,20 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     z0 = int(abs(params[16]))
     ksp = params[17]
 
-    # vr_data
-    hplus: float = vr_data[0][i - 1]  # H+ concentration [mol/l]
-    zsnow = vr_data[7][i - 1]  # previous zsnow
-
-    # reservoir data
+    # Data
     dic: float = input_data[2][i - 1]  # DIC concentration [mol/l]
     ta: float = input_data[4][i - 1]  # TA concentration [mol/l]
-    B: float = input_data[5][0]  # Carbonate Export Flux [mol/yr]
+    Bm: float = input_data[5][0]  # Carbonate Export Flux [mol/yr]
+    B12: float = input_data[5][1]  # Carbonate Export Flux light isotope
     v: float = input_data[9][i - 1]  # volume
-
     # lookup tables
     depth_area_table: NDArray = input_data[6]  # depth look-up table
     area_dz_table: NDArray = input_data[7]  # area_dz table
     Csat_table: NDArray = input_data[8]  # Csat table
+
+    # vr_data
+    hplus: float = vr_data[0][i - 1]  # H+ concentration [mol/l]
+    zsnow = vr_data[7][i - 1]  # previous zsnow
 
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus
@@ -843,7 +855,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     fg: float = hplus - oh - boh4
     ca: float = ta + fg
 
-    # calculate carbon speciation at t
+    # calculate carbon speciation
     # The following equations are after Follows et al. 2006
     gamm: float = dic / ca
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
@@ -869,10 +881,10 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     if zsat < zsat_min:
         zsat = int(zsat_min)
 
-    zcc = int(zsat0 * np.log(B * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
+    zcc = int(zsat0 * np.log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
 
     # ---- Get fractional areas
-    B_AD = B / AD
+    B_AD = Bm / AD
 
     if zcc > zmax:
         zcc = int(zmax)
@@ -916,22 +928,26 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
 
     # BD & F_burial
     BD: float = BDS + BCC + BNS + BPDC
-    Fburial = B - BD
+    Fburial = Bm - BD
+    Fburial12 = Fburial * input_data[1][i-1] / input_data[0][i-1]
+    diss =  (Bm - Fburial) * dt # dissolution flux 
+    diss12 =  (B12 - Fburial12) * dt #  # dissolution flux light isotope
 
-    # ----------------------Update DIC and TA Reservoirs ---------------
-    # note that DIC and TA have already been computed. So we use the
-    # i, rather than i -1
-    # TA mass [mol]
-    # input_data[3][i] = input_data[3][i] - 2 * Fburial * dt  # TA
-    input_data[3][i] = input_data[3][i] + 2 * (B - Fburial) * dt  # TA
-    input_data[4][i] = input_data[3][i] / v  # TA concentration
+    """ Now that the fluxes are known we need to update the reservoirs.
+    The concentration in the in the DIC (and TA) of this box are
+    DIC.m[i] + Export Flux - Burial Flux, where the isotope ratio
+    the Export flux is determined by the overlying box, and the isotope ratio
+    of the burial flux is determined by the isotope ratio of this box
+    """
 
-    # DIC isotopes assuming no fractionation, so no need to update delta
-    r = input_data[1][i] / input_data[0][i]  # C12/C ratio
-    # input_data[0][i] = input_data[0][i] - Fburial * dt  # DIC
-    input_data[0][i] = input_data[0][i] + (B - Fburial) * dt  # DIC
-    input_data[1][i] = input_data[1][i] + (B - Fburial) * dt * r  # 12C
+    # Update DIC in the deep box
+    input_data[0][i] = input_data[0][i] + diss  # DIC
+    input_data[1][i] = input_data[1][i] + diss12  # 12C
     input_data[2][i] = input_data[0][i] / v  # DIC concentration
+
+    # Update TA in deep box
+    input_data[3][i] = input_data[3][i] + 2 * diss  # TA
+    input_data[4][i] = input_data[3][i] / v  # TA concentration
 
     # copy results into datafields
     vr_data[0][i] = hplus  # 0
@@ -943,4 +959,4 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[6][i] = zcc  # 6
     vr_data[7][i] = zsnow  # 7
     vr_data[8][i] = Fburial  # 8
-    vr_data[9][i] = Fburial * r  # 9
+    vr_data[9][i] = Fburial12  # 9
