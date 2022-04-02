@@ -547,23 +547,31 @@ class ScaleFlux(Process):
         self.__postinit__()  # do some housekeeping
         self.__register_name__()
 
-        # decide which call function to use
-        # if self.mo.m_type == "both":
-        if isinstance(self.source, Source):
-            self.delta = self.source.delta
-
-        if self.reservoir.isotopes:
-            if self.delta != "None":
-                # print(f"delta = {self.delta}")
-                self.__execute__ = self.__with_fixed_delta__
+        """ Decide how to calculate isotopes (if)
+        If the connection specifies delta explicitly, this will
+        override any settings in the source.
+        """
+        self.c = 1
+        if self.delta != "None":
+            # delta explicitly provided
+            l = get_l_mass(1, self.delta, self.reservoir.species.element.r)
+            self.c = l / (1 - l)
+            self.__execute__ = self.__with_fixed_delta__
+        elif isinstance(self.source, Source):
+            if self.source.delta != "None":
+                self.delta = self.source.delta
                 l = get_l_mass(1, self.delta, self.reservoir.species.element.r)
                 self.c = l / (1 - l)
+                self.__execute__ = self.__with_fixed_delta__
             else:
-                self.__execute__ = self.__with_isotopes__
-                self.c = 1
+                self.__execute__ = self.__without_isotopes__
         else:
-            self.__execute__ = self.__without_isotopes__
-            self.c = 1
+            if self.source.isotopes:
+                self.__execute__ = self.__with_isotopes__
+            elif not self.source.isotopes:
+                self.__execute__ = self.__without_isotopes__
+            else:
+                raise ValueError("This should never happen!")
 
     # create stubs
     def __with_source__():
@@ -946,27 +954,50 @@ class weathering(RateConstant):
 
     def __misc_init__(self):
         """
-        Scale the reference flux into the model flux units
+        Scale the flux relative to the pco2_0 concentration.
+        The delta values are derived from either:
+
+        - the upstream reservoir
+        - the upstream source
+        - set to a fixed value
+
         """
 
         self.f_0: float = Q_(self.f_0).to(self.mo.f_unit).magnitude
         self.pco2_0 = Q_(self.pco2_0).to("ppm").magnitude * 1e-6
 
-        if "delta" in self.kwargs:
-            self.d = self.kwargs["delta"]
+        # delta provided explicitly
+        if self.delta != "None":
+            self.d = self.delta
             self.isotopes = True
-        else:
-            self.d = 0
-            self.isotopes = False
+            l = get_l_mass(1, self.d, self.source.species.element.r)
+            self.c = l / (1 - l)
+            self.func_name = self.p_weathering_fd
+            self.__execute__ = self.__with_fixed_delta__
+            self.fixed = True
 
-        """ test if upstream is a reserevoir or gas-reserevoir
-        in wthis case we need to calculate the isotope ratio
-        based on the upstream reservoir. We also need to overide their
-        initial isotope ratio of the flux 
-        """
-        if not isinstance(self.source, Source):
-            self.isotopes = self.source.isotopes
-            self.flux.fa = np.array([self.source.m[0], self.source.l[0]])
+        # source is Source and has delta
+        elif self.source.isotopes and isinstance(self.source, Source):
+            self.isotopes = True
+            self.delta = self.source.delta
+            self.func_name = self.p_weathering_fd
+            self.c = self.source.c
+            self.__execute__ = self.__with_fixed_delta__
+            self.fixed = True
+
+        # source is reserevoir
+        elif self.source.isotopes:
+            self.isotopes = True
+            self.func_name = self.p_weathering
+            self.__execute__ = self.__with_isotopes__
+            self.fixed = False
+
+        else:
+            self.c = 1
+            self.isotopes = False
+            self.func_name = self.p_weathering
+            self.__execute__ = self.__without_isotopes__
+            self.fixed = False
 
     def __without_isotopes__(self, i: int) -> None:
 
@@ -1001,18 +1032,26 @@ class weathering(RateConstant):
         self.flux.fa = np.array([f, fl])
 
     def get_process_args(self):
+        """data depends on whether upstream, is source or
+        reserevoir/gas-reservoir"""
 
-        if self.delta:
-            func_name: function = self.p_weathering_fd
+        if self.fixed:
+            data = List(
+                [
+                    self.flux.fa,  # 0
+                    self.reservoir_ref.c,  # 1
+                ]
+            )
         else:
-            func_name: function = self.p_weathering
+            data = List(
+                [
+                    self.flux.fa,  # 0
+                    self.reservoir_ref.c,  # 1
+                    self.source.m,  # 2
+                    self.source.l,  # 3
+                ]
+            )
 
-        data = List(
-            [
-                self.flux.fa,  # 0
-                self.reservoir_ref.c,  # 1
-            ]
-        )
         params = List(
             [
                 float(self.reservoir.species.element.r),  # 0
@@ -1024,12 +1063,12 @@ class weathering(RateConstant):
             ]
         )
 
-        return func_name, data, params
+        return self.func_name, data, params
 
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_weathering(data, params, i) -> None:
-
+        """ delta value depends on upstream reservoir """ 
         # params
         s: float = params[1]
         f_0: float = params[2]
@@ -1037,18 +1076,17 @@ class weathering(RateConstant):
         ex: float = params[4]
 
         # data
-        fm = data[0][0]
-        fi = data[0][1]
-
+        cr = data[3][i - 1] / data[2][i - 1]
         c: float = data[1][i - 1]
+        
         f: float = s * f_0 * (c / pco2_0) ** ex
-        fl = f * fi / fm
+        fl: float = f * cr
         data[0][:] = [f, fl]
 
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_weathering_fd(data, params, i) -> None:
-
+        """ delta value is fixed """ 
         # params
         s: float = params[1]
         f_0: float = params[2]
@@ -1484,7 +1522,7 @@ class GasExchange(RateConstant):
 
         a_db is thus the fractionation factor between dissolved CO2aq and HCO3-
         and a_gb between CO2g HCO3-
-        
+
         ref_species = DIC.cs.CO2aq
         liquid.m = DIC.m (used to get the isotope ratio)
 
@@ -1492,12 +1530,13 @@ class GasExchange(RateConstant):
         gas.l = mass of 12CO2
         gas.c = CO2 concentration
         gas.v = total mass of atmosphere
-        
+
         """
 
         from esbmtk import get_delta
+
         r = self.liquid.sp.r
-        
+
         # equilibrium concentration of CO2 in water based on pCO2
         eco2_at = (
             self.gas.c[i - 1]  # p Atmosphere
@@ -1510,22 +1549,19 @@ class GasExchange(RateConstant):
         #  flux
         f = self.scale * (eco2_at - eco2_aq)
 
-        c13g =  (1 - self.gas.l[i - 1] / self.gas.m[i - 1])
-        c13aq = (1 - self.liquid.l[i - 1] / self.liquid.m[i - 1])
+        c13g = 1 - self.gas.l[i - 1] / self.gas.m[i - 1]
+        c13aq = 1 - self.liquid.l[i - 1] / self.liquid.m[i - 1]
         # get 13C CO2 equlibrium concentration  CO2 in water based on pCO2
         eco2_at_13 = (
-            self.gas.c[i-1] * c13g
+            self.gas.c[i - 1]
+            * c13g
             * (1 - self.p_H2O)  # p_H2O
             * self.solubility
             * self.a_dg
         )
 
         # get 13C equilibrium  CO2 in water based on DIC m & l
-        eco2_aq_13 = (
-            self.a_db
-            * eco2_aq
-            * c13aq
-        )
+        eco2_aq_13 = self.a_db * eco2_aq * c13aq
 
         # l =  eco2_aq - eco2_aq_13
         # d = get_delta(l, eco2_aq_13, r)
@@ -1534,7 +1570,7 @@ class GasExchange(RateConstant):
         l = eco2_at - eco2_at_13
         d = get_delta(l, eco2_at_13, r)
         # print(f"d based on CO2at = {d:.2f}")
-                        
+
         # 13C flux
         f13 = self.scale * self.a_u * (eco2_at_13 - eco2_aq_13)
         f12 = f - f13
@@ -1542,7 +1578,7 @@ class GasExchange(RateConstant):
         # print(f"e13c at = {eco2_at_13:.2e} e13c aq = {eco2_aq_13:.2e}")
         # print(f"diff =  {eco2_at - eco2_aq:.2e}")
         # print(f"diff 13c =  {eco2_at_13 - eco2_aq_13:.2e}")
-        #d = get_delta(f12, f13, r)
+        # d = get_delta(f12, f13, r)
         # print(f"i = {i} d gex = {d:.2f}, f = {f:.2e}, f13: {f13:.2e} fr = {f/f12:.2e}\n")
 
         self.flux.fa = [f, f12]
