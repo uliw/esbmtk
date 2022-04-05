@@ -766,6 +766,17 @@ class Connect(esbmtkBase):
             self.__alpha__()  # Set optional flux processes
             # self.__vardeltaout__()
 
+        # check if flux should bypass any reservoirs
+        if self.bypass == "source":
+            self.source.lof.remove(self.fh)
+        elif self.bypass == "sink":
+            self.sink.lof.remove(self.fh)
+            print(f"removing {self.fh.full_name} from {self.sink.full_name} lof")
+        elif self.bypass == "None":
+            pass
+        else:
+            raise ValueError(f"bypass must be None/source/sink but not {self.bypass}")
+
         if self.save_flux_data:
             ph = SaveFluxData(
                 name=f"{self.fh.full_name}_Pfd",
@@ -813,15 +824,6 @@ class Connect(esbmtkBase):
             self.scale = self.k_value
             print(f"\n Warning: use scale instead of k_value for scaleflux type\n")
 
-        # if self.bypass == "source":
-        #     target = self.sink
-        # elif self.bypass == "sinks":
-        #     target = self.source
-        # elif self.bypass == "None":
-        #     target = self.r
-        # else:
-        #     raise ValueError(f"bypass must be None/source/sink but not {self.bypass}")
-
         ph = ScaleFlux(
             name="PSF",
             source=self.source,
@@ -834,8 +836,15 @@ class Connect(esbmtkBase):
         )
         self.lop.append(ph)
 
-        if self.bypass != "None":
-            self.bypass.lof.remove(self.fh)
+        # if self.bypass == "source":
+        #     self.source.lof.remove(self.fh)
+        # elif self.bypass == "sink":
+        #     self.sink.lof.remove(self.fh)
+        #     print(f"removing {self.fh.full_name} from {self.sink.full_name} lof")
+        # elif self.bypass == "None":
+        #     pass
+        # else:
+        #     raise ValueError(f"bypass must be None/source/sink but not {self.bypass}")
 
     def __virtual_flux__(self) -> None:
         """Create a virtual flux. This is similar to __scaleflux__, however the new flux
