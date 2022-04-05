@@ -771,7 +771,7 @@ class Connect(esbmtkBase):
             self.source.lof.remove(self.fh)
         elif self.bypass == "sink":
             self.sink.lof.remove(self.fh)
-            print(f"removing {self.fh.full_name} from {self.sink.full_name} lof")
+            # print(f"removing {self.fh.full_name} from {self.sink.full_name} lof")
         elif self.bypass == "None":
             pass
         else:
