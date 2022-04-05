@@ -54,5 +54,5 @@
 /tests/foo.py
 /tests/.coverage
 /esbmtk/.esbmtk.py.~undo-tree~
-/.setup.py.~undo-tree~
-/esbmtk/.carbonate_chemistry.py.~undo-tree~
+*.~undo-tree~
+

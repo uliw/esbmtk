@@ -1,16 +1,16 @@
 
 # Table of Contents
 
-1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orge41dbc9)
-2.  [News](#org9bc3ba7)
-3.  [Contributing](#org1805f12)
-4.  [Installation](#org0fc7498)
-5.  [Documentation](#org80f63a6)
-6.  [Todo](#orgd9b63fc)
-7.  [License](#orgd715a7b)
+1.  [ESBMTK - An Earth-sciences box modeling toolkit](#orgc2c02fc)
+2.  [News](#orgf94101d)
+3.  [Contributing](#org512fe9c)
+4.  [Installation](#org3633d95)
+5.  [Documentation](#orgc115fa5)
+6.  [Todo](#org38954a9)
+7.  [License](#orgb73494a)
 
 
-<a id="orge41dbc9"></a>
+<a id="orgc2c02fc"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -27,9 +27,12 @@ that allow the creation and manipulation of input signals and the
 generation of graphical results.
 
 
-<a id="org9bc3ba7"></a>
+<a id="orgf94101d"></a>
 
 # News
+
+-   0.7.3.9 Moved to setuptools build system. Lost of code fixesWRT
+    isotope calculations, minor fixes in the carbonate module.
 
 -   March 2<sup>nd</sup> 0.7.3.4 `Flux_summary` now supports an `exclude`
     keyword. Hot fixed an error in the gas exchange code, which
@@ -300,7 +303,7 @@ generation of graphical results.
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="org1805f12"></a>
+<a id="org512fe9c"></a>
 
 # Contributing
 
@@ -310,7 +313,7 @@ of time to spare, ESMBTK could use a solver for stiff problems, or a
 graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org0fc7498"></a>
+<a id="org3633d95"></a>
 
 # Installation
 
@@ -331,7 +334,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 -   pip install esbmtk
 
 
-<a id="org80f63a6"></a>
+<a id="orgc115fa5"></a>
 
 # Documentation
 
@@ -349,7 +352,7 @@ and in jupyter notebook format)
 -   
 
 
-<a id="orgd9b63fc"></a>
+<a id="org38954a9"></a>
 
 # Todo
 
@@ -358,7 +361,7 @@ and in jupyter notebook format)
 -   do more testing
 
 
-<a id="orgd715a7b"></a>
+<a id="orgb73494a"></a>
 
 # License
 

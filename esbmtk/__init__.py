@@ -15,13 +15,6 @@ ureg.define("ppm = 1e-6 fraction")
 import numpy as np
 np.seterr(invalid='ignore')
 
-# import utility_functions
-# import esbmtk
-
-# from .base_class import esbmtkBase
-
-
-# rom .species_definitions import carbon, sulfur, hydrogen, phosphor
 from .esbmtk import *
 from .extended_classes import *
 from .connections import ConnectionGroup, Connection, Connect, AirSeaExchange

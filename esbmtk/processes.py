@@ -966,6 +966,8 @@ class weathering(RateConstant):
         self.f_0: float = Q_(self.f_0).to(self.mo.f_unit).magnitude
         self.pco2_0 = Q_(self.pco2_0).to("ppm").magnitude * 1e-6
 
+        # if self.delta == "None" and  self.source.isotopes == False:
+        #      self.fixed = True
         # delta provided explicitly
         if self.delta != "None":
             self.d = self.delta
@@ -981,23 +983,24 @@ class weathering(RateConstant):
             self.isotopes = True
             self.delta = self.source.delta
             self.func_name = self.p_weathering_fd
-            self.c = self.source.c
             self.__execute__ = self.__with_fixed_delta__
+            self.c = self.source.c
             self.fixed = True
 
-        # source is reserevoir
+        # source is reservoir
         elif self.source.isotopes:
             self.isotopes = True
             self.func_name = self.p_weathering
             self.__execute__ = self.__with_isotopes__
             self.fixed = False
 
+        # source is source, has no delta, and delta is not provided
         else:
             self.c = 1
             self.isotopes = False
-            self.func_name = self.p_weathering
+            self.func_name = self.p_weathering_fd
             self.__execute__ = self.__without_isotopes__
-            self.fixed = False
+            self.fixed = True
 
     def __without_isotopes__(self, i: int) -> None:
 

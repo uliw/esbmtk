@@ -128,9 +128,7 @@ def get_delta_i(l: float, h: float, r: float) -> float:
 
 
 def get_flux_delta(f) -> float:
-    """Calculate the delta of flux f
-
-    """
+    """Calculate the delta of flux f"""
 
     m = f.fa[0]
     l = f.fa[1]
@@ -151,7 +149,7 @@ def get_delta_h(h) -> float:
     """
 
     r = h.species.r
-    
+
     d = np.where(h.l > 0, 1e3 * ((h.m - h.l) / h.l - r) / r, 0)
 
     return d
@@ -280,7 +278,7 @@ def execute_e(model, new, lop, lor, lpc_f, lpc_r):
                 model.dt,
             )
     else:
-        foo_no_vr(
+        foo_no_vr( 
             model.fn,
             model.da,
             model.pc,

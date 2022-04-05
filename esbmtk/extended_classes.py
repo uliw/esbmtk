@@ -1112,6 +1112,7 @@ class DataField(esbmtkBase):
 
         # set legacy variables
         self.legend_left = self.y1_legend
+        self.isotopes = False
 
         if self.associated_with == "None":
             self.associated_with = self.mo.lor[0]
@@ -1822,7 +1823,8 @@ class GasReservoir(ReservoirBase):
     You can access the reservoir data as:
 
     - Name.m # species mass
-    - Name.d # species delta
+    - Name.l # mass of light isotope
+    - Name.d # species delta (only avaible after M.get_delta_values()
     - Name.c # partial pressure
     - Name.v # total gas mass
 
@@ -1962,19 +1964,18 @@ class GasReservoir(ReservoirBase):
     def __set_with_isotopes__(self, i: int, value: float) -> None:
         """write data by index"""
 
-        self.m[i]: float = self.m[i - 1] + value[0]
-        self.v[i]: float = self.v[i - 1] + value[0]
+        self.m[i]: float = value[0]
         self.l[i]: float = value[1]
+        # self.v[i]: float = self.v[i - 1] + value[0]
+        # self.c[i]: float = self.m[i] / self.v[i]  # update concentration
         # self.h[i]: float = value[2]
         # self.d[i]: float = get_delta(self.l[i], self.h[i], self.sp.r)
-        self.c[i]: float = self.m[i] / self.v[i]  # update concentration
 
     def __set_without_isotopes__(self, i: int, value: float) -> None:
         """write data by index"""
-
-        self.m[i]: float = self.m[i - 1] + value[0]
-        self.v[i]: float = self.v[i - 1] + value[0]
-        self.c[i]: float = self.m[i] / self.v[i]  # update concentration
+        self.m[i]: float = value[0]
+        #self.c[i]: float = self.m[i] / self.v[i]  # update concentration
+        # self.v[i]: float = self.v[i - 1] + value[0]
 
 
 class ExternalData(esbmtkBase):

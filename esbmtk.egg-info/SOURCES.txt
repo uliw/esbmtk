@@ -1,5 +1,10 @@
+CODE_OF_CONDUCT.md
+MANIFEST.in
 README.md
+pyproject.toml
+setup.cfg
 setup.py
+esbmtk/Hypsometric_Curve_05m.csv
 esbmtk/__init__.py
 esbmtk/carbonate_chemistry.py
 esbmtk/connections.py
@@ -14,5 +19,4 @@ esbmtk/utility_functions.py
 esbmtk.egg-info/PKG-INFO
 esbmtk.egg-info/SOURCES.txt
 esbmtk.egg-info/dependency_links.txt
-esbmtk.egg-info/requires.txt
 esbmtk.egg-info/top_level.txt

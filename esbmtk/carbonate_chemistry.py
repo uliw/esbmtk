@@ -933,6 +933,13 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     diss =  (Bm - Fburial) * dt # dissolution flux 
     diss12 =  (B12 - Fburial12) * dt #  # dissolution flux light isotope
 
+    # # print("{Fburial}.format(")
+    # print(Bm)
+    # print(Fburial)
+    # print(diss)
+    # print()
+    # # print('df ={:.2e}\n'.format(diss/dt))
+
     """ Now that the fluxes are known we need to update the reservoirs.
     The concentration in the in the DIC (and TA) of this box are
     DIC.m[i] + Export Flux - Burial Flux, where the isotope ratio
@@ -960,3 +967,5 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[7][i] = zsnow  # 7
     vr_data[8][i] = Fburial  # 8
     vr_data[9][i] = Fburial12  # 9
+    vr_data[10][i] = diss/dt  # 9
+    vr_data[11][i] = Bm  # 9

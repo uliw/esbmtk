@@ -248,7 +248,8 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
     time = (time * model.t_unit).to(model.d_unit).magnitude
 
     # we do not map isotope values
-    yr = obj.d
+    if obj.isotopes:
+        yr = obj.d
 
     # get plot type
     ptype: int = get_ptype(obj)
@@ -263,7 +264,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
         elif obj.display_as == "ppm":
-            yl = obj.m * 1e6
+            yl = obj.c * 1e6
             y_label = f"ppm"
         elif obj.plot_transform_c != "None":
             if callable(obj.plot_transform_c):
@@ -272,7 +273,6 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                 y_label = f"{obj.legend_left}"
             else:
                 raise ValueError("plot_transform_c must be function")
-
         else:
             yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
@@ -1498,7 +1498,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                                  list of ReservoirGroup objects.
         zsat_min = depth of the upper boundary of the deep box
         z0 = upper depth limit for carbonate burial calculations
-             typically the lower boundary of the surface water box
+             typically zsat_min
 
     Optional Parameters:
 
@@ -1616,7 +1616,9 @@ def add_carbonate_system_2(**kwargs) -> None:
                 "zcc": kwargs["zcc"],  # 6 zcc
                 "zsnow": kwargs["zsnow"],  # 7 zsnow
                 "Fburial": 0.0,  # 8 carbonate burial
-                "Fburial_12C": 0.0,  # 9 carbonate burial 12C
+                "Fburial12": 0.0,  # 9 carbonate burial 12C
+                "diss": 0.0, # dissolution flux
+                "Bm": 0.0,
             },
             function_input_data=List(
                 [
@@ -1629,7 +1631,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                     area_table,  # 6
                     area_dz_table,  # 7
                     Csat_table,  # 8
-                    rg.DIC.v,  # 9 reserevoir volume
+                    rg.DIC.v,  # 9 reservoir volume
                 ]
             ),
             function_params=List(

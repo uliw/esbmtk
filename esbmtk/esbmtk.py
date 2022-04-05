@@ -1125,7 +1125,7 @@ class Model(esbmtkBase):
         self.state = 1
 
         process = psutil.Process(os.getpid())
-        print(f"This run used {process.memory_info().rss/1e9:n} Gbytes of memory \n")
+        print(f"This run used {process.memory_info().rss/1e9:.2f} Gbytes of memory \n")
 
     def get_delta_values(self):
         """Calculate the isotope ratios in the usual delta notation"""
@@ -1937,7 +1937,6 @@ class ReservoirBase(esbmtkBase):
         self.c = self.c * 0 + self.concentration
         self.m = self.m * 0 + self.mass
 
-   
 
 class Reservoir(ReservoirBase):
     """This object holds reservoir specific information.
@@ -2209,7 +2208,6 @@ class Reservoir(ReservoirBase):
         self._delta: float = d
         self.isotopes = True
         self.l = get_l_mass(self.m, d, self.species.r)
-
 
 
 class Flux(esbmtkBase):
@@ -2552,7 +2550,7 @@ class SourceSink(esbmtkBase):
         self.drn = {
             "delta": "_delta",
         }
-        
+
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species"]
 
@@ -2588,9 +2586,6 @@ class SourceSink(esbmtkBase):
                 self.pt: str = f"{self.register.name}_{self.n}"
                 self.groupname = self.register.name
 
-        # if self.delta != "None":
-        #     self.isotopes = True
-
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
@@ -2602,14 +2597,14 @@ class SourceSink(esbmtkBase):
 
     @delta.setter
     def delta(self, d):
-        
-        # if d != "None":
-        self._delta = d
-        self.isotopes = True
-        self.m = 1
-        self.l = get_l_mass(self.m, d, self.species.r)
-        self.c = self.l / (self.m - self.l)
-        # self.provided_kwargs.update({"delta": d})
+        """Set/Update delta"""
+        if d != "None":
+            self._delta = d
+            self.isotopes = True
+            self.m = 1
+            self.l = get_l_mass(self.m, d, self.species.r)
+            self.c = self.l / (self.m - self.l)
+            self.provided_kwargs.update({"delta": d})
 
 
 class Sink(SourceSink):
