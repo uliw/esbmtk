@@ -15,6 +15,7 @@
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from __future__ import annotations
 
 from numbers import Number
 from nptyping import NDArray, Float64
@@ -56,7 +57,67 @@ from .solver import (
 )
 
 
-class esbmtkBase(object):
+class input_parsing(object):
+    """Provides various routines to parse and process keyword
+    arguments.  All derived classes need to declare the allowed
+    keyword arguments, their defualt values and the type in the
+    following format:
+
+    defaults = {"key": [value, (allowed instances)]
+
+    the recommended sequence is to first set default values via
+    __register_variable_names__()
+
+    __update_dict_entries__(defaults,kwargs) will  compare the provided kwargs against
+    this data, and upon succesful parsing update the default dict
+    with the new values
+    """
+
+    def __init__(self):
+        raise NotImplementedError("input parsing has no instance!")
+
+    def __register_variable_names__(
+        self,
+        defaults: dict[str, list[any, tuple]],
+    ) -> None:
+        """Register the key value[0] pairs as local instancce variables.
+        We register them with their actual variable name and as _variable_name
+        in case we use setter and getter methods.
+        to avoid name conflicts.
+        """
+        for key, value in defaults.items():
+            setattr(self, "_" + key, value[0])
+            setattr(self, key, value[0])
+
+    def update_dict_entries(
+        self,
+        defaults: dict[str, list[any, tuple]],
+        kwargs: dict[str, list],
+    ) -> None:
+        """This function compares the kwargs dictionary with the defaults
+        dictionary. If the kwargs key cannot be found, raise an
+        error. Otherwise test that the value is of the correct type. If
+        yes, update the defaults dictionary with the new value.
+
+        defaults = {"key": [value, (allowed instances)]
+        kwargs = {"key": value
+
+        Note that this function assumes that all defaults have been registered
+        with the instance via __register_variable_names__()
+        """
+        for key, value in kwargs.items():
+            if key not in defaults:
+                raise ValueError(f"{key} is not a valid key")
+            if not isinstance(value, defaults[key][1]):
+                raise TypeError(
+                    f"{key} must be of type {defaults[key][1]}, not {type(value)}"
+                )
+
+            defaults[key][0] = value  # update defaults dictionary
+            setattr(self, "key", value)  # update instance variables
+
+
+class esbmtkBase(input_parsing):
     """The esbmtk base class template. This class handles keyword
     arguments, name registration and other common tasks
 
@@ -84,14 +145,14 @@ class esbmtkBase(object):
     register all key/value pairs as instance variables
         self.__registerkeys__()
 
-    register name in global name space. This is only necessary if you want to reference
-    the instance by name from the console, otherwise use the normal python way (i.e.
-    instance = class(keywords)
-        self.__register_name__ ()
+    register name in global name space. This is only necessary if you
+    want to reference the instance by name from the console, otherwise
+    use the normal python way (i.e.  instance = class(keywords)
+    self.__register_name__ ()
 
     """
 
-    __slots__ = "__dict__"
+    #  __slots__ = "__dict__"
 
     # from typing import Dict
 
@@ -1137,9 +1198,9 @@ class Model(esbmtkBase):
         # for vr in self.lvr:
         #     vr.d = get_delta_h(vr)
 
-        for f in self.lof:
-            if f.save_flux_data:
-                f.d = get_delta_h(f)
+        # for f in self.lof:
+        #     if f.save_flux_data:
+        #         f.d = get_delta_h(f)
 
     def sub_sample_data(self):
         """Subsample the data. No need to save 100k lines of data You need to
@@ -1926,17 +1987,6 @@ class ReservoirBase(esbmtkBase):
         print("Use the info method on any of the above connections")
         print("to see information on fluxes and processes")
 
-    @property
-    def concentration(self) -> float:
-        return self._concentration
-
-    @concentration.setter
-    def concentration(self, c) -> None:
-        self._concentration: Number = c.to(self.mo.c_unit).magnitude
-        self.mass: Number = self.concentration * self.volume  # caculate mass
-        self.c = self.c * 0 + self.concentration
-        self.m = self.m * 0 + self.mass
-
 
 class Reservoir(ReservoirBase):
     """This object holds reservoir specific information.
@@ -2065,6 +2115,7 @@ class Reservoir(ReservoirBase):
         self.drn = {
             "concentration": "_concentration",
             "delta": "_delta",
+            "mass": "_mass",
         }
 
         # list of default values if none provided
@@ -2200,14 +2251,36 @@ class Reservoir(ReservoirBase):
         self.state = 0
 
     @property
+    def concentration(self) -> float:
+        return self._concentration
+
+    @property
     def delta(self) -> float:
         return self._delta
+
+    @property
+    def mass(self) -> float:
+        return self._mass
+
+    @concentration.setter
+    def concentration(self, c) -> None:
+        self._concentration: float = c.to(self.mo.c_unit).magnitude
+        self.mass: float = self._concentration * self.volume  # caculate mass
+        self.c = self.c * 0 + self._concentration
+        self.m = self.m * 0 + self.mass
+        # print(f"updating c in {self.full_name}")
 
     @delta.setter
     def delta(self, d: float) -> None:
         self._delta: float = d
         self.isotopes = True
         self.l = get_l_mass(self.m, d, self.species.r)
+
+    @mass.setter
+    def mass(self, m: float) -> None:
+        self._mass: float = m
+        self.m = zeros(self.species.mo.steps) + self._mass
+        self.c = self.m / self.volume
 
 
 class Flux(esbmtkBase):
