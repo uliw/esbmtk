@@ -76,9 +76,25 @@ class input_parsing(object):
     def __init__(self):
         raise NotImplementedError("input parsing has no instance!")
 
+    def __initialize_keyword_variables__(self, kwargs) -> None:
+        """check, register and update keyword variables"""
+
+        self.__check_mandatory_keywords__(self.lrk, kwargs)
+        self.__register_variable_names__(self.defaults, kwargs)
+        self.__update_dict_entries__(self.defaults, kwargs)
+
+    def __check_mandatory_keywords__(self, lrk: list, kwargs: dict) -> None:
+        """Verify that all elements of lrk have a corresponding key in
+        kwargs.  If not, print error message"""
+
+        for key in lrk:
+            if key not in kwargs:
+                raise ValueError(f"{key} is a mandatory keyword")
+
     def __register_variable_names__(
         self,
         defaults: dict[str, list[any, tuple]],
+        kwargs: dict,
     ) -> None:
         """Register the key value[0] pairs as local instancce variables.
         We register them with their actual variable name and as _variable_name
@@ -89,7 +105,10 @@ class input_parsing(object):
             setattr(self, "_" + key, value[0])
             setattr(self, key, value[0])
 
-    def update_dict_entries(
+        # save kwargs dict
+        self.kwargs: dict = kwargs
+
+    def __update_dict_entries__(
         self,
         defaults: dict[str, list[any, tuple]],
         kwargs: dict[str, list],
@@ -114,7 +133,7 @@ class input_parsing(object):
                 )
 
             defaults[key][0] = value  # update defaults dictionary
-            setattr(self, "key", value)  # update instance variables
+            setattr(self, key, value)  # update instance variables
 
 
 class esbmtkBase(input_parsing):
@@ -266,7 +285,7 @@ class esbmtkBase(input_parsing):
 
         # add fullname to kwargs so it shows up in __repr__
         # its a dirty hack though
-        self.provided_kwargs["full_name"] = self.full_name
+        self.kwargs["full_name"] = self.full_name
         logging.info(self.__repr__(1))
 
     def __validateinput__(self, kwargs: dict) -> None:
@@ -458,7 +477,7 @@ class esbmtkBase(input_parsing):
         # do not echo input unless explicitly requestted
 
         m = f"{self.__class__.__name__}(\n"
-        for k, v in self.provided_kwargs.items():
+        for k, v in self.kwargs.items():
             if not isinstance({k}, esbmtkBase):
                 # check if this is not another esbmtk object
                 if "esbmtk" in str(type(v)):
@@ -506,7 +525,7 @@ class esbmtkBase(input_parsing):
             index = -2
 
         m = f"{ind}{self.name} ({self.__class__.__name__})\n"
-        for k, v in self.provided_kwargs.items():
+        for k, v in self.kwargs.items():
             if not isinstance({k}, esbmtkBase):
                 # check if this is not another esbmtk object
                 if "esbmtk" in str(type(v)):
@@ -674,63 +693,40 @@ class Model(esbmtkBase):
 
         from . import ureg, Q_
 
-        # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            "name": str,
-            "start": str,
-            "stop": str,
-            "timestep": str,
-            "offset": str,
-            "element": (str, list),
-            "mass_unit": str,
-            "volume_unit": str,
-            "time_label": str,
-            "display_precision": float,
-            "m_type": str,
-            "plot_style": str,
-            "number_of_datapoints": int,
-            "step_limit": (Number, str),
-            "register": str,
-            "full_name": str,
-            "save_flux_data": bool,
+        self.defaults: dict[str, list[any, tuple]] = {
+            "name": ["M", (str)],
+            "start": ["0 yrs", (str, Q_)],
+            "stop": ["None", (str, Q_)],
+            "offset": ["0 yrs", (str, Q_)],
+            "timestep": ["None", (str, Q_)],
+            "element": ["None", (str, list)],
+            "mass_unit": ["mol", (str)],
+            "volume_unit": ["m**3", (str)],
+            "time_label": ["Years", (str)],
+            "display_precision": [0.01, (float)],
+            "plot_style": ["default", (str)],
+            "m_type": ["Not Set", (str)],
+            "number_of_datapoints": [1000, (int)],
+            "step_limit": [1e9, (Number, str)],
+            "register": ["local", (str)],
+            "save_flux_data": [False, (bool)],
+            "full_name": ["Not_Set", (str)],
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "stop", "timestep", "mass_unit", "volume_unit"]
 
-        # list of default values if none provided
-        self.lod: Dict[str, any] = {
-            "start": "0 years",
-            "offset": "0 years",
-            "time_label": "Time",
-            "display_precision": 0.01,
-            "m_type": "Not Set",
-            "plot_style": "default",
-            "number_of_datapoints": 1000,
-            "step_limit": "None",
-            "register": "local",
-            "full_name": kwargs["name"],
-            "save_flux_data": False,
-        }
+        self.__initialize_keyword_variables__(kwargs)
 
-        self.__initerrormessages__()
-        self.bem.update(
-            {
-                "offset": "a string",
-                "timesetp": "a string",
-                "element": "element name or list of names",
-                "mass_unit": "a string",
-                "volume_unit": "a string",
-                "time_label": "a string",
-                "display_precision": "a number",
-                "m_type": "a string",
-                "plot_style": "a string",
-            }
-        )
+        # self.__check_mandatory_keywords__(self.lrk, kwargs)
+        # self.__register_variable_names__(self.defaults)
+        # self.__update_dict_entries__(self.defaults, kwargs)
 
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        # self.__validateandregister__(kwargs)  # initialize keyword values
 
         # empty list which will hold all reservoir references
+        self.lmo: list = []
+        self.lmo2: list = []
         self.dmo: dict = {}  # dict of all model objects. useful for name lookups
         self.lor: list = []
         # empty list which will hold all connector references
