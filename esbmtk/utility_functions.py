@@ -1453,7 +1453,7 @@ def add_carbonate_system_1(rgs: list):
     for rg in rgs:
 
         if rg.mo.register == "local":
-            species = rg.mo.CO2
+            species = rg.mo.Carbon.CO2
         else:
             species = __builtins__["CO2"]
 
@@ -1595,7 +1595,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     for i, rg in enumerate(rgs):  # Setup the virtual reservoirs
 
         if rg.mo.register == "local":
-            species = rg.mo.CO2
+            species = rg.mo.Carbon.CO2
         else:
             species = __builtins__["CO2"]
 
