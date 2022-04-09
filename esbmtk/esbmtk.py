@@ -715,12 +715,7 @@ class Model(esbmtkBase):
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "stop", "timestep", "mass_unit", "volume_unit"]
-
         self.__initialize_keyword_variables__(kwargs)
-
-        # self.__check_mandatory_keywords__(self.lrk, kwargs)
-        # self.__register_variable_names__(self.defaults)
-        # self.__update_dict_entries__(self.defaults, kwargs)
 
         # self.__validateandregister__(kwargs)  # initialize keyword values
 
@@ -1398,36 +1393,26 @@ class Element(esbmtkBase):
     # set element properties
     def __init__(self, **kwargs) -> any:
         """Initialize all instance variables"""
-
-        # provide a dict of known keywords and types
-        self.lkk = {
-            "name": str,
-            "model": Model,
-            "mass_unit": str,
-            "li_label": str,
-            "hi_label": str,
-            "d_label": str,
-            "d_scale": str,
-            "r": Number,
-            "full_name": str,
-            "register": any,
+        self.defaults: dict[str, list[any, tuple]] = {
+            "name": ["M", (str)],
+            "model": ["None", (str, Model)],
+            "register": ["local", (str)],
+            "full_name": ["None", (str)],
+            "li_label": ["None", (str)],
+            "hi_label": ["None", (str)],
+            "d_label": ["None", (str)],
+            "d_scale": ["None", (str)],
+            "r": [1, (Number)],
+            "mass_unit": ["None", (str, Q_)],
         }
 
         # provide a list of absolutely required keywords
+        # provide a list of absolutely required keywords
         self.lrk: list = ["name", "model", "mass_unit"]
-        # list of default values if none provided
-        self.lod = {
-            "li_label": "None",
-            "hi_label": "None",
-            "d_label": "None",
-            "d_scale": "None",
-            "r": 1,
-            "full_name": "None",
-            "register": "None",
-        }
+        self.__initialize_keyword_variables__(kwargs)
 
-        self.__initerrormessages__()
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        # self.__initerrormessages__()
+        # self.__validateandregister__(kwargs)  # initialize keyword values
 
         # legacy name aliases
         self.n: str = self.name  # display name of species
