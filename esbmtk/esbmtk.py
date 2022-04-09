@@ -135,6 +135,31 @@ class input_parsing(object):
             defaults[key][0] = value  # update defaults dictionary
             setattr(self, key, value)  # update instance variables
 
+    def __register_name_new__(self) -> None:
+        """if self.parent is set, register self as attribute of self.parent,
+        and set full name to parent.full-name + self.name
+        if self.parent == "None", full_name = name
+        """
+        if self.parent == "None":
+            self.full_name = self.name
+            reg = self
+        else:
+            print(f"n = {self.name}, pn = {self.parent.full_name}")
+            self.full_name = self.parent.full_name + "." + self.name
+            print(f"fn = {self.full_name}\n")
+            reg = self.parent.model
+            # check for naming conflicts
+            if self.full_name in reg.lmo:
+                raise NameError(f"{self.full_name} is a duplicate name. Please fix")
+            else:
+                # register with model
+                reg.lmo.append(self.full_name)
+                reg.lmo2.append(self)
+                reg.dmo.update({self.full_name: self})
+                setattr(self.parent, self.name, self)
+                self.kwargs["full_name"] = self.full_name
+        self.reg_time = time.monotonic()
+
 
 class esbmtkBase(input_parsing):
     """The esbmtk base class template. This class handles keyword
@@ -710,7 +735,8 @@ class Model(esbmtkBase):
             "step_limit": [1e9, (Number, str)],
             "register": ["local", (str)],
             "save_flux_data": [False, (bool)],
-            "full_name": ["Not_Set", (str)],
+            "full_name": ["None", (str)],
+            "parent": ["None", (str)],
         }
 
         # provide a list of absolutely required keywords
@@ -723,6 +749,15 @@ class Model(esbmtkBase):
         self.lmo: list = []
         self.lmo2: list = []
         self.dmo: dict = {}  # dict of all model objects. useful for name lookups
+
+        # start a log file
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+
+        fn: str = f"{kwargs['name']}.log"
+        logging.basicConfig(filename=fn, filemode="w", level=logging.WARN)
+        self.__register_name_new__()
+        
         self.lor: list = []
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
@@ -776,6 +811,7 @@ class Model(esbmtkBase):
         self.tu = str(self.bu)  # needs to be a string
         self.n = self.name
         self.mo = self.name
+        self.model = self
         self.plot_style: list = [self.plot_style]
 
         self.xl = f"Time [{self.bu}]"  # time axis label
@@ -842,13 +878,7 @@ class Model(esbmtkBase):
         )
         print(warranty)
 
-        # start a log file
-        for handler in logging.root.handlers[:]:
-            logging.root.removeHandler(handler)
-
-        fn: str = f"{kwargs['name']}.log"
-        logging.basicConfig(filename=fn, filemode="w", level=logging.WARN)
-        self.__register_name__()
+       
 
         # initialize the hypsometry class
         hypsometry(name="hyp", model=self, register=self)
@@ -1396,7 +1426,7 @@ class Element(esbmtkBase):
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["M", (str)],
             "model": ["None", (str, Model)],
-            "register": ["local", (str)],
+            "register": ["None", (str, Model)],
             "full_name": ["None", (str)],
             "li_label": ["None", (str)],
             "hi_label": ["None", (str)],
@@ -1404,6 +1434,7 @@ class Element(esbmtkBase):
             "d_scale": ["None", (str)],
             "r": [1, (Number)],
             "mass_unit": ["None", (str, Q_)],
+            "parent": ["None", (str, Model)],
         }
 
         # provide a list of absolutely required keywords
@@ -1411,6 +1442,7 @@ class Element(esbmtkBase):
         self.lrk: list = ["name", "model", "mass_unit"]
         self.__initialize_keyword_variables__(kwargs)
 
+        self.parent = self.model
         # self.__initerrormessages__()
         # self.__validateandregister__(kwargs)  # initialize keyword values
 
@@ -1428,7 +1460,7 @@ class Element(esbmtkBase):
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
 
-        self.__register_name__()
+        self.__register_name_new__()
 
     def list_species(self) -> None:
         """List all species which are predefined for this element"""
@@ -1456,27 +1488,21 @@ class Species(esbmtkBase):
         """Initialize all instance variables"""
 
         # provide a list of all known keywords
-        self.lkk: Dict[any, any] = {
-            "name": str,
-            "element": Element,
-            "display_as": str,
-            "m_weight": Number,
-            "register": any,
+        self.defaults: Dict[any, any] = {
+            "name": ["None", (str)],
+            "element": ["None", (Element, str)],
+            "display_as": [kwargs["name"], (str)],
+            "m_weight": [0, (Number, str)],
+            "register": ["None", (Model, Element, Reservoir, GasReservoir)],
+            "parent": ["None", (Model, Element, Reservoir, GasReservoir)],
         }
 
         # provide a list of absolutely required keywords
         self.lrk = ["name", "element"]
-
-        # list of default values if none provided
-        self.lod = {
-            "display_as": kwargs["name"],
-            "m_weight": 0,
-            "register": "None",
-        }
-
-        self.__initerrormessages__()
-
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__initialize_keyword_variables__(kwargs)
+        self.parent = self.register
+        # self.__initerrormessages__()
+        # self.__validateandregister__(kwargs)  # initialize keyword values
 
         if not "display_as" in kwargs:
             self.display_as = self.name
@@ -1499,7 +1525,7 @@ class Species(esbmtkBase):
 
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
-        self.__register_name__()
+        self.__register_name_new__()
 
 
 class ReservoirBase(esbmtkBase):
