@@ -20,7 +20,7 @@ set_printoptions(precision=4)
 from .esbmtk import Element, Species
 
 
-def carbon(model):
+def Carbon(model):
     """Some often used definitions"""
 
     eh = Element(
@@ -53,9 +53,10 @@ def carbon(model):
     Species(name="TA", element=eh, register=eh)
     Species(name="PALK", element=eh, register=eh)  # Practical Alkalinity
     Species(name="PA", element=eh, register=eh)
+    
 
 
-def sulfur(model):
+def Sulfur(model):
     eh = Element(
         name="Sulfur",
         model=model,  # model handle
@@ -82,7 +83,7 @@ def sulfur(model):
     Species(name="S2minus", element=eh, display_as=r"S$^{2-}$", register=eh)
 
 
-def hydrogen(model):
+def Hydrogen(model):
     eh = Element(
         name="Hydrogen",
         model=model,  # model handle
@@ -105,7 +106,7 @@ def hydrogen(model):
     Species(name="H", element=eh, register=eh)  # Name & element handle
 
 
-def oxygen(model):
+def Oxygen(model):
     eh = Element(
         name="Oxygen",
         model=model,  # model handle
@@ -129,7 +130,7 @@ def oxygen(model):
     )  # Name & element handle
 
 
-def phosphor(model):
+def Phosphor(model):
     eh = Element(
         name="Phosphor",
         model=model,  # model handle
@@ -149,7 +150,7 @@ def phosphor(model):
     Species(name="P", element=eh, display_as=r"P", register=eh)  # Name & element handle
 
 
-def nitrogen(model):
+def Nitrogen(model):
     eh = Element(
         name="Nitrogen",
         model=model,  # model handle
@@ -178,7 +179,7 @@ def nitrogen(model):
     )  # Name & element handle
 
 
-def boron(model):
+def Boron(model):
     eh = Element(
         name="Boron",
         model=model,  # model handle
