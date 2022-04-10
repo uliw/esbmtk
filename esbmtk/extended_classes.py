@@ -213,6 +213,8 @@ class ReservoirGroup(esbmtkBase):
             self.register = self.mo
         self.__register_name__()
 
+        self.model = self.mo
+        
         # dict with all default values
         self.cd: dict = {}
         for s in self.species:

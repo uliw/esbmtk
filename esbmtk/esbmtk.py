@@ -95,7 +95,6 @@ class input_parsing(object):
                 for k in key:
                     if k in kwargs and kwargs[k] != "None":
                         has_key += 1
-                        print(f"k={k}, kwargs = {kwargs[k]}")
                 if has_key != 1:
                     raise ValueError(f"give only one of {key}")
             else:
@@ -2115,11 +2114,11 @@ class Reservoir(ReservoirBase):
             "display_precision": [0.01, (Number)],
             "register": [
                 "None",
-                (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+                (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, Model, str),
             ],
             "parent": [
                 "None",
-                (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+                (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, Model, str),
             ],
             "full_name": ["None", (str)],
             "seawater_parameters": ["None", (dict, str)],
@@ -2130,7 +2129,7 @@ class Reservoir(ReservoirBase):
         self.lrk: list = [
             "name",
             "species",
-            ["parent", "register"],
+            "register",
             ["volume", "geometry"],
             ["mass", "concentration"],
         ]
@@ -2141,6 +2140,7 @@ class Reservoir(ReservoirBase):
         self.__initialize_keyword_variables__(kwargs)
 
         self.model = self.register
+        self.parent = self.register
 
         self.__set_legacy_names__(kwargs)
 
@@ -2155,8 +2155,6 @@ class Reservoir(ReservoirBase):
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
 
         if self.mass == "None":
-            print(f"c = {self._concentration}, m = {self._mass}")
-            print(f"kwargs = {self.kwargs}")
             c = Q_(self.concentration)
             self.plt_units = c.units
             self._concentration: Number = c.to(self.mo.c_unit).magnitude
@@ -2195,7 +2193,7 @@ class Reservoir(ReservoirBase):
         # register instance name in global name space
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
-        self.__register_name__()
+        self.__register_name_new__()
 
         # decide which setitem functions to use
         if self.isotopes:

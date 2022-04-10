@@ -1071,7 +1071,7 @@ class weathering(RateConstant):
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_weathering(data, params, i) -> None:
-        """ delta value depends on upstream reservoir """ 
+        """delta value depends on upstream reservoir"""
         # params
         s: float = params[1]
         f_0: float = params[2]
@@ -1081,7 +1081,7 @@ class weathering(RateConstant):
         # data
         cr = data[3][i - 1] / data[2][i - 1]
         c: float = data[1][i - 1]
-        
+
         f: float = s * f_0 * (c / pco2_0) ** ex
         fl: float = f * cr
         data[0][:] = [f, fl]
@@ -1089,7 +1089,7 @@ class weathering(RateConstant):
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_weathering_fd(data, params, i) -> None:
-        """ delta value is fixed """ 
+        """delta value is fixed"""
         # params
         s: float = params[1]
         f_0: float = params[2]
@@ -1763,29 +1763,35 @@ class ScaleRelativeToConcentration(RateConstant):
             self.f.fa = [m, l]
 
     def get_process_args(self):
+        """If no delta provided, use upstream reserevoir ratios
+        Otherwise, use a fixed ratio
+        """
 
-        if self.delta != "None":
-            func_name: function = self.p_scale_relative_to_concentration_fd
+        if isinstance(self.reservoir, Source):
+            raise ValueError(
+                "scale relative to concentrations is undefined for Source-type"
+            )
+
+        if self.delta == "None":
+            func_name: callable = self.p_scale_relative_to_concentration
+            self.c = 1
+        else:
+            func_name: callable = self.p_scale_relative_to_concentration_fd
             self.m = 1
             l = get_l_mass(1, self.delta, self.reservoir.species.element.r)
             self.c = l / (1 - l)
-        else:
-            func_name: function = self.p_scale_relative_to_concentration
-            self.c = 1
 
+        # print(f"type of {self.reservoir.full_name}.m = {type(self.reservoir.m)}")
+        # print(f"type of {self.reservoir.full_name}.l = {type(self.reservoir.l)}\n")
         data = List(
             [
-                self.flux.m,  # 0
-                self.flux.l,  # 1
-                self.reservoir.c,  # 5 2
-                self.reservoir.m,  # 6 3
-                self.reservoir.l,  # 7 4
-                self.flux.fa,  # 8 5
+                self.reservoir.m,  # 0 6 3
+                self.reservoir.l,  # 1 7 4
+                self.flux.fa,  # 2 8 5
             ]
         )
         params = List(
             [
-                float(self.reservoir.species.element.r),
                 float(self.scale),
                 float(self.reservoir.volume),
                 float(self.c),
@@ -1799,43 +1805,36 @@ class ScaleRelativeToConcentration(RateConstant):
     def p_scale_relative_to_concentration(data, params, i) -> None:
         """delta depends on upstream delta"""
         # params
-        r: float = params[0]  # r
-        s: float = params[1]  # scale factor
-        v: float = params[2]  # res volume
+        s: float = params[0]  # scale factor
+        v: float = params[1]  # res volume
+        # data
+        rm: float = data[0][i - 1]  # res mass
+        rl: float = data[1][i - 1]  # res li
 
-        # # data 0 to 3 = flux data
-        rc: float = data[2][i - 1]  # res concentration
-        rm: float = data[3][i - 1]  # res mass
-        rl: float = data[4][i - 1]  # res li
-
-        if rc > 0:
-            m: float = rc * s
+        if rm > 0:
+            fm: float = rm / v * s
             c: float = rl / (rm - rl)
-            l: float = m * c / (c + 1)
-            data[5][:] = [m, l]
+            fl: float = fm * c / (c + 1)
+            data[2][:] = [fm, fl]
 
         else:
-            data[5][:] = [0.0, 0.0]
+            data[2][:] = [0.0, 0.0]
 
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_scale_relative_to_concentration_fd(data, params, i) -> None:
         """delta depends fixed value"""
         # params
-        r: float = params[0]  # r
         s: float = params[1]  # scale factor
         v: float = params[2]  # res volume
         c: float = params[3]  # isotope ratio
+        # data
+        rm: float = data[0][i - 1]  # res mass
 
-        # # data 0 to 3 = flux data
-        rc: float = data[2][i - 1]  # res concentration
-        rm: float = data[3][i - 1]  # res mass
-        rl: float = data[4][i - 1]  # res li
-
-        if rc > 0:
-            m: float = rc * s
-            l: float = m * c / (c + 1)
-            data[5][:] = [m, l]
+        if rm > 0:
+            fm: float = rm / v * s
+            fl: float = fm * c / (c + 1)
+            data[2][:] = [fm, fl]
 
         else:
-            data[5][:] = [0.0, 0.0]
+            data[2][:] = [0.0, 0.0]

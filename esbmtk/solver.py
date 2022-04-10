@@ -142,7 +142,7 @@ def get_delta_h(h) -> float:
     """Calculate the delta of a flux or reserevoir from total mass
     and mass of light isotope.
 
-    f = flux or reserevoir handle
+    h = flux or reserevoir handle
 
     returns d a vector of delta values
 

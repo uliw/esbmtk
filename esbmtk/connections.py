@@ -767,16 +767,13 @@ class Connect(esbmtkBase):
             # self.__vardeltaout__()
 
         # check if flux should bypass any reservoirs
-        if self.bypass == "source":
+        
+        if self.bypass == "source" and not isinstance(self.source, Source):
             self.source.lof.remove(self.fh)
-        elif self.bypass == "sink":
+        elif self.bypass == "sink" and not isinstance(self.sink, Sink):
             self.sink.lof.remove(self.fh)
             # print(f"removing {self.fh.full_name} from {self.sink.full_name} lof")
-        elif self.bypass == "None":
-            pass
-        else:
-            raise ValueError(f"bypass must be None/source/sink but not {self.bypass}")
-
+       
         if self.save_flux_data:
             ph = SaveFluxData(
                 name=f"{self.fh.full_name}_Pfd",

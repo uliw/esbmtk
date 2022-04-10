@@ -14,6 +14,11 @@ generation of graphical results.
 
 * News
 
+  - 0.8.0.0 Cleanup of naming scheme which is now strictly
+    hierarchical. I.e., species definitions are no longer part of the
+    Model (i.e., =M.DIC=), rather you have to write
+    =M.Carbon.DIC). This will break model code, but is easy to fix
+
   - 0.7.3.9 Moved to setuptools build system. Lost of code fixesWRT
     isotope calculations, minor fixes in the carbonate module.
 

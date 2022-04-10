@@ -55,4 +55,6 @@
 /tests/.coverage
 /esbmtk/.esbmtk.py.~undo-tree~
 *.~undo-tree~
+Notes.org
 
+/notes.org

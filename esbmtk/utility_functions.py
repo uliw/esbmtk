@@ -1101,10 +1101,7 @@ def update_or_create(
     # update connection if already known
     if f"{name}" in M.lmo or f"{M.name}.{name}" in M.lmo:
 
-        if M.register == "local":
-            cg = getattr(M, name)
-        else:
-            cg = __builtins__[name]
+        cg = getattr(M, name)
 
         if M.debug:
             print(f"Connectiongroup is already known with full_name = {cg.full_name}")
@@ -1121,7 +1118,7 @@ def update_or_create(
                 alpha=make_dict(los, alpha),
                 delta=make_dict(los, delta),
                 bypass=make_dict(los, bypass),
-                register=register,
+                register=M,
                 id=cid,  # get id from dictionary
             )
 
