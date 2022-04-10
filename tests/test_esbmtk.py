@@ -27,6 +27,7 @@ def create_model(request):
         delta=d0,  # initial delta
         concentration=f"{c0} mol/l",  # concentration
         volume=f"{v0} l",  # reservoir size (m^3)
+        register=M1,
     )
 
     return v0, c0, d0, M1
@@ -132,17 +133,18 @@ def test_signal_indexing(idx, stype):
 
     Source(name="SO1", species=M1.Carbon.DIC)
 
+    Sink(name="SI1", species=M1.Carbon.DIC)
+    Sink(name="SI2", species=M1.Carbon.DIC)
+
     Reservoir(
         name="R1",  # Name of reservoir
         species=M1.Carbon.DIC,  # Species handle
         delta=d0,  # initial delta
         concentration=f"{c0} mol/l",  # concentration
         volume=f"{v0} l",  # reservoir size (m^3)
+        register=M1,
     )
-
-    Sink(name="SI1", species=M1.Carbon.DIC)
-    Sink(name="SI2", species=M1.Carbon.DIC)
-
+    
     Connect(
         source=M1.SO1,  # source of flux
         sink=M1.R1,  # target of flux
@@ -195,14 +197,7 @@ def test_fractionation(create_model, solver):
     v0, c0, d0, M1 = create_model
 
     Source(name="SO1", species=M1.Carbon.DIC)
-    Reservoir(
-        name="R1",  # Name of reservoir
-        species=M1.Carbon.DIC,  # Species handle
-        delta=d0,  # initial delta
-        concentration=f"{c0} mol/l",  # concentration
-        volume=f"{v0} l",  # reservoir size (m^3)
-    )
-
+    
     Sink(name="SI1", species=M1.Carbon.DIC)
 
     Connect(
@@ -236,14 +231,7 @@ def test_scale_flux(create_model, solver):
     v0, c0, d0, M1 = create_model
 
     Source(name="SO1", species=M1.Carbon.DIC)
-    Reservoir(
-        name="R1",  # Name of reservoir
-        species=M1.Carbon.DIC,  # Species handle
-        delta=d0,  # initial delta
-        concentration=f"{c0} mol/l",  # concentration
-        volume=f"{v0} l",  # reservoir size (m^3)
-    )
-
+    
     Sink(name="SI1", species=M1.Carbon.DIC)
     Sink(name="SI2", species=M1.Carbon.DIC)
 
@@ -289,6 +277,7 @@ def test_scale_with_concentration_empty(create_model, solver):
         delta=d0,  # initial delta
         concentration=f"0 mol/l",  # concentration
         volume=f"{v0} l",  # reservoir size (m^3)
+        register=M1,
     )
     Connect(
         source=M1.R2,  # source of flux
@@ -320,14 +309,7 @@ def test_scale_with_concentration(create_model, solver):
     v0, c0, d0, M1 = create_model
 
     Source(name="SO1", species=M1.Carbon.DIC)
-    Reservoir(
-        name="R1",  # Name of reservoir
-        species=M1.Carbon.DIC,  # Species handle
-        delta=d0,  # initial delta
-        concentration=f"{c0} mol/l",  # concentration
-        volume=f"{v0} l",  # reservoir size (m^3)
-    )
-
+    
     Sink(name="SI1", species=M1.Carbon.DIC)
     Sink(name="SI2", species=M1.Carbon.DIC)
 
@@ -371,14 +353,6 @@ def test_scale_with_mass(create_model, solver):
     v0, c0, d0, M1 = create_model
 
     Source(name="SO1", species=M1.Carbon.DIC)
-    Reservoir(
-        name="R1",  # Name of reservoir
-        species=M1.Carbon.DIC,  # Species handle
-        delta=d0,  # initial delta
-        concentration=f"{c0} mol/l",  # concentration
-        volume=f"{v0} l",  # reservoir size (m^3)
-    )
-
     Sink(name="SI1", species=M1.Carbon.DIC)
     Sink(name="SI2", species=M1.Carbon.DIC)
 
@@ -419,14 +393,7 @@ def test_square_signal(create_model, solver):
     v0, c0, d0, M1 = create_model
 
     Source(name="SO1", species=M1.Carbon.DIC)
-    Reservoir(
-        name="R1",  # Name of reservoir
-        species=M1.Carbon.DIC,  # Species handle
-        delta=d0,  # initial delta
-        concentration=f"{c0} mol/l",  # concentration
-        volume=f"{v0} l",  # reservoir size (m^3)
-    )
-
+   
     Sink(name="SI1", species=M1.Carbon.DIC)
     Sink(name="SI2", species=M1.Carbon.DIC)
 
@@ -477,14 +444,6 @@ def test_pyramid_signal(create_model, solver):
     import numpy as np
 
     Source(name="SO1", species=M1.Carbon.DIC)
-
-    Reservoir(
-        name="R1",  # Name of reservoir
-        species=M1.Carbon.DIC,  # Species handle
-        delta=d0,  # initial delta
-        concentration=f"{c0} mol/l",  # concentration
-        volume=f"{v0} l",  # reservoir size (m^3)
-    )
 
     Sink(name="SI1", species=M1.Carbon.DIC)
     Sink(name="SI2", species=M1.Carbon.DIC)
@@ -736,7 +695,7 @@ def test_seawaterconstants(create_model):
     Sink(name="SI1", species=M1.Carbon.DIC)
 
     ReservoirGroup(
-        name="S",  # Name of reservoir group
+        name="S1",  # Name of reservoir group
         # volume = "1E5 l",       # see below
         geometry=[0, 6000, 1],
         delta={M1.Carbon.DIC: 0, M1.Carbon.TA: 0},  # dict of delta values
@@ -746,10 +705,10 @@ def test_seawaterconstants(create_model):
         # @carbonate_system= True,
         register=M1,
     )
-    assert round(M1.S.swc.density, 6) == 999.966751
+    assert round(M1.S1.swc.density, 6) == 999.966751
 
     ReservoirGroup(
-        name="S",  # Name of reservoir group
+        name="S2",  # Name of reservoir group
         # volume = "1E5 l",       # see below
         geometry=[0, 6000, 1],
         delta={M1.Carbon.DIC: 0, M1.Carbon.TA: 0},  # dict of delta values
@@ -760,8 +719,8 @@ def test_seawaterconstants(create_model):
         register=M1,
     )
 
-    assert round(M1.S.swc.density, 6) == 1062.538172  # kg/m^3
-    assert round(M1.S.swc.so4, 6) == 0.03002  # mol/liter
+    assert round(M1.S2.swc.density, 6) == 1062.538172  # kg/m^3
+    assert round(M1.S2.swc.so4, 6) == 0.03002  # mol/liter
 
 
 @pytest.mark.parametrize("solver", ["numba", "python"])
@@ -952,6 +911,7 @@ def test_gas_exchange(create_model, solver):
         species_ppm="280 ppm",
         isotopes=True,
         delta=-7,
+        register=M1,
     )
 
     # DIC influx
@@ -1030,6 +990,7 @@ def test_weathering(create_model, solver, scale):
         species_ppm="400 ppm",
         isotopes=True,
         delta=0,
+        register=M1,
     )
 
     Connect(
@@ -1090,6 +1051,7 @@ def test_weathering_with_atmosphere_as_source(create_model, solver):
         species_ppm="400 ppm",
         isotopes=True,
         delta=12,
+        register=M1,
     )
 
     Connect(
@@ -1130,6 +1092,7 @@ def test_gasreservoir_flux_alpha(create_model, solver):
         reservoir_mass="1025E4 mol",
         species_ppm=f"300 ppm",
         isotopes=True,
+        register=M1,
     )
     Sink(name="SI1", species=M1.Carbon.DIC)
 
