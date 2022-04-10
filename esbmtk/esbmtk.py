@@ -79,24 +79,35 @@ class input_parsing(object):
     def __initialize_keyword_variables__(self, kwargs) -> None:
         """check, register and update keyword variables"""
 
+        self.update = False
         self.__check_mandatory_keywords__(self.lrk, kwargs)
         self.__register_variable_names__(self.defaults, kwargs)
         self.__update_dict_entries__(self.defaults, kwargs)
+        self.update = True
 
     def __check_mandatory_keywords__(self, lrk: list, kwargs: dict) -> None:
         """Verify that all elements of lrk have a corresponding key in
         kwargs.  If not, print error message"""
 
         for key in lrk:
-            if key not in kwargs:
-                raise ValueError(f"{key} is a mandatory keyword")
+            if isinstance(key, list):
+                has_key = 0
+                for k in key:
+                    if k in kwargs and kwargs[k] != "None":
+                        has_key += 1
+                        print(f"k={k}, kwargs = {kwargs[k]}")
+                if has_key != 1:
+                    raise ValueError(f"give only one of {key}")
+            else:
+                if key not in kwargs:
+                    raise ValueError(f"{key} is a mandatory keyword")
 
     def __register_variable_names__(
         self,
         defaults: dict[str, list[any, tuple]],
         kwargs: dict,
     ) -> None:
-        """Register the key value[0] pairs as local instancce variables.
+        """Register the key value[0] pairs as local instance variables.
         We register them with their actual variable name and as _variable_name
         in case we use setter and getter methods.
         to avoid name conflicts.
@@ -134,19 +145,19 @@ class input_parsing(object):
 
             defaults[key][0] = value  # update defaults dictionary
             setattr(self, key, value)  # update instance variables
+            setattr(self, "_" + key, value) # and their property shadows
 
     def __register_name_new__(self) -> None:
         """if self.parent is set, register self as attribute of self.parent,
         and set full name to parent.full-name + self.name
         if self.parent == "None", full_name = name
         """
+
         if self.parent == "None":
             self.full_name = self.name
             reg = self
         else:
-            print(f"n = {self.name}, pn = {self.parent.full_name}")
             self.full_name = self.parent.full_name + "." + self.name
-            print(f"fn = {self.full_name}\n")
             reg = self.parent.model
             # check for naming conflicts
             if self.full_name in reg.lmo:
@@ -757,7 +768,7 @@ class Model(esbmtkBase):
         fn: str = f"{kwargs['name']}.log"
         logging.basicConfig(filename=fn, filemode="w", level=logging.WARN)
         self.__register_name_new__()
-        
+
         self.lor: list = []
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
@@ -877,8 +888,6 @@ class Model(esbmtkBase):
             f"under certain conditions; See the LICENSE file for details.\n"
         )
         print(warranty)
-
-       
 
         # initialize the hypsometry class
         hypsometry(name="hyp", model=self, register=self)
@@ -2091,76 +2100,48 @@ class Reservoir(ReservoirBase):
         from . import ureg, Q_
 
         # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            "name": str,
-            "species": Species,
-            "delta": (Number, str),
-            "concentration": (str, Q_),
-            "mass": (str, Q_),
-            "volume": (str, Q_),
-            "geometry": (list, str),
-            "plot_transform_c": any,
-            "legend_left": str,
-            "plot": str,
-            "groupname": str,
-            "function": any,
-            "display_precision": Number,
-            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
-            "full_name": str,
-            "seawater_parameters": (dict, str),
-            "isotopes": bool,
+        self.defaults: dict[str, list[any, tuple]] = {
+            "name": ["None", (str)],
+            "species": ["None", (str, Species)],
+            "delta": ["None", (Number, str)],
+            "concentration": ["None", (str, Q_)],
+            "mass": ["None", (str, Q_)],
+            "volume": ["None", (str, Q_)],
+            "geometry": ["None", (list, str)],
+            "plot_transform_c": ["None", (any)],
+            "legend_left": ["None", (str)],
+            "plot": ["yes", (str)],
+            "groupname": ["None", (str)],
+            "function": ["None", (str, callable)],
+            "display_precision": [0.01, (Number)],
+            "register": [
+                "None",
+                (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            ],
+            "parent": [
+                "None",
+                (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            ],
+            "full_name": ["None", (str)],
+            "seawater_parameters": ["None", (dict, str)],
+            "isotopes": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = [
             "name",
             "species",
+            ["parent", "register"],
             ["volume", "geometry"],
             ["mass", "concentration"],
         ]
 
-        self.drn = {
-            "concentration": "_concentration",
-            "delta": "_delta",
-            "mass": "_mass",
-        }
+        # steps = kwargs["species"].mo.steps
+        # self.m: np.ndarray = zeros(steps) + self.mass
 
-        # list of default values if none provided
-        self.lod: Dict[any, any] = {
-            "delta": "None",
-            "plot": "yes",
-            "mass": "None",
-            "volume": "None",
-            "geometry": "None",
-            "concentration": "None",
-            "plot_transform_c": "None",
-            "legend_left": "None",
-            "function": "None",
-            "groupname": "None",
-            "register": "None",
-            "full_name": "Not Set",
-            "isotopes": False,
-            "seawater_parameters": "None",
-            "display_precision": 0,
-        }
+        self.__initialize_keyword_variables__(kwargs)
 
-        # validate and initialize instance variables
-        self.__initerrormessages__()
-        self.bem.update(
-            {
-                "mass": "a  string or quantity",
-                "concentration": "a string or quantity",
-                "volume": "a string or quantity",
-                "plot": "yes or no",
-                "register": "Group Object",
-                "legend_left": "A string",
-                "function": "A function",
-            }
-        )
-        self.__validateandregister__(kwargs)
-
-        if self.delta == "None":
-            self.delta = 0
+        self.model = self.register
 
         self.__set_legacy_names__(kwargs)
 
@@ -2175,6 +2156,8 @@ class Reservoir(ReservoirBase):
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
 
         if self.mass == "None":
+            print(f"c = {self._concentration}, m = {self._mass}")
+            print(f"kwargs = {self.kwargs}")
             c = Q_(self.concentration)
             self.plt_units = c.units
             self._concentration: Number = c.to(self.mo.c_unit).magnitude
@@ -2200,14 +2183,8 @@ class Reservoir(ReservoirBase):
             np.zeros(self.mo.steps) + self.volume
         )  # reservoir volume
 
-        if self.mass == 0:
-            self.c: [NDArray, Float[64]] = zeros(self.species.mo.steps)
-        else:
-            # initialize concentration vector
-            self.c: [NDArray, Float[64]] = self.m / self.v
-            # isotope mass
+        if self.delta != "None":
             self.l = get_l_mass(self.m, self.delta, self.species.r)
-            # delta of reservoir
 
         # create temporary memory if we use multiple solver iterations
         if self.mo.number_of_solving_iterations > 0:
@@ -2271,24 +2248,25 @@ class Reservoir(ReservoirBase):
 
     @concentration.setter
     def concentration(self, c) -> None:
-        self._concentration: float = c.to(self.mo.c_unit).magnitude
-        self.mass: float = self._concentration * self.volume  # caculate mass
-        self.c = self.c * 0 + self._concentration
-        self.m = self.m * 0 + self.mass
-        # print(f"updating c in {self.full_name}")
+        if self.update and c != "None":
+            self._concentration: float = c.to(self.mo.c_unit).magnitude
+            self.mass: float = self._concentration * self.volume  # caculate mass
+            self.c = self.c * 0 + self._concentration
+            self.m = self.m * 0 + self.mass
 
     @delta.setter
     def delta(self, d: float) -> None:
-        self._delta: float = d
-        self.isotopes = True
-        self.l = get_l_mass(self.m, d, self.species.r)
+        if self.update and d != "None":
+            self._delta: float = d
+            self.isotopes = True
+            self.l = get_l_mass(self.m, d, self.species.r)
 
     @mass.setter
     def mass(self, m: float) -> None:
-        self._mass: float = m
-        self.m = zeros(self.species.mo.steps) + self._mass
-        self.c = self.m / self.volume
-
+        if self.update and m != "None":
+            self._mass: float = m
+            self.m =   zeros(self.species.mo.steps) + m          
+            self.c = self.m / self.volume
 
 class Flux(esbmtkBase):
     """A class which defines a flux object. Flux objects contain
