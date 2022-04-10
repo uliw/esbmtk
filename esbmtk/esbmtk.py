@@ -145,7 +145,7 @@ class input_parsing(object):
 
             defaults[key][0] = value  # update defaults dictionary
             setattr(self, key, value)  # update instance variables
-            setattr(self, "_" + key, value) # and their property shadows
+            setattr(self, "_" + key, value)  # and their property shadows
 
     def __register_name_new__(self) -> None:
         """if self.parent is set, register self as attribute of self.parent,
@@ -854,30 +854,23 @@ class Model(esbmtkBase):
 
         # set_printoptions(precision=self.display_precision)
 
+        from esbmtk import species_definitions
+
         if "element" in self.kwargs:
             if isinstance(self.kwargs["element"], list):
                 element_list = self.kwargs["element"]
             else:
                 element_list = [self.kwargs["element"]]
 
+            # register elements and species with model
             for e in element_list:
-
-                if e == "Carbon":
-                    carbon(self)
-                elif e == "Sulfur":
-                    sulfur(self)
-                elif e == "Hydrogen":
-                    hydrogen(self)
-                elif e == "Phosphor":
-                    phosphor(self)
-                elif e == "Oxygen":
-                    oxygen(self)
-                elif e == "Nitrogen":
-                    nitrogen(self)
-                elif e == "Boron":
-                    boron(self)
-                else:
-                    raise ValueError(f"{e} not implemented yet")
+                # get function handle
+                fh = getattr(species_definitions, e)
+                fh(self)  # register element with model
+                # get element handle
+                eh = getattr(self, e)
+                # register species with model
+                eh.__register_species_with_model__()
 
         warranty = (
             f"\n"
@@ -1476,6 +1469,12 @@ class Element(esbmtkBase):
 
         for e in self.lsp:
             print(e.n)
+
+    def __register_species_with_model__(self) -> None:
+        """Bit of  hack, but makes model code more readable"""
+
+        for s in self.lsp:
+            setattr(self.model, s.name, s)
 
 
 class Species(esbmtkBase):
@@ -2265,8 +2264,9 @@ class Reservoir(ReservoirBase):
     def mass(self, m: float) -> None:
         if self.update and m != "None":
             self._mass: float = m
-            self.m =   zeros(self.species.mo.steps) + m          
+            self.m = zeros(self.species.mo.steps) + m
             self.c = self.m / self.volume
+
 
 class Flux(esbmtkBase):
     """A class which defines a flux object. Flux objects contain
@@ -2690,17 +2690,6 @@ class Source(SourceSink):
 from .extended_classes import *
 from .connections import Connection, ConnectionGroup
 from .processes import *
-
-from .species_definitions import (
-    carbon,
-    sulfur,
-    hydrogen,
-    phosphor,
-    oxygen,
-    nitrogen,
-    boron,
-)
-
 from .carbonate_chemistry import *
 from .sealevel import *
 from .solver import *
