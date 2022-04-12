@@ -2163,7 +2163,9 @@ class Reservoir(ReservoirBase):
             c = Q_(self.concentration)
             self.plt_units = c.units
             self._concentration: Number = c.to(self.mo.c_unit).magnitude
-            self.mass: Number = self._concentration * self.volume  # caculate mass
+            self.mass: Number = (
+                self._concentration * self.volume * self.parent.swc.density / 1000
+            )
             self.display_as = "concentration"
         elif self.concentration == "None":
             m = Q_(self.mass)
@@ -2252,7 +2254,9 @@ class Reservoir(ReservoirBase):
     def concentration(self, c) -> None:
         if self.update and c != "None":
             self._concentration: float = c.to(self.mo.c_unit).magnitude
-            self.mass: float = self._concentration * self.volume  # caculate mass
+            self.mass: float = (
+                self._concentration * self.volume * self.parent.swc.density / 1000
+            )  # caculate mass
             self.c = self.c * 0 + self._concentration
             self.m = self.m * 0 + self.mass
 
