@@ -3,6 +3,7 @@ from __future__ import annotations
 from pint import UnitRegistry
 
 ureg = UnitRegistry(on_redefinition="ignore")
+ureg.enable_contexts('chemistry')
 Q_ = ureg.Quantity
 
 ureg.define("Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups")
