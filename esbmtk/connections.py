@@ -443,7 +443,8 @@ class Connect(esbmtkBase):
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
 
-        self.__register_name__()  # register connection in namespace
+        self.parent = self.register
+        self.__register_name_new__()  # register connection in namespace
 
         self.source.loc.add(self)  # register connector with reservoir
         self.sink.loc.add(self)  # register connector with reservoir
@@ -462,45 +463,19 @@ class Connect(esbmtkBase):
     def __set_name__(self):
         """set connection name if not explicitly provided"""
 
-        if self.name == "None":
-            self.name = f"C_{self.source.name}_2_{self.sink.name}"
-
-            if self.id == "None" or self.id == "":
-                pass
-            else:
-                self.name = f"{self.name}_{self.id}"
-
+        if self.id == "None":
+            self.id=""
+            
         if self.register == "None":
-            self.full_name = f"{self.mo.name}.{self.name}"
+            if self.name == "None":
+                self.name = f"C_{self.source.name}_2_{self.sink.name}_{self.id}"
+                self.full_name = f"{self.mo.name}.{self.name}"
         else:
+            self.name = f"C_{self.source.species.name}_{self.id}"
             self.full_name = f"{self.register.full_name}.{self.name}"
-
+       
         self.base_name = self.full_name
         self.n = self.name
-
-        # if self.groupname: # if we are part of a group connection
-        #     self.name = f"C_{self.source.name}_2_{self.sink.name}"
-        #     if self.id == "None" or self.id == "":
-        #         pass
-        #     else:
-        #         self.name = f"{self.name}_{self.id}"
-
-        #     self.full_name = f"{self.register.full_name}.{self.name}"
-        # else:
-        #     if self.name == "None":
-        #         self.name = f"C_{self.source.name}_2_{self.sink.name}"
-        #     else:
-        #         self.name = f"{self.name}"
-
-        #     if self.id == "None" or self.id == "":
-        #         pass
-        #     else:
-        #         self.name = f"{self.name}_{self.id}"
-
-        #     self.full_name = self.name
-
-        # self.base_name = self.full_name
-        # self.n = self.name
 
     def update(self, **kwargs):
         """Update connection properties. This will delete existing processes
@@ -1246,6 +1221,7 @@ class ConnectionGroup(esbmtkBase):
 
         # # self.source.lor is a  list with the object names in the group
         self.mo = self.sink.lor[0].mo
+        self.model = self.mo
         self.loc: list = []  # list of connection objects
 
         if self.mo.debug:
@@ -1281,12 +1257,15 @@ class ConnectionGroup(esbmtkBase):
 
         self.base_name = self.name
         kwargs.update({"name": self.name})  # and add it to the kwargs
-        self.__register_name__()
+        
 
         # register connection group in global namespace
         # m_type="mass_only",
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
+
+        self.parent = self.register
+        self.__register_name_new__()
 
         logging.info(f"Created {self.name}")
         self.__create_connections__()
@@ -1363,7 +1342,8 @@ class ConnectionGroup(esbmtkBase):
         self.cd: dict = {}  # connection dictionary
         for r in self.connections:  # ["SO4", "H2S"]
             self.cd[r.n] = {
-                "cid": self.id,
+                # "cid": self.id,
+                "cid": "None",
                 "plot": "yes",
                 "delta": "None",
                 "alpha": "None",
@@ -1393,6 +1373,7 @@ class ConnectionGroup(esbmtkBase):
             else:
                 register = self
 
+            print(f"connection id = {self.id}")
             a = Connect(
                 source=getattr(self.source, r.n),
                 sink=getattr(self.sink, r.n),
@@ -1514,7 +1495,8 @@ class AirSeaExchange(esbmtkBase):
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
 
-        self.__register_name__()
+        self.parent = self.register
+        self.__register_name_new__()
         # register process with reservoir
         ph.__register__(self.lr, self.fh)
 
