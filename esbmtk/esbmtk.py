@@ -137,7 +137,6 @@ class input_parsing(object):
         for key, value in kwargs.items():
             if key not in defaults:
                 raise ValueError(f"{key} is not a valid key")
-            print(f"value = {value}")
             if not isinstance(value, defaults[key][1]):
                 raise TypeError(
                     f"{key} must be of type {defaults[key][1]}, not {type(value)}"
@@ -2335,10 +2334,11 @@ class Flux(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "species", "rate"]
+        self.lrk: list = ["species", "rate"]
 
         self.__initialize_keyword_variables__(kwargs)
 
+        self.parent = self.register
         # if save_flux_data is unsepcified, use model default
         if self.save_flux_data == "None":
             self.save_flux_data = self.species.mo.save_flux_data
@@ -2403,15 +2403,17 @@ class Flux(esbmtkBase):
         self.sink: str = ""  # Name of reservoir which acts as flux sink
 
         if self.name == "None":
-            if self.mo.register == "None":  # global name_space
-                if self.register == "None":
-                    self.full_name = self.name
-                else:
-                    self.full_name = f"{self.register.full_name}.{self.name}"
-            else:  # local name_space
-                self.name = f"{self.id}_F"
+            self.name = f"{self.id}_F"
+        # if self.name == "None":
+        #     if self.mo.register == "None":  # global name_space
+        #         if self.register == "None":
+        #             self.full_name = self.name
+        #         else:
+        #             self.full_name = f"{self.register.full_name}.{self.name}"
+        #     else:  # local name_space
+        #         self.name = f"{self.id}_F"
 
-        self.__register_name__()
+        self.__register_name_new__()
         # print(f"f name set to {self.name}. fn =  {self.full_name}\n")
         self.mo.lof.append(self)  # register with model flux list
 
@@ -2437,17 +2439,6 @@ class Flux(esbmtkBase):
         """Get data by index"""
         # return self.__get_data__(i)
         return self.fa
-        # return array([self.m[i], self.l[i], self.h[i], self.d[i]])
-
-    # def __get_with_isotopes__(self, i: int) -> NDArray[np.float64]:
-    #     """Get data by index"""
-
-    #     return array([self.m[i], self.l[i], self.h[i], self.d[i]])
-
-    # def __get_without_isotopes__(self, i: int) -> NDArray[np.float64]:
-    #     """Get data by index"""
-
-    #     return array([self.m[i]])
 
     def __set_with_isotopes__(self, i: int, value: [NDArray, float]) -> None:
         """Write data by index"""
@@ -2455,7 +2446,6 @@ class Flux(esbmtkBase):
         self.m[i] = value[0]
         self.l[i] = value[1]
         self.fa = value[0:4]
-        # self.d[i] = get_delta(self.l[i], self.h[i], self.sp.r)  # update delta
 
     def __set_without_isotopes__(self, i: int, value: [NDArray, float]) -> None:
         """Write data by index"""
@@ -2480,8 +2470,6 @@ class Flux(esbmtkBase):
         self.fa = self.fa - other.fa
         self.m = self.m - other.m
         self.l = self.l - other.l
-        # self.h = self.h - other.h
-        # self.d = get_delta(self.l, self.h, self.sp.r)
 
     def info(self, **kwargs) -> None:
         """Show an overview of the object properties.

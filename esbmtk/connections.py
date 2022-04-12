@@ -399,6 +399,7 @@ class Connect(esbmtkBase):
         self.outflux: int = -1
         # self.n = self.name
         self.mo = self.source.sp.mo
+        self.model = self.mo
         self.p = 0  # the default process handle
         self.r1: (Process, Reservoir) = self.source
         self.r2: (Process, Reservoir) = self.sink
@@ -547,25 +548,10 @@ class Connect(esbmtkBase):
         else:
             r = self.rate
 
-        # flux name
-        if self.register == "None":
-            if self.id == "None" or self.id == "":
-                n = f"{self.r1.n}_2_{self.r2.n}_F"
-            else:
-                n = f"{self.r1.n}_2_{self.r2.n}_{self.id}_F"
-        else:
-            if self.id == "None" or self.id == "":
-                n = f"{self.r1.n}_2_{self.r2.n}_F"
-            else:
-                n = f"{self.id}_F"
-        # else:
-        #    n = "F_" + self.r1.full_name + "_2_" + self.r2.full_name
-
         # derive flux unit from species obbject
         funit = self.sp.mu + "/" + str(self.sp.mo.bu)  # xxx
 
         self.fh = Flux(
-            name=n,  # flux name
             species=self.sp,  # Species handle
             delta=d,  # delta value of flux
             rate=r,  # flux value
@@ -1482,20 +1468,13 @@ class AirSeaExchange(esbmtkBase):
 
         # create connection and flux name
         cname = f"C_{self.lr.register.name}_2_{self.gr.name}"
-        fname = f"{self.gr.sp.name}_F"
-
-        if self.id == "None" or self.id == "":
-            pass
-        else:
-            fname = f"{fname}_{self.id}"
-
+        
         # print(f"Using fname = {fname}")
         self.name = cname
         self.full_name = cname
 
         # initalize a flux instance
         self.fh = Flux(
-            name=fname,  # flux name
             species=self.species,  # Species handle
             delta=0,  # delta value of flux
             rate="0 mol/a",  # flux value
