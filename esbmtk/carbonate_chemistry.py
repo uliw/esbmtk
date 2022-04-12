@@ -194,7 +194,7 @@ class SeawaterConstants(esbmtkBase):
 
         for n in self.species:
             v = getattr(self, n)
-            print(f"{n} = {v * 1E6:.2f} nmol/l")
+            print(f"{n} = {v * 1E6:.2f} nmol/kg")
 
         print(f"pH = {-log10(self.hplus):.2f}\n")
         print(f"salinity = {self.salinity:.2f}")
@@ -640,8 +640,8 @@ def calc_pCO2(
     H+, K1 and k2 and returns a numpy array containing
     the pCO2 in uatm at each timestep. Calculations are based off
     equations from Follows, 2006. doi:10.1016/j.ocemod.2005.05.004
-    dic: Reservoir  = DIC concentrations in mol/liter
-    hplus: Reservoir = H+ concentrations in mol/liter
+    dic: Reservoir  = DIC concentrations in mol/kg
+    hplus: Reservoir = H+ concentrations in mol/kg
     SW: Seawater = Seawater object for the model
     it is typically used with a DataField object, e.g.
     pco2 = calc_pCO2(dic,h,SW)
@@ -681,8 +681,8 @@ def calc_pCO2b(
     H+, K1 and k2 and returns a numpy array containing
     the pCO2 in uatm at each timestep. Calculations are based off
     equations from Follows, 2006. doi:10.1016/j.ocemod.2005.05.004
-    dic:  = DIC concentrations in mol/liter
-    hplus: = H+ concentrations in mol/liter
+    dic:  = DIC concentrations in mol/kg
+    hplus: = H+ concentrations in mol/kg
     SW: Seawater = Seawater object for the model
     it is typically used with a DataField object, e.g.
     pco2 = calc_pCO2b(dic,h,SW)
@@ -718,8 +718,8 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
 
     LIMITATIONS:
     - This in used in conjunction with ExternalCode objects!
-    - Assumes all concentrations are in mol/L
-    - Assumes your Model is in mol/L ! Otherwise, DIC and TA updating will not
+    - Assumes all concentrations are in mol/kg
+    - Assumes your Model is in mol/kg ! Otherwise, DIC and TA updating will not
     be correct.
 
     Calculations are based off equations from:
@@ -789,8 +789,8 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
 
     LIMITATIONS:
     - This in used in conjunction with ExternalCode objects!
-    - Assumes all concentrations are in mol/L
-    - Assumes your Model is in mol/L ! Otherwise, DIC and TA updating will not
+    - Assumes all concentrations are in mol/kg
+    - Assumes your Model is in mol/kg ! Otherwise, DIC and TA updating will not
     be correct.
 
     Calculations are based off equations from:
@@ -835,8 +835,8 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     ksp = params[17]
 
     # Data
-    dic: float = input_data[2][i - 1]  # DIC concentration [mol/l]
-    ta: float = input_data[4][i - 1]  # TA concentration [mol/l]
+    dic: float = input_data[2][i - 1]  # DIC concentration [mol/kg]
+    ta: float = input_data[4][i - 1]  # TA concentration [mol/kg]
     Bm: float = input_data[5][0]  # Carbonate Export Flux [mol/yr]
     B12: float = input_data[5][1]  # Carbonate Export Flux light isotope
     v: float = input_data[9][i - 1]  # volume
@@ -846,7 +846,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     Csat_table: NDArray = input_data[8]  # Csat table
 
     # vr_data
-    hplus: float = vr_data[0][i - 1]  # H+ concentration [mol/l]
+    hplus: float = vr_data[0][i - 1]  # H+ concentration [mol/kg]
     zsnow = vr_data[7][i - 1]  # previous zsnow
 
     # calc carbonate alkalinity based t-1

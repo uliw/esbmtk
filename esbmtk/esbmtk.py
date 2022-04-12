@@ -735,8 +735,9 @@ class Model(esbmtkBase):
             "offset": ["0 yrs", (str, Q_)],
             "timestep": ["None", (str, Q_)],
             "element": ["None", (str, list)],
-            "mass_unit": ["mol", (str)],
-            "volume_unit": ["m**3", (str)],
+            "mass_unit": ["mol", (str, Q_)],
+            "volume_unit": ["m**3", (str, Q_)],
+            "concentration_unit": ["mol/kg", (str, Q_)],
             "time_label": ["Years", (str)],
             "display_precision": [0.01, (float)],
             "plot_style": ["default", (str)],
@@ -747,10 +748,18 @@ class Model(esbmtkBase):
             "save_flux_data": [False, (bool)],
             "full_name": ["None", (str)],
             "parent": ["None", (str)],
+            "isotopes": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list[str] = ["name", "stop", "timestep", "mass_unit", "volume_unit"]
+        self.lrk: list[str] = [
+            "name",
+            "stop",
+            "timestep",
+            "mass_unit",
+            "volume_unit",
+            "concentration_unit",
+        ]
         self.__initialize_keyword_variables__(kwargs)
 
         # self.__validateandregister__(kwargs)  # initialize keyword values
@@ -797,13 +806,9 @@ class Model(esbmtkBase):
         self.t_unit = Q_(self.timestep).units  # the time unit
         self.d_unit = Q_(self.stop).units  # display time units
         self.m_unit = Q_(self.mass_unit).units  # the mass unit
+        self.c_unit = Q_(self.concentration_unit).units  # the mass unit
         self.v_unit = Q_(self.volume_unit).units  # the volume unit
         # the concentration unit (mass/volume)
-        self.c_unit = self.m_unit / self.v_unit  # concentration
-        u1 = Q_("mol/liter").units
-        u2 = Q_("mol/kg").units
-        if self.c_unit != u1 and self.c_unit != u2:
-            raise ValueError(f"units must be {u1} or {u2}, not {self.c_unit}")
 
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
         self.r_unit = self.v_unit / self.t_unit  # flux as volume/time
