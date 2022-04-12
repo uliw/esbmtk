@@ -137,6 +137,7 @@ class input_parsing(object):
         for key, value in kwargs.items():
             if key not in defaults:
                 raise ValueError(f"{key} is not a valid key")
+            print(f"value = {value}")
             if not isinstance(value, defaults[key][1]):
                 raise TypeError(
                     f"{key} must be of type {defaults[key][1]}, not {type(value)}"
@@ -2309,37 +2310,34 @@ class Flux(esbmtkBase):
         from . import ureg, Q_, AirSeaExchange
 
         # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            "name": str,
-            "species": Species,
-            "delta": Number,
-            "rate": (str, Q_),
-            "plot": str,
-            "display_precision": Number,
-            "isotopes": bool,
-            "register": any,
-            "save_flux_data": (bool, str),
-            "id": str,
+        self.defaults: dict[str, list[any, tuple]] = {
+            "name": ["None", (str)],
+            "species": ["None", (str, Species)],
+            "delta": [0, (str, Number)],
+            "rate": ["None", (str, Q_)],
+            "plot": ["yes", (str)],
+            "display_precision": [0.01, (Number)],
+            "isotopes": [False, (bool)],
+            "register": [
+                "None",
+                (
+                    str,
+                    Reservoir,
+                    GasReservoir,
+                    Connection,
+                    Connect,
+                    AirSeaExchange,
+                ),
+            ],
+            "save_flux_data": [False, (bool)],
+            "id": ["None", (str)],
+            "save_flux_data": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["name", "species", "rate"]
 
-        # list of default values if none provided
-        self.lod: Dict[any, any] = {
-            "delta": 0,
-            "plot": "yes",
-            "display_precision": 0,
-            "isotopes": False,
-            "register": "None",
-            "id": "",
-            "save_flux_data": "None",
-        }
-
-        # initialize instance
-        self.__initerrormessages__()
-        self.bem.update({"rate": "a string", "plot": "a string"})
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__initialize_keyword_variables__(kwargs)
 
         # if save_flux_data is unsepcified, use model default
         if self.save_flux_data == "None":
@@ -2695,7 +2693,7 @@ class Source(SourceSink):
 
 
 from .extended_classes import *
-from .connections import Connection, ConnectionGroup
+from .connections import Connection, ConnectionGroup, Connect
 from .processes import *
 from .carbonate_chemistry import *
 from .sealevel import *
