@@ -532,11 +532,11 @@ def split_key(k: str, M: any) -> Union[any, any, str]:
 
     """
 
-    if "2" in k:
-        source = k.split("2")[0]
-        sinkandid = k.split("2")[1]
+    if "_to_" in k:
+        source = k.split("_to_")[0]
+        sinkandid = k.split("_to_")[1]
     else:
-        raise ValueError("Name must follow 'Source2Sink' format")
+        raise ValueError("Name must follow 'Source_to_Sink' format")
 
     if "@" in sinkandid:
         sink = sinkandid.split("@")[0]
@@ -978,6 +978,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
         print(f"key = {n}")
     source, sink, cid = split_key(n, M)
 
+    print(f"cid : {cid}")
     # create default connections parameters and replace with values in
     # the parameter dict if present.
     los = list(p["sp"]) if isinstance(p["sp"], list) else [p["sp"]]
@@ -1006,10 +1007,10 @@ def create_connection(n: str, p: dict, M: any) -> None:
 
         name = f"CG_{source.name}2{sink.name}"
 
-        if M.debug:
-            print(
-                f"n = {n}, source: {source.full_name}, sink: {sink.full_name}, cid: {cid}, name = {name}"
-            )
+        # if M.debug:
+        #     print(
+        #         f"n = {n}, source: {source.full_name}, sink: {sink.full_name}, cid: {cid}, name = {name}"
+        #     )
 
         update_or_create(
             name,
@@ -1108,7 +1109,7 @@ def update_or_create(
 
         if isinstance(species, list):
             cg.update(
-                name=name,
+                # name=name,
                 source=source,
                 sink=sink,
                 ctype=make_dict(los, typ),
