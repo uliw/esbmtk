@@ -48,6 +48,19 @@ from esbmtk import Q_
 set_printoptions(precision=4)
 
 
+def find_matching_strings(s: str, fl: list[str]) -> bool:
+    """test if all elements of fl occur in s. Return True if yes,
+    otherwise False
+
+    """
+
+    for f in fl:
+        if f not in s:
+            return False
+
+    return True
+
+
 def insert_into_namespace(name, value, name_space=globals()):
     name_space[name] = value
 
@@ -527,7 +540,7 @@ def get_object_handle(res, M):
 
 
 def split_key(k: str, M: any) -> Union[any, any, str]:
-    """split the string k with letter 2, and test if optional
+    """split the string k with letters _to_, and test if optional
     id string is present
 
     """
@@ -996,80 +1009,24 @@ def create_connection(n: str, p: dict, M: any) -> None:
     if isinstance(scale, Q_):
         scale = scale.to("l/a").magnitude
 
-    # if name in M.dmo: # group already exist in this case we nee to update the
-    # connection group
+    name = f"{M.name}.CG_{source.name}_to_{sink.name}"
 
-    # Case one, no mixing, test if exist, otherwise create
-    # Case 2, mixing: test if forward connection exists, if not create
-    #                  test if backwards connection exists, or create
-
-    if not mix:
-
-        name = f"CG_{source.name}2{sink.name}"
-
-        # if M.debug:
-        #     print(
-        #         f"n = {n}, source: {source.full_name}, sink: {sink.full_name}, cid: {cid}, name = {name}"
-        #     )
-
-        update_or_create(
-            name,
-            source,
-            sink,
-            los,
-            typ,
-            scale,
-            rate,
-            ref_flux,
-            alpha,
-            delta,
-            cid,
-            M,
-            bypass,
-            species,
-        )
-
-    else:  # this is a connection with mixing
-        # create forward connection
-        name = f"CG_{source.name}2{sink.name}"
-
-        update_or_create(
-            name,
-            source,
-            sink,
-            los,
-            typ,
-            scale,
-            rate,
-            ref_flux,
-            alpha,
-            delta,
-            cid,
-            M,
-            bypass,
-            species,
-        )
-
-        # create backwards connection
-        name = f"CG_{sink.name}2{source.name}"
-        cid = cid.replace("_f", "_b")
-
-        update_or_create(
-            name,
-            sink,
-            source,
-            los,
-            typ,
-            scale,
-            rate,
-            ref_flux,
-            alpha,
-            delta,
-            cid,
-            M,
-            bypass,
-            species,
-        )
+    update_or_create(
+        name,
+        source,
+        sink,
+        los,
+        typ,
+        scale,
+        rate,
+        ref_flux,
+        alpha,
+        delta,
+        cid,
+        M,
+        bypass,
+        species,
+    )
 
 
 def update_or_create(
@@ -1092,20 +1049,12 @@ def update_or_create(
 
     from esbmtk import ConnectionGroup, Connect
 
-    if M.register == "local":
-        register = M
-    else:
-        register = "None"
-
-    if M.debug:
-        print(f"Looking up {name}")
-    # update connection if already known
-    if f"{name}" in M.lmo or f"{M.name}.{name}" in M.lmo:
-
+    if f"{name}" in M.lmo:
+        # remove model name before lookup
+        name = name.split(".")[1]
         cg = getattr(M, name)
 
-        if M.debug:
-            print(f"Connectiongroup is already known with full_name = {cg.full_name}")
+        print(f"updating {cg.full_name}")
 
         if isinstance(species, list):
             cg.update(
@@ -1148,6 +1097,8 @@ def update_or_create(
                 print(f"Added {g.name} to {cg.full_name}")
 
     else:  # create new connection group
+        print(f"creating {name}")
+
         cg = ConnectionGroup(
             # name=name,
             source=source,
@@ -1236,11 +1187,11 @@ def reverse_key(key: str) -> str:
     l = key.split("@")
     left = l[0]
     # right = l[1]
-    rs = left.split("2")
+    rs = left.split("_to_")
     r1 = rs[0]
     r2 = rs[1]
 
-    return f"{r2}2{r1}"
+    return f"{r2}_to_{r1}"
 
 
 def get_connection_keys(
@@ -1261,7 +1212,7 @@ def get_connection_keys(
 
     M4.CG_P_sb2P_ib.PO4.POP_F will become
 
-    P_sb2P_ib@POM_DIC
+    P_sb_to_P_ib@POM_DIC
 
     """
 
@@ -1274,7 +1225,7 @@ def get_connection_keys(
         if inverse:
             cn = reverse_key(cn)
         cn.replace(fstr, nstr)
-        cn = f"{cn}@{nstr}"
+        cn = f"{cn}_to_{nstr}"
         cl.append(cn)
 
     return cl
@@ -1297,7 +1248,7 @@ def gen_dict_entries(M: any, **kwargs) -> tuple:
 
     The optional inverse parameter, can be used where in cases where the
     flux direction needs to be reversed, i.e., the returned key will not read
-    sb2db@POM, but db2s@POM
+    sb_to_dbPOM, but db_to_sb@POM
 
     """
 
@@ -1615,7 +1566,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                 "zsnow": kwargs["zsnow"],  # 7 zsnow
                 "Fburial": 0.0,  # 8 carbonate burial
                 "Fburial12": 0.0,  # 9 carbonate burial 12C
-                "diss": 0.0, # dissolution flux
+                "diss": 0.0,  # dissolution flux
                 "Bm": 0.0,
             },
             function_input_data=List(
