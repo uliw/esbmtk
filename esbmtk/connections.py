@@ -1293,7 +1293,6 @@ class ConnectionGroup(esbmtkBase):
         self.cd: dict = {}  # connection dictionary
         # loop over speces
         for sp in self.connections:  # ["SO4", "H2S"]
-            print(f"Creating connection for {sp.name}, {sp.full_name}")
             self.cd[sp.n] = {
                 # "cid": self.id,
                 "cid": "None",
