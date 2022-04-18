@@ -53,7 +53,6 @@ def find_matching_strings(s: str, fl: list[str]) -> bool:
     otherwise False
 
     """
-
     for f in fl:
         if f not in s:
             return False
@@ -569,6 +568,8 @@ def make_dict(keys: list, values: list) -> dict:
     two lists
 
     """
+    d = dict()
+    
     if isinstance(values, list):
         if len(values) == len(keys):
             d: dict = dict(zip(keys, values))
@@ -985,136 +986,67 @@ def create_connection(n: str, p: dict, M: any) -> None:
     """
 
     from esbmtk import ConnectionGroup, Q_
+    from collections import namedtuple
 
     # get the reservoir handles by splitting the key
-    if M.debug:
-        print(f"key = {n}")
     source, sink, cid = split_key(n, M)
-
-    print(f"cid : {cid}")
     # create default connections parameters and replace with values in
     # the parameter dict if present.
     los = list(p["sp"]) if isinstance(p["sp"], list) else [p["sp"]]
-    typ = "None" if not "ty" in p else p["ty"]
+    ctype = "None" if not "ty" in p else p["ty"]
     scale = 1 if not "sc" in p else p["sc"]
     rate = Q_("0 mol/a") if not "ra" in p else p["ra"]
     ref_flux = "None" if not "re" in p else p["re"]
     alpha = "None" if not "al" in p else p["al"]
     delta = "None" if not "de" in p else p["de"]
-    mix = False if not "mx" in p else p["mx"]
-    cid = f"{cid}_f" if mix else f"{cid}"
+    cid = f"{cid}"
     bypass = "None" if not "bp" in p else p["bp"]
     species = "None" if not "sp" in p else p["sp"]
 
     if isinstance(scale, Q_):
         scale = scale.to("l/a").magnitude
 
+    # expand arguments
+    ctype = make_dict(los, ctype)
+    scale = make_dict(los, scale)  # get rate from dictionary
+    rate = make_dict(los, rate)
+    ref_flux = make_dict(los, ref_flux)
+    alpha = make_dict(los, alpha)
+    delta = make_dict(los, delta)
+    bypass = make_dict(los, bypass)
+    
+    # name of connectiongroup
     name = f"{M.name}.CG_{source.name}_to_{sink.name}"
-
-    update_or_create(
-        name,
-        source,
-        sink,
-        los,
-        typ,
-        scale,
-        rate,
-        ref_flux,
-        alpha,
-        delta,
-        cid,
-        M,
-        bypass,
-        species,
-    )
-
-
-def update_or_create(
-    name,
-    source,
-    sink,
-    los,
-    typ,
-    scale,
-    rate,
-    ref_flux,
-    alpha,
-    delta,
-    cid,
-    M,
-    bypass,
-    species,
-):
-    """Create or update connection"""
-
-    from esbmtk import ConnectionGroup, Connect
-
-    if f"{name}" in M.lmo:
-        # remove model name before lookup
-        name = name.split(".")[1]
-        cg = getattr(M, name)
-
-        print(f"updating {cg.full_name}")
-
-        if isinstance(species, list):
-            cg.update(
-                # name=name,
-                source=source,
-                sink=sink,
-                ctype=make_dict(los, typ),
-                scale=make_dict(los, scale),  # get rate from dictionary
-                rate=make_dict(los, rate),
-                ref_flux=make_dict(los, ref_flux),
-                alpha=make_dict(los, alpha),
-                delta=make_dict(los, delta),
-                bypass=make_dict(los, bypass),
-                register=M,
-                id=cid,  # get id from dictionary
-            )
-
-        else:
-            source = getattr(cg.source, f"{species.name}")
-            sink = getattr(cg.sink, f"{species.name}")
-            if M.debug:
-                print(f"source = {source.full_name},  sink = {sink.full_name}")
-
-            # #add new connection to the existing connection group
-            g = Connect(
-                # name=f"C_{id}",
-                source=source,
-                sink=sink,
-                ctype=typ,
-                scale=scale,  # get rate from dictionary
-                rate=rate,
-                ref_flux=ref_flux,
-                alpha=alpha,
-                delta=delta,
-                bypass=bypass,
-                register=cg,
-                id=cid,  # get id from dictionary
-            )
-            if M.debug:
-                print(f"Added {g.name} to {cg.full_name}")
-
-    else:  # create new connection group
-        print(f"creating {name}")
-
-        cg = ConnectionGroup(
-            # name=name,
+    if f"{name}" in M.lmo:  # Test if CG exists
+        # retriece CG object
+        cg = getattr(M, name.split(".")[1])
+        cg.add_connections(
             source=source,
             sink=sink,
-            ctype=make_dict(los, typ),
-            scale=make_dict(los, scale),  # get rate from dictionary
-            rate=make_dict(los, rate),
-            ref_flux=make_dict(los, ref_flux),
-            alpha=make_dict(los, alpha),
-            delta=make_dict(los, delta),
-            bypass=make_dict(los, bypass),
+            ctype=ctype,
+            scale=scale,  # get rate from dictionary
+            rate=rate,
+            ref_flux=ref_flux,
+            alpha=alpha,
+            delta=delta,
+            bypass=bypass,
             register=M,
             id=cid,  # get id from dictionary
         )
-        if M.debug:
-            print(f"created new connectiongroup with full_name = {cg.full_name}")
+    else:  # Create New ConnectionGroup
+        cg = ConnectionGroup(
+            source=source,
+            sink=sink,
+            ctype=ctype,
+            scale=scale,  # get rate from dictionary
+            rate=rate,
+            ref_flux=ref_flux,
+            alpha=alpha,
+            delta=delta,
+            bypass=bypass,
+            register=M,
+            id=cid,  # get id from dictionary
+        )
 
 
 def get_name_only(o: any) -> any:

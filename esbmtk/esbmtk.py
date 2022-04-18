@@ -47,6 +47,7 @@ from .utility_functions import (
     get_string_between_brackets,
     get_plot_layout,
     build_ct_dict,
+    find_matching_strings,
 )
 from .solver import (
     get_imass,
@@ -160,7 +161,7 @@ class input_parsing(object):
             reg = self.parent.model
             # check for naming conflicts
             if self.full_name in reg.lmo:
-                raise NameError(f"{self.full_name} is a duplicate name. Please fix")
+                raise NameError(f"{self.full_name} is a duplicate name in reg.lmo")
             else:
                 # register with model
                 reg.lmo.append(self.full_name)
@@ -749,6 +750,7 @@ class Model(esbmtkBase):
             "full_name": ["None", (str)],
             "parent": ["None", (str)],
             "isotopes": [False, (bool)],
+            "debug": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
@@ -798,7 +800,6 @@ class Model(esbmtkBase):
         self.los: list = []
         self.first_start = True  # keep track of repeated solver calls
         self.lof: list = []  # list of fluxes
-        self.debug: bool = False
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
@@ -1297,38 +1298,32 @@ class Model(esbmtkBase):
 
         Optional parameters:
 
-        index :int = i > 1 and i < number of timesteps -1
         filter_by :str = filter on flux name or part of flux name
-        exclude :str = None
         return: bool = True
+        exclude:str = exclude all results matching this string
 
         returns the sum of the fluxes, and a list
-        fluxes matching the filter_by string
+        fluxes matching the filter_by string.
+        words separated by blanks act as additional conditions
+                         i.e., all words must occur in a given name
 
         Example:
 
-        sum, names = M.flux_summary(filter_by="POP", return_list=True)
+        sum, names = M.flux_summary(filter_by="POP A_sb", return_list=True)
 
         """
 
+        fby = ""
         rl: list = []
-
-        if "index" in kwargs:
-            i: int = kwargs["index"]
-        else:
-            i: int = -3
-
-        if "filter_by" in kwargs:
-            fby: str = kwargs["filter_by"]
-        else:
-            fby: str = ""
+        exclude: str = ""
+        check_exlusion: bool = False
 
         if "exclude" in kwargs:
-            ex: str = kwargs["exclude"]
-            do_ex: bool = True
-        else:
-            do_ex: bool = False
-            ex = ""
+            exclude = kwargs["exclude"]
+            check_exlusion = True
+
+        if "filter_by" in kwargs:
+            fby: list = kwargs["filter_by"].split(" ")
 
         if "filter" in kwargs:
             raise ValueError("use filter_by instead of filter")
@@ -1340,14 +1335,10 @@ class Model(esbmtkBase):
             print(f"\n --- Flux Summary -- filtered by {fby}\n")
 
         for f in self.lof:  # loop over flux list
-            if fby in f.full_name:  # match on fby
-                # print(f"{fby} in {f.full_name}")
-                if do_ex:  # exclude argument present
-                    # print("do_ex = True")
-                    if ex in f.full_name:  # exclude if string matches
-                        # print(f"found {ex} in {f.full_name}")
-                        continue
-                    else:  # otherwise append
+
+            if find_matching_strings(f.full_name, fby):
+                if check_exlusion:
+                    if exclude not in f.full_name:
                         rl.append(f)
                         if not return_list:
                             print(f"{f.full_name}")
@@ -1367,13 +1358,15 @@ class Model(esbmtkBase):
         Optional parameters:
 
         filter_by :str = filter on flux name or part of flux name
+                         words separated by blanks act as additional conditions
+                         i.e., all words must occur in a given name
 
         """
 
         if "filter_by" in kwargs:
-            fby: str = kwargs["filter_by"]
+            fby: list = kwargs["filter_by"].split(" ")
         else:
-            fby: str = ""
+            fby: bool = False
 
         if "filter" in kwargs:
             raise ValueError("use filter_by instead of filter")
@@ -1392,10 +1385,12 @@ class Model(esbmtkBase):
         print(f"\n --- Connection Group Summary -- filtered by {fby}\n")
         print(f"       run the following command to see more details:\n")
 
-        for c in self.cg_list:
-            if fby in c.full_name:
-                print(f"{c.full_name}.info()")
+        # test if all words of the fby list occur in c.full_name. If yes,
 
+        for c in self.cg_list:
+            if fby != False:
+                if find_matching_strings(c.full_name, fby):
+                    print(f"{c.full_name}.info()")
         print("")
 
     def clear(self):
@@ -1575,7 +1570,7 @@ class ReservoirBase(esbmtkBase):
         else:
             self.pt: str = f"{self.register.name}_{self.n}"
             self.groupname = self.register.name
-            self.full_name = f"{self.register.name}.{self.n}"
+            # self.full_name = f"{self.register.name}.{self.n}"
         # else:
         #   self.pt = self.name
 
@@ -2212,7 +2207,7 @@ class Reservoir(ReservoirBase):
         # reservoir class in virtual reservoirs
         self.__aux_inits__()
 
-        if self.seawater_parameters != "None":
+        if self.seawater_parameters != "None" and isinstance(self.register, Model):
             if "temperature" in self.seawater_parameters:
                 temperature = self.seawater_parameters["temperature"]
             else:
@@ -2283,7 +2278,7 @@ class Flux(esbmtkBase):
     and heavy isotope flux, as well as the delta of the flux. This
     is typically handled through the Connect object. If you set it up manually
 
-    Flux = (name = "Name"
+    Flux = (name = "Name" # optional, defaults to _F
             species = species_handle,
             delta = any number,
             rate  = "12 mol/s" # must be a string
@@ -2334,8 +2329,8 @@ class Flux(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["species", "rate"]
-
+        self.lrk: list = ["species", "rate", "register"]
+        
         self.__initialize_keyword_variables__(kwargs)
 
         self.parent = self.register
@@ -2403,15 +2398,11 @@ class Flux(esbmtkBase):
         self.sink: str = ""  # Name of reservoir which acts as flux sink
 
         if self.name == "None":
-            self.name = f"{self.id}_F"
-        # if self.name == "None":
-        #     if self.mo.register == "None":  # global name_space
-        #         if self.register == "None":
-        #             self.full_name = self.name
-        #         else:
-        #             self.full_name = f"{self.register.full_name}.{self.name}"
-        #     else:  # local name_space
-        #         self.name = f"{self.id}_F"
+            if isinstance(self.parent, (Connection, Connect)):
+                self.name = "_F"
+                self.n = self.name
+            else:
+                self.name = f"{self.id}_F"
 
         self.__register_name_new__()
         # print(f"f name set to {self.name}. fn =  {self.full_name}\n")

@@ -15,9 +15,12 @@ generation of graphical results.
 * News
 
   - 0.8.0.0 Cleanup of naming scheme which is now strictly
-    hierarchical. I.e., species definitions are no longer part of the
-    Model (i.e., =M.DIC=), rather you have to write
-    =M.Carbon.DIC). This will break model code, but is easy to fix
+    hierarchical. Bulk connection dictionaries now have to be
+    specified as =source_to_sink= instead of =source2sink=. The
+    connection naming scheme has been revamped. Please see
+    =esbmtk.connect.__set_name__()= documentation for details. All of
+    this will break existing models
+    
 
   - 0.7.3.9 Moved to setuptools build system. Lost of code fixesWRT
     isotope calculations, minor fixes in the carbonate module.

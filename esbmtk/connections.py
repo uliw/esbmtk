@@ -53,19 +53,19 @@ class Connect(esbmtkBase):
      module creates the connecting flux and creates a connector object
      which stores all connection properties.
 
-     For simple connections, the type flux type is derived implcitly from the specified parameters.
-     For complex connections, the flux type must be set explicitly. See the examples below:
+     For simple connections, the type flux type is derived implcitly
+     from the specified parameters.  For complex connections, the flux
+     type must be set explicitly. See the examples below:
 
      Parameters:
-         - name: A string which determines the name of this object. Optional, if not provided
-           the connection name will be derived as "C_Source_2_Sink"
          - source: An object handle for a Source or Reservoir
          - sink: An object handle for a Sink or Reservoir
          - rate: A quantity (e.g., "1 mol/s"), optional
          - delta: The isotope ratio, optional
          - ref_reservoirs: Reservoir or flux reference
          - alpha: A fractionation factor, optional
-         - id: A string wich will become part of the object name, optional
+         - id: A string wich will become part of the object name, it will override
+           automatic name creation
          - plot: "yes" or "no", defaults to "yes"
          - signal: An object handle of signal, optional
          - pl: A list of process objects, optional
@@ -73,6 +73,9 @@ class Connect(esbmtkBase):
            reservoirs and fluxes
          - bypass :str optional defaults to "None" see scale with flux
          - save_flux_data: bool, defaults to model setting, unles specified
+
+    The connection name is derived automatically, see the documentation of
+    __set_name__() for details
 
      Connection Types:
      -----------------
@@ -278,7 +281,6 @@ class Connect(esbmtkBase):
 
         # provide a dict of all known keywords and their type
         self.lkk: Dict[str, any] = {
-            "name": str,
             "id": str,
             "source": (Source, Reservoir, GasReservoir),
             "sink": (Sink, Reservoir, GasReservoir),
@@ -312,7 +314,7 @@ class Connect(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["source", "sink"]
+        self.lrk: list = ["source", "sink", "register", "id"]
 
         # list of default values if none provided
         self.lod: Dict[any, any] = {
@@ -348,7 +350,6 @@ class Connect(esbmtkBase):
                 "a_value": "a number",
                 "ref_value": "a number, string, or quantity",
                 "b_value": "a number",
-                "name": "a string",
                 "id": "a string",
                 "plot": "a string",
                 "left": "Number, list or Reservoir",
@@ -368,8 +369,7 @@ class Connect(esbmtkBase):
 
         self.__validateandregister__(kwargs)
 
-        # if kwargs["id"] != "None":
-        #    self.name = self.name + f"_{self.id}"
+        self.parent = self.register
         if "pl" in kwargs:
             self.lop: list[Process] = self.pl
         else:
@@ -397,7 +397,6 @@ class Connect(esbmtkBase):
         # legacy names
         self.influx: int = 1
         self.outflux: int = -1
-        # self.n = self.name
         self.mo = self.source.sp.mo
         self.model = self.mo
         self.p = 0  # the default process handle
@@ -434,17 +433,13 @@ class Connect(esbmtkBase):
         # connection name
 
         self.__set_name__()  # get name of connection
-
+        self.__register_name_new__()  # register connection in namespace
         self.__create_flux__()  # Source/Sink/Regular
-
         self.__set_process_type__()  # derive flux type and create flux(es)
 
         # print(f"mo.reg = {self.mo.register}, slf reg = {self.register}")
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
-
-        self.parent = self.register
-        self.__register_name_new__()  # register connection in namespace
 
         self.source.loc.add(self)  # register connector with reservoir
         self.sink.loc.add(self)  # register connector with reservoir
@@ -453,29 +448,51 @@ class Connect(esbmtkBase):
         # This should probably move to register fluxes
         self.__register_process__()
 
-        # if self.register == "None":
-        #     print(f"Created connection {self.name}")
-        # else:
-        #     print(f"Created connection {self.register.name}.{self.name}")
-
         logging.info(f"Created {self.full_name}")
 
     def __set_name__(self):
-        """set connection name if not explicitly provided"""
+        """The connection name is derived according to the following scheme:
 
-        if self.id == "None":
-            self.id=""
-            
-        if self.register == "None":
-            if self.name == "None":
-                self.name = f"C_{self.source.name}_2_{self.sink.name}_{self.id}"
-                self.full_name = f"{self.mo.name}.{self.name}"
+        if manual connection
+            if sink and source species are equal
+               name = C_source2sink_species name
+            otherwise
+               name = C_source.species_name2sink.species_name
+
+        if parent == ConnectionGroup
+           if sink and source species are equal
+               name = species name
+            otherwise
+               name = source.species2sink.species
+
+        if id is set and id contains the species name, id will be
+        taken as as connection name, otherwise, append id to the name
+
+        """
+
+        # same species?
+        if self.sink.species.name == self.source.species.name:
+            self.name = f"{self.source.species.name}"
         else:
-            self.name = f"C_{self.source.species.name}_{self.id}"
-            self.full_name = f"{self.register.full_name}.{self.name}"
-       
-        self.base_name = self.full_name
-        self.n = self.name
+            self.name = f"{self.source.species.name}_to_{self.sink.species.name}"
+
+        # Connection by itself
+        if not isinstance(self.parent, ConnectionGroup):
+            self.name = f"C_{self.source.name}_to_{self.sink.name}_{self.name}"
+
+        # id set?
+        if self.id != "None":
+            if (self.source.species.name in self.id) or (
+                self.sink.species.name in self.id
+            ):
+                self.name = f"{self.id}"
+            else:
+                self.name = f"{self.name}_{self.id}"
+
+        # always overide name with id for manual connections
+        if not isinstance(self.parent, ConnectionGroup):
+            if self.id != "None":
+                self.name = f"{self.id}"
 
     def update(self, **kwargs):
         """Update connection properties. This will delete existing processes
@@ -509,7 +526,8 @@ class Connect(esbmtkBase):
             self.sp = self.r.sp  # get the parent species
 
     def __create_flux__(self) -> None:
-        """Create flux object, and register with reservoir and global namespace"""
+        """Create flux object, and register with reservoir and global
+        namespace"""
 
         # test if default arguments present
         if self.delta == "None":
@@ -532,7 +550,6 @@ class Connect(esbmtkBase):
             rate=r,  # flux value
             plot=self.plot,  # display this flux?
             register=self,  # is this part of a group?
-            # register=self.register,  # is this part of a group?
             isotopes=self.isotopes,
             id=self.id,
             save_flux_data=self.save_flux_data,
@@ -728,13 +745,13 @@ class Connect(esbmtkBase):
             # self.__vardeltaout__()
 
         # check if flux should bypass any reservoirs
-        
+
         if self.bypass == "source" and not isinstance(self.source, Source):
             self.source.lof.remove(self.fh)
         elif self.bypass == "sink" and not isinstance(self.sink, Sink):
             self.sink.lof.remove(self.fh)
             # print(f"removing {self.fh.full_name} from {self.sink.full_name} lof")
-       
+
         if self.save_flux_data:
             ph = SaveFluxData(
                 name=f"{self.fh.full_name}_Pfd",
@@ -1174,9 +1191,7 @@ class Connection(Connect):
 
 
 class ConnectionGroup(esbmtkBase):
-    """Name:
-
-        ConnectionGroup
+    """ConnectionGroup
 
         Connect reservoir/sink/source groups when at least one of the
         arguments is a reservoirs_group object. This method will
@@ -1217,131 +1232,69 @@ class ConnectionGroup(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
 
-        self.__parse_kwargs__(kwargs)
+        self.defaults: Dict[str, any] = {
+            "id": ["None", (str)],
+            "source": ["None", (str, SourceGroup, Reservoir, ReservoirGroup)],
+            "sink": ["None", (str, SinkGroup, Reservoir, ReservoirGroup)],
+            "delta": ["None", (str, dict, tuple, Number)],
+            "rate": ["None", (Q_, str, dict, tuple, Number)],
+            "pl": ["None", (str, dict, tuple)],
+            "signal": ["None", (str, Signal)],
+            "alpha": ["None", (str, dict, tuple, Number)],
+            "species": ["None", (str, dict, tuple, Species)],
+            "ctype": ["None", (str, dict, tuple)],
+            "ref_reservoirs": ["None", (str, dict, tuple, Reservoir)],
+            "ref_flux": ["None", (str, dict, tuple, Flux)],
+            "plot": ["yes", (str, dict, tuple)],
+            "scale": [1, (str, dict, tuple, Number)],
+            "bypass": ["None", (dict, tuple, str)],
+            "register": ["None", (str, tuple, Model)],
+            "save_flux_data": [False, (bool, tuple)],
+        }
+
+        # provide a list of absolutely required keywords
+        self.lrk: list = ["source", "sink", "register"]
+        self.__initialize_keyword_variables__(kwargs)
+
+        if self.save_flux_data == "None":
+            self.save_flux_data = self.register.save_flux_data
+            self.kwargs.update({"save_flux_data": self.register.save_flux_data})
 
         # # self.source.lor is a  list with the object names in the group
         self.mo = self.sink.lor[0].mo
         self.model = self.mo
         self.loc: list = []  # list of connection objects
 
-        if self.mo.debug:
-            print(f"mo.register = {self.mo.register}, register ={self.register.name}")
-            print(f"name = {self.name}")
-
-        if self.mo.register == "None":  # global name space
-            if self.register == "None":
-                if self.name == "None":  # set connection group name
-                    self.name = f"CG_{self.source.name}2{self.sink.name}{self.id}"
-
-                self.full_name = f"{self.mo.name}.{self.name}"
-                if self.mo.debug:
-                    print(f"1 fn = {self.full_name}")
-            else:  # with registration
-                if self.name == "None":
-                    self.name = f"CG_{self.source.name}2{self.sink.name}{self.id}"
-
-                self.full_name = f"{self.mo.name}.{self.name}"
-                if self.mo.debug:
-                    print(f"2 fn = {self.full_name}")
-        else:  # local name_space registration
-            if self.name == "None":
-                self.name = f"CG_{self.source.name}2{self.sink.name}"
-                if self.mo.debug:
-                    print(f"3 setting name = {self.name}")
-            self.full_name = f"{self.mo.name}.{self.name}"
-            if self.mo.debug:
-                print(f"4 fn = {self.full_name}")
-
-        if self.mo.debug:
-            print(f"5 fn = {self.full_name}")
-
+        self.name = f"CG_{self.source.name}_to_{self.sink.name}"
         self.base_name = self.name
-        kwargs.update({"name": self.name})  # and add it to the kwargs
-        
-
-        # register connection group in global namespace
-        # m_type="mass_only",
-        if self.mo.register == "local" and self.register == "None":
-            self.register = self.mo
-
         self.parent = self.register
         self.__register_name_new__()
-
-        logging.info(f"Created {self.name}")
         self.__create_connections__()
 
-    def update(self, **kwargs) -> None:
-        """Add a connection to the connection group
-        This will overwrite the original kwargs though
+    def add_connections(self, **kwargs) -> None:
+        """Add connections to the connection group"""
 
-        """
-
-        full_name = self.full_name
-        self.__parse_kwargs__(kwargs)
-        self.full_name = full_name
+        self.__initialize_keyword_variables__(kwargs)
         self.__create_connections__()
-
-    def __parse_kwargs__(self, kwargs) -> None:
-        """
-        Parse and register the keyword arguments
-
-        """
-        # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            "id": str,
-            "name": str,
-            "source": (SourceGroup, ReservoirGroup),
-            "sink": (SinkGroup, ReservoirGroup),
-            "delta": dict,
-            "rate": dict,
-            "pl": dict,
-            "signal": Signal,
-            "alpha": dict,
-            "species": dict,
-            "ctype": dict,
-            "ref_reservoirs": dict,
-            "ref_flux": dict,
-            "plot": dict,
-            "scale": dict,
-            "bypass": (dict, str),
-            "register": any,
-            "save_flux_data": (bool, str),
-        }
-
-        # list of default values if none provided
-        self.lod: Dict[any, any] = {
-            "name": "None",
-            "id": "",
-            "register": "None",
-            "save_flux_data": "None",
-        }
-
-        # provide a list of absolutely required keywords
-        self.lrk: list = ["source", "sink"]
-        self.__validateandregister__(kwargs)
-
-        if self.save_flux_data == "None":
-            self.save_flux_data = self.register.save_flux_data
-            self.kwargs.update({"save_flux_data": self.register.save_flux_data})
 
     def __create_connections__(self) -> None:
         """Create Connections"""
+
         # find all sub reservoirs which have been specified by the ctype keyword
         self.connections: list = []
-        for r in self.source.lor:
-            if self.ctype == "None":
+        for r, t in self.ctype.items():
+            if t == "None":
                 raise ValueError(
                     f"Connectiongroup {self.name} must specify 'ctype'. See help(Connectiongroup)"
                 )
-            if r.sp in self.ctype:
-                self.connections.append(r)
-                logging.debug(f"found species {r.sp.n}")
+            self.connections.append(r)
 
         # now we need to create defaults for all connections
-        # we setup a dict like this  {SO4:{cid:xxx,plot:xxx}}
         self.cd: dict = {}  # connection dictionary
-        for r in self.connections:  # ["SO4", "H2S"]
-            self.cd[r.n] = {
+        # loop over speces
+        for sp in self.connections:  # ["SO4", "H2S"]
+            print(f"Creating connection for {sp.name}, {sp.full_name}")
+            self.cd[sp.n] = {
                 # "cid": self.id,
                 "cid": "None",
                 "plot": "yes",
@@ -1355,41 +1308,29 @@ class ConnectionGroup(esbmtkBase):
                 "bypass": "None",
             }
 
-            # print(f"self.cd[r.n] = {self.cd[r.n]}")
-
             # test defaults against actual keyword value
-            for kcd, vcd in self.cd[r.n].items():
+            for kcd, vcd in self.cd[sp.n].items():
                 if kcd in self.kwargs:  # found entry like ctype
-                    if r.sp in self.kwargs[kcd]:  # {SO4: xxx}
+                    if r in self.kwargs[kcd]:  # {SO4: xxx}
                         # update the entry
-                        self.cd[r.n][kcd] = self.kwargs[kcd][r.sp]
-            # now we can create the connection
+                        self.cd[sp.n][kcd] = self.kwargs[kcd][sp]
 
-            # print(self.cd)
-            # name = f"{r.n}"
-
-            if self.full_name == "None":
-                register = self.mo
-            else:
-                register = self
-
-            print(f"connection id = {self.id}")
             a = Connect(
-                source=getattr(self.source, r.n),
-                sink=getattr(self.sink, r.n),
-                rate=self.cd[r.n]["rate"],
-                delta=self.cd[r.n]["delta"],
-                alpha=self.cd[r.n]["alpha"],
-                plot=self.cd[r.n]["plot"],
-                ctype=self.cd[r.n]["ctype"],
-                scale=self.cd[r.n]["scale"],
-                bypass=self.cd[r.n]["bypass"],
-                ref_reservoirs=self.cd[r.n]["ref_reservoirs"],
-                ref_flux=self.cd[r.n]["ref_flux"],
+                source=getattr(self.source, sp.n),
+                sink=getattr(self.sink, sp.n),
+                rate=self.cd[sp.n]["rate"],
+                delta=self.cd[sp.n]["delta"],
+                alpha=self.cd[sp.n]["alpha"],
+                plot=self.cd[sp.n]["plot"],
+                ctype=self.cd[sp.n]["ctype"],
+                scale=self.cd[sp.n]["scale"],
+                bypass=self.cd[sp.n]["bypass"],
+                ref_reservoirs=self.cd[sp.n]["ref_reservoirs"],
+                ref_flux=self.cd[sp.n]["ref_flux"],
                 save_flux_data=self.save_flux_data,
                 groupname=True,
                 id=self.id,
-                register=register,
+                register=self,
             )
 
             ## add connection to list of connections
@@ -1428,6 +1369,7 @@ class AirSeaExchange(esbmtkBase):
         id = str, optional
         water_vapor_pressure=Ocean.swc.p_H2O,
         ref_quantity = optional
+        register = Model
         )
 
     In some cases the gas flux does not depend on the main reservoir species
@@ -1441,19 +1383,42 @@ class AirSeaExchange(esbmtkBase):
 
         from .utility_functions import check_for_quantity
 
+        self.defaults: dict[str, list[str, tuple]] = {
+            "gas_reservoir": ["None", (str, GasReservoir)],
+            "liquid_reservoir": ["None", (str, Reservoir)],
+            "solubility": ["None", (str, float)],
+            "piston_velocity": ["None", (str, Q_)],
+            "area": [0.0, (float)],
+            "id": ["None", (str)],
+            "name": ["None", (str)],
+            "water_vapor_pressure": [0, (Number, np.float64)],
+            "ref_species": ["None", (Reservoir, Number, np.float64, np.ndarray)],
+            "species": ["None", (Species, str)],
+            "register": ["None", (str, Model)],
+        }
+        # provide a list of absolutely required keywords
+        self.lrk: list[str] = [
+            "gas_reservoir",
+            "liquid_reservoir",
+            "solubility",
+            "piston_velocity",
+            "area",
+            "water_vapor_pressure",
+            "species",
+            "register",
+        ]
+        self.__initialize_keyword_variables__(kwargs)
+
+        self.__misc_inits__()
+        
         self.lof: list = []
-
-        self.__check_keywords__(kwargs)
-
         self.scale = self.area * self.piston_velocity
 
         # create connection and flux name
-        cname = f"C_{self.lr.register.name}_2_{self.gr.name}"
+        self.name = f"C_{self.lr.register.name}_to_{self.gr.name}"
+        self.parent = self.register
+        self.__register_name_new__()
         
-        # print(f"Using fname = {fname}")
-        self.name = cname
-        self.full_name = cname
-
         # initalize a flux instance
         self.fh = Flux(
             species=self.species,  # Species handle
@@ -1461,6 +1426,7 @@ class AirSeaExchange(esbmtkBase):
             rate="0 mol/a",  # flux value
             register=self,  # register with this connection
             isotopes=self.isotopes,
+            id = self.id,
         )
         # register flux with liquid reservoir
         self.lr.lof.append(self.fh)
@@ -1492,14 +1458,8 @@ class AirSeaExchange(esbmtkBase):
             isotopes=True,
         )
 
-        if self.mo.register == "local" and self.register == "None":
-            self.register = self.mo
-
-        self.parent = self.register
-        self.__register_name_new__()
         # register process with reservoir
         ph.__register__(self.lr, self.fh)
-
         # register connector with liquid reservoirgroup
         # spr = getattr(self.lr, self.lr.name)
         self.lr.loc.add(self)
@@ -1507,51 +1467,11 @@ class AirSeaExchange(esbmtkBase):
         self.gr.loc.add(self)
         # register connector with model
         self.mo.loc.add(self)
+       
 
-        logging.info(f"Created {self.full_name}")
-
-    def __check_keywords__(self, kwargs) -> None:
-        # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            "gas_reservoir": GasReservoir,
-            "liquid_reservoir": Reservoir,
-            "solubility": float,
-            "piston_velocity": (str, Q_),
-            "area": float,
-            "id": str,
-            "name": str,
-            "water_vapor_pressure": (Number, np.float64),
-            "ref_species": (Reservoir, Number, np.float64, np.ndarray),
-            "species": (Species, str),
-        }
-
-        # provide a list of absolutely required keywords
-        self.lrk: list[str] = [
-            "gas_reservoir",
-            "liquid_reservoir",
-            "solubility",
-            "piston_velocity",
-            "area",
-            "water_vapor_pressure",
-            "species",
-        ]
-
-        # list of default values if none provided
-        self.lod: Dict[str, any] = {"id": "None"}
-        self.__initerrormessages__()
-        self.bem.update(
-            {
-                "gas_reservoir": "must be a Reservoir",
-                "liquid_reservoir": "must be a Reservoir",
-                "solubility": "must be a float number",
-                "piston_velocity": "must be a float number",
-                "area": "must be a float number",
-                "name": "None",
-                "ref_species": "None",
-            }
-        )
-
-        self.__validateandregister__(kwargs)
+    def __misc_inits__(self) -> None:
+        """ Bits and pices of house keeping
+        """
 
         # make sure piston velocity is in the right units
         self.piston_velocity = check_for_quantity(self.piston_velocity)
@@ -1577,25 +1497,7 @@ class AirSeaExchange(esbmtkBase):
         else:
             raise ValueError(f"{self.species.name} not implemented yet")
 
-        if isinstance(self.lr.register, ReservoirGroup):
-            n = self.lr.register.name
-        else:
-            n = self.lr.name
-
-        self.name = f"GC_{n}_2_{self.gr.name}_{self.species.name}"
-
-        if self.id == "None" or self.id == "":
-            pass
-        else:
-            self.name = f"{self.name}_{self.id}"
-
-        if self.register == "None":
-            self.full_name = self.name
-        else:
-            self.full_name = f"{self.register.full_name}.{self.name}"
-
-        self.base_name = self.name
-
+        
         # decide if this connection needs isotope calculations
         if self.gas_reservoir.isotopes:
             self.isotopes = True
