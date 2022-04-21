@@ -20,6 +20,7 @@ import math
 
 from .esbmtk import (
     esbmtkBase,
+    Model,
     ReservoirBase,
     Reservoir,
     Species,
@@ -214,7 +215,7 @@ class ReservoirGroup(esbmtkBase):
         self.__register_name__()
 
         self.model = self.mo
-        
+
         # dict with all default values
         self.cd: dict = {}
         for s in self.species:
@@ -528,6 +529,7 @@ class Signal(esbmtkBase):
                  reservoir = r-handle # optional, see below
                  source = s-handle optional, see below
                  display_precision = number, optional, inherited from Model
+                 register,
                 )
 
     Signals are cumulative, i.e., complex signals ar created by
@@ -576,24 +578,28 @@ class Signal(esbmtkBase):
         from . import ureg, Q_
 
         # provide a list of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            "name": str,
-            "start": str,
-            "duration": str,
-            "species": Species,
-            "delta": Number,
-            "stype": str,
-            "shape": str,
-            "filename": str,
-            "mass": str,
-            "magnitude": (str, Q_),
-            "offset": str,
-            "plot": str,
-            "scale": Number,
-            "display_precision": Number,
-            "reservoir": (Reservoir, str),
-            "source": (Source, str),
-            "legend_right": str,
+        self.defaults: dict[str, list[any, tuple]] = {
+            "name": ["None", (str)],
+            "start": ["0 yrs", (str, Q_)],
+            "duration": ["1 yr", (str, Q_)],
+            "species": ["None", (Species)],
+            "delta": [0, (Number)],
+            "stype": [
+                "addition",
+                (str),
+            ],
+            "shape": ["None", (str)],
+            "filename": ["None", (str)],
+            "mass": ["None", (str, Q_)],
+            "magnitude": ["None", (str, Q_)],
+            "offset": ["0 yrs", (str, Q_)],
+            "plot": ["no", (str)],
+            "scale": [1, (Number)],
+            "display_precision": [0.01, (Number)],
+            "reservoir": ["None", (Source, Sink, Reservoir, str)],
+            "source": ["None", (Source, Sink, Reservoir, str)],
+            "legend_right": ["None", (str)],
+            "register": ["None", (str, Model)],
         }
 
         # provide a list of absolutely required keywords
@@ -603,33 +609,10 @@ class Signal(esbmtkBase):
             "species",
             ["shape", "filename"],
             ["magnitude", "mass", "filename"],
+            "register",
         ]
 
-        # list of default values if none provided
-        self.lod: Dict[str, any] = {
-            "start": "0 yrs",
-            "stype": "addition",
-            "shape": "external_data",
-            "offset": "0 yrs",
-            "duration": "0 yrs",
-            "plot": "no",
-            "delta": 0,
-            "scale": 1,
-            "display_precision": 0,
-            "reservoir": "None",
-            "source": "None",
-            "legend_right": "delta",
-        }
-
-        self.__initerrormessages__()
-        self.bem.update(
-            {
-                "data": "a string",
-                "magnitude": "Number",
-                "scale": "Number",
-            }
-        )
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__initialize_keyword_variables__(kwargs)
 
         # list of signals we are based on
         self.los: List[Signal] = []
@@ -650,10 +633,13 @@ class Signal(esbmtkBase):
         self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
 
         # legacy name definitions
+        self.full_name = ""
         self.l: int = self.duration
         self.n: str = self.name  # the name of the this signal
         self.sp: Species = self.species  # the species
         self.mo: Model = self.species.mo  # the model handle
+        self.model = self.mo
+        self.parent = self.register
         self.ty: str = self.stype  # type of signal
         self.sh: str = self.shape  # shape the event
         self.d: float = self.delta  # delta value offset during the event
@@ -671,7 +657,7 @@ class Signal(esbmtkBase):
         # self.data.li = get_l_mass(self.data.m, self.data.d, self.sp.r)
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
-        self.__register_name__()
+        self.__register_name_new__()
         self.mo.los.append(self)  # register with model
 
         # in case we deal with a sink or source signal
@@ -1976,7 +1962,7 @@ class GasReservoir(ReservoirBase):
     def __set_without_isotopes__(self, i: int, value: float) -> None:
         """write data by index"""
         self.m[i]: float = value[0]
-        #self.c[i]: float = self.m[i] / self.v[i]  # update concentration
+        # self.c[i]: float = self.m[i] / self.v[i]  # update concentration
         # self.v[i]: float = self.v[i - 1] + value[0]
 
 
