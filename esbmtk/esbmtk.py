@@ -1371,8 +1371,9 @@ class Model(esbmtkBase):
         if "filter" in kwargs:
             raise ValueError("use filter_by instead of filter")
 
+        print(f"fby = {fby}")
         self.cg_list: list = []
-        # extract all connection groups. Note that loc contains all conections
+        # extract all connection groups. Note that loc contains all connections
         # i.e., not connection groups.
         for c in list(self.loc):
             # if "." in c.full_name:
@@ -1388,9 +1389,12 @@ class Model(esbmtkBase):
         # test if all words of the fby list occur in c.full_name. If yes,
 
         for c in self.cg_list:
-            if fby != False:
+            if not fby:
+                print(f"{c.full_name}.info()")
+            else:
                 if find_matching_strings(c.full_name, fby):
                     print(f"{c.full_name}.info()")
+                   
         print("")
 
     def clear(self):
@@ -2123,6 +2127,7 @@ class Reservoir(ReservoirBase):
             "full_name": ["None", (str)],
             "seawater_parameters": ["None", (dict, str)],
             "isotopes": [False, (bool)],
+            "ideal_water": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
@@ -2154,13 +2159,49 @@ class Reservoir(ReservoirBase):
         # This should probably be species specific?
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
 
+        if self.ideal_water:
+            self.density = 1
+        else:
+            if isinstance(self.parent, ReservoirGroup):
+                self.swc = self.parent.swc
+                self.density = self.swc.density
+            else:
+                if "None" in self.seawater_parameters.keys():
+                    temperature = 25
+                    salinity = 35
+                    pressure = 1
+                else:
+                    if "temperature" in self.seawater_parameters:
+                        temperature = self.seawater_parameters["temperature"]
+                    else:
+                        temperature = 25
+                    if "salinity" in self.seawater_parameters:
+                        salinity = self.seawater_parameters["salinity"]
+                    else:
+                        salinity = 35
+                    if "pressure" in self.seawater_parameters:
+                        pressure = self.seawater_parameters["pressure"]
+                    else:
+                        pressure = 1
+
+                SeawaterConstants(
+                    name="swc",
+                    model=self.mo,
+                    temperature=temperature,
+                    pressure=pressure,
+                    salinity=salinity,
+                    register=self,
+                    units=self.mo.c_unit,
+                )
+                self.density = self.swc.density
+
+        self.state = 0
+
         if self.mass == "None":
             c = Q_(self.concentration)
             self.plt_units = c.units
             self._concentration: Number = c.to(self.mo.c_unit).magnitude
-            self.mass: Number = (
-                self._concentration * self.volume * self.parent.swc.density / 1000
-            )
+            self.mass: Number = self._concentration * self.volume * self.density / 1000
             self.display_as = "concentration"
         elif self.concentration == "None":
             m = Q_(self.mass)
@@ -2207,32 +2248,6 @@ class Reservoir(ReservoirBase):
         # reservoir class in virtual reservoirs
         self.__aux_inits__()
 
-        if self.seawater_parameters != "None" and isinstance(self.register, Model):
-            if "temperature" in self.seawater_parameters:
-                temperature = self.seawater_parameters["temperature"]
-            else:
-                temperature = 25
-            if "salinity" in self.seawater_parameters:
-                salinity = self.seawater_parameters["salinity"]
-            else:
-                salinity = 35
-            if "pressure" in self.seawater_parameters:
-                pressure = self.seawater_parameters["pressure"]
-            else:
-                pressure = 1
-
-            SeawaterConstants(
-                name="swc",
-                model=self.mo,
-                temperature=temperature,
-                pressure=pressure,
-                salinity=salinity,
-                register=self,
-                units=self.mo.c_unit,
-            )
-
-        self.state = 0
-
     @property
     def concentration(self) -> float:
         return self._concentration
@@ -2250,7 +2265,7 @@ class Reservoir(ReservoirBase):
         if self.update and c != "None":
             self._concentration: float = c.to(self.mo.c_unit).magnitude
             self.mass: float = (
-                self._concentration * self.volume * self.parent.swc.density / 1000
+                self._concentration * self.volume * self.density / 1000
             )  # caculate mass
             self.c = self.c * 0 + self._concentration
             self.m = self.m * 0 + self.mass
@@ -2321,6 +2336,7 @@ class Flux(esbmtkBase):
                     Connection,
                     Connect,
                     AirSeaExchange,
+                    Signal,
                 ),
             ],
             "save_flux_data": [False, (bool)],
@@ -2330,7 +2346,7 @@ class Flux(esbmtkBase):
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["species", "rate", "register"]
-        
+
         self.__initialize_keyword_variables__(kwargs)
 
         self.parent = self.register
@@ -2583,7 +2599,14 @@ class SourceSink(esbmtkBase):
             "name": str,
             "species": Species,
             "display_precision": Number,
-            "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+            "register": (
+                SourceGroup,
+                SinkGroup,
+                ReservoirGroup,
+                ConnectionGroup,
+                Model,
+                str,
+            ),
             "delta": (Number, str),
             "isotopes": bool,
         }

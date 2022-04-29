@@ -19,7 +19,10 @@ generation of graphical results.
     specified as =source_to_sink= instead of =source2sink=. The
     connection naming scheme has been revamped. Please see
     =esbmtk.connect.__set_name__()= documentation for details. All of
-    this will break existing models
+    this will break existing models. The flux and connection summary
+    methods can be filtered by more than one keyword. Provide a filter
+    string in the following format ="keyword_1 keyword_2= in it will
+    only return results that match both keywords.
     
 
   - 0.7.3.9 Moved to setuptools build system. Lost of code fixesWRT

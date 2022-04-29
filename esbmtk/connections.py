@@ -690,7 +690,7 @@ class Connect(esbmtkBase):
             self._rate = "0 mmol/y"
 
         # if connection type is not set explicitly
-        if self.ctype == "None" or self.ctype == "Regular":
+        if self.ctype == "None" or self.ctype.casefold() == "regular":
             # set the fundamental flux type based on the flux arguments given
             if self.delta != "None" and self.rate != "None":
                 # self.__vardeltaout__()
