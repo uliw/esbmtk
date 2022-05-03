@@ -631,6 +631,7 @@ class Model(esbmtkBase):
                       step_limit = optional, see below
                       register = 'local', see below
                       save_flux_data = False, see below
+                      ideal_water = False
                     )
 
     ref_time:  will offset the time axis by the specified
@@ -751,6 +752,7 @@ class Model(esbmtkBase):
             "parent": ["None", (str)],
             "isotopes": [False, (bool)],
             "debug": [False, (bool)],
+            "ideal_water": [True],
         }
 
         # provide a list of absolutely required keywords
@@ -2126,7 +2128,7 @@ class Reservoir(ReservoirBase):
             "full_name": ["None", (str)],
             "seawater_parameters": ["None", (dict, str)],
             "isotopes": [False, (bool)],
-            "ideal_water": [False, (bool)],
+            "ideal_water": ["None", (str, bool)],
         }
 
         # provide a list of absolutely required keywords
@@ -2158,6 +2160,7 @@ class Reservoir(ReservoirBase):
         # This should probably be species specific?
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
 
+        self.ideal_water = self.mo.ideal_water
         if self.ideal_water:
             self.density = 1
         else:
