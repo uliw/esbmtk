@@ -1299,17 +1299,16 @@ class Model(esbmtkBase):
         Optional parameters:
 
         filter_by :str = filter on flux name or part of flux name
-        return: bool = True
+                         words separated by blanks act as additional
+                         conditions, i.e., all words must occur in a given name
+        
+        return_list: bool = False, if True return a list of fluxes matching the filter_by string.
+        
         exclude:str = exclude all results matching this string
-
-        returns the sum of the fluxes, and a list
-        fluxes matching the filter_by string.
-        words separated by blanks act as additional conditions
-                         i.e., all words must occur in a given name
 
         Example:
 
-        sum, names = M.flux_summary(filter_by="POP A_sb", return_list=True)
+              names = M.flux_summary(filter_by="POP A_sb", return_list=True)
 
         """
 
