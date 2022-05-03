@@ -1301,9 +1301,9 @@ class Model(esbmtkBase):
         filter_by :str = filter on flux name or part of flux name
                          words separated by blanks act as additional
                          conditions, i.e., all words must occur in a given name
-        
+
         return_list: bool = False, if True return a list of fluxes matching the filter_by string.
-        
+
         exclude:str = exclude all results matching this string
 
         Example:
@@ -1393,7 +1393,7 @@ class Model(esbmtkBase):
             else:
                 if find_matching_strings(c.full_name, fby):
                     print(f"{c.full_name}.info()")
-                   
+
         print("")
 
     def clear(self):
@@ -2592,52 +2592,38 @@ class SourceSink(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
 
-        self._delta = "None"
-        # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            "name": str,
-            "species": Species,
-            "display_precision": Number,
-            "register": (
-                SourceGroup,
-                SinkGroup,
-                ReservoirGroup,
-                ConnectionGroup,
-                Model,
-                str,
-            ),
-            "delta": (Number, str),
-            "isotopes": bool,
+        self.defaults: dict[str, list[any, tuple]] = {
+            "name": ["None", (str)],
+            "species": ["None", (str, Species)],
+            "display_precision": [0.01, (Number)],
+            "register": [
+                "None",
+                (
+                    SourceGroup,
+                    SinkGroup,
+                    ReservoirGroup,
+                    ConnectionGroup,
+                    Model,
+                    str,
+                ),
+            ],
+            "delta": ["None", (str, Number)],
+            "isotopes": [False, (bool)],
         }
-
-        # variables which are properties
-        self.drn = {
-            "delta": "_delta",
-        }
-
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species"]
-
-        # list of default values if none provided
-        self.lod: Dict[str, any] = {
-            "display_precision": 0,
-            "delta": "None",
-            "isotopes": False,
-            "register": "None",
-        }
-
-        self.__initerrormessages__()
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__initialize_keyword_variables__(kwargs)
 
         self.loc: set[Connection] = set()  # set of connection objects
 
         # legacy names
         # if self.register != "None":
         #    self.full_name = f"{self.name}.{self.register.name}"
-
+        self.parent = self.register
         self.n = self.name
         self.sp = self.species
         self.mo = self.species.mo
+        self.model = self.species.mo
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
         self.lio: list = []
 
@@ -2653,7 +2639,7 @@ class SourceSink(esbmtkBase):
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
-        self.__register_name__()
+        self.__register_name_new__()
 
     @property
     def delta(self):
