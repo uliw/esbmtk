@@ -439,6 +439,7 @@ class SourceSinkGroup(esbmtkBase):
 
         # register this object in the global namespace
         self.mo = self.species[0].mo  # get model handle
+        self.model = self.species[0].mo
 
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
@@ -803,10 +804,10 @@ class Signal(esbmtkBase):
         mu: float = 0
         phi: float = c / 4
 
-        a = -((x - mu) ** 2) / (2 * phi ** 2)
+        a = -((x - mu) ** 2) / (2 * phi**2)
 
         # get bell curve
-        self.s_m = 1 / (phi * math.sqrt(2 * pi)) * e ** a
+        self.s_m = 1 / (phi * math.sqrt(2 * pi)) * e**a
         self.s_d = self.s_m * self.delta / max(self.s_m)
         self.s_l = self.s_m
 
