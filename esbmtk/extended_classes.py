@@ -628,8 +628,7 @@ class Signal(esbmtkBase):
         elif "magnitude" in self.kwargs:
             self.magnitude = Q_(self.magnitude).to(self.species.mo.f_unit).magnitude
 
-        if "duration" in self.kwargs:
-            self.duration = int(Q_(self.duration).to(self.species.mo.t_unit).magnitude)
+        self.duration = int(Q_(self.duration).to(self.species.mo.t_unit).magnitude)
 
         self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
 
