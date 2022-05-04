@@ -752,7 +752,7 @@ class Model(esbmtkBase):
             "parent": ["None", (str)],
             "isotopes": [False, (bool)],
             "debug": [False, (bool)],
-            "ideal_water": [True],
+            "ideal_water": [True, (bool)],
         }
 
         # provide a list of absolutely required keywords
@@ -2614,7 +2614,7 @@ class SourceSink(esbmtkBase):
             "isotopes": [False, (bool)],
         }
         # provide a list of absolutely required keywords
-        self.lrk: list[str] = ["name", "species"]
+        self.lrk: list[str] = ["name", "species", "register"]
         self.__initialize_keyword_variables__(kwargs)
 
         self.loc: set[Connection] = set()  # set of connection objects
@@ -2657,7 +2657,7 @@ class SourceSink(esbmtkBase):
             self.m = 1
             self.l = get_l_mass(self.m, d, self.species.r)
             self.c = self.l / (self.m - self.l)
-            self.provided_kwargs.update({"delta": d})
+            #self.provided_kwargs.update({"delta": d})
 
 
 class Sink(SourceSink):
