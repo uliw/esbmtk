@@ -140,7 +140,7 @@ class input_parsing(object):
                 raise ValueError(f"{key} is not a valid key")
             if not isinstance(value, defaults[key][1]):
                 raise TypeError(
-                    f"{key} must be of type {defaults[key][1]}, not {type(value)}"
+                    f"{value} for {key} must be of type {defaults[key][1]}, not {type(value)}"
                 )
 
             defaults[key][0] = value  # update defaults dictionary
