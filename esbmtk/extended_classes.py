@@ -1,12 +1,8 @@
 # from numbers import Number
 
-# from nptyping import NDArray, Float64
-# from typing import *
-from numpy import array, set_printoptions, arange, zeros, interp, mean
+# from nptyping import np.ndarray, Float64
+import typing as tp
 from pandas import DataFrame
-from copy import deepcopy, copy
-import time
-from time import process_time
 from numba.typed import List
 import numba
 from numba.core import types as nbt
@@ -15,7 +11,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import logging
-import builtins
 import os
 import math
 
@@ -136,6 +131,7 @@ class ReservoirGroup(esbmtkBase):
         self.lrk: list = [
             "name",
             ["volume", "geometry"],
+            "register",
         ]
 
         # list of default values if none provided
@@ -172,6 +168,7 @@ class ReservoirGroup(esbmtkBase):
         # legacy variable
         self.n = self.name
         self.mo = self.species[0].mo
+        self.model = self.species[0].mo
 
         # geoemtry information
         if self.volume == "None":
@@ -354,7 +351,7 @@ class SourceSink(esbmtkBase):
         self.lkk: dict[str, any] = {
             "name": str,
             "species": Species,
-            "display_precision": tp.Union[int, float],
+            "display_precision": (int, float),
             "register": any,
             "delta": (int, float, str),
             "isotopes": bool,
@@ -777,14 +774,14 @@ class Signal(esbmtkBase):
 
         # create pyramid
         c: int = int(round((e - s) / 2))  # get the center index for the peak
-        x: np.ndarray = array([0, c, e - s])  # setup the x coordinates
-        y: np.ndarray = array([0, h, 0])  # setup the y coordinates
+        x: np.ndarray = np.array([0, c, e - s])  # setup the x coordinates
+        y: np.ndarray = np.array([0, h, 0])  # setup the y coordinates
 
-        d: np.ndarray = array([0, self.d, 0])  # setup the d coordinates
+        d: np.ndarray = np.array([0, self.d, 0])  # setup the d coordinates
         xi = np.arange(0, e - s)  # setup the points at which to interpolate
 
-        self.s_m: np.ndarray = interp(xi, x, y)  # interpolate flux
-        self.s_d: np.ndarray = interp(xi, x, d)  # interpolate delta
+        self.s_m: np.ndarray = np.interp(xi, x, y)  # interpolate flux
+        self.s_d: np.ndarray = np.interp(xi, x, d)  # interpolate delta
         self.s_l = get_l_mass(self.s_m, self.s_d, self.sp.r)
 
     def __bell__(self, s, e) -> None:
@@ -868,9 +865,11 @@ class Signal(esbmtkBase):
         # setup the points at which to interpolate
         xi = np.linspace(self.st, self.et, num_steps)
 
-        self.s_m: np.ndarray = interp(xi, self.s_time, self.s_data)  # interpolate flux
+        self.s_m: np.ndarray = np.interp(
+            xi, self.s_time, self.s_data
+        )  # interpolate flux
         if zh:
-            self.s_d: np.ndarray = interp(xi, self.s_time, self.s_delta)
+            self.s_d: np.ndarray = np.interp(xi, self.s_time, self.s_delta)
             self.s_l = get_l_mass(self.s_m, self.s_d, self.sp.r)
         else:
             self.s_l: np.ndarray = np.zeros(num_steps)
@@ -1054,7 +1053,7 @@ class DataField(esbmtkBase):
             "y2_label": str,
             "y2_legend": (str, list),
             "common_y_scale": str,
-            "display_precision": tp.Union[int, float],
+            "display_precision": (int, float),
         }
 
         # provide a list of absolutely required keywords
@@ -1247,7 +1246,7 @@ class Reservoir_no_set(ReservoirBase):
             "plot": str,
             "groupname": str,
             "function": any,
-            "display_precision": tp.Union[int, float],
+            "display_precision": (int, float),
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "full_name": str,
             "isotopes": bool,
@@ -1401,7 +1400,7 @@ class ExternalCode(Reservoir_no_set):
             "plot": str,
             "groupname": str,
             "function": any,
-            "display_precision": tp.Union[int, float],
+            "display_precision": (int, float),
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "full_name": str,
             "isotopes": bool,
@@ -1834,7 +1833,7 @@ class GasReservoir(ReservoirBase):
             "plot": str,
             "groupname": str,
             "function": any,
-            "display_precision": tp.Union[int, float],
+            "display_precision": (int, float),
             "register": any,
             "full_name": str,
             "isotopes": bool,
@@ -1905,14 +1904,16 @@ class GasReservoir(ReservoirBase):
         self.lm: str = f"{self.species.n} [{self.mu}]"
 
         # initialize vectors
-        self.m: np.ndarray = zeros(self.species.mo.steps) + self.species_mass.magnitude
-        self.l: np.ndarray = zeros(self.mo.steps)
+        self.m: np.ndarray = (
+            np.zeros(self.species.mo.steps) + self.species_mass.magnitude
+        )
+        self.l: np.ndarray = np.zeros(self.mo.steps)
         # initialize concentration vector
         self.c: np.ndarray = self.m / self.volume
         # isotope mass
         self.l = get_l_mass(self.m, self.delta, self.species.r)
         # delta of reservoir
-        self.v: float = zeros(self.mo.steps) + self.volume  # mass of atmosphere
+        self.v: float = np.zeros(self.mo.steps) + self.volume  # mass of atmosphere
 
         if self.mo.number_of_solving_iterations > 0:
             self.mc = np.empty(0)
@@ -2018,8 +2019,8 @@ class ExternalData(esbmtkBase):
             "legend": str,
             "reservoir": Reservoir,
             "offset": str,
-            "display_precision": tp.Union[int, float],
-            "scale": tp.Union[int, float],
+            "display_precision": (int, float),
+            "scale": (int, float),
         }
 
         # provide a list of absolutely required keywords
@@ -2074,7 +2075,7 @@ class ExternalData(esbmtkBase):
             yh = get_string_between_brackets(yh)
             yq = Q_(yh)
             # add these to the data we are are reading
-            # self.y: [NDArray] = self.df.iloc[:, 1].to_numpy() * yq
+            # self.y: [np.ndarray] = self.df.iloc[:, 1].to_numpy() * yq
             self.y: np.ndarray = self.df.iloc[:, 1].to_numpy() * self.scale
             # map into model units
             # lf.y = self.y.to(self.mo.c_unit).magnitude * self.scale
@@ -2129,7 +2130,7 @@ class ExternalData(esbmtkBase):
 
             raise ValueError(message)
         else:
-            self.y: np.ndarray = interp(xi, self.x, self.y)
+            self.y: np.ndarray = np.interp(xi, self.x, self.y)
             self.x = xi
 
     def plot(self) -> None:

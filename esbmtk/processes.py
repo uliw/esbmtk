@@ -1,28 +1,15 @@
 # from numbers import Number
 # from nptyping import *
 # from typing import *
-from numpy import array, set_printoptions, arange, zeros, interp, mean
-from pandas import DataFrame
-from copy import deepcopy, copy
-from time import process_time
 from numba import njit, jit
 from numba.typed import List
-
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
+from .esbmtk import esbmtkBase, Reservoir, Flux, Source, Sink
 
-import logging
-import time
-import builtins
-
-set_printoptions(precision=4)
-# from .utility_functions import *
-from .esbmtk import esbmtkBase, Reservoir, Flux, Signal, Source, Sink
-from .utility_functions import sort_by_type
+# from .utility_functions import sort_by_type
 from .solver import get_imass, get_frac, get_delta, get_flux_data, get_l_mass
-from . import ureg, Q_
 
+np.set_printoptions(precision=4)
 # from .connections import ConnnectionGroup
 
 
@@ -860,7 +847,7 @@ class RateConstant(Process):
             "function_reference": any,
             "f_0": (str),
             "pco2_0": (str),
-            "ex": tp.Union[int, float],
+            "ex": (int, float),
             "delta": (int, float, str),
         }
 

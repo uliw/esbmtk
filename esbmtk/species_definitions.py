@@ -1,23 +1,8 @@
-# from pint import UnitRegistry
-# from numbers import Number
-# from nptyping import *
-# from typing import *
-from numpy import array, set_printoptions, arange, zeros, interp, mean
-from pandas import DataFrame
-from copy import deepcopy, copy
-from time import process_time
-
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-
-import logging
-import time
-import builtins
-
-set_printoptions(precision=4)
-# from .utility_functions import *
 from .esbmtk import Element, Species
+from . import ureg, Q_
+
+np.set_printoptions(precision=4)
 
 
 def Carbon(model):

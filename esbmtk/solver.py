@@ -18,21 +18,13 @@
 
 # from pint import UnitRegistry
 # from nptyping import *
-from numpy import array, set_printoptions, arange, zeros, interp, mean
 import time
 from time import process_time
 import numba
 from numba.core import types
 from numba import njit, prange
 from numba.typed import List
-
 import numpy as np
-
-# import pandas as pd
-# import mpmath
-
-import time
-import math
 
 
 def get_l_mass(m: float, d: float, r: float) -> float:

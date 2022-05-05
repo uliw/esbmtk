@@ -20,19 +20,10 @@
 # from nptyping import *
 # from typing import *
 import typing as tp
-from numpy import array, set_printoptions, arange, zeros, interp, mean
-from copy import deepcopy, copy
-from time import process_time
 from numba import njit
 from numba.typed import List
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-
-import logging
-import time
-import builtins
-from .esbmtk import esbmtkBase, Model, Reservoir, VirtualReservoir, ReservoirGroup, Flux
+from .esbmtk import esbmtkBase, Model, Reservoir, VirtualReservoir, ReservoirGroup
 
 
 # define a transform function to display the Hplus concentration as pH
@@ -93,6 +84,7 @@ class SeawaterConstants(esbmtkBase):
             "pH": [8.1, (int, float)],
             "pressure": [1, (int, float)],
             "register": ["None", (Model, Reservoir, ReservoirGroup)],
+            "kg": ["None", (str)],
             "units": [
                 "None",
                 (str, Q_),
@@ -150,22 +142,21 @@ class SeawaterConstants(esbmtkBase):
             "hplus",
         ]
 
-        self.update()
+        self.update_parameters()
 
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
 
         self.__register_name_new__()
 
-    def update(self, **kwargs: dict) -> None:
+    def update_parameters(self, **kwargs: dict) -> None:
         """Update values if necessary"""
 
         from math import log10
         from esbmtk import Q_
 
         if kwargs:
-            self.lrk: list = []
-            self.__validateandregister__(kwargs)
+            self.__initialize_keyword_variables__(kwargs)
 
         # update K values and species concentrations according to P, S, and T
         self.__get_density__()
@@ -863,9 +854,9 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     B12: float = input_data[5][1]  # Carbonate Export Flux light isotope
     v: float = input_data[9][i - 1]  # volume
     # lookup tables
-    depth_area_table: NDArray = input_data[6]  # depth look-up table
-    area_dz_table: NDArray = input_data[7]  # area_dz table
-    Csat_table: NDArray = input_data[8]  # Csat table
+    depth_area_table: np.ndarray = input_data[6]  # depth look-up table
+    area_dz_table: np.ndarray = input_data[7]  # area_dz table
+    Csat_table: np.ndarray = input_data[8]  # Csat table
 
     # vr_data
     hplus: float = vr_data[0][i - 1]  # H+ concentration [mol/kg]

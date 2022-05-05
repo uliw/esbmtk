@@ -15,38 +15,23 @@
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
-# from pint import UnitRegistry
-# from numbers import Number
-# from nptyping import NDArray
-# from typing import Dict, Union
 import typing as tp
-from numpy import array, set_printoptions, arange, zeros, interp, mean
-from pandas import DataFrame
-from copy import deepcopy, copy
 import time
-from time import process_time
 import numba
 from numba.core import types
 from numba import njit, prange
 from numba.typed import List
 from collections import OrderedDict
-
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
-
-# import mpmath
-
 import logging
-import time
 
 from esbmtk import Q_
 
 # import builtins
 # import math
 
-set_printoptions(precision=4)
+np.set_printoptions(precision=4)
 
 
 def find_matching_strings(s: str, fl: list[str]) -> bool:
@@ -570,7 +555,7 @@ def make_dict(keys: list, values: list) -> dict:
 
     """
     d = dict()
-    
+
     if isinstance(values, list):
         if len(values) == len(keys):
             d: dict = dict(zip(keys, values))
@@ -1015,7 +1000,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
     alpha = make_dict(los, alpha)
     delta = make_dict(los, delta)
     bypass = make_dict(los, bypass)
-    
+
     # name of connectiongroup
     name = f"{M.name}.CG_{source.name}_to_{sink.name}"
     if f"{name}" in M.lmo:  # Test if CG exists

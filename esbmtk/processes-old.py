@@ -16,7 +16,7 @@ import logging
 import time
 import builtins
 
-set_printoptions(precision=4)
+np.set_printoptions(precision=4)
 # from .utility_functions import *
 from .esbmtk import esbmtkBase, Reservoir, Flux, Signal, Source, Sink
 from .utility_functions import sort_by_type
@@ -673,7 +673,7 @@ class PassiveFlux_fixed_delta(Process):
             newflux = newflux + f.m[i - 1] * self.reservoir.lio[f]
 
         # set isotope mass according to keyword value
-        self.f[i] = array(get_flux_data(newflux, self.delta, r))
+        self.f[i] = np.array(get_flux_data(newflux, self.delta, r))
 
 
 class VarDeltaOut(Process):
@@ -1625,9 +1625,9 @@ class Flux_Balance(RateConstant):
 
     def __without_isotopes__(self, i: int) -> None:
 
-        kl: NDArray = np.array([1.0, 1.0, 1.0, 1.0])
-        kr: NDArray = np.array([1.0, 1.0, 1.0, 1.0])
-        scale: NDArray = np.array([1.0, 1.0, 1.0, 1.0])
+        kl: np.ndarray = np.array([1.0, 1.0, 1.0, 1.0])
+        kr: np.ndarray = np.array([1.0, 1.0, 1.0, 1.0])
+        scale: np.ndarray = np.array([1.0, 1.0, 1.0, 1.0])
 
         # calculate the product of reservoir concentrations for left side
         for r in self.Rl:

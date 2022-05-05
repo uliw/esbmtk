@@ -16,30 +16,20 @@
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
-
-# from numbers import Number
-
-# from nptyping import NDArray, Float64
-# from typing import *
-from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
-from copy import deepcopy, copy
 import time
 from time import process_time
 from numba.typed import List
 import numba
 from numba.core import types as nbt
-
-# from numbers import Number
-
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-
 import logging
-
 import builtins
-import os, psutil
+import os
+import psutil
+from . import ureg, Q_
 
 from .utility_functions import (
     plot_object_data,
@@ -860,7 +850,7 @@ class Model(esbmtkBase):
             self.number_of_solving_iterations = int(round(self.steps / self.step_limit))
             self.reset_stride = int(round(self.steps / self.number_of_datapoints))
             self.steps = self.step_limit
-            self.time = (arange(self.steps) * self.dt) + self.start
+            self.time = (np.arange(self.steps) * self.dt) + self.start
 
         # set_printoptions(precision=self.display_precision)
 
@@ -1173,7 +1163,7 @@ class Model(esbmtkBase):
         # this has nothing todo with self.time below!
         wts = time.time()
         start: float = process_time()
-        new: np.ndarray = zeros(4)
+        new: np.ndarray = np.zeros(4)
 
         # put direction dictionary into a list
         for r in self.lor:  # loop over reservoirs
@@ -1286,7 +1276,7 @@ class Model(esbmtkBase):
             ls = ls + f.l[i] * direction  # current flux and direction
             hs = hs + f.h[i] * direction  # current flux and direction
 
-        new = array([ms, ls, hs])
+        new = np.array([ms, ls, hs])
         new = new * r.mo.dt  # get flux / timestep
         new = new + r[i - 1]  # add to data from last time step
         # new = new * (new > 0)  # set negative values to zero
@@ -2144,7 +2134,7 @@ class Reservoir(ReservoirBase):
         ]
 
         # steps = kwargs["species"].mo.steps
-        # self.m: np.ndarray = zeros(steps) + self.mass
+        # self.m: np.ndarray =np.zeros(steps) + self.mass
 
         self.__initialize_keyword_variables__(kwargs)
 
@@ -2206,7 +2196,9 @@ class Reservoir(ReservoirBase):
             c = Q_(self.concentration)
             self.plt_units = c.units
             self._concentration: tp.Union[int, float] = c.to(self.mo.c_unit).magnitude
-            self.mass: tp.Union[int, float] = self._concentration * self.volume * self.density / 1000
+            self.mass: tp.Union[int, float] = (
+                self._concentration * self.volume * self.density / 1000
+            )
             self.display_as = "concentration"
         elif self.concentration == "None":
             m = Q_(self.mass)
@@ -2222,8 +2214,8 @@ class Reservoir(ReservoirBase):
         self.lm: str = f"{self.species.n} [{self.mu}/l]"
 
         # initialize mass vector
-        self.m: np.ndarray = zeros(self.species.mo.steps) + self.mass
-        self.l: np.ndarray = zeros(self.mo.steps)
+        self.m: np.ndarray = np.zeros(self.species.mo.steps) + self.mass
+        self.l: np.ndarray = np.zeros(self.mo.steps)
         self.v: np.ndarray = np.zeros(self.mo.steps) + self.volume  # reservoir volume
 
         if self.delta != "None":
@@ -2284,7 +2276,7 @@ class Reservoir(ReservoirBase):
     def mass(self, m: float) -> None:
         if self.update and m != "None":
             self._mass: float = m
-            self.m = zeros(self.species.mo.steps) + m
+            self.m = np.zeros(self.species.mo.steps) + m
             self.c = self.m / self.volume
 
 
@@ -2382,7 +2374,7 @@ class Flux(esbmtkBase):
 
         # in case we want to keep the flux data
         if self.save_flux_data:
-            self.m: np.ndarray = zeros(self.model.steps) + fluxrate  # add the flux
+            self.m: np.ndarray = np.zeros(self.model.steps) + fluxrate  # add the flux
             self.l: np.ndarray = np.zeros(self.model.steps)
 
             if self.mo.number_of_solving_iterations > 0:

@@ -24,27 +24,19 @@
 
 # from pint import UnitRegistry
 from __future__ import annotations
+
 # from numbers import Number
-# from typing import *
-from numpy import array, set_printoptions, arange, zeros, interp, mean
-from pandas import DataFrame
-from copy import deepcopy, copy
-from time import process_time
-
+import typing as tp
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
-
+import copy as cp
 import logging
-import time
-import builtins
-
-set_printoptions(precision=4)
 from .utility_functions import map_units
 from .processes import *
 from .esbmtk import *
 from esbmtk import Q_
 from .utility_functions import check_for_quantity
+
+np.set_printoptions(precision=4)
 
 
 class Connect(esbmtkBase):
@@ -295,8 +287,8 @@ class Connect(esbmtkBase):
             "scale": (int, float, Q_, str),
             "ref_value": (str, int, float, Q_),
             "k_value": (int, float, str, Q_),
-            "a_value": Number,
-            "b_value": Number,
+            "a_value": (int, float),
+            "b_value": (int, float),
             "left": (list, int, float, Reservoir, GasReservoir),
             "right": (list, int, float, Reservoir, GasReservoir),
             "plot": str,
@@ -305,9 +297,9 @@ class Connect(esbmtkBase):
             "signal": (Signal, str),
             "bypass": (str, Reservoir, GasReservoir),
             "isotopes": bool,
-            "solubility": Number,
-            "area": Number,
-            "piston_velocity": Number,
+            "solubility": (int, float),
+            "area": (int, float),
+            "piston_velocity": (int, float),
             "function_ref": any,
             "save_flux_data": (bool, str),
         }
@@ -608,7 +600,7 @@ class Connect(esbmtkBase):
         # first test if we have a signal in the list. If so,
         # remove signal and replace with process
 
-        p_copy = copy(self.lop)
+        p_copy = cp.copy(self.lop)
         for p in p_copy:  # loop over process list if provided during init
             if isinstance(p, Signal):
                 self.lop.remove(p)
@@ -660,7 +652,7 @@ class Connect(esbmtkBase):
 
     def __move_process_to_top_of_queue__(self, lop: list, ptype: any) -> None:
         """Return a copy of lop where ptype has been moved to the top of lop"""
-        p_copy = copy(lop)
+        p_copy = cp.copy(lop)
         for p in p_copy:  # loop over process list if provided during init
             if isinstance(p, ptype):
                 lop.remove(p)
@@ -668,7 +660,7 @@ class Connect(esbmtkBase):
 
     def __move_process_to_end_of_queue__(self, lop: list, ptype: any) -> None:
         """Return a copy of lop where ptype has been moved to the top of lop"""
-        p_copy = copy(lop)
+        p_copy = cp.copy(lop)
         for p in p_copy:  # loop over process list if provided during init
             if isinstance(p, ptype):
                 lop.remove(p)
@@ -1140,11 +1132,11 @@ class Connect(esbmtkBase):
 
     # ---- alpha ----
     @property
-    def alpha(self) -> Number:
+    def alpha(self) -> tp.Union[float, int]:
         return self._alpha
 
     @alpha.setter
-    def alpha(self, a: Number) -> None:
+    def alpha(self, a: tp.Union[float, int]) -> None:
         self.__delete_process__()
         self.__delete_flux__()
         self._alpha = a
@@ -1154,7 +1146,7 @@ class Connect(esbmtkBase):
 
     # ---- rate  ----
     @property
-    def rate(self) -> Number:
+    def rate(self) -> tp.Union[float, int]:
         return self._rate
 
     @rate.setter
@@ -1171,11 +1163,11 @@ class Connect(esbmtkBase):
 
     # ---- delta  ----
     @property
-    def delta(self) -> Number:
+    def delta(self) -> tp.Union[float, int]:
         return self._delta
 
     @delta.setter
-    def delta(self, d: Number) -> None:
+    def delta(self, d: tp.Union[float, int]) -> None:
         self.__delete_process__()
         self.__delete_flux__()
         self._delta = d
@@ -1408,7 +1400,7 @@ class AirSeaExchange(esbmtkBase):
         self.__initialize_keyword_variables__(kwargs)
 
         self.__misc_inits__()
-        
+
         self.lof: list = []
         self.scale = self.area * self.piston_velocity
 
@@ -1416,7 +1408,7 @@ class AirSeaExchange(esbmtkBase):
         self.name = f"C_{self.lr.register.name}_to_{self.gr.name}"
         self.parent = self.register
         self.__register_name_new__()
-        
+
         # initalize a flux instance
         self.fh = Flux(
             species=self.species,  # Species handle
@@ -1424,7 +1416,7 @@ class AirSeaExchange(esbmtkBase):
             rate="0 mol/a",  # flux value
             register=self,  # register with this connection
             isotopes=self.isotopes,
-            id = self.id,
+            id=self.id,
         )
         # register flux with liquid reservoir
         self.lr.lof.append(self.fh)
@@ -1465,11 +1457,9 @@ class AirSeaExchange(esbmtkBase):
         self.gr.loc.add(self)
         # register connector with model
         self.mo.loc.add(self)
-       
 
     def __misc_inits__(self) -> None:
-        """ Bits and pices of house keeping
-        """
+        """Bits and pices of house keeping"""
 
         # make sure piston velocity is in the right units
         self.piston_velocity = check_for_quantity(self.piston_velocity)
@@ -1495,7 +1485,6 @@ class AirSeaExchange(esbmtkBase):
         else:
             raise ValueError(f"{self.species.name} not implemented yet")
 
-        
         # decide if this connection needs isotope calculations
         if self.gas_reservoir.isotopes:
             self.isotopes = True
