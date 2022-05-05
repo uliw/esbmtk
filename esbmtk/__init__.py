@@ -16,6 +16,8 @@ ureg.define("ppm = 1e-6 fraction")
 import numpy as np
 np.seterr(invalid='ignore')
 
+import typing as tp
+
 from .esbmtk import *
 from .extended_classes import *
 from .connections import ConnectionGroup, Connection, Connect, AirSeaExchange

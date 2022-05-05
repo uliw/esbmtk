@@ -17,10 +17,10 @@
 """
 from __future__ import annotations
 
-from numbers import Number
+# from numbers import Number
 
 # from nptyping import NDArray, Float64
-from typing import *
+# from typing import *
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
 from copy import deepcopy, copy
@@ -29,6 +29,8 @@ from time import process_time
 from numba.typed import List
 import numba
 from numba.core import types as nbt
+
+# from numbers import Number
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -746,7 +748,7 @@ class Model(esbmtkBase):
             "plot_style": ["default", (str)],
             "m_type": ["Not Set", (str)],
             "number_of_datapoints": [1000, (int)],
-            "step_limit": [1e9, (Number, str)],
+            "step_limit": [1e9, (int, float, str)],
             "register": ["local", (str)],
             "save_flux_data": [False, (bool)],
             "full_name": ["None", (str)],
@@ -1439,7 +1441,7 @@ class Element(esbmtkBase):
             "hi_label": ["None", (str)],
             "d_label": ["None", (str)],
             "d_scale": ["None", (str)],
-            "r": [1, (Number)],
+            "r": [1, (float, int)],
             "mass_unit": ["None", (str, Q_)],
             "parent": ["None", (str, Model)],
         }
@@ -1505,7 +1507,7 @@ class Species(esbmtkBase):
             "name": ["None", (str)],
             "element": ["None", (Element, str)],
             "display_as": [kwargs["name"], (str)],
-            "m_weight": [0, (Number, str)],
+            "m_weight": [0, (int, float, str)],
             "register": ["None", (Model, Element, Reservoir, GasReservoir)],
             "parent": ["None", (Model, Element, Reservoir, GasReservoir)],
         }
@@ -2107,7 +2109,7 @@ class Reservoir(ReservoirBase):
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "species": ["None", (str, Species)],
-            "delta": ["None", (Number, str)],
+            "delta": ["None", (int, float, str)],
             "concentration": ["None", (str, Q_)],
             "mass": ["None", (str, Q_)],
             "volume": ["None", (str, Q_)],
@@ -2117,7 +2119,7 @@ class Reservoir(ReservoirBase):
             "plot": ["yes", (str)],
             "groupname": ["None", (str)],
             "function": ["None", (str, callable)],
-            "display_precision": [0.01, (Number)],
+            "display_precision": [0.01, (int, float)],
             "register": [
                 "None",
                 (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, Model, str),
@@ -2156,7 +2158,7 @@ class Reservoir(ReservoirBase):
             get_box_geometry_parameters(self)
 
         # convert units
-        self.volume: Number = Q_(self.volume).to(self.mo.v_unit).magnitude
+        self.volume: tp.Union[int, float] = Q_(self.volume).to(self.mo.v_unit).magnitude
 
         # This should probably be species specific?
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
@@ -2203,13 +2205,13 @@ class Reservoir(ReservoirBase):
         if self.mass == "None":
             c = Q_(self.concentration)
             self.plt_units = c.units
-            self._concentration: Number = c.to(self.mo.c_unit).magnitude
-            self.mass: Number = self._concentration * self.volume * self.density / 1000
+            self._concentration: tp.Union[int, float] = c.to(self.mo.c_unit).magnitude
+            self.mass: tp.Union[int, float] = self._concentration * self.volume * self.density / 1000
             self.display_as = "concentration"
         elif self.concentration == "None":
             m = Q_(self.mass)
             self.plt_units = self.mo.m_unit
-            self.mass: Number = m.to(self.mo.m_unit).magnitude
+            self.mass: tp.Union[int, float] = m.to(self.mo.m_unit).magnitude
             self.concentration = self.mass / self.volume
             self.display_as = "mass"
         else:
@@ -2323,10 +2325,10 @@ class Flux(esbmtkBase):
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "species": ["None", (str, Species)],
-            "delta": [0, (str, Number)],
+            "delta": [0, (str, int, float)],
             "rate": ["None", (str, Q_)],
             "plot": ["yes", (str)],
-            "display_precision": [0.01, (Number)],
+            "display_precision": [0.01, (int, float)],
             "isotopes": [False, (bool)],
             "register": [
                 "None",
@@ -2595,7 +2597,7 @@ class SourceSink(esbmtkBase):
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "species": ["None", (str, Species)],
-            "display_precision": [0.01, (Number)],
+            "display_precision": [0.01, (int, float)],
             "register": [
                 "None",
                 (
@@ -2607,7 +2609,7 @@ class SourceSink(esbmtkBase):
                     str,
                 ),
             ],
-            "delta": ["None", (str, Number)],
+            "delta": ["None", (str, int, float)],
             "isotopes": [False, (bool)],
         }
         # provide a list of absolutely required keywords

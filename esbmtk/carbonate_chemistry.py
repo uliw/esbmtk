@@ -17,10 +17,9 @@
 
 """
 
-from numbers import Number
-
 # from nptyping import *
-from typing import *
+# from typing import *
+import typing as tp
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 from copy import deepcopy, copy
 from time import process_time
@@ -76,7 +75,7 @@ class SeawaterConstants(esbmtkBase):
 
     """
 
-    def __init__(self, **kwargs: Dict[str, str]):
+    def __init__(self, **kwargs: dict[str, str]):
 
         import math
         from esbmtk import Q_
@@ -89,10 +88,10 @@ class SeawaterConstants(esbmtkBase):
                 "Model",
                 (str, Model),
             ],
-            "salinity": [35.0, (Number)],
-            "temperature": [25.0, (Number)],
-            "pH": [8.1, (Number)],
-            "pressure": [1, (Number)],
+            "salinity": [35.0, (int, float)],
+            "temperature": [25.0, (int, float)],
+            "pH": [8.1, (int, float)],
+            "pressure": [1, (int, float)],
             "register": ["None", (Model, Reservoir, ReservoirGroup)],
             "units": [
                 "None",
@@ -653,8 +652,8 @@ class SeawaterConstants(esbmtkBase):
 
 
 def calc_pCO2(
-    dic: Union[Reservoir, VirtualReservoir],
-    hplus: Union[Reservoir, VirtualReservoir],
+    dic: tp.Union[Reservoir, VirtualReservoir],
+    hplus: tp.Union[Reservoir, VirtualReservoir],
     SW: SeawaterConstants,
 ) -> np.ndarray:
 

@@ -24,8 +24,8 @@
 
 # from pint import UnitRegistry
 from __future__ import annotations
-from numbers import Number
-from typing import *
+# from numbers import Number
+# from typing import *
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
 from copy import deepcopy, copy
@@ -283,22 +283,22 @@ class Connect(esbmtkBase):
             "id": str,
             "source": (Source, Reservoir, GasReservoir),
             "sink": (Sink, Reservoir, GasReservoir),
-            "delta": (Number, str),
-            "rate": (str, Number, Q_),
+            "delta": (int, float, str),
+            "rate": (str, int, float, Q_),
             "pl": list,
-            "alpha": (Number, str),
+            "alpha": (int, float, str),
             "species": Species,
             "ctype": str,
             "ref_reservoirs": (Reservoir, GasReservoir, str, list),
             "ref_flux": (Flux, str, list),
-            "ratio": Number,
-            "scale": (Number, Q_, str),
-            "ref_value": (str, Number, Q_),
-            "k_value": (Number, str, Q_),
+            "ratio": (int, float),
+            "scale": (int, float, Q_, str),
+            "ref_value": (str, int, float, Q_),
+            "k_value": (int, float, str, Q_),
             "a_value": Number,
             "b_value": Number,
-            "left": (list, Number, Reservoir, GasReservoir),
-            "right": (list, Number, Reservoir, GasReservoir),
+            "left": (list, int, float, Reservoir, GasReservoir),
+            "right": (list, int, float, Reservoir, GasReservoir),
             "plot": str,
             "groupname": bool,
             "register": any,
@@ -1235,17 +1235,17 @@ class ConnectionGroup(esbmtkBase):
             "id": ["None", (str)],
             "source": ["None", (str, SourceGroup, Reservoir, ReservoirGroup)],
             "sink": ["None", (str, SinkGroup, Reservoir, ReservoirGroup)],
-            "delta": ["None", (str, dict, tuple, Number)],
-            "rate": ["None", (Q_, str, dict, tuple, Number)],
+            "delta": ["None", (str, dict, tuple, int, float)],
+            "rate": ["None", (Q_, str, dict, tuple, int, float)],
             "pl": ["None", (str, dict, tuple)],
             "signal": ["None", (str, Signal)],
-            "alpha": ["None", (str, dict, tuple, Number)],
+            "alpha": ["None", (str, dict, tuple, int, float)],
             "species": ["None", (str, dict, tuple, Species)],
             "ctype": ["None", (str, dict, tuple)],
             "ref_reservoirs": ["None", (str, dict, tuple, Reservoir)],
             "ref_flux": ["None", (str, dict, tuple, Flux)],
             "plot": ["yes", (str, dict, tuple)],
-            "scale": [1, (str, dict, tuple, Number)],
+            "scale": [1, (str, dict, tuple, int, float)],
             "bypass": ["None", (dict, tuple, str)],
             "register": ["None", (str, tuple, Model)],
             "save_flux_data": [False, (bool, tuple)],
@@ -1389,8 +1389,8 @@ class AirSeaExchange(esbmtkBase):
             "area": [0.0, (float)],
             "id": ["None", (str)],
             "name": ["None", (str)],
-            "water_vapor_pressure": [0, (Number, np.float64)],
-            "ref_species": ["None", (Reservoir, Number, np.float64, np.ndarray)],
+            "water_vapor_pressure": [0, (int, float, np.float64)],
+            "ref_species": ["None", (Reservoir, int, float, np.float64, np.ndarray)],
             "species": ["None", (Species, str)],
             "register": ["None", (str, Model)],
         }

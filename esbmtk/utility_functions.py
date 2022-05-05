@@ -17,9 +17,10 @@
 """
 
 # from pint import UnitRegistry
-from numbers import Number
+# from numbers import Number
 # from nptyping import NDArray
-from typing import Dict, Union
+# from typing import Dict, Union
+import typing as tp
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
 from copy import deepcopy, copy
@@ -538,7 +539,7 @@ def get_object_handle(res, M):
     return rlist
 
 
-def split_key(k: str, M: any) -> Union[any, any, str]:
+def split_key(k: str, M: any) -> tp.Union[any, any, str]:
     """split the string k with letters _to_, and test if optional
     id string is present
 
@@ -1305,7 +1306,7 @@ def map_units(v: any, *args) -> float:
     else:  # no quantity, so it should be a number
         m = v
 
-    if not isinstance(m, Number):
+    if not isinstance(m, (int, float)):
         raise ValueError(f"m is {type(m)}, must be float, v={v}. Something is fishy")
 
     return m
@@ -1574,7 +1575,7 @@ def __find_flux__(reservoirs: list, full_name: str):
     return needed_flux
 
 
-def __checktypes__(av: Dict[any, any], pv: Dict[any, any]) -> None:
+def __checktypes__(av: dict[any, any], pv: dict[any, any]) -> None:
     """this method will use the the dict key in the user provided
     key value data (pv) to look up the allowed data type for this key in av
 

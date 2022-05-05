@@ -1,7 +1,7 @@
-from numbers import Number
+# from numbers import Number
 
 # from nptyping import NDArray, Float64
-from typing import *
+# from typing import *
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
 from copy import deepcopy, copy
@@ -118,7 +118,7 @@ class ReservoirGroup(esbmtkBase):
         from numba.typed import List
 
         # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "delta": dict,
             "concentration": dict,
@@ -139,7 +139,7 @@ class ReservoirGroup(esbmtkBase):
         ]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {
+        self.lod: dict[any, any] = {
             "volume": "None",
             "geometry": "None",
             "seawater_parameters": "None",
@@ -351,12 +351,12 @@ class SourceSink(esbmtkBase):
     def __init__(self, **kwargs) -> None:
 
         # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "species": Species,
-            "display_precision": Number,
+            "display_precision": tp.Union[int, float],
             "register": any,
-            "delta": (Number, str),
+            "delta": (int, float, str),
             "isotopes": bool,
         }
 
@@ -364,7 +364,7 @@ class SourceSink(esbmtkBase):
         self.lrk: list[str] = ["name", "species"]
 
         # list of default values if none provided
-        self.lod: Dict[str, any] = {
+        self.lod: dict[str, any] = {
             "display_precision": 0,
             "delta": "None",
             "isotopes": False,
@@ -418,7 +418,7 @@ class SourceSinkGroup(esbmtkBase):
     def __init__(self, **kwargs) -> None:
 
         # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "species": list,
             "delta": dict,
@@ -428,7 +428,7 @@ class SourceSinkGroup(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species"]
         # list of default values if none provided
-        self.lod: Dict[any, any] = {"delta": {}, "register": "None"}
+        self.lod: dict[any, any] = {"delta": {}, "register": "None"}
 
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -585,7 +585,7 @@ class Signal(esbmtkBase):
             "start": ["0 yrs", (str, Q_)],
             "duration": ["1 yr", (str, Q_)],
             "species": ["None", (Species)],
-            "delta": [0, (Number)],
+            "delta": [0, (int, float)],
             "stype": [
                 "addition",
                 (str),
@@ -596,8 +596,8 @@ class Signal(esbmtkBase):
             "magnitude": ["None", (str, Q_)],
             "offset": ["0 yrs", (str, Q_)],
             "plot": ["no", (str)],
-            "scale": [1, (Number)],
-            "display_precision": [0.01, (Number)],
+            "scale": [1, (int, float)],
+            "display_precision": [0.01, (int, float)],
             "reservoir": ["None", (Source, Sink, Reservoir, str)],
             "source": ["None", (Source, Sink, Reservoir, str)],
             "legend_right": ["None", (str)],
@@ -620,7 +620,7 @@ class Signal(esbmtkBase):
         self.los: List[Signal] = []
 
         # convert units to model units
-        self.st: Number = int(
+        self.st: tp.Union[int, float] = int(
             Q_(self.start).to(self.species.mo.t_unit).magnitude
         )  # start time
 
@@ -644,7 +644,7 @@ class Signal(esbmtkBase):
         self.ty: str = self.stype  # type of signal
         self.sh: str = self.shape  # shape the event
         self.d: float = self.delta  # delta value offset during the event
-        self.kwd: Dict[str, any] = self.kwargs  # list of keywords
+        self.kwd: dict[str, any] = self.kwargs  # list of keywords
         self.led: list = []
 
         if self.display_precision == 0:
@@ -1030,13 +1030,13 @@ class DataField(esbmtkBase):
     Similarly for y2
     """
 
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
+    def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this instance"""
 
         from . import Reservoir_no_set, VirtualReservoir, ExternalCode
 
         # dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "associated_with": (
                 Reservoir,
@@ -1054,14 +1054,14 @@ class DataField(esbmtkBase):
             "y2_label": str,
             "y2_legend": (str, list),
             "common_y_scale": str,
-            "display_precision": Number,
+            "display_precision": tp.Union[int, float],
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["name", "associated_with", "y1_data"]
 
         # list of default values if none provided
-        self.lod: Dict[str, any] = {
+        self.lod: dict[str, any] = {
             "y1_label": "Not Provided",
             "x1_data": "None",
             "y1_legend": "Not Provided",
@@ -1239,7 +1239,7 @@ class Reservoir_no_set(ReservoirBase):
         from . import ureg, Q_, ConnectionGroup
 
         # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "species": Species,
             "plot_transform_c": any,
@@ -1247,11 +1247,11 @@ class Reservoir_no_set(ReservoirBase):
             "plot": str,
             "groupname": str,
             "function": any,
-            "display_precision": Number,
+            "display_precision": tp.Union[int, float],
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "full_name": str,
             "isotopes": bool,
-            "volume": (str, Number),
+            "volume": (str, int, float),
             "vr_datafields": (dict, str),
             "function_input_data": (List, str),
             "function_params": (List, str),
@@ -1266,7 +1266,7 @@ class Reservoir_no_set(ReservoirBase):
         ]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {
+        self.lod: dict[any, any] = {
             "plot": "yes",
             "geometry": "None",
             "plot_transform_c": "None",
@@ -1393,7 +1393,7 @@ class ExternalCode(Reservoir_no_set):
         from .processes import GenericFunction
 
         # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "species": Species,
             "plot_transform_c": any,
@@ -1401,11 +1401,11 @@ class ExternalCode(Reservoir_no_set):
             "plot": str,
             "groupname": str,
             "function": any,
-            "display_precision": Number,
+            "display_precision": tp.Union[int, float],
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "full_name": str,
             "isotopes": bool,
-            "volume": (str, Number),
+            "volume": (str, int, float),
             "vr_datafields": (dict, str),
             "function_input_data": (List, str),
             "function_params": (List, str),
@@ -1420,7 +1420,7 @@ class ExternalCode(Reservoir_no_set):
         ]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {
+        self.lod: dict[any, any] = {
             "plot": "yes",
             "geometry": "None",
             "plot_transform_c": "None",
@@ -1823,10 +1823,10 @@ class GasReservoir(ReservoirBase):
         from . import ureg, Q_, ConnectionGroup
 
         # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "species": Species,
-            "delta": (Number, str),
+            "delta": (int, float, str),
             "reservoir_mass": (str, Q_),
             "species_ppm": (str, Q_),
             "plot_transform_c": any,
@@ -1834,7 +1834,7 @@ class GasReservoir(ReservoirBase):
             "plot": str,
             "groupname": str,
             "function": any,
-            "display_precision": Number,
+            "display_precision": tp.Union[int, float],
             "register": any,
             "full_name": str,
             "isotopes": bool,
@@ -1849,7 +1849,7 @@ class GasReservoir(ReservoirBase):
         ]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {
+        self.lod: dict[any, any] = {
             "delta": 0,
             "plot": "yes",
             "plot_transform_c": "None",
@@ -1893,7 +1893,7 @@ class GasReservoir(ReservoirBase):
 
         # we use the existing approach to calculate concentration
         # which will divide species_mass/volume.
-        self.volume: Number = self.reservoir_mass.magnitude
+        self.volume: tp.Union[int, float] = self.reservoir_mass.magnitude
         #    Q_(self.species_mass).magnitude / self.species_ppm.to("dimensionless")
         # ).magnitude
 
@@ -2007,25 +2007,25 @@ class ExternalData(esbmtkBase):
 
     """
 
-    def __init__(self, **kwargs: Dict[str, str]):
+    def __init__(self, **kwargs: dict[str, str]):
 
         from . import ureg, Q_
 
         # dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "filename": str,
             "legend": str,
             "reservoir": Reservoir,
             "offset": str,
-            "display_precision": Number,
-            "scale": Number,
+            "display_precision": tp.Union[int, float],
+            "scale": tp.Union[int, float],
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["name", "filename", "legend", "reservoir"]
         # list of default values if none provided
-        self.lod: Dict[str, any] = {
+        self.lod: dict[str, any] = {
             "offset": "0 yrs",
             "display_precision": 0,
             "scale": 1,

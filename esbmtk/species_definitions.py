@@ -1,7 +1,7 @@
 # from pint import UnitRegistry
-from numbers import Number
-from nptyping import *
-from typing import *
+# from numbers import Number
+# from nptyping import *
+# from typing import *
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
 from copy import deepcopy, copy
@@ -53,7 +53,6 @@ def Carbon(model):
     Species(name="TA", element=eh, register=eh)
     Species(name="PALK", element=eh, register=eh)  # Practical Alkalinity
     Species(name="PA", element=eh, register=eh)
-    
 
 
 def Sulfur(model):

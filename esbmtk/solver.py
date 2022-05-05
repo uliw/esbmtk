@@ -18,7 +18,6 @@
 
 # from pint import UnitRegistry
 # from nptyping import *
-from typing import *
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 import time
 from time import process_time

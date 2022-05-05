@@ -1,6 +1,6 @@
-from numbers import Number
-from nptyping import *
-from typing import *
+# from numbers import Number
+# from nptyping import *
+# from typing import *
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
 from copy import deepcopy, copy
@@ -36,7 +36,7 @@ class Process(esbmtkBase):
 
     __slots__ = ("reservoir", "r", "flux", "r", "mo", "direction", "scale")
 
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
+    def __init__(self, **kwargs: dict[str, any]) -> None:
         """
         Create a new process object with a given process type and options
         """
@@ -69,7 +69,7 @@ class Process(esbmtkBase):
 
         if "reserevoir" in self.kwargs:
             if isinstance(self.r, Reservoir):
-                self.direction: Dict[Flux, int] = self.r.lio[self.f]
+                self.direction: dict[Flux, int] = self.r.lio[self.f]
 
         if "delta" in self.kwargs:
             self.delta = self.kwargs["delta"]
@@ -112,15 +112,15 @@ class Process(esbmtkBase):
         from esbmtk import Reservoir, ReservoirGroup, Flux, GasReservoir
 
         # provide a dict of known keywords and types
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "reservoir": (Reservoir, Source, Sink, GasReservoir),
             "flux": Flux,
-            "rate": (Number, np.float64),
-            "delta": (Number, np.float64, str),
+            "rate": (int, float, np.float64),
+            "delta": (int, float, np.float64, str),
             "lt": Flux,
-            "alpha": (Number, np.float64),
-            "scale": (Number, np.float64),
+            "alpha": (int, float, np.float64),
+            "scale": (int, float, np.float64),
             "ref_reservoirs": (Flux, Reservoir, GasReservoir, list, str),
             "register": (
                 str,
@@ -136,7 +136,7 @@ class Process(esbmtkBase):
         self.lrk: list[str] = ["name"]
 
         # list of default values if none provided
-        self.lod: Dict[str, any] = {"scale": 1}
+        self.lod: dict[str, any] = {"scale": 1}
 
     def __register__(self, reservoir: Reservoir, flux: Flux) -> None:
         """Register the flux/reservoir pair we are acting upon, and register
@@ -178,7 +178,7 @@ class GenericFunction(Process):
 
     __slots__ = ("function", "input_data", "vr_data", "params")
 
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
+    def __init__(self, **kwargs: dict[str, any]) -> None:
         """
         Create a new process object with a given process type and options
 
@@ -189,7 +189,7 @@ class GenericFunction(Process):
         self.__defaultnames__()  # default kwargs names
 
         # list of allowed keywords
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "function": any,
             "input_data": (List, str),
@@ -202,7 +202,7 @@ class GenericFunction(Process):
         self.lrk: list = ["name", "input_data", "vr_data", "function_params", "model"]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {}
+        self.lod: dict[any, any] = {}
 
         self.__initerrormessages__()  # default error messages
         self.bem.update(
@@ -270,7 +270,7 @@ class AddSignal(Process):
 
     """
 
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
+    def __init__(self, **kwargs: dict[str, any]) -> None:
         """
         Create a new process object with a given process type and options
         """
@@ -466,7 +466,7 @@ class SaveFluxData(Process):
 
     __slots__ = "flux"
 
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
+    def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
@@ -527,7 +527,7 @@ class ScaleFlux(Process):
 
     __slots__ = ("rate", "scale", "ref_reservoirs", "reservoir", "flux")
 
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
+    def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
@@ -730,7 +730,7 @@ class Fractionation(Process):
 
     __slots__ = ("flux", "reservoir")
 
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
+    def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
@@ -815,7 +815,7 @@ class RateConstant(Process):
 
     __slots__ = ("scale", "ref_value", "k_value", "flux", "reservoir")
 
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
+    def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
 
         from . import ureg, Q_
@@ -831,16 +831,16 @@ class RateConstant(Process):
 
         # update the allowed keywords
         self.lkk: dict = {
-            "scale": (Number, np.float64),
-            "k_value": (Number, np.float64),
+            "scale": (int, float, np.float64),
+            "k_value": (int, float, np.float64),
             "name": str,
             "reservoir": (Reservoir, Source, Sink, GasReservoir, np.ndarray),
             "source": (Reservoir, Source, GasReservoir),
             "flux": Flux,
             "ref_reservoirs": list,
             "reservoir_ref": (Reservoir, GasReservoir),
-            "left": (list, Reservoir, Number, np.float64, np.ndarray),
-            "right": (list, Reservoir, Number, np.ndarray),
+            "left": (list, Reservoir, int, float, np.float64, np.ndarray),
+            "right": (list, Reservoir, int, float, np.ndarray),
             "register": (
                 SourceGroup,
                 SinkGroup,
@@ -851,17 +851,17 @@ class RateConstant(Process):
             ),
             "gas": (Reservoir, GasReservoir, Source, Sink, np.ndarray),
             "liquid": (Reservoir, Source, Sink),
-            "solubility": (Number, np.float64),
-            "piston_velocity": (Number, np.float64),
-            "water_vapor_pressure": (Number, np.float64),
+            "solubility": (int, float, np.float64),
+            "piston_velocity": (int, float, np.float64),
+            "water_vapor_pressure": (int, float, np.float64),
             "ref_species": np.ndarray,
             "seawaterconstants": any,
             "isotopes": bool,
             "function_reference": any,
             "f_0": (str),
             "pco2_0": (str),
-            "ex": Number,
-            "delta": (Number, str),
+            "ex": tp.Union[int, float],
+            "delta": (int, float, str),
         }
 
         # new required keywords
@@ -1122,7 +1122,7 @@ class MultiplySignal(Process):
 
     """
 
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
+    def __init__(self, **kwargs: dict[str, any]) -> None:
         """
         Create a new process object with a given process type and options
         """
@@ -1249,7 +1249,7 @@ class VarDeltaOut(Process):
 
     __slots__ = ("rate", "flux", "reservoir")
 
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
+    def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
 
         from . import ureg, Q_
@@ -1258,13 +1258,13 @@ class VarDeltaOut(Process):
 
         # get default names and update list for this Process
         self.__defaultnames__()
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "reservoir": (Reservoir, Source, Sink),
             "flux": Flux,
             "rate": (str, Q_),
             "register": (ConnectionGroup, ReservoirGroup, Reservoir, Flux, str),
-            "scale": (Number, np.float64, str),
+            "scale": (int, float, np.float64, str),
         }
         self.lrk.extend(["reservoir", "flux"])  # new required keywords
         self.__initerrormessages__()
