@@ -17,9 +17,11 @@ def create_model(request):
         timestep=" 1 yr",  # base unit for time
         mass_unit="mol",  # base unit for mass
         volume_unit="l",  # base unit for volume
+        concentration_unit="mmol/l",
         element="Carbon",  # load default element and species definitions
         m_type="both",
         save_flux_data=request.param,
+        ideal_water=True,
     )
     Reservoir(
         name="R1",  # Name of reservoir
@@ -32,6 +34,38 @@ def create_model(request):
 
     return v0, c0, d0, M1
 
+@pytest.fixture(params=[True, False])
+def create_model_with_sewater(request):
+
+    # from module import symbol
+    from esbmtk import Model, Reservoir
+
+    c0 = 3.1
+    d0 = 0
+    v0 = 1025
+    # create model
+    M1 = Model(
+        name="M1",  # model name
+        stop="1 kyrs",  # end time of model
+        timestep=" 1 yr",  # base unit for time
+        mass_unit="mol",  # base unit for mass
+        volume_unit="l",  # base unit for volume
+        concentration_unit="mmol/l",
+        element="Carbon",  # load default element and species definitions
+        m_type="both",
+        save_flux_data=request.param,
+        ideal_water=False,
+    )
+    Reservoir(
+        name="R1",  # Name of reservoir
+        species=M1.Carbon.DIC,  # Species handle
+        delta=d0,  # initial delta
+        concentration=f"{c0} mol/l",  # concentration
+        volume=f"{v0} l",  # reservoir size (m^3)
+        register=M1,
+    )
+
+    return v0, c0, d0, M1
 
 def test_delta_conversion():
     from esbmtk import get_imass, get_delta, get_flux_data
@@ -127,14 +161,15 @@ def test_signal_indexing(idx, stype):
         mass_unit="mol",  # base unit for mass
         volume_unit="l",  # base unit for volume
         element="Carbon",  # load default element and species definitions
+        concentration_unit="mmol/l",
         m_type="both",
         offset="100 yrs",
     )
 
-    Source(name="SO1", species=M1.Carbon.DIC)
+    Source(name="SO1", species=M1.Carbon.DIC, register=M1)
 
-    Sink(name="SI1", species=M1.Carbon.DIC)
-    Sink(name="SI2", species=M1.Carbon.DIC)
+    Sink(name="SI1", species=M1.Carbon.DIC, register=M1)
+    Sink(name="SI2", species=M1.Carbon.DIC, register=M1)
 
     Reservoir(
         name="R1",  # Name of reservoir
@@ -144,8 +179,10 @@ def test_signal_indexing(idx, stype):
         volume=f"{v0} l",  # reservoir size (m^3)
         register=M1,
     )
-    
+
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.R1,  # target of flux
         rate="100 mol/yr",  # weathering flux in
@@ -153,6 +190,7 @@ def test_signal_indexing(idx, stype):
     )
 
     Signal(
+        register=M1,
         name="foo",
         species=M1.Carbon.DIC,
         start=f"{idx[0]} yrs",
@@ -163,6 +201,7 @@ def test_signal_indexing(idx, stype):
     )
 
     Signal(
+        register=M1,
         name="foo2",
         species=M1.Carbon.DIC,
         start=f"{idx[0]} yrs",
@@ -173,6 +212,8 @@ def test_signal_indexing(idx, stype):
     )
 
     Connect(
+        id="default_b",
+        register=M1,
         source=M1.R1,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="Regular",
@@ -196,11 +237,13 @@ def test_fractionation(create_model, solver):
 
     v0, c0, d0, M1 = create_model
 
-    Source(name="SO1", species=M1.Carbon.DIC)
-    
-    Sink(name="SI1", species=M1.Carbon.DIC)
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
+
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
 
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.R1,  # target of flux
         rate="100 mol/yr",  # weathering flux in
@@ -208,6 +251,8 @@ def test_fractionation(create_model, solver):
     )
 
     Connect(
+        id="default_b",
+        register=M1,
         source=M1.R1,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="Regular",
@@ -230,12 +275,14 @@ def test_scale_flux(create_model, solver):
 
     v0, c0, d0, M1 = create_model
 
-    Source(name="SO1", species=M1.Carbon.DIC)
-    
-    Sink(name="SI1", species=M1.Carbon.DIC)
-    Sink(name="SI2", species=M1.Carbon.DIC)
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
+
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI2", species=M1.Carbon.DIC)
 
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.R1,  # target of flux
         rate="100 mol/yr",  # weathering flux in
@@ -243,6 +290,8 @@ def test_scale_flux(create_model, solver):
     )
 
     Connect(
+        id="default_b",
+        register=M1,
         source=M1.R1,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="Regular",
@@ -250,11 +299,14 @@ def test_scale_flux(create_model, solver):
         alpha=-28,  # set a default flux
     )
 
+    names = M1.flux_summary(filter_by="default_b", return_list=True)
     Connect(
+        id="default_c",
+        register=M1,
         source=M1.R1,  # source of flux
         sink=M1.SI2,  # target of flux
         ctype="scale_with_flux",
-        ref_flux=M1.C_R1_2_SI1.R1_2_SI1_F,
+        ref_flux=names[0],
         scale=1,  # weathering flux in
     )
     M1.run(solver=solver)
@@ -269,8 +321,8 @@ def test_scale_with_concentration_empty(create_model, solver):
     import numpy as np
 
     v0, c0, d0, M1 = create_model
-    Source(name="SO1", species=M1.Carbon.DIC)
-    Sink(name="SI1", species=M1.Carbon.DIC)
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
     Reservoir(
         name="R2",  # Name of reservoir
         species=M1.Carbon.DIC,  # Species handle
@@ -280,6 +332,8 @@ def test_scale_with_concentration_empty(create_model, solver):
         register=M1,
     )
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.R2,  # source of flux
         sink=M1.R1,  # target of flux
         ctype="scale_with_concentration",
@@ -288,13 +342,15 @@ def test_scale_with_concentration_empty(create_model, solver):
     M1.run(solver="solver")
     M1.get_delta_values()
 
+    names = M1.flux_summary(filter_by="default_a", return_list=True)
     assert M1.R2.m[500] == 0
     assert M1.R2.l[500] == 0
     assert M1.R2.c[500] == 0
     assert M1.R1.c[500] == 3.1
     assert round(M1.R1.d[500], 10) == 0
-    assert M1.C_R2_2_R1.R2_2_R1_F.fa[0] == 0
-    assert M1.C_R2_2_R1.R2_2_R1_F.fa[1] == 0
+    f, fl = names[0].fa
+    assert f == 0
+    assert fl == 0
 
 
 @pytest.mark.parametrize("solver", ["numba", "python"])
@@ -308,12 +364,14 @@ def test_scale_with_concentration(create_model, solver):
 
     v0, c0, d0, M1 = create_model
 
-    Source(name="SO1", species=M1.Carbon.DIC)
-    
-    Sink(name="SI1", species=M1.Carbon.DIC)
-    Sink(name="SI2", species=M1.Carbon.DIC)
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
+
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI2", species=M1.Carbon.DIC)
 
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.R1,  # target of flux
         rate="100 mol/yr",  # weathering flux in
@@ -321,6 +379,8 @@ def test_scale_with_concentration(create_model, solver):
     )
 
     Connect(
+        id="default_b",
+        register=M1,
         source=M1.R1,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="Regular",
@@ -329,6 +389,8 @@ def test_scale_with_concentration(create_model, solver):
     )
 
     Connect(
+        id="default_c",
+        register=M1,
         source=M1.R1,  # source of flux
         sink=M1.SI2,  # target of flux
         ctype="scale_with_concentration",
@@ -352,11 +414,13 @@ def test_scale_with_mass(create_model, solver):
 
     v0, c0, d0, M1 = create_model
 
-    Source(name="SO1", species=M1.Carbon.DIC)
-    Sink(name="SI1", species=M1.Carbon.DIC)
-    Sink(name="SI2", species=M1.Carbon.DIC)
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI2", species=M1.Carbon.DIC)
 
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.R1,  # target of flux
         rate="100 mol/yr",  # weathering flux in
@@ -364,6 +428,8 @@ def test_scale_with_mass(create_model, solver):
     )
 
     Connect(
+        id="default_b",
+        register=M1,
         source=M1.R1,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="Regular",
@@ -372,6 +438,8 @@ def test_scale_with_mass(create_model, solver):
     )
 
     Connect(
+        id="default_c",
+        register=M1,
         source=M1.R1,  # source of flux
         sink=M1.SI2,  # target of flux
         ctype="scale_with_mass",
@@ -392,12 +460,14 @@ def test_square_signal(create_model, solver):
 
     v0, c0, d0, M1 = create_model
 
-    Source(name="SO1", species=M1.Carbon.DIC)
-   
-    Sink(name="SI1", species=M1.Carbon.DIC)
-    Sink(name="SI2", species=M1.Carbon.DIC)
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
+
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI2", species=M1.Carbon.DIC)
 
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.R1,  # target of flux
         rate="100 mol/yr",  # weathering flux in
@@ -405,6 +475,7 @@ def test_square_signal(create_model, solver):
     )
 
     Signal(
+        register=M1,
         name="foo",
         species=M1.Carbon.DIC,
         start="100 yrs",
@@ -412,10 +483,11 @@ def test_square_signal(create_model, solver):
         shape="square",
         magnitude="50 mol/year",
         delta=-28,
-        register=M1,
     )
 
     Connect(
+        id="default_b",
+        register=M1,
         source=M1.R1,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="Regular",
@@ -443,12 +515,14 @@ def test_pyramid_signal(create_model, solver):
     from esbmtk import Source, Sink, Reservoir, Connect, Signal
     import numpy as np
 
-    Source(name="SO1", species=M1.Carbon.DIC)
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
 
-    Sink(name="SI1", species=M1.Carbon.DIC)
-    Sink(name="SI2", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI2", species=M1.Carbon.DIC)
 
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.R1,  # target of flux
         rate="100 mol/yr",  # weathering flux in
@@ -467,6 +541,8 @@ def test_pyramid_signal(create_model, solver):
     )
 
     Connect(
+        id="default_b",
+        register=M1,
         source=M1.R1,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="Regular",
@@ -491,11 +567,13 @@ def test_pyramid_signal_multiplication(create_model, solver):
 
     v0, c0, d0, M1 = create_model
 
-    Source(name="SO1", species=M1.Carbon.DIC)
-    Sink(name="SI1", species=M1.Carbon.DIC)
-    Sink(name="SI2", species=M1.Carbon.DIC)
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI2", species=M1.Carbon.DIC)
 
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.R1,  # target of flux
         rate="100 mol/yr",  # weathering flux in
@@ -514,6 +592,8 @@ def test_pyramid_signal_multiplication(create_model, solver):
     )
 
     Connect(
+        id="default_b",
+        register=M1,
         source=M1.R1,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="Regular",
@@ -539,11 +619,13 @@ def test_pyramid_signal_multiply(create_model, solver):
 
     v0, c0, d0, M1 = create_model
 
-    Source(name="SO1", species=M1.Carbon.DIC)
-    Sink(name="SI1", species=M1.Carbon.DIC)
-    Sink(name="SI2", species=M1.Carbon.DIC)
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI2", species=M1.Carbon.DIC)
 
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.R1,  # target of flux
         rate="100 mol/yr",  # weathering flux in
@@ -562,6 +644,8 @@ def test_pyramid_signal_multiply(create_model, solver):
     )
 
     Connect(
+        id="default_b",
+        register=M1,
         source=M1.R1,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="Regular",
@@ -588,16 +672,19 @@ def test_scale_with_flux_and_signal_multiplication(create_model, solver):
 
     v0, c0, d0, M1 = create_model
 
-    Source(name="SO1", species=M1.Carbon.DIC)
-    Sink(name="SI1", species=M1.Carbon.DIC)
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
 
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.R1,  # target of flux
         rate="100 mol/yr",  # weathering flux in
         delta=d0,  # set a default flux
     )
     Signal(
+        register=M1,
         name="foo",
         species=M1.Carbon.DIC,
         start="100 yrs",
@@ -607,11 +694,14 @@ def test_scale_with_flux_and_signal_multiplication(create_model, solver):
         stype="multiplication",
     )
 
+    names = M1.flux_summary(filter_by="default_a", return_list=True)
     Connect(
+        id="default_b",
+        register=M1,
         source=M1.R1,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="scale_with_flux",
-        ref_flux=M1.C_SO1_2_R1.SO1_2_R1_F,
+        ref_flux=names[0],
         alpha=-72,
         signal=M1.foo,
         # alpha=-28,  # set a default flux
@@ -639,16 +729,19 @@ def test_scale_with_flux_and_signal_addition(create_model, solver):
 
     v0, c0, d0, M1 = create_model
 
-    Source(name="SO1", species=M1.Carbon.DIC)
-    Sink(name="SI1", species=M1.Carbon.DIC)
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
 
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.R1,  # target of flux
         rate="100 mol/yr",  # weathering flux in
         delta=d0,  # set a default flux
     )
     Signal(
+        register=M1,
         name="foo",
         species=M1.Carbon.DIC,
         start="100 yrs",
@@ -658,11 +751,14 @@ def test_scale_with_flux_and_signal_addition(create_model, solver):
         stype="addition",
     )
 
+    names = M1.flux_summary(filter_by="default_a", return_list=True)
     Connect(
+        id="default_b",
+        register=M1,
         source=M1.R1,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="scale_with_flux",
-        ref_flux=M1.C_SO1_2_R1.SO1_2_R1_F,
+        ref_flux=names[0],
         alpha=-72,
         signal=M1.foo,
         scale=0.1
@@ -690,9 +786,9 @@ def test_seawaterconstants(create_model):
     import numpy as np
     import sys
 
-    v0, c0, d0, M1 = create_model
-    Source(name="SO1", species=M1.Carbon.DIC)
-    Sink(name="SI1", species=M1.Carbon.DIC)
+    v0, c0, d0, M1 = create_model_with_sewater
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
 
     ReservoirGroup(
         name="S1",  # Name of reservoir group
@@ -750,18 +846,22 @@ def test_carbonate_system1_constants(create_model, solver):
 
     add_carbonate_system_1([M1.S])
 
-    Source(name="SO1", species=M1.Carbon.DIC)
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
 
-    Sink(name="SI1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
 
     # DIC influx
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.S.DIC,  # target of flux
         rate="100 mol/yr",  # weathering flux in
     )
     # TA influx
     Connect(
+        id="default_b",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.S.TA,  # target of flux
         rate="100 mol/yr",  # weathering flux in
@@ -769,6 +869,8 @@ def test_carbonate_system1_constants(create_model, solver):
 
     # DIC outflux
     Connect(
+        id="default_c",
+        register=M1,
         source=M1.S.DIC,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="Regular",
@@ -776,6 +878,8 @@ def test_carbonate_system1_constants(create_model, solver):
     )
     # TA out
     Connect(
+        id="default_d",
+        register=M1,
         source=M1.S.TA,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="Regular",
@@ -819,18 +923,22 @@ def test_carbonate_system2_(create_model, solver):
         register=M1,
     )
 
-    Source(name="SO1", species=M1.Carbon.DIC)
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
 
-    Sink(name="SI1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
 
     # DIC influx
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.S.DIC,  # target of flux
         rate="100 mol/yr",  # weathering flux in
     )
     # TA influx
     Connect(
+        id="default_b",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.S.TA,  # target of flux
         rate="100 mol/yr",  # weathering flux in
@@ -838,6 +946,8 @@ def test_carbonate_system2_(create_model, solver):
 
     # DIC outflux
     Connect(
+        id="default_c",
+        register=M1,
         source=M1.S.DIC,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="Regular",
@@ -846,6 +956,8 @@ def test_carbonate_system2_(create_model, solver):
     )
     # TA x
     Connect(
+        id="default_d",
+        register=M1,
         source=M1.S.TA,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="Regular",
@@ -887,8 +999,8 @@ def test_gas_exchange(create_model, solver):
 
     v0, c0, d0, M1 = create_model
 
-    Source(name="SO1", species=M1.Carbon.DIC)
-    Sink(name="SI1", species=M1.Carbon.DIC)
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
 
     ReservoirGroup(
         name="S",  # Name of reservoir group
@@ -916,6 +1028,8 @@ def test_gas_exchange(create_model, solver):
 
     # DIC influx
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.S.DIC,  # target of flux
         rate="0 mol/yr",  # weathering flux in
@@ -981,7 +1095,7 @@ def test_weathering(create_model, solver, scale):
         register=M1,
     )
 
-    Source(name="Fw", species=M1.Carbon.DIC)
+    Source(register=M1, name="Fw", species=M1.Carbon.DIC)
 
     GasReservoir(
         name="CO2_At",
@@ -994,6 +1108,7 @@ def test_weathering(create_model, solver, scale):
     )
 
     Connect(
+        register=M1,
         source=M1.Fw,  # source of flux
         sink=M1.S.DIC,
         reservoir_ref=M1.CO2_At,
@@ -1007,12 +1122,14 @@ def test_weathering(create_model, solver, scale):
     )
 
     M1.run(solver=solver)
+    names = M1.flux_summary(filter_by="we", return_list=True)
+    f, fl = names[0].fa
     # flux computed at 400ppm
     tf = scale * 1e13 * (400 / 280) ** 0.4
-    f = M1.C_Fw_2_DIC_we.Fw_2_DIC_we_F.fa[0]
+    # f = M1.C_Fw_2_DIC_we.Fw_2_DIC_we_F.fa[0]
     # test that flux calculation is correct
     assert tf - f == 0
-    fl = M1.C_Fw_2_DIC_we.Fw_2_DIC_we_F.fa[1]
+    # fl = M1.C_Fw_2_DIC_we.Fw_2_DIC_we_F.fa[1] 
     d = get_delta_i(fl, f - fl, M1.Carbon.DIC.r)
     # test that isotope calculation is correct
     assert d - 5 < 0.000001
@@ -1042,7 +1159,7 @@ def test_weathering_with_atmosphere_as_source(create_model, solver):
         register=M1,
     )
 
-    Source(name="Fw", species=M1.Carbon.DIC)
+    Source(register=M1, name="Fw", species=M1.Carbon.DIC)
 
     GasReservoir(
         name="CO2_At",
@@ -1055,6 +1172,7 @@ def test_weathering_with_atmosphere_as_source(create_model, solver):
     )
 
     Connect(
+        register=M1,
         source=M1.CO2_At,  # source of flux
         sink=M1.S.DIC,
         reservoir_ref=M1.CO2_At,
@@ -1068,8 +1186,10 @@ def test_weathering_with_atmosphere_as_source(create_model, solver):
     )
 
     M1.run(solver=solver)
-    f = M1.C_CO2_At_2_DIC_we.CO2_At_2_DIC_we_F.fa[0]
-    fl = M1.C_CO2_At_2_DIC_we.CO2_At_2_DIC_we_F.fa[1]
+    names = M1.flux_summary(filter_by="we", return_list=True)
+    f, fl = names[0].fa
+    # f = M1.C_CO2_At_2_DIC_we.CO2_At_2_DIC_we_F.fa[0]
+    # fl = M1.C_CO2_At_2_DIC_we.CO2_At_2_DIC_we_F.fa[1]
     d = get_delta_i(fl, f - fl, M1.Carbon.DIC.r)
 
     tf = 1 * (400 / 280) ** 0.4
@@ -1083,7 +1203,7 @@ def test_gasreservoir_flux_alpha(create_model, solver):
     import numpy as np
 
     v0, c0, d0, M1 = create_model
-    Source(name="SO1", species=M1.Carbon.DIC)
+    Source(register=M1, name="SO1", species=M1.Carbon.DIC)
 
     GasReservoir(
         name="R1",
@@ -1094,9 +1214,11 @@ def test_gasreservoir_flux_alpha(create_model, solver):
         isotopes=True,
         register=M1,
     )
-    Sink(name="SI1", species=M1.Carbon.DIC)
+    Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
 
     Connect(
+        id="default_a",
+        register=M1,
         source=M1.SO1,  # source of flux
         sink=M1.R1,  # target of flux
         rate="100 mol/yr",  # weathering flux in
@@ -1104,6 +1226,8 @@ def test_gasreservoir_flux_alpha(create_model, solver):
     )
 
     Connect(
+        id="default_b",
+        register=M1,
         source=M1.R1,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="Regular",

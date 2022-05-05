@@ -18,7 +18,8 @@
 from __future__ import annotations
 
 from numbers import Number
-from nptyping import NDArray, Float64
+
+# from nptyping import NDArray, Float64
 from typing import *
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
@@ -1170,7 +1171,7 @@ class Model(esbmtkBase):
         # this has nothing todo with self.time below!
         wts = time.time()
         start: float = process_time()
-        new: [NDArray, Float] = zeros(4)
+        new: np.ndarray = zeros(4)
 
         # put direction dictionary into a list
         for r in self.lor:  # loop over reservoirs
@@ -1613,7 +1614,7 @@ class ReservoirBase(esbmtkBase):
         pass
         return self
 
-    def __getitem__(self, i: int) -> NDArray[np.float64]:
+    def __getitem__(self, i: int) -> np.ndarray:
         """Get flux data by index"""
 
         return np.array([self.m[i], self.l[i], self.c[i]])
@@ -2219,11 +2220,9 @@ class Reservoir(ReservoirBase):
         self.lm: str = f"{self.species.n} [{self.mu}/l]"
 
         # initialize mass vector
-        self.m: [NDArray, Float[64]] = zeros(self.species.mo.steps) + self.mass
-        self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
-        self.v: [NDArray, Float[64]] = (
-            np.zeros(self.mo.steps) + self.volume
-        )  # reservoir volume
+        self.m: np.ndarray = zeros(self.species.mo.steps) + self.mass
+        self.l: np.ndarray = zeros(self.mo.steps)
+        self.v: np.ndarray = np.zeros(self.mo.steps) + self.volume  # reservoir volume
 
         if self.delta != "None":
             self.l = get_l_mass(self.m, self.delta, self.species.r)
@@ -2377,14 +2376,12 @@ class Flux(esbmtkBase):
             li = get_l_mass(fluxrate, self.delta, self.sp.r)
         else:
             li = 0
-        self.fa: [NDArray, Float[64]] = np.array([fluxrate, li])
+        self.fa: np.ndarray = np.array([fluxrate, li])
 
         # in case we want to keep the flux data
         if self.save_flux_data:
-            self.m: [NDArray, Float[64]] = (
-                zeros(self.model.steps) + fluxrate
-            )  # add the flux
-            self.l: [NDArray, Float[64]] = np.zeros(self.model.steps)
+            self.m: np.ndarray = zeros(self.model.steps) + fluxrate  # add the flux
+            self.l: np.ndarray = np.zeros(self.model.steps)
 
             if self.mo.number_of_solving_iterations > 0:
                 self.mc = np.empty(0)
@@ -2441,22 +2438,22 @@ class Flux(esbmtkBase):
             # self.__get_data__ = self.__get_without_isotopes__
 
     # setup a placeholder setitem function
-    def __setitem__(self, i: int, value: [NDArray, float]):
+    def __setitem__(self, i: int, value: np.ndarray):
         return self.__set_data__(i, value)
 
-    def __getitem__(self, i: int) -> NDArray[np.float64]:
+    def __getitem__(self, i: int) -> np.ndarray:
         """Get data by index"""
         # return self.__get_data__(i)
         return self.fa
 
-    def __set_with_isotopes__(self, i: int, value: [NDArray, float]) -> None:
+    def __set_with_isotopes__(self, i: int, value: np.ndarray) -> None:
         """Write data by index"""
 
         self.m[i] = value[0]
         self.l[i] = value[1]
         self.fa = value[0:4]
 
-    def __set_without_isotopes__(self, i: int, value: [NDArray, float]) -> None:
+    def __set_without_isotopes__(self, i: int, value: np.ndarray) -> None:
         """Write data by index"""
 
         self.fa = [value[0], 0]
@@ -2657,7 +2654,7 @@ class SourceSink(esbmtkBase):
             self.m = 1
             self.l = get_l_mass(self.m, d, self.species.r)
             self.c = self.l / (self.m - self.l)
-            #self.provided_kwargs.update({"delta": d})
+            # self.provided_kwargs.update({"delta": d})
 
 
 class Sink(SourceSink):

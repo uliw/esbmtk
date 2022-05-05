@@ -18,7 +18,8 @@
 """
 
 from numbers import Number
-from nptyping import *
+
+# from nptyping import *
 from typing import *
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 from copy import deepcopy, copy
@@ -80,42 +81,59 @@ class SeawaterConstants(esbmtkBase):
         import math
         from esbmtk import Q_
 
-        # dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            "name": str,
-            "model": Model,
-            "salinity": (int, float),
-            "temperature": (int, float),
-            "pH": (int, float),
-            "pressure": Number,
-            "register": any,
-            "units": (any),
+        # pu_type = type(Q_("kg").units)
+
+        self.defaults: dict[list[any, tuple]] = {
+            "name": ["None", (str)],
+            "model": [
+                "Model",
+                (str, Model),
+            ],
+            "salinity": [35.0, (Number)],
+            "temperature": [25.0, (Number)],
+            "pH": [8.1, (Number)],
+            "pressure": [1, (Number)],
+            "register": ["None", (Model, Reservoir, ReservoirGroup)],
+            "units": [
+                "None",
+                (str, Q_),
+            ],
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "units"]
-        # list of default values if none provided
-        self.lod: Dict[str, any] = {
-            "salinity": 35.0,
-            "temperature": 25.0,
-            "pH": 8.1,
-            "pressure": 0,
-            "register": "None",
-        }
+        self.lrk: list = ["name", "units", "register", "units"]
+        self.__initialize_keyword_variables__(kwargs)
+        self.parent = self.register
 
-        # validate input and initialize instance variables
-        self.__initerrormessages__()
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        # deal with units
+        if isinstance(self.units, str):
+            self.units = Q_(self.units)
+            base_unit = self.units.to_base_units()
+        elif isinstance(self.units, Q_):
+            base_unit = self.units.to_base_units()
+        else:
+            raise ValueError(
+                f"{self.units} must be string or Quantity, not {type(self.units)}"
+            )
 
-        u1 = Q_("mol/liter").units
-        u2 = Q_("mol/kg").units
-        if self.units != u1 and self.units != u2:
-            raise ValueError(f"units must be {u1} or {u2}")
+        # test if we us the correct units
+        print(f"self.units = {self.units}, type = {type(self.units)}")
+        base_unit = self.units.to_base_units()
+        print(f"base_unit = {base_unit}")
+
+        if "kilogram" in str(base_unit):
+            self.kg == True
+        elif "meter ** 3" in str(base_unit):
+            self.kg == False
+        else:
+            raise ValueError(
+                f"units must be {u1} or {u2}, not {base_unit} or {self.units}"
+            )
 
         # legacy names
         self.n: str = self.name  # string =  name of this instance
         self.mo: Model = self.model
-        self.hplus = 10 ** -self.pH
+        self.hplus = 10**-self.pH
         self.constants: list = ["K0", "K1", "K2", "KW", "KB", "Ksp", "Ksp0", "KS", "KF"]
         self.species: list = [
             "dic",
@@ -138,7 +156,7 @@ class SeawaterConstants(esbmtkBase):
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
 
-        self.__register_name__()
+        self.__register_name_new__()
 
     def update(self, **kwargs: dict) -> None:
         """Update values if necessary"""
@@ -165,6 +183,11 @@ class SeawaterConstants(esbmtkBase):
         # get total alkalinity
         self.ca = self.hco3 + 2 * self.co3
         self.ta = self.ca + self.boh4 + self.oh - self.hplus
+
+        if self.kg == False:  # i.e., mol/l
+            cf = self.density / 1000
+        else:
+            cf = 1.0
 
         # convert to mol/liter if necessary
         if self.units == Q_("1 mole/liter").units:
@@ -222,23 +245,23 @@ class SeawaterConstants(esbmtkBase):
         rhow = (
             999.842594
             + 6.793952e-2 * TC
-            - 9.095290e-3 * TC ** 2
-            + 1.001685e-4 * TC ** 3
-            - 1.120083e-6 * TC ** 4
-            + 6.536332e-9 * TC ** 5
+            - 9.095290e-3 * TC**2
+            + 1.001685e-4 * TC**3
+            - 1.120083e-6 * TC**4
+            + 6.536332e-9 * TC**5
         )
 
         # density of of seawater at 1 atm, P=0
         A = (
             8.24493e-1
             - 4.0899e-3 * TC
-            + 7.6438e-5 * TC ** 2
-            - 8.2467e-7 * TC ** 3
-            + 5.3875e-9 * TC ** 4
+            + 7.6438e-5 * TC**2
+            - 8.2467e-7 * TC**3
+            + 5.3875e-9 * TC**4
         )
-        B = -5.72466e-3 + 1.0227e-4 * TC - 1.6546e-6 * TC ** 2
+        B = -5.72466e-3 + 1.0227e-4 * TC - 1.6546e-6 * TC**2
         C = 4.8314e-4
-        rho0 = rhow + A * S + B * S ** (3 / 2) + C * S ** 2
+        rho0 = rhow + A * S + B * S ** (3 / 2) + C * S**2
 
         """Secant bulk modulus of pure water is the average change in
         pressure divided by the total change in volume per unit of
@@ -247,25 +270,25 @@ class SeawaterConstants(esbmtkBase):
         Ksbmw = (
             19652.21
             + 148.4206 * TC
-            - 2.327105 * TC ** 2
-            + 1.360477e-2 * TC ** 3
-            - 5.155288e-5 * TC ** 4
+            - 2.327105 * TC**2
+            + 1.360477e-2 * TC**3
+            - 5.155288e-5 * TC**4
         )
         # Secant bulk modulus of seawater at 1 atm
         Ksbm0 = (
             Ksbmw
-            + S * (54.6746 - 0.603459 * TC + 1.09987e-2 * TC ** 2 - 6.1670e-5 * TC ** 3)
-            + S ** (3 / 2) * (7.944e-2 + 1.6483e-2 * TC - 5.3009e-4 * TC ** 2)
+            + S * (54.6746 - 0.603459 * TC + 1.09987e-2 * TC**2 - 6.1670e-5 * TC**3)
+            + S ** (3 / 2) * (7.944e-2 + 1.6483e-2 * TC - 5.3009e-4 * TC**2)
         )
         # Secant modulus of seawater at S,T,P
         Ksbm = (
             Ksbm0
             + P
-            * (3.239908 + 1.43713e-3 * TC + 1.16092e-4 * TC ** 2 - 5.77905e-7 * TC ** 3)
-            + P * S * (2.2838e-3 - 1.0981e-5 * TC - 1.6078e-6 * TC ** 2)
+            * (3.239908 + 1.43713e-3 * TC + 1.16092e-4 * TC**2 - 5.77905e-7 * TC**3)
+            + P * S * (2.2838e-3 - 1.0981e-5 * TC - 1.6078e-6 * TC**2)
             + P * S ** (3 / 2) * 1.91075e-4
-            + P * P * (8.50935e-5 - 6.12293e-6 * TC + 5.2787e-8 * TC ** 2)
-            + P ** 2 * S * (-9.9348e-7 + 2.0816e-8 * TC + 9.1697e-10 * TC ** 2)
+            + P * P * (8.50935e-5 - 6.12293e-6 * TC + 5.2787e-8 * TC**2)
+            + P**2 * S * (-9.9348e-7 + 2.0816e-8 * TC + 9.1697e-10 * TC**2)
         )
         # Density of seawater at S,T,P in kg/m^3
         self.density = rho0 / (1.0 - P / Ksbm)
@@ -298,7 +321,7 @@ class SeawaterConstants(esbmtkBase):
         lnKF = (
             1590.2 / T
             - 12.641
-            + 1.525 * I ** 0.5
+            + 1.525 * I**0.5
             + np.log(1 - 0.001005 * S)
             + np.log(1 + self.ST / self.KS)
         )
@@ -321,10 +344,10 @@ class SeawaterConstants(esbmtkBase):
             -4276.1 / T
             + 141.328
             - 23.093 * np.log(T)
-            + (-13856 / T + 324.57 - 47.986 * np.log(T)) * I ** 0.5
+            + (-13856 / T + 324.57 - 47.986 * np.log(T)) * I**0.5
             + (35474 / T - 771.54 + 114.723 * np.log(T)) * I
-            - 2698 / T * I ** 1.5
-            + 1776 / T * I ** 2
+            - 2698 / T * I**1.5
+            + 1776 / T * I**2
             + np.log(1 - 0.001005 * S)
         )
 
@@ -361,7 +384,7 @@ class SeawaterConstants(esbmtkBase):
             -2307.1266 / T
             + 2.83655
             - 1.5529413 * log(T)
-            + S ** 0.5 * (-4.0484 / T - 0.20760841)
+            + S**0.5 * (-4.0484 / T - 0.20760841)
             + S * 0.08468345
             + S ** (3 / 2) * -0.00654208
             + log(1 - 0.001006 * S)
@@ -371,9 +394,9 @@ class SeawaterConstants(esbmtkBase):
             -9.226508
             - 3351.6106 / T
             - 0.2005743 * log(T)
-            + (-0.106901773 - 23.9722 / T) * S ** 0.5
+            + (-0.106901773 - 23.9722 / T) * S**0.5
             + 0.1130822 * S
-            - 0.00846934 * S ** 1.5
+            - 0.00846934 * S**1.5
             + log(1 - 0.001006 * S)
         )
 
@@ -385,11 +408,11 @@ class SeawaterConstants(esbmtkBase):
         self.K2 = self.__pressure_correction__("K2", self.K2)
 
         self.co2 = self.dic / (
-            1 + self.K1 / self.hplus + self.K1 * self.K2 / self.hplus ** 2
+            1 + self.K1 / self.hplus + self.K1 * self.K2 / self.hplus**2
         )
         self.hco3 = self.dic / (1 + self.hplus / self.K1 + self.K2 / self.hplus)
         self.co3 = self.dic / (
-            1 + self.hplus / self.K2 + self.hplus ** 2 / (self.K1 * self.K2)
+            1 + self.hplus / self.K2 + self.hplus**2 / (self.K1 * self.K2)
         )
 
     def __init_boron__(self) -> None:
@@ -406,17 +429,17 @@ class SeawaterConstants(esbmtkBase):
         lnkb = (
             (
                 -8966.9
-                - 2890.53 * S ** 0.5
+                - 2890.53 * S**0.5
                 - 77.942 * S
-                + 1.728 * S ** 1.5
-                - 0.0996 * S ** 2
+                + 1.728 * S**1.5
+                - 0.0996 * S**2
             )
             / T
             + 148.0248
-            + 137.1942 * S ** 0.5
+            + 137.1942 * S**0.5
             + 1.62142 * S
-            - (24.4344 + 25.085 * S ** 0.5 + 0.2474 * S) * log(T)
-            + 0.053105 * S ** 0.5 * T
+            - (24.4344 + 25.085 * S**0.5 + 0.2474 * S) * log(T)
+            + 0.053105 * S**0.5 * T
         )
 
         self.KB = exp(lnkb)
@@ -440,7 +463,7 @@ class SeawaterConstants(esbmtkBase):
             148.96502
             - 13847.27 / T
             - 23.6521 * log(T)
-            + (118.67 / T - 5.977 + 1.0495 * log(T)) * S ** 0.5
+            + (118.67 / T - 5.977 + 1.0495 * log(T)) * S**0.5
             - 0.01615 * S
         )
         self.KW = exp(lnKW)
@@ -476,14 +499,14 @@ class SeawaterConstants(esbmtkBase):
 
         a: list = A[n]
 
-        DV: float = -a[0] + (a[1] * Tc) + (a[2] / 1000 * Tc ** 2)
-        DK: float = -a[3] / 1000 + (a[4] / 1000 * Tc) + (0 * Tc ** 2)
+        DV: float = -a[0] + (a[1] * Tc) + (a[2] / 1000 * Tc**2)
+        DK: float = -a[3] / 1000 + (a[4] / 1000 * Tc) + (0 * Tc**2)
 
         # print(f"DV = {DV}")
         # print(f"DK = {DK}")
         # print(f"log k= {log(K)}")
 
-        lnkp: float = -(DV / RT) * P + (0.5 * DK / RT) * P ** 2 + log(K)
+        lnkp: float = -(DV / RT) * P + (0.5 * DK / RT) * P**2 + log(K)
         # print(lnkp)
 
         return exp(lnkp)
@@ -633,7 +656,7 @@ def calc_pCO2(
     dic: Union[Reservoir, VirtualReservoir],
     hplus: Union[Reservoir, VirtualReservoir],
     SW: SeawaterConstants,
-) -> Union[NDArray, Float]:
+) -> np.ndarray:
 
     """
     Calculate the concentration of pCO2 as a function of DIC,
@@ -656,24 +679,24 @@ def calc_pCO2(
 
     """
 
-    dic_c: [NDArray, Float] = dic.c
-    hplus_c: [NDArray, Float] = hplus.c
+    dic_c: np.ndarray = dic.c
+    hplus_c: np.ndarray = hplus.c
 
     k1: float = SW.K1
     k2: float = SW.K2
 
-    co2: [NDArray, Float] = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c ** 2)))
+    co2: np.ndarray = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c**2)))
 
-    pco2: [NDArray, Float] = co2 / SW.K0 * 1e6
+    pco2: np.ndarray = co2 / SW.K0 * 1e6
 
     return pco2
 
 
 def calc_pCO2b(
-    dic: Union[float, NDArray],
-    hplus: Union[float, NDArray],
+    dic: np.ndarray,
+    hplus: np.ndarray,
     SW: SeawaterConstants,
-) -> Union[NDArray, Float]:
+) -> np.ndarray:
 
     """
     Same as calc_pCO2, but accepts values/arrays rather than Reservoirs.
@@ -694,16 +717,16 @@ def calc_pCO2b(
                        )
     """
 
-    dic_c: [NDArray, Float] = dic
+    dic_c: np.ndarray = dic
 
-    hplus_c: [NDArray, Float] = hplus
+    hplus_c: np.ndarray = hplus
 
     k1: float = SW.K1
     k2: float = SW.K2
 
-    co2: [NDArray, Float] = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c ** 2)))
+    co2: np.ndarray = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c**2)))
 
-    pco2: [NDArray, Float] = co2 / SW.K0 * 1e6
+    pco2: np.ndarray = co2 / SW.K0 * 1e6
 
     return pco2
 
@@ -754,7 +777,7 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
     gamm: float = dic / ca
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
 
-    hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))
+    hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
     # hco3 and co3
     """ Since CA = [hco3] + 2[co3], can the below expression can be simplified
     """
@@ -860,7 +883,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     gamm: float = dic / ca
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
 
-    hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy ** 0.5))
+    hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
     # co3: float = dic / (1 + (hplus / k2) + ((hplus ** 2) / (k1 * k2)))
     hco3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
     co3: float = (ca - hco3) / 2
@@ -929,9 +952,9 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # BD & F_burial
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = Bm - BD
-    Fburial12 = Fburial * input_data[1][i-1] / input_data[0][i-1]
-    diss =  (Bm - Fburial) * dt # dissolution flux 
-    diss12 =  (B12 - Fburial12) * dt #  # dissolution flux light isotope
+    Fburial12 = Fburial * input_data[1][i - 1] / input_data[0][i - 1]
+    diss = (Bm - Fburial) * dt  # dissolution flux
+    diss12 = (B12 - Fburial12) * dt  #  # dissolution flux light isotope
 
     # # print("{Fburial}.format(")
     # print(Bm)
@@ -967,5 +990,5 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[7][i] = zsnow  # 7
     vr_data[8][i] = Fburial  # 8
     vr_data[9][i] = Fburial12  # 9
-    vr_data[10][i] = diss/dt  # 9
+    vr_data[10][i] = diss / dt  # 9
     vr_data[11][i] = Bm  # 9

@@ -25,7 +25,6 @@
 # from pint import UnitRegistry
 from __future__ import annotations
 from numbers import Number
-from nptyping import *
 from typing import *
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame

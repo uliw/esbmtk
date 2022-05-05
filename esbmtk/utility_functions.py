@@ -18,7 +18,7 @@
 
 # from pint import UnitRegistry
 from numbers import Number
-from nptyping import NDArray
+# from nptyping import NDArray
 from typing import Dict, Union
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 from pandas import DataFrame
@@ -1458,7 +1458,7 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     # establish some shared parameters
     # depths_table = np.arange(0, 6001, 1)
-    depths: NDArray = np.arange(0, 6002, 1, dtype=float)
+    depths: np.ndarray = np.arange(0, 6002, 1, dtype=float)
     rgs = kwargs["rgs"]
     Ksp0 = kwargs["Ksp0"]
     ca2 = rgs[0].swc.ca2
@@ -1468,7 +1468,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     Ksp = kwargs["Ksp"]
 
     # C saturation(z) after Boudreau 2010
-    Csat_table: NDArray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
+    Csat_table: np.ndarray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
     area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
     area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area'
     AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area

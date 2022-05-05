@@ -17,7 +17,7 @@
 """
 
 # from pint import UnitRegistry
-from nptyping import *
+# from nptyping import *
 from typing import *
 from numpy import array, set_printoptions, arange, zeros, interp, mean
 import time
@@ -78,7 +78,7 @@ def get_frac(m: float, l: float, a: float) -> [float, float]:
 
 
 # @njit()
-def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
+def get_flux_data(m: float, d: float, r: float) -> np.ndarray:
     """
     Calculate the isotope masses from bulk mass and delta value.
     Arguments are m = mass, d= delta value, r = abundance ratio
@@ -93,9 +93,7 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
 
 
 # @njit()
-def get_delta(
-    l: [NDArray, [Float64]], h: [NDArray, [Float64]], r: float
-) -> [NDArray, [Float64]]:
+def get_delta(l: np.ndarray, h: np.ndarray, r: float) -> np.ndarray:
     """Calculate the delta from the mass of light and heavy isotope
     Arguments are l and h which are the masses of the light and
     heavy isotopes respectively, r = abundance ratio of the
@@ -156,8 +154,8 @@ def get_delta_h(h) -> float:
 
 
 def execute(
-    new: [NDArray, Float64],
-    time: [NDArray, Float64],
+    new: np.ndarray,
+    time: np.ndarray,
     lop: list,
     lor: list,
     lpc_f: list,
@@ -278,7 +276,7 @@ def execute_e(model, new, lop, lor, lpc_f, lpc_r):
                 model.dt,
             )
     else:
-        foo_no_vr( 
+        foo_no_vr(
             model.fn,
             model.da,
             model.pc,
