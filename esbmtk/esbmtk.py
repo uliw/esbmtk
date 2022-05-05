@@ -2161,7 +2161,7 @@ class Reservoir(ReservoirBase):
                 self.swc = self.parent.swc
                 self.density = self.swc.density
             else:
-                if "None" in self.seawater_parameters.keys():
+                if isinstance (self.seawater_parameters, str):
                     temperature = 25
                     salinity = 35
                     pressure = 1
@@ -2186,11 +2186,9 @@ class Reservoir(ReservoirBase):
                     pressure=pressure,
                     salinity=salinity,
                     register=self,
-                    units=self.mo.c_unit,
+                    units=self.mo.concentration_unit,
                 )
                 self.density = self.swc.density
-
-        self.state = 0
 
         if self.mass == "None":
             c = Q_(self.concentration)
@@ -2208,6 +2206,11 @@ class Reservoir(ReservoirBase):
             self.display_as = "mass"
         else:
             raise ValueError("You need to specify mass or concentration")
+        
+
+        self.state = 0
+
+       
 
         # save the unit which was provided by the user for display purposes
         # left y-axis label

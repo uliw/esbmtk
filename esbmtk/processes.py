@@ -4,9 +4,8 @@
 from numba import njit, jit
 from numba.typed import List
 import numpy as np
+from . import ureg, Q_
 from .esbmtk import esbmtkBase, Reservoir, Flux, Source, Sink
-
-# from .utility_functions import sort_by_type
 from .solver import get_imass, get_frac, get_delta, get_flux_data, get_l_mass
 
 np.set_printoptions(precision=4)

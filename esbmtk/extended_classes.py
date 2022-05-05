@@ -6,13 +6,13 @@ from pandas import DataFrame
 from numba.typed import List
 import numba
 from numba.core import types as nbt
-
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import logging
 import os
 import math
+from . import ureg, Q_
 
 from .esbmtk import (
     esbmtkBase,
@@ -182,6 +182,13 @@ class ReservoirGroup(esbmtkBase):
             elif not isinstance(self.volume, Q_):
                 raise ValueError("Volume must be string or quantity")
 
+        # register this group object in the global namespace
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
+        self.__register_name__()
+
+        self.model = self.mo
+
         # register a seawater_parameter instance if necessary
         if self.seawater_parameters != "None":
             if "temperature" in self.seawater_parameters:
@@ -206,13 +213,6 @@ class ReservoirGroup(esbmtkBase):
                 register=self,
                 units=self.mo.concentration_unit,
             )
-
-        # register this group object in the global namespace
-        if self.mo.register == "local" and self.register == "None":
-            self.register = self.mo
-        self.__register_name__()
-
-        self.model = self.mo
 
         # dict with all default values
         self.cd: dict = {}

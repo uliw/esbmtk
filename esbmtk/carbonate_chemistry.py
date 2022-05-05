@@ -108,9 +108,9 @@ class SeawaterConstants(esbmtkBase):
             )
 
         # test if we us the correct units
-        print(f"self.units = {self.units}, type = {type(self.units)}")
+        # print(f"self.units = {self.units}, type = {type(self.units)}")
         base_unit = self.units.to_base_units()
-        print(f"base_unit = {base_unit}")
+        # print(f"base_unit = {base_unit}")
 
         if "kilogram" in str(base_unit):
             self.kg == True
@@ -170,25 +170,25 @@ class SeawaterConstants(esbmtkBase):
         self.ca = self.hco3 + 2 * self.co3
         self.ta = self.ca + self.boh4 + self.oh - self.hplus
 
-        if self.kg == False:  # i.e., mol/l
-            cf = self.density / 1000
-        else:
-            cf = 1.0
+        # if self.kg == False:  # i.e., mol/l
+        #     cf = self.density / 1000
+        # else:
+        #     cf = 1.0
 
         # convert to mol/liter if necessary
-        if self.units == Q_("1 mole/liter").units:
-            cf = self.density / 1000  # convert to kg/liter
+        # if self.units == Q_("1 mole/liter").units:
+        #     cf = self.density / 1000  # convert to kg/liter
 
-            # constants and species are just names, so we need to
-            # retrieve the actual variable first
-            for n in self.constants:
-                v = getattr(self, n)
-                setattr(self, n, v * cf)
-            for n in self.species:
-                v = getattr(self, n)
-                setattr(self, n, v * cf)
-        else:
-            "\n Constants are mol/kg! \n"
+        #     # constants and species are just names, so we need to
+        #     # retrieve the actual variable first
+        #     for n in self.constants:
+        #         v = getattr(self, n)
+        #         setattr(self, n, v * cf)
+        #     for n in self.species:
+        #         v = getattr(self, n)
+        #         setattr(self, n, v * cf)
+        # else:
+        #     "\n Constants are mol/kg! \n"
 
         # update pk values
         for n in self.constants:
