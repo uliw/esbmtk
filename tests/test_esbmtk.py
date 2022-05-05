@@ -35,10 +35,10 @@ def create_model(request):
     return v0, c0, d0, M1
 
 @pytest.fixture(params=[True, False])
-def create_model_with_sewater(request):
+def create_model_with_seawater(request):
 
     # from module import symbol
-    from esbmtk import Model, Reservoir
+    from esbmtk import Model, Reservoir, Q_
 
     c0 = 3.1
     d0 = 0
@@ -779,14 +779,14 @@ def test_scale_with_flux_and_signal_addition(create_model, solver):
     #          M1.C_R1_2_SI1.R1_2_SI1_F])
 
 
-def test_seawaterconstants(create_model):
+def test_seawaterconstants(create_model_with_seawater):
     from esbmtk import Source, Sink, Reservoir, Connect, Signal
     from esbmtk import ExternalCode, ReservoirGroup, add_carbonate_system_1
     from esbmtk import GasReservoir, AirSeaExchange
     import numpy as np
     import sys
 
-    v0, c0, d0, M1 = create_model_with_sewater
+    v0, c0, d0, M1 = create_model_with_seawater
     Source(register=M1, name="SO1", species=M1.Carbon.DIC)
     Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
 
@@ -965,7 +965,9 @@ def test_carbonate_system2_(create_model, solver):
         bypass="sink",
         # alpha=-28,  # set a default flux
     )
-    exp = M1.C_SO1_2_DIC.SO1_2_DIC_F
+    fs = M1.flux_summary(filter_by="default_a", return_list=True)
+   
+    exp = fs[0]
     exp.fa = np.array([60e12, 60e12])
     add_carbonate_system_2(
         rgs=[M1.S], carbonate_export_fluxes=[exp], alpha=0.6, zsat_min=-200, z0=-200
@@ -986,7 +988,7 @@ def test_carbonate_system2_(create_model, solver):
 
 
 @pytest.mark.parametrize("solver", ["numba", "python"])
-def test_gas_exchange(create_model, solver):
+def test_gas_exchange(create_model_with_seawater, solver):
     """Test that isotope fractionation from a flux out of a reservoir
     results in the corrrect fractionation, when using the numba solver
 
@@ -997,7 +999,7 @@ def test_gas_exchange(create_model, solver):
     from esbmtk import add_carbonate_system_1
     import numpy as np
 
-    v0, c0, d0, M1 = create_model
+    v0, c0, d0, M1 = create_model_with_seawater
 
     Source(register=M1, name="SO1", species=M1.Carbon.DIC)
     Sink(register=M1, name="SI1", species=M1.Carbon.DIC)
@@ -1046,6 +1048,7 @@ def test_gas_exchange(create_model, solver):
         piston_velocity="4.8 m/d",
         water_vapor_pressure=M1.S.swc.p_H2O,
         id="A_sb",
+        register=M1,
     )
 
     M1.run(solver=solver)
@@ -1080,7 +1083,7 @@ def test_weathering(create_model, solver, scale):
 
     from esbmtk import Source, Sink, Connect, Reservoir, GasReservoir
     from esbmtk import ExternalCode, ReservoirGroup, AirSeaExchange
-    from esbmtk import get_delta_i
+    from esbmtk import get_delta_i, Q_
     import numpy as np
 
     v0, c0, d0, M1 = create_model
@@ -1144,7 +1147,7 @@ def test_weathering_with_atmosphere_as_source(create_model, solver):
 
     from esbmtk import Source, Sink, Connect, Reservoir, GasReservoir
     from esbmtk import ExternalCode, ReservoirGroup, AirSeaExchange
-    from esbmtk import get_delta_i
+    from esbmtk import get_delta_i, Q_
     import numpy as np
 
     v0, c0, d0, M1 = create_model
