@@ -732,7 +732,7 @@ class Model(esbmtkBase):
             "element": ["None", (str, list)],
             "mass_unit": ["mol", (str, Q_)],
             "volume_unit": ["m**3", (str, Q_)],
-            "concentration_unit": ["mol/kg", (str, Q_)],
+            "concentration_unit": ["mol/kg", (str)],
             "time_label": ["Years", (str)],
             "display_precision": [0.01, (float)],
             "plot_style": ["default", (str)],
@@ -798,6 +798,15 @@ class Model(esbmtkBase):
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
+        if not (
+            self.concentration_unit == "mol/kg"
+            or self.concentration_unit == "mol/l"
+            or self.concentration_unit == "mol/liter"
+        ):
+            raise ValueError(
+                f"{self.concentration_unit} must be either mol/l or mol/kg"
+            )
+
         self.l_unit = ureg.meter  # the length unit
         self.t_unit = Q_(self.timestep).units  # the time unit
         self.d_unit = Q_(self.stop).units  # display time units
@@ -2155,13 +2164,13 @@ class Reservoir(ReservoirBase):
 
         self.ideal_water = self.mo.ideal_water
         if self.ideal_water:
-            self.density = 1
+            self.density = 1000
         else:
             if isinstance(self.parent, ReservoirGroup):
                 self.swc = self.parent.swc
                 self.density = self.swc.density
             else:
-                if isinstance (self.seawater_parameters, str):
+                if isinstance(self.seawater_parameters, str):
                     temperature = 25
                     salinity = 35
                     pressure = 1
@@ -2195,7 +2204,7 @@ class Reservoir(ReservoirBase):
             self.plt_units = c.units
             self._concentration: tp.Union[int, float] = c.to(self.mo.c_unit).magnitude
             self.mass: tp.Union[int, float] = (
-                self._concentration * self.volume * self.density / 1000
+                self.concentration * self.volume * self.density / 1000
             )
             self.display_as = "concentration"
         elif self.concentration == "None":
@@ -2206,11 +2215,8 @@ class Reservoir(ReservoirBase):
             self.display_as = "mass"
         else:
             raise ValueError("You need to specify mass or concentration")
-        
 
         self.state = 0
-
-       
 
         # save the unit which was provided by the user for display purposes
         # left y-axis label
