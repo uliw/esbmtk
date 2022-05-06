@@ -17,7 +17,7 @@ def create_model(request):
         timestep=" 1 yr",  # base unit for time
         mass_unit="mol",  # base unit for mass
         volume_unit="l",  # base unit for volume
-        concentration_unit="mmol/l",
+        concentration_unit="mol/l",
         element="Carbon",  # load default element and species definitions
         m_type="both",
         save_flux_data=request.param,
@@ -50,7 +50,7 @@ def create_model_with_seawater(request):
         timestep=" 1 yr",  # base unit for time
         mass_unit="mol",  # base unit for mass
         volume_unit="l",  # base unit for volume
-        concentration_unit="mmol/l",
+        concentration_unit="mol/l",
         element="Carbon",  # load default element and species definitions
         m_type="both",
         save_flux_data=request.param,
@@ -161,7 +161,7 @@ def test_signal_indexing(idx, stype):
         mass_unit="mol",  # base unit for mass
         volume_unit="l",  # base unit for volume
         element="Carbon",  # load default element and species definitions
-        concentration_unit="mmol/l",
+        concentration_unit="mol/l",
         m_type="both",
         offset="100 yrs",
     )
