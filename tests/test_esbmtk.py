@@ -17,7 +17,7 @@ def create_model(request):
         timestep=" 1 yr",  # base unit for time
         mass_unit="mol",  # base unit for mass
         volume_unit="l",  # base unit for volume
-        concentration_unit="mol/l",
+        concentration_unit="mol/kg",
         element="Carbon",  # load default element and species definitions
         m_type="both",
         save_flux_data=request.param,
@@ -27,7 +27,7 @@ def create_model(request):
         name="R1",  # Name of reservoir
         species=M1.Carbon.DIC,  # Species handle
         delta=d0,  # initial delta
-        concentration=f"{c0} mol/l",  # concentration
+        concentration=f"{c0} mol/kg",  # concentration
         volume=f"{v0} l",  # reservoir size (m^3)
         register=M1,
     )
@@ -50,7 +50,7 @@ def create_model_with_seawater(request):
         timestep=" 1 yr",  # base unit for time
         mass_unit="mol",  # base unit for mass
         volume_unit="l",  # base unit for volume
-        concentration_unit="mol/l",
+        concentration_unit="mol/kg",
         element="Carbon",  # load default element and species definitions
         m_type="both",
         save_flux_data=request.param,
@@ -60,7 +60,7 @@ def create_model_with_seawater(request):
         name="R1",  # Name of reservoir
         species=M1.Carbon.DIC,  # Species handle
         delta=d0,  # initial delta
-        concentration=f"{c0} mol/l",  # concentration
+        concentration=f"{c0} mol/kg",  # concentration
         volume=f"{v0} l",  # reservoir size (m^3)
         register=M1,
     )
@@ -161,7 +161,7 @@ def test_signal_indexing(idx, stype):
         mass_unit="mol",  # base unit for mass
         volume_unit="l",  # base unit for volume
         element="Carbon",  # load default element and species definitions
-        concentration_unit="mol/l",
+        concentration_unit="mol/kg",
         m_type="both",
         offset="100 yrs",
     )
@@ -175,7 +175,7 @@ def test_signal_indexing(idx, stype):
         name="R1",  # Name of reservoir
         species=M1.Carbon.DIC,  # Species handle
         delta=d0,  # initial delta
-        concentration=f"{c0} mol/l",  # concentration
+        concentration=f"{c0} mol/kg",  # concentration
         volume=f"{v0} l",  # reservoir size (m^3)
         register=M1,
     )
@@ -327,7 +327,7 @@ def test_scale_with_concentration_empty(create_model, solver):
         name="R2",  # Name of reservoir
         species=M1.Carbon.DIC,  # Species handle
         delta=d0,  # initial delta
-        concentration=f"0 mol/l",  # concentration
+        concentration=f"0 mol/kg",  # concentration
         volume=f"{v0} l",  # reservoir size (m^3)
         register=M1,
     )
@@ -795,7 +795,7 @@ def test_seawaterconstants(create_model_with_seawater):
         # volume = "1E5 l",       # see below
         geometry=[0, 6000, 1],
         delta={M1.Carbon.DIC: 0, M1.Carbon.TA: 0},  # dict of delta values
-        concentration={M1.Carbon.DIC: "2.1 mmol/l", M1.Carbon.TA: "2.36 mmol/l"},
+        concentration={M1.Carbon.DIC: "2.1 mmol/kg", M1.Carbon.TA: "2.36 mmol/kg"},
         isotopes={M1.Carbon.DIC: True},
         seawater_parameters={"temperature": 5, "pressure": 0, "salinity": 0},
         # @carbonate_system= True,
@@ -808,7 +808,7 @@ def test_seawaterconstants(create_model_with_seawater):
         # volume = "1E5 l",       # see below
         geometry=[0, 6000, 1],
         delta={M1.Carbon.DIC: 0, M1.Carbon.TA: 0},  # dict of delta values
-        concentration={M1.Carbon.DIC: "2.1 mmol/l", M1.Carbon.TA: "2.36 mmol/l"},
+        concentration={M1.Carbon.DIC: "2.1 mmol/kg", M1.Carbon.TA: "2.36 mmol/kg"},
         isotopes={M1.Carbon.DIC: True},
         seawater_parameters={"temperature": 25, "pressure": 1000, "salinity": 35},
         # @carbonate_system= True,
@@ -816,7 +816,7 @@ def test_seawaterconstants(create_model_with_seawater):
     )
 
     assert round(M1.S2.swc.density, 6) == 1062.538172  # kg/m^3
-    assert round(M1.S2.swc.so4, 6) == 0.03002  # mol/liter
+    assert round(M1.S2.swc.so4, 6) == 0.028253  # mol/kgiter
 
 
 @pytest.mark.parametrize("solver", ["numba", "python"])
@@ -837,7 +837,7 @@ def test_carbonate_system1_constants(create_model, solver):
         name="S",  # Name of reservoir group
         volume="1E5 l",  # see below
         delta={M1.Carbon.DIC: 0, M1.Carbon.TA: 0},  # dict of delta values
-        concentration={M1.Carbon.DIC: "2.1 mmol/l", M1.Carbon.TA: "2.4 mmol/l"},
+        concentration={M1.Carbon.DIC: "2.1 mmol/kg", M1.Carbon.TA: "2.4 mmol/kg"},
         isotopes={M1.Carbon.DIC: True},
         seawater_parameters={"temperature": 25, "pressure": 1, "salinity": 35},
         # @carbonate_system= True,
@@ -891,10 +891,10 @@ def test_carbonate_system1_constants(create_model, solver):
     i = 200
     assert round(M1.S.DIC.c[i] * 1000, 2) == 2.1  # DIC
     assert round(M1.S.TA.c[i] * 1000, 2) == 2.4  # TA
-    assert round(-np.log10(M1.S.cs.H[i]), 2) == 7.99  # pH
-    assert round(M1.S.cs.HCO3[i] * 1000, 2) == 1.87
+    assert round(-np.log10(M1.S.cs.H[i]), 2) == 8  # pH
+    assert round(M1.S.cs.HCO3[i] * 1000, 2) == 1.86
     assert round(M1.S.cs.CO3[i] * 1000, 2) == 0.22
-    assert round(M1.S.cs.CO2aq[i] * 1000, 4) == 0.0134
+    assert round(M1.S.cs.CO2aq[i] * 1000, 4) == 0.0133
 
 
 @pytest.mark.parametrize("solver", ["numba", "python"])
@@ -916,7 +916,7 @@ def test_carbonate_system2_(create_model, solver):
         # volume = "1E5 l",       # see below
         geometry=[0, 6000, 1],
         delta={M1.Carbon.DIC: 0, M1.Carbon.TA: 0},  # dict of delta values
-        concentration={M1.Carbon.DIC: "2.3 mmol/l", M1.Carbon.TA: "2.4 mmol/l"},
+        concentration={M1.Carbon.DIC: "2.3 mmol/kg", M1.Carbon.TA: "2.4 mmol/kg"},
         isotopes={M1.Carbon.DIC: True},
         seawater_parameters={"temperature": 2, "pressure": 240, "salinity": 35},
         # @carbonate_system= True,
@@ -979,7 +979,7 @@ def test_carbonate_system2_(create_model, solver):
     """
     assert round(M1.S.DIC.c[i] * 1000, 2) == 2.39  # DIC
     assert round(M1.S.TA.c[i] * 1000, 2) == 2.49  # TA
-    assert round(-np.log10(M1.S.cs.H[i]), 2) == 7.82  # pH
+    assert round(-np.log10(M1.S.cs.H[i]), 2) == 7.84  # pH
     assert round(M1.S.cs.HCO3[i] * 1000, 2) == 2.27
     # assert round(M1.S.cs.CO3[i] * 1000, 4) == 0.0661
     # assert round(M1.S.cs.CO2aq[i] * 1000, 4) == 0.0386
@@ -1009,7 +1009,7 @@ def test_gas_exchange(create_model_with_seawater, solver):
         # volume = "1E5 l",       # see below
         geometry=[0, 6000, 1],
         delta={M1.Carbon.DIC: 0, M1.Carbon.TA: 0},  # dict of delta values
-        concentration={M1.Carbon.DIC: "2.1 mmol/l", M1.Carbon.TA: "2.36 mmol/l"},
+        concentration={M1.Carbon.DIC: "2.1 mmol/kg", M1.Carbon.TA: "2.36 mmol/kg"},
         isotopes={M1.Carbon.DIC: True},
         seawater_parameters={"temperature": 25, "pressure": 1, "salinity": 35},
         # @carbonate_system= True,
@@ -1062,7 +1062,7 @@ def test_gas_exchange(create_model_with_seawater, solver):
     diff_c = epco2_at[-3] - epco2_aq[-3]
     diff_d = M1.S.DIC.d[-3] - M1.CO2_At.d[-3]
 
-    assert round(abs(diff_c), 3) == 1.344  # ppm
+    assert round(abs(diff_c), 1) == 9.8  # ppm
     assert round(diff_d, 1) == 8.0
 
 
@@ -1093,7 +1093,7 @@ def test_weathering(create_model, solver, scale):
         # volume = "1E5 l",       # see below
         geometry=[0, 6000, 1],
         delta={M1.Carbon.DIC: 0, M1.Carbon.TA: 0},  # dict of delta values
-        concentration={M1.Carbon.DIC: "2.3 mmol/l", M1.Carbon.TA: "2.4 mmol/l"},
+        concentration={M1.Carbon.DIC: "2.3 mmol/kg", M1.Carbon.TA: "2.4 mmol/kg"},
         isotopes={M1.Carbon.DIC: True},
         register=M1,
     )
@@ -1157,7 +1157,7 @@ def test_weathering_with_atmosphere_as_source(create_model, solver):
         # volume = "1E5 l",       # see below
         geometry=[0, 6000, 1],
         delta={M1.Carbon.DIC: 0, M1.Carbon.TA: 0},  # dict of delta values
-        concentration={M1.Carbon.DIC: "2.3 mmol/l", M1.Carbon.TA: "2.4 mmol/l"},
+        concentration={M1.Carbon.DIC: "2.3 mmol/kg", M1.Carbon.TA: "2.4 mmol/kg"},
         isotopes={M1.Carbon.DIC: True},
         register=M1,
     )
