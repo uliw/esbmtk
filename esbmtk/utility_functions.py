@@ -609,7 +609,7 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
     provided object reference
     """
 
-    from esbmtk import SeawaterConstants, ReservoirGroup, build_concentration_dicts
+    from esbmtk import ReservoirGroup, build_concentration_dicts
     from esbmtk import SourceGroup, SinkGroup, Q_
 
     # parse for sources and sinks, create these and remove them from the list
@@ -1317,12 +1317,10 @@ def add_carbonate_system_1(rgs: list):
     # get object handle even if it defined in model namespace
     # rgs = get_object_handle(rgs)
 
+    
+    species = rgs[0].mo.Carbon.CO2
+    
     for rg in rgs:
-
-        if rg.mo.register == "local":
-            species = rg.mo.Carbon.CO2
-        else:
-            species = __builtins__["CO2"]
 
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):
             ExternalCode(
@@ -1335,6 +1333,8 @@ def add_carbonate_system_1(rgs: list):
                     "HCO3": rg.swc.hco3,  # 2
                     "CO3": rg.swc.co3,  # 3
                     "CO2aq": rg.swc.co2,  # 4
+                    "OH": 0.0,
+                    "BOH": 0.0,
                 },
                 function_input_data=List([rg.DIC.c, rg.TA.c]),
                 function_params=List(
