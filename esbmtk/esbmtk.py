@@ -2190,12 +2190,10 @@ class Reservoir(ReservoirBase):
 
                 SeawaterConstants(
                     name="swc",
-                    model=self.mo,
                     temperature=temperature,
                     pressure=pressure,
                     salinity=salinity,
                     register=self,
-                    units=self.mo.concentration_unit,
                 )
                 self.density = self.swc.density
 
