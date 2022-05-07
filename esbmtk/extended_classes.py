@@ -206,12 +206,10 @@ class ReservoirGroup(esbmtkBase):
 
             SeawaterConstants(
                 name="swc",
-                model=self.mo,
                 temperature=self.temperature,
                 pressure=self.pressure,
                 salinity=self.salinity,
                 register=self,
-                units=self.mo.concentration_unit,
             )
 
         # dict with all default values
