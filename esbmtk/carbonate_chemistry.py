@@ -23,7 +23,8 @@ import typing as tp
 from numba import njit
 from numba.typed import List
 import numpy as np
-from .esbmtk import esbmtkBase, Model, Reservoir, VirtualReservoir, ReservoirGroup
+from .esbmtk import esbmtkBase, Reservoir, VirtualReservoir, Model
+from .esbmtk import ReservoirGroup
 
 
 # define a transform function to display the Hplus concentration as pH
@@ -42,8 +43,7 @@ def phc(m: float) -> float:
 
 
 class SeawaterConstants(esbmtkBase):
-    """Provide basic seawater properties as a function of T and Salinity.
-    Pressure may come at a later stage
+    """Provide basic seawater properties as a function of T, P and Salinity.
 
     Example:
 
@@ -53,8 +53,17 @@ class SeawaterConstants(esbmtkBase):
              salinity  = optional in psu, defaults to 35,
              pressure = optional, defaults to 0 bars = 1atm,
              pH = optional, defaults to 8.1,
-             units = "mol/l" or "mol/kg"
             )
+
+    Results are always in mol/kg
+
+    Acess the values "dic", "ta", "ca", "co2", "hco3",
+    "co3", "boron", "boh4", "boh3", "oh", "ca2", "so4","hplus",
+    as SW.co3 etc.
+
+    This method also provides "K0", "K1", "K2", "KW", "KB", "Ksp",
+    "Ksp0", "KS", "KF" and their corresponding pK values, as well
+    as the density for the given (P/T/S conditions)
 
     useful methods:
 
@@ -75,55 +84,21 @@ class SeawaterConstants(esbmtkBase):
 
         self.defaults: dict[list[any, tuple]] = {
             "name": ["None", (str)],
-            "model": [
-                "Model",
-                (str, Model),
-            ],
             "salinity": [35.0, (int, float)],
             "temperature": [25.0, (int, float)],
             "pH": [8.1, (int, float)],
-            "pressure": [1, (int, float)],
+            "pressure": [0, (int, float)],
             "register": ["None", (Model, Reservoir, ReservoirGroup)],
-            "kg": ["None", (str)],
-            "units": [
-                "None",
-                (str, Q_),
-            ],
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "units", "register", "units"]
+        self.lrk: list = ["name"]
         self.__initialize_keyword_variables__(kwargs)
         self.parent = self.register
 
-        # deal with units
-        if isinstance(self.units, str):
-            self.units = Q_(self.units)
-            base_unit = self.units.to_base_units()
-        elif isinstance(self.units, Q_):
-            base_unit = self.units.to_base_units()
-        else:
-            raise ValueError(
-                f"{self.units} must be string or Quantity, not {type(self.units)}"
-            )
-
-        # test if we us the correct units
-        # print(f"self.units = {self.units}, type = {type(self.units)}")
-        base_unit = self.units.to_base_units()
-        # print(f"base_unit = {base_unit}")
-
-        if "kilogram" in str(base_unit):
-            self.kg == True
-        elif "meter ** 3" in str(base_unit):
-            self.kg == False
-        else:
-            raise ValueError(
-                f"units must be {u1} or {u2}, not {base_unit} or {self.units}"
-            )
-
         # legacy names
         self.n: str = self.name  # string =  name of this instance
-        self.mo: Model = self.model
+        # self.mo: Model = self.model
         self.hplus = 10**-self.pH
         self.constants: list = ["K0", "K1", "K2", "KW", "KB", "Ksp", "Ksp0", "KS", "KF"]
         self.species: list = [
@@ -143,7 +118,9 @@ class SeawaterConstants(esbmtkBase):
         ]
 
         self.update_parameters()
-        self.__register_name_new__()
+
+        if self.register != "None":
+            self.__register_name_new__()
 
     def update_parameters(self, **kwargs: dict) -> None:
         """Update values if necessary"""
@@ -170,32 +147,7 @@ class SeawaterConstants(esbmtkBase):
         self.ca = self.hco3 + 2 * self.co3
         self.ta = self.ca + self.boh4 + self.oh - self.hplus
 
-        # if self.kg == False:  # i.e., mol/l
-        #     cf = self.density / 1000
-        # else:
-        #     cf = 1.0
-
-        # convert to mol/liter if necessary
-        # if self.units == Q_("1 mole/liter").units:
-        #     cf = self.density / 1000  # convert to kg/liter
-
-        #     # constants and species are just names, so we need to
-        #     # retrieve the actual variable first
-        #     for n in self.constants:
-        #         v = getattr(self, n)
-        #         setattr(self, n, v * cf)
-        #     for n in self.species:
-        #         v = getattr(self, n)
-        #         setattr(self, n, v * cf)
-        # else:
-        #     "\n Constants are mol/kg! \n"
-
-        # update pk values
-        for n in self.constants:
-            v = getattr(self, n)
-            pk = f"p{n.lower()}"
-            setattr(self, pk, -log10(v))
-
+       
     def show(self) -> None:
         """Printout pK values."""
 
@@ -784,6 +736,8 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[2][i] = hco3
     vr_data[3][i] = co3
     vr_data[4][i] = co2aq
+    vr_data[5][i] = oh
+    vr_data[5][i] = boh4
     # vr_data[5][i] = omega
 
 
