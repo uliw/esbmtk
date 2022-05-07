@@ -14,15 +14,23 @@ generation of graphical results.
 
 * News
 
-  - 0.8.0.0 Cleanup of naming scheme which is now strictly
-    hierarchical. Bulk connection dictionaries now have to be
-    specified as =source_to_sink= instead of =source2sink=. The
-    connection naming scheme has been revamped. Please see
-    =esbmtk.connect.__set_name__()= documentation for details. All of
-    this will break existing models. The flux and connection summary
-    methods can be filtered by more than one keyword. Provide a filter
-    string in the following format ="keyword_1 keyword_2= in it will
+  - 0.8.0.0
+    - Cleanup of naming scheme which is now strictly hierarchical.
+    - Bulk connection dictionaries now have to be  specified as =source_to_sink= instead of =source2sink=. 
+    - The connection naming scheme has been revamped. Please see  =esbmtk.connect.__set_name__()= documentation for details. 
+    - Model concentration units must now match 'mole/liter' or 'mol/kg'. Concentrations can still be specified as =mmol/l= or =mmol/kg=, but model output will be in mole/liter or kg. At present, the model does not provide for the automatic conversion of mol/l to mol/kg. Thus you must specify units in a consistent way.
+    - The SeawaterConstants class now always returns values as mol/kg solution. Caveat Emptor.
+    - The SeawaterConstants class no longer accepts the 'model' keyword
+    - All of his will break existing models.
+    - Models assume by default that they deal with ideal water, i.e.,
+      where the density equals one. To work with seawater, you must
+      set =ideal_water=False=. In that case, you should also set the
+      =concentration_unit= keyword to ='mol/kg'= (solution).
+    - 
+  - The flux and connection summary methods can be filtered by more than one keyword. Provide a filter
+    string in the following format ="keyword_1 keyword_2= and it will
     only return results that match both keywords.
+  - Removed the dependency on the nptyping and number libraries
     
 
   - 0.7.3.9 Moved to setuptools build system. Lost of code fixesWRT
@@ -309,12 +317,11 @@ graphical interface ;-) See the todo section for ideas.
 
 ESBMTK relies on the following python versions and libraries
 
- - python > 3.9
+ - python > 3.8
  - matplotlib
  - numpy
  - pandas
  - typing
- - nptyping
  - pint
 
 If you work with conda, it is recommended to install the above via
@@ -325,18 +332,17 @@ libraries automatically. ESBMTK itself can be installed with pip
 
 * Documentation
 
-The documentation is available in org format or in pdf format. 
-See the documentation folder, [[https://github.com/uliw/esbmtk/blob/master/Documentation/ESBMTK-Quick-Start_Guide.org][specifically the quickstart guide]].
+The documentation is woefully out of date, at present, you best bet is the code itself
 
 The API documentation is available at
 https://uliw.github.io/esbmtk/esbmtk/index.html
 
-At present, I also provide the following example cases (as py-files
-and in jupyter notebook format)
+# At present, I also provide the following example cases (as py-files
+# and in jupyter notebook format)
 
-  - A trivial carbon cycle model which shows how to set up the model,
-    and read an external csv file to force the model.
-  - 
+#   - A trivial carbon cycle model which shows how to set up the model,
+#     and read an external csv file to force the model.
+#   - 
 #  - The same model as be before but now to demonstrate how to add
  #   pyramid shaped signal, and how to use the rate constant process to
  #   adjust concentration dependent flux rates . [[https://github.com/uliw/esbmtk/blob/master/Examples/Using%20a%20rate%20constant/rate_example.org][concentration dependent flux rates]]
