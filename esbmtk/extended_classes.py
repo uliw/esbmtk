@@ -1,25 +1,22 @@
-from numbers import Number
-from nptyping import NDArray, Float64
-from typing import *
-from numpy import array, set_printoptions, arange, zeros, interp, mean
+# from numbers import Number
+
+# from nptyping import np.ndarray, Float64
+import typing as tp
 from pandas import DataFrame
-from copy import deepcopy, copy
-import time
-from time import process_time
 from numba.typed import List
 import numba
 from numba.core import types as nbt
-
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import logging
-import builtins
 import os
 import math
+from . import ureg, Q_
 
 from .esbmtk import (
     esbmtkBase,
+    Model,
     ReservoirBase,
     Reservoir,
     Species,
@@ -116,7 +113,7 @@ class ReservoirGroup(esbmtkBase):
         from numba.typed import List
 
         # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "delta": dict,
             "concentration": dict,
@@ -134,10 +131,11 @@ class ReservoirGroup(esbmtkBase):
         self.lrk: list = [
             "name",
             ["volume", "geometry"],
+            "register",
         ]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {
+        self.lod: dict[any, any] = {
             "volume": "None",
             "geometry": "None",
             "seawater_parameters": "None",
@@ -170,6 +168,7 @@ class ReservoirGroup(esbmtkBase):
         # legacy variable
         self.n = self.name
         self.mo = self.species[0].mo
+        self.model = self.species[0].mo
 
         # geoemtry information
         if self.volume == "None":
@@ -182,6 +181,13 @@ class ReservoirGroup(esbmtkBase):
                 self.volume = Q_(self.volume)
             elif not isinstance(self.volume, Q_):
                 raise ValueError("Volume must be string or quantity")
+
+        # register this group object in the global namespace
+        if self.mo.register == "local" and self.register == "None":
+            self.register = self.mo
+        self.__register_name__()
+
+        self.model = self.mo
 
         # register a seawater_parameter instance if necessary
         if self.seawater_parameters != "None":
@@ -200,18 +206,11 @@ class ReservoirGroup(esbmtkBase):
 
             SeawaterConstants(
                 name="swc",
-                model=self.mo,
                 temperature=self.temperature,
                 pressure=self.pressure,
                 salinity=self.salinity,
                 register=self,
-                units=self.mo.c_unit,
             )
-
-        # register this group object in the global namespace
-        if self.mo.register == "local" and self.register == "None":
-            self.register = self.mo
-        self.__register_name__()
 
         # dict with all default values
         self.cd: dict = {}
@@ -347,12 +346,12 @@ class SourceSink(esbmtkBase):
     def __init__(self, **kwargs) -> None:
 
         # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "species": Species,
-            "display_precision": Number,
+            "display_precision": (int, float),
             "register": any,
-            "delta": (Number, str),
+            "delta": (int, float, str),
             "isotopes": bool,
         }
 
@@ -360,7 +359,7 @@ class SourceSink(esbmtkBase):
         self.lrk: list[str] = ["name", "species"]
 
         # list of default values if none provided
-        self.lod: Dict[str, any] = {
+        self.lod: dict[str, any] = {
             "display_precision": 0,
             "delta": "None",
             "isotopes": False,
@@ -414,7 +413,7 @@ class SourceSinkGroup(esbmtkBase):
     def __init__(self, **kwargs) -> None:
 
         # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "species": list,
             "delta": dict,
@@ -424,7 +423,7 @@ class SourceSinkGroup(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species"]
         # list of default values if none provided
-        self.lod: Dict[any, any] = {"delta": {}, "register": "None"}
+        self.lod: dict[any, any] = {"delta": {}, "register": "None"}
 
         self.__initerrormessages__()
         self.__validateandregister__(kwargs)  # initialize keyword values
@@ -436,6 +435,7 @@ class SourceSinkGroup(esbmtkBase):
 
         # register this object in the global namespace
         self.mo = self.species[0].mo  # get model handle
+        self.model = self.species[0].mo
 
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
@@ -526,6 +526,7 @@ class Signal(esbmtkBase):
                  reservoir = r-handle # optional, see below
                  source = s-handle optional, see below
                  display_precision = number, optional, inherited from Model
+                 register,
                 )
 
     Signals are cumulative, i.e., complex signals ar created by
@@ -574,24 +575,28 @@ class Signal(esbmtkBase):
         from . import ureg, Q_
 
         # provide a list of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            "name": str,
-            "start": str,
-            "duration": str,
-            "species": Species,
-            "delta": Number,
-            "stype": str,
-            "shape": str,
-            "filename": str,
-            "mass": str,
-            "magnitude": (str, Q_),
-            "offset": str,
-            "plot": str,
-            "scale": Number,
-            "display_precision": Number,
-            "reservoir": (Reservoir, str),
-            "source": (Source, str),
-            "legend_right": str,
+        self.defaults: dict[str, list[any, tuple]] = {
+            "name": ["None", (str)],
+            "start": ["0 yrs", (str, Q_)],
+            "duration": ["1 yr", (str, Q_)],
+            "species": ["None", (Species)],
+            "delta": [0, (int, float)],
+            "stype": [
+                "addition",
+                (str),
+            ],
+            "shape": ["None", (str)],
+            "filename": ["None", (str)],
+            "mass": ["None", (str, Q_)],
+            "magnitude": ["None", (str, Q_)],
+            "offset": ["0 yrs", (str, Q_)],
+            "plot": ["no", (str)],
+            "scale": [1, (int, float)],
+            "display_precision": [0.01, (int, float)],
+            "reservoir": ["None", (Source, Sink, Reservoir, str)],
+            "source": ["None", (Source, Sink, Reservoir, str)],
+            "legend_right": ["None", (str)],
+            "register": ["None", (str, Model)],
         }
 
         # provide a list of absolutely required keywords
@@ -601,39 +606,16 @@ class Signal(esbmtkBase):
             "species",
             ["shape", "filename"],
             ["magnitude", "mass", "filename"],
+            "register",
         ]
 
-        # list of default values if none provided
-        self.lod: Dict[str, any] = {
-            "start": "0 yrs",
-            "stype": "addition",
-            "shape": "external_data",
-            "offset": "0 yrs",
-            "duration": "0 yrs",
-            "plot": "no",
-            "delta": 0,
-            "scale": 1,
-            "display_precision": 0,
-            "reservoir": "None",
-            "source": "None",
-            "legend_right": "delta",
-        }
-
-        self.__initerrormessages__()
-        self.bem.update(
-            {
-                "data": "a string",
-                "magnitude": "Number",
-                "scale": "Number",
-            }
-        )
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__initialize_keyword_variables__(kwargs)
 
         # list of signals we are based on
         self.los: List[Signal] = []
 
         # convert units to model units
-        self.st: Number = int(
+        self.st: tp.Union[int, float] = int(
             Q_(self.start).to(self.species.mo.t_unit).magnitude
         )  # start time
 
@@ -642,20 +624,22 @@ class Signal(esbmtkBase):
         elif "magnitude" in self.kwargs:
             self.magnitude = Q_(self.magnitude).to(self.species.mo.f_unit).magnitude
 
-        if "duration" in self.kwargs:
-            self.duration = int(Q_(self.duration).to(self.species.mo.t_unit).magnitude)
+        self.duration = int(Q_(self.duration).to(self.species.mo.t_unit).magnitude)
 
         self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
 
         # legacy name definitions
+        self.full_name = ""
         self.l: int = self.duration
         self.n: str = self.name  # the name of the this signal
         self.sp: Species = self.species  # the species
         self.mo: Model = self.species.mo  # the model handle
+        self.model = self.mo
+        self.parent = self.register
         self.ty: str = self.stype  # type of signal
         self.sh: str = self.shape  # shape the event
         self.d: float = self.delta  # delta value offset during the event
-        self.kwd: Dict[str, any] = self.kwargs  # list of keywords
+        self.kwd: dict[str, any] = self.kwargs  # list of keywords
         self.led: list = []
 
         if self.display_precision == 0:
@@ -669,7 +653,7 @@ class Signal(esbmtkBase):
         # self.data.li = get_l_mass(self.data.m, self.data.d, self.sp.r)
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
-        self.__register_name__()
+        self.__register_name_new__()
         self.mo.los.append(self)  # register with model
 
         # in case we deal with a sink or source signal
@@ -754,8 +738,8 @@ class Signal(esbmtkBase):
     def __square__(self, s, e) -> None:
         """Create Square Signal"""
 
-        self.s_m: [NDArray, Float[64]] = np.zeros(e - s)
-        self.s_d: [NDArray, Float[64]] = np.zeros(e - s)
+        self.s_m: np.ndarray = np.zeros(e - s)
+        self.s_d: np.ndarray = np.zeros(e - s)
 
         if "mass" in self.kwd:
             h = self.mass / self.duration  # get the height of the square
@@ -788,14 +772,14 @@ class Signal(esbmtkBase):
 
         # create pyramid
         c: int = int(round((e - s) / 2))  # get the center index for the peak
-        x: [NDArray, Float[64]] = array([0, c, e - s])  # setup the x coordinates
-        y: [NDArray, Float[64]] = array([0, h, 0])  # setup the y coordinates
+        x: np.ndarray = np.array([0, c, e - s])  # setup the x coordinates
+        y: np.ndarray = np.array([0, h, 0])  # setup the y coordinates
 
-        d: [NDArray, Float[64]] = array([0, self.d, 0])  # setup the d coordinates
+        d: np.ndarray = np.array([0, self.d, 0])  # setup the d coordinates
         xi = np.arange(0, e - s)  # setup the points at which to interpolate
 
-        self.s_m: [NDArray, Float[64]] = interp(xi, x, y)  # interpolate flux
-        self.s_d: [NDArray, Float[64]] = interp(xi, x, d)  # interpolate delta
+        self.s_m: np.ndarray = np.interp(xi, x, y)  # interpolate flux
+        self.s_d: np.ndarray = np.interp(xi, x, d)  # interpolate delta
         self.s_l = get_l_mass(self.s_m, self.s_d, self.sp.r)
 
     def __bell__(self, s, e) -> None:
@@ -809,16 +793,16 @@ class Signal(esbmtkBase):
         """
 
         c: int = int(round((e - s) / 2))  # get the center index for the peak
-        x: [NDArray, Float[64]] = np.arange(-c, c + 1, 1)
+        x: np.ndarray = np.arange(-c, c + 1, 1)
         e: float = math.e
         pi: float = math.pi
         mu: float = 0
         phi: float = c / 4
 
-        a = -((x - mu) ** 2) / (2 * phi ** 2)
+        a = -((x - mu) ** 2) / (2 * phi**2)
 
         # get bell curve
-        self.s_m = 1 / (phi * math.sqrt(2 * pi)) * e ** a
+        self.s_m = 1 / (phi * math.sqrt(2 * pi)) * e**a
         self.s_d = self.s_m * self.delta / max(self.s_m)
         self.s_l = self.s_m
 
@@ -862,11 +846,11 @@ class Signal(esbmtkBase):
         yq = Q_(yh)
 
         # add these to the data we are are reading
-        self.s_time: [NDArray, Float[64]] = df.iloc[:, 0].to_numpy() * xq
-        self.s_data: [NDArray, Float[64]] = df.iloc[:, 1].to_numpy() * yq
+        self.s_time: np.ndarray = df.iloc[:, 0].to_numpy() * xq
+        self.s_data: np.ndarray = df.iloc[:, 1].to_numpy() * yq
         if zh:
             # delta is assumed to be without units
-            self.s_delta: [NDArray, Float[64]] = df.iloc[:, 2].to_numpy()
+            self.s_delta: np.ndarray = df.iloc[:, 2].to_numpy()
 
         # map into model units, and strip unit information
         self.s_time = self.s_time.to(self.mo.t_unit).magnitude
@@ -879,14 +863,14 @@ class Signal(esbmtkBase):
         # setup the points at which to interpolate
         xi = np.linspace(self.st, self.et, num_steps)
 
-        self.s_m: [NDArray, Float[64]] = interp(
+        self.s_m: np.ndarray = np.interp(
             xi, self.s_time, self.s_data
         )  # interpolate flux
         if zh:
-            self.s_d: [NDArray, Float[64]] = interp(xi, self.s_time, self.s_delta)
+            self.s_d: np.ndarray = np.interp(xi, self.s_time, self.s_delta)
             self.s_l = get_l_mass(self.s_m, self.s_d, self.sp.r)
         else:
-            self.s_l: [NDArray, Float[64]] = np.zeros(num_steps)
+            self.s_l: np.ndarray = np.zeros(num_steps)
 
         return int(num_steps)
 
@@ -954,10 +938,8 @@ class Signal(esbmtkBase):
         ns.stop: float = stop
         ns.offset: float = stop - start + offset
         ns.times: float = times
-        ns.ms: [NDArray, Float[64]] = self.data.m[
-            start:stop
-        ]  # get the data slice we are using
-        ns.ds: [NDArray, Float[64]] = self.data.d[start:stop]
+        ns.ms: np.ndarray = self.data.m[start:stop]  # get the data slice we are using
+        ns.ds: np.ndarray = self.data.d[start:stop]
 
         diff = 0
         for i in range(times):
@@ -972,16 +954,12 @@ class Signal(esbmtkBase):
             else:
                 lds: int = len(ns.ds)
 
-            ns.data.m[start:stop]: [NDArray, Float[64]] = (
-                ns.data.m[start:stop] + ns.ms[0:lds]
-            )
-            ns.data.d[start:stop]: [NDArray, Float[64]] = (
-                ns.data.d[start:stop] + ns.ds[0:lds]
-            )
+            ns.data.m[start:stop]: np.ndarray = ns.data.m[start:stop] + ns.ms[0:lds]
+            ns.data.d[start:stop]: np.ndarray = ns.data.d[start:stop] + ns.ds[0:lds]
 
         # and recalculate li and hi
-        ns.data.l: [NDArray, Float[64]]
-        ns.data.h: [NDArray, Float[64]]
+        ns.data.l: np.ndarray
+        ns.data.h: np.ndarray
         [ns.data.l, ns.data.h] = get_imass(ns.data.m, ns.data.d, ns.data.sp.r)
         return ns
 
@@ -997,7 +975,7 @@ class Signal(esbmtkBase):
         # list of processes
         flux.lop.append(self)
 
-    def __call__(self) -> NDArray[np.float64]:
+    def __call__(self) -> np.ndarray:
         """what to do when called as a function ()"""
 
         return (array([self.fo.m, self.fo.l, self.fo.h, self.fo.d]), self.fo.n, self)
@@ -1049,13 +1027,13 @@ class DataField(esbmtkBase):
     Similarly for y2
     """
 
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
+    def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this instance"""
 
         from . import Reservoir_no_set, VirtualReservoir, ExternalCode
 
         # dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "associated_with": (
                 Reservoir,
@@ -1064,23 +1042,23 @@ class DataField(esbmtkBase):
                 VirtualReservoir,
                 ExternalCode,
             ),
-            "y1_data": (NDArray[float], list),
-            "x1_data": (NDArray[float], list, str),
+            "y1_data": (np.ndarray, list),
+            "x1_data": (np.ndarray, list, str),
             "y1_label": str,
             "y1_legend": (str, list),
-            "y2_data": (str, NDArray[float], list),
-            "x2_data": (NDArray[float], list, str),
+            "y2_data": (str, np.ndarray, list),
+            "x2_data": (np.ndarray, list, str),
             "y2_label": str,
             "y2_legend": (str, list),
             "common_y_scale": str,
-            "display_precision": Number,
+            "display_precision": (int, float),
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["name", "associated_with", "y1_data"]
 
         # list of default values if none provided
-        self.lod: Dict[str, any] = {
+        self.lod: dict[str, any] = {
             "y1_label": "Not Provided",
             "x1_data": "None",
             "y1_legend": "Not Provided",
@@ -1112,6 +1090,7 @@ class DataField(esbmtkBase):
 
         # set legacy variables
         self.legend_left = self.y1_legend
+        self.isotopes = False
 
         if self.associated_with == "None":
             self.associated_with = self.mo.lor[0]
@@ -1257,7 +1236,7 @@ class Reservoir_no_set(ReservoirBase):
         from . import ureg, Q_, ConnectionGroup
 
         # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "species": Species,
             "plot_transform_c": any,
@@ -1265,11 +1244,11 @@ class Reservoir_no_set(ReservoirBase):
             "plot": str,
             "groupname": str,
             "function": any,
-            "display_precision": Number,
+            "display_precision": (int, float),
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "full_name": str,
             "isotopes": bool,
-            "volume": (str, Number),
+            "volume": (str, int, float),
             "vr_datafields": (dict, str),
             "function_input_data": (List, str),
             "function_params": (List, str),
@@ -1284,7 +1263,7 @@ class Reservoir_no_set(ReservoirBase):
         ]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {
+        self.lod: dict[any, any] = {
             "plot": "yes",
             "geometry": "None",
             "plot_transform_c": "None",
@@ -1411,7 +1390,7 @@ class ExternalCode(Reservoir_no_set):
         from .processes import GenericFunction
 
         # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "species": Species,
             "plot_transform_c": any,
@@ -1419,11 +1398,11 @@ class ExternalCode(Reservoir_no_set):
             "plot": str,
             "groupname": str,
             "function": any,
-            "display_precision": Number,
+            "display_precision": (int, float),
             "register": (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
             "full_name": str,
             "isotopes": bool,
-            "volume": (str, Number),
+            "volume": (str, int, float),
             "vr_datafields": (dict, str),
             "function_input_data": (List, str),
             "function_params": (List, str),
@@ -1438,7 +1417,7 @@ class ExternalCode(Reservoir_no_set):
         ]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {
+        self.lod: dict[any, any] = {
             "plot": "yes",
             "geometry": "None",
             "plot_transform_c": "None",
@@ -1822,7 +1801,8 @@ class GasReservoir(ReservoirBase):
     You can access the reservoir data as:
 
     - Name.m # species mass
-    - Name.d # species delta
+    - Name.l # mass of light isotope
+    - Name.d # species delta (only avaible after M.get_delta_values()
     - Name.c # partial pressure
     - Name.v # total gas mass
 
@@ -1840,10 +1820,10 @@ class GasReservoir(ReservoirBase):
         from . import ureg, Q_, ConnectionGroup
 
         # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "species": Species,
-            "delta": (Number, str),
+            "delta": (int, float, str),
             "reservoir_mass": (str, Q_),
             "species_ppm": (str, Q_),
             "plot_transform_c": any,
@@ -1851,7 +1831,7 @@ class GasReservoir(ReservoirBase):
             "plot": str,
             "groupname": str,
             "function": any,
-            "display_precision": Number,
+            "display_precision": (int, float),
             "register": any,
             "full_name": str,
             "isotopes": bool,
@@ -1866,7 +1846,7 @@ class GasReservoir(ReservoirBase):
         ]
 
         # list of default values if none provided
-        self.lod: Dict[any, any] = {
+        self.lod: dict[any, any] = {
             "delta": 0,
             "plot": "yes",
             "plot_transform_c": "None",
@@ -1905,10 +1885,12 @@ class GasReservoir(ReservoirBase):
 
         # not sure this universally true but it works for carbon
         self.species_mass = (self.reservoir_mass * self.species_ppm).to("mol")
+        self.display_as = "ppm"
+        self.plt_units = "ppm"
 
         # we use the existing approach to calculate concentration
         # which will divide species_mass/volume.
-        self.volume: Number = self.reservoir_mass.magnitude
+        self.volume: tp.Union[int, float] = self.reservoir_mass.magnitude
         #    Q_(self.species_mass).magnitude / self.species_ppm.to("dimensionless")
         # ).magnitude
 
@@ -1920,24 +1902,24 @@ class GasReservoir(ReservoirBase):
         self.lm: str = f"{self.species.n} [{self.mu}]"
 
         # initialize vectors
-        self.m: [NDArray, Float[64]] = (
-            zeros(self.species.mo.steps) + self.species_mass.magnitude
+        self.m: np.ndarray = (
+            np.zeros(self.species.mo.steps) + self.species_mass.magnitude
         )
-        self.l: [NDArray, Float[64]] = zeros(self.mo.steps)
+        self.l: np.ndarray = np.zeros(self.mo.steps)
         # initialize concentration vector
-        self.c: [NDArray, Float[64]] = self.m / self.volume
+        self.c: np.ndarray = self.m / self.volume
         # isotope mass
         self.l = get_l_mass(self.m, self.delta, self.species.r)
         # delta of reservoir
-        self.v: float = zeros(self.mo.steps) + self.volume  # mass of atmosphere
+        self.v: float = np.zeros(self.mo.steps) + self.volume  # mass of atmosphere
 
         if self.mo.number_of_solving_iterations > 0:
             self.mc = np.empty(0)
             self.cc = np.empty(0)
-            self.lc = np.empty(0) 
+            self.lc = np.empty(0)
             self.vc = np.empty(0)
 
-        self.mo.lor.append(self)  # add this reservoir to the model
+        self.mo.lor.append(self)  # add fthis reservoir to the model
         # register instance name in global name space
 
         # register this group object in the global namespace
@@ -1962,15 +1944,16 @@ class GasReservoir(ReservoirBase):
 
         self.m[i]: float = value[0]
         self.l[i]: float = value[1]
+        # self.v[i]: float = self.v[i - 1] + value[0]
+        # self.c[i]: float = self.m[i] / self.v[i]  # update concentration
         # self.h[i]: float = value[2]
         # self.d[i]: float = get_delta(self.l[i], self.h[i], self.sp.r)
-        self.c[i]: float = self.m[i] / self.v[i]  # update concentration
 
     def __set_without_isotopes__(self, i: int, value: float) -> None:
         """write data by index"""
-
         self.m[i]: float = value[0]
-        self.c[i]: float = self.m[i] / self.v[i]  # update concentration
+        # self.c[i]: float = self.m[i] / self.v[i]  # update concentration
+        # self.v[i]: float = self.v[i - 1] + value[0]
 
 
 class ExternalData(esbmtkBase):
@@ -2023,25 +2006,25 @@ class ExternalData(esbmtkBase):
 
     """
 
-    def __init__(self, **kwargs: Dict[str, str]):
+    def __init__(self, **kwargs: dict[str, str]):
 
         from . import ureg, Q_
 
         # dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "filename": str,
             "legend": str,
             "reservoir": Reservoir,
             "offset": str,
-            "display_precision": Number,
-            "scale": Number,
+            "display_precision": (int, float),
+            "scale": (int, float),
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["name", "filename", "legend", "reservoir"]
         # list of default values if none provided
-        self.lod: Dict[str, any] = {
+        self.lod: dict[str, any] = {
             "offset": "0 yrs",
             "display_precision": 0,
             "scale": 1,
@@ -2077,7 +2060,7 @@ class ExternalData(esbmtkBase):
 
         xq = Q_(xh)
         # add these to the data we are are reading
-        self.x: [NDArray] = self.df.iloc[:, 0].to_numpy() * xq
+        self.x: np.ndarray = self.df.iloc[:, 0].to_numpy() * xq
         # map into model units
         self.x = self.x.to(self.mo.t_unit).magnitude
 
@@ -2090,8 +2073,8 @@ class ExternalData(esbmtkBase):
             yh = get_string_between_brackets(yh)
             yq = Q_(yh)
             # add these to the data we are are reading
-            # self.y: [NDArray] = self.df.iloc[:, 1].to_numpy() * yq
-            self.y: [NDArray] = self.df.iloc[:, 1].to_numpy() * self.scale
+            # self.y: [np.ndarray] = self.df.iloc[:, 1].to_numpy() * yq
+            self.y: np.ndarray = self.df.iloc[:, 1].to_numpy() * self.scale
             # map into model units
             # lf.y = self.y.to(self.mo.c_unit).magnitude * self.scale
 
@@ -2133,7 +2116,7 @@ class ExternalData(esbmtkBase):
 
         """
 
-        xi: [NDArray] = self.model.time
+        xi: np.ndarray = self.model.time
 
         if (self.x[0] > xi[0]) or (self.x[-1] < xi[-1]):
             message = (
@@ -2145,7 +2128,7 @@ class ExternalData(esbmtkBase):
 
             raise ValueError(message)
         else:
-            self.y: [NDArray] = interp(xi, self.x, self.y)
+            self.y: np.ndarray = np.interp(xi, self.x, self.y)
             self.x = xi
 
     def plot(self) -> None:

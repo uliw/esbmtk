@@ -1,5 +1,12 @@
+CODE_OF_CONDUCT.md
+MANIFEST.in
 README.md
+pyproject.toml
+setup.cfg
 setup.py
+Documentation/C_Cycle_Ocean.csv
+Documentation/test-data.csv
+esbmtk/Hypsometric_Curve_05m.csv
 esbmtk/__init__.py
 esbmtk/carbonate_chemistry.py
 esbmtk/connections.py
@@ -7,7 +14,6 @@ esbmtk/esbmtk.py
 esbmtk/extended_classes.py
 esbmtk/processes-old.py
 esbmtk/processes.py
-esbmtk/scratch.py
 esbmtk/sealevel.py
 esbmtk/solver.py
 esbmtk/species_definitions.py
@@ -15,5 +21,9 @@ esbmtk/utility_functions.py
 esbmtk.egg-info/PKG-INFO
 esbmtk.egg-info/SOURCES.txt
 esbmtk.egg-info/dependency_links.txt
-esbmtk.egg-info/requires.txt
 esbmtk.egg-info/top_level.txt
+examples/one-box-ocean/C_Cycle_Ocean.csv
+examples/one-box-ocean/emissions-full.csv
+examples/one-box-ocean/emissions.csv
+examples/one-box-ocean/measured_c_isotopes.csv
+tests/measured_c_isotopes.csv

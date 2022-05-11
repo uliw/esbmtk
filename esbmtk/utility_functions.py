@@ -15,37 +15,35 @@
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
-# from pint import UnitRegistry
-from numbers import Number
-from nptyping import NDArray
-from typing import Dict, Union
-from numpy import array, set_printoptions, arange, zeros, interp, mean
-from pandas import DataFrame
-from copy import deepcopy, copy
+import typing as tp
 import time
-from time import process_time
 import numba
 from numba.core import types
 from numba import njit, prange
 from numba.typed import List
 from collections import OrderedDict
-
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
-
-# import mpmath
-
 import logging
-import time
 
 from esbmtk import Q_
 
 # import builtins
 # import math
 
-set_printoptions(precision=4)
+np.set_printoptions(precision=4)
+
+
+def find_matching_strings(s: str, fl: list[str]) -> bool:
+    """test if all elements of fl occur in s. Return True if yes,
+    otherwise False
+
+    """
+    for f in fl:
+        if f not in s:
+            return False
+
+    return True
 
 
 def insert_into_namespace(name, value, name_space=globals()):
@@ -225,7 +223,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
     """
 
     from . import ureg, Q_
-    from esbmtk import Flux, Reservoir, Signal, DataField, Source
+    from esbmtk import Flux, Reservoir, Signal, DataField, Source, GasReservoir
 
     # geo = list with rows and cols
     # fn  = figure number
@@ -248,7 +246,8 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
     time = (time * model.t_unit).to(model.d_unit).magnitude
 
     # we do not map isotope values
-    yr = obj.d
+    if obj.isotopes:
+        yr = obj.d
 
     # get plot type
     ptype: int = get_ptype(obj)
@@ -258,11 +257,13 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
         yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
         y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
 
-    elif isinstance(obj, (Reservoir)):
+    elif isinstance(obj, (Reservoir, GasReservoir)):
         if obj.display_as == "mass":
             yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
-
+        elif obj.display_as == "ppm":
+            yl = obj.c * 1e6
+            y_label = f"ppm"
         elif obj.plot_transform_c != "None":
             if callable(obj.plot_transform_c):
                 # yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
@@ -270,7 +271,6 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                 y_label = f"{obj.legend_left}"
             else:
                 raise ValueError("plot_transform_c must be function")
-
         else:
             yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
@@ -384,7 +384,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             ax2.set_ylabel(obj.data.ld)  # species object delta label
             set_y_limits(ax2, model)
             ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
-        elif isinstance(obj, Reservoir):
+        elif isinstance(obj, (Reservoir, GasReservoir)):
             ax2 = ax1.twinx()  # create a second y-axis
             # plof right y-scale data
             ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
@@ -524,17 +524,17 @@ def get_object_handle(res, M):
     return rlist
 
 
-def split_key(k: str, M: any) -> Union[any, any, str]:
-    """split the string k with letter 2, and test if optional
+def split_key(k: str, M: any) -> tp.Union[any, any, str]:
+    """split the string k with letters _to_, and test if optional
     id string is present
 
     """
 
-    if "2" in k:
-        source = k.split("2")[0]
-        sinkandid = k.split("2")[1]
+    if "_to_" in k:
+        source = k.split("_to_")[0]
+        sinkandid = k.split("_to_")[1]
     else:
-        raise ValueError("Name must follow 'Source2Sink' format")
+        raise ValueError("Name must follow 'Source_to_Sink' format")
 
     if "@" in sinkandid:
         sink = sinkandid.split("@")[0]
@@ -554,6 +554,8 @@ def make_dict(keys: list, values: list) -> dict:
     two lists
 
     """
+    d = dict()
+
     if isinstance(values, list):
         if len(values) == len(keys):
             d: dict = dict(zip(keys, values))
@@ -595,7 +597,6 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
          in each box. If you need box specific initial conditions
          use the output of build_concentration_dicts as starting point
 
-
     ic: dict = { # species: concentration, Isotopes
                    PO4: [Q_("2.1 * umol/liter"), False],
                    DIC: [Q_("2.1 mmol/liter"), False],
@@ -606,10 +607,9 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
 
     register reservoir groups in global name space (default), or with the
     provided object reference
-
     """
 
-    from esbmtk import SeawaterConstants, ReservoirGroup, build_concentration_dicts
+    from esbmtk import ReservoirGroup, build_concentration_dicts
     from esbmtk import SourceGroup, SinkGroup, Q_
 
     # parse for sources and sinks, create these and remove them from the list
@@ -629,7 +629,9 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
                 raise ValueError("'ty' must be either Source or Sink")
 
         else:  # create reservoirs
+
             icd: dict = build_concentration_dicts(ic, k)
+            # print(f"isotopes= {icd[k][1]}, delta = {icd[k][2]}")
             rg = ReservoirGroup(
                 name=k,
                 geometry=v["g"],
@@ -970,200 +972,67 @@ def create_connection(n: str, p: dict, M: any) -> None:
     """
 
     from esbmtk import ConnectionGroup, Q_
+    from collections import namedtuple
 
     # get the reservoir handles by splitting the key
-    if M.debug:
-        print(f"key = {n}")
     source, sink, cid = split_key(n, M)
-
     # create default connections parameters and replace with values in
     # the parameter dict if present.
     los = list(p["sp"]) if isinstance(p["sp"], list) else [p["sp"]]
-    typ = "None" if not "ty" in p else p["ty"]
+    ctype = "None" if not "ty" in p else p["ty"]
     scale = 1 if not "sc" in p else p["sc"]
     rate = Q_("0 mol/a") if not "ra" in p else p["ra"]
     ref_flux = "None" if not "re" in p else p["re"]
     alpha = "None" if not "al" in p else p["al"]
     delta = "None" if not "de" in p else p["de"]
-    mix = False if not "mx" in p else p["mx"]
-    cid = f"{cid}_f" if mix else f"{cid}"
+    cid = f"{cid}"
     bypass = "None" if not "bp" in p else p["bp"]
     species = "None" if not "sp" in p else p["sp"]
 
     if isinstance(scale, Q_):
         scale = scale.to("l/a").magnitude
 
-    # if name in M.dmo: # group already exist in this case we nee to update the
-    # connection group
+    # expand arguments
+    ctype = make_dict(los, ctype)
+    scale = make_dict(los, scale)  # get rate from dictionary
+    rate = make_dict(los, rate)
+    ref_flux = make_dict(los, ref_flux)
+    alpha = make_dict(los, alpha)
+    delta = make_dict(los, delta)
+    bypass = make_dict(los, bypass)
 
-    # Case one, no mixing, test if exist, otherwise create
-    # Case 2, mixing: test if forward connection exists, if not create
-    #                  test if backwards connection exists, or create
-
-    if not mix:
-
-        name = f"CG_{source.name}2{sink.name}"
-
-        if M.debug:
-            print(
-                f"n = {n}, source: {source.full_name}, sink: {sink.full_name}, cid: {cid}, name = {name}"
-            )
-
-        update_or_create(
-            name,
-            source,
-            sink,
-            los,
-            typ,
-            scale,
-            rate,
-            ref_flux,
-            alpha,
-            delta,
-            cid,
-            M,
-            bypass,
-            species,
-        )
-
-    else:  # this is a connection with mixing
-        # create forward connection
-        name = f"CG_{source.name}2{sink.name}"
-
-        update_or_create(
-            name,
-            source,
-            sink,
-            los,
-            typ,
-            scale,
-            rate,
-            ref_flux,
-            alpha,
-            delta,
-            cid,
-            M,
-            bypass,
-            species,
-        )
-
-        # create backwards connection
-        name = f"CG_{sink.name}2{source.name}"
-        cid = cid.replace("_f", "_b")
-
-        update_or_create(
-            name,
-            sink,
-            source,
-            los,
-            typ,
-            scale,
-            rate,
-            ref_flux,
-            alpha,
-            delta,
-            cid,
-            M,
-            bypass,
-            species,
-        )
-
-
-def update_or_create(
-    name,
-    source,
-    sink,
-    los,
-    typ,
-    scale,
-    rate,
-    ref_flux,
-    alpha,
-    delta,
-    cid,
-    M,
-    bypass,
-    species,
-):
-    """Create or update connection"""
-
-    from esbmtk import ConnectionGroup, Connect
-
-    if M.register == "local":
-        register = M
-    else:
-        register = "None"
-
-    if M.debug:
-        print(f"Looking up {name}")
-    # update connection if already known
-    if f"{name}" in M.lmo or f"{M.name}.{name}" in M.lmo:
-
-        if M.register == "local":
-            cg = getattr(M, name)
-        else:
-            cg = __builtins__[name]
-
-        if M.debug:
-            print(f"Connectiongroup is already known with full_name = {cg.full_name}")
-
-        if isinstance(species, list):
-            cg.update(
-                name=name,
-                source=source,
-                sink=sink,
-                ctype=make_dict(los, typ),
-                scale=make_dict(los, scale),  # get rate from dictionary
-                rate=make_dict(los, rate),
-                ref_flux=make_dict(los, ref_flux),
-                alpha=make_dict(los, alpha),
-                delta=make_dict(los, delta),
-                bypass=make_dict(los, bypass),
-                register=register,
-                id=cid,  # get id from dictionary
-            )
-
-        else:
-            source = getattr(cg.source, f"{species.name}")
-            sink = getattr(cg.sink, f"{species.name}")
-            if M.debug:
-                print(f"source = {source.full_name},  sink = {sink.full_name}")
-
-            # #add new connection to the existing connection group
-            g = Connect(
-                # name=f"C_{id}",
-                source=source,
-                sink=sink,
-                ctype=typ,
-                scale=scale,  # get rate from dictionary
-                rate=rate,
-                ref_flux=ref_flux,
-                alpha=alpha,
-                delta=delta,
-                bypass=bypass,
-                register=cg,
-                id=cid,  # get id from dictionary
-            )
-            if M.debug:
-                print(f"Added {g.name} to {cg.full_name}")
-
-    else:  # create new connection group
-        cg = ConnectionGroup(
-            # name=name,
+    # name of connectiongroup
+    name = f"{M.name}.CG_{source.name}_to_{sink.name}"
+    if f"{name}" in M.lmo:  # Test if CG exists
+        # retriece CG object
+        cg = getattr(M, name.split(".")[1])
+        cg.add_connections(
             source=source,
             sink=sink,
-            ctype=make_dict(los, typ),
-            scale=make_dict(los, scale),  # get rate from dictionary
-            rate=make_dict(los, rate),
-            ref_flux=make_dict(los, ref_flux),
-            alpha=make_dict(los, alpha),
-            delta=make_dict(los, delta),
-            bypass=make_dict(los, bypass),
+            ctype=ctype,
+            scale=scale,  # get rate from dictionary
+            rate=rate,
+            ref_flux=ref_flux,
+            alpha=alpha,
+            delta=delta,
+            bypass=bypass,
             register=M,
             id=cid,  # get id from dictionary
         )
-        if M.debug:
-            print(f"created new connectiongroup with full_name = {cg.full_name}")
+    else:  # Create New ConnectionGroup
+        cg = ConnectionGroup(
+            source=source,
+            sink=sink,
+            ctype=ctype,
+            scale=scale,  # get rate from dictionary
+            rate=rate,
+            ref_flux=ref_flux,
+            alpha=alpha,
+            delta=delta,
+            bypass=bypass,
+            register=M,
+            id=cid,  # get id from dictionary
+        )
 
 
 def get_name_only(o: any) -> any:
@@ -1236,11 +1105,11 @@ def reverse_key(key: str) -> str:
     l = key.split("@")
     left = l[0]
     # right = l[1]
-    rs = left.split("2")
+    rs = left.split("_to_")
     r1 = rs[0]
     r2 = rs[1]
 
-    return f"{r2}2{r1}"
+    return f"{r2}_to_{r1}"
 
 
 def get_connection_keys(
@@ -1261,7 +1130,7 @@ def get_connection_keys(
 
     M4.CG_P_sb2P_ib.PO4.POP_F will become
 
-    P_sb2P_ib@POM_DIC
+    P_sb_to_P_ib@POM_DIC
 
     """
 
@@ -1274,7 +1143,7 @@ def get_connection_keys(
         if inverse:
             cn = reverse_key(cn)
         cn.replace(fstr, nstr)
-        cn = f"{cn}@{nstr}"
+        cn = f"{cn}_to_{nstr}"
         cl.append(cn)
 
     return cl
@@ -1297,7 +1166,7 @@ def gen_dict_entries(M: any, **kwargs) -> tuple:
 
     The optional inverse parameter, can be used where in cases where the
     flux direction needs to be reversed, i.e., the returned key will not read
-    sb2db@POM, but db2s@POM
+    sb_to_dbPOM, but db_to_sb@POM
 
     """
 
@@ -1422,7 +1291,7 @@ def map_units(v: any, *args) -> float:
     else:  # no quantity, so it should be a number
         m = v
 
-    if not isinstance(m, Number):
+    if not isinstance(m, (int, float)):
         raise ValueError(f"m is {type(m)}, must be float, v={v}. Something is fishy")
 
     return m
@@ -1448,12 +1317,10 @@ def add_carbonate_system_1(rgs: list):
     # get object handle even if it defined in model namespace
     # rgs = get_object_handle(rgs)
 
+    
+    species = rgs[0].mo.Carbon.CO2
+    
     for rg in rgs:
-
-        if rg.mo.register == "local":
-            species = rg.mo.CO2
-        else:
-            species = __builtins__["CO2"]
 
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):
             ExternalCode(
@@ -1466,6 +1333,8 @@ def add_carbonate_system_1(rgs: list):
                     "HCO3": rg.swc.hco3,  # 2
                     "CO3": rg.swc.co3,  # 3
                     "CO2aq": rg.swc.co2,  # 4
+                    "OH": 0.0,
+                    "BOH": 0.0,
                 },
                 function_input_data=List([rg.DIC.c, rg.TA.c]),
                 function_params=List(
@@ -1496,7 +1365,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                                  list of ReservoirGroup objects.
         zsat_min = depth of the upper boundary of the deep box
         z0 = upper depth limit for carbonate burial calculations
-             typically the lower boundary of the surface water box
+             typically zsat_min
 
     Optional Parameters:
 
@@ -1575,7 +1444,7 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     # establish some shared parameters
     # depths_table = np.arange(0, 6001, 1)
-    depths: NDArray = np.arange(0, 6002, 1, dtype=float)
+    depths: np.ndarray = np.arange(0, 6002, 1, dtype=float)
     rgs = kwargs["rgs"]
     Ksp0 = kwargs["Ksp0"]
     ca2 = rgs[0].swc.ca2
@@ -1585,7 +1454,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     Ksp = kwargs["Ksp"]
 
     # C saturation(z) after Boudreau 2010
-    Csat_table: NDArray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
+    Csat_table: np.ndarray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
     area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
     area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area'
     AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
@@ -1593,7 +1462,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     for i, rg in enumerate(rgs):  # Setup the virtual reservoirs
 
         if rg.mo.register == "local":
-            species = rg.mo.CO2
+            species = rg.mo.Carbon.CO2
         else:
             species = __builtins__["CO2"]
 
@@ -1614,6 +1483,9 @@ def add_carbonate_system_2(**kwargs) -> None:
                 "zcc": kwargs["zcc"],  # 6 zcc
                 "zsnow": kwargs["zsnow"],  # 7 zsnow
                 "Fburial": 0.0,  # 8 carbonate burial
+                "Fburial12": 0.0,  # 9 carbonate burial 12C
+                "diss": 0.0,  # dissolution flux
+                "Bm": 0.0,
             },
             function_input_data=List(
                 [
@@ -1626,7 +1498,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                     area_table,  # 6
                     area_dz_table,  # 7
                     Csat_table,  # 8
-                    rg.DIC.v,  # 9 reserevoir volume
+                    rg.DIC.v,  # 9 reservoir volume
                 ]
             ),
             function_params=List(
@@ -1688,7 +1560,7 @@ def __find_flux__(reservoirs: list, full_name: str):
     return needed_flux
 
 
-def __checktypes__(av: Dict[any, any], pv: Dict[any, any]) -> None:
+def __checktypes__(av: dict[any, any], pv: dict[any, any]) -> None:
     """this method will use the the dict key in the user provided
     key value data (pv) to look up the allowed data type for this key in av
 

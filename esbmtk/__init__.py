@@ -3,6 +3,7 @@ from __future__ import annotations
 from pint import UnitRegistry
 
 ureg = UnitRegistry(on_redefinition="ignore")
+ureg.enable_contexts('chemistry')
 Q_ = ureg.Quantity
 
 ureg.define("Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups")
@@ -15,13 +16,8 @@ ureg.define("ppm = 1e-6 fraction")
 import numpy as np
 np.seterr(invalid='ignore')
 
-# import utility_functions
-# import esbmtk
+import typing as tp
 
-# from .base_class import esbmtkBase
-
-
-# rom .species_definitions import carbon, sulfur, hydrogen, phosphor
 from .esbmtk import *
 from .extended_classes import *
 from .connections import ConnectionGroup, Connection, Connect, AirSeaExchange

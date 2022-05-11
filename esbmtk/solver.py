@@ -17,26 +17,17 @@
 """
 
 # from pint import UnitRegistry
-from nptyping import *
-from typing import *
-from numpy import array, set_printoptions, arange, zeros, interp, mean
+# from nptyping import *
 import time
 from time import process_time
 import numba
 from numba.core import types
 from numba import njit, prange
 from numba.typed import List
-
 import numpy as np
 
-# import pandas as pd
-# import mpmath
 
-import time
-import math
-
-
-def get_l_mass(m: float, d: float, r: float) -> [float, float]:
+def get_l_mass(m: float, d: float, r: float) -> float:
     """
     Calculate the light isotope masses from bulk mass and delta value.
     Arguments are m = mass, d= delta value, r = abundance ratio
@@ -78,7 +69,7 @@ def get_frac(m: float, l: float, a: float) -> [float, float]:
 
 
 # @njit()
-def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
+def get_flux_data(m: float, d: float, r: float) -> np.ndarray:
     """
     Calculate the isotope masses from bulk mass and delta value.
     Arguments are m = mass, d= delta value, r = abundance ratio
@@ -93,9 +84,7 @@ def get_flux_data(m: float, d: float, r: float) -> [NDArray, float]:
 
 
 # @njit()
-def get_delta(
-    l: [NDArray, [Float64]], h: [NDArray, [Float64]], r: float
-) -> [NDArray, [Float64]]:
+def get_delta(l: np.ndarray, h: np.ndarray, r: float) -> np.ndarray:
     """Calculate the delta from the mass of light and heavy isotope
     Arguments are l and h which are the masses of the light and
     heavy isotopes respectively, r = abundance ratio of the
@@ -127,6 +116,17 @@ def get_delta_i(l: float, h: float, r: float) -> float:
     return d
 
 
+def get_flux_delta(f) -> float:
+    """Calculate the delta of flux f"""
+
+    m = f.fa[0]
+    l = f.fa[1]
+    h = m - l
+    r = f.species.r
+    d = 1e3 * (h / l - r) / r
+    return d
+
+
 def get_delta_h(h) -> float:
     """Calculate the delta of a flux or reserevoir from total mass
     and mass of light isotope.
@@ -138,14 +138,15 @@ def get_delta_h(h) -> float:
     """
 
     r = h.species.r
+
     d = np.where(h.l > 0, 1e3 * ((h.m - h.l) / h.l - r) / r, 0)
 
     return d
 
 
 def execute(
-    new: [NDArray, Float64],
-    time: [NDArray, Float64],
+    new: np.ndarray,
+    time: np.ndarray,
     lop: list,
     lor: list,
     lpc_f: list,

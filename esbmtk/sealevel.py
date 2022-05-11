@@ -24,31 +24,16 @@
 
 # from pint import UnitRegistry
 from __future__ import annotations
-from numbers import Number
-from nptyping import *
-from typing import *
-from numpy import array, set_printoptions, arange, zeros, interp, mean
-from pandas import DataFrame
-from copy import deepcopy, copy
-from time import process_time
 
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-
-import logging
-import time
-import builtins
-
-set_printoptions(precision=4)
+import scipy as sp
+import scipy.interpolate
 from .utility_functions import map_units
 from .processes import *
 from .esbmtk import esbmtkBase, Model
-
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy import interpolate
+np.set_printoptions(precision=4)
 
 
 class hypsometry(esbmtkBase):
@@ -137,10 +122,10 @@ class hypsometry(esbmtkBase):
         # au = area at lower bound + dz
         # vol = (al + au)/2 * dz
 
-        # di: NDArray = np.arange(u + abs(dz), l, dz)
-        # cA: NDArray = interpolate.splev(di, self.tck)
-        # dA: NDArray = np.diff(cA)
-        # dV: NDArray = np.diff(cA) * di[1:] * abs(dz)
+        # di: np.ndarray = np.arange(u + abs(dz), l, dz)
+        # cA: np.ndarray = interpolate.splev(di, self.tck)
+        # dA: np.ndarray = np.diff(cA)
+        # dV: np.ndarray = np.diff(cA) * di[1:] * abs(dz)
         # V: float = np.sum(dV) * self.sa
 
         return v
@@ -180,7 +165,7 @@ class hypsometry(esbmtkBase):
         if l < -6002:
             raise ValueError("area_dz() is only defined to a depth of 6000 mbsl")
 
-        a: NDArray = interpolate.splev([u, l], self.tck)
+        a: np.ndarray = sp.interpolate.splev([u, l], self.tck)
 
         area: float = (a[0] - a[-1]) * self.sa
 
@@ -249,7 +234,7 @@ class hypsometry(esbmtkBase):
 
         self.tck = (t, c, k)
 
-        self.hypdata = interpolate.splev(np.arange(0, -6001, -1), self.tck)
+        self.hypdata = sp.interpolate.splev(np.arange(0, -6001, -1), self.tck)
 
     def __bootstrap_curve__(self):
         """Regenerate the spline data based on the hypsometric data in
@@ -265,7 +250,7 @@ class hypsometry(esbmtkBase):
         area = df.iloc[:, 2].to_numpy()  # get area as numpy arrat
         elevation = df.iloc[:, 1].to_numpy()  # get area as numpy arrat
 
-        tck = interpolate.splrep(
+        tck = sp.interpolate.splrep(
             elevation,
             area,
             s=0.001,
@@ -275,7 +260,7 @@ class hypsometry(esbmtkBase):
         print(f"k = {tck[2].__repr__()}")
 
         depth = np.linspace(-6000, 1000, 50)
-        a = interpolate.splev(depth, tck)
+        a = sp.interpolate.splev(depth, tck)
 
         plt.style.use(["ggplot"])
         fig = plt.figure()  # Create a figure instance called fig
@@ -284,7 +269,7 @@ class hypsometry(esbmtkBase):
         ax.plot(depth, a)  # create a line plot
         plt.show()  # display figure
 
-    def get_lookup_table(self, min_depth: int, max_depth: int) -> NDAarray[Float64]:
+    def get_lookup_table(self, min_depth: int, max_depth: int) -> np.ndarray:
         """Generate a vector which contains the area(z) in 1 meter intervals
         The numbers are given in m^2 which represent the actual area.
 
@@ -298,12 +283,11 @@ class hypsometry(esbmtkBase):
             raise ValueError("max_depth must be <= 0 and >= -6000")
 
         return (
-            interpolate.splev(np.arange(min_depth, max_depth, -1), self.tck) * self.sa
+            sp.interpolate.splev(np.arange(min_depth, max_depth, -1), self.tck)
+            * self.sa
         )
 
-    def get_lookup_table_area_dz(
-        self, min_depth: int, max_depth: int
-    ) -> NDAarray[Float64]:
+    def get_lookup_table_area_dz(self, min_depth: int, max_depth: int) -> np.ndarray:
         """Generate a vector which contains the first derivative of area(z) in 1 meter intervals
         Note that the numbers are in m^2
 
