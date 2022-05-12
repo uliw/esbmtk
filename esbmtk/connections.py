@@ -271,67 +271,45 @@ class Connect(esbmtkBase):
         from . import ureg, Q_
 
         # provide a dict of all known keywords and their type
-        self.lkk: Dict[str, any] = {
-            "id": str,
-            "source": (Source, Reservoir, GasReservoir),
-            "sink": (Sink, Reservoir, GasReservoir),
-            "delta": (int, float, str),
-            "rate": (str, int, float, Q_),
-            "pl": list,
-            "alpha": (int, float, str),
-            "species": Species,
-            "ctype": str,
-            "ref_reservoirs": (Reservoir, GasReservoir, str, list),
-            "ref_flux": (Flux, str, list),
-            "ratio": (int, float),
-            "scale": (int, float, Q_, str),
-            "ref_value": (str, int, float, Q_),
-            "k_value": (int, float, str, Q_),
-            "a_value": (int, float),
-            "b_value": (int, float),
-            "left": (list, int, float, Reservoir, GasReservoir),
-            "right": (list, int, float, Reservoir, GasReservoir),
-            "plot": str,
-            "groupname": bool,
-            "register": any,
-            "signal": (Signal, str),
-            "bypass": (str, Reservoir, GasReservoir),
-            "isotopes": bool,
-            "solubility": (int, float),
-            "area": (int, float),
-            "piston_velocity": (int, float),
-            "function_ref": any,
-            "save_flux_data": (bool, str),
+        self.defaults: dict[str, list[any, tuple]] = {
+            "id": ["", str],
+            "source": ["None", (str, Source, Reservoir, GasReservoir)],
+            "sink": ["None", (str, Sink, Reservoir, GasReservoir)],
+            "delta": ["None", (int, float, str)],
+            "rate": ["None", (str, int, float, Q_)],
+            "pl": ["None", (list, str)],
+            "alpha": ["None"(int, float, str)],
+            "species": ["None", (Species, str)],
+            "ctype": ["None", (str)],
+            "ref_reservoirs": ["None", (Reservoir, GasReservoir, str, list)],
+            "ref_flux": ["None", (Flux, str, list)],
+            "ratio": ["None", (int, float, str)],
+            "scale": [1, (int, float, Q_, str)],
+            "ref_value": ["None", (str, int, float, Q_)],
+            "k_value": ["None", (int, float, str, Q_)],
+            "a_value": ["None", (int, float)],
+            "b_value": ["None", (int, float)],
+            "left": ["None", (list, int, float, Reservoir, GasReservoir)],
+            "right": ["None", (list, int, float, Reservoir, GasReservoir)],
+            "plot": ["yes", (str)],
+            "groupname": [False(bool)],
+            "register": ["None", (str, Model, Connection, Connect, ConnectionGroup)],
+            "signal": ["None", (Signal, str)],
+            "bypass": ["None", (str, Reservoir, GasReservoir)],
+            "isotopes": [False, (bool)],
+            "solubility": ["None", (str, int, float)],
+            "area": ["None", (str, int, float)],
+            "piston_velocity": ["None", (str, int, float)],
+            "function_ref": ["None", (str, callable)],
+            "save_flux_data": ["None", (bool, str)],
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["source", "sink", "register", "id"]
 
-        # list of default values if none provided
-        self.lod: Dict[any, any] = {
-            "id": "",
-            "plot": "yes",
-            "ctype": "None",
-            "delta": "None",
-            "alpha": "None",
-            "rate": "None",
-            "k_value": "None",
-            "scale": 1,
-            "signal": "None",
-            "groupname": False,
-            "bypass": "None",
-            "name": "None",
-            "isotopes": False,
-            "ref_reservoirs": "None",
-            "ref_flux": "None",
-            "register": "None",
-            "function_ref": "None",
-            "save_flux_data": "None",
-        }
-
         # validate and initialize instance variables
-        self.__initerrormessages__()
-
+        self.__initialize_keyword_variables__(kwargs)
+       
         self.bem.update(
             {
                 "k_concentration": "a number",
@@ -1155,7 +1133,7 @@ class Connect(esbmtkBase):
 
         self.__delete_process__()
         self.__delete_flux__()
-        self._rate = Q_(r).to(self.mo.f_unit)
+        self._rate = Q_(r).to(self.mo.f_unit).magnitude
         self.kwargs["rate"] = r
         self.__create_flux__()  # Source/Sink/Regular
         self.__set_process_type__()  # derive flux type and create flux(es)
