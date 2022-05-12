@@ -282,6 +282,7 @@ class Connect(esbmtkBase):
             "species": ["None", (Species, str)],
             "ctype": ["None", (str)],
             "ref_reservoirs": ["None", (Reservoir, GasReservoir, str, list)],
+            "reservoir_ref": ["None", (GasReservoir, str)],
             "ref_flux": ["None", (Flux, str, list)],
             "ratio": ["None", (int, float, str)],
             "scale": [1, (int, float, Q_, str)],
@@ -299,6 +300,8 @@ class Connect(esbmtkBase):
             "isotopes": [False, (bool)],
             "solubility": ["None", (str, int, float)],
             "area": ["None", (str, int, float)],
+            "ex": [1, (int, float)],
+            "pco2_0": ["None", (str, Q_)],
             "piston_velocity": ["None", (str, int, float)],
             "function_ref": ["None", (str, callable)],
             "save_flux_data": ["None", (bool, str)],
@@ -307,14 +310,23 @@ class Connect(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: list = ["source", "sink", "register", "id"]
 
-        self.lop :list = list()
-        self.lof :list = list()
-        
+        self.lop: list = list()
+        self.lof: list = list()
+
         # validate and initialize instance variables
         self.__initialize_keyword_variables__(kwargs)
 
-        
+        # legacy names
+        self.influx: int = 1
+        self.outflux: int = -1
+        self.mo = self.source.sp.mo
+        self.model = self.mo
+        self.sp = self.source.species
+        self.p = 0  # the default process handle
+        self.r1: (Process, Reservoir) = self.source
+        self.r2: (Process, Reservoir) = self.sink
         self.parent = self.register
+        
         if "pl" in kwargs:
             self.lop: list[Process] = self.pl
         else:
@@ -330,6 +342,15 @@ class Connect(esbmtkBase):
         elif self.save_flux_data == "None":
             self.save_flux_data = self.source.sp.mo.save_flux_data
 
+        if self.rate != "None":
+            if isinstance(self.rate, str):
+                self._rate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
+            elif isinstance(self.rate, Q_):
+                self._rate: float = self.rate.to(self.mo.f_unit).magnitude
+            elif isinstance(self.rate, (int, float)):
+                self._rate : float = self.rate
+                
+
         # if no reference reservoir is specified, default to the upstream
         # reservoir
         if self.ref_reservoirs == "None":
@@ -339,15 +360,7 @@ class Connect(esbmtkBase):
         if self.source.isotopes or self.sink.isotopes:
             self.isotopes = True
 
-        # legacy names
-        self.influx: int = 1
-        self.outflux: int = -1
-        self.mo = self.source.sp.mo
-        self.model = self.mo
-        self.p = 0  # the default process handle
-        self.r1: (Process, Reservoir) = self.source
-        self.r2: (Process, Reservoir) = self.sink
-
+       
         self.get_species(self.r1, self.r2)  #
         self.mo: Model = self.sp.mo  # the current model handle
         self.lof: list[Flux] = []  # list of fluxes in this connection
@@ -1111,7 +1124,7 @@ class Connect(esbmtkBase):
         if self.update and r != "None":
             self.__delete_process__()
             self.__delete_flux__()
-            self._rate = Q_(r).to(self.mo.f_unit).magnitude
+            self._rate = Q_(r).to(self.model.f_unit).magnitude
             self.__create_flux__()  # Source/Sink/Regular
             self.__set_process_type__()  # derive flux type and create flux(es)
             self.__register_process__()
@@ -1123,7 +1136,7 @@ class Connect(esbmtkBase):
 
     @delta.setter
     def delta(self, d: tp.Union[float, int]) -> None:
-        
+
         if self.update and r != "None":
             self.__delete_process__()
             self.__delete_flux__()
