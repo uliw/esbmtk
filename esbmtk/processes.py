@@ -844,7 +844,7 @@ class RateConstant(Process):
             "seawaterconstants": any,
             "isotopes": bool,
             "function_reference": any,
-            "f_0": (str),
+            "f_0": (str, Q_, float, int),
             "pco2_0": (str),
             "ex": (int, float),
             "delta": (int, float, str),
@@ -949,7 +949,11 @@ class weathering(RateConstant):
 
         """
 
-        self.f_0: float = Q_(self.f_0).to(self.mo.f_unit).magnitude
+        if isinstance(self.f_0, str):
+            self.f_0: float = Q_(self.f_0).to(self.mo.f_unit).magnitude
+        elif isinstance(self.f_0, Q_):
+            self.f_0: float = self.f_0.to(self.mo.f_unit).magnitude
+            
         self.pco2_0 = Q_(self.pco2_0).to("ppm").magnitude * 1e-6
 
         # if self.delta == "None" and  self.source.isotopes == False:
