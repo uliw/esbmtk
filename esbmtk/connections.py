@@ -278,7 +278,7 @@ class Connect(esbmtkBase):
             "delta": ["None", (int, float, str)],
             "rate": ["None", (str, int, float, Q_)],
             "pl": ["None", (list, str)],
-            "alpha": ["None"(int, float, str)],
+            "alpha": ["None", (int, float, str)],
             "species": ["None", (Species, str)],
             "ctype": ["None", (str)],
             "ref_reservoirs": ["None", (Reservoir, GasReservoir, str, list)],
@@ -292,7 +292,7 @@ class Connect(esbmtkBase):
             "left": ["None", (list, int, float, Reservoir, GasReservoir)],
             "right": ["None", (list, int, float, Reservoir, GasReservoir)],
             "plot": ["yes", (str)],
-            "groupname": [False(bool)],
+            "groupname": [False, (bool)],
             "register": ["None", (str, Model, Connection, Connect, ConnectionGroup)],
             "signal": ["None", (Signal, str)],
             "bypass": ["None", (str, Reservoir, GasReservoir)],
@@ -307,37 +307,13 @@ class Connect(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: list = ["source", "sink", "register", "id"]
 
+        self.lop :list = list()
+        self.lof :list = list()
+        
         # validate and initialize instance variables
         self.__initialize_keyword_variables__(kwargs)
-       
-        self.bem.update(
-            {
-                "k_concentration": "a number",
-                "k_mass": "a number",
-                "k_value": "a number",
-                "scale": "a number or Quantity",
-                "a_value": "a number",
-                "ref_value": "a number, string, or quantity",
-                "b_value": "a number",
-                "id": "a string",
-                "plot": "a string",
-                "left": "Number, list or Reservoir",
-                "right": "Number, list or Reservoir",
-                "signal": "Signal Handle",
-                "groupname": "True or False",
-                "bypass": "source/sink",
-                "function_ref": "A function",
-            }
-        )
 
-        self.drn = {
-            "alpha": "_alpha",
-            "rate": "_rate",
-            "delta": "_delta",
-        }
-
-        self.__validateandregister__(kwargs)
-
+        
         self.parent = self.register
         if "pl" in kwargs:
             self.lop: list[Process] = self.pl
@@ -1063,7 +1039,7 @@ class Connect(esbmtkBase):
         # unregister process from connection.lop, reservoir.lop, flux.lop, model.lmo
         # delete process from global name space if present
 
-        lop = copy(self.lop)
+        lop = cp.copy(self.lop)
 
         for p in lop:
             for f in self.lof:
@@ -1088,7 +1064,7 @@ class Connect(esbmtkBase):
         # unregister process from connection.lop, reservoir.lop, flux.lop, model.lmo
         # delete process from global name space if present
 
-        lof = copy(self.lof)
+        lof = cp.copy(self.lof)
         for f in lof:
             if isinstance(f.register, ConnectionGroup):
                 # remove from Connection group list of model objects
@@ -1115,12 +1091,13 @@ class Connect(esbmtkBase):
 
     @alpha.setter
     def alpha(self, a: tp.Union[float, int]) -> None:
-        self.__delete_process__()
-        self.__delete_flux__()
-        self._alpha = a
-        self.kwargs["alpha"] = a
-        self.__set_process_type__()  # derive flux type and create flux(es)
-        self.__register_process__()
+
+        if self.update and a != "None":
+            self.__delete_process__()
+            self.__delete_flux__()
+            self._alpha = a
+            self.__set_process_type__()  # derive flux type and create flux(es)
+            self.__register_process__()
 
     # ---- rate  ----
     @property
@@ -1131,13 +1108,13 @@ class Connect(esbmtkBase):
     def rate(self, r: str) -> None:
         from . import ureg, Q_
 
-        self.__delete_process__()
-        self.__delete_flux__()
-        self._rate = Q_(r).to(self.mo.f_unit).magnitude
-        self.kwargs["rate"] = r
-        self.__create_flux__()  # Source/Sink/Regular
-        self.__set_process_type__()  # derive flux type and create flux(es)
-        self.__register_process__()
+        if self.update and r != "None":
+            self.__delete_process__()
+            self.__delete_flux__()
+            self._rate = Q_(r).to(self.mo.f_unit).magnitude
+            self.__create_flux__()  # Source/Sink/Regular
+            self.__set_process_type__()  # derive flux type and create flux(es)
+            self.__register_process__()
 
     # ---- delta  ----
     @property
@@ -1146,13 +1123,15 @@ class Connect(esbmtkBase):
 
     @delta.setter
     def delta(self, d: tp.Union[float, int]) -> None:
-        self.__delete_process__()
-        self.__delete_flux__()
-        self._delta = d
-        self.kwargs["delta"] = d
-        self.__create_flux__()  # Source/Sink/Regular
-        self.__set_process_type__()  # derive flux type and create flux(es)
-        self.__register_process__()
+        
+        if self.update and r != "None":
+            self.__delete_process__()
+            self.__delete_flux__()
+            self._delta = d
+            self.kwargs["delta"] = d
+            self.__create_flux__()  # Source/Sink/Regular
+            self.__set_process_type__()  # derive flux type and create flux(es)
+            self.__register_process__()
 
 
 class Connection(Connect):
