@@ -2325,7 +2325,7 @@ class Flux(esbmtkBase):
             "name": ["None", (str)],
             "species": ["None", (str, Species)],
             "delta": [0, (str, int, float)],
-            "rate": ["None", (str, Q_)],
+            "rate": ["None", (str, Q_, int, float)],
             "plot": ["yes", (str)],
             "display_precision": [0.01, (int, float)],
             "isotopes": [False, (bool)],
@@ -2371,7 +2371,12 @@ class Flux(esbmtkBase):
         self.mu: str = f"{self.species.mu}/{self.mo.tu}"
 
         # and convert flux into model units
-        fluxrate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
+        if isinstance(self.rate, str):
+            fluxrate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
+        elif isinstance(self.rate, Q_):
+            fluxrate: float = self.rate.to(self.mo.f_unit).magnitude
+        elif isinstance(self.rate, (int, float)):
+            fluxrate : float = self.rate
 
         if self.delta:
             li = get_l_mass(fluxrate, self.delta, self.sp.r)
