@@ -32,7 +32,7 @@ from .esbmtk import (
 
 class ReservoirGroup(esbmtkBase):
     """This class allows the creation of a group of reservoirs which share
-    a common volume, and potentially connections. E.g., if we have two
+    a common volume, and potentially connections. E.g., if we have twoy
     reservoir groups with the same reservoirs, and we connect them
     with a flux, this flux will apply to all reservoirs in this group.
 
@@ -336,7 +336,7 @@ class SourceSink(esbmtkBase):
         self.lrk: list[str] = ["name", "species", "register"]
 
         self.__initialize_keyword_variables__(kwargs)
-         
+
         self.loc: set[Connection] = set()  # set of connection objects
 
         # legacy names
@@ -382,24 +382,21 @@ class SourceSinkGroup(esbmtkBase):
     def __init__(self, **kwargs) -> None:
 
         # provide a dict of all known keywords and their type
-        self.lkk: dict[str, any] = {
-            "name": str,
-            "species": list,
-            "delta": dict,
-            "register": any,
+        self.defaults: dict[str, list[any, tuple]] = {
+            "name": ["None", (str)],
+            "species": ["None", (str, list)],
+            "delta": [dict(), (dict)],
+            "register": ["None", (str, Model)],
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list[str] = ["name", "species"]
-        # list of default values if none provided
-        self.lod: dict[any, any] = {"delta": {}, "register": "None"}
+        self.lrk: list[str] = ["name", "species", "register"]
 
-        self.__initerrormessages__()
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__initialize_keyword_variables__(kwargs)
 
         # legacy variables
         self.n = self.name
-
+        self.parent = self.register
         self.loc: set[Connection] = set()  # set of connection objects
 
         # register this object in the global namespace
@@ -409,7 +406,7 @@ class SourceSinkGroup(esbmtkBase):
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
 
-        self.__register_name__()
+        self.__register_name_new__()
 
         self.lor: list = []  # list of sub reservoirs in this group
 
