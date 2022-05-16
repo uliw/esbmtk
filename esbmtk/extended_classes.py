@@ -323,54 +323,46 @@ class SourceSink(esbmtkBase):
     def __init__(self, **kwargs) -> None:
 
         # provide a dict of all known keywords and their type
-        self.lkk: dict[str, any] = {
-            "name": str,
-            "species": Species,
-            "display_precision": (int, float),
-            "register": any,
-            "delta": (int, float, str),
-            "isotopes": bool,
+        self.defaults: dict[str, list[any, tuple]] = {
+            "name": ["None", (str)],
+            "species": ["None", (str, Species)],
+            "display_precision": [0.01, (int, float)],
+            "register": ["None", (str, Model, SourceSinkGroup)],
+            "delta": ["None", (int, float, str)],
+            "isotopes": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list[str] = ["name", "species"]
+        self.lrk: list[str] = ["name", "species", "register"]
 
-        # list of default values if none provided
-        self.lod: dict[str, any] = {
-            "display_precision": 0,
-            "delta": "None",
-            "isotopes": False,
-            "register": "None",
-        }
-
-        self.__initerrormessages__()
-        self.__validateandregister__(kwargs)  # initialize keyword values
-
+        self.__initialize_keyword_variables__(kwargs)
+         
         self.loc: set[Connection] = set()  # set of connection objects
 
         # legacy names
         # if self.register != "None":
         #    self.full_name = f"{self.name}.{self.register.name}"
 
+        self.parent = self.register
         self.n = self.name
         self.sp = self.species
         self.mo = self.species.mo
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
         self.lio: list = []
 
-        if self.register == "None":
-            self.pt = self.name
-        else:
-            self.pt: str = f"{self.register.name}_{self.n}"
-            self.groupname = self.register.name
+        # if self.register == "None":
+        #     self.pt = self.name
+        # else:
+        #     self.pt: str = f"{self.register.name}_{self.n}"
+        #     self.groupname = self.register.name
 
-        if self.delta != "None":
-            self.isotopes = True
+        # if self.delta != "None":
+        #     self.isotopes = True
 
-        if self.display_precision == 0:
-            self.display_precision = self.mo.display_precision
+        # if self.display_precision == 0:
+        #     self.display_precision = self.mo.display_precision
 
-        self.__register_name__()
+        self.__register_name_new__()
 
 
 class SourceSinkGroup(esbmtkBase):
