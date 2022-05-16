@@ -113,18 +113,18 @@ class ReservoirGroup(esbmtkBase):
         from numba.typed import List
 
         # provide a dict of all known keywords and their type
-        self.lkk: dict[str, any] = {
-            "name": str,
-            "delta": dict,
-            "concentration": dict,
-            "mass": dict,
-            "volume": (str, Q_),
-            "geometry": (str, list),
-            "plot": dict,
-            "isotopes": dict,
-            "seawater_parameters": (dict, str),
-            "carbonate_system": bool,
-            "register": (str, Model),
+        self.defaults: dict[str, list[any, tuple]] = {
+            "name": ["None", (str)],
+            "delta": ["None", (dict, str)],
+            "concentration": ["None", (dict, str)],
+            "mass": ["None", (str, dict)],
+            "volume": ["None", (str, Q_)],
+            "geometry": ["None", (str, list)],
+            "plot": ["None", (str, dict)],
+            "isotopes": [False, (dict, bool)],
+            "seawater_parameters": ["None", (dict, str)],
+            "carbonate_system": [False, (bool)],
+            "register": ["None", (str, Model)],
         }
 
         # provide a list of absolutely required keywords
@@ -134,15 +134,6 @@ class ReservoirGroup(esbmtkBase):
             "register",
         ]
 
-        # list of default values if none provided
-        self.lod: dict[any, any] = {
-            "volume": "None",
-            "geometry": "None",
-            "seawater_parameters": "None",
-            "carbonate_system": False,
-            "register": "None,",
-        }
-
         if "concentration" in kwargs:
             self.species: list = list(kwargs["concentration"].keys())
         elif "mass" in kwargs:
@@ -150,25 +141,13 @@ class ReservoirGroup(esbmtkBase):
         else:
             raise ValueError("You must provide either mass or concentration")
 
-        # validate and initialize instance variables
-        self.__initerrormessages__()
-        self.bem.update(
-            {
-                "mass": "a  string or quantity",
-                "concentration": "a string or quantity",
-                "volume": "a string or quantity",
-                "plot": "yes or no",
-                "isotopes": "dict Species: True/False",
-                "geometry": "list",
-            }
-        )
-
-        self.__validateandregister__(kwargs)
+        self.__initialize_keyword_variables__(kwargs)
 
         # legacy variable
         self.n = self.name
         self.mo = self.species[0].mo
         self.model = self.species[0].mo
+        self.parent = self.register
 
         # geoemtry information
         if self.volume == "None":
@@ -183,11 +162,9 @@ class ReservoirGroup(esbmtkBase):
                 raise ValueError("Volume must be string or quantity")
 
         # register this group object in the global namespace
-        if self.mo.register == "local" and self.register == "None":
-            self.register = self.mo
-        self.__register_name__()
-
-        self.model = self.mo
+        # if self.mo.register == "local" and self.register == "None":
+        #     self.register = self.mo
+        self.__register_name_new__()
 
         # register a seawater_parameter instance if necessary
         if self.seawater_parameters != "None":
