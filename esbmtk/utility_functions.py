@@ -580,7 +580,7 @@ def get_typed_list(data: list) -> list:
     return tl
 
 
-def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dict:
+def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
     """boxes are defined by area and depth interval here we use an ordered
     dictionary to define the box geometries. The next column is temperature
     in deg C, followed by pressure in bar
@@ -604,9 +604,7 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
                }
 
     M: Model object handle
-
-    register reservoir groups in global name space (default), or with the
-    provided object reference
+    
     """
 
     from esbmtk import ReservoirGroup, build_concentration_dicts
@@ -622,16 +620,17 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
 
         if "ty" in v:  # type is given
             if v["ty"] == "Source":
-                SourceGroup(name=k, species=v["sp"], register=register)
+                SourceGroup(name=k, species=v["sp"], register=M)
             elif v["ty"] == "Sink":
-                SinkGroup(name=k, species=v["sp"], register=register)
+                SinkGroup(name=k, species=v["sp"], register=M)
             else:
                 raise ValueError("'ty' must be either Source or Sink")
 
         else:  # create reservoirs
 
+            
             icd: dict = build_concentration_dicts(ic, k)
-            # print(f"isotopes= {icd[k][1]}, delta = {icd[k][2]}")
+
             rg = ReservoirGroup(
                 name=k,
                 geometry=v["g"],
@@ -639,7 +638,7 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
                 isotopes=icd[k][1],
                 delta=icd[k][2],
                 seawater_parameters={"temperature": v["T"], "pressure": v["P"]},
-                register=register,
+                register=M,
             )
 
     return icd
