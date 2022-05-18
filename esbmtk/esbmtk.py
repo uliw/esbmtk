@@ -1253,7 +1253,7 @@ class Model(esbmtkBase):
         stride = int(len(self.time) / self.number_of_datapoints)
         self.time = self.time[2:-2:stride]
 
-    def __run_solver__(self, solver, new) -> None:
+    def __run_solver__(self, solver: str, new) -> None:
 
         if solver == "numba":
             execute_e(
@@ -1264,16 +1264,18 @@ class Model(esbmtkBase):
                 self.lpc_f,
                 self.lpc_r,
             )
+        elif solver == "odeint":
+            pass
         else:
             execute(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
 
-    def __step_process__(self, r, i) -> None:
+    def __step_process__(self, r: Reservoir, i: int) -> None:
         """For debugging. Provide reservoir and step number,"""
         for p in r.lop:  # loop over reservoir processes
             print(f"{p.n}")
             p(r, i)  # update fluxes
 
-    def __step_update_reservoir__(self, r, i) -> None:
+    def __step_update_reservoir__(self, r: Reservoir, i: int) -> None:
         """For debugging. Provide reservoir and step number,"""
         flux_list = r.lof
         # new = sum_fluxes(flux_list,r,i) # integrate all fluxes in self.lof
@@ -1515,8 +1517,6 @@ class Species(esbmtkBase):
         self.lrk = ["name", "element"]
         self.__initialize_keyword_variables__(kwargs)
         self.parent = self.register
-        # self.__initerrormessages__()
-        # self.__validateandregister__(kwargs)  # initialize keyword values
 
         if not "display_as" in kwargs:
             self.display_as = self.name
@@ -2376,7 +2376,7 @@ class Flux(esbmtkBase):
         elif isinstance(self.rate, Q_):
             fluxrate: float = self.rate.to(self.mo.f_unit).magnitude
         elif isinstance(self.rate, (int, float)):
-            fluxrate : float = self.rate
+            fluxrate: float = self.rate
 
         if self.delta:
             li = get_l_mass(fluxrate, self.delta, self.sp.r)
