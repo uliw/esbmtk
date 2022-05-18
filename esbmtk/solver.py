@@ -145,7 +145,6 @@ def get_delta_h(h) -> float:
 
 
 def execute(
-    new: np.ndarray,
     time: np.ndarray,
     lop: list,
     lor: list,
@@ -192,7 +191,7 @@ def execute(
     print(f"\n Execution time {duration:.2e} cpu seconds\n")
 
 
-def execute_e(model, new, lop, lor, lpc_f, lpc_r):
+def execute_e(model, lop, lor, lpc_f, lpc_r):
     """ """
 
     # numba.set_num_threads(2)
