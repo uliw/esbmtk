@@ -1196,7 +1196,7 @@ class Model(esbmtkBase):
                 print(
                     f"\n Iteration {i+1} out of {self.number_of_solving_iterations}\n"
                 )
-                self.__run_solver__(solver, new)
+                self.__run_solver__(solver)
 
                 print(f"Restarting model")
                 self.restart()
@@ -1212,7 +1212,7 @@ class Model(esbmtkBase):
         # self.save_data(start=0, stop=self.number_of_datapoints, stride=1)
         # print("Done Saving")
         else:
-            self.__run_solver__(solver, new)
+            self.__run_solver__(solver)
 
         # flag that the model has executed
         self.state = 1
@@ -1253,12 +1253,11 @@ class Model(esbmtkBase):
         stride = int(len(self.time) / self.number_of_datapoints)
         self.time = self.time[2:-2:stride]
 
-    def __run_solver__(self, solver: str, new) -> None:
+    def __run_solver__(self, solver: str) -> None:
 
         if solver == "numba":
             execute_e(
                 self,
-                new,
                 self.lop,
                 self.lor,
                 self.lpc_f,
@@ -1267,7 +1266,7 @@ class Model(esbmtkBase):
         elif solver == "odeint":
             pass
         else:
-            execute(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
+            execute(self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
 
     def __step_process__(self, r: Reservoir, i: int) -> None:
         """For debugging. Provide reservoir and step number,"""
