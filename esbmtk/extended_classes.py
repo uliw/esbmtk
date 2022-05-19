@@ -12,18 +12,8 @@ import os
 import math
 import copy as cp
 
-from .esbmtk import (
-    esbmtkBase,
-    Model,
-    ReservoirBase,
-    Reservoir,
-    Species,
-    Source,
-    Sink,
-    Flux,
-)
-
-from .connections import Connection
+from .esbmtk_base import esbmtkBase
+from .esbmtk import ReservoirBase, Reservoir
 
 from .solver import (
     get_imass,
@@ -34,8 +24,6 @@ from .solver import (
 from .utility_functions import (
     get_string_between_brackets,
 )
-
-from .carbonate_chemistry import calc_carbonates_2
 
 
 class ReservoirGroup(esbmtkBase):
@@ -110,13 +98,15 @@ class ReservoirGroup(esbmtkBase):
     def __init__(self, **kwargs) -> None:
         """Initialize a new reservoir group"""
 
-        from esbmtk import Model
-        from . import Q_
-        from .sealevel import get_box_geometry_parameters
-        from .carbonate_chemistry import (
+        from esbmtk import (
+            ExternalCode,
+            Species,
             SeawaterConstants,
+            Model,
+            get_box_geometry_parameters,
+            Q_,
+            calc_carbonates_2,
         )
-        from .extended_classes import ExternalCode
         from numba.typed import List
 
         # provide a dict of all known keywords and their type
@@ -308,6 +298,8 @@ class SourceSink(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
 
+        from esbmtk import Species, Model, SourceSinkGroup, Connection
+
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
@@ -366,6 +358,8 @@ class SourceSinkGroup(esbmtkBase):
     """
 
     def __init__(self, **kwargs) -> None:
+
+        from esbmtk import Model, Connection, Species, Source, Sink
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -524,7 +518,7 @@ class Signal(esbmtkBase):
     def __init__(self, **kwargs) -> None:
         """Parse and initialize variables"""
 
-        from . import Q_
+        from esbmtk import Q_, Species, Source, Sink, Reservoir, Model
 
         # provide a list of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -622,6 +616,8 @@ class Signal(esbmtkBase):
         Note that this flux will then be added to an existing flux.
 
         """
+
+        from esbmtk import Flux
 
         # these are signal times, not model time
         self.length: int = int(round(self.duration / self.mo.dt))
@@ -921,6 +917,8 @@ class Signal(esbmtkBase):
 
         """
 
+        from esbmtk import Flux, Species
+
         self.fo: Flux = flux  # the flux handle
         self.sp: Species = flux.sp  # the species handle
         # list of processes
@@ -1180,7 +1178,13 @@ class Reservoir_no_set(ReservoirBase):
 
         """
 
-        from . import ConnectionGroup
+        from esbmtk import (
+            ConnectionGroup,
+            Species,
+            SourceGroup,
+            SinkGroup,
+            ReservoirGroup,
+        )
 
         # provide a dict of all known keywords and their type
         self.lkk: dict[str, any] = {
@@ -1333,8 +1337,14 @@ class ExternalCode(Reservoir_no_set):
 
         """
 
-        from . import ConnectionGroup
-        from .processes import GenericFunction
+        from esbmtk import (
+            ConnectionGroup,
+            GenericFunction,
+            Species,
+            SourceGroup,
+            SinkGroup,
+            ReservoirGroup,
+        )
 
         # provide a dict of all known keywords and their type
         self.lkk: dict[str, any] = {
@@ -1764,7 +1774,7 @@ class GasReservoir(ReservoirBase):
     def __init__(self, **kwargs) -> None:
         """Initialize a reservoir."""
 
-        from . import Q_
+        from esbmtk import Q_, Species
 
         # provide a dict of all known keywords and their type
         self.lkk: dict[str, any] = {
@@ -1955,7 +1965,7 @@ class ExternalData(esbmtkBase):
 
     def __init__(self, **kwargs: dict[str, str]):
 
-        from . import Q_
+        from esbmtk import Q_, Model, Reservoir
 
         # dict of all known keywords and their type
         self.lkk: dict[str, any] = {
