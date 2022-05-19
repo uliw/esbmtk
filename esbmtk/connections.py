@@ -30,13 +30,17 @@ import typing as tp
 import numpy as np
 import copy as cp
 import logging
+from .esbmtk import esbmtkBase
 from .utility_functions import map_units
-from .processes import *
-from .esbmtk import *
-from esbmtk import Q_
 from .utility_functions import check_for_quantity
 
 np.set_printoptions(precision=4)
+
+# if tp.TYPE_CHECKING:
+#     from .esbmtk import Source, Reservoir, Sink, Flux, Model, Species
+#     from .extended_classes import GasReservoir, Signal, GasExchange, Q_
+#     from .extended_classes import SourceGroup, SinkGroup, ReservoirGroup
+#     from .processes import Process
 
 
 class Connect(esbmtkBase):
@@ -268,7 +272,21 @@ class Connect(esbmtkBase):
 
         """
 
-        from . import ureg, Q_
+        from esbmtk import (
+            Q_,
+            Source,
+            Sink,
+            Species,
+            Reservoir,
+            GasReservoir,
+            Model,
+            Connection,
+            Connect,
+            ConnectionGroup,
+            Flux,
+            Signal,
+            Process,
+        )
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -326,7 +344,7 @@ class Connect(esbmtkBase):
         self.r1: (Process, Reservoir) = self.source
         self.r2: (Process, Reservoir) = self.sink
         self.parent = self.register
-        
+
         if "pl" in kwargs:
             self.lop: list[Process] = self.pl
         else:
@@ -348,8 +366,7 @@ class Connect(esbmtkBase):
             elif isinstance(self.rate, Q_):
                 self._rate: float = self.rate.to(self.mo.f_unit).magnitude
             elif isinstance(self.rate, (int, float)):
-                self._rate : float = self.rate
-                
+                self._rate: float = self.rate
 
         # if no reference reservoir is specified, default to the upstream
         # reservoir
@@ -360,7 +377,6 @@ class Connect(esbmtkBase):
         if self.source.isotopes or self.sink.isotopes:
             self.isotopes = True
 
-       
         self.get_species(self.r1, self.r2)  #
         self.mo: Model = self.sp.mo  # the current model handle
         self.lof: list[Flux] = []  # list of fluxes in this connection
@@ -471,6 +487,9 @@ class Connect(esbmtkBase):
         backward fluxes the species depends on the r2
 
         """
+
+        from esbmtk import Source
+
         # print(f"r1 = {r1.n}, r2 = {r2.n}")
         if isinstance(self.r1, Source):
             self.r = r1
@@ -487,6 +506,8 @@ class Connect(esbmtkBase):
         """Create flux object, and register with reservoir and global
         namespace"""
 
+        from esbmtk import Flux, Source, Sink
+
         # test if default arguments present
         if self.delta == "None":
             d = 0
@@ -500,7 +521,7 @@ class Connect(esbmtkBase):
             r = self.rate
 
         # derive flux unit from species obbject
-        funit = self.sp.mu + "/" + str(self.sp.mo.bu)  # xxx
+        # funit = self.sp.mu + "/" + str(self.sp.mo.bu)  # xxx
 
         self.fh = Flux(
             species=self.sp,  # Species handle
@@ -564,8 +585,14 @@ class Connect(esbmtkBase):
     def __register_process__(self) -> None:
         """Register all flux related processes"""
 
-        # first test if we have a signal in the list. If so,
-        # remove signal and replace with process
+        from esbmtk import (
+            MultiplySignal,
+            AddSignal,
+            ScaleFlux,
+            VarDeltaOut,
+            SaveFluxData,
+            Signal,
+        )
 
         p_copy = cp.copy(self.lop)
         for p in p_copy:  # loop over process list if provided during init
@@ -637,6 +664,12 @@ class Connect(esbmtkBase):
         """Deduce flux type based on the provided flux properties. The method calls the
         appropriate method init routine
         """
+
+        from esbmtk import (
+            SaveFluxData,
+            Source,
+            Sink,
+        )
 
         if isinstance(self.r1, Source):
             self.r = self.r2
@@ -721,6 +754,8 @@ class Connect(esbmtkBase):
     def __passivefluxfixeddelta__(self) -> None:
         """Just a wrapper to keep the if statement manageable"""
 
+        from esbmtk import PassiveFlux_fixed_delta
+
         ph = PassiveFlux_fixed_delta(
             name="Pfd",
             reservoir=self.r,
@@ -738,6 +773,8 @@ class Connect(esbmtkBase):
 
         """
 
+        from esbmtk import VarDeltaOut
+
         ph = VarDeltaOut(
             name="Pvdo",
             reservoir=self.source,
@@ -749,6 +786,8 @@ class Connect(esbmtkBase):
 
     def __scaleflux__(self) -> None:
         """Scale a flux relative to another flux"""
+
+        from esbmtk import ScaleFlux, Flux
 
         if not isinstance(self.ref_flux, Flux):
             raise ValueError("Scale reference must be a flux")
@@ -769,21 +808,13 @@ class Connect(esbmtkBase):
         )
         self.lop.append(ph)
 
-        # if self.bypass == "source":
-        #     self.source.lof.remove(self.fh)
-        # elif self.bypass == "sink":
-        #     self.sink.lof.remove(self.fh)
-        #     print(f"removing {self.fh.full_name} from {self.sink.full_name} lof")
-        # elif self.bypass == "None":
-        #     pass
-        # else:
-        #     raise ValueError(f"bypass must be None/source/sink but not {self.bypass}")
-
     def __virtual_flux__(self) -> None:
         """Create a virtual flux. This is similar to __scaleflux__, however the new flux
         will only affect the sink, and not the source.
 
         """
+
+        from esbmtk import ScaleFlux, Flux
 
         if self.k_value != "None":
             self.scale = self.k_value
@@ -814,6 +845,8 @@ class Connect(esbmtkBase):
 
         """
 
+        from esbmtk import FluxDiff
+
         if self.k_value != "None":
             self.scale = self.k_value
             print(
@@ -833,33 +866,10 @@ class Connect(esbmtkBase):
         )
         self.lop.append(ph)
 
-    def __reaction__(self) -> None:
-        """Just a wrapper to keep the if statement manageable"""
-
-        if not isinstance(self.ref_reservoirs, (Flux)):
-            raise ValueError("Scale reference must be a flux")
-
-        if self.k_value != "None":
-            self.scale = self.k_value
-            print(f"\n Warning: use scale instead of k_value for reaction type\n")
-
-        ph = Reaction(
-            name="RF",
-            reservoir=self.r,
-            flux=self.fh,
-            register=self.fh,
-            scale=self.scale,
-            ref_reservoirs=self.ref_reservoirs,
-        )
-
-        # we need to make sure to remove the flux referenced by
-        # react_with is removed from the list of fluxes in this
-        # reservoir. This should probably move in to the React Class
-        self.r2.lof.remove(self.ref_reservoirs)
-        self.lop.append(ph)
-
     def __passiveflux__(self) -> None:
         """Just a wrapper to keep the if statement manageable"""
+
+        from esbmtk import PassiveFlux
 
         ph = PassiveFlux(
             name="_PF",
@@ -873,6 +883,8 @@ class Connect(esbmtkBase):
     def __scale_to_input__(self) -> None:
         """Just a wrapper to keep the if statement manageable"""
 
+        from esbmtk import ScaleRelativeToInputFluxes
+
         ph = ScaleRelativeToInputFluxes(
             name="_SRTIF",
             reservoir=self.r,
@@ -884,6 +896,8 @@ class Connect(esbmtkBase):
 
     def __alpha__(self) -> None:
         """Just a wrapper to keep the if statement manageable"""
+
+        from esbmtk import Fractionation
 
         ph = Fractionation(
             name="_Pa",
@@ -897,7 +911,11 @@ class Connect(esbmtkBase):
     def __rateconstant__(self) -> None:
         """Add rate constant type process"""
 
-        from . import ureg, Q_
+        from esbmtk import (
+            ScaleRelativeToMass,
+            ScaleRelativeToConcentration,
+            weathering,
+        )
 
         # this process requires that we use the vardeltaout process
         if self.mo.m_type != "mass_only":
@@ -960,52 +978,6 @@ class Connect(esbmtkBase):
                 delta=self.delta,
             )
 
-        elif self.ctype == "scale_relative_to_multiple_reservoirs":
-
-            if self.k_value != "None":
-                self.scale = self.k_value
-                print(
-                    f"\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n"
-                )
-
-            self.scale = map_units(
-                self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
-            )
-            ph = ScaleRelative2otherReservoir(
-                name="PkC",
-                reservoir=self.source,
-                ref_reservoirs=self.ref_reservoirs,
-                flux=self.fh,
-                register=self.fh,
-                scale=self.scale,
-            )
-
-        elif self.ctype == "flux_balance":
-            self.k_value = map_units(
-                self.k_value, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
-            )
-            ph = Flux_Balance(
-                name="_Pfb",
-                reservoir=self.source,
-                left=self.left,
-                right=self.right,
-                flux=self.fh,
-                register=self.fh,
-                k_value=self.k_value,
-            )
-
-        elif self.ctype == "monod_ctype_limit":
-            self.ref_value = map_units(self.ref_value, self.mo.c_unit)
-            ph = Monod(
-                name="_PMonod",
-                reservoir=self.ref_reservoirs,
-                flux=self.fh,
-                register=self.fh,
-                ref_value=self.ref_value,
-                a_value=self.a_value,
-                b_value=self.b_value,
-            )
-
         else:
             raise ValueError(
                 f"This should not happen,and points to a keywords problem in {self.name}"
@@ -1021,7 +993,6 @@ class Connect(esbmtkBase):
         indent :int = 0 indentation
 
         """
-        off: str = "  "
         if "index" not in kwargs:
             index = 0
         else:
@@ -1119,7 +1090,7 @@ class Connect(esbmtkBase):
 
     @rate.setter
     def rate(self, r: str) -> None:
-        from . import ureg, Q_
+        from . import Q_
 
         if self.update and r != "None":
             self.__delete_process__()
@@ -1137,7 +1108,7 @@ class Connect(esbmtkBase):
     @delta.setter
     def delta(self, d: tp.Union[float, int]) -> None:
 
-        if self.update and r != "None":
+        if self.update and d != "None":
             self.__delete_process__()
             self.__delete_flux__()
             self._delta = d
@@ -1193,7 +1164,19 @@ class ConnectionGroup(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
 
-        self.defaults: Dict[str, any] = {
+        from esbmtk import (
+            SourceGroup,
+            ReservoirGroup,
+            Reservoir,
+            SinkGroup,
+            Signal,
+            Species,
+            Flux,
+            Model,
+            Q_
+        )
+
+        self.defaults: dict[str, any] = {
             "id": ["None", (str)],
             "source": ["None", (str, SourceGroup, Reservoir, ReservoirGroup)],
             "sink": ["None", (str, SinkGroup, Reservoir, ReservoirGroup)],
@@ -1293,7 +1276,7 @@ class ConnectionGroup(esbmtkBase):
                 register=self,
             )
 
-            ## add connection to list of connections
+            # add connection to list of connections
             self.loc.append(a)
             if self.mo.debug:
                 print(
@@ -1341,7 +1324,7 @@ class AirSeaExchange(esbmtkBase):
     def __init__(self, **kwargs) -> None:
         """initialize instance"""
 
-        from .utility_functions import check_for_quantity
+        from esbmtk import GasReservoir, Reservoir, Species, Model, Q_, Flux, GasExchange
 
         self.defaults: dict[str, list[str, tuple]] = {
             "gas_reservoir": ["None", (str, GasReservoir)],

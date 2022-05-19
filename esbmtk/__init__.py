@@ -18,9 +18,12 @@ np.seterr(invalid='ignore')
 
 import typing as tp
 
+from .esbmtk_base import *
 from .esbmtk import *
 from .extended_classes import *
-from .connections import ConnectionGroup, Connection, Connect, AirSeaExchange
+from .connections import *
+from .processes import *
+from .carbonate_chemistry import *
 from .utility_functions import *
 from .sealevel import *
 from .solver import *

@@ -1,19 +1,24 @@
 # from numbers import Number
 # from nptyping import *
 # from typing import *
-from numba import njit, jit
+from numba import njit
 from numba.typed import List
 import numpy as np
-from . import ureg, Q_
-from .esbmtk import esbmtkBase, Reservoir, Flux, Source, Sink
-from .solver import get_imass, get_frac, get_delta, get_flux_data, get_l_mass
+from . import Q_
+from .esbmtk_base import esbmtkBase  # , Reservoir, Flux, Source, Sink
+from .solver import get_l_mass
 
 np.set_printoptions(precision=4)
 # from .connections import ConnnectionGroup
 
+# if tp.TYPE_CHECKING:
+#     from .esbmtk import Source, Reservoir, Sink, Flux, Model
+#     from .extended_classes import GasReservoir, ReservoirGroup
+#     from .connections import ConnectionGroup
+
 
 class Process(esbmtkBase):
-    """This class defines template for process which acts on one or more
+    """This class defines template for proycess which acts on one or more
     reservoir flux combinations. To use it, you need to create an
     subclass which defines the actual process implementation in their
     call method. See 'PassiveFlux as example'
@@ -21,6 +26,8 @@ class Process(esbmtkBase):
     """
 
     __slots__ = ("reservoir", "r", "flux", "r", "mo", "direction", "scale")
+
+    from .esbmtk import Source, Reservoir, Sink, Flux, Model
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """
@@ -38,6 +45,8 @@ class Process(esbmtkBase):
 
     def __postinit__(self) -> None:
         """Do some housekeeping for the process class"""
+
+        from esbmtk import Reservoir, Model, Flux
 
         # legacy name aliases
         self.n: str = self.name  # display name of species
@@ -94,8 +103,15 @@ class Process(esbmtkBase):
 
         """
 
-        from .connections import ConnectionGroup
-        from esbmtk import Reservoir, ReservoirGroup, Flux, GasReservoir
+        from esbmtk import (
+            Reservoir,
+            ReservoirGroup,
+            Source,
+            Sink,
+            GasReservoir,
+            Flux,
+            ConnectionGroup,
+        )
 
         # provide a dict of known keywords and types
         self.lkk: dict[str, any] = {
@@ -124,11 +140,13 @@ class Process(esbmtkBase):
         # list of default values if none provided
         self.lod: dict[str, any] = {"scale": 1}
 
-    def __register__(self, reservoir: Reservoir, flux: Flux) -> None:
+    def __register__(self, reservoir, flux: Flux) -> None:
         """Register the flux/reservoir pair we are acting upon, and register
         the process with the reservoir
 
         """
+
+        from esbmtk import Flux, Reservoir
 
         # register the reservoir flux combination we are acting on
         self.f: Flux = flux
@@ -169,8 +187,6 @@ class GenericFunction(Process):
         Create a new process object with a given process type and options
 
         """
-
-        from . import Reservoir_no_set
 
         self.__defaultnames__()  # default kwargs names
 
@@ -229,7 +245,7 @@ class GenericFunction(Process):
     def get_process_args(self) -> tuple:
         """return the data associated with this object"""
 
-        self.func_name: function = self.function
+        self.func_name: callable = self.function
 
         return (
             self.func_name,
@@ -350,7 +366,7 @@ class AddSignal(Process):
 
     def __get_process_args_fi__(self):
 
-        func_name: function = self.p_add_signal_fi
+        func_name: callable = self.p_add_signal_fi
 
         print(f"flux_name = {self.flux.full_name}")
 
@@ -397,7 +413,7 @@ class AddSignal(Process):
 
     def __get_process_args_fa__(self):
 
-        func_name: function = self.p_add_signal_fa
+        func_name: callable = self.p_add_signal_fa
 
         print(f"flux_name = {self.flux.full_name}")
 
@@ -405,7 +421,7 @@ class AddSignal(Process):
             [
                 self.lt.m,  # 0
                 self.lt.l,  # 1
-                self.flux.fa,  #  2
+                self.flux.fa,  # 2
             ]
         )
 
@@ -472,7 +488,7 @@ class SaveFluxData(Process):
     def get_process_args(self):
         """"""
 
-        func_name: function = self.p_save_flux
+        func_name: callable = self.p_save_flux
 
         data = List(
             [
@@ -513,8 +529,15 @@ class ScaleFlux(Process):
 
     __slots__ = ("rate", "scale", "ref_reservoirs", "reservoir", "flux")
 
+    from esbmtk import (
+        Source,
+    )
+
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
+
+        from esbmtk import Source
+
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
         self.lrk.extend(["reservoir", "flux", "scale"])  # new required keywords
@@ -563,12 +586,6 @@ class ScaleFlux(Process):
     def __with_source__():
         raise NotImplementedError()
 
-    def __with_isotopes__():
-        raise NotImplementedError()
-
-    def __without_isotopes__():
-        raise NotImplementedError()
-
     # setup a placeholder call function
     def __call__(self, i: int):
         return self.__execute__(i)
@@ -583,7 +600,6 @@ class ScaleFlux(Process):
 
         # get reference flux
         rm: float = self.ref_flux.fa[0] * self.scale
-        r: float = self.reservoir.species.element.r
 
         # get the target isotope ratio based on upstream delta
         c = self.reservoir.l[i - 1] / (
@@ -601,7 +617,6 @@ class ScaleFlux(Process):
 
         # get reference flux
         rm: float = self.ref_flux.fa[0] * self.scale
-        r: float = self.reservoir.species.element.r
 
         # get the target isotope ratio based on upstream delta
         c = self.c
@@ -632,6 +647,8 @@ class ScaleFlux(Process):
 
         """
 
+        from esbmtk import Source
+
         data = List(
             [
                 self.flux.m,  # 0
@@ -645,11 +662,11 @@ class ScaleFlux(Process):
         )
 
         if isinstance(self.source, Source) and self.source.isotopes:
-            func_name: function = self.p_scale_flux_fd
+            func_name: callable = self.p_scale_flux_fd
         elif self.delta != "None":
-            func_name: function = self.p_scale_flux_fd
+            func_name: callable = self.p_scale_flux_fd
         else:
-            func_name: function = self.p_scale_flux_r
+            func_name: callable = self.p_scale_flux_r
 
         params = List(
             [
@@ -667,7 +684,6 @@ class ScaleFlux(Process):
         """delta is derived from upstream reservoir"""
 
         # params
-        r: float = params[0]  # r value
         s: float = params[1]  # scale
 
         # data
@@ -687,14 +703,11 @@ class ScaleFlux(Process):
         """delta is set to a fixed value"""
 
         # params
-        r: float = params[0]  # r value
         s: float = params[1]  # scale
         c: float = params[2]  # l/h ratio
 
         # data
         mf: float = data[6][0] * s  # mass of reference flux
-        mr: float = data[3][i - 1]  # mass upstream reserevoir
-        lr: float = data[4][i - 1]  # li upstream reserevoir
 
         # get the target isotope ratio based on upstream delta
         l = mf * c / (c + 1)
@@ -740,7 +753,6 @@ class Fractionation(Process):
         """
 
         # print(f"self.f.m[i] =  {self.f.m[i]}")
-        r = self.reservoir.species.element.r
         fm = self.f.fa[0]
         rm = self.reservoir.m[i - 1]
         rl = self.reservoir.l[i - 1]
@@ -759,7 +771,7 @@ class Fractionation(Process):
 
     def get_process_args(self):
 
-        func_name: function = self.p_fractionation
+        func_name: callable = self.p_fractionation
 
         data = List(
             [
@@ -778,7 +790,6 @@ class Fractionation(Process):
     @njit(fastmath=True, error_model="numpy")
     def p_fractionation(data, params, i) -> None:
         # params
-        r: float = params[0]  # rvalue
         a: float = params[1]  # alpha
 
         # data
@@ -804,10 +815,18 @@ class RateConstant(Process):
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
 
-        from . import ureg, Q_
-        from .connections import SourceGroup, SinkGroup, ReservoirGroup
-        from .connections import ConnectionGroup, GasReservoir
-        from esbmtk import Flux
+        from esbmtk import (
+            Flux,
+            SourceGroup,
+            SinkGroup,
+            ReservoirGroup,
+            ConnectionGroup,
+            GasReservoir,
+            Reservoir,
+            Source,
+            Sink,
+            Q_,
+        )
 
         # Note that self.lkk values also need to be added to the lkk
         # list of the connector object.
@@ -949,11 +968,13 @@ class weathering(RateConstant):
 
         """
 
+        from esbmtk import Source
+
         if isinstance(self.f_0, str):
             self.f_0: float = Q_(self.f_0).to(self.mo.f_unit).magnitude
         elif isinstance(self.f_0, Q_):
             self.f_0: float = self.f_0.to(self.mo.f_unit).magnitude
-            
+
         self.pco2_0 = Q_(self.pco2_0).to("ppm").magnitude * 1e-6
 
         # if self.delta == "None" and  self.source.isotopes == False:
@@ -1170,7 +1191,7 @@ class MultiplySignal(Process):
         self.flux.fa = np.array([m, l])
 
     def __get_process_args_fi__(self):
-        func_name: function = self.p_multiply_signal_fi
+        func_name: callable = self.p_multiply_signal_fi
         data = List(
             [
                 self.flux.m,  # 0
@@ -1186,7 +1207,7 @@ class MultiplySignal(Process):
         return func_name, data, params
 
     def __get_process_args_fa__(self):
-        func_name: function = self.p_multiply_signal_fa
+        func_name: callable = self.p_multiply_signal_fa
         data = List(
             [
                 self.lt.m,  # 0
@@ -1205,8 +1226,6 @@ class MultiplySignal(Process):
     @njit(fastmath=True, error_model="numpy")
     def p_multiply_signal_fi(data, params, i) -> None:
 
-        r = params[0]
-
         c = data[2][i]
         m = data[0][i] * c
         l = data[1][i] * c
@@ -1216,8 +1235,6 @@ class MultiplySignal(Process):
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_multiply_signal_fa(data, params, i) -> None:
-
-        r = params[0]
 
         c = data[0][i]
         m = data[1][0] * c  # m
@@ -1242,9 +1259,7 @@ class VarDeltaOut(Process):
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
 
-        from . import ureg, Q_
-        from .connections import ConnectionGroup
-        from esbmtk import Flux, Reservoir, ReservoirGroup
+        from esbmtk import Flux, ReservoirGroup, Reservoir, ConnectionGroup, Source, Sink, Q_
 
         # get default names and update list for this Process
         self.__defaultnames__()
@@ -1305,7 +1320,7 @@ class VarDeltaOut(Process):
         # if upstream is a source, we only have a single delta value
         # so we need to patch this. Maybe this should move to source?
 
-        func_name: function = self.p_vardeltaout
+        func_name: callable = self.p_vardeltaout
 
         data = List(
             [
@@ -1320,7 +1335,7 @@ class VarDeltaOut(Process):
             ]
         )
 
-        params = List([float(reservoir.species.element.r)])
+        params = List([float(self.reservoir.species.element.r)])
 
         return func_name, data, params
 
@@ -1395,7 +1410,6 @@ class ScaleRelativeToMass(RateConstant):
 
         """
         m: float = self.reservoir.m[i - 1] * self.scale
-        r: float = self.reservoir.species.element.r
         # d: float = self.reservoir.d[i - 1]
         c = self.reservoir.l[i - 1] / (
             self.reservoir.m[i - 1] - self.reservoir.l[i - 1]
@@ -1406,7 +1420,7 @@ class ScaleRelativeToMass(RateConstant):
     def get_process_args(self):
         """return the data associated with this object"""
 
-        func_name: function = self.p_scale_relative_to_mass
+        func_name: callable = self.p_scale_relative_to_mass
 
         data = List(
             [
@@ -1427,7 +1441,6 @@ class ScaleRelativeToMass(RateConstant):
     def p_scale_relative_to_mass(data, params, i) -> None:
         # concentration times scale factor
         # params
-        r: float = params[0]  # r values
         s: float = params[1]  # scale factor
 
         # data
@@ -1479,7 +1492,7 @@ class GasExchange(RateConstant):
         # multiply by 1E3
 
         f = self.scale * (  # area in m^2
-            self.gas.c[i - 1]  #  Atmosphere
+            self.gas.c[i - 1]  # Atmosphere
             * (1 - self.p_H2O)  # p_H2O
             * self.solubility  # SA_co2 = mol/(m^3 atm)
             - self.ref_species[i - 1] * 1000  # [CO2]aq mol
@@ -1497,7 +1510,7 @@ class GasExchange(RateConstant):
 
         """
         # self.gas.v[i] = self.gas.v[i - 1] + f * self.gas.mo.dt
-        self.flux.fa[:] = [a, 1]
+        self.flux.fa[:] = [f, 1]
 
     def __with_isotopes__(self, i: int) -> None:
         """
@@ -1526,10 +1539,6 @@ class GasExchange(RateConstant):
 
         """
 
-        from esbmtk import get_delta
-
-        r = self.liquid.sp.r
-
         # equilibrium concentration of CO2 in water based on pCO2
         eco2_at = (
             self.gas.c[i - 1]  # p Atmosphere
@@ -1555,14 +1564,6 @@ class GasExchange(RateConstant):
 
         # get 13C equilibrium  CO2 in water based on DIC m & l
         eco2_aq_13 = self.a_db * eco2_aq * c13aq
-
-        # l =  eco2_aq - eco2_aq_13
-        # d = get_delta(l, eco2_aq_13, r)
-        # print(f"d based on CO2aq = {d:.2f}")
-
-        l = eco2_at - eco2_at_13
-        d = get_delta(l, eco2_at_13, r)
-        # print(f"d based on CO2at = {d:.2f}")
 
         # 13C flux
         f13 = self.scale * self.a_u * (eco2_at_13 - eco2_aq_13)
@@ -1597,7 +1598,7 @@ class GasExchange(RateConstant):
     def get_process_args(self):
         """return the data associated with this object"""
 
-        func_name: function = self.p_gas_exchange
+        func_name: callable = self.p_gas_exchange
 
         data = List(
             [
@@ -1643,7 +1644,6 @@ class GasExchange(RateConstant):
         au: float = params[3]  #
         dg: float = params[4]  #
         db: float = params[5]  #
-        dt: float = params[6]
 
         lm = data[1][i - 1]  # mass in liquid
         ll = data[2][i - 1]  # mass of light isotope in liquid_reservoir
@@ -1727,7 +1727,6 @@ class ScaleRelativeToConcentration(RateConstant):
 
         rc: float = self.reservoir.c[i - 1]
         if rc > 0:  # otherwise there is no flux
-            r: float = self.reservoir.species.element.r
             c = self.reservoir.l[i - 1] / (
                 self.reservoir.m[i - 1] - self.reservoir.l[i - 1]
             )
@@ -1746,7 +1745,6 @@ class ScaleRelativeToConcentration(RateConstant):
 
         rc: float = self.reservoir.c[i - 1]
         if rc > 0:  # otherwise there is no flux
-            r: float = self.reservoir.species.element.r
             c = self.c
             m = rc * self.scale
             l = m * c / (c + 1)
@@ -1756,6 +1754,8 @@ class ScaleRelativeToConcentration(RateConstant):
         """If no delta provided, use upstream reserevoir ratios
         Otherwise, use a fixed ratio
         """
+
+        from esbmtk import Source
 
         if isinstance(self.reservoir, Source):
             raise ValueError(

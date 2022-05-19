@@ -17,15 +17,15 @@
 
 """
 
-# from nptyping import *
-# from typing import *
 import typing as tp
 from numba import njit
 from numba.typed import List
 import numpy as np
-from .esbmtk import esbmtkBase, Reservoir, ReservoirGroup, Model
+from .esbmtk_base import esbmtkBase
 
-from .extended_classes import VirtualReservoir
+if tp.TYPE_CHECKING:
+    from .esbmtk import Reservoir, Model
+    from .extended_classes import ReservoirGroup
 
 
 # define a transform function to display the Hplus concentration as pH
@@ -76,8 +76,12 @@ class SeawaterConstants(esbmtkBase):
 
     """
 
+    
+    
     def __init__(self, **kwargs: dict[str, str]):
 
+        from esbmtk import Model, Reservoir, ReservoirGroup
+        
         self.defaults: dict[list[any, tuple]] = {
             "name": ["None", (str)],
             "salinity": [35.0, (int, float)],
@@ -582,10 +586,18 @@ class SeawaterConstants(esbmtkBase):
         self.a_u: float = 1 + self.e_u / 1000
 
 
-def calc_pCO2(
-    dic: tp.Union[Reservoir, VirtualReservoir],
-    hplus: tp.Union[Reservoir, VirtualReservoir],
+"""
+    dic: tp.Union[Reservoir, esbmtk.extended_classes.VirtualReservoir],
+    hplus: tp.Union[Reservoir, esbmtk.extended_classes.VirtualReservoir],
     SW: SeawaterConstants,
+
+"""
+
+
+def calc_pCO2(
+    dic,  # see above why no type hints
+    hplus,
+    SW,
 ) -> np.ndarray:
 
     """

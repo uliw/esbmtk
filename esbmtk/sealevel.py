@@ -26,14 +26,15 @@
 from __future__ import annotations
 
 import numpy as np
+import typing as tp
 import matplotlib.pyplot as plt
 import pandas as pd
 import scipy as sp
 import scipy.interpolate
-from .utility_functions import map_units
-from .processes import *
-from .esbmtk import esbmtkBase, Model
-np.set_printoptions(precision=4)
+from .esbmtk_base import esbmtkBase
+
+if tp.TYPE_CHECKING:
+    from .esbmtk import Model
 
 
 class hypsometry(esbmtkBase):
@@ -74,8 +75,9 @@ class hypsometry(esbmtkBase):
     def __init__(self, **kwargs):
         """Initialize a hypsometry object"""
 
+        from esbmtk import Model
         # allowed keywords
-        self.lkk: Dict[str, any] = {
+        self.lkk: dict[str, any] = {
             "name": str,
             "register": (Model, str),
             "model": Model,
@@ -87,7 +89,7 @@ class hypsometry(esbmtkBase):
             "model",
         ]
         # list of default values if none provided
-        self.lod: Dict[any, any] = {
+        self.lod: dict[any, any] = {
             "register": "None",
         }
 
