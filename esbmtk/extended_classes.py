@@ -4,15 +4,13 @@
 import typing as tp
 from pandas import DataFrame
 from numba.typed import List
-import numba
-from numba.core import types as nbt
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import logging
 import os
 import math
-from . import ureg, Q_
+import copy as cp
 
 from .esbmtk import (
     esbmtkBase,
@@ -23,11 +21,21 @@ from .esbmtk import (
     Source,
     Sink,
     Flux,
+)
+
+from .connections import Connection
+
+from .solver import (
     get_imass,
     get_delta,
-    get_string_between_brackets,
     get_l_mass,
 )
+
+from .utility_functions import (
+    get_string_between_brackets,
+)
+
+from .carbonate_chemistry import calc_carbonates_2
 
 
 class ReservoirGroup(esbmtkBase):
@@ -92,8 +100,8 @@ class ReservoirGroup(esbmtkBase):
 
     seawater_parameters:
     ~~~~~~~~~~~~~~~~~~~
-    If this optional parameter is specified, a SeaWaterConstants instance will be registered
-    for this Reservoir as Reservoir.swc
+    If this optional parameter is specified, a SeaWaterConstants instance will
+    be registered for this Reservoir as Reservoir.swc
     See the  SeaWaterConstants class for details how to specify the parameters, e.g.:
     seawater_parameters = {"temperature": 2, "pressure": 240, "salinity" : 35},
 
@@ -103,11 +111,10 @@ class ReservoirGroup(esbmtkBase):
         """Initialize a new reservoir group"""
 
         from esbmtk import Model
-        from . import ureg, Q_
+        from . import Q_
         from .sealevel import get_box_geometry_parameters
         from .carbonate_chemistry import (
             SeawaterConstants,
-            calc_carbonates_1,
         )
         from .extended_classes import ExternalCode
         from numba.typed import List
@@ -250,7 +257,7 @@ class ReservoirGroup(esbmtkBase):
 
             ExternalCode(
                 name="cs",
-                species=CO2,
+                species=Model.CO2,
                 alias_list="H CA HCO3 CO3 CO2aq omega zsat".split(" "),
                 vr_datafields=List(
                     [
@@ -263,7 +270,7 @@ class ReservoirGroup(esbmtkBase):
                         0.0,  # zsat
                     ]
                 ),
-                function=calc_carbonates,
+                function=calc_carbonates_2,
                 function_input_data=List([self.DIC.c, self.TA.c]),
                 function_params=List(
                     [
@@ -281,27 +288,6 @@ class ReservoirGroup(esbmtkBase):
                 ),
                 register=self,
             )
-            # carbonate_system_uli(self)
-
-    # depreceated
-    # def add_cs_aliases(self) -> None:
-    #     """Method that sets up aliases for the carbonate system, cs, virtual
-    #     reservoir.
-
-    #     Method used by carbonate_system_new and carbonate_system_v2.
-    #     """
-    #     self.cs.H = self.cs.vr_data[0]
-    #     self.cs.CA = self.cs.vr_data[1]
-    #     self.cs.HCO3 = self.cs.vr_data[2]
-    #     self.cs.CO3 = self.cs.vr_data[3]
-    #     self.cs.CO2aq = self.cs.vr_data[4]
-
-    #     try:
-    #         self.cs.zsat = self.cs.vr_data[5]
-    #         self.cs.zcc = self.cs.vr_data[6]
-    #         self.cs.zsnow = self.cs.vr_data[7]
-    #     except:
-    #         pass
 
 
 class SourceSink(esbmtkBase):
@@ -538,7 +524,7 @@ class Signal(esbmtkBase):
     def __init__(self, **kwargs) -> None:
         """Parse and initialize variables"""
 
-        from . import ureg, Q_
+        from . import Q_
 
         # provide a list of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -791,7 +777,7 @@ class Signal(esbmtkBase):
 
         """
 
-        from . import ureg, Q_
+        from . import Q_
 
         if not os.path.exists(self.filename):  # check if the file is actually there
             raise FileNotFoundError(f"Cannot find file {self.filename}")
@@ -862,7 +848,7 @@ class Signal(esbmtkBase):
     def __add__(self, other):
         """allow the addition of two signals and return a new signal"""
 
-        ns = deepcopy(self)
+        ns = cp.deepcopy(self)
 
         # add the data of both fluxes
         # get delta of self
@@ -894,7 +880,7 @@ class Signal(esbmtkBase):
 
         """
 
-        ns: Signal = deepcopy(self)
+        ns: Signal = cp.deepcopy(self)
         ns.n: str = self.n + f"_repeated_{times}_times"
         ns.data.n: str = self.n + f"_repeated_{times}_times_data"
         start: int = int(start / self.mo.dt)  # convert from time to index
@@ -937,14 +923,13 @@ class Signal(esbmtkBase):
 
         self.fo: Flux = flux  # the flux handle
         self.sp: Species = flux.sp  # the species handle
-        model: Model = flux.sp.mo  # the model handle add this process to the
         # list of processes
         flux.lop.append(self)
 
     def __call__(self) -> np.ndarray:
         """what to do when called as a function ()"""
 
-        return (array([self.fo.m, self.fo.l, self.fo.h, self.fo.d]), self.fo.n, self)
+        return (np.array([self.fo.m, self.fo.l, self.fo.h, self.fo.d]), self.fo.n, self)
 
     def plot(self) -> None:
         """
@@ -1133,7 +1118,7 @@ class DataField(esbmtkBase):
         stop: int,
         stride: int,
         append: bool,
-        directorty: str,
+        directory: str,
     ) -> None:
         """To be called by write_data and save_state"""
 
@@ -1145,11 +1130,7 @@ class DataField(esbmtkBase):
         # some short hands
         mo = self.mo  # model handle
 
-        smu = f"{mo.m_unit:~P}"
         mtu = f"{mo.t_unit:~P}"
-        fmu = f"{mo.f_unit:~P}"
-        cmu = f"{mo.c_unit:~P}"
-
         rn = self.n  # reservoir name
         mn = self.mo.n  # model name
 
@@ -1199,7 +1180,7 @@ class Reservoir_no_set(ReservoirBase):
 
         """
 
-        from . import ureg, Q_, ConnectionGroup
+        from . import ConnectionGroup
 
         # provide a dict of all known keywords and their type
         self.lkk: dict[str, any] = {
@@ -1352,7 +1333,7 @@ class ExternalCode(Reservoir_no_set):
 
         """
 
-        from . import ureg, Q_, ConnectionGroup
+        from . import ConnectionGroup
         from .processes import GenericFunction
 
         # provide a dict of all known keywords and their type
@@ -1783,7 +1764,7 @@ class GasReservoir(ReservoirBase):
     def __init__(self, **kwargs) -> None:
         """Initialize a reservoir."""
 
-        from . import ureg, Q_, ConnectionGroup
+        from . import Q_
 
         # provide a dict of all known keywords and their type
         self.lkk: dict[str, any] = {
@@ -1974,7 +1955,7 @@ class ExternalData(esbmtkBase):
 
     def __init__(self, **kwargs: dict[str, str]):
 
-        from . import ureg, Q_
+        from . import Q_
 
         # dict of all known keywords and their type
         self.lkk: dict[str, any] = {
@@ -2037,7 +2018,7 @@ class ExternalData(esbmtkBase):
         yh = self.df.columns[1]
         if not "Unnamed" in yh:
             yh = get_string_between_brackets(yh)
-            yq = Q_(yh)
+            # yq = Q_(yh)
             # add these to the data we are are reading
             # self.y: [np.ndarray] = self.df.iloc[:, 1].to_numpy() * yq
             self.y: np.ndarray = self.df.iloc[:, 1].to_numpy() * self.scale
@@ -2046,7 +2027,7 @@ class ExternalData(esbmtkBase):
 
         # check if z-data is present
         if ncols == 3:
-            zh = self.df.columns[2]
+            # zh = self.df.columns[2]
             self.z = self.df.iloc[:, 2].to_numpy()
 
         # register with reservoir
