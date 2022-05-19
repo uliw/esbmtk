@@ -20,8 +20,6 @@ from pandas import DataFrame
 import time
 from time import process_time
 from numba.typed import List
-import numba
-from numba.core import types as nbt
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -35,16 +33,10 @@ from .utility_functions import (
     plot_object_data,
     show_data,
     plot_geometry,
-    show_dict,
-    gen_dict_entries,
-    get_string_between_brackets,
     get_plot_layout,
-    build_ct_dict,
     find_matching_strings,
 )
 from .solver import (
-    get_imass,
-    get_delta,
     get_l_mass,
     execute,
     execute_e,
@@ -175,14 +167,14 @@ class esbmtkBase(input_parsing):
        self.lrk: list = ["name"]
 
     define allowed type per keyword in lkk dict:
-       self.lkk: Dict[str, any] = {
+       self.lkk: dict[str, any] = {
                                   "name": str,
                                   "model": Model,
                                   "salinity": (int, float), # int or float
                                   }
 
     define default values if none provided in lod dict
-       self.lod: Dict[str, any] = {"salinity": 35.0}
+       self.lod: dict[str, any] = {"salinity": 35.0}
 
     validate keyword input:
         self.__validateinput__(kwargs)
@@ -202,7 +194,7 @@ class esbmtkBase(input_parsing):
 
     #  __slots__ = "__dict__"
 
-    # from typing import Dict
+    # from typing import dict
 
     def __init__(self) -> None:
         raise NotImplementedError
@@ -253,8 +245,8 @@ class esbmtkBase(input_parsing):
         There are two possible cases: This is a regular object, which will be registered
         in the global namespace (self.register is not set).
 
-        Case B) This object should be registered in the local namespace of a group. In which case
-        self.register should be set to the group object.
+        Case B) This object should be registered in the local namespace of a group.
+        In that case self.register should be set to the group object.
 
         """
 
@@ -349,7 +341,7 @@ class esbmtkBase(input_parsing):
         # check if key values are of correct type
         self.__checktypes__(self.lkk, self.kwargs)
 
-    def __checktypes__(self, av: Dict[any, any], pv: Dict[any, any]) -> None:
+    def __checktypes__(self, av: dict[any, any], pv: dict[any, any]) -> None:
         """this method will use the the dict key in the user provided
         key value data (pv) to look up the allowed data type for this key in av
 
@@ -370,18 +362,7 @@ class esbmtkBase(input_parsing):
                         raise TypeError(
                             f"{type(pv[k])} is the wrong type for '{k}', should be '{av[k]}'"
                         )
-
-        # loop over provided keywords
-        # for k, v in pv.items():
-        #     # check av if provided value v is of correct type
-        #     if av[k] != any:
-        #         # print(f"key = {k}, value  = {v}")
-        #         if not isinstance(v, av[k]):
-        #             # print(f"k={k}, v= {v}, av[k] = {av[k]}")
-        #             raise TypeError(
-        #                 f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
-        #             )
-
+      
     def __initerrormessages__(self):
         """Init the list of known error messages"""
         self.bem: dict = {
@@ -481,8 +462,8 @@ class esbmtkBase(input_parsing):
 
     def __addmissingdefaults__(self, lod: dict, kwargs: dict) -> dict:
         """
-        test if the keys in lod exist in kwargs, otherwise add them with the default values
-        from lod
+        test if the keys in lod exist in kwargs, otherwise add them
+        with the default values from lod
 
         """
         new: dict = {}
@@ -627,21 +608,25 @@ class Model(esbmtkBase):
                       ideal_water = False
                     )
 
-    ref_time:  will offset the time axis by the specified
-                 amount, when plotting the data, .i.e., the model time runs from to
-                 100, but you want to plot data as if where from 2000 to 2100, you would
-                 specify a value of 2000. This is for display purposes only, and does not affect
-                 the model. Care must be taken that any external data references the model
-                 time domain, and not the display time.
+    ref_time: will offset the time axis by the specified amount, when
+                 plotting the data, .i.e., the model time runs from to
+                 100, but you want to plot data as if where from 2000
+                 to 2100, you would specify a value of 2000. This is
+                 for display purposes only, and does not affect the
+                 model. Care must be taken that any external data
+                 references the model time domain, and not the display
+                 time.
 
     display precision: affects the on-screen display of data. It is
-                       also cutoff for the graphicak output. I.e., the interval f the y-axis will not be
-                       smaller than the display_precision.
+                       also cutoff for the graphicak output. I.e., the
+                       interval f the y-axis will not be smaller than
+                       the display_precision.
 
-    m_type: enables or disables isotope calculation for the entire model.
-            The default value  is "Not set" in this case isotopes will only be calculated for
-            reservoirs which set the isotope keyword. 'mass_only' 'both' will override
-            the reservoir settings
+    m_type: enables or disables isotope calculation for the entire
+            model.  The default value is "Not set" in this case
+            isotopes will only be calculaten for reservoirs which set
+            the isotope keyword. 'mass_only' 'both' will override the
+            reservoir settings
 
     register = local/None. If set to 'None' all objects are registered
                in the global namespace the default setting is local,
@@ -718,10 +703,10 @@ class Model(esbmtkBase):
 
     __slots__ = "lor"
 
-    def __init__(self, **kwargs: Dict[any, any]) -> None:
+    def __init__(self, **kwargs: dict[any, any]) -> None:
         """Init Sequence"""
 
-        from . import ureg, Q_
+        # from . import ureg, Q_
 
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["M", (str)],
@@ -1503,7 +1488,7 @@ class Species(esbmtkBase):
         """Initialize all instance variables"""
 
         # provide a list of all known keywords
-        self.defaults: Dict[any, any] = {
+        self.defaults: dict[any, any] = {
             "name": ["None", (str)],
             "element": ["None", (Element, str)],
             "display_as": [kwargs["name"], (str)],
@@ -1562,7 +1547,7 @@ class ReservoirBase(esbmtkBase):
         self.lio: dict[str, int] = {}  # flux name:direction pairs
         self.lop: list[Process] = []  # list holding all processe references
         self.loe: list[Element] = []  # list of elements in thiis reservoir
-        self.doe: Dict[Species, Flux] = {}  # species flux pairs
+        self.doe: dict[Species, Flux] = {}  # species flux pairs
         self.loc: set[Connection] = set()  # set of connection objects
         self.ldf: list[DataField] = []  # list of datafield objects
         # list of processes which calculate reservoirs
@@ -2310,7 +2295,7 @@ class Flux(esbmtkBase):
 
     __slots__ = ("m", "l", "h", "d", "rvalue", "lpc")
 
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
+    def __init__(self, **kwargs: dict[str, any]) -> None:
         """
         Initialize a flux. Arguments are the species name the flux rate
         (mol/year), the delta value and unit
