@@ -23,8 +23,9 @@ import typing as tp
 from numba import njit
 from numba.typed import List
 import numpy as np
-from .esbmtk import esbmtkBase, Reservoir, VirtualReservoir, Model
-from .esbmtk import ReservoirGroup
+from .esbmtk import esbmtkBase, Reservoir, ReservoirGroup, Model
+
+from .extended_classes import VirtualReservoir
 
 
 # define a transform function to display the Hplus concentration as pH
@@ -77,11 +78,6 @@ class SeawaterConstants(esbmtkBase):
 
     def __init__(self, **kwargs: dict[str, str]):
 
-        import math
-        from esbmtk import Q_
-
-        # pu_type = type(Q_("kg").units)
-
         self.defaults: dict[list[any, tuple]] = {
             "name": ["None", (str)],
             "salinity": [35.0, (int, float)],
@@ -125,9 +121,6 @@ class SeawaterConstants(esbmtkBase):
     def update_parameters(self, **kwargs: dict) -> None:
         """Update values if necessary"""
 
-        from math import log10
-        from esbmtk import Q_
-
         if kwargs:
             self.__initialize_keyword_variables__(kwargs)
 
@@ -147,7 +140,6 @@ class SeawaterConstants(esbmtkBase):
         self.ca = self.hco3 + 2 * self.co3
         self.ta = self.ca + self.boh4 + self.oh - self.hplus
 
-       
     def show(self) -> None:
         """Printout pK values."""
 
@@ -305,7 +297,7 @@ class SeawaterConstants(esbmtkBase):
 
         """
 
-        from math import exp, log, log10
+        from math import exp, log
 
         T = 273.15 + self.temperature
         S = self.salinity
@@ -894,7 +886,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     Fburial = Bm - BD
     Fburial12 = Fburial * input_data[1][i - 1] / input_data[0][i - 1]
     diss = (Bm - Fburial) * dt  # dissolution flux
-    diss12 = (B12 - Fburial12) * dt  #  # dissolution flux light isotope
+    diss12 = (B12 - Fburial12) * dt  # dissolution flux light isotope
 
     # # print("{Fburial}.format(")
     # print(Bm)
