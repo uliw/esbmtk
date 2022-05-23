@@ -1058,6 +1058,8 @@ class ReservoirBase(esbmtkBase):
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
+        self.parent = self.register
+
     # setup a placeholder setitem function
     def __setitem__(self, i: int, value: float):
         return self.__set_data__(i, value)
