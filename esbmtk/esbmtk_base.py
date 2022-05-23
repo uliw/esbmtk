@@ -110,6 +110,7 @@ class input_parsing(object):
         for key, value in kwargs.items():
             if key not in defaults:
                 raise ValueError(f"{key} is not a valid key")
+
             if not isinstance(value, defaults[key][1]):
                 raise TypeError(
                     f"{value} for {key} must be of type {defaults[key][1]}, not {type(value)}"
@@ -238,6 +239,7 @@ class esbmtkBase(input_parsing):
         """
 
         from esbmtk import Model
+
         # we use this to suppress the echo during object creation
         self.reg_time = time.monotonic()
 
@@ -571,5 +573,3 @@ class esbmtkBase(input_parsing):
         """Aux initialization code. Not normally used"""
 
         pass
-
-
