@@ -952,7 +952,7 @@ class DataField(esbmtkBase):
     Example::
 
              DataField(name = "Name"
-                       associated_with = reservoir_handle, optional
+                       register = Model handle,
                        y1_data = np.Ndarray or list of arrays
                        y1_label = Y-Axis label
                        y1_legend = Data legend or list of legends
@@ -982,64 +982,42 @@ class DataField(esbmtkBase):
         from . import Reservoir_no_set, VirtualReservoir, ExternalCode
 
         # dict of all known keywords and their type
-        self.lkk: dict[str, any] = {
-            "name": str,
-            "associated_with": (
-                Reservoir,
-                ReservoirGroup,
-                Reservoir_no_set,
-                VirtualReservoir,
-                ExternalCode,
-            ),
-            "y1_data": (np.ndarray, list),
-            "x1_data": (np.ndarray, list, str),
-            "y1_label": str,
-            "y1_legend": (str, list),
-            "y2_data": (str, np.ndarray, list),
-            "x2_data": (np.ndarray, list, str),
-            "y2_label": str,
-            "y2_legend": (str, list),
-            "common_y_scale": str,
-            "display_precision": (int, float),
+        self.defaults: dict[str, list(str, tuple)] = {
+            "name": ["None", (str)],
+            "register": [
+                "None",
+                (
+                    Reservoir,
+                    ReservoirGroup,
+                    Reservoir_no_set,
+                    VirtualReservoir,
+                    ExternalCode,
+                ),
+            ],
+            "y1_data": ["None", (np.ndarray, list)],
+            "x1_data": ["None"(np.ndarray, list, str)],
+            "y1_label": ["Not Provided", (str)],
+            "y1_legend": ["Not Provided", (str, list)],
+            "y2_data": ["None", (str, np.ndarray, list)],
+            "x2_data": ["None", (np.ndarray, list, str)],
+            "y2_label": ["Not Provided", (str)],
+            "y2_legend": ["Not Provided", (str, list)],
+            "common_y_scale": ["no", (str)],
+            "display_precision": [0.01, (int, float)],
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "associated_with", "y1_data"]
-
-        # list of default values if none provided
-        self.lod: dict[str, any] = {
-            "y1_label": "Not Provided",
-            "x1_data": "None",
-            "y1_legend": "Not Provided",
-            "y2_label": "Not Provided",
-            "y2_legend": "Not Provided",
-            "y2_data": "None",
-            "x2_data": "None",
-            "common_y_scale": "no",
-            "display_precision": 0,
-            "associated_with": "None",
-        }
+        self.lrk: list = ["name", "register", "y1_data"]
 
         # provide a dictionary entry for a keyword specific error message
         # see esbmtkBase.__initerrormessages__()
         self.__initerrormessages__()
-        self.bem.update(
-            {
-                "y1_data": "a numpy array",
-                "y1_label": "a string",
-                "y1_legend": "a string",
-                "y2_data": "a numpy array",
-                "y2_label": "a string",
-                "y2_legend": "a string",
-                "common_y_scale": "a string",
-            }
-        )
-
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__initialize_keyword_variables__(kwargs)
 
         # set legacy variables
         self.legend_left = self.y1_legend
         self.isotopes = False
+        self.parent = self.register
 
         if self.associated_with == "None":
             self.associated_with = self.mo.lor[0]
@@ -1096,7 +1074,7 @@ class DataField(esbmtkBase):
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
-        self.__register_name__()
+        self.__register_name_new__()
         if self.mo.state == 0:
             print("")
             print(
