@@ -42,7 +42,7 @@ class hypsometry(esbmtkBase):
     The data is derived from etopo 5, but internally represented by a spline approximation
 
     Invoke as:
-               hyspometry(name="hyp", model=M)
+               hyspometry(name="hyp")
 
     User facing methods:
 
@@ -76,32 +76,33 @@ class hypsometry(esbmtkBase):
         """Initialize a hypsometry object"""
 
         from esbmtk import Model
+
         # allowed keywords
-        self.lkk: dict[str, any] = {
-            "name": str,
-            "register": (Model, str),
-            "model": Model,
+        self.defaults: dict[str, list[any, tuple]] = {
+            "name": ["None", (str)],
+            "register": ["None", (Model, str)],
+            "model": ["None", (str, Model)],
         }
 
         # required keywords
         self.lrk: list = [
             "name",
-            "model",
         ]
-        # list of default values if none provided
-        self.lod: dict[any, any] = {
-            "register": "None",
-        }
 
-        self.__initerrormessages__()
-        self.__validateandregister__(kwargs)
+        self.__initialize_keyword_variables__(kwargs)
+
+        if self.register == "None":
+            if self.model != "None":
+                self.register = self.model
+
+        self.parent = self.register
 
         # legacy variables
         self.pfn = "spline_paramaters.txt"
         self.hfn = "Hypsometric_Curve_05m.csv"
         self.sa = 510067420e6  # total surfce area in square meters, http://www.physicalgeography.net/fundamentals/8o.html
         self.mo = self.model
-        self.__register_name__()
+        self.__register_name_new__()
         self.__init_curve__()
         self.oa = self.area_dz(0, -6000)  # total ocean area
 
