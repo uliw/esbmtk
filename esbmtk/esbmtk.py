@@ -27,6 +27,7 @@ import pandas as pd
 import logging
 import os
 import psutil
+import collections as col
 from . import ureg, Q_
 
 from .esbmtk_base import esbmtkBase
@@ -1105,7 +1106,7 @@ class ReservoirBase(esbmtkBase):
             ]
         )
 
-        func_name: callable = self.__update_mass__
+        func_name: col.Callable = self.__update_mass__
         params = List([float(self.reservoir.species.element.r)])
 
         return func_name, data, params
@@ -1575,7 +1576,7 @@ class Reservoir(ReservoirBase):
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
             "groupname": ["None", (str)],
-            "function": ["None", (str, callable)],
+            "function": ["None", (str, col.Callable)],
             "display_precision": [0.01, (int, float)],
             "register": [
                 "None",
