@@ -1209,7 +1209,7 @@ def test_gasreservoir_flux_alpha(create_model, solver):
     Source(register=M1, name="SO1", species=M1.Carbon.DIC)
 
     GasReservoir(
-        name="R1",
+        name="GR1",
         species=M1.Carbon.CO2,
         delta=d0,  # initial delta
         reservoir_mass="1025E4 mol",
@@ -1223,7 +1223,7 @@ def test_gasreservoir_flux_alpha(create_model, solver):
         id="default_a",
         register=M1,
         source=M1.SO1,  # source of flux
-        sink=M1.R1,  # target of flux
+        sink=M1.GR1,  # target of flux
         rate="100 mol/yr",  # weathering flux in
         delta=d0,  # set a default flux
     )
@@ -1231,7 +1231,7 @@ def test_gasreservoir_flux_alpha(create_model, solver):
     Connect(
         id="default_b",
         register=M1,
-        source=M1.R1,  # source of flux
+        source=M1.GR1,  # source of flux
         sink=M1.SI1,  # target of flux
         ctype="Regular",
         rate="100 mol/yr",  # weathering flux in
@@ -1240,7 +1240,7 @@ def test_gasreservoir_flux_alpha(create_model, solver):
 
     M1.run(solver=solver)
     M1.get_delta_values()
-    assert round(M1.R1.d[-2], 4) == 28.8066
+    assert round(M1.GR1.d[-2], 4) == 28.8066
 
 
 # the following do currently not work with numba
