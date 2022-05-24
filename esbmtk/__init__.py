@@ -27,3 +27,6 @@ from .carbonate_chemistry import *
 from .utility_functions import *
 from .sealevel import *
 from .solver import *
+from .ODEINT_Solver import *
+from .Constructor import *
+from .Equation_Terms import *
