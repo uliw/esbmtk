@@ -29,7 +29,7 @@ import os
 import psutil
 import collections as col
 from . import ureg, Q_
-from .ODEINT_Solver import run_solver
+# from .ODEINT_Solver import run_solver
 
 from .esbmtk_base import esbmtkBase
 
