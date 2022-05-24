@@ -29,6 +29,7 @@ import os
 import psutil
 import collections as col
 from . import ureg, Q_
+from ODEINT_Solver import run_solver
 
 from .esbmtk_base import esbmtkBase
 
@@ -719,7 +720,7 @@ class Model(esbmtkBase):
                 self.lpc_r,
             )
         elif solver == "odeint":
-            pass
+            run_solver(self)
         else:
             execute(self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
 
