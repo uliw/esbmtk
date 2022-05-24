@@ -29,7 +29,6 @@ import os
 import psutil
 import collections as col
 from . import ureg, Q_
-# from .ODEINT_Solver import run_solver
 
 from .esbmtk_base import esbmtkBase
 
@@ -710,7 +709,7 @@ class Model(esbmtkBase):
         self.time = self.time[2:-2:stride]
 
     def __run_solver__(self, solver: str) -> None:
-
+        from .ODEINT_Solver import run_solver  
         if solver == "numba":
             execute_e(
                 self,
