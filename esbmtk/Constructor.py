@@ -1,8 +1,8 @@
-from esbmtk import Q_, Model, Reservoir, Connect, Source, Sink
+from .esbmtk import Q_, Model, Reservoir, Connect, Source, Sink
 from sympy import Symbol
 import numpy as np
 from typing import Union
-from Equation_Terms import EQ_Terms
+from .Equation_Terms import EQ_Terms
 
 
 class Constructor:
