@@ -1,6 +1,6 @@
-from esbmtk import Q_, Model, Reservoir, Connect, Source, Sink
-from Constructor import Constructor
-from Equation_Terms import EQ_Terms
+from .esbmtk import Q_, Model, Reservoir, Connect, Source, Sink
+from .Constructor import Constructor
+from .Equation_Terms import EQ_Terms
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 import numpy as np
