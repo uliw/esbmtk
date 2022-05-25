@@ -606,6 +606,7 @@ class Connect(esbmtkBase):
                         flux=self.fh,
                         lt=p.data,
                         register=self.fh,
+                        model=self.mo,
                     )
                     self.lop.insert(0, n)  # signals must come first
                     logging.debug(f"Inserting {n.n} in {self.name} for {self.r.n}")
@@ -617,6 +618,7 @@ class Connect(esbmtkBase):
                         flux=self.fh,
                         lt=p.data,
                         register=self.fh,
+                        model=self.mo,
                     )
                     self.lop.insert(len(self.lop), n)  # multiplaction should come last
                     logging.debug(f"Inserting {n.n} in {self.name} for {self.r.n}")
@@ -747,6 +749,7 @@ class Connect(esbmtkBase):
             ph = SaveFluxData(
                 name=f"{self.fh.full_name}_Pfd",
                 flux=self.fh,
+                model=self.mo,
                 register=self.fh,
             )
             self.lop.append(ph)
@@ -805,6 +808,7 @@ class Connect(esbmtkBase):
             scale=self.scale,
             ref_flux=self.ref_flux,
             delta=self.delta,
+            model=self.mo,
         )
         self.lop.append(ph)
 
@@ -905,6 +909,7 @@ class Connect(esbmtkBase):
             flux=self.fh,
             register=self.fh,
             alpha=self.kwargs["alpha"],
+            model=self.mo
         )
         self.lop.append(ph)  #
 
@@ -1173,7 +1178,7 @@ class ConnectionGroup(esbmtkBase):
             Species,
             Flux,
             Model,
-            Q_
+            Q_,
         )
 
         self.defaults: dict[str, any] = {
@@ -1324,7 +1329,15 @@ class AirSeaExchange(esbmtkBase):
     def __init__(self, **kwargs) -> None:
         """initialize instance"""
 
-        from esbmtk import GasReservoir, Reservoir, Species, Model, Q_, Flux, GasExchange
+        from esbmtk import (
+            GasReservoir,
+            Reservoir,
+            Species,
+            Model,
+            Q_,
+            Flux,
+            GasExchange,
+        )
 
         self.defaults: dict[str, list[str, tuple]] = {
             "gas_reservoir": ["None", (str, GasReservoir)],

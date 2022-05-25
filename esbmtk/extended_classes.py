@@ -1,6 +1,4 @@
-# from numbers import Number
-
-# from nptyping import np.ndarray, Float64
+from __future__ import annotations
 import typing as tp
 from pandas import DataFrame
 from numba.typed import List
@@ -1361,7 +1359,8 @@ class ExternalCode(Reservoir_no_set):
             input_data=self.function_input_data,
             vr_data=self.vr_data,
             function_params=self.function_params,
-            model=self.mo,
+            model=self.species.mo,
+            register=self.register
         )
 
         self.mo.lor.remove(self)
