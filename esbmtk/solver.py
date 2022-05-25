@@ -22,7 +22,7 @@ import time
 from time import process_time
 import numba
 from numba.core import types
-from numba import njit, prange
+from numba import njit
 from numba.typed import List
 import numpy as np
 
