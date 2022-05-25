@@ -1,5 +1,4 @@
 from __future__ import annotations
-import typing as tp
 from pandas import DataFrame
 from numba.typed import List
 import numpy as np
@@ -10,7 +9,11 @@ import os
 import math
 import copy as cp
 import collections as col
+import typing as tp
 
+if tp.TYPE_CHECKING:
+    from esbmtk import Connection
+    
 from .esbmtk_base import esbmtkBase
 from .esbmtk import ReservoirBase, Reservoir
 
@@ -297,7 +300,7 @@ class SourceSink(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
 
-        from esbmtk import Species, Model, SourceSinkGroup, Connection
+        from esbmtk import Species, Model, SourceSinkGroup
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -358,7 +361,7 @@ class SourceSinkGroup(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
 
-        from esbmtk import Model, Connection, Species, Source, Sink
+        from esbmtk import Model, Species, Source, Sink
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -1360,7 +1363,7 @@ class ExternalCode(Reservoir_no_set):
             vr_data=self.vr_data,
             function_params=self.function_params,
             model=self.species.mo,
-            register=self.register
+            register=self.register,
         )
 
         self.mo.lor.remove(self)
