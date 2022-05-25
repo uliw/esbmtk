@@ -1,6 +1,5 @@
 import numpy as np
 from .esbmtk import Element, Species
-from . import ureg, Q_
 
 np.set_printoptions(precision=4)
 
