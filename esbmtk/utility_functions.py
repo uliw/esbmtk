@@ -15,11 +15,7 @@
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import typing as tp
-import time
-import numba
-from numba.core import types
-from numba import njit, prange
+# import typing as tp
 from numba.typed import List
 from collections import OrderedDict
 import numpy as np
@@ -190,7 +186,7 @@ def get_ptype(obj, **kwargs: dict) -> int:
 
     """
 
-    from esbmtk import Flux, Reservoir, Signal, DataField, Source, Sink
+    from esbmtk import Flux, Reservoir, Source, Sink
 
     ptype: int = 0
 
@@ -222,8 +218,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
 
     """
 
-    from . import ureg, Q_
-    from esbmtk import Flux, Reservoir, Signal, DataField, Source, GasReservoir
+    from esbmtk import Flux, Reservoir, Signal, DataField, GasReservoir
 
     # geo = list with rows and cols
     # fn  = figure number
@@ -604,11 +599,10 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
                }
 
     M: Model object handle
-    
     """
 
     from esbmtk import ReservoirGroup, build_concentration_dicts
-    from esbmtk import SourceGroup, SinkGroup, Q_
+    from esbmtk import SourceGroup, SinkGroup
 
     # parse for sources and sinks, create these and remove them from the list
 
@@ -628,7 +622,6 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
 
         else:  # create reservoirs
 
-            
             icd: dict = build_concentration_dicts(ic, k)
 
             rg = ReservoirGroup(
@@ -751,9 +744,9 @@ def get_longest_dict_entry(d: dict) -> int:
     if l_length > 0 and p_length == 0:
         case = 0  # Only lists present
     if l_length == 0 and p_length == 1:
-        case = 1  #  Only parameters present
+        case = 1  # Only parameters present
     if l_length > 0 and p_length == 1:
-        case = 2  #  Lists and parameters present
+        case = 2  # Lists and parameters present
 
     return case, l_length
 
@@ -950,7 +943,7 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
         elif isinstance(k, str):
             create_connection(k, v, M)
         else:
-            raise ValueError(f"{connection} must be string or tuple")
+            raise ValueError(f"{c} must be string or tuple")
 
     return ct
 
@@ -971,22 +964,21 @@ def create_connection(n: str, p: dict, M: any) -> None:
     """
 
     from esbmtk import ConnectionGroup, Q_
-    from collections import namedtuple
 
     # get the reservoir handles by splitting the key
     source, sink, cid = split_key(n, M)
     # create default connections parameters and replace with values in
     # the parameter dict if present.
     los = list(p["sp"]) if isinstance(p["sp"], list) else [p["sp"]]
-    ctype = "None" if not "ty" in p else p["ty"]
-    scale = 1 if not "sc" in p else p["sc"]
-    rate = Q_("0 mol/a") if not "ra" in p else p["ra"]
-    ref_flux = "None" if not "re" in p else p["re"]
-    alpha = "None" if not "al" in p else p["al"]
-    delta = "None" if not "de" in p else p["de"]
+    ctype = "None" if "ty" not in p else p["ty"]
+    scale = 1 if "sc" not in p else p["sc"]
+    rate = Q_("0 mol/a") if "ra" not in p else p["ra"]
+    ref_flux = "None" if "re" not in p else p["re"]
+    alpha = "None" if "al" not in p else p["al"]
+    delta = "None" if "de" not in p else p["de"]
     cid = f"{cid}"
-    bypass = "None" if not "bp" in p else p["bp"]
-    species = "None" if not "sp" in p else p["sp"]
+    bypass = "None" if "bp" not in p else p["bp"]
+    species = "None" if "sp" not in p else p["sp"]
 
     if isinstance(scale, Q_):
         scale = scale.to("l/a").magnitude
@@ -1038,8 +1030,9 @@ def get_name_only(o: any) -> any:
     """Test if item is an esbmtk type. If yes, extract the name"""
 
     from esbmtk import Flux, Reservoir, ReservoirGroup, Species
-    from esbmtk import Sink, Source, SourceGroup, SinkGroup
-    from esbmtk import Process, DataField, VirtualReservoir
+
+    # from esbmtk import Sink, Source, SourceGroup, SinkGroup
+    # from esbmtk import Process, DataField, VirtualReservoir
 
     if isinstance(o, (Flux, Reservoir, ReservoirGroup, Species)):
         r = o.full_name
@@ -1054,8 +1047,6 @@ def get_simple_list(l: list) -> list:
     rather than all the object properties
 
     """
-
-    from esbmtk import Flux, Reservoir, Species
 
     r: list = []
     for e in l:
@@ -1316,9 +1307,8 @@ def add_carbonate_system_1(rgs: list):
     # get object handle even if it defined in model namespace
     # rgs = get_object_handle(rgs)
 
-    
     species = rgs[0].mo.Carbon.CO2
-    
+
     for rg in rgs:
 
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):
@@ -1355,35 +1345,34 @@ def add_carbonate_system_1(rgs: list):
 
 def add_carbonate_system_2(**kwargs) -> None:
     """Creates a new carbonate system virtual reservoir
-    which will compute carbon species, saturation, compensation,
-    and snowline depth, and compute the associated carbonate burial fluxes
+        which will compute carbon species, saturation, compensation,
+        and snowline depth, and compute the associated carbonate burial fluxes
 
-    Required keywords:
-        rgs: list of ReservoirGroup objects
-        carbonate_export_fluxes: list of flux objects which mus match the
-                                 list of ReservoirGroup objects.
-        zsat_min = depth of the upper boundary of the deep box
-        z0 = upper depth limit for carbonate burial calculations
-             typically zsat_min
+        Required keywords:
+            rgs: list of ReservoirGroup objects
+            carbonate_export_fluxes: list of flux objects which mus match the
+                                     list of ReservoirGroup objects.
+            zsat_min = depth of the upper boundary of the deep box
+            z0 = upper depth limit for carbonate burial calculations
+                 typically zsat_min
 
-    Optional Parameters:
+        Optional Parameters:
 
-        zsat = initial saturation depth (m)
-        zcc = initial carbon compensation depth (m)
-        zsnow = initial snowline depth (m)
-        zsat0 = characteristic depth (m)
-        Ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
-        kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
-        Ca2 = calcium ion concentration (mol/kg)
-        pc = characteristic pressure (atm)
-        pg = seawater density multiplied by gravity due to acceleration (atm/m)
-        I = dissolvable CaCO3 inventory
-        co3 = CO3 concentration (mol/kg)
-q        Ksp = solubility product of calcite at in situ sea water conditions (mol^2/kg^2)
+            zsat = initial saturation depth (m)
+            zcc = initial carbon compensation depth (m)
+            zsnow = initial snowline depth (m)
+            zsat0 = characteristic depth (m)
+            Ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
+            kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
+            Ca2 = calcium ion concentration (mol/kg)
+            pc = characteristic pressure (atm)
+            pg = seawater density multiplied by gravity due to acceleration (atm/m)
+            I = dissolvable CaCO3 inventory
+            co3 = CO3 concentration (mol/kg)
+    q        Ksp = solubility product of calcite at in situ sea water conditions (mol^2/kg^2)
 
     """
 
-    from esbmtk import carbonate_chemistry
     from esbmtk import ExternalCode, calc_carbonates_2
 
     # list of known keywords
@@ -1427,7 +1416,7 @@ q        Ksp = solubility product of calcite at in situ sea water conditions (mo
         "alpha": 0.6,  # 0.928771302395292, #0.75,
         "pg": 0.103,  # pressure in atm/m
         "pc": 511,  # characteristic pressure after Boudreau 2010
-        "I_caco3": 529,  #  dissolveable CaCO3 in mol/m^2
+        "I_caco3": 529,  # dissolveable CaCO3 in mol/m^2
         "zmax": -6000,  # max model depth
         "Ksp": reservoir.swc.Ksp,  # mol^2/kg^2
     }
@@ -1528,8 +1517,6 @@ q        Ksp = solubility product of calcite at in situ sea water conditions (mo
 
 def weathering_processes():
 
-    from esbmtk import ExternalCode, calc_carbonates_1
-
     pass
 
 
@@ -1549,9 +1536,9 @@ def __find_flux__(reservoirs: list, full_name: str):
             if flux.full_name == full_name:
                 needed_flux = flux
                 break
-        if needed_flux != None:
+        if needed_flux is not None:
             break
-    if needed_flux == None:
+    if needed_flux is None:
         raise NameError(
             f"add_carbonate_system: Flux {full_name} cannot be found in any of the reservoirs in the Model!"
         )
