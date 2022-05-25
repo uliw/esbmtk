@@ -1700,8 +1700,6 @@ class GasReservoir(ReservoirBase):
     - Name.info()   # info Reservoir
     """
 
-    __slots__ = ("m", "l", "h", "d", "c", "lio", "rvalue", "lodir", "lof", "lpc")
-
     def __init__(self, **kwargs) -> None:
         """Initialize a reservoir."""
 

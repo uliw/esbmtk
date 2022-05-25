@@ -1379,7 +1379,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         pg = seawater density multiplied by gravity due to acceleration (atm/m)
         I = dissolvable CaCO3 inventory
         co3 = CO3 concentration (mol/kg)
-        Ksp = solubility product of calcite at in situ sea water conditions (mol^2/kg^2)
+q        Ksp = solubility product of calcite at in situ sea water conditions (mol^2/kg^2)
 
     """
 

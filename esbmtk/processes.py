@@ -24,8 +24,6 @@ class Process(esbmtkBase):
 
     """
 
-    __slots__ = ("reservoir", "r", "flux", "r", "mo", "direction", "scale")
-
     from .esbmtk import Source, Reservoir, Sink, Flux, Model
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
@@ -180,8 +178,6 @@ class GenericFunction(Process):
     to write a function for this class.
 
     """
-
-    __slots__ = ("function", "input_data", "vr_data", "params")
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """
@@ -447,8 +443,6 @@ class SaveFluxData(Process):
 
     """
 
-    __slots__ = "flux"
-
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
         # get default names and update list for this Process
@@ -508,8 +502,6 @@ class ScaleFlux(Process):
                    )
 
     """
-
-    __slots__ = ("rate", "scale", "ref_reservoirs", "reservoir", "flux")
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
@@ -786,8 +778,6 @@ class RateConstant(Process):
 
 
     """
-
-    __slots__ = ("scale", "ref_value", "k_value", "flux", "reservoir")
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
@@ -1192,8 +1182,6 @@ class VarDeltaOut(Process):
                 flux = flux handle,
                 rate = rate,)
     """
-
-    __slots__ = ("rate", "flux", "reservoir")
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""

@@ -172,8 +172,6 @@ class Model(esbmtkBase):
 
     """
 
-    __slots__ = "lor"
-
     def __init__(self, **kwargs: dict[any, any]) -> None:
         """Init Sequence"""
 
@@ -997,8 +995,6 @@ class Species(esbmtkBase):
 class ReservoirBase(esbmtkBase):
     """Base class for all Reservoir objects"""
 
-    __slots__ = ("m", "l", "h", "d", "c", "lio", "rvalue", "lodir", "lof", "lpc")
-
     def __init__(self, **kwargs) -> None:
 
         raise NotImplementedError(
@@ -1550,8 +1546,6 @@ class Reservoir(ReservoirBase):
     - Name.info()   # info Reservoir
     """
 
-    __slots__ = ("m", "l", "h", "d", "c", "lio", "rvalue", "lodir", "lof", "lpc")
-
     def __init__(self, **kwargs) -> None:
         """Initialize a reservoir."""
 
@@ -1767,8 +1761,6 @@ class Flux(esbmtkBase):
     - Name.c # concentration
 
     """
-
-    __slots__ = ("m", "l", "h", "d", "rvalue", "lpc")
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """
