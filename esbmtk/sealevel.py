@@ -24,17 +24,11 @@
 
 # from pint import UnitRegistry
 from __future__ import annotations
-
 import numpy as np
-import typing as tp
 import matplotlib.pyplot as plt
 import pandas as pd
 import scipy as sp
-import scipy.interpolate
 from .esbmtk_base import esbmtkBase
-
-if tp.TYPE_CHECKING:
-    from .esbmtk import Model
 
 
 class hypsometry(esbmtkBase):
