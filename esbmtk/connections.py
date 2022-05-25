@@ -36,8 +36,8 @@ from .utility_functions import check_for_quantity
 
 np.set_printoptions(precision=4)
 
-# if tp.TYPE_CHECKING:
-#     from .esbmtk import Source, Reservoir, Sink, Flux, Model, Species
+if tp.TYPE_CHECKING:
+    from esbmtk import Process
 #     from .extended_classes import GasReservoir, Signal, GasExchange, Q_
 #     from .extended_classes import SourceGroup, SinkGroup, ReservoirGroup
 #     from .processes import Process
@@ -285,7 +285,6 @@ class Connect(esbmtkBase):
             ConnectionGroup,
             Flux,
             Signal,
-            Process,
         )
 
         # provide a dict of all known keywords and their type
