@@ -41,7 +41,7 @@ class run_solver:
     """runs the odeint solver on the equations
     and if want_a_plot==True, it also plots the graph"""
 
-    from esbmtk import Constructor, EQ_Terms, Q_
+    from esbmtk import EQ_Terms, Q_
 
     def __init__(self, M, want_a_plot: bool = False):
 
