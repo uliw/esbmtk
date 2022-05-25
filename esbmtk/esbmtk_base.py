@@ -20,14 +20,12 @@
 """
 from __future__ import annotations
 import time
-from numba.typed import List
 import numpy as np
-import logging
-import builtins
-import typing as tp
 
-if tp.TYPE_CHECKING:
-    from .esbmtk import Model
+# import typing as tp
+
+# if tp.TYPE_CHECKING:
+#     from .esbmtk import Model
 
 
 class input_parsing(object):
@@ -155,35 +153,23 @@ class esbmtkBase(input_parsing):
        self.lrk: list = ["name"]
 
     define allowed type per keyword in lkk dict:
-       self.lkk: dict[str, any] = {
-                                  "name": str,
-                                  "model": Model,
-                                  "salinity": (int, float), # int or float
+       self.defaults: dict[str, list[any, tuple]] = {
+                                  "name": ["None", (str)],
+                                  "model": ["None",(str, Model)],
+                                  "salinity": [35, (int, float)], # int or float
                                   }
 
-    define default values if none provided in lod dict
-       self.lod: dict[str, any] = {"salinity": 35.0}
+    parse and register all keywords with the instance
+    self.__initialize_keyword_variables__(kwargs)
 
-    validate keyword input:
-        self.__validateinput__(kwargs)
-
-    add global defaults each esbmtk object should have, even if they are not set or used
-        self.__global_defaults__()
-
-    register all key/value pairs as instance variables
-        self.__registerkeys__()
-
-    register name in global name space. This is only necessary if you
-    want to reference the instance by name from the console, otherwise
-    use the normal python way (i.e.  instance = class(keywords)
-    self.__register_name__ ()
+    register the instance
+    self.__register_name_new__ ()
 
     """
 
     def __init__(self) -> None:
         raise NotImplementedError
 
-   
     def __repr__(self, log=0) -> str:
         """Print the basic parameters for this class when called via the print method"""
         from esbmtk import Q_
