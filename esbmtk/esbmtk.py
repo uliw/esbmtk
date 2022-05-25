@@ -48,11 +48,8 @@ from .solver import (
 
 
 if tp.TYPE_CHECKING:
-    from .extended_classes import GasReservoir, ExternalData, DataField, Signal
-    from .extended_classes import SourceGroup, SinkGroup, ReservoirGroup
-    from .connections import Connection, ConnectionGroup, Connect
-    from .sealevel import get_box_geometry_parameters
-    from .carbonate_chemistry import SeawaterConstants
+    from .extended_classes import GasReservoir, ExternalData, DataField
+    from .connections import Connection
     from .processes import Process
 
 
@@ -707,7 +704,8 @@ class Model(esbmtkBase):
         self.time = self.time[2:-2:stride]
 
     def __run_solver__(self, solver: str) -> None:
-        from .ODEINT_Solver import run_solver  
+        from .ODEINT_Solver import run_solver
+
         if solver == "numba":
             execute_e(
                 self,
@@ -968,7 +966,7 @@ class Species(esbmtkBase):
         self.__initialize_keyword_variables__(kwargs)
         self.parent = self.register
 
-        if not "display_as" in kwargs:
+        if "display_as" not in kwargs:
             self.display_as = self.name
 
         # legacy names
@@ -1005,6 +1003,8 @@ class ReservoirBase(esbmtkBase):
         """
         Move the below out of the way
         """
+
+        from esbmtk import get_box_geometry_parameters
 
         self.lof: list[Flux] = []  # flux references
         self.led: list[ExternalData] = []  # all external data references
@@ -1555,6 +1555,7 @@ class Reservoir(ReservoirBase):
             ReservoirGroup,
             ConnectionGroup,
             SeawaterConstants,
+            get_box_geometry_parameters,
         )
 
         # provide a dict of all known keywords and their type
