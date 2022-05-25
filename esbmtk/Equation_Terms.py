@@ -1,12 +1,16 @@
+from __future__ import annotations
 from sympy import Symbol
-import numpy as np
-from typing import Union
+import typing as tp
+
+if tp.TYPE_CHECKING:
+    from typing import Union
+
 
 class EQ_Terms:
     """terms of ode equations"""
 
     def __init__(self, M):
-        '''M is a Model class'''
+        """M is a Model class"""
 
         self.res_flux = (
             {}

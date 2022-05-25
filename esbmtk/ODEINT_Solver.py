@@ -1,6 +1,40 @@
+from __future__ import annotations
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 import numpy as np
+import typing as tp
+
+if tp.TYPE_CHECKING:
+    from esbmtk import EQ_Terms
+
+
+class Constructor:
+    """constructs the equation from the terms
+    in res_flux dictionary"""
+
+    def __init__(self, terms: EQ_Terms):
+        self.terms = terms
+        # tuple of resevoir ids (also res_flux keys)
+        self.var_ids = tuple(terms.res_flux.keys())
+        # holds the equations
+        self.eqs = []
+        self.ivp = []
+        vars = []
+        for var_id in self.var_ids:
+            # reservoir id
+            res_id = terms.res_flux[var_id]
+            # list of variables
+            vars.append(self.terms.var_dict[res_id[2]])
+            # volume of the given reservoir
+            vol = res_id[3].volume
+            # creates the IVP
+            self.ivp.append(res_id[3].concentration)
+
+            # this is the equation
+            eq = (sum(res_id[0]) - sum(res_id[1])) / vol
+            self.eqs.append(eq)
+        # turns the above list of variables into a tuple
+        self.vars = tuple(vars)
 
 
 class run_solver:
@@ -19,6 +53,8 @@ class run_solver:
 
     def _solve(self, K: Constructor):
         """solves the ODE system"""
+
+        from esbmrk import Q_
 
         eqs = K.eqs
         vars = K.vars
@@ -48,6 +84,8 @@ class run_solver:
 
     def plot(self, K: Constructor):
         """plots the ODE system"""
+
+        from esbmtk import Q_
 
         for var in K.vars:
             var_index = K.vars.index(var)
