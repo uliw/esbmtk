@@ -17,11 +17,11 @@
 """
 # import typing as tp
 from numba.typed import List
-from collections import OrderedDict
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
-
+import typing as tp
+from collections import OrderedDict
 from esbmtk import Q_
 
 # import builtins
