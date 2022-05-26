@@ -13,7 +13,7 @@ import typing as tp
 
 if tp.TYPE_CHECKING:
     from esbmtk import Connection
-    
+
 from .esbmtk_base import esbmtkBase
 from .esbmtk import ReservoirBase, Reservoir
 
@@ -545,6 +545,7 @@ class Signal(esbmtkBase):
             "source": ["None", (Source, Sink, Reservoir, str)],
             "legend_right": ["None", (str)],
             "register": ["None", (str, Model)],
+            "isotopes": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
@@ -594,6 +595,7 @@ class Signal(esbmtkBase):
             self.display_precision = self.mo.display_precision
 
         self.data = self.__init_signal_data__()
+        self.m = self.data.m
         self.data.n: str = self.name + "_data"  # update the name of the signal data
         self.legend_left = self.data.legend_left
         self.legend_right = self.data.legend_right
@@ -997,7 +999,7 @@ class DataField(esbmtkBase):
                 ),
             ],
             "y1_data": ["None", (np.ndarray, list)],
-            "x1_data": ["None"(np.ndarray, list, str)],
+            "x1_data": ["None", (np.ndarray, list, str)],
             "y1_label": ["Not Provided", (str)],
             "y1_legend": ["Not Provided", (str, list)],
             "y2_data": ["None", (str, np.ndarray, list)],
