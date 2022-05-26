@@ -41,9 +41,10 @@ class run_solver:
     """runs the odeint solver on the equations
     and if want_a_plot==True, it also plots the graph"""
 
-    from esbmtk import EQ_Terms, Q_
-
     def __init__(self, M, want_a_plot: bool = False):
+        """activates the solver and the plotting method
+        M is a Model class object n esbmtk"""
+        from esbmtk import EQ_Terms
 
         eq_terms = EQ_Terms(M)
         construct = Constructor(eq_terms)
@@ -54,7 +55,7 @@ class run_solver:
     def _solve(self, K: Constructor):
         """solves the ODE system"""
 
-        from esbmrk import Q_
+        from esbmtk import Q_
 
         eqs = K.eqs
         vars = K.vars
