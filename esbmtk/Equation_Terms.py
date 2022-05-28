@@ -1,3 +1,20 @@
+"""
+ esbmtk: A general purpose Earth Science box model toolkit
+ Copyright (C), 2020 Ulrich G. Wortmann
+ 
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 from __future__ import annotations
 from sympy import Symbol
 import typing as tp
@@ -7,10 +24,45 @@ if tp.TYPE_CHECKING:
 
 
 class EQ_Terms:
-    """terms of ode equations"""
+
+    """Given a Model class object M, this class generates the terms of
+    the system of ODE equations where each equation corresponds to the rate
+    of change of concentration of a specific substance in a specific reservoir
+    
+    The class further sorts these terms of equations into two different lists
+    stored within a tuple of the form (list, list, str, Reservoir). These tuples
+    are values in a dictionary called res_flux where the keys are corresponding
+    reservoir memory ids.
+    
+    In any given tuple, the first list holds the terms of an equation that represent
+    an influx into the reservoir (hence, substance is being added to the reservoir).
+    The second list holds terms that represent an outflux out of a reservoir, so 
+    substance is being removed out of reseroir
+    
+    The str in the suple is of the form x_id(Reservoir) and will be the x in the dx/dt
+    terms in the equation that will represent the concentration of a substance in the
+    reservoir. We use the reservoir id to guarantee sufficiency and uniqueness of x terms
+    in every equation within the system.
+    
+    Lastly, The last item in the tuple is the reservoir itself for which the equation is built.
+    """
 
     def __init__(self, M):
-        """M is a Model class"""
+        """During initialization, the empty res_flux dictionary is created and later
+        filled. It there are different types of equation terms and these types are dependednt
+        on the connection types.
+        
+        - regular: the flow is constant and the rate is given
+            then scale_w_concentration_or_regular will be used
+        - scale_with_concentration: rate is given so scale_w_concentration_or_regular
+            will be used
+        - scale_with_concentration: rate is NOT given so variable_rate is used
+            in this case, we assume that since the rate is not provided, then it is
+                 a variable and may change over time
+        - scale_with_mass: scale_with_mass method will be used to generate the eq term
+        - scale_with_flux: use scale_with_flux method and provide the reference flux
+            as this case assumes that the eq terms will be a scaled offo of an already
+            existing flux (hence an equation term)"""
 
         self.res_flux = (
             {}
@@ -60,19 +112,22 @@ class EQ_Terms:
     def scale_w_concentration_or_regular(
         self, connection, factor=1, factor_scaling_connection=None
     ):
-        """this method is used when we work with regular or
-        scale_with_concentration connections"""
+        """This method is used when we work with regular or
+        scale_with_concentration connections where the rate
+        provided. The term it genereates in a constant and is
+        the provided rate itself"""
         if factor_scaling_connection is None:
             self.res_flux_filler(connection.rate * factor, connection)
         else:
             self.res_flux_filler(connection.rate * factor, factor_scaling_connection)
 
     def scale_with_flux(self, connection):
-        """given a reference flux, we calculate the
-        new flux as a percentage of that other flux"""
-        # we don't need a factor parameter here as this method
-        # itself is using the factor parameters from other methods
-
+        """Given a reference flux, we calculate the
+        new flux as a percentage of the given flux.
+        We don't need a factor parameter (which is the scale)
+        here as this method itself is using the factor parameter
+        granted by the connection that gets inputted 
+        """
         original_flux = connection.ref_flux.parent
         factor = connection.scale
 
@@ -93,10 +148,11 @@ class EQ_Terms:
             raise TypeError("Please input proper ref_flux connection type")
 
     def scale_with_mass(self, connection, factor=1, factor_scaling_connection=None):
-        """the variable for this equation term is the
+        """The variable for this equation term is the
         same as for the source variable and the coeff
         is the product of the scale (1/tau) multipled
         by the volume of the source reservoir"""
+
         coeff = connection.source.volume * connection.scale
         var_str = self.res_flux[id(connection.source)][2]
 
@@ -111,8 +167,11 @@ class EQ_Terms:
         self, connection, factor: Union[float, int] = 1, factor_scaling_connection=None
     ):
 
-        """if the connection has a specified rate then
-        use this one to get the units matching"""
+        """If the connection is of scale_with_concentration type but without a provided
+        rate, then it will be calculated as scale*x-variable where x-variable is the source
+        reservoir corresponding x variable as x_id(Reservoir). Since these equations will
+        further need to be evaluated, the x-variable is not a string but in a sympy.Symbol
+        class object with the same name"""
 
         scale_mag = connection.scale
         var_str = self.res_flux[id(connection.source)][2]
