@@ -936,6 +936,9 @@ class Signal(esbmtkBase):
 
         """
 
+        t = int(t) # ensure that t is integer.
+        # improve by doing proper interpolation
+
         return [self.data.m[t], self.data.l[t]]
        
 
