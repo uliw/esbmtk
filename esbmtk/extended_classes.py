@@ -744,6 +744,8 @@ class Signal(esbmtkBase):
         So we can scale the result simply with mass
         """
 
+        import sys
+
         c: int = int(round((e - s) / 2))  # get the center index for the peak
         x: np.ndarray = np.arange(-c, c + 1, 1)
         e: float = math.e
@@ -751,8 +753,11 @@ class Signal(esbmtkBase):
         mu: float = 0
         phi: float = c / 4
 
-        a = -((x - mu) ** 2) / (2 * phi**2)
+        print(f"mu = {mu} ,phi = {phi}")
+        print(f"x[0] = {x[0]}, x[-1] = {x[-1]}")
+        print(sys.float_info)
 
+        a = -((x - mu) ** 2) / (2 * phi**2)
         # get bell curve
         self.s_m = 1 / (phi * math.sqrt(2 * pi)) * e**a
         self.s_d = self.s_m * self.delta / max(self.s_m)
@@ -936,11 +941,10 @@ class Signal(esbmtkBase):
 
         """
 
-        t = int(t) # ensure that t is integer.
+        t = int(t)  # ensure that t is integer.
         # improve by doing proper interpolation
 
         return [self.data.m[t], self.data.l[t]]
-       
 
     def plot(self) -> None:
         """
