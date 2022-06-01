@@ -1035,10 +1035,11 @@ class DataField(esbmtkBase):
         self.isotopes = False
         self.parent = self.register
 
-        if self.associated_with == "None":
-            self.associated_with = self.mo.lor[0]
+        # if self.associated_with == "None":
+        #     self.associated_with = self.mo.lor[0]
 
-        self.mo = self.associated_with.mo
+        # self.mo = self.associated_with.mo
+        self.mo = self.register.mo
         if "self.y2_data" != "None":
             self.d = self.y2_data
             self.legend_right = self.y2_legend
@@ -1084,7 +1085,7 @@ class DataField(esbmtkBase):
             self.y2_legend = [self.y2_legend]
 
         # register with reservoir
-        self.associated_with.ldf.append(self)
+        # self.associated_with.ldf.append(self)
         # register with model. needed for print_reservoirs
         self.mo.ldf.append(self)
         if self.display_precision == 0:
