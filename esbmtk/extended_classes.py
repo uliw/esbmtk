@@ -1028,7 +1028,6 @@ class DataField(esbmtkBase):
 
         # provide a dictionary entry for a keyword specific error message
         # see esbmtkBase.__initerrormessages__()
-        self.__initerrormessages__()
         self.__initialize_keyword_variables__(kwargs)
 
         # set legacy variables
