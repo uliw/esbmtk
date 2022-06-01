@@ -1031,6 +1031,7 @@ class ReservoirBase(esbmtkBase):
 
         self.sp: Species = self.species  # species handle
         self.mo: Model = self.species.mo  # model handle
+        self.model = self.mo
         self.rvalue = self.sp.r
 
         # right y-axis label
