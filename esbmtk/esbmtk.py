@@ -226,6 +226,7 @@ class Model(esbmtkBase):
         self.__register_name_new__()
 
         self.lor: list = []
+        self.lic: list = [] # list of all reserevoir type objects
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
         self.lel: list = []  # list which will hold all element references
@@ -1690,6 +1691,7 @@ class Reservoir(ReservoirBase):
             self.dc = np.empty(0)
 
         self.mo.lor.append(self)  # add this reservoir to the model
+        self.mo.lic.append(self)  # reservoir type object list
         # register instance name in global name space
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
@@ -2099,6 +2101,7 @@ class SourceSink(esbmtkBase):
         self.model = self.species.mo
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
         self.lio: list = []
+        self.mo.lic.append(self) # add source to list of res type objects
 
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
