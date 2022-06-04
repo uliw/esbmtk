@@ -1,0 +1,94 @@
+"""
+     esbmtk/odeint_uli: A general purpose Earth Science box model toolkit
+     Copyright (C), 2020 Ulrich G. Wortmann
+
+     This program is free software: you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation, either version 3 of the License, or
+     (at your option) any later version.
+
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License for more details.
+
+     You should have received a copy of the GNU General Public License
+     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+from __future__ import annotations
+import typing as tp
+
+if tp.TYPE_CHECKING:
+    from esbmtk import Flux, Reservoir, Model
+
+
+def connection_types(f: Flux, r: Reservoir, R: list, M: Model) -> tuple(str, str):
+    """Create formula expression that describes the flux f
+    returns ex as string
+    """
+    ex = ""
+    p = f.parent  # shorthand
+
+    if p.source == r:
+        sign = "-"
+    elif p.sink == r:
+        sign = "+"
+    else:
+        raise ValueError("This should not happen")
+
+    if p.ctype == "regular":
+        ex = f"{p.rate}  # {p.id} rate"
+
+    elif p.ctype == "scale_with_concentration":
+        ici = M.lic.index(p.source)  # index into initial conditions
+        ex = f"{p.scale} * R[{ici}]  #  {p.id} scale with c in {p.source.full_name}"
+
+    elif p.ctype == "scale_with_flux":
+        p = f.parent.ref_flux.parent
+        ici = M.lic.index(p.source)  # index into initial conditions
+        ex = f"{p.scale} * R[{ici}] * {f.parent.scale}  #  {f.parent.id} scale with c in {p.source.full_name}"
+
+    else:
+        raise ValueError(f"{p.ctype} is not known")
+
+    return ex, sign
+
+
+def write_equations(M: Model) -> list:
+    """Write file that contains the ode-equations for M
+    Returns the list R that contains the initial condition
+    for each reserevoir
+
+    """
+    import pathlib as pl
+
+    # get list of initial conditions
+    R = []
+    for e in M.lor:
+        R.append(e.c[0])
+
+    # get pathlib object
+    fn: str = "equations.py"  # file name
+    cwd: pl.Path = pl.Path.cwd()  # get the current working directory
+    fqfn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
+
+    # write file
+    with open(fqfn, "w", encoding="utf-8") as eqs:
+        eqs.write("from __future__ import annotations\n\n\n")
+        eqs.write("def foo(R: list, t) -> list:\n\n")
+        eqs.write('\t"""Auto generated esbmtk equations do not edit"""\n\n')
+
+        rel = ""  # list of return values
+        for r in M.lor:  # loop over reservoirs
+
+            fex = ""
+            for f in r.lof:
+                ex, sign = connection_types(f, r, R, M)
+                fex = fex + f"\t{sign} {ex}\n"
+
+            eqs.write(f"\t{r.name} = (\n{fex})/{r.volume}\n")
+            rel = rel + f"{r.name}, "
+
+        eqs.write(f"\treturn [{rel}]\n")
+
+    return R
