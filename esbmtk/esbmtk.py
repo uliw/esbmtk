@@ -738,7 +738,8 @@ class Model(esbmtkBase):
         from equations import eqs
 
         # execute solver
-        results = odeint(eqs, R, self.time, tfirst=True, args=(self,))
+        results = 0
+        results = odeint(eqs, R, self.time, tfirst=True, args=(self, results))
 
         # assign results
         for i, r in enumerate(self.lor):
