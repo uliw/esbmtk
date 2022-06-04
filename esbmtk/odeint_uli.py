@@ -19,7 +19,24 @@ from __future__ import annotations
 import typing as tp
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Flux, Reservoir, Model
+    from esbmtk import Flux, Reservoir, Model, Connection, Connect
+
+
+def check_signal(ex: str, c: union(Connection, Connect)) -> str:
+    """Test if connection requires a signal"""
+
+    sign = ""
+    if c.signal != "None":
+        # get signal type
+        print(f"signame =  {c.signal.full_name}")
+        if c.signal.stype == "addition":
+            sign = "+"
+        else:
+            raise ValueError(f"stype={c.signal.stype} not implemented")
+
+        ex = ex + f"\n\t{sign} {c.signal.full_name}(t)  # Signal"
+
+    return ex
 
 
 def connection_types(f: Flux, r: Reservoir, R: list, M: Model) -> tuple(str, str):
@@ -27,29 +44,32 @@ def connection_types(f: Flux, r: Reservoir, R: list, M: Model) -> tuple(str, str
     returns ex as string
     """
     ex = ""
-    p = f.parent  # shorthand
+    c = f.parent  # shorthand for the connection object
 
-    if p.source == r:
+    if c.source == r:
         sign = "-"
-    elif p.sink == r:
+    elif c.sink == r:
         sign = "+"
     else:
         raise ValueError("This should not happen")
 
-    if p.ctype == "regular":
-        ex = f"{p.rate}  # {p.id} rate"
+    if c.ctype == "regular":
+        ex = f"{c.rate:.16e}  # {c.id} rate"
+        ex = check_signal(ex, c)
 
-    elif p.ctype == "scale_with_concentration":
-        ici = M.lic.index(p.source)  # index into initial conditions
-        ex = f"{p.scale} * R[{ici}]  #  {p.id} scale with c in {p.source.full_name}"
+    elif c.ctype == "scale_with_concentration":
+        ici = M.lic.index(c.source)  # index into initial conditions
+        ex = f"{c.scale:.16e} * R[{ici}]  # {c.id} scale with conc in {c.source.full_name}"
+        ex = check_signal(ex, c)
 
-    elif p.ctype == "scale_with_flux":
+    elif c.ctype == "scale_with_flux":
         p = f.parent.ref_flux.parent
-        ici = M.lic.index(p.source)  # index into initial conditions
-        ex = f"{p.scale} * R[{ici}] * {f.parent.scale}  #  {f.parent.id} scale with c in {p.source.full_name}"
+        ici = M.lic.index(c.source)  # index into initial conditions
+        ex = f"{c.scale:.16e} * R[{ici}] * {f.parent.scale:.16e}  # {f.parent.id} scale with c in {c.source.full_name}"
+        ex = check_signal(ex, c)
 
     else:
-        raise ValueError(f"{p.ctype} is not known")
+        raise ValueError(f"{c.ctype} is not implmented")
 
     return ex, sign
 
@@ -68,7 +88,7 @@ def write_equations(M: Model) -> list:
         R.append(e.c[0])
 
     # get pathlib object
-    fn: str = "equations.py"  # file name
+    fn: str = f"{M.name}_equations.py"  # file name
     cwd: pl.Path = pl.Path.cwd()  # get the current working directory
     fqfn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
 
@@ -86,7 +106,7 @@ def write_equations(M: Model) -> list:
                 ex, sign = connection_types(f, r, R, M)
                 fex = fex + f"\t{sign} {ex}\n"
 
-            eqs.write(f"\t{r.name} = (\n{fex})/{r.volume}\n")
+            eqs.write(f"\t{r.name} = (\n{fex}\t)/{r.volume:.16e}\n\n")
             rel = rel + f"{r.name}, "
 
         eqs.write(f"\treturn [{rel}]\n")
