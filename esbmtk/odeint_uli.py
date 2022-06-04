@@ -105,13 +105,16 @@ def write_equations(M: Model) -> list:
         rel = ""  # list of return values
         for r in M.lor:  # loop over reservoirs
 
+            # create unique variable name. Reservoirs are typically called
+            # M.rg.r so we replace all dots with underscore
+            name = r.full_name.replace(".", "_")
             fex = ""
             for f in r.lof:
                 ex, sign = connection_types(f, r, R, M)
                 fex = fex + f"\t{sign} {ex}\n"
 
-            eqs.write(f"\t{r.name} = (\n{fex}\t)/{r.volume:.16e}\n\n")
-            rel = rel + f"{r.name}, "
+            eqs.write(f"\t{name} = (\n{fex}\t)/{r.full_name}.volume\n\n")
+            rel = rel + f"{name}, "
 
         eqs.write(f"\treturn [{rel}]\n")
 
