@@ -88,7 +88,7 @@ def write_equations(M: Model) -> list:
         R.append(e.c[0])
 
     # get pathlib object
-    fn: str = f"{M.name}_equations.py"  # file name
+    fn: str = "equations.py"  # file name
     cwd: pl.Path = pl.Path.cwd()  # get the current working directory
     fqfn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
 
