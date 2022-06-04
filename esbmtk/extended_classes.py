@@ -935,16 +935,17 @@ class Signal(esbmtkBase):
 
     def __call__(self, t) -> list:
         """Return Signal value at time t (mass and mass for light
-        isotope). This will work as long a t is a multiple of dt.  We
+        isotope). This will work as long a t is a multiple of dt, and i = t.
         may extend this by addding linear interpolation but that will
         be costly
 
         """
 
-        t = int(t)  # ensure that t is integer.
-        # improve by doing proper interpolation
+        import numpy as np
 
-        return [self.data.m[t], self.data.l[t]]
+        v = np.interp(t, self.mo.time, self.data.m)
+
+        return [v, 0]
 
     def plot(self) -> None:
         """
