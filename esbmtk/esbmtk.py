@@ -735,10 +735,10 @@ class Model(esbmtkBase):
         R = write_equations(self)
 
         # import equations
-        from equations import foo
+        from equations import eqs
 
         # execute solver
-        results = odeint(foo, R, self.time)
+        results = odeint(eqs, R, self.time, tfirst=True, args=(self,))
 
         # assign results
         for i, r in enumerate(self.lor):
