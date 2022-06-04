@@ -226,7 +226,7 @@ class Model(esbmtkBase):
         self.__register_name_new__()
 
         self.lor: list = []
-        self.lic: list = [] # list of all reserevoir type objects
+        self.lic: list = []  # list of all reserevoir type objects
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
         self.lel: list = []  # list which will hold all element references
@@ -717,8 +717,32 @@ class Model(esbmtkBase):
             )
         elif solver == "odeint":
             run_solver(self)
-        else:
+        elif solver == "ode_uli":
+            self.ode_uli()
+        elif solver == "python":
             execute(self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
+        else:
+            raise ValueError(
+                f"Solver={solver} is unkknown, use 'python/numba/odeint/ode_uli'"
+            )
+
+    def ode_uli(self):
+        """Use the ode solver based on Uli's approach"""
+        from esbmtk import write_equations
+        from scipy.integrate import odeint
+
+        # build equation file
+        R = write_equations(self)
+
+        # import equations
+        from equations import foo
+
+        # execute solver
+        results = odeint(foo, R, self.time)
+
+        # assign results
+        for i, r in enumerate(self.lor):
+            r.c = results[:, i]
 
     def __step_process__(self, r: Reservoir, i: int) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -2101,7 +2125,7 @@ class SourceSink(esbmtkBase):
         self.model = self.species.mo
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
         self.lio: list = []
-        self.mo.lic.append(self) # add source to list of res type objects
+        self.mo.lic.append(self)  # add source to list of res type objects
 
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
