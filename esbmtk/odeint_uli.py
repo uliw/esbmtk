@@ -99,7 +99,7 @@ def write_equations(M: Model) -> list:
     # write file
     with open(fqfn, "w", encoding="utf-8") as eqs:
         eqs.write("from __future__ import annotations\n\n\n")
-        eqs.write("def eqs(t, R: list, M: Model) -> list:\n\n")
+        eqs.write("def eqs(t, R: list, M: Model, results) -> list:\n\n")
         eqs.write('\t"""Auto generated esbmtk equations do not edit"""\n\n')
 
         rel = ""  # list of return values
