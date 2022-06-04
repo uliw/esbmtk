@@ -737,8 +737,9 @@ class Model(esbmtkBase):
         # import equations
         from equations import eqs
 
+        # initialize array holding return values
+        results = np.zeros((len(self.time), len(R)), dtype=float)
         # execute solver
-        results = 0
         results = odeint(eqs, R, self.time, tfirst=True, args=(self, results))
 
         # assign results
