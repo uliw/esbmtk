@@ -34,7 +34,7 @@ def check_signal(ex: str, c: union(Connection, Connect)) -> str:
         else:
             raise ValueError(f"stype={c.signal.stype} not implemented")
 
-        ex = ex + f"\n\t{sign} {c.signal.full_name}(t)  # Signal"
+        ex = ex + f"\n\t{sign} {c.signal.full_name}(t)[0]  # Signal"
 
     return ex
 
@@ -45,6 +45,7 @@ def connection_types(f: Flux, r: Reservoir, R: list, M: Model) -> tuple(str, str
     """
     ex = ""
     c = f.parent  # shorthand for the connection object
+    cfn = f.parent.full_name
 
     if c.source == r:
         sign = "-"
@@ -54,18 +55,21 @@ def connection_types(f: Flux, r: Reservoir, R: list, M: Model) -> tuple(str, str
         raise ValueError("This should not happen")
 
     if c.ctype == "regular":
-        ex = f"{c.rate:.16e}  # {c.id} rate"
+        # ex = f"{c.rate:.16e}  # {c.id} rate"
+        ex = f"{cfn}.rate  # {c.id} rate"
         ex = check_signal(ex, c)
 
     elif c.ctype == "scale_with_concentration":
         ici = M.lic.index(c.source)  # index into initial conditions
-        ex = f"{c.scale:.16e} * R[{ici}]  # {c.id} scale with conc in {c.source.full_name}"
+        ex = f"{cfn}.scale * R[{ici}]  # {c.id} scale with conc in {c.source.full_name}"
         ex = check_signal(ex, c)
 
     elif c.ctype == "scale_with_flux":
         p = f.parent.ref_flux.parent
         ici = M.lic.index(c.source)  # index into initial conditions
-        ex = f"{c.scale:.16e} * R[{ici}] * {f.parent.scale:.16e}  # {f.parent.id} scale with c in {c.source.full_name}"
+        #ex = f"{c.scale:.16e} * R[{ici}] * {f.parent.scale:.16e}  # {f.parent.id} scale with c in {c.source.full_name}"
+        # ex = check_signal(ex, c)
+        ex = f"{cfn}.scale * R[{ici}] * {p.full_name}.scale # {f.parent.id} scale with f in {c.source.full_name}"
         ex = check_signal(ex, c)
 
     else:
@@ -95,7 +99,7 @@ def write_equations(M: Model) -> list:
     # write file
     with open(fqfn, "w", encoding="utf-8") as eqs:
         eqs.write("from __future__ import annotations\n\n\n")
-        eqs.write("def foo(R: list, t) -> list:\n\n")
+        eqs.write("def eqs(t, R: list, M: Model) -> list:\n\n")
         eqs.write('\t"""Auto generated esbmtk equations do not edit"""\n\n')
 
         rel = ""  # list of return values
