@@ -110,6 +110,10 @@ class setup_ode():
     '''
 
     def __init__(self):
+        ''' Use this method to initialize all variables that require the state
+            t-1
+        '''
+    
         self.i: int = 0
         self.last_t: float = 0.0
 
