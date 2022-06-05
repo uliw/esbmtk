@@ -22,10 +22,11 @@ if tp.TYPE_CHECKING:
     from esbmtk import Flux, Reservoir, Model, Connection, Connect
 
 
-def check_signal(ex: str, c: union(Connection, Connect)) -> str:
+def check_signal(ex: str, c: tp.union(Connection, Connect)) -> str:
     """Test if connection requires a signal"""
 
     sign = ""
+    ind3 = 12 * " "  # indentation
     if c.signal != "None":
         # get signal type
         print(f"signame =  {c.signal.full_name}")
@@ -34,7 +35,7 @@ def check_signal(ex: str, c: union(Connection, Connect)) -> str:
         else:
             raise ValueError(f"stype={c.signal.stype} not implemented")
 
-        ex = ex + f"\n\t{sign} {c.signal.full_name}(t)[0]  # Signal"
+        ex = ex + f"\n{ind3}{sign} {c.signal.full_name}(t)[0]  # Signal"
 
     return ex
 
@@ -67,9 +68,9 @@ def connection_types(f: Flux, r: Reservoir, R: list, M: Model) -> tuple(str, str
     elif c.ctype == "scale_with_flux":
         p = f.parent.ref_flux.parent
         ici = M.lic.index(c.source)  # index into initial conditions
-        #ex = f"{c.scale:.16e} * R[{ici}] * {f.parent.scale:.16e}  # {f.parent.id} scale with c in {c.source.full_name}"
+        # ex = f"{c.scale:.16e} * R[{ici}] * {f.parent.scale:.16e}  # {f.parent.id} scale with c in {c.source.full_name}"
         # ex = check_signal(ex, c)
-        ex = f"{cfn}.scale * R[{ici}] * {p.full_name}.scale # {f.parent.id} scale with f in {c.source.full_name}"
+        ex = f"{cfn}.scale * R[{ici}] * {p.full_name}.scale  # {f.parent.id} scale with f in {c.source.full_name}"
         ex = check_signal(ex, c)
 
     else:
@@ -96,13 +97,39 @@ def write_equations(M: Model) -> list:
     cwd: pl.Path = pl.Path.cwd()  # get the current working directory
     fqfn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
 
+    # construct header and static code:
+    header = """from __future__ import annotations\n\n
+import typing as tp
+
+if tp.TYPE_CHECKING:
+    from esbmtk import Model
+
+
+class setup_ode():
+    '''Class stub to enable state in the equation system passed to ODEINT
+    '''
+
+    def __init__(self):
+        self.i: int = 0
+        self.last_t: float = 0.0
+
+    def eqs(self, t, R: list, M: Model) -> list:
+        '''Auto generated esbmtk equations do not edit
+        '''
+
+"""
+
+    # """
     # write file
     with open(fqfn, "w", encoding="utf-8") as eqs:
-        eqs.write("from __future__ import annotations\n\n\n")
-        eqs.write("def eqs(t, R: list, M: Model, results) -> list:\n\n")
-        eqs.write('\t"""Auto generated esbmtk equations do not edit"""\n\n')
 
         rel = ""  # list of return values
+        ind1 = 4 * " "
+        ind2 = 8 * " "  # indention
+        ind3 = 12 * " "  # indention
+
+        eqs.write(header)
+
         for r in M.lor:  # loop over reservoirs
 
             # create unique variable name. Reservoirs are typically called
@@ -111,11 +138,11 @@ def write_equations(M: Model) -> list:
             fex = ""
             for f in r.lof:
                 ex, sign = connection_types(f, r, R, M)
-                fex = fex + f"\t{sign} {ex}\n"
+                fex = fex + f"{ind3}{sign} {ex}\n"
 
-            eqs.write(f"\t{name} = (\n{fex}\t)/{r.full_name}.volume\n\n")
+            eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
             rel = rel + f"{name}, "
 
-        eqs.write(f"\treturn [{rel}]\n")
+        eqs.write(f"{ind2}return [{rel}]\n")
 
     return R
