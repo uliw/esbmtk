@@ -735,12 +735,10 @@ class Model(esbmtkBase):
         R = write_equations(self)
 
         # import equations
-        from equations import eqs
+        from equations import setup_ode
 
-        # initialize array holding return values
-        results = np.zeros((len(self.time), len(R)), dtype=float)
-        # execute solver
-        results = odeint(eqs, R, self.time, tfirst=True, args=(self, results))
+        ode_system = setup_ode()  # create ode system instance
+        results = odeint(ode_system.eqs, R, self.time, tfirst=True, args=(self,))
 
         # assign results
         for i, r in enumerate(self.lor):
