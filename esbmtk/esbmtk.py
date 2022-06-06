@@ -728,7 +728,7 @@ class Model(esbmtkBase):
 
     def ode_uli(self):
         """Use the ode solver based on Uli's approach"""
-        from esbmtk import write_equations
+        from esbmtk import write_equations_2
         from scipy.integrate import odeint
 
         # build equation file
