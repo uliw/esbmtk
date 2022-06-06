@@ -653,6 +653,9 @@ class Signal(esbmtkBase):
             register=self,
         )
 
+        # remove signal fluxes from global flux list
+        self.mo.lof.remove(self.nf)
+        
         # map into model space
         insert_start_time = self.st - self.mo.offset
         insert_stop_time = insert_start_time + self.duration
