@@ -65,12 +65,30 @@ def connection_types(f: Flux, r: Reservoir, R: list, M: Model) -> tuple(str, str
         ex = f"{cfn}.scale * R[{ici}]  # {c.id} scale with conc in {c.source.full_name}"
         ex = check_signal(ex, c)
 
+    elif c.ctype == "scale_with_mass":
+        ici = M.lic.index(c.source)  # index into initial conditions
+        ex = (
+            f"{cfn}.scale * {c.source.full_name}.volume * R[{ici}]"
+            f"# {c.id} scale with conc in {c.source.full_name}"
+        )
+        ex = check_signal(ex, c)
+
     elif c.ctype == "scale_with_flux":
         p = f.parent.ref_flux.parent
         ici = M.lic.index(c.source)  # index into initial conditions
-        # ex = f"{c.scale:.16e} * R[{ici}] * {f.parent.scale:.16e}  # {f.parent.id} scale with c in {c.source.full_name}"
-        # ex = check_signal(ex, c)
-        ex = f"{cfn}.scale * R[{ici}] * {p.full_name}.scale  # {f.parent.id} scale with f in {c.source.full_name}"
+
+        if f.parent.ref_flux.parent.ctype == "scale_with_concentration":
+            ex = (
+                f"{cfn}.scale * R[{ici}] * {p.full_name}.scale"
+                f"# {f.parent.id} scale with f in {c.source.full_name}"
+            )
+        elif f.parent.ref_flux.parent.ctype == "scale_with_mass":
+            ex = (
+                f"{cfn}.scale * R[{ici}] * {p.full_name}.scale * {p.full_name}.source.volume"
+                f"# {f.parent.id} scale with f in {c.source.full_name}"
+            )
+        else:
+            raise ValueError(f"{f.parent.ref_flux.parent.ctype} is not implmented")
         ex = check_signal(ex, c)
 
     else:
