@@ -1352,6 +1352,7 @@ class ExternalCode(Reservoir_no_set):
             "function_params": ["None", (List, str)],
             "geometry": ["None", (List, str)],
             "alias_list": ["None", (List, str)],
+            "ftype": ["None", (str)],
         }
 
         # provide a list of absolutely required keywords
