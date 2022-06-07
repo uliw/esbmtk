@@ -19,7 +19,7 @@ from __future__ import annotations
 from esbmtk import EQ_Terms
 
 
-class Constructor:
+class Construct:
     """constructs the equation from the terms
     in res_flux dictionary"""
 
