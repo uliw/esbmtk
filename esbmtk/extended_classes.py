@@ -579,12 +579,11 @@ class Signal(esbmtkBase):
 
         self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
 
-        if self.duration/self.species.mo.dt < 10:
+        if self.duration / self.species.mo.dt < 10:
             print("\n\n   W A R N I N G \n\n")
             print("Your signal duration is covered by less than 10")
             print("Intergration steps. This may not be what you want\n\n")
-        
-        
+
         # legacy name definitions
         self.full_name = ""
         self.l: int = self.duration
@@ -663,7 +662,7 @@ class Signal(esbmtkBase):
 
         # remove signal fluxes from global flux list
         self.mo.lof.remove(self.nf)
-        
+
         # map into model space
         insert_start_time = self.st - self.mo.offset
         insert_stop_time = insert_start_time + self.duration
@@ -1392,6 +1391,7 @@ class ExternalCode(Reservoir_no_set):
             function_params=self.function_params,
             model=self.species.mo,
             register=self.register,
+            ftype=self.ftype,
         )
 
         self.mo.lor.remove(self)
