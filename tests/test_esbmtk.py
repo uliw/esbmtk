@@ -339,7 +339,7 @@ def test_scale_with_concentration_empty(create_model, solver):
         ctype="scale_with_concentration",
         alpha=-70,
     )
-    M1.run(solver="solver")
+    M1.run(solver=solver)
     M1.get_delta_values()
 
     names = M1.flux_summary(filter_by="default_a", return_list=True)
@@ -655,7 +655,7 @@ def test_pyramid_signal_multiply(create_model, solver):
         # alpha=-28,  # set a default flux
     )
 
-    M1.run(solver="solver")
+    M1.run(solver=solver)
     M1.get_delta_values()
     # diff = M1.C_R1_2_SI1.R1_2_SI1_F.d[500] - M1.R1.d[500]
     assert round(M1.R1.c[-2]) == 81
@@ -765,7 +765,7 @@ def test_scale_with_flux_and_signal_addition(create_model, solver):
         # alpha=-28,  # set a default flux
     )
     # M1.run(solver='python')
-    M1.run(solver="solver")
+    M1.run(solver=solver)
     M1.get_delta_values()
 
     # diff = M1.C_R1_2_SI1.R1_2_SI1_F.d[500] - M1.R1.d[500]
