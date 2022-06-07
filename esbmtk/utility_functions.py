@@ -1320,6 +1320,7 @@ def add_carbonate_system_1(rgs: list):
                 name="cs",
                 species=species,
                 function=calc_carbonates_1,
+                ftype="cs1",
                 vr_datafields={
                     "H": rg.swc.hplus,  # 0
                     "CA": rg.swc.ca,  # 1
@@ -1339,11 +1340,12 @@ def add_carbonate_system_1(rgs: list):
                         rg.swc.boron,  # 4
                         rg.swc.ca2,  # 5
                         rg.swc.Ksp,  # 6
+                        rg.swc.hplus,  #
                     ]
                 ),
                 register=rg,
-                rg.has_cs1 = True
             )
+            rg.has_cs1 = True
         else:
             raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
@@ -1463,6 +1465,7 @@ def add_carbonate_system_2(**kwargs) -> None:
             name="cs",
             species=species,
             function=calc_carbonates_2,
+            ftype="cs2",
             # datafield hold the results of the VR_no_set function
             # provide a default values which will be use to initialize
             # the respective datafield/
@@ -1514,11 +1517,13 @@ def add_carbonate_system_2(**kwargs) -> None:
                     float(abs(kwargs["zmax"])),  # 15
                     float(abs(kwargs["z0"])),  # 16
                     Ksp,  # 17
+                    rg.swc.hplus,
+                    kwargs["zsnow"],
                 ]
             ),
             register=rg,
-            rg.has_cs2 = True
         )
+        rg.has_cs2 = True
 
 
 def weathering_processes():
