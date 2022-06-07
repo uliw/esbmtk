@@ -43,13 +43,13 @@ class setup_ode():
     '''
 
     from esbmtk import Model
-    
+
     def __init__(self, M: Model)->None:
         ''' Use this method to initialize all variables that require the state
             t-1
         '''
         import numpy as np
-    
+
         self.i: int = np.zeros(len(M.time))
         self.last_t: float = np.zeros(len(M.time))
 
@@ -76,6 +76,10 @@ class setup_ode():
             fex = get_flux(flux, M)
             fn = flux.full_name.replace(".", "_")
             eqs.write(f"{ind2}{fn} = {fex}\n")
+
+        # Setup carbonate chemistry calculations
+        for r in M.lor:
+            pass  # test if R has cs1 or cs2
 
         eqs.write(f"\n{ind2}# Reservoir Equations\n")
 
@@ -113,6 +117,7 @@ def get_flux(flux: Flux, M: Model) -> str:
     if c.ctype == "regular":
         ex = f"{flux.full_name}.rate"
         ex = check_signal_2(ex, c)
+        ex = ex + "  # fixed rate"
 
     elif c.ctype == "scale_with_concentration":
         ici = M.lic.index(c.source)  # index into initial conditions
@@ -120,11 +125,13 @@ def get_flux(flux: Flux, M: Model) -> str:
             f"{cfn}.scale * R[{ici}]"  # {c.id} scale with conc in {c.source.full_name}"
         )
         ex = check_signal_2(ex, c)
+        ex = ex + "  # fixed rate"
 
     elif c.ctype == "scale_with_mass":
         ici = M.lic.index(c.source)  # index into initial conditions
         ex = f"{cfn}.scale * {c.source.full_name}.volume * R[{ici}]"
         ex = check_signal_2(ex, c)
+        ex = ex + "  # scale with mass"
 
     elif c.ctype == "scale_with_flux":
         p = flux.parent.ref_flux.parent
@@ -138,6 +145,12 @@ def get_flux(flux: Flux, M: Model) -> str:
         else:
             raise ValueError(f"{flux.parent.ref_flux.parent.ctype} is not implmented")
         ex = check_signal_2(ex, c)
+        ex = ex + "  # scale with concentration"
+
+    elif c.ctype == "weathering":
+        ex = f"{cfn}.scale * ({cfn}.reservoir_ref.c/{cfn}.pco2_0) **  {cfn}.ex"
+        ex = check_signal_2(ex, c)
+        ex = ex + "  # weathering"
 
     else:
         raise ValueError(f"{c.ctype} is not implmented")
@@ -157,6 +170,6 @@ def check_signal_2(ex: str, c: tp.union(Connection, Connect)) -> str:
         else:
             raise ValueError(f"stype={c.signal.stype} not implemented")
 
-        ex = ex + f" + {c.signal.full_name}(t)[0]  # Signal"
+        ex = ex + f" {sign} {c.signal.full_name}(t)[0]  # Signal"
 
     return ex
