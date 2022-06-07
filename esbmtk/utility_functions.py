@@ -1342,6 +1342,7 @@ def add_carbonate_system_1(rgs: list):
                     ]
                 ),
                 register=rg,
+                rg.has_cs1 = True
             )
         else:
             raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
@@ -1516,6 +1517,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                 ]
             ),
             register=rg,
+            rg.has_cs2 = True
         )
 
 
