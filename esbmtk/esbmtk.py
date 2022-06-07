@@ -652,9 +652,7 @@ class Model(esbmtkBase):
                 print(f"Restarting model")
                 self.restart()
 
-            duration: float = process_time() - start
-            wcd = time.time() - wts
-            print(f"\n Execution took {duration} cpu seconds, wt = {wcd}\n")
+            
             print("Merge results")
             self.merge_temp_results()
             self.steps = self.number_of_datapoints
@@ -668,6 +666,10 @@ class Model(esbmtkBase):
         # flag that the model has executed
         self.state = 1
 
+        duration: float = process_time() - start
+        wcd = time.time() - wts
+        print(f"\n Execution took {duration:.2e} cpu seconds, wt = {wcd:.2e}\n")
+        
         process = psutil.Process(os.getpid())
         print(f"This run used {process.memory_info().rss/1e9:.2f} Gbytes of memory \n")
 
@@ -737,7 +739,7 @@ class Model(esbmtkBase):
         # import equations
         from equations import setup_ode
 
-        ode_system = setup_ode()  # create ode system instance
+        ode_system = setup_ode(self)  # create ode system instance
         results = odeint(ode_system.eqs, R, self.time, tfirst=True, args=(self,))
 
         # assign results
