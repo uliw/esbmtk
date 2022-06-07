@@ -16,65 +16,39 @@
 """
 
 from __future__ import annotations
-from sympy import Symbol
+from esbmtk import Reservoir, Connect
 import typing as tp
 
 if tp.TYPE_CHECKING:
     from typing import Union
 
 
-class EQ_Terms:
+def decorate_con_w_signal(flux_func):
+    def inner(*args):
+        """decorator to add both
+        the original connection terms
+        and the associated signal terms"""
+        flux_func(*args)
+        eq_terms = args[0]
+        connection = args[1]
+        if connection.signal != "None":
+            f_interp = lambda t: connection.signal(t)[0]
+            eq_terms.res_flux_filler((f_interp, "t"), connection)
 
-    """Given a Model class object M, this class generates the terms of
-    the system of ODE equations where each equation corresponds to the rate
-    of change of concentration of a specific substance in a specific reservoir
-    
-    The class further sorts these terms of equations into two different lists
-    stored within a tuple of the form (list, list, str, Reservoir). These tuples
-    are values in a dictionary called res_flux where the keys are corresponding
-    reservoir memory ids.
-    
-    In any given tuple, the first list holds the terms of an equation that represent
-    an influx into the reservoir (hence, substance is being added to the reservoir).
-    The second list holds terms that represent an outflux out of a reservoir, so 
-    substance is being removed out of reseroir
-    
-    The str in the suple is of the form x_id(Reservoir) and will be the x in the dx/dt
-    terms in the equation that will represent the concentration of a substance in the
-    reservoir. We use the reservoir id to guarantee sufficiency and uniqueness of x terms
-    in every equation within the system.
-    
-    Lastly, The last item in the tuple is the reservoir itself for which the equation is built.
-    """
+    return inner
+
+class EQ_Terms:
+    """terms of ode equations"""
 
     def __init__(self, M):
-        """During initialization, the empty res_flux dictionary is created and later
-        filled. It there are different types of equation terms and these types are dependednt
-        on the connection types.
-        
-        - regular: the flow is constant and the rate is given
-            then scale_w_concentration_or_regular will be used
-        - scale_with_concentration: rate is given so scale_w_concentration_or_regular
-            will be used
-        - scale_with_concentration: rate is NOT given so variable_rate is used
-            in this case, we assume that since the rate is not provided, then it is
-                 a variable and may change over time
-        - scale_with_mass: scale_with_mass method will be used to generate the eq term
-        - scale_with_flux: use scale_with_flux method and provide the reference flux
-            as this case assumes that the eq terms will be a scaled offo of an already
-            existing flux (hence an equation term)"""
-
-        self.res_flux = (
-            {}
-        )  # dict that holds variables, reservoirse and in/out-flux (keys are int [res ids])
-        self.var_dict = {}  # dict that holds variables {'x_123':Symbol('x_123')}
+        self.res_flux = {}  # dict that holds variables, reservoirse
+        # and in/out-flux (keys are int [res ids])
         self.M = M
 
         for res in self.M.lor:
-            # influx, outflux lists, concentration variable for a reservoir
+            # influx, outflux, concentration variable for reservoir, reservoir
             var_str = f"x_{id(res)}"
             self.res_flux[id(res)] = ([], [], var_str, res)
-            self.var_dict[var_str] = Symbol(var_str)
 
         for connection in M.loc:
             # I need to further split these if blocks into a separate function
@@ -106,28 +80,31 @@ class EQ_Terms:
 
     # if the equation term is scaled off of another term, then the term
     # generating methods the factor_scaling_connection is set to be equal the
-    # the method that is generating this scaled term otherwise, factor_scaling_connection
-    # parameter is set at None by default
+    # the method that is generating this scaled term otherwise,
+    # factor_scaling_connection parameter is set at None by default
 
+    @decorate_con_w_signal
     def scale_w_concentration_or_regular(
-        self, connection, factor=1, factor_scaling_connection=None
+        self,
+        connection: Connect,
+        factor: float = 1,
+        factor_scaling_connection: Union[None, Connect] = None,
     ):
-        """This method is used when we work with regular or
-        scale_with_concentration connections where the rate
-        provided. The term it genereates in a constant and is
-        the provided rate itself"""
+        """this method is used when we work with regular or
+        scale_with_concentration connections
+
+        no variables involved"""
         if factor_scaling_connection is None:
             self.res_flux_filler(connection.rate * factor, connection)
         else:
             self.res_flux_filler(connection.rate * factor, factor_scaling_connection)
 
-    def scale_with_flux(self, connection):
-        """Given a reference flux, we calculate the
-        new flux as a percentage of the given flux.
-        We don't need a factor parameter (which is the scale)
-        here as this method itself is using the factor parameter
-        granted by the connection that gets inputted 
-        """
+    def scale_with_flux(self, connection: Connect):
+        """given a reference flux, we calculate the
+        new flux as a percentage of that other flux
+        we don't need a factor parameter here as this method
+        itself is using the factor parameters from other methods"""
+
         original_flux = connection.ref_flux.parent
         factor = connection.scale
 
@@ -147,63 +124,74 @@ class EQ_Terms:
         else:
             raise TypeError("Please input proper ref_flux connection type")
 
-    def scale_with_mass(self, connection, factor=1, factor_scaling_connection=None):
-        """The variable for this equation term is the
+    @decorate_con_w_signal
+    def scale_with_mass(
+        self,
+        connection: Connect,
+        factor: float = 1,
+        factor_scaling_connection: Union[None, Connect] = None,
+    ):
+        """the variable for this equation term is the
         same as for the source variable and the coeff
         is the product of the scale (1/tau) multipled
         by the volume of the source reservoir"""
-
-        coeff = connection.source.volume * connection.scale
-        var_str = self.res_flux[id(connection.source)][2]
+        coeff: float = connection.source.volume * connection.scale
+        var_str: str = self.res_flux[id(connection.source)][2]
+        exec(
+            f"global func; func = lambda variable, factor={factor}: {coeff}*variable*factor"
+        )
 
         if factor_scaling_connection is None:
-            self.res_flux_filler(coeff * self.var_dict[var_str] * factor, connection)
+            self.res_flux_filler((func, var_str), connection)
         else:
-            self.res_flux_filler(
-                coeff * self.var_dict[var_str] * factor, factor_scaling_connection
-            )
+            self.res_flux_filler((func, var_str), factor_scaling_connection)
 
+    @decorate_con_w_signal
     def variable_rate(
-        self, connection, factor: Union[float, int] = 1, factor_scaling_connection=None
+        self,
+        connection: Connect,
+        factor: Union[float, int] = 1,
+        factor_scaling_connection: Union[None, Connect] = None,
     ):
+        """if the connection has a specified rate then
+        use this one to get the units matching"""
 
-        """If the connection is of scale_with_concentration type but without a provided
-        rate, then it will be calculated as scale*x-variable where x-variable is the source
-        reservoir corresponding x variable as x_id(Reservoir). Since these equations will
-        further need to be evaluated, the x-variable is not a string but in a sympy.Symbol
-        class object with the same name"""
-
-        scale_mag = connection.scale
-        var_str = self.res_flux[id(connection.source)][2]
+        scale_mag: Union[int, float] = connection.scale
+        var_str: str = self.res_flux[id(connection.source)][2]
+        exec(
+            f"global func; func = lambda variable, factor={factor}: {scale_mag}*variable*factor"
+        )
 
         if factor_scaling_connection is None:
-            self.res_flux_filler(
-                scale_mag * self.var_dict[var_str] * factor, connection
-            )
+            self.res_flux_filler((func, var_str), connection)
         else:
-            self.res_flux_filler(
-                scale_mag * self.var_dict[var_str] * factor, factor_scaling_connection
-            )
+            self.res_flux_filler((func, var_str), factor_scaling_connection)
 
-    def res_flux_filler(self, input, connection):
+    def res_flux_filler(self, input, connection: Connect):
         """Fills the influx and outflux lists in the res_flux dictionary
         filling the res_flux dict depending on the source and sink of the flux
 
-        - if both source and sink are reservoirs the input (which is the equation term in
-          form of a Sympy object) will be filled into both the influx and outflux lists of
-          corresponding reservoirs
+        - if both source and sink are reservoirs the input (which is the
+          equation term in form of a Sympy object) will be filled into both
+          the influx and outflux lists of corresponding reservoirs
 
-        - if only the source is a reservoir, then the input will be filled into the source
-          list of the corresponding reservoir
+        - if only the source is a reservoir, then the input will be
+          filled into the source list of the corresponding reservoir
 
-        - if only the sink is a reservoir, then the input will be filled into the sink
-          list of the corresponding reservoir"""
+        - if only the sink is a reservoir, then the input will be filled into
+          the sink list of the corresponding reservoir"""
 
-        type_reservoir = type(self.M.lor[0])
-
-        if isinstance(connection.source, type_reservoir) and isinstance(
-            connection.sink, type_reservoir
+        if isinstance(connection.source, Reservoir) and isinstance(
+            connection.sink, Reservoir
         ):
+
+            if isinstance(input, tuple):
+                """If a function appears in
+                many equations, to denote that,
+                we use a list and not a tuple"""
+                input = list(input)
+
+            # outflowing and inflow lists
             self.res_flux[id(connection.source)][1].append(
                 input
             )  # outflowing is the first list
@@ -212,7 +200,7 @@ class EQ_Terms:
             )  # inflowing is the second list
 
         elif isinstance(
-            connection.source, type_reservoir
+            connection.source, Reservoir
         ):  # and not isinstance(connection.sink, Reservoir)
             # outflowing list
             self.res_flux[id(connection.source)][1].append(input)
