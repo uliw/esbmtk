@@ -16,15 +16,16 @@
 """
 
 from __future__ import annotations
-from esbmtk import Q_, Model, Constructor, EQ_Terms
+from esbmtk import Q_, Model, Construct, EQ_Terms
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 
 
 class run_solver:
     def __init__(self, M: Model, want_a_plot: bool = False):
+        from esbmtk import EQ_Terms, Construct
         eq_terms = EQ_Terms(M)
-        construct = Constructor(eq_terms)
+        construct = Construct(eq_terms)
         self._solve(construct)
         if want_a_plot:
             self.plot(construct)
