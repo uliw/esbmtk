@@ -11,7 +11,7 @@ def write_equations_2(M: Model) -> list:
     for each reserevoir
 
     """
-    from esbmtk import Model
+    from esbmtk import Model, ReservoirGroup
     import pathlib as pl
 
     # get list of initial conditions
@@ -42,7 +42,7 @@ class setup_ode():
     '''Class stub to enable state in the equation system passed to ODEINT
     '''
 
-    from esbmtk import Model
+    from esbmtk import Model, ReservoirGroup
 
     def __init__(self, M: Model)->None:
         ''' Use this method to initialize all variables that require the state
@@ -78,8 +78,16 @@ class setup_ode():
             eqs.write(f"{ind2}{fn} = {fex}\n")
 
         # Setup carbonate chemistry calculations
-        for r in M.lor:
-            pass  # test if R has cs1 or cs2
+        for r in M.lpc_r:
+            if r.ftype == "cs1":
+                eqs.write(f"{ind2}{r}.fullname(i)")
+            elif r.ftype == "cs2":
+                fn_dic = f"{r}.register.DIC.full_name.burial".replace(".", "_")
+                fn_ta = f"{r}.register.TA.full_name.burial".replace(".", "_")
+                eqs.write(f"{ind2}{fn_dic} = {r}.fullname(i)\n")
+                eqs.write(f"{ind2}{fn_ta} = {fn_dic} * 2\n")
+            else:
+                raise ValueError(f"{r.ftype} is undefined")
 
         eqs.write(f"\n{ind2}# Reservoir Equations\n")
 
@@ -95,6 +103,12 @@ class setup_ode():
                 elif flux.parent.sink == r:
                     sign = "+"
                 fex = fex + f"{ind3}{sign} {flux.full_name.replace('.', '_')}\n"
+
+            # check if reservoir requires carbonate burial fluxes
+            if isinstance(r.parent, ReservoirGroup):
+                if r.parent.has_cs2:
+                    fn = f"{r.fullname}.{r.species.name}.burial".replace(".", "_")
+                    fex = f"{fex} - {fn}"
 
             eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
             rel = rel + f"{name}, "
