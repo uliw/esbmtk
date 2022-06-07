@@ -147,6 +147,8 @@ class ReservoirGroup(esbmtkBase):
         self.mo = self.species[0].mo
         self.model = self.species[0].mo
         self.parent = self.register
+        self.has_cs1 = False
+        self.has_cs2 = False
 
         # geoemtry information
         if self.volume == "None":
