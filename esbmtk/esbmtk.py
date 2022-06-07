@@ -1043,8 +1043,6 @@ class ReservoirBase(esbmtkBase):
         self.ldf: list[DataField] = []  # list of datafield objects
         # list of processes which calculate reservoirs
         self.lpc: list[Process] = []
-        self.has_cs1 :bool = False
-        self.has_cs2 :bool = False
 
         # legacy names
         self.n: str = self.name  # name of reservoir
