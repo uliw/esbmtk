@@ -1,0 +1,162 @@
+from __future__ import annotations
+import typing as tp
+
+if tp.TYPE_CHECKING:
+    from esbmtk import Flux, Reservoir, Model, Connection, Connect
+
+
+def write_equations_2(M: Model) -> list:
+    """Write file that contains the ode-equations for M
+    Returns the list R that contains the initial condition
+    for each reserevoir
+
+    """
+    from esbmtk import Model
+    import pathlib as pl
+
+    # get list of initial conditions
+    R = []
+    for e in M.lor:
+        R.append(e.c[0])
+
+    # get list of unique Fluxes
+    ufl: set = set()
+    for f in M.lof:
+        ufl.add(f)
+
+    ufl: list = list(ufl)
+    # get pathlib object
+    fn: str = "equations.py"  # file name
+    cwd: pl.Path = pl.Path.cwd()  # get the current working directory
+    fqfn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
+
+    # construct header and static code:
+    header = """from __future__ import annotations\n\n
+import typing as tp
+
+if tp.TYPE_CHECKING:
+    from esbmtk import Model
+
+
+class setup_ode():
+    '''Class stub to enable state in the equation system passed to ODEINT
+    '''
+
+    from esbmtk import Model
+    
+    def __init__(self, M: Model)->None:
+        ''' Use this method to initialize all variables that require the state
+            t-1
+        '''
+        import numpy as np
+    
+        self.i: int = np.zeros(len(M.time))
+        self.last_t: float = np.zeros(len(M.time))
+
+    def eqs(self, t, R: list, M: Model) -> list:
+        '''Auto generated esbmtk equations do not edit
+        '''
+
+        # flux equations
+"""
+
+    # """
+    # write file
+    with open(fqfn, "w", encoding="utf-8") as eqs:
+
+        rel = ""  # list of return values
+        ind1 = 4 * " "
+        ind2 = 8 * " "  # indention
+        ind3 = 12 * " "  # indention
+
+        eqs.write(header)
+
+        for flux in ufl:  # get flux expressions
+            fex = ""
+            fex = get_flux(flux, M)
+            fn = flux.full_name.replace(".", "_")
+            eqs.write(f"{ind2}{fn} = {fex}\n")
+
+        eqs.write(f"\n{ind2}# Reservoir Equations\n")
+
+        for r in M.lor:  # loop over reservoirs
+
+            # create unique variable name. Reservoirs are typically called
+            # M.rg.r so we replace all dots with underscore
+            name = r.full_name.replace(".", "_")
+            fex = ""
+            for flux in r.lof:
+                if flux.parent.source == r:
+                    sign = "-"
+                elif flux.parent.sink == r:
+                    sign = "+"
+                fex = fex + f"{ind3}{sign} {flux.full_name.replace('.', '_')}\n"
+
+            eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
+            rel = rel + f"{name}, "
+
+        eqs.write(f"{ind2}self.i += 1\n")
+        eqs.write(f"{ind2}self.last_t = t\n")
+        eqs.write(f"{ind2}return [{rel}]\n")
+
+    return R
+
+
+def get_flux(flux: Flux, M: Model) -> str:
+    """Create formula expression that describes the flux f
+    returns ex as string
+    """
+    ex = ""
+    c = flux.parent  # shorthand for the connection object
+    cfn = flux.parent.full_name
+
+    if c.ctype == "regular":
+        ex = f"{flux.full_name}.rate"
+        ex = check_signal_2(ex, c)
+
+    elif c.ctype == "scale_with_concentration":
+        ici = M.lic.index(c.source)  # index into initial conditions
+        ex = (
+            f"{cfn}.scale * R[{ici}]"  # {c.id} scale with conc in {c.source.full_name}"
+        )
+        ex = check_signal_2(ex, c)
+
+    elif c.ctype == "scale_with_mass":
+        ici = M.lic.index(c.source)  # index into initial conditions
+        ex = f"{cfn}.scale * {c.source.full_name}.volume * R[{ici}]"
+        ex = check_signal_2(ex, c)
+
+    elif c.ctype == "scale_with_flux":
+        p = flux.parent.ref_flux.parent
+        ici = M.lic.index(c.source)
+
+        if flux.parent.ref_flux.parent.ctype == "scale_with_concentration":
+            ex = f"{cfn}.scale * {p.full_name}.scale * R[{ici}]"
+
+        elif flux.parent.ref_flux.parent.ctype == "scale_with_mass":
+            ex = f"{cfn}.scale * {p.full_name}.scale * {p.source.full_name}.volume * R[{ici}]"
+        else:
+            raise ValueError(f"{flux.parent.ref_flux.parent.ctype} is not implmented")
+        ex = check_signal_2(ex, c)
+
+    else:
+        raise ValueError(f"{c.ctype} is not implmented")
+
+    return ex
+
+
+def check_signal_2(ex: str, c: tp.union(Connection, Connect)) -> str:
+    """Test if connection requires a signal"""
+
+    sign = ""
+    ind3 = 12 * " "  # indentation
+    if c.signal != "None":
+        # get signal type
+        if c.signal.stype == "addition":
+            sign = "+"
+        else:
+            raise ValueError(f"stype={c.signal.stype} not implemented")
+
+        ex = ex + f" + {c.signal.full_name}(t)[0]  # Signal"
+
+    return ex
