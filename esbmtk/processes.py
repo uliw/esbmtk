@@ -196,6 +196,7 @@ class GenericFunction(Process):
             "vr_data": ["None", (List, str)],
             "function_params": ["None", (List, str)],
             "model": ["None", (str, Model)],
+            "ftype": ["None", (str)],
         }
 
         self.defaults.update(defaults)
