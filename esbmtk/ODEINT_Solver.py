@@ -20,7 +20,7 @@ from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 import typing as tp
 if tp.TYPE_CHECKING:
-    from esbmtk import Model
+    from esbmtk import Model, Construct
 
 class run_solver:
     def __init__(self, M: Model, want_a_plot: bool = False):
@@ -33,7 +33,7 @@ class run_solver:
         if want_a_plot:
             self.plot(construct)
 
-    def _solve(self, K: Constructor):
+    def _solve(self, K: Construct):
         """solves the ODE system and plots it"""
         vars = K.vars
 
@@ -54,7 +54,7 @@ class run_solver:
             res_id = int(var[2:])
             K.terms.res_flux[res_id][3].c = self.sol[:, var_index]
 
-    def plot(self, K: Constructor):
+    def plot(self, K: Construct):
         from esbmtk import Q_
         for var in K.vars:
             var_index = K.vars.index(var)
