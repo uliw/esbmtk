@@ -16,16 +16,19 @@
 """
 
 from __future__ import annotations
-from esbmtk import Q_, Model, Construct, EQ_Terms
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
-
+import typing as tp
+if tp.TYPE_CHECKING:
+    from esbmtk import Model
 
 class run_solver:
     def __init__(self, M: Model, want_a_plot: bool = False):
         from esbmtk import EQ_Terms, Construct
+
         eq_terms = EQ_Terms(M)
         construct = Construct(eq_terms)
+
         self._solve(construct)
         if want_a_plot:
             self.plot(construct)
@@ -52,6 +55,7 @@ class run_solver:
             K.terms.res_flux[res_id][3].c = self.sol[:, var_index]
 
     def plot(self, K: Constructor):
+        from esbmtk import Q_
         for var in K.vars:
             var_index = K.vars.index(var)
             res_id = int(str(var)[2:])
