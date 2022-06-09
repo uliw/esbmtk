@@ -1461,3 +1461,5 @@ class AirSeaExchange(esbmtkBase):
         self.mo = self.species.mo
         self.model = self.mo
         self.ctype = "gas_exchange"
+        self.source = self.liquid_reservoir
+        self.sink = self.gas_reservoir
