@@ -1510,6 +1510,7 @@ class GasExchange(RateConstant):
         not working, see note below
         """
         self.gas.v[i] = self.gas.v[i - 1] + f * self.gas.mo.dt
+        return [f, f12]
         # print()
 
     def __postinit__(self) -> None:
