@@ -908,7 +908,7 @@ class Connect(esbmtkBase):
             flux=self.fh,
             register=self.fh,
             alpha=self.kwargs["alpha"],
-            model=self.mo
+            model=self.mo,
         )
         self.lop.append(ph)  #
 
@@ -1336,6 +1336,7 @@ class AirSeaExchange(esbmtkBase):
             Q_,
             Flux,
             GasExchange,
+            Signal,
         )
 
         self.defaults: dict[str, list[str, tuple]] = {
@@ -1350,6 +1351,7 @@ class AirSeaExchange(esbmtkBase):
             "ref_species": ["None", (Reservoir, int, float, np.float64, np.ndarray)],
             "species": ["None", (Species, str)],
             "register": ["None", (str, Model)],
+            "signal": ["None", (str, Signal)],
         }
         # provide a list of absolutely required keywords
         self.lrk: list[str] = [
