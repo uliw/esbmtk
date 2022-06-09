@@ -19,11 +19,11 @@
 
 import typing as tp
 import numpy as np
-from .esbmtk_base import esbmtkBase
+from numba.typed import List
 
 if tp.TYPE_CHECKING:
     from .esbmtk import Reservoir, Model
-    from .extended_classes import ReservoirGroup
+    from .extended_classes import Reservoir
 
 
 def carbonate_system_1_ode(i, input_data: list, vr_data: List, params: List) -> None:
@@ -86,7 +86,6 @@ def carbonate_system_1_ode(i, input_data: list, vr_data: List, params: List) -> 
     co2aq: float = dic - hco3 - co3
     # omega: float = ca2 * co3 / ksp
 
-    
     # this may not be necessary to keep all data. maybe move to params
     vr_data[0][i] = hplus
     vr_data[1][i] = ca
@@ -99,7 +98,7 @@ def carbonate_system_1_ode(i, input_data: list, vr_data: List, params: List) -> 
     # vr_data[5][i] = omega
 
 
-def carbonate_system_2(i: int, input_data: List, vr_data: List, params: List) -> None:
+def carbonate_system_2_ode(i: int, input_data: List, vr_data: List, params: List) -> None:
     """Calculates and returns the carbonate concentrations and carbonate compensation
     depth (zcc) at the ith time-step of the model.
 
@@ -293,6 +292,6 @@ def carbonate_system_2(i: int, input_data: List, vr_data: List, params: List) ->
     vr_data[11][i] = Bm  # 9
 
     params[18] = hplus  # previous h+ concentrartion
-    params[19] = zsnow # previous zsnow
-   
+    params[19] = zsnow  # previous zsnow
+
     return Fburial, 2 * Fburial

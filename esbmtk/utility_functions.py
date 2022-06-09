@@ -1306,7 +1306,7 @@ def add_carbonate_system_1(rgs: list):
 
     """
 
-    from esbmtk import ExternalCode, calc_carbonates_1, calc_carbonates_1_ode
+    from esbmtk import ExternalCode, calc_carbonates_1, carbonate_system_1_ode
 
     # get object handle even if it defined in model namespace
     # rgs = get_object_handle(rgs)
@@ -1314,7 +1314,7 @@ def add_carbonate_system_1(rgs: list):
     species = rgs[0].mo.Carbon.CO2
 
     if rgs[0].mo.use_ode:
-        func = calc_carbonates_1_ode
+        func =  carbonate_system_1_ode
     else:
         func = calc_carbonates_1
 
@@ -1385,7 +1385,7 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     """
 
-    from esbmtk import ExternalCode, calc_carbonates_2, calc_carbonates_2_ode
+    from esbmtk import ExternalCode, calc_carbonates_2, carbonate_system_2_ode
 
     # list of known keywords
     lkk: dict = {
@@ -1460,7 +1460,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
 
     if rgs[0].mo.use_ode:
-        func = calc_carbonates_2_ode
+        func = carbonate_system_2_ode
     else:
         func = calc_carbonates_2
 
