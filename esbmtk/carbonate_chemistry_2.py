@@ -26,7 +26,7 @@ if tp.TYPE_CHECKING:
     from .extended_classes import ReservoirGroup
 
 
-def carbonate_system_1(i: int, input_data: list, vr_data: List, params: List) -> None:
+def carbonate_system_1_ode(i, input_data: list, vr_data: List, params: List) -> None:
     """Calculates and returns the carbonate concentrations and saturation state
      at the ith time-step of the model.
 
@@ -86,6 +86,8 @@ def carbonate_system_1(i: int, input_data: list, vr_data: List, params: List) ->
     co2aq: float = dic - hco3 - co3
     # omega: float = ca2 * co3 / ksp
 
+    
+    # this may not be necessary to keep all data. maybe move to params
     vr_data[0][i] = hplus
     vr_data[1][i] = ca
     vr_data[2][i] = hco3
