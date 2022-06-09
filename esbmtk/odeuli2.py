@@ -77,14 +77,23 @@ class setup_ode():
             fn = flux.full_name.replace(".", "_")
             eqs.write(f"{ind2}{fn} = {fex}\n")
 
+        message = (
+            f"\n{ind2}'''Carbonate System 1, has no return values, it just calculates\n"
+            f"{ind2}   values that are used elsewhere.\n\n"
+            f"{ind2}   Carbonate System 2, returns the carbonate burial/dissolution\n"
+            f"{ind2}   flux for DIC\n"
+            f"{ind2}'''\n\n"
+        )
+
+        eqs.write(message)
         # Setup carbonate chemistry calculations
         for r in M.lpc_r:
             if r.ftype == "cs1":
-                eqs.write(f"{ind2}{r}.fullname(i)")
+                eqs.write(f"{ind2}{r.full_name}  # cs1 \n")
             elif r.ftype == "cs2":
-                fn_dic = f"{r}.register.DIC.full_name.burial".replace(".", "_")
-                fn_ta = f"{r}.register.TA.full_name.burial".replace(".", "_")
-                eqs.write(f"{ind2}{fn_dic} = {r}.fullname(i)\n")
+                fn_dic = f"{r.register.DIC.full_name}.burial".replace(".", "_")
+                fn_ta = f"{r.register.TA.full_name}.burial".replace(".", "_")
+                eqs.write(f"{ind2}{fn_dic} = {r.full_name}  # cs2\n")
                 eqs.write(f"{ind2}{fn_ta} = {fn_dic} * 2\n")
             else:
                 raise ValueError(f"{r.ftype} is undefined")
@@ -107,8 +116,8 @@ class setup_ode():
             # check if reservoir requires carbonate burial fluxes
             if isinstance(r.parent, ReservoirGroup):
                 if r.parent.has_cs2:
-                    fn = f"{r.fullname}.{r.species.name}.burial".replace(".", "_")
-                    fex = f"{fex} - {fn}"
+                    fn = f"{r.full_name}.burial".replace(".", "_")
+                    fex = f"{fex}{ind3}- {fn}\n"
 
             eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
             rel = rel + f"{name}, "
@@ -124,11 +133,12 @@ def get_flux(flux: Flux, M: Model) -> str:
     """Create formula expression that describes the flux f
     returns ex as string
     """
+
     ex = ""
     c = flux.parent  # shorthand for the connection object
     cfn = flux.parent.full_name
 
-    if c.ctype == "regular":
+    if c.ctype.casefold() == "regular":
         ex = f"{flux.full_name}.rate"
         ex = check_signal_2(ex, c)
         ex = ex + "  # fixed rate"
@@ -156,8 +166,8 @@ def get_flux(flux: Flux, M: Model) -> str:
 
         elif flux.parent.ref_flux.parent.ctype == "scale_with_mass":
             ex = f"{cfn}.scale * {p.full_name}.scale * {p.source.full_name}.volume * R[{ici}]"
-        else:
-            raise ValueError(f"{flux.parent.ref_flux.parent.ctype} is not implmented")
+        # else:
+        #     raise ValueError(f"{flux.parent.ref_flux.parent.ctype} is not implmented")
         ex = check_signal_2(ex, c)
         ex = ex + "  # scale with concentration"
 
@@ -166,7 +176,13 @@ def get_flux(flux: Flux, M: Model) -> str:
         ex = check_signal_2(ex, c)
         ex = ex + "  # weathering"
 
+    elif c.ctype == "gas_exchange":  # Gasexchange
+        ex = f"{flux.full_name}._PGex(t)"
+        ex = check_signal_2(ex, c)
+        ex = ex + "  # gas_exchange"
+
     else:
+        pass
         raise ValueError(f"{c.ctype} is not implmented")
 
     return ex
