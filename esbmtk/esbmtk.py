@@ -74,6 +74,7 @@ class Model(esbmtkBase):
                       register = 'local', see below
                       save_flux_data = False, see below
                       ideal_water = False
+                      use_ode = False
                     )
 
     ref_time: will offset the time axis by the specified amount, when
@@ -197,6 +198,7 @@ class Model(esbmtkBase):
             "isotopes": [False, (bool)],
             "debug": [False, (bool)],
             "ideal_water": [True, (bool)],
+            "use_ode": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
@@ -736,15 +738,15 @@ class Model(esbmtkBase):
         # build equation file
         R = write_equations_2(self)
 
-        # import equations
-        from equations import setup_ode
+        # # import equations
+        # from equations import setup_ode
 
-        ode_system = setup_ode(self)  # create ode system instance
-        results = odeint(ode_system.eqs, R, self.time, tfirst=True, args=(self,))
+        # ode_system = setup_ode(self)  # create ode system instance
+        # results = odeint(ode_system.eqs, R, self.time, tfirst=True, args=(self,))
 
-        # assign results
-        for i, r in enumerate(self.lor):
-            r.c = results[:, i]
+        # # assign results
+        # for i, r in enumerate(self.lor):
+        #     r.c = results[:, i]
 
     def __step_process__(self, r: Reservoir, i: int) -> None:
         """For debugging. Provide reservoir and step number,"""
