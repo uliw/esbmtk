@@ -1314,7 +1314,7 @@ def add_carbonate_system_1(rgs: list):
     species = rgs[0].mo.Carbon.CO2
 
     if rgs[0].mo.use_ode:
-        func =  carbonate_system_1_ode
+        func = carbonate_system_1_ode
     else:
         func = calc_carbonates_1
 
@@ -1459,11 +1459,6 @@ def add_carbonate_system_2(**kwargs) -> None:
     area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area'
     AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
 
-    if rgs[0].mo.use_ode:
-        func = carbonate_system_2_ode
-    else:
-        func = calc_carbonates_2
-
     for i, rg in enumerate(rgs):  # Setup the virtual reservoirs
 
         if rg.mo.register == "local":
@@ -1471,68 +1466,105 @@ def add_carbonate_system_2(**kwargs) -> None:
         else:
             species = __builtins__["CO2"]
 
-        ExternalCode(
-            name="cs",
-            species=species,
-            function=func,
-            ftype="cs2",
-            # datafield hold the results of the VR_no_set function
-            # provide a default values which will be use to initialize
-            # the respective datafield/
-            vr_datafields={
-                "H": rg.swc.hplus,  # 0 H+
-                "CA": rg.swc.ca,  # 1 carbonate alkalinity
-                "HCO3": rg.swc.hco3,  # 2 HCO3
-                "CO3": rg.swc.co3,  # 3 CO3
-                "CO2aq": rg.swc.co2,  # 4 CO2aq
-                "zsat": kwargs["zsat"],  # 5 zsat
-                "zcc": kwargs["zcc"],  # 6 zcc
-                "zsnow": kwargs["zsnow"],  # 7 zsnow
-                "Fburial": 0.0,  # 8 carbonate burial
-                "Fburial12": 0.0,  # 9 carbonate burial 12C
-                "diss": 0.0,  # dissolution flux
-                "Bm": 0.0,
-            },
-            function_input_data=List(
-                [
-                    rg.DIC.m,  # 0 DIC mass
-                    rg.DIC.l,  # 1 DIC light isotope mass
-                    rg.DIC.c,  # 2 DIC concentration
-                    rg.TA.m,  # 3 TA mass
-                    rg.TA.c,  # 4 TA concentration
-                    kwargs["carbonate_export_fluxes"][i].fa,  # 5
-                    area_table,  # 6
-                    area_dz_table,  # 7
-                    Csat_table,  # 8
-                    rg.DIC.v,  # 9 reservoir volume
-                ]
-            ),
-            function_params=List(
-                [
-                    rg.swc.K1,  # 0
-                    rg.swc.K2,  # 1
-                    rg.swc.KW,  # 2
-                    rg.swc.KB,  # 3
-                    rg.swc.boron,  # 4
-                    Ksp0,  # 5
-                    float(kwargs["kc"]),  # 6
-                    float(rg.volume.to("liter").magnitude),  # 7
-                    float(AD),  # 8
-                    float(abs(kwargs["zsat0"])),  # 9
-                    float(rg.swc.ca2),  # 10
-                    rg.mo.dt,  # 11
-                    float(kwargs["I_caco3"]),  # 12
-                    float(kwargs["alpha"]),  # 13
-                    float(abs(kwargs["zsat_min"])),  # 14
-                    float(abs(kwargs["zmax"])),  # 15
-                    float(abs(kwargs["z0"])),  # 16
-                    Ksp,  # 17
-                    rg.swc.hplus,
-                    kwargs["zsnow"],
-                ]
-            ),
-            register=rg,
-        )
+        if rgs[0].mo.use_ode:
+            ExternalCode(
+                name="cs",
+                species=species,
+                function=func,
+                ftype="cs2",
+                # datafield hold the results of the VR_no_set function
+                # provide a default values which will be use to initialize
+                # the respective datafield/
+                vr_datafields={
+                    "H": rg.swc.hplus,  # 0 H+
+                    "CA": rg.swc.ca,  # 1 carbonate alkalinity
+                    "HCO3": rg.swc.hco3,  # 2 HCO3
+                    "CO3": rg.swc.co3,  # 3 CO3
+                    "CO2aq": rg.swc.co2,  # 4 CO2aq
+                    "zsat": kwargs["zsat"],  # 5 zsat
+                    "zcc": kwargs["zcc"],  # 6 zcc
+                    "zsnow": kwargs["zsnow"],  # 7 zsnow
+                    "last_t": 0.0,  # t-1
+                    "kc": kwargs["kc"],  #
+                    "AD": kwargs["AD"],
+                    "zsat0": kwargs["zsat0"],
+                    "zsat_min": kwargs["zsat_min"],
+                    "zmax": kwargs["zmax"],
+                    "z0": kwargs["z0"],
+                    "I_caco3": kwargs["I_caco3"],
+                    "alpha": kwargs["alpha"],
+                    "depth_area_table": area_table,
+                    "area_dz_table": area_dz_table,
+                    "Csat_table:": Csat_table,
+                },
+                function_input_data=List(),
+                function_params=List(),
+                register=rg,
+            )
+
+        else:
+            ExternalCode(
+                name="cs",
+                species=species,
+                function=calc_carbonates_2,
+                ftype="cs2",
+                # datafield hold the results of the VR_no_set function
+                # provide a default values which will be use to initialize
+                # the respective datafield/
+                vr_datafields={
+                    "H": rg.swc.hplus,  # 0 H+
+                    "CA": rg.swc.ca,  # 1 carbonate alkalinity
+                    "HCO3": rg.swc.hco3,  # 2 HCO3
+                    "CO3": rg.swc.co3,  # 3 CO3
+                    "CO2aq": rg.swc.co2,  # 4 CO2aq
+                    "zsat": kwargs["zsat"],  # 5 zsat
+                    "zcc": kwargs["zcc"],  # 6 zcc
+                    "zsnow": kwargs["zsnow"],  # 7 zsnow
+                    "Fburial": 0.0,  # 8 carbonate burial
+                    "Fburial12": 0.0,  # 9 carbonate burial 12C
+                    "diss": 0.0,  # dissolution flux
+                    "Bm": 0.0,
+                },
+                function_input_data=List(
+                    [
+                        rg.DIC.m,  # 0 DIC mass
+                        rg.DIC.l,  # 1 DIC light isotope mass
+                        rg.DIC.c,  # 2 DIC concentration
+                        rg.TA.m,  # 3 TA mass
+                        rg.TA.c,  # 4 TA concentration
+                        kwargs["carbonate_export_fluxes"][i].fa,  # 5
+                        area_table,  # 6
+                        area_dz_table,  # 7
+                        Csat_table,  # 8
+                        rg.DIC.v,  # 9 reservoir volume
+                    ]
+                ),
+                function_params=List(
+                    [
+                        rg.swc.K1,  # 0
+                        rg.swc.K2,  # 1
+                        rg.swc.KW,  # 2
+                        rg.swc.KB,  # 3
+                        rg.swc.boron,  # 4
+                        Ksp0,  # 5
+                        float(kwargs["kc"]),  # 6
+                        float(rg.volume.to("liter").magnitude),  # 7
+                        float(AD),  # 8
+                        float(abs(kwargs["zsat0"])),  # 9
+                        float(rg.swc.ca2),  # 10
+                        rg.mo.dt,  # 11
+                        float(kwargs["I_caco3"]),  # 12
+                        float(kwargs["alpha"]),  # 13
+                        float(abs(kwargs["zsat_min"])),  # 14
+                        float(abs(kwargs["zmax"])),  # 15
+                        float(abs(kwargs["z0"])),  # 16
+                        Ksp,  # 17
+                        rg.swc.hplus,
+                        kwargs["zsnow"],
+                    ]
+                ),
+                register=rg,
+            )
         rg.has_cs2 = True
 
 
