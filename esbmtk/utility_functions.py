@@ -1306,12 +1306,17 @@ def add_carbonate_system_1(rgs: list):
 
     """
 
-    from esbmtk import ExternalCode, calc_carbonates_1
+    from esbmtk import ExternalCode, calc_carbonates_1,  calc_carbonates_1_ode
 
     # get object handle even if it defined in model namespace
     # rgs = get_object_handle(rgs)
 
     species = rgs[0].mo.Carbon.CO2
+
+    if rgs[0].mo.use_ode:
+        func = calc_carbonates_1_ode
+    else:
+        func = calc_carbonates_1
 
     for rg in rgs:
 
@@ -1319,7 +1324,7 @@ def add_carbonate_system_1(rgs: list):
             ExternalCode(
                 name="cs",
                 species=species,
-                function=calc_carbonates_1,
+                function=func,
                 ftype="cs1",
                 vr_datafields={
                     "H": rg.swc.hplus,  # 0
@@ -1380,7 +1385,7 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     """
 
-    from esbmtk import ExternalCode, calc_carbonates_2
+    from esbmtk import ExternalCode, calc_carbonates_2, calc_carbonates_2_ode
 
     # list of known keywords
     lkk: dict = {
@@ -1454,6 +1459,11 @@ def add_carbonate_system_2(**kwargs) -> None:
     area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area'
     AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
 
+     if rgs[0].mo.use_ode:
+        func = calc_carbonates_2_ode
+    else:
+        func = calc_carbonates_2
+    
     for i, rg in enumerate(rgs):  # Setup the virtual reservoirs
 
         if rg.mo.register == "local":
@@ -1464,7 +1474,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         ExternalCode(
             name="cs",
             species=species,
-            function=calc_carbonates_2,
+            function=func,
             ftype="cs2",
             # datafield hold the results of the VR_no_set function
             # provide a default values which will be use to initialize
