@@ -1458,3 +1458,4 @@ class AirSeaExchange(esbmtkBase):
 
         self.mo = self.species.mo
         self.model = self.mo
+        self.ctype = "gas_exchange"
