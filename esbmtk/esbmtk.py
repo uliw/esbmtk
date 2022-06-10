@@ -737,6 +737,7 @@ class Model(esbmtkBase):
 
         # build equation file
         R = write_equations_2(self)
+        self.R = R
 
         # import equations
         from equations import setup_ode
@@ -1123,6 +1124,7 @@ class ReservoirBase(esbmtkBase):
     def get_process_args(self):
         """Provide the data structure which needs to be passed to the numba solver"""
 
+        print(f"Name = {self.full_name}")
         data = List(
             [
                 self.m,  # 0
