@@ -270,6 +270,11 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
             y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
 
+        if obj.isotopes:
+            ptype = 1
+        else:
+            ptype = 2
+
     elif isinstance(obj, Signal):
         # use the same units as the associated flux
         yl = (obj.data.m * model.f_unit).to(obj.data.plt_units).magnitude
