@@ -8,7 +8,7 @@ if tp.TYPE_CHECKING:
 def write_equations_2(M: Model) -> list:
     """Write file that contains the ode-equations for M
     Returns the list R that contains the initial condition
-    for each reserevoir
+    for each reservoir
 
     """
     from esbmtk import Model, ReservoirGroup
@@ -16,15 +16,9 @@ def write_equations_2(M: Model) -> list:
 
     # get list of initial conditions
     R = []
-    for e in M.lor:
+    for e in M.lic:
         R.append(e.c[0])
 
-    # get list of unique Fluxes
-    ufl: set = set()
-    for f in M.lof:
-        ufl.add(f)
-
-    ufl: list = list(ufl)
     # get pathlib object
     fn: str = "equations.py"  # file name
     cwd: pl.Path = pl.Path.cwd()  # get the current working directory
@@ -57,6 +51,8 @@ class setup_ode():
         '''Auto generated esbmtk equations do not edit
         '''
 
+        from esbmtk import carbonate_system_1_ode, carbonate_system_2_ode
+    
         # flux equations
 """
 
@@ -71,17 +67,26 @@ class setup_ode():
 
         eqs.write(header)
 
-        for flux in ufl:  # get flux expressions
-            fex = ""
-            fex = get_flux(flux, M)
-            fn = flux.full_name.replace(".", "_")
-            eqs.write(f"{ind2}{fn} = {fex}\n")
+        eqs.write(f"{ind2}{M.name} = M\n")
+        
+        flist = list()
+        for flux in M.lof:  # loop over fluxes
+
+            # fluces blong to at least 2 reservoirs, so we need to avoid duplication
+            # we cannot use a set, since we need to preserv order
+            if flux not in flist:
+                fex = ""
+                fex = get_flux(flux, M)
+                fn = flux.full_name.replace(".", "_")
+                eqs.write(f"{ind2}{fn} = {fex}\n")
+                flist.append(flux)
 
         message = (
-            f"\n{ind2}'''Carbonate System 1, has no return values, it just calculates\n"
-            f"{ind2}   values that are used elsewhere.\n\n"
-            f"{ind2}   Carbonate System 2, returns the carbonate burial/dissolution\n"
-            f"{ind2}   flux for DIC\n"
+            f"\n{ind2}'''\n"
+            f"{ind2}Carbonate System 1, has no return values, it just calculates\n"
+            f"{ind2}values that are used elsewhere.\n\n"
+            f"{ind2}Carbonate System 2, returns the carbonate burial/dissolution\n"
+            f"{ind2}flux for DIC\n"
             f"{ind2}'''\n\n"
         )
 
@@ -89,12 +94,22 @@ class setup_ode():
         # Setup carbonate chemistry calculations
         for r in M.lpc_r:
             if r.ftype == "cs1":
-                eqs.write(f"{ind2}{r.full_name}  # cs1 \n")
+                # carbonate_system_1_ode(rg: ReservoirGroup
+                eqs.write(
+                    f"{ind2}carbonate_system_1_ode({r.parent.full_name}, "
+                    f"R[{M.lic.index(r.parent.DIC)}], "
+                    f"R[{M.lic.index(r.parent.TA)}])  # cs1 \n"
+                )
             elif r.ftype == "cs2":
                 fn_dic = f"{r.register.DIC.full_name}.burial".replace(".", "_")
                 fn_ta = f"{r.register.TA.full_name}.burial".replace(".", "_")
-                eqs.write(f"{ind2}{fn_dic} = {r.full_name}  # cs2\n")
-                eqs.write(f"{ind2}{fn_ta} = {fn_dic} * 2\n")
+                influx = r.parent.cs.ref_flux[0].full_name.replace(".", "_")
+                eqs.write(
+                    f"{ind2}{fn_dic} = carbonate_system_2_ode(t, {r.parent.full_name}, {influx}, "
+                    f"R[{M.lic.index(r.parent.DIC)}], "
+                    f"R[{M.lic.index(r.parent.TA)}])  # cs2 \n"
+                )
+                eqs.write(f"{ind2}{fn_ta} = {fn_dic} * 2  # cs2\n")
             else:
                 raise ValueError(f"{r.ftype} is undefined")
 
@@ -116,8 +131,9 @@ class setup_ode():
             # check if reservoir requires carbonate burial fluxes
             if isinstance(r.parent, ReservoirGroup):
                 if r.parent.has_cs2:
-                    fn = f"{r.full_name}.burial".replace(".", "_")
-                    fex = f"{fex}{ind3}- {fn}\n"
+                    if r.species.name == "DIC" or r.species.name == "TA":
+                        fn = f"{r.full_name}.burial".replace(".", "_")
+                        fex = f"{fex}{ind3}- {fn}\n"
 
             eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
             rel = rel + f"{name}, "
@@ -149,7 +165,7 @@ def get_flux(flux: Flux, M: Model) -> str:
             f"{cfn}.scale * R[{ici}]"  # {c.id} scale with conc in {c.source.full_name}"
         )
         ex = check_signal_2(ex, c)
-        ex = ex + "  # fixed rate"
+        ex = ex + "  # scale with concentration"
 
     elif c.ctype == "scale_with_mass":
         ici = M.lic.index(c.source)  # index into initial conditions
@@ -159,25 +175,20 @@ def get_flux(flux: Flux, M: Model) -> str:
 
     elif c.ctype == "scale_with_flux":
         p = flux.parent.ref_flux.parent
-        ici = M.lic.index(c.source)
-
-        if flux.parent.ref_flux.parent.ctype == "scale_with_concentration":
-            ex = f"{cfn}.scale * {p.full_name}.scale * R[{ici}]"
-
-        elif flux.parent.ref_flux.parent.ctype == "scale_with_mass":
-            ex = f"{cfn}.scale * {p.full_name}.scale * {p.source.full_name}.volume * R[{ici}]"
-        # else:
-        #     raise ValueError(f"{flux.parent.ref_flux.parent.ctype} is not implmented")
+        ex = f"{cfn}.scale * {p.full_name.replace('.', '_')}__F"
         ex = check_signal_2(ex, c)
-        ex = ex + "  # scale with concentration"
+        ex = ex + "  # scale with flux"
 
     elif c.ctype == "weathering":
-        ex = f"{cfn}.scale * ({cfn}.reservoir_ref.c/{cfn}.pco2_0) **  {cfn}.ex"
+        # c.reservoir_ref.full_name needs to be replaced with stateful reference or initial conditions?
+        # how do we fine the correct R[] ?
+        ici = M.lic.index(c.reservoir_ref) 
+        ex = f"{cfn}.scale * (R[{ici}]/{cfn}.pco2_0) **  {cfn}.ex"
         ex = check_signal_2(ex, c)
         ex = ex + "  # weathering"
 
     elif c.ctype == "gas_exchange":  # Gasexchange
-        ex = f"{flux.full_name}._PGex(t)"
+        ex = f"{flux.full_name}._PGex.ode()"
         ex = check_signal_2(ex, c)
         ex = ex + "  # gas_exchange"
 

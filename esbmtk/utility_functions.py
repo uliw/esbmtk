@@ -1455,6 +1455,7 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     # C saturation(z) after Boudreau 2010
     Csat_table: np.ndarray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
+    print(f"len Csat = {len(Csat_table)}")
     area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
     area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area'
     AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
@@ -1470,7 +1471,7 @@ def add_carbonate_system_2(**kwargs) -> None:
             ExternalCode(
                 name="cs",
                 species=species,
-                function=func,
+                function="None",
                 ftype="cs2",
                 # datafield hold the results of the VR_no_set function
                 # provide a default values which will be use to initialize
@@ -1486,17 +1487,19 @@ def add_carbonate_system_2(**kwargs) -> None:
                     "zsnow": kwargs["zsnow"],  # 7 zsnow
                     "last_t": 0.0,  # t-1
                     "kc": kwargs["kc"],  #
-                    "AD": kwargs["AD"],
                     "zsat0": kwargs["zsat0"],
                     "zsat_min": kwargs["zsat_min"],
                     "zmax": kwargs["zmax"],
                     "z0": kwargs["z0"],
                     "I_caco3": kwargs["I_caco3"],
                     "alpha": kwargs["alpha"],
+                    "AD": AD,
                     "depth_area_table": area_table,
                     "area_dz_table": area_dz_table,
-                    "Csat_table:": Csat_table,
+                    "Csat_table": Csat_table,
+                    "Bm": 0.0,
                 },
+                ref_flux=kwargs["carbonate_export_fluxes"],
                 function_input_data=List(),
                 function_params=List(),
                 register=rg,

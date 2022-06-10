@@ -19,22 +19,17 @@
 
 import typing as tp
 import numpy as np
-from numba.typed import List
+from esbmtk import ReservoirGroup, Flux
 
-if tp.TYPE_CHECKING:
-    from .esbmtk import Reservoir, Model
-    from .extended_classes import Reservoir
+#if tp.TYPE_CHECKING:
+#    from .esbmtk import Reservoir
 
 
-def carbonate_system_1_ode(i, input_data: list, vr_data: List, params: List) -> None:
+def carbonate_system_1_ode(rg: ReservoirGroup, dic: float, ta: float) -> None:
     """Calculates and returns the carbonate concentrations and saturation state
-     at the ith time-step of the model.
-
-    The function assumes that vr_data will be in the following order:
-        [H+, CA, HCO3, CO3, CO2(aq), omega]
+     for the given reservoirgroup
 
     LIMITATIONS:
-    - This in used in conjunction with ExternalCode objects!
     - Assumes all concentrations are in mol/kg
     - Assumes your Model is in mol/kg ! Otherwise, DIC and TA updating will not
     be correct.
@@ -46,18 +41,12 @@ def carbonate_system_1_ode(i, input_data: list, vr_data: List, params: List) -> 
     Author: M. Niazi & T. Tsan, 2021, with modifications by U. Wortmann 2022
     """
 
-    k1 = params[0]  # K1
-    k2 = params[1]  # K2
-    KW = params[2]  # KW
-    KB = params[3]  # KB
-    boron = params[4]  # boron
-    ca2 = params[5]  # Ca2+
-    ksp = params[6]  # Ksp
-    hplus: float = params[7]  # hplus from last timestep
-
-    dic: float = input_data[0]
-    ta: float = input_data[1]
-    hplus: float = input_data[2]
+    k1 = rg.swc.K1  # K1
+    k2 = rg.swc.K2  # K2
+    KW = rg.swc.KW  # KW
+    KB = rg.swc.KB  # KB
+    boron = rg.swc.boron  # boron
+    hplus = rg.cs.H  # hlus from last timestep
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
@@ -84,30 +73,22 @@ def carbonate_system_1_ode(i, input_data: list, vr_data: List, params: List) -> 
     """
     #  co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
     co2aq: float = dic - hco3 - co3
-    # omega: float = ca2 * co3 / ksp
 
-    # this may not be necessary to keep all data. maybe move to params
-    vr_data[0][i] = hplus
-    vr_data[1][i] = ca
-    vr_data[2][i] = hco3
-    vr_data[3][i] = co3
-    vr_data[4][i] = co2aq
-    vr_data[5][i] = oh
-    vr_data[5][i] = boh4
-    params[7] = hplus  # preserve state of hplus
-    # vr_data[5][i] = omega
+    rg.cs.H = hplus
+    rg.cs.CA = ca
+    rg.cs.HCO3 = hco3
+    rg.cs.CO3 = co3
+    rg.cs.CO2a = co2aq
+    rg.cs.OH = oh
+    rg.cs.BOH4 = boh4
 
 
-def carbonate_system_2_ode(i: int, input_data: List, vr_data: List, params: List) -> None:
+def carbonate_system_2_ode(t, rg: ReservoirGroup, Bm: Flux, dic:float, ta:float) -> float:
     """Calculates and returns the carbonate concentrations and carbonate compensation
     depth (zcc) at the ith time-step of the model.
 
-    The function assumes that vr_data will be in the following order:
-        [H+, CA, HCO3, CO3, CO2(aq), zsat, zcc, zsnow, Fburial,
-        B, BNS, BDS_under, BDS_resp, BDS, BCC, BPDC, BD,omega]
 
     LIMITATIONS:
-    - This in used in conjunction with ExternalCode objects!
     - Assumes all concentrations are in mol/kg
     - Assumes your Model is in mol/kg ! Otherwise, DIC and TA updating will not
     be correct.
@@ -116,55 +97,36 @@ def carbonate_system_2_ode(i: int, input_data: List, vr_data: List, params: List
     Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
     Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
 
-    See add_carbonate_system_2 in utility_functions.py on how to call this function.
-    The input data is a follows
-
-        reservoir DIC.m,  # 0
-        reservoir DIC.l,  # 1
-        reservoir DIC.c,  # 2
-        reservoir TA.m,  # 3 TA mass
-        reservoir.TA.c,  # 4 TA concentration
-        Export_flux.fa,  # 5
-        area_table,  # 6
-        area_dz_table,  # 7
-        Csat_table,  # 8
-        reservoir.DIC.v,  # 9 reservoir volume
 
     Author: M. Niazi & T. Tsan, 2021
     """
 
     # Parameters
-    k1 = params[0]
-    k2 = params[1]
-    KW = params[2]
-    KB = params[3]
-    boron = params[4]
-    ksp0 = params[5]
-    kc = params[6]
-    volume = params[7]
-    AD = params[8]
-    zsat0 = int(abs(params[9]))
-    ca2 = params[10]
-    dt = params[11]
-    I_caco3 = params[12]
-    alpha = params[13]
-    zsat_min = int(abs(params[14]))
-    zmax = int(abs(params[15]))
-    z0 = int(abs(params[16]))
-    ksp = params[17]
-    hplus = params[18]  # previous h+ concentrartion
-    zsnow = params[19]  # previous zsnow
+    k1 = rg.swc.K1  # K1
+    k2 = rg.swc.K2  # K2
+    KW = rg.swc.KW  # KW
+    KB = rg.swc.KB  # KB
+    ksp0 = rg.swc.Ksp0
+    ca2 = rg.swc.ca2  # Ca2+
+    boron = rg.swc.boron  # boron
 
-    # Data
-    dic: float = input_data[2]  # DIC concentration [mol/kg]
-    ta: float = input_data[4]  # TA concentration [mol/kg]
-    Bm: float = input_data[5]  # Carbonate Export Flux [mol/yr]
-    B12: float = input_data[5]  # Carbonate Export Flux light isotope
-    v: float = input_data[9]  # volume
-    # lookup tables
-    depth_area_table: np.ndarray = input_data[6]  # depth look-up table
-    area_dz_table: np.ndarray = input_data[7]  # area_dz table
-    Csat_table: np.ndarray = input_data[8]  # Csat table
+    # concentration
+    hplus = rg.cs.H  # hplus from last timestep
+  
+    # still missing parameters
+    last_t = rg.cs.last_t
+    kc = rg.cs.kc
+    AD = rg.cs.AD
+    zsat0 = rg.cs.zsat0
+    I_caco3 = rg.cs.I_caco3
+    alpha = rg.cs.alpha
+    zsat_min = int(abs(rg.cs.zsat_min))
+    zmax = int(abs(rg.cs.zmax))
+    z0 = int(abs(rg.cs.z0))
+    zsnow = rg.cs.zsnow  # previous zsnow
+    depth_area_table = rg.cs.depth_area_table
+    area_dz_table = rg.cs.area_dz_table
+    Csat_table = rg.cs.Csat_table
 
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus
@@ -236,7 +198,7 @@ def carbonate_system_2_ode(i: int, input_data: List, vr_data: List, params: List
         area_p = area_dz_table[zcc : int(zsnow)]
         BPDC = kc * area_p.dot(diff)
         # eq 4 dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
-        zsnow = zsnow - BPDC / (area_dz_table[int(zsnow)] * I_caco3) * dt
+        zsnow = zsnow - BPDC / (area_dz_table[int(zsnow)] * I_caco3) * t - last_t
 
     else:  # zcc > zsnow
         # there is no carbonate below zsnow, so BPDC = 0
@@ -247,51 +209,17 @@ def carbonate_system_2_ode(i: int, input_data: List, vr_data: List, params: List
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = Bm - BD
     # Fburial12 = Fburial * input_data[1][i - 1] / input_data[0][i - 1]
-    diss = (Bm - Fburial) * dt  # dissolution flux
     # diss12 = (B12 - Fburial12) * dt  # dissolution flux light isotope
 
-    # # print("{Fburial}.format(")
-    # print(Bm)
-    # print(Fburial)
-    # print(diss)
-    # print()
-    # # print('df ={:.2e}\n'.format(diss/dt))
-
-    """ Now that the fluxes are known we need to update the reservoirs.
-    The concentration in the in the DIC (and TA) of this box are
-    DIC.m[i] + Export Flux - Burial Flux, where the isotope ratio
-    the Export flux is determined by the overlying box, and the isotope ratio
-    of the burial flux is determined by the isotope ratio of this box
-    
-
-    # Update DIC in the deep box
-    input_data[0][i] = input_data[0][i] + diss  # DIC
-    input_data[1][i] = input_data[1][i] + diss12  # 12C
-    input_data[2][i] = input_data[0][i] / v  # DIC concentration
-
-    # Update TA in deep box
-    input_data[3][i] = input_data[3][i] + 2 * diss  # TA
-    input_data[4][i] = input_data[3][i] / v  # TA concentration
-
-    we needto return the relevant fluxes, so that they can be used in the equation
-    systems
-    """
-
     # copy results into datafields
-    vr_data[0][i] = hplus  # 0
-    vr_data[1][i] = ca  # 1
-    vr_data[2][i] = hco3  # 2
-    vr_data[3][i] = co3  # 3
-    vr_data[4][i] = co2aq  # 4
-    vr_data[5][i] = zsat  # 5
-    vr_data[6][i] = zcc  # 6
-    vr_data[7][i] = zsnow  # 7
-    vr_data[8][i] = Fburial  # 8
-    # vr_data[9][i] = Fburial12  # 9
-    vr_data[10][i] = diss / dt  # 9
-    vr_data[11][i] = Bm  # 9
+    rg.cs.H = hplus  # 0
+    rg.cs.CA = ca  # 1
+    rg.cs.HCO3 = hco3  # 2
+    rg.cs.CO3 = co3  # 3
+    rg.cs.CO2aq = co2aq  # 4
+    rg.cs.zsat = zsat  # 5
+    rg.cs.zcc = zcc  # 6
+    rg.cs.zsnow = zsnow  # 7
+    rg.cs.last_t = t
 
-    params[18] = hplus  # previous h+ concentrartion
-    params[19] = zsnow  # previous zsnow
-
-    return Fburial, 2 * Fburial
+    return Fburial

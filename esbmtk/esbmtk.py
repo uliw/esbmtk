@@ -654,7 +654,6 @@ class Model(esbmtkBase):
                 print(f"Restarting model")
                 self.restart()
 
-            
             print("Merge results")
             self.merge_temp_results()
             self.steps = self.number_of_datapoints
@@ -671,7 +670,7 @@ class Model(esbmtkBase):
         duration: float = process_time() - start
         wcd = time.time() - wts
         print(f"\n Execution took {duration:.2e} cpu seconds, wt = {wcd:.2e}\n")
-        
+
         process = psutil.Process(os.getpid())
         print(f"This run used {process.memory_info().rss/1e9:.2f} Gbytes of memory \n")
 
@@ -738,15 +737,15 @@ class Model(esbmtkBase):
         # build equation file
         R = write_equations_2(self)
 
-        # # import equations
-        # from equations import setup_ode
+        # import equations
+        from equations import setup_ode
 
-        # ode_system = setup_ode(self)  # create ode system instance
-        # results = odeint(ode_system.eqs, R, self.time, tfirst=True, args=(self,))
+        ode_system = setup_ode(self)  # create ode system instance
+        results = odeint(ode_system.eqs, R, self.time, tfirst=True, args=(self,))
 
-        # # assign results
-        # for i, r in enumerate(self.lor):
-        #     r.c = results[:, i]
+        # assign results
+        for i, r in enumerate(self.lor):
+            r.c = results[:, i]
 
     def __step_process__(self, r: Reservoir, i: int) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -2144,6 +2143,7 @@ class SourceSink(esbmtkBase):
             self.display_precision = self.mo.display_precision
 
         self.__register_name_new__()
+        self.mo.lic.remove(self)
 
     @property
     def delta(self):

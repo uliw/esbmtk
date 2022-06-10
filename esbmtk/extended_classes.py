@@ -1214,6 +1214,7 @@ class Reservoir_no_set(ReservoirBase):
             "function_params": [List(), (List, str)],
             "geometry": ["None", (list, str)],
             "alias_list": ["None", (list, str)],
+            "ref_flux": ["None", (list, str)],
         }
 
         # provide a list of absolutely required keywords
@@ -1337,7 +1338,7 @@ class ExternalCode(Reservoir_no_set):
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
             "groupname": ["None", (str)],
-            "function": ["None", (col.Callable)],
+            "function": ["None", (col.Callable, str)],
             "display_precision": [0.01, (int, float)],
             "register": [
                 "None",
@@ -1352,6 +1353,7 @@ class ExternalCode(Reservoir_no_set):
             "geometry": ["None", (List, str)],
             "alias_list": ["None", (List, str)],
             "ftype": ["None", (str)],
+            "ref_flux": ["None", (list, str)],
         }
 
         # provide a list of absolutely required keywords
@@ -1375,30 +1377,40 @@ class ExternalCode(Reservoir_no_set):
         name = f"{self.full_name}_generic_function".replace(".", "_")
         logging.info(f"creating {name}")
 
-        # initialize data fields
-        self.vr_data = List()
-        for e in self.vr_datafields.values():
-            self.vr_data.append(np.full(self.mo.steps, e, dtype=float))
-
-        # extract alias names
         self.alias_list = list(self.vr_datafields.keys())
 
-        self.gfh = GenericFunction(
-            name=name,
-            function=self.function,
-            input_data=self.function_input_data,
-            vr_data=self.vr_data,
-            function_params=self.function_params,
-            model=self.species.mo,
-            register=self.register,
-            ftype=self.ftype,
-        )
+        # initialize data fields
+
+        if self.mo.use_ode:
+            self.vr_data = list()
+            for key, value in self.vr_datafields.items():
+                self.vr_data.append(value)
+        else:
+            self.vr_data = List()
+            for e in self.vr_datafields.values():
+                self.vr_data.append(np.full(self.mo.steps, e, dtype=float))
+
+            self.gfh = GenericFunction(
+                name=name,
+                function=self.function,
+                input_data=self.function_input_data,
+                vr_data=self.vr_data,
+                function_params=self.function_params,
+                model=self.species.mo,
+                register=self.register,
+                ftype=self.ftype,
+            )
+            # add the function handle to the list of function to be executed
+
+        if self.mo.use_ode:
+            self.mo.lpc_r.append(self)
+        else:
+            self.mo.lpc_r.append(self.gfh)
 
         self.mo.lor.remove(self)
         # but lets keep track of  virtual reservoir in lvr.
         self.mo.lvr.append(self)
-        # add the function handle to the list of function to be executed
-        self.mo.lpc_r.append(self.gfh)
+
         # print(f"added {self.name} to lvr 2")
 
         # create temporary memory if we use multiple solver iterations
@@ -1413,6 +1425,7 @@ class ExternalCode(Reservoir_no_set):
         """Register  alialises for each vr_datafield"""
 
         for i, a in enumerate(self.alias_list):
+            # print(f"{a} = {self.vr_data[i]}")
             setattr(self, a, self.vr_data[i])
 
     def append(self, **kwargs) -> None:
@@ -1810,6 +1823,7 @@ class GasReservoir(ReservoirBase):
             self.vc = np.empty(0)
 
         self.mo.lor.append(self)  # add fthis reservoir to the model
+        self.mo.lic.append(self)  # reservoir type object list
         # register instance name in global name space
 
         # register this group object in the global namespace

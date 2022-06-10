@@ -809,17 +809,17 @@ class RateConstant(Process):
                 (str, list, Reservoir, int, float, np.float64, np.ndarray),
             ],
             "right": ["None", (str, list, Reservoir, int, float, np.ndarray)],
-            "gas": ["None", (str, Reservoir, GasReservoir, Source, Sink, np.ndarray)],
-            "liquid": ["None", (Reservoir, Source, Sink)],
+            "gas": ["None", (str, Reservoir, GasReservoir, Source, Sink, np.ndarray, float)],
+            "liquid": ["None", (Reservoir, Source, Sink, float)],
             "solubility": ["None", (str, int, float, np.float64)],
             "piston_velocity": ["None", (str, int, float, np.float64)],
             "water_vapor_pressure": ["None", (str, int, float, np.float64)],
-            "ref_species": ["None", (str, np.ndarray)],
+            "ref_species": ["None", (str, np.ndarray, float)],
             "seawaterconstants": ["None", (str, SeawaterConstants)],
             "isotopes": [False, (bool)],
             "function_reference": ["None", (str, col.Callable)],
             "f_0": ["None", (str, Q_, float, int)],
-            "pco2_0": ["None", (str, Q_)],
+            "pco2_0": ["280 ppm", (str, Q_, float)],
             "ex": [0.2, (int, float)],
             "source": ["None", (str, Source, GasReservoir)],
         }
@@ -907,7 +907,10 @@ class weathering(RateConstant):
         elif isinstance(self.f_0, Q_):
             self.f_0: float = self.f_0.to(self.mo.f_unit).magnitude
 
-        self.pco2_0 = Q_(self.pco2_0).to("ppm").magnitude * 1e-6
+        if isinstance(self.pco2_0, str):
+            self.pco2_0 = Q_(self.pco2_0).to("ppm").magnitude * 1e-6
+        elif isinstance(self.pco2_0, Q_):
+            self.pco2_0 = self.pco2_0.magnitude.to("ppm").magnitude * 1e-6
 
         # if self.delta == "None" and  self.source.isotopes == False:
         #      self.fixed = True
@@ -1408,6 +1411,17 @@ class GasExchange(RateConstant):
         self.a_u = self.seawaterconstants.a_u
         self.rvalue = self.liquid.sp.r
         self.volume = self.gas.volume
+
+    def ode(self) -> None:
+
+        f = self.scale * (  # area in m^2
+            self.gas.c  # Atmosphere
+            * (1 - self.p_H2O)  # p_H2O
+            * self.solubility  # SA_co2 = mol/(m^3 atm)
+            - self.ref_species * 1000  # [CO2]aq mol
+        )
+        
+        return f
 
     def __without_isotopes__(self, i: int) -> None:
 
