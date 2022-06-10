@@ -68,7 +68,7 @@ class setup_ode():
         eqs.write(header)
 
         eqs.write(f"{ind2}{M.name} = M\n")
-        
+
         flist = list()
         for flux in M.lof:  # loop over fluxes
 
@@ -79,6 +79,7 @@ class setup_ode():
                 fex = get_flux(flux, M)
                 fn = flux.full_name.replace(".", "_")
                 eqs.write(f"{ind2}{fn} = {fex}\n")
+                eqs.write(f"{ind2}print({fn})")
                 flist.append(flux)
 
         message = (
@@ -135,12 +136,24 @@ class setup_ode():
                         fn = f"{r.full_name}.burial".replace(".", "_")
                         fex = f"{fex}{ind3}- {fn}\n"
 
-            eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
+            # avoid reservoirs without active fluxes
+            if len(r.lof) > 0:
+                eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
+            else:
+                eqs.write(f"{ind2}{name} = R[{M.lic.index(r)}]\n"),
+
+            # but we need to return the full set
             rel = rel + f"{name}, "
 
         eqs.write(f"{ind2}self.i += 1\n")
         eqs.write(f"{ind2}self.last_t = t\n")
         eqs.write(f"{ind2}return [{rel}]\n")
+
+        if len(R) != len(rel.split(",")) - 1:
+            raise ValueError(
+                f"number of initial conditions ({len(R)})"
+                f"does not match number of return values ({len(rel.split(','))-1}')"
+            )
 
     return R
 
@@ -182,8 +195,8 @@ def get_flux(flux: Flux, M: Model) -> str:
     elif c.ctype == "weathering":
         # c.reservoir_ref.full_name needs to be replaced with stateful reference or initial conditions?
         # how do we fine the correct R[] ?
-        ici = M.lic.index(c.reservoir_ref) 
-        ex = f"{cfn}.scale * (R[{ici}]/{cfn}.pco2_0) **  {cfn}.ex"
+        ici = M.lic.index(c.reservoir_ref)
+        ex = f"{cfn}.rate * {cfn}.scale * (R[{ici}]/{cfn}.pco2_0) **  {cfn}.ex"
         ex = check_signal_2(ex, c)
         ex = ex + "  # weathering"
 
