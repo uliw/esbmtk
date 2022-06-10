@@ -318,7 +318,7 @@ class Connect(esbmtkBase):
             "solubility": ["None", (str, int, float)],
             "area": ["None", (str, int, float)],
             "ex": [1, (int, float)],
-            "pco2_0": ["None", (str, Q_)],
+            "pco2_0": ["280 ppm", (str, Q_)],
             "piston_velocity": ["None", (str, int, float)],
             "function_ref": ["None", (str, callable)],
             "save_flux_data": ["None", (bool, str)],
@@ -343,6 +343,11 @@ class Connect(esbmtkBase):
         self.r1: (Process, Reservoir) = self.source
         self.r2: (Process, Reservoir) = self.sink
         self.parent = self.register
+
+        if isinstance(self.pco2_0, str):
+            self.pco2_0 = Q_(self.pco2_0).to("ppm").magnitude * 1e-6
+        elif isinstance(self.pco2_0, Q_):
+            self.pco2_0 = self.pco2_0.magnitude.to("ppm").magnitude * 1e-6
 
         if "pl" in kwargs:
             self.lop: list[Process] = self.pl
@@ -443,6 +448,8 @@ class Connect(esbmtkBase):
 
         """
 
+        from esbmtk import ReservoirGroup, Source, SourceGroup
+
         # same species?
         if self.sink.species.name == self.source.species.name:
             self.name = f"{self.source.species.name}"
@@ -450,8 +457,28 @@ class Connect(esbmtkBase):
             self.name = f"{self.source.species.name}_to_{self.sink.species.name}"
 
         # Connection by itself
-        if not isinstance(self.parent, ConnectionGroup):
-            self.name = f"C_{self.source.name}_to_{self.sink.name}_{self.name}"
+        if not isinstance(self.parent, ConnectionGroup):  # manual connection
+            if isinstance(self.source.parent, ReservoirGroup):
+                so = self.source.parent.name
+            elif isinstance(self.source.parent, Source):
+                so = self.source.parent.name
+            elif isinstance(self.source.parent, SourceGroup):
+                so = self.source.parent.name
+            else:
+                so = self.source.name
+
+            if isinstance(self.sink.parent, ReservoirGroup):
+                si = self.sink.parent.name
+            else:
+                si = self.sink.name
+                
+            self.name = f"C_{so}_to_{si}_{self.source.sp.name}"
+        else:
+            # same species?
+            if self.sink.species.name == self.source.species.name:
+                self.name = f"{self.source.species.name}"
+            else:
+                self.name = f"{self.source.species.name}_to_{self.sink.species.name}"
 
         # id set?
         if self.id != "None":
@@ -463,9 +490,9 @@ class Connect(esbmtkBase):
                 self.name = f"{self.name}_{self.id}"
 
         # always overide name with id for manual connections
-        if not isinstance(self.parent, ConnectionGroup):
-            if self.id != "None":
-                self.name = f"{self.id}"
+        # if not isinstance(self.parent, ConnectionGroup):
+        #     if self.id != "None":
+        #         self.name = f"{self.source.name}_{self.id}_{self.sp.name}"
 
     def update(self, **kwargs):
         """Update connection properties. This will delete existing processes
