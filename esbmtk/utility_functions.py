@@ -1311,12 +1311,18 @@ def add_carbonate_system_1(rgs: list):
 
     """
 
-    from esbmtk import ExternalCode, calc_carbonates_1, carbonate_system_1_ode
+    from esbmtk import (
+        ExternalCode,
+        calc_carbonates_1,
+        carbonate_system_1_ode,
+        Reservoir,
+    )
 
     # get object handle even if it defined in model namespace
     # rgs = get_object_handle(rgs)
 
-    species = rgs[0].mo.Carbon.CO2
+    model = rgs[0].mo
+    species = model.Carbon.CO2
 
     if rgs[0].mo.use_ode:
         func = carbonate_system_1_ode
@@ -1326,7 +1332,7 @@ def add_carbonate_system_1(rgs: list):
     for rg in rgs:
 
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):
-            ExternalCode(
+            ec = ExternalCode(
                 name="cs",
                 species=species,
                 function=func,
@@ -1353,9 +1359,21 @@ def add_carbonate_system_1(rgs: list):
                         rg.swc.hplus,  #
                     ]
                 ),
+                return_values="H CA HCO3 CO3 CO2aq OH BOH".split(" "),
                 register=rg,
             )
             rg.has_cs1 = True
+
+            if model.use_ode:
+                for n in ec.return_values:
+                    rt = Reservoir(
+                        name=n,
+                        species=getattr(model, n),
+                        concentration=ec.vr_datafields[n],
+                        register=rg,
+                        volume=rg.volume,
+                    )
+                    rg.lor.append(rt)
         else:
             raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
