@@ -39,7 +39,7 @@ def get_initial_conditions(M: Model) -> tuple[list, list, list, list]:
 
     ipl = list(set(M.lic).difference(M.lor))
 
-    icl = icl.append(ipl)
+    icl = icl.append(ipl)q
     M.lic.append(ipl)
 
     return R, icl, cpl, ipl
