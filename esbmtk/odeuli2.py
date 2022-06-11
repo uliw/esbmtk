@@ -5,23 +5,47 @@ if tp.TYPE_CHECKING:
     from esbmtk import Flux, Reservoir, Model, Connection, Connect
 
 
-def get_initial_conditions(M: Model) -> tuple[list[float], list]:
-    """get list of initial conditions. Make sure we do not add
-    reserevoirs without fluxes
+def get_initial_conditions(M: Model) -> tuple[list, list, list, list]:
+    """get list of initial conditions. THis list needs to match
+    the number of equations. We need to consider 3 types reservoirs:
+
+    1) Reservoirs that change as a result of physical fluxes
+       i.e. r.lof > 0. These require a flux statements and a
+       reservoir equation.
+
+    2) Reservoirs that do not have active fluxes but are computed
+       as a tracer, i.e.. HCO3. These only require a reservoir
+       equation
+
+    3) Reservoirs that do not change but are used as input. Those
+       should not happen in a well formed model, but we cannot
+       exclude the possibility. In this case, there is no flux
+       equation, and we state that dR/dt = 0
 
     """
 
-    R = []
-    ic_index = []
+    R = []  # list of initial conditions
+    icl: list = []  # list of reservoirs that depend on fluxes
+    cpl: list = []  # list of reservoirs that are computed
+    ipl: list = []  # list of static reservoirs that serve as input
+
     for r in M.lic:
         if len(r.lof) > 0:
             R.append(r.c[0])
-            ic_index.append(r)
+            icl.append(r)
+        else:
+            R.append(r.c[0])
+            cpl.append(r)
 
-    return R, ic_index
+    ipl = list(set(M.lic).difference(M.lor))
+
+    icl = icl.append(ipl)
+    M.lic.append(ipl)
+
+    return R, icl, cpl, ipl
 
 
-def write_equations_2(M: Model, R: list[float], ic_index: list) -> list:
+def write_equations_2(M: Model, R: list[float], icl: list, cpl: list, ipl: list) -> list:
     """Write file that contains the ode-equations for M
     Returns the list R that contains the initial condition
     for each reservoir
@@ -81,55 +105,34 @@ class setup_ode():
         eqs.write(f"{ind2}{M.name} = M\n")
 
         flist = list()
+
+        sep = "# ---------------- write all flux equations ------------------- #"
+        eqs.write(f"\n{sep}\n")
+
         for flux in M.lof:  # loop over fluxes
 
             # fluces blong to at least 2 reservoirs, so we need to avoid duplication
             # we cannot use a set, since we need to preserv order
             if flux not in flist:
                 fex = ""
-                fex = get_flux(flux, M, R, ic_index)
+                fex = get_flux(flux, M, R, icl)
                 fn = flux.full_name.replace(".", "_")
                 eqs.write(f"{ind2}{fn} = {fex}\n")
-                # eqs.write(f"{ind2}print({fn})")
                 flist.append(flux)
 
-        message = (
-            f"\n{ind2}'''\n"
-            f"{ind2}Carbonate System 1, has no return values, it just calculates\n"
-            f"{ind2}values that are used elsewhere.\n\n"
-            f"{ind2}Carbonate System 2, returns the carbonate burial/dissolution\n"
-            f"{ind2}flux for DIC\n"
-            f"{ind2}'''\n\n"
-        )
+        sep = "# ---------------- write input only reservoir equations -------- #"
+        eqs.write(f"\n{sep}\n")
 
-        eqs.write(message)
-        # Setup carbonate chemistry calculations
-        for r in M.lpc_r:
-            if r.ftype == "cs1":
-                # carbonate_system_1_ode(rg: ReservoirGroup
-                eqs.write(
-                    f"{ind2}carbonate_system_1_ode({r.parent.full_name}, "
-                    f"R[{M.lic.index(r.parent.DIC)}], "
-                    f"R[{M.lic.index(r.parent.TA)}])  # cs1 \n"
-                )
-            elif r.ftype == "cs2":
-                fn_dic = f"{r.register.DIC.full_name}.burial".replace(".", "_")
-                fn_ta = f"{r.register.TA.full_name}.burial".replace(".", "_")
-                influx = r.parent.cs.ref_flux[0].full_name.replace(".", "_")
-                eqs.write(
-                    f"{ind2}{fn_dic} = carbonate_system_2_ode(t, {r.parent.full_name}, {influx}, "
-                    f"R[{M.lic.index(r.parent.DIC)}], "
-                    f"R[{M.lic.index(r.parent.TA)}])  # cs2 \n"
-                )
-                eqs.write(f"{ind2}{fn_ta} = {fn_dic} * 2  # cs2\n")
-            else:
-                raise ValueError(f"{r.ftype} is undefined")
+        for r in ipl:
+            rname = r.full_name.replace(".", "_")
+            eqs.write(f"{ind2}{rname} = 0.0")
 
-        eqs.write(f"\n{ind2}# Reservoir Equations\n")
+        sep = "# ---------------- write regular reservoir equations ------------ #"
+        eqs.write(f"\n{sep}\n")
 
         for r in M.lor:  # loop over reservoirs
 
-            # create unique variable name. Reservoirs are typically called
+            # create unique variable name. Reservoirs are typiclally called
             # M.rg.r so we replace all dots with underscore
             name = r.full_name.replace(".", "_")
             fex = ""
@@ -152,6 +155,42 @@ class setup_ode():
                 eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
                 rel = rel + f"{name}, "
 
+        sep = "# ---------------- write computed reservoir equations -------- #"
+        eqs.write(f"\n{sep}\n")
+
+        for r in M.lpc_r:  # All virtual reservoirs need to be in this list
+
+            # write left side of expression
+            rv = ""
+            eqs.write(f"{ind2}[\n")
+            for rv in r.return_values:
+                eqs.write(f"{ind3}{rv,}\n")
+
+            eqs.write(f"{ind2}] = ")
+
+            if r.ftype == "cs1":
+                # carbonate_system_1_ode(rg: Reservoir
+                eqs.write(
+                    f"{ind2}carbonate_system_1_ode({r.parent.full_name}, "
+                    f"R[{icl.index(r.parent.DIC)}], "
+                    f"R[{icl.index(r.parent.TA)}])  # cs1 \n"
+                )
+            elif r.ftype == "cs2":
+                fn_dic = f"{r.register.DIC.full_name}.burial".replace(".", "_")
+                fn_ta = f"{r.register.TA.full_name}.burial".replace(".", "_")
+                influx = r.parent.cs.ref_flux[0].full_name.replace(".", "_")
+                eqs.write(
+                    f"{ind2}{fn_dic} = carbonate_system_2_ode(t, {r.parent.full_name}, {influx}, "
+                    f"R[{icl.index(r.parent.DIC)}], "
+                    f"R[{icl.index(r.parent.TA)}])  # cs2 \n"
+                )
+                eqs.write(f"{ind2}{fn_ta} = {fn_dic} * 2  # cs2\n")
+            else:
+                raise ValueError(f"{r.ftype} is undefined")
+
+        sep = "# ---------------- bits and pieces --------------------------- #"
+        eqs.write(f"\n{sep}\n")
+
         eqs.write(f"{ind2}self.i += 1\n")
         eqs.write(f"{ind2}self.last_t = t\n")
         eqs.write(f"{ind2}return [{rel}]\n")
@@ -165,7 +204,7 @@ class setup_ode():
     return R
 
 
-def get_flux(flux: Flux, M: Model, R: list[float], ic_index: list) -> str:
+def get_flux(flux: Flux, M: Model, R: list[float], icl: list) -> str:
     """Create formula expression that describes the flux f
     returns ex as string
     """
@@ -180,7 +219,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], ic_index: list) -> str:
         ex = ex + "  # fixed rate"
 
     elif c.ctype == "scale_with_concentration":
-        ici = ic_index.index(c.source)  # index into initial conditions
+        ici = icl.index(c.source)  # index into initial conditions
         ex = (
             f"{cfn}.scale * R[{ici}]"  # {c.id} scale with conc in {c.source.full_name}"
         )
@@ -188,7 +227,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], ic_index: list) -> str:
         ex = ex + "  # scale with concentration"
 
     elif c.ctype == "scale_with_mass":
-        ici = ic_index.index(c.source)  # index into initial conditions
+        ici = icl.index(c.source)  # index into initial conditions
         ex = f"{cfn}.scale * {c.source.full_name}.volume * R[{ici}]"
         ex = check_signal_2(ex, c)
         ex = ex + "  # scale with mass"
@@ -202,7 +241,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], ic_index: list) -> str:
     elif c.ctype == "weathering":
         # c.reservoir_ref.full_name needs to be replaced with stateful reference or initial conditions?
         # how do we fine the correct R[] ?
-        ici = ic_index.index(c.reservoir_ref)
+        ici = icl.index(c.reservoir_ref)
         ex = f"{c.rate} * {c.scale} * (R[{ici}]/{c.pco2_0}) **  {c.ex}"
         # ex = f"{cfn}.rate * {cfn}.scale * (R[{ici}]/{cfn}.pco2_0) **  {cfn}.ex"
         ex = check_signal_2(ex, c)
