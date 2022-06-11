@@ -1354,6 +1354,8 @@ class ExternalCode(Reservoir_no_set):
             "alias_list": ["None", (List, str)],
             "ftype": ["None", (str)],
             "ref_flux": ["None", (list, str)],
+            "return_values": ["None", (str, list)],
+            "arguments": ["None", (str, list)],
         }
 
         # provide a list of absolutely required keywords
