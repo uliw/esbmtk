@@ -5,7 +5,23 @@ if tp.TYPE_CHECKING:
     from esbmtk import Flux, Reservoir, Model, Connection, Connect
 
 
-def write_equations_2(M: Model) -> list:
+def get_initial_conditions(M: Model) -> tuple[list[float], list]:
+    """get list of initial conditions. Make sure we do not add
+    reserevoirs without fluxes
+
+    """
+
+    R = []
+    ic_index = []
+    for r in M.lic:
+        if len(r.lof) > 0:
+            R.append(r.c[0])
+            ic_index.append(r)
+
+    return R, ic_index
+
+
+def write_equations_2(M: Model, R: list[float], ic_index: list) -> list:
     """Write file that contains the ode-equations for M
     Returns the list R that contains the initial condition
     for each reservoir
@@ -13,11 +29,6 @@ def write_equations_2(M: Model) -> list:
     """
     from esbmtk import Model, ReservoirGroup
     import pathlib as pl
-
-    # get list of initial conditions
-    R = []
-    for e in M.lic:
-        R.append(e.c[0])
 
     # get pathlib object
     fn: str = "equations.py"  # file name
@@ -76,10 +87,10 @@ class setup_ode():
             # we cannot use a set, since we need to preserv order
             if flux not in flist:
                 fex = ""
-                fex = get_flux(flux, M)
+                fex = get_flux(flux, M, R, ic_index)
                 fn = flux.full_name.replace(".", "_")
                 eqs.write(f"{ind2}{fn} = {fex}\n")
-                eqs.write(f"{ind2}print({fn})")
+                # eqs.write(f"{ind2}print({fn})")
                 flist.append(flux)
 
         message = (
@@ -139,11 +150,7 @@ class setup_ode():
             # avoid reservoirs without active fluxes
             if len(r.lof) > 0:
                 eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
-            else:
-                eqs.write(f"{ind2}{name} = R[{M.lic.index(r)}]\n"),
-
-            # but we need to return the full set
-            rel = rel + f"{name}, "
+                rel = rel + f"{name}, "
 
         eqs.write(f"{ind2}self.i += 1\n")
         eqs.write(f"{ind2}self.last_t = t\n")
@@ -158,7 +165,7 @@ class setup_ode():
     return R
 
 
-def get_flux(flux: Flux, M: Model) -> str:
+def get_flux(flux: Flux, M: Model, R: list[float], ic_index: list) -> str:
     """Create formula expression that describes the flux f
     returns ex as string
     """
@@ -173,7 +180,7 @@ def get_flux(flux: Flux, M: Model) -> str:
         ex = ex + "  # fixed rate"
 
     elif c.ctype == "scale_with_concentration":
-        ici = M.lic.index(c.source)  # index into initial conditions
+        ici = ic_index.index(c.source)  # index into initial conditions
         ex = (
             f"{cfn}.scale * R[{ici}]"  # {c.id} scale with conc in {c.source.full_name}"
         )
@@ -181,7 +188,7 @@ def get_flux(flux: Flux, M: Model) -> str:
         ex = ex + "  # scale with concentration"
 
     elif c.ctype == "scale_with_mass":
-        ici = M.lic.index(c.source)  # index into initial conditions
+        ici = ic_index.index(c.source)  # index into initial conditions
         ex = f"{cfn}.scale * {c.source.full_name}.volume * R[{ici}]"
         ex = check_signal_2(ex, c)
         ex = ex + "  # scale with mass"
@@ -195,8 +202,9 @@ def get_flux(flux: Flux, M: Model) -> str:
     elif c.ctype == "weathering":
         # c.reservoir_ref.full_name needs to be replaced with stateful reference or initial conditions?
         # how do we fine the correct R[] ?
-        ici = M.lic.index(c.reservoir_ref)
-        ex = f"{cfn}.rate * {cfn}.scale * (R[{ici}]/{cfn}.pco2_0) **  {cfn}.ex"
+        ici = ic_index.index(c.reservoir_ref)
+        ex = f"{c.rate} * {c.scale} * (R[{ici}]/{c.pco2_0}) **  {c.ex}"
+        # ex = f"{cfn}.rate * {cfn}.scale * (R[{ici}]/{cfn}.pco2_0) **  {cfn}.ex"
         ex = check_signal_2(ex, c)
         ex = ex + "  # weathering"
 

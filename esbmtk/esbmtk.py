@@ -732,12 +732,14 @@ class Model(esbmtkBase):
 
     def ode_uli(self):
         """Use the ode solver based on Uli's approach"""
-        from esbmtk import write_equations_2
+        from esbmtk import write_equations_2, get_initial_conditions
         from scipy.integrate import odeint
 
         # build equation file
-        R = write_equations_2(self)
+        R, ic_index = get_initial_conditions(self)
         self.R = R
+        self.ic_index = ic_index
+        write_equations_2(self, R, ic_index)
 
         # import equations
         from equations import setup_ode
@@ -746,7 +748,7 @@ class Model(esbmtkBase):
         results = odeint(ode_system.eqs, R, self.time, tfirst=True, args=(self,))
 
         # assign results
-        for i, r in enumerate(self.lor):
+        for i, r in enumerate(ic_index):
             r.c = results[:, i]
 
     def __step_process__(self, r: Reservoir, i: int) -> None:
