@@ -736,10 +736,12 @@ class Model(esbmtkBase):
         from scipy.integrate import odeint
 
         # build equation file
-        R, ic_index = get_initial_conditions(self)
+        R, icl, cpl, ipl = get_initial_conditions(self)
         self.R = R
-        self.ic_index = ic_index
-        write_equations_2(self, R, ic_index)
+        self.icl = icl
+        self.cpl = cpl
+        self.ipl = ipl
+        write_equations_2(self, R, icl, cpl, ipl)
 
         # import equations
         from equations import setup_ode
@@ -748,7 +750,7 @@ class Model(esbmtkBase):
         results = odeint(ode_system.eqs, R, self.time, tfirst=True, args=(self,))
 
         # assign results
-        for i, r in enumerate(ic_index):
+        for i, r in enumerate(self.lic):
             r.c = results[:, i]
 
     def __step_process__(self, r: Reservoir, i: int) -> None:
@@ -1597,7 +1599,7 @@ class Reservoir(ReservoirBase):
             "name": ["None", (str)],
             "species": ["None", (str, Species)],
             "delta": ["None", (int, float, str)],
-            "concentration": ["None", (str, Q_)],
+            "concentration": ["None", (str, Q_, float)],
             "mass": ["None", (str, Q_)],
             "volume": ["None", (str, Q_)],
             "geometry": ["None", (list, str)],
@@ -1686,9 +1688,15 @@ class Reservoir(ReservoirBase):
                 self.density = self.swc.density
 
         if self.mass == "None":
-            c = Q_(self.concentration)
-            self.plt_units = c.units
-            self._concentration: tp.Union[int, float] = c.to(self.mo.c_unit).magnitude
+            if isinstance(self.concentration, (str, Q_)):
+                c = Q_(self.concentration)
+                self.plt_units = c.units
+                self._concentration: tp.Union[int, float] = c.to(self.mo.c_unit).magnitude
+            else:
+                c = self.concentration
+                self.plt_units = self.mo.c_unit
+                self._concentration = c
+
             self.mass: tp.Union[int, float] = (
                 self.concentration * self.volume * self.density / 1000
             )
