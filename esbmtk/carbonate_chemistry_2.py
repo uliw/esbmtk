@@ -21,11 +21,13 @@ import typing as tp
 import numpy as np
 from esbmtk import ReservoirGroup, Flux
 
-#if tp.TYPE_CHECKING:
-#    from .esbmtk import Reservoir
+if tp.TYPE_CHECKING:
+    from .esbmtk import ReservoirGroup, Flux
 
 
-def carbonate_system_1_ode(rg: ReservoirGroup, dic: float, ta: float) -> None:
+def carbonate_system_1_ode(
+    rg: ReservoirGroup, dic: float, ta: float, hplus: float
+) -> tuple:
     """Calculates and returns the carbonate concentrations and saturation state
      for the given reservoirgroup
 
@@ -46,7 +48,6 @@ def carbonate_system_1_ode(rg: ReservoirGroup, dic: float, ta: float) -> None:
     KW = rg.swc.KW  # KW
     KB = rg.swc.KB  # KB
     boron = rg.swc.boron  # boron
-    hplus = rg.cs.H  # hlus from last timestep
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
@@ -74,16 +75,20 @@ def carbonate_system_1_ode(rg: ReservoirGroup, dic: float, ta: float) -> None:
     #  co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
     co2aq: float = dic - hco3 - co3
 
-    rg.cs.H = hplus
-    rg.cs.CA = ca
-    rg.cs.HCO3 = hco3
-    rg.cs.CO3 = co3
-    rg.cs.CO2a = co2aq
-    rg.cs.OH = oh
-    rg.cs.BOH4 = boh4
+    # rg.cs.H = hplus
+    # rg.cs.CA = ca
+    # rg.cs.HCO3 = hco3
+    # rg.cs.CO3 = co3
+    # rg.cs.CO2a = co2aq
+    # rg.cs.OH = oh
+    # rg.cs.BOH4 = boh4
+
+    return hplus, ca, hco3, co3, co2aq, oh, boh4
 
 
-def carbonate_system_2_ode(t, rg: ReservoirGroup, Bm: Flux, dic:float, ta:float) -> float:
+def carbonate_system_2_ode(
+    t, rg: ReservoirGroup, Bm: Flux, dic: float, ta: float
+) -> float:
     """Calculates and returns the carbonate concentrations and carbonate compensation
     depth (zcc) at the ith time-step of the model.
 
@@ -112,7 +117,7 @@ def carbonate_system_2_ode(t, rg: ReservoirGroup, Bm: Flux, dic:float, ta:float)
 
     # concentration
     hplus = rg.cs.H  # hplus from last timestep
-  
+
     # still missing parameters
     last_t = rg.cs.last_t
     kc = rg.cs.kc
