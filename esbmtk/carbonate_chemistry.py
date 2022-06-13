@@ -740,8 +740,8 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[2][i] = hco3
     vr_data[3][i] = co3
     vr_data[4][i] = co2aq
-    vr_data[5][i] = oh
-    vr_data[5][i] = boh4
+    # vr_data[5][i] = oh
+    # vr_data[5][i] = boh4
     # vr_data[5][i] = omega
 
 
