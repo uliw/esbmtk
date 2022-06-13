@@ -1343,8 +1343,6 @@ def add_carbonate_system_1(rgs: list):
                     "HCO3": rg.swc.hco3,  # 2
                     "CO3": rg.swc.co3,  # 3
                     "CO2aq": rg.swc.co2,  # 4
-                    "OH": 0.0,
-                    "BOH": 0.0,
                 },
                 function_input_data=List([rg.DIC.c, rg.TA.c]),
                 function_params=List(
@@ -1359,7 +1357,7 @@ def add_carbonate_system_1(rgs: list):
                         rg.swc.hplus,  #
                     ]
                 ),
-                return_values="H CA HCO3 CO3 CO2aq OH BOH".split(" "),
+                return_values="H CA HCO3 CO3 CO2aq".split(" "),
                 register=rg,
             )
             rg.has_cs1 = True

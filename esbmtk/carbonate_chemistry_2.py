@@ -26,7 +26,7 @@ if tp.TYPE_CHECKING:
 
 
 def carbonate_system_1_ode(
-    rg: ReservoirGroup, dic: float, ta: float, hplus: float
+    rg: ReservoirGroup, dic: float, ta: float, hplus: float, i: int
 ) -> tuple:
     """Calculates and returns the carbonate concentrations and saturation state
      for the given reservoirgroup
@@ -48,6 +48,7 @@ def carbonate_system_1_ode(
     KW = rg.swc.KW  # KW
     KB = rg.swc.KB  # KB
     boron = rg.swc.boron  # boron
+    # hplus = rg.cs.H[i-1]
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
@@ -75,15 +76,77 @@ def carbonate_system_1_ode(
     #  co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
     co2aq: float = dic - hco3 - co3
 
-    # rg.cs.H = hplus
-    # rg.cs.CA = ca
-    # rg.cs.HCO3 = hco3
-    # rg.cs.CO3 = co3
-    # rg.cs.CO2a = co2aq
-    # rg.cs.OH = oh
-    # rg.cs.BOH4 = boh4
+    # print(f"i = {i}, t = {t} pH({i}) = {-np.log10(hplus):.2f}, pH({i-1}) = {-np.log10(rg.cs.H[i-1]):.2f}")
 
-    return hplus, ca, hco3, co3, co2aq, oh, boh4
+    rg.cs.H[i] = hplus          #
+    rg.cs.CA[i] = ca
+    rg.cs.HCO3[i] = hco3
+    rg.cs.CO3[i] = co3
+    rg.cs.CO2aq[i] = co2aq
+    
+    return hplus
+
+
+def carbonate_system_1_ode_old(
+    rg: ReservoirGroup, dic: float, ta: float, i: int, t
+) -> tuple:
+    """Calculates and returns the carbonate concentrations and saturation state
+     for the given reservoirgroup
+
+    LIMITATIONS:
+    - Assumes all concentrations are in mol/kg
+    - Assumes your Model is in mol/kg ! Otherwise, DIC and TA updating will not
+    be correct.
+
+    Calculations are based off equations from:
+    Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
+    Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
+
+    Author: M. Niazi & T. Tsan, 2021, with modifications by U. Wortmann 2022
+    """
+
+    k1 = rg.swc.K1  # K1
+    k2 = rg.swc.K2  # K2
+    KW = rg.swc.KW  # KW
+    KB = rg.swc.KB  # KB
+    boron = rg.swc.boron  # boron
+    hplus = rg.cs.H[i - 1]  # hplus from previous time step
+
+    # calculates carbonate alkalinity (ca) based on H+ concentration from the
+    # previous time-step
+    oh: float = KW / hplus
+    boh4: float = boron * KB / (hplus + KB)
+    fg: float = hplus - oh - boh4
+    ca: float = ta + fg
+
+    # hplus
+    gamm: float = dic / ca
+    dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
+
+    hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
+    # hco3 and co3
+    """ Since CA = [hco3] + 2[co3], can the below expression can be simplified
+    """
+    # co3: float = dic / (1 + (hplus / k2) + ((hplus ** 2) / (k1 * k2)))
+    hco3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
+    co3: float = (ca - hco3) / 2
+    # co2 (aq)
+    """DIC = hco3 + co3 + co2 + H2CO3 The last term is however rather
+    small, so it may be ok to simply write co2aq = dic - hco3 + co3.
+    Let's test this once we have a case where pco2 is calculated from co2aq
+    """
+    #  co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
+    co2aq: float = dic - hco3 - co3
+
+    print(
+        f"i = {i}, t = {t} pH({i}) = {-np.log10(hplus):.2f}, pH({i-1}) = {-np.log10(rg.cs.H[i-1]):.2f}"
+    )
+
+    rg.cs.H[i] = hplus
+    rg.cs.CA[i] = ca
+    rg.cs.HCO3[i] = hco3
+    rg.cs.CO3[i] = co3
+    rg.cs.CO2aq[i] = co2aq
 
 
 def carbonate_system_2_ode(

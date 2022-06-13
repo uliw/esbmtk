@@ -484,6 +484,9 @@ class Model(esbmtkBase):
         subsequent model run.
 
         """
+
+        from esbmtk import Reservoir, GasReservoir
+        
         for r in self.lor:
             from esbmtk import Reservoir, GasReservoir
             if isinstance(r, (Reservoir, GasReservoir)):
@@ -733,7 +736,7 @@ class Model(esbmtkBase):
     def ode_uli(self):
         """Use the ode solver based on Uli's approach"""
         from esbmtk import write_equations_2, get_initial_conditions
-        from scipy.integrate import odeint
+        from scipy.integrate import odeint, solve_ivp
 
         # build equation file
         R, icl, cpl, ipl = get_initial_conditions(self)
@@ -747,11 +750,25 @@ class Model(esbmtkBase):
         from equations import setup_ode
 
         ode_system = setup_ode(self)  # create ode system instance
-        results = odeint(ode_system.eqs, R, self.time, tfirst=True, args=(self,))
+
+        results = solve_ivp(
+            ode_system.eqs,
+            (self.time[0], self.time[-1]),
+            R,
+            args=(self,),
+            method="LSODA",
+            t_eval=self.time
+            #max_step=self.dt,
+        )
+        
+        self.results = results
 
         # assign results
-        for i, r in enumerate(self.lic):
-            r.c = results[:, i]
+        for i, r in enumerate(icl):
+            print(f"r = {r.full_name}")
+            r.c = results.y[i]
+
+        self.time = results.t
 
     def __step_process__(self, r: Reservoir, i: int) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -1621,6 +1638,8 @@ class Reservoir(ReservoirBase):
             "seawater_parameters": ["None", (dict, str)],
             "isotopes": [False, (bool)],
             "ideal_water": ["None", (str, bool)],
+            "has_cs1":  [False, (bool)],
+            "has_cs2":  [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
@@ -1691,7 +1710,9 @@ class Reservoir(ReservoirBase):
             if isinstance(self.concentration, (str, Q_)):
                 c = Q_(self.concentration)
                 self.plt_units = c.units
-                self._concentration: tp.Union[int, float] = c.to(self.mo.c_unit).magnitude
+                self._concentration: tp.Union[int, float] = c.to(
+                    self.mo.c_unit
+                ).magnitude
             else:
                 c = self.concentration
                 self.plt_units = self.mo.c_unit

@@ -30,25 +30,37 @@ def get_initial_conditions(M: Model) -> tuple[list, list, list, list]:
     ipl: list = []  # list of static reservoirs that serve as input
 
     for r in M.lic:
-        if len(r.lof) > 0:
+        # print(f"R={r.full_name} lof = {len(r.lof)}")
+        if len(r.lof) > 0:  # list of reservoirs that depend on fluxes
             R.append(r.c[0])
             icl.append(r)
-        else:
-            R.append(r.c[0])
+            # print(f"adding {r.full_name} to icl")
+        else:  # list of reservoirs that are computed
             cpl.append(r)
+            # if r.name == "H":
+            #     icl.append(r)
+            #     R.append(r.c[0])
+            # print(f"adding {r.full_name} to cpl")
 
     ipl = list(set(M.lic).difference(M.lor))
 
-    icl = icl.append(ipl)q
-    M.lic.append(ipl)
+    if len(ipl) > 0:
+        icl.append(ipl)
+        M.lic.append(ipl)
 
     return R, icl, cpl, ipl
 
 
-def write_equations_2(M: Model, R: list[float], icl: list, cpl: list, ipl: list) -> list:
+def write_equations_2(
+    M: Model, R: list[float], icl: list, cpl: list, ipl: list
+) -> list:
     """Write file that contains the ode-equations for M
     Returns the list R that contains the initial condition
     for each reservoir
+
+    icl: list of reservoirs that have actual fluxes
+    cpl: list of reservoirs that hjave no fluxes but are computed based on other R's
+    ipl: list of reserevoir that do not change in concentration
 
     """
     from esbmtk import Model, ReservoirGroup
@@ -79,8 +91,9 @@ class setup_ode():
         '''
         import numpy as np
 
-        self.i: int = np.zeros(len(M.time))
-        self.last_t: float = np.zeros(len(M.time))
+        self.i = 0
+        self.last_t = 0
+        self.hplus = 10**-8.1
 
     def eqs(self, t, R: list, M: Model) -> list:
         '''Auto generated esbmtk equations do not edit
@@ -160,21 +173,31 @@ class setup_ode():
 
         for r in M.lpc_r:  # All virtual reservoirs need to be in this list
 
-            # write left side of expression
-            rv = ""
-            eqs.write(f"{ind2}[\n")
-            for rv in r.return_values:
-                eqs.write(f"{ind3}{rv,}\n")
-
-            eqs.write(f"{ind2}] = ")
-
             if r.ftype == "cs1":
                 # carbonate_system_1_ode(rg: Reservoir
                 eqs.write(
-                    f"{ind2}carbonate_system_1_ode({r.parent.full_name}, "
+                    f"{ind2}self.hplus = "
+                    f"carbonate_system_1_ode({r.parent.full_name}, "
                     f"R[{icl.index(r.parent.DIC)}], "
-                    f"R[{icl.index(r.parent.TA)}])  # cs1 \n"
+                    f"R[{icl.index(r.parent.TA)}], "
+                    f"self.hplus, self.i) # cs 1\n"
                 )
+
+                # # write hplus in differential form
+                # fname = f"{r.parent.full_name}.H".replace(".", "_")
+                # eqs.write(
+                #     f"{ind2}{fname}_cv = "
+                #     f"carbonate_system_1_ode({r.parent.full_name}, "
+                #     f"R[{icl.index(r.parent.DIC)}], "
+                #     f"R[{icl.index(r.parent.TA)}], "
+                #     f"R[{icl.index(r.parent.H)}])  # cs1\n"
+                # )
+
+                # # eqs.write(f"{ind2}R[{icl.index(r.parent.H)}] = {fname}_cv\n")
+                # eqs.write(f"{ind2}{fname} = -(R[{icl.index(r.parent.H)}] - {fname}_cv) "
+                #           f"/ {r.parent.full_name}.H.volume\n")
+                # rel = rel + f"{fname}, "
+
             elif r.ftype == "cs2":
                 fn_dic = f"{r.register.DIC.full_name}.burial".replace(".", "_")
                 fn_ta = f"{r.register.TA.full_name}.burial".replace(".", "_")
@@ -198,7 +221,9 @@ class setup_ode():
         if len(R) != len(rel.split(",")) - 1:
             raise ValueError(
                 f"number of initial conditions ({len(R)})"
-                f"does not match number of return values ({len(rel.split(','))-1}')"
+                f"does not match number of return values ({len(rel.split(','))-1}')\n\n"
+                f"R = {R}\n"
+                f"rv = {rel}\n"
             )
 
     return R
@@ -242,8 +267,8 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: list) -> str:
         # c.reservoir_ref.full_name needs to be replaced with stateful reference or initial conditions?
         # how do we fine the correct R[] ?
         ici = icl.index(c.reservoir_ref)
-        ex = f"{c.rate} * {c.scale} * (R[{ici}]/{c.pco2_0}) **  {c.ex}"
-        # ex = f"{cfn}.rate * {cfn}.scale * (R[{ici}]/{cfn}.pco2_0) **  {cfn}.ex"
+        # ex = f"{cfn}.rate * {cfn}.scale * (R[{ici}]/{cfn}.pco2_0) **  {c.ex}"
+        ex = f"{cfn}.rate * {cfn}.scale * (R[{ici}]/{cfn}.pco2_0) **  {cfn}.ex"
         ex = check_signal_2(ex, c)
         ex = ex + "  # weathering"
 

@@ -1383,31 +1383,24 @@ class ExternalCode(Reservoir_no_set):
 
         # initialize data fields
 
-        if self.mo.use_ode:
-            self.vr_data = list()
-            for key, value in self.vr_datafields.items():
-                self.vr_data.append(value)
-        else:
-            self.vr_data = List()
-            for e in self.vr_datafields.values():
-                self.vr_data.append(np.full(self.mo.steps, e, dtype=float))
+        self.vr_data = List()
+        for e in self.vr_datafields.values():
+            self.vr_data.append(np.full(self.mo.steps, e, dtype=float))
 
-            self.gfh = GenericFunction(
-                name=name,
-                function=self.function,
-                input_data=self.function_input_data,
-                vr_data=self.vr_data,
-                function_params=self.function_params,
-                model=self.species.mo,
-                register=self.register,
-                ftype=self.ftype,
-            )
-            # add the function handle to the list of function to be executed
+        self.gfh = GenericFunction(
+            name=name,
+            function=self.function,
+            input_data=self.function_input_data,
+            vr_data=self.vr_data,
+            function_params=self.function_params,
+            model=self.species.mo,
+            register=self.register,
+            ftype=self.ftype,
+        )
+        # add the function handle to the list of function to be executed
 
-        if self.mo.use_ode:
-            self.mo.lpc_r.append(self)
-        else:
-            self.mo.lpc_r.append(self.gfh)
+            
+        self.mo.lpc_r.append(self.gfh)
 
         self.mo.lor.remove(self)
         # but lets keep track of  virtual reservoir in lvr.
