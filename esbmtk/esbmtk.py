@@ -488,7 +488,6 @@ class Model(esbmtkBase):
         from esbmtk import Reservoir, GasReservoir
         
         for r in self.lor:
-            from esbmtk import Reservoir, GasReservoir
             if isinstance(r, (Reservoir, GasReservoir)):
                 # print(f" reading from {r.full_name}")
                 r.__read_state__("state")
