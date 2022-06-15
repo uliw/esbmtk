@@ -64,7 +64,7 @@ class EQ_Terms:
                 self.scale_with_mass(connection)
 
             elif connection.ctype == "scale_with_flux":
-                if isinstance(M.burial.ref_flux.parent, type(connection)):
+                if isinstance(connection.ref_flux.parent, Connect):
                     self.scale_with_flux(connection)
                 else:
                     raise TypeError("Please input proper ref_flux for scale_with_flux")
