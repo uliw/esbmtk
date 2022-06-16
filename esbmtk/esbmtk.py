@@ -486,7 +486,7 @@ class Model(esbmtkBase):
         """
 
         from esbmtk import Reservoir, GasReservoir
-        
+
         for r in self.lor:
             if isinstance(r, (Reservoir, GasReservoir)):
                 # print(f" reading from {r.full_name}")
@@ -665,7 +665,7 @@ class Model(esbmtkBase):
         # self.save_data(start=0, stop=self.number_of_datapoints, stride=1)
         # print("Done Saving")
         else:
-            self.__run_solver__(solver)
+            self.__run_solver__(solver, kwargs)
 
         # flag that the model has executed
         self.state = 1
@@ -710,7 +710,7 @@ class Model(esbmtkBase):
         stride = int(len(self.time) / self.number_of_datapoints)
         self.time = self.time[2:-2:stride]
 
-    def __run_solver__(self, solver: str) -> None:
+    def __run_solver__(self, solver: str, kwargs: dict) -> None:
         from .ODEINT_Solver import run_solver
 
         if solver == "numba":
@@ -724,7 +724,7 @@ class Model(esbmtkBase):
         elif solver == "odeint":
             run_solver(self)
         elif solver == "ode_uli":
-            self.ode_uli()
+            self.ode_uli(kwargs)
         elif solver == "python":
             execute(self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
         else:
@@ -732,7 +732,7 @@ class Model(esbmtkBase):
                 f"Solver={solver} is unkknown, use 'python/numba/odeint/ode_uli'"
             )
 
-    def ode_uli(self):
+    def ode_uli(self, kwargs):
         """Use the ode solver based on Uli's approach"""
         from esbmtk import write_equations_2, get_initial_conditions
         from scipy.integrate import odeint, solve_ivp
@@ -749,25 +749,46 @@ class Model(esbmtkBase):
         from equations import setup_ode
 
         ode_system = setup_ode(self)  # create ode system instance
+        self.ode_system = ode_system
 
-        results = solve_ivp(
-            ode_system.eqs,
-            (self.time[0], self.time[-1]),
-            R,
-            args=(self,),
-            method="LSODA",
-            t_eval=self.time
-            #max_step=self.dt,
-        )
-        
+        if "method" in kwargs:
+            method = kwargs["method"]
+        else:
+            method = ("LSODA",)
+
+        if "stype" in kwargs:
+            stype = kwargs["stype"]
+        else:
+            stype = "solve_ivp"
+
+        if stype == "solve_ivp":
+            results = solve_ivp(
+                ode_system.eqs,
+                (self.time[0], self.time[-1]),
+                R,
+                args=(self,),
+                method=method,
+                t_eval=self.time,
+            )
+            # assign results
+            for i, r in enumerate(icl):
+                r.c = results.y[i]
+            self.time = results.t
+
+        else:
+            results = odeint(
+                ode_system.eqs,
+                R,
+                t=self.time,
+                args=(self,),
+                tfirst=True
+            )
+            # assign results
+            for i, r in enumerate(icl):
+                print(f"r = {r.full_name}")
+                r.c = results[:,i]
+
         self.results = results
-
-        # assign results
-        for i, r in enumerate(icl):
-            print(f"r = {r.full_name}")
-            r.c = results.y[i]
-
-        self.time = results.t
 
     def __step_process__(self, r: Reservoir, i: int) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -1637,8 +1658,8 @@ class Reservoir(ReservoirBase):
             "seawater_parameters": ["None", (dict, str)],
             "isotopes": [False, (bool)],
             "ideal_water": ["None", (str, bool)],
-            "has_cs1":  [False, (bool)],
-            "has_cs2":  [False, (bool)],
+            "has_cs1": [False, (bool)],
+            "has_cs2": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
