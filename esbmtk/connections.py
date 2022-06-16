@@ -1379,6 +1379,7 @@ class AirSeaExchange(esbmtkBase):
             "species": ["None", (Species, str)],
             "register": ["None", (str, Model)],
             "signal": ["None", (str, Signal)],
+            "c_type": ["gas_exchange", (str)],
         }
         # provide a list of absolutely required keywords
         self.lrk: list[str] = [
