@@ -325,7 +325,7 @@ class Connect(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["source", "sink", "register", "id"]
+        self.lrk: list = ["source", "sink", "register", "id", "ctype"]
 
         self.lop: list = list()
         self.lof: list = list()
@@ -1379,7 +1379,7 @@ class AirSeaExchange(esbmtkBase):
             "species": ["None", (Species, str)],
             "register": ["None", (str, Model)],
             "signal": ["None", (str, Signal)],
-            "c_type": ["gas_exchange", (str)],
+            "ctype": ["gas_exchange", (str)],
         }
         # provide a list of absolutely required keywords
         self.lrk: list[str] = [
