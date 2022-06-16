@@ -325,7 +325,7 @@ class Connect(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["source", "sink", "register", "id", "ctype"]
+        self.lrk: list = ["source", "sink", "register", "id"]
 
         self.lop: list = list()
         self.lof: list = list()
