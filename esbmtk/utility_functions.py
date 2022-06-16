@@ -242,7 +242,8 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
 
     # we do not map isotope values
     if obj.isotopes:
-        yr = obj.d
+        if obj.isotopes:
+            yr = obj.d
 
     # get plot type
     ptype: int = get_ptype(obj)
@@ -1362,16 +1363,16 @@ def add_carbonate_system_1(rgs: list):
             )
             rg.has_cs1 = True
 
-            if model.use_ode:
-                for n in ec.return_values:
-                    rt = Reservoir(
-                        name=n,
-                        species=getattr(model, n),
-                        concentration=ec.vr_datafields[n],
-                        register=rg,
-                        volume=rg.volume,
-                    )
-                    rg.lor.append(rt)
+            # if model.use_ode:
+            #     for n in ec.return_values:
+            #         rt = Reservoir(
+            #             name=n,
+            #             species=getattr(model, n),
+            #             concentration=ec.vr_datafields[n],
+            #             register=rg,
+            #             volume=rg.volume,
+            #         )
+            #         rg.lor.append(rt)
         else:
             raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 

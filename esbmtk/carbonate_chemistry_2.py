@@ -25,9 +25,7 @@ if tp.TYPE_CHECKING:
     from .esbmtk import ReservoirGroup, Flux
 
 
-def carbonate_system_1_ode(
-    rg: ReservoirGroup, dic: float, ta: float, hplus: float, i: int
-) -> tuple:
+def carbonate_system_1_ode(rg: ReservoirGroup, dic: float, ta: float, i: int) -> float:
     """Calculates and returns the carbonate concentrations and saturation state
      for the given reservoirgroup
 
@@ -48,7 +46,7 @@ def carbonate_system_1_ode(
     KW = rg.swc.KW  # KW
     KB = rg.swc.KB  # KB
     boron = rg.swc.boron  # boron
-    # hplus = rg.cs.H[i-1]
+    hplus = rg.cs.H[i - 1]
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
@@ -78,13 +76,13 @@ def carbonate_system_1_ode(
 
     # print(f"i = {i}, t = {t} pH({i}) = {-np.log10(hplus):.2f}, pH({i-1}) = {-np.log10(rg.cs.H[i-1]):.2f}")
 
-    rg.cs.H[i] = hplus          #
+    rg.cs.H[i] = hplus  #
     rg.cs.CA[i] = ca
     rg.cs.HCO3[i] = hco3
     rg.cs.CO3[i] = co3
     rg.cs.CO2aq[i] = co2aq
-    
-    return hplus
+
+    return co2aq
 
 
 def carbonate_system_1_ode_old(
@@ -291,3 +289,20 @@ def carbonate_system_2_ode(
     rg.cs.last_t = t
 
     return Fburial
+
+
+def gas_exchange_ode(scale, gas_c, p_H2O, solubility, co2aq):
+
+    # set flux
+    # note that the sink delta is co2aq as returned by the carbonate VR
+    # this equation is for mmol but esbmtk uses mol, so we need to
+    # multiply by 1E3
+
+    f = scale * (  # area in m^2
+        gas_c  # Atmosphere
+        * (1 - p_H2O)  # p_H2O
+        * solubility  # SA_co2 = mol/(m^3 atm)
+        - co2aq * 1000  # [CO2]aq mol
+    )
+
+    return -f
