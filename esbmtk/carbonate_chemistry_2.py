@@ -46,7 +46,7 @@ def carbonate_system_1_ode(rg: ReservoirGroup, dic: float, ta: float, i: int) ->
     KW = rg.swc.KW  # KW
     KB = rg.swc.KB  # KB
     boron = rg.swc.boron  # boron
-    hplus = rg.cs.H[i - 1]
+    hplus = rg.cs.H[0]
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
@@ -76,11 +76,11 @@ def carbonate_system_1_ode(rg: ReservoirGroup, dic: float, ta: float, i: int) ->
 
     # print(f"i = {i}, t = {t} pH({i}) = {-np.log10(hplus):.2f}, pH({i-1}) = {-np.log10(rg.cs.H[i-1]):.2f}")
 
-    rg.cs.H[i] = hplus  #
-    rg.cs.CA[i] = ca
-    rg.cs.HCO3[i] = hco3
-    rg.cs.CO3[i] = co3
-    rg.cs.CO2aq[i] = co2aq
+    rg.cs.H[0] = hplus  #
+    rg.cs.CA[0] = ca
+    rg.cs.HCO3[0] = hco3
+    rg.cs.CO3[0] = co3
+    rg.cs.CO2aq[0] = co2aq
 
     return co2aq
 
