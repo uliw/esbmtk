@@ -734,7 +734,7 @@ class Model(esbmtkBase):
 
     def ode_uli(self, kwargs):
         """Use the ode solver based on Uli's approach"""
-        from esbmtk import write_equations_2, get_initial_conditions
+        from esbmtk import Q_, write_equations_2, get_initial_conditions
         from scipy.integrate import odeint, solve_ivp
 
         # build equation file
@@ -777,7 +777,7 @@ class Model(esbmtkBase):
                 method=method,
                 t_eval=self.time,
                 atol=1e-9,
-                first_step=1 / (365 * 24),
+                first_step=Q_("1 hour").to(self.t_unit).magnitude,
                 # dense_output=True,
                 # max_step=1,
             )
