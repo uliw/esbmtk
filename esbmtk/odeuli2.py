@@ -96,7 +96,7 @@ class setup_ode():
     # write file
     with open(fqfn, "w", encoding="utf-8") as eqs:
 
-        rel = ""  # list of return values
+        rel = "[\n"  # list of return values
         ind1 = 4 * " "
         ind2 = 8 * " "  # indention
         ind3 = 12 * " "  # indention
@@ -105,7 +105,9 @@ class setup_ode():
 
         eqs.write(f"{ind2}{M.name} = M\n")
 
-        sep = "# ---------------- write computed reservoir equations -------- #"
+        sep = "# ---------------- write computed reservoir equations -------- #\n"
+        sep = sep + "# that do not depend on fluxes"
+
         eqs.write(f"\n{sep}\n")
 
         for r in M.lpc_r:  # All virtual reservoirs need to be in this list
@@ -122,17 +124,8 @@ class setup_ode():
                 eqs.write(get_ic(r.parent.TA, icl)),
                 eqs.write("self.i) #  cs1\n")
 
-            elif r.ftype == "cs2":  # untested
-                fn_dic = f"{r.register.DIC.full_name}.burial".replace(".", "_")
-                fn_ta = f"{r.register.TA.full_name}.burial".replace(".", "_")
-                influx = r.parent.cs.ref_flux[0].full_name.replace(".", "_")
-                eqs.write(
-                    f"{ind2}{fn_dic} = carbonate_system_2_ode(t, {r.parent.full_name}, {influx}, "
-                )
-                eqs.write(get_ic(r.parent.DIC, icl)),
-                eqs.write(get_ic(r.parent.TA, icl)),
-                f"{self.i}  # cs2 \n"
-                eqs.write(f"{ind2}{fn_ta} = {fn_dic} * 2  # cs2\n")
+            elif r.ftype == "cs2":
+                pass  # see below
             else:
                 raise ValueError(f"{r.ftype} is undefined")
 
@@ -150,6 +143,27 @@ class setup_ode():
                 fn = flux.full_name.replace(".", "_")
                 eqs.write(f"{ind2}{fn} = {fex}\n")
                 flist.append(flux)
+
+        sep = "# ---------------- write computed reservoir equations -------- #\n"
+        sep = sep + "# that do not depend on fluxes"
+        eqs.write(f"\n{sep}\n")
+
+        for r in M.lpc_r:  # All virtual reservoirs need to be in this list
+
+            if r.ftype == "cs1":
+                pass  # see above
+            elif r.ftype == "cs2":  #
+                fn_dic = f"{r.register.DIC.full_name}.burial".replace(".", "_")
+                fn_ta = f"{r.register.TA.full_name}.burial".replace(".", "_")
+                influx = r.parent.cs.ref_flux[0].full_name.replace(".", "_")
+                eqs.write(f"{ind2}{fn_dic} = carbonate_system_2_ode(\n")
+                eqs.write(f"{ind3}t,\n{ind3}{r.parent.full_name},\n{ind3}{influx},\n")
+                eqs.write(f"{ind3}{get_ic(r.parent.DIC, icl)}\n"),
+                eqs.write(f"{ind3}{get_ic(r.parent.TA, icl)}\n"),
+                eqs.write(f"{ind3}self.i,\n{ind3}self.t,\n{ind2})  # cs2\n")
+                eqs.write(f"{ind2}{fn_ta} = {fn_dic} * 2  # cs2\n")
+            else:
+                raise ValueError(f"{r.ftype} is undefined")
 
         sep = "# ---------------- write input only reservoir equations -------- #"
         eqs.write(f"\n{sep}\n")
@@ -183,13 +197,13 @@ class setup_ode():
             # avoid reservoirs without active fluxes
             if len(r.lof) > 0:
                 eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
-                rel = rel + f"{name}, "
+                rel = rel + f"{ind3}{name},\n"
 
         sep = "# ---------------- bits and pieces --------------------------- #"
         eqs.write(f"\n{sep}\n")
         eqs.write(f"{ind2}self.t = t\n")
         eqs.write(f"{ind2}self.i += 1\n")
-        eqs.write(f"{ind2}return [{rel}]\n")
+        eqs.write(f"{ind2}return {rel}{ind2}]\n")
 
         if len(R) != len(rel.split(",")) - 1:
             raise ValueError(
