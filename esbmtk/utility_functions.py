@@ -1507,23 +1507,36 @@ def add_carbonate_system_2(**kwargs) -> None:
                     "zsat": kwargs["zsat"],  # 5 zsat
                     "zcc": kwargs["zcc"],  # 6 zcc
                     "zsnow": kwargs["zsnow"],  # 7 zsnow
-                    "last_t": 0.0,  # t-1
-                    "kc": kwargs["kc"],  #
-                    "zsat0": kwargs["zsat0"],
-                    "zsat_min": kwargs["zsat_min"],
-                    "zmax": kwargs["zmax"],
-                    "z0": kwargs["z0"],
-                    "I_caco3": kwargs["I_caco3"],
-                    "alpha": kwargs["alpha"],
-                    "AD": AD,
                     "depth_area_table": area_table,
                     "area_dz_table": area_dz_table,
                     "Csat_table": Csat_table,
-                    "Bm": 0.0,
                 },
                 ref_flux=kwargs["carbonate_export_fluxes"],
                 function_input_data=List(),
-                function_params=List(),
+                function_params=List(
+                    [
+                        rg.swc.K1,  # 0
+                        rg.swc.K2,  # 1
+                        rg.swc.KW,  # 2
+                        rg.swc.KB,  # 3
+                        rg.swc.boron,  # 4
+                        Ksp0,  # 5
+                        float(kwargs["kc"]),  # 6
+                        float(rg.volume.to("liter").magnitude),  # 7
+                        float(AD),  # 8
+                        float(abs(kwargs["zsat0"])),  # 9
+                        float(rg.swc.ca2),  # 10
+                        rg.mo.dt,  # 11
+                        float(kwargs["I_caco3"]),  # 12
+                        float(kwargs["alpha"]),  # 13
+                        float(abs(kwargs["zsat_min"])),  # 14
+                        float(abs(kwargs["zmax"])),  # 15
+                        float(abs(kwargs["z0"])),  # 16
+                        Ksp,  # 17
+                        rg.swc.hplus,  # 18
+                        kwargs["zsnow"], # 19
+                    ]
+                ),
                 register=rg,
             )
 
