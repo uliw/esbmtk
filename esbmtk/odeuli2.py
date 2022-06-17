@@ -81,7 +81,7 @@ class setup_ode():
         import numpy as np
 
         self.i = 0
-        self.t = np.zeros(len(M.time)*12, dtype = int)
+        self.t = 0  #  t at the last timestep
 
     def eqs(self, t, R: list, M: Model) -> list:
         '''Auto generated esbmtk equations do not edit
@@ -187,7 +187,7 @@ class setup_ode():
 
         sep = "# ---------------- bits and pieces --------------------------- #"
         eqs.write(f"\n{sep}\n")
-        eqs.write(f"{ind2}self.t[self.i] = t\n")
+        eqs.write(f"{ind2}self.t = t\n")
         eqs.write(f"{ind2}self.i += 1\n")
         eqs.write(f"{ind2}return [{rel}]\n")
 
