@@ -754,7 +754,7 @@ class Model(esbmtkBase):
         if "method" in kwargs:
             method = kwargs["method"]
         else:
-            method = ("LSODA",)
+            method = "RK23",
 
         if "stype" in kwargs:
             stype = kwargs["stype"]
