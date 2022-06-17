@@ -754,7 +754,7 @@ class Model(esbmtkBase):
         if "method" in kwargs:
             method = kwargs["method"]
         else:
-            method = "RK23",
+            method = "RK23"
 
         if "stype" in kwargs:
             stype = kwargs["stype"]
@@ -775,8 +775,8 @@ class Model(esbmtkBase):
                 R,
                 args=(self,),
                 method=method,
-                t_eval=self.time,
-                atol=1e-9,
+                #t_eval=self.time,
+                atol=1e-15,
                 first_step=Q_("1 hour").to(self.t_unit).magnitude,
                 # dense_output=True,
                 # max_step=1,

@@ -1385,8 +1385,11 @@ class ExternalCode(Reservoir_no_set):
 
         self.vr_data = List()
         for e in self.vr_datafields.values():
-            self.vr_data.append(np.full(self.mo.steps, e, dtype=float))
-
+            if isinstance(e, (float, int)):
+                self.vr_data.append(np.full(self.mo.steps, e, dtype=float))
+            else:
+                 self.vr_data.append(e)
+                 
         self.gfh = GenericFunction(
             name=name,
             function=self.function,
