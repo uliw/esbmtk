@@ -60,7 +60,7 @@ class Model(esbmtkBase):
 
           esbmtkModel(name   =  "Test_Model",
                       start    = "0 yrs",    # optional: start time
-                      stop     = "1000 yrs", # end time
+                      stop     = "10000 yrs", # end time
                       timestep = "2 yrs",    # as a string "2 yrs"
                       offset = "0 yrs",    # optional: time offset for plot
                       mass_unit = "mol",   #required
@@ -761,6 +761,13 @@ class Model(esbmtkBase):
         else:
             stype = "solve_ivp"
 
+        print(
+            f"start time = {self.time[0]} ,"
+            f"end time = {self.time[-1]} ,"
+            f"dt = {self.dt} ,"
+            f"n steps = {len(self.time)}"
+        )
+
         if stype == "solve_ivp":
             results = solve_ivp(
                 ode_system.eqs,
@@ -769,6 +776,10 @@ class Model(esbmtkBase):
                 args=(self,),
                 method=method,
                 t_eval=self.time,
+                atol=1e-9,
+                first_step=1 / (365 * 24),
+                # dense_output=True,
+                # max_step=1,
             )
             # assign results
             for i, r in enumerate(icl):
@@ -776,17 +787,11 @@ class Model(esbmtkBase):
             self.time = results.t
 
         else:
-            results = odeint(
-                ode_system.eqs,
-                R,
-                t=self.time,
-                args=(self,),
-                tfirst=True
-            )
+            results = odeint(ode_system.eqs, R, t=self.time, args=(self,), tfirst=True)
             # assign results
             for i, r in enumerate(icl):
                 print(f"r = {r.full_name}")
-                r.c = results[:,i]
+                r.c = results[:, i]
 
         self.results = results
 
