@@ -37,7 +37,7 @@ def get_initial_conditions(M: Model) -> tuple[list, list, list, list]:
             R.append(r.c[0])
             icl.append(r)
 
-        if r.name == "Hplus":
+        if r.rtype == "computed":
             R.append(r.c[0])
             icl.append(r)
 
@@ -93,7 +93,7 @@ class setup_ode():
         '''
 
         from esbmtk import carbonate_system_1_ode, carbonate_system_2_ode
-        from esbmtk import get_hplus, gas_exchange_ode
+        from esbmtk import gas_exchange_ode, get_hplus
 
         max_i = len(M.time)
     
@@ -104,7 +104,7 @@ class setup_ode():
     # write file
     with open(fqfn, "w", encoding="utf-8") as eqs:
 
-        rel = "[\n"  # list of return values
+        rel = ""  # list of return values
         ind1 = 4 * " "
         ind2 = 8 * " "  # indention
         ind3 = 12 * " "  # indention
@@ -123,15 +123,17 @@ class setup_ode():
             if r.ftype == "cs1":
 
                 # carbonate_system_1_ode(rg: Reservoir
-                fname = f"{r.parent.full_name}.CO2aq".replace(".", "_")
+                fname = f"{r.parent.full_name}.Hplus".replace(".", "_")
                 print(r.parent.full_name)
                 eqs.write(
                     f"{ind2}{fname} = " f"carbonate_system_1_ode({r.parent.full_name}, "
                 )
                 eqs.write(get_ic(r.parent.DIC, icl)),
                 eqs.write(get_ic(r.parent.TA, icl)),
+                eqs.write(get_ic(r.parent.Hplus, icl)),
                 eqs.write("self.i, ")
-                eqs.write("max_i) #  cs1\n")
+                eqs.write(f"max_i)  # cs1\n")
+                rel = rel + f"{ind3}{fname},\n"
 
             elif r.ftype == "cs2":
                 pass  # see below
@@ -154,7 +156,7 @@ class setup_ode():
                 flist.append(flux)
 
         sep = "# ---------------- write computed reservoir equations -------- #\n"
-        sep = sep + "# that do not depend on fluxes"
+        sep = sep + "# that do depend on fluxes"
         eqs.write(f"\n{sep}\n")
 
         for r in M.lpc_r:  # All virtual reservoirs need to be in this list
@@ -211,20 +213,18 @@ class setup_ode():
                 eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
                 rel = rel + f"{ind3}{name},\n"
 
-            if r.name == "Hplus":
-                eqs.write(f"{ind2}{name} = " f"get_hplus({r.parent.full_name}, ")
-                eqs.write(get_ic(r.parent.DIC, icl))
-                eqs.write(get_ic(r.parent.TA, icl))
-                eqs.write(get_ic(r.parent.Hplus, icl))
-                eqs.write(")  #  cs1\n")
-                rel = rel + f"{ind3}{name},\n"
 
         sep = "# ---------------- bits and pieces --------------------------- #"
         eqs.write(f"\n{sep}\n")
         eqs.write(f"{ind2}self.i += 1\n")
         eqs.write(f"{ind2}self.t.extend([t])\n")
         eqs.write(f"{ind2}self.last_t = t\n")
-        eqs.write(f"{ind2}return {rel}{ind2}]\n")
+        eqs.write(f"{ind2}return [\n")
+        for r in icl:
+            eqs.write(f"{ind3}{r.full_name.replace('.', '_')},\n")
+            
+        eqs.write(f"{ind2}]\n")
+        
 
         if len(R) != len(rel.split(",")) - 1:
             raise ValueError(
