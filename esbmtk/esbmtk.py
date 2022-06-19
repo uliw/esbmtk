@@ -1649,6 +1649,7 @@ class Reservoir(ReservoirBase):
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
             "groupname": ["None", (str)],
+            "rtype": ["regular", (str)], 
             "function": ["None", (str, col.Callable)],
             "display_precision": [0.01, (int, float)],
             "register": [
