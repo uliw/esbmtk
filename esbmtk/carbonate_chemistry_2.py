@@ -108,12 +108,12 @@ def carbonate_system_1_ode(
 
     #diff = hplus - rg.cs.H.extend
     # save in state for co2aq, hco3, co3
-    if i > max_i:
-        rg.cs.H.extend([hplus])
-        rg.cs.CA.extend([ca])
-        rg.cs.HCO3.extend([hco3])
-        rg.cs.CO3.extend([co3])
-        rg.cs.CO2aq.extend([co2aq])
+    if i >= max_i:
+        np.append(rg.cs.H, hplus)
+        np.append(rg.cs.CA, ca)
+        np.append(rg.cs.HCO3, hco3)
+        np.append(rg.cs.CO3, co3)
+        np.append(rg.cs.CO2aq, co2aq)
     else:
         rg.cs.H[i] = hplus  # 1
         rg.cs.CA[i] = ca  # 1
@@ -126,7 +126,7 @@ def carbonate_system_1_ode(
     # print(f"hplus = {-np.log10(hplus)}")
     # print(f"hplus_0 = {-np.log10(hplus_0)}")
     # print(f"diff = {-np.log10(diff)}")
-    return diff
+    return diff, co2aq
 
 
 def carbonate_system_2_ode(

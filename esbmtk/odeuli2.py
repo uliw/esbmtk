@@ -95,7 +95,7 @@ class setup_ode():
         from esbmtk import carbonate_system_1_ode, carbonate_system_2_ode
         from esbmtk import gas_exchange_ode, get_hplus
 
-        max_i = len(M.time)
+        max_i = len(M.time)-1
     
         # flux equations
 """
@@ -124,15 +124,17 @@ class setup_ode():
 
                 # carbonate_system_1_ode(rg: Reservoir
                 fname = f"{r.parent.full_name}.Hplus".replace(".", "_")
-                print(r.parent.full_name)
+                cname = f"{r.parent.full_name}.CO2aq".replace(".", "_")
+
                 eqs.write(
-                    f"{ind2}{fname} = " f"carbonate_system_1_ode({r.parent.full_name}, "
+                    f"{ind2}{fname}, {cname} = carbonate_system_1_ode(\n"
+                    f"{ind3}{r.parent.full_name},\n"
+                    f"{ind3}{get_ic(r.parent.DIC, icl)}\n"
+                    f"{ind3}{get_ic(r.parent.TA, icl)}\n"
+                    f"{ind3}{get_ic(r.parent.Hplus, icl)}\n"
+                    f"{ind3}self.i,\n"
+                    f"{ind3}max_i)  # cs1\n"
                 )
-                eqs.write(get_ic(r.parent.DIC, icl)),
-                eqs.write(get_ic(r.parent.TA, icl)),
-                eqs.write(get_ic(r.parent.Hplus, icl)),
-                eqs.write("self.i, ")
-                eqs.write(f"max_i)  # cs1\n")
                 rel = rel + f"{ind3}{fname},\n"
 
             elif r.ftype == "cs2":
@@ -167,15 +169,17 @@ class setup_ode():
                 fn_dic = f"{r.register.DIC.full_name}.burial".replace(".", "_")
                 fn_ta = f"{r.register.TA.full_name}.burial".replace(".", "_")
                 influx = r.parent.cs.ref_flux[0].full_name.replace(".", "_")
-                eqs.write(f"{ind2}{fn_dic} = carbonate_system_2_ode(\n")
-                eqs.write(f"{ind3}t,\n{ind3}{r.parent.full_name},\n{ind3}{influx},\n")
-                eqs.write(f"{ind3}{get_ic(r.parent.DIC, icl)}\n"),
-                eqs.write(f"{ind3}{get_ic(r.parent.TA, icl)}\n"),
-                eqs.write(f"{ind3}self.i,\n")
-                eqs.write(f"{ind3}max_i,\n")
-                eqs.write(f"{ind3}self.last_t,\n")
-                eqs.write(f"{ind2})  # cs2\n")
-                eqs.write(f"{ind2}{fn_ta} = {fn_dic} * 2  # cs2\n")
+                eqs.write(
+                    f"{ind2}{fn_dic} = carbonate_system_2_ode(\n"
+                    f"{ind3}t,\n{ind3}{r.parent.full_name},\n{ind3}{influx},\n"
+                    f"{ind3}{get_ic(r.parent.DIC, icl)}\n"
+                    f"{ind3}{get_ic(r.parent.TA, icl)}\n"
+                    f"{ind3}self.i,\n"
+                    f"{ind3}max_i,\n"
+                    f"{ind3}self.last_t,\n"
+                    f"{ind2})  # cs2\n"
+                    f"{ind2}{fn_ta} = {fn_dic} * 2  # cs2\n"
+                )
             else:
                 raise ValueError(f"{r.ftype} is undefined")
 
@@ -213,18 +217,18 @@ class setup_ode():
                 eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
                 rel = rel + f"{ind3}{name},\n"
 
-
         sep = "# ---------------- bits and pieces --------------------------- #"
-        eqs.write(f"\n{sep}\n")
-        eqs.write(f"{ind2}self.i += 1\n")
-        eqs.write(f"{ind2}self.t.extend([t])\n")
-        eqs.write(f"{ind2}self.last_t = t\n")
-        eqs.write(f"{ind2}return [\n")
+        eqs.write(
+            f"\n{sep}\n"
+            f"{ind2}self.i += 1\n"
+            f"{ind2}self.t.extend([t])\n"
+            f"{ind2}self.last_t = t\n"
+            f"{ind2}return [\n"
+        )
         for r in icl:
             eqs.write(f"{ind3}{r.full_name.replace('.', '_')},\n")
-            
+
         eqs.write(f"{ind2}]\n")
-        
 
         if len(R) != len(rel.split(",")) - 1:
             raise ValueError(

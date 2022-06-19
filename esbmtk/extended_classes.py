@@ -1763,6 +1763,7 @@ class GasReservoir(ReservoirBase):
             "full_name": ["None", (str)],
             "isotopes": [False, (bool)],
             "geometry": ["None", (str, dict)],
+            "rtype": ["regular", (str)],
         }
 
         # provide a list of absolutely required keywords
