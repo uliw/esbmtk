@@ -23,14 +23,45 @@ from esbmtk import ReservoirGroup, Flux
 
 if tp.TYPE_CHECKING:
     from .esbmtk import ReservoirGroup, Flux
-
-
+    
 def get_hplus(
     rg: ReservoirGroup,
     dic: float,
     ta: float,
     hplus: float,
-) -> tuple:
+) -> float:
+
+    k1 = rg.swc.K1  # K1
+    k2 = rg.swc.K2  # K2
+    KW = rg.swc.KW  # KW
+    KB = rg.swc.KB  # KB
+    boron = rg.swc.boron  # boron
+    hplus_0 = hplus
+
+    # calculates carbonate alkalinity (ca) based on H+ concentration from the
+    # previous time-step
+    oh: float = KW / hplus
+    boh4: float = boron * KB / (hplus + KB)
+    fg: float = hplus - oh - boh4
+    ca: float = ta + fg
+
+    # hplus
+    gamm: float = dic / ca
+    dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
+    hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
+
+    return hplus - hplus_0
+
+    
+
+def carbonate_system_1_ode(
+    rg: ReservoirGroup,
+    dic: float,
+    ta: float,
+    hplus: float,
+    i: float,
+    max_i: float,
+) -> float:
 
     """Calculates and returns the H+ and carbonate alkalinity concentrations
      for the given reservoirgroup
@@ -65,35 +96,6 @@ def get_hplus(
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
     hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
 
-    return hplus - hplus_0, ca
-
-
-def carbonate_system_1_ode(
-    rg: ReservoirGroup,
-    dic: float,
-    ta: float,
-    hplus: float,  # H1 from get_hplus
-    ca: float,  # carbonate alkalinity from get_hplus
-) -> tuple:
-    """Calculates and returns the carbonate concentrations and saturation state
-     for the given reservoirgroup
-
-    LIMITATIONS:
-    - Assumes all concentrations are in mol/kg
-    - Assumes your Model is in mol/kg ! Otherwise, DIC and TA updating will not
-    be correct.
-
-    Calculations are based off equations from:
-    Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
-    Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
-
-    Author: M. Niazi & T. Tsan, 2021, with modifications by U. Wortmann 2022
-    """
-
-    k1 = rg.swc.K1  # K1
-    k2 = rg.swc.K2  # K2
-
-    # co3: float = dic / (1 + (hplus / k2) + ((hplus ** 2) / (k1 * k2)))
     hco3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
     co3: float = (ca - hco3) / 2
     # co2 (aq)
@@ -103,8 +105,28 @@ def carbonate_system_1_ode(
     """
     #  co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
     co2aq: float = dic - hco3 - co3
-   
-    return hco3, co3, co2aq
+
+    #diff = hplus - rg.cs.H.extend
+    # save in state for co2aq, hco3, co3
+    if i > max_i:
+        rg.cs.H.extend([hplus])
+        rg.cs.CA.extend([ca])
+        rg.cs.HCO3.extend([hco3])
+        rg.cs.CO3.extend([co3])
+        rg.cs.CO2aq.extend([co2aq])
+    else:
+        rg.cs.H[i] = hplus  # 1
+        rg.cs.CA[i] = ca  # 1
+        rg.cs.HCO3[i] = hco3  # 2
+        rg.cs.CO3[i] = co3  # 3
+        rg.cs.CO2aq[i] = co2aq  # 4
+
+    diff = hplus - hplus_0
+    # import numpy  as np
+    # print(f"hplus = {-np.log10(hplus)}")
+    # print(f"hplus_0 = {-np.log10(hplus_0)}")
+    # print(f"diff = {-np.log10(diff)}")
+    return diff
 
 
 def carbonate_system_2_ode(
