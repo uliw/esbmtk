@@ -1354,7 +1354,7 @@ class ExternalCode(Reservoir_no_set):
             "alias_list": ["None", (List, str)],
             "ftype": ["None", (str)],
             "ref_flux": ["None", (list, str)],
-            "return_values": ["None", (str, list)],
+            "return_values": ["None", (str, dict)],
             "arguments": ["None", (str, list)],
         }
 
@@ -1382,7 +1382,6 @@ class ExternalCode(Reservoir_no_set):
         self.alias_list = list(self.vr_datafields.keys())
 
         # initialize data fields
-
         self.vr_data = List()
         for e in self.vr_datafields.values():
             if isinstance(e, (float, int)):
@@ -1423,7 +1422,7 @@ class ExternalCode(Reservoir_no_set):
         """Register  alialises for each vr_datafield"""
 
         for i, a in enumerate(self.alias_list):
-            # print(f"{a} = {self.vr_data[i]}")
+            # print(f"{a} = {self.vr_data[i][0]}")
             setattr(self, a, self.vr_data[i])
 
     def append(self, **kwargs) -> None:

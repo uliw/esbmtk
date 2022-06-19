@@ -743,9 +743,11 @@ class Model(esbmtkBase):
         self.icl = icl
         self.cpl = cpl
         self.ipl = ipl
+
+        # write equation system
         write_equations_2(self, R, icl, cpl, ipl)
 
-        # import equations
+        # import equation system
         from equations import setup_ode
 
         ode_system = setup_ode(self)  # create ode system instance
@@ -775,7 +777,7 @@ class Model(esbmtkBase):
                 R,
                 args=(self,),
                 method=method,
-                t_eval=self.time,
+                #t_eval=self.time,
                 atol=1e-12,
                 first_step=Q_("1 hour").to(self.t_unit).magnitude,
                 # dense_output=True,
@@ -783,6 +785,7 @@ class Model(esbmtkBase):
             )
             # assign results
             for i, r in enumerate(icl):
+                print(f"assigning data to = {r.full_name}")
                 r.c = results.y[i]
             self.time = results.t
 
@@ -790,7 +793,7 @@ class Model(esbmtkBase):
             results = odeint(ode_system.eqs, R, t=self.time, args=(self,), tfirst=True)
             # assign results
             for i, r in enumerate(icl):
-                print(f"r = {r.full_name}")
+                print(f"assigning data to = {r.full_name}")
                 r.c = results[:, i]
 
         self.results = results

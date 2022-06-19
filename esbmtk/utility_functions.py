@@ -1325,56 +1325,80 @@ def add_carbonate_system_1(rgs: list):
     model = rgs[0].mo
     species = model.Carbon.CO2
 
-    if rgs[0].mo.use_ode:
-        func = carbonate_system_1_ode
-    else:
-        func = calc_carbonates_1
-
     for rg in rgs:
-
-        if hasattr(rg, "DIC") and hasattr(rg, "TA"):
-            ec = ExternalCode(
-                name="cs",
-                species=species,
-                function=func,
-                ftype="cs1",
-                vr_datafields={
-                    "H": rg.swc.hplus,  # 0
-                    "CA": rg.swc.ca,  # 1
-                    "HCO3": rg.swc.hco3,  # 2
-                    "CO3": rg.swc.co3,  # 3
-                    "CO2aq": rg.swc.co2,  # 4
-                },
-                function_input_data=List([rg.DIC.c, rg.TA.c]),
-                function_params=List(
-                    [
-                        rg.swc.K1,  # 0
-                        rg.swc.K2,  # 1
-                        rg.swc.KW,  # 2
-                        rg.swc.KB,  # 3
-                        rg.swc.boron,  # 4
-                        rg.swc.ca2,  # 5
-                        rg.swc.Ksp,  # 6
-                        rg.swc.hplus,  #
-                    ]
-                ),
-                return_values="H CA HCO3 CO3 CO2aq".split(" "),
-                register=rg,
-            )
-            rg.has_cs1 = True
-
-            # if model.use_ode:
-            #     for n in ec.return_values:
-            #         rt = Reservoir(
-            #             name=n,
-            #             species=getattr(model, n),
-            #             concentration=ec.vr_datafields[n],
-            #             register=rg,
-            #             volume=rg.volume,
-            #         )
-            #         rg.lor.append(rt)
+        if rgs[0].mo.use_ode:
+            if hasattr(rg, "DIC") and hasattr(rg, "TA"):
+                ec = ExternalCode(
+                    name="cs",
+                    species=species,
+                    function=carbonate_system_1_ode,
+                    ftype="cs1",
+                    vr_datafields={
+                        "H": rg.swc.hplus,
+                        "CA": rg.swc.ca,  # 1
+                        "HCO3": rg.swc.hco3,  # 2
+                        "CO3": rg.swc.co3,  # 3
+                        "CO2aq": rg.swc.co2,  # 4
+                    },
+                    function_input_data=List(),
+                    function_params=List(),
+                    register=rg,
+                    return_values={"Hplus": rg.swc.hplus}
+                )
+                for n, v in ec.return_values.items():
+                    rt = Reservoir(
+                        name=n,
+                        species=getattr(model, n),
+                        concentration=f"{v} mol/kg",
+                        register=rg,
+                        volume=rg.volume,
+                        rtype="computed",
+                    )
+                    rg.lor.append(rt)
         else:
-            raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
+            if hasattr(rg, "DIC") and hasattr(rg, "TA"):
+                ec = ExternalCode(
+                    name="cs",
+                    species=species,
+                    function=calc_carbonates_1,
+                    ftype="cs1",
+                    vr_datafields={
+                        "H": rg.swc.hplus,  # 0
+                        "CA": rg.swc.ca,  # 1
+                        "HCO3": rg.swc.hco3,  # 2
+                        "CO3": rg.swc.co3,  # 3
+                        "CO2aq": rg.swc.co2,  # 4
+                    },
+                    function_input_data=List([rg.DIC.c, rg.TA.c]),
+                    function_params=List(
+                        [
+                            rg.swc.K1,  # 0
+                            rg.swc.K2,  # 1
+                            rg.swc.KW,  # 2
+                            rg.swc.KB,  # 3
+                            rg.swc.boron,  # 4
+                            rg.swc.ca2,  # 5
+                            rg.swc.Ksp,  # 6
+                            rg.swc.hplus,  #
+                        ]
+                    ),
+                    # return_values="H CA HCO3 CO3 CO2aq".split(" "),
+                    register=rg,
+                )
+                rg.has_cs1 = True
+
+                # if model.use_ode:
+                #     for n in ec.return_values:
+                #         rt = Reservoir(
+                #             name=n,
+                #             species=getattr(model, n),
+                #             concentration=ec.vr_datafields[n],
+                #             register=rg,
+                #             volume=rg.volume,
+                #         )
+                #         rg.lor.append(rt)
+            else:
+                raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
 
 def add_carbonate_system_2(**kwargs) -> None:
@@ -1535,7 +1559,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                         float(abs(kwargs["z0"])),  # 16
                         Ksp,  # 17
                         rg.swc.hplus,  # 18
-                        kwargs["zsnow"], # 19
+                        kwargs["zsnow"],  # 19
                     ]
                 ),
                 register=rg,
