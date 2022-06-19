@@ -25,7 +25,38 @@ if tp.TYPE_CHECKING:
     from .esbmtk import ReservoirGroup, Flux
 
 
-def carbonate_system_1_ode(rg: ReservoirGroup, dic: float, ta: float, i: int) -> float:
+def get_hplus(
+    rg: ReservoirGroup,
+    dic: float,
+    ta: float,
+    hplus: float,
+) -> float:
+
+    k1 = rg.swc.K1  # K1
+    k2 = rg.swc.K2  # K2
+    KW = rg.swc.KW  # KW
+    KB = rg.swc.KB  # KB
+    boron = rg.swc.boron  # boron
+    hplus_0 = hplus
+
+    # calculates carbonate alkalinity (ca) based on H+ concentration from the
+    # previous time-step
+    oh: float = KW / hplus
+    boh4: float = boron * KB / (hplus + KB)
+    fg: float = hplus - oh - boh4
+    ca: float = ta + fg
+
+    # hplus
+    gamm: float = dic / ca
+    dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
+    hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
+
+    return hplus - hplus_0
+
+
+def carbonate_system_1_ode(
+    rg: ReservoirGroup, dic: float, ta: float, i: int, max_i: int
+) -> float:
     """Calculates and returns the carbonate concentrations and saturation state
      for the given reservoirgroup
 
@@ -46,7 +77,7 @@ def carbonate_system_1_ode(rg: ReservoirGroup, dic: float, ta: float, i: int) ->
     KW = rg.swc.KW  # KW
     KB = rg.swc.KB  # KB
     boron = rg.swc.boron  # boron
-    hplus = rg.cs.H[0]
+    hplus = rg.cs.H[i - 1]
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
@@ -74,13 +105,17 @@ def carbonate_system_1_ode(rg: ReservoirGroup, dic: float, ta: float, i: int) ->
     #  co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
     co2aq: float = dic - hco3 - co3
 
-    rg.cs.H[0] = hplus  #
+    if i > max_i:
+        rg.cs.H.extend([hplus])
+    else:
+        rg.cs.H[i] = hplus  #
     # rg.cs.CA[0] = ca
     # rg.cs.HCO3[0] = hco3
     # rg.cs.CO3[0] = co3
     # rg.cs.CO2aq[0] = co2aq
 
     return co2aq
+    return hplus - rg.cs.H[i]
 
 
 def carbonate_system_2_ode(
@@ -90,6 +125,7 @@ def carbonate_system_2_ode(
     dic: float,
     ta: float,
     i: float,
+    max_i: float,
     last_t: float,
 ) -> float:
     """Calculates and returns the carbonate burial flux and carbonate compensation
@@ -108,23 +144,24 @@ def carbonate_system_2_ode(
 
     Author: M. Niazi & T. Tsan, 2021
     """
-    
+
     # concentration
-    hplus = rg.cs.H[0]  # hplus from last timestep
+    hplus = rg.cs.H[i - 1]  # hplus from last timestep
 
     # Parameters
-    p =  rg.cs.function_params
-    
-    k1 = p[0]  # K1
-    k2 = p[1]  # K2
-    KW = p[2]  # KW
-    KB = p[3]  # KB
-    boron = p[4]  # boron
+    k1 = rg.swc.K1  # K1
+    k2 = rg.swc.K2  # K2
+    KW = rg.swc.KW  # KW
+    KB = rg.swc.KB  # KB
+    boron = rg.swc.boron  # boron
+
+    p = rg.cs.function_params
+
     ksp0 = p[5]
     ca2 = rg.swc.ca2  # Ca2+
     kc = p[6]
     AD = p[8]
-    zsat0 = p[9]
+    zsat0 = int(abs(p[9]))
     I_caco3 = p[12]
     alpha = p[13]
     zsat_min = int(abs(p[14]))
@@ -164,6 +201,11 @@ def carbonate_system_2_ode(
         co3 = 1e-16
 
     zsat = int(max((zsat0 * np.log(ca2 * co3 / ksp0)), zsat_min))  # eq2
+
+    # print(
+    #     f"i = {i}, zsat0 = {zsat0:.1f}, ca= {ca:.2e}, co3 = {co3:.2e}, ksp0 = {ksp0:.2e}, zsat_min = {zsat_min:.1f}"
+    # )
+    # print(f"zsat = {zsat:.1f}\n")
     if zsat < zsat_min:
         zsat = int(zsat_min)
 
@@ -215,20 +257,32 @@ def carbonate_system_2_ode(
     # BD & F_burial
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = Bm - BD
+    diss = Bm - Fburial
     # Fburial12 = Fburial * input_data[1][i - 1] / input_data[0][i - 1]
     # diss12 = (B12 - Fburial12) * dt  # dissolution flux light isotope
 
-    # copy results into datafields
-    rg.cs.H[0] = hplus  # 0
-    rg.cs.CA[i] = ca  # 1
-    rg.cs.HCO3[i] = hco3  # 2
-    rg.cs.CO3[i] = co3  # 3
-    rg.cs.CO2aq[i] = co2aq  # 4
-    rg.cs.zsat[i] = zsat  # 5
-    rg.cs.zcc[i] = zcc  # 6
-    rg.cs.zsnow[i] = zsnow  # 7
+    if i > max_i:
+        rg.cs.H.extend([hplus])
+        rg.cs.CA.extend([ca])
+        rg.cs.HCO3.extend([hco3])
+        rg.cs.CO3.extend([co3])
+        rg.cs.CO2aq.extend([co2aq])
+        rg.cs.zsat.extend([zsat])
+        rg.cs.zcc.extend([zcc])
+        rg.cs.zsnow.extend([zsnow])
+        rg.cs.Fburial.extend([Fburial])
+    else:
+        rg.cs.H[i] = hplus  #
+        rg.cs.CA[i] = ca  # 1
+        rg.cs.HCO3[i] = hco3  # 2
+        rg.cs.CO3[i] = co3  # 3
+        rg.cs.CO2aq[i] = co2aq  # 4
+        rg.cs.zsat[i] = zsat  # 5
+        rg.cs.zcc[i] = zcc  # 6
+        rg.cs.zsnow[i] = zsnow  # 7
+        rg.cs.Fburial[i] = Fburial
 
-    return Fburial
+    return -diss
 
 
 def gas_exchange_ode(scale, gas_c, p_H2O, solubility, co2aq):

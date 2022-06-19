@@ -1510,6 +1510,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                     "depth_area_table": area_table,
                     "area_dz_table": area_dz_table,
                     "Csat_table": Csat_table,
+                    "Fburial": 0.0,
                 },
                 ref_flux=kwargs["carbonate_export_fluxes"],
                 function_input_data=List(),

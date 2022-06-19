@@ -37,6 +37,10 @@ def get_initial_conditions(M: Model) -> tuple[list, list, list, list]:
             R.append(r.c[0])
             icl.append(r)
 
+        if r.name == "Hplus":
+            R.append(r.c[0])
+            icl.append(r)
+
     return R, icl, cpl, ipl
 
 
@@ -81,13 +85,17 @@ class setup_ode():
         import numpy as np
 
         self.i = 0
-        self.t = 0  #  t at the last timestep
+        self.t = []
+        self.last_t = 0
 
     def eqs(self, t, R: list, M: Model) -> list:
         '''Auto generated esbmtk equations do not edit
         '''
 
-        from esbmtk import carbonate_system_1_ode, carbonate_system_2_ode, gas_exchange_ode
+        from esbmtk import carbonate_system_1_ode, carbonate_system_2_ode
+        from esbmtk import get_hplus, gas_exchange_ode
+
+        max_i = len(M.time)
     
         # flux equations
 """
@@ -122,7 +130,8 @@ class setup_ode():
                 )
                 eqs.write(get_ic(r.parent.DIC, icl)),
                 eqs.write(get_ic(r.parent.TA, icl)),
-                eqs.write("self.i) #  cs1\n")
+                eqs.write("self.i, ")
+                eqs.write("max_i) #  cs1\n")
 
             elif r.ftype == "cs2":
                 pass  # see below
@@ -160,7 +169,10 @@ class setup_ode():
                 eqs.write(f"{ind3}t,\n{ind3}{r.parent.full_name},\n{ind3}{influx},\n")
                 eqs.write(f"{ind3}{get_ic(r.parent.DIC, icl)}\n"),
                 eqs.write(f"{ind3}{get_ic(r.parent.TA, icl)}\n"),
-                eqs.write(f"{ind3}self.i,\n{ind3}self.t,\n{ind2})  # cs2\n")
+                eqs.write(f"{ind3}self.i,\n")
+                eqs.write(f"{ind3}max_i,\n")
+                eqs.write(f"{ind3}self.last_t,\n")
+                eqs.write(f"{ind2})  # cs2\n")
                 eqs.write(f"{ind2}{fn_ta} = {fn_dic} * 2  # cs2\n")
             else:
                 raise ValueError(f"{r.ftype} is undefined")
@@ -199,10 +211,19 @@ class setup_ode():
                 eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
                 rel = rel + f"{ind3}{name},\n"
 
+            if r.name == "Hplus":
+                eqs.write(f"{ind2}{name} = " f"get_hplus({r.parent.full_name}, ")
+                eqs.write(get_ic(r.parent.DIC, icl))
+                eqs.write(get_ic(r.parent.TA, icl))
+                eqs.write(get_ic(r.parent.Hplus, icl))
+                eqs.write(")  #  cs1\n")
+                rel = rel + f"{ind3}{name},\n"
+
         sep = "# ---------------- bits and pieces --------------------------- #"
         eqs.write(f"\n{sep}\n")
-        eqs.write(f"{ind2}self.t = t\n")
         eqs.write(f"{ind2}self.i += 1\n")
+        eqs.write(f"{ind2}self.t.extend([t])\n")
+        eqs.write(f"{ind2}self.last_t = t\n")
         eqs.write(f"{ind2}return {rel}{ind2}]\n")
 
         if len(R) != len(rel.split(",")) - 1:
