@@ -23,7 +23,8 @@ from esbmtk import ReservoirGroup, Flux
 
 if tp.TYPE_CHECKING:
     from .esbmtk import ReservoirGroup, Flux
-    
+
+
 def get_hplus(
     rg: ReservoirGroup,
     dic: float,
@@ -52,7 +53,6 @@ def get_hplus(
 
     return hplus - hplus_0
 
-    
 
 def carbonate_system_1_ode(
     rg: ReservoirGroup,
@@ -106,7 +106,7 @@ def carbonate_system_1_ode(
     #  co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
     co2aq: float = dic - hco3 - co3
 
-    #diff = hplus - rg.cs.H.extend
+    # diff = hplus - rg.cs.H.extend
     # save in state for co2aq, hco3, co3
     if i >= max_i:
         np.append(rg.cs.H, hplus)
@@ -135,14 +135,19 @@ def carbonate_system_2_ode(
     Bm: Flux,
     dic: float,
     ta: float,
+    hplus: float,
     i: float,
     max_i: float,
     last_t: float,
 ) -> float:
-    """Calculates and returns the carbonate burial flux and carbonate compensation
-    depth (zcc) at the ith time-step of the model.
+    """Calculates and returns the fraction of the carbonate rain that is
+    dissolved an returned back into the ocean. Additionally, calculate
+    the following critical depth intervals:
 
-
+    zsat: top of lysocline
+    zcc: carbonate compensation depth
+    zsnow: snowline below which no carbonate exist.
+    
     LIMITATIONS:
     - Assumes all concentrations are in mol/kg
     - Assumes your Model is in mol/kg ! Otherwise, DIC and TA updating will not
@@ -156,8 +161,7 @@ def carbonate_system_2_ode(
     Author: M. Niazi & T. Tsan, 2021
     """
 
-    # concentration
-    hplus = rg.cs.H[i - 1]  # hplus from last timestep
+    hplus_0 = hplus  # hplus from last timestep
 
     # Parameters
     k1 = rg.swc.K1  # K1
@@ -268,20 +272,24 @@ def carbonate_system_2_ode(
     # BD & F_burial
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = Bm - BD
+
+    """ the fraction of the carbonate rain that is dissolved and returned to
+    ocean is the difference between the carbonate rain and the the burial
+    flux """
     diss = Bm - Fburial
     # Fburial12 = Fburial * input_data[1][i - 1] / input_data[0][i - 1]
     # diss12 = (B12 - Fburial12) * dt  # dissolution flux light isotope
 
     if i > max_i:
-        rg.cs.H.extend([hplus])
-        rg.cs.CA.extend([ca])
-        rg.cs.HCO3.extend([hco3])
-        rg.cs.CO3.extend([co3])
-        rg.cs.CO2aq.extend([co2aq])
-        rg.cs.zsat.extend([zsat])
-        rg.cs.zcc.extend([zcc])
-        rg.cs.zsnow.extend([zsnow])
-        rg.cs.Fburial.extend([Fburial])
+        np.append(rg.cs.H, hplus)
+        np.append(rg.cs.CA, ca)
+        np.append(rg.cs.HCO3, hco3)
+        np.append(rg.cs.CO3, co3)
+        np.append(rg.cs.CO2aq, co2aq)
+        np.append(rg.cs.zsat, zsat)
+        np.append(rg.cs.zcc, zcc)
+        np.append(rg.cs.zsnow, zsnow)
+        np.append(rg.cs.Fburial, Fburial)
     else:
         rg.cs.H[i] = hplus  #
         rg.cs.CA[i] = ca  # 1
@@ -293,7 +301,7 @@ def carbonate_system_2_ode(
         rg.cs.zsnow[i] = zsnow  # 7
         rg.cs.Fburial[i] = Fburial
 
-    return -diss
+    return diss
 
 
 def gas_exchange_ode(scale, gas_c, p_H2O, solubility, co2aq):
