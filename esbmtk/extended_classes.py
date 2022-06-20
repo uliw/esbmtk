@@ -1007,7 +1007,7 @@ class DataField(esbmtkBase):
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this instance"""
 
-        from . import Reservoir_no_set, VirtualReservoir, ExternalCode
+        from . import Reservoir_no_set, VirtualReservoir, ExternalCode, Model
 
         # dict of all known keywords and their type
         self.defaults: dict[str, list(str, tuple)] = {
@@ -1015,6 +1015,18 @@ class DataField(esbmtkBase):
             "register": [
                 "None",
                 (
+                    Model,
+                    Reservoir,
+                    ReservoirGroup,
+                    Reservoir_no_set,
+                    VirtualReservoir,
+                    ExternalCode,
+                ),
+            ],
+            "associated_with": [
+                "None",
+                (
+                    Model,
                     Reservoir,
                     ReservoirGroup,
                     Reservoir_no_set,
@@ -1035,11 +1047,14 @@ class DataField(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "register", "y1_data"]
+        self.lrk: list = ["name", ["register", "associated_with"], "y1_data"]
 
         # provide a dictionary entry for a keyword specific error message
         # see esbmtkBase.__initerrormessages__()
         self.__initialize_keyword_variables__(kwargs)
+
+        if self.register == "None":
+            self.register = self.associated_with
 
         # set legacy variables
         self.legend_left = self.y1_legend
@@ -1387,8 +1402,8 @@ class ExternalCode(Reservoir_no_set):
             if isinstance(e, (float, int)):
                 self.vr_data.append(np.full(self.mo.steps, e, dtype=float))
             else:
-                 self.vr_data.append(e)
-                 
+                self.vr_data.append(e)
+
         self.gfh = GenericFunction(
             name=name,
             function=self.function,
@@ -1401,7 +1416,6 @@ class ExternalCode(Reservoir_no_set):
         )
         # add the function handle to the list of function to be executed
 
-            
         self.mo.lpc_r.append(self.gfh)
 
         self.mo.lor.remove(self)
