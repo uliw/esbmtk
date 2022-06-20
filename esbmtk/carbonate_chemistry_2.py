@@ -260,6 +260,7 @@ def carbonate_system_2_ode(
         BPDC = kc * area_p.dot(diff)
         # eq 4 dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
         zsnow = zsnow - BPDC / (area_dz_table[int(zsnow)] * I_caco3) * t - last_t
+        print(f"zcc = {zcc} calculating zsnow = {zsnow}, t = {t} dt = {t - last_t}, i = {i}")
 
     else:  # zcc > zsnow
         # there is no carbonate below zsnow, so BPDC = 0
@@ -291,6 +292,7 @@ def carbonate_system_2_ode(
         rg.cs.zsnow[i] = zsnow  # 7
         rg.cs.Fburial[i] = Fburial
 
+    
     """ the fraction of the carbonate rain that is dissolved and returned to
     ocean is the difference between the carbonate rain and the the burial
     flux """
@@ -298,8 +300,8 @@ def carbonate_system_2_ode(
     # Fburial12 = Fburial * input_data[1][i - 1] / input_data[0][i - 1]
     # diss12 = (B12 - Fburial12) * dt  # dissolution flux light isotope
     
-    diff = hplus - hplus_0
-    return -diss, diff
+    dH = hplus - hplus_0
+    return -diss, dH
 
 
 def gas_exchange_ode(scale, gas_c, p_H2O, solubility, co2aq):
