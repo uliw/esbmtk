@@ -235,7 +235,7 @@ def carbonate_system_2_ode(
     A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
     A_zcc_zmax = depth_area_table[zcc] - depth_area_table[zmax]
 
-    # ------------------------Calculate Burial Fluxes------------------------------------
+    # ------------------------Calculate Burial Fluxes----------------------------- #
     # BCC = (A(zcc, zmax) / AD) * B, eq 7
     BCC = A_zcc_zmax * B_AD
 
@@ -251,19 +251,22 @@ def carbonate_system_2_ode(
     BDS = BDS_under + BDS_resp
 
     # BPDC =  kc int(zsnow,zcc) area' Csat(z,t) - [CO3](t) dz, eq 10
-    if zcc < zsnow:  # zcc cannot
+    if zcc < zsnow:  # zsnow is deeper than zcc, so we need to dissolve
+                     # sedimentary CaCO3
         if zsnow > zmax:  # zsnow cannot exceed ocean depth
             zsnow = zmax
 
         diff = Csat_table[zcc : int(zsnow)] - co3
         area_p = area_dz_table[zcc : int(zsnow)]
         BPDC = kc * area_p.dot(diff)
+        print(f"BPDC = {BPDC:.2e}, zsnow={zsnow}")
         # eq 4 dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
         zsnow = zsnow - BPDC / (area_dz_table[int(zsnow)] * I_caco3) * t - last_t
         print(f"zcc = {zcc} calculating zsnow = {zsnow}, t = {t} dt = {t - last_t}, i = {i}")
 
     else:  # zcc > zsnow
         # there is no carbonate below zsnow, so BPDC = 0
+        print(f"seting zsnow({zcc}) to zcc({zcc}), t = {t} dt = {t - last_t}, i = {i}")
         zsnow = zcc
         BPDC = 0
 

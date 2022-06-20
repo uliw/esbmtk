@@ -778,7 +778,7 @@ class Model(esbmtkBase):
                 R,
                 args=(self,),
                 method=method,
-                t_eval=self.time,
+                # t_eval=self.time,
                 atol=1e-12,
                 first_step=Q_("1 hour").to(self.t_unit).magnitude,
                 # dense_output=True,
