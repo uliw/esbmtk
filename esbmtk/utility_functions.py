@@ -1343,7 +1343,7 @@ def add_carbonate_system_1(rgs: list):
                     function_input_data=List(),
                     function_params=List(),
                     register=rg,
-                    return_values={"Hplus": rg.swc.hplus}
+                    return_values={"Hplus": rg.swc.hplus},
                 )
                 for n, v in ec.return_values.items():
                     rt = Reservoir(
@@ -1431,7 +1431,7 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     """
 
-    from esbmtk import ExternalCode, calc_carbonates_2, carbonate_system_2_ode
+    from esbmtk import ExternalCode, calc_carbonates_2, carbonate_system_2_ode, Reservoir
 
     # list of known keywords
     lkk: dict = {
@@ -1507,14 +1507,13 @@ def add_carbonate_system_2(**kwargs) -> None:
     AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
 
     for i, rg in enumerate(rgs):  # Setup the virtual reservoirs
-
         if rg.mo.register == "local":
             species = rg.mo.Carbon.CO2
         else:
             species = __builtins__["CO2"]
 
         if rgs[0].mo.use_ode:
-            ExternalCode(
+            ec = ExternalCode(
                 name="cs",
                 species=species,
                 function="None",
@@ -1562,8 +1561,19 @@ def add_carbonate_system_2(**kwargs) -> None:
                         kwargs["zsnow"],  # 19
                     ]
                 ),
+                return_values={"Hplus": rg.swc.hplus},
                 register=rg,
             )
+            for n, v in ec.return_values.items():
+                rt = Reservoir(
+                    name=n,
+                    species=getattr(model, n),
+                    concentration=f"{v} mol/kg",
+                    register=rg,
+                    volume=rg.volume,
+                    rtype="computed",
+                )
+                rg.lor.append(rt)
 
         else:
             ExternalCode(

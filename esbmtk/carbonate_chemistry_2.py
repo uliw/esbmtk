@@ -109,11 +109,11 @@ def carbonate_system_1_ode(
     # diff = hplus - rg.cs.H.extend
     # save in state for co2aq, hco3, co3
     if i >= max_i:
-        np.append(rg.cs.H, hplus)
-        np.append(rg.cs.CA, ca)
-        np.append(rg.cs.HCO3, hco3)
-        np.append(rg.cs.CO3, co3)
-        np.append(rg.cs.CO2aq, co2aq)
+        rg.cs.H = np.append(rg.cs.H, hplus)
+        rg.cs.CA = np.append(rg.cs.CA, ca)
+        rg.cs.HCO3 = np.append(rg.cs.HCO3, hco3)
+        rg.cs.CO3 = np.append(rg.cs.CO3, co3)
+        rg.cs.CO2aq = np.append(rg.cs.CO2aq, co2aq)
     else:
         rg.cs.H[i] = hplus  # 1
         rg.cs.CA[i] = ca  # 1
@@ -122,10 +122,7 @@ def carbonate_system_1_ode(
         rg.cs.CO2aq[i] = co2aq  # 4
 
     diff = hplus - hplus_0
-    # import numpy  as np
-    # print(f"hplus = {-np.log10(hplus)}")
-    # print(f"hplus_0 = {-np.log10(hplus_0)}")
-    # print(f"diff = {-np.log10(diff)}")
+    
     return diff, co2aq
 
 
@@ -273,23 +270,16 @@ def carbonate_system_2_ode(
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = Bm - BD
 
-    """ the fraction of the carbonate rain that is dissolved and returned to
-    ocean is the difference between the carbonate rain and the the burial
-    flux """
-    diss = Bm - Fburial
-    # Fburial12 = Fburial * input_data[1][i - 1] / input_data[0][i - 1]
-    # diss12 = (B12 - Fburial12) * dt  # dissolution flux light isotope
-
     if i > max_i:
-        np.append(rg.cs.H, hplus)
-        np.append(rg.cs.CA, ca)
-        np.append(rg.cs.HCO3, hco3)
-        np.append(rg.cs.CO3, co3)
-        np.append(rg.cs.CO2aq, co2aq)
-        np.append(rg.cs.zsat, zsat)
-        np.append(rg.cs.zcc, zcc)
-        np.append(rg.cs.zsnow, zsnow)
-        np.append(rg.cs.Fburial, Fburial)
+        rg.cs.H = np.append(rg.cs.H, hplus)
+        rg.cs.CA = np.append(rg.cs.CA, ca)
+        rg.cs.HCO3 = np.append(rg.cs.HCO3, hco3)
+        rg.cs.CO3 = np.append(rg.cs.CO3, co3)
+        rg.cs.CO2aq = np.append(rg.cs.CO2aq, co2aq)
+        rg.cs.zsat = np.append(rg.cs.zsat, zsat)
+        rg.cs.zcc = np.append(rg.cs.zcc, zcc)
+        rg.cs.zsnow = np.append(rg.cs.zsnow, zsnow)
+        rg.cs.Fburial = np.append(rg.cs.Fburial, Fburial)
     else:
         rg.cs.H[i] = hplus  #
         rg.cs.CA[i] = ca  # 1
@@ -301,7 +291,15 @@ def carbonate_system_2_ode(
         rg.cs.zsnow[i] = zsnow  # 7
         rg.cs.Fburial[i] = Fburial
 
-    return diss
+    """ the fraction of the carbonate rain that is dissolved and returned to
+    ocean is the difference between the carbonate rain and the the burial
+    flux """
+    diss = Bm - Fburial
+    # Fburial12 = Fburial * input_data[1][i - 1] / input_data[0][i - 1]
+    # diss12 = (B12 - Fburial12) * dt  # dissolution flux light isotope
+    
+    diff = hplus - hplus_0
+    return -diss, diff
 
 
 def gas_exchange_ode(scale, gas_c, p_H2O, solubility, co2aq):
