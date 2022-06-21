@@ -1387,16 +1387,6 @@ def add_carbonate_system_1(rgs: list):
                 )
                 rg.has_cs1 = True
 
-                # if model.use_ode:
-                #     for n in ec.return_values:
-                #         rt = Reservoir(
-                #             name=n,
-                #             species=getattr(model, n),
-                #             concentration=ec.vr_datafields[n],
-                #             register=rg,
-                #             volume=rg.volume,
-                #         )
-                #         rg.lor.append(rt)
             else:
                 raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
@@ -1431,7 +1421,12 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     """
 
-    from esbmtk import ExternalCode, calc_carbonates_2, carbonate_system_2_ode, Reservoir
+    from esbmtk import (
+        ExternalCode,
+        calc_carbonates_2,
+        carbonate_system_2_ode,
+        Reservoir,
+    )
 
     # list of known keywords
     lkk: dict = {
@@ -1466,7 +1461,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     lod: dict = {
         "zsat": -3715,  # m
         "zcc": -4750,  # m
-        "zsnow": -4750,  # m
+        "zsnow": -5000,  # m
         "zsat0": -5078,  # m
         "Ksp0": reservoir.swc.Ksp0,  # mol^2/kg^2
         "kc": 8.84 * 1000,  # m/yr converted to kg/(m^2 yr)
@@ -1527,9 +1522,9 @@ def add_carbonate_system_2(**kwargs) -> None:
                     "HCO3": rg.swc.hco3,  # 2 HCO3
                     "CO3": rg.swc.co3,  # 3 CO3
                     "CO2aq": rg.swc.co2,  # 4 CO2aq
-                    "zsat": kwargs["zsat"],  # 5 zsat
-                    "zcc": kwargs["zcc"],  # 6 zcc
-                    "zsnow": kwargs["zsnow"],  # 7 zsnow
+                    "zsat": abs(kwargs["zsat"]),  # 5 zsat
+                    "zcc": abs(kwargs["zcc"]),  # 6 zcc
+                    # "zsnow": abs(kwargs["zsnow"]),  # 7 zsnow
                     "depth_area_table": area_table,
                     "area_dz_table": area_dz_table,
                     "Csat_table": Csat_table,
@@ -1558,10 +1553,10 @@ def add_carbonate_system_2(**kwargs) -> None:
                         float(abs(kwargs["z0"])),  # 16
                         Ksp,  # 17
                         rg.swc.hplus,  # 18
-                        kwargs["zsnow"],  # 19
+                        float(abs(kwargs["zsnow"])),  # 19
                     ]
                 ),
-                return_values={"Hplus": rg.swc.hplus},
+                return_values={"Hplus": rg.swc.hplus, "zsnow": float(abs(kwargs["zsnow"]))},
                 register=rg,
             )
             for n, v in ec.return_values.items():
@@ -1633,7 +1628,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                         float(abs(kwargs["z0"])),  # 16
                         Ksp,  # 17
                         rg.swc.hplus,
-                        kwargs["zsnow"],
+                        float(abs(kwargs["zsnow"])),
                     ]
                 ),
                 register=rg,

@@ -789,7 +789,6 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     boron = params[4]
     ksp0 = params[5]
     kc = params[6]
-    volume = params[7]
     AD = params[8]
     zsat0 = int(abs(params[9]))
     ca2 = params[10]
@@ -799,7 +798,6 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     zsat_min = int(abs(params[14]))
     zmax = int(abs(params[15]))
     z0 = int(abs(params[16]))
-    ksp = params[17]
 
     # Data
     dic: float = input_data[2][i - 1]  # DIC concentration [mol/kg]
@@ -815,7 +813,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # vr_data
     hplus: float = vr_data[0][i - 1]  # H+ concentration [mol/kg]
     zsnow = vr_data[7][i - 1]  # previous zsnow
-
+    
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus
     boh4: float = boron * KB / (hplus + KB)
@@ -884,7 +882,9 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
 
         diff = Csat_table[zcc : int(zsnow)] - co3
         area_p = area_dz_table[zcc : int(zsnow)]
+      
         BPDC = kc * area_p.dot(diff)
+        zold = BPDC / (area_dz_table[int(zsnow)] * I_caco3) * dt
         # eq 4 dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
         zsnow = zsnow - BPDC / (area_dz_table[int(zsnow)] * I_caco3) * dt
 

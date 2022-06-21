@@ -191,9 +191,9 @@ def Boron(model):
     )  # Borate
 
 
-def distances(model):
+def distance_variables(model):
     eh = Element(
-        name="distance variables",
+        name="distance_variables",
         model=model,  # model handle
         mass_unit="m",  # base mass unit
         register=model,

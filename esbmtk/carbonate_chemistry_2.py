@@ -122,7 +122,7 @@ def carbonate_system_1_ode(
         rg.cs.CO2aq[i] = co2aq  # 4
 
     diff = hplus - hplus_0
-    
+
     return diff, co2aq
 
 
@@ -133,6 +133,7 @@ def carbonate_system_2_ode(
     dic: float,
     ta: float,
     hplus: float,
+    zsnow: float,
     i: float,
     max_i: float,
     last_t: float,
@@ -144,7 +145,7 @@ def carbonate_system_2_ode(
     zsat: top of lysocline
     zcc: carbonate compensation depth
     zsnow: snowline below which no carbonate exist.
-    
+
     LIMITATIONS:
     - Assumes all concentrations are in mol/kg
     - Assumes your Model is in mol/kg ! Otherwise, DIC and TA updating will not
@@ -179,7 +180,7 @@ def carbonate_system_2_ode(
     zsat_min = int(abs(p[14]))
     zmax = int(abs(p[15]))
     z0 = int(abs(p[16]))
-    zsnow = int(abs(p[19]))  # previous zsnow
+    # zsnow = int(abs(p[19]))  # previous zsnow
     depth_area_table = rg.cs.depth_area_table
     area_dz_table = rg.cs.area_dz_table
     Csat_table = rg.cs.Csat_table
@@ -251,24 +252,38 @@ def carbonate_system_2_ode(
     BDS = BDS_under + BDS_resp
 
     # BPDC =  kc int(zsnow,zcc) area' Csat(z,t) - [CO3](t) dz, eq 10
-    if zcc < zsnow:  # zsnow is deeper than zcc, so we need to dissolve
-                     # sedimentary CaCO3
-        if zsnow > zmax:  # zsnow cannot exceed ocean depth
-            zsnow = zmax
+    # if zcc < zsnow:  # zsnow is deeper than zcc, so we need to dissolve
+    #     if zsnow > zmax:  # zsnow cannot exceed ocean depth
+    #         zsnow = zmax
+    # sedimentary CaCO3
+    # if zsnow > zmax:  # zsnow cannot exceed ocean depth
+    #     zsnow = zmax
+    # moved to equations.py
 
-        diff = Csat_table[zcc : int(zsnow)] - co3
-        area_p = area_dz_table[zcc : int(zsnow)]
-        BPDC = kc * area_p.dot(diff)
-        print(f"BPDC = {BPDC:.2e}, zsnow={zsnow}")
-        # eq 4 dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
-        zsnow = zsnow - BPDC / (area_dz_table[int(zsnow)] * I_caco3) * t - last_t
-        print(f"zcc = {zcc} calculating zsnow = {zsnow}, t = {t} dt = {t - last_t}, i = {i}")
+    # get saturation difference per depth interval
+    diff: np.ndarray = Csat_table[zcc : int(zsnow)] - co3
 
-    else:  # zcc > zsnow
-        # there is no carbonate below zsnow, so BPDC = 0
-        print(f"seting zsnow({zcc}) to zcc({zcc}), t = {t} dt = {t - last_t}, i = {i}")
-        zsnow = zcc
+    # get table of depth intervals
+    # print(f"zcc = {zcc}, zsnow = {zsnow}")
+    area_p: np.ndarray = area_dz_table[zcc : int(zsnow)]
+
+    # integrate saturation difference over area
+    BPDC = kc * area_p.dot(diff)
+
+    if BPDC < 0:
         BPDC = 0
+    #     d_zsnow = 0
+    # print(f"BPDC = {BPDC:.2e}")
+    # eq 4 dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
+    # print(f"area_dz_table[int(zsnow)] = {area_dz_table[int(zsnow)]:.2e}")
+    # print(f"I_caco3 = {I_caco3}, dt = {(t - last_t):.2e}")
+
+    d_zsnow = - BPDC / (area_dz_table[int(zsnow)] * I_caco3)
+
+    # elif zcc >= zsnow:  # e.g. 5000 > 4750
+    #     # there is no carbonate below 4750, so BPDC = 0
+    #     d_zsnow = 0
+    #     BPDC = 0
 
     # BD & F_burial
     BD: float = BDS + BCC + BNS + BPDC
@@ -282,7 +297,7 @@ def carbonate_system_2_ode(
         rg.cs.CO2aq = np.append(rg.cs.CO2aq, co2aq)
         rg.cs.zsat = np.append(rg.cs.zsat, zsat)
         rg.cs.zcc = np.append(rg.cs.zcc, zcc)
-        rg.cs.zsnow = np.append(rg.cs.zsnow, zsnow)
+        # rg.cs.zsnow = np.append(rg.cs.zsnow, zsnow)
         rg.cs.Fburial = np.append(rg.cs.Fburial, Fburial)
     else:
         rg.cs.H[i] = hplus  #
@@ -292,19 +307,21 @@ def carbonate_system_2_ode(
         rg.cs.CO2aq[i] = co2aq  # 4
         rg.cs.zsat[i] = zsat  # 5
         rg.cs.zcc[i] = zcc  # 6
-        rg.cs.zsnow[i] = zsnow  # 7
+        # rg.cs.zsnow[i] = zsnow  # 7
         rg.cs.Fburial[i] = Fburial
 
-    
+    # store zsnow for next iteration
+    # p[19] = zsnow
+
     """ the fraction of the carbonate rain that is dissolved and returned to
     ocean is the difference between the carbonate rain and the the burial
     flux """
     diss = Bm - Fburial
     # Fburial12 = Fburial * input_data[1][i - 1] / input_data[0][i - 1]
     # diss12 = (B12 - Fburial12) * dt  # dissolution flux light isotope
-    
+
     dH = hplus - hplus_0
-    return -diss, dH
+    return -diss, dH, d_zsnow
 
 
 def gas_exchange_ode(scale, gas_c, p_H2O, solubility, co2aq):

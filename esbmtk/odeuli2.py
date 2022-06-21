@@ -129,9 +129,9 @@ class setup_ode():
                 eqs.write(
                     f"{ind2}{fname}, {cname} = carbonate_system_1_ode(\n"
                     f"{ind3}{r.parent.full_name},\n"
-                    f"{ind3}{get_ic(r.parent.DIC, icl)}\n"
-                    f"{ind3}{get_ic(r.parent.TA, icl)}\n"
-                    f"{ind3}{get_ic(r.parent.Hplus, icl)}\n"
+                    f"{ind3}{get_ic(r.parent.DIC, icl)},\n"
+                    f"{ind3}{get_ic(r.parent.TA, icl)},\n"
+                    f"{ind3}{get_ic(r.parent.Hplus, icl)},\n"
                     f"{ind3}self.i,\n"
                     f"{ind3}max_i)  # cs1\n"
                 )
@@ -170,20 +170,27 @@ class setup_ode():
                 fn_ta = f"{r.register.TA.full_name}.burial".replace(".", "_")
                 influx = r.parent.cs.ref_flux[0].full_name.replace(".", "_")
                 fname = f"{r.parent.full_name}.Hplus".replace(".", "_")
+                zname = f"{r.parent.full_name}.zsnow".replace(".", "_")
+                zmax = r.parent.cs.function_params[15]
                 eqs.write(
-                    f"{ind2}{fn_dic}, {fname} = carbonate_system_2_ode(\n"
+                    f"{ind2}{fn_dic}, {fname}, {zname} = carbonate_system_2_ode(\n"
                     f"{ind3}t,\n{ind3}{r.parent.full_name},\n{ind3}{influx},\n"
-                    f"{ind3}{get_ic(r.parent.DIC, icl)}\n"
-                    f"{ind3}{get_ic(r.parent.TA, icl)}\n"
-                    f"{ind3}{get_ic(r.parent.Hplus, icl)}\n"
+                    f"{ind3}{get_ic(r.parent.DIC, icl)},\n"
+                    f"{ind3}{get_ic(r.parent.TA, icl)},\n"
+                    f"{ind3}{get_ic(r.parent.Hplus, icl)},\n"
+                    f"{ind3}{get_ic(r.parent.zsnow, icl)},\n"
                     f"{ind3}self.i,\n"
                     f"{ind3}max_i,\n"
                     f"{ind3}self.last_t,\n"
                     f"{ind2})  # cs2\n"
                     f"{ind2}{fn_ta} = {fn_dic} * 2  # cs2\n"
+                    f"{ind2}# Limit zsnow >= zmax\n"
+                    f"{ind2}if {get_ic(r.parent.zsnow, icl)} > {zmax}:"
+                    f" {get_ic(r.parent.zsnow, icl)} = {zmax}\n"
                 )
                 # add Hplus to the list of return values
                 rel = rel + f"{ind3}{fname},\n"
+                rel = rel + f"{ind3}{zname},\n"
             else:
                 raise ValueError(f"{r.ftype} is undefined")
 
@@ -229,8 +236,8 @@ class setup_ode():
             f"{ind2}self.last_t = t\n"
             f"{ind2}return [\n"
         )
-        for r in icl:
-            eqs.write(f"{ind3}{r.full_name.replace('.', '_')},\n")
+        for i, r in enumerate(icl):
+            eqs.write(f"{ind3}{r.full_name.replace('.', '_')},  # {i}\n")
 
         eqs.write(f"{ind2}]\n")
 
@@ -296,7 +303,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: list) -> str:
         ex = (
             f"gas_exchange_ode(\n"
             f"{ind3}{cfn}.scale,\n"
-            f"{ind3}{pco2}\n"
+            f"{ind3}{pco2},\n"
             f"{ind3}{cfn}.water_vapor_pressure,\n"
             f"{ind3}{cfn}.solubility,\n"
             f"{ind3}{co2aq},\n"
@@ -343,8 +350,8 @@ def get_ic(r: Reservoir, icl: list) -> str:
     s = ""
 
     if r in icl:
-        s = f"R[{icl.index(r)}],"
+        s = f"R[{icl.index(r)}]"
     else:
-        s = f"{r.full_name}.c[0],"
+        s = f"{r.full_name}.c[0]"
 
     return s
