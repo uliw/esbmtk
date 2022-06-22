@@ -1966,32 +1966,26 @@ class ExternalData(esbmtkBase):
             raise ValueError("CSV file must have 3 columns")
 
         # print(f"Model = {self.mo.full_name}, t_unit = {self.mo.t_unit}")
-        self.offset = Q_(self.offset).to(self.mo.t_unit).magnitude
+        self.offset = self.ensure_q(self.offset)
+        self.offset = self.offset.to(self.mo.t_unit).magnitude
 
-        xh = self.df.columns[0]
+        # get unit information
+        xq = Q_(get_string_between_brackets(self.df.columns[0]))
+        yq = Q_(get_string_between_brackets(self.df.columns[1]))
 
-        # get unit information from each header
-        xh = get_string_between_brackets(xh)
+        # establish scaling factors
+        xs = xq.to(self.mo.t_unit).magnitude
+        ys = yq.to(self.mo.c_unit).magnitude
 
-        xq = Q_(xh)
-        # add these to the data we are are reading
-        self.x: np.ndarray = self.df.iloc[:, 0].to_numpy() * xq
-        # map into model units
-        self.x = self.x.to(self.mo.t_unit).magnitude
+        print(f"yq = {yq}, ys = {ys} cunit = {self.mo.c_unit}")
+        
+        print(xq, yq)
+        # scale input data into model  units
+        self.x: np.ndarray = self.df.iloc[:, 0].to_numpy() * xs
+        self.y: np.ndarray = self.df.iloc[:, 1].to_numpy() * ys
 
         # map into model space
         self.x = self.x - self.x[0] + self.offset
-
-        # check if y-data is present
-        yh = self.df.columns[1]
-        if "Unnamed" not in yh:
-            yh = get_string_between_brackets(yh)
-            # yq = Q_(yh)
-            # add these to the data we are are reading
-            # self.y: [np.ndarray] = self.df.iloc[:, 1].to_numpy() * yq
-            self.y: np.ndarray = self.df.iloc[:, 1].to_numpy() * self.scale
-            # map into model units
-            # lf.y = self.y.to(self.mo.c_unit).magnitude * self.scale
 
         # check if z-data is present
         if ncols == 3:
