@@ -1065,6 +1065,14 @@ class DataField(esbmtkBase):
 
         # self.mo = self.associated_with.mo
         self.mo = self.register.mo
+        self.model = self.mo
+        if isinstance(self.associated_with, Reservoir):
+            self.plt_units = self.associated_with.plt_units
+        elif isinstance(self.associated_with, ReservoirGroup):
+            self.plt_units = self.associated_with.lor[0].plt_units
+        else:
+            raise ValueError("This needs fixing")
+
         if "self.y2_data" != "None":
             self.d = self.y2_data
             self.legend_right = self.y2_legend
@@ -1884,6 +1892,7 @@ class ExternalData(esbmtkBase):
                         reservoir  = reservoir_handle,
                         scale      = scaling factor, optional
                         display_precision = number, optional, inherited from Model
+                        convert_to = optional, see below
                        )
 
     The data must exist as CSV file, where the first column contains
@@ -1911,6 +1920,9 @@ class ExternalData(esbmtkBase):
 
     The file must exist in the local working directory.
 
+    the convert_to keyword can be used to force a specific conversion.
+    The default is to convert into the model concentration units.
+
     Methods:
       - name.plot()
 
@@ -1923,18 +1935,19 @@ class ExternalData(esbmtkBase):
 
     def __init__(self, **kwargs: dict[str, str]):
 
-        from esbmtk import Q_, Model, Reservoir
+        from esbmtk import Q_, Model, Reservoir, DataField
 
         # dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "filename": ["None", (str)],
             "legend": ["None", (str)],
-            "reservoir": ["None", (str, Reservoir)],
+            "reservoir": ["None", (str, Reservoir, DataField)],
             "offset": ["0 yrs", (Q_, str)],
             "display_precision": [0.01, (int, float)],
             "scale": [1, (int, float)],
-            "register": ["None", (str, Model, Reservoir)],
+            "register": ["None", (str, Model, Reservoir, DataField)],
+            "convert_to": ["None", (Q_, str)],
         }
 
         # provide a list of absolutely required keywords
@@ -1948,7 +1961,13 @@ class ExternalData(esbmtkBase):
 
         self.n: str = self.name  # string =  name of this instance
         self.fn: str = self.filename  # string = filename of data
-        self.mo: Model = self.reservoir.species.mo
+        if isinstance(self.reservoir, Reservoir):
+            self.mo: Model = self.reservoir.species.mo
+        else:
+            self.mo = self.reservoir.mo
+
+        self.model = self.mo
+
         self.parent = self.reservoir
         self.mo.led.append(self)  # keep track of this instance
 
@@ -1971,10 +1990,12 @@ class ExternalData(esbmtkBase):
         # get unit information
         xq = Q_(get_string_between_brackets(self.df.columns[0]))
         yq = Q_(get_string_between_brackets(self.df.columns[1]))
-
-        # establish scaling factors
         xs = xq.to(self.mo.t_unit).magnitude
-        ys = yq.to(self.mo.c_unit).magnitude
+
+        if self.convert_to == "None":
+            ys = yq.to(self.mo.c_unit).magnitude
+        else:
+            ys = yq.to(self.ensure_q(self.convert_to))
 
         # scale input data into model  units
         self.x: np.ndarray = self.df.iloc[:, 0].to_numpy() * xs
