@@ -233,12 +233,11 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
     cols = geo[1]
     # species = obj.sp
     model = obj.mo
-    time = model.time + model.offset
 
     # convert data from model units to display units (i.e. the same
     # units the input data was defined).
     # time units are the same regardless of object
-    time = (time * model.t_unit).to(model.d_unit).magnitude
+    time = (model.time * model.t_unit).to(model.d_unit).magnitude + + model.offset
 
     # we do not map isotope values
     if obj.isotopes:
@@ -336,10 +335,6 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                 # plt.legend()
 
         else:
-            print(f"Obj = {obj.full_name}")
-            print(f"time  = {time}\n, y = {yl}\n")
-
-            # print(f"yl[2] = {yl[1:-2]}")
             ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=y_label)
             cn = cn + 1
             col = f"C{cn}"
@@ -418,7 +413,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
 
     for d in obj.led:  # loop over external data objects if present
 
-        time =  (d.x * model.t_unit).to(model.d_unit).magnitude
+        time = (d.x * model.t_unit).to(model.d_unit).magnitude
         if isinstance(d.x[0], str):  # if string, something is off
             raise ValueError("No time axis in external data object {d.name}")
         if "y" in dir(d):  # mass or concentration data is present
@@ -427,7 +422,7 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
             col = f"C{cn}"
             leg = f"{obj.lm} {d.legend}"
             ln3 = ax1.scatter(time[1:-2], yd[1:-2], color=col, label=leg)
-            print(f"second axis, x = {d.x}, y = {d.y}")
+            
         if "z" in dir(d) and second_axis:  # isotope data is present
             cn = cn + 1
             col = f"C{cn}"
@@ -1502,7 +1497,6 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     # C saturation(z) after Boudreau 2010
     Csat_table: np.ndarray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
-    print(f"len Csat = {len(Csat_table)}")
     area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
     area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area'
     AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
@@ -1562,7 +1556,10 @@ def add_carbonate_system_2(**kwargs) -> None:
                         float(abs(kwargs["zsnow"])),  # 19
                     ]
                 ),
-                return_values={"Hplus": rg.swc.hplus, "zsnow": float(abs(kwargs["zsnow"]))},
+                return_values={
+                    "Hplus": rg.swc.hplus,
+                    "zsnow": float(abs(kwargs["zsnow"])),
+                },
                 register=rg,
             )
             for n, v in ec.return_values.items():

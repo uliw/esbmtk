@@ -276,9 +276,12 @@ class Model(esbmtkBase):
         # ureg.define('Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups')
 
         # legacy variable names
-        self.start = Q_(self.start).to(self.t_unit).magnitude
-        self.stop = Q_(self.stop).to(self.t_unit).magnitude
-        self.offset = Q_(self.offset).to(self.t_unit).magnitude
+
+        self.start = self.ensure_q(self.start).to(self.t_unit).magnitude
+        self.stop = self.ensure_q(self.stop).to(self.t_unit).magnitude
+        self.offset = self.ensure_q(self.offset).to(self.t_unit).magnitude
+        # self.start = self.start + self.offset
+        # self.stop = self.stop + self.offset
 
         self.bu = self.t_unit
         self.base_unit = self.t_unit
@@ -764,13 +767,6 @@ class Model(esbmtkBase):
             stype = kwargs["stype"]
         else:
             stype = "solve_ivp"
-
-        print(
-            f"start time = {self.time[0]} ,"
-            f"end time = {self.time[-1]} ,"
-            f"dt = {self.dt} ,"
-            f"n steps = {len(self.time)}"
-        )
 
         if stype == "solve_ivp":
             results = solve_ivp(

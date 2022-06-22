@@ -643,7 +643,6 @@ class Signal(esbmtkBase):
             self.__bell__(0, self.length)
         elif "filename" in self.kwargs:  # use an external data set
             self.length = self.__int_ext_data__()
-            print(f"lengths = {self.length}")
         else:
             raise ValueError(
                 f"argument needs to be either square/pyramid, "
@@ -1977,9 +1976,6 @@ class ExternalData(esbmtkBase):
         xs = xq.to(self.mo.t_unit).magnitude
         ys = yq.to(self.mo.c_unit).magnitude
 
-        print(f"yq = {yq}, ys = {ys} cunit = {self.mo.c_unit}")
-        
-        print(xq, yq)
         # scale input data into model  units
         self.x: np.ndarray = self.df.iloc[:, 0].to_numpy() * xs
         self.y: np.ndarray = self.df.iloc[:, 1].to_numpy() * ys
