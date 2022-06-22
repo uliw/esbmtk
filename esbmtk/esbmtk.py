@@ -232,6 +232,7 @@ class Model(esbmtkBase):
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
         self.lel: list = []  # list which will hold all element references
+        self.led: list[ExternalData] = []  # all external data objects
         self.lsp: list = []  # list which will hold all species references
         self.lop: list = []  # set of flux processes
         self.lpc_f: list = []  # list of external functions affecting fluxes
@@ -793,6 +794,11 @@ class Model(esbmtkBase):
                     self.time,
                     s.data.m,
                 )
+
+            # interpolate external data into ode time domain
+            # must be done before changing model time domain
+            # for ed in self.led:
+            #     ed.y = np.interp(results.t, ed.x, ed.y)
 
             # assign results to the esbmtk variables
             for i, r in enumerate(icl):
