@@ -1946,12 +1946,12 @@ class ExternalData(esbmtkBase):
         # legacy names
         if self.register == "None":
             self.register = self.reservoir
-            
+
         self.n: str = self.name  # string =  name of this instance
         self.fn: str = self.filename  # string = filename of data
         self.mo: Model = self.reservoir.species.mo
         self.parent = self.reservoir
-        
+        self.mo.led.append(self)  # keep track of this instance
 
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
