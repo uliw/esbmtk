@@ -784,10 +784,25 @@ class Model(esbmtkBase):
                 # dense_output=True,
                 # max_step=1,
             )
-            # assign results
+            # assign results to the esbmtk variables
             for i, r in enumerate(icl):
                 r.c = results.y[i]
             self.time = results.t
+
+            # interpolate intermediate results to match the model
+            # time scale. This only applies to data in virtual
+            # data fields
+            for gf in self.lpc_r:
+                # get cs instance handle
+                cs = getattr(gf.register, "cs")
+                for k, v in cs.vr_datafields.items():
+                    od = getattr(cs, k)  # get ode data
+                    od = np.interp(
+                        self.time,
+                        self.ode_system.t,
+                        od[0 : self.ode_system.i],
+                    )
+                    setattr(cs, k, od)
 
         else:
             results = odeint(ode_system.eqs, R, t=self.time, args=(self,), tfirst=True)
@@ -1651,7 +1666,7 @@ class Reservoir(ReservoirBase):
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
             "groupname": ["None", (str)],
-            "rtype": ["regular", (str)], 
+            "rtype": ["regular", (str)],
             "function": ["None", (str, col.Callable)],
             "display_precision": [0.01, (int, float)],
             "register": [
