@@ -784,6 +784,16 @@ class Model(esbmtkBase):
                 # dense_output=True,
                 # max_step=1,
             )
+
+            # interpolate signals into the ode time domain
+            # must be done before changing model time domain
+            for s in self.los:
+                s.data.m = np.interp(
+                    results.t,
+                    self.time,
+                    s.data.m,
+                )
+
             # assign results to the esbmtk variables
             for i, r in enumerate(icl):
                 r.c = results.y[i]
