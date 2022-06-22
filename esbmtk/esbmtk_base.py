@@ -278,3 +278,18 @@ class esbmtkBase(input_parsing):
         """Aux initialization code. Not normally used"""
 
         pass
+
+    def ensure_q(self, arg):
+        """ Test that a given input argument is a quantity. If not convert
+        into quantity
+        """
+        from esbmtk import Q_
+        
+        if isinstance(arg, Q_):
+            pass
+        elif isinstance(arg, str):
+            arg = Q_(arg)
+        else:
+            raise ValueError(f"{arg} must be string or Quantity, not {type(arg)}")
+
+        return arg
