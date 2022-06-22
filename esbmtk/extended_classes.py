@@ -1932,9 +1932,10 @@ class ExternalData(esbmtkBase):
             "filename": ["None", (str)],
             "legend": ["None", (str)],
             "reservoir": ["None", (str, Reservoir)],
-            "offset": ["None", (Q_, str)],
+            "offset": ["0 yrs", (Q_, str)],
             "display_precision": [0.01, (int, float)],
             "scale": [1, (int, float)],
+            "register": ["None", (str, Model, Reservoir)],
         }
 
         # provide a list of absolutely required keywords
@@ -1943,10 +1944,14 @@ class ExternalData(esbmtkBase):
         self.__initialize_keyword_variables__(kwargs)
 
         # legacy names
+        if self.register == "None":
+            self.register = self.reservoir
+            
         self.n: str = self.name  # string =  name of this instance
         self.fn: str = self.filename  # string = filename of data
         self.mo: Model = self.reservoir.species.mo
         self.parent = self.reservoir
+        
 
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
@@ -1960,6 +1965,7 @@ class ExternalData(esbmtkBase):
         if ncols != 3:  # test of we have 3 columns
             raise ValueError("CSV file must have 3 columns")
 
+        # print(f"Model = {self.mo.full_name}, t_unit = {self.mo.t_unit}")
         self.offset = Q_(self.offset).to(self.mo.t_unit).magnitude
 
         xh = self.df.columns[0]
