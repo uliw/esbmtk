@@ -336,6 +336,9 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
                 # plt.legend()
 
         else:
+            print(f"Obj = {obj.full_name}")
+            print(f"time  = {time}\n, y = {yl}\n")
+
             # print(f"yl[2] = {yl[1:-2]}")
             ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=y_label)
             cn = cn + 1
@@ -415,13 +418,16 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
 
     for d in obj.led:  # loop over external data objects if present
 
+        time =  (d.x * model.t_unit).to(model.d_unit).magnitude
         if isinstance(d.x[0], str):  # if string, something is off
             raise ValueError("No time axis in external data object {d.name}")
         if "y" in dir(d):  # mass or concentration data is present
+            yd = (d.y * model.c_unit).to(obj.plt_units).magnitude
             cn = cn + 1
             col = f"C{cn}"
             leg = f"{obj.lm} {d.legend}"
-            ln3 = ax1.scatter(d.x[1:-2], d.y[1:-2], color=col, label=leg)
+            ln3 = ax1.scatter(time[1:-2], yd[1:-2], color=col, label=leg)
+            print(f"second axis, x = {d.x}, y = {d.y}")
         if "z" in dir(d) and second_axis:  # isotope data is present
             cn = cn + 1
             col = f"C{cn}"
