@@ -33,7 +33,6 @@ from . import ureg, Q_
 from .esbmtk_base import esbmtkBase
 
 from .utility_functions import (
-    plot_object_data,
     show_data,
     plot_geometry,
     get_plot_layout,
@@ -515,7 +514,7 @@ class Model(esbmtkBase):
         for r in self.lvr:
             r.__merge_temp_results__()
 
-    def plot_data(self, pl: list = [], **kwargs) -> None:
+    def plot(self, pl: list = [], **kwargs) -> None:
         """Plot all objects specified in pl
 
         M.plot([sb.PO4, sb.DIC],fn=test.pdf)
@@ -536,7 +535,6 @@ class Model(esbmtkBase):
         """ The shape of the ax value of subplots depends on the figure
         geometry. So we need to ensure we are dealing with a 2-D array
         """
-        print(ax)
         if geo[0] == 1 and geo[1] == 1:  # row=1, col=1 only one window
             axs[0][0] = ax
         elif geo[0] > 1 and geo[1] == 1:  # mutiple rows, one column
@@ -553,16 +551,12 @@ class Model(esbmtkBase):
         fig.canvas.manager.set_window_title(f"{self.n} Reservoirs")
         fig.set_size_inches(size)
 
-        print(f"rows = {geo[0]}, cols = {geo[1]}, \nax = {ax}")
-
-        print(f"axs = {axs}")
-
         i = 0  # loop over objects
         for c in range(geo[0]):  # rows
             for r in range(geo[1]):  # columns
                 if i < noo:
-                    print(f"r={r}, c={c}, i = {i}")
                     pl[i].__plot__(self, axs[r][c])
+                    axs[r][c].set_title(pl[i].full_name)
                     i = i + 1
                 else:
                     axs[r][c].remove()
@@ -570,35 +564,6 @@ class Model(esbmtkBase):
         fig.subplots_adjust(top=0.88)
         fig.tight_layout()
         plt.show(block=False)  # create the plot windows
-        fig.savefig(filename)
-
-    def plot(self, l: list = [], **kwargs) -> None:
-        """Plot all objects specified in list)
-
-        M.plot([sb.PO4, sb.DIC],fn=test.pdf)
-
-        fn is optional
-        """
-        if "fn" in kwargs:
-            filename = kwargs["fn"]
-        else:
-            filename = f"{self.n}.pdf"
-
-        noo: int = len(l)
-        size, geo = plot_geometry(noo)  # adjust layout
-        plt.style.use(self.plot_style)
-        fig = plt.figure(0)  # Initialize a plot window
-        fig.canvas.manager.set_window_title(f"{self.n} Reservoirs")
-        fig.set_size_inches(size)
-
-        i: int = 1
-        for e in l:
-            plot_object_data(geo, i, e)
-            i = i + 1
-
-        fig.subplots_adjust(top=0.88)
-        fig.tight_layout()
-        plt.show()  # create the plot windows
         fig.savefig(filename)
 
     def run(self, **kwargs) -> None:
@@ -718,7 +683,7 @@ class Model(esbmtkBase):
         """Use the ode solver based on Uli's approach"""
         from esbmtk import Q_, write_equations_2, get_initial_conditions
         from scipy.integrate import odeint, solve_ivp
-        import sys 
+        import sys
 
         # build equation file
         R, icl, cpl, ipl = get_initial_conditions(self)
@@ -1444,7 +1409,7 @@ class ReservoirBase(esbmtkBase):
 
         # convert time and data to display units
         x = (M.time * M.t_unit).to(M.d_unit).magnitude
-        
+
         if self.display_as == "mass":
             y1 = (self.m * M.m_unit).to(self.plt_units).magnitude
             y1_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
@@ -1463,11 +1428,37 @@ class ReservoirBase(esbmtkBase):
                 raise ValueError("Plot transform must be a function")
 
         # plot first axis
-        ln1 = ax.plot(x[1:-2], y1[1:-2], color="C0", label=y1_label)
+        ax.plot(x[1:-2], y1[1:-2], color="C0", label=y1_label)
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
         ax.set_ylabel(self.legend_left)
+
+        # add any external data if present
+        for i, d, in enumerate(self.led):
+            time = (d.x * M.t_unit).to(M.d_unit).magnitude
+            yd = (d.y * M.c_unit).to(self.plt_units).magnitude
+            leg = f"{self.lm} {d.legend}"
+            ax.scatter(time[1:-2], yd[1:-2], color=f"C{i+1}", label=leg)
+        
         ax.spines["top"].set_visible(False)
         handler1, label1 = ax.get_legend_handles_labels()
+
+        if self.isotopes:
+            axt = ax.twinx()
+            y2 = self.d  # no conversion for isotopes
+            axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
+            axt.set_ylabel(self.data.ld)
+            set_y_limits(axt, M)
+            x.spines["top"].set_visible(False)
+            # set combined legend
+            handler2, label2 = axt.get_legend_handles_labels()
+            legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
+                6
+            )
+        else:
+            ax.legend()
+            ax.spines["right"].set_visible(False)
+            ax.yaxis.set_ticks_position("left")
+            ax.xaxis.set_ticks_position("bottom")
 
     def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
@@ -1766,7 +1757,7 @@ class Reservoir(ReservoirBase):
         # any auxilliary init - normally empty, but we use it here to extend the
         # reservoir class in virtual reservoirs
         self.__aux_inits__()
-        
+
     @property
     def concentration(self) -> float:
         return self._concentration
@@ -2066,7 +2057,7 @@ class Flux(esbmtkBase):
                 raise ValueError("Plot transform must be a function")
 
         # plot first axis
-        ln1 = ax.plot(x[1:-2], y1[1:-2], color="C0", label=self.legend_left)
+        ax.plot(x[1:-2], y1[1:-2], color="C0", label=self.legend_left)
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
         ax.set_ylabel(self.legend_left)
         ax.spines["top"].set_visible(False)

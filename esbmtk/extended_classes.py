@@ -1232,13 +1232,43 @@ class DataField(esbmtkBase):
         from esbmtk import set_y_limits
 
         for i, d in enumerate(self.y1_data):  # loop over datafield list
-            y1_legend = self.y1_legend[i]
-            ax.plot(self.x1_data[i], self.y1_data[i], color=f"C{i}", label=y1_legend)
+            ax.plot(
+                self.x1_data[i],
+                self.y1_data[i],
+                color=f"C{i}",
+                label=self.y1_legend[i],
+            )
+
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
-        ax.set_ylabel(self.y1_label)
+        ax.set_ylabel(self.y2_label)
         # remove unnecessary frame species
         ax.spines["top"].set_visible(False)
         handler1, label1 = ax.get_legend_handles_labels()
+
+        if len(self.y2_data) > 0:
+            axt = ax.twinx()
+            for i, d in enumerate(self.y2_data):  # loop over datafield list
+                ax.plot(
+                    self.x1_data[i],
+                    self.y1_data[i],
+                    color=f"C{i}",
+                    label=self.y2_legend[i],
+                )
+
+            axt.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
+            axt.set_ylabel(self.y2_label)
+            # remove unnecessary frame species
+            axt.spines["top"].set_visible(False)
+            handler2, label2 = axt.get_legend_handles_labels()
+            legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
+                6
+            )
+            #axt.legend()
+        else:
+            ax.legend(handler1, label1)
+            ax.spines["right"].set_visible(False)
+            ax.yaxis.set_ticks_position("left")
+            ax.xaxis.set_ticks_position("bottom")
 
 
 class Reservoir_no_set(ReservoirBase):
