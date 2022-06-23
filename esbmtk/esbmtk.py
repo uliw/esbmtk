@@ -515,20 +515,56 @@ class Model(esbmtkBase):
         for r in self.lvr:
             r.__merge_temp_results__()
 
-    def plot_data(self, **kwargs: dict) -> None:
+    def plot_data(self, pl: list = [], **kwargs) -> None:
+        """Plot all objects specified in pl
+
+        M.plot([sb.PO4, sb.DIC],fn=test.pdf)
+
+        fn is optional
         """
-        Loop over all reservoirs and either plot the data into a
-        window, or save it to a pdf
 
+        if "fn" in kwargs:
+            filename = kwargs["fn"]
+        else:
+            filename = f"{self.n}.pdf"
+
+        noo: int = len(pl)
+        size, geo = plot_geometry(noo)  # adjust layout
+        fig, ax = plt.subplots(geo[0], geo[1])
+        axs = [[], []]
+
+        """ The shape of the ax value of subplots depends on the figure
+        geometry. So we need to ensure we are dealing with a 2-D array
         """
+        print(ax)
+        if geo[0] == 1 and geo[1] == 1:  # only one window
+            axs[0][0] = ax
+        elif geo[0] > 1 and geo[1] == 1:
+            for i in range(geo[0]):
+                axs[0].append(ax[i])
+        elif geo[0] == 1 and geo[1] > 1:
+            for i in range(geo[1]):
+                axs[1].append(ax[i])
 
-        i = 0
-        for r in self.lor:
-            r.__plot__(i)
-            i = i + 1
+        # ste plot parameters
+        plt.style.use(self.plot_style)
+        fig.canvas.manager.set_window_title(f"{self.n} Reservoirs")
+        fig.set_size_inches(size)
 
+        print(ax)
+        print(axs)
+        
+        i = 0  # loop over objects
+        for c in range(geo[0]):  # rows
+            for r in range(geo[1]):  # columns
+                print(f"r = {r}, c = {c}")
+                pl[i].__plot__(self, axs[r][c])
+                i = i + 1
+
+        fig.subplots_adjust(top=0.88)
         fig.tight_layout()
-        plt.show()  # create the plot windows
+        plt.show(block=False)  # create the plot windows
+        fig.savefig(filename)
 
     def plot(self, l: list = [], **kwargs) -> None:
         """Plot all objects specified in list)
@@ -1822,6 +1858,46 @@ class Reservoir(ReservoirBase):
         # any auxilliary init - normally empty, but we use it here to extend the
         # reservoir class in virtual reservoirs
         self.__aux_inits__()
+
+    def __plot__(self, M: Model, ax) -> None:
+        """Plot instructions.
+        M: Model
+        ax: matplotlib axes handle
+        """
+
+        from esbmtk import set_y_limits
+
+        # convert time and data to display units
+        x = (M.time * M.t_unit).to(M.d_unit).magnitude
+        y1 = (self.c * M.c_unit).to(self.plt_units).magnitude
+       
+
+        # test for plt_transform
+        if self.plot_transform_c != "None":
+            if callable(self.plot_transform_c):
+                y1 = self.plot_transform_c(self.c)
+            else:
+                raise ValueError("Plot transform must be a function")
+
+        # plot first axis
+        ln1 = ax.plot(x[1:-2], y1[1:-2], color="C0", label=self.legend_left)
+        ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
+        ax.set_ylabel(self.legend_left)
+        ax.spines["top"].set_visible(False)
+
+        # plot second axis
+        axt = ax.twinx()
+        if self.isotopes:
+            y2 = self.d  # no conversion for isotopes
+            ln2 = axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
+            axt.set_ylabel(self.data.ld)
+            axt.spines["top"].set_visible(False)
+            set_y_limits(axt, M)
+
+        # set legend
+        handler1, label1 = ax.get_legend_handles_labels()
+        handler2, label2 = axt.get_legend_handles_labels()
+        legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(6)
 
     @property
     def concentration(self) -> float:
