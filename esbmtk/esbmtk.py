@@ -530,36 +530,42 @@ class Model(esbmtkBase):
 
         noo: int = len(pl)
         size, geo = plot_geometry(noo)  # adjust layout
-        fig, ax = plt.subplots(geo[0], geo[1])
+        fig, ax = plt.subplots(geo[0], geo[1])  # row, col
         axs = [[], []]
 
         """ The shape of the ax value of subplots depends on the figure
         geometry. So we need to ensure we are dealing with a 2-D array
         """
         print(ax)
-        if geo[0] == 1 and geo[1] == 1:  # only one window
+        if geo[0] == 1 and geo[1] == 1:  # row=1, col=1 only one window
             axs[0][0] = ax
-        elif geo[0] > 1 and geo[1] == 1:
+        elif geo[0] > 1 and geo[1] == 1:  # mutiple rows, one column
             for i in range(geo[0]):
                 axs[0].append(ax[i])
-        elif geo[0] == 1 and geo[1] > 1:
+        elif geo[0] == 1 and geo[1] > 1:  # 1 row, multiple columns
             for i in range(geo[1]):
                 axs[1].append(ax[i])
+        else:
+            axs = ax  # mutiple rows and mutiple columns
 
         # ste plot parameters
         plt.style.use(self.plot_style)
         fig.canvas.manager.set_window_title(f"{self.n} Reservoirs")
         fig.set_size_inches(size)
 
-        print(ax)
-        print(axs)
+        print(f"rows = {geo[0]}, cols = {geo[1]}, \nax = {ax}")
+
+        print(f"axs = {axs}")
 
         i = 0  # loop over objects
         for c in range(geo[0]):  # rows
             for r in range(geo[1]):  # columns
-                print(f"r = {r}, c = {c}")
-                pl[i].__plot__(self, axs[r][c])
-                i = i + 1
+                if i < noo:
+                    print(f"r={r}, c={c}, i = {i}")
+                    pl[i].__plot__(self, axs[r][c])
+                    i = i + 1
+                else:
+                    axs[r][c].remove()
 
         fig.subplots_adjust(top=0.88)
         fig.tight_layout()
