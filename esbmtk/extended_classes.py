@@ -1001,6 +1001,7 @@ class Signal(esbmtkBase):
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
 
+
 class DataField(esbmtkBase):
     """
     DataField: Datafields can be used to plot data which is computed after
@@ -1221,6 +1222,23 @@ class DataField(esbmtkBase):
             df.to_csv(file_path, header=True, mode="w", index=False)
 
         return df
+
+    def __plot__(self, M: Model, ax) -> None:
+        """Plot instructions.
+        M: Model
+        ax: matplotlib axes handle
+        """
+
+        from esbmtk import set_y_limits
+
+        for i, d in enumerate(self.y1_data):  # loop over datafield list
+            y1_legend = self.y1_legend[i]
+            ax.plot(self.x1_data[i], self.y1_data[i], color=f"C{i}", label=y1_legend)
+        ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
+        ax.set_ylabel(self.y1_label)
+        # remove unnecessary frame species
+        ax.spines["top"].set_visible(False)
+        handler1, label1 = ax.get_legend_handles_labels()
 
 
 class Reservoir_no_set(ReservoirBase):
