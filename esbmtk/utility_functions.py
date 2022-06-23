@@ -446,6 +446,10 @@ def plot_object_data(geo: list, fn: int, obj: any) -> None:
     else:
         raise TypeError("This should never happen!")
 
+# def build_legend(ax, axt):
+    
+#     handler1, label1 = ax.get_legend_handles_labels()
+#     plt.gca().spines["right"].set_visible(False)
 
 def is_name_in_list(n: str, l: list) -> bool:
     """Test if an object name is part of the object list"""
