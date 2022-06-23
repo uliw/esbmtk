@@ -553,7 +553,7 @@ class Model(esbmtkBase):
 
         print(ax)
         print(axs)
-        
+
         i = 0  # loop over objects
         for c in range(geo[0]):  # rows
             for r in range(geo[1]):  # columns
@@ -593,71 +593,6 @@ class Model(esbmtkBase):
         fig.subplots_adjust(top=0.88)
         fig.tight_layout()
         plt.show()  # create the plot windows
-        fig.savefig(filename)
-
-    def plot_reservoirs(self, **kwargs: dict) -> None:
-        """Plot only Reservoir data
-
-        you can further specify a different name for the plot
-        fn = "foo.pdf"
-
-        """
-
-        # get number of plot objects
-        i = 0
-        # get number of signals
-        for s in self.los:
-            if s.plot == "yes":
-                i = i + 1
-
-        # get number of reservoirs
-        for r in self.lor:
-            if r.plot == "yes":
-                i = i + 1
-
-        # get number of virtual reservoirs
-        for r in self.lvr:
-            if r.plot == "yes":
-                i = i + 1
-
-        noo: int = len(self.ldf) + i
-        size, geo = plot_geometry(noo)  # adjust layout
-
-        if "fn" in kwargs:
-            filename = kwargs["fn"]
-        else:
-            filename = f"{self.n}_Reservoirs.pdf"
-
-        plt.style.use(self.plot_style)
-
-        fig = plt.figure(0)  # Initialize a plot window
-        fig.canvas.manager.set_window_title(f"{self.n} Reservoirs")
-        fig.set_size_inches(size)
-
-        i: int = 1
-
-        for r in self.los:  # signals
-            if r.plot == "yes":
-                plot_object_data(geo, i, r)
-                i = i + 1
-
-        for r in self.lor:  # reservoirs
-            if r.plot == "yes":
-                plot_object_data(geo, i, r)
-                i = i + 1
-
-        for r in self.lvr:  # virtual reservoirs
-            if r.plot == "yes":
-                plot_object_data(geo, i, r)
-                i = i + 1
-
-        for r in self.ldf:  # datafields
-            plot_object_data(geo, i, r)
-            i = i + 1
-
-        fig.tight_layout()
-        plt.show()  # create the plot windows
-        fig.subplots_adjust(top=0.88)
         fig.savefig(filename)
 
     def run(self, **kwargs) -> None:
@@ -1536,31 +1471,6 @@ class ReservoirBase(esbmtkBase):
             print(f"Saving as {filename}")
             fig.savefig(filename)
 
-    def __plot_reservoirs__(self, i: int) -> None:
-        """Plot only the  reservoirs data, and ignore the fluxes"""
-
-        model = self.sp.mo
-        # species = self.sp
-        # obj = self
-        # time = model.time + model.offset  # get the model time
-        # xl = f"Time [{model.bu}]"
-
-        size: list = [5, 3]
-        geo: list = [1, 1]
-        filename = f"{model.n}_{self.n}.pdf"
-        fn: int = 1  # counter for the figure number
-
-        plt.style.use(model.plot_style)
-        fig = plt.figure(i)  # Initialize a plot window
-        fig.set_size_inches(size)
-
-        # plt.legend()ot reservoir data
-        plot_object_data(geo, fn, self)
-
-        fig.tight_layout()
-        # fig.subplots_adjust(top=0.88)
-        fig.savefig(filename)
-
     def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
         Optional arguments are
@@ -1870,7 +1780,6 @@ class Reservoir(ReservoirBase):
         # convert time and data to display units
         x = (M.time * M.t_unit).to(M.d_unit).magnitude
         y1 = (self.c * M.c_unit).to(self.plt_units).magnitude
-       
 
         # test for plt_transform
         if self.plot_transform_c != "None":
@@ -1884,20 +1793,26 @@ class Reservoir(ReservoirBase):
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
         ax.set_ylabel(self.legend_left)
         ax.spines["top"].set_visible(False)
+        handler1, label1 = ax.get_legend_handles_labels()
 
         # plot second axis
-        axt = ax.twinx()
         if self.isotopes:
+            axt = ax.twinx()
             y2 = self.d  # no conversion for isotopes
             ln2 = axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
             axt.set_ylabel(self.data.ld)
-            axt.spines["top"].set_visible(False)
             set_y_limits(axt, M)
-
-        # set legend
-        handler1, label1 = ax.get_legend_handles_labels()
-        handler2, label2 = axt.get_legend_handles_labels()
-        legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(6)
+            x.spines["top"].set_visible(False)
+            # set combined legend
+            handler2, label2 = axt.get_legend_handles_labels()
+            legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
+                6
+            )
+        else:
+            ax.legend()
+            ax.spines["right"].set_visible(False)
+            ax.yaxis.set_ticks_position("left")
+            ax.xaxis.set_ticks_position("bottom")
 
     @property
     def concentration(self) -> float:
@@ -2178,27 +2093,50 @@ class Flux(esbmtkBase):
         else:
             print("There are no processes for this flux")
 
-    def plot(self, **kwargs: dict) -> None:
-        """Plot the flux data:"""
+    def __plot__(self, M: Model, ax) -> None:
+        """Plot instructions.
+        M: Model
+        ax: matplotlib axes handle
+        """
 
-        fig, ax1 = plt.subplots()
-        fig.set_size_inches(5, 4)  # Set figure size in inches
-        fig.set_dpi(100)  # Set resolution in dots per inch
+        from esbmtk import set_y_limits
 
-        ax1.plot(self.mo.time, self.m, c="C0")
-        ax2 = ax1.twinx()  # get second y-axis
-        ax2.plot(self.mo.time, self.d, c="C1", label=self.n)
+        # convert time and data to display units
+        x = (M.time * M.t_unit).to(M.d_unit).magnitude
+        y1 = (self.m * M.m_unit).to(self.plt_units).magnitude
 
-        ax1.set_title(self.n)
-        ax1.set_xlabel(f"Time [{self.mo.tu}]")  #
-        ax1.set_ylabel(f"{self.sp.n} [{self.sp.mu}]")
-        ax2.set_ylabel(f"{self.sp.dn} [{self.sp.ds}]")
-        ax1.spines["top"].set_visible(False)  # remove unnecessary frame
-        ax2.spines["top"].set_visible(False)  # remove unnecessary frame
+        # test for plt_transform
+        if self.plot_transform_c != "None":
+            if callable(self.plot_transform_c):
+                y1 = self.plot_transform_c(self.c)
+            else:
+                raise ValueError("Plot transform must be a function")
 
-        fig.tight_layout()
-        plt.show()
-        plt.savefig(self.n + ".pdf")
+        # plot first axis
+        ln1 = ax.plot(x[1:-2], y1[1:-2], color="C0", label=self.legend_left)
+        ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
+        ax.set_ylabel(self.legend_left)
+        ax.spines["top"].set_visible(False)
+        handler1, label1 = ax.get_legend_handles_labels()
+
+        # plot second axis
+        if self.isotopes:
+            axt = ax.twinx()
+            y2 = self.d  # no conversion for isotopes
+            ln2 = axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
+            axt.set_ylabel(self.data.ld)
+            set_y_limits(axt, M)
+            x.spines["top"].set_visible(False)
+            # set combined legend
+            handler2, label2 = axt.get_legend_handles_labels()
+            legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
+                6
+            )
+        else:
+            ax.legend()
+            ax.spines["right"].set_visible(False)
+            ax.yaxis.set_ticks_position("left")
+            ax.xaxis.set_ticks_position("bottom")
 
     def __sub_sample_data__(self) -> None:
         """There is usually no need to keep more than a thousand data points
