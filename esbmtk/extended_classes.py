@@ -956,17 +956,50 @@ class Signal(esbmtkBase):
 
         return [v, 0]
 
-    def plot(self) -> None:
+    def __plot__(self, M: Model, ax) -> None:
+        """Plot instructions.
+        M: Model
+        ax: matplotlib axes handle
         """
-          Example::
 
-              Signal.plot()
+        from esbmtk import set_y_limits
 
-        Plot the signal
+        # convert time and data to display units
+        x = (M.time * M.t_unit).to(M.d_unit).magnitude
+        y1 = (self.data.m * M.f_unit).to(self.data.plt_units).magnitude
 
-        """
-        self.data.plot()
+        # # test for plt_transform
+        # if self.plot_transform_c != "None":
+        #     if callable(self.plot_transform_c):
+        #         y1 = self.plot_transform_c(self.c)
+        #     else:
+        #         raise ValueError("Plot transform must be a function")
 
+        # plot first axis
+        ln1 = ax.plot(x[1:-2], y1[1:-2], color="C0", label=self.legend_left)
+        ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
+        ax.set_ylabel(self.legend_left)
+        ax.spines["top"].set_visible(False)
+        handler1, label1 = ax.get_legend_handles_labels()
+
+        # plot second axis
+        if self.isotopes:
+            axt = ax.twinx()
+            y2 = self.d  # no conversion for isotopes
+            ln2 = axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
+            axt.set_ylabel(self.data.ld)
+            set_y_limits(axt, M)
+            x.spines["top"].set_visible(False)
+            # set combined legend
+            handler2, label2 = axt.get_legend_handles_labels()
+            legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
+                6
+            )
+        else:
+            ax.legend()
+            ax.spines["right"].set_visible(False)
+            ax.yaxis.set_ticks_position("left")
+            ax.xaxis.set_ticks_position("bottom")
 
 class DataField(esbmtkBase):
     """
