@@ -46,7 +46,7 @@ def get_initial_conditions(M: Model) -> tuple[list, list, list, list]:
 
 def write_equations_2(
     M: Model, R: list[float], icl: list, cpl: list, ipl: list
-) -> list:
+) -> tuple:
     """Write file that contains the ode-equations for M
     Returns the list R that contains the initial condition
     for each reservoir
@@ -249,7 +249,7 @@ class setup_ode():
                 f"rv = {rel}\n"
             )
 
-    return R
+    return fqfn
 
 
 def get_flux(flux: Flux, M: Model, R: list[float], icl: list) -> str:
