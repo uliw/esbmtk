@@ -1455,7 +1455,7 @@ class ReservoirBase(esbmtkBase):
                 6
             )
         else:
-            ax.legend()
+            ax.legend(handler1, label1)
             ax.spines["right"].set_visible(False)
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
@@ -2077,7 +2077,7 @@ class Flux(esbmtkBase):
                 6
             )
         else:
-            ax.legend()
+            ax.legend(handler1, label1)
             ax.spines["right"].set_visible(False)
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
