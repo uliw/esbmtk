@@ -718,6 +718,7 @@ class Model(esbmtkBase):
         """Use the ode solver based on Uli's approach"""
         from esbmtk import Q_, write_equations_2, get_initial_conditions
         from scipy.integrate import odeint, solve_ivp
+        import sys 
 
         # build equation file
         R, icl, cpl, ipl = get_initial_conditions(self)
@@ -727,7 +728,9 @@ class Model(esbmtkBase):
         self.ipl = ipl
 
         # write equation system
-        write_equations_2(self, R, icl, cpl, ipl)
+        eqs_file = write_equations_2(self, R, icl, cpl, ipl)
+        sys.path.append(eqs_file.resolve())
+        print(f"eqs_file = {eqs_file}")
 
         # import equation system
         from equations import setup_ode
@@ -1431,51 +1434,40 @@ class ReservoirBase(esbmtkBase):
 
         return col
 
-    def __plot__(self, i: int) -> None:
-        """Plot data from reservoirs and fluxes into a multiplot window"""
+    def __plot__(self, M: Model, ax) -> None:
+        """Plot instructions.
+        M: Model
+        ax: matplotlib axes handle
+        """
 
-        model = self.sp.mo
-        # species = self.sp
-        # obj = self
-        # time = model.time + model.offset  # get the model time
-        # xl = f"Time [{model.bu}]"
+        from esbmtk import set_y_limits
 
-        size, geo = get_plot_layout(self)  # adjust layout
-        filename = f"{model.n}_{self.full_name}.pdf"
-        fn = 1  # counter for the figure number
+        # convert time and data to display units
+        x = (M.time * M.t_unit).to(M.d_unit).magnitude
+        
+        if self.display_as == "mass":
+            y1 = (self.m * M.m_unit).to(self.plt_units).magnitude
+            y1_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
+        elif self.display_as == "ppm":
+            y1 = self.c * 1e6
+            y1_label = "ppm"
+        else:
+            y1 = (self.c * M.c_unit).to(self.plt_units).magnitude
+            y1_label = f"{self.legend_left}"
 
-        plt.style.use(model.plot_style)
-        fig = plt.figure(i)  # Initialize a plot window
-        fig.canvas.manager.set_window_title(f"Reservoir Name: {self.n}")
-        fig.set_size_inches(size)
+        # test for plt_transform
+        if self.plot_transform_c != "None":
+            if callable(self.plot_transform_c):
+                y1 = self.plot_transform_c(self.c)
+            else:
+                raise ValueError("Plot transform must be a function")
 
-        # plot reservoir data
-        if self.plot == "yes":
-            plot_object_data(geo, fn, self)
-
-            # plot the fluxes assoiated with this reservoir
-            for f in sorted(self.lof):  # plot flux data
-                if f.plot == "yes":
-                    fn = fn + 1
-                    plot_object_data(geo, fn, f)
-
-            for d in sorted(self.ldf):  # plot data fields
-                fn = fn + 1
-                plot_object_data(geo, fn, d)
-
-            if geo != [1, 1]:
-                if self.groupname == "None":
-                    fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
-                else:
-                    # filename = f"{self.groupname}_{self.n}.pdf"
-                    fig.suptitle(
-                        f"Group: {self.groupname}, Reservoir: {self.n}\n", size=16
-                    )
-
-            fig.tight_layout()
-            fig.subplots_adjust(top=0.88)
-            print(f"Saving as {filename}")
-            fig.savefig(filename)
+        # plot first axis
+        ln1 = ax.plot(x[1:-2], y1[1:-2], color="C0", label=y1_label)
+        ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
+        ax.set_ylabel(self.legend_left)
+        ax.spines["top"].set_visible(False)
+        handler1, label1 = ax.get_legend_handles_labels()
 
     def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
@@ -1774,52 +1766,7 @@ class Reservoir(ReservoirBase):
         # any auxilliary init - normally empty, but we use it here to extend the
         # reservoir class in virtual reservoirs
         self.__aux_inits__()
-
-    def __plot__(self, M: Model, ax) -> None:
-        """Plot instructions.
-        M: Model
-        ax: matplotlib axes handle
-        """
-
-        from esbmtk import set_y_limits
-
-        # convert time and data to display units
-        x = (M.time * M.t_unit).to(M.d_unit).magnitude
-        y1 = (self.c * M.c_unit).to(self.plt_units).magnitude
-
-        # test for plt_transform
-        if self.plot_transform_c != "None":
-            if callable(self.plot_transform_c):
-                y1 = self.plot_transform_c(self.c)
-            else:
-                raise ValueError("Plot transform must be a function")
-
-        # plot first axis
-        ln1 = ax.plot(x[1:-2], y1[1:-2], color="C0", label=self.legend_left)
-        ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
-        ax.set_ylabel(self.legend_left)
-        ax.spines["top"].set_visible(False)
-        handler1, label1 = ax.get_legend_handles_labels()
-
-        # plot second axis
-        if self.isotopes:
-            axt = ax.twinx()
-            y2 = self.d  # no conversion for isotopes
-            ln2 = axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
-            axt.set_ylabel(self.data.ld)
-            set_y_limits(axt, M)
-            x.spines["top"].set_visible(False)
-            # set combined legend
-            handler2, label2 = axt.get_legend_handles_labels()
-            legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
-                6
-            )
-        else:
-            ax.legend()
-            ax.spines["right"].set_visible(False)
-            ax.yaxis.set_ticks_position("left")
-            ax.xaxis.set_ticks_position("bottom")
-
+        
     @property
     def concentration(self) -> float:
         return self._concentration
