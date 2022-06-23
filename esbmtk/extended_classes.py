@@ -967,6 +967,7 @@ class Signal(esbmtkBase):
         # convert time and data to display units
         x = (M.time * M.t_unit).to(M.d_unit).magnitude
         y1 = (self.data.m * M.f_unit).to(self.data.plt_units).magnitude
+        legend = f"{self.legend_left} [{M.f_unit}]"
 
         # # test for plt_transform
         # if self.plot_transform_c != "None":
@@ -978,7 +979,7 @@ class Signal(esbmtkBase):
         # plot first axis
         ln1 = ax.plot(x[1:-2], y1[1:-2], color="C0", label=self.legend_left)
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
-        ax.set_ylabel(self.legend_left)
+        ax.set_ylabel(legend)
         ax.spines["top"].set_visible(False)
         handler1, label1 = ax.get_legend_handles_labels()
 
@@ -1241,7 +1242,7 @@ class DataField(esbmtkBase):
 
         last_i = i
         # add any external data if present
-        for i, d, in enumerate(self.led):
+        for (i, d) in enumerate(self.led):
             time = (d.x * M.t_unit).to(M.d_unit).magnitude
             # yd = (d.y * M.c_unit).to(self.plt_units).magnitude
             leg = f"{d.legend}"
@@ -1273,7 +1274,7 @@ class DataField(esbmtkBase):
             legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
                 6
             )
-            #axt.legend()
+            # axt.legend()
         else:
             ax.legend(handler1, label1)
             ax.spines["right"].set_visible(False)
