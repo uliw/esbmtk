@@ -1239,19 +1239,29 @@ class DataField(esbmtkBase):
                 label=self.y1_legend[i],
             )
 
+        last_i = i
+        # add any external data if present
+        for i, d, in enumerate(self.led):
+            time = (d.x * M.t_unit).to(M.d_unit).magnitude
+            # yd = (d.y * M.c_unit).to(self.plt_units).magnitude
+            leg = f"{d.legend}"
+            ax.scatter(time[1:-2], d.y[1:-2], color=f"C{i+last_i}", label=leg)
+
+        last_i = i
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
-        ax.set_ylabel(self.y2_label)
+        ax.set_ylabel(self.y1_label)
         # remove unnecessary frame species
         ax.spines["top"].set_visible(False)
         handler1, label1 = ax.get_legend_handles_labels()
 
-        if len(self.y2_data) > 0:
+        if self.y2_data[0] != "None":
+            print(f"doing twinx for {self.full_name}")
             axt = ax.twinx()
             for i, d in enumerate(self.y2_data):  # loop over datafield list
                 ax.plot(
                     self.x1_data[i],
                     self.y1_data[i],
-                    color=f"C{i}",
+                    color=f"C{i+last_i}",
                     label=self.y2_legend[i],
                 )
 
