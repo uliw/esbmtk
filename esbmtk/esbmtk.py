@@ -684,6 +684,7 @@ class Model(esbmtkBase):
         from esbmtk import Q_, write_equations_2, get_initial_conditions
         from scipy.integrate import odeint, solve_ivp
         import sys
+        import pathlib as pl
 
         # build equation file
         R, icl, cpl, ipl = get_initial_conditions(self)
@@ -694,8 +695,11 @@ class Model(esbmtkBase):
 
         # write equation system
         eqs_file = write_equations_2(self, R, icl, cpl, ipl)
-        sys.path.append(eqs_file.resolve())
-        print(f"eqs_file = {eqs_file}")
+        print(f"loc = {eqs_file.resolve()}")
+
+        # ensure that cwd is in the load path. Required for windows
+        cwd: pl.Path = pl.Path.cwd()
+        sys.path.append(cwd)
 
         # import equation system
         from equations import setup_ode
