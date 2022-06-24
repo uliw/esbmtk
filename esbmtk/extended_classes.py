@@ -2040,6 +2040,7 @@ class ExternalData(esbmtkBase):
             "scale": [1, (int, float)],
             "register": ["None", (str, Model, Reservoir, DataField)],
             "convert_to": ["None", (Q_, str)],
+            "plot_transform_c": ["None", (str, col.Callable)],
         }
 
         # provide a list of absolutely required keywords
@@ -2085,9 +2086,11 @@ class ExternalData(esbmtkBase):
         xs = xq.to(self.mo.t_unit).magnitude
 
         if self.convert_to == "None":
-            ys = yq.to(self.mo.c_unit).magnitude
+            ys = 1
         else:
             ys = yq.to(self.ensure_q(self.convert_to))
+            print(f"yq = {yq}, cvt= {self.convert_to}, ys = {ys}")
+            
 
         # scale input data into model  units
         self.x: np.ndarray = self.df.iloc[:, 0].to_numpy() * xs
@@ -2095,6 +2098,13 @@ class ExternalData(esbmtkBase):
 
         # map into model space
         self.x = self.x - self.x[0] + self.offset
+
+        # test for plt_transform
+        if self.plot_transform_c != "None":
+            if callable(self.plot_transform_c):
+                self.y = self.plot_transform_c(self.y)
+            else:
+                raise ValueError("Plot transform must be a function")
 
         # check if z-data is present
         if ncols == 3:

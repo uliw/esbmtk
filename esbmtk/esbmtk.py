@@ -1439,7 +1439,7 @@ class ReservoirBase(esbmtkBase):
         # add any external data if present
         for i, d, in enumerate(self.led):
             time = (d.x * M.t_unit).to(M.d_unit).magnitude
-            yd = (d.y * M.c_unit).to(self.plt_units).magnitude
+            yd = d.y.to(self.plt_units).magnitude
             leg = f"{self.lm} {d.legend}"
             ax.scatter(time[1:-2], yd[1:-2], color=f"C{i+1}", label=leg)
         
