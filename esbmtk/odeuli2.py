@@ -96,7 +96,7 @@ class setup_ode():
         from esbmtk import gas_exchange_ode, get_hplus
 
         max_i = len(M.time)-1
-    
+
         # flux equations
 """
 
@@ -105,7 +105,7 @@ class setup_ode():
     with open(fqfn, "w", encoding="utf-8") as eqs:
 
         rel = ""  # list of return values
-        ind1 = 4 * " "
+        # ind1 = 4 * " "
         ind2 = 8 * " "  # indention
         ind3 = 12 * " "  # indention
 
@@ -121,22 +121,7 @@ class setup_ode():
         for r in M.lpc_r:  # All virtual reservoirs need to be in this list
 
             if r.ftype == "cs1":
-
-                # carbonate_system_1_ode(rg: Reservoir
-                fname = f"{r.parent.full_name}.Hplus".replace(".", "_")
-                cname = f"{r.parent.full_name}.CO2aq".replace(".", "_")
-
-                eqs.write(
-                    f"{ind2}{fname}, {cname} = carbonate_system_1_ode(\n"
-                    f"{ind3}{r.parent.full_name},\n"
-                    f"{ind3}{get_ic(r.parent.DIC, icl)},\n"
-                    f"{ind3}{get_ic(r.parent.TA, icl)},\n"
-                    f"{ind3}{get_ic(r.parent.Hplus, icl)},\n"
-                    f"{ind3}self.i,\n"
-                    f"{ind3}max_i)  # cs1\n"
-                )
-                rel = rel + f"{ind3}{fname},\n"
-
+                rel = write_cs_1(eqs, r, icl, rel, ind2, ind3)
             elif r.ftype == "cs2":
                 pass  # see below
             else:
@@ -166,31 +151,7 @@ class setup_ode():
             if r.ftype == "cs1":
                 pass  # see above
             elif r.ftype == "cs2":  #
-                fn_dic = f"{r.register.DIC.full_name}.burial".replace(".", "_")
-                fn_ta = f"{r.register.TA.full_name}.burial".replace(".", "_")
-                influx = r.parent.cs.ref_flux[0].full_name.replace(".", "_")
-                fname = f"{r.parent.full_name}.Hplus".replace(".", "_")
-                zname = f"{r.parent.full_name}.zsnow".replace(".", "_")
-                zmax = r.parent.cs.function_params[15]
-                eqs.write(
-                    f"{ind2}{fn_dic}, {fname}, {zname} = carbonate_system_2_ode(\n"
-                    f"{ind3}t,\n{ind3}{r.parent.full_name},\n{ind3}{influx},\n"
-                    f"{ind3}{get_ic(r.parent.DIC, icl)},\n"
-                    f"{ind3}{get_ic(r.parent.TA, icl)},\n"
-                    f"{ind3}{get_ic(r.parent.Hplus, icl)},\n"
-                    f"{ind3}{get_ic(r.parent.zsnow, icl)},\n"
-                    f"{ind3}self.i,\n"
-                    f"{ind3}max_i,\n"
-                    f"{ind3}self.last_t,\n"
-                    f"{ind2})  # cs2\n"
-                    f"{ind2}{fn_ta} = {fn_dic} * 2  # cs2\n"
-                    f"{ind2}# Limit zsnow >= zmax\n"
-                    f"{ind2}if {get_ic(r.parent.zsnow, icl)} > {zmax}:"
-                    f" {get_ic(r.parent.zsnow, icl)} = {zmax}\n"
-                )
-                # add Hplus to the list of return values
-                rel = rel + f"{ind3}{fname},\n"
-                rel = rel + f"{ind3}{zname},\n"
+                rel = write_cs_2(eqs, r, icl, rel, ind2, ind3)
             else:
                 raise ValueError(f"{r.ftype} is undefined")
 
@@ -257,6 +218,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: list) -> str:
     return expression ex as string
     """
 
+    ind2 = 8 * " "  # indentation
     ind3 = 12 * " "  # indentation
 
     ex = ""  # expression string
@@ -264,53 +226,22 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: list) -> str:
     cfn = flux.parent.full_name  # shorthand for the connection object name
 
     if c.ctype.casefold() == "regular":
-        ex = f"{flux.full_name}.rate"
-        ex = check_signal_2(ex, c)
-        ex = ex + "  # fixed rate"
+        ex = write_regular_flux(ex, flux, c)
 
     elif c.ctype == "scale_with_concentration":
-        ici = icl.index(c.source)  # index into initial conditions
-        # this should probably handled by get_ic() see below
-        ex = (
-            f"{cfn}.scale * R[{ici}]"  # {c.id} scale with conc in {c.source.full_name}"
-        )
-        ex = check_signal_2(ex, c)
-        ex = ex + "  # scale with concentration"
+        ex = write_scale_with_concentration(ex, flux, c, cfn, icl)
 
     elif c.ctype == "scale_with_mass":
-        ici = icl.index(c.source)  # index into initial conditions
-        ex = f"{cfn}.scale * {c.source.full_name}.volume * R[{ici}]"
-        ex = check_signal_2(ex, c)
-        ex = ex + "  # scale with mass"
+        ex = write_scale_with_concentration(ex, flux, c, cfn, icl)
 
     elif c.ctype == "scale_with_flux":
-        p = flux.parent.ref_flux.parent
-        ex = f"{cfn}.scale * {p.full_name.replace('.', '_')}__F"
-        ex = check_signal_2(ex, c)
-        ex = ex + "  # scale with flux"
+        ex = write_scale_with_flux(ex, flux, c, cfn, icl)
 
     elif c.ctype == "weathering":
-        ici = icl.index(c.reservoir_ref)
-        ex = f"{cfn}.rate * {cfn}.scale * (R[{ici}]/{cfn}.pco2_0) **  {cfn}.ex"
-        ex = check_signal_2(ex, c)
-        ex = ex + "  # weathering"
+        ex = write_weathering(ex, flux, c, cfn, icl, ind2, ind3)
 
     elif c.ctype == "gas_exchange":  # Gasexchange
-        # get co2_aq reference
-        co2aq = f"{c.liquid_reservoir.parent.full_name}.CO2aq".replace(".", "_")
-        # get atmosphere pcO2 reference
-        pco2 = get_ic(c.gas_reservoir, icl)
-        ex = (
-            f"gas_exchange_ode(\n"
-            f"{ind3}{cfn}.scale,\n"
-            f"{ind3}{pco2},\n"
-            f"{ind3}{cfn}.water_vapor_pressure,\n"
-            f"{ind3}{cfn}.solubility,\n"
-            f"{ind3}{co2aq},\n"
-            f"{ind3})"
-        )
-        ex = check_signal_2(ex, c)
-        ex = ex + "  # gas_exchange\n"
+        ex = write_gas_exchange(ex, flux, c, cfn, icl, ind2, ind3)
 
     else:
         raise ValueError(
@@ -324,7 +255,6 @@ def check_signal_2(ex: str, c: tp.union(Connection, Connect)) -> str:
     """Test if connection requires a signal"""
 
     sign = ""
-    ind3 = 12 * " "  # indentation
     if c.signal != "None":
         # get signal type
         if c.signal.stype == "addition":
@@ -355,3 +285,226 @@ def get_ic(r: Reservoir, icl: list) -> str:
         s = f"{r.full_name}.c[0]"
 
     return s
+
+
+# ------------------------ define processes ------------------------- #
+
+
+def write_cs_1(eqs, r: Reservoir, icl: list, rel: str, ind2: str, ind3: str) -> list:
+    """Write the python code that defines carbonate system 1"""
+
+    fname = f"{r.parent.full_name}.Hplus".replace(".", "_")
+    cname = f"{r.parent.full_name}.CO2aq".replace(".", "_")
+
+    eqs.write(
+        f"{ind2}{fname}, {cname} = carbonate_system_1_ode(\n"
+        f"{ind3}{r.parent.full_name},\n"
+        f"{ind3}{get_ic(r.parent.DIC, icl)},\n"
+        f"{ind3}{get_ic(r.parent.TA, icl)},\n"
+        f"{ind3}{get_ic(r.parent.Hplus, icl)},\n"
+        f"{ind3}self.i,\n"
+        f"{ind3}max_i)  # cs1\n"
+    )
+    rel = rel + f"{ind3}{fname},\n"
+
+    return rel
+
+
+def write_cs_2(eqs, r: Reservoir, icl: list, rel: str, ind2: str, ind3: str) -> list:
+    """Write the python code that defines carbonate system 2"""
+
+    fn_dic = f"{r.register.DIC.full_name}.burial".replace(".", "_")
+    fn_ta = f"{r.register.TA.full_name}.burial".replace(".", "_")
+    influx = r.parent.cs.ref_flux[0].full_name.replace(".", "_")
+    fname = f"{r.parent.full_name}.Hplus".replace(".", "_")
+    zname = f"{r.parent.full_name}.zsnow".replace(".", "_")
+    zmax = r.parent.cs.function_params[15]
+    eqs.write(
+        f"{ind2}{fn_dic}, {fname}, {zname} = carbonate_system_2_ode(\n"
+        f"{ind3}t,\n{ind3}{r.parent.full_name},\n{ind3}{influx},\n"
+        f"{ind3}{get_ic(r.parent.DIC, icl)},\n"
+        f"{ind3}{get_ic(r.parent.TA, icl)},\n"
+        f"{ind3}{get_ic(r.parent.Hplus, icl)},\n"
+        f"{ind3}{get_ic(r.parent.zsnow, icl)},\n"
+        f"{ind3}self.i,\n"
+        f"{ind3}max_i,\n"
+        f"{ind3}self.last_t,\n"
+        f"{ind2})  # cs2\n"
+        f"{ind2}{fn_ta} = {fn_dic} * 2  # cs2\n"
+        f"{ind2}# Limit zsnow >= zmax\n"
+        f"{ind2}if {get_ic(r.parent.zsnow, icl)} > {zmax}:"
+        f" {get_ic(r.parent.zsnow, icl)} = {zmax}\n"
+    )
+    # add Hplus to the list of return values
+    rel = rel + f"{ind3}{fname},\n"
+    rel = rel + f"{ind3}{zname},\n"
+
+    return rel
+
+
+def write_regular_flux(
+    ex: str,  # final expression
+    flux: Flux,  # flux instance
+    c: Connect,  # connection instance
+) -> str:
+    """Equation defining a fixed rate flux
+    Example:
+
+    M1_volcanic_flux__F = M1.C_Fw_to_CO2_At_DIC_volcanic_flux._F.rate
+
+    """
+
+    ex = f"{flux.full_name}.rate"
+    ex = check_signal_2(ex, c)
+    ex = ex + "  # fixed rate"
+
+    return ex
+
+
+def write_scale_with_concentration(
+    ex: str,  # final expression
+    flux: Flux,  # flux instance
+    c: Connect,  # connection instance
+    cfn: str,  # full name of the connection instance
+    icl: list,  # list of initial conditions
+) -> str:
+    """Equation defining a flux that scales with the concentration in the upstream
+    reservoir
+
+    Example:
+
+    M1_CG_D_b_to_L_b_TA_thc__F = M1.CG_D_b_to_L_b.TA_thc.scale * R[5]
+    """
+
+    ici = icl.index(c.source)  # index into initial conditions
+    # this should probably handled by get_ic() see below
+    ex = f"{cfn}.scale * R[{ici}]"  # {c.id} scale with conc in {c.source.full_name}"
+    ex = check_signal_2(ex, c)
+    ex = ex + "  # scale with concentration"
+
+    return ex
+
+
+def write_scale_with_mass(
+    ex: str,  # final expression
+    flux: Flux,  # flux instance
+    c: Connect,  # connection instance
+    cfn: str,  # full name of the connection instance
+    icl: list,  # list of initial conditions
+) -> str:
+    """Equation defining a flux that scales with the concentration in the upstream
+    reservoir
+
+    Example:
+
+    M1_CG_D_b_to_L_b_TA_thc__F = M1.CG_D_b_to_L_b.TA_thc.scale * R[5]
+    """
+
+    ici = icl.index(c.source)  # index into initial conditions
+    ex = f"{cfn}.scale * {c.source.full_name}.volume * R[{ici}]"
+    ex = check_signal_2(ex, c)
+    ex = ex + "  # scale with mass"
+
+    return ex
+
+
+def write_scale_with_flux(
+    ex: str,  # final expression
+    flux: Flux,  # flux instance
+    c: Connect,  # connection instance
+    cfn: str,  # full name of the connection instance
+    icl: list,  # list of initial conditions
+) -> str:
+    """Equation defining a flux that scales with strength of another flux
+    reservoir
+
+    Example:
+
+    M1_C_Fw_to_L_b_TA_wca_ta__F = M1.C_Fw_to_L_b_TA_wca_ta.scale * M1_C_Fw_to_L_b_DIC_Ca_W__F
+    """
+
+    p = flux.parent.ref_flux.parent
+    ex = f"{cfn}.scale * {p.full_name.replace('.', '_')}__F"
+    ex = check_signal_2(ex, c)
+    ex = ex + "  # scale with flux"
+
+    return ex
+
+
+def write_weathering(
+    ex: str,  # final expression
+    flux: Flux,  # flux instance
+    c: Connect,  # connection instance
+    cfn: str,  # full name of the connection instance
+    icl: list,  # list of initial conditions
+    ind2: str,
+    ind3: str,
+) -> str:
+    """Equation defining a flux that scales with the concentration of pcO2
+
+    F = F_0 (pcO2/pCO2_0) * c, see Zeebe, 2012, doi:10.5194/gmd-5-149-2012
+
+    Example:
+
+     M1_C_Fw_to_L_b_DIC_Ca_W__F = (
+            M1.C_Fw_to_L_b_DIC_Ca_W.rate
+            * M1.C_Fw_to_L_b_DIC_Ca_W.scale
+            * (R[10]/M1.C_Fw_to_L_b_DIC_Ca_W.pco2_0)
+            **  M1.C_Fw_to_L_b_DIC_Ca_W.ex
+        )
+
+    """
+
+    ici = icl.index(c.reservoir_ref)
+    ex = (
+        f"(\n{ind3}{cfn}.rate\n"
+        f"{ind3}* {cfn}.scale\n"
+        f"{ind3}* (R[{ici}]/{cfn}.pco2_0)\n"
+        f"{ind3}**  {cfn}.ex\n"
+        f"{ind2})"
+    )
+    ex = check_signal_2(ex, c)
+    ex = ex + "  # weathering\n"
+
+    return ex
+
+
+def write_gas_exchange(
+    ex: str,  # final expression
+    flux: Flux,  # flux instance
+    c: Connect,  # connection instance
+    cfn: str,  # full name of the connection instance
+    icl: list,  # list of initial conditions
+    ind2: str,
+    ind3: str,
+) -> str:
+    """Equation defining a flux that scales with the concentration of pcO2
+    see Zeebe, 2012, doi:10.5194/gmd-5-149-2012
+
+    M1_C_H_b_to_CO2_At_gex_hb_F = gas_exchange_ode(
+            M1.C_H_b_to_CO2_At.scale,
+            R[10],  # pco2 in atmosphere
+            M1.C_H_b_to_CO2_At.water_vapor_pressure,
+            M1.C_H_b_to_CO2_At.solubility,
+            M1_H_b_CO2aq, # [co2]aq
+            )  # gas_exchange
+
+    """
+
+    # get co2_aq reference
+    co2aq = f"{c.liquid_reservoir.parent.full_name}.CO2aq".replace(".", "_")
+    # get atmosphere pcO2 reference
+    pco2 = get_ic(c.gas_reservoir, icl)
+    ex = (
+        f"gas_exchange_ode(\n"
+        f"{ind3}{cfn}.scale,\n"
+        f"{ind3}{pco2},\n"
+        f"{ind3}{cfn}.water_vapor_pressure,\n"
+        f"{ind3}{cfn}.solubility,\n"
+        f"{ind3}{co2aq},\n"
+        f"{ind3})"
+    )
+    ex = check_signal_2(ex, c)
+    ex = ex + "  # gas_exchange\n"
+
+    return ex
