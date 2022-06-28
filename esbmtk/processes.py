@@ -491,7 +491,7 @@ class SaveFluxData(Process):
 
 class ScaleFlux(Process):
     """This process scales the mass of a flux (m,l,h) relative to
-    another flux. Delta is either taken from the upstream reserevoir
+    another flux. Delta is either taken from the upstream reservoir
     or set to a fixed value.  The scale factor "scale" and flux
     reference must be present when the object is being initalized
 
@@ -613,7 +613,7 @@ class ScaleFlux(Process):
 
     def get_process_args(self):
         """we need to decide between cases where the reservoir is an
-        actual reserevoir or just a source, since sources do not have
+        actual reservoir or just a source, since sources do not have
         arrays
 
         """
@@ -659,8 +659,8 @@ class ScaleFlux(Process):
 
         # data
         mf: float = data[6][0] * s  # mass of reference flux
-        mr: float = data[3][i - 1]  # mass upstream reserevoir
-        lr: float = data[4][i - 1]  # li upstream reserevoir
+        mr: float = data[3][i - 1]  # mass upstream reservoir
+        lr: float = data[4][i - 1]  # li upstream reservoir
 
         # get the target isotope ratio based on upstream delta
         c = lr / (mr - lr)
@@ -718,7 +718,7 @@ class Fractionation(Process):
     def __call__(self, i: int) -> None:
         """
         Set flux isotope masses based on fractionation factor
-        relative to reserevoir
+        relative to reservoir
 
         """
 
@@ -982,7 +982,7 @@ class weathering(RateConstant):
 
     def get_process_args(self):
         """data depends on whether upstream, is source or
-        reserevoir/gas-reservoir"""
+        reservoir/gas-reservoir"""
 
         if self.fixed:
             data = List(
@@ -1443,7 +1443,7 @@ class GasExchange(RateConstant):
         # variable which we use the store the total atmospheric mass
         """The solver will use f and f12 to update mass, light
         isotope and concentration values in the Gas
-        reserevoir. However, Gas reserevoirs track total gas pressure
+        reservoir. However, Gas reservoirs track total gas pressure
         in the volume variable. This will not be updated by the
         solver. So we need to do it ourseleves
 
@@ -1517,7 +1517,7 @@ class GasExchange(RateConstant):
         self.flux.fa = [f, f12]
         """The solver will use f and f12 to update mass, light
         isotope and concentration values in the Gas
-        reserevoir. However, Gas reserevoirs track total gas pressure
+        reservoir. However, Gas reservoirs track total gas pressure
         in the volume variable. This will not be updated by the
         solver. So we need to do it ourseleves
 
@@ -1587,13 +1587,13 @@ class GasExchange(RateConstant):
 
         lm = data[1][i - 1]  # mass in liquid
         ll = data[2][i - 1]  # mass of light isotope in liquid_reservoir
-        gm = data[3][i - 1]  # mass in gas reserevoir
-        gl = data[4][i - 1]  # mass of light isotope in gas reserevoir
-        gc = data[5][i - 1]  # concentration in gas reserevoir
+        gm = data[3][i - 1]  # mass in gas reservoir
+        gl = data[4][i - 1]  # mass of light isotope in gas reservoir
+        gc = data[5][i - 1]  # concentration in gas reservoir
         gv = data[6][i - 1]  # total mass of atmosphere
         rs = data[7][i - 1]  # concentrartion of reference species in liquid_reservoir
-        gh = gm - gl  # mass of heavy isotope in gas reserevoir
-        lh = lm - ll  # mass of heavy isotope in liquid reserevoir
+        gh = gm - gl  # mass of heavy isotope in gas reservoir
+        lh = lm - ll  # mass of heavy isotope in liquid reservoir
 
         # equilibrium concentration of CO2 in water based on pCO2
         eco2_at = gc * SA  # p Atmosphere  # p_H2O
@@ -1610,7 +1610,7 @@ class GasExchange(RateConstant):
         data[0][:] = [f, f12]  # fa
         """The solver will use f and f12 to update mass, light
         isotope and concentration values in the Gas
-        reservoir. However, Gas reserevoirs track total gas pressure
+        reservoir. However, Gas reservoirs track total gas pressure
         in the volume variable. This will not be updated by the
         solver. So we need to do it ourseleves
 
@@ -1691,7 +1691,7 @@ class ScaleRelativeToConcentration(RateConstant):
             self.f.fa = [m, l]
 
     def get_process_args(self):
-        """If no delta provided, use upstream reserevoir ratios
+        """If no delta provided, use upstream reservoir ratios
         Otherwise, use a fixed ratio
         """
 

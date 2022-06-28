@@ -227,7 +227,7 @@ class Model(esbmtkBase):
         self.__register_name_new__()
 
         self.lor: list = []
-        self.lic: list = []  # list of all reserevoir type objects
+        self.lic: list = []  # list of all reservoir type objects
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
         self.lel: list = []  # list which will hold all element references
