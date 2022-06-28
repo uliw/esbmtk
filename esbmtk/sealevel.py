@@ -33,8 +33,9 @@ from .esbmtk_base import esbmtkBase
 
 
 class hypsometry(esbmtkBase):
-    """A class to provide hypsometric data for the depth interval between -6000 to 1000 meter
-    The data is derived from etopo 5, but internally represented by a spline approximation
+    """A class to provide hypsometric data for the depth interval between -6000 to 1000
+    meter (relative to sealevel)
+    The data is derived from etopo 2, but internally represented by a spline approximation
 
     Invoke as:
                hyspometry(name="hyp")
@@ -116,15 +117,6 @@ class hypsometry(esbmtkBase):
             raise ValueError(f"hyp.volume: {l} must be higher than {u}")
 
         v = np.sum(self.hypdata[u:l]) * self.sa
-        # al = area at lower bound
-        # au = area at lower bound + dz
-        # vol = (al + au)/2 * dz
-
-        # di: np.ndarray = np.arange(u + abs(dz), l, dz)
-        # cA: np.ndarray = interpolate.splev(di, self.tck)
-        # dA: np.ndarray = np.diff(cA)
-        # dV: np.ndarray = np.diff(cA) * di[1:] * abs(dz)
-        # V: float = np.sum(dV) * self.sa
 
         return v
 
@@ -245,8 +237,8 @@ class hypsometry(esbmtkBase):
             nrows=1200,
             skiprows=300,
         )
-        area = df.iloc[:, 2].to_numpy()  # get area as numpy arrat
-        elevation = df.iloc[:, 1].to_numpy()  # get area as numpy arrat
+        area = df.iloc[:, 2].to_numpy()  # get area as numpy array
+        elevation = df.iloc[:, 1].to_numpy()  # get area as numpy array
 
         tck = sp.interpolate.splrep(
             elevation,
@@ -261,7 +253,7 @@ class hypsometry(esbmtkBase):
         a = sp.interpolate.splev(depth, tck)
 
         plt.style.use(["ggplot"])
-        fig = plt.figure()  # Create a figure instance called fig
+        plt.figure()  # Create a figure instance called fig
         ax = plt.subplot()  # Create a plot instance called ax
         ax.plot(elevation, area)  # create a line plot
         ax.plot(depth, a)  # create a line plot
