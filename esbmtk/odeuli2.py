@@ -44,6 +44,98 @@ def get_initial_conditions(M: Model) -> tuple[list, list, list, list]:
     return R, icl, cpl, ipl
 
 
+def write_reservoir_equations(
+    eqs,
+    M: Model,
+    rel: str,  # string with reservoir names used in return function
+    ind2: str,  # indent 2 times
+    ind3: str,  # indent 3 times
+) -> str:  # updated list of reservoirs
+    """Loop over reservoirs and their fluxes to build the reservoir equation"""
+
+    from esbmtk import ReservoirGroup
+
+    for r in M.lor:  # loop over reservoirs
+        # Write equations for each reservoir
+        # create unique variable names. Reservoirs are typiclally called
+        # M.rg.r so we replace all dots with underscore
+
+        name = f'{r.full_name.replace(".", "_")}'
+        fex = ""
+
+        # add all fluxes
+        for flux in r.lof:  # check if in or outflux
+            if flux.parent.source == r:
+                sign = "-"
+            elif flux.parent.sink == r:
+                sign = "+"
+
+            fname = f'{flux.full_name.replace(".", "_")}'
+            fex = fex + f"{ind3}{sign} {fname}\n"
+
+        # check if reservoir requires carbonate burial fluxes
+        if isinstance(r.parent, ReservoirGroup):
+            if r.parent.has_cs2:
+                if r.species.name == "DIC" or r.species.name == "TA":
+                    fn = f"{r.full_name}.burial".replace(".", "_")
+                    fex = f"{fex}{ind3}- {fn}\n"
+
+        # avoid reservoirs without active fluxes
+        if len(r.lof) > 0:
+            eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
+            rel = rel + f"{ind3}{name},\n"
+
+    return rel
+
+
+def write_reservoir_equations_with_istopes(
+    eqs,
+    M: Model,
+    rel: str,  # string with reservoir names used in return function
+    ind2: str,  # indent 2 times
+    ind3: str,  # indent 3 times
+) -> str:  # updated list of reservoirs
+    """Loop over reservoirs and their fluxes to build the reservoir equation"""
+
+    from esbmtk import ReservoirGroup
+
+    for r in M.lor:  # loop over reservoirs
+        # Write equations for each reservoir
+        # create unique variable names. Reservoirs are typiclally called
+        # M.rg.r so we replace all dots with underscore
+
+        # need to query the connection and decide if isotopes are
+        # needed and then only write the isotope equation?  Ort do
+        # this on a per reservoir base
+
+        name = f'{r.full_name.replace(".", "_")}_l'
+        fex = ""
+
+        # add all fluxes
+        for flux in r.lof:  # check if in or outflux
+            if flux.parent.source == r:
+                sign = "-"
+            elif flux.parent.sink == r:
+                sign = "+"
+
+            fname = f'{flux.full_name.replace(".", "_")}_l'
+            fex = fex + f"{ind3}{sign} {fname}\n"
+
+        # check if reservoir requires carbonate burial fluxes
+        if isinstance(r.parent, ReservoirGroup):
+            if r.parent.has_cs2:
+                if r.species.name == "DIC" or r.species.name == "TA":
+                    fn = f"{r.full_name}.burial".replace(".", "_")
+                    fex = f"{fex}{ind3}- {fn}\n"
+
+        # avoid reservoirs without active fluxes
+        if len(r.lof) > 0:
+            eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
+            rel = rel + f"{ind3}{name},\n"
+
+    return rel
+
+
 def write_equations_2(
     M: Model, R: list[float], icl: list, cpl: list, ipl: list
 ) -> tuple:
@@ -53,7 +145,7 @@ def write_equations_2(
 
     icl: list of reservoirs that have actual fluxes
     cpl: list of reservoirs that hjave no fluxes but are computed based on other R's
-    ipl: list of reserevoir that do not change in concentration
+    ipl: list of reservoir that do not change in concentration
 
     """
     from esbmtk import Model, ReservoirGroup
@@ -170,32 +262,7 @@ class setup_ode():
         sep = "# ---------------- write regular reservoir equations ------------ #"
         eqs.write(f"\n{sep}\n")
 
-        for r in M.lor:  # loop over reservoirs
-            # Write equations for each reservoir
-            # create unique variable names. Reservoirs are typiclally called
-            # M.rg.r so we replace all dots with underscore
-            name = r.full_name.replace(".", "_")
-            fex = ""
-
-            # add all fluxes 
-            for flux in r.lof:  # check if in or outflux
-                if flux.parent.source == r:
-                    sign = "-"
-                elif flux.parent.sink == r:
-                    sign = "+"
-                fex = fex + f"{ind3}{sign} {flux.full_name.replace('.', '_')}\n"
-
-            # check if reservoir requires carbonate burial fluxes
-            if isinstance(r.parent, ReservoirGroup):
-                if r.parent.has_cs2:
-                    if r.species.name == "DIC" or r.species.name == "TA":
-                        fn = f"{r.full_name}.burial".replace(".", "_")
-                        fex = f"{fex}{ind3}- {fn}\n"
-
-            # avoid reservoirs without active fluxes
-            if len(r.lof) > 0:
-                eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
-                rel = rel + f"{ind3}{name},\n"
+        rel = write_reservoir_equations(eqs, M, rel, ind2, ind3)
 
         sep = "# ---------------- bits and pieces --------------------------- #"
         eqs.write(
@@ -219,8 +286,6 @@ class setup_ode():
             )
 
     return fqfn
-
-
 
 
 def get_flux(flux: Flux, M: Model, R: list[float], icl: list) -> tuple(str, str):
