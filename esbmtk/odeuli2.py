@@ -136,11 +136,16 @@ class setup_ode():
             # fluxes belong to at least 2 reservoirs, so we need to avoid duplication
             # we cannot use a set, since we need to preserve order
             if flux not in flist:
-                fex = ""
-                fex = get_flux(flux, M, R, icl)
+                ex, exl = get_flux(flux, M, R, icl)
                 fn = flux.full_name.replace(".", "_")
-                eqs.write(f"{ind2}{fn} = {fex}\n")
+                eqs.write(f"{ind2}{fn} = {ex}\n")
                 flist.append(flux)
+
+                # add equations for light isotope
+                if flux.parent.isotopes:
+                    fn = flux.full_name.replace(".", "_")
+                    eqs.write(f"{ind2}{fn}_l = {exl}\n")
+                    flist.append(flux)
 
         sep = "# ---------------- write computed reservoir equations -------- #\n"
         sep = sep + "# that do depend on fluxes"
@@ -166,10 +171,13 @@ class setup_ode():
         eqs.write(f"\n{sep}\n")
 
         for r in M.lor:  # loop over reservoirs
+            # Write equations for each reservoir
             # create unique variable names. Reservoirs are typiclally called
             # M.rg.r so we replace all dots with underscore
             name = r.full_name.replace(".", "_")
             fex = ""
+
+            # add all fluxes 
             for flux in r.lof:  # check if in or outflux
                 if flux.parent.source == r:
                     sign = "-"
@@ -213,7 +221,9 @@ class setup_ode():
     return fqfn
 
 
-def get_flux(flux: Flux, M: Model, R: list[float], icl: list) -> str:
+
+
+def get_flux(flux: Flux, M: Model, R: list[float], icl: list) -> tuple(str, str):
     """Create formula expressions that describes the flux f
     return expression ex as string
     """
@@ -222,33 +232,34 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: list) -> str:
     ind3 = 12 * " "  # indentation
 
     ex = ""  # expression string
+    exl = ""  # expression string for light isotope
     c = flux.parent  # shorthand for the connection object
     cfn = flux.parent.full_name  # shorthand for the connection object name
 
     if c.ctype.casefold() == "regular":
-        ex = write_regular_flux(ex, flux, c)
+        ex, exl = get_regular_flux(flux, c)
 
     elif c.ctype == "scale_with_concentration":
-        ex = write_scale_with_concentration(ex, flux, c, cfn, icl)
+        ex, exl = get_scale_with_concentration(flux, c, cfn, icl)
 
     elif c.ctype == "scale_with_mass":
-        ex = write_scale_with_concentration(ex, flux, c, cfn, icl)
+        ex, exl = get_scale_with_concentration(flux, c, cfn, icl)
 
     elif c.ctype == "scale_with_flux":
-        ex = write_scale_with_flux(ex, flux, c, cfn, icl)
+        ex, exl = get_scale_with_flux(flux, c, cfn, icl)
 
     elif c.ctype == "weathering":
-        ex = write_weathering(ex, flux, c, cfn, icl, ind2, ind3)
+        ex, exl = get_weathering(flux, c, cfn, icl, ind2, ind3)
 
     elif c.ctype == "gas_exchange":  # Gasexchange
-        ex = write_gas_exchange(ex, flux, c, cfn, icl, ind2, ind3)
+        ex, exl = get_gas_exchange(flux, c, cfn, icl, ind2, ind3)
 
     else:
         raise ValueError(
             f"Connection type {c.ctype} for {c.full_name} is not implmented"
         )
 
-    return ex
+    return ex, exl
 
 
 def check_signal_2(ex: str, c: tp.union(Connection, Connect)) -> str:
@@ -342,11 +353,10 @@ def write_cs_2(eqs, r: Reservoir, icl: list, rel: str, ind2: str, ind3: str) -> 
     return rel
 
 
-def write_regular_flux(
-    ex: str,  # final expression
+def get_regular_flux(
     flux: Flux,  # flux instance
     c: Connect,  # connection instance
-) -> str:
+) -> tuple:
     """Equation defining a fixed rate flux
     Example:
 
@@ -358,16 +368,20 @@ def write_regular_flux(
     ex = check_signal_2(ex, c)
     ex = ex + "  # fixed rate"
 
-    return ex
+    if c.isotopes:
+        exl = ""
+    else:
+        exl = ""
+
+    return ex, exl
 
 
-def write_scale_with_concentration(
-    ex: str,  # final expression
+def get_scale_with_concentration(
     flux: Flux,  # flux instance
     c: Connect,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: list,  # list of initial conditions
-) -> str:
+) -> tuple(str, str):
     """Equation defining a flux that scales with the concentration in the upstream
     reservoir
 
@@ -378,20 +392,25 @@ def write_scale_with_concentration(
 
     ici = icl.index(c.source)  # index into initial conditions
     # this should probably handled by get_ic() see below
+
     ex = f"{cfn}.scale * R[{ici}]"  # {c.id} scale with conc in {c.source.full_name}"
     ex = check_signal_2(ex, c)
     ex = ex + "  # scale with concentration"
 
-    return ex
+    if c.isotopes:
+        exl = ""
+    else:
+        exl = ""
+
+    return ex, exl
 
 
-def write_scale_with_mass(
-    ex: str,  # final expression
+def get_scale_with_mass(
     flux: Flux,  # flux instance
     c: Connect,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: list,  # list of initial conditions
-) -> str:
+) -> tuple(str, str):
     """Equation defining a flux that scales with the concentration in the upstream
     reservoir
 
@@ -404,17 +423,21 @@ def write_scale_with_mass(
     ex = f"{cfn}.scale * {c.source.full_name}.volume * R[{ici}]"
     ex = check_signal_2(ex, c)
     ex = ex + "  # scale with mass"
+    exl = ""
+    if c.isotopes:
+        exl = ""
+    else:
+        exl = ""
 
-    return ex
+    return ex, exl
 
 
-def write_scale_with_flux(
-    ex: str,  # final expression
+def get_scale_with_flux(
     flux: Flux,  # flux instance
     c: Connect,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: list,  # list of initial conditions
-) -> str:
+) -> tuple(str, str):
     """Equation defining a flux that scales with strength of another flux
     reservoir
 
@@ -424,22 +447,27 @@ def write_scale_with_flux(
     """
 
     p = flux.parent.ref_flux.parent
+
     ex = f"{cfn}.scale * {p.full_name.replace('.', '_')}__F"
     ex = check_signal_2(ex, c)
     ex = ex + "  # scale with flux"
 
-    return ex
+    if c.isotopes:
+        exl = ""
+    else:
+        exl = ""
+
+    return ex, exl
 
 
-def write_weathering(
-    ex: str,  # final expression
+def get_weathering(
     flux: Flux,  # flux instance
     c: Connect,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: list,  # list of initial conditions
     ind2: str,
     ind3: str,
-) -> str:
+) -> tuple(str, str):
     """Equation defining a flux that scales with the concentration of pcO2
 
     F = F_0 (pcO2/pCO2_0) * c, see Zeebe, 2012, doi:10.5194/gmd-5-149-2012
@@ -466,18 +494,22 @@ def write_weathering(
     ex = check_signal_2(ex, c)
     ex = ex + "  # weathering\n"
 
-    return ex
+    if c.isotopes:
+        exl = ""
+    else:
+        exl = ""
+
+    return ex, exl
 
 
-def write_gas_exchange(
-    ex: str,  # final expression
+def get_gas_exchange(
     flux: Flux,  # flux instance
     c: Connect,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: list,  # list of initial conditions
     ind2: str,
     ind3: str,
-) -> str:
+) -> tuple(str, str):
     """Equation defining a flux that scales with the concentration of pcO2
     see Zeebe, 2012, doi:10.5194/gmd-5-149-2012
 
@@ -507,4 +539,11 @@ def write_gas_exchange(
     ex = check_signal_2(ex, c)
     ex = ex + "  # gas_exchange\n"
 
-    return ex
+    if c.isotopes:
+        exl = ""
+    else:
+        exl = ""
+
+    exl = ""
+
+    return ex, exl
