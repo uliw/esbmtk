@@ -37,7 +37,7 @@ def get_initial_conditions(M: Model) -> tuple[list, list, list, list]:
             R.append(r.c[0])
             icl.append(r)
 
-        if r.rtype == "computed":
+        if r.rtype == "computed" or r.type == "passive":
             R.append(r.c[0])
             icl.append(r)
 
