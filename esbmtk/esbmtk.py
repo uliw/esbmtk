@@ -536,7 +536,8 @@ class Model(esbmtkBase):
         geometry. So we need to ensure we are dealing with a 2-D array
         """
         if geo[0] == 1 and geo[1] == 1:  # row=1, col=1 only one window
-            axs[0][0] = ax
+            print(f"size of axs = {len(axs)}, type = {type(axs)}\n")
+            axs[0].append(ax)
         elif geo[0] > 1 and geo[1] == 1:  # mutiple rows, one column
             for i in range(geo[0]):
                 axs[0].append(ax[i])
@@ -1437,12 +1438,15 @@ class ReservoirBase(esbmtkBase):
         ax.set_ylabel(f"{self.legend_left} [{M.c_unit:~P}]")
 
         # add any external data if present
-        for i, d, in enumerate(self.led):
+        for (
+            i,
+            d,
+        ) in enumerate(self.led):
             time = (d.x * M.t_unit).to(M.d_unit).magnitude
             yd = d.y.to(self.plt_units).magnitude
             leg = f"{self.lm} {d.legend}"
             ax.scatter(time[1:-2], yd[1:-2], color=f"C{i+1}", label=leg)
-        
+
         ax.spines["top"].set_visible(False)
         handler1, label1 = ax.get_legend_handles_labels()
 
