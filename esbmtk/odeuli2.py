@@ -37,7 +37,7 @@ def get_initial_conditions(M: Model) -> tuple[list, list, list, list]:
             R.append(r.c[0])
             icl.append(r)
 
-        if r.rtype == "computed" or r.type == "passive":
+        if r.rtype == "computed" or r.rtype == "passive":
             R.append(r.c[0])
             icl.append(r)
 
@@ -589,7 +589,17 @@ def get_gas_exchange(
     """
 
     # get co2_aq reference
-    co2aq = f"{c.liquid_reservoir.parent.full_name}.CO2aq".replace(".", "_")
+    lrn = f"{c.liquid_reservoir.full_name}"
+    sp = lrn.split(".")[-1]
+    # test if we refer to CO2 or other gas species
+    if sp == "DIC":
+        refsp = f"{c.liquid_reservoir.parent.full_name}.CO2aq".replace(".", "_")
+    elif sp == "O2":
+        ici = icl.index(c.liquid_reservoir)
+        refsp = f"R[{ici}]"
+    else:
+        raise ValueError(f"Species{sp} has not definition for gex")
+
     # get atmosphere pcO2 reference
     pco2 = get_ic(c.gas_reservoir, icl)
     ex = (
@@ -598,7 +608,7 @@ def get_gas_exchange(
         f"{ind3}{pco2},\n"
         f"{ind3}{cfn}.water_vapor_pressure,\n"
         f"{ind3}{cfn}.solubility,\n"
-        f"{ind3}{co2aq},\n"
+        f"{ind3}{refsp},\n"
         f"{ind3})"
     )
     ex = check_signal_2(ex, c)
