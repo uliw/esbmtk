@@ -536,7 +536,6 @@ class Model(esbmtkBase):
         geometry. So we need to ensure we are dealing with a 2-D array
         """
         if geo[0] == 1 and geo[1] == 1:  # row=1, col=1 only one window
-            print(f"size of axs = {len(axs)}, type = {type(axs)}\n")
             axs[0].append(ax)
         elif geo[0] > 1 and geo[1] == 1:  # mutiple rows, one column
             for i in range(geo[0]):
@@ -553,12 +552,9 @@ class Model(esbmtkBase):
         fig.set_size_inches(size)
 
         i = 0  # loop over objects
-        print(f"len axs = {len(axs)}")
-        print(f"len of axs[0] = {len(axs[0])}")
         for c in range(geo[0]):  # rows
             for r in range(geo[1]):  # columns
                 if i < noo:
-                    print(f"r={r}, c={c}")
                     pl[i].__plot__(self, axs[c][r])
                     axs[c][r].set_title(pl[i].full_name)
                     i = i + 1
@@ -649,18 +645,21 @@ class Model(esbmtkBase):
 
         """
 
-        for r in self.lor:
-            r.__sub_sample_data__()
-
-        for vr in self.lvr:
-            vr.__sub_sample_data__()
-
-        for f in self.lof:
-            f.__sub_sample_data__()
-
         stride = int(len(self.time) / self.number_of_datapoints)
-        self.time = self.time[2:-2:stride]
 
+        if stride > 1:
+            self.time = self.time[2:-2:stride]
+
+            for r in self.lor:
+                r.__sub_sample_data__(stride)
+
+            for vr in self.lvr:
+                vr.__sub_sample_data__(stride)
+
+            for f in self.lof:
+                f.__sub_sample_data__(stride)
+
+        
     def __run_solver__(self, solver: str, kwargs: dict) -> None:
         from .ODEINT_Solver import run_solver
 
@@ -761,13 +760,18 @@ class Model(esbmtkBase):
                 # get cs instance handle
                 cs = getattr(gf.register, "cs")
                 for k, v in cs.vr_datafields.items():
-                    od = getattr(cs, k)  # get ode data
-                    od = np.interp(
-                        self.time,
-                        self.ode_system.t,
-                        od[0 : self.ode_system.i],
-                    )
-                    setattr(cs, k, od)
+                    if "table" not in k:
+                        od = getattr(cs, k)  # get ode data
+                        # print(f"R = {gf.full_name} - {k}:\n"
+                        #       f"len(fp) = {len(od[0 : self.ode_system.i])}, "
+                        #       f"len(xp) = {len(self.ode_system.t)}, "
+                        #       f"i = {self.ode_system.i}")
+                        od = np.interp(
+                            self.time,
+                            self.ode_system.t,
+                            od[0 : self.ode_system.i],
+                        )
+                        setattr(cs, k, od)
 
         else:
             results = odeint(ode_system.eqs, R, t=self.time, args=(self,), tfirst=True)
@@ -1239,18 +1243,15 @@ class ReservoirBase(esbmtkBase):
 
         return df
 
-    def __sub_sample_data__(self) -> None:
+    def __sub_sample_data__(self,stride) -> None:
         """There is usually no need to keep more than a thousand data points
         so we subsample the results before saving, or processing them
 
         """
-        stride = int(len(self.m) / self.mo.number_of_datapoints)
 
         # print(f"Reset data with {len(self.m)}, stride = {self.mo.reset_stride}")
         self.m = self.m[2:-2:stride]
         self.l = self.l[2:-2:stride]
-        # self.h = self.h[2:-2:stride]
-        # self.d = self.d[2:-2:stride]
         self.c = self.c[2:-2:stride]
 
     def __reset_state__(self) -> None:
@@ -2093,15 +2094,13 @@ class Flux(esbmtkBase):
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
 
-    def __sub_sample_data__(self) -> None:
+    def __sub_sample_data__(self, stride) -> None:
         """There is usually no need to keep more than a thousand data points
         so we subsample the results before saving, or processing them
 
         """
 
         if self.save_flux_data:
-            stride = int(len(self.m) / self.mo.number_of_datapoints)
-
             self.m = self.m[2:-2:stride]
             self.l = self.m[2:-2:stride]
 
