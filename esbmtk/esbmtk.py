@@ -553,14 +553,17 @@ class Model(esbmtkBase):
         fig.set_size_inches(size)
 
         i = 0  # loop over objects
+        print(f"len axs = {len(axs)}")
+        print(f"len of axs[0] = {len(axs[0])}")
         for c in range(geo[0]):  # rows
             for r in range(geo[1]):  # columns
                 if i < noo:
-                    pl[i].__plot__(self, axs[r][c])
-                    axs[r][c].set_title(pl[i].full_name)
+                    print(f"r={r}, c={c}")
+                    pl[i].__plot__(self, axs[c][r])
+                    axs[c][r].set_title(pl[i].full_name)
                     i = i + 1
                 else:
-                    axs[r][c].remove()
+                    axs[c][r].remove()
 
         fig.subplots_adjust(top=0.88)
         fig.tight_layout()
@@ -1454,7 +1457,7 @@ class ReservoirBase(esbmtkBase):
             axt = ax.twinx()
             y2 = self.d  # no conversion for isotopes
             axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
-            axt.set_ylabel(self.data.ld)
+            axt.set_ylabel(self.ld)
             set_y_limits(axt, M)
             x.spines["top"].set_visible(False)
             # set combined legend
