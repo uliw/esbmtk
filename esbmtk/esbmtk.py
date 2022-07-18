@@ -1459,7 +1459,7 @@ class ReservoirBase(esbmtkBase):
             axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
             axt.set_ylabel(self.ld)
             set_y_limits(axt, M)
-            x.spines["top"].set_visible(False)
+            ax.spines["top"].set_visible(False)
             # set combined legend
             handler2, label2 = axt.get_legend_handles_labels()
             legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
@@ -2081,7 +2081,7 @@ class Flux(esbmtkBase):
             ln2 = axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
             axt.set_ylabel(self.data.ld)
             set_y_limits(axt, M)
-            x.spines["top"].set_visible(False)
+            ax.spines["top"].set_visible(False)
             # set combined legend
             handler2, label2 = axt.get_legend_handles_labels()
             legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
