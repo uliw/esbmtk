@@ -129,7 +129,8 @@ def carbonate_system_1_ode(
 def carbonate_system_2_ode(
     t,
     rg: ReservoirGroup,
-    Bm: Flux,
+    Bm: float,
+    Bm_l: float,
     dic: float,
     ta: float,
     hplus: float,
@@ -278,13 +279,14 @@ def carbonate_system_2_ode(
     # print(f"area_dz_table[int(zsnow)] = {area_dz_table[int(zsnow)]:.2e}")
     # print(f"I_caco3 = {I_caco3}, dt = {(t - last_t):.2e}")
 
-    d_zsnow = - BPDC / (area_dz_table[int(zsnow)] * I_caco3)
+    d_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
 
     # elif zcc >= zsnow:  # e.g. 5000 > 4750
     #     # there is no carbonate below 4750, so BPDC = 0
     #     d_zsnow = 0
     #     BPDC = 0
 
+    # get isotope ratio in reservoir
     # BD & F_burial
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = Bm - BD
@@ -310,18 +312,22 @@ def carbonate_system_2_ode(
         # rg.cs.zsnow[i] = zsnow  # 7
         rg.cs.Fburial[i] = Fburial
 
-    # store zsnow for next iteration
-    # p[19] = zsnow
+    """Bm is the flux of CaCO3 into the box. However, the model should
+    use the bypass option and leave all flux calculations to the
+    cs_code.  As such, we simply add the fraction of the input flux
+    that dissolves, and ignore the fraction that is buried.  
 
-    """ the fraction of the carbonate rain that is dissolved and returned to
-    ocean is the difference between the carbonate rain and the the burial
-    flux """
-    diss = Bm - Fburial
-    # Fburial12 = Fburial * input_data[1][i - 1] / input_data[0][i - 1]
-    # diss12 = (B12 - Fburial12) * dt  # dissolution flux light isotope
+    The isotope ratio of the dissolutio flux is determined by the delta
+    value of the sediments we are dissolving, and the delta of the carbonate rain.
+    The currrent code, assumes that both are the same.
+    """
+    # SB_r = # isotope ratio of surface box
+    # DB_r = # isotope ratio of deep box
+    # BD_l = BD * SB_r
+    # Fburial_l = Fburial * DB_r
 
     dH = hplus - hplus_0
-    return -diss, dH, d_zsnow
+    return -BD, 1, dH, d_zsnow
 
 
 def gas_exchange_ode(scale, gas_c, p_H2O, solubility, co2aq):
