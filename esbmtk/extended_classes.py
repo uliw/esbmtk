@@ -1470,6 +1470,8 @@ class ExternalCode(Reservoir_no_set):
             "ref_flux": ["None", (list, str)],
             "return_values": ["None", (str, dict)],
             "arguments": ["None", (str, list)],
+            "r_s": ["None", (str, ReservoirGroup)],
+            "r_d": ["None", (str, ReservoirGroup)],
         }
 
         # provide a list of absolutely required keywords
@@ -1504,6 +1506,7 @@ class ExternalCode(Reservoir_no_set):
                 self.vr_data.append(e)
 
         self.gfh = GenericFunction(
+            r_s=self.r_s,
             name=name,
             function=self.function,
             input_data=self.function_input_data,
@@ -1626,14 +1629,13 @@ class ExternalCode(Reservoir_no_set):
                 # print(f"i = {i}, header = {n}, data = {df.iloc[-3:, i]}")
                 self.vr_data[i - 1][:3] = df.iloc[-3:, i]
 
-    def __sub_sample_data__(self) -> None:
+    def __sub_sample_data__(self, stride) -> None:
         """There is usually no need to keep more than a thousand data points
         so we subsample the results before saving, or processing them
 
         """
 
         # print(f"subsampling {self.fullname}")
-        stride = int(len(self.vr_data[0]) / self.mo.number_of_datapoints)
 
         new: list = []
         for d in self.vr_data:
@@ -2090,7 +2092,6 @@ class ExternalData(esbmtkBase):
         else:
             ys = yq.to(self.ensure_q(self.convert_to))
             print(f"yq = {yq}, cvt= {self.convert_to}, ys = {ys}")
-            
 
         # scale input data into model  units
         self.x: np.ndarray = self.df.iloc[:, 0].to_numpy() * xs

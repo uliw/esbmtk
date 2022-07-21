@@ -185,7 +185,7 @@ class GenericFunction(Process):
 
         """
 
-        from esbmtk import Model
+        from esbmtk import Model, ReservoirGroup
 
         self.__defaultnames__()  # default kwargs names
 
@@ -197,6 +197,8 @@ class GenericFunction(Process):
             "function_params": ["None", (List, str)],
             "model": ["None", (str, Model)],
             "ftype": ["None", (str)],
+            "r_s": ["None", (str, ReservoirGroup)],
+            "r_g": ["None", (str, ReservoirGroup)],
         }
 
         self.defaults.update(defaults)

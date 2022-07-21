@@ -345,20 +345,27 @@ def check_signal_2(ex: str, c: tp.union(Connection, Connect)) -> str:
     return ex
 
 
-def get_ic(r: Reservoir, icl: list) -> str:
+def get_ic(r: Reservoir, icl: list, isotopes=False) -> str:
     """Get initial condition. If r in icl, return index
     expression into R. If r is not in index, return
     Reservoir concentration a t=0
 
     In both cases return these a string
+
+    If the isotopes varibale is set to True, return the pointter to
+    the light isotope reser instead
     """
 
     s = ""
 
-    if r in icl:
-        s = f"R[{icl.index(r)}]"
+    if isotopes:
+        pass
     else:
-        s = f"{r.full_name}.c[0]"
+        if r in icl:
+            s = f"R[{icl.index(r)}]"
+        else:
+            raise ValueError(f"get_ic: this should not happen r = {r.full_name}")
+            s = f"{r.full_name}.c[0]"
 
     return s
 
@@ -389,25 +396,44 @@ def write_cs_1(eqs, r: Reservoir, icl: list, rel: str, ind2: str, ind3: str) -> 
 def write_cs_2(eqs, r: Reservoir, icl: list, rel: str, ind2: str, ind3: str) -> list:
     """Write the python code that defines carbonate system 2"""
 
-    fn_dic = f"{r.register.DIC.full_name}.burial".replace(".", "_")
-    fn_ta = f"{r.register.TA.full_name}.burial".replace(".", "_")
     influx = r.parent.cs.ref_flux[0].full_name.replace(".", "_")
+
+    # get DIC reservoir of the surface box
+    sb_DIC = getattr(r.r_s, 'DIC')
+    
+    if r.register.DIC.isotopes:
+        source_m = get_ic(sb_DIC, icl)
+        source_l = get_ic(sb_DIC, icl, isotopes=True)
+    else:
+        print(f"sb_DIC = {sb_DIC.full_name}")
+        source_m = get_ic(sb_DIC, icl)
+        source_l = 1
+
+    fn_dic = f"{r.register.DIC.full_name}.burial".replace(".", "_")
+    fn_dic_l = f"{fn_dic}_l"
+    fn_ta = f"{r.register.TA.full_name}.burial".replace(".", "_")
+
     fname = f"{r.parent.full_name}.Hplus".replace(".", "_")
     zname = f"{r.parent.full_name}.zsnow".replace(".", "_")
     zmax = r.parent.cs.function_params[15]
     eqs.write(
-        f"{ind2}{fn_dic}, {fname}, {zname} = carbonate_system_2_ode(\n"
-        f"{ind3}t,\n{ind3}{r.parent.full_name},\n{ind3}{influx},\n"
-        f"{ind3}{get_ic(r.parent.DIC, icl)},\n"
-        f"{ind3}{get_ic(r.parent.TA, icl)},\n"
-        f"{ind3}{get_ic(r.parent.Hplus, icl)},\n"
-        f"{ind3}{get_ic(r.parent.zsnow, icl)},\n"
-        f"{ind3}self.i,\n"
-        f"{ind3}max_i,\n"
-        f"{ind3}self.last_t,\n"
+        f"{ind2}{fn_dic}, {fn_dic_l}, {fname}, {zname} = carbonate_system_2_ode(\n"
+        f"{ind3}t, \n"  # current time
+        f"{ind3}{r.parent.full_name}, \n"  # Reservoir handle
+        f"{ind3}{influx}, \n"  # CaCO3 export flux
+        f"{ind3}{get_ic(r.parent.DIC, icl)}, \n"  # DIC in the deep box
+        f"{ind3}{get_ic(r.parent.TA, icl)}, \n"  # TA in the deep box
+        f"{ind3}{source_m}, \n"  # DIC in the surface box
+        f"{ind3}{source_l}, \n"  # DIC of the light isotope in the surface box
+        f"{ind3}{get_ic(r.parent.Hplus, icl)}, \n"  # H+ in the deep box at t-1
+        f"{ind3}{get_ic(r.parent.zsnow, icl)}, \n"  # zsnow in mbsl at t-1
+        f"{ind3}self.i, \n"  # current index
+        f"{ind3}max_i, \n"  # max is of vr data fields
+        f"{ind3}self.last_t, \n"  # t at t-1
         f"{ind2})  # cs2\n"
+        # calculate the TA dissolution flux from DIc diss flux
         f"{ind2}{fn_ta} = {fn_dic} * 2  # cs2\n"
-        f"{ind2}# Limit zsnow >= zmax\n"
+        f"{ind2} # Limit zsnow >= zmax\n"
         f"{ind2}if {get_ic(r.parent.zsnow, icl)} > {zmax}:"
         f" {get_ic(r.parent.zsnow, icl)} = {zmax}\n"
     )

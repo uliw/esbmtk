@@ -127,25 +127,28 @@ def carbonate_system_1_ode(
 
 
 def carbonate_system_2_ode(
-    t,
-    rg: ReservoirGroup,
-    Bm: float,
-    Bm_l: float,
-    dic: float,
-    ta: float,
-    hplus: float,
-    zsnow: float,
-    i: float,
-    max_i: float,
-    last_t: float,
-) -> float:
+    t,  # time step
+    rg: ReservoirGroup,  # Reservoir handle
+    Bm: float,  # CaCO3 export flux as DIC
+    dic_db: float,  # DIC in the deep box
+    ta_db: float,  # TA in the deep box
+    dic_sb: float,  # [DIC] in the surface box
+    dic_sb_l: float,  # [DIC_l] in the surface box
+    hplus: float,  # hplus in the deep box at t-1
+    zsnow: float,  # snowline in meters below sealevel at t-1
+    i: float,  # current index
+    max_i: float,  # max length of vr vectors
+    last_t: float,  # time of the last calls to cs2
+) -> tuple:
     """Calculates and returns the fraction of the carbonate rain that is
-    dissolved an returned back into the ocean. Additionally, calculate
-    the following critical depth intervals:
+    dissolved an returned back into the ocean. This functions returns:
+
+    DIC_burial, DIC_burial_l, Hplus, zsnow
+
+    Additionally, it calculates  the following critical depth intervals:
 
     zsat: top of lysocline
     zcc: carbonate compensation depth
-    zsnow: snowline below which no carbonate exist.
 
     LIMITATIONS:
     - Assumes all concentrations are in mol/kg
@@ -155,7 +158,6 @@ def carbonate_system_2_ode(
     Calculations are based off equations from:
     Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
     Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
-
 
     Author: M. Niazi & T. Tsan, 2021
     """
@@ -190,20 +192,20 @@ def carbonate_system_2_ode(
     oh: float = KW / hplus
     boh4: float = boron * KB / (hplus + KB)
     fg: float = hplus - oh - boh4
-    ca: float = ta + fg
+    ca: float = ta_db + fg
 
     # calculate carbon speciation
     # The following equations are after Follows et al. 2006
-    gamm: float = dic / ca
+    gamm: float = dic_db / ca
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
 
     hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
     # co3: float = dic / (1 + (hplus / k2) + ((hplus ** 2) / (k1 * k2)))
-    hco3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
+    hco3: float = dic_db / (1 + (hplus / k1) + (k2 / hplus))
     co3: float = (ca - hco3) / 2
     # DIC = hco3 + co3 + co2 + H2CO3 The last term is however rather
     # small, so it may be ok to simply write co2aq = dic - hco3 + co3.
-    co2aq: float = dic - co3 - hco3
+    co2aq: float = dic_db - co3 - hco3
     # co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
     # omega: float = (ca2 * co3) / ksp
 
@@ -323,11 +325,11 @@ def carbonate_system_2_ode(
     """
     # SB_r = # isotope ratio of surface box
     # DB_r = # isotope ratio of deep box
-    # BD_l = BD * SB_r
+    BD_l = BD * dic_sb_l/dic_sb
     # Fburial_l = Fburial * DB_r
 
     dH = hplus - hplus_0
-    return -BD, 1, dH, d_zsnow
+    return -BD, -BD_l, dH, d_zsnow
 
 
 def gas_exchange_ode(scale, gas_c, p_H2O, solubility, co2aq):

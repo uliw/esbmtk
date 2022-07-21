@@ -1126,7 +1126,8 @@ def add_carbonate_system_2(**kwargs) -> None:
         and snowline depth, and compute the associated carbonate burial fluxes
 
         Required keywords:
-            rgs: list of ReservoirGroup objects
+            r_sb: list of ReservoirGroup objects in the surface layer
+            r_db: list of ReservoirGroup objects in the deep layer
             carbonate_export_fluxes: list of flux objects which mus match the
                                      list of ReservoirGroup objects.
             zsat_min = depth of the upper boundary of the deep box
@@ -1159,7 +1160,8 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     # list of known keywords
     lkk: dict = {
-        "rgs": list,
+        "r_db": list,  # list of deep reservoirs
+        "r_sb": list,  # list of corresponding surface reservoirs
         "carbonate_export_fluxes": list,
         "AD": float,
         "zsat": int,
@@ -1179,15 +1181,16 @@ def add_carbonate_system_2(**kwargs) -> None:
         "Ksp": (float, int),
     }
     # provide a list of absolutely required keywords
-    lrk: list[str] = ["rgs", "carbonate_export_fluxes", "zsat_min", "z0"]
+    lrk: list[str] = ["r_db", "r_sb", "carbonate_export_fluxes", "zsat_min", "z0"]
 
     # we need the reference to the Model in order to set some
     # default values.
 
-    reservoir = kwargs["rgs"][0]
+    reservoir = kwargs["r_db"][0]
     model = reservoir.mo
     # list of default values if none provided
     lod: dict = {
+        "r_sb": [],  # empty list
         "zsat": -3715,  # m
         "zcc": -4750,  # m
         "zsnow": -5000,  # m
@@ -1215,13 +1218,21 @@ def add_carbonate_system_2(**kwargs) -> None:
     # establish some shared parameters
     # depths_table = np.arange(0, 6001, 1)
     depths: np.ndarray = np.arange(0, 6002, 1, dtype=float)
-    rgs = kwargs["rgs"]
+    r_db = kwargs["r_db"]
+    r_sb = kwargs["r_sb"]
     Ksp0 = kwargs["Ksp0"]
-    ca2 = rgs[0].swc.ca2
+    ca2 = r_db[0].swc.ca2
     pg = kwargs["pg"]
     pc = kwargs["pc"]
     z0 = kwargs["z0"]
     Ksp = kwargs["Ksp"]
+
+    # test if corresponding surface reservoirs have been defined
+    if len(r_sb) == 0:
+        raise ValueError(
+            f"Please update your call to add_carbonate_system_2"
+            f"and add the list of of corresponding surface reservoirs"
+        )
 
     # C saturation(z) after Boudreau 2010
     Csat_table: np.ndarray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
@@ -1229,18 +1240,20 @@ def add_carbonate_system_2(**kwargs) -> None:
     area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area'
     AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
 
-    for i, rg in enumerate(rgs):  # Setup the virtual reservoirs
+    for i, rg in enumerate(r_db):  # Setup the virtual reservoirs
         if rg.mo.register == "local":
             species = rg.mo.Carbon.CO2
         else:
             species = __builtins__["CO2"]
 
-        if rgs[0].mo.use_ode:
+        if r_db[0].mo.use_ode:
             ec = ExternalCode(
                 name="cs",
                 species=species,
                 function="None",
                 ftype="cs2",
+                r_s=r_sb[i],  # source (RG) of CaCO3 flux,
+                r_d=r_db[i],  # sink (RG) of CaCO3 flux,
                 # datafield hold the results of the VR_no_set function
                 # provide a default values which will be use to initialize
                 # the respective datafield/
@@ -1326,11 +1339,11 @@ def add_carbonate_system_2(**kwargs) -> None:
                 },
                 function_input_data=List(
                     [
-                        rg.DIC.m,  # 0 DIC mass
-                        rg.DIC.l,  # 1 DIC light isotope mass
-                        rg.DIC.c,  # 2 DIC concentration
-                        rg.TA.m,  # 3 TA mass
-                        rg.TA.c,  # 4 TA concentration
+                        rg.DIC.m,  # 0 DIC mass db
+                        rg.DIC.l,  # 1 DIC light isotope mass db
+                        rg.DIC.c,  # 2 DIC concentration db
+                        rg.TA.m,  # 3 TA mass db
+                        rg.TA.c,  # 4 TA concentration db
                         kwargs["carbonate_export_fluxes"][i].fa,  # 5
                         area_table,  # 6
                         area_dz_table,  # 7
