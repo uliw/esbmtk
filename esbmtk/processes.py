@@ -1468,7 +1468,7 @@ class GasExchange(RateConstant):
         c = carbonate ion
 
         a_db is thus the fractionation factor between dissolved CO2aq and HCO3-
-        and a_gb between CO2g HCO3-
+        and a_dg between CO2aq and CO2g
 
         ref_species = DIC.cs.CO2aq
         liquid.m = DIC.m (used to get the isotope ratio)
@@ -1509,12 +1509,6 @@ class GasExchange(RateConstant):
         # 13C flux
         f13 = self.scale * self.a_u * (eco2_at_13 - eco2_aq_13)
         f12 = f - f13
-
-        # print(f"e13c at = {eco2_at_13:.2e} e13c aq = {eco2_aq_13:.2e}")
-        # print(f"diff =  {eco2_at - eco2_aq:.2e}")
-        # print(f"diff 13c =  {eco2_at_13 - eco2_aq_13:.2e}")
-        # d = get_delta(f12, f13, r)
-        # print(f"i = {i} d gex = {d:.2f}, f = {f:.2e}, f13: {f13:.2e} fr = {f/f12:.2e}\n")
 
         self.flux.fa = [f, f12]
         """The solver will use f and f12 to update mass, light

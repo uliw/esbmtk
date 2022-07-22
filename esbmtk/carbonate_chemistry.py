@@ -567,7 +567,7 @@ class SeawaterConstants(esbmtkBase):
 
         # CO2aq versus CO2g
         self.e_dg: float = -373 / T + 0.19
-        self.a_dg: float = 1 + self.e_dg / 1000
+        self. a_dg: float = 1 + self.e_dg / 1000
 
         # CO2aq versus HCO3
         self.e_db: float = -9866 / T + 24.12

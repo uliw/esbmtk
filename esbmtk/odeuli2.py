@@ -302,7 +302,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: list) -> tuple(str, str)
     cfn = flux.parent.full_name  # shorthand for the connection object name
 
     if c.ctype.casefold() == "regular":
-        ex, exl = get_regular_flux(flux, c)
+        ex, exl = get_regular_flux(flux, c, icl, ind3)
 
     elif c.ctype == "scale_with_concentration":
         ex, exl = get_scale_with_concentration(flux, c, cfn, icl)
@@ -317,8 +317,10 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: list) -> tuple(str, str)
         ex, exl = get_weathering(flux, c, cfn, icl, ind2, ind3)
 
     elif c.ctype == "gas_exchange":  # Gasexchange
-        ex, exl = get_gas_exchange(flux, c, cfn, icl, ind2, ind3)
-
+        if c.isotopes:
+            ex, exl = get_gas_exchange_w_isotopes(flux, c, cfn, icl, ind2, ind3)
+        else:
+            ex = get_gas_exchange(flux, c, cfn, icl, ind2, ind3)
     else:
         raise ValueError(
             f"Connection type {c.ctype} for {c.full_name} is not implmented"
@@ -399,8 +401,8 @@ def write_cs_2(eqs, r: Reservoir, icl: list, rel: str, ind2: str, ind3: str) -> 
     influx = r.parent.cs.ref_flux[0].full_name.replace(".", "_")
 
     # get DIC reservoir of the surface box
-    sb_DIC = getattr(r.r_s, 'DIC')
-    
+    sb_DIC = getattr(r.r_s, "DIC")
+
     if r.register.DIC.isotopes:
         source_m = get_ic(sb_DIC, icl)
         source_l = get_ic(sb_DIC, icl, isotopes=True)
@@ -447,20 +449,59 @@ def write_cs_2(eqs, r: Reservoir, icl: list, rel: str, ind2: str, ind3: str) -> 
 def get_regular_flux(
     flux: Flux,  # flux instance
     c: Connect,  # connection instance
+    icl: list,  # list of initial conditions
+    ind3,  # indentation
 ) -> tuple:
     """Equation defining a fixed rate flux
     Example:
 
-    M1_volcanic_flux__F = M1.C_Fw_to_CO2_At_DIC_volcanic_flux._F.rate
+    ex =  M1.C_Fw_to_CO2_At_DIC_volcanic_flux._F.rate
+    exl = M1.C_Fw_to_CO2_At_DIC_volcanic_flux._F.rate
 
     """
 
     ex = f"{flux.full_name}.rate"
     ex = check_signal_2(ex, c)
-    ex = ex + "  # fixed rate"
+    # ex = ex + "  # fixed rate"
 
     if c.isotopes:
-        exl = ""
+        # r, d and a are typically only a few decimal places so we use them
+        # directly
+        if c.delta != "None":
+            r = c.species.r
+            d = c.delta
+            exl = (
+                f"(\n",
+                f"{ind3}{ex} * 1e3\n",
+                f"{ind3}/({r} * ({d} + 1000) + 1000)",
+                f"{ind3})",
+            )
+        elif c.alpha != "None":
+            if a > 1.1 or a < 0.9:
+                raise ValueError(
+                    "alpha needs to be given as fractional value not in permil"
+                )
+            r = c.species.r
+            a = c.alpha
+            s_c = get_ic(c.source, icl)
+            s_l = get_ic(c.source, icl, isotopes=True)
+
+            exl = (
+                f"(\n",
+                f"{ind3} - {s_l} * {s_c}\n",
+                f"{ind3}/({a} * {s_l} - {a} * {s_c} - {s_l})",
+                f"{ind3})",
+            )
+        else:
+            raise ValueError(
+                "A regular flux in an isotope system must specify"
+                "either delta, or alpha. Otherwise use a connection"
+                "that depends on the upstream reservoir delta, or"
+                "set the isotope flag to False"
+            )
+        # this will probably not work
+        exl = check_signal_2(exl, c)
+
     else:
         exl = ""
 
@@ -601,8 +642,9 @@ def get_gas_exchange(
     ind2: str,
     ind3: str,
 ) -> tuple(str, str):
-    """Equation defining a flux that scales with the concentration of pcO2
-    see Zeebe, 2012, doi:10.5194/gmd-5-149-2012
+    """Equation defining a flux that scales with the concentration of
+    of the gas in the atmosphere versus the concentration of the gas
+    in solution. See Zeebe, 2012, doi:10.5194/gmd-5-149-2012
 
     M1_C_H_b_to_CO2_At_gex_hb_F = gas_exchange_ode(
             M1.C_H_b_to_CO2_At.scale,
@@ -640,11 +682,77 @@ def get_gas_exchange(
     ex = check_signal_2(ex, c)
     ex = ex + "  # gas_exchange\n"
 
-    if c.isotopes:
-        exl = ""
+    return ex
+
+
+def get_gas_exchange_w_isotopes(
+    flux: Flux,  # flux instance
+    c: Connect,  # connection instance
+    cfn: str,  # full name of the connection instance
+    icl: list,  # list of initial conditions
+    ind2: str,
+    ind3: str,
+) -> tuple(str, str):
+    """Equation defining a flux that scales with the concentration of
+    of the gas in the atmosphere versus the concentration of the gas
+    in solution. See Zeebe, 2012, doi:10.5194/gmd-5-149-2012
+
+    M1_C_H_b_to_CO2_At_gex_hb_F, M1_C_H_b_to_CO2_At_gex_hb_F_l  = gas_exchange_ode(
+            M1.C_H_b_to_CO2_At.scale, # surface area in m^2
+            R[10],  # gas c in atmosphere
+            R[11],  # gas c_l in atmosphere
+            R[12],  # c of reference species, e.g., DIC
+            R[13],  # c_l reference species, e.g., DIC_12
+            M1.C_H_b_to_CO2_At.water_vapor_pressure,
+            M1.C_H_b_to_CO2_At.solubility,
+            M1_H_b_CO2aq, # gas concentration in liquid, e.g., [co2]aq
+            a_db,  # fractionation factor between dissolved CO2aq and HCO3-
+            a_gb,  # fractionation between CO2g HCO3-
+            )  # gas_exchange
+
+     source_l = get_ic(sb_DIC, icl, isotopes=True)
+    """
+
+    # get isotope data
+    pco2 = get_ic(c.gas_reservoir, icl)
+    pco2_l = get_ic(c.gas_reservoir, icl, isotopes=True)
+    dic = get_ic(c.liquid_reservoir, icl)
+    dic_l = get_ic(c.liquid_reservoir, icl, isotopes=True)
+
+    # get fractionation factors
+    swc = getattr(c.liquid_reservoir.parent, "swc")
+    a_db = swc.a_db  # fractionation factor between CO2aq and HCO3-
+    a_dg = swc.a_dg  # fractionation between CO2aq and CO2g
+    a_u = swc.a_u  # kinetic fractionation during gas exchange
+
+    # get co2_aq reference
+    lrn = f"{c.liquid_reservoir.full_name}"
+    sp = lrn.split(".")[-1]
+    # test if we refer to CO2 or other gas species
+    if sp == "DIC":
+        refsp = f"{c.liquid_reservoir.parent.full_name}.CO2aq".replace(".", "_")
+    elif sp == "O2":
+        ici = icl.index(c.liquid_reservoir)
+        refsp = f"R[{ici}]"
     else:
-        exl = ""
+        raise ValueError(f"Species{sp} has not definition for gex")
 
-    exl = ""
+    ex, exl = (
+        f"gas_exchange_ode_with_isotopes(\n"
+        f"{ind3}{cfn}.scale,\n"  # surface area in m^2
+        f"{ind3}{pco2},\n"  # gas c in atmosphere
+        f"{ind3}{pco2_l},\n"  # gas c_l in atmosphere
+        f"{ind3}{dic},\n"  # c of reference species, e.g., DIC
+        f"{ind3}{dic_l},\n"  # c_l reference species, e.g., DIC_12
+        f"{ind3}{cfn}.water_vapor_pressure,\n"
+        f"{ind3}{cfn}.solubility,\n"
+        f"{ind3}{refsp},\n"  # gas concentration in liquid, e.g., [co2]aq
+        f"{ind3}{a_db},\n"  # fractionation factor between dissolved CO2aq and HCO3-
+        f"{ind3}{a_dg},\n"  # fractionation between CO2aq and CO2g
+        f"{ind3}{a_u},\n"  # kinetic fractionation during gas exchange
+        f"{ind3})"
+    )
+    ex = check_signal_2(ex, c)
+    ex = ex + "  # gas_exchange\n"
 
-    return ex, exl
+    return ex

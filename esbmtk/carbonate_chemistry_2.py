@@ -311,7 +311,7 @@ def carbonate_system_2_ode(
         rg.cs.CO2aq[i] = co2aq  # 4
         rg.cs.zsat[i] = zsat  # 5
         rg.cs.zcc[i] = zcc  # 6
-        # rg.cs.zsnow[i] = zsnow  # 7
+        # rg.cs.zsnow[i] = zsnow  # 7 claculated explicitly by the ode system
         rg.cs.Fburial[i] = Fburial
 
     """Bm is the flux of CaCO3 into the box. However, the model should
@@ -325,25 +325,74 @@ def carbonate_system_2_ode(
     """
     # SB_r = # isotope ratio of surface box
     # DB_r = # isotope ratio of deep box
-    BD_l = BD * dic_sb_l/dic_sb
+    BD_l = BD * dic_sb_l / dic_sb
     # Fburial_l = Fburial * DB_r
 
     dH = hplus - hplus_0
     return -BD, -BD_l, dH, d_zsnow
 
 
-def gas_exchange_ode(scale, gas_c, p_H2O, solubility, co2aq):
+def gas_exchange_ode(scale, gas_c, p_H2O, solubility, c_aq) -> float:
+    """Calculate the gas exchange flux across the air sea interface
 
-    # set flux
-    # note that the sink delta is co2aq as returned by the carbonate VR
-    # this equation is for mmol but esbmtk uses mol, so we need to
-    # multiply by 1E3
+    Parameters:
+     scale: surface area in m^2
+     gas_c: species concentration in atmosphere
+     p_H2O: water vapor partial pressure
+     solubility: species solubility  mol/(m^3 atm)
+     c_aq: concentration of the dissolved gas in water
+    """
 
     f = scale * (  # area in m^2
         gas_c  # Atmosphere
         * (1 - p_H2O)  # p_H2O
         * solubility  # SA_co2 = mol/(m^3 atm)
-        - co2aq * 1000  # [CO2]aq mol
+        - c_aq * 1000  # [CO2]aq mol
     )
 
     return -f
+
+
+def gas_exchange_ode_with_isotopes(
+    scale,  # surface area in m^2
+    gas_c,  # species concentration in atmosphere
+    gas_c_l,  # same but for the light isotope
+    liquid_c,  # c of the reference species (e.g., DIC)
+    liquid_c_l,  # same but for the light isotope
+    p_H2O,  # water vapor pressure
+    solubility,  # solubility constant
+    c_aq,  # Gas concentration in liquid phase
+    a_db,  # fractionation factor between dissolved CO2aq and HCO3-
+    a_dg,  # fractionation between CO2aq and CO2g
+    a_u,  # kinetic fractionation during gas exchange
+) -> tuple:
+    """Calculate the gas exchange flux across the air sea interface
+    for co2 incliding isotope effects.
+
+    Note that the sink delta is co2aq as returned by the carbonate VR
+    this equation is for mmol but esbmtk uses mol, so we need to
+    multiply by 1E3
+    """
+
+    # equilibrium concentration of CO2 in water based on pCO2
+    eco2_at = gas_c * (1 - p_H2O) * solubility  # p Atmosphere  # p_H2O
+    # equilibrium concentration of CO2 in water based on CO2aq
+    eco2_aq = c_aq * 1000
+
+    # total flux
+    f = scale * (eco2_at - eco2_aq)
+
+    # get heavy isotope concentration in the respective reservoirs
+    c13g = gas_c - gas_c_l  #
+    c13aq = liquid_c - liquid_c_l
+    # get 13C CO2 equlibrium concentration  CO2 in water based on pCO2
+    eco2_at_13 = gas_c * c13g * (1 - p_H2O) * solubility * a_dg  # p_H2O
+
+    # get 13C equilibrium  CO2 in water based on DIC m & l
+    eco2_aq_13 = a_db * eco2_aq * c13aq
+
+    # 13C flux
+    f13 = scale * a_u * (eco2_at_13 - eco2_aq_13)
+    f12 = f - f13
+
+    return -f, -f12
