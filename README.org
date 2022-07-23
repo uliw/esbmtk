@@ -16,9 +16,16 @@ generation of graphical results.
 
   - 0.8.0.0
     - Cleanup of naming scheme which is now strictly hierarchical.
-    - Bulk connection dictionaries now have to be  specified as =source_to_sink= instead of =source2sink=. 
-    - The connection naming scheme has been revamped. Please see  =esbmtk.connect.__set_name__()= documentation for details. 
-    - Model concentration units must now match 'mole/liter' or 'mol/kg'. Concentrations can still be specified as =mmol/l= or =mmol/kg=, but model output will be in mole/liter or kg. At present, the model does not provide for the automatic conversion of mol/l to mol/kg. Thus you must specify units in a consistent way.
+    - Bulk connection dictionaries now have to be specified as
+      =source_to_sink= instead of =source2sink=.
+    - The connection naming scheme has been revamped. Please see
+      =esbmtk.connect.__set_name__()= documentation for details.
+    - Model concentration units must now match 'mole/liter' or
+      'mol/kg'. Concentrations can still be specified as =mmol/l= or
+      =mmol/kg=, but model output will be in mole/liter or kg. At
+      present, the model does not provide for the automatic conversion
+      of mol/l to mol/kg. Thus you must specify units in a consistent
+      way.
     - The SeawaterConstants class now always returns values as mol/kg solution. Caveat Emptor.
     - The SeawaterConstants class no longer accepts the 'model' keyword
     - All of his will break existing models.
@@ -26,10 +33,12 @@ generation of graphical results.
       where the density equals one. To work with seawater, you must
       set =ideal_water=False=. In that case, you should also set the
       =concentration_unit= keyword to ='mol/kg'= (solution).
-    - 
-  - The flux and connection summary methods can be filtered by more than one keyword. Provide a filter
-    string in the following format ="keyword_1 keyword_2= and it will
-    only return results that match both keywords.
+    - Several classes now require the "register" keyword. You may need to fix your code accordingly
+    
+  - The flux and connection summary methods can be filtered by more
+    than one keyword. Provide a filter string in the following format
+    ="keyword_1 keyword_2= and it will only return results that match
+    both keywords.
   - Removed the dependency on the nptyping and number libraries
     
 

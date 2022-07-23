@@ -22,7 +22,7 @@ import time
 from time import process_time
 import numba
 from numba.core import types
-from numba import njit, prange
+from numba import njit
 from numba.typed import List
 import numpy as np
 
@@ -128,10 +128,10 @@ def get_flux_delta(f) -> float:
 
 
 def get_delta_h(h) -> float:
-    """Calculate the delta of a flux or reserevoir from total mass
+    """Calculate the delta of a flux or reservoir from total mass
     and mass of light isotope.
 
-    h = flux or reserevoir handle
+    h = flux or reservoir handle
 
     returns d a vector of delta values
 
@@ -145,7 +145,6 @@ def get_delta_h(h) -> float:
 
 
 def execute(
-    new: np.ndarray,
     time: np.ndarray,
     lop: list,
     lor: list,
@@ -192,7 +191,7 @@ def execute(
     print(f"\n Execution time {duration:.2e} cpu seconds\n")
 
 
-def execute_e(model, new, lop, lor, lpc_f, lpc_r):
+def execute_e(model, lop, lor, lpc_f, lpc_r):
     """ """
 
     # numba.set_num_threads(2)
@@ -220,7 +219,7 @@ def execute_e(model, new, lop, lor, lpc_f, lpc_r):
         a = reservoir_list
         b = flux list
         c = direction list
-        d = virtual reserevoir list
+        d = virtual reservoir list
         e = r0 list ???
         """
         model.first_start = False
@@ -243,7 +242,7 @@ def execute_e(model, new, lop, lor, lpc_f, lpc_r):
                 model.fn,
                 model.da,
                 model.pc,
-                model.a,  # reserevoir list
+                model.a,  # reservoir list
                 model.b,  # flux list
                 model.c,  # direction list
                 model.d,  # r0 list
@@ -258,7 +257,7 @@ def execute_e(model, new, lop, lor, lpc_f, lpc_r):
                 model.vr_data,
                 model.vr_params,
                 model.fn,
-                model.a,  # reserevoir list
+                model.a,  # reservoir list
                 model.b,  # flux list
                 model.c,  # direction list
                 model.d,  # r0 list
@@ -393,7 +392,7 @@ def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
     a = reservoir_list
     b = flux list
     c = direction list
-    d = virtual reserevoir list
+    d = virtual reservoir list
     e = r0 list ???
     """
 
@@ -437,7 +436,7 @@ def foo_no_vr_no_p(fn, a, b, c, d, e, maxt, dt):
     a = reservoir_list
     b = flux list
     c = direction list
-    d = virtual reserevoir list
+    d = virtual reservoir list
     e = r0 list ???
     """
 

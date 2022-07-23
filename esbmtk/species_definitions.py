@@ -1,6 +1,5 @@
 import numpy as np
 from .esbmtk import Element, Species
-from . import ureg, Q_
 
 np.set_printoptions(precision=4)
 
@@ -31,6 +30,7 @@ def Carbon(model):
     Species(name="CO3", element=eh, display_as="CO$_3^{2-}$", register=eh)
     Species(name="DOC", element=eh, register=eh)
     Species(name="C", element=eh, register=eh)
+    Species(name="CO2aq", element=eh, register=eh)
     Species(name="ALK", element=eh, register=eh)  # Alkalinity
     Species(name="CALK", element=eh, register=eh)  # Carbonate Alkalinity
     Species(name="CA", element=eh, register=eh)
@@ -47,7 +47,7 @@ def Sulfur(model):
         mass_unit="mmol",  # base mass unit
         li_label="$^{32}$S",  # Name of light isotope
         hi_label="$^{34}$S",  # Name of heavy isotope
-        d_label="$\delta^{34}$S",  # Name of isotope delta
+        d_label=r"$\delta^{34}$S",  # Name of isotope delta
         d_scale="VCDT",  # Isotope scale. End of plot labels
         r=0.044162589,  # isotopic abundance ratio for species
         register=model,
@@ -87,7 +87,9 @@ def Hydrogen(model):
     Species(
         name="H2O", element=eh, display_as=r"H$_{2}$O", register=eh
     )  # Name & element handle
-    Species(name="H", element=eh, register=eh)  # Name & element handle
+    Species(
+        name="H", element=eh, display_as=r"$H^+$", register=eh
+    )  # Name & element handle
 
 
 def Oxygen(model):
@@ -179,8 +181,24 @@ def Boron(model):
     # add species
     Species(name="B", element=eh, display_as=r"B", register=eh)  # Name & element handle
     Species(
+        name="BOH", element=eh, display_as=r"B", register=eh
+    )  # Name & element handle
+    Species(
         name="BOH3", element=eh, display_as=r"B(OH)$_{3}$", register=eh
     )  # Boric Acid
     Species(
         name="BOH4", element=eh, display_as=r"B(OH)$_{4}^{-}$", register=eh
     )  # Borate
+
+
+def distance_variables(model):
+    eh = Element(
+        name="distance_variables",
+        model=model,  # model handle
+        mass_unit="m",  # base mass unit
+        register=model,
+    )
+
+    # add species
+    Species(name="zsnow", element=eh, display_as="zsnow", register=eh)
+    # Name & element handle

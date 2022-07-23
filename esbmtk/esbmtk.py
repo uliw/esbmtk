@@ -16,592 +16,40 @@
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
+import typing as tp
 from pandas import DataFrame
 import time
 from time import process_time
 from numba.typed import List
-import numba
-from numba.core import types as nbt
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import logging
-import builtins
 import os
 import psutil
+import collections as col
 from . import ureg, Q_
 
+from .esbmtk_base import esbmtkBase
+
 from .utility_functions import (
-    plot_object_data,
     show_data,
     plot_geometry,
-    show_dict,
-    gen_dict_entries,
-    get_string_between_brackets,
     get_plot_layout,
-    build_ct_dict,
     find_matching_strings,
 )
 from .solver import (
-    get_imass,
-    get_delta,
     get_l_mass,
     execute,
     execute_e,
+    get_delta_h,
 )
 
 
-class input_parsing(object):
-    """Provides various routines to parse and process keyword
-    arguments.  All derived classes need to declare the allowed
-    keyword arguments, their defualt values and the type in the
-    following format:
-
-    defaults = {"key": [value, (allowed instances)]
-
-    the recommended sequence is to first set default values via
-    __register_variable_names__()
-
-    __update_dict_entries__(defaults,kwargs) will  compare the provided kwargs against
-    this data, and upon succesful parsing update the default dict
-    with the new values
-    """
-
-    def __init__(self):
-        raise NotImplementedError("input parsing has no instance!")
-
-    def __initialize_keyword_variables__(self, kwargs) -> None:
-        """check, register and update keyword variables"""
-
-        self.update = False
-        self.__check_mandatory_keywords__(self.lrk, kwargs)
-        self.__register_variable_names__(self.defaults, kwargs)
-        self.__update_dict_entries__(self.defaults, kwargs)
-        self.update = True
-
-    def __check_mandatory_keywords__(self, lrk: list, kwargs: dict) -> None:
-        """Verify that all elements of lrk have a corresponding key in
-        kwargs.  If not, print error message"""
-
-        for key in lrk:
-            if isinstance(key, list):
-                has_key = 0
-                for k in key:
-                    if k in kwargs and kwargs[k] != "None":
-                        has_key += 1
-                if has_key != 1:
-                    raise ValueError(f"give only one of {key}")
-            else:
-                if key not in kwargs:
-                    raise ValueError(f"{key} is a mandatory keyword")
-
-    def __register_variable_names__(
-        self,
-        defaults: dict[str, list[any, tuple]],
-        kwargs: dict,
-    ) -> None:
-        """Register the key value[0] pairs as local instance variables.
-        We register them with their actual variable name and as _variable_name
-        in case we use setter and getter methods.
-        to avoid name conflicts.
-        """
-        for key, value in defaults.items():
-            setattr(self, "_" + key, value[0])
-            setattr(self, key, value[0])
-
-        # save kwargs dict
-        self.kwargs: dict = kwargs
-
-    def __update_dict_entries__(
-        self,
-        defaults: dict[str, list[any, tuple]],
-        kwargs: dict[str, list],
-    ) -> None:
-        """This function compares the kwargs dictionary with the defaults
-        dictionary. If the kwargs key cannot be found, raise an
-        error. Otherwise test that the value is of the correct type. If
-        yes, update the defaults dictionary with the new value.
-
-        defaults = {"key": [value, (allowed instances)]
-        kwargs = {"key": value
-
-        Note that this function assumes that all defaults have been registered
-        with the instance via __register_variable_names__()
-        """
-        for key, value in kwargs.items():
-            if key not in defaults:
-                raise ValueError(f"{key} is not a valid key")
-            if not isinstance(value, defaults[key][1]):
-                raise TypeError(
-                    f"{value} for {key} must be of type {defaults[key][1]}, not {type(value)}"
-                )
-
-            defaults[key][0] = value  # update defaults dictionary
-            setattr(self, key, value)  # update instance variables
-            setattr(self, "_" + key, value)  # and their property shadows
-
-    def __register_name_new__(self) -> None:
-        """if self.parent is set, register self as attribute of self.parent,
-        and set full name to parent.full-name + self.name
-        if self.parent == "None", full_name = name
-        """
-
-        if self.parent == "None":
-            self.full_name = self.name
-            reg = self
-        else:
-            self.full_name = self.parent.full_name + "." + self.name
-            reg = self.parent.model
-            # check for naming conflicts
-            if self.full_name in reg.lmo:
-                raise NameError(f"{self.full_name} is a duplicate name in reg.lmo")
-            else:
-                # register with model
-                reg.lmo.append(self.full_name)
-                reg.lmo2.append(self)
-                reg.dmo.update({self.full_name: self})
-                setattr(self.parent, self.name, self)
-                self.kwargs["full_name"] = self.full_name
-        self.reg_time = time.monotonic()
-
-
-class esbmtkBase(input_parsing):
-    """The esbmtk base class template. This class handles keyword
-    arguments, name registration and other common tasks
-
-    Useful methods in this class:
-
-    define required keywords in lrk dict:
-       self.lrk: list = ["name"]
-
-    define allowed type per keyword in lkk dict:
-       self.lkk: Dict[str, any] = {
-                                  "name": str,
-                                  "model": Model,
-                                  "salinity": (int, float), # int or float
-                                  }
-
-    define default values if none provided in lod dict
-       self.lod: Dict[str, any] = {"salinity": 35.0}
-
-    validate keyword input:
-        self.__validateinput__(kwargs)
-
-    add global defaults each esbmtk object should have, even if they are not set or used
-        self.__global_defaults__()
-
-    register all key/value pairs as instance variables
-        self.__registerkeys__()
-
-    register name in global name space. This is only necessary if you
-    want to reference the instance by name from the console, otherwise
-    use the normal python way (i.e.  instance = class(keywords)
-    self.__register_name__ ()
-
-    """
-
-    #  __slots__ = "__dict__"
-
-    # from typing import Dict
-
-    def __init__(self) -> None:
-        raise NotImplementedError
-
-    def __global_defaults__(self) -> None:
-        """Initial variables which should be present in every object
-        Note that this is executed before we register the kwargs as instance
-        variables
-
-        """
-
-        self.lmo: list = []
-        self.lmo2: list = []
-        self.ldo: list = ["full_name", "register", "groupname", "ctype"]
-
-        for n in self.ldo:
-            if n not in self.kwargs:
-                self.kwargs[n] = "None"
-                # logging.debug(
-                #    f"set {self.kwargs['name']} self.kwargs[{n}] to {self.kwargs[n]}"
-                # )
-
-    def __validateandregister__(self, kwargs: dict) -> None:
-        """Validate the user provided input key-value pairs. For this we need
-        kwargs = dictionary with the user provided key-value pairs
-        self.lkk = dictionary with allowed keys and type
-        self.lrk = list of mandatory keywords
-        self.lod = dictionary of default values for keys
-
-        and register the instance variables and the instance in the global name space
-
-        """
-
-        # validate input
-        self.__validateinput__(kwargs)
-
-        # add global key-value pairs which should be present in each object
-        self.__global_defaults__()
-
-        # register all key/value pairs as instance variables
-        self.__registerkeys__()
-
-    def __register_name__(self) -> None:
-        """
-        Register object name in global name space, and test if
-        name is unique
-
-        There are two possible cases: This is a regular object, which will be registered
-        in the global namespace (self.register is not set).
-
-        Case B) This object should be registered in the local namespace of a group. In which case
-        self.register should be set to the group object.
-
-        """
-
-        # we use this to suppress the echo during object creation
-        self.reg_time = time.monotonic()
-
-        # if self register is set, it points to the group object which contains
-        # this sub object.
-
-        logging.debug(f"self.register = {self.register}")
-
-        # models are either in the global namespace, or do not get registered at all
-        if isinstance(self, Model):
-            if self.register == "None":
-                setattr(builtins, self.name, self)
-            else:
-                pass
-
-        # all other objects can be either part of another esbmtk object
-        # register=object reference
-        # or be registered globally
-        else:
-            # get model registry
-            if isinstance(self.register, Model):
-                reg = self.register
-            elif isinstance(self.register, str):
-                reg = self.mo
-            else:
-                reg = self.register.mo
-
-            # checl model default
-            if self.register == "None":  # global registration
-                setattr(builtins, self.name, self)
-                self.full_name = self.name
-
-                # check for naming conflicts
-                if self.full_name in reg.lmo:
-                    raise NameError(f"{self.full_name} is a duplicate name. Please fix")
-                else:
-                    # register with model
-                    reg.lmo.append(self.full_name)
-                    reg.lmo2.append(self)
-                    reg.dmo.update({self.full_name: self})
-
-            else:  # local registration
-                # get full_name of parent object
-                if self.register.full_name != "None":
-                    fn: str = f"{self.register.full_name}.{self.name}"
-                else:
-                    fn: str = f"{self.register.name}.{self.name}"
-
-                self.full_name = fn
-                setattr(self.register, self.name, self)
-                # register with model
-                reg.lmo.append(self.full_name)
-                reg.dmo.update({self.full_name: self})
-
-        # add fullname to kwargs so it shows up in __repr__
-        # its a dirty hack though
-        self.kwargs["full_name"] = self.full_name
-        logging.info(self.__repr__(1))
-
-    def __validateinput__(self, kwargs: dict) -> None:
-        """Validate the user provided input key-value pairs. For this we need
-        kwargs = dictionary with the user provided key-value pairs
-        self.lkk = dictionary with allowed keys and type
-        self.lrk = list of mandatory keywords
-        self.lod = dictionary of default values for keys
-
-        """
-
-        self.kwargs = kwargs  # store the kwargs
-        self.provided_kwargs = kwargs.copy()  # preserve a copy
-
-        if not hasattr(self, "lkk"):
-            self.lkk: dict = {}
-        if not hasattr(self, "lrk"):
-            self.lrk: list = []
-        if not hasattr(self, "lod"):
-            self.lod: dict = []
-        if not hasattr(self, "drn"):
-            self.drn: dict = []
-
-        # check that mandatory keys are present
-        # and that all keys are allowed
-        self.__checkkeys__()
-
-        # initialize missing parameters
-
-        self.kwargs = self.__addmissingdefaults__(self.lod, kwargs)
-
-        # check if key values are of correct type
-        self.__checktypes__(self.lkk, self.kwargs)
-
-    def __checktypes__(self, av: Dict[any, any], pv: Dict[any, any]) -> None:
-        """this method will use the the dict key in the user provided
-        key value data (pv) to look up the allowed data type for this key in av
-
-        av = dictinory with the allowed input keys and their type
-        pv = dictionary with the user provided key-value data
-        """
-
-        k: any
-        v: any
-
-        # loop over known keywords in av
-        for k, v in av.items():
-            if k in pv:  # check type of k
-                # check if entry matches required type
-                if v != any:
-                    # print()
-                    if not isinstance(pv[k], v):
-                        raise TypeError(
-                            f"{type(pv[k])} is the wrong type for '{k}', should be '{av[k]}'"
-                        )
-
-        # loop over provided keywords
-        # for k, v in pv.items():
-        #     # check av if provided value v is of correct type
-        #     if av[k] != any:
-        #         # print(f"key = {k}, value  = {v}")
-        #         if not isinstance(v, av[k]):
-        #             # print(f"k={k}, v= {v}, av[k] = {av[k]}")
-        #             raise TypeError(
-        #                 f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
-        #             )
-
-    def __initerrormessages__(self):
-        """Init the list of known error messages"""
-        self.bem: dict = {
-            "Number": "a number",
-            "Model": "a model handle (i.e. the name without quotation marks)",
-            "Element": "an element handle (i.e. the name without quotation marks)",
-            "Species": "a species handle (i.e. the name without quotation marks)",
-            "Flux": "a flux handle (i.e. the name without quotation marks)",
-            "Reservoir": "a reservoir handle (i.e. the name without quotation marks)",
-            "Signal": "a signal handle (i.e. the name without quotation marks)",
-            "Process": "a process handle (i.e. the name without quotation marks)",
-            "Unit": "a string",
-            "File": "a filename inb the local directory",
-            "Legend": " a string",
-            "Source": " a string",
-            "Sink": " a string",
-            "Ref": " a Flux reference",
-            "Alpha": " a Number",
-            "Delta": " a Number",
-            "Scale": " a Number",
-            "Ratio": " a Number",
-            "number": "a number",
-            "model": "a model handle (i.e. the name without quotation marks)",
-            "element": "an element handle (i.e. the name without quotation marks)",
-            "species": "a species handle (i.e. the name without quotation marks)",
-            "flux": "a flux handle (i.e. the name without quotation marks)",
-            "reservoir": "a reservoir handle (i.e. the name without quotation marks)",
-            "signal": "a signal handle (i.e. the name without quotation marks)",
-            "Process": "a process handle (i.e. the name without quotation marks)",
-            "unit": "a string",
-            "file": "a filename inb the local directory",
-            "legend": " a string",
-            "source": " a string",
-            "sink": " a string",
-            "ref": " a Flux reference",
-            "alpha": " a Number",
-            "delta": " a Number",
-            "scale": "a Number",
-            "ratio": "a Number",
-            "concentration": "a Number",
-            "pl": " a list with one or more process handles",
-            "react_with": "a Flux handle",
-            "data": "External Data Object",
-            "register": "esbmtk object",
-            str: "a string with quotation marks",
-        }
-
-    def __registerkeys__(self) -> None:
-        """register the kwargs key/value pairs as instance variables
-        and complain about unknown keywords"""
-        k: any  # dict keys
-        v: any  # dict values
-
-        # need list of replacement values
-        # "alpha" : _alpha
-
-        for k, v in self.kwargs.items():
-            # check wheather the variable name needs to be replaced
-            if k in self.drn:
-                k = self.drn[k]
-            setattr(self, k, v)
-
-    def __checkkeys__(self) -> None:
-        """check if the mandatory keys are present"""
-
-        k: str
-        v: any
-        # test if the required keywords are given
-        for k in self.lrk:  # loop over required keywords
-            if isinstance(k, list):  # If keyword is a list
-                s: int = 0  # loop over allowed substitutions
-                for e in k:  # test how many matches are in this list
-                    if e in self.kwargs:
-                        # print(self.kwargs[e])
-                        if not isinstance(e, (np.ndarray, np.float64, list)):
-                            # print (type(self.kwargs[e]))
-                            if self.kwargs[e] != "None":
-                                s = s + 1
-                if s > 1:  # if more than one match
-                    raise ValueError(
-                        f"You need to specify exactly one from this list: {k}"
-                    )
-
-            else:  # keyword is not a list
-                if k not in self.kwargs:
-                    raise ValueError(f"You need to specify a value for {k}")
-
-        tl: List[str] = []
-        # get a list of all known keywords
-        for k, v in self.lkk.items():
-            tl.append(k)
-
-        # test if we know all keys
-        # for k, v in self.kwargs.items():
-        #     if k not in self.lkk:
-        #         raise ValueError(f"{k} is not a valid keyword. \n Try any of \n {tl}\n")
-
-    def __addmissingdefaults__(self, lod: dict, kwargs: dict) -> dict:
-        """
-        test if the keys in lod exist in kwargs, otherwise add them with the default values
-        from lod
-
-        """
-        new: dict = {}
-        if len(self.lod) > 0:
-            for k, v in lod.items():
-                if k not in kwargs:
-                    new.update({k: v})
-
-        kwargs.update(new)
-        return kwargs
-
-    def __repr__(self, log=0) -> str:
-        """Print the basic parameters for this class when called via the print method"""
-        from esbmtk import Q_
-
-        m: str = ""
-
-        # suppress output during object initialization
-        tdiff = time.monotonic() - self.reg_time
-
-        # do not echo input unless explicitly requestted
-
-        m = f"{self.__class__.__name__}(\n"
-        for k, v in self.kwargs.items():
-            if not isinstance({k}, esbmtkBase):
-                # check if this is not another esbmtk object
-                if "esbmtk" in str(type(v)):
-                    m = m + f"    {k} = {v.name},\n"
-                # if this is a string
-                elif isinstance(v, str):
-                    m = m + f"    {k} = '{v}',\n"
-                # if this is a quantity
-                elif isinstance(v, Q_):
-                    m = m + f"    {k} = '{v}',\n"
-                # if this is a list
-                elif isinstance(v, (list, np.ndarray)):
-                    m = m + f"    {k} = '{v[0:3]}',\n"
-                # all other cases
-                else:
-                    m = m + f"    {k} = {v},\n"
-
-        m = m + ")"
-
-        if log == 0 and tdiff < 1:
-            m = ""
-
-        return m
-
-    def __str__(self, kwargs={}):
-        """Print the basic parameters for this class when called via the print method
-        Optional arguments
-
-        indent :int = 0 printing offset
-
-        """
-        from esbmtk import Q_
-
-        m: str = ""
-        off: str = "  "
-
-        if "indent" in kwargs:
-            ind: str = kwargs["indent"] * " "
-        else:
-            ind: str = ""
-
-        if "index" in kwargs:
-            index = int(kwargs["index"])
-        else:
-            index = -2
-
-        m = f"{ind}{self.name} ({self.__class__.__name__})\n"
-        for k, v in self.kwargs.items():
-            if not isinstance({k}, esbmtkBase):
-                # check if this is not another esbmtk object
-                if "esbmtk" in str(type(v)):
-                    pass
-                elif isinstance(v, str) and not (k == "name"):
-                    m = m + f"{ind}{off}{k} = {v}\n"
-                elif isinstance(v, Q_):
-                    m = m + f"{ind}{off}{k} = {v}\n"
-                elif isinstance(v, np.ndarray):
-                    m = m + f"{ind}{off}{k}[{index}] = {v[index]:.2e}\n"
-                elif k != "name":
-                    m = m + f"{ind}{off}{k} = {v}\n"
-
-        return m
-
-    def __lt__(self, other) -> None:
-        """This is needed for sorting with sorted()"""
-
-        return self.n < other.n
-
-    def __gt__(self, other) -> None:
-        """This is needed for sorting with sorted()"""
-
-        return self.n > other.n
-
-    def info(self, **kwargs) -> None:
-        """Show an overview of the object properties.
-        Optional arguments are
-
-        indent :int = 0 indentation
-
-        """
-
-        if "indent" not in kwargs:
-            indent = 0
-            ind = ""
-        else:
-            indent = kwargs["indent"]
-            ind = " " * indent
-
-        # print basic data bout this object
-        print(f"{ind}{self.__str__(kwargs)}")
-
-    def __aux_inits__(self) -> None:
-        """Aux initialization code. Not normally used"""
-
-        pass
+if tp.TYPE_CHECKING:
+    from .extended_classes import GasReservoir, ExternalData, DataField
+    from .connections import Connection
+    from .processes import Process
 
 
 class Model(esbmtkBase):
@@ -611,7 +59,7 @@ class Model(esbmtkBase):
 
           esbmtkModel(name   =  "Test_Model",
                       start    = "0 yrs",    # optional: start time
-                      stop     = "1000 yrs", # end time
+                      stop     = "10000 yrs", # end time
                       timestep = "2 yrs",    # as a string "2 yrs"
                       offset = "0 yrs",    # optional: time offset for plot
                       mass_unit = "mol",   #required
@@ -625,23 +73,28 @@ class Model(esbmtkBase):
                       register = 'local', see below
                       save_flux_data = False, see below
                       ideal_water = False
+                      use_ode = False
                     )
 
-    ref_time:  will offset the time axis by the specified
-                 amount, when plotting the data, .i.e., the model time runs from to
-                 100, but you want to plot data as if where from 2000 to 2100, you would
-                 specify a value of 2000. This is for display purposes only, and does not affect
-                 the model. Care must be taken that any external data references the model
-                 time domain, and not the display time.
+    ref_time: will offset the time axis by the specified amount, when
+                 plotting the data, .i.e., the model time runs from to
+                 100, but you want to plot data as if where from 2000
+                 to 2100, you would specify a value of 2000. This is
+                 for display purposes only, and does not affect the
+                 model. Care must be taken that any external data
+                 references the model time domain, and not the display
+                 time.
 
     display precision: affects the on-screen display of data. It is
-                       also cutoff for the graphicak output. I.e., the interval f the y-axis will not be
-                       smaller than the display_precision.
+                       also cutoff for the graphicak output. I.e., the
+                       interval f the y-axis will not be smaller than
+                       the display_precision.
 
-    m_type: enables or disables isotope calculation for the entire model.
-            The default value  is "Not set" in this case isotopes will only be calculated for
-            reservoirs which set the isotope keyword. 'mass_only' 'both' will override
-            the reservoir settings
+    m_type: enables or disables isotope calculation for the entire
+            model.  The default value is "Not set" in this case
+            isotopes will only be calculaten for reservoirs which set
+            the isotope keyword. 'mass_only' 'both' will override the
+            reservoir settings
 
     register = local/None. If set to 'None' all objects are registered
                in the global namespace the default setting is local,
@@ -716,12 +169,10 @@ class Model(esbmtkBase):
 
     """
 
-    __slots__ = "lor"
-
-    def __init__(self, **kwargs: Dict[any, any]) -> None:
+    def __init__(self, **kwargs: dict[any, any]) -> None:
         """Init Sequence"""
 
-        from . import ureg, Q_
+        # from . import ureg, Q_
 
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["M", (str)],
@@ -746,6 +197,7 @@ class Model(esbmtkBase):
             "isotopes": [False, (bool)],
             "debug": [False, (bool)],
             "ideal_water": [True, (bool)],
+            "use_ode": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
@@ -775,9 +227,11 @@ class Model(esbmtkBase):
         self.__register_name_new__()
 
         self.lor: list = []
+        self.lic: list = []  # list of all reservoir type objects
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
         self.lel: list = []  # list which will hold all element references
+        self.led: list[ExternalData] = []  # all external data objects
         self.lsp: list = []  # list which will hold all species references
         self.lop: list = []  # set of flux processes
         self.lpc_f: list = []  # list of external functions affecting fluxes
@@ -821,9 +275,12 @@ class Model(esbmtkBase):
         # ureg.define('Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups')
 
         # legacy variable names
-        self.start = Q_(self.start).to(self.t_unit).magnitude
-        self.stop = Q_(self.stop).to(self.t_unit).magnitude
-        self.offset = Q_(self.offset).to(self.t_unit).magnitude
+
+        self.start = self.ensure_q(self.start).to(self.t_unit).magnitude
+        self.stop = self.ensure_q(self.stop).to(self.t_unit).magnitude
+        self.offset = self.ensure_q(self.offset).to(self.t_unit).magnitude
+        # self.start = self.start + self.offset
+        # self.stop = self.stop + self.offset
 
         self.bu = self.t_unit
         self.base_unit = self.t_unit
@@ -863,7 +320,7 @@ class Model(esbmtkBase):
 
         # set_printoptions(precision=self.display_precision)
 
-        from esbmtk import species_definitions
+        from esbmtk import species_definitions, hypsometry
 
         if "element" in self.kwargs:
             if isinstance(self.kwargs["element"], list):
@@ -902,10 +359,10 @@ class Model(esbmtkBase):
 
         """
         off: str = "  "
-        if "index" not in kwargs:
-            index = 0
-        else:
-            index = kwargs["index"]
+        # if "index" not in kwargs:
+        #    index = 0
+        # else:
+        # index = kwargs["index"]
 
         if "indent" not in kwargs:
             indent = 0
@@ -980,8 +437,7 @@ class Model(esbmtkBase):
             append = False
 
         prefix = ""
-        # Save reservoir and flux data
-        ##print("Writing reservoir data")
+
         print(f"start = {start}, stop = {stop}, stride={stride}, append ={append}")
         for r in self.lor:
             # print(f"R = {r.full_name}")
@@ -1031,6 +487,9 @@ class Model(esbmtkBase):
         subsequent model run.
 
         """
+
+        from esbmtk import Reservoir, GasReservoir
+
         for r in self.lor:
             if isinstance(r, (Reservoir, GasReservoir)):
                 # print(f" reading from {r.full_name}")
@@ -1055,113 +514,56 @@ class Model(esbmtkBase):
         for r in self.lvr:
             r.__merge_temp_results__()
 
-    def plot_data(self, **kwargs: dict) -> None:
-        """
-        Loop over all reservoirs and either plot the data into a
-        window, or save it to a pdf
-
-        """
-
-        i = 0
-        for r in self.lor:
-            r.__plot__(i)
-            i = i + 1
-
-        fig.tight_layout()
-        plt.show()  # create the plot windows
-
-    def plot(self, l: list = [], **kwargs) -> None:
-        """Plot all objects specified in list)
+    def plot(self, pl: list = [], **kwargs) -> None:
+        """Plot all objects specified in pl
 
         M.plot([sb.PO4, sb.DIC],fn=test.pdf)
 
         fn is optional
         """
+
         if "fn" in kwargs:
             filename = kwargs["fn"]
         else:
             filename = f"{self.n}.pdf"
 
-        noo: int = len(l)
+        noo: int = len(pl)
         size, geo = plot_geometry(noo)  # adjust layout
-        plt.style.use(self.plot_style)
-        fig = plt.figure(0)  # Initialize a plot window
-        fig.canvas.manager.set_window_title(f"{self.n} Reservoirs")
-        fig.set_size_inches(size)
+        fig, ax = plt.subplots(geo[0], geo[1])  # row, col
+        axs = [[], []]
 
-        i: int = 1
-        for e in l:
-            plot_object_data(geo, i, e)
-            i = i + 1
-
-        fig.subplots_adjust(top=0.88)
-        fig.tight_layout()
-        plt.show()  # create the plot windows
-        fig.savefig(filename)
-
-    def plot_reservoirs(self, **kwargs: dict) -> None:
-        """Plot only Reservoir data
-
-        you can further specify a different name for the plot
-        fn = "foo.pdf"
-
+        """ The shape of the ax value of subplots depends on the figure
+        geometry. So we need to ensure we are dealing with a 2-D array
         """
-
-        # get number of plot objects
-        i = 0
-        # get number of signals
-        for s in self.los:
-            if s.plot == "yes":
-                i = i + 1
-
-        # get number of reservoirs
-        for r in self.lor:
-            if r.plot == "yes":
-                i = i + 1
-
-        # get number of virtual reservoirs
-        for r in self.lvr:
-            if r.plot == "yes":
-                i = i + 1
-
-        noo: int = len(self.ldf) + i
-        size, geo = plot_geometry(noo)  # adjust layout
-
-        if "fn" in kwargs:
-            filename = kwargs["fn"]
+        if geo[0] == 1 and geo[1] == 1:  # row=1, col=1 only one window
+            axs[0].append(ax)
+        elif geo[0] > 1 and geo[1] == 1:  # mutiple rows, one column
+            for i in range(geo[0]):
+                axs[0].append(ax[i])
+        elif geo[0] == 1 and geo[1] > 1:  # 1 row, multiple columns
+            for i in range(geo[1]):
+                axs[1].append(ax[i])
         else:
-            filename = f"{self.n}_Reservoirs.pdf"
+            axs = ax  # mutiple rows and mutiple columns
 
+        # ste plot parameters
         plt.style.use(self.plot_style)
-
-        fig = plt.figure(0)  # Initialize a plot window
         fig.canvas.manager.set_window_title(f"{self.n} Reservoirs")
         fig.set_size_inches(size)
 
-        i: int = 1
+        i = 0  # loop over objects
+        for c in range(geo[0]):  # rows
+            for r in range(geo[1]):  # columns
+                if i < noo:
+                    pl[i].__plot__(self, axs[c][r])
+                    axs[c][r].set_title(pl[i].full_name)
+                    i = i + 1
+                else:
+                    axs[c][r].remove()
 
-        for r in self.los:  # signals
-            if r.plot == "yes":
-                plot_object_data(geo, i, r)
-                i = i + 1
-
-        for r in self.lor:  # reservoirs
-            if r.plot == "yes":
-                plot_object_data(geo, i, r)
-                i = i + 1
-
-        for r in self.lvr:  # virtual reservoirs
-            if r.plot == "yes":
-                plot_object_data(geo, i, r)
-                i = i + 1
-
-        for r in self.ldf:  # datafields
-            plot_object_data(geo, i, r)
-            i = i + 1
-
-        fig.tight_layout()
-        plt.show()  # create the plot windows
         fig.subplots_adjust(top=0.88)
+        fig.tight_layout()
+        plt.show(block=False)  # create the plot windows
         fig.savefig(filename)
 
     def run(self, **kwargs) -> None:
@@ -1172,7 +574,7 @@ class Model(esbmtkBase):
         # this has nothing todo with self.time below!
         wts = time.time()
         start: float = process_time()
-        new: np.ndarray = np.zeros(4)
+        # new: np.ndarray = np.zeros(4)
 
         # put direction dictionary into a list
         for r in self.lor:  # loop over reservoirs
@@ -1190,20 +592,18 @@ class Model(esbmtkBase):
         else:
             solver = kwargs["solver"]
 
+        self.solver = solver
         if self.number_of_solving_iterations > 0:
 
             for i in range(self.number_of_solving_iterations):
                 print(
                     f"\n Iteration {i+1} out of {self.number_of_solving_iterations}\n"
                 )
-                self.__run_solver__(solver, new)
+                self.__run_solver__(solver)
 
                 print(f"Restarting model")
                 self.restart()
 
-            duration: float = process_time() - start
-            wcd = time.time() - wts
-            print(f"\n Execution took {duration} cpu seconds, wt = {wcd}\n")
             print("Merge results")
             self.merge_temp_results()
             self.steps = self.number_of_datapoints
@@ -1212,10 +612,14 @@ class Model(esbmtkBase):
         # self.save_data(start=0, stop=self.number_of_datapoints, stride=1)
         # print("Done Saving")
         else:
-            self.__run_solver__(solver, new)
+            self.__run_solver__(solver, kwargs)
 
         # flag that the model has executed
         self.state = 1
+
+        duration: float = process_time() - start
+        wcd = time.time() - wts
+        print(f"\n Execution took {duration:.2e} cpu seconds, wt = {wcd:.2e}\n")
 
         process = psutil.Process(os.getpid())
         print(f"This run used {process.memory_info().rss/1e9:.2f} Gbytes of memory \n")
@@ -1241,39 +645,149 @@ class Model(esbmtkBase):
 
         """
 
-        for r in self.lor:
-            r.__sub_sample_data__()
-
-        for vr in self.lvr:
-            vr.__sub_sample_data__()
-
-        for f in self.lof:
-            f.__sub_sample_data__()
-
         stride = int(len(self.time) / self.number_of_datapoints)
-        self.time = self.time[2:-2:stride]
 
-    def __run_solver__(self, solver, new) -> None:
+        if stride > 1:
+            self.time = self.time[2:-2:stride]
+
+            for r in self.lor:
+                r.__sub_sample_data__(stride)
+
+            for vr in self.lvr:
+                vr.__sub_sample_data__(stride)
+
+            for f in self.lof:
+                f.__sub_sample_data__(stride)
+
+        
+    def __run_solver__(self, solver: str, kwargs: dict) -> None:
+        from .ODEINT_Solver import run_solver
 
         if solver == "numba":
             execute_e(
                 self,
-                new,
                 self.lop,
                 self.lor,
                 self.lpc_f,
                 self.lpc_r,
             )
+        elif solver == "odeint":
+            run_solver(self)
+        elif solver == "ode_uli":
+            self.ode_uli(kwargs)
+        elif solver == "python":
+            execute(self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
         else:
-            execute(new, self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
+            raise ValueError(
+                f"Solver={solver} is unkknown, use 'python/numba/odeint/ode_uli'"
+            )
 
-    def __step_process__(self, r, i) -> None:
+    def ode_uli(self, kwargs):
+        """Use the ode solver based on Uli's approach"""
+        from esbmtk import Q_, write_equations_2, get_initial_conditions
+        from scipy.integrate import odeint, solve_ivp
+        import sys
+        import pathlib as pl
+
+        # build equation file
+        R, icl, cpl, ipl = get_initial_conditions(self)
+        self.R = R
+        self.icl = icl
+        self.cpl = cpl
+        self.ipl = ipl
+
+        # write equation system
+        eqs_file = write_equations_2(self, R, icl, cpl, ipl)
+        print(f"loc = {eqs_file.resolve()}")
+
+        # ensure that cwd is in the load path. Required for windows
+        cwd: pl.Path = pl.Path.cwd()
+        sys.path.append(cwd)
+
+        # import equation system
+        from equations import setup_ode
+
+        ode_system = setup_ode(self)  # create ode system instance
+        self.ode_system = ode_system
+
+        if "method" in kwargs:
+            method = kwargs["method"]
+        else:
+            method = "RK23"
+
+        if "stype" in kwargs:
+            stype = kwargs["stype"]
+        else:
+            stype = "solve_ivp"
+
+        if stype == "solve_ivp":
+            results = solve_ivp(
+                ode_system.eqs,
+                (self.time[0], self.time[-1]),
+                R,
+                args=(self,),
+                method=method,
+                # t_eval=self.time,
+                atol=1e-12,
+                first_step=Q_("1 hour").to(self.t_unit).magnitude,
+                # dense_output=True,
+                # max_step=1,
+            )
+
+            # interpolate signals into the ode time domain
+            # must be done before changing model time domain
+            for s in self.los:
+                s.data.m = np.interp(
+                    results.t,
+                    self.time,
+                    s.data.m,
+                )
+
+            # interpolate external data into ode time domain
+            # must be done before changing model time domain
+            # for ed in self.led:
+            #     ed.y = np.interp(results.t, ed.x, ed.y)
+
+            # assign results to the esbmtk variables
+            for i, r in enumerate(icl):
+                r.c = results.y[i]
+            self.time = results.t
+
+            # interpolate intermediate results to match the model
+            # time scale. This only applies to data in virtual
+            # data fields
+            for gf in self.lpc_r:
+                # get cs instance handle
+                cs = getattr(gf.register, "cs")
+                for k, v in cs.vr_datafields.items():
+                    if "table" not in k:
+                        od = getattr(cs, k)  # get ode data
+                        # print(f"R = {gf.full_name} - {k}:\n"
+                        #       f"len(fp) = {len(od[0 : self.ode_system.i])}, "
+                        #       f"len(xp) = {len(self.ode_system.t)}, "
+                        #       f"i = {self.ode_system.i}")
+                        od = np.interp(
+                            self.time,
+                            self.ode_system.t,
+                            od[0 : self.ode_system.i],
+                        )
+                        setattr(cs, k, od)
+
+        else:
+            results = odeint(ode_system.eqs, R, t=self.time, args=(self,), tfirst=True)
+            # assign results
+            for i, r in enumerate(icl):
+                r.c = results[:, i]
+
+        self.results = results
+
+    def __step_process__(self, r: Reservoir, i: int) -> None:
         """For debugging. Provide reservoir and step number,"""
         for p in r.lop:  # loop over reservoir processes
             print(f"{p.n}")
             p(r, i)  # update fluxes
 
-    def __step_update_reservoir__(self, r, i) -> None:
+    def __step_update_reservoir__(self, r: Reservoir, i: int) -> None:
         """For debugging. Provide reservoir and step number,"""
         flux_list = r.lof
         # new = sum_fluxes(flux_list,r,i) # integrate all fluxes in self.lof
@@ -1403,8 +917,6 @@ class Model(esbmtkBase):
     def clear(self):
         """delete all model objects"""
 
-        import builtins
-
         for o in self.lmo:
             print(f"deleting {o}")
             del __builtins__[o]
@@ -1495,14 +1007,14 @@ class Species(esbmtkBase):
 
     """
 
-    __slots__ = "r"
-
     # set species properties
     def __init__(self, **kwargs) -> None:
         """Initialize all instance variables"""
 
+        from esbmtk import GasReservoir
+
         # provide a list of all known keywords
-        self.defaults: Dict[any, any] = {
+        self.defaults: dict[any, any] = {
             "name": ["None", (str)],
             "element": ["None", (Element, str)],
             "display_as": [kwargs["name"], (str)],
@@ -1515,10 +1027,8 @@ class Species(esbmtkBase):
         self.lrk = ["name", "element"]
         self.__initialize_keyword_variables__(kwargs)
         self.parent = self.register
-        # self.__initerrormessages__()
-        # self.__validateandregister__(kwargs)  # initialize keyword values
 
-        if not "display_as" in kwargs:
+        if "display_as" not in kwargs:
             self.display_as = self.name
 
         # legacy names
@@ -1545,8 +1055,6 @@ class Species(esbmtkBase):
 class ReservoirBase(esbmtkBase):
     """Base class for all Reservoir objects"""
 
-    __slots__ = ("m", "l", "h", "d", "c", "lio", "rvalue", "lodir", "lof", "lpc")
-
     def __init__(self, **kwargs) -> None:
 
         raise NotImplementedError(
@@ -1558,12 +1066,14 @@ class ReservoirBase(esbmtkBase):
         Move the below out of the way
         """
 
+        from esbmtk import get_box_geometry_parameters
+
         self.lof: list[Flux] = []  # flux references
         self.led: list[ExternalData] = []  # all external data references
         self.lio: dict[str, int] = {}  # flux name:direction pairs
         self.lop: list[Process] = []  # list holding all processe references
         self.loe: list[Element] = []  # list of elements in thiis reservoir
-        self.doe: Dict[Species, Flux] = {}  # species flux pairs
+        self.doe: dict[Species, Flux] = {}  # species flux pairs
         self.loc: set[Connection] = set()  # set of connection objects
         self.ldf: list[DataField] = []  # list of datafield objects
         # list of processes which calculate reservoirs
@@ -1583,6 +1093,7 @@ class ReservoirBase(esbmtkBase):
 
         self.sp: Species = self.species  # species handle
         self.mo: Model = self.species.mo  # model handle
+        self.model = self.mo
         self.rvalue = self.sp.r
 
         # right y-axis label
@@ -1606,6 +1117,8 @@ class ReservoirBase(esbmtkBase):
 
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
+
+        self.parent = self.register
 
     # setup a placeholder setitem function
     def __setitem__(self, i: int, value: float):
@@ -1643,6 +1156,7 @@ class ReservoirBase(esbmtkBase):
     def get_process_args(self):
         """Provide the data structure which needs to be passed to the numba solver"""
 
+        print(f"Name = {self.full_name}")
         data = List(
             [
                 self.m,  # 0
@@ -1652,8 +1166,8 @@ class ReservoirBase(esbmtkBase):
             ]
         )
 
-        func_name: function = self.__update_mass__
-        params = List([float(reservoir.species.element.r)])
+        func_name: col.Callable = self.__update_mass__
+        params = List([float(self.reservoir.species.element.r)])
 
         return func_name, data, params
 
@@ -1683,8 +1197,8 @@ class ReservoirBase(esbmtkBase):
         fmu = f"{mo.f_unit:~P}"
         cmu = f"{mo.c_unit:~P}"
 
-        sdn = self.sp.dn  # delta name
-        sds = self.sp.ds  # delta scale
+        # sdn = self.sp.dn  # delta name
+        # sds = self.sp.ds  # delta scale
         rn = self.full_name  # reservoir name
         mn = self.sp.mo.n  # model name
         if self.sp.mo.register == "None":
@@ -1713,7 +1227,7 @@ class ReservoirBase(esbmtkBase):
 
             if f.save_flux_data:
                 df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]  # m
-                df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]  #  l
+                df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]  # l
             else:
                 df[f"{f.full_name} {sn} [{fmu}]"] = f.fa[0]  # m
                 df[f"{f.full_name} {sn} [{sp.ln}]"] = f.fa[1]  # l
@@ -1729,18 +1243,15 @@ class ReservoirBase(esbmtkBase):
 
         return df
 
-    def __sub_sample_data__(self) -> None:
+    def __sub_sample_data__(self,stride) -> None:
         """There is usually no need to keep more than a thousand data points
         so we subsample the results before saving, or processing them
 
         """
-        stride = int(len(self.m) / self.mo.number_of_datapoints)
 
         # print(f"Reset data with {len(self.m)}, stride = {self.mo.reset_stride}")
         self.m = self.m[2:-2:stride]
         self.l = self.l[2:-2:stride]
-        # self.h = self.h[2:-2:stride]
-        # self.d = self.d[2:-2:stride]
         self.c = self.c[2:-2:stride]
 
     def __reset_state__(self) -> None:
@@ -1897,76 +1408,69 @@ class ReservoirBase(esbmtkBase):
 
         return col
 
-    def __plot__(self, i: int) -> None:
-        """Plot data from reservoirs and fluxes into a multiplot window"""
+    def __plot__(self, M: Model, ax) -> None:
+        """Plot instructions.
+        M: Model
+        ax: matplotlib axes handle
+        """
 
-        model = self.sp.mo
-        species = self.sp
-        obj = self
-        # time = model.time + model.offset  # get the model time
-        # xl = f"Time [{model.bu}]"
+        from esbmtk import set_y_limits
 
-        size, geo = get_plot_layout(self)  # adjust layout
-        filename = f"{model.n}_{self.full_name}.pdf"
-        fn = 1  # counter for the figure number
+        # convert time and data to display units
+        x = (M.time * M.t_unit).to(M.d_unit).magnitude
 
-        plt.style.use(model.plot_style)
-        fig = plt.figure(i)  # Initialize a plot window
-        fig.canvas.manager.set_window_title(f"Reservoir Name: {self.n}")
-        fig.set_size_inches(size)
+        if self.display_as == "mass":
+            y1 = (self.m * M.m_unit).to(self.plt_units).magnitude
+            y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
+        elif self.display_as == "ppm":
+            y1 = self.c * 1e6
+            y1_label = "ppm"
+        else:
+            y1 = (self.c * M.c_unit).to(self.plt_units).magnitude
+            y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
 
-        # plot reservoir data
-        if self.plot == "yes":
-            plot_object_data(geo, fn, self)
+        # test for plt_transform
+        if self.plot_transform_c != "None":
+            if callable(self.plot_transform_c):
+                y1 = self.plot_transform_c(self.c)
+            else:
+                raise ValueError("Plot transform must be a function")
 
-            # plot the fluxes assoiated with this reservoir
-            for f in sorted(self.lof):  # plot flux data
-                if f.plot == "yes":
-                    fn = fn + 1
-                    plot_object_data(geo, fn, f)
+        # plot first axis
+        ax.plot(x[1:-2], y1[1:-2], color="C0", label=y1_label)
+        ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
+        ax.set_ylabel(f"{self.legend_left} [{M.c_unit:~P}]")
 
-            for d in sorted(self.ldf):  # plot data fields
-                fn = fn + 1
-                plot_object_data(geo, fn, d)
+        # add any external data if present
+        for (
+            i,
+            d,
+        ) in enumerate(self.led):
+            time = (d.x * M.t_unit).to(M.d_unit).magnitude
+            yd = d.y.to(self.plt_units).magnitude
+            leg = f"{self.lm} {d.legend}"
+            ax.scatter(time[1:-2], yd[1:-2], color=f"C{i+1}", label=leg)
 
-            if geo != [1, 1]:
-                if self.groupname == "None":
-                    fig.suptitle(f"Model: {model.n}, Reservoir: {self.n}\n", size=16)
-                else:
-                    # filename = f"{self.groupname}_{self.n}.pdf"
-                    fig.suptitle(
-                        f"Group: {self.groupname}, Reservoir: {self.n}\n", size=16
-                    )
+        ax.spines["top"].set_visible(False)
+        handler1, label1 = ax.get_legend_handles_labels()
 
-            fig.tight_layout()
-            fig.subplots_adjust(top=0.88)
-            print(f"Saving as {filename}")
-            fig.savefig(filename)
-
-    def __plot_reservoirs__(self, i: int) -> None:
-        """Plot only the  reservoirs data, and ignore the fluxes"""
-
-        model = self.sp.mo
-        species = self.sp
-        obj = self
-        time = model.time + model.offset  # get the model time
-        xl = f"Time [{model.bu}]"
-
-        size: list = [5, 3]
-        geo: list = [1, 1]
-        filename = f"{model.n}_{self.n}.pdf"
-        fn: int = 1  # counter for the figure number
-
-        plt.style.use(model.plot_style)
-        fig = plt.figure(i)  # Initialize a plot window
-        fig.set_size_inches(size)
-
-        # plt.legend()ot reservoir data
-        plot_object_data(geo, fn, self)
-
-        fig.tight_layout()
-        # fig.subplots_adjust(top=0.88)
-        fig.savefig(filename)
+        if self.isotopes:
+            axt = ax.twinx()
+            y2 = self.d  # no conversion for isotopes
+            axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
+            axt.set_ylabel(self.ld)
+            set_y_limits(axt, M)
+            ax.spines["top"].set_visible(False)
+            # set combined legend
+            handler2, label2 = axt.get_legend_handles_labels()
+            legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
+                6
+            )
+        else:
+            ax.legend(handler1, label1)
+            ax.spines["right"].set_visible(False)
+            ax.yaxis.set_ticks_position("left")
+            ax.xaxis.set_ticks_position("bottom")
 
     def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
@@ -1998,7 +1502,6 @@ class ReservoirBase(esbmtkBase):
             print(f"{off}{ind}{p.full_name}.info()")
 
         print(f"\n{ind}Fluxes:")
-        from esbmtk import Q_
 
         # m = Q_("1 Sv").to("l/a").magnitude
         for i, f in enumerate(self.lof):
@@ -2097,19 +1600,24 @@ class Reservoir(ReservoirBase):
     - Name.info()   # info Reservoir
     """
 
-    __slots__ = ("m", "l", "h", "d", "c", "lio", "rvalue", "lodir", "lof", "lpc")
-
     def __init__(self, **kwargs) -> None:
         """Initialize a reservoir."""
 
-        from . import ureg, Q_
+        from esbmtk import (
+            SourceGroup,
+            SinkGroup,
+            ReservoirGroup,
+            ConnectionGroup,
+            SeawaterConstants,
+            get_box_geometry_parameters,
+        )
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "species": ["None", (str, Species)],
             "delta": ["None", (int, float, str)],
-            "concentration": ["None", (str, Q_)],
+            "concentration": ["None", (str, Q_, float)],
             "mass": ["None", (str, Q_)],
             "volume": ["None", (str, Q_)],
             "geometry": ["None", (list, str)],
@@ -2117,7 +1625,8 @@ class Reservoir(ReservoirBase):
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
             "groupname": ["None", (str)],
-            "function": ["None", (str, callable)],
+            "rtype": ["regular", (str)],
+            "function": ["None", (str, col.Callable)],
             "display_precision": [0.01, (int, float)],
             "register": [
                 "None",
@@ -2131,6 +1640,8 @@ class Reservoir(ReservoirBase):
             "seawater_parameters": ["None", (dict, str)],
             "isotopes": [False, (bool)],
             "ideal_water": ["None", (str, bool)],
+            "has_cs1": [False, (bool)],
+            "has_cs2": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
@@ -2198,9 +1709,17 @@ class Reservoir(ReservoirBase):
                 self.density = self.swc.density
 
         if self.mass == "None":
-            c = Q_(self.concentration)
-            self.plt_units = c.units
-            self._concentration: tp.Union[int, float] = c.to(self.mo.c_unit).magnitude
+            if isinstance(self.concentration, (str, Q_)):
+                c = Q_(self.concentration)
+                self.plt_units = c.units
+                self._concentration: tp.Union[int, float] = c.to(
+                    self.mo.c_unit
+                ).magnitude
+            else:
+                c = self.concentration
+                self.plt_units = self.mo.c_unit
+                self._concentration = c
+
             self.mass: tp.Union[int, float] = (
                 self.concentration * self.volume * self.density / 1000
             )
@@ -2235,6 +1754,7 @@ class Reservoir(ReservoirBase):
             self.dc = np.empty(0)
 
         self.mo.lor.append(self)  # add this reservoir to the model
+        self.mo.lic.append(self)  # reservoir type object list
         # register instance name in global name space
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
@@ -2309,23 +1829,29 @@ class Flux(esbmtkBase):
 
     """
 
-    __slots__ = ("m", "l", "h", "d", "rvalue", "lpc")
-
-    def __init__(self, **kwargs: Dict[str, any]) -> None:
+    def __init__(self, **kwargs: dict[str, any]) -> None:
         """
         Initialize a flux. Arguments are the species name the flux rate
         (mol/year), the delta value and unit
 
         """
 
-        from . import ureg, Q_, AirSeaExchange
+        from esbmtk import (
+            Q_,
+            AirSeaExchange,
+            Reservoir,
+            GasReservoir,
+            Connect,
+            Connection,
+            Signal,
+        )
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "species": ["None", (str, Species)],
             "delta": [0, (str, int, float)],
-            "rate": ["None", (str, Q_)],
+            "rate": ["None", (str, Q_, int, float)],
             "plot": ["yes", (str)],
             "display_precision": [0.01, (int, float)],
             "isotopes": [False, (bool)],
@@ -2343,7 +1869,6 @@ class Flux(esbmtkBase):
             ],
             "save_flux_data": [False, (bool)],
             "id": ["None", (str)],
-            "save_flux_data": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
@@ -2371,7 +1896,12 @@ class Flux(esbmtkBase):
         self.mu: str = f"{self.species.mu}/{self.mo.tu}"
 
         # and convert flux into model units
-        fluxrate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
+        if isinstance(self.rate, str):
+            fluxrate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
+        elif isinstance(self.rate, Q_):
+            fluxrate: float = self.rate.to(self.mo.f_unit).magnitude
+        elif isinstance(self.rate, (int, float)):
+            fluxrate: float = self.rate
 
         if self.delta:
             li = get_l_mass(fluxrate, self.delta, self.sp.r)
@@ -2519,37 +2049,58 @@ class Flux(esbmtkBase):
         else:
             print("There are no processes for this flux")
 
-    def plot(self, **kwargs: dict) -> None:
-        """Plot the flux data:"""
+    def __plot__(self, M: Model, ax) -> None:
+        """Plot instructions.
+        M: Model
+        ax: matplotlib axes handle
+        """
 
-        fig, ax1 = plt.subplots()
-        fig.set_size_inches(5, 4)  # Set figure size in inches
-        fig.set_dpi(100)  # Set resolution in dots per inch
+        from esbmtk import set_y_limits
 
-        ax1.plot(self.mo.time, self.m, c="C0")
-        ax2 = ax1.twinx()  # get second y-axis
-        ax2.plot(self.mo.time, self.d, c="C1", label=self.n)
+        # convert time and data to display units
+        x = (M.time * M.t_unit).to(M.d_unit).magnitude
+        y1 = (self.m * M.m_unit).to(self.plt_units).magnitude
 
-        ax1.set_title(self.n)
-        ax1.set_xlabel(f"Time [{self.mo.tu}]")  #
-        ax1.set_ylabel(f"{self.sp.n} [{self.sp.mu}]")
-        ax2.set_ylabel(f"{self.sp.dn} [{self.sp.ds}]")
-        ax1.spines["top"].set_visible(False)  # remove unnecessary frame
-        ax2.spines["top"].set_visible(False)  # remove unnecessary frame
+        # test for plt_transform
+        if self.plot_transform_c != "None":
+            if callable(self.plot_transform_c):
+                y1 = self.plot_transform_c(self.c)
+            else:
+                raise ValueError("Plot transform must be a function")
 
-        fig.tight_layout()
-        plt.show()
-        plt.savefig(self.n + ".pdf")
+        # plot first axis
+        ax.plot(x[1:-2], y1[1:-2], color="C0", label=self.legend_left)
+        ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
+        ax.set_ylabel(self.legend_left)
+        ax.spines["top"].set_visible(False)
+        handler1, label1 = ax.get_legend_handles_labels()
 
-    def __sub_sample_data__(self) -> None:
+        # plot second axis
+        if self.isotopes:
+            axt = ax.twinx()
+            y2 = self.d  # no conversion for isotopes
+            ln2 = axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
+            axt.set_ylabel(self.data.ld)
+            set_y_limits(axt, M)
+            ax.spines["top"].set_visible(False)
+            # set combined legend
+            handler2, label2 = axt.get_legend_handles_labels()
+            legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
+                6
+            )
+        else:
+            ax.legend(handler1, label1)
+            ax.spines["right"].set_visible(False)
+            ax.yaxis.set_ticks_position("left")
+            ax.xaxis.set_ticks_position("bottom")
+
+    def __sub_sample_data__(self, stride) -> None:
         """There is usually no need to keep more than a thousand data points
         so we subsample the results before saving, or processing them
 
         """
 
         if self.save_flux_data:
-            stride = int(len(self.m) / self.mo.number_of_datapoints)
-
             self.m = self.m[2:-2:stride]
             self.l = self.m[2:-2:stride]
 
@@ -2593,6 +2144,13 @@ class SourceSink(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
 
+        from esbmtk import (
+            SourceGroup,
+            SinkGroup,
+            ReservoirGroup,
+            ConnectionGroup,
+        )
+
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "species": ["None", (str, Species)],
@@ -2627,6 +2185,7 @@ class SourceSink(esbmtkBase):
         self.model = self.species.mo
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
         self.lio: list = []
+        self.mo.lic.append(self)  # add source to list of res type objects
 
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
@@ -2641,6 +2200,7 @@ class SourceSink(esbmtkBase):
             self.display_precision = self.mo.display_precision
 
         self.__register_name_new__()
+        self.mo.lic.remove(self)
 
     @property
     def delta(self):
@@ -2680,9 +2240,9 @@ class Source(SourceSink):
     """
 
 
-from .extended_classes import *
-from .connections import Connection, ConnectionGroup, Connect
-from .processes import *
-from .carbonate_chemistry import *
-from .sealevel import *
-from .solver import *
+# from .extended_classes import *
+# from .connections import Connection, ConnectionGroup, Connect
+# from .processes import *
+# from .carbonate_chemistry import *
+# from .sealevel import *
+# from .solver import *

@@ -15,17 +15,13 @@
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import typing as tp
-import time
-import numba
-from numba.core import types
-from numba import njit, prange
+# import typing as tp
 from numba.typed import List
-from collections import OrderedDict
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
-
+import typing as tp
+from collections import OrderedDict
 from esbmtk import Q_
 
 # import builtins
@@ -179,268 +175,6 @@ def set_y_limits(ax: plt.Axes, obj: any) -> None:
         ax.set_ylim(bottom, top)
 
 
-def get_ptype(obj, **kwargs: dict) -> int:
-    """
-    Set plot type variable based on ptype or isotope keyword returns
-
-    0 mass/concentration and isotope data
-    1 isotopes only
-    2 concentrartion only
-    3 mass only
-
-    """
-
-    from esbmtk import Flux, Reservoir, Signal, DataField, Source, Sink
-
-    ptype: int = 0
-
-    if isinstance(obj, (Reservoir, Source, Sink, Flux)):
-        if obj.isotopes:
-            ptype = 0
-        else:
-            ptype = 2
-    elif "ptype" in kwargs:
-        if kwargs["ptype"] == "both":
-            ptype = 0
-        elif kwargs["ptype"] == "iso":
-            ptype = 1
-        elif kwargs["ptype"] == "concentration":
-            ptype = 2
-        elif kwargs["ptype"] == "mass_only":
-            ptype = 2
-
-    return ptype
-
-
-def plot_object_data(geo: list, fn: int, obj: any) -> None:
-    """collection of commands which will plotqand annotate a reservoir or flux
-    object into an existing plot window.
-
-    geo: geometry info
-    fn: figure number in plot
-    obj: the object to plot
-
-    """
-
-    from . import ureg, Q_
-    from esbmtk import Flux, Reservoir, Signal, DataField, Source, GasReservoir
-
-    # geo = list with rows and cols
-    # fn  = figure number
-    # yl  = array with y values for the left side
-    # yr  = array with y values for the right side
-    # obj = object handle, i.e., reservoir or flux
-
-    first_axis: bool = False
-    second_axis: bool = False
-
-    rows = geo[0]
-    cols = geo[1]
-    # species = obj.sp
-    model = obj.mo
-    time = model.time + model.offset
-
-    # convert data from model units to display units (i.e. the same
-    # units the input data was defined).
-    # time units are the same regardless of object
-    time = (time * model.t_unit).to(model.d_unit).magnitude
-
-    # we do not map isotope values
-    if obj.isotopes:
-        yr = obj.d
-
-    # get plot type
-    ptype: int = get_ptype(obj)
-
-    # remap concentration & flux values
-    if isinstance(obj, Flux):
-        yl = (obj.m * model.f_unit).to(obj.plt_units).magnitude
-        y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
-
-    elif isinstance(obj, (Reservoir, GasReservoir)):
-        if obj.display_as == "mass":
-            yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
-            y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
-        elif obj.display_as == "ppm":
-            yl = obj.c * 1e6
-            y_label = f"ppm"
-        elif obj.plot_transform_c != "None":
-            if callable(obj.plot_transform_c):
-                # yl = (obj.m * model.m_unit).to(obj.plt_units).magnitude
-                yl = obj.plot_transform_c(obj.c)
-                y_label = f"{obj.legend_left}"
-            else:
-                raise ValueError("plot_transform_c must be function")
-        else:
-            yl = (obj.c * model.c_unit).to(obj.plt_units).magnitude
-            y_label = f"{obj.legend_left} [{obj.plt_units:~P}]"
-
-    elif isinstance(obj, Signal):
-        # use the same units as the associated flux
-        yl = (obj.data.m * model.f_unit).to(obj.data.plt_units).magnitude
-        y_label = f"{obj.n} [{obj.data.plt_units:~P}]"
-
-    elif isinstance(obj, DataField):
-        # time = (time * model.t_unit).to(model.d_unit).magnitude
-        # yl = obj.y1_data
-        # y_label = obj.y1_label
-        if type(obj.y2_data) == str:
-            ptype = 2
-        else:
-            ptype = 0
-
-    else:  # sources, sinks, external data should not show up here
-        raise ValueError(f"{obj.n} = {type(obj)}")
-
-    # decide what to plot
-    if ptype == 0:
-        first_axis = True
-        second_axis = True
-    elif ptype == 1:
-        first_axis = False
-        second_axis = True
-    elif ptype == 2:
-        first_axis = True
-        second_axis = False
-
-    # start subplot
-    ax1 = plt.subplot(rows, cols, fn)
-
-    # set color index
-    cn = 0
-    col = f"C{cn}"
-
-    if first_axis:
-        if isinstance(obj, DataField):
-            y_label = obj.y1_label
-            if not isinstance(obj.y1_data[0], str):
-                for i, d in enumerate(obj.y1_data):  # loop over datafield list
-                    y1_legend = obj.y1_legend[i]
-                    # print(f"label = {y1_legend}")
-                    ln1 = ax1.plot(
-                        obj.x1_data[i], obj.y1_data[i], color=col, label=y1_legend
-                    )
-                    cn = cn + 1
-                    col = f"C{cn}"
-
-                ax1.set_xlabel(f"{model.time_label} [{model.d_unit:~P}]")
-                ax1.set_ylabel(y_label)
-                # remove unnecessary frame species
-                ax1.spines["top"].set_visible(False)
-                # set_y_limits(ax1, obj)
-                # plt.legend()
-
-        else:
-            # print(f"yl[2] = {yl[1:-2]}")
-            ln1 = ax1.plot(time[1:-2], yl[1:-2], color=col, label=y_label)
-            cn = cn + 1
-            col = f"C{cn}"
-
-            ax1.set_xlabel(f"{model.time_label} [{model.d_unit:~P}]")
-            ax1.set_ylabel(y_label)
-            # remove unnecessary frame species
-            ax1.spines["top"].set_visible(False)
-            # set_y_limits(ax1, obj)
-
-    if second_axis:
-        if isinstance(obj, DataField):
-            y_label = obj.y2_label
-            if not isinstance(obj.y2_data[0], str):
-                if obj.common_y_scale == "yes":
-                    for i, d in enumerate(obj.y2_data):  # loop over datafield list
-                        y2_legend = obj.y2_legend[i]
-                        ln1 = ax1.plot(
-                            obj.x2_data[i], obj.y2_data[i], color=col, label=y2_legend
-                        )
-                        cn = cn + 1
-                        col = f"C{cn}"
-                        # set_y_limits(ax1, model)
-                        # ax1.legend()
-                        second_axis = False
-                else:
-                    ax2 = ax1.twinx()  # create a second y-axis
-                    for i, d in enumerate(obj.y2_data):  # loop over datafield list
-                        y2_legend = obj.y2_legend[i]
-                        ln1 = ax2.plot(
-                            obj.x2_data[i], obj.y2_data[i], color=col, label=y2_legend
-                        )
-                        cn = cn + 1
-                        col = f"C{cn}"
-
-                    ax2.set_ylabel(obj.y2_label)  # species object delta label
-                    set_y_limits(ax2, model)
-                    # remove unneeded frame
-                    ax2.spines["top"].set_visible(False)
-            else:
-                second_axis = False
-
-        elif isinstance(obj, Signal):
-            # use the same units as the associated flux
-            ax2 = ax1.twinx()  # create a second y-axis
-            # plof right y-scale data
-            ln2 = ax2.plot(
-                time[1:-2], obj.data.d[1:-2], color=col, label=obj.legend_right
-            )
-            ax2.set_ylabel(obj.data.ld)  # species object delta label
-            set_y_limits(ax2, model)
-            ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
-        elif isinstance(obj, (Reservoir, GasReservoir)):
-            ax2 = ax1.twinx()  # create a second y-axis
-            # plof right y-scale data
-            ln2 = ax2.plot(time[1:-2], yr[1:-2], color=col, label=obj.legend_right)
-            ax2.set_ylabel(obj.ld)  # species object delta label
-            set_y_limits(ax2, model)
-            ax2.spines["top"].set_visible(False)  # remove unnecessary frame species
-        elif isinstance(obj, Flux):
-            # use the same units as the associated flux
-            ax2 = ax1.twinx()  # create a second y-axis
-            # plof right y-scale data
-            ln2 = ax2.plot(time[1:-2], obj.d[1:-2], color=col, label=obj.legend_right)
-            ax2.set_ylabel(obj.ld)  # species object delta label
-            set_y_limits(ax2, model)
-            ax2.spines["top"].set_visible(False)  # remove unnecessary frame speciess
-
-    # adjust display properties for title and legend
-
-    plt.rcParams["axes.titlepad"] = 20  # offset title upwards
-    plt.rcParams["legend.facecolor"] = "0.8"  # show a gray background
-    plt.rcParams["legend.edgecolor"] = "0.8"  # make frame the same color
-    plt.rcParams["legend.framealpha"] = 0.4  # set transparency
-    ax1.set_title(obj.full_name)
-
-    for d in obj.led:  # loop over external data objects if present
-
-        if isinstance(d.x[0], str):  # if string, something is off
-            raise ValueError("No time axis in external data object {d.name}")
-        if "y" in dir(d):  # mass or concentration data is present
-            cn = cn + 1
-            col = f"C{cn}"
-            leg = f"{obj.lm} {d.legend}"
-            ln3 = ax1.scatter(d.x[1:-2], d.y[1:-2], color=col, label=leg)
-        if "z" in dir(d) and second_axis:  # isotope data is present
-            cn = cn + 1
-            col = f"C{cn}"
-            leg = f"{d.legend}"
-            ln3 = ax2.scatter(d.x, d.z, color=col, label=leg)
-
-    # collect all labels and print them in one legend
-    if first_axis:
-        handler1, label1 = ax1.get_legend_handles_labels()
-        plt.gca().spines["right"].set_visible(False)
-
-    if second_axis:
-        handler2, label2 = ax2.get_legend_handles_labels()
-
-    if first_axis and second_axis:
-        legend = ax2.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(6)
-    elif first_axis:
-        legend = ax1.legend(handler1, label1, loc=0).set_zorder(6)
-    elif second_axis:
-        legend = ax2.legend(handler2, label2, loc=0).set_zorder(6)
-    else:
-        raise TypeError("This should never happen!")
-
-
 def is_name_in_list(n: str, l: list) -> bool:
     """Test if an object name is part of the object list"""
 
@@ -580,7 +314,7 @@ def get_typed_list(data: list) -> list:
     return tl
 
 
-def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dict:
+def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
     """boxes are defined by area and depth interval here we use an ordered
     dictionary to define the box geometries. The next column is temperature
     in deg C, followed by pressure in bar
@@ -604,13 +338,10 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
                }
 
     M: Model object handle
-
-    register reservoir groups in global name space (default), or with the
-    provided object reference
     """
 
     from esbmtk import ReservoirGroup, build_concentration_dicts
-    from esbmtk import SourceGroup, SinkGroup, Q_
+    from esbmtk import SourceGroup, SinkGroup
 
     # parse for sources and sinks, create these and remove them from the list
 
@@ -622,16 +353,16 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
 
         if "ty" in v:  # type is given
             if v["ty"] == "Source":
-                SourceGroup(name=k, species=v["sp"], register=register)
+                SourceGroup(name=k, species=v["sp"], register=M)
             elif v["ty"] == "Sink":
-                SinkGroup(name=k, species=v["sp"], register=register)
+                SinkGroup(name=k, species=v["sp"], register=M)
             else:
                 raise ValueError("'ty' must be either Source or Sink")
 
         else:  # create reservoirs
 
             icd: dict = build_concentration_dicts(ic, k)
-            # print(f"isotopes= {icd[k][1]}, delta = {icd[k][2]}")
+
             rg = ReservoirGroup(
                 name=k,
                 geometry=v["g"],
@@ -639,7 +370,7 @@ def create_reservoirs(bn: dict, ic: dict, M: any, register: any = "None") -> dic
                 isotopes=icd[k][1],
                 delta=icd[k][2],
                 seawater_parameters={"temperature": v["T"], "pressure": v["P"]},
-                register=register,
+                register=M,
             )
 
     return icd
@@ -752,9 +483,9 @@ def get_longest_dict_entry(d: dict) -> int:
     if l_length > 0 and p_length == 0:
         case = 0  # Only lists present
     if l_length == 0 and p_length == 1:
-        case = 1  #  Only parameters present
+        case = 1  # Only parameters present
     if l_length > 0 and p_length == 1:
-        case = 2  #  Lists and parameters present
+        case = 2  # Lists and parameters present
 
     return case, l_length
 
@@ -951,7 +682,7 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
         elif isinstance(k, str):
             create_connection(k, v, M)
         else:
-            raise ValueError(f"{connection} must be string or tuple")
+            raise ValueError(f"{c} must be string or tuple")
 
     return ct
 
@@ -972,22 +703,21 @@ def create_connection(n: str, p: dict, M: any) -> None:
     """
 
     from esbmtk import ConnectionGroup, Q_
-    from collections import namedtuple
 
     # get the reservoir handles by splitting the key
     source, sink, cid = split_key(n, M)
     # create default connections parameters and replace with values in
     # the parameter dict if present.
     los = list(p["sp"]) if isinstance(p["sp"], list) else [p["sp"]]
-    ctype = "None" if not "ty" in p else p["ty"]
-    scale = 1 if not "sc" in p else p["sc"]
-    rate = Q_("0 mol/a") if not "ra" in p else p["ra"]
-    ref_flux = "None" if not "re" in p else p["re"]
-    alpha = "None" if not "al" in p else p["al"]
-    delta = "None" if not "de" in p else p["de"]
+    ctype = "None" if "ty" not in p else p["ty"]
+    scale = 1 if "sc" not in p else p["sc"]
+    rate = Q_("0 mol/a") if "ra" not in p else p["ra"]
+    ref_flux = "None" if "re" not in p else p["re"]
+    alpha = "None" if "al" not in p else p["al"]
+    delta = "None" if "de" not in p else p["de"]
     cid = f"{cid}"
-    bypass = "None" if not "bp" in p else p["bp"]
-    species = "None" if not "sp" in p else p["sp"]
+    bypass = "None" if "bp" not in p else p["bp"]
+    species = "None" if "sp" not in p else p["sp"]
 
     if isinstance(scale, Q_):
         scale = scale.to("l/a").magnitude
@@ -1039,8 +769,9 @@ def get_name_only(o: any) -> any:
     """Test if item is an esbmtk type. If yes, extract the name"""
 
     from esbmtk import Flux, Reservoir, ReservoirGroup, Species
-    from esbmtk import Sink, Source, SourceGroup, SinkGroup
-    from esbmtk import Process, DataField, VirtualReservoir
+
+    # from esbmtk import Sink, Source, SourceGroup, SinkGroup
+    # from esbmtk import Process, DataField, VirtualReservoir
 
     if isinstance(o, (Flux, Reservoir, ReservoirGroup, Species)):
         r = o.full_name
@@ -1055,8 +786,6 @@ def get_simple_list(l: list) -> list:
     rather than all the object properties
 
     """
-
-    from esbmtk import Flux, Reservoir, Species
 
     r: list = []
     for e in l:
@@ -1312,84 +1041,127 @@ def add_carbonate_system_1(rgs: list):
 
     """
 
-    from esbmtk import ExternalCode, calc_carbonates_1
+    from esbmtk import (
+        ExternalCode,
+        calc_carbonates_1,
+        carbonate_system_1_ode,
+        Reservoir,
+    )
 
     # get object handle even if it defined in model namespace
     # rgs = get_object_handle(rgs)
 
-    
-    species = rgs[0].mo.Carbon.CO2
-    
-    for rg in rgs:
+    model = rgs[0].mo
+    species = model.Carbon.CO2
 
-        if hasattr(rg, "DIC") and hasattr(rg, "TA"):
-            ExternalCode(
-                name="cs",
-                species=species,
-                function=calc_carbonates_1,
-                vr_datafields={
-                    "H": rg.swc.hplus,  # 0
-                    "CA": rg.swc.ca,  # 1
-                    "HCO3": rg.swc.hco3,  # 2
-                    "CO3": rg.swc.co3,  # 3
-                    "CO2aq": rg.swc.co2,  # 4
-                    "OH": 0.0,
-                    "BOH": 0.0,
-                },
-                function_input_data=List([rg.DIC.c, rg.TA.c]),
-                function_params=List(
-                    [
-                        rg.swc.K1,  # 0
-                        rg.swc.K2,  # 1
-                        rg.swc.KW,  # 2
-                        rg.swc.KB,  # 3
-                        rg.swc.boron,  # 4
-                        rg.swc.ca2,  # 5
-                        rg.swc.Ksp,  # 6
-                    ]
-                ),
-                register=rg,
-            )
+    for rg in rgs:
+        if rgs[0].mo.use_ode:
+            if hasattr(rg, "DIC") and hasattr(rg, "TA"):
+                ec = ExternalCode(
+                    name="cs",
+                    species=species,
+                    function=carbonate_system_1_ode,
+                    ftype="cs1",
+                    vr_datafields={
+                        "H": rg.swc.hplus,
+                        "CA": rg.swc.ca,  # 1
+                        "HCO3": rg.swc.hco3,  # 2
+                        "CO3": rg.swc.co3,  # 3
+                        "CO2aq": rg.swc.co2,  # 4
+                    },
+                    function_input_data=List(),
+                    function_params=List(),
+                    register=rg,
+                    return_values={"Hplus": rg.swc.hplus},
+                )
+                for n, v in ec.return_values.items():
+                    rt = Reservoir(
+                        name=n,
+                        species=getattr(model, n),
+                        concentration=f"{v} mol/kg",
+                        register=rg,
+                        volume=rg.volume,
+                        rtype="computed",
+                    )
+                    rg.lor.append(rt)
         else:
-            raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
+            if hasattr(rg, "DIC") and hasattr(rg, "TA"):
+                ec = ExternalCode(
+                    name="cs",
+                    species=species,
+                    function=calc_carbonates_1,
+                    ftype="cs1",
+                    vr_datafields={
+                        "H": rg.swc.hplus,  # 0
+                        "CA": rg.swc.ca,  # 1
+                        "HCO3": rg.swc.hco3,  # 2
+                        "CO3": rg.swc.co3,  # 3
+                        "CO2aq": rg.swc.co2,  # 4
+                    },
+                    function_input_data=List([rg.DIC.c, rg.TA.c]),
+                    function_params=List(
+                        [
+                            rg.swc.K1,  # 0
+                            rg.swc.K2,  # 1
+                            rg.swc.KW,  # 2
+                            rg.swc.KB,  # 3
+                            rg.swc.boron,  # 4
+                            rg.swc.ca2,  # 5
+                            rg.swc.Ksp,  # 6
+                            rg.swc.hplus,  #
+                        ]
+                    ),
+                    # return_values="H CA HCO3 CO3 CO2aq".split(" "),
+                    register=rg,
+                )
+                rg.has_cs1 = True
+
+            else:
+                raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
 
 def add_carbonate_system_2(**kwargs) -> None:
     """Creates a new carbonate system virtual reservoir
-    which will compute carbon species, saturation, compensation,
-    and snowline depth, and compute the associated carbonate burial fluxes
+        which will compute carbon species, saturation, compensation,
+        and snowline depth, and compute the associated carbonate burial fluxes
 
-    Required keywords:
-        rgs: list of ReservoirGroup objects
-        carbonate_export_fluxes: list of flux objects which mus match the
-                                 list of ReservoirGroup objects.
-        zsat_min = depth of the upper boundary of the deep box
-        z0 = upper depth limit for carbonate burial calculations
-             typically zsat_min
+        Required keywords:
+            r_sb: list of ReservoirGroup objects in the surface layer
+            r_db: list of ReservoirGroup objects in the deep layer
+            carbonate_export_fluxes: list of flux objects which mus match the
+                                     list of ReservoirGroup objects.
+            zsat_min = depth of the upper boundary of the deep box
+            z0 = upper depth limit for carbonate burial calculations
+                 typically zsat_min
 
-    Optional Parameters:
+        Optional Parameters:
 
-        zsat = initial saturation depth (m)
-        zcc = initial carbon compensation depth (m)
-        zsnow = initial snowline depth (m)
-        zsat0 = characteristic depth (m)
-        Ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
-        kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
-        Ca2 = calcium ion concentration (mol/kg)
-        pc = characteristic pressure (atm)
-        pg = seawater density multiplied by gravity due to acceleration (atm/m)
-        I = dissolvable CaCO3 inventory
-        co3 = CO3 concentration (mol/kg)
-        Ksp = solubility product of calcite at in situ sea water conditions (mol^2/kg^2)
+            zsat = initial saturation depth (m)
+            zcc = initial carbon compensation depth (m)
+            zsnow = initial snowline depth (m)
+            zsat0 = characteristic depth (m)
+            Ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
+            kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
+            Ca2 = calcium ion concentration (mol/kg)
+            pc = characteristic pressure (atm)
+            pg = seawater density multiplied by gravity due to acceleration (atm/m)
+            I = dissolvable CaCO3 inventory
+            co3 = CO3 concentration (mol/kg)
+    q        Ksp = solubility product of calcite at in situ sea water conditions (mol^2/kg^2)
 
     """
 
-    from esbmtk import carbonate_chemistry
-    from esbmtk import ExternalCode, calc_carbonates_2
+    from esbmtk import (
+        ExternalCode,
+        calc_carbonates_2,
+        carbonate_system_2_ode,
+        Reservoir,
+    )
 
     # list of known keywords
     lkk: dict = {
-        "rgs": list,
+        "r_db": list,  # list of deep reservoirs
+        "r_sb": list,  # list of corresponding surface reservoirs
         "carbonate_export_fluxes": list,
         "AD": float,
         "zsat": int,
@@ -1409,18 +1181,19 @@ def add_carbonate_system_2(**kwargs) -> None:
         "Ksp": (float, int),
     }
     # provide a list of absolutely required keywords
-    lrk: list[str] = ["rgs", "carbonate_export_fluxes", "zsat_min", "z0"]
+    lrk: list[str] = ["r_db", "r_sb", "carbonate_export_fluxes", "zsat_min", "z0"]
 
     # we need the reference to the Model in order to set some
     # default values.
 
-    reservoir = kwargs["rgs"][0]
+    reservoir = kwargs["r_db"][0]
     model = reservoir.mo
     # list of default values if none provided
     lod: dict = {
+        "r_sb": [],  # empty list
         "zsat": -3715,  # m
         "zcc": -4750,  # m
-        "zsnow": -4750,  # m
+        "zsnow": -5000,  # m
         "zsat0": -5078,  # m
         "Ksp0": reservoir.swc.Ksp0,  # mol^2/kg^2
         "kc": 8.84 * 1000,  # m/yr converted to kg/(m^2 yr)
@@ -1428,7 +1201,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "alpha": 0.6,  # 0.928771302395292, #0.75,
         "pg": 0.103,  # pressure in atm/m
         "pc": 511,  # characteristic pressure after Boudreau 2010
-        "I_caco3": 529,  #  dissolveable CaCO3 in mol/m^2
+        "I_caco3": 529,  # dissolveable CaCO3 in mol/m^2
         "zmax": -6000,  # max model depth
         "Ksp": reservoir.swc.Ksp,  # mol^2/kg^2
     }
@@ -1445,13 +1218,21 @@ def add_carbonate_system_2(**kwargs) -> None:
     # establish some shared parameters
     # depths_table = np.arange(0, 6001, 1)
     depths: np.ndarray = np.arange(0, 6002, 1, dtype=float)
-    rgs = kwargs["rgs"]
+    r_db = kwargs["r_db"]
+    r_sb = kwargs["r_sb"]
     Ksp0 = kwargs["Ksp0"]
-    ca2 = rgs[0].swc.ca2
+    ca2 = r_db[0].swc.ca2
     pg = kwargs["pg"]
     pc = kwargs["pc"]
     z0 = kwargs["z0"]
     Ksp = kwargs["Ksp"]
+
+    # test if corresponding surface reservoirs have been defined
+    if len(r_sb) == 0:
+        raise ValueError(
+            f"Please update your call to add_carbonate_system_2"
+            f"and add the list of of corresponding surface reservoirs"
+        )
 
     # C saturation(z) after Boudreau 2010
     Csat_table: np.ndarray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
@@ -1459,77 +1240,147 @@ def add_carbonate_system_2(**kwargs) -> None:
     area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area'
     AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
 
-    for i, rg in enumerate(rgs):  # Setup the virtual reservoirs
-
+    for i, rg in enumerate(r_db):  # Setup the virtual reservoirs
         if rg.mo.register == "local":
             species = rg.mo.Carbon.CO2
         else:
             species = __builtins__["CO2"]
 
-        ExternalCode(
-            name="cs",
-            species=species,
-            function=calc_carbonates_2,
-            # datafield hold the results of the VR_no_set function
-            # provide a default values which will be use to initialize
-            # the respective datafield/
-            vr_datafields={
-                "H": rg.swc.hplus,  # 0 H+
-                "CA": rg.swc.ca,  # 1 carbonate alkalinity
-                "HCO3": rg.swc.hco3,  # 2 HCO3
-                "CO3": rg.swc.co3,  # 3 CO3
-                "CO2aq": rg.swc.co2,  # 4 CO2aq
-                "zsat": kwargs["zsat"],  # 5 zsat
-                "zcc": kwargs["zcc"],  # 6 zcc
-                "zsnow": kwargs["zsnow"],  # 7 zsnow
-                "Fburial": 0.0,  # 8 carbonate burial
-                "Fburial12": 0.0,  # 9 carbonate burial 12C
-                "diss": 0.0,  # dissolution flux
-                "Bm": 0.0,
-            },
-            function_input_data=List(
-                [
-                    rg.DIC.m,  # 0 DIC mass
-                    rg.DIC.l,  # 1 DIC light isotope mass
-                    rg.DIC.c,  # 2 DIC concentration
-                    rg.TA.m,  # 3 TA mass
-                    rg.TA.c,  # 4 TA concentration
-                    kwargs["carbonate_export_fluxes"][i].fa,  # 5
-                    area_table,  # 6
-                    area_dz_table,  # 7
-                    Csat_table,  # 8
-                    rg.DIC.v,  # 9 reservoir volume
-                ]
-            ),
-            function_params=List(
-                [
-                    rg.swc.K1,  # 0
-                    rg.swc.K2,  # 1
-                    rg.swc.KW,  # 2
-                    rg.swc.KB,  # 3
-                    rg.swc.boron,  # 4
-                    Ksp0,  # 5
-                    float(kwargs["kc"]),  # 6
-                    float(rg.volume.to("liter").magnitude),  # 7
-                    float(AD),  # 8
-                    float(abs(kwargs["zsat0"])),  # 9
-                    float(rg.swc.ca2),  # 10
-                    rg.mo.dt,  # 11
-                    float(kwargs["I_caco3"]),  # 12
-                    float(kwargs["alpha"]),  # 13
-                    float(abs(kwargs["zsat_min"])),  # 14
-                    float(abs(kwargs["zmax"])),  # 15
-                    float(abs(kwargs["z0"])),  # 16
-                    Ksp,  # 17
-                ]
-            ),
-            register=rg,
-        )
+        if r_db[0].mo.use_ode:
+            ec = ExternalCode(
+                name="cs",
+                species=species,
+                function="None",
+                ftype="cs2",
+                r_s=r_sb[i],  # source (RG) of CaCO3 flux,
+                r_d=r_db[i],  # sink (RG) of CaCO3 flux,
+                # datafield hold the results of the VR_no_set function
+                # provide a default values which will be use to initialize
+                # the respective datafield/
+                vr_datafields={
+                    "H": rg.swc.hplus,  # 0 H+
+                    "CA": rg.swc.ca,  # 1 carbonate alkalinity
+                    "HCO3": rg.swc.hco3,  # 2 HCO3
+                    "CO3": rg.swc.co3,  # 3 CO3
+                    "CO2aq": rg.swc.co2,  # 4 CO2aq
+                    "zsat": abs(kwargs["zsat"]),  # 5 zsat
+                    "zcc": abs(kwargs["zcc"]),  # 6 zcc
+                    # "zsnow": abs(kwargs["zsnow"]),  # 7 zsnow
+                    "depth_area_table": area_table,
+                    "area_dz_table": area_dz_table,
+                    "Csat_table": Csat_table,
+                    "Fburial": 0.0,
+                },
+                ref_flux=kwargs["carbonate_export_fluxes"],
+                function_input_data=List(),
+                function_params=List(
+                    [
+                        rg.swc.K1,  # 0
+                        rg.swc.K2,  # 1
+                        rg.swc.KW,  # 2
+                        rg.swc.KB,  # 3
+                        rg.swc.boron,  # 4
+                        Ksp0,  # 5
+                        float(kwargs["kc"]),  # 6
+                        float(rg.volume.to("liter").magnitude),  # 7
+                        float(AD),  # 8
+                        float(abs(kwargs["zsat0"])),  # 9
+                        float(rg.swc.ca2),  # 10
+                        rg.mo.dt,  # 11
+                        float(kwargs["I_caco3"]),  # 12
+                        float(kwargs["alpha"]),  # 13
+                        float(abs(kwargs["zsat_min"])),  # 14
+                        float(abs(kwargs["zmax"])),  # 15
+                        float(abs(kwargs["z0"])),  # 16
+                        Ksp,  # 17
+                        rg.swc.hplus,  # 18
+                        float(abs(kwargs["zsnow"])),  # 19
+                    ]
+                ),
+                return_values={
+                    "Hplus": rg.swc.hplus,
+                    "zsnow": float(abs(kwargs["zsnow"])),
+                },
+                register=rg,
+            )
+            for n, v in ec.return_values.items():
+                rt = Reservoir(
+                    name=n,
+                    species=getattr(model, n),
+                    concentration=f"{v} mol/kg",
+                    register=rg,
+                    volume=rg.volume,
+                    rtype="computed",
+                )
+                rg.lor.append(rt)
+
+        else:
+            ExternalCode(
+                name="cs",
+                species=species,
+                function=calc_carbonates_2,
+                ftype="cs2",
+                # datafield hold the results of the VR_no_set function
+                # provide a default values which will be use to initialize
+                # the respective datafield/
+                vr_datafields={
+                    "H": rg.swc.hplus,  # 0 H+
+                    "CA": rg.swc.ca,  # 1 carbonate alkalinity
+                    "HCO3": rg.swc.hco3,  # 2 HCO3
+                    "CO3": rg.swc.co3,  # 3 CO3
+                    "CO2aq": rg.swc.co2,  # 4 CO2aq
+                    "zsat": kwargs["zsat"],  # 5 zsat
+                    "zcc": kwargs["zcc"],  # 6 zcc
+                    "zsnow": kwargs["zsnow"],  # 7 zsnow
+                    "Fburial": 0.0,  # 8 carbonate burial
+                    "Fburial12": 0.0,  # 9 carbonate burial 12C
+                    "diss": 0.0,  # dissolution flux
+                    "Bm": 0.0,
+                },
+                function_input_data=List(
+                    [
+                        rg.DIC.m,  # 0 DIC mass db
+                        rg.DIC.l,  # 1 DIC light isotope mass db
+                        rg.DIC.c,  # 2 DIC concentration db
+                        rg.TA.m,  # 3 TA mass db
+                        rg.TA.c,  # 4 TA concentration db
+                        kwargs["carbonate_export_fluxes"][i].fa,  # 5
+                        area_table,  # 6
+                        area_dz_table,  # 7
+                        Csat_table,  # 8
+                        rg.DIC.v,  # 9 reservoir volume
+                    ]
+                ),
+                function_params=List(
+                    [
+                        rg.swc.K1,  # 0
+                        rg.swc.K2,  # 1
+                        rg.swc.KW,  # 2
+                        rg.swc.KB,  # 3
+                        rg.swc.boron,  # 4
+                        Ksp0,  # 5
+                        float(kwargs["kc"]),  # 6
+                        float(rg.volume.to("liter").magnitude),  # 7
+                        float(AD),  # 8
+                        float(abs(kwargs["zsat0"])),  # 9
+                        float(rg.swc.ca2),  # 10
+                        rg.mo.dt,  # 11
+                        float(kwargs["I_caco3"]),  # 12
+                        float(kwargs["alpha"]),  # 13
+                        float(abs(kwargs["zsat_min"])),  # 14
+                        float(abs(kwargs["zmax"])),  # 15
+                        float(abs(kwargs["z0"])),  # 16
+                        Ksp,  # 17
+                        rg.swc.hplus,
+                        float(abs(kwargs["zsnow"])),
+                    ]
+                ),
+                register=rg,
+            )
+        rg.has_cs2 = True
 
 
 def weathering_processes():
-
-    from esbmtk import ExternalCode, calc_carbonates_1
 
     pass
 
@@ -1550,9 +1401,9 @@ def __find_flux__(reservoirs: list, full_name: str):
             if flux.full_name == full_name:
                 needed_flux = flux
                 break
-        if needed_flux != None:
+        if needed_flux is not None:
             break
-    if needed_flux == None:
+    if needed_flux is None:
         raise NameError(
             f"add_carbonate_system: Flux {full_name} cannot be found in any of the reservoirs in the Model!"
         )

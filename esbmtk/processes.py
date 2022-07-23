@@ -1,26 +1,30 @@
-# from numbers import Number
-# from nptyping import *
-# from typing import *
-from numba import njit, jit
+from __future__ import annotations
+from numba import njit
 from numba.typed import List
 import numpy as np
-from . import ureg, Q_
-from .esbmtk import esbmtkBase, Reservoir, Flux, Source, Sink
-from .solver import get_imass, get_frac, get_delta, get_flux_data, get_l_mass
+from . import Q_
+from .esbmtk_base import esbmtkBase  # , Reservoir, Flux, Source, Sink
+from .solver import get_l_mass
+import collections as col
 
 np.set_printoptions(precision=4)
 # from .connections import ConnnectionGroup
 
+# if tp.TYPE_CHECKING:
+#     from .esbmtk import Source, Reservoir, Sink, Flux, Model
+#     from .extended_classes import GasReservoir, ReservoirGroup
+#     from .connections import ConnectionGroup
+
 
 class Process(esbmtkBase):
-    """This class defines template for process which acts on one or more
+    """This class defines template for proycess which acts on one or more
     reservoir flux combinations. To use it, you need to create an
     subclass which defines the actual process implementation in their
     call method. See 'PassiveFlux as example'
 
     """
 
-    __slots__ = ("reservoir", "r", "flux", "r", "mo", "direction", "scale")
+    from .esbmtk import Source, Reservoir, Sink, Flux, Model
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """
@@ -31,29 +35,28 @@ class Process(esbmtkBase):
         self.__initerrormessages__()  # default error messages
         self.bem.update({"rate": "a string"})
         self.bem.update({"scale": "Number or quantity"})
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__initialize_keyword_variables__(kwargs)  # initialize keyword values
 
         self.__postinit__()  # do some housekeeping
-        self.__register_name__()
+        self.parent = self.register
+        self.__register_name_new__()
 
     def __postinit__(self) -> None:
         """Do some housekeeping for the process class"""
 
+        from esbmtk import Reservoir, Model, Flux
+
         # legacy name aliases
         self.n: str = self.name  # display name of species
-        if "reserevoir" in self.kwargs:
+        if "reservoir" in self.kwargs:
             self.r: Reservoir = self.reservoir
-            self.m: Model = self.r.sp.mo
-        else:
-            self.m: Model = self.flux.mo  # the model handle
 
-        self.mo: Model = self.m
+        self.mo: Model = self.model
         self.f: Flux = self.flux
-        self.mo: Model = self.m
 
         # self.rm0: float = self.r.m[0]  # the initial reservoir mass
 
-        if "reserevoir" in self.kwargs:
+        if "reservoir" in self.kwargs:
             if isinstance(self.r, Reservoir):
                 self.direction: dict[Flux, int] = self.r.lio[self.f]
 
@@ -94,41 +97,55 @@ class Process(esbmtkBase):
 
         """
 
-        from .connections import ConnectionGroup
-        from esbmtk import Reservoir, ReservoirGroup, Flux, GasReservoir
+        from esbmtk import (
+            Reservoir,
+            ReservoirGroup,
+            Source,
+            Sink,
+            GasReservoir,
+            Flux,
+            ConnectionGroup,
+            Model,
+        )
 
         # provide a dict of known keywords and types
-        self.lkk: dict[str, any] = {
-            "name": str,
-            "reservoir": (Reservoir, Source, Sink, GasReservoir),
-            "flux": Flux,
-            "rate": (int, float, np.float64),
-            "delta": (int, float, np.float64, str),
-            "lt": Flux,
-            "alpha": (int, float, np.float64),
-            "scale": (int, float, np.float64),
-            "ref_reservoirs": (Flux, Reservoir, GasReservoir, list, str),
-            "register": (
-                str,
-                ConnectionGroup,
-                Reservoir,
-                ReservoirGroup,
-                GasReservoir,
-                Flux,
-            ),
+        self.defaults: dict[str, list[any, tuple]] = {
+            "name": ["None", (str)],
+            "reservoir": ["None", (str, Reservoir, Source, Sink, GasReservoir)],
+            "flux": ["None", (str, Flux)],
+            "ref_flux": ["None", (str, Flux)],
+            "rate": [0, (int, float, np.float64)],
+            "delta": ["None", (int, float, np.float64, str)],
+            "lt": ["None", (Flux)],
+            "alpha": [0, (int, float, np.float64)],
+            "scale": [1, (int, float, np.float64)],
+            "ref_reservoirs": ["None", (Flux, Reservoir, GasReservoir, list, str)],
+            "model": ["None", (str, Model)],
+            "source": ["None", (str, Source, Reservoir, GasReservoir)],
+            "register": [
+                "None",
+                (
+                    str,
+                    ConnectionGroup,
+                    Reservoir,
+                    ReservoirGroup,
+                    GasReservoir,
+                    Flux,
+                    Model,
+                ),
+            ],
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list[str] = ["name"]
+        self.lrk: list[str] = ["name", "register"]
 
-        # list of default values if none provided
-        self.lod: dict[str, any] = {"scale": 1}
-
-    def __register__(self, reservoir: Reservoir, flux: Flux) -> None:
+    def __register__(self, reservoir, flux: Flux) -> None:
         """Register the flux/reservoir pair we are acting upon, and register
         the process with the reservoir
 
         """
+
+        from esbmtk import Flux, Reservoir
 
         # register the reservoir flux combination we are acting on
         self.f: Flux = flux
@@ -162,55 +179,42 @@ class GenericFunction(Process):
 
     """
 
-    __slots__ = ("function", "input_data", "vr_data", "params")
-
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """
         Create a new process object with a given process type and options
 
         """
 
-        from . import Reservoir_no_set
+        from esbmtk import Model, ReservoirGroup
 
         self.__defaultnames__()  # default kwargs names
 
         # list of allowed keywords
-        self.lkk: dict[str, any] = {
-            "name": str,
-            "function": any,
-            "input_data": (List, str),
-            "vr_data": (List, str),
-            "function_params": (List, str),
-            "model": any,
+        defaults: dict[str, list[any, tuple]] = {
+            "function": ["None", (str, col.Callable)],
+            "input_data": ["None", (List, str)],
+            "vr_data": ["None", (List, str)],
+            "function_params": ["None", (List, str)],
+            "model": ["None", (str, Model)],
+            "ftype": ["None", (str)],
+            "r_s": ["None", (str, ReservoirGroup)],
+            "r_g": ["None", (str, ReservoirGroup)],
         }
 
+        self.defaults.update(defaults)
+        self.__initialize_keyword_variables__(kwargs)
         # required arguments
         self.lrk: list = ["name", "input_data", "vr_data", "function_params", "model"]
 
-        # list of default values if none provided
-        self.lod: dict[any, any] = {}
-
-        self.__initerrormessages__()  # default error messages
-        self.bem.update(
-            {
-                "function": "a function",
-                "input_data": "list of one or more numpy arrays",
-                "vr_data": "list of one or more numpy arrays",
-                "function_params": "a list of float values",
-            }
-        )
-        self.__validateandregister__(kwargs)  # initialize keyword values
         self.mo = self.model
-
-        if not callable(self.function):
-            raise ValueError("function must be defined before it can be used here")
+        self.parent = self.register
 
         self.__postinit__()  # do some housekeeping
 
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
 
-        self.__register_name__()  #
+        self.__register_name_new__()  #
 
     def __call__(self, i: int) -> None:
         """Here we execute the user supplied function
@@ -220,16 +224,10 @@ class GenericFunction(Process):
 
         self.function(i, self.input_data, self.vr_data, self.function_params)
 
-    # redefine post init
-    def __postinit__(self) -> None:
-        """Do some housekeeping for the process class"""
-
-        self.__misc_init__()
-
     def get_process_args(self) -> tuple:
         """return the data associated with this object"""
 
-        self.func_name: function = self.function
+        self.func_name: callable = self.function
 
         return (
             self.func_name,
@@ -264,15 +262,13 @@ class AddSignal(Process):
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
         self.lrk.extend(["lt", "flux", "reservoir"])  # new required keywords
-
-        self.__initerrormessages__()
-        # self.bem.update({"rate": "a string"})
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__initialize_keyword_variables__(kwargs)  # initialize keyword values
 
         # legacy variables
         self.mo = self.reservoir.mo
         self.__postinit__()  # do some housekeeping
-        self.__register_name__()
+        self.parent = self.register
+        self.__register_name_new__()
 
         # defaults
         self.__execute__ = self.__add_with_fi__
@@ -350,7 +346,7 @@ class AddSignal(Process):
 
     def __get_process_args_fi__(self):
 
-        func_name: function = self.p_add_signal_fi
+        func_name: callable = self.p_add_signal_fi
 
         print(f"flux_name = {self.flux.full_name}")
 
@@ -397,7 +393,7 @@ class AddSignal(Process):
 
     def __get_process_args_fa__(self):
 
-        func_name: function = self.p_add_signal_fa
+        func_name: callable = self.p_add_signal_fa
 
         print(f"flux_name = {self.flux.full_name}")
 
@@ -405,7 +401,7 @@ class AddSignal(Process):
             [
                 self.lt.m,  # 0
                 self.lt.l,  # 1
-                self.flux.fa,  #  2
+                self.flux.fa,  # 2
             ]
         )
 
@@ -450,19 +446,18 @@ class SaveFluxData(Process):
 
     """
 
-    __slots__ = "flux"
-
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
         self.lrk.extend(["flux"])  # new required keywords
 
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__initialize_keyword_variables__(kwargs)  # initialize keyword values
 
         # legacy variables
+        self.parent = self.register
         self.__postinit__()  # do some housekeeping
-        self.__register_name__()
+        self.__register_name_new__()
 
     # setup a placeholder call function
     def __call__(self, i: int):
@@ -472,7 +467,7 @@ class SaveFluxData(Process):
     def get_process_args(self):
         """"""
 
-        func_name: function = self.p_save_flux
+        func_name: callable = self.p_save_flux
 
         data = List(
             [
@@ -498,7 +493,7 @@ class SaveFluxData(Process):
 
 class ScaleFlux(Process):
     """This process scales the mass of a flux (m,l,h) relative to
-    another flux. Delta is either taken from the upstream reserevoir
+    another flux. Delta is either taken from the upstream reservoir
     or set to a fixed value.  The scale factor "scale" and flux
     reference must be present when the object is being initalized
 
@@ -511,15 +506,15 @@ class ScaleFlux(Process):
 
     """
 
-    __slots__ = ("rate", "scale", "ref_reservoirs", "reservoir", "flux")
-
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
+
+        from esbmtk import Source
+
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
         self.lrk.extend(["reservoir", "flux", "scale"])  # new required keywords
-
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__initialize_keyword_variables__(kwargs)  # initialize keyword values
 
         if "ref_reservoirs" in kwargs:
             self.ref_flux = kwargs["ref_reservoirs"]
@@ -531,7 +526,8 @@ class ScaleFlux(Process):
         # legacy variables
         self.mo = self.reservoir.mo
         self.__postinit__()  # do some housekeeping
-        self.__register_name__()
+        self.parent = self.register
+        self.__register_name_new__()
 
         """ Decide how to calculate isotopes (if)
         If the connection specifies delta explicitly, this will
@@ -563,12 +559,6 @@ class ScaleFlux(Process):
     def __with_source__():
         raise NotImplementedError()
 
-    def __with_isotopes__():
-        raise NotImplementedError()
-
-    def __without_isotopes__():
-        raise NotImplementedError()
-
     # setup a placeholder call function
     def __call__(self, i: int):
         return self.__execute__(i)
@@ -583,7 +573,6 @@ class ScaleFlux(Process):
 
         # get reference flux
         rm: float = self.ref_flux.fa[0] * self.scale
-        r: float = self.reservoir.species.element.r
 
         # get the target isotope ratio based on upstream delta
         c = self.reservoir.l[i - 1] / (
@@ -601,7 +590,6 @@ class ScaleFlux(Process):
 
         # get reference flux
         rm: float = self.ref_flux.fa[0] * self.scale
-        r: float = self.reservoir.species.element.r
 
         # get the target isotope ratio based on upstream delta
         c = self.c
@@ -627,10 +615,12 @@ class ScaleFlux(Process):
 
     def get_process_args(self):
         """we need to decide between cases where the reservoir is an
-        actual reserevoir or just a source, since sources do not have
+        actual reservoir or just a source, since sources do not have
         arrays
 
         """
+
+        from esbmtk import Source
 
         data = List(
             [
@@ -645,11 +635,11 @@ class ScaleFlux(Process):
         )
 
         if isinstance(self.source, Source) and self.source.isotopes:
-            func_name: function = self.p_scale_flux_fd
+            func_name: callable = self.p_scale_flux_fd
         elif self.delta != "None":
-            func_name: function = self.p_scale_flux_fd
+            func_name: callable = self.p_scale_flux_fd
         else:
-            func_name: function = self.p_scale_flux_r
+            func_name: callable = self.p_scale_flux_r
 
         params = List(
             [
@@ -667,13 +657,12 @@ class ScaleFlux(Process):
         """delta is derived from upstream reservoir"""
 
         # params
-        r: float = params[0]  # r value
         s: float = params[1]  # scale
 
         # data
         mf: float = data[6][0] * s  # mass of reference flux
-        mr: float = data[3][i - 1]  # mass upstream reserevoir
-        lr: float = data[4][i - 1]  # li upstream reserevoir
+        mr: float = data[3][i - 1]  # mass upstream reservoir
+        lr: float = data[4][i - 1]  # li upstream reservoir
 
         # get the target isotope ratio based on upstream delta
         c = lr / (mr - lr)
@@ -687,14 +676,11 @@ class ScaleFlux(Process):
         """delta is set to a fixed value"""
 
         # params
-        r: float = params[0]  # r value
         s: float = params[1]  # scale
         c: float = params[2]  # l/h ratio
 
         # data
         mf: float = data[6][0] * s  # mass of reference flux
-        mr: float = data[3][i - 1]  # mass upstream reserevoir
-        lr: float = data[4][i - 1]  # li upstream reserevoir
 
         # get the target isotope ratio based on upstream delta
         l = mf * c / (c + 1)
@@ -714,15 +700,13 @@ class Fractionation(Process):
 
     """
 
-    __slots__ = ("flux", "reservoir")
-
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
         self.lrk.extend(["reservoir", "flux", "alpha"])  # new required keywords
 
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__initialize_keyword_variables__(kwargs)  # initialize keyword values
         self.__postinit__()  # do some housekeeping
 
         # alpha is given in permil, but the fractionation routine expects
@@ -730,17 +714,17 @@ class Fractionation(Process):
 
         self.alp = 1 + self.alpha / 1000
         self.mo = self.reservoir.mo
-        self.__register_name__()
+        self.parent = self.register
+        self.__register_name_new__()
 
     def __call__(self, i: int) -> None:
         """
         Set flux isotope masses based on fractionation factor
-        relative to reserevoir
+        relative to reservoir
 
         """
 
         # print(f"self.f.m[i] =  {self.f.m[i]}")
-        r = self.reservoir.species.element.r
         fm = self.f.fa[0]
         rm = self.reservoir.m[i - 1]
         rl = self.reservoir.l[i - 1]
@@ -759,7 +743,7 @@ class Fractionation(Process):
 
     def get_process_args(self):
 
-        func_name: function = self.p_fractionation
+        func_name: callable = self.p_fractionation
 
         data = List(
             [
@@ -778,7 +762,6 @@ class Fractionation(Process):
     @njit(fastmath=True, error_model="numpy")
     def p_fractionation(data, params, i) -> None:
         # params
-        r: float = params[0]  # rvalue
         a: float = params[1]  # alpha
 
         # data
@@ -799,15 +782,17 @@ class RateConstant(Process):
 
     """
 
-    __slots__ = ("scale", "ref_value", "k_value", "flux", "reservoir")
-
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
 
-        from . import ureg, Q_
-        from .connections import SourceGroup, SinkGroup, ReservoirGroup
-        from .connections import ConnectionGroup, GasReservoir
-        from esbmtk import Flux
+        from esbmtk import (
+            SeawaterConstants,
+            GasReservoir,
+            Reservoir,
+            Source,
+            Sink,
+            Q_,
+        )
 
         # Note that self.lkk values also need to be added to the lkk
         # list of the connector object.
@@ -816,70 +801,38 @@ class RateConstant(Process):
         self.__defaultnames__()  # default kwargs names
 
         # update the allowed keywords
-        self.lkk: dict = {
-            "scale": (int, float, np.float64),
-            "k_value": (int, float, np.float64),
-            "name": str,
-            "reservoir": (Reservoir, Source, Sink, GasReservoir, np.ndarray),
-            "source": (Reservoir, Source, GasReservoir),
-            "flux": Flux,
-            "ref_reservoirs": list,
-            "reservoir_ref": (Reservoir, GasReservoir),
-            "left": (list, Reservoir, int, float, np.float64, np.ndarray),
-            "right": (list, Reservoir, int, float, np.ndarray),
-            "register": (
-                SourceGroup,
-                SinkGroup,
-                ReservoirGroup,
-                ConnectionGroup,
-                Flux,
-                str,
-            ),
-            "gas": (Reservoir, GasReservoir, Source, Sink, np.ndarray),
-            "liquid": (Reservoir, Source, Sink),
-            "solubility": (int, float, np.float64),
-            "piston_velocity": (int, float, np.float64),
-            "water_vapor_pressure": (int, float, np.float64),
-            "ref_species": np.ndarray,
-            "seawaterconstants": any,
-            "isotopes": bool,
-            "function_reference": any,
-            "f_0": (str),
-            "pco2_0": (str),
-            "ex": (int, float),
-            "delta": (int, float, str),
+        defaults: dict[str, list[any, tuple]] = {
+            "scale": [1, (int, float, np.float64)],
+            "k_value": [1, (int, float, np.float64)],
+            "ref_reservoirs": ["None", (str, list)],
+            "reservoir_ref": ["None", (str, Reservoir, GasReservoir)],
+            "left": [
+                "None",
+                (str, list, Reservoir, int, float, np.float64, np.ndarray),
+            ],
+            "right": ["None", (str, list, Reservoir, int, float, np.ndarray)],
+            "gas": ["None", (str, Reservoir, GasReservoir, Source, Sink, np.ndarray, float)],
+            "liquid": ["None", (Reservoir, Source, Sink, float)],
+            "solubility": ["None", (str, int, float, np.float64)],
+            "piston_velocity": ["None", (str, int, float, np.float64)],
+            "water_vapor_pressure": ["None", (str, int, float, np.float64)],
+            "ref_species": ["None", (str, np.ndarray, float)],
+            "seawaterconstants": ["None", (str, SeawaterConstants)],
+            "isotopes": [False, (bool)],
+            "function_reference": ["None", (str, col.Callable)],
+            "f_0": ["None", (str, Q_, float, int)],
+            "pco2_0": ["280 ppm", (str, Q_, float)],
+            "ex": [0.2, (int, float)],
+            "source": ["None", (str, Source, GasReservoir)],
         }
 
+        self.defaults.update(defaults)
         # new required keywords
-        self.lrk.extend([["reservoir", "atmosphere"], ["scale", "k_value"]])
+        # self.lrk.extend([["reservoir", "atmosphere"], ["scale", "k_value"], "register"])
 
-        # dict with default values if none provided
-        # self.lod = {r
-        self.lod: dict = {
-            "isotopes": False,
-            "function_reference": "None",
-            "delta": "None",
-        }
+        self.__initialize_keyword_variables__(kwargs)
 
-        self.__initerrormessages__()
-
-        # add these terms to the known error messages
-        self.bem.update(
-            {
-                "scale": "a number",
-                "reservoir": "Reservoir handle",
-                "ref_reservoirs": "List of Reservoir handle(s)",
-                "ref_value": "a number or flux quantity",
-                "name": "a string value",
-                "flux": "a flux handle",
-                "left": "list, reservoir or number",
-                "right": "list, reservoir or number",
-                "function_reference": "A function reference",
-            }
-        )
-
-        # initialize keyword values
-        self.__validateandregister__(kwargs)
+        self.parent = self.register
         if "reservoir" in kwargs:
             self.mo = self.reservoir.mo
         elif "gas_reservoir" in kwargs:
@@ -889,7 +842,7 @@ class RateConstant(Process):
         self.__postinit__()  # do some housekeeping
         # legacy variables
 
-        self.__register_name__()
+        self.__register_name_new__()
 
         if self.reservoir.isotopes or self.isotopes:
             self.__execute__ = self.__with_isotopes__
@@ -949,8 +902,17 @@ class weathering(RateConstant):
 
         """
 
-        self.f_0: float = Q_(self.f_0).to(self.mo.f_unit).magnitude
-        self.pco2_0 = Q_(self.pco2_0).to("ppm").magnitude * 1e-6
+        from esbmtk import Source
+
+        if isinstance(self.f_0, str):
+            self.f_0: float = Q_(self.f_0).to(self.mo.f_unit).magnitude
+        elif isinstance(self.f_0, Q_):
+            self.f_0: float = self.f_0.to(self.mo.f_unit).magnitude
+
+        if isinstance(self.pco2_0, str):
+            self.pco2_0 = Q_(self.pco2_0).to("ppm").magnitude * 1e-6
+        elif isinstance(self.pco2_0, Q_):
+            self.pco2_0 = self.pco2_0.magnitude.to("ppm").magnitude * 1e-6
 
         # if self.delta == "None" and  self.source.isotopes == False:
         #      self.fixed = True
@@ -1022,7 +984,7 @@ class weathering(RateConstant):
 
     def get_process_args(self):
         """data depends on whether upstream, is source or
-        reserevoir/gas-reservoir"""
+        reservoir/gas-reservoir"""
 
         if self.fixed:
             data = List(
@@ -1116,15 +1078,13 @@ class MultiplySignal(Process):
         # get default names and update list for this Process
         self.__defaultnames__()  # default kwargs names
         self.lrk.extend(["lt", "flux", "reservoir"])  # new required keywords
-
-        self.__initerrormessages__()
-        # self.bem.update({"rate": "a string"})
-        self.__validateandregister__(kwargs)  # initialize keyword values
+        self.__initialize_keyword_variables__(kwargs)  # initialize keyword values
 
         # legacy variables
         self.mo = self.reservoir.mo
         self.__postinit__()  # do some housekeeping
-        self.__register_name__()
+        self.parent = self.register
+        self.__register_name_new__()
 
         # decide whichh call function to use
         # if self.mo.m_type == "both":
@@ -1166,7 +1126,7 @@ class MultiplySignal(Process):
         self.flux.fa = np.array([m, l])
 
     def __get_process_args_fi__(self):
-        func_name: function = self.p_multiply_signal_fi
+        func_name: callable = self.p_multiply_signal_fi
         data = List(
             [
                 self.flux.m,  # 0
@@ -1182,7 +1142,7 @@ class MultiplySignal(Process):
         return func_name, data, params
 
     def __get_process_args_fa__(self):
-        func_name: function = self.p_multiply_signal_fa
+        func_name: callable = self.p_multiply_signal_fa
         data = List(
             [
                 self.lt.m,  # 0
@@ -1201,8 +1161,6 @@ class MultiplySignal(Process):
     @njit(fastmath=True, error_model="numpy")
     def p_multiply_signal_fi(data, params, i) -> None:
 
-        r = params[0]
-
         c = data[2][i]
         m = data[0][i] * c
         l = data[1][i] * c
@@ -1212,8 +1170,6 @@ class MultiplySignal(Process):
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_multiply_signal_fa(data, params, i) -> None:
-
-        r = params[0]
 
         c = data[0][i]
         m = data[1][0] * c  # m
@@ -1233,31 +1189,24 @@ class VarDeltaOut(Process):
                 rate = rate,)
     """
 
-    __slots__ = ("rate", "flux", "reservoir")
-
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this Process"""
 
-        from . import ureg, Q_
-        from .connections import ConnectionGroup
-        from esbmtk import Flux, Reservoir, ReservoirGroup
+        from esbmtk import (
+            Reservoir,
+            Source,
+        )
 
         # get default names and update list for this Process
         self.__defaultnames__()
-        self.lkk: dict[str, any] = {
-            "name": str,
-            "reservoir": (Reservoir, Source, Sink),
-            "flux": Flux,
-            "rate": (str, Q_),
-            "register": (ConnectionGroup, ReservoirGroup, Reservoir, Flux, str),
-            "scale": (int, float, np.float64, str),
-        }
-        self.lrk.extend(["reservoir", "flux"])  # new required keywords
-        self.__initerrormessages__()
-        self.__validateandregister__(kwargs)  # initialize keyword values
+
+        self.lrk.extend(["reservoir", "flux", "register"])  # required keywords
+
+        self.__initialize_keyword_variables__(kwargs)
         self.mo = self.reservoir.mo
+        self.parent = self.register
         self.__postinit__()  # do some housekeeping
-        self.__register_name__()
+        self.__register_name_new__()
 
         # decide which call function to use
         # if self.mo.m_type == "both":
@@ -1301,7 +1250,7 @@ class VarDeltaOut(Process):
         # if upstream is a source, we only have a single delta value
         # so we need to patch this. Maybe this should move to source?
 
-        func_name: function = self.p_vardeltaout
+        func_name: callable = self.p_vardeltaout
 
         data = List(
             [
@@ -1316,7 +1265,7 @@ class VarDeltaOut(Process):
             ]
         )
 
-        params = List([float(reservoir.species.element.r)])
+        params = List([float(self.reservoir.species.element.r)])
 
         return func_name, data, params
 
@@ -1391,7 +1340,6 @@ class ScaleRelativeToMass(RateConstant):
 
         """
         m: float = self.reservoir.m[i - 1] * self.scale
-        r: float = self.reservoir.species.element.r
         # d: float = self.reservoir.d[i - 1]
         c = self.reservoir.l[i - 1] / (
             self.reservoir.m[i - 1] - self.reservoir.l[i - 1]
@@ -1402,7 +1350,7 @@ class ScaleRelativeToMass(RateConstant):
     def get_process_args(self):
         """return the data associated with this object"""
 
-        func_name: function = self.p_scale_relative_to_mass
+        func_name: callable = self.p_scale_relative_to_mass
 
         data = List(
             [
@@ -1423,7 +1371,6 @@ class ScaleRelativeToMass(RateConstant):
     def p_scale_relative_to_mass(data, params, i) -> None:
         # concentration times scale factor
         # params
-        r: float = params[0]  # r values
         s: float = params[1]  # scale factor
 
         # data
@@ -1467,6 +1414,17 @@ class GasExchange(RateConstant):
         self.rvalue = self.liquid.sp.r
         self.volume = self.gas.volume
 
+    def ode(self) -> None:
+
+        f = self.scale * (  # area in m^2
+            self.gas.c  # Atmosphere
+            * (1 - self.p_H2O)  # p_H2O
+            * self.solubility  # SA_co2 = mol/(m^3 atm)
+            - self.ref_species * 1000  # [CO2]aq mol
+        )
+        
+        return f
+
     def __without_isotopes__(self, i: int) -> None:
 
         # set flux
@@ -1475,7 +1433,7 @@ class GasExchange(RateConstant):
         # multiply by 1E3
 
         f = self.scale * (  # area in m^2
-            self.gas.c[i - 1]  #  Atmosphere
+            self.gas.c[i - 1]  # Atmosphere
             * (1 - self.p_H2O)  # p_H2O
             * self.solubility  # SA_co2 = mol/(m^3 atm)
             - self.ref_species[i - 1] * 1000  # [CO2]aq mol
@@ -1487,13 +1445,13 @@ class GasExchange(RateConstant):
         # variable which we use the store the total atmospheric mass
         """The solver will use f and f12 to update mass, light
         isotope and concentration values in the Gas
-        reserevoir. However, Gas reserevoirs track total gas pressure
+        reservoir. However, Gas reservoirs track total gas pressure
         in the volume variable. This will not be updated by the
         solver. So we need to do it ourseleves
 
         """
         # self.gas.v[i] = self.gas.v[i - 1] + f * self.gas.mo.dt
-        self.flux.fa[:] = [a, 1]
+        self.flux.fa[:] = [f, 1]
 
     def __with_isotopes__(self, i: int) -> None:
         """
@@ -1510,7 +1468,7 @@ class GasExchange(RateConstant):
         c = carbonate ion
 
         a_db is thus the fractionation factor between dissolved CO2aq and HCO3-
-        and a_gb between CO2g HCO3-
+        and a_dg between CO2aq and CO2g
 
         ref_species = DIC.cs.CO2aq
         liquid.m = DIC.m (used to get the isotope ratio)
@@ -1521,10 +1479,6 @@ class GasExchange(RateConstant):
         gas.v = total mass of atmosphere
 
         """
-
-        from esbmtk import get_delta
-
-        r = self.liquid.sp.r
 
         # equilibrium concentration of CO2 in water based on pCO2
         eco2_at = (
@@ -1552,34 +1506,21 @@ class GasExchange(RateConstant):
         # get 13C equilibrium  CO2 in water based on DIC m & l
         eco2_aq_13 = self.a_db * eco2_aq * c13aq
 
-        # l =  eco2_aq - eco2_aq_13
-        # d = get_delta(l, eco2_aq_13, r)
-        # print(f"d based on CO2aq = {d:.2f}")
-
-        l = eco2_at - eco2_at_13
-        d = get_delta(l, eco2_at_13, r)
-        # print(f"d based on CO2at = {d:.2f}")
-
         # 13C flux
         f13 = self.scale * self.a_u * (eco2_at_13 - eco2_aq_13)
         f12 = f - f13
 
-        # print(f"e13c at = {eco2_at_13:.2e} e13c aq = {eco2_aq_13:.2e}")
-        # print(f"diff =  {eco2_at - eco2_aq:.2e}")
-        # print(f"diff 13c =  {eco2_at_13 - eco2_aq_13:.2e}")
-        # d = get_delta(f12, f13, r)
-        # print(f"i = {i} d gex = {d:.2f}, f = {f:.2e}, f13: {f13:.2e} fr = {f/f12:.2e}\n")
-
         self.flux.fa = [f, f12]
         """The solver will use f and f12 to update mass, light
         isotope and concentration values in the Gas
-        reserevoir. However, Gas reserevoirs track total gas pressure
+        reservoir. However, Gas reservoirs track total gas pressure
         in the volume variable. This will not be updated by the
         solver. So we need to do it ourseleves
 
         not working, see note below
         """
         self.gas.v[i] = self.gas.v[i - 1] + f * self.gas.mo.dt
+        return [f, f12]
         # print()
 
     def __postinit__(self) -> None:
@@ -1593,7 +1534,7 @@ class GasExchange(RateConstant):
     def get_process_args(self):
         """return the data associated with this object"""
 
-        func_name: function = self.p_gas_exchange
+        func_name: callable = self.p_gas_exchange
 
         data = List(
             [
@@ -1639,17 +1580,16 @@ class GasExchange(RateConstant):
         au: float = params[3]  #
         dg: float = params[4]  #
         db: float = params[5]  #
-        dt: float = params[6]
 
         lm = data[1][i - 1]  # mass in liquid
         ll = data[2][i - 1]  # mass of light isotope in liquid_reservoir
-        gm = data[3][i - 1]  # mass in gas reserevoir
-        gl = data[4][i - 1]  # mass of light isotope in gas reserevoir
-        gc = data[5][i - 1]  # concentration in gas reserevoir
+        gm = data[3][i - 1]  # mass in gas reservoir
+        gl = data[4][i - 1]  # mass of light isotope in gas reservoir
+        gc = data[5][i - 1]  # concentration in gas reservoir
         gv = data[6][i - 1]  # total mass of atmosphere
         rs = data[7][i - 1]  # concentrartion of reference species in liquid_reservoir
-        gh = gm - gl  # mass of heavy isotope in gas reserevoir
-        lh = lm - ll  # mass of heavy isotope in liquid reserevoir
+        gh = gm - gl  # mass of heavy isotope in gas reservoir
+        lh = lm - ll  # mass of heavy isotope in liquid reservoir
 
         # equilibrium concentration of CO2 in water based on pCO2
         eco2_at = gc * SA  # p Atmosphere  # p_H2O
@@ -1666,7 +1606,7 @@ class GasExchange(RateConstant):
         data[0][:] = [f, f12]  # fa
         """The solver will use f and f12 to update mass, light
         isotope and concentration values in the Gas
-        reservoir. However, Gas reserevoirs track total gas pressure
+        reservoir. However, Gas reservoirs track total gas pressure
         in the volume variable. This will not be updated by the
         solver. So we need to do it ourseleves
 
@@ -1723,7 +1663,6 @@ class ScaleRelativeToConcentration(RateConstant):
 
         rc: float = self.reservoir.c[i - 1]
         if rc > 0:  # otherwise there is no flux
-            r: float = self.reservoir.species.element.r
             c = self.reservoir.l[i - 1] / (
                 self.reservoir.m[i - 1] - self.reservoir.l[i - 1]
             )
@@ -1742,16 +1681,17 @@ class ScaleRelativeToConcentration(RateConstant):
 
         rc: float = self.reservoir.c[i - 1]
         if rc > 0:  # otherwise there is no flux
-            r: float = self.reservoir.species.element.r
             c = self.c
             m = rc * self.scale
             l = m * c / (c + 1)
             self.f.fa = [m, l]
 
     def get_process_args(self):
-        """If no delta provided, use upstream reserevoir ratios
+        """If no delta provided, use upstream reservoir ratios
         Otherwise, use a fixed ratio
         """
+
+        from esbmtk import Source
 
         if isinstance(self.reservoir, Source):
             raise ValueError(

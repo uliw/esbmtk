@@ -17,14 +17,15 @@
 
 """
 
-# from nptyping import *
-# from typing import *
 import typing as tp
 from numba import njit
 from numba.typed import List
 import numpy as np
-from .esbmtk import esbmtkBase, Reservoir, VirtualReservoir, Model
-from .esbmtk import ReservoirGroup
+from .esbmtk_base import esbmtkBase
+
+if tp.TYPE_CHECKING:
+    from .esbmtk import Reservoir, Model
+    from .extended_classes import ReservoirGroup
 
 
 # define a transform function to display the Hplus concentration as pH
@@ -75,13 +76,12 @@ class SeawaterConstants(esbmtkBase):
 
     """
 
+    
+    
     def __init__(self, **kwargs: dict[str, str]):
 
-        import math
-        from esbmtk import Q_
-
-        # pu_type = type(Q_("kg").units)
-
+        from esbmtk import Model, Reservoir, ReservoirGroup
+        
         self.defaults: dict[list[any, tuple]] = {
             "name": ["None", (str)],
             "salinity": [35.0, (int, float)],
@@ -125,9 +125,6 @@ class SeawaterConstants(esbmtkBase):
     def update_parameters(self, **kwargs: dict) -> None:
         """Update values if necessary"""
 
-        from math import log10
-        from esbmtk import Q_
-
         if kwargs:
             self.__initialize_keyword_variables__(kwargs)
 
@@ -147,7 +144,6 @@ class SeawaterConstants(esbmtkBase):
         self.ca = self.hco3 + 2 * self.co3
         self.ta = self.ca + self.boh4 + self.oh - self.hplus
 
-       
     def show(self) -> None:
         """Printout pK values."""
 
@@ -305,7 +301,7 @@ class SeawaterConstants(esbmtkBase):
 
         """
 
-        from math import exp, log, log10
+        from math import exp, log
 
         T = 273.15 + self.temperature
         S = self.salinity
@@ -571,7 +567,7 @@ class SeawaterConstants(esbmtkBase):
 
         # CO2aq versus CO2g
         self.e_dg: float = -373 / T + 0.19
-        self.a_dg: float = 1 + self.e_dg / 1000
+        self. a_dg: float = 1 + self.e_dg / 1000
 
         # CO2aq versus HCO3
         self.e_db: float = -9866 / T + 24.12
@@ -590,10 +586,18 @@ class SeawaterConstants(esbmtkBase):
         self.a_u: float = 1 + self.e_u / 1000
 
 
-def calc_pCO2(
-    dic: tp.Union[Reservoir, VirtualReservoir],
-    hplus: tp.Union[Reservoir, VirtualReservoir],
+"""
+    dic: tp.Union[Reservoir, esbmtk.extended_classes.VirtualReservoir],
+    hplus: tp.Union[Reservoir, esbmtk.extended_classes.VirtualReservoir],
     SW: SeawaterConstants,
+
+"""
+
+
+def calc_pCO2(
+    dic,  # see above why no type hints
+    hplus,
+    SW,
 ) -> np.ndarray:
 
     """
@@ -736,8 +740,8 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[2][i] = hco3
     vr_data[3][i] = co3
     vr_data[4][i] = co2aq
-    vr_data[5][i] = oh
-    vr_data[5][i] = boh4
+    # vr_data[5][i] = oh
+    # vr_data[5][i] = boh4
     # vr_data[5][i] = omega
 
 
@@ -785,7 +789,6 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     boron = params[4]
     ksp0 = params[5]
     kc = params[6]
-    volume = params[7]
     AD = params[8]
     zsat0 = int(abs(params[9]))
     ca2 = params[10]
@@ -795,7 +798,6 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     zsat_min = int(abs(params[14]))
     zmax = int(abs(params[15]))
     z0 = int(abs(params[16]))
-    ksp = params[17]
 
     # Data
     dic: float = input_data[2][i - 1]  # DIC concentration [mol/kg]
@@ -811,7 +813,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # vr_data
     hplus: float = vr_data[0][i - 1]  # H+ concentration [mol/kg]
     zsnow = vr_data[7][i - 1]  # previous zsnow
-
+    
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus
     boh4: float = boron * KB / (hplus + KB)
@@ -880,7 +882,9 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
 
         diff = Csat_table[zcc : int(zsnow)] - co3
         area_p = area_dz_table[zcc : int(zsnow)]
+      
         BPDC = kc * area_p.dot(diff)
+        zold = BPDC / (area_dz_table[int(zsnow)] * I_caco3) * dt
         # eq 4 dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
         zsnow = zsnow - BPDC / (area_dz_table[int(zsnow)] * I_caco3) * dt
 
@@ -894,7 +898,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     Fburial = Bm - BD
     Fburial12 = Fburial * input_data[1][i - 1] / input_data[0][i - 1]
     diss = (Bm - Fburial) * dt  # dissolution flux
-    diss12 = (B12 - Fburial12) * dt  #  # dissolution flux light isotope
+    diss12 = (B12 - Fburial12) * dt  # dissolution flux light isotope
 
     # # print("{Fburial}.format(")
     # print(Bm)
