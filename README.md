@@ -1,13 +1,13 @@
-- [ESBMTK - An Earth-sciences box modeling toolkit](#org9ceb49f)
-- [News](#orge029246)
-- [Contributing](#orgeec6fae)
-- [Installation](#orga516430)
-- [Documentation](#org5f551d0)
-- [Todo](#org2c61b62)
-- [License](#org6deeb2d)
+- [ESBMTK - An Earth-sciences box modeling toolkit](#orgcebd52d)
+- [News](#org7f8ba9b)
+- [Contributing](#org01e5e4d)
+- [Installation](#org42c8da6)
+- [Documentation](#org2289a7a)
+- [Todo](#org90afaa8)
+- [License](#org669ebb1)
 
 
-<a id="org9ceb49f"></a>
+<a id="orgcebd52d"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
@@ -16,7 +16,7 @@ ESBMTK is a python library that aims to simplify typical box modeling projects i
 At present, it will calculate masses/concentrations in reservoirs and fluxes, including isotope ratios. It provides a variety of classes that allow the creation and manipulation of input signals and the generation of graphical results.
 
 
-<a id="orge029246"></a>
+<a id="org7f8ba9b"></a>
 
 # News
 
@@ -136,14 +136,14 @@ At present, it will calculate masses/concentrations in reservoirs and fluxes, in
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgeec6fae"></a>
+<a id="org01e5e4d"></a>
 
 # Contributing
 
 Don't be shy. Contributing is as easy as finding bugs by using the code, or maybe you want to add a new process code? If you have plenty of time to spare, ESMBTK could use a solver for stiff problems, or a graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orga516430"></a>
+<a id="org42c8da6"></a>
 
 # Installation
 
@@ -161,7 +161,7 @@ If you work with conda, it is recommended to install the above via conda. If you
 -   pip install esbmtk
 
 
-<a id="org5f551d0"></a>
+<a id="org2289a7a"></a>
 
 # Documentation
 
@@ -170,7 +170,7 @@ The documentation is woefully out of date, at present, you best bet is the code 
 The API documentation is available at <https://uliw.github.io/esbmtk/esbmtk/index.html>
 
 
-<a id="org2c61b62"></a>
+<a id="org90afaa8"></a>
 
 # Todo
 
@@ -179,7 +179,7 @@ The API documentation is available at <https://uliw.github.io/esbmtk/esbmtk/inde
 -   do more testing
 
 
-<a id="org6deeb2d"></a>
+<a id="org669ebb1"></a>
 
 # License
 
