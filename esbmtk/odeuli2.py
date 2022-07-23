@@ -302,7 +302,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: list) -> tuple(str, str)
     cfn = flux.parent.full_name  # shorthand for the connection object name
 
     if c.ctype.casefold() == "regular":
-        ex, exl = get_regular_flux(flux, c, icl, ind3)
+        ex, exl = get_regular_flux(flux, c, icl, ind2, ind3)
 
     elif c.ctype == "scale_with_concentration":
         ex, exl = get_scale_with_concentration(flux, c, cfn, icl)
@@ -450,6 +450,7 @@ def get_regular_flux(
     flux: Flux,  # flux instance
     c: Connect,  # connection instance
     icl: list,  # list of initial conditions
+    ind2,  # indentation
     ind3,  # indentation
 ) -> tuple:
     """Equation defining a fixed rate flux
@@ -474,10 +475,10 @@ def get_regular_flux(
                 f"(\n",
                 f"{ind3}{ex} * 1e3\n",
                 f"{ind3}/({r} * ({d} + 1000) + 1000)",
-                f"{ind3})",
+                f"{ind2})",
             )
         elif c.alpha != "None":
-            if a > 1.1 or a < 0.9:
+            if c.alpha > 1.1 or c.alpha < 0.9:
                 raise ValueError(
                     "alpha needs to be given as fractional value not in permil"
                 )
@@ -490,7 +491,7 @@ def get_regular_flux(
                 f"(\n",
                 f"{ind3} - {s_l} * {s_c}\n",
                 f"{ind3}/({a} * {s_l} - {a} * {s_c} - {s_l})",
-                f"{ind3})",
+                f"{ind2})",
             )
         else:
             raise ValueError(
@@ -522,15 +523,16 @@ def get_scale_with_concentration(
     M1_CG_D_b_to_L_b_TA_thc__F = M1.CG_D_b_to_L_b.TA_thc.scale * R[5]
     """
 
-    ici = icl.index(c.source)  # index into initial conditions
-    # this should probably handled by get_ic() see below
-
-    ex = f"{cfn}.scale * R[{ici}]"  # {c.id} scale with conc in {c.source.full_name}"
+    s_c = get_ic(c.source, icl)  # get index to concentration
+    ex = f"{cfn}.scale * {s_c}"  # {c.id} scale with conc in {c.source.full_name}"
     ex = check_signal_2(ex, c)
-    ex = ex + "  # scale with concentration"
+    # ex = ex + "  # scale with concentration"
 
     if c.isotopes:
-        exl = ""
+        # get c of light isotope in source
+        s_l = get_ic(c.source, icl, isotopes=True)  # R[x]
+        exl = f"{cfn}.scale * {s_l}"
+        exl = check_signal_2(exl, c)
     else:
         exl = ""
 
@@ -551,13 +553,14 @@ def get_scale_with_mass(
     M1_CG_D_b_to_L_b_TA_thc__F = M1.CG_D_b_to_L_b.TA_thc.scale * R[5]
     """
 
-    ici = icl.index(c.source)  # index into initial conditions
-    ex = f"{cfn}.scale * {c.source.full_name}.volume * R[{ici}]"
+    s_c = get_ic(c.source, icl)  # get index to concentration
+    ex = f"{cfn}.scale * {c.source.full_name}.volume * {s_c}"
     ex = check_signal_2(ex, c)
-    ex = ex + "  # scale with mass"
-    exl = ""
+    # ex = ex + "  # scale with mass"
     if c.isotopes:
-        exl = ""
+        s_l = get_ic(c.source, icl, isotopes=True)  # get index to concentration
+        exl = f"{cfn}.scale * {c.source.full_name}.volume * {s_l}"
+        exl = check_signal_2(exl, c)
     else:
         exl = ""
 
@@ -579,13 +582,13 @@ def get_scale_with_flux(
     """
 
     p = flux.parent.ref_flux.parent
-
     ex = f"{cfn}.scale * {p.full_name.replace('.', '_')}__F"
     ex = check_signal_2(ex, c)
-    ex = ex + "  # scale with flux"
+    # ex = ex + "  # scale with flux"
 
     if c.isotopes:
-        exl = ""
+        exl = f"{cfn}.scale * {p.full_name.replace('.', '_')}__F_l"
+        exl = check_signal_2(exl, c)
     else:
         exl = ""
 
@@ -615,11 +618,11 @@ def get_weathering(
 
     """
 
-    ici = icl.index(c.reservoir_ref)
+    s_c = get_ic(c.reservoir_ref, icl)
     ex = (
         f"(\n{ind3}{cfn}.rate\n"
         f"{ind3}* {cfn}.scale\n"
-        f"{ind3}* (R[{ici}]/{cfn}.pco2_0)\n"
+        f"{ind3}* ({s_c}/{cfn}.pco2_0)\n"
         f"{ind3}**  {cfn}.ex\n"
         f"{ind2})"
     )
@@ -627,7 +630,11 @@ def get_weathering(
     ex = ex + "  # weathering\n"
 
     if c.isotopes:
-        exl = ""
+        # get isotope ratio of source
+        s_c = get_ic(c.source, icl)  # get index to concentration
+        s_l = get_ic(c.source, icl, isotopes=True)  # get index to concentration l
+        fn = flux.full_name.replace(".", "_")
+        exl = f"{fn} * {s_l}/{s_c}"
     else:
         exl = ""
 
@@ -663,8 +670,8 @@ def get_gas_exchange(
     if sp == "DIC":
         refsp = f"{c.liquid_reservoir.parent.full_name}.CO2aq".replace(".", "_")
     elif sp == "O2":
-        ici = icl.index(c.liquid_reservoir)
-        refsp = f"R[{ici}]"
+        s_c = get_ic(c.liquid_reservoir, icl)
+        refsp = f"{s_c}"
     else:
         raise ValueError(f"Species{sp} has not definition for gex")
 
@@ -677,7 +684,7 @@ def get_gas_exchange(
         f"{ind3}{cfn}.water_vapor_pressure,\n"
         f"{ind3}{cfn}.solubility,\n"
         f"{ind3}{refsp},\n"
-        f"{ind3})"
+        f"{ind2})"
     )
     ex = check_signal_2(ex, c)
     ex = ex + "  # gas_exchange\n"
@@ -732,8 +739,8 @@ def get_gas_exchange_w_isotopes(
     if sp == "DIC":
         refsp = f"{c.liquid_reservoir.parent.full_name}.CO2aq".replace(".", "_")
     elif sp == "O2":
-        ici = icl.index(c.liquid_reservoir)
-        refsp = f"R[{ici}]"
+        s_c = get_ic(c.liquid_reservoir, icl)
+        refsp = f"{s_c}"
     else:
         raise ValueError(f"Species{sp} has not definition for gex")
 
@@ -750,7 +757,7 @@ def get_gas_exchange_w_isotopes(
         f"{ind3}{a_db},\n"  # fractionation factor between dissolved CO2aq and HCO3-
         f"{ind3}{a_dg},\n"  # fractionation between CO2aq and CO2g
         f"{ind3}{a_u},\n"  # kinetic fractionation during gas exchange
-        f"{ind3})"
+        f"{ind2})"
     )
     ex = check_signal_2(ex, c)
     ex = ex + "  # gas_exchange\n"
