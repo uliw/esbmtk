@@ -970,7 +970,12 @@ def test_carbonate_system2_(create_model, solver):
     exp = fs[0]
     exp.fa = np.array([60e12, 60e12])
     add_carbonate_system_2(
-        rgs=[M1.S], carbonate_export_fluxes=[exp], alpha=0.6, zsat_min=-200, z0=-200
+        r_db=[M1.S],
+        r_sb=[M1.S],
+        carbonate_export_fluxes=[exp],
+        alpha=0.6,
+        zsat_min=-200,
+        z0=-200,
     )
     M1.run(solver=solver)
     i = 997
