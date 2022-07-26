@@ -197,7 +197,7 @@ class Model(esbmtkBase):
             "isotopes": [False, (bool)],
             "debug": [False, (bool)],
             "ideal_water": [True, (bool)],
-            "use_ode": [False, (bool)],
+            "use_ode": [True, (bool)],
         }
 
         # provide a list of absolutely required keywords
@@ -631,6 +631,10 @@ class Model(esbmtkBase):
         for r in self.lor:
             r.m = r.c * r.volume
             if r.isotopes:
+                # esbmtl assumes that l is the mass, whereas the ODE
+                # solver treats it as concentration, so we convert it
+                # back to mass
+                r.l = r.l * r.volume
                 print(f"r = {r.full_name}")
                 r.d = get_delta_h(r)
 
