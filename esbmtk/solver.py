@@ -138,8 +138,7 @@ def get_delta_h(h) -> float:
     """
 
     r = h.species.r
-
-    d = np.where(h.l > 0, 1e3 * ((h.m - h.l) / h.l - r) / r, 0)
+    d = np.where(h.l > 0, 1e3 * ((h.c - h.l) / h.l - r) / r, 0)
 
     return d
 

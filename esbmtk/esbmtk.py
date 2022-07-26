@@ -625,10 +625,13 @@ class Model(esbmtkBase):
         print(f"This run used {process.memory_info().rss/1e9:.2f} Gbytes of memory \n")
 
     def get_delta_values(self):
-        """Calculate the isotope ratios in the usual delta notation"""
+        """ Calculate masses and isotope ratios in the usual delta
+        notation"""
 
         for r in self.lor:
+            r.m = r.c * r.volume
             if r.isotopes:
+                print(f"r = {r.full_name}")
                 r.d = get_delta_h(r)
 
         # for vr in self.lvr:
@@ -659,7 +662,6 @@ class Model(esbmtkBase):
             for f in self.lof:
                 f.__sub_sample_data__(stride)
 
-        
     def __run_solver__(self, solver: str, kwargs: dict) -> None:
         from .ODEINT_Solver import run_solver
 
@@ -749,8 +751,14 @@ class Model(esbmtkBase):
             #     ed.y = np.interp(results.t, ed.x, ed.y)
 
             # assign results to the esbmtk variables
-            for i, r in enumerate(icl):
+            i = 0
+            for r in icl:
                 r.c = results.y[i]
+                i = i + 1
+                if r.isotopes:
+                    r.l = results.y[i]
+                    i = i + 1
+
             self.time = results.t
 
             # interpolate intermediate results to match the model
@@ -1243,7 +1251,7 @@ class ReservoirBase(esbmtkBase):
 
         return df
 
-    def __sub_sample_data__(self,stride) -> None:
+    def __sub_sample_data__(self, stride) -> None:
         """There is usually no need to keep more than a thousand data points
         so we subsample the results before saving, or processing them
 
