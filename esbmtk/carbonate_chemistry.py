@@ -896,9 +896,9 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # BD & F_burial
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = Bm - BD
-    Fburial12 = Fburial * input_data[1][i - 1] / input_data[0][i - 1]
+    Fburial_l = Fburial * input_data[1][i - 1] / input_data[0][i - 1]
     diss = (Bm - Fburial) * dt  # dissolution flux
-    diss12 = (B12 - Fburial12) * dt  # dissolution flux light isotope
+    diss12 = (B12 - Fburial_l) * dt  # dissolution flux light isotope
 
     # # print("{Fburial}.format(")
     # print(Bm)
@@ -933,6 +933,6 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     vr_data[6][i] = zcc  # 6
     vr_data[7][i] = zsnow  # 7
     vr_data[8][i] = Fburial  # 8
-    vr_data[9][i] = Fburial12  # 9
+    vr_data[9][i] = Fburial_l  # 9
     vr_data[10][i] = diss / dt  # 9
     vr_data[11][i] = Bm  # 9

@@ -1270,6 +1270,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                     "area_dz_table": area_dz_table,
                     "Csat_table": Csat_table,
                     "Fburial": 0.0,
+                    "Fburial_l": 0.0,
                 },
                 ref_flux=kwargs["carbonate_export_fluxes"],
                 function_input_data=List(),
@@ -1333,7 +1334,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                     "zcc": kwargs["zcc"],  # 6 zcc
                     "zsnow": kwargs["zsnow"],  # 7 zsnow
                     "Fburial": 0.0,  # 8 carbonate burial
-                    "Fburial12": 0.0,  # 9 carbonate burial 12C
+                    "Fburial_l": 0.0,  # 9 carbonate burial 12C
                     "diss": 0.0,  # dissolution flux
                     "Bm": 0.0,
                 },

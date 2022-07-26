@@ -14,6 +14,8 @@ generation of graphical results.
 
 * News
 
+  - 0.9.0.0 Moved to odepack based backend. Removed now defunct code.
+  
   - 0.8.0.0
     - Cleanup of naming scheme which is now strictly hierarchical.
     - Bulk connection dictionaries now have to be specified as
@@ -313,6 +315,7 @@ generation of graphical results.
     examples
 
   - Oct. 25^{th}, Initial release on github.
+
 
 * Contributing
 
