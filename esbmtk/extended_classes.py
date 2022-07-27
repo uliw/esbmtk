@@ -332,18 +332,6 @@ class SourceSink(esbmtkBase):
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
         self.lio: list = []
 
-        # if self.register == "None":
-        #     self.pt = self.name
-        # else:
-        #     self.pt: str = f"{self.register.name}_{self.n}"
-        #     self.groupname = self.register.name
-
-        # if self.delta != "None":
-        #     self.isotopes = True
-
-        # if self.display_precision == 0:
-        #     self.display_precision = self.mo.display_precision
-
         self.__register_name_new__()
 
 
@@ -821,6 +809,19 @@ class Signal(esbmtkBase):
         # map into model units, and strip unit information
         self.s_time = self.s_time.to(self.mo.t_unit).magnitude
         self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
+
+        if isinstance(yq, Q_):
+            # test what type of Quantity we have
+            if yq.check(["volume]/[time"]):  # flux
+                self.s_data = self.s_data.to(self.mo.r_unit).magnitude * self.scale
+            elif yq.check(["mass] / [time"]):  # flux
+                self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
+            elif yq.check("[mass]/[volume]"):  # concentration
+                self.s_data = self.s_data.to(self.mo.c_unit).magnitude * self.scale
+            elif yq.check("dimensionless"):  # concentration
+                self.s_data = self.s_data.magnitude * self.scale
+            else:
+                ValueError(f"No conversion to model units for {self.scale} specified")
 
         self.st: float = self.s_time[0]  # start time
         self.et: float = self.s_time[-1]  # end time
