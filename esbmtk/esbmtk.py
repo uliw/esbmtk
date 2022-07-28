@@ -625,7 +625,7 @@ class Model(esbmtkBase):
         print(f"This run used {process.memory_info().rss/1e9:.2f} Gbytes of memory \n")
 
     def get_delta_values(self):
-        """ Calculate masses and isotope ratios in the usual delta
+        """Calculate masses and isotope ratios in the usual delta
         notation"""
 
         for r in self.lor:
@@ -1238,11 +1238,11 @@ class ReservoirBase(esbmtkBase):
             fullname.append(f.full_name)
 
             # if f.save_flux_data:
-              #  df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]  # m
-                # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]  # l
-            #else:
+            #  df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]  # m
+            # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]  # l
+            # else:
             df[f"{f.full_name} {sn} [{fmu}]"] = f.fa[0]  # m
-                # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.fa[1]  # l
+            # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.fa[1]  # l
 
         file_path = Path(fn)
         if append:
@@ -1391,11 +1391,17 @@ class ReservoirBase(esbmtkBase):
 
         """
 
+        # print(f"name = {obj.full_name}")
+        # breakpoint()
         obj.fa[0] = df.iloc[0, col]
-        obj.fa[1] = df.iloc[0, col + 1]
-        # obj.fa[2] = df.iloc[0, col + 2]
+
         # obj.fa[3] = df.iloc[0, col + 3]
-        col = col + 2
+        if obj.isotopes:
+            obj.fa[1] = df.iloc[0, col + 1]
+            obj.fa[2] = df.iloc[0, col + 2]
+            col = col + 2
+        else:
+            col = col + 1
 
         return col
 
@@ -1412,11 +1418,12 @@ class ReservoirBase(esbmtkBase):
         """
 
         obj.m[:] = df.iloc[-3, col]
-        obj.l[:] = df.iloc[-3, col + 1]
-        # obj.h[:] = df.iloc[-3, col + 2]
-        # obj.d[:] = df.iloc[-3, col + 3]
-        obj.c[:] = df.iloc[-3, col + 2]
-        col = col + 3
+        if obj.isotopes:
+            obj.l[:] = df.iloc[-3, col + 1]
+            obj.c[:] = df.iloc[-3, col + 2]
+            col = col + 2
+        else:
+            col = col + 1
 
         return col
 
