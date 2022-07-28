@@ -228,13 +228,15 @@ def carbonate_system_2_ode(
 
     # print(f"i={i}, ca2={ca2}, co3={co3}, ksp0 = {ksp0}")
     zsat = int(max((zsat0 * np.log(ca2 * co3 / ksp0)), zsat_min))  # eq2
+    if zsat > zmax:
+        zsat = zmax
+    if zsat < zsat_min:
+        zsat = int(zsat_min)
 
     # print(
     #     f"i = {i}, zsat0 = {zsat0:.1f}, ca= {ca:.2e}, co3 = {co3:.2e}, ksp0 = {ksp0:.2e}, zsat_min = {zsat_min:.1f}"
     # )
     # print(f"zsat = {zsat:.1f}\n")
-    if zsat < zsat_min:
-        zsat = int(zsat_min)
 
     zcc = int(zsat0 * np.log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
 
