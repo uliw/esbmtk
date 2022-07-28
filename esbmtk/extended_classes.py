@@ -678,8 +678,9 @@ class Signal(esbmtkBase):
             self.nf.m[model_start_index:model_stop_index] = self.s_m[
                 signal_start_index:signal_stop_index
             ]
-            self.nf.l[model_start_index:model_stop_index] = self.s_l[
-                signal_start_index:signal_stop_index
+            if self.nf.isotopes:
+                self.nf.l[model_start_index:model_stop_index] = self.s_l[
+                    signal_start_index:signal_stop_index
             ]
 
         return self.nf
@@ -808,18 +809,18 @@ class Signal(esbmtkBase):
 
         # map into model units, and strip unit information
         self.s_time = self.s_time.to(self.mo.t_unit).magnitude
-        self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
+        # self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
 
         if isinstance(yq, Q_):
             # test what type of Quantity we have
-            if yq.check(["volume]/[time"]):  # flux
+            if yq.check(['dimensionless']):  # dimensionless
+                self.s_data = self.s_data.magnitude * self.scale
+            elif yq.check(["volume]/[time"]):  # flux
                 self.s_data = self.s_data.to(self.mo.r_unit).magnitude * self.scale
             elif yq.check(["mass] / [time"]):  # flux
                 self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
-            elif yq.check("[mass]/[volume]"):  # concentration
+            elif yq.check(["[mass]/[volume]"]):  # concentration
                 self.s_data = self.s_data.to(self.mo.c_unit).magnitude * self.scale
-            elif yq.check("dimensionless"):  # concentration
-                self.s_data = self.s_data.magnitude * self.scale
             else:
                 ValueError(f"No conversion to model units for {self.scale} specified")
 
@@ -873,7 +874,7 @@ class Signal(esbmtkBase):
         ns.data.l = get_l_mass(ns.data.m, sd + od, ns.data.sp.r)
 
         ns.n: str = self.n + "_and_" + other.n
-        print(f"adding {self.n} to {other.n}, returning {ns.n}")
+        # print(f"adding {self.n} to {other.n}, returning {ns.n}")
         ns.data.n: str = self.n + "_and_" + other.n + "_data"
         ns.st = min(self.st, other.st)
         ns.l = max(self.l, other.l)

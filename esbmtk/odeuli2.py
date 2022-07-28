@@ -340,7 +340,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
         ex, exl = get_scale_with_concentration(flux, c, cfn, icl)
 
     elif c.ctype == "scale_with_flux":
-        ex, exl = get_scale_with_flux(flux, c, cfn, icl)
+        ex, exl = get_scale_with_flux(flux, c, cfn, icl, ind2, ind3)
 
     elif c.ctype == "weathering":
         ex, exl = get_weathering(flux, c, cfn, icl, ind2, ind3)
@@ -366,7 +366,7 @@ def check_signal_2(ex: str, c: tp.union(Connection, Connect)) -> str:
         # get signal type
         if c.signal.stype == "addition":
             sign = "+"
-        elif c.signal.stype == "scale":
+        elif c.signal.stype == "multiplication":
             sign = "*"
         else:
             raise ValueError(f"stype={c.signal.stype} not implemented")
@@ -524,7 +524,8 @@ def get_regular_flux(
         elif c.alpha != "None":
             if c.alpha > 1.1 or c.alpha < 0.9:
                 raise ValueError(
-                    "alpha needs to be given as fractional value not in permil"
+                    f"alpha needs to be given as fractional value not in permil\n"
+                    f"e.g., a=1 -< no fractionation\n"
                 )
             r = c.source.species.r
             a = c.alpha
@@ -538,13 +539,8 @@ def get_regular_flux(
                 f"{ind2})"
             )
             exl = exl + "  # fixed rate with alpha"
-        else:
-            raise ValueError(
-                "A regular flux in an isotope system must specify"
-                "either delta, or alpha. Otherwise use a connection"
-                "that depends on the upstream reservoir delta, or"
-                "set the isotope flag to False"
-            )
+        else: # apply rate 
+            pass
         # this will probably not work
         exl = check_signal_2(exl, c)
 
@@ -619,6 +615,8 @@ def get_scale_with_flux(
     c: Connect,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: dict,  # list of initial conditions
+    ind2: str, # indentation
+    ind3: str, # indentation    
 ) -> tuple(str, str):
     """Equation defining a flux that scales with strength of another flux
     reservoir
@@ -642,9 +640,14 @@ def get_scale_with_flux(
     if c.isotopes:
         s_c = get_ic(c.source, icl)
         s_l = get_ic(c.source, icl, isotopes=True)
-        exl = f"(\n" f"{cfn}.scale\n" f"* {fn}\n" f"* {s_l} / {s_c}\n" f")\n"
+        exl = (f"(\n"
+               f"{ind3}{cfn}.scale\n"
+               f"{ind3}* {fn}\n"
+               f"{ind3}* {s_l} / {s_c}\n"
+               f"{ind2})"
+               )
         # exl = check_signal_2(exl, c)
-        exl = exl + "  # scale with flux"
+        exl = exl + "  # scale with flux\n"
     else:
         exl = ""
 

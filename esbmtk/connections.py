@@ -471,7 +471,7 @@ class Connect(esbmtkBase):
                 si = self.sink.parent.name
             else:
                 si = self.sink.name
-                
+
             self.name = f"C_{so}_to_{si}_{self.source.sp.name}"
         else:
             # same species?
@@ -1214,7 +1214,7 @@ class ConnectionGroup(esbmtkBase):
             "delta": ["None", (str, dict, tuple, int, float)],
             "rate": ["None", (Q_, str, dict, tuple, int, float)],
             "pl": ["None", (str, dict, tuple)],
-            "signal": ["None", (str, Signal)],
+            "signal": ["None", (str, Signal, dict)],
             "alpha": ["None", (str, dict, tuple, int, float)],
             "species": ["None", (str, dict, tuple, Species)],
             "ctype": ["None", (str, dict, tuple)],
@@ -1280,6 +1280,7 @@ class ConnectionGroup(esbmtkBase):
                 "ref_reservoirs": "None",
                 "ref_flux": "None",
                 "bypass": "None",
+                "signal": "None",
             }
 
             # test defaults against actual keyword value
@@ -1299,6 +1300,7 @@ class ConnectionGroup(esbmtkBase):
                 ctype=self.cd[sp.n]["ctype"],
                 scale=self.cd[sp.n]["scale"],
                 bypass=self.cd[sp.n]["bypass"],
+                signal=self.cd[sp.n]["signal"],
                 ref_reservoirs=self.cd[sp.n]["ref_reservoirs"],
                 ref_flux=self.cd[sp.n]["ref_flux"],
                 save_flux_data=self.save_flux_data,

@@ -30,7 +30,7 @@ import numpy as np
 def get_l_mass(m: float, d: float, r: float) -> float:
     """
     Calculate the light isotope masses from bulk mass and delta value.
-    Arguments are m = mass, d= delta value, r = abundance ratio
+    Arguments are m = mass/concentration, d= delta value, r = abundance ratio
     """
 
     l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)

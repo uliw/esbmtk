@@ -631,11 +631,6 @@ class Model(esbmtkBase):
         for r in self.lor:
             r.m = r.c * r.volume
             if r.isotopes:
-                # esbmtl assumes that l is the mass, whereas the ODE
-                # solver treats it as concentration, so we convert it
-                # back to mass
-                r.l = r.l * r.volume
-                print(f"r = {r.full_name}")
                 r.d = get_delta_h(r)
 
         # for vr in self.lvr:
@@ -1152,7 +1147,7 @@ class ReservoirBase(esbmtkBase):
         # update concentration and delta next. This is computationally inefficient
         # but the next time step may depend on on both variables.
         self.c[i]: float = value[0] / self.v[i]  # update concentration
-        self.l[i]: float = value[1]
+        self.l[i]: float = value[1] / self.v[i]  # update concentration
 
     def __set_without_isotopes__(self, i: int, value: float) -> None:
         """write data by index"""
@@ -1757,7 +1752,7 @@ class Reservoir(ReservoirBase):
         self.v: np.ndarray = np.zeros(self.mo.steps) + self.volume  # reservoir volume
 
         if self.delta != "None":
-            self.l = get_l_mass(self.m, self.delta, self.species.r)
+            self.l = get_l_mass(self.c, self.delta, self.species.r)
 
         # create temporary memory if we use multiple solver iterations
         if self.mo.number_of_solving_iterations > 0:
@@ -1809,7 +1804,7 @@ class Reservoir(ReservoirBase):
         if self.update and d != "None":
             self._delta: float = d
             self.isotopes = True
-            self.l = get_l_mass(self.m, d, self.species.r)
+            self.l = get_l_mass(self.c, d, self.species.r)
 
     @mass.setter
     def mass(self, m: float) -> None:
@@ -1924,15 +1919,16 @@ class Flux(esbmtkBase):
         # in case we want to keep the flux data
         if self.save_flux_data:
             self.m: np.ndarray = np.zeros(self.model.steps) + fluxrate  # add the flux
-            self.l: np.ndarray = np.zeros(self.model.steps)
+
+            if self.isotopes:
+                self.l: np.ndarray = np.zeros(self.model.steps)
+                if self.rate != 0:
+                    self.l = get_l_mass(self.c, self.delta, self.species.r)
+                    self.fa[1] = self.l[0]
 
             if self.mo.number_of_solving_iterations > 0:
                 self.mc = np.empty(0)
                 self.dc = np.empty(0)
-
-            if self.rate != 0:
-                self.l = get_l_mass(self.m, self.delta, self.species.r)
-                self.fa[1] = self.l[0]
 
         else:
             # setup dummy variables to keep existing numba data structures
@@ -2225,8 +2221,9 @@ class SourceSink(esbmtkBase):
             self._delta = d
             self.isotopes = True
             self.m = 1
+            self.c = 1
             self.l = get_l_mass(self.m, d, self.species.r)
-            self.c = self.l / (self.m - self.l)
+            # self.c = self.l / (self.m - self.l)
             # self.provided_kwargs.update({"delta": d})
 
 

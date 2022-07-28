@@ -622,6 +622,7 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
     # al: alpha, optional
     # de: delta, optional
     # bp: bypass, see scale_with_flux
+    # si: signal
     # mx: True, optional defaults to False. If set, it will create forward
           and backward fluxes (i.e. mixing)
 
@@ -680,6 +681,7 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
             for c in k:
                 create_connection(c, v, M)
         elif isinstance(k, str):
+            # print(f"k={k}, v={v}")
             create_connection(k, v, M)
         else:
             raise ValueError(f"{c} must be string or tuple")
@@ -718,6 +720,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
     cid = f"{cid}"
     bypass = "None" if "bp" not in p else p["bp"]
     species = "None" if "sp" not in p else p["sp"]
+    signal = "None" if "si" not in p else p["si"]
 
     if isinstance(scale, Q_):
         scale = scale.to("l/a").magnitude
@@ -730,6 +733,9 @@ def create_connection(n: str, p: dict, M: any) -> None:
     alpha = make_dict(los, alpha)
     delta = make_dict(los, delta)
     bypass = make_dict(los, bypass)
+    signal = make_dict(los, signal)
+
+    print(signal)
 
     # name of connectiongroup
     name = f"{M.name}.CG_{source.name}_to_{sink.name}"
@@ -747,6 +753,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
             delta=delta,
             bypass=bypass,
             register=M,
+            signal=signal,
             id=cid,  # get id from dictionary
         )
     else:  # Create New ConnectionGroup
@@ -761,6 +768,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
             delta=delta,
             bypass=bypass,
             register=M,
+            signal=signal,
             id=cid,  # get id from dictionary
         )
 
