@@ -447,9 +447,9 @@ class Model(esbmtkBase):
         # save data fields
         # for r in self.ldf:
         #     r.__write_data__(prefix, start, stop, stride, append)
-        print("Writing virtual reservoir data")
-        for r in self.lvr:
-            r.__write_data__(prefix, start, stop, stride, append, "data")
+        # print("Writing virtual reservoir data")
+        # for r in self.lvr:
+        #    r.__write_data__(prefix, start, stop, stride, append, "data")
         print("done writing")
 
     def restart(self):
@@ -1222,7 +1222,7 @@ class ReservoirBase(esbmtkBase):
 
         df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
         df[f"{rn} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
-        df[f"{rn} {sp.ln} [{smu}]"] = self.l[start:stop:stride]  # light isotope
+        # df[f"{rn} {sp.ln} [{smu}]"] = self.l[start:stop:stride]  # light isotope
         df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
 
         fullname: list = []
@@ -1232,12 +1232,12 @@ class ReservoirBase(esbmtkBase):
                 raise ValueError(f"{f.full_name} is a double")
             fullname.append(f.full_name)
 
-            if f.save_flux_data:
-                df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]  # m
-                df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]  # l
-            else:
-                df[f"{f.full_name} {sn} [{fmu}]"] = f.fa[0]  # m
-                df[f"{f.full_name} {sn} [{sp.ln}]"] = f.fa[1]  # l
+            # if f.save_flux_data:
+              #  df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]  # m
+                # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]  # l
+            #else:
+            df[f"{f.full_name} {sn} [{fmu}]"] = f.fa[0]  # m
+                # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.fa[1]  # l
 
         file_path = Path(fn)
         if append:
