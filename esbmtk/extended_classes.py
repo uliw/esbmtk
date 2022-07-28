@@ -657,6 +657,7 @@ class Signal(esbmtkBase):
         dt1 = int((self.st - self.mo.offset - self.mo.start))
         dt2 = int((self.st + self.duration - self.mo.stop - self.mo.offset))
 
+        # This fails if actual model steps != dt
         model_start_index = int(max(insert_start_time / self.mo.dt, 0))
         model_stop_index = int(min((self.mo.steps + dt2 / self.mo.dt), self.mo.steps))
         signal_start_index = int(min(dt1, 0) * -1)
@@ -681,7 +682,7 @@ class Signal(esbmtkBase):
             if self.nf.isotopes:
                 self.nf.l[model_start_index:model_stop_index] = self.s_l[
                     signal_start_index:signal_stop_index
-            ]
+                ]
 
         return self.nf
 
@@ -787,6 +788,7 @@ class Signal(esbmtkBase):
 
         # read external dataset
         df = pd.read_csv(self.filename)
+        # print(f"df = {df.head()}")
 
         # get unit information from each header
         xh = df.columns[0].split("[")[1].split("]")[0]
@@ -803,6 +805,7 @@ class Signal(esbmtkBase):
         # add these to the data we are are reading
         self.s_time: np.ndarray = df.iloc[:, 0].to_numpy() * xq
         self.s_data: np.ndarray = df.iloc[:, 1].to_numpy() * yq
+
         if zh:
             # delta is assumed to be without units
             self.s_delta: np.ndarray = df.iloc[:, 2].to_numpy()
@@ -813,16 +816,18 @@ class Signal(esbmtkBase):
 
         if isinstance(yq, Q_):
             # test what type of Quantity we have
-            if yq.check(['dimensionless']):  # dimensionless
-                self.s_data = self.s_data.magnitude * self.scale
+            if yq.check(["dimensionless"]):  # dimensionless
+                self.s_data = self.s_data.magnitude 
             elif yq.check(["volume]/[time"]):  # flux
-                self.s_data = self.s_data.to(self.mo.r_unit).magnitude * self.scale
+                self.s_data = self.s_data.to(self.mo.r_unit).magnitude 
             elif yq.check(["mass] / [time"]):  # flux
-                self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
+                self.s_data = self.s_data.to(self.mo.f_unit).magnitude 
             elif yq.check(["[mass]/[volume]"]):  # concentration
-                self.s_data = self.s_data.to(self.mo.c_unit).magnitude * self.scale
+                self.s_data = self.s_data.to(self.mo.c_unit).magnitude 
             else:
                 ValueError(f"No conversion to model units for {self.scale} specified")
+
+        self.s_data = self.s_data * self.scale
 
         self.st: float = self.s_time[0]  # start time
         self.et: float = self.s_time[-1]  # end time
