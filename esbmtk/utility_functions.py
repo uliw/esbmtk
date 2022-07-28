@@ -681,7 +681,6 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
             for c in k:
                 create_connection(c, v, M)
         elif isinstance(k, str):
-            # print(f"k={k}, v={v}")
             create_connection(k, v, M)
         else:
             raise ValueError(f"{c} must be string or tuple")
@@ -734,8 +733,6 @@ def create_connection(n: str, p: dict, M: any) -> None:
     delta = make_dict(los, delta)
     bypass = make_dict(los, bypass)
     signal = make_dict(los, signal)
-
-    print(signal)
 
     # name of connectiongroup
     name = f"{M.name}.CG_{source.name}_to_{sink.name}"

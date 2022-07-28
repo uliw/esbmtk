@@ -721,6 +721,11 @@ class Model(esbmtkBase):
         else:
             stype = "solve_ivp"
 
+        if "max_step" in kwargs:
+            max_step = kwargs["max_step"]
+        else:
+            max_step = 1e6
+
         if stype == "solve_ivp":
             results = solve_ivp(
                 ode_system.eqs,
@@ -732,7 +737,7 @@ class Model(esbmtkBase):
                 atol=1e-12,
                 first_step=Q_("1 hour").to(self.t_unit).magnitude,
                 # dense_output=True,
-                # max_step=1,
+                max_step=max_step,
             )
 
             # interpolate signals into the ode time domain
