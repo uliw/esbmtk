@@ -258,6 +258,9 @@ class setup_ode():
                     if flux.parent.isotopes:  # add line for isotopes
                         eqs.write(f"{ind2}{fn}_l = {exl}\n")
 
+                if flux.save_flux_data:
+                    eqs.write(f"{ind2}" + "print(f'" + f"{fn} = " + "{" + f"{fn}:.2e" +"}"+"')\n")
+
         sep = "# ---------------- write computed reservoir equations -------- #\n"
         sep = sep + "# that do depend on fluxes"
         eqs.write(f"\n{sep}\n")
