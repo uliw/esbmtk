@@ -259,7 +259,7 @@ class setup_ode():
                         eqs.write(f"{ind2}{fn}_l = {exl}\n")
 
                 if flux.save_flux_data:
-                    eqs.write(f"{ind2}" + "print(f'" + f"{fn} = " + "{" + f"{fn}:.2e" +"}"+"')\n")
+                    eqs.write(f"{ind2}{flux.full_name}.m[self.i] = {ex}\n")
 
         sep = "# ---------------- write computed reservoir equations -------- #\n"
         sep = sep + "# that do depend on fluxes"
@@ -542,7 +542,7 @@ def get_regular_flux(
                 f"{ind2})"
             )
             exl = exl + "  # fixed rate with alpha"
-        else: # apply rate 
+        else:  # apply rate
             pass
         # this will probably not work
         exl = check_signal_2(exl, c)
@@ -618,8 +618,8 @@ def get_scale_with_flux(
     c: Connect,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: dict,  # list of initial conditions
-    ind2: str, # indentation
-    ind3: str, # indentation    
+    ind2: str,  # indentation
+    ind3: str,  # indentation
 ) -> tuple(str, str):
     """Equation defining a flux that scales with strength of another flux
     reservoir
@@ -643,12 +643,13 @@ def get_scale_with_flux(
     if c.isotopes:
         s_c = get_ic(c.source, icl)
         s_l = get_ic(c.source, icl, isotopes=True)
-        exl = (f"(\n"
-               f"{ind3}{cfn}.scale\n"
-               f"{ind3}* {fn}\n"
-               f"{ind3}* {s_l} / {s_c}\n"
-               f"{ind2})"
-               )
+        exl = (
+            f"(\n"
+            f"{ind3}{cfn}.scale\n"
+            f"{ind3}* {fn}\n"
+            f"{ind3}* {s_l} / {s_c}\n"
+            f"{ind2})"
+        )
         # exl = check_signal_2(exl, c)
         exl = exl + "  # scale with flux\n"
     else:
