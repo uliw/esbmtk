@@ -14,6 +14,7 @@
 
 * Overview
 
+Please note that the current code is under rapid development, and that this quick-start guide is not in sync. While the principle has not changed, the syntax shown below will not work without producing errors. An updated guide will be published once the API is stable.
 
 ESBMTK provides a couple of classes which are used to define a
 model. The classes are arranged in a hierarchical manner, starting

@@ -228,11 +228,8 @@ def carbonate_system_2_ode(
 
     # print(f"i={i}, ca2={ca2}, co3={co3}, ksp0 = {ksp0}")
     zsat = int(max((zsat0 * np.log(ca2 * co3 / ksp0)), zsat_min))  # eq2
-    if zsat > zmax:
-        zsat = zmax
-    if zsat < zsat_min:
-        zsat = int(zsat_min)
-
+    zsat = min(zsat, zmax)
+    zsat = max(zsat, zsat_min)
     # print(
     #     f"i = {i}, zsat0 = {zsat0:.1f}, ca= {ca:.2e}, co3 = {co3:.2e}, ksp0 = {ksp0:.2e}, zsat_min = {zsat_min:.1f}"
     # )
@@ -243,11 +240,8 @@ def carbonate_system_2_ode(
     # ---- Get fractional areas
     B_AD = Bm / AD
 
-    if zcc > zmax:
-        zcc = int(zmax)
-    if zcc < zsat_min:
-        zcc = zsat_min
-
+    zcc = min(zcc, zmax)
+    zcc = max(zcc, zsat_min)
     A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
     A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
     A_zcc_zmax = depth_area_table[zcc] - depth_area_table[zmax]
@@ -286,8 +280,7 @@ def carbonate_system_2_ode(
     # integrate saturation difference over area
     BPDC = kc * area_p.dot(diff)
 
-    if BPDC < 0:
-        BPDC = 0
+    BPDC = max(BPDC, 0)
     #     d_zsnow = 0
     # print(f"BPDC = {BPDC:.2e}")
     # eq 4 dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3

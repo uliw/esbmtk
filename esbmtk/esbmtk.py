@@ -252,11 +252,7 @@ class Model(esbmtkBase):
 
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
-        if not (
-            self.concentration_unit == "mol/kg"
-            or self.concentration_unit == "mol/l"
-            or self.concentration_unit == "mol/liter"
-        ):
+        if self.concentration_unit not in ["mol/kg", "mol/l", "mol/liter"]:
             raise ValueError(
                 f"{self.concentration_unit} must be either mol/l or mol/kg"
             )
@@ -416,26 +412,10 @@ class Model(esbmtkBase):
                 print(f"{k} must be an integer number")
                 raise ValueError(f"{k} must be an integer number")
 
-        if "stride" in kwargs:
-            stride = kwargs["stride"]
-        else:
-            stride = self.stride
-
-        if "start" in kwargs:
-            start = kwargs["start"]
-        else:
-            start = 0
-
-        if "stop" in kwargs:
-            stop = kwargs["stop"]
-        else:
-            stop = self.steps
-
-        if "append" in kwargs:
-            append = kwargs["append"]
-        else:
-            append = False
-
+        stride = kwargs.get("stride", self.stride)
+        start = kwargs.get("start", 0)
+        stop = kwargs.get("stop", self.steps)
+        append = kwargs.get("append", False)
         prefix = ""
 
         print(f"start = {start}, stop = {stop}, stride={stride}, append ={append}")
@@ -514,7 +494,7 @@ class Model(esbmtkBase):
         for r in self.lvr:
             r.__merge_temp_results__()
 
-    def plot(self, pl: list = [], **kwargs) -> None:
+    def plot(self, pl: list = None, **kwargs) -> None:
         """Plot all objects specified in pl
 
         M.plot([sb.PO4, sb.DIC],fn=test.pdf)
@@ -522,11 +502,9 @@ class Model(esbmtkBase):
         fn is optional
         """
 
-        if "fn" in kwargs:
-            filename = kwargs["fn"]
-        else:
-            filename = f"{self.n}.pdf"
-
+        if pl is None:
+            pl = []
+        filename = kwargs.get("fn", f"{self.n}.pdf")
         noo: int = len(pl)
         size, geo = plot_geometry(noo)  # adjust layout
         fig, ax = plt.subplots(geo[0], geo[1])  # row, col
@@ -578,20 +556,12 @@ class Model(esbmtkBase):
 
         # put direction dictionary into a list
         for r in self.lor:  # loop over reservoirs
-            r.lodir = []
-            for f in r.lof:  # loop over fluxes
-                a = r.lio[f]
-                r.lodir.append(a)
-
+            r.lodir = [r.lio[f] for f in r.lof]
         # take care of objects which require a delayed init
         for o in self.lto:
             o.__delayed_init__()
 
-        if "solver" not in kwargs:
-            solver = "python"
-        else:
-            solver = kwargs["solver"]
-
+        solver = "python" if "solver" not in kwargs else kwargs["solver"]
         self.solver = solver
         if self.number_of_solving_iterations > 0:
 
@@ -601,16 +571,13 @@ class Model(esbmtkBase):
                 )
                 self.__run_solver__(solver)
 
-                print(f"Restarting model")
+                print("Restarting model")
                 self.restart()
 
             print("Merge results")
             self.merge_temp_results()
             self.steps = self.number_of_datapoints
-            # after merging, the model steps = number_of_datapoints
-        # print("Saving data")
-        # self.save_data(start=0, stop=self.number_of_datapoints, stride=1)
-        # print("Done Saving")
+                # after merging, the model steps = number_of_datapoints
         else:
             self.__run_solver__(solver, kwargs)
 
@@ -711,21 +678,9 @@ class Model(esbmtkBase):
         ode_system = setup_ode(self)  # create ode system instance
         self.ode_system = ode_system
 
-        if "method" in kwargs:
-            method = kwargs["method"]
-        else:
-            method = "RK23"
-
-        if "stype" in kwargs:
-            stype = kwargs["stype"]
-        else:
-            stype = "solve_ivp"
-
-        if "max_step" in kwargs:
-            max_step = kwargs["max_step"]
-        else:
-            max_step = 1e6
-
+        method = kwargs["method"] if "method" in kwargs else "RK23"
+        stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
+        max_step = kwargs["max_step"] if "max_step" in kwargs else 1e6
         if stype == "solve_ivp":
             results = solve_ivp(
                 ode_system.eqs,
@@ -778,11 +733,7 @@ class Model(esbmtkBase):
                         #       f"len(fp) = {len(od[0 : self.ode_system.i])}, "
                         #       f"len(xp) = {len(self.ode_system.t)}, "
                         #       f"i = {self.ode_system.i}")
-                        od = np.interp(
-                            self.time,
-                            self.ode_system.t,
-                            od[0 : self.ode_system.i],
-                        )
+                        od = np.interp(self.time, self.ode_system.t, od[:self.ode_system.i])
                         setattr(cs, k, od)
 
         else:
@@ -865,17 +816,10 @@ class Model(esbmtkBase):
 
         for f in self.lof:  # loop over flux list
 
-            if find_matching_strings(f.full_name, fby):
-                if check_exlusion:
-                    if exclude not in f.full_name:
-                        rl.append(f)
-                        if not return_list:
-                            print(f"{f.full_name}")
-                else:
-                    rl.append(f)
-                    if not return_list:
-                        print(f"{f.full_name}")
-
+            if find_matching_strings(f.full_name, fby) and (check_exlusion and exclude not in f.full_name or not check_exlusion):
+                rl.append(f)
+                if not return_list:
+                    print(f"{f.full_name}")
         if not return_list:
             rl = None
 
@@ -901,28 +845,15 @@ class Model(esbmtkBase):
             raise ValueError("use filter_by instead of filter")
 
         print(f"fby = {fby}")
-        self.cg_list: list = []
-        # extract all connection groups. Note that loc contains all connections
-        # i.e., not connection groups.
-        for c in list(self.loc):
-            # if "." in c.full_name:
-            # if c.register not in self.cg_list and c.register != "None":
-            if c not in self.cg_list and c.register != "None":
-                self.cg_list.append(c)
-            else:  # this is a regular connnection
-                self.cg_list.append(c)
-
+        self.cg_list: list = list(list(self.loc))
         print(f"\n --- Connection Group Summary -- filtered by {fby}\n")
         print(f"       run the following command to see more details:\n")
 
         # test if all words of the fby list occur in c.full_name. If yes,
 
         for c in self.cg_list:
-            if not fby:
+            if fby and find_matching_strings(c.full_name, fby) or not fby:
                 print(f"{c.full_name}.info()")
-            else:
-                if find_matching_strings(c.full_name, fby):
-                    print(f"{c.full_name}.info()")
 
         print("")
 
@@ -1137,7 +1068,6 @@ class ReservoirBase(esbmtkBase):
         return self.__set_data__(i, value)
 
     def __call__(self) -> None:  # what to do when called as a function ()
-        pass
         return self
 
     def __getitem__(self, i: int) -> np.ndarray:
@@ -1245,14 +1175,10 @@ class ReservoirBase(esbmtkBase):
             # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.fa[1]  # l
 
         file_path = Path(fn)
-        if append:
-            if file_path.exists():
-                df.to_csv(file_path, header=False, mode="a", index=False)
-            else:
-                df.to_csv(file_path, header=True, mode="w", index=False)
+        if append and file_path.exists():
+            df.to_csv(file_path, header=False, mode="a", index=False)
         else:
             df.to_csv(file_path, header=True, mode="w", index=False)
-
         return df
 
     def __sub_sample_data__(self, stride) -> None:
@@ -1399,9 +1325,9 @@ class ReservoirBase(esbmtkBase):
         if obj.isotopes:
             obj.fa[1] = df.iloc[0, col + 1]
             obj.fa[2] = df.iloc[0, col + 2]
-            col = col + 2
+            col += 2
         else:
-            col = col + 1
+            col += 1
 
         return col
 
@@ -1421,9 +1347,9 @@ class ReservoirBase(esbmtkBase):
         if obj.isotopes:
             obj.l[:] = df.iloc[-3, col + 1]
             obj.c[:] = df.iloc[-3, col + 2]
-            col = col + 2
+            col += 2
         else:
-            col = col + 1
+            col += 1
 
         return col
 
@@ -1499,11 +1425,7 @@ class ReservoirBase(esbmtkBase):
 
         """
         off: str = "  "
-        if "index" not in kwargs:
-            index = 0
-        else:
-            index = kwargs["index"]
-
+        index = 0 if "index" not in kwargs else kwargs["index"]
         if "indent" not in kwargs:
             indent = 0
             ind = ""
@@ -1698,7 +1620,6 @@ class Reservoir(ReservoirBase):
         else:
             if isinstance(self.parent, ReservoirGroup):
                 self.swc = self.parent.swc
-                self.density = self.swc.density
             else:
                 if isinstance(self.seawater_parameters, str):
                     temperature = 25
@@ -1725,8 +1646,7 @@ class Reservoir(ReservoirBase):
                     salinity=salinity,
                     register=self,
                 )
-                self.density = self.swc.density
-
+            self.density = self.swc.density
         if self.mass == "None":
             if isinstance(self.concentration, (str, Q_)):
                 c = Q_(self.concentration)
@@ -1922,10 +1842,7 @@ class Flux(esbmtkBase):
         elif isinstance(self.rate, (int, float)):
             fluxrate: float = self.rate
 
-        if self.delta:
-            li = get_l_mass(fluxrate, self.delta, self.sp.r)
-        else:
-            li = 0
+        li = get_l_mass(fluxrate, self.delta, self.sp.r) if self.delta else 0
         self.fa: np.ndarray = np.array([fluxrate, li])
 
         # in case we want to keep the flux data
@@ -2002,7 +1919,7 @@ class Flux(esbmtkBase):
 
         self.m[i] = value[0]
         self.l[i] = value[1]
-        self.fa = value[0:4]
+        self.fa = value[:4]
 
     def __set_without_isotopes__(self, i: int, value: np.ndarray) -> None:
         """Write data by index"""
@@ -2035,12 +1952,7 @@ class Flux(esbmtkBase):
         indent :int = 0 indentation
 
         """
-        off: str = "  "
-        if "index" not in kwargs:
-            index = 0
-        else:
-            index = kwargs["index"]
-
+        index = 0 if "index" not in kwargs else kwargs["index"]
         if "indent" not in kwargs:
             indent = 0
             ind = ""
@@ -2054,20 +1966,25 @@ class Flux(esbmtkBase):
         show_data(self, index=index, indent=indent)
 
         if len(self.lop) > 0:
-            print(f"\n{ind}Process(es) acting on this flux:")
-            for p in self.lop:
-                print(f"{off}{ind}{p.__repr__()}")
-
-            print("")
-            print(
-                "Use help on the process name to get an explanation what this process does"
-            )
-            if self.register == "None":
-                print(f"e.g., help({self.lop[0].n})")
-            else:
-                print(f"e.g., help({self.register.name}.{self.lop[0].name})")
+            self._extracted_from_info_27(ind)
         else:
             print("There are no processes for this flux")
+
+    # TODO Rename this here and in `info`
+    def _extracted_from_info_27(self, ind):
+        print(f"\n{ind}Process(es) acting on this flux:")
+        off: str = "  "
+        for p in self.lop:
+            print(f"{off}{ind}{p.__repr__()}")
+
+        print("")
+        print(
+            "Use help on the process name to get an explanation what this process does"
+        )
+        if self.register == "None":
+            print(f"e.g., help({self.lop[0].n})")
+        else:
+            print(f"e.g., help({self.register.name}.{self.lop[0].name})")
 
     def __plot__(self, M: Model, ax) -> None:
         """Plot instructions.
@@ -2209,12 +2126,11 @@ class SourceSink(esbmtkBase):
 
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
+        elif self.register == "None":
+            self.pt = self.name
         else:
-            if self.register == "None":
-                self.pt = self.name
-            else:
-                self.pt: str = f"{self.register.name}_{self.n}"
-                self.groupname = self.register.name
+            self.pt: str = f"{self.register.name}_{self.n}"
+            self.groupname = self.register.name
 
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision

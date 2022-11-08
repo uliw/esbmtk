@@ -62,15 +62,11 @@ class input_parsing(object):
 
         for key in lrk:
             if isinstance(key, list):
-                has_key = 0
-                for k in key:
-                    if k in kwargs and kwargs[k] != "None":
-                        has_key += 1
+                has_key = sum(k in kwargs and kwargs[k] != "None" for k in key)
                 if has_key != 1:
                     raise ValueError(f"give only one of {key}")
-            else:
-                if key not in kwargs:
-                    raise ValueError(f"{key} is a mandatory keyword")
+            elif key not in kwargs:
+                raise ValueError(f"{key} is a mandatory keyword")
 
     def __register_variable_names__(
         self,
@@ -83,7 +79,7 @@ class input_parsing(object):
         to avoid name conflicts.
         """
         for key, value in defaults.items():
-            setattr(self, "_" + key, value[0])
+            setattr(self, f"_{key}", value[0])
             setattr(self, key, value[0])
 
         # save kwargs dict
@@ -116,7 +112,7 @@ class input_parsing(object):
 
             defaults[key][0] = value  # update defaults dictionary
             setattr(self, key, value)  # update instance variables
-            setattr(self, "_" + key, value)  # and their property shadows
+            setattr(self, f"_{key}", value)
 
     def __register_name_new__(self) -> None:
         """if self.parent is set, register self as attribute of self.parent,
@@ -128,18 +124,16 @@ class input_parsing(object):
             self.full_name = self.name
             reg = self
         else:
-            self.full_name = self.parent.full_name + "." + self.name
+            self.full_name = f"{self.parent.full_name}.{self.name}"
             reg = self.parent.model
-            # check for naming conflicts
             if self.full_name in reg.lmo:
                 raise NameError(f"{self.full_name} is a duplicate name in reg.lmo")
-            else:
-                # register with model
-                reg.lmo.append(self.full_name)
-                reg.lmo2.append(self)
-                reg.dmo.update({self.full_name: self})
-                setattr(self.parent, self.name, self)
-                self.kwargs["full_name"] = self.full_name
+            # register with model
+            reg.lmo.append(self.full_name)
+            reg.lmo2.append(self)
+            reg.dmo.update({self.full_name: self})
+            setattr(self.parent, self.name, self)
+            self.kwargs["full_name"] = self.full_name
         self.reg_time = time.monotonic()
 
 
@@ -186,63 +180,49 @@ class esbmtkBase(input_parsing):
             if not isinstance({k}, esbmtkBase):
                 # check if this is not another esbmtk object
                 if "esbmtk" in str(type(v)):
-                    m = m + f"    {k} = {v.name},\n"
-                # if this is a string
+                    m = f"{m}    {k} = {v.name},\n"
                 elif isinstance(v, str):
-                    m = m + f"    {k} = '{v}',\n"
-                # if this is a quantity
+                    m = f"{m}    {k} = '{v}',\n"
                 elif isinstance(v, Q_):
-                    m = m + f"    {k} = '{v}',\n"
-                # if this is a list
+                    m = f"{m}    {k} = '{v}',\n"
                 elif isinstance(v, (list, np.ndarray)):
-                    m = m + f"    {k} = '{v[0:3]}',\n"
-                # all other cases
+                    m = f"{m}    {k} = '{v[:3]}',\n"
                 else:
-                    m = m + f"    {k} = {v},\n"
+                    m = f"{m}    {k} = {v},\n"
 
-        m = m + ")"
-
-        if log == 0 and tdiff < 1:
-            m = ""
-
+        m = "" if log == 0 and tdiff < 1 else f"{m})"
         return m
 
-    def __str__(self, kwargs={}):
+    def __str__(self, kwargs=None):
         """Print the basic parameters for this class when called via the print method
         Optional arguments
 
         indent :int = 0 printing offset
 
         """
+        if kwargs is None:
+            kwargs = {}
         from esbmtk import Q_
 
         m: str = ""
         off: str = "  "
 
-        if "indent" in kwargs:
-            ind: str = kwargs["indent"] * " "
-        else:
-            ind: str = ""
-
-        if "index" in kwargs:
-            index = int(kwargs["index"])
-        else:
-            index = -2
-
+        ind: str = kwargs["indent"] * " " if "indent" in kwargs else ""
+        index = int(kwargs["index"]) if "index" in kwargs else -2
         m = f"{ind}{self.name} ({self.__class__.__name__})\n"
         for k, v in self.kwargs.items():
             if not isinstance({k}, esbmtkBase):
                 # check if this is not another esbmtk object
                 if "esbmtk" in str(type(v)):
                     pass
-                elif isinstance(v, str) and not (k == "name"):
-                    m = m + f"{ind}{off}{k} = {v}\n"
+                elif isinstance(v, str) and k != "name":
+                    m = f"{m}{ind}{off}{k} = {v}\n"
                 elif isinstance(v, Q_):
-                    m = m + f"{ind}{off}{k} = {v}\n"
+                    m = f"{m}{ind}{off}{k} = {v}\n"
                 elif isinstance(v, np.ndarray):
-                    m = m + f"{ind}{off}{k}[{index}] = {v[index]:.2e}\n"
+                    m = f"{m}{ind}{off}{k}[{index}] = {v[index]:.2e}\n"
                 elif k != "name":
-                    m = m + f"{ind}{off}{k} = {v}\n"
+                    m = f"{m}{ind}{off}{k} = {v}\n"
 
         return m
 

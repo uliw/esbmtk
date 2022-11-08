@@ -40,14 +40,13 @@ def get_initial_conditions(M: Model) -> tuple[list, dict, list, list]:
     for r in M.lic:
         # collect all reservoirs that have initial conditions
         if len(r.lof) > 0 or r.rtype == "computed" or r.rtype == "passive":
+            R.append(r.c[0])  # add initial condition
             if r.isotopes:
-                R.append(r.c[0])  # add initial condition
                 R.append(r.l[0])  # add initial condition for l
-                icl.update({r: [i, i + 1]})  # record index position
+                icl[r] = [i, i + 1]
                 i += 2
             else:
-                R.append(r.c[0])  # add initial condition for c
-                icl.update({r: [i, i]})  # record index position
+                icl[r] = [i, i]
                 i += 1
 
     return R, icl, cpl, ipl
@@ -59,7 +58,7 @@ def write_reservoir_equations(
     rel: str,  # string with reservoir names used in return function
     ind2: str,  # indent 2 times
     ind3: str,  # indent 3 times
-) -> str:  # updated list of reservoirs
+) -> str:    # updated list of reservoirs
     """Loop over reservoirs and their fluxes to build the reservoir equation"""
 
     from esbmtk import ReservoirGroup
@@ -80,19 +79,17 @@ def write_reservoir_equations(
                 sign = "+"
 
             fname = f'{flux.full_name.replace(".", "_")}'
-            fex = fex + f"{ind3}{sign} {fname}\n"
+            fex = f"{fex}{ind3}{sign} {fname}\n"
 
         # check if reservoir requires carbonate burial fluxes
-        if isinstance(r.parent, ReservoirGroup):
-            if r.parent.has_cs2:
-                if r.species.name == "DIC" or r.species.name == "TA":
-                    fn = f"{r.full_name}.burial".replace(".", "_")
-                    fex = f"{fex}{ind3}- {fn}\n"
+        if isinstance(r.parent, ReservoirGroup) and r.parent.has_cs2 and r.species.name in ["DIC", "TA"]:
+            fn = f"{r.full_name}.burial".replace(".", "_")
+            fex = f"{fex}{ind3}- {fn}\n"
 
         # avoid reservoirs without active fluxes
         if len(r.lof) > 0:
             eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
-            rel = rel + f"{ind3}{name},\n"
+            rel = f"{rel}{ind3}{name},\n"
 
     return rel
 
@@ -103,7 +100,7 @@ def write_reservoir_equations_with_isotopes(
     rel: str,  # string with reservoir names returned by setup_ode
     ind2: str,  # indent 2 times
     ind3: str,  # indent 3 times
-) -> str:  # updated list of reservoirs
+) -> str:    # updated list of reservoirs
     """Loop over reservoirs and their fluxes to build the reservoir equation"""
 
     from esbmtk import ReservoirGroup
@@ -126,21 +123,19 @@ def write_reservoir_equations_with_isotopes(
                     sign = "+"
 
                 fname = f'{flux.full_name.replace(".", "_")}_l'
-                fex = fex + f"{ind3}{sign} {fname}\n"
+                fex = f"{fex}{ind3}{sign} {fname}\n"
 
             # check if reservoir requires carbonate burial fluxes
-            if isinstance(r.parent, ReservoirGroup):
-                if r.parent.has_cs2:
-                    if r.species.name == "DIC":
-                        fn = f"{r.full_name}.burial".replace(".", "_")
-                        fn = f"{fn}_l"
-                        fex = f"{fex}{ind3}- {fn}\n"
+            if isinstance(r.parent, ReservoirGroup) and r.parent.has_cs2 and r.species.name == "DIC":
+                fn = f"{r.full_name}.burial".replace(".", "_")
+                fn = f"{fn}_l"
+                fex = f"{fex}{ind3}- {fn}\n"
 
             # avoid reservoirs without active fluxes
             if len(r.lof) > 0:
                 print(f"Adding: {name} to rel")
                 eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
-                rel = rel + f"{ind3}{name},\n"
+                rel = f"{rel}{ind3}{name},\n"
 
     return rel
 
@@ -216,8 +211,7 @@ class setup_ode():
 
         eqs.write(f"{ind2}{M.name} = M\n")
 
-        sep = "# ---------------- write computed reservoir equations -------- #\n"
-        sep = sep + "# that do not depend on fluxes"
+        sep = "# ---------------- write computed reservoir equations -------- #\n" + "# that do not depend on fluxes"
 
         eqs.write(f"\n{sep}\n")
 
@@ -225,12 +219,10 @@ class setup_ode():
 
             if r.ftype == "cs1":
                 rel = write_cs_1(eqs, r, icl, rel, ind2, ind3)
-            elif r.ftype == "cs2":
-                pass  # see below
-            else:
+            elif r.ftype != "cs2":
                 raise ValueError(f"{r.ftype} is undefined")
 
-        flist = list()
+        flist = []
 
         sep = "# ---------------- write all flux equations ------------------- #"
         eqs.write(f"\n{sep}\n")
@@ -248,10 +240,7 @@ class setup_ode():
 
                     if flux.parent.isotopes:  # add F_l if necessary
                         fn = f"{fn}, {fn}_l"
-                        eqs.write(f"{ind2}{fn} = {ex}\n")
-
-                    else:
-                        eqs.write(f"{ind2}{fn} = {ex}\n")
+                    eqs.write(f"{ind2}{fn} = {ex}\n")
 
                 else:  # all others types
                     eqs.write(f"{ind2}{fn} = {ex}\n")
@@ -261,8 +250,8 @@ class setup_ode():
                 if flux.save_flux_data:
                     eqs.write(f"{ind2}{flux.full_name}.m[self.i] = {ex}\n")
 
-        sep = "# ---------------- write computed reservoir equations -------- #\n"
-        sep = sep + "# that do depend on fluxes"
+        sep = "# ---------------- write computed reservoir equations -------- #\n" + "# that do depend on fluxes"
+
         eqs.write(f"\n{sep}\n")
 
         for r in M.lpc_r:  # All virtual reservoirs need to be in this list
@@ -310,12 +299,12 @@ class setup_ode():
 
         eqs.write(f"{ind2}]\n")
 
-        # if len(R) != len(rel.split(",")) - 1:
-        #     raise ValueError(
-        #         f"number of initial conditions ({len(R)})"
-        #         f"does not match number of return values"
-        #         f"({len(rel.split(','))-1}')\n\n"
-        #     )
+            # if len(R) != len(rel.split(",")) - 1:
+            #     raise ValueError(
+            #         f"number of initial conditions ({len(R)})"
+            #         f"does not match number of return values"
+            #         f"({len(rel.split(','))-1}')\n\n"
+            #     )
 
     return fqfn
 
@@ -374,7 +363,7 @@ def check_signal_2(ex: str, c: tp.union(Connection, Connect)) -> str:
         else:
             raise ValueError(f"stype={c.signal.stype} not implemented")
 
-        ex = ex + f" {sign} {c.signal.full_name}(t)[0]  # Signal"
+        ex += f" {sign} {c.signal.full_name}(t)[0]  # Signal"
 
     return ex
 
@@ -399,11 +388,7 @@ def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
     # print(f"r = {r.full_name}")
 
     if r in icl:
-        s = f"R[{icl[r][0]}]"
-        if isotopes:
-            s = f"R[{icl[r][1]}]"
-
-    # sources&sinks are static, so not in list of initial conditions
+        s = f"R[{icl[r][1]}]" if isotopes else f"R[{icl[r][0]}]"
     elif isinstance(r, (Source, Sink)):
         s = f"{r.full_name}.c"
         if isotopes:
@@ -435,7 +420,7 @@ def write_cs_1(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> 
         f"{ind3}self.i,\n"
         f"{ind3}max_i)  # cs1\n"
     )
-    rel = rel + f"{ind3}{fname},\n"
+    rel += f"{ind3}{fname},\n"
 
     return rel
 
@@ -485,8 +470,8 @@ def write_cs_2(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> 
         f" {get_ic(r.parent.zsnow, icl)} = {zmax}\n"
     )
     # add Hplus to the list of return values
-    rel = rel + f"{ind3}{fname},\n"
-    rel = rel + f"{ind3}{zname},\n"
+    rel += f"{ind3}{fname},\n"
+    rel = f"{rel}{ind3}{zname},\n"
 
     return rel
 
@@ -508,7 +493,7 @@ def get_regular_flux(
 
     ex = f"{flux.full_name}.rate"
     ex = check_signal_2(ex, c)
-    ex = ex + "  # fixed rate"
+    ex = f"{ex}  # fixed rate"
 
     if c.isotopes:
         # r, d and a are typically only a few decimal places so we use them
@@ -522,28 +507,10 @@ def get_regular_flux(
                 f"{ind3}/({r} * ({d} + 1000) + 1000)\n"
                 f"{ind2})"
             )
-            exl = exl + "  # fixed rate with delta"
+            exl = f"{exl}  # fixed rate with delta"
 
         elif c.alpha != "None":
-            if c.alpha > 1.1 or c.alpha < 0.9:
-                raise ValueError(
-                    f"alpha needs to be given as fractional value not in permil\n"
-                    f"e.g., a=1 -< no fractionation\n"
-                )
-            r = c.source.species.r
-            a = c.alpha
-            s_c = get_ic(c.source, icl)
-            s_l = get_ic(c.source, icl, isotopes=True)
-
-            exl = (
-                f"(\n"
-                f"{ind3} - {s_l} * {s_c}\n"
-                f"{ind3}/({a} * {s_l} - {a} * {s_c} - {s_l})"
-                f"{ind2})"
-            )
-            exl = exl + "  # fixed rate with alpha"
-        else:  # apply rate
-            pass
+            exl = _extracted_from_get_regular_flux_35(c, icl, ind3, ind2)
         # this will probably not work
         exl = check_signal_2(exl, c)
 
@@ -551,6 +518,24 @@ def get_regular_flux(
         exl = ""
 
     return ex, exl
+
+
+# TODO Rename this here and in `get_regular_flux`
+def _extracted_from_get_regular_flux_35(c, icl, ind3, ind2):
+    if c.alpha > 1.1 or c.alpha < 0.9:
+        raise ValueError(
+            f"alpha needs to be given as fractional value not in permil\n"
+            f"e.g., a=1 -< no fractionation\n"
+        )
+    r = c.source.species.r
+    a = c.alpha
+    s_c = get_ic(c.source, icl)
+    s_l = get_ic(c.source, icl, isotopes=True)
+
+    result = f"(\n{ind3} - {s_l} * {s_c}\n{ind3}/({a} * {s_l} - {a} * {s_c} - {s_l}){ind2})"
+
+    result = f"{result}  # fixed rate with alpha"
+    return result
 
 
 def get_scale_with_concentration(
@@ -570,14 +555,14 @@ def get_scale_with_concentration(
     s_c = get_ic(c.source, icl)  # get index to concentration
     ex = f"{cfn}.scale * {s_c}"  # {c.id} scale with conc in {c.source.full_name}"
     ex = check_signal_2(ex, c)
-    ex = ex + "  # scale with concentration"
+    ex = f"{ex}  # scale with concentration"
 
     if c.isotopes:
         # get c of light isotope in source
         s_l = get_ic(c.source, icl, isotopes=True)  # R[x]
         exl = f"{cfn}.scale * {s_l}"
         exl = check_signal_2(exl, c)
-        exl = exl + "  # scale with concentration"
+        exl = f"{exl}  # scale with concentration"
     else:
         exl = ""
 
@@ -599,18 +584,22 @@ def get_scale_with_mass(
     """
 
     s_c = get_ic(c.source, icl)  # get index to concentration
-    ex = f"{cfn}.scale * {c.source.full_name}.volume * {s_c}"
-    ex = check_signal_2(ex, c)
-    ex = ex + "  # scale with mass"
+    ex = _extracted_from_get_scale_with_mass_21(cfn, c, s_c)
     if c.isotopes:
         s_l = get_ic(c.source, icl, isotopes=True)  # get index to concentration
-        exl = f"{cfn}.scale * {c.source.full_name}.volume * {s_l}"
-        exl = check_signal_2(exl, c)
-        exl = exl + "  # scale with mass"
+        exl = _extracted_from_get_scale_with_mass_21(cfn, c, s_l)
     else:
         exl = ""
 
     return ex, exl
+
+
+# TODO Rename this here and in `get_scale_with_mass`
+def _extracted_from_get_scale_with_mass_21(cfn, c, arg2):
+    result = f"{cfn}.scale * {c.source.full_name}.volume * {arg2}"
+    result = check_signal_2(result, c)
+    result = f"{result}  # scale with mass"
+    return result
 
 
 def get_scale_with_flux(
@@ -633,7 +622,7 @@ def get_scale_with_flux(
     fn = f"{p.full_name.replace('.', '_')}__F"
     ex = f"{cfn}.scale * {fn}"
     ex = check_signal_2(ex, c)
-    ex = ex + "  # scale with flux"
+    ex = f"{ex}  # scale with flux"
 
     """ The flux for the light isotope will computed as follows:
     We will use the mass of the flux we or scaling, but that we will set the
@@ -692,7 +681,7 @@ def get_weathering(
         f"{ind2})"
     )
     ex = check_signal_2(ex, c)
-    ex = ex + "  # weathering"
+    ex = f"{ex}  # weathering"
 
     if c.isotopes:
         # get isotope ratio of source
@@ -705,7 +694,7 @@ def get_weathering(
 
         fn = flux.full_name.replace(".", "_")
         exl = f"{fn} * {s_l} / {s_c}"
-        exl = exl + "  # weathering + isotopes"
+        exl = f"{exl}  # weathering + isotopes"
     else:
         exl = ""
 

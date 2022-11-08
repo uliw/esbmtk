@@ -1,24 +1,24 @@
-- [ESBMTK - An Earth-sciences box modeling toolkit](#org9ceb49f)
-- [News](#orge029246)
-- [Contributing](#orgeec6fae)
-- [Installation](#orga516430)
-- [Documentation](#org5f551d0)
-- [Todo](#org2c61b62)
-- [License](#org6deeb2d)
+- [ESBMTK - An Earth-sciences box modeling toolkit](#org937b7e2)
+- [News](#org6c82ca5)
+- [Contributing](#org84c84e2)
+- [Installation](#org11d5a60)
+- [Documentation](#org5985c88)
+- [Todo](#org2bb14df)
+- [License](#org619ece0)
 
 
-<a id="org9ceb49f"></a>
+<a id="org937b7e2"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
-ESBMTK is a python library that aims to simplify typical box modeling projects in the Earth-Sciences. The general focus is to make box modeling more approachable for classroom teaching. Performance and scalability are currently no priority. Specifically, the solver is just a simple forward Euler scheme, so stiff problems are not handled gracefully.
-
-At present, it will calculate masses/concentrations in reservoirs and fluxes, including isotope ratios. It provides a variety of classes that allow the creation and manipulation of input signals and the generation of graphical results.
+ESBMTK is a python library that aims to simplify typical box modeling projects in the Earth-Sciences. The general focus is to make box modeling more approachable for classroom teaching. At present the code is under active development and the API changes frequently.
 
 
-<a id="orge029246"></a>
+<a id="org6c82ca5"></a>
 
 # News
+
+-   0.9.0.0 Moved to odepack based backend. Removed now defunct code.
 
 -   0.8.0.0
     -   Cleanup of naming scheme which is now strictly hierarchical.
@@ -136,14 +136,14 @@ At present, it will calculate masses/concentrations in reservoirs and fluxes, in
 -   Oct. 25<sup>th</sup>, Initial release on github.
 
 
-<a id="orgeec6fae"></a>
+<a id="org84c84e2"></a>
 
 # Contributing
 
 Don't be shy. Contributing is as easy as finding bugs by using the code, or maybe you want to add a new process code? If you have plenty of time to spare, ESMBTK could use a solver for stiff problems, or a graphical interface ;-) See the todo section for ideas.
 
 
-<a id="orga516430"></a>
+<a id="org11d5a60"></a>
 
 # Installation
 
@@ -161,7 +161,7 @@ If you work with conda, it is recommended to install the above via conda. If you
 -   pip install esbmtk
 
 
-<a id="org5f551d0"></a>
+<a id="org5985c88"></a>
 
 # Documentation
 
@@ -170,7 +170,7 @@ The documentation is woefully out of date, at present, you best bet is the code 
 The API documentation is available at <https://uliw.github.io/esbmtk/esbmtk/index.html>
 
 
-<a id="org2c61b62"></a>
+<a id="org2bb14df"></a>
 
 # Todo
 
@@ -179,7 +179,7 @@ The API documentation is available at <https://uliw.github.io/esbmtk/esbmtk/inde
 -   do more testing
 
 
-<a id="org6deeb2d"></a>
+<a id="org619ece0"></a>
 
 # License
 
