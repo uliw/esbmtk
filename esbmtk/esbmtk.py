@@ -577,7 +577,7 @@ class Model(esbmtkBase):
             print("Merge results")
             self.merge_temp_results()
             self.steps = self.number_of_datapoints
-                # after merging, the model steps = number_of_datapoints
+            # after merging, the model steps = number_of_datapoints
         else:
             self.__run_solver__(solver, kwargs)
 
@@ -629,8 +629,6 @@ class Model(esbmtkBase):
                 f.__sub_sample_data__(stride)
 
     def __run_solver__(self, solver: str, kwargs: dict) -> None:
-        from .ODEINT_Solver import run_solver
-
         if solver == "numba":
             execute_e(
                 self,
@@ -639,18 +637,19 @@ class Model(esbmtkBase):
                 self.lpc_f,
                 self.lpc_r,
             )
-        elif solver == "odeint":
-            run_solver(self)
+        elif solver == "ode":
+            ode_solver(kwargs)
         elif solver == "ode_uli":
-            self.ode_uli(kwargs)
+            print("\n\n the solver type 'ode_uli' is deprecated, please use 'ode' \n\n")
+            self.ode_solver(kwargs)
         elif solver == "python":
             execute(self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
         else:
             raise ValueError(
-                f"Solver={solver} is unkknown, use 'python/numba/odeint/ode_uli'"
+                f"Solver={self.solver} is unkknown, use 'python/numba/odeint/ode'"
             )
 
-    def ode_uli(self, kwargs):
+    def ode_solver(self, kwargs):
         """Use the ode solver based on Uli's approach"""
         from esbmtk import Q_, write_equations_2, get_initial_conditions
         from scipy.integrate import odeint, solve_ivp
@@ -733,7 +732,9 @@ class Model(esbmtkBase):
                         #       f"len(fp) = {len(od[0 : self.ode_system.i])}, "
                         #       f"len(xp) = {len(self.ode_system.t)}, "
                         #       f"i = {self.ode_system.i}")
-                        od = np.interp(self.time, self.ode_system.t, od[:self.ode_system.i])
+                        od = np.interp(
+                            self.time, self.ode_system.t, od[: self.ode_system.i]
+                        )
                         setattr(cs, k, od)
 
         else:
@@ -816,7 +817,9 @@ class Model(esbmtkBase):
 
         for f in self.lof:  # loop over flux list
 
-            if find_matching_strings(f.full_name, fby) and (check_exlusion and exclude not in f.full_name or not check_exlusion):
+            if find_matching_strings(f.full_name, fby) and (
+                check_exlusion and exclude not in f.full_name or not check_exlusion
+            ):
                 rl.append(f)
                 if not return_list:
                     print(f"{f.full_name}")
