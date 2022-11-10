@@ -156,11 +156,10 @@ class ReservoirGroup(esbmtkBase):
             # reset values, otherwise creation of Reservoir will complain
             # about volume and geometry being defined
             self.geometry = "None"
-        else:
-            if isinstance(self.volume, str):
-                self.volume = Q_(self.volume)
-            elif not isinstance(self.volume, Q_):
-                raise ValueError("Volume must be string or quantity")
+        elif isinstance(self.volume, str):
+            self.volume = Q_(self.volume)
+        elif not isinstance(self.volume, Q_):
+            raise ValueError("Volume must be string or quantity")
 
         # register this group object in the global namespace
         # if self.mo.register == "local" and self.register == "None":
@@ -204,12 +203,10 @@ class ReservoirGroup(esbmtkBase):
             # now we loop trough all keys for this reservoir and see
             # if we find a corresponding item in the kwargs
             for kcd, vcd in self.cd[s.name].items():  # kcd  = delta, plot, etc
-                if kcd in self.kwargs:  # found entry delta
-                    # test if delta relates to any species
-                    if s in self.kwargs[kcd]:  # {SO4: xxx}
-                        # update the entry with the value provided in kwargs
-                        # self.cd['SO4_name']['delta'] = self.kwargs['delta'][SO4]
-                        self.cd[s.name][kcd] = self.kwargs[kcd][s]
+                if kcd in self.kwargs and s in self.kwargs[kcd]:
+                    # update the entry with the value provided in kwargs
+                    # self.cd['SO4_name']['delta'] = self.kwargs['delta'][SO4]
+                    self.cd[s.name][kcd] = self.kwargs[kcd][s]
 
         self.lor: list = []  # list of reservoirs in this group.
         # loop over all entries in species and create the respective reservoirs
@@ -332,18 +329,6 @@ class SourceSink(esbmtkBase):
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
         self.lio: list = []
 
-        # if self.register == "None":
-        #     self.pt = self.name
-        # else:
-        #     self.pt: str = f"{self.register.name}_{self.n}"
-        #     self.groupname = self.register.name
-
-        # if self.delta != "None":
-        #     self.isotopes = True
-
-        # if self.display_precision == 0:
-        #     self.display_precision = self.mo.display_precision
-
         self.__register_name_new__()
 
 
@@ -366,12 +351,8 @@ class SourceSinkGroup(esbmtkBase):
         from esbmtk import Model, Species, Source, Sink
 
         # provide a dict of all known keywords and their type
-        self.defaults: dict[str, list[any, tuple]] = {
-            "name": ["None", (str)],
-            "species": ["None", (str, list)],
-            "delta": [dict(), (dict)],
-            "register": ["None", (str, Model)],
-        }
+        self.defaults: dict[str, list[any, tuple]] = {"name": ["None", (str)], "species": ["None", (str, list)], "delta": [{}, dict], "register": ["None", (str, Model)]}
+
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species", "register"]
@@ -399,11 +380,7 @@ class SourceSinkGroup(esbmtkBase):
             if not isinstance(s, Species):
                 raise ValueError(f"{s.n} needs to be a valid species name")
 
-            if s in self.delta:
-                delta = self.delta[s]
-            else:
-                delta = "None"
-
+            delta = self.delta[s] if s in self.delta else "None"
             if type(self).__name__ == "SourceGroup":
                 a = Source(
                     name=f"{s.name}",
@@ -644,10 +621,8 @@ class Signal(esbmtkBase):
         elif "filename" in self.kwargs:  # use an external data set
             self.length = self.__int_ext_data__()
         else:
-            raise ValueError(
-                f"argument needs to be either square/pyramid, "
-                f"or an ExternalData object. "
-            )
+            raise ValueError('argument needs to be either square/pyramid, or an ExternalData object. ')
+
 
         # create a dummy flux we can act up
         self.nf: Flux = Flux(
@@ -669,6 +644,7 @@ class Signal(esbmtkBase):
         dt1 = int((self.st - self.mo.offset - self.mo.start))
         dt2 = int((self.st + self.duration - self.mo.stop - self.mo.offset))
 
+        # This fails if actual model steps != dt
         model_start_index = int(max(insert_start_time / self.mo.dt, 0))
         model_stop_index = int(min((self.mo.steps + dt2 / self.mo.dt), self.mo.steps))
         signal_start_index = int(min(dt1, 0) * -1)
@@ -690,9 +666,10 @@ class Signal(esbmtkBase):
             self.nf.m[model_start_index:model_stop_index] = self.s_m[
                 signal_start_index:signal_stop_index
             ]
-            self.nf.l[model_start_index:model_stop_index] = self.s_l[
-                signal_start_index:signal_stop_index
-            ]
+            if self.nf.isotopes:
+                self.nf.l[model_start_index:model_stop_index] = self.s_l[
+                    signal_start_index:signal_stop_index
+                ]
 
         return self.nf
 
@@ -798,15 +775,12 @@ class Signal(esbmtkBase):
 
         # read external dataset
         df = pd.read_csv(self.filename)
+        # print(f"df = {df.head()}")
 
         # get unit information from each header
         xh = df.columns[0].split("[")[1].split("]")[0]
         yh = df.columns[1].split("[")[1].split("]")[0]
-        if len(df.columns) > 2:
-            zh = df.columns[2].split("[")[1].split("]")[0]
-        else:
-            zh = None
-
+        zh = df.columns[2].split("[")[1].split("]")[0] if len(df.columns) > 2 else None
         # create the associated quantities
         xq = Q_(xh)
         yq = Q_(yh)
@@ -814,13 +788,29 @@ class Signal(esbmtkBase):
         # add these to the data we are are reading
         self.s_time: np.ndarray = df.iloc[:, 0].to_numpy() * xq
         self.s_data: np.ndarray = df.iloc[:, 1].to_numpy() * yq
+
         if zh:
             # delta is assumed to be without units
             self.s_delta: np.ndarray = df.iloc[:, 2].to_numpy()
 
         # map into model units, and strip unit information
         self.s_time = self.s_time.to(self.mo.t_unit).magnitude
-        self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
+        # self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
+
+        if isinstance(yq, Q_):
+            # test what type of Quantity we have
+            if yq.check(["dimensionless"]):  # dimensionless
+                self.s_data = self.s_data.magnitude 
+            elif yq.check(["volume]/[time"]):  # flux
+                self.s_data = self.s_data.to(self.mo.r_unit).magnitude 
+            elif yq.check(["mass] / [time"]):  # flux
+                self.s_data = self.s_data.to(self.mo.f_unit).magnitude 
+            elif yq.check(["[mass]/[volume]"]):  # concentration
+                self.s_data = self.s_data.to(self.mo.c_unit).magnitude 
+            else:
+                ValueError(f"No conversion to model units for {self.scale} specified")
+
+        self.s_data = self.s_data * self.scale
 
         self.st: float = self.s_time[0]  # start time
         self.et: float = self.s_time[-1]  # end time
@@ -838,7 +828,7 @@ class Signal(esbmtkBase):
         else:
             self.s_l: np.ndarray = np.zeros(num_steps)
 
-        return int(num_steps)
+        return num_steps
 
     def __apply_signal__(self) -> None:
         """In case we deal with a source  signal, we need
@@ -872,7 +862,7 @@ class Signal(esbmtkBase):
         ns.data.l = get_l_mass(ns.data.m, sd + od, ns.data.sp.r)
 
         ns.n: str = self.n + "_and_" + other.n
-        print(f"adding {self.n} to {other.n}, returning {ns.n}")
+        # print(f"adding {self.n} to {other.n}, returning {ns.n}")
         ns.data.n: str = self.n + "_and_" + other.n + "_data"
         ns.st = min(self.st, other.st)
         ns.l = max(self.l, other.l)
@@ -908,20 +898,20 @@ class Signal(esbmtkBase):
         ns.ds: np.ndarray = self.data.d[start:stop]
 
         diff = 0
-        for i in range(times):
-            start: int = start + ns.offset
-            stop: int = stop + ns.offset
+        for _ in range(times):
+            start += ns.offset
+            stop += ns.offset
             if start > len(self.data.m):
                 break
             elif stop > len(self.data.m):  # end index larger than data size
                 diff: int = stop - len(self.data.m)  # difference
-                stop: int = stop - diff  # new end index
+                stop -= diff
                 lds: int = len(ns.ds) - diff
             else:
                 lds: int = len(ns.ds)
 
-            ns.data.m[start:stop]: np.ndarray = ns.data.m[start:stop] + ns.ms[0:lds]
-            ns.data.d[start:stop]: np.ndarray = ns.data.d[start:stop] + ns.ds[0:lds]
+            ns.data.m[start:stop]: np.ndarray = ns.data.m[start:stop] + ns.ms[:lds]
+            ns.data.d[start:stop]: np.ndarray = ns.data.d[start:stop] + ns.ds[:lds]
 
         # and recalculate li and hi
         ns.data.l: np.ndarray
@@ -1124,19 +1114,16 @@ class DataField(esbmtkBase):
             time = (self.mo.time * self.mo.t_unit).to(self.mo.d_unit).magnitude
             self.x1_data = []
             if isinstance(self.y1_data, list):
-                for i, e in enumerate(self.y1_data):
-                    self.x1_data.append(time)
+                self.x1_data.extend(time for _ in self.y1_data)
             else:
                 self.x1_data.append(time)
-        else:
-            if not isinstance(self.x1_data, list):
-                self.x1_data = [self.x1_data]
+        elif not isinstance(self.x1_data, list):
+            self.x1_data = [self.x1_data]
 
         if self.x2_data == "None" and self.y2_data != "None":
             self.x2_data = []
             if isinstance(self.y2_data, list):
-                for i, e in enumerate(self.y2_data):
-                    self.x2_data.append(self.mo.time)
+                self.x2_data.extend(self.mo.time for _ in self.y2_data)
             else:
                 self.x2_data.append(self.mo.time)
         elif self.x2_data != "None":
@@ -1214,14 +1201,10 @@ class DataField(esbmtkBase):
             df[f"{self.n} {self.y1_label}"] = self.y2_data[start:stop:stride]  # y2_data
 
         file_path = Path(fn)
-        if append:
-            if file_path.exists():
-                df.to_csv(file_path, header=False, mode="a", index=False)
-            else:
-                df.to_csv(file_path, header=True, mode="w", index=False)
+        if append and file_path.exists():
+            df.to_csv(file_path, header=False, mode="a", index=False)
         else:
             df.to_csv(file_path, header=True, mode="w", index=False)
-
         return df
 
     def __plot__(self, M: Model, ax) -> None:
@@ -1681,22 +1664,14 @@ class ExternalCode(Reservoir_no_set):
         df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
 
         for i, d in enumerate(self.vr_data):
-            if self.alias_list != "None":
-                h = self.alias_list[i]
-            else:
-                h = f"X{i}"
-
+            h = self.alias_list[i] if self.alias_list != "None" else f"X{i}"
             df[h] = d[start:stop:stride]
 
         file_path = Path(fn)
-        if append:
-            if file_path.exists():
-                df.to_csv(file_path, header=False, mode="a", index=False)
-            else:
-                df.to_csv(file_path, header=True, mode="w", index=False)
+        if append and file_path.exists():
+            df.to_csv(file_path, header=False, mode="a", index=False)
         else:
             df.to_csv(file_path, header=True, mode="w", index=False)
-
         return df
 
 
@@ -1813,9 +1788,8 @@ class VirtualReservoir(Reservoir):
         for key, value in kwargs.items():
             if key not in allowed_keys:
                 raise ValueError("you can only change a1 to a6")
-            else:
-                setattr(self, key, value)  # update self
-                setattr(self.gfh, key, value)  # update function
+            setattr(self, key, value)  # update self
+            setattr(self.gfh, key, value)  # update function
 
 
 class GasReservoir(ReservoirBase):
@@ -2107,10 +2081,8 @@ class ExternalData(esbmtkBase):
             else:
                 raise ValueError("Plot transform must be a function")
 
-        # check if z-data is present
-        if ncols == 3:
-            # zh = self.df.columns[2]
-            self.z = self.df.iloc[:, 2].to_numpy()
+        # zh = self.df.columns[2]
+        self.z = self.df.iloc[:, 2].to_numpy()
 
         # register with reservoir
         self.__register__(self.reservoir)

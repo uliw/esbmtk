@@ -327,8 +327,8 @@ class Connect(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: list = ["source", "sink", "register", "id"]
 
-        self.lop: list = list()
-        self.lof: list = list()
+        self.lop: list = []
+        self.lof: list = []
 
         # validate and initialize instance variables
         self.__initialize_keyword_variables__(kwargs)
@@ -349,11 +349,7 @@ class Connect(esbmtkBase):
         elif isinstance(self.pco2_0, Q_):
             self.pco2_0 = self.pco2_0.magnitude.to("ppm").magnitude * 1e-6
 
-        if "pl" in kwargs:
-            self.lop: list[Process] = self.pl
-        else:
-            self.lop: list[Process] = []
-
+        self.lop: list[Process] = self.pl if "pl" in kwargs else []
         if self.signal != "None":
             self.lop.append(self.signal)
 
@@ -467,18 +463,13 @@ class Connect(esbmtkBase):
             else:
                 so = self.source.name
 
-            if isinstance(self.sink.parent, ReservoirGroup):
-                si = self.sink.parent.name
-            else:
-                si = self.sink.name
-                
+            si = self.sink.parent.name if isinstance(self.sink.parent, ReservoirGroup) else self.sink.name
+
             self.name = f"C_{so}_to_{si}_{self.source.sp.name}"
+        elif self.sink.species.name == self.source.species.name:
+            self.name = f"{self.source.species.name}"
         else:
-            # same species?
-            if self.sink.species.name == self.source.species.name:
-                self.name = f"{self.source.species.name}"
-            else:
-                self.name = f"{self.source.species.name}_to_{self.sink.species.name}"
+            self.name = f"{self.source.species.name}_to_{self.sink.species.name}"
 
         # id set?
         if self.id != "None":
@@ -517,16 +508,9 @@ class Connect(esbmtkBase):
         from esbmtk import Source
 
         # print(f"r1 = {r1.n}, r2 = {r2.n}")
-        if isinstance(self.r1, Source):
-            self.r = r1
-        else:  # in this case we do have an upstream reservoir
-            self.r = r2
-
+        self.r = r1 if isinstance(self.r1, Source) else r2
         # test if species was explicitly given
-        if "species" in self.kwargs:  # this is a quick fix only
-            self.sp = self.kwargs["species"]
-        else:
-            self.sp = self.r.sp  # get the parent species
+        self.sp = self.kwargs["species"] if "species" in self.kwargs else self.r.sp
 
     def __create_flux__(self) -> None:
         """Create flux object, and register with reservoir and global
@@ -535,17 +519,8 @@ class Connect(esbmtkBase):
         from esbmtk import Flux, Source, Sink
 
         # test if default arguments present
-        if self.delta == "None":
-            d = 0
-        else:
-            d = self.delta
-
-        if self.rate == "None":
-            r = f"0 {self.sp.mo.f_unit}"
-            # self._rate = r
-        else:
-            r = self.rate
-
+        d = 0 if self.delta == "None" else self.delta
+        r = f"0 {self.sp.mo.f_unit}" if self.rate == "None" else self.rate
         # derive flux unit from species obbject
         # funit = self.sp.mu + "/" + str(self.sp.mo.bu)  # xxx
 
@@ -626,26 +601,14 @@ class Connect(esbmtkBase):
                 self.lop.remove(p)
                 if p.ty == "addition":
                     # create AddSignal Process object
-                    n = AddSignal(
-                        name=p.n + "_addition_process",
-                        reservoir=self.r,
-                        flux=self.fh,
-                        lt=p.data,
-                        register=self.fh,
-                        model=self.mo,
-                    )
+                    n = AddSignal(name=f"{p.n}_addition_process", reservoir=self.r, flux=self.fh, lt=p.data, register=self.fh, model=self.mo)
+
                     self.lop.insert(0, n)  # signals must come first
                     logging.debug(f"Inserting {n.n} in {self.name} for {self.r.n}")
                 elif p.ty == "multiplication":
                     # create AddSignal Process object
-                    n = MultiplySignal(
-                        name=p.n + "_multiplication_process",
-                        reservoir=self.r,
-                        flux=self.fh,
-                        lt=p.data,
-                        register=self.fh,
-                        model=self.mo,
-                    )
+                    n = MultiplySignal(name=f"{p.n}_multiplication_process", reservoir=self.r, flux=self.fh, lt=p.data, register=self.fh, model=self.mo)
+
                     self.lop.insert(len(self.lop), n)  # multiplaction should come last
                     logging.debug(f"Inserting {n.n} in {self.name} for {self.r.n}")
                 else:
@@ -658,19 +621,16 @@ class Connect(esbmtkBase):
         self.__move_process_to_top_of_queue__(self.lop, VarDeltaOut)
         self.__move_process_to_end_of_queue__(self.lop, SaveFluxData)
 
-        # nwo we can register everythig on lop
-        i = 0
-        for p in self.lop:
+        for i, p in enumerate(self.lop):
             if isinstance(p, (MultiplySignal)) and i > 0:
                 p.__execute__ = p.__multiply_with_flux_fa__
                 p.__get_process_args__ = p.__get_process_args_fa__
             if isinstance(p, (AddSignal)) and i > 0:
-                print(f"Found Add signal")
+                print("Found Add signal")
                 p.__execute__ = p.__add_with_fa__
                 p.__get_process_args__ = p.__get_process_args_fa__
 
             p.__register__(self.r, self.fh)
-            i += 1
 
     def __move_process_to_top_of_queue__(self, lop: list, ptype: any) -> None:
         """Return a copy of lop where ptype has been moved to the top of lop"""
@@ -699,11 +659,7 @@ class Connect(esbmtkBase):
             Sink,
         )
 
-        if isinstance(self.r1, Source):
-            self.r = self.r2
-        else:
-            self.r = self.r1
-
+        self.r = self.r2 if isinstance(self.r1, Source) else self.r1
         # if signal is provided but rate is omitted
         if self.signal != "None" and self.rate == "None":
             self._rate = "0 mmol/y"
@@ -714,13 +670,9 @@ class Connect(esbmtkBase):
             if self.delta != "None" and self.rate != "None":
                 # self.__vardeltaout__()
                 pass  # if delta and rate are specified, do nothing
-            # variable flux with fixed delta
             elif self.delta != "None":  # if delta is set
                 self.__passivefluxfixeddelta__()
-            elif self.rate != "None":  # if rate is set
-                if self.delta != "None" and not isinstance(self.source, Sink):
-                    self.__vardeltaout__()  # variable delta with fixed flux
-            else:  # if neither are given -> default varflux type
+            elif self.rate == "None":  # if neither are given -> default varflux type
                 self._delta = 0
                 self.__passiveflux__()
 
@@ -752,9 +704,7 @@ class Connect(esbmtkBase):
         elif self.ctype == "monod_type_limit":
             # self.__vardeltaout__()
             self.__rateconstant__()
-        elif self.ctype == "manual":
-            pass
-        else:
+        elif self.ctype != "manual":
             print(f"Connection Type {self.ctype} is unknown")
             raise ValueError(f"Unknown connection type {self.ctype}")
 
@@ -948,11 +898,6 @@ class Connect(esbmtkBase):
             weathering,
         )
 
-        # this process requires that we use the vardeltaout process
-        if self.mo.m_type != "mass_only":
-            # self.__vardeltaout__()
-            pass
-
         if self.ctype == "scale_with_mass":
             if self.k_value != "None":
                 self.scale = self.k_value
@@ -1024,11 +969,7 @@ class Connect(esbmtkBase):
         indent :int = 0 indentation
 
         """
-        if "index" not in kwargs:
-            index = 0
-        else:
-            index = kwargs["index"]
-
+        index = 0 if "index" not in kwargs else kwargs["index"]
         if "indent" not in kwargs:
             indent = 0
             ind = ""
@@ -1214,7 +1155,7 @@ class ConnectionGroup(esbmtkBase):
             "delta": ["None", (str, dict, tuple, int, float)],
             "rate": ["None", (Q_, str, dict, tuple, int, float)],
             "pl": ["None", (str, dict, tuple)],
-            "signal": ["None", (str, Signal)],
+            "signal": ["None", (str, Signal, dict)],
             "alpha": ["None", (str, dict, tuple, int, float)],
             "species": ["None", (str, dict, tuple, Species)],
             "ctype": ["None", (str, dict, tuple)],
@@ -1280,14 +1221,14 @@ class ConnectionGroup(esbmtkBase):
                 "ref_reservoirs": "None",
                 "ref_flux": "None",
                 "bypass": "None",
+                "signal": "None",
             }
 
             # test defaults against actual keyword value
             for kcd, vcd in self.cd[sp.n].items():
-                if kcd in self.kwargs:  # found entry like ctype
-                    if r in self.kwargs[kcd]:  # {SO4: xxx}
-                        # update the entry
-                        self.cd[sp.n][kcd] = self.kwargs[kcd][sp]
+                if kcd in self.kwargs and r in self.kwargs[kcd]:
+                    # update the entry
+                    self.cd[sp.n][kcd] = self.kwargs[kcd][sp]
 
             a = Connect(
                 source=getattr(self.source, sp.n),
@@ -1299,6 +1240,7 @@ class ConnectionGroup(esbmtkBase):
                 ctype=self.cd[sp.n]["ctype"],
                 scale=self.cd[sp.n]["scale"],
                 bypass=self.cd[sp.n]["bypass"],
+                signal=self.cd[sp.n]["signal"],
                 ref_reservoirs=self.cd[sp.n]["ref_reservoirs"],
                 ref_flux=self.cd[sp.n]["ref_flux"],
                 save_flux_data=self.save_flux_data,
@@ -1423,11 +1365,7 @@ class AirSeaExchange(esbmtkBase):
         # register with connection
         self.lof.append(self.fh)
 
-        if self.lr.register == "None":
-            swc = self.lr.swc
-        else:
-            swc = self.lr.register.swc
-
+        swc = self.lr.swc if self.lr.register == "None" else self.lr.register.swc
         # initialize process instance
         ph = GasExchange(
             name="_PGex",
@@ -1475,17 +1413,11 @@ class AirSeaExchange(esbmtkBase):
         self.lr = self.liquid_reservoir
         self.gr = self.gas_reservoir
 
-        if self.species.name in ["CO2", "DIC", "O2"]:
-            pass
-        else:
+        if self.species.name not in ["CO2", "DIC", "O2"]:
             raise ValueError(f"{self.species.name} not implemented yet")
 
         # decide if this connection needs isotope calculations
-        if self.gas_reservoir.isotopes:
-            self.isotopes = True
-        else:
-            self.isotopes = False
-
+        self.isotopes = bool(self.gas_reservoir.isotopes)
         self.mo = self.species.mo
         self.model = self.mo
         self.ctype = "gas_exchange"

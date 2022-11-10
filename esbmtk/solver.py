@@ -30,11 +30,10 @@ import numpy as np
 def get_l_mass(m: float, d: float, r: float) -> float:
     """
     Calculate the light isotope masses from bulk mass and delta value.
-    Arguments are m = mass, d= delta value, r = abundance ratio
+    Arguments are m = mass/concentration, d= delta value, r = abundance ratio
     """
 
-    l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
-    return l
+    return (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
 
 
 def get_imass(m: float, d: float, r: float) -> [float, float]:
@@ -108,12 +107,7 @@ def get_delta_i(l: float, h: float, r: float) -> float:
     delta of zero may no longer be zero)
 
     """
-    # d = 1000 * (h / l - r) / r
-    if l > 0:
-        d: float = 1e3 * (h / l - r) / r
-    else:
-        d = 0
-    return d
+    return 1e3 * (h / l - r) / r if l > 0 else 0
 
 
 def get_flux_delta(f) -> float:
@@ -123,8 +117,7 @@ def get_flux_delta(f) -> float:
     l = f.fa[1]
     h = m - l
     r = f.species.r
-    d = 1e3 * (h / l - r) / r
-    return d
+    return 1e3 * (h / l - r) / r
 
 
 def get_delta_h(h) -> float:
@@ -138,10 +131,7 @@ def get_delta_h(h) -> float:
     """
 
     r = h.species.r
-
-    d = np.where(h.l > 0, 1e3 * ((h.m - h.l) / h.l - r) / r, 0)
-
-    return d
+    return np.where(h.l > 0, 1e3 * ((h.c - h.l) / h.l - r) / r, 0)
 
 
 def execute(
@@ -155,7 +145,7 @@ def execute(
 
     start: float = process_time()
     i = 1  # some processes refer to the previous time step
-    for t in time[1:-1]:  # loop over the time vector except the first
+    for _ in time[1:-1]:
         # we first need to calculate all fluxes
         # for r in lor:  # loop over all reservoirs
         #     for p in r.lop:  # loop over reservoir processes
@@ -304,7 +294,7 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, 
 
         # loop over function (process) list and compute fluxes
         j = 0
-        for f in enumerate(fn):
+        for _ in enumerate(fn):
             fn[j](da[j], pc[j], i)
             j = j + 1
 
@@ -401,7 +391,7 @@ def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
 
         # loop over processes
         j = 0
-        for f in enumerate(fn):
+        for _ in enumerate(fn):
             fn[j](da[j], pc[j], i)
             j = j + 1
 
@@ -441,11 +431,10 @@ def foo_no_vr_no_p(fn, a, b, c, d, e, maxt, dt):
     """
 
     i = 1
-    for t in maxt:
-
-        # calculate the resulting reservoir concentrations
-        # summarize_fluxes(a, b, c, d, e, i, dt)
-        r_steps: int = len(b)
+    # calculate the resulting reservoir concentrations
+    # summarize_fluxes(a, b, c, d, e, i, dt)
+    r_steps: int = len(b)
+    for _ in maxt:
         # loop over reservoirs
         for j in range(r_steps):
             mass = li = 0.0
@@ -547,7 +536,7 @@ def build_process_list(lor: list, lop: list) -> tuple:
     da = List()  # data
     pc = List()  # list of constants
 
-    print(f"Building Process List")
+    print("Building Process List")
 
     tfn = numba.typed.List.empty_list(
         types.ListType(types.void)(  # return value

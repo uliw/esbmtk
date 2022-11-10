@@ -127,18 +127,18 @@ def carbonate_system_1_ode(
 
 
 def carbonate_system_2_ode(
-    t,  # time step
-    rg: ReservoirGroup,  # Reservoir handle
-    Bm: float,  # CaCO3 export flux as DIC
-    dic_db: float,  # DIC in the deep box
-    ta_db: float,  # TA in the deep box
-    dic_sb: float,  # [DIC] in the surface box
-    dic_sb_l: float,  # [DIC_l] in the surface box
-    hplus: float,  # hplus in the deep box at t-1
-    zsnow: float,  # snowline in meters below sealevel at t-1
-    i: float,  # current index
-    max_i: float,  # max length of vr vectors
-    last_t: float,  # time of the last calls to cs2
+    t,  # 1: time step
+    rg: ReservoirGroup,  # 2 Reservoir handle
+    Bm: float,  # 3 CaCO3 export flux as DIC
+    dic_db: float,  # 4 DIC in the deep box
+    ta_db: float,  # 5 TA in the deep box
+    dic_sb: float,  # 6 [DIC] in the surface box
+    dic_sb_l: float,  # 7 [DIC_l] in the surface box
+    hplus: float,  # 8 hplus in the deep box at t-1
+    zsnow: float,  # 9 snowline in meters below sealevel at t-1
+    i: float,  # 10  current index
+    max_i: float,  # 11, max length of vr vectors
+    last_t: float,  # 12 time of the last calls to cs2
 ) -> tuple:
     """Calculates and returns the fraction of the carbonate rain that is
     dissolved an returned back into the ocean. This functions returns:
@@ -191,7 +191,16 @@ def carbonate_system_2_ode(
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus
     boh4: float = boron * KB / (hplus + KB)
+
+    # print(f"t = {t}")
+    # print(f"RG = {rg.full_name}")
+    # print(f"BM = {Bm}")
+    # print(f"dic_db = {dic_db}"),
+    # print(f"ta_db = {ta_db}"),
+    # print(f"dic_sb = {dic_sb}, dic_sb_l = {dic_sb_l}, zsnow = {zsnow}")
+    # print(f"i = {i}, hplus_0 = {hplus_0}, hplus = {hplus}, oh = {oh}, boh4 = {boh4}")
     fg: float = hplus - oh - boh4
+    # print(f"ta_db = {ta_db}, fg = {fg}")
     ca: float = ta_db + fg
 
     # calculate carbon speciation
@@ -202,6 +211,7 @@ def carbonate_system_2_ode(
     hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
     # co3: float = dic / (1 + (hplus / k2) + ((hplus ** 2) / (k1 * k2)))
     hco3: float = dic_db / (1 + (hplus / k1) + (k2 / hplus))
+    # print(f"ca = {ca}, hco3 = {hco3}")
     co3: float = (ca - hco3) / 2
     # DIC = hco3 + co3 + co2 + H2CO3 The last term is however rather
     # small, so it may be ok to simply write co2aq = dic - hco3 + co3.
@@ -216,25 +226,22 @@ def carbonate_system_2_ode(
     if co3 <= 0:
         co3 = 1e-16
 
+    # print(f"i={i}, ca2={ca2}, co3={co3}, ksp0 = {ksp0}")
     zsat = int(max((zsat0 * np.log(ca2 * co3 / ksp0)), zsat_min))  # eq2
-
+    zsat = min(zsat, zmax)
+    zsat = max(zsat, zsat_min)
     # print(
     #     f"i = {i}, zsat0 = {zsat0:.1f}, ca= {ca:.2e}, co3 = {co3:.2e}, ksp0 = {ksp0:.2e}, zsat_min = {zsat_min:.1f}"
     # )
     # print(f"zsat = {zsat:.1f}\n")
-    if zsat < zsat_min:
-        zsat = int(zsat_min)
 
     zcc = int(zsat0 * np.log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
 
     # ---- Get fractional areas
     B_AD = Bm / AD
 
-    if zcc > zmax:
-        zcc = int(zmax)
-    if zcc < zsat_min:
-        zcc = zsat_min
-
+    zcc = min(zcc, zmax)
+    zcc = max(zcc, zsat_min)
     A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
     A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
     A_zcc_zmax = depth_area_table[zcc] - depth_area_table[zmax]
@@ -273,8 +280,7 @@ def carbonate_system_2_ode(
     # integrate saturation difference over area
     BPDC = kc * area_p.dot(diff)
 
-    if BPDC < 0:
-        BPDC = 0
+    BPDC = max(BPDC, 0)
     #     d_zsnow = 0
     # print(f"BPDC = {BPDC:.2e}")
     # eq 4 dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
@@ -292,28 +298,6 @@ def carbonate_system_2_ode(
     # BD & F_burial
     BD: float = BDS + BCC + BNS + BPDC
     Fburial = Bm - BD
-
-    if i > max_i:
-        rg.cs.H = np.append(rg.cs.H, hplus)
-        rg.cs.CA = np.append(rg.cs.CA, ca)
-        rg.cs.HCO3 = np.append(rg.cs.HCO3, hco3)
-        rg.cs.CO3 = np.append(rg.cs.CO3, co3)
-        rg.cs.CO2aq = np.append(rg.cs.CO2aq, co2aq)
-        rg.cs.zsat = np.append(rg.cs.zsat, zsat)
-        rg.cs.zcc = np.append(rg.cs.zcc, zcc)
-        # rg.cs.zsnow = np.append(rg.cs.zsnow, zsnow)
-        rg.cs.Fburial = np.append(rg.cs.Fburial, Fburial)
-    else:
-        rg.cs.H[i] = hplus  #
-        rg.cs.CA[i] = ca  # 1
-        rg.cs.HCO3[i] = hco3  # 2
-        rg.cs.CO3[i] = co3  # 3
-        rg.cs.CO2aq[i] = co2aq  # 4
-        rg.cs.zsat[i] = zsat  # 5
-        rg.cs.zcc[i] = zcc  # 6
-        # rg.cs.zsnow[i] = zsnow  # 7 claculated explicitly by the ode system
-        rg.cs.Fburial[i] = Fburial
-
     """Bm is the flux of CaCO3 into the box. However, the model should
     use the bypass option and leave all flux calculations to the
     cs_code.  As such, we simply add the fraction of the input flux
@@ -323,12 +307,33 @@ def carbonate_system_2_ode(
     value of the sediments we are dissolving, and the delta of the carbonate rain.
     The currrent code, assumes that both are the same.
     """
-    # SB_r = # isotope ratio of surface box
-    # DB_r = # isotope ratio of deep box
+    DB_r = dic_sb_l / dic_sb
     BD_l = BD * dic_sb_l / dic_sb
-    # Fburial_l = Fburial * DB_r
+    Fburial_l = Fburial * DB_r
 
     dH = hplus - hplus_0
+
+    if i > max_i:
+        rg.cs.H = np.append(rg.cs.H, hplus)
+        rg.cs.CA = np.append(rg.cs.CA, ca)
+        rg.cs.HCO3 = np.append(rg.cs.HCO3, hco3)
+        rg.cs.CO3 = np.append(rg.cs.CO3, co3)
+        rg.cs.CO2aq = np.append(rg.cs.CO2aq, co2aq)
+        rg.cs.zsat = np.append(rg.cs.zsat, zsat)
+        rg.cs.zcc = np.append(rg.cs.zcc, zcc)
+        rg.cs.Fburial = np.append(rg.cs.Fburial, Fburial)
+        rg.cs.Fburial_l = np.append(rg.cs.Fburial, Fburial)
+    else:
+        rg.cs.H[i] = hplus  #
+        rg.cs.CA[i] = ca  # 1
+        rg.cs.HCO3[i] = hco3  # 2
+        rg.cs.CO3[i] = co3  # 3
+        rg.cs.CO2aq[i] = co2aq  # 4
+        rg.cs.zsat[i] = zsat  # 5
+        rg.cs.zcc[i] = zcc  # 6
+        rg.cs.Fburial[i] = Fburial
+        rg.cs.Fburial_l[i] = Fburial_l
+
     return -BD, -BD_l, dH, d_zsnow
 
 

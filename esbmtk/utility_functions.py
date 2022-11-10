@@ -35,11 +35,7 @@ def find_matching_strings(s: str, fl: list[str]) -> bool:
     otherwise False
 
     """
-    for f in fl:
-        if f not in s:
-            return False
-
-    return True
+    return all(f in s for f in fl)
 
 
 def insert_into_namespace(name, value, name_space=globals()):
@@ -52,7 +48,7 @@ def add_to(l, e):
     exception. Otherwise add
     """
 
-    if not (e in l):  # if not present, append element
+    if e not in l:  # if not present, append element
         l.append(e)
 
 
@@ -63,12 +59,8 @@ def get_plot_layout(obj):
 
     """
 
-    noo = 1  # the reservoir is the fisrt object
-    for f in obj.lof:  # count numbert of fluxes
-        if f.plot == "yes":
-            noo += 1
-
-    for d in obj.ldf:  # count number of data fields
+    noo = 1 + sum(f.plot == "yes" for f in obj.lof)
+    for _ in obj.ldf:
         noo += 1
 
     # noo = len(obj.lof) + 1  # number of objects in this reservoir
@@ -149,15 +141,8 @@ def show_data(self, **kwargs) -> None:
 
     off: str = "  "
 
-    if "index" not in kwargs:
-        index = 0
-    else:
-        index = kwargs["index"]
-
-    if "indent" in kwargs:
-        ind: str = kwargs["indent"] * " "
-    else:
-        ind: str = ""
+    index = 0 if "index" not in kwargs else kwargs["index"]
+    ind: str = kwargs["indent"] * " " if "indent" in kwargs else ""
 
     # show the first 4 entries
     # for i in range(index, index + 3):
@@ -178,11 +163,7 @@ def set_y_limits(ax: plt.Axes, obj: any) -> None:
 def is_name_in_list(n: str, l: list) -> bool:
     """Test if an object name is part of the object list"""
 
-    r: bool = False
-    for e in l:
-        if e.full_name == n:
-            r = True
-    return r
+    return any(e.full_name == n for e in l)
 
 
 def get_object_from_list(name: str, l: list) -> any:
@@ -225,7 +206,7 @@ def sort_by_type(l: list, t: list, m: str) -> list:
 
     # at this point, all elements of lc should have been processed
     # if not, lc contains element which are of a different type
-    if len(lc) > 0:
+    if lc:
         raise TypeError(m)
 
     return rl
@@ -264,12 +245,11 @@ def split_key(k: str, M: any) -> tp.Union[any, any, str]:
 
     """
 
-    if "_to_" in k:
-        source = k.split("_to_")[0]
-        sinkandid = k.split("_to_")[1]
-    else:
+    if "_to_" not in k:
         raise ValueError("Name must follow 'Source_to_Sink' format")
 
+    source = k.split("_to_")[0]
+    sinkandid = k.split("_to_")[1]
     if "@" in sinkandid:
         sink = sinkandid.split("@")[0]
         cid = sinkandid.split("@")[1]
@@ -288,7 +268,7 @@ def make_dict(keys: list, values: list) -> dict:
     two lists
 
     """
-    d = dict()
+    d = {}
 
     if isinstance(values, list):
         if len(values) == len(keys):
@@ -298,7 +278,7 @@ def make_dict(keys: list, values: list) -> dict:
             print(f"values = {values}")
             for k in keys:
                 print(f"key = {k}")
-            raise ValueError(f"key and value list must be of equal length")
+            raise ValueError("key and value list must be of equal length")
     else:
         values: list = [values] * len(keys)
         d: dict = dict(zip(keys, values))
@@ -410,13 +390,13 @@ def build_concentration_dicts(cd: dict, bg: dict) -> dict:
 
     # create the dicts for concentration and isotopes
     for k, v in cd.items():
-        td1.update({k: v[0]})
-        td2.update({k: v[1]})
-        td3.update({k: v[2]})
+        td1[k] = v[0]
+        td2[k] = v[1]
+        td3[k] = v[2]
 
     # box_names: list = bg.keys()
     for bn in box_names:  # loop over box names
-        icd.update({bn: [td1, td2, td3]})
+        icd[bn] = [td1, td2, td3]
 
     return icd
 
@@ -445,7 +425,7 @@ def calc_volumes(bg: dict, M: any, h: any) -> list:
 
     v: list = []  # list of volumes
 
-    for k, v in bg.items():
+    for v in bg.values():
         a = v[0]
         u = v[1]
         l = v[2]
@@ -465,7 +445,7 @@ def get_longest_dict_entry(d: dict) -> int:
     # we need to cover the case where we have two lists of different length
     # this happens if we have a long list of tuples with matched references,
     # as well as a list of species
-    for k, v in d.items():
+    for v in d.values():
         if isinstance(v, list):
             nl = nl + 1
             if len(v) > l_length:
@@ -475,10 +455,8 @@ def get_longest_dict_entry(d: dict) -> int:
         else:
             p_length = 1
 
-    if nl > 1:
-        # if lists have different lengths
-        if ll.count(l_length) != len(ll):
-            raise ValueError("Mapping for multiple lists is not supported")
+    if nl > 1 and ll.count(l_length) != len(ll):
+        raise ValueError("Mapping for multiple lists is not supported")
 
     if l_length > 0 and p_length == 0:
         case = 0  # Only lists present
@@ -499,9 +477,7 @@ def convert_to_lists(d: dict, l: int) -> dict:
 
     for k, v in cd.items():
         if not isinstance(v, list):
-            p = []
-            for i in range(l):
-                p.append(v)
+            p = [v for _ in range(l)]
             d[k] = p
 
     return d
@@ -513,11 +489,7 @@ def get_sub_key(d: dict, i: int) -> dict:
 
     """
 
-    rd: dict = {}
-    for k, v in d.items():
-        rd[k] = v[i]
-
-    return rd
+    return {k: v[i] for k, v in d.items()}
 
 
 def expand_dict(d: dict, mt: str = "1:1") -> int:
@@ -593,16 +565,14 @@ def expand_dict(d: dict, mt: str = "1:1") -> int:
                 raise ValueError(f"{mt} is not defined. must be '1:1' or '1:N'")
 
         else:
-            if case == 0:  # only lists present, case 3
-                nd = cd
-            elif case == 1:  # only parameters present
+            if case in [0, 1]:  # only lists present, case 3
                 nd = cd
             elif case == 2:  # list and parameters present case 4
                 nd = convert_to_lists(cd, length)
             rd[ck] = nd
 
         # update the overall dict and move to the next entry
-        r.update(rd)
+        r |= rd
 
     return r
 
@@ -622,6 +592,7 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
     # al: alpha, optional
     # de: delta, optional
     # bp: bypass, see scale_with_flux
+    # si: signal
     # mx: True, optional defaults to False. If set, it will create forward
           and backward fluxes (i.e. mixing)
 
@@ -718,6 +689,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
     cid = f"{cid}"
     bypass = "None" if "bp" not in p else p["bp"]
     species = "None" if "sp" not in p else p["sp"]
+    signal = "None" if "si" not in p else p["si"]
 
     if isinstance(scale, Q_):
         scale = scale.to("l/a").magnitude
@@ -730,6 +702,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
     alpha = make_dict(los, alpha)
     delta = make_dict(los, delta)
     bypass = make_dict(los, bypass)
+    signal = make_dict(los, signal)
 
     # name of connectiongroup
     name = f"{M.name}.CG_{source.name}_to_{sink.name}"
@@ -747,6 +720,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
             delta=delta,
             bypass=bypass,
             register=M,
+            signal=signal,
             id=cid,  # get id from dictionary
         )
     else:  # Create New ConnectionGroup
@@ -761,6 +735,7 @@ def create_connection(n: str, p: dict, M: any) -> None:
             delta=delta,
             bypass=bypass,
             register=M,
+            signal=signal,
             id=cid,  # get id from dictionary
         )
 
@@ -770,15 +745,7 @@ def get_name_only(o: any) -> any:
 
     from esbmtk import Flux, Reservoir, ReservoirGroup, Species
 
-    # from esbmtk import Sink, Source, SourceGroup, SinkGroup
-    # from esbmtk import Process, DataField, VirtualReservoir
-
-    if isinstance(o, (Flux, Reservoir, ReservoirGroup, Species)):
-        r = o.full_name
-    else:
-        r = o
-
-    return r
+    return o.full_name if isinstance(o, (Flux, Reservoir, ReservoirGroup, Species)) else o
 
 
 def get_simple_list(l: list) -> list:
@@ -787,11 +754,7 @@ def get_simple_list(l: list) -> list:
 
     """
 
-    r: list = []
-    for e in l:
-        r.append(get_name_only(e))
-
-    return r
+    return [get_name_only(e) for e in l]
 
 
 def show_dict(d: dict, mt: str = "1:1") -> None:
@@ -804,10 +767,7 @@ def show_dict(d: dict, mt: str = "1:1") -> None:
         print(f"{ck}")
 
         for pk, pv in cv.items():
-            if isinstance(pv, list):
-                x = get_simple_list(pv)
-            else:
-                x = get_name_only(pv)
+            x = get_simple_list(pv) if isinstance(pv, list) else get_name_only(pv)
             print(f"     {pk} : {x}")
 
 
@@ -903,16 +863,8 @@ def gen_dict_entries(M: any, **kwargs) -> tuple:
 
     reference = kwargs["ref_id"]
     target = kwargs["target_id"]
-    if "inverse" in kwargs:
-        inverse = kwargs["inverse"]
-    else:
-        inverse = False
-
-    if "exclude" in kwargs:
-        exclude_str = kwargs["exclude"]
-    else:
-        exclude_str = "None"
-
+    inverse = kwargs.get("inverse", False)
+    exclude_str = kwargs.get("exclude", "None")
     if isinstance(M, Model):
         flist: list = find_matching_fluxes(
             M.loc, filter_by=reference, exclude=exclude_str
@@ -939,15 +891,7 @@ def build_ct_dict(d: dict, p: dict) -> dict:
 
     """
 
-    ct: dict = {}
-
-    for k, v in d.items():
-        td: dict = {}  # temp dict for scale
-        td["sc"] = v
-        td.update(p)
-        ct[k] = td
-
-    return ct
+    return {k: {"sc": v} | p for k, v in d.items()}
 
 
 def get_string_between_brackets(s: str) -> str:
@@ -978,10 +922,8 @@ def check_for_quantity(kw) -> Q_:
 
     if isinstance(kw, str):
         kw = Q_(kw)
-    elif isinstance(kw, Q_):
-        pass
-    else:
-        raise ValueError(f"kw must be string or Quantity")
+    elif not isinstance(kw, Q_):
+        raise ValueError("kw must be string or Quantity")
 
     return kw
 
@@ -1084,40 +1026,39 @@ def add_carbonate_system_1(rgs: list):
                         rtype="computed",
                     )
                     rg.lor.append(rt)
-        else:
-            if hasattr(rg, "DIC") and hasattr(rg, "TA"):
-                ec = ExternalCode(
-                    name="cs",
-                    species=species,
-                    function=calc_carbonates_1,
-                    ftype="cs1",
-                    vr_datafields={
-                        "H": rg.swc.hplus,  # 0
-                        "CA": rg.swc.ca,  # 1
-                        "HCO3": rg.swc.hco3,  # 2
-                        "CO3": rg.swc.co3,  # 3
-                        "CO2aq": rg.swc.co2,  # 4
-                    },
-                    function_input_data=List([rg.DIC.c, rg.TA.c]),
-                    function_params=List(
-                        [
-                            rg.swc.K1,  # 0
-                            rg.swc.K2,  # 1
-                            rg.swc.KW,  # 2
-                            rg.swc.KB,  # 3
-                            rg.swc.boron,  # 4
-                            rg.swc.ca2,  # 5
-                            rg.swc.Ksp,  # 6
-                            rg.swc.hplus,  #
-                        ]
-                    ),
-                    # return_values="H CA HCO3 CO3 CO2aq".split(" "),
-                    register=rg,
-                )
-                rg.has_cs1 = True
+        elif hasattr(rg, "DIC") and hasattr(rg, "TA"):
+            ec = ExternalCode(
+                name="cs",
+                species=species,
+                function=calc_carbonates_1,
+                ftype="cs1",
+                vr_datafields={
+                    "H": rg.swc.hplus,  # 0
+                    "CA": rg.swc.ca,  # 1
+                    "HCO3": rg.swc.hco3,  # 2
+                    "CO3": rg.swc.co3,  # 3
+                    "CO2aq": rg.swc.co2,  # 4
+                },
+                function_input_data=List([rg.DIC.c, rg.TA.c]),
+                function_params=List(
+                    [
+                        rg.swc.K1,  # 0
+                        rg.swc.K2,  # 1
+                        rg.swc.KW,  # 2
+                        rg.swc.KB,  # 3
+                        rg.swc.boron,  # 4
+                        rg.swc.ca2,  # 5
+                        rg.swc.Ksp,  # 6
+                        rg.swc.hplus,  #
+                    ]
+                ),
+                # return_values="H CA HCO3 CO3 CO2aq".split(" "),
+                register=rg,
+            )
+            rg.has_cs1 = True
 
-            else:
-                raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
+        else:
+            raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
 
 def add_carbonate_system_2(**kwargs) -> None:
@@ -1128,7 +1069,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         Required keywords:
             r_sb: list of ReservoirGroup objects in the surface layer
             r_db: list of ReservoirGroup objects in the deep layer
-            carbonate_export_fluxes: list of flux objects which mus match the
+            carbonate_export_fluxes: list of flux objects which must match the
                                      list of ReservoirGroup objects.
             zsat_min = depth of the upper boundary of the deep box
             z0 = upper depth limit for carbonate burial calculations
@@ -1147,7 +1088,7 @@ def add_carbonate_system_2(**kwargs) -> None:
             pg = seawater density multiplied by gravity due to acceleration (atm/m)
             I = dissolvable CaCO3 inventory
             co3 = CO3 concentration (mol/kg)
-    q        Ksp = solubility product of calcite at in situ sea water conditions (mol^2/kg^2)
+            Ksp = solubility product of calcite at in situ sea water conditions (mol^2/kg^2)
 
     """
 
@@ -1229,10 +1170,8 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     # test if corresponding surface reservoirs have been defined
     if len(r_sb) == 0:
-        raise ValueError(
-            f"Please update your call to add_carbonate_system_2"
-            f"and add the list of of corresponding surface reservoirs"
-        )
+        raise ValueError('Please update your call to add_carbonate_system_2and add the list of of corresponding surface reservoirs')
+
 
     # C saturation(z) after Boudreau 2010
     Csat_table: np.ndarray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
@@ -1270,6 +1209,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                     "area_dz_table": area_dz_table,
                     "Csat_table": Csat_table,
                     "Fburial": 0.0,
+                    "Fburial_l": 0.0,
                 },
                 ref_flux=kwargs["carbonate_export_fluxes"],
                 function_input_data=List(),
@@ -1333,7 +1273,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                     "zcc": kwargs["zcc"],  # 6 zcc
                     "zsnow": kwargs["zsnow"],  # 7 zsnow
                     "Fburial": 0.0,  # 8 carbonate burial
-                    "Fburial12": 0.0,  # 9 carbonate burial 12C
+                    "Fburial_l": 0.0,  # 9 carbonate burial 12C
                     "diss": 0.0,  # dissolution flux
                     "Bm": 0.0,
                 },
@@ -1425,13 +1365,11 @@ def __checktypes__(av: dict[any, any], pv: dict[any, any]) -> None:
     # loop over provided keywords
     for k, v in pv.items():
         # check av if provided value v is of correct type
-        if av[k] != any:
-            # print(f"key = {k}, value  = {v}")
-            if not isinstance(v, av[k]):
-                # print(f"k={k}, v= {v}, av[k] = {av[k]}")
-                raise TypeError(
-                    f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
-                )
+        if av[k] != any and not isinstance(v, av[k]):
+            # print(f"k={k}, v= {v}, av[k] = {av[k]}")
+            raise TypeError(
+                f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
+            )
 
 
 def __checkkeys__(lrk: list, lkk: list, kwargs: dict) -> None:
@@ -1450,26 +1388,17 @@ def __checkkeys__(lrk: list, lkk: list, kwargs: dict) -> None:
         if isinstance(k, list):  # If keyword is a list
             s: int = 0  # loop over allowed substitutions
             for e in k:  # test how many matches are in this list
-                if e in kwargs:
-                    # print(self.kwargs[e])
-                    if not isinstance(e, (np.ndarray, np.float64, list)):
-                        # print (type(self.kwargs[e]))
-                        if kwargs[e] != "None":
-                            s = s + 1
+                if e in kwargs and not isinstance(e, (np.ndarray, np.float64, list)) and kwargs[e] != "None":
+                    s = s + 1
             if s > 1:  # if more than one match
                 raise ValueError(f"You need to specify exactly one from this list: {k}")
 
-        else:  # keyword is not in list
-            if k not in kwargs:
-                raise ValueError(f"You need to specify a value for {k}")
+        elif k not in kwargs:
+            raise ValueError(f"You need to specify a value for {k}")
 
-    tl: List[str] = []
-    # create a list of known keywords
-    for k, v in lkk.items():
-        tl.append(k)
-
+    tl: List[str] = [k for k, v in lkk.items()]
     # test if we know all keys
-    for k, v in kwargs.items():
+    for k in kwargs:
         if k not in lkk:
             raise ValueError(f"{k} is not a valid keyword. \n Try any of \n {tl}\n")
 
@@ -1482,10 +1411,10 @@ def __addmissingdefaults__(lod: dict, kwargs: dict) -> dict:
     """
 
     new: dict = {}
-    if len(lod) > 0:
+    if lod:
         for k, v in lod.items():
             if k not in kwargs:
-                new.update({k: v})
+                new[k] = v
 
-    kwargs.update(new)
+    kwargs |= new
     return kwargs

@@ -87,9 +87,8 @@ class hypsometry(esbmtkBase):
 
         self.__initialize_keyword_variables__(kwargs)
 
-        if self.register == "None":
-            if self.model != "None":
-                self.register = self.model
+        if self.register == "None" and self.model != "None":
+            self.register = self.model
 
         self.parent = self.register
 
@@ -116,9 +115,7 @@ class hypsometry(esbmtkBase):
         if l < u:
             raise ValueError(f"hyp.volume: {l} must be higher than {u}")
 
-        v = np.sum(self.hypdata[u:l]) * self.sa
-
-        return v
+        return np.sum(self.hypdata[u:l]) * self.sa
 
     def area(self, depth: int) -> float:
         """Calculate the ocean area at a given depth
@@ -157,9 +154,7 @@ class hypsometry(esbmtkBase):
 
         a: np.ndarray = sp.interpolate.splev([u, l], self.tck)
 
-        area: float = (a[0] - a[-1]) * self.sa
-
-        return area
+        return (a[0] - a[-1]) * self.sa
 
     def __init_curve__(self):
         """Initialize Spline Parameters. See  __bootstrap_curve__ if you want

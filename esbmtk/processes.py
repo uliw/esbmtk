@@ -56,15 +56,10 @@ class Process(esbmtkBase):
 
         # self.rm0: float = self.r.m[0]  # the initial reservoir mass
 
-        if "reservoir" in self.kwargs:
-            if isinstance(self.r, Reservoir):
-                self.direction: dict[Flux, int] = self.r.lio[self.f]
+        if "reservoir" in self.kwargs and isinstance(self.r, Reservoir):
+            self.direction: dict[Flux, int] = self.r.lio[self.f]
 
-        if "delta" in self.kwargs:
-            self.delta = self.kwargs["delta"]
-        else:
-            self.delta = "None"
-
+        self.delta = self.kwargs["delta"] if "delta" in self.kwargs else "None"
         self.__misc_init__()
 
     def __delayed_init__(self) -> None:
@@ -300,17 +295,10 @@ class AddSignal(Process):
         sl = self.lt.l[i]  # signal li
 
         # get signal delta
-        if sm > 0:
-            sd = 1000 * ((sm - sl) / sl - r) / r
-        else:
-            sd = 0
+        sd = 1000 * ((sm - sl) / sl - r) / r if sm > 0 else 0
         # print(f"Signal delta = {sd}")
 
-        if fm > 0:  # get flux delta
-            fd = 1000 * ((fm - fl) / fl - r) / r + sd
-        else:
-            fd = sd
-
+        fd = 1000 * ((fm - fl) / fl - r) / r + sd if fm > 0 else sd
         fm += sm  # add signal mass
         fl = 1000.0 * fm / ((fd + 1000.0) * r + 1000.0)
 
@@ -330,11 +318,7 @@ class AddSignal(Process):
         # get signal delta
         sd = 1000 * ((sm - sl) / sl - r) / r
 
-        if fm > 0:  # get flux delta
-            fd = 1000 * ((fm - fl) / fl - r) / r + sd
-        else:
-            fd = sd
-
+        fd = 1000 * ((fm - fl) / fl - r) / r + sd if fm > 0 else sd
         # set new flux rate
         fm += sm  # add signal mass
         fl = 1000.0 * fm / ((fd + 1000.0) * r + 1000.0)
@@ -375,16 +359,8 @@ class AddSignal(Process):
         sl: float = data[3][i]  # sd
 
         # get signal delta
-        if sm > 0:
-            sd = 1000 * ((sm - sl) / sl - r) / r
-        else:
-            sd = 0
-
-        if fm > 0:  # get flux delta
-            fd = 1000 * ((fm - fl) / fl - r) / r + sd
-        else:
-            fd = sd
-
+        sd = 1000 * ((sm - sl) / sl - r) / r if sm > 0 else 0
+        fd = 1000 * ((fm - fl) / fl - r) / r + sd if fm > 0 else sd
         # set new flux rate
         fm += sm  # add signal mass
         fl = 1000.0 * fm / ((fd + 1000.0) * r + 1000.0)
@@ -420,16 +396,8 @@ class AddSignal(Process):
         sl: float = data[1][i]
 
         # get signal delta
-        if sm > 0:
-            sd = 1000 * ((sm - sl) / sl - r) / r
-        else:
-            sd = 0
-
-        if fm > 0:  # get flux delta
-            fd = 1000 * ((fm - fl) / fl - r) / r + sd
-        else:
-            fd = sd
-
+        sd = 1000 * ((sm - sl) / sl - r) / r if sm > 0 else 0
+        fd = 1000 * ((fm - fl) / fl - r) / r + sd if fm > 0 else sd
         fm += sm  # add signal mass
         fl = 1000.0 * fm / ((fd + 1000.0) * r + 1000.0)
         data[2][:] = [fm, fl]
@@ -518,9 +486,7 @@ class ScaleFlux(Process):
 
         if "ref_reservoirs" in kwargs:
             self.ref_flux = kwargs["ref_reservoirs"]
-        elif "ref_flux" in kwargs:
-            pass
-        else:
+        elif "ref_flux" not in kwargs:
             raise ValueError("You need to specify a value for ref_flux")
 
         # legacy variables
@@ -547,13 +513,10 @@ class ScaleFlux(Process):
                 self.__execute__ = self.__with_fixed_delta__
             else:
                 self.__execute__ = self.__without_isotopes__
+        elif self.source.isotopes:
+            self.__execute__ = self.__with_isotopes__
         else:
-            if self.source.isotopes:
-                self.__execute__ = self.__with_isotopes__
-            elif not self.source.isotopes:
-                self.__execute__ = self.__without_isotopes__
-            else:
-                raise ValueError("This should never happen!")
+            self.__execute__ = self.__without_isotopes__
 
     # create stubs
     def __with_source__():
@@ -726,11 +689,11 @@ class Fractionation(Process):
 
         # print(f"self.f.m[i] =  {self.f.m[i]}")
         fm = self.f.fa[0]
-        rm = self.reservoir.m[i - 1]
-        rl = self.reservoir.l[i - 1]
-        a = self.alp
-
         if fm != 0:
+            rm = self.reservoir.m[i - 1]
+            rl = self.reservoir.l[i - 1]
+            a = self.alp
+
             fl = rl * fm / (a * rm + rl - a * rl)
             self.f.fa[:] = [fm, fl]
         else:
@@ -844,9 +807,9 @@ class RateConstant(Process):
 
         self.__register_name_new__()
 
+        self.c = 1
         if self.reservoir.isotopes or self.isotopes:
             self.__execute__ = self.__with_isotopes__
-            self.c = 1
             if self.delta != "None":
                 self.__execute__ = self.__with_fixed_delta__
                 l = get_l_mass(1, self.delta, self.reservoir.species.r)
@@ -854,7 +817,6 @@ class RateConstant(Process):
                 # print(f"delta = {self.delta} setting c = {self.c}")
         else:
             self.__execute__ = self.__without_isotopes__
-            self.c = 1
 
     def __postinit__(self) -> "None":
         self.mo = self.reservoir.mo
@@ -1416,14 +1378,7 @@ class GasExchange(RateConstant):
 
     def ode(self) -> None:
 
-        f = self.scale * (  # area in m^2
-            self.gas.c  # Atmosphere
-            * (1 - self.p_H2O)  # p_H2O
-            * self.solubility  # SA_co2 = mol/(m^3 atm)
-            - self.ref_species * 1000  # [CO2]aq mol
-        )
-        
-        return f
+        return self.scale * (self.gas.c * (1 - self.p_H2O) * self.solubility - self.ref_species * 1000)  # area in m^2  # Atmosphere  # p_H2O  # SA_co2 = mol/(m^3 atm)  # [CO2]aq mol
 
     def __without_isotopes__(self, i: int) -> None:
 
@@ -1730,15 +1685,15 @@ class ScaleRelativeToConcentration(RateConstant):
     @njit(fastmath=True, error_model="numpy")
     def p_scale_relative_to_concentration(data, params, i) -> None:
         """delta depends on upstream delta"""
-        # params
-        s: float = params[0]  # scale factor
-        v: float = params[1]  # res volume
         # data
         rm: float = data[0][i - 1]  # res mass
-        rl: float = data[1][i - 1]  # res li
-
         if rm > 0:
+            # params
+            s: float = params[0]  # scale factor
+            v: float = params[1]  # res volume
             fm: float = rm / v * s
+            rl: float = data[1][i - 1]  # res li
+
             c: float = rl / (rm - rl)
             fl: float = fm * c / (c + 1)
             data[2][:] = [fm, fl]
@@ -1750,15 +1705,15 @@ class ScaleRelativeToConcentration(RateConstant):
     @njit(fastmath=True, error_model="numpy")
     def p_scale_relative_to_concentration_fd(data, params, i) -> None:
         """delta depends fixed value"""
-        # params
-        s: float = params[1]  # scale factor
-        v: float = params[2]  # res volume
-        c: float = params[3]  # isotope ratio
         # data
         rm: float = data[0][i - 1]  # res mass
 
         if rm > 0:
+            # params
+            s: float = params[1]  # scale factor
+            v: float = params[2]  # res volume
             fm: float = rm / v * s
+            c: float = params[3]  # isotope ratio
             fl: float = fm * c / (c + 1)
             data[2][:] = [fm, fl]
 
