@@ -1,24 +1,24 @@
-- [ESBMTK - An Earth-sciences box modeling toolkit](#orgf45e314)
-- [News](#org8169de3)
-- [Contributing](#org8802082)
-- [Installation](#org10c118c)
-- [Documentation](#org426ab8b)
-- [Todo](#org4912dd6)
-- [License](#orgb0e517e)
+- [ESBMTK - An Earth-sciences box modeling toolkit](#org88547a8)
+- [News](#org2d9deaf)
+- [Contributing](#orgaea14f4)
+- [Installation](#org6245b3d)
+- [Documentation](#orgacbaaae)
+- [Todo](#org53be4bf)
+- [License](#orga4fd471)
 
 
-<a id="orgf45e314"></a>
+<a id="org88547a8"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
 ESBMTK is a python library that aims to simplify typical box modeling projects in the Earth-Sciences. The general focus is to make box modeling more approachable for classroom teaching. At present the code is under active development and the API changes frequently.
 
 
-<a id="org8169de3"></a>
+<a id="org2d9deaf"></a>
 
 # News
 
--   Nov. 11<sup>th</sup> 2022, v 0.9.0.0 Moved to odepack based backend. Removed now defunct code. The odepack backend doe not yet support isotope calculations.
+-   Nov. 11<sup>th</sup> 2022, v 0.9.0.0 Moved to odepack based backend. Removed now defunct code. The odepack backend does not yet support isotope calculations.
 
 -   0.8.0.0
     -   Cleanup of naming scheme which is now strictly hierarchical.
@@ -45,14 +45,14 @@ ESBMTK is a python library that aims to simplify typical box modeling projects i
 Older releases are mentioned in the Release History.
 
 
-<a id="org8802082"></a>
+<a id="orgaea14f4"></a>
 
 # Contributing
 
 Don't be shy. Contributing is as easy as finding bugs by using the code, or maybe you want to add a new process code? If you have plenty of time to spare, ESMBTK could use a solver for stiff problems, or a graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org10c118c"></a>
+<a id="org6245b3d"></a>
 
 # Installation
 
@@ -70,7 +70,7 @@ If you work with conda, it is recommended to install the above via conda. If you
 -   pip install esbmtk
 
 
-<a id="org426ab8b"></a>
+<a id="orgacbaaae"></a>
 
 # Documentation
 
@@ -79,7 +79,7 @@ The documentation is woefully out of date, at present, your best bet is the code
 The API documentation is available at <https://uliw.github.io/esbmtk/esbmtk/index.html>
 
 
-<a id="org4912dd6"></a>
+<a id="org53be4bf"></a>
 
 # Todo
 
@@ -88,7 +88,7 @@ The API documentation is available at <https://uliw.github.io/esbmtk/esbmtk/inde
 -   do more testing
 
 
-<a id="orgb0e517e"></a>
+<a id="orga4fd471"></a>
 
 # License
 
