@@ -472,7 +472,6 @@ class Model(esbmtkBase):
 
         for r in self.lor:
             if isinstance(r, (Reservoir, GasReservoir)):
-                # print(f" reading from {r.full_name}")
                 r.__read_state__("state")
 
         for r in self.lvr:
@@ -712,6 +711,8 @@ class Model(esbmtkBase):
             i = 0
             for r in icl:
                 r.c = results.y[i]
+                # this needs fixing if we have variable volumes
+                r.m =  results.y[i] * r.volume
                 i = i + 1
                 if r.isotopes:
                     r.l = results.y[i]
@@ -1345,13 +1346,15 @@ class ReservoirBase(esbmtkBase):
                     res = true if reservoir
 
         """
-
-        obj.m[:] = df.iloc[-3, col]
+        # this may need fixing
         if obj.isotopes:
+            obj.m[:] = df.iloc[-3, col]
             obj.l[:] = df.iloc[-3, col + 1]
             obj.c[:] = df.iloc[-3, col + 2]
             col += 2
         else:
+            obj.m[:] = df.iloc[-3, col]
+            obj.c[:] = df.iloc[-3, col+1]
             col += 1
 
         return col
