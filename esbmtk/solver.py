@@ -25,14 +25,20 @@ from numba.core import types
 from numba import njit
 from numba.typed import List
 import numpy as np
+import typing as tp
+
+if tp.TYPE_CHECKING:
+    from esbmtk import Reservoir, Flux
 
 
 def get_l_mass(m: float, d: float, r: float) -> float:
     """
-    Calculate the light isotope masses from bulk mass and delta value.
-    Arguments are m = mass/concentration, d= delta value, r = abundance ratio
-    """
+    :param m: mass or concentration
+    :param d: delta value
+    :param r: isotopic reference ratio
 
+    return mass or concentration of the light isotope
+    """
     return (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
 
 
@@ -85,16 +91,13 @@ def get_flux_data(m: float, d: float, r: float) -> np.ndarray:
 # @njit()
 def get_delta(l: np.ndarray, h: np.ndarray, r: float) -> np.ndarray:
     """Calculate the delta from the mass of light and heavy isotope
-    Arguments are l and h which are the masses of the light and
-    heavy isotopes respectively, r = abundance ratio of the
-    respective element. Note that this equation can result in a
-    siginificant loss of precision (on the order of 1E-13). I
-    therefore round the results to numbers largers 1E12 (otherwise a
-    delta of zero may no longer be zero)
+
+    :param l: light isotope mass/concentration 
+    :param h: heavy isotope mass/concentration
+    :param r: reference ratio 
 
     """
-
-    return 1000 * (h / l - r) / r
+     return 1000 * (h / l - r) / r
 
 
 def get_delta_i(l: float, h: float, r: float) -> float:
@@ -120,18 +123,17 @@ def get_flux_delta(f) -> float:
     return 1e3 * (h / l - r) / r
 
 
-def get_delta_h(h) -> float:
-    """Calculate the delta of a flux or reservoir from total mass
-    and mass of light isotope.
+def get_delta_h(R: Reservoir | Flux) -> float:
+    """Calculate the delta of a flux or reservoir
 
-    h = flux or reservoir handle
+    :param R: Reservoir or Flux handle
 
-    returns d a vector of delta values
-
+    returns d as vector of delta values
+    R.c = total concentration
+    R.l = concentration of the light isotope
     """
-
-    r = h.species.r
-    return np.where(h.l > 0, 1e3 * ((h.c - h.l) / h.l - r) / r, 0)
+    r = R.species.r  # reference ratio
+    return np.where(R.l > 0, 1e3 * ((R.c - R.l) / R.l - r) / r, 0)
 
 
 def execute(
@@ -291,7 +293,6 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, 
 
     i = 1
     for t in maxt:
-
         # loop over function (process) list and compute fluxes
         j = 0
         for _ in enumerate(fn):
@@ -342,7 +343,6 @@ def foo_no_p(fn_vr, input_data, vr_data, vr_params, fn, a, b, c, d, e, maxt, dt)
 
     i = 1
     for t in maxt:
-
         # calculate the resulting reservoir concentrations
         # summarize_fluxes(a, b, c, d, e, i, dt)
         r_steps: int = len(b)
@@ -388,7 +388,6 @@ def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
 
     i = 1
     for t in maxt:
-
         # loop over processes
         j = 0
         for _ in enumerate(fn):
@@ -473,7 +472,6 @@ def build_vr_list(lvr: list) -> tuple:
 
     count = 0
     for r in lvr:  # loop over reservoir processes
-
         func_name, in_d, vr_d, params = r.get_process_args()
         fn.append(func_name)
         input_data.append(in_d)

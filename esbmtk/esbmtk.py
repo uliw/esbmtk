@@ -135,7 +135,7 @@ class Model(esbmtkBase):
 
                 :param m_type: enables or disables isotope calculation for the
                 entire model.  The default value is "Not set" in this case
-                isotopes will only be calculaten for reservoirs which set
+                isotopes will only be calculated for reservoirs which set
                 the isotope keyword.  'mass_only' 'both' will override the
                 reservoir settings
 
@@ -533,7 +533,6 @@ class Model(esbmtkBase):
         solver = "python" if "solver" not in kwargs else kwargs["solver"]
         self.solver = solver
         if self.number_of_solving_iterations > 0:
-
             for i in range(self.number_of_solving_iterations):
                 print(
                     f"\n Iteration {i+1} out of {self.number_of_solving_iterations}\n"
@@ -561,10 +560,7 @@ class Model(esbmtkBase):
         print(f"This run used {process.memory_info().rss/1e9:.2f} Gbytes of memory \n")
 
     def get_delta_values(self):
-        """Calculate masses and isotope ratios in the usual delta
-        notation
-        """
-
+        """Calculate masses and isotope ratios in the usual delta"""
         for r in self.lor:
             r.m = r.c * r.volume
             if r.isotopes:
@@ -790,7 +786,6 @@ class Model(esbmtkBase):
             print(f"\n --- Flux Summary -- filtered by {fby}\n")
 
         for f in self.lof:  # loop over flux list
-
             if find_matching_strings(f.full_name, fby) and (
                 check_exlusion and exclude not in f.full_name or not check_exlusion
             ):
@@ -1008,7 +1003,6 @@ class ReservoirBase(esbmtkBase):
     """
 
     def __init__(self, **kwargs) -> None:
-
         raise NotImplementedError(
             "ReservoirBase should never be used. Use the derived classes"
         )
@@ -1088,9 +1082,10 @@ class ReservoirBase(esbmtkBase):
 
     def __set_with_isotopes__(self, i: int, value: float) -> None:
         """
-        write data by index
-        """
+        :param i: index
+        :param value: array of [mass, li, hi, d]
 
+        """
         self.m[i]: float = value[0]
         # update concentration and delta next. This is computationally inefficient
         # but the next time step may depend on on both variables.
@@ -1099,9 +1094,10 @@ class ReservoirBase(esbmtkBase):
 
     def __set_without_isotopes__(self, i: int, value: float) -> None:
         """
-        write data by index
-        """
+        :param i: index
+        :param value: array of [mass]
 
+        """
         self.m[i]: float = value[0]
         self.c[i]: float = self.m[i] / self.v[i]  # update concentration
 
@@ -1341,7 +1337,7 @@ class ReservoirBase(esbmtkBase):
 
         :param obj: # Flux
         :param df: pd.dataframe
-        :param col: int # index into column position 
+        :param col: int # index into column position
         :param res: bool = False # indicates whether obj is reservoir
         :returns: int # index into last column
         """
@@ -1369,7 +1365,7 @@ class ReservoirBase(esbmtkBase):
 
         :returns: int # index into last column
         """
-        
+
         # this may need fixing
         if obj.isotopes:
             obj.m[:] = df.iloc[-3, col]
@@ -1389,7 +1385,6 @@ class ReservoirBase(esbmtkBase):
         :param M: Model
         :param ax: # graph axes handle
         """
-        
 
         from esbmtk import set_y_limits
 
@@ -1456,7 +1451,7 @@ class ReservoirBase(esbmtkBase):
         :param index: int = 0 # this will show data at the given index
         :param indent: int = 0 # print indentation
         """
-        
+
         off: str = "  "
         index = 0 if "index" not in kwargs else kwargs["index"]
         if "indent" not in kwargs:
@@ -1852,10 +1847,8 @@ class Flux(esbmtkBase):
     You can access the flux data as
 
         - Name.m # mass
-
         - Name.d # delta
-
-        - Name.c # concentration
+        - Name.c # same as Name.m since flux has no concentration
     """
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
@@ -1970,7 +1963,7 @@ class Flux(esbmtkBase):
             if self.isotopes:
                 self.l: np.ndarray = np.zeros(self.model.steps)
                 if self.rate != 0:
-                    self.l = get_l_mass(self.c, self.delta, self.species.r)
+                    self.l = get_l_mass(self.m, self.delta, self.species.r)
                     self.fa[1] = self.l[0]
 
             if self.mo.number_of_solving_iterations > 0:
@@ -2302,7 +2295,7 @@ class SourceSink(esbmtkBase):
             self.isotopes = True
             self.m = 1
             self.c = 1
-            self.l = get_l_mass(self.m, d, self.species.r)
+            self.l = get_l_mass(self.c, d, self.species.r)
             # self.c = self.l / (self.m - self.l)
             # self.provided_kwargs.update({"delta": d})
 

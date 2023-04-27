@@ -329,7 +329,6 @@ class AddSignal(Process):
         return self.__get_process_args__()
 
     def __get_process_args_fi__(self):
-
         func_name: callable = self.p_add_signal_fi
 
         print(f"flux_name = {self.flux.full_name}")
@@ -351,7 +350,6 @@ class AddSignal(Process):
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_add_signal_fi(data, params, i) -> None:
-
         r: float = params[0]
         fm: float = data[0][i]  # fm
         fl: float = data[1][i]  # fl
@@ -368,7 +366,6 @@ class AddSignal(Process):
         data[4][:] = [fm, fl]
 
     def __get_process_args_fa__(self):
-
         func_name: callable = self.p_add_signal_fa
 
         print(f"flux_name = {self.flux.full_name}")
@@ -388,7 +385,6 @@ class AddSignal(Process):
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_add_signal_fa(data, params, i) -> None:
-
         r: float = params[0]
         fm: float = data[2][0]
         fl: float = data[2][1]
@@ -429,7 +425,6 @@ class SaveFluxData(Process):
 
     # setup a placeholder call function
     def __call__(self, i: int):
-
         self.f[i] = self.f.fa
 
     def get_process_args(self):
@@ -454,7 +449,6 @@ class SaveFluxData(Process):
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_save_flux(data, params, i) -> None:
-
         data[0][i] = data[2][0]
         data[1][i] = data[2][1]
 
@@ -539,7 +533,7 @@ class ScaleFlux(Process):
 
         # get the target isotope ratio based on upstream delta
         c = self.reservoir.l[i - 1] / (
-            self.reservoir.m[i - 1] - self.reservoir.l[i - 1]
+            self.reservoir.c[i - 1] - self.reservoir.l[i - 1]
         )
 
         fl: float = rm * c / (c + 1)
@@ -705,7 +699,6 @@ class Fractionation(Process):
         return
 
     def get_process_args(self):
-
         func_name: callable = self.p_fractionation
 
         data = List(
@@ -774,7 +767,10 @@ class RateConstant(Process):
                 (str, list, Reservoir, int, float, np.float64, np.ndarray),
             ],
             "right": ["None", (str, list, Reservoir, int, float, np.ndarray)],
-            "gas": ["None", (str, Reservoir, GasReservoir, Source, Sink, np.ndarray, float)],
+            "gas": [
+                "None",
+                (str, Reservoir, GasReservoir, Source, Sink, np.ndarray, float),
+            ],
             "liquid": ["None", (Reservoir, Source, Sink, float)],
             "solubility": ["None", (str, int, float, np.float64)],
             "piston_velocity": ["None", (str, int, float, np.float64)],
@@ -913,7 +909,6 @@ class weathering(RateConstant):
             self.fixed = True
 
     def __without_isotopes__(self, i: int) -> None:
-
         f = self.scale * (
             self.f_0 * (self.reservoir_ref.c[i - 1] / self.pco2_0) ** self.ex
         )
@@ -1116,13 +1111,11 @@ class MultiplySignal(Process):
         return func_name, data, params
 
     def get_process_args(self):
-
         return self.__get_process_args__()
 
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_multiply_signal_fi(data, params, i) -> None:
-
         c = data[2][i]
         m = data[0][i] * c
         l = data[1][i] * c
@@ -1132,7 +1125,6 @@ class MultiplySignal(Process):
     @staticmethod
     @njit(fastmath=True, error_model="numpy")
     def p_multiply_signal_fa(data, params, i) -> None:
-
         c = data[0][i]
         m = data[1][0] * c  # m
         l = data[1][1] * c  # l
@@ -1377,11 +1369,11 @@ class GasExchange(RateConstant):
         self.volume = self.gas.volume
 
     def ode(self) -> None:
-
-        return self.scale * (self.gas.c * (1 - self.p_H2O) * self.solubility - self.ref_species * 1000)  # area in m^2  # Atmosphere  # p_H2O  # SA_co2 = mol/(m^3 atm)  # [CO2]aq mol
+        return self.scale * (
+            self.gas.c * (1 - self.p_H2O) * self.solubility - self.ref_species * 1000
+        )  # area in m^2  # Atmosphere  # p_H2O  # SA_co2 = mol/(m^3 atm)  # [CO2]aq mol
 
     def __without_isotopes__(self, i: int) -> None:
-
         # set flux
         # note that the sink delta is co2aq as returned by the carbonate VR
         # this equation is for mmol but esbmtk uses mol, so we need to
