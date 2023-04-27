@@ -6,27 +6,40 @@ if tp.TYPE_CHECKING:
 
 
 def get_initial_conditions(M: Model) -> tuple[list, dict, list, list]:
-    """get list of initial conditions. THis list needs to match
-    the number of equations. We need to consider 3 types reservoirs:
+    """Get list of initial conditions.  This list needs to match the
+    number of equations.
 
-    1) Reservoirs that change as a result of physical fluxes
-       i.e. r.lof > 0. These require a flux statements and a
-       reservoir equation.
+    :param Model: The model handle
 
-    2) Reservoirs that do not have active fluxes but are computed
-       as a tracer, i.e.. HCO3. These only require a reservoir
-       equation
+    :return: R = list of initial conditions as floats
+    :return: icl = dict[Reservoir, list[int, int]] where reservoir
+             indicates the reservoir handle, and the list contains the
+             index into the reservoir data.  list[0] = concentration
+             list[1] concentration of the light isotope.
+    :return: cpl = list of reservoirs that use function to evaluate
+             reservoir data
+    :return: ipl = list of static reservoirs that serve as input
 
-    3) Reservoirs that do not change but are used as input. Those
-       should not happen in a well formed model, but we cannot
-       exclude the possibility. In this case, there is no flux
-       equation, and we state that dR/dt = 0
+        We need to consider 3 types of reservoirs:
 
-    get_ic() will look up the index position of the reservoir_handle on
-    icl, and then use this index to retrieve the correspinding value in R
+        1) Reservoirs that change as a result of physical fluxes i.e.
+        r.lof > 0.  These require a flux statements and a reservoir
+        equation.
 
-    Isotopes are handled by adding a second entry
+        2) Reservoirs that do not have active fluxes but are computed
+        as a tracer, i.e.. HCO3.  These only require a reservoir
+        equation
 
+        3) Reservoirs that do not change but are used as input.  Those
+        should not happen in a well formed model, but we cannot
+        exclude the possibility.  In this case, there is no flux
+        equation, and we state that dR/dt = 0
+
+        get_ic() will look up the index position of the
+        reservoir_handle on icl, and then use this index to retrieve
+        the correspinding value in R
+
+        Isotopes are handled by adding a second entry
     """
 
     R = []  # list of initial conditions
@@ -52,21 +65,29 @@ def get_initial_conditions(M: Model) -> tuple[list, dict, list, list]:
     return R, icl, cpl, ipl
 
 
-def write_reservoir_equations(
-    eqs,
-    M: Model,
-    rel: str,  # string with reservoir names used in return function
-    ind2: str,  # indent 2 times
-    ind3: str,  # indent 3 times
-) -> str:    # updated list of reservoirs
-    """Loop over reservoirs and their fluxes to build the reservoir equation"""
+def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> str:
+    """Loop over reservoirs and their fluxes to build the reservoir
+    equation
+
+    :param eqs: equation file handle
+    :param rel: string with reservoir names used in return function.
+        Note that these are the reervoir names as used by the
+        equations and not the reservoir names used by esbmtk. E.g.,
+        M1.R1.O2 will be M1_R1_O2,
+    :param ind2: string with indentation offset
+    :param ind3: string with indentation offset
+
+    :returns: rel = updated list of reservoirs names
+    """
 
     from esbmtk import ReservoirGroup
 
     for r in M.lor:  # loop over reservoirs
-        # Write equations for each reservoir
-        # create unique variable names. Reservoirs are typiclally called
-        # M.rg.r so we replace all dots with underscore
+        """
+        Write equations for each reservoir and create unique variable
+        names.  Reservoirs are typiclally called M.rg.r so we replace
+        all dots with underscore -> M_rg_r
+        """
 
         name = f'{r.full_name.replace(".", "_")}'
         fex = ""
@@ -81,13 +102,15 @@ def write_reservoir_equations(
             fname = f'{flux.full_name.replace(".", "_")}'
             fex = f"{fex}{ind3}{sign} {fname}\n"
 
-        # check if reservoir requires carbonate burial fluxes
-        if isinstance(r.parent, ReservoirGroup) and r.parent.has_cs2 and r.species.name in ["DIC", "TA"]:
+        if (  # check if reservoir requires carbonate burial fluxes
+            isinstance(r.parent, ReservoirGroup)
+            and r.parent.has_cs2
+            and r.species.name in ["DIC", "TA"]
+        ):
             fn = f"{r.full_name}.burial".replace(".", "_")
             fex = f"{fex}{ind3}- {fn}\n"
 
-        # avoid reservoirs without active fluxes
-        if len(r.lof) > 0:
+        if len(r.lof) > 0:  # avoid reservoirs without active fluxes
             eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
             rel = f"{rel}{ind3}{name},\n"
 
@@ -100,7 +123,7 @@ def write_reservoir_equations_with_isotopes(
     rel: str,  # string with reservoir names returned by setup_ode
     ind2: str,  # indent 2 times
     ind3: str,  # indent 3 times
-) -> str:    # updated list of reservoirs
+) -> str:  # updated list of reservoirs
     """Loop over reservoirs and their fluxes to build the reservoir equation"""
 
     from esbmtk import ReservoirGroup
@@ -126,7 +149,11 @@ def write_reservoir_equations_with_isotopes(
                 fex = f"{fex}{ind3}{sign} {fname}\n"
 
             # check if reservoir requires carbonate burial fluxes
-            if isinstance(r.parent, ReservoirGroup) and r.parent.has_cs2 and r.species.name == "DIC":
+            if (
+                isinstance(r.parent, ReservoirGroup)
+                and r.parent.has_cs2
+                and r.species.name == "DIC"
+            ):
                 fn = f"{r.full_name}.burial".replace(".", "_")
                 fn = f"{fn}_l"
                 fex = f"{fex}{ind3}- {fn}\n"
@@ -143,16 +170,19 @@ def write_reservoir_equations_with_isotopes(
 def write_equations_2(
     M: Model, R: list[float], icl: dict, cpl: list, ipl: list
 ) -> tuple:
-    """Write file that contains the ode-equations for M
-    Returns the list R that contains the initial condition
-    for each reservoir
+    """Write file that contains the ode-equations for the Model
+    Returns the list R that contains the initial condition for each
+    reservoir
 
-    icl: dict of reservoirs that have actual fluxes
-    cpl: list of reservoirs that hjave no fluxes but are computed based on other R's
-    ipl: list of reservoir that do not change in concentration
-
+    :param Model: Model handle
+    :param R: list of floats with the initial conditions for each
+              reservoir
+    :param icl: dict of reservoirs that have actual fluxes
+    :param cpl: list of reservoirs that have no fluxes but are
+        computed based on other reservoirs
+    :param ipl: list of reservoir that do not change in concentration
     """
-    from esbmtk import Model, ReservoirGroup
+    # from esbmtk import Model, ReservoirGroup
     import pathlib as pl
 
     # get pathlib object
@@ -211,7 +241,10 @@ class setup_ode():
 
         eqs.write(f"{ind2}{M.name} = M\n")
 
-        sep = "# ---------------- write computed reservoir equations -------- #\n" + "# that do not depend on fluxes"
+        sep = (
+            "# ---------------- write computed reservoir equations -------- #\n"
+            + "# that do not depend on fluxes"
+        )
 
         eqs.write(f"\n{sep}\n")
 
@@ -250,7 +283,10 @@ class setup_ode():
                 if flux.save_flux_data:
                     eqs.write(f"{ind2}{flux.full_name}.m[self.i] = {ex}\n")
 
-        sep = "# ---------------- write computed reservoir equations -------- #\n" + "# that do depend on fluxes"
+        sep = (
+            "# ---------------- write computed reservoir equations -------- #\n"
+            + "# that do depend on fluxes"
+        )
 
         eqs.write(f"\n{sep}\n")
 
@@ -299,19 +335,28 @@ class setup_ode():
 
         eqs.write(f"{ind2}]\n")
 
-            # if len(R) != len(rel.split(",")) - 1:
-            #     raise ValueError(
-            #         f"number of initial conditions ({len(R)})"
-            #         f"does not match number of return values"
-            #         f"({len(rel.split(','))-1}')\n\n"
-            #     )
+        # if len(R) != len(rel.split(",")) - 1:
+        #     raise ValueError(
+        #         f"number of initial conditions ({len(R)})"
+        #         f"does not match number of return values"
+        #         f"({len(rel.split(','))-1}')\n\n"
+        #     )
 
     return fqfn
 
 
 def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str):
-    """Create formula expressions that describes the flux f
-    return expression ex as string
+    """Create formula expressions that calcultes the flux F.  Return
+    the equation expression as string
+
+    :param flux: The flux object for which we create the equation
+    :param M: The current model object
+    :param R: The list of initial conditions for each reservoir
+    :param icl: dict of reservoirs that have actual fluxes
+
+    :returns: A tuple where the first string is the equation for the
+              total flux, and the second string is the equation for
+              the flux of the light isotope
     """
 
     ind2 = 8 * " "  # indentation
@@ -323,25 +368,25 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
     cfn = flux.parent.full_name  # shorthand for the connection object name
 
     if c.ctype.casefold() == "regular":
-        ex, exl = get_regular_flux(flux, c, icl, ind2, ind3)
+        ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3)
 
     elif c.ctype == "scale_with_concentration":
-        ex, exl = get_scale_with_concentration(flux, c, cfn, icl)
+        ex, exl = get_scale_with_concentration_eq(flux, c, cfn, icl)
 
     elif c.ctype == "scale_with_mass":
-        ex, exl = get_scale_with_concentration(flux, c, cfn, icl)
+        ex, exl = get_scale_with_concentration_eq(flux, c, cfn, icl)
 
     elif c.ctype == "scale_with_flux":
-        ex, exl = get_scale_with_flux(flux, c, cfn, icl, ind2, ind3)
+        ex, exl = get_scale_with_flux_eq(flux, c, cfn, icl, ind2, ind3)
 
     elif c.ctype == "weathering":
-        ex, exl = get_weathering(flux, c, cfn, icl, ind2, ind3)
+        ex, exl = get_weathering_eq(flux, c, cfn, icl, ind2, ind3)
 
     elif c.ctype == "gas_exchange":  # Gasexchange
         if c.isotopes:
-            ex = get_gas_exchange_w_isotopes(flux, c, cfn, icl, ind2, ind3)
+            ex = get_gas_exchange_w_isotopes_eq(flux, c, cfn, icl, ind2, ind3)
         else:
-            ex = get_gas_exchange(flux, c, cfn, icl, ind2, ind3)
+            ex = get_gas_exchange_eq(flux, c, cfn, icl, ind2, ind3)
     else:
         raise ValueError(
             f"Connection type {c.ctype} for {c.full_name} is not implmented"
@@ -350,9 +395,14 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
     return ex, exl
 
 
-def check_signal_2(ex: str, c: tp.union(Connection, Connect)) -> str:
-    """Test if connection requires a signal"""
+def check_signal_2(ex: str, c: Connection | Connect) -> str:
+    """Test if connection is affected by a signal
 
+    :param ex: equation string
+    :param c: connection object
+
+    :returns: (modified) equation string
+    """
     sign = ""
     if c.signal != "None":
         # get signal type
@@ -369,23 +419,32 @@ def check_signal_2(ex: str, c: tp.union(Connection, Connect)) -> str:
 
 
 def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
-    """Get initial condition. If r in icl, return index
-    expression into R. If r is not in index, return
-    Reservoir concentration a t=0
+    """Get initial condition in a reservoir.  If the reservoir is icl,
+    return index expression into R.c. If the reservoir is not in the
+    index, return the Reservoir concentration a t=0
 
     In both cases return these a string
 
-    If the isotopes varibale is set to True, return the pointter to
-    the light isotope reser instead
+    If isotopes == True, return the pointer to the light isotope
+    concentration
 
-    icl: dict[Reservoir, [c, l]]
+    :param r: A reservoir handle
+    :param icl: icl = dict[Reservoir, list[int, int]] where reservoir
+        indicates the reservoir handle, and the list contains the
+        index into the reservoir data.  list[0] = concentration
+        list[1] concentration of the light isotope.
+    :param isotopes: whether to return the total mass or the mass of
+        the light isotope
+
+    :raises ValueError: get_ic: can't find {r.full_name} in list of
+        initial conditions
+
+    :returns: the string s which is the full_name of the reservoir
+              concentration or isotope concentration
     """
-
     from esbmtk import Source, Sink
 
     s = ""
-
-    # print(f"r = {r.full_name}")
 
     if r in icl:
         s = f"R[{icl[r][1]}]" if isotopes else f"R[{icl[r][0]}]"
@@ -405,9 +464,20 @@ def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
 # ------------------------ define processes ------------------------- #
 
 
-def write_cs_1(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> list:
-    """Write the python code that defines carbonate system 1"""
+def write_cs_1(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> str:
+    """Write the python code that defines carbonate system 1, add the
+    name of the reservoir carbonate system to the string of reservoir
+    names in rel
 
+    :param eqs: equation file handle
+    :param r: reservoir_handle
+    :param icl: dict of reservoirs that have actual fluxes
+    :param rel: string with reservoir names returned by setup_ode
+    :param ind2: indent 2 times
+    :param ind3: indent 3 times
+
+    :returns: rel: modied string of reservoir names
+    """
     fname = f"{r.parent.full_name}.Hplus".replace(".", "_")
     cname = f"{r.parent.full_name}.CO2aq".replace(".", "_")
 
@@ -425,8 +495,20 @@ def write_cs_1(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> 
     return rel
 
 
-def write_cs_2(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> list:
-    """Write the python code that defines carbonate system 2"""
+def write_cs_2(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> str:
+    """Write the python code that defines carbonate system 2, add the
+    name of the reservoir carbonate system to the string of reservoir
+    names in rel
+
+    :param eqs: equation file handle
+    :param r: reservoir_handle
+    :param icl: dict of reservoirs that have actual fluxes
+    :param rel: string with reservoir names returned by setup_ode
+    :param ind2: indent 2 times
+    :param ind3: indent 3 times
+
+    :returns: rel: modied string of reservoir names
+    """
 
     influx = r.parent.cs.ref_flux[0].full_name.replace(".", "_")
 
@@ -476,19 +558,29 @@ def write_cs_2(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> 
     return rel
 
 
-def get_regular_flux(
+def get_regular_flux_eq(
     flux: Flux,  # flux instance
-    c: Connect,  # connection instance
+    c: Connect | Connection,  # connection instance
     icl: dict,  # list of initial conditions
     ind2,  # indentation
     ind3,  # indentation
 ) -> tuple:
-    """Equation defining a fixed rate flux
-    Example:
+    """Create a string containing the equation for a regular (aka
+    fixed rate) connection, e.g.,
 
-    ex =  M1.C_Fw_to_CO2_At_DIC_volcanic_flux._F.rate
-    exl = M1.C_Fw_to_CO2_At_DIC_volcanic_flux._F.rate
+    ex = M1.C_Fw_to_CO2_At_DIC_volcanic_flux._F.rate + rate
 
+    exl = see code below
+
+    :param flux: flux instance
+    :param c: connection object
+    :param icl: dict of reservoirs that have actual fluxes
+    :param ind2: indent 2 times
+    :param ind3: indent 3 times
+
+    :returns: two strings, where the first describes the equation for
+              the total flux, and the second describes the rate for
+              the light isotope
     """
 
     ex = f"{flux.full_name}.rate"
@@ -510,7 +602,7 @@ def get_regular_flux(
             exl = f"{exl}  # fixed rate with delta"
 
         elif c.alpha != "None":
-            exl = _extracted_from_get_regular_flux_35(c, icl, ind3, ind2)
+            exl = add_fractionation(c, icl, ind3, ind2)
         # this will probably not work
         exl = check_signal_2(exl, c)
 
@@ -521,37 +613,63 @@ def get_regular_flux(
 
 
 # TODO Rename this here and in `get_regular_flux`
-def _extracted_from_get_regular_flux_35(c, icl, ind3, ind2):
+def add_fractionation(c: Connect | Connection, icl: dict, ind3: str, ind2: str) -> str:
+    """If the connection involves isotope fractionation, add equation
+    string that calculates the isotope offset.
+
+    :param c: Connection Object
+    :param icl: dict of reservoirs that have actual fluxes
+    :param ind2: indent 2 times
+    :param ind3: indent 3 times
+
+    :raises ValueError: if alpha is not between 0.9 and 1.1
+
+    :returns: string with the fractionation equation
+    """
     if c.alpha > 1.1 or c.alpha < 0.9:
         raise ValueError(
-            f"alpha needs to be given as fractional value not in permil\n"
-            f"e.g., a=1 -< no fractionation\n"
+            f"alpha needs to be given as fractional value between"
+            f"0.9 and 1.1 not in permil\n"
+            f"e.g., a=1.025"
         )
-    r = c.source.species.r
+    # r = c.source.species.r
     a = c.alpha
     s_c = get_ic(c.source, icl)
     s_l = get_ic(c.source, icl, isotopes=True)
 
-    result = f"(\n{ind3} - {s_l} * {s_c}\n{ind3}/({a} * {s_l} - {a} * {s_c} - {s_l}){ind2})"
+    result = (
+        f"(\n{ind3} - {s_l} * {s_c}\n{ind3}/({a} * {s_l} - {a} * {s_c} - {s_l}){ind2})"
+    )
 
-    result = f"{result}  # fixed rate with alpha"
+    # 123 we can probably drop this line
+    # result = f"{result}  # fixed rate with alpha"
     return result
 
 
-def get_scale_with_concentration(
+def get_scale_with_concentration_eq(
     flux: Flux,  # flux instance
-    c: Connect,  # connection instance
+    c: Connect | Connection,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: dict,  # list of initial conditions
 ) -> tuple(str, str):
-    """Equation defining a flux that scales with the concentration in the upstream
-    reservoir
+    """Create equation string defining a flux that scales with the
+    concentration in the upstream reservoir
 
-    Example:
+    Example: M1_CG_D_b_to_L_b_TA_thc__F =
+    M1.CG_D_b_to_L_b.TA_thc.scale * R[5]
 
-    M1_CG_D_b_to_L_b_TA_thc__F = M1.CG_D_b_to_L_b.TA_thc.scale * R[5]
+    :param flux: Flux object
+    :param c: connection instance
+    :param cfn: full name of the connection instance
+    :param icl: dict[Reservoir, list[int, int]] where reservoir
+        indicates the reservoir handle, and the list contains the
+        index into the reservoir data.  list[0] = concentration
+        list[1] concentration of the light isotope.
+
+    :returns: two strings with the respective equations for the change
+              in the total reservoir concentration and the
+              concentration of the light isotope
     """
-
     s_c = get_ic(c.source, icl)  # get index to concentration
     ex = f"{cfn}.scale * {s_c}"  # {c.id} scale with conc in {c.source.full_name}"
     ex = check_signal_2(ex, c)
@@ -569,53 +687,66 @@ def get_scale_with_concentration(
     return ex, exl
 
 
-def get_scale_with_mass(
+# def get_scale_with_mass(
+#     flux: Flux,  # flux instance
+#     c: Connect|Connection,  # connection instance
+#     cfn: str,  # full name of the connection instance
+#     icl: dict,  # list of initial conditions
+# ) -> tuple(str, str):
+#     """Equation defining a flux that scales with the concentration in the upstream
+#     reservoir
+
+#     Example:
+
+#     M1_CG_D_b_to_L_b_TA_thc__F = M1.CG_D_b_to_L_b.TA_thc.scale * R[5]
+#     """
+
+#     s_c = get_ic(c.source, icl)  # get index to concentration
+#     ex = _extracted_from_get_scale_with_mass_21(cfn, c, s_c)
+#     if c.isotopes:
+#         s_l = get_ic(c.source, icl, isotopes=True)  # get index to concentration
+#         exl = _extracted_from_get_scale_with_mass_21(cfn, c, s_l)
+#     else:
+#         exl = ""
+
+#     return ex, exl
+
+
+# # TODO Rename this here and in `get_scale_with_mass`
+# def _extracted_from_get_scale_with_mass_21(cfn, c, arg2):
+#     result = f"{cfn}.scale * {c.source.full_name}.volume * {arg2}"
+#     result = check_signal_2(result, c)
+#     result = f"{result}  # scale with mass"
+#     return result
+
+
+def get_scale_with_flux_eq(
     flux: Flux,  # flux instance
-    c: Connect,  # connection instance
-    cfn: str,  # full name of the connection instance
-    icl: dict,  # list of initial conditions
-) -> tuple(str, str):
-    """Equation defining a flux that scales with the concentration in the upstream
-    reservoir
-
-    Example:
-
-    M1_CG_D_b_to_L_b_TA_thc__F = M1.CG_D_b_to_L_b.TA_thc.scale * R[5]
-    """
-
-    s_c = get_ic(c.source, icl)  # get index to concentration
-    ex = _extracted_from_get_scale_with_mass_21(cfn, c, s_c)
-    if c.isotopes:
-        s_l = get_ic(c.source, icl, isotopes=True)  # get index to concentration
-        exl = _extracted_from_get_scale_with_mass_21(cfn, c, s_l)
-    else:
-        exl = ""
-
-    return ex, exl
-
-
-# TODO Rename this here and in `get_scale_with_mass`
-def _extracted_from_get_scale_with_mass_21(cfn, c, arg2):
-    result = f"{cfn}.scale * {c.source.full_name}.volume * {arg2}"
-    result = check_signal_2(result, c)
-    result = f"{result}  # scale with mass"
-    return result
-
-
-def get_scale_with_flux(
-    flux: Flux,  # flux instance
-    c: Connect,  # connection instance
+    c: Connect | Connection,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: dict,  # list of initial conditions
     ind2: str,  # indentation
     ind3: str,  # indentation
 ) -> tuple(str, str):
-    """Equation defining a flux that scales with strength of another flux
-    reservoir
+    """Equation defining a flux that scales with strength of another
+    flux reservoir
 
     Example:
 
-    M1_C_Fw_to_L_b_TA_wca_ta__F = M1.C_Fw_to_L_b_TA_wca_ta.scale * M1_C_Fw_to_L_b_DIC_Ca_W__F
+    M1_C_Fw_to_L_b_TA_wca_ta__F = M1.C_Fw_to_L_b_TA_wca_ta.scale *
+    M1_C_Fw_to_L_b_DIC_Ca_W__F
+
+    :param flux: Flux object
+    :param c: connection instance
+    :param cfn: full name of the connection instance
+    :param icl: dict[Reservoir, list[int, int]] where reservoir
+        indicates the reservoir handle, and the list contains the
+        index into the reservoir data.  list[0] = concentration
+        list[1] concentration of the light isotope.
+
+    :returns: two strings with the respective equations for the change
+              in the total reservoir concentration and the
+              concentration of the light isotope
     """
 
     p = flux.parent.ref_flux.parent
@@ -647,9 +778,9 @@ def get_scale_with_flux(
     return ex, exl
 
 
-def get_weathering(
+def get_weathering_eq(
     flux: Flux,  # flux instance
-    c: Connect,  # connection instance
+    c: Connect | Connection,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: dict,  # list of initial conditions
     ind2: str,
@@ -667,6 +798,18 @@ def get_weathering(
             * (R[10]/M1.C_Fw_to_L_b_DIC_Ca_W.pco2_0)
             **  M1.C_Fw_to_L_b_DIC_Ca_W.ex
         )
+
+    :param flux: Flux object
+    :param c: connection instance
+    :param cfn: full name of the connection instance
+    :param icl: dict[Reservoir, list[int, int]] where reservoir
+        indicates the reservoir handle, and the list contains the
+        index into the reservoir data.  list[0] = concentration
+        list[1] concentration of the light isotope.
+
+    :returns: two strings with the respective equations for the change
+              in the total reservoir concentration and the
+              concentration of the light isotope
 
     """
 
@@ -701,26 +844,37 @@ def get_weathering(
     return ex, exl
 
 
-def get_gas_exchange(
+def get_gas_exchange_eq(
     flux: Flux,  # flux instance
     c: Connect,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: dict,  # list of initial conditions
     ind2: str,
     ind3: str,
-) -> tuple(str, str):
+) -> str:
     """Equation defining a flux that scales with the concentration of
     of the gas in the atmosphere versus the concentration of the gas
-    in solution. See Zeebe, 2012, doi:10.5194/gmd-5-149-2012
+    in solution.  See Zeebe, 2012, doi:10.5194/gmd-5-149-2012
 
-    M1_C_H_b_to_CO2_At_gex_hb_F = gas_exchange_ode(
-            M1.C_H_b_to_CO2_At.scale,
-            R[10],  # pco2 in atmosphere
-            M1.C_H_b_to_CO2_At.water_vapor_pressure,
-            M1.C_H_b_to_CO2_At.solubility,
-            M1_H_b_CO2aq, # [co2]aq
-            )  # gas_exchange
+    ..Example::
 
+        M1_C_H_b_to_CO2_At_gex_hb_F = gas_exchange_ode(
+             M1.C_H_b_to_CO2_At.scale,
+             R[10],  # pco2 in atmosphere
+             M1.C_H_b_to_CO2_At.water_vapor_pressure,
+             M1.C_H_b_to_CO2_At.solubility,
+             M1_H_b_CO2aq, # [co2]aq
+         )  # gas_exchange
+
+    :param flux: Flux object
+    :param c: connection instance
+    :param cfn: full name of the connection instance
+    :param icl: dict[Reservoir, list[int, int]] where reservoir
+        indicates the reservoir handle, and the list contains the
+        index into the reservoir data.  list[0] = concentration
+        list[1] concentration of the light isotope.
+
+    :returns: string with the gas exchange equation
     """
 
     # get co2_aq reference
@@ -752,9 +906,9 @@ def get_gas_exchange(
     return ex
 
 
-def get_gas_exchange_w_isotopes(
+def get_gas_exchange_w_isotopes_eq(
     flux: Flux,  # flux instance
-    c: Connect,  # connection instance
+    c: Connect | Connection,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: dict,  # list of initial conditions
     ind2: str,
@@ -762,22 +916,33 @@ def get_gas_exchange_w_isotopes(
 ) -> tuple(str, str):
     """Equation defining a flux that scales with the concentration of
     of the gas in the atmosphere versus the concentration of the gas
-    in solution. See Zeebe, 2012, doi:10.5194/gmd-5-149-2012
+    in solution.  See Zeebe, 2012, doi:10.5194/gmd-5-149-2012
 
-    M1_C_H_b_to_CO2_At_gex_hb_F, M1_C_H_b_to_CO2_At_gex_hb_F_l  = gas_exchange_ode(
-            M1.C_H_b_to_CO2_At.scale, # surface area in m^2
-            R[10],  # gas c in atmosphere
-            R[11],  # gas c_l in atmosphere
-            R[12],  # c of reference species, e.g., DIC
-            R[13],  # c_l reference species, e.g., DIC_12
-            M1.C_H_b_to_CO2_At.water_vapor_pressure,
-            M1.C_H_b_to_CO2_At.solubility,
-            M1_H_b_CO2aq, # gas concentration in liquid, e.g., [co2]aq
-            a_db,  # fractionation factor between dissolved CO2aq and HCO3-
-            a_gb,  # fractionation between CO2g HCO3-
-            )  # gas_exchange
+    ..Example::
 
-     source_l = get_ic(sb_DIC, icl, isotopes=True)
+        M1_C_H_b_to_CO2_At_gex_hb_F, M1_C_H_b_to_CO2_At_gex_hb_F_l  = gas_exchange_ode(
+           M1.C_H_b_to_CO2_At.scale, # surface area in m^2
+           R[10],  # gas c in atmosphere
+           R[11],  # gas c_l in atmosphere
+           R[12],  # c of reference species, e.g., DIC
+           R[13],  # c_l reference species, e.g., DIC_12
+           M1.C_H_b_to_CO2_At.water_vapor_pressure,
+           M1.C_H_b_to_CO2_At.solubility,
+           M1_H_b_CO2aq, # gas concentration in liquid, e.g., [co2]aq
+           a_db,  # fractionation factor between dissolved CO2aq and HCO3-
+           a_gb,  # fractionation between CO2g HCO3-
+        )  # gas_exchange
+
+    :param flux: Flux object
+    :param c: connection instance
+    :param cfn: full name of the connection instance
+    :param icl: dict[Reservoir, list[int, int]] where reservoir
+        indicates the reservoir handle, and the list contains the
+        index into the reservoir data.  list[0] = concentration
+        list[1] concentration of the light isotope.
+
+    :returns: string with the gas exchange equation for the light
+              isotope
     """
 
     # get isotope data

@@ -6,10 +6,7 @@ setup.cfg
 setup.py
 Documentation/C_Cycle_Ocean.csv
 Documentation/test-data.csv
-esbmtk/Constructor.py
-esbmtk/Equation_Terms.py
 esbmtk/Hypsometric_Curve_05m.csv
-esbmtk/ODEINT_Solver.py
 esbmtk/__init__.py
 esbmtk/carbonate_chemistry.py
 esbmtk/carbonate_chemistry_2.py
@@ -17,8 +14,7 @@ esbmtk/connections.py
 esbmtk/esbmtk.py
 esbmtk/esbmtk_base.py
 esbmtk/extended_classes.py
-esbmtk/odeuli2.py
-esbmtk/processes-old.py
+esbmtk/ode_backend.py
 esbmtk/processes.py
 esbmtk/sealevel.py
 esbmtk/solver.py

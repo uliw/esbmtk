@@ -1,19 +1,19 @@
 """
-     esbmtk: A general purpose Earth Science box model toolkit
-     Copyright (C), 2020 Ulrich G. Wortmann
+esbmtk: A general purpose Earth Science box model toolkit Copyright
+(C), 2020 Ulrich G.  Wortmann
 
-     This program is free software: you can redistribute it and/or modify
-     it under the terms of the GNU General Public License as published by
-     the Free Software Foundation, either version 3 of the License, or
-     (at your option) any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or (at
+your option) any later version.
 
-     This program is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-     GNU General Public License for more details.
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
 
-     You should have received a copy of the GNU General Public License
-     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
 import typing as tp
@@ -53,126 +53,105 @@ if tp.TYPE_CHECKING:
 
 
 class Model(esbmtkBase):
-    """This class is used to specify a new model
-
-    Example:
-
-          esbmtkModel(name   =  "Test_Model",
-                      start    = "0 yrs",    # optional: start time
-                      stop     = "10000 yrs", # end time
-                      timestep = "2 yrs",    # as a string "2 yrs"
-                      offset = "0 yrs",    # optional: time offset for plot
-                      mass_unit = "mol",   #required
-                      volume_unit = "l", #required
-                      time_label = optional, defaults to "Time"
-                      display_precision = optional, defaults to 0.01,
-                      m_type = "mass_only/both"
-                      plot_style = 'default', optional defaults to 'default'
-                      number_of_datapoints = optional, see below
-                      step_limit = optional, see below
-                      register = 'local', see below
-                      save_flux_data = False, see below
-                      ideal_water = False
-                      use_ode = False
-                    )
-
-    ref_time: will offset the time axis by the specified amount, when
-                 plotting the data, .i.e., the model time runs from to
-                 100, but you want to plot data as if where from 2000
-                 to 2100, you would specify a value of 2000. This is
-                 for display purposes only, and does not affect the
-                 model. Care must be taken that any external data
-                 references the model time domain, and not the display
-                 time.
-
-    display precision: affects the on-screen display of data. It is
-                       also cutoff for the graphicak output. I.e., the
-                       interval f the y-axis will not be smaller than
-                       the display_precision.
-
-    m_type: enables or disables isotope calculation for the entire
-            model.  The default value is "Not set" in this case
-            isotopes will only be calculaten for reservoirs which set
-            the isotope keyword. 'mass_only' 'both' will override the
-            reservoir settings
-
-    register = local/None. If set to 'None' all objects are registered
-               in the global namespace the default setting is local,
-               i.e. all objects are registered in the model namespace.
-
-    save_flux_data: Normally, flux data is not stored. Set this to True
-               for debugging puposes. Note, Fluxes with signals are always
-               stored. You can also enable this option for inidividual
-               connections (fluxes).
-
-    get_delta_values: Compute delta values as postprocessing step.
-
-    All of the above keyword values are available as variables with
-    Model_Name.keyword
+    """This class is used to specify a new model.  See the __init__()
+    method for a detailed explanation of the parameters
 
     The user facing methods of the model class are
-       - Model_Name.info()
-       - Model_Name.save_data()
-       - Model_Name.plot_data()
-       - Model_Name.plot_reservoirs() takes an optional filename as argument
-       - Model_Name.plot([sb.DIC, sb.TA]) plot any object in the list
-       - Model_Name.save_state() Save the model state
-       - Model_name.read_state() Initialize with a previous model state
-       - Model_Name.run(), there are 2 optional arguments here, solver="hybrid"
-         and solver = "numba". Both involve a 3 to 5 second overhead. The hybrid
-         solver is compatible with all connection types, and about 3 times faster
-         than the  regular solver. The numba solver is about 10 faster, but currently
-         only supports a limited set of connection types.
-       - Model_Name.list_species()
-       - Model_name.flux_summary()
-       - Model_Name.connection_summary()
 
+        - Model_Name.info()
+
+        - Model_Name.save_data()
+
+        - Model_Name.plot_data()
+
+        - Model_Name.plot_reservoirs() takes an optional filename as
+          argument
+
+        - Model_Name.plot([sb.DIC, sb.TA]) plot any object in the list
+
+        - Model_Name.save_state() Save the model state
+
+        - Model_name.read_state() Initialize with a previous model
+          state
+
+        - Model_Name.run(),
+
+        - Model_Name.list_species()
+
+        - Model_name.flux_summary()
+
+        - Model_Name.connection_summary()
 
     User facing variable are Model_Name.time which contains the time
     axis.
 
     Optional, you can provide the element keyword which will setup a
-    default set of Species for Carbon and Sulfur. In this case, there
-    is no need to define elements or species. The argument to this
+    default set of Species for Carbon and Sulfur.  In this case, there
+    is no need to define elements or species.  The argument to this
     keyword are either "Carbon", or "Sulfur" or both as a list
     ["Carbon", "Sulfur"].
 
 
-    Dealing with large datasets:
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    1) Limiting the size of the data which is being saved with save_data()
-
-         number_of_datapoints = 100 will only write every nth data point to file.
-                                where n = timesteps/ number_of_datapoints
-
-         this defaults to 1000 until set explicitly.
-
-    2) Reducing the memory footprint
-
-    Models with a long runtime can easily exceed the available
-    computer memory, as much if it is goobled up storing the model
-    results. In this case, one can set the optional parameter
-
-       step_limit = 1E6
-
-    The above will limit the total number of iterations to 1E6, then
-    save the data up to this point, and then restart the
-    model. Subsequent results will be appended to the results.
-
-    Caveat Emptor: If your model uses a signal instance, all signal
-    data must fit into a single iteration set. At present, there is no
-    support for signals which extend beyond the step_limit.
-
-    In order to prevent the creation of massive datafiles, number_of_datapoints
-    defaults to 1000. Modify as needed.
-
     """
 
     def __init__(self, **kwargs: dict[any, any]) -> None:
-        """Init Sequence"""
+        """Initialize a model instance
 
-        # from . import ureg, Q_
+        :param **kwargs: A dictionary with key value pairs.
+
+            .. Example::
+
+                    esbmtkModel(name   =  "Test_Model",
+                                start    = "0 yrs",    # optional: start time
+                                stop     = "10000 yrs", # end time
+                                timestep = "2 yrs",    # as a string "2 yrs"
+                                offset = "0 yrs",    # optional: time offset for plot
+                                mass_unit = "mol",   #required
+                                volume_unit = "l", # required
+                                element = ["Carbon", "Sulfur" ]
+                                time_label = #  optional, defaults to "Time"
+                                display_precision = #  optional, defaults to 0.01,
+                                m_type = "mass_only/both"
+                                plot_style = #  optional defaults to 'default'
+                                step_limit = optional, see below
+                                register = 'local', see below
+                                save_flux_data = False, see below
+                                ideal_water = False
+                                use_ode = False
+                              )
+
+                :param ref_time: will offset the time axis by the specified
+                amount, when plotting the data, .i.e., the model time runs
+                from to 100, but you want to plot data as if where from
+                2000 to 2100, you would specify a value of 2000.  This is
+                for display purposes only, and does not affect the model.
+                Care must be taken that any external data references the
+                model time domain, and not the display time.
+
+                :param display precision: affects the on-screen display of data.
+                It is also cutoff for the graphicak output.  I.e., the
+                interval f the y-axis will not be smaller than the
+                display_precision.
+
+                :param m_type: enables or disables isotope calculation for the
+                entire model.  The default value is "Not set" in this case
+                isotopes will only be calculaten for reservoirs which set
+                the isotope keyword.  'mass_only' 'both' will override the
+                reservoir settings
+
+                :param register: local/None.  If set to 'None' all objects are
+                registered in the global namespace the default setting is
+                local, i.e. all objects are registered in the model
+                namespace.
+
+                :param save_flux_data: Normally, flux data is not stored.  Set
+                this to True for debugging puposes.  Note, Fluxes with
+                signals are always stored.  You can also enable this
+                option for inidividual connections (fluxes).
+
+                get_delta_values: Compute delta values as postprocessing
+                step.
+        """
 
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["M", (str)],
@@ -210,8 +189,6 @@ class Model(esbmtkBase):
             "concentration_unit",
         ]
         self.__initialize_keyword_variables__(kwargs)
-
-        # self.__validateandregister__(kwargs)  # initialize keyword values
 
         # empty list which will hold all reservoir references
         self.lmo: list = []
@@ -348,17 +325,13 @@ class Model(esbmtkBase):
         hypsometry(name="hyp", model=self, register=self)
 
     def info(self, **kwargs) -> None:
-        """Show an overview of the object properties.
-        Optional arguments are
-        index  :int = 0 this will show data at the given index
-        indent :int = 0 indentation
+        """Show an overview of the object properties.  Optional
+        arguments are (name/default/explanation)
 
+        :param index: int = 0 # this will show data at the given index
+        :param indent: int = 0 # print indentation
         """
         off: str = "  "
-        # if "index" not in kwargs:
-        #    index = 0
-        # else:
-        # index = kwargs["index"]
 
         if "indent" not in kwargs:
             indent = 0
@@ -379,9 +352,8 @@ class Model(esbmtkBase):
                 print(f"{off}{off}{ind}{s.n}")
 
     def save_state(self) -> None:
-        """Save model state. Similar to save data, but only saves the last 10
-        time-steps
-
+        """Save model state.  Similar to save data, but only saves the
+        last 10 time-steps
         """
 
         start: int = -10
@@ -400,10 +372,10 @@ class Model(esbmtkBase):
         their own CSV file
 
         Optional arguments:
-        stride = int  # every nth element
-        start = int   # start index
-        stop = int    # end index
-        append = True/False #
+        :param stride: int = 0  # every nth element
+        :param start: int  = 0  # start index
+        :param stop: int = self.steps # end index
+        :param append: bool = False #
 
         """
 
@@ -433,10 +405,8 @@ class Model(esbmtkBase):
         print("done writing")
 
     def restart(self):
-        """Restart the model with result of the last run.
-        This is useful for long runs which otherwise would used
-        to much memory
-
+        """Restart the model with result of the last run.  This is
+        useful for long runs which otherwise would used to much memory
         """
 
         for r in self.lor:
@@ -460,15 +430,14 @@ class Model(esbmtkBase):
         # self.time = (arange(self.steps) * self.dt) + self.start
 
     def read_state(self):
-        """This will initialize the model with the result of a previous model
-        run.  For this to work, you will need issue a
-        Model.save_state() command at then end of a model run. This
+        """This will initialize the model with the result of a
+        previous model run.  For this to work, you will need issue a
+        Model.save_state() command at then end of a model run.  This
         will create the necessary data files to initialize a
         subsequent model run.
-
         """
 
-        from esbmtk import Reservoir, GasReservoir
+        from esbmtk import Reservoir, GasReservoir  # GasReservoir
 
         for r in self.lor:
             if isinstance(r, (Reservoir, GasReservoir)):
@@ -479,9 +448,8 @@ class Model(esbmtkBase):
             r.__read_state__("state")
 
     def merge_temp_results(self):
-        """Replace the datafields which were used for an individual iteration
-        with the data we saved from the previous iterations
-
+        """Replace the datafields which were used for an individual
+        iteration with the data we saved from the previous iterations
         """
 
         self.time = self.timec
@@ -496,9 +464,11 @@ class Model(esbmtkBase):
     def plot(self, pl: list = None, **kwargs) -> None:
         """Plot all objects specified in pl
 
-        M.plot([sb.PO4, sb.DIC],fn=test.pdf)
+        Example::
 
-        fn is optional
+            M.plot([sb.PO4, sb.DIC], fn='test.pdf')
+
+        fn is optional and defaults to the Model Name
         """
 
         if pl is None:
@@ -592,7 +562,8 @@ class Model(esbmtkBase):
 
     def get_delta_values(self):
         """Calculate masses and isotope ratios in the usual delta
-        notation"""
+        notation
+        """
 
         for r in self.lor:
             r.m = r.c * r.volume
@@ -607,10 +578,9 @@ class Model(esbmtkBase):
         #         f.d = get_delta_h(f)
 
     def sub_sample_data(self):
-        """Subsample the data. No need to save 100k lines of data You need to
-        do this _after_ saving the state, but before plotting and
-        saving the data
-
+        """Subsample the data.  No need to save 100k lines of data You
+        need to do this _after_ saving the state, but before plotting
+        and saving the data
         """
 
         stride = int(len(self.time) / self.number_of_datapoints)
@@ -649,7 +619,9 @@ class Model(esbmtkBase):
             )
 
     def ode_solver(self, kwargs):
-        """Use the ode solver based on Uli's approach"""
+        """
+        Use the ode solver based on Uli's approach
+        """
         from esbmtk import Q_, write_equations_2, get_initial_conditions
         from scipy.integrate import odeint, solve_ivp
         import sys
@@ -712,7 +684,7 @@ class Model(esbmtkBase):
             for r in icl:
                 r.c = results.y[i]
                 # this needs fixing if we have variable volumes
-                r.m =  results.y[i] * r.volume
+                r.m = results.y[i] * r.volume
                 i = i + 1
                 if r.isotopes:
                     r.l = results.y[i]
@@ -776,23 +748,24 @@ class Model(esbmtkBase):
             print(f"{e.n}")
             e.list_species()
 
-    def flux_summary(self, **kwargs: dict) -> tuple:
+    def flux_summary(self, **kwargs: dict) -> [tuple | None]:
         """Show a summary of all model fluxes
 
         Optional parameters:
 
-        filter_by :str = filter on flux name or part of flux name
-                         words separated by blanks act as additional
-                         conditions, i.e., all words must occur in a given name
+        :param filter_by: str = "" # filter on flux name or part of
+            flux name words separated by blanks act as additional
+            conditions, i.e., all words must occur in a given name
 
-        return_list: bool = False, if True return a list of fluxes matching the filter_by string.
+        :param return_list: bool = False, # if True return a list of
+            fluxes matching the filter_by string.
 
-        exclude:str = exclude all results matching this string
+        :param exclude: str = "" # exclude all results matching this
+            string
 
-        Example:
+            Example::
 
-              names = M.flux_summary(filter_by="POP A_sb", return_list=True)
-
+                names = M.flux_summary(filter_by="POP A_sb", return_list=True)
         """
 
         fby = ""
@@ -834,10 +807,9 @@ class Model(esbmtkBase):
 
         Optional parameters:
 
-        filter_by :str = filter on flux name or part of flux name
-                         words separated by blanks act as additional conditions
-                         i.e., all words must occur in a given name
-
+        :param filter_by: str = "" # filter on flux name or part of
+            flux name words separated by blanks act as additional
+            conditions i.e., all words must occur in a given name
         """
 
         if "filter_by" in kwargs:
@@ -862,8 +834,9 @@ class Model(esbmtkBase):
         print("")
 
     def clear(self):
-        """delete all model objects"""
-
+        """
+        delete all model objects
+        """
         for o in self.lmo:
             print(f"deleting {o}")
             del __builtins__[o]
@@ -875,21 +848,38 @@ class Element(esbmtkBase):
 
     Example::
 
-            Element(name      = "S "           # the element name
-                    model     = Test_model     # the model handle
-                    mass_unit =  "mol",        # base mass unit
-                    li_label  =  "$^{32$S",    # Label of light isotope
-                    hi_label  =  "$^{34}S",    # Label of heavy isotope
-                    d_label   =  r"$\delta^{34}$S",  # Label for delta value
-                    d_scale   =  "VCDT",       # Isotope scale
-                    r         = 0.044162589,   # isotopic abundance ratio for element
-                  )
-
+        Element(name      = "S "           # the element name
+                model     = Test_model     # the model handle
+                mass_unit =  "mol",        # base mass unit
+                li_label  =  "$^{32$S",    # Label of light isotope
+                hi_label  =  "$^{34}S",    # Label of heavy isotope
+                d_label   =  r"$\delta^{34}$S",  # Label for delta value
+                d_scale   =  "VCDT",       # Isotope scale
+                r         = 0.044162589,   # isotopic abundance ratio for element
+              )
     """
 
     # set element properties
     def __init__(self, **kwargs) -> any:
-        """Initialize all instance variables"""
+        """Initialize all instance variables Defaults are as follows::
+
+            self.defaults: dict[str, list[any, tuple]] = {
+               "name": ["M", (str)],
+               "model": ["None", (str, Model)],
+               "register": ["None", (str, Model)],
+               "full_name": ["None", (str)],
+               "li_label": ["None", (str)],
+               "hi_label": ["None", (str)],
+               "d_label": ["None", (str)],
+               "d_scale": ["None", (str)],
+               "r": [1, (float, int)],
+               "mass_unit": ["None", (str, Q_)],
+               "parent": ["None", (str, Model)],
+
+        }
+
+        Required keywords: "name", "model", "mass_unit"
+        """
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["M", (str)],
             "model": ["None", (str, Model)],
@@ -904,15 +894,11 @@ class Element(esbmtkBase):
             "parent": ["None", (str, Model)],
         }
 
-        # provide a list of absolutely required keywords
-        # provide a list of absolutely required keywords
+        # list of absolutely required keywords
         self.lrk: list = ["name", "model", "mass_unit"]
         self.__initialize_keyword_variables__(kwargs)
 
         self.parent = self.model
-        # self.__initerrormessages__()
-        # self.__validateandregister__(kwargs)  # initialize keyword values
-
         # legacy name aliases
         self.n: str = self.name  # display name of species
         self.mo: Model = self.model  # model handle
@@ -930,28 +916,45 @@ class Element(esbmtkBase):
         self.__register_name_new__()
 
     def list_species(self) -> None:
-        """List all species which are predefined for this element"""
+        """
+        List all species which are predefined for this element
+        """
 
         for e in self.lsp:
             print(e.n)
 
     def __register_species_with_model__(self) -> None:
-        """Bit of  hack, but makes model code more readable"""
+        """
+        Bit of hack, but makes model code more readable
+        """
 
         for s in self.lsp:
             setattr(self.model, s.name, s)
 
 
 class Species(esbmtkBase):
-    """Each model, can have one or more species.  This class sets species
-    specific properties
+    """Each model, can have one or more species.  This class sets
+    species specific properties
 
-          Example::
+    Example::
 
-                Species(name = "SO4",
-                        element = S,
+        Species(name = "SO4",
+                element = S,
+
     )
 
+    Defaults::
+
+        self.defaults: dict[any, any] = {
+             "name": ["None", (str)],
+             "element": ["None", (Element, str)],
+             "display_as": [kwargs["name"], (str)],
+             "m_weight": [0, (int, float, str)],
+             "register": ["None", (Model, Element, Reservoir, GasReservoir)],
+             "parent": ["None", (Model, Element, Reservoir, GasReservoir)],
+         }
+
+    Required keywords: "name", "element"
     """
 
     # set species properties
@@ -1000,7 +1003,9 @@ class Species(esbmtkBase):
 
 
 class ReservoirBase(esbmtkBase):
-    """Base class for all Reservoir objects"""
+    """
+    Base class for all Reservoir objects
+    """
 
     def __init__(self, **kwargs) -> None:
 
@@ -1075,12 +1080,16 @@ class ReservoirBase(esbmtkBase):
         return self
 
     def __getitem__(self, i: int) -> np.ndarray:
-        """Get flux data by index"""
+        """
+        Get flux data by index
+        """
 
         return np.array([self.m[i], self.l[i], self.c[i]])
 
     def __set_with_isotopes__(self, i: int, value: float) -> None:
-        """write data by index"""
+        """
+        write data by index
+        """
 
         self.m[i]: float = value[0]
         # update concentration and delta next. This is computationally inefficient
@@ -1089,13 +1098,17 @@ class ReservoirBase(esbmtkBase):
         self.l[i]: float = value[1] / self.v[i]  # update concentration
 
     def __set_without_isotopes__(self, i: int, value: float) -> None:
-        """write data by index"""
+        """
+        write data by index
+        """
 
         self.m[i]: float = value[0]
         self.c[i]: float = self.m[i] / self.v[i]  # update concentration
 
     def __update_mass__() -> None:
-        """Place holder function"""
+        """
+        Place holder function
+        """
 
         raise NotImplementedError("__update_mass__ is not yet implmented")
 
@@ -1126,8 +1139,16 @@ class ReservoirBase(esbmtkBase):
         append: bool,
         directory: str,
     ) -> None:
-        """To be called by write_data and save_state"""
+        """Write data to file.  This function is called by the
+        write_data() and save_state() methods
 
+        :param prefix:
+        :param start:
+        :param stop:
+        :param stride:
+        :param append:
+        :param directory:
+        """
         from pathlib import Path
 
         p = Path(directory)
@@ -1186,9 +1207,9 @@ class ReservoirBase(esbmtkBase):
         return df
 
     def __sub_sample_data__(self, stride) -> None:
-        """There is usually no need to keep more than a thousand data points
-        so we subsample the results before saving, or processing them
-
+        """There is usually no need to keep more than a thousand data
+        points so we subsample the results before saving, or
+        processing them
         """
 
         # print(f"Reset data with {len(self.m)}, stride = {self.mo.reset_stride}")
@@ -1197,11 +1218,10 @@ class ReservoirBase(esbmtkBase):
         self.c = self.c[2:-2:stride]
 
     def __reset_state__(self) -> None:
-        """Copy the result of the last computation back to the beginning
-        so that a new run will start with these values
+        """Copy the result of the last computation back to the
+        beginning so that a new run will start with these values
 
         save the current results into the temp fields
-
         """
 
         # print(f"Reset data with {len(self.m)}, stride = {self.mo.reset_stride}")
@@ -1217,9 +1237,8 @@ class ReservoirBase(esbmtkBase):
         self.c[0] = self.c[-2]
 
     def __merge_temp_results__(self) -> None:
-        """Once all iterations are done, replace the data fields
-        with the saved values
-
+        """Once all iterations are done, replace the data fields with
+        the saved values
         """
 
         self.m = self.mc
@@ -1231,15 +1250,21 @@ class ReservoirBase(esbmtkBase):
 
         The CSV file must have the following columns
 
-        Model Time     t
-        Reservoir_Name m
-        Reservoir_Name l
-        Reservoir_Name h
-        Reservoir_Name d
-        Reservoir_Name c
-        Flux_name m
-        Flux_name l etc etc.
+            - Model Time t
 
+            - Reservoir_Name m
+
+            - Reservoir_Name l
+
+            - Reservoir_Name h
+
+            - Reservoir_Name d
+
+            - Reservoir_Name c
+
+            - Flux_name m
+
+            - Flux_name l etc etc.
         """
 
         from .utility_functions import is_name_in_list, get_object_from_list
@@ -1312,20 +1337,17 @@ class ReservoirBase(esbmtkBase):
     def __assign_flux_data__(
         self, obj: any, df: pd.DataFrame, col: int, res: bool
     ) -> int:
+        """Assign the third last entry data to all values in flux
+
+        :param obj: # Flux
+        :param df: pd.dataframe
+        :param col: int # index into column position 
+        :param res: bool = False # indicates whether obj is reservoir
+        :returns: int # index into last column
         """
-        Assign the third last entry data to all values in flux
 
-        parameters: df = dataframe
-                    col = column number
-                    res = true if reservoir
-
-        """
-
-        # print(f"name = {obj.full_name}")
-        # breakpoint()
         obj.fa[0] = df.iloc[0, col]
 
-        # obj.fa[3] = df.iloc[0, col + 3]
         if obj.isotopes:
             obj.fa[1] = df.iloc[0, col + 1]
             obj.fa[2] = df.iloc[0, col + 2]
@@ -1338,14 +1360,16 @@ class ReservoirBase(esbmtkBase):
     def __assign_reservoir_data__(
         self, obj: any, df: pd.DataFrame, col: int, res: bool
     ) -> int:
-        """
-        Assign the third last entry data to all values in reservoir
+        """Assign the third last entry data to all values in reservoir
 
-        parameters: df = dataframe
-                    col = column number
-                    res = true if reservoir
+        :param obj: # Reservoir
+        :param df: pd.dataframe
+        :param col: int # index into column position
+        :param res: True # indicates whether obj is reservoir
 
+        :returns: int # index into last column
         """
+        
         # this may need fixing
         if obj.isotopes:
             obj.m[:] = df.iloc[-3, col]
@@ -1354,16 +1378,18 @@ class ReservoirBase(esbmtkBase):
             col += 2
         else:
             obj.m[:] = df.iloc[-3, col]
-            obj.c[:] = df.iloc[-3, col+1]
+            obj.c[:] = df.iloc[-3, col + 1]
             col += 1
 
         return col
 
     def __plot__(self, M: Model, ax) -> None:
-        """Plot instructions.
-        M: Model
-        ax: matplotlib axes handle
+        """Plot Model data
+
+        :param M: Model
+        :param ax: # graph axes handle
         """
+        
 
         from esbmtk import set_y_limits
 
@@ -1424,12 +1450,13 @@ class ReservoirBase(esbmtkBase):
             ax.xaxis.set_ticks_position("bottom")
 
     def info(self, **kwargs) -> None:
-        """Show an overview of the object properties.
-        Optional arguments are
-        index  :int = 0 this will show data at the given index
-        indent :int = 0 indentation
+        """Show an overview of the object properties.  Optional
+        arguments are
 
+        :param index: int = 0 # this will show data at the given index
+        :param indent: int = 0 # print indentation
         """
+        
         off: str = "  "
         index = 0 if "index" not in kwargs else kwargs["index"]
         if "indent" not in kwargs:
@@ -1462,93 +1489,144 @@ class ReservoirBase(esbmtkBase):
 class Reservoir(ReservoirBase):
     """This object holds reservoir specific information.
 
-          Example::
+    Example::
 
-                  Reservoir(name = "foo",      # Name of reservoir
-                            species = S,          # Species handle
-                            delta = 20,           # initial delta - optional (defaults  to 0)
-                            mass/concentration = "1 unit"  # species concentration or mass
-                            volume/geometry = "1E5 l",      # reservoir volume (m^3)
-                            plot = "yes"/"no", defaults to yes
-                            plot_transform_c = a function reference, optional (see below)
-                            legend_left = str, optional, useful for plot transform
-                            display_precision = number, optional, inherited from Model
-                            register = optional, use to register with Reservoir Group
-                            isotopes = True/False otherwise use Model.m_type
-                            seawater_parameters= dict, optional
-                            )
+        Reservoir(name = "foo",      # Name of reservoir
+                  species = S,          # Species handle
+                  delta = 20,           # initial delta - optional (defaults  to 0)
+                  mass/concentration = "1 unit"  # species concentration or mass
+                  volume/geometry = "1E5 l",      # reservoir volume (m^3)
+                  plot = "yes"/"no", defaults to yes
+                  plot_transform_c = a function reference, optional (see below)
+                  legend_left = str, optional, useful for plot transform
+                  display_precision = number, optional, inherited from Model
+                  register = optional, use to register with Reservoir Group
+                  isotopes = True/False otherwise use Model.m_type
+                  seawater_parameters= dict, optional
+                  )
 
-          You must either give mass or concentration.  The result will always be displayed
-          as concentration though.
+    You must either give mass or concentration.  The result will
+    always be displayed as concentration though.
 
-          You must provide either the volume or the geometry keyword. In the latter case
-          provide a list where the first entry is the upper depth datum, the second entry is
-          the lower depth datum, and the third entry is the area percentage. E.g., to specify
-          the upper 200 meters of the entire ocean, you would write:
+    You must provide either the volume or the geometry keyword.  In
+    the latter case provide a list where the first entry is the upper
+    depth datum, the second entry is the lower depth datum, and the
+    third entry is the area percentage.  E.g., to specify the upper
+    200 meters of the entire ocean, you would write:
 
-                 geometry=[0,-200,1]
+    geometry=[0,-200,1]
 
-          the corresponding ocean volume will then be calculated by the calc_volume method
-          in this case the following instance variables will also be set:
+    the corresponding ocean volume will then be calculated by the
+    calc_volume method in this case the following instance variables
+    will also be set:
 
-                 self.volume in model units (usually liter)
-                 self.are:a surface area in m^2 at the upper bounding surface
-                 self.area_dz: area of seafloor which is intercepted by this box.
-                 self.area_fraction: area of seafloor which is intercepted by this
-                                    relative to the total ocean floor area
+    self.volume in model units (usually liter) self.are:a surface area
+    in m^2 at the upper bounding surface self.area_dz: area of
+    seafloor which is intercepted by this box.  self.area_fraction:
+    area of seafloor which is intercepted by this relative to the
+    total ocean floor area
 
-          Adding seawater_properties:
-          ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-          If this optional parameter is specified, a SeaWaterConstants instance will be registered
-          for this Reservoir as Reservoir.swc
-          See the  SeaWaterConstants class for details how to specify the parameters, e.g.:
-          seawater_parameters = {"temperature": 2, "pressure": 240, "salinity" : 35},
+    Adding seawater_properties: ~~~~~~~~~~~~~~~~~~~~~~~~~~~ If this
+    optional parameter is specified, a SeaWaterConstants instance will
+    be registered for this Reservoir as Reservoir.swc See the
+    SeaWaterConstants class for details how to specify the parameters,
+    e.g.: seawater_parameters = {"temperature": 2, "pressure": 240,
+    "salinity" : 35},
 
-          Using a transform function
-          ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Using a transform function ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-          In some cases, it is useful to transform the reservoir
-          concentration data before plotting it.  A good example is the H+
-          concentration in water which is better displayed as pH.  We can
-          do this by specifying a function to convert the reservoir
-          concentration into pH units::
+    In some cases, it is useful to transform the reservoir
+    concentration data before plotting it.  A good example is the H+
+    concentration in water which is better displayed as pH.  We can do
+    this by specifying a function to convert the reservoir
+    concentration into pH units::
 
-              def phc(c :float) -> float:
-                  # Calculate concentration as pH. c can be a number or numpy array
+        def phc(c :float) -> float:
+            # Calculate concentration as pH. c can be a number or numpy array
 
-                  import numpy as np
+            import numpy as np
 
-                  pH :float = -np.log10(c)
-                  return pH
+            pH :float = -np.log10(c)
+            return pH
 
-          this function can then be added to a reservoir as::
+    this function can then be added to a reservoir as::
 
-          hplus.plot_transform_c = phc
 
-          You can modify the left legend to suit the transform via the legend_left keyword
+    hplus.plot_transform_c = phc
 
-          Note, at present the plot_transform_c function will only take one
-          argument, which always defaults to the reservoir
-          concentration. The function must return a single argument which
-          will be interpreted as the transformed reservoir concentration.
+    You can modify the left legend to suit the transform via the
+    legend_left keyword
 
-    Accesing Reservoir Data:
-    ~~~~~~~~~~~~~~~~~~~~~~~~
+    Note, at present the plot_transform_c function will only take one
+    argument, which always defaults to the reservoir concentration.
+    The function must return a single argument which will be
+    interpreted as the transformed reservoir concentration.
+
+    Accesing Reservoir Data: ~~~~~~~~~~~~~~~~~~~~~~~~
 
     You can access the reservoir data as:
 
-    - Name.m # mass
-    - Name.d # delta
-    - Name.c # concentration
+        - Name.m # mass
+
+        - Name.d # delta
+
+        - Name.c # concentration
 
     Useful methods include:
 
-    - Name.write_data() # save data to file
-    - Name.info()   # info Reservoir
+        - Name.write_data() # save data to file
+
+        - Name.info() # info Reservoir
     """
 
     def __init__(self, **kwargs) -> None:
-        """Initialize a reservoir."""
+        """Initialize a reservoir
+
+        Defaults::
+
+            self.defaults: dict[str, list[any, tuple]] = {
+              "name": ["None", (str)],
+              "species": ["None", (str, Species)],
+              "delta": ["None", (int, float, str)],
+              "concentration": ["None", (str, Q_, float)],
+              "mass": ["None", (str, Q_)],
+              "volume": ["None", (str, Q_)],
+              "geometry": ["None", (list, str)],
+              "plot_transform_c": ["None", (any)],
+              "legend_left": ["None", (str)],
+              "plot": ["yes", (str)],
+              "groupname": ["None", (str)],
+              "rtype": ["regular", (str)],
+              "function": ["None", (str, col.Callable)],
+              "display_precision": [0.01, (int, float)],
+              "register": [
+                  "None",
+                  (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, Model, str),
+              ],
+              "parent": [
+                  "None",
+                  (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, Model, str),
+              ],
+              "full_name": ["None", (str)],
+              "seawater_parameters": ["None", (dict, str)],
+              "isotopes": [False, (bool)],
+              "ideal_water": ["None", (str, bool)],
+              "has_cs1": [False, (bool)],
+              "has_cs2": [False, (bool)],
+
+        }
+
+        Required Keywords::
+
+            self.lrk: list = [
+              "name",
+              "species",
+              "register",
+              ["volume", "geometry"],
+              ["mass", "concentration"],
+
+        ]
+        """
 
         from esbmtk import (
             SourceGroup,
@@ -1753,32 +1831,66 @@ class Reservoir(ReservoirBase):
 
 
 class Flux(esbmtkBase):
-    """A class which defines a flux object. Flux objects contain
+    """A class which defines a flux object.  Flux objects contain
     information which links them to an species, describe things like
     the mass and time unit, and store data of the total flux rate at
-    any given time step. Similarly, they store the flux of the light
-    and heavy isotope flux, as well as the delta of the flux. This
-    is typically handled through the Connect object. If you set it up manually
+    any given time step.  Similarly, they store the flux of the light
+    and heavy isotope flux, as well as the delta of the flux.  This is
+    typically handled through the Connect object.  If you set it up
+    manually
 
-    Flux = (name = "Name" # optional, defaults to _F
-            species = species_handle,
-            delta = any number,
-            rate  = "12 mol/s" # must be a string
-            display_precision = number, optional, inherited from Model
+    Example::
+
+        Flux = (name = "Name" # optional, defaults to _F
+             species = species_handle,
+             delta = any number,
+             rate  = "12 mol/s" # must be a string
+             display_precision = number, optional, inherited from Model
+
     )
 
-     You can access the flux data as
-    - Name.m # mass
-    - Name.d # delta
-    - Name.c # concentration
+    You can access the flux data as
 
+        - Name.m # mass
+
+        - Name.d # delta
+
+        - Name.c # concentration
     """
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """
-        Initialize a flux. Arguments are the species name the flux rate
-        (mol/year), the delta value and unit
+        Initialize a flux.  Arguments are the species name the flux
+        rate (mol/year), the delta value and unit
 
+        Defaults::
+
+            self.defaults: dict[str, list[any, tuple]] = {
+              "name": ["None", (str)],
+              "species": ["None", (str, Species)],
+              "delta": [0, (str, int, float)],
+              "rate": ["None", (str, Q_, int, float)],
+              "plot": ["yes", (str)],
+              "display_precision": [0.01, (int, float)],
+              "isotopes": [False, (bool)],
+              "register": [
+                  "None",
+                  (
+                      str,
+                      Reservoir,
+                      GasReservoir,
+                      Connection,
+                      Connect,
+                      AirSeaExchange,
+                      Signal,
+                  ),
+              ],
+              "save_flux_data": [False, (bool)],
+              "id": ["None", (str)],
+
+        }
+
+        Required Keywords: "species", "rate", "register"
         """
 
         from esbmtk import (
@@ -1916,19 +2028,25 @@ class Flux(esbmtkBase):
         return self.__set_data__(i, value)
 
     def __getitem__(self, i: int) -> np.ndarray:
-        """Get data by index"""
+        """
+        Get data by index
+        """
         # return self.__get_data__(i)
         return self.fa
 
     def __set_with_isotopes__(self, i: int, value: np.ndarray) -> None:
-        """Write data by index"""
+        """
+        Write data by index
+        """
 
         self.m[i] = value[0]
         self.l[i] = value[1]
         self.fa = value[:4]
 
     def __set_without_isotopes__(self, i: int, value: np.ndarray) -> None:
-        """Write data by index"""
+        """
+        Write data by index
+        """
 
         self.fa = [value[0], 0]
         self.m[i] = value[0]
@@ -1938,25 +2056,30 @@ class Flux(esbmtkBase):
         return
 
     def __add__(self, other):
-        """adding two fluxes works for the masses, but not for delta"""
+        """
+        adding two fluxes works for the masses, but not for delta
+        """
 
         self.fa = self.fa + other.fa
         self.m = self.m + other.m
         self.l = self.l + other.l
 
     def __sub__(self, other):
-        """substracting two fluxes works for the masses, but not for delta"""
+        """
+        substracting two fluxes works for the masses, but not for
+        delta
+        """
 
         self.fa = self.fa - other.fa
         self.m = self.m - other.m
         self.l = self.l - other.l
 
     def info(self, **kwargs) -> None:
-        """Show an overview of the object properties.
-        Optional arguments are
-        index  :int = 0 this will show data at the given index
-        indent :int = 0 indentation
+        """Show an overview of the object properties.  Optional
+        arguments are:
 
+        :param index: int = 0 this will show data at the given index
+        :param indent: int = 0 indentation
         """
         index = 0 if "index" not in kwargs else kwargs["index"]
         if "indent" not in kwargs:
@@ -1994,8 +2117,9 @@ class Flux(esbmtkBase):
 
     def __plot__(self, M: Model, ax) -> None:
         """Plot instructions.
-        M: Model
-        ax: matplotlib axes handle
+
+        :param M: Model
+        :param ax: matplotlib axes handle
         """
 
         from esbmtk import set_y_limits
@@ -2038,9 +2162,9 @@ class Flux(esbmtkBase):
             ax.xaxis.set_ticks_position("bottom")
 
     def __sub_sample_data__(self, stride) -> None:
-        """There is usually no need to keep more than a thousand data points
-        so we subsample the results before saving, or processing them
-
+        """There is usually no need to keep more than a thousand data
+        points so we subsample the results before saving, or
+        processing them
         """
 
         if self.save_flux_data:
@@ -2048,8 +2172,8 @@ class Flux(esbmtkBase):
             self.l = self.m[2:-2:stride]
 
     def __reset_state__(self) -> None:
-        """Copy the result of the last computation back to the beginning
-        so that a new run will start with these values.
+        """Copy the result of the last computation back to the
+        beginning so that a new run will start with these values.
 
         Also, copy current results into temp field
         """
@@ -2061,9 +2185,8 @@ class Flux(esbmtkBase):
             self.l[0] = self.l[-2]
 
     def __merge_temp_results__(self) -> None:
-        """Once all iterations are done, replace the data fields
-        with the saved values
-
+        """Once all iterations are done, replace the data fields with
+        the saved values
         """
 
         self.m = self.mc
@@ -2071,21 +2194,44 @@ class Flux(esbmtkBase):
 
 class SourceSink(esbmtkBase):
     """
-    This is a meta class to setup a Source/Sink objects. These are not
-    actual reservoirs, but we stil need to have them as objects
+    This is a meta class to setup a Source/Sink objects.  These are
+    not actual reservoirs, but we stil need to have them as objects
     Example::
 
-           Sink(name = "Pyrite",
-               species = SO4,
-               display_precision = number, optional, inherited from Model
-               delta = number or str. optional defaults to "None"
-           )
+        Sink(name = "Pyrite",
+            species = SO4,
+            display_precision = number, optional, inherited from Model
+            delta = number or str. optional defaults to "None"
+        )
 
-    where the first argument is a string, and the second is a reservoir handle
-
+    where the first argument is a string, and the second is a
+    reservoir handle
     """
 
     def __init__(self, **kwargs) -> None:
+        """
+        Defaults::
+
+            self.defaults: dict[str, list[any, tuple]] = {
+               "name": ["None", (str)],
+               "species": ["None", (str, Species)],
+               "display_precision": [0.01, (int, float)],
+               "register": [
+                   "None",
+                   (
+                       SourceGroup,
+                       SinkGroup,
+                       ReservoirGroup,
+                       ConnectionGroup,
+                       Model,
+                       str,
+                   ),
+               ],
+               "delta": ["None", (str, int, float)],
+               "isotopes": [False, (bool)],
+
+        Required Keywords: "name", "species", "register"
+        """
 
         from esbmtk import (
             SourceGroup,
@@ -2163,29 +2309,21 @@ class SourceSink(esbmtkBase):
 
 class Sink(SourceSink):
     """
-    This is just a wrapper to setup a Sink object
-    Example::
+    This is just a wrapper to setup a Sink object Example::
 
-           Sink(name = "Pyrite",species =SO4)
+        Sink(name = "Pyrite",species =SO4)
 
-    where the first argument is a string, and the second is a species handle
+    where the first argument is a string, and the second is a species
+    handle
     """
 
 
 class Source(SourceSink):
     """
-    This is just a wrapper to setup a Source object
-    Example::
+    This is just a wrapper to setup a Source object Example::
 
-           Source(name = "SO4_diffusion", species ="SO4")
+        Source(name = "SO4_diffusion", species ="SO4")
 
-    where the first argument is a string, and the second is a species handle
+    where the first argument is a string, and the second is a species
+    handle
     """
-
-
-# from .extended_classes import *
-# from .connections import Connection, ConnectionGroup, Connect
-# from .processes import *
-# from .carbonate_chemistry import *
-# from .sealevel import *
-# from .solver import *
