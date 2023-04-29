@@ -1948,18 +1948,18 @@ class Flux(esbmtkBase):
 
         # and convert flux into model units
         if isinstance(self.rate, str):
-            fluxrate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
+            self.rate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
         elif isinstance(self.rate, Q_):
-            fluxrate: float = self.rate.to(self.mo.f_unit).magnitude
+            self.rate: float = self.rate.to(self.mo.f_unit).magnitude
         elif isinstance(self.rate, (int, float)):
-            fluxrate: float = self.rate
+            self.rate: float = self.rate
 
-        li = get_l_mass(fluxrate, self.delta, self.sp.r) if self.delta else 0
-        self.fa: np.ndarray = np.array([fluxrate, li])
+        li = get_l_mass(self.rate, self.delta, self.sp.r) if self.delta else 0
+        self.fa: np.ndarray = np.array([self.rate, li])
 
         # in case we want to keep the flux data
         if self.save_flux_data:
-            self.m: np.ndarray = np.zeros(self.model.steps) + fluxrate  # add the flux
+            self.m: np.ndarray = np.zeros(self.model.steps) + self.rate  # add the flux
 
             if self.isotopes:
                 self.l: np.ndarray = np.zeros(self.model.steps)
