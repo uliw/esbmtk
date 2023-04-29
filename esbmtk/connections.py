@@ -30,6 +30,7 @@ import typing as tp
 import numpy as np
 import copy as cp
 import logging
+import uuid
 from .esbmtk import esbmtkBase
 from .utility_functions import map_units
 from .utility_functions import check_for_quantity
@@ -325,14 +326,19 @@ class Connect(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["source", "sink", "register", "id"]
+        self.lrk: list = ["source", "sink"]
 
         self.lop: list = []
         self.lof: list = []
-
+        
         # validate and initialize instance variables
         self.__initialize_keyword_variables__(kwargs)
 
+        if self.register == "None":
+            self.register = self.source.register
+        if self.id == "None":
+            self.id = str(uuid.uuid4())[:8]
+        
         # legacy names
         self.influx: int = 1
         self.outflux: int = -1
