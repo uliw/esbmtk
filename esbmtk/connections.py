@@ -298,7 +298,7 @@ class Connect(esbmtkBase):
             "pl": ["None", (list, str)],
             "alpha": ["None", (int, float, str)],
             "species": ["None", (Species, str)],
-            "ctype": ["None", (str)],
+            "ctype": ["regular", (str)],
             "ref_reservoirs": ["None", (Reservoir, GasReservoir, str, list)],
             "reservoir_ref": ["None", (GasReservoir, str)],
             "ref_flux": ["None", (Flux, str, list)],
