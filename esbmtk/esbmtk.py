@@ -603,7 +603,7 @@ class Model(esbmtkBase):
                 self.lpc_r,
             )
         elif solver == "ode":
-            ode_solver(kwargs)
+            self.ode_solver(kwargs)
         elif solver == "ode_uli":
             print("\n\n the solver type 'ode_uli' is deprecated, please use 'ode' \n\n")
             self.ode_solver(kwargs)
@@ -1728,15 +1728,16 @@ class Reservoir(ReservoirBase):
             self.density = self.swc.density
         if self.mass == "None":
             if isinstance(self.concentration, (str, Q_)):
-                c = Q_(self.concentration)
-                self.plt_units = c.units
-                self._concentration: tp.Union[int, float] = c.to(
+                cc = Q_(self.concentration)
+                self.plt_units = cc.units
+                self._concentration: [int | float] = cc.to(
                     self.mo.c_unit
                 ).magnitude
+              
             else:
-                c = self.concentration
+                cc = self.concentration
                 self.plt_units = self.mo.c_unit
-                self._concentration = c
+                self._concentration = cc
 
             self.mass: tp.Union[int, float] = (
                 self.concentration * self.volume * self.density / 1000
