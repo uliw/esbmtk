@@ -351,8 +351,12 @@ class SourceSinkGroup(esbmtkBase):
         from esbmtk import Model, Species, Source, Sink
 
         # provide a dict of all known keywords and their type
-        self.defaults: dict[str, list[any, tuple]] = {"name": ["None", (str)], "species": ["None", (str, list)], "delta": [{}, dict], "register": ["None", (str, Model)]}
-
+        self.defaults: dict[str, list[any, tuple]] = {
+            "name": ["None", (str)],
+            "species": ["None", (str, list)],
+            "delta": [{}, dict],
+            "register": ["None", (str, Model)],
+        }
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species", "register"]
@@ -580,6 +584,9 @@ class Signal(esbmtkBase):
 
         self.data = self.__init_signal_data__()
         self.m = self.data.m
+        if self.isotopes:
+            self.l = self.data.l
+
         self.data.n: str = self.name + "_data"  # update the name of the signal data
         self.legend_left = self.data.legend_left
         self.legend_right = self.data.legend_right
@@ -621,8 +628,9 @@ class Signal(esbmtkBase):
         elif "filename" in self.kwargs:  # use an external data set
             self.length = self.__int_ext_data__()
         else:
-            raise ValueError('argument needs to be either square/pyramid, or an ExternalData object. ')
-
+            raise ValueError(
+                "argument needs to be either square/pyramid, or an ExternalData object. "
+            )
 
         # create a dummy flux we can act up
         self.nf: Flux = Flux(
@@ -630,6 +638,7 @@ class Signal(esbmtkBase):
             species=self.sp,
             rate=f"0 {self.sp.mo.f_unit}",
             delta=0,
+            isotopes=self.isotopes,
             save_flux_data=True,
             register=self,
         )
@@ -670,7 +679,6 @@ class Signal(esbmtkBase):
                 self.nf.l[model_start_index:model_stop_index] = self.s_l[
                     signal_start_index:signal_stop_index
                 ]
-
         return self.nf
 
     def __square__(self, s, e) -> None:
@@ -800,13 +808,13 @@ class Signal(esbmtkBase):
         if isinstance(yq, Q_):
             # test what type of Quantity we have
             if yq.check(["dimensionless"]):  # dimensionless
-                self.s_data = self.s_data.magnitude 
+                self.s_data = self.s_data.magnitude
             elif yq.check(["volume]/[time"]):  # flux
-                self.s_data = self.s_data.to(self.mo.r_unit).magnitude 
+                self.s_data = self.s_data.to(self.mo.r_unit).magnitude
             elif yq.check(["mass] / [time"]):  # flux
-                self.s_data = self.s_data.to(self.mo.f_unit).magnitude 
+                self.s_data = self.s_data.to(self.mo.f_unit).magnitude
             elif yq.check(["[mass]/[volume]"]):  # concentration
-                self.s_data = self.s_data.to(self.mo.c_unit).magnitude 
+                self.s_data = self.s_data.to(self.mo.c_unit).magnitude
             else:
                 ValueError(f"No conversion to model units for {self.scale} specified")
 
@@ -932,7 +940,7 @@ class Signal(esbmtkBase):
         # list of processes
         flux.lop.append(self)
 
-    def __call__(self, t) -> list:
+    def __call__(self, t) -> list[float, float]:
         """Return Signal value at time t (mass and mass for light
         isotope). This will work as long a t is a multiple of dt, and i = t.
         may extend this by addding linear interpolation but that will
@@ -942,9 +950,10 @@ class Signal(esbmtkBase):
 
         import numpy as np
 
-        v = np.interp(t, self.mo.time, self.data.m)
+        m = np.interp(t, self.mo.time, self.data.m)
+        l = np.interp(t, self.mo.time, self.data.l)
 
-        return [v, 0]
+        return [m, l]
 
     def __plot__(self, M: Model, ax) -> None:
         """Plot instructions.
