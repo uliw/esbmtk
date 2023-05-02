@@ -15,6 +15,8 @@
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+# from pint import UnitRegistry
+from __future__ import annotations
 
 # from pint import UnitRegistry
 # from nptyping import *
@@ -92,12 +94,25 @@ def get_flux_data(m: float, d: float, r: float) -> np.ndarray:
 def get_delta(l: np.ndarray, h: np.ndarray, r: float) -> np.ndarray:
     """Calculate the delta from the mass of light and heavy isotope
 
-    :param l: light isotope mass/concentration 
+    :param l: light isotope mass/concentration
     :param h: heavy isotope mass/concentration
-    :param r: reference ratio 
+    :param r: reference ratio
 
     """
-     return 1000 * (h / l - r) / r
+    return 1000 * (h / l - r) / r
+
+
+def get_delta_from_concentration(c: np.darray, l: np.ndarray, r: float) -> np.ndarray:
+    """Calculate the delta from the mass of light and heavy isotope
+
+    :param c: total mass/concentration
+    :param l: light isotope mass/concentration
+    :param r: reference ratio
+
+    """
+    h = c - l
+    d = 1000 * (h / l - r) / r
+    return d
 
 
 def get_delta_i(l: float, h: float, r: float) -> float:
