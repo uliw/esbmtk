@@ -106,6 +106,7 @@ class Model(esbmtkBase):
                                 start    = "0 yrs",    # optional: start time
                                 stop     = "10000 yrs", # end time
                                 timestep = "2 yrs",    # as a string "2 yrs"
+                                max_step = "1000 yrs", # str, optional
                                 offset = "0 yrs",    # optional: time offset for plot
                                 mass_unit = "mol",   #required
                                 volume_unit = "l", # required
@@ -118,7 +119,6 @@ class Model(esbmtkBase):
                                 register = 'local', see below
                                 save_flux_data = False, see below
                                 ideal_water = False
-                                use_ode = False
                               )
 
                 :param ref_time: will offset the time axis by the specified
@@ -150,8 +150,12 @@ class Model(esbmtkBase):
                 signals are always stored.  You can also enable this
                 option for inidividual connections (fluxes).
 
-                get_delta_values: Compute delta values as postprocessing
+                :param get_delta_values: Compute delta values as postprocessing
                 step.
+
+                :param max_step: Limit automatic step size increase, i.e., the time
+                resolution of the model. Optional, defaults to the model duration/100
+
         """
 
         self.defaults: dict[str, list[any, tuple]] = {
@@ -178,6 +182,7 @@ class Model(esbmtkBase):
             "debug": [False, (bool)],
             "ideal_water": [True, (bool)],
             "use_ode": [True, (bool)],
+            "max_step": ["None", (str)],
         }
 
         # provide a list of absolutely required keywords
@@ -245,6 +250,7 @@ class Model(esbmtkBase):
 
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
         self.r_unit = self.v_unit / self.t_unit  # flux as volume/time
+
         # this is now defined in __init__.py
         # ureg.define('Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups')
 
@@ -255,6 +261,10 @@ class Model(esbmtkBase):
         self.offset = self.ensure_q(self.offset).to(self.t_unit).magnitude
         # self.start = self.start + self.offset
         # self.stop = self.stop + self.offset
+        if self.max_step != "None":
+            self.max_step = Q_(self.max_step).magnitude
+        else:
+            self.max_step = int((self.stop - self.start) / 100)
 
         self.bu = self.t_unit
         self.base_unit = self.t_unit
@@ -641,12 +651,13 @@ class Model(esbmtkBase):
 
         # import equation system
         from equations import setup_ode
-        
+
         ode_system = setup_ode(self)  # create ode system instance
         self.ode_system = ode_system
         method = kwargs["method"] if "method" in kwargs else "RK23"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
-        max_step = kwargs["max_step"] if "max_step" in kwargs else 1e6
+        
+
         if stype == "solve_ivp":
             results = solve_ivp(
                 ode_system.eqs,
@@ -654,11 +665,10 @@ class Model(esbmtkBase):
                 R,
                 args=(self,),
                 method=method,
-                # t_eval=self.time,
                 atol=1e-12,
                 first_step=Q_("1 hour").to(self.t_unit).magnitude,
                 # dense_output=True,
-                max_step=max_step,
+                max_step=self.max_step,
             )
 
             # interpolate signals into the ode time domain
