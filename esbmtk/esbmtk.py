@@ -43,6 +43,7 @@ from .solver import (
     execute,
     execute_e,
     get_delta_h,
+    get_delta_from_concentration,
 )
 
 
@@ -616,7 +617,7 @@ class Model(esbmtkBase):
 
     def ode_solver(self, kwargs):
         """
-        Use the ode solver based on Uli's approach
+        Use the ode solver
         """
         from esbmtk import Q_, write_equations_2, get_initial_conditions
         from scipy.integrate import odeint, solve_ivp
@@ -640,10 +641,9 @@ class Model(esbmtkBase):
 
         # import equation system
         from equations import setup_ode
-
+        
         ode_system = setup_ode(self)  # create ode system instance
         self.ode_system = ode_system
-
         method = kwargs["method"] if "method" in kwargs else "RK23"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
         max_step = kwargs["max_step"] if "max_step" in kwargs else 1e6
@@ -669,6 +669,12 @@ class Model(esbmtkBase):
                     self.time,
                     s.data.m,
                 )
+                if s.isotopes:
+                    s.data.l = np.interp(
+                        results.t,
+                        self.time,
+                        s.data.l,
+                    )
 
             # interpolate external data into ode time domain
             # must be done before changing model time domain
@@ -685,6 +691,7 @@ class Model(esbmtkBase):
                 if r.isotopes:
                     r.l = results.y[i]
                     i = i + 1
+                    r.d = get_delta_from_concentration(r.c, r.l, r.sp.r)
 
             self.time = results.t
 
@@ -707,6 +714,7 @@ class Model(esbmtkBase):
                         setattr(cs, k, od)
 
         else:
+            raise ValueError("odeint solver currently not supported")
             results = odeint(ode_system.eqs, R, t=self.time, args=(self,), tfirst=True)
             # assign results
             for i, r in enumerate(icl):
@@ -1730,10 +1738,8 @@ class Reservoir(ReservoirBase):
             if isinstance(self.concentration, (str, Q_)):
                 cc = Q_(self.concentration)
                 self.plt_units = cc.units
-                self._concentration: [int | float] = cc.to(
-                    self.mo.c_unit
-                ).magnitude
-              
+                self._concentration: [int | float] = cc.to(self.mo.c_unit).magnitude
+
             else:
                 cc = self.concentration
                 self.plt_units = self.mo.c_unit
