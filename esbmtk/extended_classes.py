@@ -560,10 +560,14 @@ class Signal(esbmtkBase):
 
         self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
 
-        if self.duration / self.species.mo.dt < 10:
+        breakpoint()
+        if self.duration / self.species.mo.max_step < 10:
+            print("\n\n ------------------------------------------------\n")
             print("\n\n   W A R N I N G \n\n")
             print("Your signal duration is covered by less than 10")
-            print("Intergration steps. This may not be what you want\n\n")
+            print("Intergration steps. This may not be what you want")
+            print("Consider adjusting the max_step parameter of the model object\n\n")
+             print("\n\n ------------------------------------------------\n")
 
         # legacy name definitions
         self.full_name = ""
