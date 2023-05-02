@@ -668,7 +668,7 @@ class Connect(esbmtkBase):
         self.r = self.r2 if isinstance(self.r1, Source) else self.r1
         # if signal is provided but rate is omitted
         if self.signal != "None" and self.rate == "None":
-            self._rate = "0 mmol/y"
+            self._rate = 0
 
         # if connection type is not set explicitly
         if self.ctype == "None" or self.ctype.casefold() == "regular":
