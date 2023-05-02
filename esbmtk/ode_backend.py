@@ -395,7 +395,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
     return ex, exl
 
 
-def check_signal_2(ex: str, c: Connection | Connect) -> str:
+def check_signal_2(ex: str, exl: str, c: Connection | Connect) -> (str,str):
     """Test if connection is affected by a signal
 
     :param ex: equation string
@@ -414,8 +414,11 @@ def check_signal_2(ex: str, c: Connection | Connect) -> str:
             raise ValueError(f"stype={c.signal.stype} not implemented")
 
         ex += f" {sign} {c.signal.full_name}(t)[0]  # Signal"
-
-    return ex
+        if c.isotopes:
+            exl += f" {sign} {c.signal.full_name}(t)[1]  # Signal"
+        else:
+            exl += ""
+    return ex, exl
 
 
 def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
@@ -583,10 +586,10 @@ def get_regular_flux_eq(
               the light isotope
     """
 
-    ex = f"{flux.full_name}.rate"
-    ex = check_signal_2(ex, c)
-    ex = f"{ex}  # fixed rate"
+    ex = f"{flux.full_name}.rate"  # get flux rate string
 
+    """ The flux can have a fixed delta value, or a fractionation 
+    """
     if c.isotopes:
         # r, d and a are typically only a few decimal places so we use them
         # directly
@@ -599,15 +602,14 @@ def get_regular_flux_eq(
                 f"{ind3}/({r} * ({d} + 1000) + 1000)\n"
                 f"{ind2})"
             )
-            exl = f"{exl}  # fixed rate with delta"
-
+            # exl = f"{exl}  # fixed rate with delta"
         elif c.alpha != "None":
             exl = add_fractionation(c, icl, ind3, ind2)
-        # this will probably not work
-        exl = check_signal_2(exl, c)
+            # this will probably not work
+        else:
+            raise ValueError("Neither delta nor alpha defined")
 
-    else:
-        exl = ""
+    ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
 
     return ex, exl
 
@@ -672,52 +674,16 @@ def get_scale_with_concentration_eq(
     """
     s_c = get_ic(c.source, icl)  # get index to concentration
     ex = f"{cfn}.scale * {s_c}"  # {c.id} scale with conc in {c.source.full_name}"
-    ex = check_signal_2(ex, c)
-    ex = f"{ex}  # scale with concentration"
 
     if c.isotopes:
         # get c of light isotope in source
         s_l = get_ic(c.source, icl, isotopes=True)  # R[x]
         exl = f"{cfn}.scale * {s_l}"
-        exl = check_signal_2(exl, c)
-        exl = f"{exl}  # scale with concentration"
-    else:
-        exl = ""
+
+    ex, exl = check_signal_2(ex, "", c)
+    ex = f"{ex}  # scale with concentration"
 
     return ex, exl
-
-
-# def get_scale_with_mass(
-#     flux: Flux,  # flux instance
-#     c: Connect|Connection,  # connection instance
-#     cfn: str,  # full name of the connection instance
-#     icl: dict,  # list of initial conditions
-# ) -> tuple(str, str):
-#     """Equation defining a flux that scales with the concentration in the upstream
-#     reservoir
-
-#     Example:
-
-#     M1_CG_D_b_to_L_b_TA_thc__F = M1.CG_D_b_to_L_b.TA_thc.scale * R[5]
-#     """
-
-#     s_c = get_ic(c.source, icl)  # get index to concentration
-#     ex = _extracted_from_get_scale_with_mass_21(cfn, c, s_c)
-#     if c.isotopes:
-#         s_l = get_ic(c.source, icl, isotopes=True)  # get index to concentration
-#         exl = _extracted_from_get_scale_with_mass_21(cfn, c, s_l)
-#     else:
-#         exl = ""
-
-#     return ex, exl
-
-
-# # TODO Rename this here and in `get_scale_with_mass`
-# def _extracted_from_get_scale_with_mass_21(cfn, c, arg2):
-#     result = f"{cfn}.scale * {c.source.full_name}.volume * {arg2}"
-#     result = check_signal_2(result, c)
-#     result = f"{result}  # scale with mass"
-#     return result
 
 
 def get_scale_with_flux_eq(
@@ -752,8 +718,7 @@ def get_scale_with_flux_eq(
     p = flux.parent.ref_flux.parent
     fn = f"{p.full_name.replace('.', '_')}__F"
     ex = f"{cfn}.scale * {fn}"
-    ex = check_signal_2(ex, c)
-    ex = f"{ex}  # scale with flux"
+    
 
     """ The flux for the light isotope will computed as follows:
     We will use the mass of the flux we or scaling, but that we will set the
@@ -770,10 +735,8 @@ def get_scale_with_flux_eq(
             f"{ind3}* {s_l} / {s_c}\n"
             f"{ind2})"
         )
-        # exl = check_signal_2(exl, c)
-        exl = exl + "  # scale with flux\n"
-    else:
-        exl = ""
+    ex, exl = check_signal_2(ex, "", c)
+    ex = f"{ex}  # scale with flux"
 
     return ex, exl
 
@@ -823,9 +786,7 @@ def get_weathering_eq(
         f"{ind3}**  {cfn}.ex\n"
         f"{ind2})"
     )
-    ex = check_signal_2(ex, c)
-    ex = f"{ex}  # weathering"
-
+   
     if c.isotopes:
         # get isotope ratio of source
         if isinstance(c.source, (Source, Sink)):
@@ -838,9 +799,9 @@ def get_weathering_eq(
         fn = flux.full_name.replace(".", "_")
         exl = f"{fn} * {s_l} / {s_c}"
         exl = f"{exl}  # weathering + isotopes"
-    else:
-        exl = ""
-
+        
+    ex, exl = check_signal_2(ex,"", c)
+    ex = f"{ex}  # weathering"
     return ex, exl
 
 
@@ -900,7 +861,7 @@ def get_gas_exchange_eq(
         f"{ind3}{refsp},\n"
         f"{ind2})"
     )
-    ex = check_signal_2(ex, c)
+    ex,exl = check_signal_2(ex, "", c)
     ex = ex + "  # gas_exchange\n"
 
     return ex
