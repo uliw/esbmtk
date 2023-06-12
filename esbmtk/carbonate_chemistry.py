@@ -45,7 +45,7 @@ def phc(m: float) -> float:
 
 class SeawaterConstants(esbmtkBase):
     """Provide basic seawater properties as a function of T, P and Salinity.
-
+    
     Example:
 
     Seawater(name="SW",
@@ -151,10 +151,12 @@ class SeawaterConstants(esbmtkBase):
             v = getattr(self, n)
             print(f"{n} = {v * 1E6:.2f} nmol/kg")
 
-        print(f"pH = {-log10(self.hplus):.2f}\n")
+        print()
+        print(f"pCO2 = {get_pco2(self):.2e}")
+        print(f"pH = {-log10(self.hplus):.2f}")
         print(f"salinity = {self.salinity:.2f}")
         print(f"temperature = {self.temperature:.2f}\n")
-
+        
         for n in self.constants:
             K = getattr(self, n)  # get K value
             pk = f"p{n.lower()}"  # get K name
@@ -590,6 +592,18 @@ class SeawaterConstants(esbmtkBase):
     SW: SeawaterConstants,
 
 """
+
+
+def get_pco2(SW) -> float:
+    """Calculate the concentration of pCO2"""
+
+    dic_c: float = SW.dic
+    hplus_c: float = SW.hplus
+    k1: float = SW.K1
+    k2: float = SW.K2
+    co2: np.ndarray = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c**2)))
+    pco2: np.ndarray = co2 / SW.K0 * 1e6
+    return pco2
 
 
 def calc_pCO2(
