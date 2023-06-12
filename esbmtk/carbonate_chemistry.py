@@ -76,12 +76,10 @@ class SeawaterConstants(esbmtkBase):
 
     """
 
-    
-    
     def __init__(self, **kwargs: dict[str, str]):
 
         from esbmtk import Model, Reservoir, ReservoirGroup
-        
+
         self.defaults: dict[list[any, tuple]] = {
             "name": ["None", (str)],
             "salinity": [35.0, (int, float)],
@@ -145,7 +143,7 @@ class SeawaterConstants(esbmtkBase):
         self.ta = self.ca + self.boh4 + self.oh - self.hplus
 
     def show(self) -> None:
-        """Printout pK values."""
+        """Printout constants"""
 
         from math import log10
 
@@ -158,9 +156,9 @@ class SeawaterConstants(esbmtkBase):
         print(f"temperature = {self.temperature:.2f}\n")
 
         for n in self.constants:
-            K = getattr(self, n)
-            pk = getattr(self, f"p{n.lower()}")
-            print(f"{n} = {K:.2e}, p{n} = {pk:.2f}")
+            K = getattr(self, n)  # get K value
+            pk = f"p{n.lower()}"  # get K name
+            print(f"{n} = {K:.2e}, {pk} = {-log10(K):.2f}")
 
     def __get_density__(self):
         """Calculate seawater density as function of temperature,
@@ -567,7 +565,7 @@ class SeawaterConstants(esbmtkBase):
 
         # CO2aq versus CO2g
         self.e_dg: float = -373 / T + 0.19
-        self. a_dg: float = 1 + self.e_dg / 1000
+        self.a_dg: float = 1 + self.e_dg / 1000
 
         # CO2aq versus HCO3
         self.e_db: float = -9866 / T + 24.12
@@ -813,7 +811,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
     # vr_data
     hplus: float = vr_data[0][i - 1]  # H+ concentration [mol/kg]
     zsnow = vr_data[7][i - 1]  # previous zsnow
-    
+
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus
     boh4: float = boron * KB / (hplus + KB)
@@ -882,7 +880,7 @@ def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> 
 
         diff = Csat_table[zcc : int(zsnow)] - co3
         area_p = area_dz_table[zcc : int(zsnow)]
-      
+
         BPDC = kc * area_p.dot(diff)
         zold = BPDC / (area_dz_table[int(zsnow)] * I_caco3) * dt
         # eq 4 dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
