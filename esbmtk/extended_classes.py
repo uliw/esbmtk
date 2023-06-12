@@ -567,7 +567,7 @@ class Signal(esbmtkBase):
             print("Your signal duration is covered by less than 10")
             print("Intergration steps. This may not be what you want")
             print("Consider adjusting the max_step parameter of the model object\n\n")
-             print("\n\n ------------------------------------------------\n")
+            print("\n\n ------------------------------------------------\n")
 
         # legacy name definitions
         self.full_name = ""
