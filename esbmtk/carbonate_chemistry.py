@@ -23,9 +23,9 @@ from numba.typed import List
 import numpy as np
 from .esbmtk_base import esbmtkBase
 
-if tp.TYPE_CHECKING:
-    from .esbmtk import Reservoir, Model
-    from .extended_classes import ReservoirGroup
+# if tp.TYPE_CHECKING:
+#     from .esbmtk import Reservoir, Model
+#     from .extended_classes import ReservoirGroup
 
 
 # define a transform function to display the Hplus concentration as pH
@@ -45,7 +45,8 @@ def phc(m: float) -> float:
 
 class SeawaterConstants(esbmtkBase):
     """Provide basic seawater properties as a function of T, P and Salinity.
-    
+    This module does not reca
+
     Example:
 
     Seawater(name="SW",
@@ -156,7 +157,7 @@ class SeawaterConstants(esbmtkBase):
         print(f"pH = {-log10(self.hplus):.2f}")
         print(f"salinity = {self.salinity:.2f}")
         print(f"temperature = {self.temperature:.2f}\n")
-        
+
         for n in self.constants:
             K = getattr(self, n)  # get K value
             pk = f"p{n.lower()}"  # get K name
