@@ -681,6 +681,10 @@ class Connect(esbmtkBase):
             elif self.rate == "None":  # if neither are given -> default varflux type
                 self._delta = 0
                 self.__passiveflux__()
+            # test for case where isotopes are true, but neither
+            # delta notr alpha are given
+            if self.delta == "None" and self.alpha == "None" and self.isotopes:
+                self._alpha = 0
 
         elif self.ctype == "scale_to_input":
             self.__scale_to_input__()
@@ -890,7 +894,7 @@ class Connect(esbmtkBase):
             reservoir=self.r,
             flux=self.fh,
             register=self.fh,
-            alpha=self.kwargs["alpha"],
+            alpha=self.alpha,
             model=self.mo,
         )
         self.lop.append(ph)  #
