@@ -132,12 +132,9 @@ def write_reservoir_equations_with_isotopes(
         # Write equations for each reservoir
         # create unique variable names. Reservoirs are typiclally called
         # M.rg.r so we replace all dots with underscore
-
         if r.isotopes:
-
             name = f'{r.full_name.replace(".", "_")}_l'
             fex = ""
-
             # add all fluxes
             for flux in r.lof:  # check if in or outflux
                 if flux.parent.source == r:
@@ -231,35 +228,27 @@ class setup_ode():
     # """
     # write file
     with open(fqfn, "w", encoding="utf-8") as eqs:
-
         rel = ""  # list of return values
         # ind1 = 4 * " "
         ind2 = 8 * " "  # indention
         ind3 = 12 * " "  # indention
-
         eqs.write(header)
-
         eqs.write(f"{ind2}{M.name} = M\n")
-
         sep = (
             "# ---------------- write computed reservoir equations -------- #\n"
             + "# that do not depend on fluxes"
         )
-
         eqs.write(f"\n{sep}\n")
 
         for r in M.lpc_r:  # All virtual reservoirs need to be in this list
-
             if r.ftype == "cs1":
                 rel = write_cs_1(eqs, r, icl, rel, ind2, ind3)
             elif r.ftype != "cs2":
                 raise ValueError(f"{r.ftype} is undefined")
 
         flist = []
-
         sep = "# ---------------- write all flux equations ------------------- #"
         eqs.write(f"\n{sep}\n")
-
         for flux in M.lof:  # loop over fluxes
             # fluxes belong to at least 2 reservoirs, so we need to avoid duplication
             # we cannot use a set, since we need to preserve order
@@ -270,7 +259,6 @@ class setup_ode():
 
                 # check for types that return isotope data as well
                 if isinstance(flux.parent, AirSeaExchange):
-
                     if flux.parent.isotopes:  # add F_l if necessary
                         fn = f"{fn}, {fn}_l"
                     eqs.write(f"{ind2}{fn} = {ex}\n")
@@ -291,7 +279,6 @@ class setup_ode():
         eqs.write(f"\n{sep}\n")
 
         for r in M.lpc_r:  # All virtual reservoirs need to be in this list
-
             if r.ftype == "cs1":
                 pass  # see above
             elif r.ftype == "cs2":  #
@@ -301,7 +288,6 @@ class setup_ode():
 
         sep = "# ---------------- write input only reservoir equations -------- #"
         eqs.write(f"\n{sep}\n")
-
         for r in ipl:
             rname = r.full_name.replace(".", "_")
             eqs.write(f"{ind2}{rname} = 0.0")
@@ -326,7 +312,6 @@ class setup_ode():
             f"{ind2}self.last_t = t\n"
             f"{ind2}return [\n"
         )
-
         # Write all initial conditions that are recorded in icl
         for k, v in icl.items():
             eqs.write(f"{ind3}{k.full_name.replace('.', '_')},  # {v[0]}\n")
@@ -334,14 +319,12 @@ class setup_ode():
                 eqs.write(f"{ind3}{k.full_name.replace('.', '_')}_l,  # {v[1]}\n")
 
         eqs.write(f"{ind2}]\n")
-
         # if len(R) != len(rel.split(",")) - 1:
         #     raise ValueError(
         #         f"number of initial conditions ({len(R)})"
         #         f"does not match number of return values"
         #         f"({len(rel.split(','))-1}')\n\n"
         #     )
-
     return fqfn
 
 
@@ -395,7 +378,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
     return ex, exl
 
 
-def check_signal_2(ex: str, exl: str, c: Connection | Connect) -> (str,str):
+def check_signal_2(ex: str, exl: str, c: Connection | Connect) -> (str, str):
     """Test if connection is affected by a signal
 
     :param ex: equation string
@@ -588,7 +571,7 @@ def get_regular_flux_eq(
 
     ex = f"{flux.full_name}.rate"  # get flux rate string
 
-    """ The flux can have a fixed delta value, or a fractionation 
+    """ The flux can have a fixed delta value, or a fractionation,
     """
     if c.isotopes:
         # r, d and a are typically only a few decimal places so we use them
@@ -598,13 +581,13 @@ def get_regular_flux_eq(
             d = c.delta
             exl = (
                 f"(\n"
-                f"{ind3}{flux.full_name}.rate * 1e3\n"
+                f"{ind3}{ex} * 1e3\n"
                 f"{ind3}/({r} * ({d} + 1000) + 1000)\n"
                 f"{ind2})"
             )
             # exl = f"{exl}  # fixed rate with delta"
         elif c.alpha != "None":
-            exl = add_fractionation(c, icl, ind3, ind2)
+            exl = add_fractionation(ex, c, icl, ind3, ind2)
             # this will probably not work
         else:
             raise ValueError("Neither delta nor alpha defined")
@@ -615,11 +598,14 @@ def get_regular_flux_eq(
 
 
 # TODO Rename this here and in `get_regular_flux`
-def add_fractionation(c: Connect | Connection, icl: dict, ind3: str, ind2: str) -> str:
+def add_fractionation(
+    f_m: str, c: Connection | Connect, icl: dict, ind3: str, ind2: str
+) -> str:
     """If the connection involves isotope fractionation, add equation
-    string that calculates the isotope offset.
+    string that calculates the fractionation effect.
 
-    :param c: Connection Object
+    :param f_m: string with the flux name
+    :param c: connection object
     :param icl: dict of reservoirs that have actual fluxes
     :param ind2: indent 2 times
     :param ind3: indent 3 times
@@ -627,24 +613,23 @@ def add_fractionation(c: Connect | Connection, icl: dict, ind3: str, ind2: str) 
     :raises ValueError: if alpha is not between 0.9 and 1.1
 
     :returns: string with the fractionation equation
+
+    Calculate the flux of the light isotope (f_l) as a function of the isotope
+    ratios in the source reservoir soncentrations (s_c, s_l), and alpha (a) as
+
+    f_l = s_l * f_m/ (a * s_c + s_l - a * s_l)
     """
-    if c.alpha > 1.1 or c.alpha < 0.9:
-        raise ValueError(
-            f"alpha needs to be given as fractional value between"
-            f"0.9 and 1.1 not in permil\n"
-            f"e.g., a=1.025"
-        )
+
+    a = c.alpha / 1000 + 1
+   
     # r = c.source.species.r
-    a = c.alpha
     s_c = get_ic(c.source, icl)
     s_l = get_ic(c.source, icl, isotopes=True)
 
     result = (
-        f"(\n{ind3} - {s_l} * {s_c}\n{ind3}/({a} * {s_l} - {a} * {s_c} - {s_l}){ind2})"
+        f"(\n{ind3} {s_l} * {f_m}\n{ind3}/({a} * {s_c} + {s_l} - {a} * {s_l}){ind2})"
     )
 
-    # 123 we can probably drop this line
-    # result = f"{result}  # fixed rate with alpha"
     return result
 
 
@@ -718,7 +703,6 @@ def get_scale_with_flux_eq(
     p = flux.parent.ref_flux.parent
     fn = f"{p.full_name.replace('.', '_')}__F"
     ex = f"{cfn}.scale * {fn}"
-    
 
     """ The flux for the light isotope will computed as follows:
     We will use the mass of the flux we or scaling, but that we will set the
@@ -786,7 +770,7 @@ def get_weathering_eq(
         f"{ind3}**  {cfn}.ex\n"
         f"{ind2})"
     )
-   
+
     if c.isotopes:
         # get isotope ratio of source
         if isinstance(c.source, (Source, Sink)):
@@ -799,8 +783,8 @@ def get_weathering_eq(
         fn = flux.full_name.replace(".", "_")
         exl = f"{fn} * {s_l} / {s_c}"
         exl = f"{exl}  # weathering + isotopes"
-        
-    ex, exl = check_signal_2(ex,"", c)
+
+    ex, exl = check_signal_2(ex, "", c)
     ex = f"{ex}  # weathering"
     return ex, exl
 
@@ -861,7 +845,7 @@ def get_gas_exchange_eq(
         f"{ind3}{refsp},\n"
         f"{ind2})"
     )
-    ex,exl = check_signal_2(ex, "", c)
+    ex, exl = check_signal_2(ex, "", c)
     ex = ex + "  # gas_exchange\n"
 
     return ex
