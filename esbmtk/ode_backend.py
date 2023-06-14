@@ -582,7 +582,7 @@ def get_regular_flux_eq(
             exl = (
                 f"(\n"
                 f"{ind3}{ex} * 1e3\n"
-                f"{ind3}/({r} * ({d} + 1000) + 1000)\n"
+                f"{ind3} / ({r} * ({d} + 1000) + 1000)\n"
                 f"{ind2})"
             )
             # exl = f"{exl}  # fixed rate with delta"
@@ -612,7 +612,7 @@ def add_fractionation(
 
     :raises ValueError: if alpha is not between 0.9 and 1.1
 
-    :returns: string with the fractionation equation
+    :returns eq: string with the fractionation equation
 
     Calculate the flux of the light isotope (f_l) as a function of the isotope
     ratios in the source reservoir soncentrations (s_c, s_l), and alpha (a) as
@@ -621,16 +621,15 @@ def add_fractionation(
     """
 
     a = c.alpha / 1000 + 1
-   
-    # r = c.source.species.r
     s_c = get_ic(c.source, icl)
     s_l = get_ic(c.source, icl, isotopes=True)
 
-    result = (
-        f"(\n{ind3} {s_l} * {f_m}\n{ind3}/({a} * {s_c} + {s_l} - {a} * {s_l}){ind2})"
-    )
-
-    return result
+    if int(c.alpha) != 0:
+        eq = f"(\n{ind3} {s_l} * {f_m}\n{ind3} / ({a} * {s_c} + {s_l} - {a} * {s_l}))"
+    else:
+        # fl = fm * s_l / s_c
+        eq = f"(\n{ind3} {f_m} * {s_l} / {s_c})"
+    return eq
 
 
 def get_scale_with_concentration_eq(
