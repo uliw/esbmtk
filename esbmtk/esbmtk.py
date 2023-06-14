@@ -118,7 +118,8 @@ class Model(esbmtkBase):
                                 step_limit = optional, see below
                                 register = 'local', see below
                                 save_flux_data = False, see below
-                                ideal_water = False
+                                ideal_water = False,
+                                parse_model = True,
                               )
 
                 :param ref_time: will offset the time axis by the specified
@@ -183,6 +184,7 @@ class Model(esbmtkBase):
             "ideal_water": [True, (bool)],
             "use_ode": [True, (bool)],
             "max_step": ["None", (str)],
+            "parse_model": [True, (bool)],
         }
 
         # provide a list of absolutely required keywords
@@ -541,7 +543,7 @@ class Model(esbmtkBase):
         for o in self.lto:
             o.__delayed_init__()
 
-        solver = "python" if "solver" not in kwargs else kwargs["solver"]
+        solver = "ode" if "solver" not in kwargs else kwargs["solver"]
         self.solver = solver
         if self.number_of_solving_iterations > 0:
             for i in range(self.number_of_solving_iterations):
@@ -606,6 +608,7 @@ class Model(esbmtkBase):
 
     def __run_solver__(self, solver: str, kwargs: dict) -> None:
         if solver == "numba":
+            print("Using numba solver")
             execute_e(
                 self,
                 self.lop,
@@ -614,11 +617,13 @@ class Model(esbmtkBase):
                 self.lpc_r,
             )
         elif solver == "ode":
+            print("Using ODE solver")
             self.ode_solver(kwargs)
         elif solver == "ode_uli":
             print("\n\n the solver type 'ode_uli' is deprecated, please use 'ode' \n\n")
             self.ode_solver(kwargs)
         elif solver == "python":
+            print("Using python solver")
             execute(self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
         else:
             raise ValueError(
@@ -642,8 +647,11 @@ class Model(esbmtkBase):
         self.ipl = ipl
 
         # write equation system
-        eqs_file = write_equations_2(self, R, icl, cpl, ipl)
-        print(f"loc = {eqs_file.resolve()}")
+        if self.parse_model:
+            eqs_file = write_equations_2(self, R, icl, cpl, ipl)
+            print(f"loc = {eqs_file.resolve()}")
+        else:
+            print("\n WARNING: Reusing equation file\n")
 
         # ensure that cwd is in the load path. Required for windows
         cwd: pl.Path = pl.Path.cwd()
@@ -656,7 +664,6 @@ class Model(esbmtkBase):
         self.ode_system = ode_system
         method = kwargs["method"] if "method" in kwargs else "RK23"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
-        
 
         if stype == "solve_ivp":
             results = solve_ivp(
