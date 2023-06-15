@@ -489,22 +489,26 @@ class Model(esbmtkBase):
             pl = []
         filename = kwargs.get("fn", f"{self.n}.pdf")
         noo: int = len(pl)
-        size, geo = plot_geometry(noo)  # adjust layout
-        fig, ax = plt.subplots(geo[0], geo[1])  # row, col
+        size, [row, col] = plot_geometry(noo)  # adjust layout
+        fig, ax = plt.subplots(row, col)  # row, col
         axs = [[], []]
 
         """ The shape of the ax value of subplots depends on the figure
         geometry. So we need to ensure we are dealing with a 2-D array
         """
-        if geo[0] == 1 and geo[1] == 1:  # row=1, col=1 only one window
+        print(f"row = {row}, col = {col}, axs = {axs}")
+        if row == 1 and col == 1:  # row=1, col=1 only one window
             axs[0].append(ax)
-        elif geo[0] > 1 and geo[1] == 1:  # mutiple rows, one column
-            for i in range(geo[0]):
-                axs[0].append(ax[i])
-        elif geo[0] == 1 and geo[1] > 1:  # 1 row, multiple columns
+        elif row > 1 and col == 1:  # mutiple rows, one column
+            axs = []
+            for i in range(row):
+                axs.append(ax[i])
+        elif row == 1 and col:  # 1 row, multiple columns
+            print(f"one row, mutiple cols")
             for i in range(geo[1]):
-                axs[1].append(ax[i])
+                axs.append(ax[i])
         else:
+            print("other geometry")
             axs = ax  # mutiple rows and mutiple columns
 
         # ste plot parameters
@@ -513,14 +517,19 @@ class Model(esbmtkBase):
         fig.set_size_inches(size)
 
         i = 0  # loop over objects
-        for c in range(geo[0]):  # rows
-            for r in range(geo[1]):  # columns
-                if i < noo:
-                    pl[i].__plot__(self, axs[c][r])
-                    axs[c][r].set_title(pl[i].full_name)
-                    i = i + 1
-                else:
-                    axs[c][r].remove()
+        for c in range(row):  # rows
+            if col > 1:
+                for r in range(col):  # columns
+                    if i < noo:
+                        pl[i].__plot__(self, axs[c][r])
+                        axs[c][r].set_title(pl[i].full_name)
+                        i = i + 1
+                    else:
+                        axs[c][r].remove()
+            else:
+                pl[i].__plot__(self, axs[c])
+                axs[c].set_title(pl[i].full_name)
+                i = i + 1
 
         fig.subplots_adjust(top=0.88)
         fig.tight_layout()
