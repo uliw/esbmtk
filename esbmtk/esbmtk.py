@@ -498,7 +498,7 @@ class Model(esbmtkBase):
         """
         print(f"row = {row}, col = {col}, axs = {axs}")
         if row == 1 and col == 1:  # row=1, col=1 only one window
-            axs[0].append(ax)
+            axs = ax
         elif row > 1 and col == 1:  # mutiple rows, one column
             axs = []
             for i in range(row):
@@ -526,9 +526,13 @@ class Model(esbmtkBase):
                         i = i + 1
                     else:
                         axs[c][r].remove()
-            else:
+            elif row > 1:
                 pl[i].__plot__(self, axs[c])
                 axs[c].set_title(pl[i].full_name)
+                i = i + 1
+            else:
+                pl[i].__plot__(self, axs)
+                axs.set_title(pl[i].full_name)
                 i = i + 1
 
         fig.subplots_adjust(top=0.88)
@@ -1701,7 +1705,7 @@ class Reservoir(ReservoirBase):
         self.lrk: list = [
             "name",
             "species",
-            "register",
+            # "register",
             ["volume", "geometry"],
             ["mass", "concentration"],
         ]
@@ -1711,6 +1715,8 @@ class Reservoir(ReservoirBase):
 
         self.__initialize_keyword_variables__(kwargs)
 
+        if self.register == "None":  # use a sensible default
+            self.register = self.species.element.register
         self.model = self.register
         self.parent = self.register
 
@@ -1957,7 +1963,7 @@ class Flux(esbmtkBase):
         self.lrk: list = ["species", "rate", "register"]
 
         self.__initialize_keyword_variables__(kwargs)
-
+        
         self.parent = self.register
         # if save_flux_data is unsepcified, use model default
         if self.save_flux_data == "None":
@@ -2255,7 +2261,7 @@ class SourceSink(esbmtkBase):
                "delta": ["None", (str, int, float)],
                "isotopes": [False, (bool)],
 
-        Required Keywords: "name", "species", "register"
+        Required Keywords: "name", "species"
         """
 
         from esbmtk import (
@@ -2284,9 +2290,12 @@ class SourceSink(esbmtkBase):
             "isotopes": [False, (bool)],
         }
         # provide a list of absolutely required keywords
-        self.lrk: list[str] = ["name", "species", "register"]
+        self.lrk: list[str] = ["name", "species"]
         self.__initialize_keyword_variables__(kwargs)
 
+        if self.register == "None":  # use a sensible default
+            self.register = self.species.element.register
+        
         self.loc: set[Connection] = set()  # set of connection objects
 
         # legacy names

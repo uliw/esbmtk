@@ -48,7 +48,7 @@ class ReservoirGroup(esbmtkBase):
                     isotopes = {DIC: True/False} see Reservoir class for details
                     seawater_parameters = dict, optional, see below
                     carbonate_system= False, see below
-                    register= model handle
+                    register= model handle, required
                )
 
     Notes: - The subreservoirs are derived from the keys in the concentration or mass
@@ -130,8 +130,8 @@ class ReservoirGroup(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: list = [
             "name",
-            ["volume", "geometry"],
             "register",
+            ["volume", "geometry"],
         ]
 
         if "concentration" in kwargs:
@@ -143,6 +143,8 @@ class ReservoirGroup(esbmtkBase):
 
         self.__initialize_keyword_variables__(kwargs)
 
+        
+            
         # legacy variable
         self.n = self.name
         self.mo = self.species[0].mo
