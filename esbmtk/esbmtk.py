@@ -102,7 +102,7 @@ class Model(esbmtkBase):
 
             .. Example::
 
-                    esbmtkModel(name   =  "Test_Model",
+                    esbmtkModel(name   =  "Test_Model", # required 
                                 start    = "0 yrs",    # optional: start time
                                 stop     = "10000 yrs", # end time
                                 timestep = "2 yrs",    # as a string "2 yrs"
@@ -110,18 +110,34 @@ class Model(esbmtkBase):
                                 offset = "0 yrs",    # optional: time offset for plot
                                 mass_unit = "mol",   #required
                                 volume_unit = "l", # required
+                                concentration_unit="mol/kg | mol/l", required
                                 element = ["Carbon", "Sulfur" ]
                                 time_label = #  optional, defaults to "Time"
                                 display_precision = #  optional, defaults to 0.01,
-                                m_type = "mass_only/both"
+                                m_type = "mass_only/both" # defaults to mass_only
                                 plot_style = #  optional defaults to 'default'
-                                step_limit = optional, see below
-                                register = 'local', see below
                                 save_flux_data = False, see below
                                 ideal_water = False,
                                 parse_model = True,
                               )
 
+                :param mass_unit: only tested with mol
+
+                :param volume_unit: only tested with liter
+
+                :concentration_unit: only tested with mol/kg
+
+                :param element: list with one or more species names
+
+                :param max_step: Limit automatic step size increase, i.e., the time
+                resolution of the model. Optional, defaults to the model duration/100
+
+                :param m_type: enables or disables isotope calculation for the
+                entire model.  The default value is "Not set" in this case
+                isotopes will only be calculated for reservoirs which set
+                the isotope keyword.  'mass_only' 'both' will override the
+                reservoir settings
+        
                 :param ref_time: will offset the time axis by the specified
                 amount, when plotting the data, .i.e., the model time runs
                 from to 100, but you want to plot data as if where from
@@ -135,28 +151,13 @@ class Model(esbmtkBase):
                 interval f the y-axis will not be smaller than the
                 display_precision.
 
-                :param m_type: enables or disables isotope calculation for the
-                entire model.  The default value is "Not set" in this case
-                isotopes will only be calculated for reservoirs which set
-                the isotope keyword.  'mass_only' 'both' will override the
-                reservoir settings
-
-                :param register: local/None.  If set to 'None' all objects are
-                registered in the global namespace the default setting is
-                local, i.e. all objects are registered in the model
-                namespace.
-
                 :param save_flux_data: Normally, flux data is not stored.  Set
-                this to True for debugging puposes.  Note, Fluxes with
+                this to True for debugging puposes.  Note, fluxes with
                 signals are always stored.  You can also enable this
                 option for inidividual connections (fluxes).
 
-                :param get_delta_values: Compute delta values as postprocessing
-                step.
-
-                :param max_step: Limit automatic step size increase, i.e., the time
-                resolution of the model. Optional, defaults to the model duration/100
-
+                :param ideal_water: if set, ignore seawater density/chemisrty
+                 calculations
         """
 
         self.defaults: dict[str, list[any, tuple]] = {
