@@ -50,7 +50,7 @@ class SeawaterConstants(esbmtkBase):
     Example:
 
     Seawater(name="SW",
-             model=,
+             register=M # model handle
              temperature = optional in C, defaults to 25,
              salinity  = optional in psu, defaults to 35,
              pressure = optional, defaults to 0 bars = 1atm,

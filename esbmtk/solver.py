@@ -147,6 +147,7 @@ def get_delta_h(R: Reservoir | Flux) -> float:
     R.c = total concentration
     R.l = concentration of the light isotope
     """
+
     r = R.species.r  # reference ratio
     return np.where(R.l > 0, 1e3 * ((R.c - R.l) / R.l - r) / r, 0)
 

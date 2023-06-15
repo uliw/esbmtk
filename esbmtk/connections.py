@@ -1192,6 +1192,9 @@ class ConnectionGroup(esbmtkBase):
         self.loc: list = []  # list of connection objects
 
         self.name = f"CG_{self.source.name}_to_{self.sink.name}"
+        if self.id != "None":
+            self.name = f"{self.name}_{self.id}"
+            
         self.base_name = self.name
         self.parent = self.register
         self.__register_name_new__()

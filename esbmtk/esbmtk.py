@@ -102,7 +102,7 @@ class Model(esbmtkBase):
 
             .. Example::
 
-                    esbmtkModel(name   =  "Test_Model", # required 
+                    esbmtkModel(name   =  "Test_Model", # required
                                 start    = "0 yrs",    # optional: start time
                                 stop     = "10000 yrs", # end time
                                 timestep = "2 yrs",    # as a string "2 yrs"
@@ -137,7 +137,7 @@ class Model(esbmtkBase):
                 isotopes will only be calculated for reservoirs which set
                 the isotope keyword.  'mass_only' 'both' will override the
                 reservoir settings
-        
+
                 :param ref_time: will offset the time axis by the specified
                 amount, when plotting the data, .i.e., the model time runs
                 from to 100, but you want to plot data as if where from
@@ -563,19 +563,17 @@ class Model(esbmtkBase):
         else:
             self.__run_solver__(solver, kwargs)
 
-        # flag that the model has executed
-        self.state = 1
-
+        self.state = 1  # flag that the model has executed
         duration: float = process_time() - start
         wcd = time.time() - wts
         print(f"\n Execution took {duration:.2e} cpu seconds, wt = {wcd:.2e}\n")
-
         process = psutil.Process(os.getpid())
         print(f"This run used {process.memory_info().rss/1e9:.2f} Gbytes of memory \n")
 
     def get_delta_values(self):
-        """Calculate masses and isotope ratios in the usual delta"""
+        """Calculate masses and isotope ratios in the usual delta notation"""
         for r in self.lor:
+            print(f"getting delta for {r.full_name}")
             r.m = r.c * r.volume
             if r.isotopes:
                 r.d = get_delta_h(r)
@@ -650,7 +648,7 @@ class Model(esbmtkBase):
         # write equation system
         if self.parse_model:
             eqs_file = write_equations_2(self, R, icl, cpl, ipl)
-            print(f"loc = {eqs_file.resolve()}")
+            # print(f"loc = {eqs_file.resolve()}")
         else:
             print("\n WARNING: Reusing equation file\n")
 
@@ -706,7 +704,7 @@ class Model(esbmtkBase):
                 # this needs fixing if we have variable volumes
                 r.m = results.y[i] * r.volume
                 i = i + 1
-                if r.isotopes:
+                if r.isotopes == True:
                     r.l = results.y[i]
                     i = i + 1
                     r.d = get_delta_from_concentration(r.c, r.l, r.sp.r)

@@ -157,7 +157,7 @@ def write_reservoir_equations_with_isotopes(
 
             # avoid reservoirs without active fluxes
             if len(r.lof) > 0:
-                print(f"Adding: {name} to rel")
+                # print(f"Adding: {name} to rel")
                 eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
                 rel = f"{rel}{ind3}{name},\n"
 
@@ -386,9 +386,9 @@ def check_signal_2(ex: str, exl: str, c: Connection | Connect) -> (str, str):
 
     :returns: (modified) equation string
     """
-    sign = ""
-    if c.signal != "None":
-        # get signal type
+
+    if c.signal != "None": # get signal type
+        
         if c.signal.stype == "addition":
             sign = "+"
         elif c.signal.stype == "multiplication":
@@ -397,10 +397,11 @@ def check_signal_2(ex: str, exl: str, c: Connection | Connect) -> (str, str):
             raise ValueError(f"stype={c.signal.stype} not implemented")
 
         ex += f" {sign} {c.signal.full_name}(t)[0]  # Signal"
-        if c.isotopes:
+        if c.source.isotopes:
             exl += f" {sign} {c.signal.full_name}(t)[1]  # Signal"
         else:
             exl += ""
+
     return ex, exl
 
 
@@ -570,6 +571,7 @@ def get_regular_flux_eq(
     """
 
     ex = f"{flux.full_name}.rate"  # get flux rate string
+    exl = ""
 
     """ The flux can have a fixed delta value, or a fractionation,
     """
@@ -659,14 +661,14 @@ def get_scale_with_concentration_eq(
     s_c = get_ic(c.source, icl)  # get index to concentration
     ex = f"{cfn}.scale * {s_c}"  # {c.id} scale with conc in {c.source.full_name}"
 
-    if c.isotopes:
+    if c.source.isotopes:
         # get c of light isotope in source
         s_l = get_ic(c.source, icl, isotopes=True)  # R[x]
         exl = f"{cfn}.scale * {s_l}"
 
-    ex, exl = check_signal_2(ex, "", c)
-    ex = f"{ex}  # scale with concentration"
-
+    ex, exl = check_signal_2(ex, exl, c)
+    # ex = f"{ex}  # scale with concentration"
+    # exl = f"{exl}"
     return ex, exl
 
 

@@ -46,8 +46,9 @@ class ReservoirGroup(esbmtkBase):
                     mass/concentration = {DIC:"1 unit", TA: "1 unit"}
                     plot = {DIC:"yes", TA:"yes"}  defaults to yes
                     isotopes = {DIC: True/False} see Reservoir class for details
-                    seawater_parameter = dict, optional, see below
+                    seawater_parameters = dict, optional, see below
                     carbonate_system= False, see below
+                    register= model handle
                )
 
     Notes: - The subreservoirs are derived from the keys in the concentration or mass
@@ -230,9 +231,7 @@ class ReservoirGroup(esbmtkBase):
             )
             # register as part of this group
             self.lor.append(a)
-
-        # setup the carbonate system
-
+            
         # depreceated
         if self.carbonate_system:
             # do some sanity checks:
