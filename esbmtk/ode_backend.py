@@ -555,12 +555,8 @@ def get_regular_flux_eq(
     ind3,  # indentation
 ) -> tuple:
     """Create a string containing the equation for a regular (aka
-    fixed rate) connection, e.g.,
-
-    ex = M1.C_Fw_to_CO2_At_DIC_volcanic_flux._F.rate + rate
-
-    exl = see code below
-
+    fixed rate) connection
+    
     :param flux: flux instance
     :param c: connection object
     :param icl: dict of reservoirs that have actual fluxes
@@ -599,7 +595,6 @@ def check_isotope_effects(
         r = c.source.species.r
         s_c = get_ic(c.source, icl)
         s_l = get_ic(c.source, icl, isotopes=True)
-
         """ Calculate the flux of the light isotope (f_l) as a function of the isotope
         ratios in the source reservoir soncentrations (s_c, s_l), and alpha (a) as
         f_l = f_m * 1000/(r * (d + 1000) + 1000)
@@ -648,16 +643,6 @@ def get_scale_with_concentration_eq(
     """
     s_c = get_ic(c.source, icl)  # get index to concentration
     ex = f"{cfn}.scale * {s_c}"  # {c.id} scale with conc in {c.source.full_name}"
-
-    # if c.isotopes:
-    #     if c.delta != "None":
-    #         exl = apply_delta(ex, c, icl, ind3, ind2)
-    #     elif c.alpha != "None":
-    #         exl = apply_fractionation(ex, c, icl, ind3, ind2)
-    #     else:  # scale according to reservoir ratio
-    #         s_l = get_ic(c.source, icl, is
-    #              otopes=True)
-    # exl = f"{cfn}.scale * {s_l}"
     exl = check_isotope_effects(ex, c, icl, ind3, ind2)
     ex, exl = check_signal_2(ex, exl, c)
     return ex, exl
@@ -672,12 +657,7 @@ def get_scale_with_flux_eq(
     ind3: str,  # indentation
 ) -> tuple(str, str):
     """Equation defining a flux that scales with strength of another
-    flux reservoir
-
-    Example:
-
-    M1_C_Fw_to_L_b_TA_wca_ta__F = M1.C_Fw_to_L_b_TA_wca_ta.scale *
-    M1_C_Fw_to_L_b_DIC_Ca_W__F
+    flux. If isotopes are used, use the isotope ratio of the upstream reservoir.
 
     :param flux: Flux object
     :param c: connection instance
@@ -697,27 +677,12 @@ def get_scale_with_flux_eq(
     fn = f"{p.full_name.replace('.', '_')}__F"
     # get the equation string for the flux
     ex = f"{cfn}.scale * {fn}"
-
     """ The flux for the light isotope will computed as follows:
     We will use the mass of the flux we or scaling, but that we will set the
     delta|alpha according to isotope ratio of the reference flux
     """
-
-    print(f"gs0: ex = {ex}")
-    # if c.isotopes:
-    #     s_c = get_ic(c.source, icl)
-    #     s_l = get_ic(c.source, icl, isotopes=True)
-    #     exl = (
-    #         f"(\n"
-    #         f"{ind3}{cfn}.scale\n"
-    #         f"{ind3}* {fn}\n"
-    #         f"{ind3}* {s_l} / {s_c}\n"
-    #         f"{ind2})"
-    #     )
     exl = check_isotope_effects(ex, c, icl, ind3, ind2)
     ex, exl = check_signal_2(ex, exl, c)
-    print(f"gs1: ex = {ex}")
-    print(f"gs1: exl = {exl}\n")
     return ex, exl
 
 
