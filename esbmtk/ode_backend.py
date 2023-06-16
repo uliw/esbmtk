@@ -745,8 +745,8 @@ def get_weathering_eq(
         exl = f"{fn} * {s_l} / {s_c}"
         exl = f"{exl}  # weathering + isotopes"
 
-    ex, exl = check_signal_2(ex, "", c)
-    ex = f"{ex}  # weathering"
+    ex, exl = check_signal_2(ex, exl, c)
+
     return ex, exl
 
 
