@@ -569,31 +569,19 @@ def get_regular_flux_eq(
               the total flux, and the second describes the rate for
               the light isotope
     """
-
-    ex = f"{flux.full_name}.rate"  # get flux rate string
-    exl = ""
-
-    """ The flux can have a fixed delta value, or a fractionation,
-    """
-    if c.isotopes:
-        if c.delta != "None":
-            exl = apply_delta(ex, c, icl, ind3, ind2)
-        elif c.alpha != "None":
-            exl = apply_fractionation(ex, c, icl, ind3, ind2)
-        else:
-            raise ValueError("Neither delta nor alpha defined")
-
+    ex = f"{ind3}{flux.full_name}.rate"  # get flux rate string
+    exl = check_isotope_effects(ex, c, icl, ind3, ind2)
     ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
+
     return ex, exl
 
 
-def apply_isotope_effects(
+def check_isotope_effects(
     f_m: str,
     c: Connection | Connect,
     icl: dict,
     ind3: str,
     ind2: str,
-    scale=1,
 ) -> str:
     """Test if the connection involves any isotope effects
 
@@ -603,27 +591,30 @@ def apply_isotope_effects(
     :param ind2: indent 2 times
     :param ind3: indent 3 times
 
-    :returns eq: string with the fractionation equation
+    :returns eq: equation string
     """
+    if c.isotopes:
+        r = c.source.species.r
+        s_c = get_ic(c.source, icl)
+        s_l = get_ic(c.source, icl, isotopes=True)
 
-    r = c.source.species.r
-    s_c = get_ic(c.source, icl)
-    s_l = get_ic(c.source, icl, isotopes=True)
+        """ Calculate the flux of the light isotope (f_l) as a function of the isotope
+        ratios in the source reservoir soncentrations (s_c, s_l), and alpha (a) as
+        f_l = f_m * 1000/(r * (d + 1000) + 1000)
 
-    # Calculate the flux of the light isotope (f_l) as a function of the isotope
-    # ratios in the source reservoir soncentrations (s_c, s_l), and alpha (a) as
-    # f_l = f_m * 1000/(r * (d + 1000) + 1000)
-    if c.delta != "None":
-        d = c.delta
-        eq = (
-            f"(\n"
-            f"{ind3}{scale * f_m} * 1000\n"
-            f"{ind3} / ({r} * ({d} + 1000) + 1000))\n"
-        )
-    elif c.alpha != "None":
-        eq = f"(\n{ind3}{scale * s_l} * {f_m}\n{ind3} / ({a} * {s_c} + {s_l} - {a} * {s_l}))"
+        Note that the scale has already been applaied to f_m in the calling function.
+        """
+        if c.delta != "None":
+            d = c.delta
+            eq = f"{ind3}{f_m} * 1000 " f"/ ({r} * ({d} + 1000) + 1000)\n"
+        elif c.alpha != "None":
+            a = c.alpha / 1000 + 1
+            eq = f"{ind3}{s_l} * {f_m}{ind3} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
+        else:
+            eq = f"{ind3}{f_m} * {s_l} / {s_c}"
     else:
-        eq = f"(\n{ind3} {scale * f_m} * {s_l} / {s_c})"
+        eq = ""
+
     return eq
 
 
@@ -687,35 +678,6 @@ def apply_fractionation(
     return eq
 
 
-def no_isotope_effect(
-    f_m: str, c: Connection | Connect, icl: dict, ind3: str, ind2: str
-) -> str:
-    """If the connection involves isotopes but no isotope effect
-
-    :param f_m: string with the flux name
-    :param c: connection object
-    :param icl: dict of reservoirs that have actual fluxes
-    :param ind2: indent 2 times
-    :param ind3: indent 3 times
-
-    :returns eq: string with the equation for the light isotope
-
-    Calculate the flux of the light isotope (f_l) as a function of the isotope
-    ratios in the source reservoir soncentrations (s_c, s_l)
-
-    f_l = scale * s_l/s_c
-    """
-
-    s_c = get_ic(c.source, icl)
-    s_l = get_ic(c.source, icl, isotopes=True)
-
-    if int(c.alpha) != 0:
-        eq = f"(\n{ind3} {s_l} * {f_m}\n{ind3} / ({a} * {s_c} + {s_l} - {a} * {s_l}))"
-    else:
-        eq = f"(\n{ind3} {f_m} * {s_l} / {s_c})"
-    return eq
-
-
 def get_scale_with_concentration_eq(
     flux: Flux,  # flux instance
     c: Connect | Connection,  # connection instance
@@ -745,15 +707,16 @@ def get_scale_with_concentration_eq(
     s_c = get_ic(c.source, icl)  # get index to concentration
     ex = f"{cfn}.scale * {s_c}"  # {c.id} scale with conc in {c.source.full_name}"
 
-    if c.isotopes:
-        if c.delta != "None":
-            exl = apply_delta(ex, c, icl, ind3, ind2)
-        elif c.alpha != "None":
-            exl = apply_fractionation(ex, c, icl, ind3, ind2)
-        else:  # scale according to reservoir ratio
-            s_l = get_ic(c.source, icl, isotopes=True)
-            exl = f"{cfn}.scale * {s_l}"
-
+    # if c.isotopes:
+    #     if c.delta != "None":
+    #         exl = apply_delta(ex, c, icl, ind3, ind2)
+    #     elif c.alpha != "None":
+    #         exl = apply_fractionation(ex, c, icl, ind3, ind2)
+    #     else:  # scale according to reservoir ratio
+    #         s_l = get_ic(c.source, icl, is
+    #              otopes=True)
+    # exl = f"{cfn}.scale * {s_l}"
+    exl = check_isotope_effects(ex, c, icl, ind3, ind2)
     ex, exl = check_signal_2(ex, exl, c)
     return ex, exl
 
@@ -798,28 +761,21 @@ def get_scale_with_flux_eq(
     delta|alpha according to isotope ratio of the reference flux
     """
 
-    if c.isotopes:
-        if c.delta != "None":
-            exl = apply_delta(ex, c, icl, ind3, ind2)
-        elif c.alpha != "None":
-            exl = apply_fractionation(ex, c, icl, ind3, ind2)
-        else:  # scale according to reservoir ratio
-            s_c = get_ic(c.source, icl)
-            s_l = get_ic(c.source, icl, isotopes=True)
-
-    if c.isotopes:
-        s_c = get_ic(c.source, icl)
-        s_l = get_ic(c.source, icl, isotopes=True)
-        exl = (
-            f"(\n"
-            f"{ind3}{cfn}.scale\n"
-            f"{ind3}* {fn}\n"
-            f"{ind3}* {s_l} / {s_c}\n"
-            f"{ind2})"
-        )
-    ex, exl = check_signal_2(ex, "", c)
-    ex = f"{ex}  # scale with flux"
-
+    print(f"gs0: ex = {ex}")
+    # if c.isotopes:
+    #     s_c = get_ic(c.source, icl)
+    #     s_l = get_ic(c.source, icl, isotopes=True)
+    #     exl = (
+    #         f"(\n"
+    #         f"{ind3}{cfn}.scale\n"
+    #         f"{ind3}* {fn}\n"
+    #         f"{ind3}* {s_l} / {s_c}\n"
+    #         f"{ind2})"
+    #     )
+    exl = check_isotope_effects(ex, c, icl, ind3, ind2)
+    ex, exl = check_signal_2(ex, exl, c)
+    print(f"gs1: ex = {ex}")
+    print(f"gs1: exl = {exl}\n")
     return ex, exl
 
 
