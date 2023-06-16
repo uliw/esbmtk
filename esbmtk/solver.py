@@ -148,8 +148,19 @@ def get_delta_h(R: Reservoir | Flux) -> float:
     R.l = concentration of the light isotope
     """
 
+    from esbmtk import Reservoir, Flux
+
     r = R.species.r  # reference ratio
-    return np.where(R.l > 0, 1e3 * ((R.c - R.l) / R.l - r) / r, 0)
+    if isinstance(R, Reservoir):
+        d = np.where(R.l > 0, 1e3 * ((R.c - R.l) / R.l - r) / r, 0)
+    elif isinstance(R, Flux):
+        d = np.where(R.l > 0, 1e3 * ((R.m - R.l) / R.l - r) / r, 0)
+    else:
+        raise ValueError(
+            f"{R.full_name} must be of type Flux or Reservoir, not {type(R)}"
+        )
+
+    return d
 
 
 def execute(
