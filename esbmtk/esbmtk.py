@@ -209,7 +209,7 @@ class Model(esbmtkBase):
             logging.root.removeHandler(handler)
 
         fn: str = f"{kwargs['name']}.log"
-        logging.basicConfig(filename=fn, filemode="w", level=logging.WARN)
+        logging.basicConfig(filename=fn, filemode="w", level=logging.CRITICAL)
         self.__register_name_new__()
 
         self.lor: list = []
