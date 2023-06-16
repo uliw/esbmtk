@@ -269,7 +269,9 @@ class setup_ode():
                         eqs.write(f"{ind2}{fn}_l = {exl}\n")
 
                 if flux.save_flux_data:
-                    eqs.write(f"{ind2}{flux.full_name}.m[self.i] = {ex}\n")
+                    eqs.write(f"{ind2}{flux.full_name}.m[self.i] = {fn}\n")
+                    if flux.parent.isotopes:
+                        eqs.write(f"{ind2}{flux.full_name}.l[self.i] = {fn}_l\n")   
 
         sep = (
             "# ---------------- write computed reservoir equations -------- #\n"
@@ -569,7 +571,7 @@ def get_regular_flux_eq(
               the total flux, and the second describes the rate for
               the light isotope
     """
-    ex = f"{ind3}{flux.full_name}.rate"  # get flux rate string
+    ex = f"{flux.full_name}.rate"  # get flux rate string
     exl = check_isotope_effects(ex, c, icl, ind3, ind2)
     ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
 
@@ -606,16 +608,17 @@ def check_isotope_effects(
         """
         if c.delta != "None":
             d = c.delta
-            eq = f"{ind3}{f_m} * 1000 " f"/ ({r} * ({d} + 1000) + 1000)\n"
+            eq = f"{f_m} * 1000 / ({r} * ({d} + 1000) + 1000)"
         elif c.alpha != "None":
             a = c.alpha / 1000 + 1
-            eq = f"{ind3}{s_l} * {f_m}{ind3} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
+            eq = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
         else:
-            eq = f"{ind3}{f_m} * {s_l} / {s_c}"
+            eq = f"{f_m} * {s_l} / {s_c}"
     else:
         eq = ""
 
     return eq
+
 
 def get_scale_with_concentration_eq(
     flux: Flux,  # flux instance
