@@ -387,8 +387,8 @@ def check_signal_2(ex: str, exl: str, c: Connection | Connect) -> (str, str):
     :returns: (modified) equation string
     """
 
-    if c.signal != "None": # get signal type
-        
+    if c.signal != "None":  # get signal type
+
         if c.signal.stype == "addition":
             sign = "+"
         elif c.signal.stype == "multiplication":
@@ -576,31 +576,49 @@ def get_regular_flux_eq(
     """ The flux can have a fixed delta value, or a fractionation,
     """
     if c.isotopes:
-        # r, d and a are typically only a few decimal places so we use them
-        # directly
         if c.delta != "None":
-            r = c.source.species.r
-            d = c.delta
-            exl = (
-                f"(\n"
-                f"{ind3}{ex} * 1e3\n"
-                f"{ind3} / ({r} * ({d} + 1000) + 1000)\n"
-                f"{ind2})"
-            )
-            # exl = f"{exl}  # fixed rate with delta"
+            exl = apply_delta(ex, c, icl, ind3, ind2)
         elif c.alpha != "None":
-            exl = add_fractionation(ex, c, icl, ind3, ind2)
-            # this will probably not work
+            exl = apply_fractionation(ex, c, icl, ind3, ind2)
         else:
             raise ValueError("Neither delta nor alpha defined")
 
     ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
-
     return ex, exl
 
 
-# TODO Rename this here and in `get_regular_flux`
-def add_fractionation(
+def apply_delta(
+    f_m: str, c: Connection | Connect, icl: dict, ind3: str, ind2: str
+) -> str:
+    """If the connection involves a fixed deltae offset add equation
+    string according to the delta value
+
+    :param f_m: string with the flux name
+    :param c: connection object
+    :param icl: dict of reservoirs that have actual fluxes
+    :param ind2: indent 2 times
+    :param ind3: indent 3 times
+
+    :raises ValueError: if alpha is not between 0.9 and 1.1
+
+    :returns eq: string with the fractionation equation
+
+    Calculate the flux of the light isotope (f_l) as a function of the isotope
+    ratios in the source reservoir soncentrations (s_c, s_l), and alpha (a) as
+
+    f_l = f_m * 1000/(r * (d + 1000) + 1000)
+    """
+    r = c.source.species.r
+    d = c.delta
+    exl = (
+        f"(\n"
+        f"{ind3}{f_m} * 1000\n"
+        f"{ind3} / ({r} * ({d} + 1000) + 1000))\n"
+    )
+    return exl
+
+
+def apply_fractionation(
     f_m: str, c: Connection | Connect, icl: dict, ind3: str, ind2: str
 ) -> str:
     """If the connection involves isotope fractionation, add equation
