@@ -690,66 +690,75 @@ class Model(esbmtkBase):
                 max_step=self.max_step,
             )
 
-            # interpolate signals into the ode time domain
-            # must be done before changing model time domain
-            for s in self.los:
-                s.data.m = np.interp(
+        self.post_process_data(results)
+
+    def post_process_data(self, results) -> None:
+        """Map solver results back into esbmtk structures
+
+        :param results: numpy arrays with solver results
+        """
+
+        # interpolate signals into the ode time domain
+        # must be done before changing model time domain
+        for s in self.los:
+            s.data.m = np.interp(
+                results.t,
+                self.time,
+                s.data.m,
+            )
+            if s.isotopes:
+                s.data.l = np.interp(
                     results.t,
                     self.time,
-                    s.data.m,
+                    s.data.l,
                 )
-                if s.isotopes:
-                    s.data.l = np.interp(
-                        results.t,
-                        self.time,
-                        s.data.l,
-                    )
 
-            # interpolate external data into ode time domain
-            # must be done before changing model time domain
-            # for ed in self.led:
-            #     ed.y = np.interp(results.t, ed.x, ed.y)
-
-            # assign results to the esbmtk variables
-            i = 0
-            for r in icl:
-                r.c = results.y[i]
-                # this needs fixing if we have variable volumes
-                r.m = results.y[i] * r.volume
+        # interpolate external data into ode time domain
+        # must be done before changing model time domain
+        # for ed in self.led:
+        #     ed.y = np.interp(results.t, ed.x, ed.y)
+        # assign results to the esbmtk variables
+        i = 0
+        for r in self.icl:
+            r.c = results.y[i]
+            # this needs fixing if we have variable volumes
+            r.m = results.y[i] * r.volume
+            i = i + 1
+            if r.isotopes:
+                r.l = results.y[i]
                 i = i + 1
-                if r.isotopes == True:
-                    r.l = results.y[i]
-                    i = i + 1
-                    r.d = get_delta_from_concentration(r.c, r.l, r.sp.r)
+                r.d = get_delta_from_concentration(r.c, r.l, r.sp.r)
 
-            self.time = results.t
+        self.time = results.t
 
-            # interpolate intermediate results to match the model
-            # time scale. This only applies to data in virtual
-            # data fields
-            for gf in self.lpc_r:
-                # get cs instance handle
-                cs = getattr(gf.register, "cs")
-                for k, v in cs.vr_datafields.items():
-                    if "table" not in k:
-                        od = getattr(cs, k)  # get ode data
-                        # print(f"R = {gf.full_name} - {k}:\n"
-                        #       f"len(fp) = {len(od[0 : self.ode_system.i])}, "
-                        #       f"len(xp) = {len(self.ode_system.t)}, "
-                        #       f"i = {self.ode_system.i}")
-                        od = np.interp(
-                            self.time, self.ode_system.t, od[: self.ode_system.i]
-                        )
-                        setattr(cs, k, od)
+        # interpolate intermediate results to match the model
+        # time scale. This only applies to data in virtual
+        # data fields
+        for gf in self.lpc_r:
+            # get cs instance handle
+            cs = getattr(gf.register, "cs")
+            for k, v in cs.vr_datafields.items():
+                if "table" not in k:
+                    od = getattr(cs, k)  # get ode data
+                    # print(f"R = {gf.full_name} - {k}:\n"
+                    #       f"len(fp) = {len(od[0 : self.ode_system.i])}, "
+                    #       f"len(xp) = {len(self.ode_system.t)}, "
+                    #       f"i = {self.ode_system.i}")
+                    od = np.interp(
+                        self.time, self.ode_system.t, od[: self.ode_system.i]
+                    )
+                    setattr(cs, k, od)
 
-        else:
-            raise ValueError("odeint solver currently not supported")
-            results = odeint(ode_system.eqs, R, t=self.time, args=(self,), tfirst=True)
-            # assign results
-            for i, r in enumerate(icl):
-                r.c = results[:, i]
+        # check if there are any fluxes that need pp
+        steps = len(results.t)  # get number of solver steps
+        for f in self.lof:
+            if f.save_flux_data:
+                f.m = f.m[0:steps]
+                if f.isotopes:
+                    f.l = f.l[0:steps]
+                    f.d = get_delta_h(f)
 
-        self.results = results
+        # self.results = results # save results for debugging
 
     def __step_process__(self, r: Reservoir, i: int) -> None:
         """For debugging. Provide reservoir and step number,"""
@@ -1963,7 +1972,7 @@ class Flux(esbmtkBase):
         self.lrk: list = ["species", "rate", "register"]
 
         self.__initialize_keyword_variables__(kwargs)
-        
+
         self.parent = self.register
         # if save_flux_data is unsepcified, use model default
         if self.save_flux_data == "None":
@@ -2295,7 +2304,7 @@ class SourceSink(esbmtkBase):
 
         if self.register == "None":  # use a sensible default
             self.register = self.species.element.register
-        
+
         self.loc: set[Connection] = set()  # set of connection objects
 
         # legacy names
