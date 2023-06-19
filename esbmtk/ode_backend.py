@@ -439,7 +439,7 @@ def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
         s = f"R[{icl[r][1]}]" if isotopes else f"R[{icl[r][0]}]"
     elif isinstance(r, (Source, Sink)):
         s = f"{r.full_name}.c"
-        if isotopes:
+        if r.isotopes:
             s = f"{r.full_name}.l"
     else:
         #

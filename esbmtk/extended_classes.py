@@ -1913,7 +1913,8 @@ class GasReservoir(ReservoirBase):
         # initialize concentration vector
         self.c: np.ndarray = self.m / self.volume
         # isotope mass
-        self.l = get_l_mass(self.m, self.delta, self.species.r)
+        # self.l = get_l_mass(self.m, self.delta, self.species.r)
+        self.l = get_l_mass(self.c, self.delta, self.species.r)
         # delta of reservoir
         self.v: float = np.zeros(self.mo.steps) + self.volume  # mass of atmosphere
 
@@ -1949,6 +1950,7 @@ class GasReservoir(ReservoirBase):
 
         self.m[i]: float = value[0]
         self.l[i]: float = value[1]
+        # self.c[i]: float = self.m[i] / self.v[i]  # update concentration 
         # self.v[i]: float = self.v[i - 1] + value[0]
         # self.c[i]: float = self.m[i] / self.v[i]  # update concentration
         # self.h[i]: float = value[2]

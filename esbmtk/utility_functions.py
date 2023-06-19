@@ -212,34 +212,34 @@ def sort_by_type(l: list, t: list, m: str) -> list:
     return rl
 
 
-def get_object_handle(res, M):
+def get_object_handle(res: list|string|Reservoir|ReservoirGroup, M: Model):
     """Test if the key is a global reservoir handle
     or exists in the model namespace
 
-    res: list, str, or reservoir handle
-    M: Model handle
+    :param res: list of strings, or reservoir handles
+    :param M: Model handle
     """
 
-    rlist: list = []
+    r_list: list = []
 
     if not isinstance(res, list):
         res = [res]
     for o in res:
-        print(f"goh0: looking up {o} of {type(o)}")
+        # print(f"goh0: looking up {o} of {type(o)}")
         if o in M.dmo:  # is object known in global namespace
-            rlist.append(M.dmo[o])
-            print(f"goh1: found {o} in dmo")
+            r_list.append(M.dmo[o])
+            # print(f"goh1: found {o} in dmo")
         elif o in M.__dict__:  # or does it exist in Model namespace
-            rlist.append(getattr(M, o))
-            print(f"goh2: found {o} in __dict__\n")
+            r_list.append(getattr(M, o))
+            # print(f"goh2: found {o} in __dict__\n")
         else:
             print(f"{o} is not known for model {M.name}")
             # raise ValueError(f"{o} is not known for model {M.name}")
 
-    if len(rlist) == 1:
-        rlist = rlist[0]
+    if len(r_list) == 1:
+        r_list = r_list[0]
 
-    return rlist
+    return r_list
 
 
 def split_key(k: str, M: any) -> tp.Union[any, any, str]:
@@ -580,7 +580,7 @@ def expand_dict(d: dict, mt: str = "1:1") -> int:
     return r
 
 
-def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
+def create_bulk_connections(ct: dict, M: Model, mt: int = "1:1") -> dict:
     """Create connections from a dictionary. The dict can have the following keys
     following format:
 
@@ -658,28 +658,29 @@ def create_bulk_connections(ct: dict, M: any, mt: int = "1:1") -> None:
         else:
             raise ValueError(f"{c} must be string or tuple")
 
-    return ct
+    return c_ct
 
 
-def create_connection(n: str, p: dict, M: any) -> None:
-    """called by create_bulk_connections in order to create a connection
-    group It is assumed that all rates are in liter/year or mol per
-    year. This may not be what you want or need.
+def create_connection(n: str, p: dict, M: Model) -> None:
+    """called by create_bulk_connections in order to create a connection group
+    It is assumed that all rates are in liter/year or mol per year.  This may
+    not be what you want or need.
 
-    n: a connection key e.g., sb2db@mix which will be
-    interpreted as mixing a connection between sb and db and thus
-    create connections in both directions
-
-    p: a dictionary holding  the connection properties
-
-    M: the model handle
-
+    :param n: a connection key.  if the mix flag is given interpreted as mixing
+              a connection between sb and db and thus create connections in both
+              directions
+    :param p: a dictionary holding the connection properties
+    :param M: the model handle
     """
 
     from esbmtk import ConnectionGroup, Q_
 
+    # print(f"cc00: {n}",flush=True)
     # get the reservoir handles by splitting the key
     source, sink, cid = split_key(n, M)
+    # print(f"cc0: type of key {type(n)}", flush=True)
+    # print(f"cc1: key = {n}, source = {source}, sink = {sink}", flush=True)
+    
     # create default connections parameters and replace with values in
     # the parameter dict if present.
     los = list(p["sp"]) if isinstance(p["sp"], list) else [p["sp"]]
@@ -833,48 +834,41 @@ def get_connection_keys(
         # get connection and flux name
         fns = f.full_name.split(".")
         cnc = fns[1][3:]  # get key without leadinf C_
-        print()
-        print(f"gck0: flux = {f.full_name}, key = {cnc}")
-        print(f"gck1: ref_id = {ref_id}, target_id = {target_id}")
+        # print()
+        # print(f"gck0: flux = {f.full_name}, key = {cnc}")
+        # print(f"gck1: ref_id = {ref_id}, target_id = {target_id}")
         if inverse:
             cnc = reverse_key(cnc)
             
         cnc.replace(ref_id, target_id)
         # create new cnc string
         cnc = f"{cnc}_to_{target_id}"
-        print(f"gck3: cnc = {cnc}")
+        # fix id vs connection Name
+        # parts = cnc.split('_to_')
+        # cnc = f"{parts[0]}@{parts[1]}"
+        # print(f"gck3: cnc = {cnc}")
         cnc_l.append(cnc)
 
     return cnc_l
 
 
-def gen_dict_entries(M: Model | list, **kwargs) -> tuple(list, list):
+def gen_dict_entries(M: Model | list, **kwargs) -> tuple(tuple, list):
     """Find all fluxes that contain the reference string, and create a new
     Connection instance that connects the flux matching ref_id, with a flux
-    matching target_id.  keys which contain the target string.  The function
-    will return two lists, which can be used to create a dict for the
-    create_bulk_connnection function.
+    matching target_id.  The function will a tuple containig the new connection
+    keys that can be used by the create bulk_connection() function.  The second
+    return value is a list containing the reference fluxes.
+
+    The optional inverse parameter, can be used where in cases where the flux
+    direction needs to be reversed, i.e., the returned key will not read
+    sb_to_dbPOM, but db_to_sb@POM
 
     :param M: Model or list
     :param **kwargs: keyword dictionary, known keys are ref_id, and raget_id,
         inverse
 
     :return f_list: List of fluxes that match ref_id
-    :return c_list: List of connection objects that match
-
-        E.g., to create a dict which will create new fluxes based on existing
-        fluxes
-
-        dk:list, fl:list = gen_dict_entries(M, ref_id='POP', target_id ='POM',
-        inverse=False)
-
-        this will find all fluxes with the POP-id and put these into fl.  It
-        will also generate a list with suitable connections keys (dk) which
-        contain the 'POM' id.
-
-        The optional inverse parameter, can be used where in cases where the
-        flux direction needs to be reversed, i.e., the returned key will not
-        read sb_to_dbPOM, but db_to_sb@POM
+    :return k_tuples: tuple of connection keys
     """
 
     from esbmtk import Model
@@ -900,7 +894,7 @@ def gen_dict_entries(M: Model | list, **kwargs) -> tuple(list, list):
     else:
         raise ValueError(f"gen_dict_entries: M must be list or Model, not {type(M)}")
 
-    c_list: list = get_connection_keys(
+    k_tuples: list = get_connection_keys(
         f_list,
         ref_id,
         target_id,
@@ -908,7 +902,7 @@ def gen_dict_entries(M: Model | list, **kwargs) -> tuple(list, list):
         exclude_str,
     )
 
-    return c_list, f_list
+    return tuple(k_tuples), f_list
 
 
 def build_ct_dict(d: dict, p: dict) -> dict:

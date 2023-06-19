@@ -19,6 +19,7 @@
 
 import typing as tp
 import numpy as np
+from numba import njit
 from esbmtk import ReservoirGroup, Flux
 
 if tp.TYPE_CHECKING:
@@ -54,6 +55,7 @@ def get_hplus(
     return hplus - hplus_0
 
 
+#@njit(parallel=False, fastmath=True, error_model="numpy")
 def carbonate_system_1_ode(
     rg: ReservoirGroup,
     dic: float,
@@ -125,7 +127,7 @@ def carbonate_system_1_ode(
 
     return diff, co2aq
 
-
+# @njit(parallel=False, fastmath=True, error_model="numpy")
 def carbonate_system_2_ode(
     t,  # 1: time step
     rg: ReservoirGroup,  # 2 Reservoir handle

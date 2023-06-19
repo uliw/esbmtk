@@ -485,6 +485,7 @@ class Connect(esbmtkBase):
                 self.name = f"{self.id}"
             else:
                 self.name = f"{self.name}_{self.id}"
+                #self.name = f"{self.name}@{self.id}"
 
         # always overide name with id for manual connections
         # if not isinstance(self.parent, ConnectionGroup):
@@ -1194,8 +1195,10 @@ class ConnectionGroup(esbmtkBase):
         self.loc: list = []  # list of connection objects
 
         self.name = f"CG_{self.source.name}_to_{self.sink.name}"
-        if self.id != "None":
-            self.name = f"{self.name}_{self.id}"
+        # fixme this results in duplicate names in the model namespace.
+        # probably related to the create connection function
+        # if self.id != "None":
+        #     self.name = f"{self.name}@{self.id}"
             
         self.base_name = self.name
         self.parent = self.register
@@ -1222,7 +1225,7 @@ class ConnectionGroup(esbmtkBase):
 
         # now we need to create defaults for all connections
         self.cd: dict = {}  # connection dictionary
-        # loop over speces
+        # loop over species
         for sp in self.connections:  # ["SO4", "H2S"]
             self.cd[sp.n] = {
                 # "cid": self.id,

@@ -126,6 +126,7 @@ class input_parsing(object):
         else:
             self.full_name = f"{self.parent.full_name}.{self.name}"
             reg = self.parent.model
+            # self.full_name, reg.lmo = self.__test_and_resolve_duplicates__(self.full_name, reg.lmo)
             if self.full_name in reg.lmo:
                 raise NameError(f"{self.full_name} is a duplicate name in reg.lmo")
             # register with model
@@ -135,6 +136,16 @@ class input_parsing(object):
             setattr(self.parent, self.name, self)
             self.kwargs["full_name"] = self.full_name
         self.reg_time = time.monotonic()
+
+    def __test_and_resolve_duplicates__(self, name, lmo):
+        if name in lmo:
+            print(f"\n Warning, {name} is a duplicate, trying with {name}_1\n")
+            name = name + "_1"
+            name, lmo = self.__test_and_resolve_duplicates__(name, lmo)
+        else:
+            lmo.append(name)
+
+        return name, lmo
 
 
 class esbmtkBase(input_parsing):
@@ -260,11 +271,11 @@ class esbmtkBase(input_parsing):
         pass
 
     def ensure_q(self, arg):
-        """ Test that a given input argument is a quantity. If not convert
+        """Test that a given input argument is a quantity. If not convert
         into quantity
         """
         from esbmtk import Q_
-        
+
         if isinstance(arg, Q_):
             pass
         elif isinstance(arg, str):
