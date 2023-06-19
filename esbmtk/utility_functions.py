@@ -15,7 +15,7 @@
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-# import typing as tp
+from __future__ import annotations
 from numba.typed import List
 import numpy as np
 import matplotlib.pyplot as plt
@@ -24,8 +24,8 @@ import typing as tp
 from collections import OrderedDict
 from esbmtk import Q_
 
-# import builtins
-# import math
+if tp.TYPE_CHECKING:
+    from esbmtk import Flux, Model, Connection, Connect
 
 np.set_printoptions(precision=4)
 
@@ -213,7 +213,7 @@ def sort_by_type(l: list, t: list, m: str) -> list:
 
 
 def get_object_handle(res, M):
-    """Test if we the key is a global reservoir handle
+    """Test if the key is a global reservoir handle
     or exists in the model namespace
 
     res: list, str, or reservoir handle
@@ -224,14 +224,17 @@ def get_object_handle(res, M):
 
     if not isinstance(res, list):
         res = [res]
-
     for o in res:
+        print(f"goh0: looking up {o} of {type(o)}")
         if o in M.dmo:  # is object known in global namespace
             rlist.append(M.dmo[o])
+            print(f"goh1: found {o} in dmo")
         elif o in M.__dict__:  # or does it exist in Model namespace
             rlist.append(getattr(M, o))
+            print(f"goh2: found {o} in __dict__\n")
         else:
-            raise ValueError(f"{o} is not known for model {M.name}")
+            print(f"{o} is not known for model {M.name}")
+            # raise ValueError(f"{o} is not known for model {M.name}")
 
     if len(rlist) == 1:
         rlist = rlist[0]
@@ -745,7 +748,9 @@ def get_name_only(o: any) -> any:
 
     from esbmtk import Flux, Reservoir, ReservoirGroup, Species
 
-    return o.full_name if isinstance(o, (Flux, Reservoir, ReservoirGroup, Species)) else o
+    return (
+        o.full_name if isinstance(o, (Flux, Reservoir, ReservoirGroup, Species)) else o
+    )
 
 
 def get_simple_list(l: list) -> list:
@@ -790,10 +795,8 @@ def find_matching_fluxes(l: list, filter_by: str, exclude: str) -> list:
 def reverse_key(key: str) -> str:
     """reverse a connection key e.g., sb2db@POM becomes db2sb@POM"""
 
-    # print(f"key = {key}")
-    l = key.split("@")
-    left = l[0]
-    # right = l[1]
+    left = key.split("@")
+    left = left[0]
     rs = left.split("_to_")
     r1 = rs[0]
     r2 = rs[1]
@@ -802,85 +805,110 @@ def reverse_key(key: str) -> str:
 
 
 def get_connection_keys(
-    s: set, fstr: str, nstr: str, inverse: bool, exclude: str
-) -> list:
-    """extract connection keys from set of flux names, replace fstr with
-    nstr so that the key can be used in create_bulk_connnections()
+    f_list: set,
+    ref_id: str,
+    target_id: str,
+    inverse: bool,
+    exclude: str,
+) -> list[str]:
+    """
+    extract connection keys from set of flux names, replace ref_id with
+    target_id so that the key can be used in create_bulk_connnections()
+
+    :param f_list: a set with flux objects
+    :param ref_id: string with the reference id
+    :param target_id: string with the target_id
+    :param inverse: Bool, optional, defaults to false
+
+    :return cnc_l: a list of connection keys (str)
 
     The optional inverse parameter, can be used where in cases where the
     flux direction needs to be reversed, i.e., the returned key will not read
     sb2db@POM, but db2s@POM
-
-    E.g., if
-
-    s = ( M4.CG_P_sb2P_ib.PO4.POP_F)
-    fstr = "POP"
-    nstr = "POM_DIC"
-
-    M4.CG_P_sb2P_ib.PO4.POP_F will become
-
-    P_sb_to_P_ib@POM_DIC
-
     """
 
-    cl: list = []
+    cnc_l: list = []  # list of connection keys
 
-    for n in s:
+    for f in f_list:
         # get connection and flux name
-        l = n.full_name.split(".")
-        cn = l[1][3:]  # get key without leadinf C_
+        fns = f.full_name.split(".")
+        cnc = fns[1][3:]  # get key without leadinf C_
+        print()
+        print(f"gck0: flux = {f.full_name}, key = {cnc}")
+        print(f"gck1: ref_id = {ref_id}, target_id = {target_id}")
         if inverse:
-            cn = reverse_key(cn)
-        cn.replace(fstr, nstr)
-        cn = f"{cn}_to_{nstr}"
-        cl.append(cn)
+            cnc = reverse_key(cnc)
+            
+        cnc.replace(ref_id, target_id)
+        # create new cnc string
+        cnc = f"{cnc}_to_{target_id}"
+        print(f"gck3: cnc = {cnc}")
+        cnc_l.append(cnc)
 
-    return cl
+    return cnc_l
 
 
-def gen_dict_entries(M: any, **kwargs) -> tuple:
-    """find all fluxes which contain the reference string, and create
-    matching keys which contain the target string. The function will
-    return two lists, which can be used to create a dict for the
+def gen_dict_entries(M: Model | list, **kwargs) -> tuple(list, list):
+    """Find all fluxes that contain the reference string, and create a new
+    Connection instance that connects the flux matching ref_id, with a flux
+    matching target_id.  keys which contain the target string.  The function
+    will return two lists, which can be used to create a dict for the
     create_bulk_connnection function.
 
-    E.g., to create a dict which will create new fluxes based on
-    existing fluxes
+    :param M: Model or list
+    :param **kwargs: keyword dictionary, known keys are ref_id, and raget_id,
+        inverse
 
-    dk:list, fl:list = gen_dict_entries(ref_id = 'POP', target_id = 'POM')
+    :return f_list: List of fluxes that match ref_id
+    :return c_list: List of connection objects that match
 
-    this will find all fluxes with the POP-id and put these into
-    fl. It will also generate a list with suitable connections keys
-    (dk) which contain the 'POM' id.
+        E.g., to create a dict which will create new fluxes based on existing
+        fluxes
 
-    The optional inverse parameter, can be used where in cases where the
-    flux direction needs to be reversed, i.e., the returned key will not read
-    sb_to_dbPOM, but db_to_sb@POM
+        dk:list, fl:list = gen_dict_entries(M, ref_id='POP', target_id ='POM',
+        inverse=False)
 
+        this will find all fluxes with the POP-id and put these into fl.  It
+        will also generate a list with suitable connections keys (dk) which
+        contain the 'POM' id.
+
+        The optional inverse parameter, can be used where in cases where the
+        flux direction needs to be reversed, i.e., the returned key will not
+        read sb_to_dbPOM, but db_to_sb@POM
     """
 
     from esbmtk import Model
 
-    reference = kwargs["ref_id"]
-    target = kwargs["target_id"]
+    ref_id = kwargs["ref_id"]
+    target_id = kwargs["target_id"]
     inverse = kwargs.get("inverse", False)
     exclude_str = kwargs.get("exclude", "None")
+
+    # find matching fluxes
     if isinstance(M, Model):
-        flist: list = find_matching_fluxes(
-            M.loc, filter_by=reference, exclude=exclude_str
+        f_list: list = find_matching_fluxes(
+            M.loc,
+            filter_by=ref_id,
+            exclude=exclude_str,
         )
     elif isinstance(M, list):
-        flist: list = find_matching_fluxes(
+        f_list: list = find_matching_fluxes(
             M,
-            filter_by=reference,
+            filter_by=ref_id,
             exclude=exclude_str,
         )
     else:
         raise ValueError(f"gen_dict_entries: M must be list or Model, not {type(M)}")
 
-    klist: list = get_connection_keys(flist, reference, target, inverse, exclude_str)
+    c_list: list = get_connection_keys(
+        f_list,
+        ref_id,
+        target_id,
+        inverse,
+        exclude_str,
+    )
 
-    return tuple(klist), flist
+    return c_list, f_list
 
 
 def build_ct_dict(d: dict, p: dict) -> dict:
@@ -1063,32 +1091,32 @@ def add_carbonate_system_1(rgs: list):
 
 def add_carbonate_system_2(**kwargs) -> None:
     """Creates a new carbonate system virtual reservoir
-        which will compute carbon species, saturation, compensation,
-        and snowline depth, and compute the associated carbonate burial fluxes
+    which will compute carbon species, saturation, compensation,
+    and snowline depth, and compute the associated carbonate burial fluxes
 
-        Required keywords:
-            r_sb: list of ReservoirGroup objects in the surface layer
-            r_db: list of ReservoirGroup objects in the deep layer
-            carbonate_export_fluxes: list of flux objects which must match the
-                                     list of ReservoirGroup objects.
-            zsat_min = depth of the upper boundary of the deep box
-            z0 = upper depth limit for carbonate burial calculations
-                 typically zsat_min
+    Required keywords:
+        r_sb: list of ReservoirGroup objects in the surface layer
+        r_db: list of ReservoirGroup objects in the deep layer
+        carbonate_export_fluxes: list of flux objects which must match the
+                                 list of ReservoirGroup objects.
+        zsat_min = depth of the upper boundary of the deep box
+        z0 = upper depth limit for carbonate burial calculations
+             typically zsat_min
 
-        Optional Parameters:
+    Optional Parameters:
 
-            zsat = initial saturation depth (m)
-            zcc = initial carbon compensation depth (m)
-            zsnow = initial snowline depth (m)
-            zsat0 = characteristic depth (m)
-            Ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
-            kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
-            Ca2 = calcium ion concentration (mol/kg)
-            pc = characteristic pressure (atm)
-            pg = seawater density multiplied by gravity due to acceleration (atm/m)
-            I = dissolvable CaCO3 inventory
-            co3 = CO3 concentration (mol/kg)
-            Ksp = solubility product of calcite at in situ sea water conditions (mol^2/kg^2)
+        zsat = initial saturation depth (m)
+        zcc = initial carbon compensation depth (m)
+        zsnow = initial snowline depth (m)
+        zsat0 = characteristic depth (m)
+        Ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
+        kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
+        Ca2 = calcium ion concentration (mol/kg)
+        pc = characteristic pressure (atm)
+        pg = seawater density multiplied by gravity due to acceleration (atm/m)
+        I = dissolvable CaCO3 inventory
+        co3 = CO3 concentration (mol/kg)
+        Ksp = solubility product of calcite at in situ sea water conditions (mol^2/kg^2)
 
     """
 
@@ -1170,8 +1198,9 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     # test if corresponding surface reservoirs have been defined
     if len(r_sb) == 0:
-        raise ValueError('Please update your call to add_carbonate_system_2and add the list of of corresponding surface reservoirs')
-
+        raise ValueError(
+            "Please update your call to add_carbonate_system_2and add the list of of corresponding surface reservoirs"
+        )
 
     # C saturation(z) after Boudreau 2010
     Csat_table: np.ndarray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
@@ -1388,7 +1417,11 @@ def __checkkeys__(lrk: list, lkk: list, kwargs: dict) -> None:
         if isinstance(k, list):  # If keyword is a list
             s: int = 0  # loop over allowed substitutions
             for e in k:  # test how many matches are in this list
-                if e in kwargs and not isinstance(e, (np.ndarray, np.float64, list)) and kwargs[e] != "None":
+                if (
+                    e in kwargs
+                    and not isinstance(e, (np.ndarray, np.float64, list))
+                    and kwargs[e] != "None"
+                ):
                     s = s + 1
             if s > 1:  # if more than one match
                 raise ValueError(f"You need to specify exactly one from this list: {k}")
