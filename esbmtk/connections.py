@@ -1184,7 +1184,6 @@ class ConnectionGroup(esbmtkBase):
 
         if self.register == "None":
             self.register = self.source.register
-            
         if self.save_flux_data == "None":
             self.save_flux_data = self.register.save_flux_data
             self.kwargs.update({"save_flux_data": self.register.save_flux_data})
