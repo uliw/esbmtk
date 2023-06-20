@@ -673,8 +673,8 @@ class Model(esbmtkBase):
         from equations import setup_ode
 
         ode_system = setup_ode(self)  # create ode system instance
-        self.ode_system = ode_system
-        method = kwargs["method"] if "method" in kwargs else "RK23"
+        # self.ode_system = ode_system
+        method = kwargs["method"] if "method" in kwargs else "BDF"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
 
         if stype == "solve_ivp":
@@ -690,9 +690,9 @@ class Model(esbmtkBase):
                 max_step=self.max_step,
             )
 
-        self.post_process_data(results)
+        self.post_process_data(results, ode_system)
 
-    def post_process_data(self, results) -> None:
+    def post_process_data(self, results, ode_system) -> None:
         """Map solver results back into esbmtk structures
 
         :param results: numpy arrays with solver results
@@ -744,9 +744,7 @@ class Model(esbmtkBase):
                     #       f"len(fp) = {len(od[0 : self.ode_system.i])}, "
                     #       f"len(xp) = {len(self.ode_system.t)}, "
                     #       f"i = {self.ode_system.i}")
-                    od = np.interp(
-                        self.time, self.ode_system.t, od[: self.ode_system.i]
-                    )
+                    od = np.interp(self.time, ode_system.t, od[: ode_system.i])
                     setattr(cs, k, od)
 
         # check if there are any fluxes that need pp
@@ -1239,7 +1237,7 @@ class ReservoirBase(esbmtkBase):
         #     # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]  # l
         #     # else:
         #     df[f"{f.full_name} {sn} [{fmu}]"] = f.fa[0]  # m
-        #     # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.fa[1]  # 
+        #     # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.fa[1]  #
 
         file_path = Path(fn)
         if append and file_path.exists():
