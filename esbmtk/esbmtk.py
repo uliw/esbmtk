@@ -685,7 +685,7 @@ class Model(esbmtkBase):
                 args=(self,),
                 method=method,
                 atol=1e-12,
-                first_step=Q_("1 hour").to(self.t_unit).magnitude,
+                first_step=Q_("1 second").to(self.t_unit).magnitude,
                 # dense_output=True,
                 max_step=self.max_step,
             )
