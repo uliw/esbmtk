@@ -16,7 +16,7 @@
      <https://www.gnu.org/licenses/>.
 
 """
-
+from __future__ import annotations
 import typing as tp
 import numpy as np
 from numba import njit
@@ -55,7 +55,7 @@ def get_hplus(
     return hplus - hplus_0
 
 
-#@njit(parallel=False, fastmath=True, error_model="numpy")
+# @njit(parallel=False, fastmath=True, error_model="numpy")
 def carbonate_system_1_ode(
     rg: ReservoirGroup,
     dic: float,
@@ -126,6 +126,7 @@ def carbonate_system_1_ode(
     diff = hplus - hplus_0
 
     return diff, co2aq
+
 
 # @njit(parallel=False, fastmath=True, error_model="numpy")
 def carbonate_system_2_ode(
@@ -361,18 +362,18 @@ def gas_exchange_ode(scale, gas_c, p_H2O, solubility, c_aq) -> float:
 
 
 def gas_exchange_ode_with_isotopes(
-    scale,  # surface area in m^2
+    scale,  # surface area in m^2 * piston velocity
     gas_c,  # species concentration in atmosphere
     gas_c_l,  # same but for the light isotope
     liquid_c,  # c of the reference species (e.g., DIC)
     liquid_c_l,  # same but for the light isotope
     p_H2O,  # water vapor pressure
     solubility,  # solubility constant
-    c_aq,  # Gas concentration in liquid phase
+    gas_c_aq,  # Gas concentration in liquid phase
     a_db,  # fractionation factor between dissolved CO2aq and HCO3-
     a_dg,  # fractionation between CO2aq and CO2g
     a_u,  # kinetic fractionation during gas exchange
-) -> tuple:
+) -> tuple(float, float):
     """Calculate the gas exchange flux across the air sea interface
     for co2 incliding isotope effects.
 
@@ -380,26 +381,20 @@ def gas_exchange_ode_with_isotopes(
     this equation is for mmol but esbmtk uses mol, so we need to
     multiply by 1E3
     """
+    # Solibility with correction for pH2O
+    beta = solubility * (1 - p_H2O)
+    # concentration of dissolved gas
+    liquid_eq = gas_c_aq * 1000
 
-    # equilibrium concentration of CO2 in water based on pCO2
-    eco2_at = gas_c * (1 - p_H2O) * solubility  # p Atmosphere  # p_H2O
-    # equilibrium concentration of CO2 in water based on CO2aq
-    eco2_aq = c_aq * 1000
+    # get heavy isotope concentrations in atmosphere
+    gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
 
-    # total flux
-    f = scale * (eco2_at - eco2_aq)
+    # get h/c ratio in liquid
+    liquid_r = (liquid_c - liquid_c_l) / liquid_c
 
-    # get heavy isotope concentration in the respective reservoirs
-    c13g = gas_c - gas_c_l  #
-    c13aq = liquid_c - liquid_c_l
-    # get 13C CO2 equlibrium concentration  CO2 in water based on pCO2
-    eco2_at_13 = gas_c * c13g * (1 - p_H2O) * solubility * a_dg  # p_H2O
+    f = scale * (gas_c * beta - liquid_eq)  # total flux across interface
 
-    # get 13C equilibrium  CO2 in water based on DIC m & l
-    eco2_aq_13 = a_db * eco2_aq * c13aq
+    # flux of the light isotope = flux - flux_h
+    f_l = f - scale * a_u * (a_dg * gas_c_h * beta - a_db * liquid_r * liquid_eq)
 
-    # 13C flux
-    f13 = scale * a_u * (eco2_at_13 - eco2_aq_13)
-    f12 = f - f13
-
-    return -f, -f12
+    return -f, -f_l

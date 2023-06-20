@@ -830,8 +830,8 @@ def get_gas_exchange_w_isotopes_eq(
            M1.C_H_b_to_CO2_At.scale, # surface area in m^2
            R[10],  # gas c in atmosphere
            R[11],  # gas c_l in atmosphere
-           R[12],  # c of reference species, e.g., DIC
-           R[13],  # c_l reference species, e.g., DIC_12
+           R[12],  # c of main species, e.g., DIC
+           R[13],  # c_l of main species, e.g., DIC_12
            M1.C_H_b_to_CO2_At.water_vapor_pressure,
            M1.C_H_b_to_CO2_At.solubility,
            M1_H_b_CO2aq, # gas concentration in liquid, e.g., [co2]aq
@@ -867,11 +867,8 @@ def get_gas_exchange_w_isotopes_eq(
     # test if we refer to CO2 or other gas species
     if sp == "DIC":
         refsp = f"{c.liquid_reservoir.parent.full_name}.CO2aq".replace(".", "_")
-    elif sp == "O2":
-        s_c = get_ic(c.liquid_reservoir, icl)
-        refsp = f"{s_c}"
     else:
-        raise ValueError(f"Species{sp} has not definition for gex")
+        raise ValueError(f"Species{sp} has no isotope definition for gas exchange")
 
     ex = (
         f"gas_exchange_ode_with_isotopes(\n"
