@@ -20,7 +20,6 @@ import typing as tp
 from pandas import DataFrame
 import time
 from time import process_time
-from numba.typed import List
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -41,7 +40,6 @@ from .utility_functions import (
 from .solver import (
     get_l_mass,
     execute,
-    execute_e,
     get_delta_h,
     get_delta_from_concentration,
 )
@@ -619,23 +617,14 @@ class Model(esbmtkBase):
                 f.__sub_sample_data__(stride)
 
     def __run_solver__(self, solver: str, kwargs: dict) -> None:
-        if solver == "numba":
-            print("Using numba solver")
-            execute_e(
-                self,
-                self.lop,
-                self.lor,
-                self.lpc_f,
-                self.lpc_r,
-            )
-        elif solver == "ode":
+        if solver == "ode":
             print("Using ODE solver")
             self.ode_solver(kwargs)
         elif solver == "ode_uli":
             print("\n\n the solver type 'ode_uli' is deprecated, please use 'ode' \n\n")
             self.ode_solver(kwargs)
         elif solver == "python":
-            print("Using python solver")
+            print("\n\n the solver type 'python' is deprecated, please use 'ode' \n\n")
             execute(self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
         else:
             raise ValueError(
@@ -1151,24 +1140,6 @@ class ReservoirBase(esbmtkBase):
         """
 
         raise NotImplementedError("__update_mass__ is not yet implmented")
-
-    def get_process_args(self):
-        """Provide the data structure which needs to be passed to the numba solver"""
-
-        print(f"Name = {self.full_name}")
-        data = List(
-            [
-                self.m,  # 0
-                self.l,  # 1
-                self.c,  # 2
-                self.v,  # 3
-            ]
-        )
-
-        func_name: col.Callable = self.__update_mass__
-        params = List([float(self.reservoir.species.element.r)])
-
-        return func_name, data, params
 
     def __write_data__(
         self,
@@ -1690,7 +1661,7 @@ class Reservoir(ReservoirBase):
             "plot": ["yes", (str)],
             "groupname": ["None", (str)],
             "rtype": ["regular", (str)],
-            "function": ["None", (str, col.Callable)],
+            "function": ["None", (str, callable)],
             "display_precision": [0.01, (int, float)],
             "register": [
                 "None",

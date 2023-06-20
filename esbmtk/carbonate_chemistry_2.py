@@ -19,7 +19,6 @@
 from __future__ import annotations
 import typing as tp
 import numpy as np
-from numba import njit
 from esbmtk import ReservoirGroup, Flux
 
 if tp.TYPE_CHECKING:

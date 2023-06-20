@@ -11,6 +11,7 @@ esbmtk/__init__.py
 esbmtk/carbonate_chemistry.py
 esbmtk/carbonate_chemistry_2.py
 esbmtk/connections.py
+esbmtk/depreceated_code.py
 esbmtk/esbmtk.py
 esbmtk/esbmtk_base.py
 esbmtk/extended_classes.py
@@ -29,3 +30,4 @@ examples/one-box-ocean/emissions-full.csv
 examples/one-box-ocean/emissions.csv
 examples/one-box-ocean/measured_c_isotopes.csv
 tests/measured_c_isotopes.csv
+tests/test_esbmtk.py

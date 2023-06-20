@@ -2,9 +2,7 @@ python >= 3.9
 matplotlib
 numpy
 pandas
-typing
 pint
+typing
 os
-psutils
-numba
-
+psutil

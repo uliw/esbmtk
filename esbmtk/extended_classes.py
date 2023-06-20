@@ -1,6 +1,5 @@
 from __future__ import annotations
 from pandas import DataFrame
-from numba.typed import List
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -108,9 +107,7 @@ class ReservoirGroup(esbmtkBase):
             Model,
             get_box_geometry_parameters,
             Q_,
-            calc_carbonates_2,
         )
-        from numba.typed import List
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -251,7 +248,7 @@ class ReservoirGroup(esbmtkBase):
                 name="cs",
                 species=Model.CO2,
                 alias_list="H CA HCO3 CO3 CO2aq omega zsat".split(" "),
-                vr_datafields=List(
+                vr_datafields=list(
                     [
                         self.swc.hplus,
                         self.swc.ca,
@@ -263,8 +260,8 @@ class ReservoirGroup(esbmtkBase):
                     ]
                 ),
                 function=calc_carbonates_2,
-                function_input_data=List([self.DIC.c, self.TA.c]),
-                function_params=List(
+                function_input_data=list([self.DIC.c, self.TA.c]),
+                function_params=list(
                     [
                         self.swc.K1,  # 0
                         self.swc.K2,  # 1
@@ -533,7 +530,7 @@ class Signal(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: List[str] = [
+        self.lrk: list[str] = [
             "name",
             ["duration", "filename"],
             "species",
@@ -545,7 +542,7 @@ class Signal(esbmtkBase):
         self.__initialize_keyword_variables__(kwargs)
 
         # list of signals we are based on
-        self.los: List[Signal] = []
+        self.los: list[Signal] = []
 
         # convert units to model units
         self.st: tp.Union[int, float] = int(
@@ -975,7 +972,7 @@ class Signal(esbmtkBase):
 
         # # test for plt_transform
         # if self.plot_transform_c != "None":
-        #     if callable(self.plot_transform_c):
+        #     if Callable(self.plot_transform_c):
         #         y1 = self.plot_transform_c(self.c)
         #     else:
         #         raise ValueError("Plot transform must be a function")
@@ -1307,11 +1304,11 @@ class Reservoir_no_set(ReservoirBase):
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "species": ["None", (str, Species)],
-            "plot_transform_c": ["None", (str, col.Callable)],
+            "plot_transform_c": ["None", (str, Callable)],
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
             "groupname": ["None", (str)],
-            "function": ["None", (str, col.Callable)],
+            "function": ["None", (str, Callable)],
             "display_precision": [0.01, (int, float)],
             "register": [
                 "None",
@@ -1321,8 +1318,8 @@ class Reservoir_no_set(ReservoirBase):
             "isotopes": [False, (bool)],
             "volume": ["None", (str, int, float)],
             "vr_datafields": [{}, (dict)],
-            "function_input_data": (List, str),
-            "function_params": [List(), (List, str)],
+            "function_input_data": (list, str),
+            "function_params": [list(), (list, str)],
             "geometry": ["None", (list, str)],
             "alias_list": ["None", (list, str)],
             "ref_flux": ["None", (list, str)],
@@ -1379,14 +1376,12 @@ class ExternalCode(Reservoir_no_set):
                                           "Beta": 0.0},
 
                     function=calc_carbonates, # function reference, see below
-                    # A numba types List of one ore more np.arrays which are used
-                    # as input values for the user provided function
-                    function_input_data=List([self.DIC.c, self.TA.c]),
+                    function_input_data=list([self.DIC.c, self.TA.c]),
 
-                    # A numba types List of float parameters.
+                    # A list of float parameters.
                     alias_list = ["H", "CA", "HCO3", "CO3", "CO2aq"]
                     # Note that parameters must be individual float values
-                    function_params=List(
+                    function_params=list(
                         [
                             self.swc.K1,
                             self.swc.K2,
@@ -1406,12 +1401,11 @@ class ExternalCode(Reservoir_no_set):
 
     The general template for a user defined function is a follows:
 
-    # @njit Add the njit decorator if you plan to use the numba solver
-    def calc_carbonates(i: int, input_data: List, vr_data: List, params: List) -> None:
+    def calc_carbonates(i: int, input_data: list, vr_data: list, params: list) -> None:
         # i = index of current timestep
-        # input_data = List of np.arrays, typically data from other Reservoirs
-        # vr_data = List of np.arrays created during instance creation (i.e. the vr data)
-        # params = List of float values (at least one!)
+        # input_data = list of np.arrays, typically data from other Reservoirs
+        # vr_data = list of np.arrays created during instance creation (i.e. the vr data)
+        # params = list of float values (at least one!)
 
         pass
 
@@ -1430,7 +1424,7 @@ class ExternalCode(Reservoir_no_set):
         values provided in the keywords
 
         """
-
+        
         from esbmtk import (
             ConnectionGroup,
             GenericFunction,
@@ -1439,17 +1433,16 @@ class ExternalCode(Reservoir_no_set):
             SinkGroup,
             ReservoirGroup,
         )
-        from numba.typed import List
-
+        from typing import Callable
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "species": ["None", (str, Species)],
-            "plot_transform_c": ["None", (str, col.Callable)],
+            "plot_transform_c": ["None", (str, Callable)],
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
             "groupname": ["None", (str)],
-            "function": ["None", (col.Callable, str)],
+            "function": ["None", (Callable, str)],
             "display_precision": [0.01, (int, float)],
             "register": [
                 "None",
@@ -1459,10 +1452,10 @@ class ExternalCode(Reservoir_no_set):
             "isotopes": [False, (bool)],
             "volume": ["None", (str, int, float)],
             "vr_datafields": ["None", (dict, str)],
-            "function_input_data": ["None", (List, str)],
-            "function_params": ["None", (List, str)],
-            "geometry": ["None", (List, str)],
-            "alias_list": ["None", (List, str)],
+            "function_input_data": ["None", (list, str)],
+            "function_params": ["None", (list, str)],
+            "geometry": ["None", (list, str)],
+            "alias_list": ["None", (list, str)],
             "ftype": ["None", (str)],
             "ref_flux": ["None", (list, str)],
             "return_values": ["None", (str, dict)],
@@ -1495,7 +1488,7 @@ class ExternalCode(Reservoir_no_set):
         self.alias_list = list(self.vr_datafields.keys())
 
         # initialize data fields
-        self.vr_data = List()
+        self.vr_data = list()
         for e in self.vr_datafields.values():
             if isinstance(e, (float, int)):
                 self.vr_data.append(np.full(self.mo.steps, e, dtype=float))
@@ -1723,14 +1716,6 @@ class VirtualReservoir(Reservoir):
      - function  = a function reference
      - a1 to a3 function arguments
 
-    In order to be compatible with the numba solver, a1 and a2 must be
-    an array of 1-D numpy.arrays i.e., [m, l, h, c]. The array can have
-    any number of arrays though. a3 must be single array (or list).
-    The a3 array must be passed as List([...]), and List must be imported as
-
-    from numba.typed import List
-
-
     The function must return a list of numbers which correspond to the
     data which describe a reservoir i.e., mass, light isotope, heavy
     isotope, delta, and concentration
@@ -1848,6 +1833,7 @@ class GasReservoir(ReservoirBase):
         """Initialize a reservoir."""
 
         from esbmtk import Q_, Species, Model
+        from typing import Callable
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -1856,11 +1842,11 @@ class GasReservoir(ReservoirBase):
             "delta": [0, (int, float)],
             "reservoir_mass": ["1.833E20 mol", (str, Q_)],
             "species_ppm": ["None", (str, Q_)],
-            "plot_transform_c": ["None", (str, col.Callable)],
+            "plot_transform_c": ["None", (str, Callable)],
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
             "groupname": ["None", (str)],
-            "function": ["None", (str, col.Callable)],
+            "function": ["None", (str, Callable)],
             "display_precision": [0.01, (int, float)],
             "register": ["None", (str, Model)],
             "full_name": ["None", (str)],
@@ -2032,7 +2018,7 @@ class ExternalData(esbmtkBase):
             "scale": [1, (int, float)],
             "register": ["None", (str, Model, Reservoir, DataField)],
             "convert_to": ["None", (Q_, str)],
-            "plot_transform_c": ["None", (str, col.Callable)],
+            "plot_transform_c": ["None", (str, Callable)],
         }
 
         # provide a list of absolutely required keywords
@@ -2092,7 +2078,7 @@ class ExternalData(esbmtkBase):
 
         # test for plt_transform
         if self.plot_transform_c != "None":
-            if callable(self.plot_transform_c):
+            if Callable(self.plot_transform_c):
                 self.y = self.plot_transform_c(self.y)
             else:
                 raise ValueError("Plot transform must be a function")

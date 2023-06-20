@@ -16,7 +16,6 @@
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
-from numba.typed import List
 import numpy as np
 import matplotlib.pyplot as plt
 import logging
@@ -291,7 +290,7 @@ def make_dict(keys: list, values: list) -> dict:
 
 def get_typed_list(data: list) -> list:
 
-    tl = List()
+    tl = list()
     for x in data:
         tl.append(x)
     return tl
@@ -1007,7 +1006,6 @@ def add_carbonate_system_1(rgs: list):
 
     from esbmtk import (
         ExternalCode,
-        calc_carbonates_1,
         carbonate_system_1_ode,
         Reservoir,
     )
@@ -1033,8 +1031,8 @@ def add_carbonate_system_1(rgs: list):
                         "CO3": rg.swc.co3,  # 3
                         "CO2aq": rg.swc.co2,  # 4
                     },
-                    function_input_data=List(),
-                    function_params=List(),
+                    function_input_data=list(),
+                    function_params=list(),
                     register=rg,
                     return_values={"Hplus": rg.swc.hplus},
                 )
@@ -1061,8 +1059,8 @@ def add_carbonate_system_1(rgs: list):
                     "CO3": rg.swc.co3,  # 3
                     "CO2aq": rg.swc.co2,  # 4
                 },
-                function_input_data=List([rg.DIC.c, rg.TA.c]),
-                function_params=List(
+                function_input_data=list([rg.DIC.c, rg.TA.c]),
+                function_params=list(
                     [
                         rg.swc.K1,  # 0
                         rg.swc.K2,  # 1
@@ -1116,7 +1114,6 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     from esbmtk import (
         ExternalCode,
-        calc_carbonates_2,
         carbonate_system_2_ode,
         Reservoir,
     )
@@ -1235,8 +1232,8 @@ def add_carbonate_system_2(**kwargs) -> None:
                     "Fburial_l": 0.0,
                 },
                 ref_flux=kwargs["carbonate_export_fluxes"],
-                function_input_data=List(),
-                function_params=List(
+                function_input_data=list(),
+                function_params=list(
                     [
                         rg.swc.K1,  # 0
                         rg.swc.K2,  # 1
@@ -1300,7 +1297,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                     "diss": 0.0,  # dissolution flux
                     "Bm": 0.0,
                 },
-                function_input_data=List(
+                function_input_data=list(
                     [
                         rg.DIC.m,  # 0 DIC mass db
                         rg.DIC.l,  # 1 DIC light isotope mass db
@@ -1314,7 +1311,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                         rg.DIC.v,  # 9 reservoir volume
                     ]
                 ),
-                function_params=List(
+                function_params=list(
                     [
                         rg.swc.K1,  # 0
                         rg.swc.K2,  # 1
@@ -1423,7 +1420,7 @@ def __checkkeys__(lrk: list, lkk: list, kwargs: dict) -> None:
         elif k not in kwargs:
             raise ValueError(f"You need to specify a value for {k}")
 
-    tl: List[str] = [k for k, v in lkk.items()]
+    tl: list[str] = [k for k, v in lkk.items()]
     # test if we know all keys
     for k in kwargs:
         if k not in lkk:
