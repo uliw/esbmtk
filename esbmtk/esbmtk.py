@@ -375,7 +375,7 @@ class Model(esbmtkBase):
         stride: int = 1
         prefix: str = "state_"
 
-        for r in self.lor:
+        for r in self.lor:  # loop over reservoirs
             r.__write_data__(prefix, start, stop, stride, False, "state")
 
         for r in self.lvr:
@@ -1224,22 +1224,22 @@ class ReservoirBase(esbmtkBase):
 
         df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
         df[f"{rn} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
-        # df[f"{rn} {sp.ln} [{smu}]"] = self.l[start:stop:stride]  # light isotope
+        if self.isotopes:
+            df[f"{rn} {sp.ln} [{cmu}]"] = self.l[start:stop:stride]  # light isotope
         df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
 
-        fullname: list = []
+        # fullname: list = []
+        # for f in self.lof:  # Assemble the headers and data for the reservoir fluxes
+        #     if f.full_name in fullname:
+        #         raise ValueError(f"{f.full_name} is a double")
+        #     fullname.append(f.full_name)
 
-        for f in self.lof:  # Assemble the headers and data for the reservoir fluxes
-            if f.full_name in fullname:
-                raise ValueError(f"{f.full_name} is a double")
-            fullname.append(f.full_name)
-
-            # if f.save_flux_data:
-            #  df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]  # m
-            # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]  # l
-            # else:
-            df[f"{f.full_name} {sn} [{fmu}]"] = f.fa[0]  # m
-            # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.fa[1]  # l
+        #     # if f.save_flux_data:
+        #     #  df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]  # m
+        #     # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]  # l
+        #     # else:
+        #     df[f"{f.full_name} {sn} [{fmu}]"] = f.fa[0]  # m
+        #     # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.fa[1]  # 
 
         file_path = Path(fn)
         if append and file_path.exists():
@@ -1331,9 +1331,9 @@ class ReservoirBase(esbmtkBase):
             )
 
         # get a set of all current fluxes
-        for f in self.lof:
-            curr.add(f.full_name)
-            logging.debug(f"    Adding Flux {f.full_name} to list of fluxes to read")
+        # for f in self.lof:
+        #     curr.add(f.full_name)
+        #     logging.debug(f"    Adding Flux {f.full_name} to list of fluxes to read")
 
         self.df: pd.DataFrame = pd.read_csv(fn)
         self.headers: list = list(self.df.columns.values)
@@ -1360,15 +1360,15 @@ class ReservoirBase(esbmtkBase):
                 logging.debug(f"found reservoir data for {name}")
                 col = self.__assign_reservoir_data__(self, df, col, True)
             # this loops over all fluxes in a reservoir
-            elif is_name_in_list(name, self.lof):
-                logging.debug(f"{name} is in {self.full_name}.lof")
-                obj = get_object_from_list(name, self.lof)
-                logging.debug(
-                    f"found object {obj.full_name} adding flux data for {name}"
-                )
-                read.add(obj.full_name)
-                col = self.__assign_flux_data__(obj, df, col, False)
-                i += 1
+            # elif is_name_in_list(name, self.lof):
+            #     logging.debug(f"{name} is in {self.full_name}.lof")
+            #     obj = get_object_from_list(name, self.lof)
+            #     logging.debug(
+            #         f"found object {obj.full_name} adding flux data for {name}"
+            #     )
+            #     read.add(obj.full_name)
+            #     col = self.__assign_flux_data__(obj, df, col, False)
+            #     i += 1
             else:
                 raise ValueError(f"Unable to find Flux {n} in {self.full_name}")
 
@@ -1392,8 +1392,8 @@ class ReservoirBase(esbmtkBase):
 
         if obj.isotopes:
             obj.fa[1] = df.iloc[0, col + 1]
-            obj.fa[2] = df.iloc[0, col + 2]
-            col += 2
+            # obj.fa[2] = df.iloc[0, col + 2]
+            col += 1
         else:
             col += 1
 
