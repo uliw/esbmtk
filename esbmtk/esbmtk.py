@@ -26,7 +26,6 @@ import pandas as pd
 import logging
 import os
 import psutil
-import collections as col
 from . import ureg, Q_
 
 from .esbmtk_base import esbmtkBase
@@ -494,7 +493,6 @@ class Model(esbmtkBase):
         """ The shape of the ax value of subplots depends on the figure
         geometry. So we need to ensure we are dealing with a 2-D array
         """
-        print(f"row = {row}, col = {col}, axs = {axs}")
         if row == 1 and col == 1:  # row=1, col=1 only one window
             axs = ax
         elif row > 1 and col == 1:  # mutiple rows, one column
@@ -506,7 +504,6 @@ class Model(esbmtkBase):
             for i in range(geo[1]):
                 axs.append(ax[i])
         else:
-            print("other geometry")
             axs = ax  # mutiple rows and mutiple columns
 
         # ste plot parameters
@@ -746,30 +743,6 @@ class Model(esbmtkBase):
                     f.d = get_delta_h(f)
 
         # self.results = results # save results for debugging
-
-    def __step_process__(self, r: Reservoir, i: int) -> None:
-        """For debugging. Provide reservoir and step number,"""
-        for p in r.lop:  # loop over reservoir processes
-            print(f"{p.n}")
-            p(r, i)  # update fluxes
-
-    def __step_update_reservoir__(self, r: Reservoir, i: int) -> None:
-        """For debugging. Provide reservoir and step number,"""
-        flux_list = r.lof
-        # new = sum_fluxes(flux_list,r,i) # integrate all fluxes in self.lof
-
-        ms = ls = hs = 0
-        for f in flux_list:  # do sum of fluxes in this reservoir
-            direction = r.lio[f]
-            ms = ms + f.m[i] * direction  # current flux and direction
-            ls = ls + f.l[i] * direction  # current flux and direction
-            hs = hs + f.h[i] * direction  # current flux and direction
-
-        new = np.array([ms, ls, hs])
-        new = new * r.mo.dt  # get flux / timestep
-        new = new + r[i - 1]  # add to data from last time step
-        # new = new * (new > 0)  # set negative values to zero
-        r[i] = new  # update reservoir data
 
     def list_species(self):
         """List all  defined species."""
