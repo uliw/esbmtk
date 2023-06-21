@@ -7,11 +7,10 @@ import logging
 import os
 import math
 import copy as cp
-import collections as col
 import typing as tp
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Connection
+    from esbmtk import Connection, Model
 
 from .esbmtk_base import esbmtkBase
 from .esbmtk import ReservoirBase, Reservoir
@@ -556,7 +555,6 @@ class Signal(esbmtkBase):
 
         self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
 
-        breakpoint()
         if self.duration / self.species.mo.max_step < 10:
             print("\n\n ------------------------------------------------\n")
             print("\n\n   W A R N I N G \n\n")
@@ -1119,52 +1117,13 @@ class DataField(esbmtkBase):
         else:
             raise ValueError("This needs fixing")
 
-        if not isinstance(self.y2_data, str):
-            self.d = self.y2_data
-            self.legend_right = self.y2_legend
-            self.ld = self.y2_label
+        # if not isinstance(self.y2_data, str):
+        #     self.d = self.y2_data
+        #     self.legend_right = self.y2_legend
+        #     self.ld = self.y2_label
 
         self.n = self.name
         self.led = []
-
-        if not isinstance(self.y1_data, list):
-            self.y1_data = [self.y1_data]
-
-        # if no x data provided, match with model
-        if isinstance(self.x1_data, str): # no data provided 
-            time = (self.mo.time * self.mo.t_unit).to(self.mo.d_unit).magnitude
-            self.x1_data = []
-            self.x1_data.extend(time for _ in self.y1_data)
-        elif not isinstance(self.x1_data, list):
-            self.x1_data = [self.x1_data]
-        #     if isinstance(self.x1_data, list): # 
-        #         self.x1_data.extend(time for _ in self.y1_data)
-        #     else:
-        #         self.x1_data.append(time)
-        # elif not isinstance(self.x1_data, list):
-
-        # if y_data is defined, and x_data is empty
-        if not isinstance(self.y2_data, str) and isinstance(self.x2_data, str):
-            self.x2_data = []
-            # if isinstance(self.y2_data, list):
-            self.x2_data.extend(self.mo.time for _ in self.y2_data)
-            # else:
-            #     self.x2_data.append(self.mo.time)
-                
-        elif self.x2_data != "None":
-            if not isinstance(self.x2_data, list):
-                self.x2_data = [self.x2_data]
-        else:
-            self.x2_data = self.x1_data
-            
-        if not isinstance(self.y1_label, list):
-            self.y1_legend = [self.y1_legend]
-
-        if not isinstance(self.y2_data, list):
-            self.y2_data = [self.y2_data]
-
-        if not isinstance(self.y2_label, list):
-            self.y2_legend = [self.y2_legend]
 
         # register with reservoir
         # self.associated_with.ldf.append(self)
@@ -1234,6 +1193,93 @@ class DataField(esbmtkBase):
             df.to_csv(file_path, header=True, mode="w", index=False)
         return df
 
+    def __unify_data__(self, M: Model, x, y, label) -> tuple(list, list):
+        """The input data for the DataField Class can be either missing, be a
+        single array, or a list of arrays.  The module analyzes the data and
+        modifies is in such a way that it can be used by the __plot__ method
+        without further adjustments.
+
+        :param x: str, array, list, withe the x-data
+        :param y: str, array, list, withe the y-data
+
+        :return x,y: as list
+        """
+        import numpy as np
+
+        # print(f"ud0: type x = {type(x)}, len = {len(x)}")
+        # print(f"ud1: type y = {type(x)}, len = {len(y)}")
+        # consider the y-axis first
+        if isinstance(y, str):
+            ValueError("Provide at least one data-set")
+        elif isinstance(y, np.ndarray):
+            y = [y]
+            y_l = 1
+        elif isinstance(y, list):
+            y_l = len(y)
+        else:
+            raise ValueError("Y data needs to be array, numpy array or list")
+
+        # consider the x-axis next
+        if isinstance(x, str):  # no x-data has been provided
+            if y_l == 1:  # single y data
+                x = [M.time]
+                # print(f" no x-data y_l = {y_l}")
+            else:  # mutiple y data
+                # print(f" no x-data mutiple y-data y_l = {y_l}")
+                x = []
+                for e in range(y_l):
+                    x.append(M.time)
+
+        elif isinstance(x, np.ndarray):
+            # print(f"np_array, y_l = {y_l}")
+            xx = []
+            if y_l == 1:  # single y data
+                xx.append(x)
+            else:  # mutiple y data
+                # print(f" no x-data mutiple y-data y_l = {y_l}")
+                for e in range(y_l):
+                    xx.append(x)
+            x = xx
+            # print(f"after: {type(x)}")
+        elif isinstance(x, list):  # assume that lists match
+            if len(x) != len(y):
+                raise ValueError(f"Y data needs to match x data for {label}")
+        else:
+            raise ValueError(
+                f"Y data needs to be array, numpy array or list for {label}"
+            )
+
+        if y_l == 1:
+            if not isinstance(label, list):
+                label = [label]
+        elif y_l > 1:
+            if not isinstance(label, list):
+                ll = []
+                for e in y_l:
+                    ll.append(label)
+                label = ll
+
+        return x, y, label
+
+    def __plot_data__(self, ax, x, y, t, l, i) -> None:
+        """Plot data either as line of scatterplot
+
+        :param ax: axis handle
+        :param x: x data
+        :param y: y data
+        :param t: plot type
+        :param l: label str
+        :param i: index
+
+        """
+
+        
+        
+        if t == "plot":
+            ax.plot(x, y, color=f"C{i}", label=l)
+        else:
+            ax.scatter(x, y, color=f"C{i}", label=l)
+
     def __plot__(self, M: Model, ax) -> None:
         """Plot instructions.
         M: Model
@@ -1242,29 +1288,29 @@ class DataField(esbmtkBase):
 
         from esbmtk import set_y_limits
 
-        for i, d in enumerate(self.y1_data):  # loop over datafield list
-            if self.y1_type == "plot":
-                ax.plot(
-                    self.x1_data[i],
-                    self.y1_data[i],
-                    color=f"C{i}",
-                    label=self.y1_label[i],
-                )
-            else:
-                ax.scatter(
-                    self.x1_data[i],
-                    self.y1_data[i],
-                    color=f"C{i}",
-                    label=self.y2_label[i],
-                )
-
-        last_i = i
-        # add any external data if present
+        # plot external data first
         for (i, d) in enumerate(self.led):
             time = (d.x * M.t_unit).to(M.d_unit).magnitude
             # yd = (d.y * M.c_unit).to(self.plt_units).magnitude
             leg = f"{d.legend}"
-            ax.scatter(time[1:-2], d.y[1:-2], color=f"C{i+last_i}", label=leg)
+            ax.scatter(time[1:-2], d.y[1:-2], color=f"C{i}", label=leg)
+
+        self.x1_data, self.y1_data, self.y1_label = self.__unify_data__(
+            M, self.x1_data, self.y1_data, self.y1_label
+        )
+
+        for i, d in enumerate(self.y1_data):  # loop over datafield list
+            print(self.y1_label)
+            self.__plot_data__(
+                ax,
+                self.x1_data[i],
+                self.y1_data[i],
+                self.y1_type,
+                self.y1_label[i],
+                i,
+            )
+            last_i = i
+        # add any external data if present
 
         last_i = i
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
@@ -1273,34 +1319,31 @@ class DataField(esbmtkBase):
         ax.spines["top"].set_visible(False)
         handler1, label1 = ax.get_legend_handles_labels()
 
+        # test if independeny y_data is present
         if not isinstance(self.y2_data, str):
-            print(f"doing twinx for {self.full_name}")
+            self.x2_data, self.y2_data, self.y2_label = self.__unify_data__(
+                M, self.x2_data, self.y2_data, self.y2_label
+            )
             axt = ax.twinx()
             for i, d in enumerate(self.y2_data):  # loop over datafield list
-                if self.y2_type == "plot":
-                    axt.plot(
-                        self.x2_data[i],
-                        self.y2_data[i],
-                        color=f"C{i+last_i+1}",
-                        label=self.y2_legend[i],
-                    )
-                else:
-                    axt.scatter(
-                        self.x2_data[i],
-                        self.y2_data[i],
-                        color=f"C{i+last_i+1}",
-                        label=self.y2_legend[i],
-                    )
-                    
+                self.__plot_data__(
+                    axt,
+                    self.x2_data[i],
+                    self.y2_data[i],
+                    self.y2_type,
+                    self.y2_label[i],
+                    i + last_i + 1,
+                )
+
             axt.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
-            axt.set_ylabel(self.y2_label)
+            axt.set_ylabel(self.y2_legend)
             # remove unnecessary frame species
             axt.spines["top"].set_visible(False)
             handler2, label2 = axt.get_legend_handles_labels()
             legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
                 6
             )
-            # axt.legend()
+            axt.legend()
         else:
             ax.legend(handler1, label1)
             ax.spines["right"].set_visible(False)
