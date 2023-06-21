@@ -140,8 +140,6 @@ class ReservoirGroup(esbmtkBase):
 
         self.__initialize_keyword_variables__(kwargs)
 
-        
-            
         # legacy variable
         self.n = self.name
         self.mo = self.species[0].mo
@@ -230,7 +228,7 @@ class ReservoirGroup(esbmtkBase):
             )
             # register as part of this group
             self.lor.append(a)
-            
+
         # depreceated
         if self.carbonate_system:
             # do some sanity checks:
@@ -1102,6 +1100,14 @@ class DataField(esbmtkBase):
         # self.mo = self.associated_with.mo
         self.mo = self.register.mo
         self.model = self.mo
+        if self.associated_with == "None":
+            if isinstance(self.register, Model):
+                self.associated_with = self.register.lor[0]
+            elif isinstance(self.register, Reservoir):
+                self.associated_with = self.register
+            else:
+                raise ValueError("Set associated_with or register to a reservoir name")
+
         if isinstance(self.associated_with, Reservoir):
             self.plt_units = self.associated_with.plt_units
         elif isinstance(self.associated_with, ReservoirGroup):
@@ -1424,7 +1430,7 @@ class ExternalCode(Reservoir_no_set):
         values provided in the keywords
 
         """
-        
+
         from esbmtk import (
             ConnectionGroup,
             GenericFunction,
@@ -1434,6 +1440,7 @@ class ExternalCode(Reservoir_no_set):
             ReservoirGroup,
         )
         from typing import Callable
+
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
@@ -1936,7 +1943,7 @@ class GasReservoir(ReservoirBase):
 
         self.m[i]: float = value[0]
         self.l[i]: float = value[1]
-        # self.c[i]: float = self.m[i] / self.v[i]  # update concentration 
+        # self.c[i]: float = self.m[i] / self.v[i]  # update concentration
         # self.v[i]: float = self.v[i - 1] + value[0]
         # self.c[i]: float = self.m[i] / self.v[i]  # update concentration
         # self.h[i]: float = value[2]
