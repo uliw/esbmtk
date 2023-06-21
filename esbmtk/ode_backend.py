@@ -2,14 +2,20 @@ from __future__ import annotations
 import typing as tp
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Flux, Reservoir, Model, Connection, Connect
+    from esbmtk import Flux, Reservoir, Model, Connection, Connect, numpy
 
 
-def get_initial_conditions(M: Model) -> tuple[list, dict, list, list]:
+def get_initial_conditions(
+    M: Model,
+    rtol: float,
+    atol_d: float = 1e-6,
+) -> tuple[list, dict, list, list, numpy.array]:
     """Get list of initial conditions.  This list needs to match the
     number of equations.
 
     :param Model: The model handle
+    :param rtol: relative tolerance for BDF solver.
+    :param atol_d: default value for atol if c = 0
 
     :return: R = list of initial conditions as floats
     :return: icl = dict[Reservoir, list[int, int]] where reservoir
@@ -19,6 +25,7 @@ def get_initial_conditions(M: Model) -> tuple[list, dict, list, list]:
     :return: cpl = list of reservoirs that use function to evaluate
              reservoir data
     :return: ipl = list of static reservoirs that serve as input
+    :return: rtol = array of tolerence values for ode solver
 
         We need to consider 3 types of reservoirs:
 
@@ -41,8 +48,10 @@ def get_initial_conditions(M: Model) -> tuple[list, dict, list, list]:
 
         Isotopes are handled by adding a second entry
     """
+    import numpy as np
 
     R = []  # list of initial conditions
+    atol: list = []  # list of tolerances for ode solver
     # dict that contains the reservoir_handle as key and the index positions
     # for c and l as a list
     icl: dict[Reservoir, list[int, int]] = {}
@@ -54,7 +63,25 @@ def get_initial_conditions(M: Model) -> tuple[list, dict, list, list]:
         # collect all reservoirs that have initial conditions
         if len(r.lof) > 0 or r.rtype == "computed" or r.rtype == "passive":
             R.append(r.c[0])  # add initial condition
+            if r.c[0] > 0:
+                # compute tol such that tol < rtol * abs(y)
+                tol = rtol * abs(r.c[0]) / 10
+                atol.append(tol)
+                r.atol[0] = tol
+            else:
+                atol.append(atol_d)
+                r.atol[0] = atol_d
+
             if r.isotopes:
+                if r.l[0] > 0:
+                    # compute tol such that tol < rtol * abs(y)
+                    tol = rtol * abs(r.l[0]) / 10
+                    atol.append(tol)
+                    r.atol[1] = tol 
+                else:
+                    atol.append(atol_d)
+                    r.atol[1] = atol_d
+
                 R.append(r.l[0])  # add initial condition for l
                 icl[r] = [i, i + 1]
                 i += 2
@@ -62,7 +89,7 @@ def get_initial_conditions(M: Model) -> tuple[list, dict, list, list]:
                 icl[r] = [i, i]
                 i += 1
 
-    return R, icl, cpl, ipl
+    return R, icl, cpl, ipl, np.array(atol)
 
 
 def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> str:
@@ -271,7 +298,7 @@ class setup_ode():
                 if flux.save_flux_data:
                     eqs.write(f"{ind2}{flux.full_name}.m[self.i] = {fn}\n")
                     if flux.parent.isotopes:
-                        eqs.write(f"{ind2}{flux.full_name}.l[self.i] = {fn}_l\n")   
+                        eqs.write(f"{ind2}{flux.full_name}.l[self.i] = {fn}_l\n")
 
         sep = (
             "# ---------------- write computed reservoir equations -------- #\n"
@@ -556,7 +583,7 @@ def get_regular_flux_eq(
 ) -> tuple:
     """Create a string containing the equation for a regular (aka
     fixed rate) connection
-    
+
     :param flux: flux instance
     :param c: connection object
     :param icl: dict of reservoirs that have actual fluxes

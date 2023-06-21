@@ -193,16 +193,7 @@ def carbonate_system_2_ode(
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus
     boh4: float = boron * KB / (hplus + KB)
-
-    # print(f"t = {t}")
-    # print(f"RG = {rg.full_name}")
-    # print(f"BM = {Bm}")
-    # print(f"dic_db = {dic_db}"),
-    # print(f"ta_db = {ta_db}"),
-    # print(f"dic_sb = {dic_sb}, dic_sb_l = {dic_sb_l}, zsnow = {zsnow}")
-    # print(f"i = {i}, hplus_0 = {hplus_0}, hplus = {hplus}, oh = {oh}, boh4 = {boh4}")
     fg: float = hplus - oh - boh4
-    # print(f"ta_db = {ta_db}, fg = {fg}")
     ca: float = ta_db + fg
 
     # calculate carbon speciation
@@ -228,20 +219,14 @@ def carbonate_system_2_ode(
     if co3 <= 0:
         co3 = 1e-16
 
-    # print(f"i={i}, ca2={ca2}, co3={co3}, ksp0 = {ksp0}")
     zsat = int(max((zsat0 * np.log(ca2 * co3 / ksp0)), zsat_min))  # eq2
     zsat = min(zsat, zmax)
     zsat = max(zsat, zsat_min)
-    # print(
-    #     f"i = {i}, zsat0 = {zsat0:.1f}, ca= {ca:.2e}, co3 = {co3:.2e}, ksp0 = {ksp0:.2e}, zsat_min = {zsat_min:.1f}"
-    # )
-    # print(f"zsat = {zsat:.1f}\n")
-
     zcc = int(zsat0 * np.log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
 
     # ---- Get fractional areas
     B_AD = Bm / AD
-
+    # limit zcc to box geometry
     zcc = min(zcc, zmax)
     zcc = max(zcc, zsat_min)
     A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
@@ -283,12 +268,6 @@ def carbonate_system_2_ode(
     BPDC = kc * area_p.dot(diff)
 
     BPDC = max(BPDC, 0)
-    #     d_zsnow = 0
-    # print(f"BPDC = {BPDC:.2e}")
-    # eq 4 dzsnow/dt = Bpdc(t) / (a'(zsnow(t)) * ICaCO3
-    # print(f"area_dz_table[int(zsnow)] = {area_dz_table[int(zsnow)]:.2e}")
-    # print(f"I_caco3 = {I_caco3}, dt = {(t - last_t):.2e}")
-
     d_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
 
     # elif zcc >= zsnow:  # e.g. 5000 > 4750
@@ -323,6 +302,7 @@ def carbonate_system_2_ode(
         rg.cs.CO2aq = np.append(rg.cs.CO2aq, co2aq)
         rg.cs.zsat = np.append(rg.cs.zsat, zsat)
         rg.cs.zcc = np.append(rg.cs.zcc, zcc)
+        rg.cs.zsnow = np.append(rg.cs.zsnow, zsnow)
         rg.cs.Fburial = np.append(rg.cs.Fburial, Fburial)
         rg.cs.Fburial_l = np.append(rg.cs.Fburial, Fburial)
     else:
@@ -333,6 +313,7 @@ def carbonate_system_2_ode(
         rg.cs.CO2aq[i] = co2aq  # 4
         rg.cs.zsat[i] = zsat  # 5
         rg.cs.zcc[i] = zcc  # 6
+        rg.cs.zsnow[i] = zsnow  # 7
         rg.cs.Fburial[i] = Fburial
         rg.cs.Fburial_l[i] = Fburial_l
 

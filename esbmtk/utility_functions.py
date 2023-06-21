@@ -1224,7 +1224,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                     "CO2aq": rg.swc.co2,  # 4 CO2aq
                     "zsat": abs(kwargs["zsat"]),  # 5 zsat
                     "zcc": abs(kwargs["zcc"]),  # 6 zcc
-                    # "zsnow": abs(kwargs["zsnow"]),  # 7 zsnow
+                    "zsnow": abs(kwargs["zsnow"]),  # 7 zsnow
                     "depth_area_table": area_table,
                     "area_dz_table": area_dz_table,
                     "Csat_table": Csat_table,

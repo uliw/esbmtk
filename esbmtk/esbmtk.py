@@ -633,12 +633,13 @@ class Model(esbmtkBase):
         Use the ode solver
         """
         from esbmtk import Q_, write_equations_2, get_initial_conditions
-        from scipy.integrate import odeint, solve_ivp
+        from scipy.integrate import solve_ivp
         import sys
         import pathlib as pl
 
         # build equation file
-        R, icl, cpl, ipl = get_initial_conditions(self)
+        rtol = 1e-3
+        R, icl, cpl, ipl, atol = get_initial_conditions(self, rtol)
         self.R = R
         self.icl = icl
         self.cpl = cpl
@@ -664,19 +665,20 @@ class Model(esbmtkBase):
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
 
         if stype == "solve_ivp":
-            results = solve_ivp(
+            self.results = solve_ivp(
                 ode_system.eqs,
                 (self.time[0], self.time[-1]),
                 R,
                 args=(self,),
                 method=method,
-                atol=1e-12,
+                atol=atol,
+                rtol=1e-6,
                 first_step=Q_("1 second").to(self.t_unit).magnitude,
                 # dense_output=True,
                 max_step=self.max_step,
             )
 
-        self.post_process_data(results, ode_system)
+        self.post_process_data(self.results, ode_system)
 
     def post_process_data(self, results, ode_system) -> None:
         """Map solver results back into esbmtk structures
@@ -1020,6 +1022,7 @@ class ReservoirBase(esbmtkBase):
 
         from esbmtk import get_box_geometry_parameters
 
+        self.atol: list[float] = [1.0, 1.0]  # tolerances
         self.lof: list[Flux] = []  # flux references
         self.led: list[ExternalData] = []  # all external data references
         self.lio: dict[str, int] = {}  # flux name:direction pairs
