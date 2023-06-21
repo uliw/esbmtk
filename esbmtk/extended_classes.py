@@ -1017,9 +1017,11 @@ class DataField(esbmtkBase):
                        y1_data = np.Ndarray or list of arrays
                        y1_label = Y-Axis label
                        y1_legend = Data legend or list of legends
+                       y1_type = "plot", | "scatter"
                        y2_data = np.Ndarray    # optional
                        y2_label = Y-Axis label # optional
                        y2_legend = Data legend # optional
+                       y2_type = "plot", | "scatter"
                        common_y_scale = "no",  #optional, default "no"
                        display_precision = number, optional, inherited from Model
                        )
@@ -1069,12 +1071,14 @@ class DataField(esbmtkBase):
             ],
             "y1_data": ["None", (np.ndarray, list)],
             "x1_data": ["None", (np.ndarray, list, str)],
-            "y1_label": ["Not Provided", (str)],
-            "y1_legend": ["Not Provided", (str, list)],
+            "y1_label": ["Not Provided", (str, list)],
+            "y1_legend": ["Not Provided", (str)],
+            "y1_type": ["plot", (str, list)],
             "y2_data": ["None", (str, np.ndarray, list)],
             "x2_data": ["None", (np.ndarray, list, str)],
-            "y2_label": ["Not Provided", (str)],
-            "y2_legend": ["Not Provided", (str, list)],
+            "y2_label": ["Not Provided", (str, list)],
+            "y2_legend": ["Not Provided", (str)],
+            "y2_type": ["plot", (str, list)],
             "common_y_scale": ["no", (str)],
             "display_precision": [0.01, (int, float)],
         }
@@ -1115,7 +1119,7 @@ class DataField(esbmtkBase):
         else:
             raise ValueError("This needs fixing")
 
-        if "self.y2_data" != "None":
+        if not isinstance(self.y2_data, str):
             self.d = self.y2_data
             self.legend_right = self.y2_legend
             self.ld = self.y2_label
@@ -1127,33 +1131,39 @@ class DataField(esbmtkBase):
             self.y1_data = [self.y1_data]
 
         # if no x data provided, match with model
-        if self.x1_data == "None":
+        if isinstance(self.x1_data, str): # no data provided 
             time = (self.mo.time * self.mo.t_unit).to(self.mo.d_unit).magnitude
             self.x1_data = []
-            if isinstance(self.y1_data, list):
-                self.x1_data.extend(time for _ in self.y1_data)
-            else:
-                self.x1_data.append(time)
+            self.x1_data.extend(time for _ in self.y1_data)
         elif not isinstance(self.x1_data, list):
             self.x1_data = [self.x1_data]
+        #     if isinstance(self.x1_data, list): # 
+        #         self.x1_data.extend(time for _ in self.y1_data)
+        #     else:
+        #         self.x1_data.append(time)
+        # elif not isinstance(self.x1_data, list):
 
-        if self.x2_data == "None" and self.y2_data != "None":
+        # if y_data is defined, and x_data is empty
+        if not isinstance(self.y2_data, str) and isinstance(self.x2_data, str):
             self.x2_data = []
-            if isinstance(self.y2_data, list):
-                self.x2_data.extend(self.mo.time for _ in self.y2_data)
-            else:
-                self.x2_data.append(self.mo.time)
+            # if isinstance(self.y2_data, list):
+            self.x2_data.extend(self.mo.time for _ in self.y2_data)
+            # else:
+            #     self.x2_data.append(self.mo.time)
+                
         elif self.x2_data != "None":
             if not isinstance(self.x2_data, list):
                 self.x2_data = [self.x2_data]
-
-        if not isinstance(self.y1_legend, list):
+        else:
+            self.x2_data = self.x1_data
+            
+        if not isinstance(self.y1_label, list):
             self.y1_legend = [self.y1_legend]
 
         if not isinstance(self.y2_data, list):
             self.y2_data = [self.y2_data]
 
-        if not isinstance(self.y2_legend, list):
+        if not isinstance(self.y2_label, list):
             self.y2_legend = [self.y2_legend]
 
         # register with reservoir
@@ -1233,12 +1243,20 @@ class DataField(esbmtkBase):
         from esbmtk import set_y_limits
 
         for i, d in enumerate(self.y1_data):  # loop over datafield list
-            ax.plot(
-                self.x1_data[i],
-                self.y1_data[i],
-                color=f"C{i}",
-                label=self.y1_legend[i],
-            )
+            if self.y1_type == "plot":
+                ax.plot(
+                    self.x1_data[i],
+                    self.y1_data[i],
+                    color=f"C{i}",
+                    label=self.y1_label[i],
+                )
+            else:
+                ax.scatter(
+                    self.x1_data[i],
+                    self.y1_data[i],
+                    color=f"C{i}",
+                    label=self.y2_label[i],
+                )
 
         last_i = i
         # add any external data if present
@@ -1255,17 +1273,25 @@ class DataField(esbmtkBase):
         ax.spines["top"].set_visible(False)
         handler1, label1 = ax.get_legend_handles_labels()
 
-        if self.y2_data[0] != "None":
+        if not isinstance(self.y2_data, str):
             print(f"doing twinx for {self.full_name}")
             axt = ax.twinx()
             for i, d in enumerate(self.y2_data):  # loop over datafield list
-                ax.plot(
-                    self.x1_data[i],
-                    self.y1_data[i],
-                    color=f"C{i+last_i}",
-                    label=self.y2_legend[i],
-                )
-
+                if self.y2_type == "plot":
+                    axt.plot(
+                        self.x2_data[i],
+                        self.y2_data[i],
+                        color=f"C{i+last_i+1}",
+                        label=self.y2_legend[i],
+                    )
+                else:
+                    axt.scatter(
+                        self.x2_data[i],
+                        self.y2_data[i],
+                        color=f"C{i+last_i+1}",
+                        label=self.y2_legend[i],
+                    )
+                    
             axt.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
             axt.set_ylabel(self.y2_label)
             # remove unnecessary frame species
