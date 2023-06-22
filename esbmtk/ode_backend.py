@@ -77,7 +77,7 @@ def get_initial_conditions(
                     # compute tol such that tol < rtol * abs(y)
                     tol = rtol * abs(r.l[0]) / 10
                     atol.append(tol)
-                    r.atol[1] = tol 
+                    r.atol[1] = tol
                 else:
                     atol.append(atol_d)
                     r.atol[1] = atol_d
@@ -545,6 +545,7 @@ def write_cs_2(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> 
 
     fname = f"{r.parent.full_name}.Hplus".replace(".", "_")
     zname = f"{r.parent.full_name}.zsnow".replace(".", "_")
+    # f_exp = f"{r.parent.full_name}.BM".replace(".", "_")
     zmax = r.parent.cs.function_params[15]
     eqs.write(
         f"{ind2}{fn_dic}, {fn_dic_l}, {fname}, {zname} = carbonate_system_2_ode(\n"

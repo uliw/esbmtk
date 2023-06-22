@@ -19,10 +19,10 @@
 from __future__ import annotations
 import typing as tp
 import numpy as np
-from esbmtk import ReservoirGroup, Flux
+from esbmtk import ReservoirGroup
 
-if tp.TYPE_CHECKING:
-    from .esbmtk import ReservoirGroup, Flux
+# if tp.TYPE_CHECKING:
+#     from .esbmtk import ReservoirGroup, Flux
 
 
 def get_hplus(
@@ -54,7 +54,6 @@ def get_hplus(
     return hplus - hplus_0
 
 
-# @njit(parallel=False, fastmath=True, error_model="numpy")
 def carbonate_system_1_ode(
     rg: ReservoirGroup,
     dic: float,
@@ -123,7 +122,6 @@ def carbonate_system_1_ode(
     #     rg.cs.CO2aq[i] = co2aq  # 4
 
     diff = hplus - hplus_0
-
     return diff, co2aq
 
 
@@ -185,7 +183,6 @@ def carbonate_system_2_ode(
     zsat_min = int(abs(p[14]))
     zmax = int(abs(p[15]))
     z0 = int(abs(p[16]))
-    # zsnow = int(abs(p[19]))  # previous zsnow
     depth_area_table = rg.cs.depth_area_table
     area_dz_table = rg.cs.area_dz_table
     Csat_table = rg.cs.Csat_table
@@ -202,16 +199,8 @@ def carbonate_system_2_ode(
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
 
     hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
-    # co3: float = dic / (1 + (hplus / k2) + ((hplus ** 2) / (k1 * k2)))
     hco3: float = dic_db / (1 + (hplus / k1) + (k2 / hplus))
-    # print(f"ca = {ca}, hco3 = {hco3}")
     co3: float = (ca - hco3) / 2
-    # DIC = hco3 + co3 + co2 + H2CO3 The last term is however rather
-    # small, so it may be ok to simply write co2aq = dic - hco3 + co3.
-    co2aq: float = dic_db - co3 - hco3
-    # co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
-    # omega: float = (ca2 * co3) / ksp
-
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
 
@@ -278,7 +267,7 @@ def carbonate_system_2_ode(
     # get isotope ratio in reservoir
     # BD & F_burial
     BD: float = BDS + BCC + BNS + BPDC
-    Fburial = Bm - BD
+    # Fburial = Bm - BD
     """Bm is the flux of CaCO3 into the box. However, the model should
     use the bypass option and leave all flux calculations to the
     cs_code.  As such, we simply add the fraction of the input flux
@@ -288,12 +277,12 @@ def carbonate_system_2_ode(
     value of the sediments we are dissolving, and the delta of the carbonate rain.
     The currrent code, assumes that both are the same.
     """
-    DB_r = dic_sb_l / dic_sb
     BD_l = BD * dic_sb_l / dic_sb
-    #Fburial_l = Fburial * DB_r
-
     dH = hplus - hplus_0
-
+    # BM0 = p[20]
+    # dBM = Bm - BM0
+    # p[20] = Bm
+    # print(f"Bm = {Bm}, BM0 = {BM0}, dBM={dBM}, p[20] = {p[20]}")
     # if i > max_i:
     #     print(f"cs2: i = {i}, max_i = {max_i}")
     #     rg.cs.H = np.append(rg.cs.H, hplus)
@@ -321,22 +310,22 @@ def carbonate_system_2_ode(
     return -BD, -BD_l, dH, d_zsnow
 
 
-def gas_exchange_ode(scale, gas_c, p_H2O, solubility, c_aq) -> float:
+def gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:
     """Calculate the gas exchange flux across the air sea interface
 
     Parameters:
-     scale: surface area in m^2
-     gas_c: species concentration in atmosphere
-     p_H2O: water vapor partial pressure
-     solubility: species solubility  mol/(m^3 atm)
-     c_aq: concentration of the dissolved gas in water
+    scale: surface area in m^2
+    gas_c: species concentration in atmosphere
+    p_H2O: water vapor partial pressure
+    solubility: species solubility  mol/(m^3 atm)
+    gc_aq: concentration of the dissolved gas in water
     """
 
     f = scale * (  # area in m^2
         gas_c  # Atmosphere
         * (1 - p_H2O)  # p_H2O
         * solubility  # SA_co2 = mol/(m^3 atm)
-        - c_aq * 1000  # [CO2]aq mol
+        - g_c_aq * 1000  # [CO2]aq mol
     )
 
     return -f
@@ -356,7 +345,7 @@ def gas_exchange_ode_with_isotopes(
     a_u,  # kinetic fractionation during gas exchange
 ) -> tuple(float, float):
     """Calculate the gas exchange flux across the air sea interface
-    for co2 incliding isotope effects.
+    for co2 including isotope effects.
 
     Note that the sink delta is co2aq as returned by the carbonate VR
     this equation is for mmol but esbmtk uses mol, so we need to

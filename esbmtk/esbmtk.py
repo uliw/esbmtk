@@ -728,10 +728,12 @@ class Model(esbmtkBase):
             for k, v in cs.vr_datafields.items():
                 if "table" not in k:
                     od = getattr(cs, k)  # get ode data
-                    # print(f"R = {gf.full_name} - {k}:\n"
-                    #       f"len(fp) = {len(od[0 : self.ode_system.i])}, "
-                    #       f"len(xp) = {len(self.ode_system.t)}, "
-                    #       f"i = {self.ode_system.i}")
+                    # print(
+                    #     f"i= {i}, R = {gf.full_name}, k= {k}:\n"
+                    #     f"len(fp) = {len(od[0 : ode_system.i])}, "
+                    #     f"len(xp) = {len(ode_system.t)}, "
+                    #     f"i = {ode_system.i}"
+                    # )
                     od = np.interp(self.time, ode_system.t, od[: ode_system.i])
                     setattr(cs, k, od)
 

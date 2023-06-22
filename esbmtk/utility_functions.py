@@ -211,7 +211,7 @@ def sort_by_type(l: list, t: list, m: str) -> list:
     return rl
 
 
-def get_object_handle(res: list|string|Reservoir|ReservoirGroup, M: Model):
+def get_object_handle(res: list | string | Reservoir | ReservoirGroup, M: Model):
     """Test if the key is a global reservoir handle
     or exists in the model namespace
 
@@ -679,7 +679,7 @@ def create_connection(n: str, p: dict, M: Model) -> None:
     source, sink, cid = split_key(n, M)
     # print(f"cc0: type of key {type(n)}", flush=True)
     # print(f"cc1: key = {n}, source = {source}, sink = {sink}", flush=True)
-    
+
     # create default connections parameters and replace with values in
     # the parameter dict if present.
     los = list(p["sp"]) if isinstance(p["sp"], list) else [p["sp"]]
@@ -838,7 +838,7 @@ def get_connection_keys(
         # print(f"gck1: ref_id = {ref_id}, target_id = {target_id}")
         if inverse:
             cnc = reverse_key(cnc)
-            
+
         cnc.replace(ref_id, target_id)
         # create new cnc string
         cnc = f"{cnc}_to_{target_id}"
@@ -1139,6 +1139,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "zmax": (float, int),
         "z0": (float, int),
         "Ksp": (float, int),
+        # "BM": (float, int),
     }
     # provide a list of absolutely required keywords
     lrk: list[str] = ["r_db", "r_sb", "carbonate_export_fluxes", "zsat_min", "z0"]
@@ -1164,6 +1165,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "I_caco3": 529,  # dissolveable CaCO3 in mol/m^2
         "zmax": -6000,  # max model depth
         "Ksp": reservoir.swc.Ksp,  # mol^2/kg^2
+        # "BM": 0.0,
     }
 
     # make sure all mandatory keywords are present
@@ -1230,6 +1232,7 @@ def add_carbonate_system_2(**kwargs) -> None:
                     "Csat_table": Csat_table,
                     "Fburial": 0.0,
                     "Fburial_l": 0.0,
+                    # "BM": 0.0,
                 },
                 ref_flux=kwargs["carbonate_export_fluxes"],
                 function_input_data=list(),
@@ -1255,11 +1258,14 @@ def add_carbonate_system_2(**kwargs) -> None:
                         Ksp,  # 17
                         rg.swc.hplus,  # 18
                         float(abs(kwargs["zsnow"])),  # 19
+                        # float(abs(kwargs["BM"])),  # last known value for BM,
+                        # 22325765737536.062,  # last known value for BM,
                     ]
                 ),
-                return_values={
+                return_values={  # these must be known speces definitions
                     "Hplus": rg.swc.hplus,
                     "zsnow": float(abs(kwargs["zsnow"])),
+                    # "BM": 22325765737536.062,
                 },
                 register=rg,
             )
