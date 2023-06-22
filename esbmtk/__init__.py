@@ -21,5 +21,6 @@ from .sealevel import *
 from .solver import *
 from .ode_backend import *
 from .carbonate_chemistry_2 import *
+from .post_processing import *
 
 np.seterr(invalid="ignore")

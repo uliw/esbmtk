@@ -574,7 +574,7 @@ class Model(esbmtkBase):
         self.state = 1  # flag that the model has executed
         duration: float = process_time() - start
         wcd = time.time() - wts
-        print(f"\n Execution took {duration:.2e} cpu seconds, wt = {wcd:.2e}\n")
+        print(f"\n Execution took {duration:.2f} cpu seconds, wt = {wcd:.2f}\n")
         process = psutil.Process(os.getpid())
         print(f"This run used {process.memory_info().rss/1e9:.2f} Gbytes of memory \n")
 

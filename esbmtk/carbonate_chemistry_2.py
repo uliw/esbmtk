@@ -109,18 +109,18 @@ def carbonate_system_1_ode(
 
     # diff = hplus - rg.cs.H.extend
     # save in state for co2aq, hco3, co3
-    if i >= max_i:
-        rg.cs.H = np.append(rg.cs.H, hplus)
-        rg.cs.CA = np.append(rg.cs.CA, ca)
-        rg.cs.HCO3 = np.append(rg.cs.HCO3, hco3)
-        rg.cs.CO3 = np.append(rg.cs.CO3, co3)
-        rg.cs.CO2aq = np.append(rg.cs.CO2aq, co2aq)
-    else:
-        rg.cs.H[i] = hplus  # 1
-        rg.cs.CA[i] = ca  # 1
-        rg.cs.HCO3[i] = hco3  # 2
-        rg.cs.CO3[i] = co3  # 3
-        rg.cs.CO2aq[i] = co2aq  # 4
+    # if i >= max_i:
+    #     rg.cs.H = np.append(rg.cs.H, hplus)
+    #     rg.cs.CA = np.append(rg.cs.CA, ca)
+    #     rg.cs.HCO3 = np.append(rg.cs.HCO3, hco3)
+    #     rg.cs.CO3 = np.append(rg.cs.CO3, co3)
+    #     rg.cs.CO2aq = np.append(rg.cs.CO2aq, co2aq)
+    # else:
+    #     rg.cs.H[i] = hplus  # 1
+    #     rg.cs.CA[i] = ca  # 1
+    #     rg.cs.HCO3[i] = hco3  # 2
+    #     rg.cs.CO3[i] = co3  # 3
+    #     rg.cs.CO2aq[i] = co2aq  # 4
 
     diff = hplus - hplus_0
 
@@ -290,32 +290,33 @@ def carbonate_system_2_ode(
     """
     DB_r = dic_sb_l / dic_sb
     BD_l = BD * dic_sb_l / dic_sb
-    Fburial_l = Fburial * DB_r
+    #Fburial_l = Fburial * DB_r
 
     dH = hplus - hplus_0
 
-    if i > max_i:
-        rg.cs.H = np.append(rg.cs.H, hplus)
-        rg.cs.CA = np.append(rg.cs.CA, ca)
-        rg.cs.HCO3 = np.append(rg.cs.HCO3, hco3)
-        rg.cs.CO3 = np.append(rg.cs.CO3, co3)
-        rg.cs.CO2aq = np.append(rg.cs.CO2aq, co2aq)
-        rg.cs.zsat = np.append(rg.cs.zsat, zsat)
-        rg.cs.zcc = np.append(rg.cs.zcc, zcc)
-        rg.cs.zsnow = np.append(rg.cs.zsnow, zsnow)
-        rg.cs.Fburial = np.append(rg.cs.Fburial, Fburial)
-        rg.cs.Fburial_l = np.append(rg.cs.Fburial, Fburial)
-    else:
-        rg.cs.H[i] = hplus  #
-        rg.cs.CA[i] = ca  # 1
-        rg.cs.HCO3[i] = hco3  # 2
-        rg.cs.CO3[i] = co3  # 3
-        rg.cs.CO2aq[i] = co2aq  # 4
-        rg.cs.zsat[i] = zsat  # 5
-        rg.cs.zcc[i] = zcc  # 6
-        rg.cs.zsnow[i] = zsnow  # 7
-        rg.cs.Fburial[i] = Fburial
-        rg.cs.Fburial_l[i] = Fburial_l
+    # if i > max_i:
+    #     print(f"cs2: i = {i}, max_i = {max_i}")
+    #     rg.cs.H = np.append(rg.cs.H, hplus)
+    #     rg.cs.CA = np.append(rg.cs.CA, ca)
+    #     rg.cs.HCO3 = np.append(rg.cs.HCO3, hco3)
+    #     rg.cs.CO3 = np.append(rg.cs.CO3, co3)
+    #     rg.cs.CO2aq = np.append(rg.cs.CO2aq, co2aq)
+    #     rg.cs.zsat = np.append(rg.cs.zsat, zsat)
+    #     rg.cs.zcc = np.append(rg.cs.zcc, zcc)
+    #     rg.cs.zsnow = np.append(rg.cs.zsnow, zsnow)
+    #     rg.cs.Fburial = np.append(rg.cs.Fburial, Fburial)
+    #     rg.cs.Fburial_l = np.append(rg.cs.Fburial, Fburial)
+    # else:
+    #     rg.cs.H[i] = hplus  #
+    #     rg.cs.CA[i] = ca  # 1
+    #     rg.cs.HCO3[i] = hco3  # 2
+    #     rg.cs.CO3[i] = co3  # 3
+    #     rg.cs.CO2aq[i] = co2aq  # 4
+    #     rg.cs.zsat[i] = zsat  # 5
+    #     rg.cs.zcc[i] = zcc  # 6
+    #     rg.cs.zsnow[i] = zsnow  # 7
+    #     rg.cs.Fburial[i] = Fburial
+    #     rg.cs.Fburial_l[i] = Fburial_l
 
     return -BD, -BD_l, dH, d_zsnow
 
