@@ -191,9 +191,9 @@ def Boron(model):
     )  # Borate
 
 
-def distance_variables(model):
+def misc_variables(model):
     eh = Element(
-        name="distance_variables",
+        name="misc_variables",
         model=model,  # model handle
         mass_unit="m",  # base mass unit
         register=model,
@@ -201,4 +201,5 @@ def distance_variables(model):
 
     # add species
     Species(name="zsnow", element=eh, display_as="zsnow", register=eh)
+    Species(name="BM", element=eh, display_as="BM", register=eh)
     # Name & element handle
