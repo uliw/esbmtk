@@ -1013,12 +1013,12 @@ class DataField(esbmtkBase):
              DataField(name = "Name"
                        register = Model handle,
                        y1_data = np.Ndarray or list of arrays
-                       y1_label = Y-Axis label
-                       y1_legend = Data legend or list of legends
+                       y1_label = Data label(s)
+                       y1_legend = Y-Axis Label
                        y1_type = "plot", | "scatter"
                        y2_data = np.Ndarray    # optional
-                       y2_label = Y-Axis label # optional
-                       y2_legend = Data legend # optional
+                       y2_legend = Y-Axis label # optional
+                       y2_label = Data legend(s) # optional
                        y2_type = "plot", | "scatter"
                        common_y_scale = "no",  #optional, default "no"
                        display_precision = number, optional, inherited from Model
@@ -1181,10 +1181,12 @@ class DataField(esbmtkBase):
         df: pd.dataframe = DataFrame()
 
         df[f"{self.n} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
-        df[f"{self.n} {self.y1_label}"] = self.y1_data[start:stop:stride]  # y1 data
+        df[f"{self.n} {self.y1_legend}"] = self.y1_data[start:stop:stride]  # y1 data
 
         if self.y2_data != "None":
-            df[f"{self.n} {self.y1_label}"] = self.y2_data[start:stop:stride]  # y2_data
+            df[f"{self.n} {self.y2_legend}"] = self.y2_data[
+                start:stop:stride
+            ]  # y2_data
 
         file_path = Path(fn)
         if append and file_path.exists():
@@ -1273,8 +1275,6 @@ class DataField(esbmtkBase):
 
         """
 
-        
-        
         if t == "plot":
             ax.plot(x, y, color=f"C{i}", label=l)
         else:
@@ -1296,11 +1296,14 @@ class DataField(esbmtkBase):
             ax.scatter(time[1:-2], d.y[1:-2], color=f"C{i}", label=leg)
 
         self.x1_data, self.y1_data, self.y1_label = self.__unify_data__(
-            M, self.x1_data, self.y1_data, self.y1_label
+            M,
+            self.x1_data,
+            self.y1_data,
+            self.y1_label,
         )
 
         for i, d in enumerate(self.y1_data):  # loop over datafield list
-            print(self.y1_label)
+            # print(self.y1_legend)
             self.__plot_data__(
                 ax,
                 self.x1_data[i],
@@ -1314,7 +1317,7 @@ class DataField(esbmtkBase):
 
         last_i = i
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
-        ax.set_ylabel(self.y1_label)
+        ax.set_ylabel(self.y1_legend)
         # remove unnecessary frame species
         ax.spines["top"].set_visible(False)
         handler1, label1 = ax.get_legend_handles_labels()
@@ -1322,7 +1325,10 @@ class DataField(esbmtkBase):
         # test if independeny y_data is present
         if not isinstance(self.y2_data, str):
             self.x2_data, self.y2_data, self.y2_label = self.__unify_data__(
-                M, self.x2_data, self.y2_data, self.y2_label
+                M,
+                self.x2_data,
+                self.y2_data,
+                self.y2_label,
             )
             axt = ax.twinx()
             for i, d in enumerate(self.y2_data):  # loop over datafield list
