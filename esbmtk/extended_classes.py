@@ -150,9 +150,6 @@ class ReservoirGroup(esbmtkBase):
         # geoemtry information
         if self.volume == "None":
             get_box_geometry_parameters(self)
-            # reset values, otherwise creation of Reservoir will complain
-            # about volume and geometry being defined
-            self.geometry = "None"
         elif isinstance(self.volume, str):
             self.volume = Q_(self.volume)
         elif not isinstance(self.volume, Q_):
@@ -220,7 +217,7 @@ class ReservoirGroup(esbmtkBase):
                 mass=self.cd[s.n]["mass"],
                 concentration=self.cd[s.n]["concentration"],
                 volume=self.volume,
-                geometry=self.geometry,
+                # geometry=self.geometry,
                 plot=self.cd[s.n]["plot"],
                 groupname=self.name,
                 isotopes=self.cd[s.n]["isotopes"],

@@ -36,9 +36,11 @@ def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
     oh: float = KW / hplus
     boh4: float = boron * KB / (hplus + KB)
     fg: float = hplus - oh - boh4
-    rg.cs.CA: float = ta + fg
-    rg.cs.HCO3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
-    rg.cs.CO3: float = (rg.cs.CA.ca - rg.cs.CA.hco3) / 2
+    rg.CA: float = ta + fg
+    rg.HCO3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
+    rg.CO3: float = (rg.CA - rg.HCO3) / 2
+    rg.omega = rg.swc.ca2 * rg.CO3 / rg.swc.Ksp
+    rg.pH: float = -np.log10(hplus)
 
 
 def carbonate_system_2_pp(
@@ -72,12 +74,10 @@ def carbonate_system_2_pp(
     KW = rg.swc.KW  # KW
     KB = rg.swc.KB  # KB
     boron = rg.swc.boron  # boron
-    hplus = rg.Hplus
+    hplus = rg.Hplus.c
     ta = rg.TA.c
     dic = rg.DIC.c
-
     p = rg.cs.function_params
-
     ksp0 = p[5]
     ca2 = rg.swc.ca2  # Ca2+
     kc = p[6]
@@ -90,17 +90,14 @@ def carbonate_system_2_pp(
     oh: float = KW / hplus
     boh4: float = boron * KB / (hplus + KB)
     fg: float = hplus - oh - boh4
-    rg.cs.CA: float = ta + fg
-    rg.cs.HCO3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
+    rg.CA: float = ta + fg
+    rg.HCO3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
 
-    rg.cs.CO3: float = (rg.cs.CA - rg.cs.HCO3) / 2
-    if rg.cs.CO3 <= 0:  # abvoid zero values
-        co3 = 1e-16
-
-    rg.cs.co2aq = dic - rg.cs.CO3 - rg.cs.HCO3
-    rg.cs.zsat = int(max((zsat0 * np.log(ca2 * rg.cs.CO3 / ksp0)), zsat_min))  # eq2
-    rg.cs.zsat = min(rg.cs.zsat, zmax)  # limit values to depth floor
-    rg.cs.zsat = max(rg.cs.zsat, zsat_min)  # limit values to top of box
-    rg.cs.zcc = int(
-        zsat0 * np.log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
-    )  # eq3
+    rg.CO3: float = (rg.CA - rg.HCO3) / 2
+    rg.CO3[rg.CO3 < 0] = 0
+    rg.CO2aq = dic - rg.CO3 - rg.HCO3
+    rg.omega = rg.swc.ca2 * rg.CO3 / rg.swc.Ksp
+    rg.pH: float = -np.log10(hplus)
+    rg.zsat = np.clip(zsat0 * np.log(ca2 * rg.CO3 / ksp0),  zsat_min, zmax)
+    rg.zcc = zsat0 * np.log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * rg.CO3 / ksp0)  # eq3
+    rg.zsnow = rg.zsnow.c
