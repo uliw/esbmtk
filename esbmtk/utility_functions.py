@@ -1258,11 +1258,14 @@ def add_carbonate_system_2(**kwargs) -> None:
                         Ksp,  # 17
                         rg.swc.hplus,  # 18
                         float(abs(kwargs["zsnow"])),  # 19
+                        # float(abs(kwargs["BM"])),  # last known value for BM,
+                        # 22325765737536.062,  # last known value for BM,
                     ]
                 ),
                 return_values={  # these must be known speces definitions
                     "Hplus": rg.swc.hplus,
                     "zsnow": float(abs(kwargs["zsnow"])),
+                    # "BM": 22325765737536.062,
                 },
                 register=rg,
             )

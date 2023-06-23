@@ -722,20 +722,20 @@ class Model(esbmtkBase):
         # interpolate intermediate results to match the model
         # time scale. This only applies to data in virtual
         # data fields
-        # for gf in self.lpc_r:
-        #     # get cs instance handle
-        #     cs = getattr(gf.register, "cs")
-        #     for k, v in cs.vr_datafields.items():
-        #         if "table" not in k:
-        #             od = getattr(cs, k)  # get ode data
-        #             print(
-        #                 f"i= {i}, R = {gf.full_name}, k= {k}:\n"
-        #                 f"len(fp) = {len(od[0 : ode_system.i])}, "
-        #                 f"len(xp) = {len(ode_system.t)}, "
-        #                 f"i = {ode_system.i}"
-        #             )
-        #             od = np.interp(self.time, ode_system.t, od[: ode_system.i])
-        #             setattr(cs, k, od)
+        for gf in self.lpc_r:
+            # get cs instance handle
+            cs = getattr(gf.register, "cs")
+            for k, v in cs.vr_datafields.items():
+                if "table" not in k:
+                    od = getattr(cs, k)  # get ode data
+                    # print(
+                    #     f"i= {i}, R = {gf.full_name}, k= {k}:\n"
+                    #     f"len(fp) = {len(od[0 : ode_system.i])}, "
+                    #     f"len(xp) = {len(ode_system.t)}, "
+                    #     f"i = {ode_system.i}"
+                    # )
+                    od = np.interp(self.time, ode_system.t, od[: ode_system.i])
+                    setattr(cs, k, od)
 
         # check if there are any fluxes that need pp
         steps = len(results.t)  # get number of solver steps
@@ -817,7 +817,6 @@ class Model(esbmtkBase):
             conditions i.e., all words must occur in a given name
         """
 
-        rl = []
         if "filter_by" in kwargs:
             fby: list = kwargs["filter_by"].split(" ")
         else:
@@ -826,20 +825,18 @@ class Model(esbmtkBase):
         if "filter" in kwargs:
             raise ValueError("use filter_by instead of filter")
 
-        if "silent" not in kwargs:
-            print(f"fby = {fby}")
-            print(f"\n --- Connection Group Summary -- filtered by {fby}\n")
-            print(f"       run the following command to see more details:\n")
+        print(f"fby = {fby}")
+        self.cg_list: list = list(list(self.loc))
+        print(f"\n --- Connection Group Summary -- filtered by {fby}\n")
+        print(f"       run the following command to see more details:\n")
 
         # test if all words of the fby list occur in c.full_name. If yes,
-        self.cg_list: list = list(list(self.loc))
+
         for c in self.cg_list:
             if fby and find_matching_strings(c.full_name, fby) or not fby:
-                if "silent" in kwargs:
-                    rl.append(c)
-                else:
-                    print(f"{c.full_name}.info()\n")
-        return rl
+                print(f"{c.full_name}.info()")
+
+        print("")
 
     def clear(self):
         """
@@ -1072,7 +1069,7 @@ class ReservoirBase(esbmtkBase):
         elif self.mo.m_type == "mass_only":
             self.isotopes = False
 
-        if self.geometry != "None" and self.geometry_unset:
+        if self.geometry != "None":
             get_box_geometry_parameters(self)
 
         if self.display_precision == 0:
@@ -1664,9 +1661,13 @@ class Reservoir(ReservoirBase):
         self.lrk: list = [
             "name",
             "species",
+            # "register",
             ["volume", "geometry"],
             ["mass", "concentration"],
         ]
+
+        # steps = kwargs["species"].mo.steps
+        # self.m: np.ndarray =np.zeros(steps) + self.mass
 
         self.__initialize_keyword_variables__(kwargs)
 
