@@ -181,7 +181,7 @@ class Model(esbmtkBase):
             "debug": [False, (bool)],
             "ideal_water": [True, (bool)],
             "use_ode": [True, (bool)],
-            "max_step": ["None", (str)],
+            # "max_step": ["None", (str)],
             "parse_model": [True, (bool)],
         }
 
@@ -259,16 +259,12 @@ class Model(esbmtkBase):
         self.start = self.ensure_q(self.start).to(self.t_unit).magnitude
         self.stop = self.ensure_q(self.stop).to(self.t_unit).magnitude
         self.offset = self.ensure_q(self.offset).to(self.t_unit).magnitude
-        # self.start = self.start + self.offset
-        # self.stop = self.stop + self.offset
-        if self.max_step != "None":
-            self.max_step = Q_(self.max_step).magnitude
-        else:
-            self.max_step = int((self.stop - self.start) / 100)
-
+        self.start = self.start + self.offset
+        self.stop = self.stop + self.offset
         self.bu = self.t_unit
         self.base_unit = self.t_unit
         self.dt = Q_(self.timestep).magnitude
+        self.max_step = self.dt
         self.tu = str(self.bu)  # needs to be a string
         self.n = self.name
         self.mo = self.name
@@ -278,11 +274,12 @@ class Model(esbmtkBase):
         self.xl = f"Time [{self.bu}]"  # time axis label
         self.length = int(abs(self.stop - self.start))
         self.steps = int(abs(round(self.length / self.dt)))
-
-        if self.steps < self.number_of_datapoints:
-            self.number_of_datapoints = self.steps
+        # self.steps = 100
+        # if self.steps < self.number_of_datapoints:
+        #     self.number_of_datapoints = self.steps
 
         self.time = (np.arange(self.steps) * self.dt) + self.start
+        self.time_ode = np.linspace(self.start, self.stop-self.dt, num=100)
         self.timec = np.empty(0)
         self.state = 0
 
@@ -321,7 +318,7 @@ class Model(esbmtkBase):
                 eh = getattr(self, e)
                 # register species with model
                 eh.__register_species_with_model__()
-                
+
         warranty = (
             f"\n"
             f"ESBMTK  Copyright (C) 2020  Ulrich G.Wortmann\n"
@@ -638,7 +635,7 @@ class Model(esbmtkBase):
         import pathlib as pl
 
         # build equation file
-        rtol = 1e-3
+        rtol = 1e-4
         R, icl, cpl, ipl, atol = get_initial_conditions(self, rtol)
         self.R = R
         self.icl = icl
@@ -673,6 +670,7 @@ class Model(esbmtkBase):
                 method=method,
                 atol=atol,
                 rtol=1e-6,
+                t_eval=self.time_ode,
                 first_step=Q_("1 second").to(self.t_unit).magnitude,
                 # dense_output=True,
                 max_step=self.max_step,
@@ -703,8 +701,8 @@ class Model(esbmtkBase):
 
         # interpolate external data into ode time domain
         # must be done before changing model time domain
-        # for ed in self.led:
-        #     ed.y = np.interp(results.t, ed.x, ed.y)
+        for ed in self.led:
+            ed.y = np.interp(results.t, ed.x, ed.y)
         # assign results to the esbmtk variables
         i = 0
         for r in self.icl:
@@ -719,25 +717,6 @@ class Model(esbmtkBase):
 
         self.time = results.t
 
-        # interpolate intermediate results to match the model
-        # time scale. This only applies to data in virtual
-        # data fields
-        # for gf in self.lpc_r:
-        #     # get cs instance handle
-        #     cs = getattr(gf.register, "cs")
-        #     for k, v in cs.vr_datafields.items():
-        #         if "table" not in k:
-        #             od = getattr(cs, k)  # get ode data
-        #             print(
-        #                 f"i= {i}, R = {gf.full_name}, k= {k}:\n"
-        #                 f"len(fp) = {len(od[0 : ode_system.i])}, "
-        #                 f"len(xp) = {len(ode_system.t)}, "
-        #                 f"i = {ode_system.i}"
-        #             )
-        #             od = np.interp(self.time, ode_system.t, od[: ode_system.i])
-        #             setattr(cs, k, od)
-
-        # check if there are any fluxes that need pp
         steps = len(results.t)  # get number of solver steps
         for f in self.lof:
             if f.save_flux_data:
