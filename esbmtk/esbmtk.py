@@ -364,7 +364,7 @@ class Model(esbmtkBase):
         last 10 time-steps
         """
 
-        start: int = -10
+        start: int = -5
         stop: int = -1
         stride: int = 1
         prefix: str = "state_"
@@ -372,8 +372,8 @@ class Model(esbmtkBase):
         for r in self.lor:  # loop over reservoirs
             r.__write_data__(prefix, start, stop, stride, False, "state")
 
-        for r in self.lvr:
-            r.__write_data__(prefix, start, stop, stride, False, "state")
+        # for r in self.lvr:
+        #    r.__write_data__(prefix, start, stop, stride, False, "state")
 
     def save_data(self, **kwargs) -> None:
         """Save the model results to a CSV file. Each reservoir will have
@@ -451,9 +451,9 @@ class Model(esbmtkBase):
             if isinstance(r, (Reservoir, GasReservoir)):
                 r.__read_state__("state")
 
-        for r in self.lvr:
-            # print(f"lvr  reading from {r.full_name}")
-            r.__read_state__("state")
+        # for r in self.lvr:
+        #     # print(f"lvr  reading from {r.full_name}")
+        #     r.__read_state__("state")
 
     def merge_temp_results(self):
         """Replace the datafields which were used for an individual
@@ -1156,19 +1156,6 @@ class ReservoirBase(esbmtkBase):
         if self.isotopes:
             df[f"{rn} {sp.ln} [{cmu}]"] = self.l[start:stop:stride]  # light isotope
         df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
-
-        # fullname: list = []
-        # for f in self.lof:  # Assemble the headers and data for the reservoir fluxes
-        #     if f.full_name in fullname:
-        #         raise ValueError(f"{f.full_name} is a double")
-        #     fullname.append(f.full_name)
-
-        #     # if f.save_flux_data:
-        #     #  df[f"{f.full_name} {sn} [{fmu}]"] = f.m[start:stop:stride]  # m
-        #     # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.l[start:stop:stride]  # l
-        #     # else:
-        #     df[f"{f.full_name} {sn} [{fmu}]"] = f.fa[0]  # m
-        #     # df[f"{f.full_name} {sn} [{sp.ln}]"] = f.fa[1]  #
 
         file_path = Path(fn)
         if append and file_path.exists():
