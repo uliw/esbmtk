@@ -281,8 +281,10 @@ class hypsometry(esbmtkBase):
         return np.diff(self.get_lookup_table(min_depth, max_depth))
 
 
-def get_box_geometry_parameters(box):
+def get_box_geometry_parameters(box) -> None:
     from esbmtk import Q_
+
+    box.geometry_unset = True
 
     if box.geometry != "None":
         if not isinstance(box.geometry, list):
@@ -296,6 +298,7 @@ def get_box_geometry_parameters(box):
             box.mo.hyp.area_dz(box.geometry[0], box.geometry[1]) * box.area_percentage
         )
         box.area_fraction = box.area_dz / box.mo.hyp.oa
+        box.geometry_unset = False
 
     elif box.volume == "None":
         raise ValueError("You need to provide volume or geometry!")

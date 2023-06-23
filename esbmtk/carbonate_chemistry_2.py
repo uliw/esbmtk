@@ -95,33 +95,9 @@ def carbonate_system_1_ode(
     gamm: float = dic / ca
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
     hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
-
-    hco3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
-    co3: float = (ca - hco3) / 2
-    # co2 (aq)
-    """DIC = hco3 + co3 + co2 + H2CO3 The last term is however rather
-    small, so it may be ok to simply write co2aq = dic - hco3 + co3.
-    Let's test this once we have a case where pco2 is calculated from co2aq
-    """
-    #  co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus ** 2)))
-    co2aq: float = dic - hco3 - co3
-
-    # diff = hplus - rg.cs.H.extend
-    # save in state for co2aq, hco3, co3
-    # if i >= max_i:
-    #     rg.cs.H = np.append(rg.cs.H, hplus)
-    #     rg.cs.CA = np.append(rg.cs.CA, ca)
-    #     rg.cs.HCO3 = np.append(rg.cs.HCO3, hco3)
-    #     rg.cs.CO3 = np.append(rg.cs.CO3, co3)
-    #     rg.cs.CO2aq = np.append(rg.cs.CO2aq, co2aq)
-    # else:
-    #     rg.cs.H[i] = hplus  # 1
-    #     rg.cs.CA[i] = ca  # 1
-    #     rg.cs.HCO3[i] = hco3  # 2
-    #     rg.cs.CO3[i] = co3  # 3
-    #     rg.cs.CO2aq[i] = co2aq  # 4
-
+    co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus**2)))
     diff = hplus - hplus_0
+
     return diff, co2aq
 
 
@@ -170,9 +146,7 @@ def carbonate_system_2_ode(
     KW = rg.swc.KW  # KW
     KB = rg.swc.KB  # KB
     boron = rg.swc.boron  # boron
-
     p = rg.cs.function_params
-
     ksp0 = p[5]
     ca2 = rg.swc.ca2  # Ca2+
     kc = p[6]
@@ -197,77 +171,36 @@ def carbonate_system_2_ode(
     # The following equations are after Follows et al. 2006
     gamm: float = dic_db / ca
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
-
     hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
-    hco3: float = dic_db / (1 + (hplus / k1) + (k2 / hplus))
-    co3: float = (ca - hco3) / 2
+    co3 = max(dic_db / (1 + hplus / k2 + hplus * hplus / (k1 * k2)),0)
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
-
-    # prevent co3 from becoming zero
-    if co3 <= 0:
-        co3 = 1e-16
-
-    zsat = int(max((zsat0 * np.log(ca2 * co3 / ksp0)), zsat_min))  # eq2
-    zsat = min(zsat, zmax)
-    zsat = max(zsat, zsat_min)
+    zsat = int(zsat0 * np.log(ca2 * co3 / ksp0))
+    zsat = np.clip(zsat, zsat_min, zmax)
     zcc = int(zsat0 * np.log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
-
-    # ---- Get fractional areas
+    # get fractional areas
     B_AD = Bm / AD
-    # limit zcc to box geometry
-    zcc = min(zcc, zmax)
-    zcc = max(zcc, zsat_min)
+    np.clip(zcc, zsat_min, zmax)  # limit zcc to box geometry
     A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
     A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
     A_zcc_zmax = depth_area_table[zcc] - depth_area_table[zmax]
-
     # ------------------------Calculate Burial Fluxes----------------------------- #
-    # BCC = (A(zcc, zmax) / AD) * B, eq 7
     BCC = A_zcc_zmax * B_AD
-
-    # BNS = alpha_RD * ((A(z0, zsat) * B) / AD) eq 8
     BNS = alpha * A_z0_zsat * B_AD
-
-    # BDS_under = kc int(zcc,zsat) area' Csat(z,t) - [CO3](t) dz, eq 9a
     diff_co3 = Csat_table[zsat:zcc] - co3
     area_p = area_dz_table[zsat:zcc]
-
     BDS_under = kc * area_p.dot(diff_co3)
     BDS_resp = alpha * (A_zsat_zcc * B_AD - BDS_under)
     BDS = BDS_under + BDS_resp
-
-    # BPDC =  kc int(zsnow,zcc) area' Csat(z,t) - [CO3](t) dz, eq 10
-    # if zcc < zsnow:  # zsnow is deeper than zcc, so we need to dissolve
-    #     if zsnow > zmax:  # zsnow cannot exceed ocean depth
-    #         zsnow = zmax
-    # sedimentary CaCO3
-    # if zsnow > zmax:  # zsnow cannot exceed ocean depth
-    #     zsnow = zmax
-    # moved to equations.py
-
     # get saturation difference per depth interval
     diff: np.ndarray = Csat_table[zcc : int(zsnow)] - co3
-
-    # get table of depth intervals
-    # print(f"zcc = {zcc}, zsnow = {zsnow}")
     area_p: np.ndarray = area_dz_table[zcc : int(zsnow)]
-
     # integrate saturation difference over area
     BPDC = kc * area_p.dot(diff)
-
-    BPDC = max(BPDC, 0)
+    BPDC = max(BPDC, 0)  # prevent negative values
     d_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
-
-    # elif zcc >= zsnow:  # e.g. 5000 > 4750
-    #     # there is no carbonate below 4750, so BPDC = 0
-    #     d_zsnow = 0
-    #     BPDC = 0
-
     # get isotope ratio in reservoir
-    # BD & F_burial
     BD: float = BDS + BCC + BNS + BPDC
-    # Fburial = Bm - BD
     """Bm is the flux of CaCO3 into the box. However, the model should
     use the bypass option and leave all flux calculations to the
     cs_code.  As such, we simply add the fraction of the input flux
@@ -279,33 +212,6 @@ def carbonate_system_2_ode(
     """
     BD_l = BD * dic_sb_l / dic_sb
     dH = hplus - hplus_0
-    # BM0 = p[20]
-    # dBM = Bm - BM0
-    # p[20] = Bm
-    # print(f"Bm = {Bm}, BM0 = {BM0}, dBM={dBM}, p[20] = {p[20]}")
-    # if i > max_i:
-    #     print(f"cs2: i = {i}, max_i = {max_i}")
-    #     rg.cs.H = np.append(rg.cs.H, hplus)
-    #     rg.cs.CA = np.append(rg.cs.CA, ca)
-    #     rg.cs.HCO3 = np.append(rg.cs.HCO3, hco3)
-    #     rg.cs.CO3 = np.append(rg.cs.CO3, co3)
-    #     rg.cs.CO2aq = np.append(rg.cs.CO2aq, co2aq)
-    #     rg.cs.zsat = np.append(rg.cs.zsat, zsat)
-    #     rg.cs.zcc = np.append(rg.cs.zcc, zcc)
-    #     rg.cs.zsnow = np.append(rg.cs.zsnow, zsnow)
-    #     rg.cs.Fburial = np.append(rg.cs.Fburial, Fburial)
-    #     rg.cs.Fburial_l = np.append(rg.cs.Fburial, Fburial)
-    # else:
-    #     rg.cs.H[i] = hplus  #
-    #     rg.cs.CA[i] = ca  # 1
-    #     rg.cs.HCO3[i] = hco3  # 2
-    #     rg.cs.CO3[i] = co3  # 3
-    #     rg.cs.CO2aq[i] = co2aq  # 4
-    #     rg.cs.zsat[i] = zsat  # 5
-    #     rg.cs.zcc[i] = zcc  # 6
-    #     rg.cs.zsnow[i] = zsnow  # 7
-    #     rg.cs.Fburial[i] = Fburial
-    #     rg.cs.Fburial_l[i] = Fburial_l
 
     return -BD, -BD_l, dH, d_zsnow
 
