@@ -121,11 +121,6 @@ def carbonate_system_2_ode(
 
     DIC_burial, DIC_burial_l, Hplus, zsnow
 
-    Additionally, it calculates  the following critical depth intervals:
-
-    zsat: top of lysocline
-    zcc: carbonate compensation depth
-
     LIMITATIONS:
     - Assumes all concentrations are in mol/kg
     - Assumes your Model is in mol/kg ! Otherwise, DIC and TA updating will not
@@ -134,13 +129,10 @@ def carbonate_system_2_ode(
     Calculations are based off equations from:
     Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
     Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
-
-    Author: M. Niazi & T. Tsan, 2021
     """
 
-    hplus_0 = hplus  # hplus from last timestep
-
     # Parameters
+    hplus_0 = hplus  # hplus from last timestep
     k1 = rg.swc.K1  # K1
     k2 = rg.swc.K2  # K2
     KW = rg.swc.KW  # KW
@@ -172,7 +164,7 @@ def carbonate_system_2_ode(
     gamm: float = dic_db / ca
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
     hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
-    co3 = max(dic_db / (1 + hplus / k2 + hplus * hplus / (k1 * k2)),0)
+    co3 = max(dic_db / (1 + hplus / k2 + hplus * hplus / (k1 * k2)), 0)
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(zsat0 * np.log(ca2 * co3 / ksp0))
@@ -211,6 +203,9 @@ def carbonate_system_2_ode(
     The currrent code, assumes that both are the same.
     """
     BD_l = BD * dic_sb_l / dic_sb
+    # BD_h = BD - BD_l
+    # print(f"13C burial = {get_delta(BD_l, BD_h,  0.0112372):.2f}")
+
     dH = hplus - hplus_0
 
     return -BD, -BD_l, dH, d_zsnow
@@ -257,20 +252,28 @@ def gas_exchange_ode_with_isotopes(
     this equation is for mmol but esbmtk uses mol, so we need to
     multiply by 1E3
     """
+
+    from esbmtk import get_delta
     # Solibility with correction for pH2O
     beta = solubility * (1 - p_H2O)
     # concentration of dissolved gas
     liquid_eq = gas_c_aq * 1000
-
     # get heavy isotope concentrations in atmosphere
     gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
-
     # get h/c ratio in liquid
     liquid_r = (liquid_c - liquid_c_l) / liquid_c
-
     f = scale * (gas_c * beta - liquid_eq)  # total flux across interface
 
+    # this imparts a 9 permil fractionation relative to the dissolved phase
+    
+    #_l, f_h = get_frac(f, 
     # flux of the light isotope = flux - flux_h
     f_l = f - scale * a_u * (a_dg * gas_c_h * beta - a_db * liquid_r * liquid_eq)
+    
+    print(f"d13C gas = {get_delta(gas_c_l, gas_c_h,  0.0112372):.2f}")
+    print(f"d13C liquid = {get_delta(liquid_c_l, liquid_c - liquid_c_l,  0.0112372):.2f}")
+    print(f"l h/c ratio = {liquid_r:.2e}")
+    f_h = f - f_l
+    print(f"d13C flux = {get_delta(f_l, f_h,  0.0112372):.2f}\n")
 
     return -f, -f_l
