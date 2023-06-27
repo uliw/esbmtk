@@ -262,20 +262,18 @@ def gas_exchange_ode_with_isotopes(
     Conversely, we can convert the the pCO2 into the amount of dissolved CO2 =
     pCO2 * beta
     """
-    # fas afunction of solubility difference
-    # print(f"gex0: CO2aq = {gas_c_aq}")
+    # f as afunction of solubility difference
     f = scale * (beta * gas_c - gas_c_aq * 1e3)
-    # print(
-    #     f"pCO2 {gas_c * 1E6:.2f} solubility = {1000 * beta * gas_c:.2f} umol [CO2]aq =  {gas_c_aq*1e6} umol"
-    # )
 
-    # h/l ratio in HCO3 estimated via h/l in DIC
-    Rd = (liquid_c - liquid_c_l) / liquid_c_l
+    # h/c ratio in HCO3 estimated via h/c in DIC. Zeebe writes C12/C13 ratio
+    # but that does not work. the C13/C ratio results however in -8 permil
+    # offset, which is closer to observations
+    Rt = (liquid_c - liquid_c_l) / liquid_c
 
     # get heavy isotope concentrations in atmosphere
     gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
 
-    f_h = scale * a_u * (a_dg * gas_c_h * beta - Rd * a_db * gas_c_aq * 1e3)
+    f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_c_aq * 1e3)
     # print(f"gas_c = {gas_c:.2e}, gas_c_l {gas_c_l:.2e}, gas_c_h {gas_c_h:.2e}")
     # print(f"liquid_c = {liquid_c*1000:.2f}, Rd = {Rd:.2e}")
     # print(
