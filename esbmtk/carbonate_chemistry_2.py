@@ -19,6 +19,7 @@
 from __future__ import annotations
 import typing as tp
 import numpy as np
+import math
 from esbmtk import ReservoirGroup
 
 # if tp.TYPE_CHECKING:
@@ -164,15 +165,15 @@ def carbonate_system_2_ode(
     gamm: float = dic_db / ca
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
     hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
-    co3 = max(dic_db / (1 + hplus / k2 + hplus * hplus / (k1 * k2)), 0)
+    co3 = max(dic_db / (1 + hplus / k2 + hplus * hplus / (k1 * k2)), 3.7e-05)
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
-    zsat = int(zsat0 * np.log(ca2 * co3 / ksp0))
+    zsat = int(zsat0 * math.log(ca2 * co3 / ksp0))
     zsat = np.clip(zsat, zsat_min, zmax)
-    zcc = int(zsat0 * np.log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
+    zcc = int(zsat0 * math.log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
+    zcc = np.clip(zcc, zsat_min, zmax)
     # get fractional areas
     B_AD = Bm / AD
-    np.clip(zcc, zsat_min, zmax)  # limit zcc to box geometry
     A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
     A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
     A_zcc_zmax = depth_area_table[zcc] - depth_area_table[zmax]
@@ -181,7 +182,10 @@ def carbonate_system_2_ode(
     BNS = alpha * A_z0_zsat * B_AD
     diff_co3 = Csat_table[zsat:zcc] - co3
     area_p = area_dz_table[zsat:zcc]
+    # if len(diff_co3) != len(area_p):
+    #     breakpoint()
     BDS_under = kc * area_p.dot(diff_co3)
+
     BDS_resp = alpha * (A_zsat_zcc * B_AD - BDS_under)
     BDS = BDS_under + BDS_resp
     # get saturation difference per depth interval
@@ -221,13 +225,8 @@ def gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:
     solubility: species solubility  mol/(m^3 atm)
     gc_aq: concentration of the dissolved gas in water
     """
-
-    f = scale * (  # area in m^2
-        gas_c  # Atmosphere
-        * (1 - p_H2O)  # p_H2O
-        * solubility  # SA_co2 = mol/(m^3 atm)
-        - g_c_aq * 1000  # [CO2]aq mol
-    )
+    beta = solubility * (1 - p_H2O)
+    f = scale * (gas_c * beta - g_c_aq * 1e3)
 
     return -f
 
@@ -237,7 +236,7 @@ def gas_exchange_ode_with_isotopes(
     gas_c,  # species concentration in atmosphere
     gas_c_l,  # same but for the light isotope
     liquid_c,  # c of the reference species (e.g., DIC)
-    liquid_c_l,  # same but for the light isotope
+    liquid_c_l,  # same but for the light isotopeof DIC
     p_H2O,  # water vapor pressure
     solubility,  # solubility constant
     gas_c_aq,  # Gas concentration in liquid phase
@@ -253,27 +252,35 @@ def gas_exchange_ode_with_isotopes(
     multiply by 1E3
     """
 
-    from esbmtk import get_delta
     # Solibility with correction for pH2O
     beta = solubility * (1 - p_H2O)
-    # concentration of dissolved gas
-    liquid_eq = gas_c_aq * 1000
+    """total flux across interface dpends on the difference in either
+    concentration or pressure the atmospheric pressure is known, as gas_c, and
+    we can calculate the equilibrium pressure that corresponds to the dissolved
+    gas in the water as [CO2]aq/beta.
+
+    Conversely, we can convert the the pCO2 into the amount of dissolved CO2 =
+    pCO2 * beta
+    """
+    # fas afunction of solubility difference
+    # print(f"gex0: CO2aq = {gas_c_aq}")
+    f = scale * (beta * gas_c - gas_c_aq * 1e3)
+    # print(
+    #     f"pCO2 {gas_c * 1E6:.2f} solubility = {1000 * beta * gas_c:.2f} umol [CO2]aq =  {gas_c_aq*1e6} umol"
+    # )
+
+    # h/l ratio in HCO3 estimated via h/l in DIC
+    Rd = (liquid_c - liquid_c_l) / liquid_c_l
+
     # get heavy isotope concentrations in atmosphere
     gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
-    # get h/c ratio in liquid
-    liquid_r = (liquid_c - liquid_c_l) / liquid_c
-    f = scale * (gas_c * beta - liquid_eq)  # total flux across interface
 
-    # this imparts a 9 permil fractionation relative to the dissolved phase
-    
-    #_l, f_h = get_frac(f, 
-    # flux of the light isotope = flux - flux_h
-    f_l = f - scale * a_u * (a_dg * gas_c_h * beta - a_db * liquid_r * liquid_eq)
-    
-    print(f"d13C gas = {get_delta(gas_c_l, gas_c_h,  0.0112372):.2f}")
-    print(f"d13C liquid = {get_delta(liquid_c_l, liquid_c - liquid_c_l,  0.0112372):.2f}")
-    print(f"l h/c ratio = {liquid_r:.2e}")
-    f_h = f - f_l
-    print(f"d13C flux = {get_delta(f_l, f_h,  0.0112372):.2f}\n")
+    f_h = scale * a_u * (a_dg * gas_c_h * beta - Rd * a_db * gas_c_aq * 1e3)
+    # print(f"gas_c = {gas_c:.2e}, gas_c_l {gas_c_l:.2e}, gas_c_h {gas_c_h:.2e}")
+    # print(f"liquid_c = {liquid_c*1000:.2f}, Rd = {Rd:.2e}")
+    # print(
+    #     f"p13CO2 atmosphere = {1000 * beta * gas_c_h:.2f}, p13CO2 water = {1000 * Rd * liquid_c:.2f}"
+    # )
+    f_l = f - f_h
 
     return -f, -f_l
