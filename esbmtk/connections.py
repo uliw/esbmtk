@@ -330,7 +330,7 @@ class Connect(esbmtkBase):
 
         self.lop: list = []
         self.lof: list = []
-        
+
         # validate and initialize instance variables
         self.__initialize_keyword_variables__(kwargs)
 
@@ -338,7 +338,7 @@ class Connect(esbmtkBase):
             self.register = self.source.register
         if self.id == "None":
             self.id = str(uuid.uuid4())[:8]
-        
+
         # legacy names
         self.influx: int = 1
         self.outflux: int = -1
@@ -469,7 +469,11 @@ class Connect(esbmtkBase):
             else:
                 so = self.source.name
 
-            si = self.sink.parent.name if isinstance(self.sink.parent, ReservoirGroup) else self.sink.name
+            si = (
+                self.sink.parent.name
+                if isinstance(self.sink.parent, ReservoirGroup)
+                else self.sink.name
+            )
 
             self.name = f"C_{so}_to_{si}_{self.source.sp.name}"
         elif self.sink.species.name == self.source.species.name:
@@ -485,7 +489,7 @@ class Connect(esbmtkBase):
                 self.name = f"{self.id}"
             else:
                 self.name = f"{self.name}_{self.id}"
-                #self.name = f"{self.name}@{self.id}"
+                # self.name = f"{self.name}@{self.id}"
 
         # always overide name with id for manual connections
         # if not isinstance(self.parent, ConnectionGroup):
@@ -608,13 +612,27 @@ class Connect(esbmtkBase):
                 self.lop.remove(p)
                 if p.ty == "addition":
                     # create AddSignal Process object
-                    n = AddSignal(name=f"{p.n}_addition_process", reservoir=self.r, flux=self.fh, lt=p.data, register=self.fh, model=self.mo)
+                    n = AddSignal(
+                        name=f"{p.n}_addition_process",
+                        reservoir=self.r,
+                        flux=self.fh,
+                        lt=p.data,
+                        register=self.fh,
+                        model=self.mo,
+                    )
 
                     self.lop.insert(0, n)  # signals must come first
                     logging.debug(f"Inserting {n.n} in {self.name} for {self.r.n}")
                 elif p.ty == "multiplication":
                     # create AddSignal Process object
-                    n = MultiplySignal(name=f"{p.n}_multiplication_process", reservoir=self.r, flux=self.fh, lt=p.data, register=self.fh, model=self.mo)
+                    n = MultiplySignal(
+                        name=f"{p.n}_multiplication_process",
+                        reservoir=self.r,
+                        flux=self.fh,
+                        lt=p.data,
+                        register=self.fh,
+                        model=self.mo,
+                    )
 
                     self.lop.insert(len(self.lop), n)  # multiplaction should come last
                     logging.debug(f"Inserting {n.n} in {self.name} for {self.r.n}")
@@ -1199,7 +1217,7 @@ class ConnectionGroup(esbmtkBase):
         # probably related to the create connection function
         # if self.id != "None":
         #     self.name = f"{self.name}@{self.id}"
-            
+
         self.base_name = self.name
         self.parent = self.register
         self.__register_name_new__()
@@ -1217,6 +1235,8 @@ class ConnectionGroup(esbmtkBase):
         # find all sub reservoirs which have been specified by the ctype keyword
         self.connections: list = []
         for r, t in self.ctype.items():
+            # r = species/Reservoir Name
+            # t = connnection type, i.e. regular etc.
             if t == "None":
                 raise ValueError(
                     f"Connectiongroup {self.name} must specify 'ctype'. See help(Connectiongroup)"
@@ -1224,9 +1244,10 @@ class ConnectionGroup(esbmtkBase):
             self.connections.append(r)
 
         # now we need to create defaults for all connections
-        self.cd: dict = {}  # connection dictionary
+        self.cd: dict = {}  # connection dictionary with defaults
         # loop over species
         for sp in self.connections:  # ["SO4", "H2S"]
+            # print(f"found species: ----------- {sp.name} ------------")
             self.cd[sp.n] = {
                 # "cid": self.id,
                 "cid": "None",
@@ -1242,11 +1263,17 @@ class ConnectionGroup(esbmtkBase):
                 "signal": "None",
             }
 
-            # test defaults against actual keyword value
-            for kcd, vcd in self.cd[sp.n].items():
-                if kcd in self.kwargs and r in self.kwargs[kcd]:
+            # print(f"c0:\n Testing for {self.name}, sp = {sp.n}")
+            # loop over entries in defaults dict
+            for kcd, vcd in self.cd[sp.name].items():
+                # print(f"c1: kcd = {kcd}, vcd = {vcd}")
+                # test if key in default dict is also specified as connection keyword
+                if kcd in self.kwargs and sp in self.kwargs[kcd]:
+                    # print(f"c2: found kcd = {kcd} in kwargs, sp = {sp.n}")
                     # update the entry
                     self.cd[sp.n][kcd] = self.kwargs[kcd][sp]
+                # else:
+                    # print(f"c3: did not find kcd = {kcd}, r = {sp.n}")
 
             a = Connect(
                 source=getattr(self.source, sp.n),
