@@ -41,6 +41,7 @@ def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
     rg.CO3: float = (rg.CA - rg.HCO3) / 2
     rg.omega = rg.swc.ca2 * rg.CO3 / rg.swc.Ksp
     rg.pH: float = -np.log10(hplus)
+    rg.CO2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus**2)))
 
 
 def carbonate_system_2_pp(

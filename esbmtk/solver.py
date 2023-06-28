@@ -25,7 +25,7 @@ import numpy as np
 import typing as tp
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Reservoir, Flux
+    from esbmtk import Reservoir, GasReservoir, Flux
 
 
 def get_l_mass(m: float, d: float, r: float) -> float:
@@ -34,7 +34,7 @@ def get_l_mass(m: float, d: float, r: float) -> float:
     :param d: delta value
     :param r: isotopic reference ratio
 
-    return mass or concentration of the light isotope
+    return mass or concentration of the light isotopeb
     """
     return (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
 
@@ -93,6 +93,8 @@ def get_delta(l: np.ndarray, h: np.ndarray, r: float) -> np.ndarray:
     :param h: heavy isotope mass/concentration
     :param r: reference ratio
 
+    :return : delta
+
     """
     return 1000 * (h / l - r) / r
 
@@ -133,7 +135,7 @@ def get_flux_delta(f) -> float:
     return 1e3 * (h / l - r) / r
 
 
-def get_delta_h(R: Reservoir | Flux) -> float:
+def get_delta_h(R: Reservoir | GasReservoir | Flux) -> float:
     """Calculate the delta of a flux or reservoir
 
     :param R: Reservoir or Flux handle
@@ -143,10 +145,10 @@ def get_delta_h(R: Reservoir | Flux) -> float:
     R.l = concentration of the light isotope
     """
 
-    from esbmtk import Reservoir, Flux
+    from esbmtk import Reservoir, GasReservoir, Flux
 
     r = R.species.r  # reference ratio
-    if isinstance(R, Reservoir):
+    if isinstance(R, Reservoir | GasReservoir):
         d = np.where(R.l > 0, 1e3 * ((R.c - R.l) / R.l - r) / r, 0)
     elif isinstance(R, Flux):
         d = np.where(R.l > 0, 1e3 * ((R.m - R.l) / R.l - r) / r, 0)

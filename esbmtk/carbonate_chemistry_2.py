@@ -250,35 +250,29 @@ def gas_exchange_ode_with_isotopes(
     Note that the sink delta is co2aq as returned by the carbonate VR
     this equation is for mmol but esbmtk uses mol, so we need to
     multiply by 1E3
-    """
-
-    # Solibility with correction for pH2O
-    beta = solubility * (1 - p_H2O)
-    """total flux across interface dpends on the difference in either
+    
+    The Total flux across interface dpends on the difference in either
     concentration or pressure the atmospheric pressure is known, as gas_c, and
     we can calculate the equilibrium pressure that corresponds to the dissolved
     gas in the water as [CO2]aq/beta.
 
     Conversely, we can convert the the pCO2 into the amount of dissolved CO2 =
     pCO2 * beta
+
+    The h/c ratio in HCO3 estimated via h/c in DIC. Zeebe writes C12/C13 ratio
+    but that does not work. the C13/C ratio results however in -8 permil
+    offset, which is closer to observations
     """
+    # Solibility with correction for pH2O
+    beta = solubility * (1 - p_H2O)
     # f as afunction of solubility difference
     f = scale * (beta * gas_c - gas_c_aq * 1e3)
-
-    # h/c ratio in HCO3 estimated via h/c in DIC. Zeebe writes C12/C13 ratio
-    # but that does not work. the C13/C ratio results however in -8 permil
-    # offset, which is closer to observations
+    # isotope ratio of DIC
     Rt = (liquid_c - liquid_c_l) / liquid_c
-
     # get heavy isotope concentrations in atmosphere
     gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
-
+    # get exchange of the heavy isotope 
     f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_c_aq * 1e3)
-    # print(f"gas_c = {gas_c:.2e}, gas_c_l {gas_c_l:.2e}, gas_c_h {gas_c_h:.2e}")
-    # print(f"liquid_c = {liquid_c*1000:.2f}, Rd = {Rd:.2e}")
-    # print(
-    #     f"p13CO2 atmosphere = {1000 * beta * gas_c_h:.2f}, p13CO2 water = {1000 * Rd * liquid_c:.2f}"
-    # )
-    f_l = f - f_h
+    f_l = f - f_h # the corresponding flux of the light isotope
 
     return -f, -f_l

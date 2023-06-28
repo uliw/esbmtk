@@ -103,6 +103,7 @@ class SeawaterConstants(esbmtkBase):
             "ta",
             "ca",
             "co2",
+            "co2aq",
             "hco3",
             "co3",
             "boron",
@@ -347,6 +348,9 @@ class SeawaterConstants(esbmtkBase):
         self.co3 = self.dic / (
             1 + self.hplus / self.K2 + self.hplus**2 / (self.K1 * self.K2)
         )
+        self.co2aq = self.dic / (
+            1 + (self.K1 / self.hplus) + (self.K1 * self.K2 / (self.hplus**2))
+        )
 
     def __init_boron__(self) -> None:
         """Calculate the boron equilibrium values as function of
@@ -582,7 +586,7 @@ class SeawaterConstants(esbmtkBase):
         m = 0.14 / 16
         c = m * 5 + 0.95
         self.e_u: float = self.temperature * m - c
-        self.a_u: float = 1 + self.e_u / 1000
+        self.a_u: float = 1 + self.e_u / 1000 
 
 
 """
@@ -682,4 +686,3 @@ def calc_pCO2b(
     pco2: np.ndarray = co2 / SW.K0 * 1e6
 
     return pco2
-

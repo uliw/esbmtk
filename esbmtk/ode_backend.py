@@ -630,6 +630,7 @@ def check_isotope_effects(
         """
         if c.delta != "None":
             d = c.delta
+            print(f"c-name = {c.name}, d= {d:.2f}")
             eq = f"{f_m} * 1000 / ({r} * ({d} + 1000) + 1000)"
         elif c.alpha != "None":
             a = c.alpha / 1000 + 1
@@ -771,6 +772,8 @@ def get_weathering_eq(
         fn = flux.full_name.replace(".", "_")
         exl = f"{fn} * {s_l} / {s_c}"
         exl = f"{exl}  # weathering + isotopes"
+    else:
+        exl = ""
 
     ex, exl = check_signal_2(ex, exl, c)
 
@@ -815,7 +818,10 @@ def get_gas_exchange_eq(
     sp = lrn.split(".")[-1]
     # test if we refer to CO2 or other gas species
     if sp == "DIC":
+        # here we reference the dyanamically calculated CO2aq from cs1,
+        # and not the vector field of cs1
         refsp = f"{c.liquid_reservoir.parent.full_name}.CO2aq".replace(".", "_")
+        # refsp = f"{c.liquid_reservoir.parent.full_name}.CO2aq"
     elif sp == "O2":
         s_c = get_ic(c.liquid_reservoir, icl)
         refsp = f"{s_c}"
@@ -893,7 +899,10 @@ def get_gas_exchange_w_isotopes_eq(
     sp = lrn.split(".")[-1]
     # test if we refer to CO2 or other gas species
     if sp == "DIC":
+        # here we reference the dyanamically calculated CO2aq from cs1,
+        # and not the vector field of cs1
         refsp = f"{c.liquid_reservoir.parent.full_name}.CO2aq".replace(".", "_")
+        # refsp = f"{c.liquid_reservoir.parent.full_name}.CO2aq"
     else:
         raise ValueError(f"Species{sp} has no isotope definition for gas exchange")
 

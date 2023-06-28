@@ -279,7 +279,7 @@ class Model(esbmtkBase):
         #     self.number_of_datapoints = self.steps
 
         self.time = (np.arange(self.steps) * self.dt) + self.start
-        self.time_ode = np.linspace(self.start, self.stop-self.dt, num=100)
+        self.time_ode = np.linspace(self.start, self.stop - self.dt, num=100)
         self.timec = np.empty(0)
         self.state = 0
 
@@ -578,9 +578,8 @@ class Model(esbmtkBase):
     def get_delta_values(self):
         """Calculate masses and isotope ratios in the usual delta notation"""
         for r in self.lor:
-            print(f"getting delta for {r.full_name}")
-            r.m = r.c * r.volume
             if r.isotopes:
+                r.m = r.c * r.volume
                 r.d = get_delta_h(r)
 
         # for vr in self.lvr:
@@ -2229,6 +2228,8 @@ class SourceSink(esbmtkBase):
         self.model = self.species.mo
         self.u = self.species.mu + "/" + str(self.species.mo.bu)
         self.lio: list = []
+        self.m = 1  # set default mass and concentration values
+        self.c = 1
         self.mo.lic.append(self)  # add source to list of res type objects
 
         if self.mo.register == "local" and self.register == "None":
