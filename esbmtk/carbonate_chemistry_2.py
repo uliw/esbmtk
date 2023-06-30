@@ -189,6 +189,7 @@ def carbonate_system_2_ode(
     BDS_resp = alpha * (A_zsat_zcc * B_AD - BDS_under)
     BDS = BDS_under + BDS_resp
     # get saturation difference per depth interval
+    # np.clip(zsnow, zsat_min, zmax)
     diff: np.ndarray = Csat_table[zcc : int(zsnow)] - co3
     area_p: np.ndarray = area_dz_table[zcc : int(zsnow)]
     # integrate saturation difference over area

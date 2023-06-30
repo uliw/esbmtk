@@ -547,6 +547,9 @@ def write_cs_2(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> 
     zname = f"{r.parent.full_name}.zsnow".replace(".", "_")
     zmax = r.parent.cs.function_params[15]
     eqs.write(
+        f"{ind2} # Limit zsnow >= zmax\n"
+        f"{ind2}if {get_ic(r.parent.zsnow, icl)} > {zmax}:"
+        f" {get_ic(r.parent.zsnow, icl)} = {zmax}\n"
         f"{ind2}{fn_dic}, {fn_dic_l}, {fname}, {zname} = carbonate_system_2_ode(\n"
         f"{ind3}t,  # 1: current time\n"
         f"{ind3}{r.parent.full_name},  # 2: Reservoirgroup handle\n"
@@ -563,9 +566,6 @@ def write_cs_2(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> 
         f"{ind2})  # cs2\n"
         # calculate the TA dissolution flux from DIc diss flux
         f"{ind2}{fn_ta} = {fn_dic} * 2  # cs2\n"
-        f"{ind2} # Limit zsnow >= zmax\n"
-        f"{ind2}if {get_ic(r.parent.zsnow, icl)} > {zmax}:"
-        f" {get_ic(r.parent.zsnow, icl)} = {zmax}\n"
     )
     # add Hplus to the list of return values
     rel += f"{ind3}{fname},\n"
@@ -630,7 +630,7 @@ def check_isotope_effects(
         """
         if c.delta != "None":
             d = c.delta
-            print(f"c-name = {c.name}, d= {d:.2f}")
+            # print(f"c-name = {c.name}, d= {d:.2f}")
             eq = f"{f_m} * 1000 / ({r} * ({d} + 1000) + 1000)"
         elif c.alpha != "None":
             a = c.alpha / 1000 + 1

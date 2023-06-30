@@ -335,7 +335,10 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
 
         if "ty" in v:  # type is given
             if v["ty"] == "Source":
-                SourceGroup(name=k, species=v["sp"], register=M)
+                if "delta" in v:
+                    SourceGroup(name=k, species=v["sp"], delta=v["delta"], register=M)
+                else:
+                    SourceGroup(name=k, species=v["sp"], register=M)
             elif v["ty"] == "Sink":
                 SinkGroup(name=k, species=v["sp"], register=M)
             else:

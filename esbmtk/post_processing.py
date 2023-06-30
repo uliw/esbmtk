@@ -101,4 +101,4 @@ def carbonate_system_2_pp(
     rg.pH: float = -np.log10(hplus)
     rg.zsat = np.clip(zsat0 * np.log(ca2 * rg.CO3 / ksp0),  zsat_min, zmax)
     rg.zcc = zsat0 * np.log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * rg.CO3 / ksp0)  # eq3
-    rg.zsnow = rg.zsnow.c
+    # rg.zsnow = rg.zsnow.c
