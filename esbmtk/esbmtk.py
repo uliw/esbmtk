@@ -1365,14 +1365,9 @@ class ReservoirBase(esbmtkBase):
         ax.set_ylabel(f"{self.legend_left} [{M.c_unit:~P}]")
 
         # add any external data if present
-        for (
-            i,
-            d,
-        ) in enumerate(self.led):
-            time = (d.x * M.t_unit).to(M.d_unit).magnitude
-            yd = d.y.to(self.plt_units).magnitude
+        for (i, d) in enumerate(self.led):
             leg = f"{self.lm} {d.legend}"
-            ax.scatter(time[1:-2], yd[1:-2], color=f"C{i+1}", label=leg)
+            ax.scatter(d.x[1:-2], d.y[1:-2], color=f"C{i+2}", label=leg)
 
         ax.spines["top"].set_visible(False)
         handler1, label1 = ax.get_legend_handles_labels()
@@ -1638,6 +1633,7 @@ class Reservoir(ReservoirBase):
 
         # convert units
         self.volume: tp.Union[int, float] = Q_(self.volume).to(self.mo.v_unit).magnitude
+        self.c_unit = self.model.c_unit
 
         # This should probably be species specific?
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
@@ -1690,6 +1686,7 @@ class Reservoir(ReservoirBase):
                 self.concentration * self.volume * self.density / 1000
             )
             self.display_as = "concentration"
+            
         elif self.concentration == "None":
             m = Q_(self.mass)
             self.plt_units = self.mo.m_unit

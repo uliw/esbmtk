@@ -2091,13 +2091,12 @@ class ExternalData(esbmtkBase):
             "name": ["None", (str)],
             "filename": ["None", (str)],
             "legend": ["None", (str)],
-            "reservoir": ["None", (str, Reservoir, DataField)],
+            "reservoir": ["None", (str, Reservoir, DataField, GasReservoir)],
             "offset": ["0 yrs", (Q_, str)],
             "display_precision": [0.01, (int, float)],
             "scale": [1, (int, float)],
-            "register": ["None", (str, Model, Reservoir, DataField)],
-            "convert_to": ["None", (Q_, str)],
-            "plot_transform_c": ["None", (str, Callable)],
+            "register": ["None", (str, Model, Reservoir, DataField, GasReservoir)],
+            "plot_transform_c": ["None", (str, callable)],
         }
 
         # provide a list of absolutely required keywords
@@ -2130,23 +2129,26 @@ class ExternalData(esbmtkBase):
         self.df: pd.DataFrame = pd.read_csv(self.fn)  # read file
 
         ncols = len(self.df.columns)
-        if ncols != 3:  # test of we have 3 columns
-            raise ValueError("CSV file must have 3 columns")
+        if ncols < 2:  # test of we have at elast 2 columns
+            raise ValueError("CSV file must have at least 2 columns")
+        elif ncols == 2:
+            self.isotopes = False
+        elif ncols == 3:
+            self.isotopes = True
+        elif ncols > 3:
+            raise ValueError("External data only supports up to 2 Y columns")
+        else:
+            raise ValueError("ED: This should not happen")
 
         # print(f"Model = {self.mo.full_name}, t_unit = {self.mo.t_unit}")
         self.offset = self.ensure_q(self.offset)
         self.offset = self.offset.to(self.mo.t_unit).magnitude
 
         # get unit information
-        xq = Q_(get_string_between_brackets(self.df.columns[0]))
-        yq = Q_(get_string_between_brackets(self.df.columns[1]))
-        xs = xq.to(self.mo.t_unit).magnitude
-
-        if self.convert_to == "None":
-            ys = 1
-        else:
-            ys = yq.to(self.ensure_q(self.convert_to))
-            print(f"yq = {yq}, cvt= {self.convert_to}, ys = {ys}")
+        self.xq = Q_(get_string_between_brackets(self.df.columns[0]))
+        self.yq = Q_(get_string_between_brackets(self.df.columns[1]))
+        xs = self.xq.to(self.mo.d_unit).magnitude
+        ys = self.yq.to(self.register.plt_units).magnitude
 
         # scale input data into model  units
         self.x: np.ndarray = self.df.iloc[:, 0].to_numpy() * xs
@@ -2157,13 +2159,14 @@ class ExternalData(esbmtkBase):
 
         # test for plt_transform
         if self.plot_transform_c != "None":
-            if Callable(self.plot_transform_c):
+            if callable(self.plot_transform_c):
                 self.y = self.plot_transform_c(self.y)
             else:
                 raise ValueError("Plot transform must be a function")
 
         # zh = self.df.columns[2]
-        self.z = self.df.iloc[:, 2].to_numpy()
+        if self.isotopes:
+            self.z = self.df.iloc[:, 2].to_numpy()
 
         # register with reservoir
         self.__register__(self.reservoir)
