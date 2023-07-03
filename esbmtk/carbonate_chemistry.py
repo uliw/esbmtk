@@ -341,6 +341,11 @@ class SeawaterConstants(esbmtkBase):
         self.K1 = self.__pressure_correction__("K1", self.K1)
         self.K2 = self.__pressure_correction__("K2", self.K2)
 
+        self.K1K1: float = self.K1 * self.K1
+        self.K1K2: float = self.K1 * self.K2
+
+        # self.K_l : list = [self.K0, self.K1, self.K2, self.K1K1, self.K1K2]
+
         self.co2 = self.dic / (
             1 + self.K1 / self.hplus + self.K1 * self.K2 / self.hplus**2
         )
@@ -586,7 +591,7 @@ class SeawaterConstants(esbmtkBase):
         m = 0.14 / 16
         c = m * 5 + 0.95
         self.e_u: float = self.temperature * m - c
-        self.a_u: float = 1 + self.e_u / 1000 
+        self.a_u: float = 1 + self.e_u / 1000
 
 
 """

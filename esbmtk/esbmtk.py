@@ -365,7 +365,7 @@ class Model(esbmtkBase):
         """
 
         start: int = -5
-        stop: int = -1
+        stop: int = None
         stride: int = 1
         prefix: str = "state_"
 
@@ -1274,16 +1274,6 @@ class ReservoirBase(esbmtkBase):
             if name == self.full_name:
                 logging.debug(f"found reservoir data for {name}")
                 col = self.__assign_reservoir_data__(self, df, col, True)
-            # this loops over all fluxes in a reservoir
-            # elif is_name_in_list(name, self.lof):
-            #     logging.debug(f"{name} is in {self.full_name}.lof")
-            #     obj = get_object_from_list(name, self.lof)
-            #     logging.debug(
-            #         f"found object {obj.full_name} adding flux data for {name}"
-            #     )
-            #     read.add(obj.full_name)
-            #     col = self.__assign_flux_data__(obj, df, col, False)
-            #     i += 1
             else:
                 raise ValueError(f"Unable to find Flux {n} in {self.full_name}")
 
@@ -1329,13 +1319,13 @@ class ReservoirBase(esbmtkBase):
 
         # this may need fixing
         if obj.isotopes:
-            obj.m[:] = df.iloc[-3, col]
-            obj.l[:] = df.iloc[-3, col + 1]
-            obj.c[:] = df.iloc[-3, col + 2]
+            obj.m[:] = df.iloc[-1, col]
+            obj.l[:] = df.iloc[-1, col + 1]
+            obj.c[:] = df.iloc[-1, col + 2]
             col += 2
         else:
-            obj.m[:] = df.iloc[-3, col]
-            obj.c[:] = df.iloc[-3, col + 1]
+            obj.m[:] = df.iloc[-1, col]
+            obj.c[:] = df.iloc[-1, col + 1]
             col += 1
 
         return col

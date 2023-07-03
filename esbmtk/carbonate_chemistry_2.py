@@ -19,7 +19,7 @@
 from __future__ import annotations
 import typing as tp
 import numpy as np
-import math
+from math import log, sqrt
 from esbmtk import ReservoirGroup
 
 # if tp.TYPE_CHECKING:
@@ -50,18 +50,16 @@ def get_hplus(
     # hplus
     gamm: float = dic / ca
     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
-    hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
+    hplus: float = 0.5 * ((gamm - 1) * k1 + sqrt(dummy))
 
     return hplus - hplus_0
 
 
 def carbonate_system_1_ode(
-    rg: ReservoirGroup,
+    swc: any,
     dic: float,
     ta: float,
     hplus: float,
-    i: float,
-    max_i: float,
 ) -> float:
 
     """Calculates and returns the H+ and carbonate alkalinity concentrations
@@ -78,11 +76,12 @@ def carbonate_system_1_ode(
 
     """
 
-    k1 = rg.swc.K1  # K1
-    k2 = rg.swc.K2  # K2
-    KW = rg.swc.KW  # KW
-    KB = rg.swc.KB  # KB
-    boron = rg.swc.boron  # boron
+    k1 = swc.K1  # K1
+    k1k1 = swc.K1K1  #  K1 * K1
+    k1k2 = swc.K1K2  # K1 * K2
+    KW = swc.KW  # KW
+    KB = swc.KB  # KB
+    boron = swc.boron  # boron
     hplus_0 = hplus
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
@@ -94,9 +93,9 @@ def carbonate_system_1_ode(
 
     # hplus
     gamm: float = dic / ca
-    dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
-    hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
-    co2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus**2)))
+    dummy: float = (1 - gamm) * (1 - gamm) * k1k1 - k1k2 * (4 - 8 * gamm)
+    hplus: float = 0.5 * ((gamm - 1) * k1 + sqrt(dummy))
+    co2aq: float = dic / (1 + (k1 / hplus) + (k1k2 / (hplus * hplus)))
     diff = hplus - hplus_0
 
     return diff, co2aq
@@ -104,18 +103,14 @@ def carbonate_system_1_ode(
 
 # @njit(parallel=False, fastmath=True, error_model="numpy")
 def carbonate_system_2_ode(
-    t,  # 1: time step
     rg: ReservoirGroup,  # 2 Reservoir handle
     Bm: float,  # 3 CaCO3 export flux as DIC
     dic_db: float,  # 4 DIC in the deep box
     ta_db: float,  # 5 TA in the deep box
     dic_sb: float,  # 6 [DIC] in the surface box
     dic_sb_l: float,  # 7 [DIC_l] in the surface box
-    hplus: float,  # 8 hplus in the deep box at t-1
+    hplus_0: float,  # 8 hplus in the deep box at t-1
     zsnow: float,  # 9 snowline in meters below sealevel at t-1
-    i: float,  # 10  current index
-    max_i: float,  # 11, max length of vr vectors
-    last_t: float,  # 12 time of the last calls to cs2
 ) -> tuple:
     """Calculates and returns the fraction of the carbonate rain that is
     dissolved an returned back into the ocean. This functions returns:
@@ -133,9 +128,10 @@ def carbonate_system_2_ode(
     """
 
     # Parameters
-    hplus_0 = hplus  # hplus from last timestep
     k1 = rg.swc.K1  # K1
+    k1k1 = rg.swc.K1K1
     k2 = rg.swc.K2  # K2
+    k1k2 = rg.swc.K1K2  # K2
     KW = rg.swc.KW  # KW
     KB = rg.swc.KB  # KB
     boron = rg.swc.boron  # boron
@@ -155,22 +151,22 @@ def carbonate_system_2_ode(
     Csat_table = rg.cs.Csat_table
 
     # calc carbonate alkalinity based t-1
-    oh: float = KW / hplus
-    boh4: float = boron * KB / (hplus + KB)
-    fg: float = hplus - oh - boh4
+    oh: float = KW / hplus_0
+    boh4: float = boron * KB / (hplus_0 + KB)
+    fg: float = hplus_0 - oh - boh4
     ca: float = ta_db + fg
 
     # calculate carbon speciation
     # The following equations are after Follows et al. 2006
     gamm: float = dic_db / ca
-    dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
-    hplus: float = 0.5 * ((gamm - 1) * k1 + (dummy**0.5))
-    co3 = max(dic_db / (1 + hplus / k2 + hplus * hplus / (k1 * k2)), 3.7e-05)
+    dummy: float = (1 - gamm) * (1 - gamm) * k1k1 - k1k2 * (4 - 8 * gamm)
+    hplus: float = 0.5 * ((gamm - 1) * k1 + sqrt(dummy))
+    co3 = max(dic_db / (1 + hplus / k2 + hplus * hplus / k1k2), 3.7e-05)
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
-    zsat = int(zsat0 * math.log(ca2 * co3 / ksp0))
+    zsat = int(zsat0 * log(ca2 * co3 / ksp0))
     zsat = np.clip(zsat, zsat_min, zmax)
-    zcc = int(zsat0 * math.log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
+    zcc = int(zsat0 * log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
     zcc = np.clip(zcc, zsat_min, zmax)
     # get fractional areas
     B_AD = Bm / AD
@@ -182,14 +178,9 @@ def carbonate_system_2_ode(
     BNS = alpha * A_z0_zsat * B_AD
     diff_co3 = Csat_table[zsat:zcc] - co3
     area_p = area_dz_table[zsat:zcc]
-    # if len(diff_co3) != len(area_p):
-    #     breakpoint()
     BDS_under = kc * area_p.dot(diff_co3)
-
     BDS_resp = alpha * (A_zsat_zcc * B_AD - BDS_under)
     BDS = BDS_under + BDS_resp
-    # get saturation difference per depth interval
-    # np.clip(zsnow, zsat_min, zmax)
     diff: np.ndarray = Csat_table[zcc : int(zsnow)] - co3
     area_p: np.ndarray = area_dz_table[zcc : int(zsnow)]
     # integrate saturation difference over area
@@ -208,9 +199,6 @@ def carbonate_system_2_ode(
     The currrent code, assumes that both are the same.
     """
     BD_l = BD * dic_sb_l / dic_sb
-    # BD_h = BD - BD_l
-    # print(f"13C burial = {get_delta(BD_l, BD_h,  0.0112372):.2f}")
-
     dH = hplus - hplus_0
 
     return -BD, -BD_l, dH, d_zsnow
@@ -251,7 +239,7 @@ def gas_exchange_ode_with_isotopes(
     Note that the sink delta is co2aq as returned by the carbonate VR
     this equation is for mmol but esbmtk uses mol, so we need to
     multiply by 1E3
-    
+
     The Total flux across interface dpends on the difference in either
     concentration or pressure the atmospheric pressure is known, as gas_c, and
     we can calculate the equilibrium pressure that corresponds to the dissolved
@@ -272,8 +260,8 @@ def gas_exchange_ode_with_isotopes(
     Rt = (liquid_c - liquid_c_l) / liquid_c
     # get heavy isotope concentrations in atmosphere
     gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
-    # get exchange of the heavy isotope 
+    # get exchange of the heavy isotope
     f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_c_aq * 1e3)
-    f_l = f - f_h # the corresponding flux of the light isotope
+    f_l = f - f_h  # the corresponding flux of the light isotope
 
     return -f, -f_l

@@ -499,12 +499,11 @@ def write_cs_1(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> 
 
     eqs.write(
         f"{ind2}{fname}, {cname} = carbonate_system_1_ode(\n"
-        f"{ind3}{r.parent.full_name},\n"
+        f"{ind3}{r.parent.full_name}.swc,\n"
         f"{ind3}{get_ic(r.parent.DIC, icl)},\n"
         f"{ind3}{get_ic(r.parent.TA, icl)},\n"
         f"{ind3}{get_ic(r.parent.Hplus, icl)},\n"
-        f"{ind3}self.i,\n"
-        f"{ind3}max_i)  # cs1\n"
+        f"{ind2})  # cs1\n"
     )
     rel += f"{ind3}{fname},\n"
 
@@ -551,7 +550,6 @@ def write_cs_2(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> 
         f"{ind2}if {get_ic(r.parent.zsnow, icl)} > {zmax}:"
         f" {get_ic(r.parent.zsnow, icl)} = {zmax}\n"
         f"{ind2}{fn_dic}, {fn_dic_l}, {fname}, {zname} = carbonate_system_2_ode(\n"
-        f"{ind3}t,  # 1: current time\n"
         f"{ind3}{r.parent.full_name},  # 2: Reservoirgroup handle\n"
         f"{ind3}{influx},  # 3: CaCO3 export flux\n"
         f"{ind3}{get_ic(r.parent.DIC, icl)},  # 4: DIC in the deep box\n"
@@ -560,9 +558,6 @@ def write_cs_2(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> 
         f"{ind3}{source_l},  # 7: DIC of the light isotope in the surface box\n"
         f"{ind3}{get_ic(r.parent.Hplus, icl)},  # 8: H+ in the deep box at t-1\n"
         f"{ind3}{get_ic(r.parent.zsnow, icl)},  # 9: zsnow in mbsl at t-1\n"
-        f"{ind3}self.i,  # 10: current index\n"
-        f"{ind3}max_i,   # 11: max is of vr data fields\n"
-        f"{ind3}self.last_t, # 12: t at t-1\n"
         f"{ind2})  # cs2\n"
         # calculate the TA dissolution flux from DIc diss flux
         f"{ind2}{fn_ta} = {fn_dic} * 2  # cs2\n"
