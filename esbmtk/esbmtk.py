@@ -813,7 +813,7 @@ class Model(esbmtkBase):
         self.cg_list: list = list(list(self.loc))
         for c in self.cg_list:
             if fby and find_matching_strings(c.full_name, fby) or not fby:
-                if "silent" in kwargs:
+                if "silent" in kwargs or kwargs["return_list"]:
                     rl.append(c)
                 else:
                     print(f"{c.full_name}.info()\n")
@@ -1676,7 +1676,7 @@ class Reservoir(ReservoirBase):
                 cc = Q_(self.concentration)
                 self.plt_units = cc.units
                 self._concentration: [int | float] = cc.to(self.mo.c_unit).magnitude
-
+                
             else:
                 cc = self.concentration
                 self.plt_units = self.mo.c_unit
