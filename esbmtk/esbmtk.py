@@ -805,7 +805,6 @@ class Model(esbmtkBase):
             raise ValueError("use filter_by instead of filter")
 
         if "silent" not in kwargs:
-            print(f"fby = {fby}")
             print(f"\n --- Connection Group Summary -- filtered by {fby}\n")
             print(f"       run the following command to see more details:\n")
 
@@ -813,7 +812,7 @@ class Model(esbmtkBase):
         self.cg_list: list = list(list(self.loc))
         for c in self.cg_list:
             if fby and find_matching_strings(c.full_name, fby) or not fby:
-                if "silent" in kwargs or kwargs["return_list"]:
+                if "silent" in kwargs or "return_list" in kwargs:
                     rl.append(c)
                 else:
                     print(f"{c.full_name}.info()\n")
