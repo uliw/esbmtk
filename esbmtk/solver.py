@@ -62,7 +62,7 @@ def get_frac(m: float, l: float, a: float) -> [float, float]:
 
     """
 
-    if a > 1.1 or a < 0.9:
+    if a.any() > 1.1 or a.any()  < 0.9:
         raise ValueError("alpha needs to be given as fractional value not in permil")
 
     li: float = -l * m / (a * l - a * m - l)
