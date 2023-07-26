@@ -234,18 +234,12 @@ class setup_ode():
         '''
         import numpy as np
 
-        self.i = 0
-        self.t = []
-        self.last_t = 0
-
     def eqs(self, t, R: list, M: Model) -> list:
         '''Auto generated esbmtk equations do not edit
         '''
 
         from esbmtk import carbonate_system_1_ode, carbonate_system_2_ode
         from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes
-
-        max_i = len(M.time)-1
 
         # flux equations
 """
@@ -260,7 +254,7 @@ class setup_ode():
         ind2 = 8 * " "  # indention
         ind3 = 12 * " "  # indention
         eqs.write(header)
-        eqs.write(f"{ind2}{M.name} = M\n")
+        # eqs.write(f"{ind2}{M.name} = M\n")
         sep = (
             "# ---------------- write computed reservoir equations -------- #\n"
             + "# that do not depend on fluxes"
@@ -336,9 +330,6 @@ class setup_ode():
         sep = "# ---------------- bits and pieces --------------------------- #"
         eqs.write(
             f"\n{sep}\n"
-            f"{ind2}self.i += 1\n"
-            f"{ind2}self.t.extend([t])\n"
-            f"{ind2}self.last_t = t\n"
             f"{ind2}return [\n"
         )
         # Write all initial conditions that are recorded in icl

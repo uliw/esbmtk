@@ -62,8 +62,8 @@ def get_frac(m: float, l: float, a: float) -> [float, float]:
 
     """
 
-    if a.any() > 1.1 or a.any()  < 0.9:
-        raise ValueError("alpha needs to be given as fractional value not in permil")
+    # if a.any() > 1.1 or a.any()  < 0.9:
+    #     raise ValueError("alpha needs to be given as fractional value not in permil")
 
     li: float = -l * m / (a * l - a * m - l)
     hi: float = m - li  # get the new heavy isotope value

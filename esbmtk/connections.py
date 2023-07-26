@@ -1273,7 +1273,7 @@ class ConnectionGroup(esbmtkBase):
                     # update the entry
                     self.cd[sp.n][kcd] = self.kwargs[kcd][sp]
                 # else:
-                    # print(f"c3: did not find kcd = {kcd}, r = {sp.n}")
+                # print(f"c3: did not find kcd = {kcd}, r = {sp.n}")
 
             a = Connect(
                 source=getattr(self.source, sp.n),
@@ -1409,6 +1409,12 @@ class AirSeaExchange(esbmtkBase):
         self.gr.lio[self.fh] = -1  # flux direction
         # register with connection
         self.lof.append(self.fh)
+
+        # kas = air-sea gas exchange coefficient
+        # solubility in mol/(m^3 * atm)
+        # piston velocity in  m/d
+        # zeebe expresses this as mol/(m^2 * uatm * yr)
+        self.kas = self.solubility * self.piston_velocity * 365E-6
 
         swc = self.lr.swc if self.lr.register == "None" else self.lr.register.swc
         # initialize process instance
