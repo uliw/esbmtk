@@ -1326,7 +1326,7 @@ class AirSeaExchange(esbmtkBase):
         liquid_reservoir = must be a reservoir
         solubility= as returned by the swc object
         area = Ocean.area, [m^2]
-        piston_velocity = 4.8*365, [m/yr]
+        piston_velocity = "4.8 m/d",
         id = str, optional
         water_vapor_pressure=Ocean.swc.p_H2O,
         ref_quantity = optional
@@ -1411,11 +1411,13 @@ class AirSeaExchange(esbmtkBase):
         self.lof.append(self.fh)
 
         # kas = air-sea gas exchange coefficient
-        # solubility in mol/(m^3 * atm)
-        # piston velocity in  m/d
-        # zeebe expresses this as mol/(m^2 * uatm * yr)
-        self.kas = self.solubility * self.piston_velocity * 365E-6
-
+        # esbmtk solubility in mol/(m^3 * atm)
+        # esbmtk piston velocity in  m/d needs to be converted to
+        # esbmtk pCO2 = atm 
+        # zeebe expresses kas as mol/(m^2 * uatm * yr)
+        self.kas = self.solubility * self.piston_velocity
+        self.kas_zeebe = self.kas * 1e-6
+        
         swc = self.lr.swc if self.lr.register == "None" else self.lr.register.swc
         # initialize process instance
         ph = GasExchange(
@@ -1425,8 +1427,8 @@ class AirSeaExchange(esbmtkBase):
             ref_species=self.ref_species,  # concentration
             flux=self.fh,  # flux handle
             register=self.fh,
-            scale=self.scale,
-            solubility=self.solubility,
+            scale=self.scale,  # piston_velocity * area
+            solubility=self.solubility, # mol/(m^3 * atm)
             water_vapor_pressure=self.water_vapor_pressure,
             seawaterconstants=swc,
             isotopes=True,
