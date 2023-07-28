@@ -1446,10 +1446,10 @@ class ExternalCode(Reservoir_no_set):
         ExternalCode(
                     name="cs",     # instance name
                     species=CO2,   # species, must be given
-                    # The next line defines the number of datafields and their default values
 
-                    data which will be computed by this function
-                    provide alias name and default value
+                    # the vr_data_fields contains any data that is referenced inside the
+                    # function, rather than passed as argument, and all data that is
+                    # explicitly referenced by the model
                     vr_datafields :dict ={"Hplus": self.swc.hplus,
                                           "Beta": 0.0},
 
@@ -1469,6 +1469,12 @@ class ExternalCode(Reservoir_no_set):
                             self.swc.hplus,
                         ]
                     ),
+                    # list of return values
+                    return_values={  # these must be known speces definitions
+                                  "Hplus": rg.swc.hplus,
+                                   "zsnow": float(abs(kwargs["zsnow"])),
+                                   },
+
                     register=rh # reservoir_handle to register with.
 
                 )
