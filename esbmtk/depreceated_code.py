@@ -94,7 +94,7 @@ def execute_e(model, lop, lor, lpc_f, lpc_r):
 
 
 # from numba import jit
-@njit(parallel=False, fastmath=True, error_model="numpy")
+# @njit(parallel=False, fastmath=True, error_model="numpy")
 def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, dt):
     """
     fn = flux process list
@@ -144,7 +144,7 @@ def foo(fn_vr, input_data, vr_data, vr_params, fn, da, pc, a, b, c, d, e, maxt, 
         i = i + 1  # next time step
 
 
-@njit(parallel=False, fastmath=True, error_model="numpy")
+# @njit(parallel=False, fastmath=True, error_model="numpy")
 def foo_no_p(fn_vr, input_data, vr_data, vr_params, fn, a, b, c, d, e, maxt, dt):
     """
     fn = flux process list
@@ -188,7 +188,7 @@ def foo_no_p(fn_vr, input_data, vr_data, vr_params, fn, a, b, c, d, e, maxt, dt)
         i = i + 1  # next time step
 
 
-@njit(parallel=False, fastmath=True, error_model="numpy")
+# @njit(parallel=False, fastmath=True, error_model="numpy")
 def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
     """Same as foo but no virtual reservoirs present
 
@@ -231,7 +231,7 @@ def foo_no_vr(fn, da, pc, a, b, c, d, e, maxt, dt):
         i = i + 1
 
 
-@njit(parallel=False, fastmath=True, error_model="numpy")
+# @njit(parallel=False, fastmath=True, error_model="numpy")
 def foo_no_vr_no_p(fn, a, b, c, d, e, maxt, dt):
     """Same as foo but no virtual reservoirs present
 
@@ -438,7 +438,7 @@ def apply_delta(
     return exl
 
 
-@njit(parallel=False, fastmath=True, error_model="numpy")
+# @njit(parallel=False, fastmath=True, error_model="numpy")
 def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> None:
     """Calculates and returns the carbonate concentrations and saturation state
      at the ith time-step of the model.
@@ -510,7 +510,7 @@ def calc_carbonates_1(i: int, input_data: List, vr_data: List, params: List) -> 
     # vr_data[5][i] = omega
 
 
-@njit(fastmath=True, error_model="numpy")
+# @njit(fastmath=True, error_model="numpy")
 def calc_carbonates_2(i: int, input_data: List, vr_data: List, params: List) -> None:
     """Calculates and returns the carbonate concentrations and carbonate compensation
     depth (zcc) at the ith time-step of the model.
