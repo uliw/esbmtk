@@ -7,6 +7,8 @@ modeling more approachable for classroom teaching. At present the code is under 
 
 * News
 
+  - July 28^{th}, 2023, v 0.9.0.1 The ODEPACk backend is now fully functional, and the basic API is more or less stable. 
+
   - Nov. 11^{th} 2022, v 0.9.0.0 Moved to odepack based backend. Removed now defunct code. The odepack backend does not yet support isotope calculations.
   
   - 0.8.0.0
