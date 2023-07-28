@@ -1008,7 +1008,7 @@ def add_carbonate_system_1(rgs: list):
     """
     from esbmtk import init_carbonate_system_1, Reservoir
 
-    model = rgs[0].mo 
+    model = rgs[0].mo
     for rg in rgs:
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):
             pass
@@ -1017,7 +1017,7 @@ def add_carbonate_system_1(rgs: list):
 
         ec = init_carbonate_system_1(rg)
 
-        # add Reservoir objects for the retun values 
+        # add Reservoir objects for the retun values
         for n, v in ec.return_values.items():
             rt = Reservoir(
                 name=n,
@@ -1062,11 +1062,7 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     """
 
-    from esbmtk import (
-        ExternalCode,
-        carbonate_system_2_ode,
-        Reservoir,
-    )
+    from esbmtk import Reservoir, init_carbonate_system_2
 
     # list of known keywords
     lkk: dict = {
@@ -1115,7 +1111,6 @@ def add_carbonate_system_2(**kwargs) -> None:
         "I_caco3": 529,  # dissolveable CaCO3 in mol/m^2
         "zmax": -6000,  # max model depth
         "Ksp": reservoir.swc.Ksp,  # mol^2/kg^2
-        # "BM": 0.0,
     }
 
     # make sure all mandatory keywords are present
@@ -1132,17 +1127,15 @@ def add_carbonate_system_2(**kwargs) -> None:
     depths: np.ndarray = np.arange(0, 6002, 1, dtype=float)
     r_db = kwargs["r_db"]
     r_sb = kwargs["r_sb"]
-    Ksp0 = kwargs["Ksp0"]
     ca2 = r_db[0].swc.ca2
     pg = kwargs["pg"]
     pc = kwargs["pc"]
     z0 = kwargs["z0"]
-    Ksp = kwargs["Ksp"]
-
+    Ksp0 = kwargs["Ksp0"]
     # test if corresponding surface reservoirs have been defined
     if len(r_sb) == 0:
         raise ValueError(
-            "Please update your call to add_carbonate_system_2and add the list of of corresponding surface reservoirs"
+            "Please update your call to add_carbonate_system_2 and add the list of of corresponding surface reservoirs"
         )
 
     # C saturation(z) after Boudreau 2010
@@ -1152,58 +1145,18 @@ def add_carbonate_system_2(**kwargs) -> None:
     AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
 
     for i, rg in enumerate(r_db):  # Setup the virtual reservoirs
-        if rg.mo.register == "local":
-            species = rg.mo.Carbon.CO2
-        else:
-            species = __builtins__["CO2"]
 
-        ec = ExternalCode(
-            name="cs",
-            species=species,
-            function="None",
-            ftype="cs2",
-            r_s=r_sb[i],  # source (RG) of CaCO3 flux,
-            r_d=r_db[i],  # sink (RG) of CaCO3 flux,
-            # the vr_data_fields contains any data that is referenced inside the
-            # function, rather than passed as argument, and all data that is
-            # explicitly referenced by the model
-            vr_datafields={
-                "depth_area_table": area_table,
-                "area_dz_table": area_dz_table,
-                "Csat_table": Csat_table,
-            },
-            ref_flux=kwargs["carbonate_export_fluxes"],
-            function_input_data=list(),
-            function_params=list(
-                [
-                    rg.swc.K1,  # 0
-                    rg.swc.K2,  # 1
-                    rg.swc.KW,  # 2
-                    rg.swc.KB,  # 3
-                    rg.swc.boron,  # 4
-                    Ksp0,  # 5
-                    float(kwargs["kc"]),  # 6
-                    float(rg.volume.to("liter").magnitude),  # 7
-                    float(AD),  # 8
-                    float(abs(kwargs["zsat0"])),  # 9
-                    float(rg.swc.ca2),  # 10
-                    rg.mo.dt,  # 11
-                    float(kwargs["I_caco3"]),  # 12
-                    float(kwargs["alpha"]),  # 13
-                    float(abs(kwargs["zsat_min"])),  # 14
-                    float(abs(kwargs["zmax"])),  # 15
-                    float(abs(kwargs["z0"])),  # 16
-                    Ksp,  # 17
-                    rg.swc.hplus,  # 18
-                    float(abs(kwargs["zsnow"])),  # 19
-                ]
-            ),
-            return_values={  # these must be known speces definitions
-                "Hplus": rg.swc.hplus,
-                "zsnow": float(abs(kwargs["zsnow"])),
-            },
-            register=rg,
+        ec = init_carbonate_system_2(
+            rg,
+            r_sb[i],
+            r_db[i],
+            area_table,
+            area_dz_table,
+            Csat_table,
+            AD,
+            kwargs,
         )
+
         for n, v in ec.return_values.items():
             rt = Reservoir(
                 name=n,

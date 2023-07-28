@@ -18,6 +18,7 @@ this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
 import typing as tp
+import numpy as np
 
 if tp.TYPE_CHECKING:
     from .extended_classes import ReservoirGroup
@@ -59,4 +60,68 @@ def init_carbonate_system_1(rg: ReservoirGroup):
     return ec
 
 
+def init_carbonate_system_2(
+    rg: ReservoirGroup,
+    r_sb: ReservoirGroup,
+    r_db: ReservoirGroup,
+    area_table: np.ndarray,
+    area_dz_table: np.ndarray,
+    Csat_table: np.ndarray,
+    AD: float,
+    kwargs: dict,
+):
 
+    from esbmtk import ExternalCode, carbonate_system_2_ode
+
+    Ksp0 = kwargs["Ksp0"]
+    Ksp = kwargs["Ksp"]
+     
+    ec = ExternalCode(
+        name="cs",
+        species=rg.mo.Carbon.CO2,
+        function=carbonate_system_2_ode,
+        ftype="cs2",
+        r_s=r_sb,  # source (RG) of CaCO3 flux,
+        r_d=r_db,  # sink (RG) of CaCO3 flux,
+        # the vr_data_fields contains any data that is referenced inside the
+        # function, rather than passed as argument, and all data that is
+        # explicitly referenced by the model
+        vr_datafields={
+            "depth_area_table": area_table,
+            "area_dz_table": area_dz_table,
+            "Csat_table": Csat_table,
+        },
+        ref_flux=kwargs["carbonate_export_fluxes"],
+        function_input_data=list(),
+        function_params=list(
+            [
+                rg.swc.K1,  # 0
+                rg.swc.K2,  # 1
+                rg.swc.KW,  # 2
+                rg.swc.KB,  # 3
+                rg.swc.boron,  # 4
+                Ksp0,  # 5
+                float(kwargs["kc"]),  # 6
+                float(rg.volume.to("liter").magnitude),  # 7
+                float(AD),  # 8
+                float(abs(kwargs["zsat0"])),  # 9
+                float(rg.swc.ca2),  # 10
+                rg.mo.dt,  # 11
+                float(kwargs["I_caco3"]),  # 12
+                float(kwargs["alpha"]),  # 13
+                float(abs(kwargs["zsat_min"])),  # 14
+                float(abs(kwargs["zmax"])),  # 15
+                float(abs(kwargs["z0"])),  # 16
+                Ksp,  # 17
+                rg.swc.hplus,  # 18
+                float(abs(kwargs["zsnow"])),  # 19
+            ]
+        ),
+        return_values={  # these must be known speces definitions
+            "Hplus": rg.swc.hplus,
+            "zsnow": float(abs(kwargs["zsnow"])),
+        },
+        register=rg,
+    )
+
+    return ec
