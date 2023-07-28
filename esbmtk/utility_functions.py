@@ -1030,11 +1030,10 @@ def add_carbonate_system_1(rgs: list):
             species=species,
             function=carbonate_system_1_ode,
             ftype="cs1",
+             # the vr_data_fields contains any data that is referenced inside the
+            # function, rather than passed as argument, and all data that is
+            # explicitly referenced by the model
             vr_datafields={
-                "H": rg.swc.hplus,
-                "CA": rg.swc.ca,  # 1
-                "HCO3": rg.swc.hco3,  # 2
-                "CO3": rg.swc.co3,  # 3
                 "CO2aq": rg.swc.co2,  # 4
             },
             function_input_data=list(),
@@ -1188,8 +1187,11 @@ def add_carbonate_system_2(**kwargs) -> None:
             function="None",
             ftype="cs2",
             r_s=r_sb[i],  # source (RG) of CaCO3 flux,
-            r_d=r_db[i],  # sink (RG) of CaCO3 flux, this contains any data that
-            # is referenced inside the fuction, rather than passed as argument
+            r_d=r_db[i],  # sink (RG) of CaCO3 flux,
+            
+            # the vr_data_fields contains any data that is referenced inside the
+            # function, rather than passed as argument, and all data that is
+            # explicitly referenced by the model
             vr_datafields={
                 "depth_area_table": area_table,
                 "area_dz_table": area_dz_table,
