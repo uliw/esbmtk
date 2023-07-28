@@ -1182,139 +1182,62 @@ def add_carbonate_system_2(**kwargs) -> None:
         else:
             species = __builtins__["CO2"]
 
-        if r_db[0].mo.use_ode:
-            ec = ExternalCode(
-                name="cs",
-                species=species,
-                function="None",
-                ftype="cs2",
-                r_s=r_sb[i],  # source (RG) of CaCO3 flux,
-                r_d=r_db[i],  # sink (RG) of CaCO3 flux,
-                # datafield hold the results of the VR_no_set function
-                # provide a default values which will be use to initialize
-                # the respective datafield/
-                vr_datafields={
-                    "H": rg.swc.hplus,  # 0 H+
-                    "CA": rg.swc.ca,  # 1 carbonate alkalinity
-                    "HCO3": rg.swc.hco3,  # 2 HCO3
-                    "CO3": rg.swc.co3,  # 3 CO3
-                    "CO2aq": rg.swc.co2,  # 4 CO2aq
-                    "zsat": abs(kwargs["zsat"]),  # 5 zsat
-                    "zcc": abs(kwargs["zcc"]),  # 6 zcc
-                    "zsnow": abs(kwargs["zsnow"]),  # 7 zsnow
-                    "depth_area_table": area_table,
-                    "area_dz_table": area_dz_table,
-                    "Csat_table": Csat_table,
-                    "Fburial": 0.0,
-                    "Fburial_l": 0.0,
-                    # "BM": 0.0,
-                },
-                ref_flux=kwargs["carbonate_export_fluxes"],
-                function_input_data=list(),
-                function_params=list(
-                    [
-                        rg.swc.K1,  # 0
-                        rg.swc.K2,  # 1
-                        rg.swc.KW,  # 2
-                        rg.swc.KB,  # 3
-                        rg.swc.boron,  # 4
-                        Ksp0,  # 5
-                        float(kwargs["kc"]),  # 6
-                        float(rg.volume.to("liter").magnitude),  # 7
-                        float(AD),  # 8
-                        float(abs(kwargs["zsat0"])),  # 9
-                        float(rg.swc.ca2),  # 10
-                        rg.mo.dt,  # 11
-                        float(kwargs["I_caco3"]),  # 12
-                        float(kwargs["alpha"]),  # 13
-                        float(abs(kwargs["zsat_min"])),  # 14
-                        float(abs(kwargs["zmax"])),  # 15
-                        float(abs(kwargs["z0"])),  # 16
-                        Ksp,  # 17
-                        rg.swc.hplus,  # 18
-                        float(abs(kwargs["zsnow"])),  # 19
-                    ]
-                ),
-                return_values={  # these must be known speces definitions
-                    "Hplus": rg.swc.hplus,
-                    "zsnow": float(abs(kwargs["zsnow"])),
-                },
+        ec = ExternalCode(
+            name="cs",
+            species=species,
+            function="None",
+            ftype="cs2",
+            r_s=r_sb[i],  # source (RG) of CaCO3 flux,
+            r_d=r_db[i],  # sink (RG) of CaCO3 flux, this contains any data that
+            # is referenced inside the fuction, rather than passed as argument
+            vr_datafields={
+                "depth_area_table": area_table,
+                "area_dz_table": area_dz_table,
+                "Csat_table": Csat_table,
+            },
+            ref_flux=kwargs["carbonate_export_fluxes"],
+            function_input_data=list(),
+            function_params=list(
+                [
+                    rg.swc.K1,  # 0
+                    rg.swc.K2,  # 1
+                    rg.swc.KW,  # 2
+                    rg.swc.KB,  # 3
+                    rg.swc.boron,  # 4
+                    Ksp0,  # 5
+                    float(kwargs["kc"]),  # 6
+                    float(rg.volume.to("liter").magnitude),  # 7
+                    float(AD),  # 8
+                    float(abs(kwargs["zsat0"])),  # 9
+                    float(rg.swc.ca2),  # 10
+                    rg.mo.dt,  # 11
+                    float(kwargs["I_caco3"]),  # 12
+                    float(kwargs["alpha"]),  # 13
+                    float(abs(kwargs["zsat_min"])),  # 14
+                    float(abs(kwargs["zmax"])),  # 15
+                    float(abs(kwargs["z0"])),  # 16
+                    Ksp,  # 17
+                    rg.swc.hplus,  # 18
+                    float(abs(kwargs["zsnow"])),  # 19
+                ]
+            ),
+            return_values={  # these must be known speces definitions
+                "Hplus": rg.swc.hplus,
+                "zsnow": float(abs(kwargs["zsnow"])),
+            },
+            register=rg,
+        )
+        for n, v in ec.return_values.items():
+            rt = Reservoir(
+                name=n,
+                species=getattr(model, n),
+                concentration=f"{v} mol/kg",
                 register=rg,
+                volume=rg.volume,
+                rtype="computed",
             )
-            for n, v in ec.return_values.items():
-                rt = Reservoir(
-                    name=n,
-                    species=getattr(model, n),
-                    concentration=f"{v} mol/kg",
-                    register=rg,
-                    volume=rg.volume,
-                    rtype="computed",
-                )
-                rg.lor.append(rt)
+            rg.lor.append(rt)
 
-        else:
-            ExternalCode(
-                name="cs",
-                species=species,
-                function=calc_carbonates_2,
-                ftype="cs2",
-                # datafield hold the results of the VR_no_set function
-                # provide a default values which will be use to initialize
-                # the respective datafield/
-                vr_datafields={
-                    "H": rg.swc.hplus,  # 0 H+
-                    "CA": rg.swc.ca,  # 1 carbonate alkalinity
-                    "HCO3": rg.swc.hco3,  # 2 HCO3
-                    "CO3": rg.swc.co3,  # 3 CO3
-                    "CO2aq": rg.swc.co2,  # 4 CO2aq
-                    "zsat": kwargs["zsat"],  # 5 zsat
-                    "zcc": kwargs["zcc"],  # 6 zcc
-                    "zsnow": kwargs["zsnow"],  # 7 zsnow
-                    "Fburial": 0.0,  # 8 carbonate burial
-                    "Fburial_l": 0.0,  # 9 carbonate burial 12C
-                    "diss": 0.0,  # dissolution flux
-                    "Bm": 0.0,
-                },
-                function_input_data=list(
-                    [
-                        rg.DIC.m,  # 0 DIC mass db
-                        rg.DIC.l,  # 1 DIC light isotope mass db
-                        rg.DIC.c,  # 2 DIC concentration db
-                        rg.TA.m,  # 3 TA mass db
-                        rg.TA.c,  # 4 TA concentration db
-                        kwargs["carbonate_export_fluxes"][i].fa,  # 5
-                        area_table,  # 6
-                        area_dz_table,  # 7
-                        Csat_table,  # 8
-                        rg.DIC.v,  # 9 reservoir volume
-                    ]
-                ),
-                function_params=list(
-                    [
-                        rg.swc.K1,  # 0
-                        rg.swc.K2,  # 1
-                        rg.swc.KW,  # 2
-                        rg.swc.KB,  # 3
-                        rg.swc.boron,  # 4
-                        Ksp0,  # 5
-                        float(kwargs["kc"]),  # 6
-                        float(rg.volume.to("liter").magnitude),  # 7
-                        float(AD),  # 8
-                        float(abs(kwargs["zsat0"])),  # 9
-                        float(rg.swc.ca2),  # 10
-                        rg.mo.dt,  # 11
-                        float(kwargs["I_caco3"]),  # 12
-                        float(kwargs["alpha"]),  # 13
-                        float(abs(kwargs["zsat_min"])),  # 14
-                        float(abs(kwargs["zmax"])),  # 15
-                        float(abs(kwargs["z0"])),  # 16
-                        Ksp,  # 17
-                        rg.swc.hplus,
-                        float(abs(kwargs["zsnow"])),
-                    ]
-                ),
-                register=rg,
-            )
         rg.has_cs2 = True
 
 
