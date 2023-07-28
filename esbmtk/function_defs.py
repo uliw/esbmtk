@@ -37,27 +37,11 @@ def init_carbonate_system_1(rg: ReservoirGroup):
     for a given key key in the  vr_datafields dictionary (i.e., H, CA, etc.)
 
     """
-
-    from esbmtk import (
-        ExternalCode,
-        carbonate_system_1_ode,
-        Reservoir,
-    )
-
-    # get object handle even if it defined in model namespace
-    # rgs = get_object_handle(rgs)
-
-    model = rg.mo
-    species = model.Carbon.CO2
-
-    if hasattr(rg, "DIC") and hasattr(rg, "TA"):
-        pass
-    else:
-        raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
+    from esbmtk import ExternalCode, carbonate_system_1_ode
 
     ec = ExternalCode(
         name="cs",
-        species=species,
+        species=rg.mo.Carbon.CO2,
         function=carbonate_system_1_ode,
         ftype="cs1",
         # the vr_data_fields contains any data that is referenced inside the
@@ -71,17 +55,8 @@ def init_carbonate_system_1(rg: ReservoirGroup):
         register=rg,
         return_values={"Hplus": rg.swc.hplus},
     )
-    for n, v in ec.return_values.items():
-        rt = Reservoir(
-            name=n,
-            species=getattr(model, n),
-            concentration=f"{v} mol/kg",
-            register=rg,
-            volume=rg.volume,
-            rtype="computed",
-        )
-        rg.lor.append(rt)
-
-    rg.has_cs1 = True
 
     return ec
+
+
+

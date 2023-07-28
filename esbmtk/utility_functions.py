@@ -1006,52 +1006,28 @@ def add_carbonate_system_1(rgs: list):
     for a given key key in the  vr_datafields dictionary (i.e., H, CA, etc.)
 
     """
+    from esbmtk import init_carbonate_system_1, Reservoir
 
-    from esbmtk import (
-        ExternalCode,
-        carbonate_system_1_ode,
-        Reservoir,
-    )
-
-    # get object handle even if it defined in model namespace
-    # rgs = get_object_handle(rgs)
-
-    model = rgs[0].mo
-    species = model.Carbon.CO2
-
+    model = rgs[0].mo 
     for rg in rgs:
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):
             pass
         else:
             raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
-        ec = ExternalCode(
-            name="cs",
-            species=species,
-            function=carbonate_system_1_ode,
-            ftype="cs1",
-             # the vr_data_fields contains any data that is referenced inside the
-            # function, rather than passed as argument, and all data that is
-            # explicitly referenced by the model
-            vr_datafields={
-                "CO2aq": rg.swc.co2,  # 4
-            },
-            function_input_data=list(),
-            function_params=list(),
-            register=rg,
-            return_values={"Hplus": rg.swc.hplus},
-        )
+        ec = init_carbonate_system_1(rg)
+
+        # add Reservoir objects for the retun values 
         for n, v in ec.return_values.items():
             rt = Reservoir(
                 name=n,
-                species=getattr(model, n),
+                species=getattr(rg.mo, n),
                 concentration=f"{v} mol/kg",
                 register=rg,
                 volume=rg.volume,
                 rtype="computed",
             )
             rg.lor.append(rt)
-
         rg.has_cs1 = True
 
 
@@ -1188,7 +1164,6 @@ def add_carbonate_system_2(**kwargs) -> None:
             ftype="cs2",
             r_s=r_sb[i],  # source (RG) of CaCO3 flux,
             r_d=r_db[i],  # sink (RG) of CaCO3 flux,
-            
             # the vr_data_fields contains any data that is referenced inside the
             # function, rather than passed as argument, and all data that is
             # explicitly referenced by the model
