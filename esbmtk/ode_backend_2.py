@@ -66,7 +66,7 @@ def get_types(M: Model, rtol: float) -> tuple(np.ndarray, np.ndarray, dict, dict
     :return f_dict: dictionary of flux types
     """
     from esbmtk import Source, Sink
-    
+
     atol = list()  # list of tolerances
     IC = list()  # IC = r1.l, r1.c, r2.l, r3.l etc)
     IC_i = dict()  # IC_i[r] = index position of r in IC
@@ -75,13 +75,13 @@ def get_types(M: Model, rtol: float) -> tuple(np.ndarray, np.ndarray, dict, dict
     # get initial conditions tolerances and indexes for each reservoir
     i = 0
     for r in M.lic:
-        IC.append(r.c[-1])
-        atol.append(set_tolerance(r.c[-1], rtol))
+        IC.append(r.c[0])
+        atol.append(set_tolerance(r.c[0], rtol))
         IC_i[r.full_name] = i
         i = i + 1
         if r.isotopes:
-            IC.append(r.l[-1])
-            atol.append(set_tolerance(r.l[-1], rtol))
+            IC.append(r.l[0])
+            atol.append(set_tolerance(r.l[0], rtol))
             IC_i[f"{r.full_name}_i"] = i
             i = i + 1
 
@@ -95,8 +95,8 @@ def get_types(M: Model, rtol: float) -> tuple(np.ndarray, np.ndarray, dict, dict
     for tta in types_to_append:
         if tta in f_dict:
             for f in f_dict[tta]:
-                print(f"setting {f.full_name} with {f.rate}")
-                IC.append(f.rate) # add constant to inittial conditions
+                # print(f"setting {f.full_name} with {f.rate}")
+                IC.append(f.rate)  # add constant to inittial conditions
                 atol.append(set_tolerance(r.m[-1], rtol))
                 if isinstance(f.register.source, Source):
                     IC_i[f.register.source.full_name] = i
@@ -125,9 +125,10 @@ def get_matrix_coordinates(
     :param row: row index
     :param col: cold index
     :param scale: value
-    :param bypass: whether to bypass either the sink term
+    :param bypass: whether to bypass the sink term
     """
     from esbmtk import Source, Sink
+
     coords: list[list] = list()
 
     if isinstance(c.source, Source):
@@ -141,14 +142,13 @@ def get_matrix_coordinates(
     else:
         row = IC_i[source]  # this will set the row
         col = IC_i[sink]
-        coords.append([row, col, -scale])
+        coords.append([row, col, scale])
 
         if not bypass:
             row = IC_i[sink]  # this will set the row
             col = IC_i[sink]
-            coords.append([row, col, scale])
-            
-    print(coords)
+            coords.append([row, col, -scale])
+
     return coords
 
 
@@ -161,11 +161,17 @@ def set_matrix_coefficients(C, coords):
 
     """
     for c in coords:
-        print(f"row = {c[0]}, col = {c[1]}")
+        # print(f"row = {c[0]}, col = {c[1]}, val = {c[2]:.2e}")
         if C[c[0], c[1]] == 0:
             C[c[0], c[1]] = c[2]
         else:
-            C[c[0], c[1]] += c[2]
+            print(f"C before = {C}")
+            print(
+                f"current = {C[c[0], c[1]]:.2e}, new = {c[2]:.2e}, future = {C[c[0], c[1]] - c[2]:.2e}"
+            )
+            C[c[0], c[1]] -= c[2]
+            print(f"C after = {C}\n")
+        # print(C)
 
 
 def build_matrix(M: Model, IC: np.ndarray, IC_i: dict, f_dict: dict):
@@ -209,7 +215,7 @@ def build_matrix(M: Model, IC: np.ndarray, IC_i: dict, f_dict: dict):
         #     # if isinstance(c.sink, Sink):
         #     #     sink = f.full_name
 
-        print(f"ctype = {c.ctype}, source={source}, sink={sink}")
+        # print(f"ctype = {c.ctype}, source={source}, sink={sink}")
         coords = get_matrix_coordinates(
             source,
             sink,
