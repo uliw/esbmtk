@@ -186,8 +186,6 @@ def build_matrix(M: Model, IC: np.ndarray, IC_i: dict, f_dict: dict):
 
     :return C: coefficient matrix
     """
-    from esbmtk import Source, Sink
-
     # create initial coefficient matrix
     rows = len(M.lor)
     cols = len(IC)
@@ -200,22 +198,6 @@ def build_matrix(M: Model, IC: np.ndarray, IC_i: dict, f_dict: dict):
         source = c.source.full_name
         sink = c.sink.full_name
 
-        if c.ctype == "scale_with_concentration":
-            scale = c.scale
-        else:
-            scale = 1
-        # elif c.ctype == "Regular".lower():
-
-        # need to set M.W to flux rate when setting initial conditions!
-
-        #     scale = 1
-        #     if isinstance(c.source, Source):
-        #         sink = f.full_name
-        #         source = c.sink.full_name
-        #     # if isinstance(c.sink, Sink):
-        #     #     sink = f.full_name
-
-        # print(f"ctype = {c.ctype}, source={source}, sink={sink}")
         coords = get_matrix_coordinates(
             source,
             sink,
