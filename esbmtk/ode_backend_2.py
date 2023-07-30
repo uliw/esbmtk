@@ -141,13 +141,13 @@ def get_matrix_coordinates(
         coords.append([row, col, -scale])
     else:
         row = IC_i[source]  # this will set the row
-        col = IC_i[sink]
-        coords.append([row, col, scale])
+        col = IC_i[source]
+        coords.append([row, col, -scale])
 
         if not bypass:
             row = IC_i[sink]  # this will set the row
-            col = IC_i[sink]
-            coords.append([row, col, -scale])
+            col = IC_i[source]
+            coords.append([row, col, +scale])
 
     return coords
 
@@ -165,12 +165,12 @@ def set_matrix_coefficients(C, coords):
         if C[c[0], c[1]] == 0:
             C[c[0], c[1]] = c[2]
         else:
-            print(f"C before = {C}")
-            print(
-                f"current = {C[c[0], c[1]]:.2e}, new = {c[2]:.2e}, future = {C[c[0], c[1]] - c[2]:.2e}"
-            )
-            C[c[0], c[1]] -= c[2]
-            print(f"C after = {C}\n")
+            # print(f"C before = {C}")
+            # print(
+            #     f"current = {C[c[0], c[1]]:.2e}, new = {c[2]:.2e}, future = {C[c[0], c[1]] - c[2]:.2e}"
+            # )
+            C[c[0], c[1]] += c[2]
+            # print(f"C after = {C}\n")
         # print(C)
 
 
