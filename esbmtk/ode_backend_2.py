@@ -195,14 +195,22 @@ def build_matrix(M: Model, IC: np.ndarray, IC_i: dict, f_dict: dict):
     for f in M.lof:
         c = f.register  # get connection
 
-        source = c.source.full_name
-        sink = c.sink.full_name
+        if c.ctype == "scale_with_flux":
+            source = c.ref_flux.register.source.full_name
+            sink = c.sink.full_name
+            scale = c.ref_flux.register.scale * c.scale
+            print(f"source = {source}")
+            print(f"sink = {sink}")
+        else:
+            source = c.source.full_name
+            sink = c.sink.full_name
+            scale = c.scale
 
         coords = get_matrix_coordinates(
             source,
             sink,
             IC_i,
-            c.scale,
+            scale,
             c,
         )
         set_matrix_coefficients(C, coords)
