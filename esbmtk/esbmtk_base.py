@@ -103,7 +103,7 @@ class input_parsing(object):
         """
         for key, value in kwargs.items():
             if key not in defaults:
-                raise ValueError(f"{key} is not a valid key")
+                raise ValueError(f"{key} is not a valid keyword")
 
             if not isinstance(value, defaults[key][1]):
                 raise TypeError(
