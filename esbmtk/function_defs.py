@@ -44,6 +44,7 @@ def init_carbonate_system_1(rg: ReservoirGroup):
         name="cs",
         species=rg.mo.Carbon.CO2,
         function=carbonate_system_1_ode,
+        fname="carbonate_system_1_ode",
         ftype="cs1",
         # the vr_data_fields contains any data that is referenced inside the
         # function, rather than passed as argument, and all data that is
@@ -51,10 +52,13 @@ def init_carbonate_system_1(rg: ReservoirGroup):
         vr_datafields={
             "CO2aq": rg.swc.co2,  # 4
         },
-        function_input_data=list(),
-        function_params=list(),
+        # function_input_data=[rg.DIC, rg.TA, rg.Hplus],
+        function_input_data="DIC TA Hplus",
+        function_params=[rg.swc.full_name],
         register=rg,
-        return_values={"Hplus": rg.swc.hplus},
+        # name and initial value pairs
+        # return_values={"Hplus": rg.swc.hplus},
+        return_values={"Hplus": rg.swc.hplus, "CO2aq": 0},
     )
 
     return ec
@@ -75,7 +79,7 @@ def init_carbonate_system_2(
 
     Ksp0 = kwargs["Ksp0"]
     Ksp = kwargs["Ksp"]
-     
+
     ec = ExternalCode(
         name="cs",
         species=rg.mo.Carbon.CO2,
