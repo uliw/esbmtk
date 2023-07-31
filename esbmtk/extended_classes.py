@@ -1539,11 +1539,12 @@ class ExternalCode(Reservoir_no_set):
             "vr_datafields": ["None", (dict, str)],
             "function_input_data": ["None", (list, str)],
             "function_params": ["None", (list, str)],
+            "fname": ["None", (str)],
             "geometry": ["None", (list, str)],
             "alias_list": ["None", (list, str)],
             "ftype": ["None", (str)],
             "ref_flux": ["None", (list, str)],
-            "return_values": ["None", (str, dict)],
+            "return_values": ["None", (dict)],
             "arguments": ["None", (str, list)],
             "r_s": ["None", (str, ReservoirGroup)],
             "r_d": ["None", (str, ReservoirGroup)],
@@ -1580,20 +1581,20 @@ class ExternalCode(Reservoir_no_set):
             else:
                 self.vr_data.append(e)
 
-        self.gfh = GenericFunction(
-            r_s=self.r_s,
-            name=name,
-            function=self.function,
-            input_data=self.function_input_data,
-            vr_data=self.vr_data,
-            function_params=self.function_params,
-            model=self.species.mo,
-            register=self.register,
-            ftype=self.ftype,
-        )
+        # self.gfh = GenericFunction(
+        #     r_s=self.r_s,
+        #     name=name,
+        #     function=self.function,
+        #     input_data=self.function_input_data,
+        #     vr_data=self.vr_data,
+        #     function_params=self.function_params,
+        #     model=self.species.mo,
+        #     register=self.register,
+        #     ftype=self.ftype,
+        # )
         # add the function handle to the list of function to be executed
-
-        self.mo.lpc_r.append(self.gfh)
+        self.mo.lpc_r.append(self)
+        # self.mo.lpc_r.append(self.gfh)
 
         self.mo.lor.remove(self)
         # but lets keep track of  virtual reservoir in lvr.
