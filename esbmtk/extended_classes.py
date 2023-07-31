@@ -1535,7 +1535,7 @@ class ExternalCode(Reservoir_no_set):
             "isotopes": [False, (bool)],
             "volume": ["None", (str, int, float)],
             "vr_datafields": ["None", (dict, str)],
-            "function_input_data": ["None", (str)],
+            "function_input_data": ["None", (str, list)],
             "function_params": ["None", (list)],
             "fname": ["None", (str)],
             "geometry": ["None", (list, str)],
