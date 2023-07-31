@@ -263,7 +263,8 @@ class setup_ode():
 
         for r in M.lpc_r:  # All virtual reservoirs need to be in this list
             if r.ftype == "cs1":
-                rel = write_cs_1(eqs, r, icl, rel, ind2, ind3)
+                # rel = write_cs_1(eqs, r, icl, rel, ind2, ind3)
+                rel = write_ef(eqs, r, icl, rel, ind2, ind3)
             elif r.ftype != "cs2":
                 raise ValueError(f"{r.ftype} is undefined")
 
@@ -328,10 +329,7 @@ class setup_ode():
         rel = write_reservoir_equations_with_isotopes(eqs, M, rel, ind2, ind3)
 
         sep = "# ---------------- bits and pieces --------------------------- #"
-        eqs.write(
-            f"\n{sep}\n"
-            f"{ind2}return [\n"
-        )
+        eqs.write(f"\n{sep}\n" f"{ind2}return [\n")
         # Write all initial conditions that are recorded in icl
         for k, v in icl.items():
             eqs.write(f"{ind3}{k.full_name.replace('.', '_')},  # {v[0]}\n")
@@ -469,6 +467,40 @@ def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
 
 
 # ------------------------ define processes ------------------------- #
+def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> str:
+    """Write external function call code
+
+    :param eqs: equation file handle
+    :param r: reservoir_handle
+    :param icl: dict of reservoirs that have actual fluxes
+    :param rel: string with reservoir names returned by setup_ode
+    :param ind2: indent 2 times
+    :param ind3: indent 3 times
+
+    :returns: rel: modied string of reservoir names
+    """
+
+    # get list of return values
+    rv = ind2
+    for n, v in r.return_values.items():
+        rv += f"{r.parent.full_name}.{n}, ".replace(".", "_")
+    rv = rv[:-2]
+
+    # get list of parameters
+    ps = ""
+    for p in r.function_params:
+        ps += f"{p},\n"
+    # get list of arguments
+    a = ind3
+    for d in r.function_input_data.split(" "):
+        sr = getattr(r.register, d)
+        a += f"{ind3}{get_ic(sr, icl)},\n"
+
+    eqs.write(f"{rv} = {r.fname}(\n{ps}{a}\n)\n")
+    print(f"{rv} = {r.fname}(\n{a}\n)")
+    rel += f"{ind3}{rv},\n"
+
+    return rel
 
 
 def write_cs_1(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> str:
