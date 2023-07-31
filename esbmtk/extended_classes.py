@@ -1454,10 +1454,8 @@ class ExternalCode(Reservoir_no_set):
                                           "Beta": 0.0},
 
                     function=calc_carbonates, # function reference, see below
-                    function_input_data=list([self.DIC.c, self.TA.c]),
-
-                    # A list of float parameters.
-                    alias_list = ["H", "CA", "HCO3", "CO3", "CO2aq"]
+                    fname = function name as string
+                    function_input_data="DIC TA",
                     # Note that parameters must be individual float values
                     function_params=list(
                         [
@@ -1537,8 +1535,8 @@ class ExternalCode(Reservoir_no_set):
             "isotopes": [False, (bool)],
             "volume": ["None", (str, int, float)],
             "vr_datafields": ["None", (dict, str)],
-            "function_input_data": ["None", (list, str)],
-            "function_params": ["None", (list, str)],
+            "function_input_data": ["None", (str)],
+            "function_params": ["None", (list)],
             "fname": ["None", (str)],
             "geometry": ["None", (list, str)],
             "alias_list": ["None", (list, str)],
