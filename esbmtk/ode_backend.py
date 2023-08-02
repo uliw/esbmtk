@@ -1,15 +1,16 @@
 from __future__ import annotations
 import typing as tp
+import numpy as np
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Flux, Reservoir, Model, Connection, Connect, numpy
+    from esbmtk import Flux, Reservoir, Model, Connection, Connect
 
 
 def get_initial_conditions(
     M: Model,
     rtol: float,
     atol_d: float = 1e-6,
-) -> tuple[list, dict, list, list, numpy.array]:
+) -> tuple[list, dict, list, list, np.ndarray]:
     """Get list of initial conditions.  This list needs to match the
     number of equations.
 
@@ -306,7 +307,8 @@ class setup_ode():
             if r.ftype == "cs1":
                 pass  # see above
             elif r.ftype == "cs2":  #
-                rel = write_cs_2(eqs, r, icl, rel, ind2, ind3)
+                # rel = write_cs_2(eqs, r, icl, rel, ind2, ind3)
+                rel = write_ef(eqs, r, icl, rel, ind2, ind3)
             else:
                 raise ValueError(f"{r.ftype} is undefined")
 
@@ -438,8 +440,6 @@ def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
         indicates the reservoir handle, and the list contains the
         index into the reservoir data.  list[0] = concentration
         list[1] concentration of the light isotope.
-    :param isotopes: whether to return the total mass or the mass of
-        the light isotope
 
     :raises ValueError: get_ic: can't find {r.full_name} in list of
         initial conditions
@@ -449,21 +449,52 @@ def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
     """
     from esbmtk import Source, Sink
 
-    s = ""
-
     if r in icl:
-        s = f"R[{icl[r][1]}]" if isotopes else f"R[{icl[r][0]}]"
+        s1 = f"R[{icl[r][0]}]"
+        if isotopes:
+            s1 += f", R[{icl[r][1]}]"
+
     elif isinstance(r, (Source, Sink)):
-        s = f"{r.full_name}.c"
-        if r.isotopes:
-            s = f"{r.full_name}.l"
+        s1 = f"{r.full_name}.c"
+        if isotopes:
+            s1 += f", {r.full_name}.l"
     else:
-        #
         raise ValueError(
             f"get_ic: can't find {r.full_name} in list of initial conditions"
         )
 
-    return s
+    return s1
+
+
+def parse_esbmtk_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> str:
+    """Parse esbmtk data types that are provided as arguments
+    to external function objects, and convert them into a suitable string
+    format that can be used in the ode equation file
+    """
+    from esbmtk import Flux, Reservoir, ReservoirGroup, SeawaterConstants
+
+    if isinstance(d, str):
+        sr = getattr(r.register, d)
+        a = f"{ind}{get_ic(sr, icl)},\n"
+    elif isinstance(d, Reservoir):
+        a = f"{ind}{get_ic(d, icl,d.isotopes)},\n"
+    elif isinstance(d, ReservoirGroup):
+        a = f"{ind}{d.full_name},\n"
+    elif isinstance(d, Flux):
+        sr = d.full_name.replace(".", "_")
+        a = f"{ind}{sr},\n"
+    elif isinstance(d, SeawaterConstants):
+        a = f"{ind}{d.full_name},\n"
+    elif isinstance(d, float | int | np.ndarray):
+        a = f"{ind}{d},\n"
+    elif isinstance(d, dict):
+        # get key and reservoiur handle
+        sr = getattr(r.register, next(iter(d)))
+        a = f"{ind}{get_ic(sr, icl)},\n"
+    else:
+        raise ValueError(f"\n{d} is of type {type(d)}")
+
+    return a
 
 
 # ------------------------ define processes ------------------------- #
@@ -482,21 +513,15 @@ def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> st
 
     # get list of return values
     rv = ind2
-    for n, v in r.return_values.items():
-        rv += f"{r.parent.full_name}.{n}, ".replace(".", "_")
+    for d in r.return_values:
+        rv += parse_esbmtk_data_types(d, r, ind2, icl)
     rv = rv[:-2]
 
-    # get list of parameters
-    ps = ""
-    for p in r.function_params:
-        ps += f"{p},\n"
-    # get list of arguments
     a = ind3
-    for d in r.function_input_data.split(" "):
-        sr = getattr(r.register, d)
-        a += f"{ind3}{get_ic(sr, icl)},\n"
+    for d in r.function_input_data:
+        a += parse_esbmtk_data_types(d, r, ind3, icl)
 
-    eqs.write(f"{rv} = {r.fname}(\n{ps}{a}\n)\n")
+    eqs.write(f"{rv} = {r.fname}(\n{a}\n)\n")
     print(f"{rv} = {r.fname}(\n{a}\n)")
     rel += f"{ind3}{rv},\n"
 
@@ -554,8 +579,7 @@ def write_cs_2(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> 
     sb_DIC = getattr(r.r_s, "DIC")
 
     if r.register.DIC.isotopes:
-        source_m = get_ic(sb_DIC, icl)
-        source_l = get_ic(sb_DIC, icl, isotopes=True)
+        source_m, source_l = get_ic(sb_DIC, icl, True).replace(" ", "").split(",")
     else:
         # print(f"sb_DIC = {sb_DIC.full_name}")
         source_m = get_ic(sb_DIC, icl)
@@ -638,8 +662,8 @@ def check_isotope_effects(
     """
     if c.isotopes:
         r = c.source.species.r
-        s_c = get_ic(c.source, icl)
-        s_l = get_ic(c.source, icl, isotopes=True)
+        s = get_ic(c.source, icl, True)
+        s_c, s_l = s.replace(" ", "").split(",")
         """ Calculate the flux of the light isotope (f_l) as a function of the isotope
         ratios in the source reservoir soncentrations (s_c, s_l), and alpha (a) as
         f_l = f_m * 1000/(r * (d + 1000) + 1000)
@@ -784,8 +808,7 @@ def get_weathering_eq(
             s_c = f"{c.source.full_name}.c"
             s_l = f"{c.source.full_name}.l"
         else:
-            s_c = get_ic(c.source, icl)  # get index to concentration
-            s_l = get_ic(c.source, icl, isotopes=True)  # get index to concentration l
+            s_c, s_l = get_ic(c.source, icl, True).replace(" ", "").split(",")
 
         fn = flux.full_name.replace(".", "_")
         exl = f"{fn} * {s_l} / {s_c}"
@@ -903,10 +926,8 @@ def get_gas_exchange_w_isotopes_eq(
     """
 
     # get isotope data
-    pco2 = get_ic(c.gas_reservoir, icl)
-    pco2_l = get_ic(c.gas_reservoir, icl, isotopes=True)
-    dic = get_ic(c.liquid_reservoir, icl)
-    dic_l = get_ic(c.liquid_reservoir, icl, isotopes=True)
+    pco2, pco2_l = get_ic(c.gas_reservoir, icl, True).replace(" ", "").split(",")
+    dic, dic_l = get_ic(c.liquid_reservoir, icl, True).replace(" ", "").split(",")
 
     a_db = f"{c.liquid_reservoir.parent.full_name}.swc.a_db"
     a_dg = f"{c.liquid_reservoir.parent.full_name}.swc.a_dg"

@@ -53,15 +53,85 @@ def init_carbonate_system_1(rg: ReservoirGroup):
             "CO2aq": rg.swc.co2,  # 4
         },
         # function_input_data=[rg.DIC, rg.TA, rg.Hplus],
-        function_input_data="DIC TA Hplus",
-        function_params=[rg.swc.full_name],
+        function_input_data=[rg.swc, rg.DIC, rg.TA, "Hplus"],
         register=rg,
         # name and initial value pairs
         # return_values={"Hplus": rg.swc.hplus},
-        return_values={"Hplus": rg.swc.hplus, "CO2aq": 0},
+        return_values=[
+            {"Hplus": rg.swc.hplus},
+            {"CO2aq": rg.swc.co2aq},
+        ],
+        # return_values=["Hplus", "CO2aq"],
     )
 
     return ec
+
+
+# def init_carbonate_system_3(
+#     rg: ReservoirGroup,
+#     r_sb: ReservoirGroup,
+#     r_db: ReservoirGroup,
+#     area_table: np.ndarray,
+#     area_dz_table: np.ndarray,
+#     Csat_table: np.ndarray,
+#     AD: float,
+#     kwargs: dict,
+# ):
+
+#     from esbmtk import ExternalCode, carbonate_system_2_ode
+
+#     Ksp0 = kwargs["Ksp0"]
+#     Ksp = kwargs["Ksp"]
+
+#     ec = ExternalCode(
+#         name="cs",
+#         species=rg.mo.Carbon.CO2,
+#         function=carbonate_system_2_ode,
+#         ftype="cs2",
+#         r_s=r_sb,  # source (RG) of CaCO3 flux,
+#         r_d=r_db,  # sink (RG) of CaCO3 flux,
+#         # the vr_data_fields contains any data that is referenced inside the
+#         # function, rather than passed as argument, and all data that is
+#         # explicitly referenced by the model
+#         vr_datafields={
+#             "depth_area_table": area_table,
+#             "area_dz_table": area_dz_table,
+#             "Csat_table": Csat_table,
+#         },
+#         ref_flux=kwargs["carbonate_export_fluxes"],
+#         function_input_data=list(),
+#         function_params=list(
+#             [
+#                 rg.swc.K1,  # 0
+#                 rg.swc.K2,  # 1
+#                 rg.swc.KW,  # 2
+#                 rg.swc.KB,  # 3
+#                 rg.swc.boron,  # 4
+#                 Ksp0,  # 5
+#                 float(kwargs["kc"]),  # 6
+#                 float(rg.volume.to("liter").magnitude),  # 7
+#                 float(AD),  # 8
+#                 float(abs(kwargs["zsat0"])),  # 9
+#                 float(rg.swc.ca2),  # 10
+#                 rg.mo.dt,  # 11
+#                 float(kwargs["I_caco3"]),  # 12
+#                 float(kwargs["alpha"]),  # 13
+#                 float(abs(kwargs["zsat_min"])),  # 14
+#                 float(abs(kwargs["zmax"])),  # 15
+#                 float(abs(kwargs["z0"])),  # 16
+#                 Ksp,  # 17
+#                 rg.swc.hplus,  # 18
+#                 float(abs(kwargs["zsnow"])),  # 19
+#             ]
+#         ),
+#         return_values={  # these must be known speces definitions
+#             "Hplus": rg.swc.hplus,
+#             "zsnow": float(abs(kwargs["zsnow"])),
+#         },
+#         register=rg,
+#     )
+
+#     return ec
 
 
 def init_carbonate_system_2(
@@ -77,13 +147,11 @@ def init_carbonate_system_2(
 
     from esbmtk import ExternalCode, carbonate_system_2_ode
 
-    Ksp0 = kwargs["Ksp0"]
-    Ksp = kwargs["Ksp"]
-
     ec = ExternalCode(
         name="cs",
         species=rg.mo.Carbon.CO2,
         function=carbonate_system_2_ode,
+        fname="carbonate_system_2_ode",
         ftype="cs2",
         r_s=r_sb,  # source (RG) of CaCO3 flux,
         r_d=r_db,  # sink (RG) of CaCO3 flux,
@@ -95,36 +163,30 @@ def init_carbonate_system_2(
             "area_dz_table": area_dz_table,
             "Csat_table": Csat_table,
         },
-        ref_flux=kwargs["carbonate_export_fluxes"],
-        function_input_data=list(),
-        function_params=list(
-            [
-                rg.swc.K1,  # 0
-                rg.swc.K2,  # 1
-                rg.swc.KW,  # 2
-                rg.swc.KB,  # 3
-                rg.swc.boron,  # 4
-                Ksp0,  # 5
-                float(kwargs["kc"]),  # 6
-                float(rg.volume.to("liter").magnitude),  # 7
-                float(AD),  # 8
-                float(abs(kwargs["zsat0"])),  # 9
-                float(rg.swc.ca2),  # 10
-                rg.mo.dt,  # 11
-                float(kwargs["I_caco3"]),  # 12
-                float(kwargs["alpha"]),  # 13
-                float(abs(kwargs["zsat_min"])),  # 14
-                float(abs(kwargs["zmax"])),  # 15
-                float(abs(kwargs["z0"])),  # 16
-                Ksp,  # 17
-                rg.swc.hplus,  # 18
-                float(abs(kwargs["zsnow"])),  # 19
-            ]
-        ),
-        return_values={  # these must be known speces definitions
-            "Hplus": rg.swc.hplus,
-            "zsnow": float(abs(kwargs["zsnow"])),
-        },
+        function_input_data=[
+            rg,
+            kwargs["carbonate_export_fluxes"][0],
+            r_db.DIC,
+            r_db.TA,
+            r_sb.DIC,
+            "Hplus",
+            "zsnow",
+            kwargs["Ksp0"],
+            float(kwargs["kc"]),  # 1
+            float(AD),  # 2
+            float(abs(kwargs["zsat0"])),  # 3
+            float(kwargs["I_caco3"]),  # 4
+            float(kwargs["alpha"]),  # 5
+            float(abs(kwargs["zsat_min"])),  # 6
+            float(abs(kwargs["zmax"])),  # 7
+            float(abs(kwargs["z0"])),  # 8
+        ],
+        return_values=[
+            r_db.DIC,
+            r_db.TA,
+            {"Hplus": rg.swc.hplus},
+            {"zsnow": float(abs(kwargs["zsnow"]))},
+        ],
         register=rg,
     )
 

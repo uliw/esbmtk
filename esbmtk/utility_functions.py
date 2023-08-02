@@ -1008,7 +1008,6 @@ def add_carbonate_system_1(rgs: list):
     """
     from esbmtk import init_carbonate_system_1, Reservoir
 
-    model = rgs[0].mo
     for rg in rgs:
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):
             pass
@@ -1017,17 +1016,20 @@ def add_carbonate_system_1(rgs: list):
 
         ec = init_carbonate_system_1(rg)
 
-        # add Reservoir objects for the retun values
-        for n, v in ec.return_values.items():
-            rt = Reservoir(
-                name=n,
-                species=getattr(rg.mo, n),
-                concentration=f"{v} mol/kg",
-                register=rg,
-                volume=rg.volume,
-                rtype="computed",
-            )
-            rg.lor.append(rt)
+        # if the function returns computed values that are not part
+        # of the regular setup, add new reservoirs
+        for v in ec.return_values:
+            if isinstance(v, dict):
+                n = next(iter(v))
+                rt = Reservoir(
+                    name=n,
+                    species=getattr(rg.mo, n),
+                    concentration=f"{v[n]} mol/kg",
+                    register=rg,
+                    volume=rg.volume,
+                    rtype="computed",
+                )
+                rg.lor.append(rt)
         rg.has_cs1 = True
 
 
@@ -1157,16 +1159,18 @@ def add_carbonate_system_2(**kwargs) -> None:
             kwargs,
         )
 
-        for n, v in ec.return_values.items():
-            rt = Reservoir(
-                name=n,
-                species=getattr(model, n),
-                concentration=f"{v} mol/kg",
-                register=rg,
-                volume=rg.volume,
-                rtype="computed",
-            )
-            rg.lor.append(rt)
+        for v in ec.return_values:
+            if isinstance(v, dict):
+                n = next(iter(v))
+                rt = Reservoir(
+                    name=n,
+                    species=getattr(model, n),
+                    concentration=f"{v[n]} mol/kg",
+                    register=rg,
+                    volume=rg.volume,
+                    rtype="computed",
+                )
+                rg.lor.append(rt)
 
         rg.has_cs2 = True
 

@@ -1542,7 +1542,7 @@ class ExternalCode(Reservoir_no_set):
             "alias_list": ["None", (list, str)],
             "ftype": ["None", (str)],
             "ref_flux": ["None", (list, str)],
-            "return_values": ["None", (dict)],
+            "return_values": ["None", (list)],
             "arguments": ["None", (str, list)],
             "r_s": ["None", (str, ReservoirGroup)],
             "r_d": ["None", (str, ReservoirGroup)],
