@@ -634,7 +634,7 @@ class Model(esbmtkBase):
         import pathlib as pl
 
         # build equation file
-        rtol = 1e-4
+        rtol = 1e-6
         R, icl, cpl, ipl, atol = get_initial_conditions(self, rtol)
         self.R = R
         self.icl = icl

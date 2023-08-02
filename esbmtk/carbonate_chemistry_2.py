@@ -185,6 +185,8 @@ def carbonate_system_2_ode(
     BDS_under = kc * area_p.dot(diff_co3)
     BDS_resp = alpha * (A_zsat_zcc * B_AD - BDS_under)
     BDS = BDS_under + BDS_resp
+    if zsnow > zmax:
+        zsnow = zmax
     diff: np.ndarray = Csat_table[zcc : int(zsnow)] - co3
     area_p: np.ndarray = area_dz_table[zcc : int(zsnow)]
     # integrate saturation difference over area
@@ -206,7 +208,7 @@ def carbonate_system_2_ode(
     dH = hplus - hplus_0
 
     # F_DIC, F_DIC_l, F_TA, dH, d_zsnow
-    return BD, BD_l, 2 * BD, dH, d_zsnow
+    return -BD, -BD_l, -2 * BD, dH, d_zsnow
 
 
 def gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:

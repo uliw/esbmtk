@@ -9,7 +9,7 @@ if tp.TYPE_CHECKING:
 def get_initial_conditions(
     M: Model,
     rtol: float,
-    atol_d: float = 1e-6,
+    atol_d: float = 1e-7,
 ) -> tuple[list, dict, list, list, np.ndarray]:
     """Get list of initial conditions.  This list needs to match the
     number of equations.
@@ -63,6 +63,7 @@ def get_initial_conditions(
     for r in M.lic:
         # collect all reservoirs that have initial conditions
         if len(r.lof) > 0 or r.rtype == "computed" or r.rtype == "passive":
+            # print(f"R = {r.full_name} c = {r.c[0]:.2e}")
             R.append(r.c[0])  # add initial condition
             if r.c[0] > 0:
                 # compute tol such that tol < rtol * abs(y)
@@ -74,6 +75,7 @@ def get_initial_conditions(
                 r.atol[0] = atol_d
 
             if r.isotopes:
+                # print(f"R = {r.full_name} l = {r.l[0]:.2e}")
                 if r.l[0] > 0:
                     # compute tol such that tol < rtol * abs(y)
                     tol = rtol * abs(r.l[0]) / 10
@@ -537,16 +539,15 @@ def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> st
     rv = ind2
     for d in r.return_values:
         rv += f"{parse_esbmtk_return_data_types(d, r, ind2, icl)}, "
-        
+
     rv = rv[:-2]
-    print(f"{rv} = {rv}\n")
-    
+
     a = ind3
     for d in r.function_input_data:
         a += parse_esbmtk_input_data_types(d, r, ind3, icl)
 
     eqs.write(f"{rv} = {r.fname}(\n{a}\n)\n")
-    
+
     rel += f"{ind3}{rv},\n"
 
     return rel
