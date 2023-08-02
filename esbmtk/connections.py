@@ -705,6 +705,8 @@ class Connect(esbmtkBase):
             if self.delta == "None" and self.alpha == "None" and self.isotopes:
                 self._alpha = 0
 
+        elif self.ctype == "ignore":
+            pass
         elif self.ctype == "scale_to_input":
             self.__scale_to_input__()
         elif self.ctype == "flux_diff":

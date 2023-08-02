@@ -191,14 +191,14 @@ def carbonate_system_2_ode(
     BPDC = kc * area_p.dot(diff)
     BPDC = max(BPDC, 0)  # prevent negative values
     d_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
-    # get isotope ratio in reservoir
     BD: float = BDS + BCC + BNS + BPDC
+    
     """Bm is the flux of CaCO3 into the box. However, the model should
     use the bypass option and leave all flux calculations to the
     cs_code.  As such, we simply add the fraction of the input flux
     that dissolves, and ignore the fraction that is buried.  
 
-    The isotope ratio of the dissolutio flux is determined by the delta
+    The isotope ratio of the dissolution flux is determined by the delta
     value of the sediments we are dissolving, and the delta of the carbonate rain.
     The currrent code, assumes that both are the same.
     """
@@ -206,109 +206,7 @@ def carbonate_system_2_ode(
     dH = hplus - hplus_0
 
     # F_DIC, F_DIC_l, F_TA, dH, d_zsnow
-    return -BD, -BD_l, -2 * BD, dH, d_zsnow
-
-
-def carbonate_system_3_ode(
-    rg: ReservoirGroup,  # 2 Reservoir handle
-    Bm: float,  # 3 CaCO3 export flux as DIC
-    dic_db: float,  # 4 DIC in the deep box
-    ta_db: float,  # 5 TA in the deep box
-    dic_sb: float,  # 6 [DIC] in the surface box
-    dic_sb_l: float,  # 7 [DIC_l] in the surface box
-    hplus_0: float,  # 8 hplus in the deep box at t-1
-    zsnow: float,  # 9 snowline in meters below sealevel at t-1
-) -> tuple:
-    """Calculates and returns the fraction of the carbonate rain that is
-    dissolved an returned back into the ocean. This functions returns:
-
-    DIC_burial, DIC_burial_l, Hplus, zsnow
-
-    LIMITATIONS:
-    - Assumes all concentrations are in mol/kg
-    - Assumes your Model is in mol/kg ! Otherwise, DIC and TA updating will not
-    be correct.
-
-    Calculations are based off equations from:
-    Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
-    Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
-    """
-
-    # Parameters
-    k1 = rg.swc.K1  # K1
-    k1k1 = rg.swc.K1K1
-    k2 = rg.swc.K2  # K2
-    k1k2 = rg.swc.K1K2  # K2
-    KW = rg.swc.KW  # KW
-    KB = rg.swc.KB  # KB
-    boron = rg.swc.boron  # boron
-    p = rg.cs.function_params
-    ksp0 = p[5]
-    ca2 = rg.swc.ca2  # Ca2+
-    kc = p[6]
-    AD = p[8]
-    zsat0 = int(abs(p[9]))
-    I_caco3 = p[12]
-    alpha = p[13]
-    zsat_min = int(abs(p[14]))
-    zmax = int(abs(p[15]))
-    z0 = int(abs(p[16]))
-    depth_area_table = rg.cs.depth_area_table
-    area_dz_table = rg.cs.area_dz_table
-    Csat_table = rg.cs.Csat_table
-
-    # calc carbonate alkalinity based t-1
-    oh: float = KW / hplus_0
-    boh4: float = boron * KB / (hplus_0 + KB)
-    fg: float = hplus_0 - oh - boh4
-    ca: float = ta_db + fg
-
-    # calculate carbon speciation
-    # The following equations are after Follows et al. 2006
-    gamm: float = dic_db / ca
-    dummy: float = (1 - gamm) * (1 - gamm) * k1k1 - k1k2 * (4 - 8 * gamm)
-    hplus: float = 0.5 * ((gamm - 1) * k1 + sqrt(dummy))
-    co3 = max(dic_db / (1 + hplus / k2 + hplus * hplus / k1k2), 3.7e-05)
-    # ---------- compute critical depth intervals eq after  Boudreau (2010)
-    # all depths will be positive to facilitate the use of lookup_tables
-    zsat = int(zsat0 * log(ca2 * co3 / ksp0))
-    zsat = np.clip(zsat, zsat_min, zmax)
-    zcc = int(zsat0 * log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
-    zcc = np.clip(zcc, zsat_min, zmax)
-    # get fractional areas
-    B_AD = Bm / AD
-    A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
-    A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
-    A_zcc_zmax = depth_area_table[zcc] - depth_area_table[zmax]
-    # ------------------------Calculate Burial Fluxes----------------------------- #
-    BCC = A_zcc_zmax * B_AD
-    BNS = alpha * A_z0_zsat * B_AD
-    diff_co3 = Csat_table[zsat:zcc] - co3
-    area_p = area_dz_table[zsat:zcc]
-    BDS_under = kc * area_p.dot(diff_co3)
-    BDS_resp = alpha * (A_zsat_zcc * B_AD - BDS_under)
-    BDS = BDS_under + BDS_resp
-    diff: np.ndarray = Csat_table[zcc : int(zsnow)] - co3
-    area_p: np.ndarray = area_dz_table[zcc : int(zsnow)]
-    # integrate saturation difference over area
-    BPDC = kc * area_p.dot(diff)
-    BPDC = max(BPDC, 0)  # prevent negative values
-    d_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
-    # get isotope ratio in reservoir
-    BD: float = BDS + BCC + BNS + BPDC
-    """Bm is the flux of CaCO3 into the box. However, the model should
-    use the bypass option and leave all flux calculations to the
-    cs_code.  As such, we simply add the fraction of the input flux
-    that dissolves, and ignore the fraction that is buried.  
-
-    The isotope ratio of the dissolutio flux is determined by the delta
-    value of the sediments we are dissolving, and the delta of the carbonate rain.
-    The currrent code, assumes that both are the same.
-    """
-    BD_l = BD * dic_sb_l / dic_sb
-    dH = hplus - hplus_0
-
-    return -BD, -BD_l, dH, d_zsnow
+    return BD, BD_l, 2 * BD, dH, d_zsnow
 
 
 def gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:

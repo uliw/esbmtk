@@ -1071,6 +1071,8 @@ def add_carbonate_system_2(**kwargs) -> None:
         "r_db": list,  # list of deep reservoirs
         "r_sb": list,  # list of corresponding surface reservoirs
         "carbonate_export_fluxes": list,
+        "dic_burial_fluxes": list,
+        "ta_burial_fluxes": list,
         "AD": float,
         "zsat": int,
         "zsat_min": int,
@@ -1090,7 +1092,15 @@ def add_carbonate_system_2(**kwargs) -> None:
         # "BM": (float, int),
     }
     # provide a list of absolutely required keywords
-    lrk: list[str] = ["r_db", "r_sb", "carbonate_export_fluxes", "zsat_min", "z0"]
+    lrk: list[str] = [
+        "r_db",
+        "r_sb",
+        "carbonate_export_fluxes",
+        "zsat_min",
+        "z0",
+        "dic_burial_fluxes",
+        "ta_burial_fluxes",
+    ]
 
     # we need the reference to the Model in order to set some
     # default values.
@@ -1150,6 +1160,9 @@ def add_carbonate_system_2(**kwargs) -> None:
 
         ec = init_carbonate_system_2(
             rg,
+            kwargs["carbonate_export_fluxes"][i],
+            kwargs["dic_burial_fluxes"][i],
+            kwargs["ta_burial_fluxes"][i],
             r_sb[i],
             r_db[i],
             area_table,

@@ -78,14 +78,14 @@ def carbonate_system_2_pp(
     hplus = rg.Hplus.c
     ta = rg.TA.c
     dic = rg.DIC.c
-    p = rg.cs.function_params
-    ksp0 = p[5]
+    p = rg.cs.function_input_data
+    ksp0 = p[7]
     ca2 = rg.swc.ca2  # Ca2+
-    kc = p[6]
-    AD = p[8]
-    zsat0 = int(abs(p[9]))
-    zsat_min = int(abs(p[14]))
-    zmax = int(abs(p[15]))
+    kc = p[8]
+    AD = p[9]
+    zsat0 = int(abs(p[10]))
+    zsat_min = int(abs(p[13]))
+    zmax = int(abs(p[14]))
 
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus

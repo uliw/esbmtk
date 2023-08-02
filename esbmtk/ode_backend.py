@@ -130,13 +130,13 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
             fname = f'{flux.full_name.replace(".", "_")}'
             fex = f"{fex}{ind3}{sign} {fname}\n"
 
-        if (  # check if reservoir requires carbonate burial fluxes
-            isinstance(r.parent, ReservoirGroup)
-            and r.parent.has_cs2
-            and r.species.name in ["DIC", "TA"]
-        ):
-            fn = f"{r.full_name}.burial".replace(".", "_")
-            fex = f"{fex}{ind3}- {fn}\n"
+        # if (  # check if reservoir requires carbonate burial fluxes
+        #     isinstance(r.parent, ReservoirGroup)
+        #     and r.parent.has_cs2
+        #     and r.species.name in ["DIC", "TA"]
+        # ):
+        #     fn = f"{r.full_name}.burial".replace(".", "_")
+        #     fex = f"{fex}{ind3}- {fn}\n"
 
         if len(r.lof) > 0:  # avoid reservoirs without active fluxes
             eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
@@ -173,15 +173,15 @@ def write_reservoir_equations_with_isotopes(
                 fname = f'{flux.full_name.replace(".", "_")}_l'
                 fex = f"{fex}{ind3}{sign} {fname}\n"
 
-            # check if reservoir requires carbonate burial fluxes
-            if (
-                isinstance(r.parent, ReservoirGroup)
-                and r.parent.has_cs2
-                and r.species.name == "DIC"
-            ):
-                fn = f"{r.full_name}.burial".replace(".", "_")
-                fn = f"{fn}_l"
-                fex = f"{fex}{ind3}- {fn}\n"
+            # # check if reservoir requires carbonate burial fluxes
+            # if (
+            #     isinstance(r.parent, ReservoirGroup)
+            #     and r.parent.has_cs2
+            #     and r.species.name == "DIC"
+            # ):
+            #     fn = f"{r.full_name}.burial".replace(".", "_")
+            #     fn = f"{fn}_l"
+            #     fex = f"{fex}{ind3}- {fn}\n"
 
             # avoid reservoirs without active fluxes
             if len(r.lof) > 0:
@@ -273,6 +273,8 @@ class setup_ode():
         sep = "# ---------------- write all flux equations ------------------- #"
         eqs.write(f"\n{sep}\n")
         for flux in M.lof:  # loop over fluxes
+            if flux.register.ctype == "ignore":
+                continue
             # fluxes belong to at least 2 reservoirs, so we need to avoid duplication
             # we cannot use a set, since we need to preserve order
             if flux not in flist:
@@ -466,7 +468,27 @@ def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
     return s1
 
 
-def parse_esbmtk_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> str:
+def parse_esbmtk_return_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> str:
+    """Parse esbmtk data types that are provided as arguments
+    to external function objects, and convert them into a suitable string
+    format that can be used in the ode equation file
+    """
+
+    # covert to object handle if need be
+    if isinstance(d, str):
+        d = getattr(r.register, d)
+    elif isinstance(d, dict):
+        d = getattr(r.register, next(iter(d)))
+
+    sr = d.full_name.replace(".", "_")
+
+    if d.isotopes:
+        sr = f"{sr}, {sr}_l"
+
+    return sr
+
+
+def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> str:
     """Parse esbmtk data types that are provided as arguments
     to external function objects, and convert them into a suitable string
     format that can be used in the ode equation file
@@ -514,15 +536,17 @@ def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> st
     # get list of return values
     rv = ind2
     for d in r.return_values:
-        rv += parse_esbmtk_data_types(d, r, ind2, icl)
+        rv += f"{parse_esbmtk_return_data_types(d, r, ind2, icl)}, "
+        
     rv = rv[:-2]
-
+    print(f"{rv} = {rv}\n")
+    
     a = ind3
     for d in r.function_input_data:
-        a += parse_esbmtk_data_types(d, r, ind3, icl)
+        a += parse_esbmtk_input_data_types(d, r, ind3, icl)
 
     eqs.write(f"{rv} = {r.fname}(\n{a}\n)\n")
-    print(f"{rv} = {r.fname}(\n{a}\n)")
+    
     rel += f"{ind3}{rv},\n"
 
     return rel
