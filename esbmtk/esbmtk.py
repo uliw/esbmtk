@@ -376,34 +376,28 @@ class Model(esbmtkBase):
         # for r in self.lvr:
         #    r.__write_data__(prefix, start, stop, stride, False, "state")
 
-    def save_data(self, **kwargs) -> None:
+    def save_data(self, directory="./data") -> None:
         """Save the model results to a CSV file. Each reservoir will have
         their own CSV file
 
-        Optional arguments:
-        :param stride: int = 0  # every nth element
-        :param start: int  = 0  # start index
-        :param stop: int = self.steps # end index
-        :param append: bool = False #
-
         """
 
-        for k, v in kwargs.items():
-            if not isinstance(v, int):
-                print(f"{k} must be an integer number")
-                raise ValueError(f"{k} must be an integer number")
+        # for k, v in kwargs.items():
+        #     if not isinstance(v, int):
+        #         print(f"{k} must be an integer number")
+        #         raise ValueError(f"{k} must be an integer number")
 
-        stride = kwargs.get("stride", self.stride)
-        start = kwargs.get("start", 0)
-        stop = kwargs.get("stop", self.steps)
-        append = kwargs.get("append", False)
         prefix = ""
+        stride = self.stride
+        start = 0
+        stop = self.steps
+        append = False
 
-        print(f"start = {start}, stop = {stop}, stride={stride}, append ={append}")
+        # print(f"start = {start}, stop = {self.steps}, stride={0}, append ={append}")
         for r in self.lor:
             # print(f"R = {r.full_name}")
             # print(f"start = {start}, stop = {stop}, stride={stride}, append ={append}")
-            r.__write_data__(prefix, start, stop, stride, append, "data")
+            r.__write_data__(prefix, start, stop, stride, append, directory)
 
         # save data fields
         # for r in self.ldf:
@@ -411,7 +405,21 @@ class Model(esbmtkBase):
         # print("Writing virtual reservoir data")
         # for r in self.lvr:
         #    r.__write_data__(prefix, start, stop, stride, append, "data")
-        print("done writing")
+        # print("done writing")
+
+    def read_data(self, directory="./data") -> None:
+        """Save the model results to a CSV file. Each reservoir will have
+        their own CSV file
+        """
+        from esbmtk import Reservoir, GasReservoir
+
+        prefix = ""
+
+        for r in self.lor:
+            if isinstance(r, (Reservoir, GasReservoir)):
+                r.__read_state__(directory, prefix)
+                if r.isotopes:
+                    r.d = get_delta_from_concentration(r.c, r.l, r.sp.r)
 
     def restart(self):
         """Restart the model with result of the last run.  This is
@@ -1199,25 +1207,16 @@ class ReservoirBase(esbmtkBase):
         self.c = self.cc
         # self.d = self.dc
 
-    def __read_state__(self, directory: str) -> None:
+    def __read_state__(self, directory: str, prefix="state_") -> None:
         """read data from csv-file into a dataframe
-
         The CSV file must have the following columns
-
             - Model Time t
-
             - Reservoir_Name m
-
             - Reservoir_Name l
-
             - Reservoir_Name h
-
             - Reservoir_Name d
-
             - Reservoir_Name c
-
             - Flux_name m
-
             - Flux_name l etc etc.
         """
 
@@ -1227,9 +1226,9 @@ class ReservoirBase(esbmtkBase):
         curr: set = set()
 
         if self.sp.mo.register == "None":
-            fn = f"{directory}/state_{self.mo.n}_{self.full_name}.csv"
+            fn = f"{directory}/{prefix}{self.mo.n}_{self.full_name}.csv"
         elif self.sp.mo.register == "local":
-            fn = f"{directory}/state_{self.full_name}.csv"
+            fn = f"{directory}/{prefix}{self.full_name}.csv"
         else:
             raise ValueError(
                 f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
@@ -1241,11 +1240,6 @@ class ReservoirBase(esbmtkBase):
             raise FileNotFoundError(
                 f"Flux {fn} does not exist in Reservoir {self.full_name}"
             )
-
-        # get a set of all current fluxes
-        # for f in self.lof:
-        #     curr.add(f.full_name)
-        #     logging.debug(f"    Adding Flux {f.full_name} to list of fluxes to read")
 
         self.df: pd.DataFrame = pd.read_csv(fn)
         self.headers: list = list(self.df.columns.values)
@@ -1379,9 +1373,7 @@ class ReservoirBase(esbmtkBase):
             ax.spines["top"].set_visible(False)
             # set combined legend
             handler2, label2 = axt.get_legend_handles_labels()
-            axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
-                6
-            )
+            axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(6)
         else:
             ax.legend(handler1, label1)
             ax.spines["right"].set_visible(False)
