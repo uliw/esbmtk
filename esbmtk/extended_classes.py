@@ -1310,6 +1310,7 @@ class DataField(esbmtkBase):
                 i,
             )
             last_i = i
+            set_y_limits(ax, self)
         # add any external data if present
 
         last_i = i
@@ -1337,6 +1338,7 @@ class DataField(esbmtkBase):
                     self.y2_label[i],
                     i + last_i + 1,
                 )
+                set_y_limits(axt, self)
 
             axt.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
             axt.set_ylabel(self.y2_legend)

@@ -150,12 +150,11 @@ def show_data(self, **kwargs) -> None:
 
 def set_y_limits(ax: plt.Axes, obj: any) -> None:
     """Prevent the display or arbitrarily small differences"""
-    lower: float
-    upper: float
 
     bottom, top = ax.get_ylim()
     if (top - bottom) < obj.display_precision:
         top = bottom + obj.display_precision
+        bottom -= obj.display_precision
         ax.set_ylim(bottom, top)
 
 
