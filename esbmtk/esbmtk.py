@@ -183,6 +183,7 @@ class Model(esbmtkBase):
             "use_ode": [True, (bool)],
             # "max_step": ["None", (str)],
             "parse_model": [True, (bool)],
+            "rtol": [1.0e-6, (float)],
         }
 
         # provide a list of absolutely required keywords
@@ -634,8 +635,7 @@ class Model(esbmtkBase):
         import pathlib as pl
 
         # build equation file
-        rtol = 1e-6
-        R, icl, cpl, ipl, atol = get_initial_conditions(self, rtol)
+        R, icl, cpl, ipl, atol = get_initial_conditions(self, self.rtol)
         self.R = R
         self.icl = icl
         self.cpl = cpl
@@ -668,13 +668,20 @@ class Model(esbmtkBase):
                 args=(self,),
                 method=method,
                 atol=atol,
-                rtol=1e-6,
+                rtol=self.rtol,
                 t_eval=self.time_ode,
                 first_step=Q_("1 second").to(self.t_unit).magnitude,
                 # dense_output=True,
                 max_step=self.max_step,
             )
 
+        print()
+        print(
+            f"nfev={self.results.nfev}, njev={self.results.njev}, nlu={self.results.nlu}"
+        )
+        print(f"status={self.results.status}")
+        print(f"message={self.results.message}\n")
+        
         self.post_process_data(self.results, ode_system)
 
     def post_process_data(self, results, ode_system) -> None:
@@ -1675,7 +1682,7 @@ class Reservoir(ReservoirBase):
                 cc = Q_(self.concentration)
                 self.plt_units = cc.units
                 self._concentration: [int | float] = cc.to(self.mo.c_unit).magnitude
-                
+
             else:
                 cc = self.concentration
                 self.plt_units = self.mo.c_unit
@@ -1685,7 +1692,7 @@ class Reservoir(ReservoirBase):
                 self.concentration * self.volume * self.density / 1000
             )
             self.display_as = "concentration"
-            
+
         elif self.concentration == "None":
             m = Q_(self.mass)
             self.plt_units = self.mo.m_unit
