@@ -46,9 +46,8 @@ def init_carbonate_system_1(rg: ReservoirGroup):
         function=carbonate_system_1_ode,
         fname="carbonate_system_1_ode",
         ftype="cs1",
-        # the vr_data_fields contains any data that is referenced inside the
-        # function, rather than passed as argument, and all data that is
-        # explicitly referenced by the model
+        # this needs cleanup as it should be handled by the return_values
+        # list.
         vr_datafields={
             "CO2aq": rg.swc.co2,  # 4
         },
