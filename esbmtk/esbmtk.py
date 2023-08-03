@@ -614,9 +614,7 @@ class Model(esbmtkBase):
         if solver == "ode":
             self.ode_solver(kwargs)
         else:
-            raise ValueError(
-                f"Solver={self.solver} is unkknown"
-            )
+            raise ValueError(f"Solver={self.solver} is unkknown")
 
     def ode_solver(self, kwargs):
         """
@@ -674,7 +672,7 @@ class Model(esbmtkBase):
         )
         print(f"status={self.results.status}")
         print(f"message={self.results.message}\n")
-        
+
         self.post_process_data(self.results, ode_system)
 
     def post_process_data(self, results, ode_system) -> None:
@@ -1370,17 +1368,18 @@ class ReservoirBase(esbmtkBase):
 
         ax.spines["top"].set_visible(False)
         handler1, label1 = ax.get_legend_handles_labels()
+        set_y_limits(ax, self)
 
         if self.isotopes:
             axt = ax.twinx()
             y2 = self.d  # no conversion for isotopes
             axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
             axt.set_ylabel(self.ld)
-            set_y_limits(axt, M)
+            set_y_limits(axt, self)
             ax.spines["top"].set_visible(False)
             # set combined legend
             handler2, label2 = axt.get_legend_handles_labels()
-            legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
+            axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
                 6
             )
         else:
