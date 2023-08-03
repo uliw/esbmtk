@@ -612,17 +612,10 @@ class Model(esbmtkBase):
 
     def __run_solver__(self, solver: str, kwargs: dict) -> None:
         if solver == "ode":
-            print("Using ODE solver")
             self.ode_solver(kwargs)
-        elif solver == "ode_uli":
-            print("\n\n the solver type 'ode_uli' is deprecated, please use 'ode' \n\n")
-            self.ode_solver(kwargs)
-        elif solver == "python":
-            print("\n\n the solver type 'python' is deprecated, please use 'ode' \n\n")
-            execute(self.time, self.lop, self.lor, self.lpc_f, self.lpc_r)
         else:
             raise ValueError(
-                f"Solver={self.solver} is unkknown, use 'python/numba/odeint/ode'"
+                f"Solver={self.solver} is unkknown"
             )
 
     def ode_solver(self, kwargs):
