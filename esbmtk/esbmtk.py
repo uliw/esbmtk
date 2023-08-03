@@ -360,7 +360,7 @@ class Model(esbmtkBase):
             for s in e.lsp:
                 print(f"{off}{off}{ind}{s.n}")
 
-    def save_state(self) -> None:
+    def save_state(self, directory="state") -> None:
         """Save model state.  Similar to save data, but only saves the
         last 10 time-steps
         """
@@ -371,7 +371,7 @@ class Model(esbmtkBase):
         prefix: str = "state_"
 
         for r in self.lor:  # loop over reservoirs
-            r.__write_data__(prefix, start, stop, stride, False, "state")
+            r.__write_data__(prefix, start, stop, stride, False, directory)
 
         # for r in self.lvr:
         #    r.__write_data__(prefix, start, stop, stride, False, "state")
@@ -446,7 +446,7 @@ class Model(esbmtkBase):
         # print(f"len of timec {len(self.timec)}")
         # self.time = (arange(self.steps) * self.dt) + self.start
 
-    def read_state(self):
+    def read_state(self, directory="state"):
         """This will initialize the model with the result of a
         previous model run.  For this to work, you will need issue a
         Model.save_state() command at then end of a model run.  This
@@ -458,7 +458,7 @@ class Model(esbmtkBase):
 
         for r in self.lor:
             if isinstance(r, (Reservoir, GasReservoir)):
-                r.__read_state__("state")
+                r.__read_state__(directory)
 
         # for r in self.lvr:
         #     # print(f"lvr  reading from {r.full_name}")
