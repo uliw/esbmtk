@@ -29,6 +29,33 @@ if tp.TYPE_CHECKING:
 np.set_printoptions(precision=4)
 
 
+def summarize_results(M: Model) -> dict():
+    """Summarize all model results at t_max into a hirarchical
+    dictionary, where values are accessed in the following way:
+
+    results[basin_name][level_name][species_name]
+
+    e.g., result["A"]["sb"]["O2"]
+
+    """
+    results = dict()
+    
+    for r in M.lor:
+        species_name = r.name
+        basin_name = r.register.name[:1]
+        level_name = r.register.name[-2:]
+        species_value = r.c[-1]
+        # print(f"{basin_name},{level_name}, {species_name}, {species_value}")
+        if basin_name not in results:
+            results[basin_name] = {level_name: {species_name: species_value}}
+        elif level_name not in results[basin_name]:
+            results[basin_name][level_name] = {species_name: species_value}
+        elif species_name not in results[basin_name][level_name]:
+            results[basin_name][level_name][species_name] = species_value
+
+    return results
+
+
 def find_matching_strings(s: str, fl: list[str]) -> bool:
     """test if all elements of fl occur in s. Return True if yes,
     otherwise False
