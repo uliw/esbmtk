@@ -252,7 +252,7 @@ class setup_ode():
 
     # add optional import statements
     if len(M.lpc_f) > 0:
-        hi = f"{ind2}from function_defs import "
+        hi = f"{ind2}from custom_functions import "
         for f in set(M.lpc_f):
             hi += f"{f} ,"
 
