@@ -243,21 +243,26 @@ class setup_ode():
 
         from esbmtk import carbonate_system_1_ode, carbonate_system_2_ode
         from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes
-
-        # flux equations
 """
-
     from esbmtk import AirSeaExchange
+
+    ind2 = 8 * " "  # indention
+    ind3 = 12 * " "  # indention
+    rel = ""  # list of return values
+
+    # add optional import statements
+    if len(M.lpc_f) > 0:
+        hi = f"{ind2}from function_defs import "
+        for f in set(M.lpc_f):
+            hi += f"{f} ,"
+
+    hi = hi[0:-2]
+    header += hi
 
     # """
     # write file
     with open(fqfn, "w", encoding="utf-8") as eqs:
-        rel = ""  # list of return values
-        # ind1 = 4 * " "
-        ind2 = 8 * " "  # indention
-        ind3 = 12 * " "  # indention
         eqs.write(header)
-        # eqs.write(f"{ind2}{M.name} = M\n")
         sep = (
             "# ---------------- write computed reservoir equations -------- #\n"
             + "# that do not depend on fluxes"
