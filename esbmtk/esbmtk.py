@@ -415,6 +415,8 @@ class Model(esbmtkBase):
 
         prefix = ""
 
+        print(f"reading data from {directory}")
+        
         for r in self.lor:
             if isinstance(r, (Reservoir, GasReservoir)):
                 r.__read_state__(directory, prefix)
