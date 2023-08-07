@@ -1319,7 +1319,7 @@ class DataField(esbmtkBase):
         # add any external data if present
         ymin = min(ymin)
         ymax = max(ymax)
-        ax.set_ylim([ymin, ymax])1
+        ax.set_ylim([ymin, ymax])
 
         last_i = i
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
@@ -1346,14 +1346,12 @@ class DataField(esbmtkBase):
                     self.y2_label[i],
                     i + last_i + 1,
                 )
-                 u, v = axt.get_ylim()
-                 ymin.append(u)
-                 ymax.append(v)
+            u, v = axt.get_ylim()
+            ymin.append(u)
+            ymax.append(v)
             ymin = min(ymin)
             ymax = max(ymax)
-            axt.set_ylim([ymin, ymax])1
-
-
+            axt.set_ylim([ymin, ymax])
 
             axt.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
             axt.set_ylabel(self.y2_legend)
