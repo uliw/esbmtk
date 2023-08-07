@@ -1299,6 +1299,8 @@ class DataField(esbmtkBase):
             self.y1_label,
         )
 
+        ymin = list()
+        ymax = list()
         for i, d in enumerate(self.y1_data):  # loop over datafield list
             # print(self.y1_legend)
             self.__plot_data__(
@@ -1310,8 +1312,14 @@ class DataField(esbmtkBase):
                 i,
             )
             last_i = i
-            set_y_limits(ax, self)
+            u, v = ax.get_ylim()
+            ymin.append(u)
+            ymax.append(v)
+            # set_y_limits(ax, self)
         # add any external data if present
+        ymin = min(ymin)
+        ymax = max(ymax)
+        ax.set_ylim([ymin, ymax])1
 
         last_i = i
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
@@ -1338,7 +1346,14 @@ class DataField(esbmtkBase):
                     self.y2_label[i],
                     i + last_i + 1,
                 )
-                set_y_limits(axt, self)
+                 u, v = axt.get_ylim()
+                 ymin.append(u)
+                 ymax.append(v)
+            ymin = min(ymin)
+            ymax = max(ymax)
+            axt.set_ylim([ymin, ymax])1
+
+
 
             axt.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
             axt.set_ylabel(self.y2_legend)
