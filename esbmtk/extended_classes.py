@@ -1329,6 +1329,8 @@ class DataField(esbmtkBase):
         handler1, label1 = ax.get_legend_handles_labels()
 
         # test if independeny y_data is present
+        ymin = list()
+        ymax = list()
         if not isinstance(self.y2_data, str):
             self.x2_data, self.y2_data, self.y2_label = self.__unify_data__(
                 M,

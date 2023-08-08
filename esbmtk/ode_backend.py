@@ -175,16 +175,6 @@ def write_reservoir_equations_with_isotopes(
                 fname = f'{flux.full_name.replace(".", "_")}_l'
                 fex = f"{fex}{ind3}{sign} {fname}\n"
 
-            # # check if reservoir requires carbonate burial fluxes
-            # if (
-            #     isinstance(r.parent, ReservoirGroup)
-            #     and r.parent.has_cs2
-            #     and r.species.name == "DIC"
-            # ):
-            #     fn = f"{r.full_name}.burial".replace(".", "_")
-            #     fn = f"{fn}_l"
-            #     fex = f"{fex}{ind3}- {fn}\n"
-
             # avoid reservoirs without active fluxes
             if len(r.lof) > 0:
                 # print(f"Adding: {name} to rel")
@@ -255,10 +245,12 @@ class setup_ode():
         hi = f"{ind2}from custom_functions import "
         for f in set(M.lpc_f):
             hi += f"{f} ,"
-
+    else:
+        hi = "  "
+        
     hi = hi[0:-2]
-    header += hi
-
+    header += f"{hi} \n\n"
+    
     # """
     # write file
     with open(fqfn, "w", encoding="utf-8") as eqs:
