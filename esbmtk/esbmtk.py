@@ -416,7 +416,7 @@ class Model(esbmtkBase):
         prefix = ""
 
         print(f"reading data from {directory}")
-        
+
         for r in self.lor:
             if isinstance(r, (Reservoir, GasReservoir)):
                 r.__read_state__(directory, prefix)
@@ -1023,6 +1023,7 @@ class ReservoirBase(esbmtkBase):
         self.ldf: list[DataField] = []  # list of datafield objects
         # list of processes which calculate reservoirs
         self.lpc: list[Process] = []
+        self.ef_results = False  # Reservoir has external function results
 
         # legacy names
         self.n: str = self.name  # name of reservoir
