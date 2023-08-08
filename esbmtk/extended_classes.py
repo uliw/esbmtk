@@ -1586,28 +1586,16 @@ class ExternalCode(Reservoir_no_set):
         name = f"{self.full_name}_generic_function".replace(".", "_")
         logging.info(f"creating {name}")
 
-        self.alias_list = list(self.vr_datafields.keys())
+        if self.vr_datafields is not "None":
+            self.alias_list = list(self.vr_datafields.keys())
+            # initialize data fields
+            self.vr_data = list()
+            for e in self.vr_datafields.values():
+                if isinstance(e, (float, int)):
+                    self.vr_data.append(np.full(self.mo.steps, e, dtype=float))
+                else:
+                    self.vr_data.append(e)
 
-        # initialize data fields
-        self.vr_data = list()
-        for e in self.vr_datafields.values():
-            if isinstance(e, (float, int)):
-                self.vr_data.append(np.full(self.mo.steps, e, dtype=float))
-            else:
-                self.vr_data.append(e)
-
-        # self.gfh = GenericFunction(
-        #     r_s=self.r_s,
-        #     name=name,
-        #     function=self.function,
-        #     input_data=self.function_input_data,
-        #     vr_data=self.vr_data,
-        #     function_params=self.function_params,
-        #     model=self.species.mo,
-        #     register=self.register,
-        #     ftype=self.ftype,
-        # )
-        # add the function handle to the list of function to be executed
         self.mo.lpc_r.append(self)
         # self.mo.lpc_r.append(self.gfh)
 
