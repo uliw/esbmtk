@@ -29,6 +29,28 @@ if tp.TYPE_CHECKING:
 np.set_printoptions(precision=4)
 
 
+def register_return_values(ec, parent) -> None:
+    """ Check the return values of external function instances,
+    and create the necessary reservoirs
+    """
+    from .esbmtk import Reservoir
+    
+    for v in ec.return_values:
+        if isinstance(v, dict):
+            n = next(iter(v))
+            rt = Reservoir(
+                name=n,
+                species=getattr(parent.mo, n),
+                concentration=f"{v[n]} mol/kg",
+                register=parent,
+                volume=parent.volume,
+                rtype="computed",
+            )
+            parent.lor.append(rt)
+        elif isinstance(v, Reservoir):
+            v.ef_results = True
+
+
 def summarize_results(M: Model) -> dict():
     """Summarize all model results at t_max into a hirarchical
     dictionary, where values are accessed in the following way:
