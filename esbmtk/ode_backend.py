@@ -132,16 +132,12 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
             fname = f'{flux.full_name.replace(".", "_")}'
             fex = f"{fex}{ind3}{sign} {fname}\n"
 
-        # if (  # check if reservoir requires carbonate burial fluxes
-        #     isinstance(r.parent, ReservoirGroup)
-        #     and r.parent.has_cs2
-        #     and r.species.name in ["DIC", "TA"]
-        # ):
-        #     fn = f"{r.full_name}.burial".replace(".", "_")
-        #     fex = f"{fex}{ind3}- {fn}\n"
-
         if len(r.lof) > 0:  # avoid reservoirs without active fluxes
-            eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
+            if r.ef_results:
+                eqs.write(f"{ind2}{name} += (\n{fex}{ind2})/{r.full_name}.volume\n\n")
+            else:
+                eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
+                
             rel = f"{rel}{ind3}{name},\n"
 
     return rel
@@ -177,8 +173,11 @@ def write_reservoir_equations_with_isotopes(
 
             # avoid reservoirs without active fluxes
             if len(r.lof) > 0:
-                # print(f"Adding: {name} to rel")
-                eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
+                if r.ef_results:
+                    eqs.write(f"{ind2}{name} += (\n{fex}{ind2})/{r.full_name}.volume\n\n")
+                else:
+                    eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
+                    
                 rel = f"{rel}{ind3}{name},\n"
 
     return rel
@@ -513,7 +512,9 @@ def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> 
         sr = getattr(r.register, next(iter(d)))
         a = f"{ind}{get_ic(sr, icl)},\n"
     else:
-        raise ValueError(f"\n{d} is of type {type(d)}")
+        raise ValueError(f"\n r = {r.full_name}, d ={d}\n"
+                         f"\n{d} is of type {type(d)}\n",
+                         )
 
     return a
 
