@@ -53,6 +53,18 @@ def get_imass(m: float, d: float, r: float) -> [float, float]:
 
 
 # @njit()
+def get_li_mass(m: float, d: float, r: float) -> float:
+    """
+    Calculate the isotope masses from bulk mass and delta value.
+    Arguments are m = mass, d= delta value, r = abundance ratio
+    species
+    """
+
+    l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+    return l
+
+
+# @njit()
 def get_frac(m: float, l: float, a: float) -> [float, float]:
     """Calculate the effect of the istope fractionation factor alpha on
     the ratio between the light and heavy isotope.
@@ -69,6 +81,22 @@ def get_frac(m: float, l: float, a: float) -> [float, float]:
     hi: float = m - li  # get the new heavy isotope value
     return li, hi
 
+
+# @njit()
+def get_li_frac(m: float, l: float, a: float) -> [float, float]:
+    """Calculate the effect of the istope fractionation factor alpha on
+    the ratio between the light and heavy isotope.
+
+    Note that alpha needs to be given as fractional value, i.e., 1.07 rather
+    than 70 (i.e., (alpha-1) * 1000
+
+    """
+
+    # if a.any() > 1.1 or a.any()  < 0.9:
+    #     raise ValueError("alpha needs to be given as fractional value not in permil")
+
+    li: float = -l * m / (a * l - a * m - l)
+    return li
 
 # @njit()
 def get_flux_data(m: float, d: float, r: float) -> np.ndarray:
