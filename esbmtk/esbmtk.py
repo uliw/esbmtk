@@ -184,6 +184,7 @@ class Model(esbmtkBase):
             # "max_step": ["None", (str)],
             "parse_model": [True, (bool)],
             "rtol": [1.0e-6, (float)],
+            "custom_functions": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
