@@ -23,6 +23,7 @@ from .ode_backend import *
 from .ode_backend_2 import *
 from .seawater import *
 from .carbonate_chemistry import *
+from .bio_geochemical_reactions import *
 from .post_processing import *
 
 np.seterr(invalid="ignore")
