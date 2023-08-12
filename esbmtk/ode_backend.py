@@ -110,8 +110,6 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
     :returns: rel = updated list of reservoirs names
     """
 
-    from esbmtk import ReservoirGroup
-
     for r in M.lor:  # loop over reservoirs
         """
         Write equations for each reservoir and create unique variable
@@ -121,6 +119,7 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
 
         name = f'{r.full_name.replace(".", "_")}'
         fex = ""
+        v_val = f'{r.volume.to(r.v_unit).magnitude}'
 
         # add all fluxes
         for flux in r.lof:  # check if in or outflux
@@ -134,10 +133,10 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
 
         if len(r.lof) > 0:  # avoid reservoirs without active fluxes
             if r.ef_results:
-                eqs.write(f"{ind2}{name} += (\n{fex}{ind2})/{r.full_name}.volume\n\n")
+                eqs.write(f"{ind2}{name} += (\n{fex}{ind2})/{v_val}\n\n")
             else:
-                eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
-                
+                eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{v_val}\n\n")
+
             rel = f"{rel}{ind3}{name},\n"
 
     return rel
@@ -152,9 +151,8 @@ def write_reservoir_equations_with_isotopes(
 ) -> str:  # updated list of reservoirs
     """Loop over reservoirs and their fluxes to build the reservoir equation"""
 
-    from esbmtk import ReservoirGroup
-
     for r in M.lor:  # loop over reservoirs
+        v_val = f'{r.volume.to(r.v_unit).magnitude}'
         # Write equations for each reservoir
         # create unique variable names. Reservoirs are typiclally called
         # M.rg.r so we replace all dots with underscore
@@ -174,10 +172,14 @@ def write_reservoir_equations_with_isotopes(
             # avoid reservoirs without active fluxes
             if len(r.lof) > 0:
                 if r.ef_results:
-                    eqs.write(f"{ind2}{name} += (\n{fex}{ind2})/{r.full_name}.volume\n\n")
+                    eqs.write(
+                        f"{ind2}{name} += (\n{fex}{ind2})/{v_val}\n\n"
+                    )
                 else:
-                    eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{r.full_name}.volume\n\n")
-                    
+                    eqs.write(
+                        f"{ind2}{name} = (\n{fex}{ind2})/{v_val}\n\n"
+                    )
+
                 rel = f"{rel}{ind3}{name},\n"
 
     return rel
@@ -246,10 +248,10 @@ class setup_ode():
             hi += f"{f} ,"
     else:
         hi = "  "
-        
+
     hi = hi[0:-2]
     header += f"{hi} \n\n"
-    
+
     # """
     # write file
     with open(fqfn, "w", encoding="utf-8") as eqs:
@@ -491,7 +493,7 @@ def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> 
     to external function objects, and convert them into a suitable string
     format that can be used in the ode equation file
     """
-    from esbmtk import Flux, Reservoir, ReservoirGroup, SeawaterConstants
+    from esbmtk import Flux, Reservoir, ReservoirGroup, SeawaterConstants, Q_
 
     if isinstance(d, str):
         sr = getattr(r.register, d)
@@ -511,10 +513,17 @@ def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> 
         # get key and reservoiur handle
         sr = getattr(r.register, next(iter(d)))
         a = f"{ind}{get_ic(sr, icl)},\n"
+    elif isinstance(d, Q_):
+        a = f"{ind}{d.magnitude},\n"
+    elif isinstance(d, list):
+        a = f"{ind}["
+        for e in d:
+            a += f"{parse_esbmtk_input_data_types(e, r,'',icl)[0:-2]},"
+        a += "],\n"
     else:
-        raise ValueError(f"\n r = {r.full_name}, d ={d}\n"
-                         f"\n{d} is of type {type(d)}\n",
-                         )
+        raise ValueError(
+            f"\n r = {r.full_name}, d ={d}\n" f"\n{d} is of type {type(d)}\n",
+        )
 
     return a
 
@@ -540,11 +549,11 @@ def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> st
 
     rv = rv[:-2]
 
-    a = ind3
+    a = ""
     for d in r.function_input_data:
         a += parse_esbmtk_input_data_types(d, r, ind3, icl)
 
-    eqs.write(f"{rv} = {r.fname}(\n{a}\n)\n")
+    eqs.write(f"{rv} = {r.fname}(\n{a}{ind2})\n")
 
     rel += f"{ind3}{rv},\n"
 

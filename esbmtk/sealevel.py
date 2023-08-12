@@ -293,6 +293,7 @@ def get_box_geometry_parameters(box) -> None:
         volume = f"{box.mo.hyp.volume(box.geometry[0], box.geometry[1]) * box.area_percentage} m**3"
 
         box.volume = Q_(volume)
+        box.volume = box.volume.to(box.mo.v_unit)
         box.area = box.mo.hyp.area(box.geometry[0]) * box.area_percentage
         box.area_dz = (
             box.mo.hyp.area_dz(box.geometry[0], box.geometry[1]) * box.area_percentage

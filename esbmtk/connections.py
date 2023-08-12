@@ -1364,7 +1364,7 @@ class AirSeaExchange(esbmtkBase):
             "id": ["None", (str)],
             "name": ["None", (str)],
             "water_vapor_pressure": [0, (int, float, np.float64)],
-            "ref_species": ["None", (Reservoir, int, float, np.float64, np.ndarray)],
+            "ref_species": ["None", (Reservoir, int, float, np.ndarray)],
             "species": ["None", (Species, str)],
             "register": ["None", (str, Model)],
             "signal": ["None", (str, Signal)],

@@ -1041,7 +1041,10 @@ class ReservoirBase(esbmtkBase):
         self.mo: Model = self.species.mo  # model handle
         self.model = self.mo
         self.rvalue = self.sp.r
-
+        self.m_unit = self.model.m_unit
+        self.v_unit = self.model.v_unit                        
+        self.c_unit = self.model.c_unit      
+                                 
         # right y-axis label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"
         self.xl: str = self.mo.xl  # set x-axis lable to model time
@@ -1623,9 +1626,9 @@ class Reservoir(ReservoirBase):
         # geoemtry information
         if self.volume == "None":
             get_box_geometry_parameters(self)
+        else:
+            self.volume = Q_(self.volume).to(self.mo.v_unit)
 
-        # convert units
-        self.volume: tp.Union[int, float] = Q_(self.volume).to(self.mo.v_unit).magnitude
         self.c_unit = self.model.c_unit
 
         # This should probably be species specific?
@@ -1668,23 +1671,32 @@ class Reservoir(ReservoirBase):
             if isinstance(self.concentration, (str, Q_)):
                 cc = Q_(self.concentration)
                 self.plt_units = cc.units
-                self._concentration: [int | float] = cc.to(self.mo.c_unit).magnitude
+                self._concentration = cc.to(self.mo.c_unit)
 
             else:
                 cc = self.concentration
                 self.plt_units = self.mo.c_unit
                 self._concentration = cc
 
-            self.mass: tp.Union[int, float] = (
-                self.concentration * self.volume * self.density / 1000
+            self.mass = (
+                self.concentration.to(self.mo.c_unit).magnitude
+                * self.volume.to(self.mo.v_unit).magnitude
+                * self.density
+                / 1000
             )
+            self.mass = Q_(f"{self.mass} {self.mo.c_unit}")
             self.display_as = "concentration"
 
+            # fixme: c should be dimensionless, not sure why this happens
+            self.c = self.c.to(self.mo.c_unit).magnitude
+                                 
         elif self.concentration == "None":
             m = Q_(self.mass)
             self.plt_units = self.mo.m_unit
             self.mass: tp.Union[int, float] = m.to(self.mo.m_unit).magnitude
-            self.concentration = self.mass / self.volume
+            self.concentration = self.massto(self.mo.m_unit) / self.volume.to(
+                self.mo.v_unit
+            )
             self.display_as = "mass"
         else:
             raise ValueError("You need to specify mass or concentration")
@@ -1698,7 +1710,9 @@ class Reservoir(ReservoirBase):
         # initialize mass vector
         self.m: np.ndarray = np.zeros(self.species.mo.steps) + self.mass
         self.l: np.ndarray = np.zeros(self.mo.steps)
-        self.v: np.ndarray = np.zeros(self.mo.steps) + self.volume  # reservoir volume
+        self.v: np.ndarray = (
+            np.zeros(self.mo.steps) + self.volume.to(self.mo.v_unit).magnitude
+        )  # reservoir volume
 
         if self.delta != "None":
             self.l = get_l_mass(self.c, self.delta, self.species.r)
@@ -1738,14 +1752,22 @@ class Reservoir(ReservoirBase):
     def mass(self) -> float:
         return self._mass
 
+    # @property
+    # def volume(self) -> float:
+    #     return self._volume
+
+    # @volume.setter
+    # def volume(self) -> None:
+    #     self.volume = self._volume.to(self.register.v_unit)
+
     @concentration.setter
     def concentration(self, c) -> None:
         if self.update and c != "None":
-            self._concentration: float = c.to(self.mo.c_unit).magnitude
+            self._concentration: float = c.to(self.mo.c_unit)
             self.mass: float = (
                 self._concentration * self.volume * self.density / 1000
             )  # caculate mass
-            self.c = self.c * 0 + self._concentration
+            self.c = self.c * 0 + self._concentration.to(self.mo_c_unit).magnitude
             self.m = self.m * 0 + self.mass
 
     @delta.setter
@@ -1759,8 +1781,11 @@ class Reservoir(ReservoirBase):
     def mass(self, m: float) -> None:
         if self.update and m != "None":
             self._mass: float = m
+            """ problem: m_unit can be mole, but data can be in liter * mole /kg
+            this should not happen and results in an error converting to magnitide
+            """
             self.m = np.zeros(self.species.mo.steps) + m
-            self.c = self.m / self.volume
+            self.c = self.m / self.volume.to(self.mo.v_unit).magnitude
 
 
 class Flux(esbmtkBase):

@@ -151,7 +151,7 @@ class ReservoirGroup(esbmtkBase):
         if self.volume == "None":
             get_box_geometry_parameters(self)
         elif isinstance(self.volume, str):
-            self.volume = Q_(self.volume)
+            self.volume = Q_(self.volume).to(self.mo.v_unit)
         elif not isinstance(self.volume, Q_):
             raise ValueError("Volume must be string or quantity")
 
@@ -1956,6 +1956,8 @@ class GasReservoir(ReservoirBase):
 
         self.__set_legacy_names__(kwargs)
 
+        self.v_unit = Q_("mole").units
+
         # setup base data
         if isinstance(self.reservoir_mass, str):
             self.reservoir_mass = Q_(self.reservoir_mass)
@@ -1969,9 +1971,16 @@ class GasReservoir(ReservoirBase):
 
         # we use the existing approach to calculate concentration
         # which will divide species_mass/volume.
-        self.volume: tp.Union[int, float] = self.reservoir_mass.magnitude
+        self.volume = self.reservoir_mass
         #    Q_(self.species_mass).magnitude / self.species_ppm.to("dimensionless")
         # ).magnitude
+
+        if self.v_unit != self.volume.units:
+            raise ValueError(
+                f"\n\n{self.full_name} reservoir_mass units must be "
+                f"in {self.v_unit} "
+                f"not {self.volume.units}"
+            )
 
         # This should probably be species specific?
         self.mu: str = "ppm"  # massunit xxxx
@@ -1986,12 +1995,12 @@ class GasReservoir(ReservoirBase):
         )
         self.l: np.ndarray = np.zeros(self.mo.steps)
         # initialize concentration vector
-        self.c: np.ndarray = self.m / self.volume
+        self.c: np.ndarray = self.m / self.volume.to(self.v_unit).magnitude
         # isotope mass
         # self.l = get_l_mass(self.m, self.delta, self.species.r)
         self.l = get_l_mass(self.c, self.delta, self.species.r)
         # delta of reservoir
-        self.v: float = np.zeros(self.mo.steps) + self.volume  # mass of atmosphere
+        self.v: float = np.zeros(self.mo.steps) + self.volume.to(self.v_unit).magnitude  # mass of atmosphere
 
         if self.mo.number_of_solving_iterations > 0:
             self.mc = np.empty(0)
