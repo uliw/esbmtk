@@ -243,9 +243,14 @@ class setup_ode():
 
     # add optional import statements
     if len(M.lpc_f) > 0:
-        hi = f"{ind2}from custom_functions import "
-        for f in set(M.lpc_f):
-            hi += f"{f} ,"
+        if M.custom_functions:
+            hi = f"{ind2}from custom_functions import "
+            for f in set(M.lpc_f):
+                hi += f"{f} ,"
+        else:
+            hi = f"{ind2}from esbmtk import "
+            for f in set(M.lpc_f):
+                hi += f"{f} ,"
     else:
         hi = "  "
 
