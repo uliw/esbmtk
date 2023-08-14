@@ -83,20 +83,21 @@ def get_frac(m: float, l: float, a: float) -> [float, float]:
 
 
 # @njit()
-def get_li_frac(m: float, l: float, a: float) -> [float, float]:
+def get_new_ratio_from_alpha(
+    ref_mass: float,
+    ref_l: float,
+    a: float,
+) -> [float, float]:
     """Calculate the effect of the istope fractionation factor alpha on
-    the ratio between the light and heavy isotope.
+    the ratio between the mass of the light isotope devided by the total mass
 
     Note that alpha needs to be given as fractional value, i.e., 1.07 rather
     than 70 (i.e., (alpha-1) * 1000
-
     """
+    new_ratio = -ref_l / (a * ref_l - a * ref_mass - ref_l)
 
-    # if a.any() > 1.1 or a.any()  < 0.9:
-    #     raise ValueError("alpha needs to be given as fractional value not in permil")
+    return new_ratio
 
-    li: float = -l * m / (a * l - a * m - l)
-    return li
 
 # @njit()
 def get_flux_data(m: float, d: float, r: float) -> np.ndarray:
