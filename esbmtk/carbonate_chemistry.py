@@ -169,7 +169,7 @@ def add_carbonate_system_1(rgs: list):
 
 def carbonate_system_2_ode(
     rg: ReservoirGroup,  # 2 Reservoir handle
-    Bm: float,  # 3 CaCO3 export flux as DIC
+    CaCO3_export: float,  # 3 CaCO3 export flux as DIC
     dic_db: float,  # 4 DIC in the deep box
     dic_db_l: float,  # 4 DIC in the deep box
     ta_db: float,  # 5 TA in the deep box
@@ -235,10 +235,10 @@ def carbonate_system_2_ode(
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
     zsat = np.clip(zsat, zsat_min, zmax)
-    zcc = int(zsat0 * log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
+    zcc = int(zsat0 * log(CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
     zcc = np.clip(zcc, zsat_min, zmax)
     # get fractional areas
-    B_AD = Bm / AD
+    B_AD = CaCO3_export / AD
     A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
     A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
     A_zcc_zmax = depth_area_table[zcc] - depth_area_table[zmax]
