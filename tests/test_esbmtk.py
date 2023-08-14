@@ -1,6 +1,9 @@
 import pytest
 
 
+def test_alpha():
+    
+
 @pytest.fixture(params=[True, False])
 def create_model(request):
 
@@ -96,7 +99,31 @@ def test_delta_conversion_with_vector():
     d2 = get_delta(l, h, r)
     assert abs(max(d2 - d)) < 1e-10
 
+def test_get_delta_from_concentration():
+    from esbmtk import get_delta_from_concentration, get_li_mass
+    delta = 0
+    r = 0.044162589
+    m = 10
+    l = get_li_mass(m, delta, r)
+    d_new = get_delta_from_concentration(m, l, r)
+    assert abs(d_new - delta) < 1e-11
 
+def test_get_new_ratio_from_alpha():
+    from esbmtk import get_delta_from_concentration
+    from esbmtk import get_li_mass, get_new_ratio_from_alpha
+
+    alpha = 1.07
+    delta = 0
+    r = 0.044162589
+
+    m = 10
+    l = get_li_mass(m, delta, r)
+    n_m = 20
+    n_r = get_new_ratio_from_alpha(m, l, alpha)
+    n_l = n_m * n_r
+    d_new = get_delta_from_concentration(n_m, n_l, r)
+    assert abs(d_new - (delta + (alpha-1)*1000)) < 1e-11
+    
 def test_isotope_mass_calculation():
     from esbmtk import get_imass
 
