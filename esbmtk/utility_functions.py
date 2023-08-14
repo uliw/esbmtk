@@ -30,23 +30,50 @@ np.set_printoptions(precision=4)
 
 
 def register_return_values(ec, parent) -> None:
-    """ Check the return values of external function instances,
-    and create the necessary reservoirs
+    """Check the return values of external function instances,
+    and create the necessary reservoirs or fluxes
     """
-    from .esbmtk import Reservoir
-    
+    from .esbmtk import Reservoir, Flux
+
     for v in ec.return_values:
         if isinstance(v, dict):
-            n = next(iter(v))
-            rt = Reservoir(
-                name=n,
-                species=getattr(parent.mo, n),
-                concentration=f"{v[n]} mol/kg",
-                register=parent,
-                volume=parent.volume,
-                rtype="computed",
-            )
-            parent.lor.append(rt)
+            n = next(iter(v))  # get first key
+            if n[:2] == "F_":
+                fid = v[n]
+                n = n[2:]  #
+                r = getattr(parent, n.split(".")[1])
+                sp = r.species
+                fn = f"{r.full_name}_{fid}_F"
+                # i = 0
+                # while fn in parent.lof:
+                #     fn = f"{fn}_{i}
+                #     i += 1
+
+                f = Flux(q
+                    name=fn,
+                    species=sp,
+                    rate=0,
+                    register=r,
+                )
+                r.lof.append(f)
+                if r.isotopes:
+                    f = Flux(
+                        name=f"{fn}_l",
+                        species=sp,
+                        rate=0,
+                        register=r,
+                    )
+                    r.lof.append(f)
+            else:
+                rt = Reservoir(
+                    name=n,
+                    species=getattr(parent.mo, n),
+                    concentration=f"{v[n]} mol/kg",
+                    register=parent,
+                    volume=parent.volume,
+                    rtype="computed",
+                )
+                parent.lor.append(rt)
         elif isinstance(v, Reservoir):
             v.ef_results = True
 
@@ -61,7 +88,7 @@ def summarize_results(M: Model) -> dict():
 
     """
     results = dict()
-    
+
     for r in M.lor:
         species_name = r.name
         basin_name = r.register.name[:1]
