@@ -66,11 +66,11 @@ def photosynthesis(
     dMdt_dic += -CaCO3  # dic removed
     dMdt_dic_l += -CaCO3 * dic_l / dic
     dMdt_ta += 2 * -CaCO3  # TA removed
-    
+
     # sulfur reactions, assuming that there is alwways enough O2
-    dMdt_h2s = -h2s * volume # H2S oxidation
-    dCdt_so4 = dMdt_h2s # add S to the sulfate pool
-    dMdt_ta += dMdt_ta - 2 * dCdt_so4 # adjust Alkalinity
+    dMdt_h2s = -h2s * volume  # H2S oxidation
+    dCdt_so4 = dMdt_h2s  # add S to the sulfate pool
+    dMdt_ta += dMdt_ta - 2 * dCdt_so4  # adjust Alkalinity
 
     # add O2 from photosynthesis - h2s oxidation
     dCdt_o = dMdt_OM * O2C_ratio - 2 * h2s * volume
@@ -129,7 +129,6 @@ def init_photosynthesis(rg, productivity):
             {"F_rg.OM": "photosynthesis"},
         ],
     )
-
     rg.mo.lpc_f.append(ec.fname)
 
     return ec
@@ -152,82 +151,91 @@ def add_photosynthesis(rgs: list[ReservoirGroup], p_fluxes: list[Flux | Q_]):
 
 
 def remineralization(
-    OM_fluxes: list,  # OM export fluxes
-    OM_fluxes_l: list,  # OM_l export fluxes
+    om_fluxes: list,  # OM export fluxes
+    om_fluxes_l: list,  # OM_l export fluxes
     dic_fluxes: list,
     dic_fluxes_l: list,
-    remin_fraction: list,  # list of remineralization fractions
+    om_remin_fraction: list,  # list of remineralization fractions
+    alpha: float,
     h2s: float,  # concentration
     so4: float,  # concentration
     o2: float,  # o2 concentration
     po4: float,  # po4 concentration
-    dic: float,  # dic_concentration
-    dic_l: float,  # dic_l concentration
     volume: float,  # box volume
     PC_ratio: float,
     NC_ratio: float,
     O2C_ratio: float,
-    PUE: float,
-    rain_rate: float,
-    remin_OM: float,
-    alpha: float,
     CaCO3_reactions=True,
     # burial: float,
 ) -> float:
     """Reservoirs can have multiple sources of OM with different
     remineralization efficiencies, e.g., low latidtude OM flux, vs
-    high latitude OM flux.
+    high latitude OM flux. We only add the part that is remineralized.
+    Note: The CaCO3 fluxes are handled below
     """
     OM_flux = 0
     OM_flux_l = 0
     # sum all OM and dic fluxes
-    for i, f in enumerate(OM_fluxes):
-        OM_flux += f * remin_fraction[i]
-        OM_flux_l += OM_flux_l[i] * remin_fraction[i]
-
-    # normalize to volume
-    OM_flux /= volume
-    OM_flux_l /= volume
+    for i, f in enumerate(om_fluxes):
+        OM_flux += f * om_remin_fraction[i]
+        OM_flux_l += om_fluxes_l[i] * om_remin_fraction[i]
 
     # remove Alkalinity and add dic and po4 from OM remineralization
-    dCdt_dic = OM_flux  # add DIC from OM
-    dCdt_dic_l = OM_flux_l  # add DIC from OM
-    dCdt_ta = -OM_flux * NC_ratio  # remove Alkalinity
-    dCdt_po4 = OM_flux / PC_ratio  # add alkalinity
+    # this happens irrespective of oxygen levels
+    dMdt_po4 = OM_flux / PC_ratio  # return PO4
+    dMdt_ta = -OM_flux * NC_ratio  # remove Alkalinity from NO3
+    dMdt_dic = OM_flux  # add DIC from OM
+    dMdt_dic_l = OM_flux_l
 
+    print(f"OM_flux = {OM_flux:2e}")
+    print(f"dMdt_po4 = {dMdt_po4:2e}")
+    print(f"dMdt_ta = {dMdt_ta:2e}")
+    print(f"dMdt_dic = {dMdt_dic:2e}")
+    print(f"dMdt_dic_l = {dMdt_dic_l:2e}")
+
+    m_h2s = h2s * volume
+    m_o2 = o2 * volume
     # how much O2 is needed to oxidize all OM and H2S
-    o2_eq = OM_flux * O2C_ratio * 2 * h2s
+    m_o2_eq = OM_flux * O2C_ratio + 2 * m_h2s
 
-    if o2 > o2_eq:  # box has enough oxygen
-        dCdt_o2 = -o2_eq  # consume O2
-        dCdt_h2s = -h2s  # consume all h2s
-        dCdt_so4 = h2s  # add sulfate
+    if m_o2 > m_o2_eq:  # box has enough oxygen
+        dMdt_o2 = -m_o2_eq  # consume O2
+        dMdt_h2s = -m_h2s  # consume all h2s
+        dMdt_so4 = -m_h2s  # add sulfate
+        print("oxic remin")
+        print(f"dMdt_o2 = {dMdt_o2:2e}")
+        print(f"dMdt_h2s = {dMdt_h2s:2e}")
+        print(f"dMdt_so4 = {dMdt_so4:2e}")
+
     else:  # box has not enough oxygen
-        dCdt_o2 = -o2  # remove all available oxygen
+        dMdt_o2 = -m_o2  # remove all available oxygen
         # calculate how much OM is left to oxidize
-        OM_flux = OM_flux - o2 / O2C_ratio
+        OM_flux = OM_flux - m_o2 / O2C_ratio
         # oxidize the remaining OM via sulfate reduction
-        # one SO4 oxidizes 2 carbon, and add 2 mol to TA
-        dCdt_so4 = -OM_flux / 2
-        dCdt_h2s = -dCdt_so4
-
-    # adjust Alkalinity for changes in sulfate
-    dCdt_ta += 2 * -dCdt_so4
+        dMdt_so4 = -OM_flux / 2  # one SO4 oxidizes 2 carbon, and add 2 mol to TA
+        dMdt_h2s = -dMdt_so4  # move S to reduced reservoir
+        dMdt_ta += 2 * -dMdt_so4  # adjust Alkalinity for changes in sulfate
+        print("anoxic remin")
+        print(f"dMdt_o2 = {dMdt_o2:2e}")
+        print(f"dMdt_h2s = {dMdt_h2s:2e}")
+        print(f"dMdt_so4 = {dMdt_so4:2e}")
+        print(f"dMdt_ta = {dMdt_ta:2e}")
 
     if CaCO3_reactions:
         dic_flux = 0
         dic_flux_l = 0
         for i, f in enumerate(dic_fluxes):
-            dic_flux += f
-            dic_flux_l += dic_fluxes_l[i]
+            dic_flux += f * alpha[i]
+            dic_flux_l += dic_fluxes_l[i] * alpha[i]
 
+        breakpoint()
         # add Alkalinity and DIC from CaCO3 dissolution
-        dCdt_dic += dic_flux * alpha
-        dCdt_dic_l += dic_flux_l * alpha
-        dCdt_ta += 2 * dic_flux * alpha
+        dMdt_dic += dic_flux
+        dMdt_dic_l += dic_flux_l
+        dMdt_ta += 2 * dic_flux
 
     # note, these are returned as fluxes
-    return [dCdt_ta, dCdt_h2s, dCdt_so4, dCdt_o2, dCdt_po4]
+    return [dMdt_ta, dMdt_h2s, dMdt_so4, dMdt_o2, dMdt_po4]
 
 
 def init_remineralization(
@@ -255,9 +263,9 @@ def init_remineralization(
         function_input_data=[
             om_fluxes,
             om_fluxes_l,
-            om_remin_fractions,
             CaCO3_fluxes,
             CaCO3_fluxes_l,
+            om_remin_fractions,
             CaCO3_remin_fractions,
             rg.H2S,
             rg.SO4,
@@ -267,21 +275,18 @@ def init_remineralization(
             M.PC_ratio,
             M.NC_ratio,
             M.O2C_ratio,
-            M.PUE,
             CaCO3_reactions,
         ],
         register=rg,
         return_values=[
-            rg.TA,
-            rg.H2S,
-            rg.SO4,
-            rg.O2,
-            rg.PO4,
+            {"F_rg.TA": "remineralization"},
+            {"F_rg.H2S": "remineralization"},
+            {"F_rg.SO4": "remineralization"},
+            {"F_rg.O2": "remineralization"},
+            {"F_rg.PO4": "remineralization"},
         ],
     )
-    # only neede
     rg.mo.lpc_f.append(ec.fname)
-
     return ec
 
 
@@ -311,52 +316,55 @@ def add_remineralization(M: Model, f_map: dict) -> None:
         CaCO3_remin = list()
 
         # create flux lists for OM and possibly CaCO3
-        for source, type_list in source_dict.items():
+        for source, type_dict in source_dict.items():
             # get matching fluxes for e.g., M.A_sb, and OM
-            fl = M.flux_summary(
-                filter_by=f"photosynthesis {source.name} {type_list[0]}",
-                return_list=True,
-            )
-            if type_list[0] == "OM":
+            if "OM" in type_dict:
+                fl = M.flux_summary(
+                    filter_by=f"photosynthesis {source.name} OM",
+                    return_list=True,
+                )
                 for f in fl:
-                    om_remin.append(type_list[1])
+                    om_remin.append(type_dict["OM"])
                     if f.name[-3:] == "F_l":
                         om_fluxes_l.append(f)
                     else:
                         om_fluxes.append(f)
-            elif type_list[0] == "DIC":
+
+            if "DIC" in type_dict:
+                fl = M.flux_summary(
+                    filter_by=f"photosynthesis {source.name} DIC",
+                    return_list=True,
+                )
                 for f in fl:
-                    CaCO3_remin.append(type_list[1])
+                    CaCO3_remin.append(type_dict["DIC"])
                     if f.name[-3:] == "F_l":
                         CaCO3_fluxes_l.append(f)
                     else:
                         CaCO3_fluxes.append(f)
-            else:
-                raise ValueError(
-                    f"\n You need to specify OM or CaCO3, {type_list[0]} is not valid\n"
-                )
 
-    if len(CaCO3_fluxes) > 0:
-        ec = init_remineralization(
-            sink,
-            om_fluxes,
-            om_fluxes_l,
-            om_remin,
-            CaCO3_fluxes,
-            CaCO3_fluxes_l,
-            CaCO3_remin,
-            True,
-        )
-    else:
-        ec = init_remineralization(
-            sink,
-            om_fluxes,
-            om_fluxes_l,
-            om_remin,
-            CaCO3_fluxes,
-            CaCO3_fluxes_l,
-            CaCO3_remin,
-            False,
-        )
-    register_return_values(ec, sink)
-    sink.has_cs2 = True
+        #print(f"CaCO3 fluxes {sink.full_name} {CaCO3_fluxes}")
+        #print(f"OM fluxes {sink.full_name} {om_fluxes}")
+        if len(CaCO3_fluxes) > 0:
+            ec = init_remineralization(
+                sink,
+                om_fluxes,
+                om_fluxes_l,
+                om_remin,
+                CaCO3_fluxes,
+                CaCO3_fluxes_l,
+                CaCO3_remin,
+                True,
+            )
+        else:
+            ec = init_remineralization(
+                sink,
+                om_fluxes,
+                om_fluxes_l,
+                om_remin,
+                CaCO3_fluxes,
+                CaCO3_fluxes_l,
+                CaCO3_remin,
+                False,
+            )
+        register_return_values(ec, sink)
+        sink.has_cs2 = True

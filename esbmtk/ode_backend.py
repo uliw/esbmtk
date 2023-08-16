@@ -276,7 +276,7 @@ class setup_ode():
         eqs.write(f"\n{sep}\n")
         for flux in M.lof:  # loop over fluxes
             if flux.register.ctype == "ignore":
-                continue # skip 
+                continue  # skip
             # fluxes belong to at least 2 reservoirs, so we need to avoid duplication
             # we cannot use a set, since we need to preserve order
             if flux not in flist:
@@ -536,6 +536,11 @@ def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> 
         raise ValueError(
             f"\n r = {r.full_name}, d ={d}\n" f"\n{d} is of type {type(d)}\n",
         )
+
+    if a == "M_P_sb_DIC__photosynthesis_F":
+        print("M_P_sb_DIC__photosynthesis_F")
+        print(d)
+        print()
 
     return a
 

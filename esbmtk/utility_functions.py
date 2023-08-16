@@ -40,7 +40,7 @@ def register_return_values(ec, parent) -> None:
             n = next(iter(v))  # get first key
             if n[:2] == "F_":
                 fid = v[n]
-                fn = f"_{fid}_F"
+                fn = f"{fid}_F"
                 n = n.split(".")[1]  # species name - reservoir name
                 r = getattr(parent, n)  # get r handle
                 f = Flux(
@@ -56,6 +56,7 @@ def register_return_values(ec, parent) -> None:
                 # reservoir they belong to.
                 r.source = r
                 r.sink = "None"
+                r.ctype = "ignore"
                 if r.isotopes:
                     f = Flux(
                         name=f"{fn}_l",
@@ -64,8 +65,6 @@ def register_return_values(ec, parent) -> None:
                         register=r,
                     )
                     r.lof.append(f)
-                    r.source = r
-                    r.sink = "None"
             else:
                 rt = Reservoir(
                     name=n,
@@ -78,8 +77,8 @@ def register_return_values(ec, parent) -> None:
                 parent.lor.append(rt)
         elif isinstance(v, Reservoir):
             v.ef_results = True
-
-
+    
+            
 def summarize_results(M: Model) -> dict():
     """Summarize all model results at t_max into a hirarchical
     dictionary, where values are accessed in the following way:
