@@ -554,12 +554,12 @@ class Model(esbmtkBase):
         start: float = process_time()
         # new: np.ndarray = np.zeros(4)
 
-        # put direction dictionary into a list
-        for r in self.lor:  # loop over reservoirs
-            r.lodir = [r.lio[f] for f in r.lof]
-        # take care of objects which require a delayed init
-        for o in self.lto:
-            o.__delayed_init__()
+        # # put direction dictionary into a list
+        # for r in self.lor:  # loop over reservoirs
+        #     r.lodir = [r.lio[f] for f in r.lof]
+        # # take care of objects which require a delayed init
+        # for o in self.lto:
+        #     o.__delayed_init__()
 
         solver = "ode" if "solver" not in kwargs else kwargs["solver"]
         self.solver = solver

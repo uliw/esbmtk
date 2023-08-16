@@ -128,7 +128,7 @@ def get_delta(l: np.ndarray, h: np.ndarray, r: float) -> np.ndarray:
     return 1000 * (h / l - r) / r
 
 
-def get_delta_from_concentration(c: np.darray, l: np.ndarray, r: float) -> np.ndarray:
+def get_delta_from_concentration(c, l, r):
     """Calculate the delta from the mass of light and heavy isotope
 
     :param c: total mass/concentration

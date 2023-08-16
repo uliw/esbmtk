@@ -260,7 +260,7 @@ def carbonate_system_2_ode(
     d_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
     BD: float = BDS + BCC + BNS + BPDC
 
-    """Bm is the flux of CaCO3 into the box. However, the model should
+    """CACO3_export is the flux of CaCO3 into the box. However, the model should
     use the bypass option and leave all flux calculations to the
     cs_code.  As such, we simply add the fraction of the input flux
     that dissolves, and ignore the fraction that is buried.  

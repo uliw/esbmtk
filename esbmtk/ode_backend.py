@@ -119,10 +119,11 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
 
         name = f'{r.full_name.replace(".", "_")}'
         fex = ""
-        v_val = f'{r.volume.to(r.v_unit).magnitude}'
+        v_val = f"{r.volume.to(r.v_unit).magnitude}"
 
         # add all fluxes
         for flux in r.lof:  # check if in or outflux
+            # print(f"f = {flux.full_name}, p = {flux.parent.full_name}")
             if flux.parent.source == r:
                 sign = "-"
             elif flux.parent.sink == r:
@@ -152,7 +153,7 @@ def write_reservoir_equations_with_isotopes(
     """Loop over reservoirs and their fluxes to build the reservoir equation"""
 
     for r in M.lor:  # loop over reservoirs
-        v_val = f'{r.volume.to(r.v_unit).magnitude}'
+        v_val = f"{r.volume.to(r.v_unit).magnitude}"
         # Write equations for each reservoir
         # create unique variable names. Reservoirs are typiclally called
         # M.rg.r so we replace all dots with underscore
@@ -172,13 +173,9 @@ def write_reservoir_equations_with_isotopes(
             # avoid reservoirs without active fluxes
             if len(r.lof) > 0:
                 if r.ef_results:
-                    eqs.write(
-                        f"{ind2}{name} += (\n{fex}{ind2})/{v_val}\n\n"
-                    )
+                    eqs.write(f"{ind2}{name} += (\n{fex}{ind2})/{v_val}\n\n")
                 else:
-                    eqs.write(
-                        f"{ind2}{name} = (\n{fex}{ind2})/{v_val}\n\n"
-                    )
+                    eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{v_val}\n\n")
 
                 rel = f"{rel}{ind3}{name},\n"
 
@@ -235,7 +232,7 @@ class setup_ode():
         from esbmtk import carbonate_system_1_ode, carbonate_system_2_ode
         from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes
 """
-    from esbmtk import AirSeaExchange
+    from esbmtk import AirSeaExchange, Reservoir
 
     ind2 = 8 * " "  # indention
     ind3 = 12 * " "  # indention
@@ -279,11 +276,15 @@ class setup_ode():
         eqs.write(f"\n{sep}\n")
         for flux in M.lof:  # loop over fluxes
             if flux.register.ctype == "ignore":
-                continue
+                continue # skip 
             # fluxes belong to at least 2 reservoirs, so we need to avoid duplication
             # we cannot use a set, since we need to preserve order
             if flux not in flist:
                 flist.append(flux)  # add to list of fluxes already computed
+
+                if isinstance(flux.parent, Reservoir):
+                    continue  # skip computed fluxes
+
                 ex, exl = get_flux(flux, M, R, icl)  # get flux expressions
                 fn = flux.full_name.replace(".", "_")
 
@@ -297,11 +298,6 @@ class setup_ode():
                     eqs.write(f"{ind2}{fn} = {ex}\n")
                     if flux.parent.isotopes:  # add line for isotopes
                         eqs.write(f"{ind2}{fn}_l = {exl}\n")
-
-                if flux.save_flux_data:
-                    eqs.write(f"{ind2}{flux.full_name}.m[self.i] = {fn}\n")
-                    if flux.parent.isotopes:
-                        eqs.write(f"{ind2}{flux.full_name}.l[self.i] = {fn}_l\n")
 
         sep = (
             "# ---------------- write computed reservoir equations -------- #\n"
@@ -368,7 +364,6 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
               total flux, and the second string is the equation for
               the flux of the light isotope
     """
-
     ind2 = 8 * " "  # indentation
     ind3 = 12 * " "  # indentation
 
@@ -397,6 +392,10 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
             ex = get_gas_exchange_w_isotopes_eq(flux, c, cfn, icl, ind2, ind3)
         else:
             ex = get_gas_exchange_eq(flux, c, cfn, icl, ind2, ind3)
+
+    elif c.ctype == "ignore":
+        pass  # do nothing
+
     else:
         raise ValueError(
             f"Connection type {c.ctype} for {c.full_name} is not implmented"
@@ -478,16 +477,24 @@ def parse_esbmtk_return_data_types(d: any, r: Reservoir, ind: str, icl: dict) ->
     to external function objects, and convert them into a suitable string
     format that can be used in the ode equation file
     """
-
     # covert to object handle if need be
     if isinstance(d, str):
-        d = getattr(r.register, d)
+        o = getattr(r.register, d)
     elif isinstance(d, dict):
-        d = getattr(r.register, next(iter(d)))
+        k = next(iter(d))
+        if k[0:2] == "F_":  # this is flux
+            sp = k.split(".")[1]
+            o = getattr(r.register, f"{sp}")
+            sr = f"{o.full_name}.{d[k]}_F".replace(".", "_")
+        else:
+            o = getattr(r.register, k)
+            sr = o.full_name.replace(".", "_")
 
-    sr = d.full_name.replace(".", "_")
+    else:  # argument is a regular reservoir
+        o = d
+        sr = o.full_name.replace(".", "_")
 
-    if d.isotopes:
+    if o.isotopes:
         sr = f"{sr}, {sr}_l"
 
     return sr
@@ -558,7 +565,7 @@ def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> st
     for d in r.function_input_data:
         a += parse_esbmtk_input_data_types(d, r, ind3, icl)
 
-    eqs.write(f"{rv} = {r.fname}(\n{a}{ind2})\n")
+    eqs.write(f"{rv} = {r.fname}(\n{a}{ind2})\n\n")
 
     rel += f"{ind3}{rv},\n"
 
