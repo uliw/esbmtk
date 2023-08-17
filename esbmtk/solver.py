@@ -84,9 +84,9 @@ def get_frac(m: float, l: float, a: float) -> [float, float]:
 
 # @njit()
 def get_new_ratio_from_alpha(
-    ref_mass: float,
-    ref_l: float,
-    a: float,
+    ref_mass: float,  # reference mass
+    ref_l: float,  # reference light istope
+    a: float,  # fractionation factor
 ) -> [float, float]:
     """Calculate the effect of the istope fractionation factor alpha on
     the ratio between the mass of the light isotope devided by the total mass
@@ -94,7 +94,11 @@ def get_new_ratio_from_alpha(
     Note that alpha needs to be given as fractional value, i.e., 1.07 rather
     than 70 (i.e., (alpha-1) * 1000
     """
-    new_ratio = -ref_l / (a * ref_l - a * ref_mass - ref_l)
+
+    if ref_mass > 0.0:
+        new_ratio = -ref_l / (a * ref_l - a * ref_mass - ref_l)
+    else:
+        new_ratio = 0.0
 
     return new_ratio
 

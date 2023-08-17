@@ -965,6 +965,7 @@ class Species(esbmtkBase):
             "m_weight": [0, (int, float, str)],
             "register": ["None", (Model, Element, Reservoir, GasReservoir)],
             "parent": ["None", (Model, Element, Reservoir, GasReservoir)],
+            "flux_only": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
@@ -1725,7 +1726,9 @@ class Reservoir(ReservoirBase):
             self.dc = np.empty(0)
 
         self.mo.lor.append(self)  # add this reservoir to the model
-        self.mo.lic.append(self)  # reservoir type object list
+        if self.rtype != "flux_only":
+            self.mo.lic.append(self)  # reservoir type object list
+                                 
         # register instance name in global name space
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo

@@ -37,6 +37,9 @@ def register_return_values(ec, parent) -> None:
 
     for v in ec.return_values:
         if isinstance(v, dict):
+            # these fluxes are not associated with a connection Object
+            # so we register the source/sink relationship with the
+            # reservoir they belong to.
             n = next(iter(v))  # get first key
             if n[:2] == "F_":
                 fid = v[n]
@@ -50,10 +53,6 @@ def register_return_values(ec, parent) -> None:
                     register=r,
                 )
                 r.lof.append(f)
-
-                # these fluxes are not associated with a connection Object
-                # so we register the source/sink relationship with the
-                # reservoir they belong to.
                 r.source = r
                 r.sink = "None"
                 r.ctype = "ignore"
@@ -64,7 +63,7 @@ def register_return_values(ec, parent) -> None:
                         rate=0,
                         register=r,
                     )
-                    r.lof.append(f)
+                    # r.lof.append(f) do not add!
             else:
                 rt = Reservoir(
                     name=n,
@@ -389,10 +388,10 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
          in each box. If you need box specific initial conditions
          use the output of build_concentration_dicts as starting point
 
-    ic: dict = { # species: concentration, Isotopes
-                   PO4: [Q_("2.1 * umol/liter"), False],
-                   DIC: [Q_("2.1 mmol/liter"), False],
-                   ALK: [Q_("2.43 mmol/liter"), False],
+    ic: dict = { # species: concentration, Isotopes, delta, f_only
+                   PO4: [Q_("2.1 * umol/liter"), False, 0, False],
+                   DIC: [Q_("2.1 mmol/liter"), False, 0, False],
+                   ALK: [Q_("2.43 mmol/liter"), False, 0, False],
                }
 
     M: Model object handle
@@ -421,9 +420,7 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
                 raise ValueError("'ty' must be either Source or Sink")
 
         else:  # create reservoirs
-
             icd: dict = build_concentration_dicts(ic, k)
-
             rg = ReservoirGroup(
                 name=k,
                 geometry=v["g"],

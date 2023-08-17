@@ -62,6 +62,7 @@ def get_initial_conditions(
     i: int = 0
     for r in M.lic:
         # collect all reservoirs that have initial conditions
+        # if r.rtype != "flux_only":
         if len(r.lof) > 0 or r.rtype == "computed" or r.rtype == "passive":
             # print(f"R = {r.full_name} c = {r.c[0]:.2e}")
             R.append(r.c[0])  # add initial condition
@@ -117,28 +118,29 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
         all dots with underscore -> M_rg_r
         """
 
-        name = f'{r.full_name.replace(".", "_")}'
-        fex = ""
-        v_val = f"{r.volume.to(r.v_unit).magnitude}"
+        if r.rtype != "flux_only":
+            name = f'{r.full_name.replace(".", "_")}'
+            fex = ""
+            v_val = f"{r.volume.to(r.v_unit).magnitude}"
 
-        # add all fluxes
-        for flux in r.lof:  # check if in or outflux
-            # print(f"f = {flux.full_name}, p = {flux.parent.full_name}")
-            if flux.parent.source == r:
-                sign = "-"
-            elif flux.parent.sink == r:
-                sign = "+"
+            # add all fluxes
+            for flux in r.lof:  # check if in or outflux
+                # print(f"f = {flux.full_name}, p = {flux.parent.full_name}")
+                if flux.parent.source == r:
+                    sign = "-"
+                elif flux.parent.sink == r:
+                    sign = "+"
 
-            fname = f'{flux.full_name.replace(".", "_")}'
-            fex = f"{fex}{ind3}{sign} {fname}\n"
+                fname = f'{flux.full_name.replace(".", "_")}'
+                fex = f"{fex}{ind3}{sign} {fname}\n"
 
-        if len(r.lof) > 0:  # avoid reservoirs without active fluxes
-            if r.ef_results:
-                eqs.write(f"{ind2}{name} += (\n{fex}{ind2})/{v_val}\n\n")
-            else:
-                eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{v_val}\n\n")
+            if len(r.lof) > 0:  # avoid reservoirs without active fluxes
+                if r.ef_results:
+                    eqs.write(f"{ind2}{name} += (\n{fex}{ind2})/{v_val}\n\n")
+                else:
+                    eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{v_val}\n\n")
 
-            rel = f"{rel}{ind3}{name},\n"
+                rel = f"{rel}{ind3}{name},\n"
 
     return rel
 
@@ -153,31 +155,32 @@ def write_reservoir_equations_with_isotopes(
     """Loop over reservoirs and their fluxes to build the reservoir equation"""
 
     for r in M.lor:  # loop over reservoirs
-        v_val = f"{r.volume.to(r.v_unit).magnitude}"
-        # Write equations for each reservoir
-        # create unique variable names. Reservoirs are typiclally called
-        # M.rg.r so we replace all dots with underscore
-        if r.isotopes:
-            name = f'{r.full_name.replace(".", "_")}_l'
-            fex = ""
-            # add all fluxes
-            for flux in r.lof:  # check if in or outflux
-                if flux.parent.source == r:
-                    sign = "-"
-                elif flux.parent.sink == r:
-                    sign = "+"
+        if r.rtype != "flux_only":
+            v_val = f"{r.volume.to(r.v_unit).magnitude}"
+            # Write equations for each reservoir
+            # create unique variable names. Reservoirs are typiclally called
+            # M.rg.r so we replace all dots with underscore
+            if r.isotopes:
+                name = f'{r.full_name.replace(".", "_")}_l'
+                fex = ""
+                # add all fluxes
+                for flux in r.lof:  # check if in or outflux
+                    if flux.parent.source == r:
+                        sign = "-"
+                    elif flux.parent.sink == r:
+                        sign = "+"
 
-                fname = f'{flux.full_name.replace(".", "_")}_l'
-                fex = f"{fex}{ind3}{sign} {fname}\n"
+                    fname = f'{flux.full_name.replace(".", "_")}_l'
+                    fex = f"{fex}{ind3}{sign} {fname}\n"
 
-            # avoid reservoirs without active fluxes
-            if len(r.lof) > 0:
-                if r.ef_results:
-                    eqs.write(f"{ind2}{name} += (\n{fex}{ind2})/{v_val}\n\n")
-                else:
-                    eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{v_val}\n\n")
+                # avoid reservoirs without active fluxes
+                if len(r.lof) > 0:
+                    if r.ef_results:
+                        eqs.write(f"{ind2}{name} += (\n{fex}{ind2})/{v_val}\n\n")
+                    else:
+                        eqs.write(f"{ind2}{name} = (\n{fex}{ind2})/{v_val}\n\n")
 
-                rel = f"{rel}{ind3}{name},\n"
+                    rel = f"{rel}{ind3}{name},\n"
 
     return rel
 
@@ -536,11 +539,6 @@ def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> 
         raise ValueError(
             f"\n r = {r.full_name}, d ={d}\n" f"\n{d} is of type {type(d)}\n",
         )
-
-    if a == "M_P_sb_DIC__photosynthesis_F":
-        print("M_P_sb_DIC__photosynthesis_F")
-        print(d)
-        print()
 
     return a
 

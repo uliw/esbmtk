@@ -25,10 +25,12 @@ def Carbon(model):
     )  # Name & element handle
     Species(name="DIC", element=eh, register=eh)
     Species(name="OM", element=eh, register=eh)
+    # Particulate OM
+    Species(name="POM", element=eh, register=eh, flux_only=True)
+    Species(name="DOC", element=eh, register=eh)
     Species(name="CaCO3", element=eh, display_as=r"CaCO$_3$", register=eh)
     Species(name="HCO3", element=eh, display_as=r"HCO$_3^-$", register=eh)
     Species(name="CO3", element=eh, display_as="CO$_3^{2-}$", register=eh)
-    Species(name="DOC", element=eh, register=eh)
     Species(name="C", element=eh, register=eh)
     Species(name="CO2aq", element=eh, register=eh)
     Species(name="ALK", element=eh, register=eh)  # Alkalinity

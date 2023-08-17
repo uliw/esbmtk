@@ -207,6 +207,10 @@ class ReservoirGroup(esbmtkBase):
         for s in self.species:
             if not isinstance(s, Species):
                 raise ValueError(f"{s.n} needs to be a valid species name")
+            if s.flux_only:
+                rtype = "flux_only"
+            else:
+                rtype = "regular"
 
             # create reservoir without registering it in the global name space
             a = Reservoir(
@@ -221,6 +225,7 @@ class ReservoirGroup(esbmtkBase):
                 plot=self.cd[s.n]["plot"],
                 groupname=self.name,
                 isotopes=self.cd[s.n]["isotopes"],
+                rtype=rtype,
             )
             # register as part of this group
             self.lor.append(a)
