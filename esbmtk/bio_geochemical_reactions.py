@@ -20,13 +20,15 @@ from __future__ import annotations
 import typing as tp
 import numpy as np
 from math import log, sqrt
-from esbmtk import Q_, register_return_values
+from numba import jit, njit, float64, boolean
+from esbmtk import Q_, register_return_values, get_new_ratio_from_alpha
 from .utility_functions import __checkkeys__, __addmissingdefaults__, __checktypes__
 
 if tp.TYPE_CHECKING:
     from esbmtk import Flux, Model, ReservoirGroup
 
 
+@njit()
 def photosynthesis(
     o2,
     ta,
@@ -53,7 +55,6 @@ def photosynthesis(
     Note that this functions returns fluxes, so we need to calculate
     dMdt, not dCdt
     """
-    from esbmtk import get_new_ratio_from_alpha
 
     # POM formation
     dMdt_po4 = -productivity * PUE  # remove PO4 into POM
@@ -97,7 +98,6 @@ def init_photosynthesis(rg, productivity):
     from esbmtk import ExternalCode
 
     M = rg.mo
-
     ec = ExternalCode(
         name="ps",
         species=rg.mo.Oxygen.O2,
@@ -152,14 +152,14 @@ def add_photosynthesis(rgs: list[ReservoirGroup], p_fluxes: list[Flux | Q_]):
         register_return_values(ec, r)
         r.has_cs1 = True
 
-
+@njit()
 def remineralization(
     om_fluxes: list,  # POM export fluxes
     om_fluxes_l: list,  # POM_l export fluxes
     dic_fluxes: list,
     dic_fluxes_l: list,
-    om_remin_fraction: list,  # list of remineralization fractions
-    alpha: float,
+    om_remin_fractions: list,  # list of remineralization fractions
+    CaCO3_remin_fractions: float,
     h2s: float,  # concentration
     so4: float,  # concentration
     o2: float,  # o2 concentration
@@ -180,8 +180,8 @@ def remineralization(
     POM_flux_l = 0
     # sum all POM and dic fluxes
     for i, f in enumerate(om_fluxes):
-        POM_flux += f * om_remin_fraction[i]
-        POM_flux_l += om_fluxes_l[i] * om_remin_fraction[i]
+        POM_flux += f * om_remin_fractions[i]
+        POM_flux_l += om_fluxes_l[i] * om_remin_fractions[i]
 
     # remove Alkalinity and add dic and po4 from POM remineralization
     # this happens irrespective of oxygen levels
@@ -228,8 +228,8 @@ def remineralization(
         dic_flux = 0.0
         dic_flux_l = 0.0
         for i, f in enumerate(dic_fluxes):
-            dic_flux += f * alpha[i]
-            dic_flux_l += dic_fluxes_l[i] * alpha[i]
+            dic_flux += f * CaCO3_remin_fractions[i]
+            dic_flux_l += dic_fluxes_l[i] * CaCO3_remin_fractions[i]
 
         # add Alkalinity and DIC from CaCO3 dissolution
         dMdt_dic += -dic_flux
@@ -365,10 +365,10 @@ def add_remineralization(M: Model, f_map: dict) -> None:
                 sink,
                 om_fluxes,
                 om_fluxes_l,
-                CaCO3_fluxes,
-                CaCO3_fluxes_l,
+                om_fluxes,  # numba cannot deal with empty fluxes, so we
+                om_fluxes_l,  # add the om_fluxes, but ignore them
                 om_remin,
-                CaCO3_remin,
+                om_remin,
                 False,
             )
         register_return_values(ec, sink)
@@ -497,7 +497,6 @@ def init_carbonate_system_3(
     AD: float,
     kwargs: dict,
 ):
-
     from esbmtk import ExternalCode, carbonate_system_3
 
     ec = ExternalCode(
@@ -656,7 +655,6 @@ def add_carbonate_system_3(**kwargs) -> None:
     AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
 
     for i, rg in enumerate(r_db):  # Setup the virtual reservoirs
-
         ec = init_carbonate_system_3(
             rg,
             kwargs["carbonate_export_fluxes"][i],

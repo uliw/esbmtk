@@ -23,6 +23,7 @@ from __future__ import annotations
 from time import process_time
 import numpy as np
 import typing as tp
+from numba import njit
 
 if tp.TYPE_CHECKING:
     from esbmtk import Reservoir, GasReservoir, Flux
@@ -82,7 +83,7 @@ def get_frac(m: float, l: float, a: float) -> [float, float]:
     return li, hi
 
 
-# @njit()
+@njit()
 def get_new_ratio_from_alpha(
     ref_mass: float,  # reference mass
     ref_l: float,  # reference light istope

@@ -1,9 +1,8 @@
 from __future__ import annotations
-import typing as tp
 import numpy as np
-
-if tp.TYPE_CHECKING:
-    from esbmtk import Flux, Reservoir, Model, Connection, Connect
+from numba.typed import List
+from esbmtk import Flux, Reservoir, Model, Connection, Connect
+from esbmtk import AirSeaExchange
 
 
 def get_initial_conditions(
@@ -211,16 +210,15 @@ def write_equations_2(
     # construct header and static code:
     header = """from __future__ import annotations\n\n
 import typing as tp
-
-if tp.TYPE_CHECKING:
-    from esbmtk import Model
-
+import numpy as np
+from esbmtk import Model, ReservoirGroup, AirSeaExchange, Reservoir
+from esbmtk import carbonate_system_1_ode, carbonate_system_2_ode
+from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes
 
 class setup_ode():
     '''Class stub to enable state in the equation system passed to ODEINT
     '''
-
-    from esbmtk import Model, ReservoirGroup
+    
 
     def __init__(self, M: Model)->None:
         ''' Use this method to initialize all variables that require the state
@@ -232,10 +230,7 @@ class setup_ode():
         '''Auto generated esbmtk equations do not edit
         '''
 
-        from esbmtk import carbonate_system_1_ode, carbonate_system_2_ode
-        from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes
 """
-    from esbmtk import AirSeaExchange, Reservoir
 
     ind2 = 8 * " "  # indention
     ind3 = 12 * " "  # indention
@@ -417,7 +412,6 @@ def check_signal_2(ex: str, exl: str, c: Connection | Connect) -> (str, str):
     """
 
     if c.signal != "None":  # get signal type
-
         if c.signal.stype == "addition":
             sign = "+"
         elif c.signal.stype == "multiplication":
@@ -530,11 +524,14 @@ def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> 
         a = f"{ind}{get_ic(sr, icl)},\n"
     elif isinstance(d, Q_):
         a = f"{ind}{d.magnitude},\n"
-    elif isinstance(d, list):
-        a = f"{ind}["
+    elif isinstance(d, float):
+        a = f"{ind}{d.magnitude},\n"
+    elif isinstance(d, list | List):  # loo pover list elements
+        a = f"{ind}{d},\n"
+        a = f"{ind}np.array(["
         for e in d:
             a += f"{parse_esbmtk_input_data_types(e, r,'',icl)[0:-2]},"
-        a += "],\n"
+        a += "]),\n"
     else:
         raise ValueError(
             f"\n r = {r.full_name}, d ={d}\n" f"\n{d} is of type {type(d)}\n",

@@ -281,7 +281,11 @@ class Model(esbmtkBase):
         #     self.number_of_datapoints = self.steps
 
         self.time = (np.arange(self.steps) * self.dt) + self.start
-        self.time_ode = np.linspace(self.start, self.stop - self.dt, num=100)
+        self.time_ode = np.linspace(
+            self.start,
+            self.stop - (self.stop - self.start) / 100,
+            num=100,
+        )
         self.timec = np.empty(0)
         self.state = 0
 
@@ -1044,9 +1048,9 @@ class ReservoirBase(esbmtkBase):
         self.model = self.mo
         self.rvalue = self.sp.r
         self.m_unit = self.model.m_unit
-        self.v_unit = self.model.v_unit                        
-        self.c_unit = self.model.c_unit      
-                                 
+        self.v_unit = self.model.v_unit
+        self.c_unit = self.model.c_unit
+
         # right y-axis label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"
         self.xl: str = self.mo.xl  # set x-axis lable to model time
@@ -1163,8 +1167,9 @@ class ReservoirBase(esbmtkBase):
         # build the dataframe
         df: pd.dataframe = DataFrame()
 
+        # breakpoint()
         df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
-        df[f"{rn} {sn} [{smu}]"] = self.m[start:stop:stride]  # mass
+        # df[f"{rn} {sn} [{smu}]"] = self.m.to(self.mo.m_unit).magnitude[start:stop:stride]  # mass
         if self.isotopes:
             df[f"{rn} {sp.ln} [{cmu}]"] = self.l[start:stop:stride]  # light isotope
         df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
@@ -1318,13 +1323,15 @@ class ReservoirBase(esbmtkBase):
 
         # this may need fixing
         if obj.isotopes:
-            obj.m[:] = df.iloc[-1, col]
-            obj.l[:] = df.iloc[-1, col + 1]
-            obj.c[:] = df.iloc[-1, col + 2]
-            col += 2
+            # obj.m[:] = df.iloc[-1, col+ 0]
+            # col += 1
+            obj.l[:] = df.iloc[-1, col]
+            col += 1
+            obj.c[:] = df.iloc[-1, col]
+            col += 1
         else:
-            obj.m[:] = df.iloc[-1, col]
-            obj.c[:] = df.iloc[-1, col + 1]
+            # obj.m[:] = df.iloc[-1, col]
+            obj.c[:] = df.iloc[-1, col]
             col += 1
 
         return col
@@ -1364,7 +1371,7 @@ class ReservoirBase(esbmtkBase):
         ax.set_ylabel(f"{self.legend_left} [{M.c_unit:~P}]")
 
         # add any external data if present
-        for (i, d) in enumerate(self.led):
+        for i, d in enumerate(self.led):
             leg = f"{self.lm} {d.legend}"
             ax.scatter(d.x[1:-2], d.y[1:-2], color=f"C{i+2}", label=leg)
 
@@ -1691,7 +1698,7 @@ class Reservoir(ReservoirBase):
 
             # fixme: c should be dimensionless, not sure why this happens
             self.c = self.c.to(self.mo.c_unit).magnitude
-                                 
+
         elif self.concentration == "None":
             m = Q_(self.mass)
             self.plt_units = self.mo.m_unit
@@ -1728,7 +1735,7 @@ class Reservoir(ReservoirBase):
         self.mo.lor.append(self)  # add this reservoir to the model
         if self.rtype != "flux_only":
             self.mo.lic.append(self)  # reservoir type object list
-                                 
+
         # register instance name in global name space
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo

@@ -53,8 +53,8 @@ def register_return_values(ec, parent) -> None:
                     register=r,
                 )
                 r.lof.append(f)
-                r.source = r
-                r.sink = "None"
+                r.sink = r
+                r.source = "None"
                 r.ctype = "ignore"
                 if r.isotopes:
                     f = Flux(
