@@ -63,19 +63,23 @@ def photosynthesis(
     dMdt_POM_l = dMdt_POM * r  # mass of POM_l
     dMdt_dic = -dMdt_POM  # remove DIC by POM formation
     dMdt_dic_l = -dMdt_POM_l
-    dMdt_ta = -dMdt_POM * NC_ratio  # add TA from nitrate uptake into POM
+    dMdt_ta = dMdt_POM * NC_ratio  # add TA from nitrate uptake into POM
+    # print(f"dMdt_ta OM = {dMdt_ta:2e}")
 
     # CaCO3 formation
     CaCO3 = dMdt_POM / rain_rate  # newly formed CaCO3
     dMdt_dic += -CaCO3  # dic removed
     dMdt_dic_l += -CaCO3 * dic_l / dic
+    # print(f"dMdt_ta CaCO3 = {2 * -CaCO3:2e}")
     dMdt_ta += 2 * -CaCO3  # TA removed
+    # print(f"dMdt_Ta = {dMdt_ta:2e}")
 
     # sulfur reactions, assuming that there is alwways enough O2
     dMdt_h2s = -h2s * volume  # H2S oxidation
-    dCdt_so4 = dMdt_h2s  # add S to the sulfate pool
-    dMdt_ta += dMdt_ta - 2 * dCdt_so4  # adjust Alkalinity
-
+    dMdt_so4 = dMdt_h2s  # add S to the sulfate pool
+    dMdt_ta += 2 * dMdt_so4  # adjust Alkalinity
+    # print(f"dMdt_Ta returned = {dMdt_ta:2e}")
+    # print()
     # add O2 from photosynthesis - h2s oxidation
     dCdt_o = dMdt_POM * O2C_ratio - 2 * h2s * volume
 
@@ -84,7 +88,7 @@ def photosynthesis(
         dCdt_o,
         dMdt_ta,
         dMdt_po4,
-        dCdt_so4,
+        dMdt_so4,
         dMdt_h2s,
         dMdt_dic,
         dMdt_dic_l,
@@ -152,6 +156,7 @@ def add_photosynthesis(rgs: list[ReservoirGroup], p_fluxes: list[Flux | Q_]):
         register_return_values(ec, r)
         r.has_cs1 = True
 
+
 @njit()
 def remineralization(
     om_fluxes: list,  # POM export fluxes
@@ -189,14 +194,8 @@ def remineralization(
     dMdt_ta = -POM_flux * NC_ratio  # remove Alkalinity from NO3
     dMdt_dic = POM_flux  # add DIC from POM
     dMdt_dic_l = POM_flux_l
-
-    # print(f"POM_flux = {POM_flux:2e}")
-    # print(f"dMdt_po4 = {dMdt_po4:2e}")
-    # print(f"dMdt_ta = {dMdt_ta:2e}")
-    # print(f"dMdt_dic = {dMdt_dic:2e}")
-    # print(f"dMdt_dic_l = {dMdt_dic_l:2e}")
-
     m_h2s = h2s * volume
+
     m_o2 = o2 * volume
     # how much O2 is needed to oxidize all POM and H2S
     m_o2_eq = POM_flux * O2C_ratio + 2 * m_h2s
@@ -205,10 +204,6 @@ def remineralization(
         dMdt_o2 = -m_o2_eq  # consume O2
         dMdt_h2s = -m_h2s  # consume all h2s
         dMdt_so4 = -m_h2s  # add sulfate
-        # print("oxic remin")
-        # print(f"dMdt_o2 = {dMdt_o2:2e}")
-        # print(f"dMdt_h2s = {dMdt_h2s:2e}")
-        # print(f"dMdt_so4 = {dMdt_so4:2e}")
 
     else:  # box has not enough oxygen
         dMdt_o2 = -m_o2  # remove all available oxygen
@@ -218,11 +213,6 @@ def remineralization(
         dMdt_so4 = -POM_flux / 2  # one SO4 oxidizes 2 carbon, and add 2 mol to TA
         dMdt_h2s = -dMdt_so4  # move S to reduced reservoir
         dMdt_ta += 2 * -dMdt_so4  # adjust Alkalinity for changes in sulfate
-        # print("anoxic remin")
-        # print(f"dMdt_o2 = {dMdt_o2:2e}")
-        # print(f"dMdt_h2s = {dMdt_h2s:2e}")
-        # print(f"dMdt_so4 = {dMdt_so4:2e}")
-        # print(f"dMdt_ta = {dMdt_ta:2e}")
 
     if CaCO3_reactions:
         dic_flux = 0.0
@@ -231,7 +221,10 @@ def remineralization(
             dic_flux += f * CaCO3_remin_fractions[i]
             dic_flux_l += dic_fluxes_l[i] * CaCO3_remin_fractions[i]
 
-        # add Alkalinity and DIC from CaCO3 dissolution
+        """ add Alkalinity and DIC from CaCO3 dissolution. Note that
+        the dic_flux comes with a negative sign, so we need to invert
+        the direction!
+        """
         dMdt_dic += -dic_flux
         dMdt_dic_l += -dic_flux_l
         dMdt_ta += 2 * -dic_flux
@@ -426,7 +419,7 @@ def carbonate_system_3(
     depth_area_table = rg.cs.depth_area_table
     area_dz_table = rg.cs.area_dz_table
     Csat_table = rg.cs.Csat_table
-
+    CaCO3_export = -CaCO3_export  # We need to flip sign
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus_0
     boh4: float = boron * KB / (hplus_0 + KB)
@@ -444,31 +437,30 @@ def carbonate_system_3(
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
     zsat = np.clip(zsat, zsat_min, zmax)
     zcc = int(
-        zsat0 * log(-CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
+        zsat0 * log(CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
     )  # eq3
     zcc = np.clip(zcc, zsat_min, zmax)
     # get fractional areas
-    B_AD = -CaCO3_export / AD
+    B_AD = CaCO3_export / AD
     A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
     A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
     A_zcc_zmax = depth_area_table[zcc] - depth_area_table[zmax]
     # ------------------------Calculate Burial Fluxes----------------------------- #
-    BCC = A_zcc_zmax * B_AD
-    BNS = alpha * A_z0_zsat * B_AD
+    BCC = A_zcc_zmax * B_AD  # CCD dissolution
+    BNS = alpha * A_z0_zsat * B_AD  # water column dissolution
     diff_co3 = Csat_table[zsat:zcc] - co3
     area_p = area_dz_table[zsat:zcc]
     BDS_under = kc * area_p.dot(diff_co3)
     BDS_resp = alpha * (A_zsat_zcc * B_AD - BDS_under)
-    BDS = BDS_under + BDS_resp
+    BDS = BDS_under + BDS_resp  # respiration
     if zsnow > zmax:
         zsnow = zmax
     diff: np.ndarray = Csat_table[zcc : int(zsnow)] - co3
     area_p: np.ndarray = area_dz_table[zcc : int(zsnow)]
     # integrate saturation difference over area
-    BPDC = kc * area_p.dot(diff)
+    BPDC = kc * area_p.dot(diff)  # diss if zcc < zsnow
     BPDC = max(BPDC, 0)  # prevent negative values
     d_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
-    dMdt_DIC: float = BDS + BCC + BNS + BPDC
 
     """CACO3_export is the flux of CaCO3 into the box. However, the model should
     use the bypass option and leave all flux calculations to the
@@ -479,11 +471,13 @@ def carbonate_system_3(
     value of the sediments we are dissolving, and the delta of the carbonate rain.
     The currrent code, assumes that both are the same.
     """
-    dMdt_CaCO3_l = dMdt_DIC * dic_sb_l / dic_sb
+    # add dic and TA from dissolution
+    dMdt_dic = BDS + BCC + BNS + BPDC
+    dMdt_ta = 2 * dMdt_dic
+    dMdt_dic_l = dMdt_dic * dic_sb_l / dic_sb
     dH = hplus - hplus_0
 
-    # F_DIC, F_DIC_l, F_TA, dH, d_zsnow
-    return -dMdt_DIC, -dMdt_CaCO3_l, -2 * dMdt_DIC, dH, d_zsnow
+    return dMdt_dic, dMdt_dic_l, dMdt_ta, dH, d_zsnow
 
 
 def init_carbonate_system_3(

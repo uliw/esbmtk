@@ -238,6 +238,8 @@ def carbonate_system_2_ode(
     zcc = int(zsat0 * log(CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
     zcc = np.clip(zcc, zsat_min, zmax)
     # get fractional areas
+
+    
     B_AD = CaCO3_export / AD
     A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
     A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
@@ -271,7 +273,7 @@ def carbonate_system_2_ode(
     """
     BD_l = BD * dic_sb_l / dic_sb
     dH = hplus - hplus_0
-
+    
     # F_DIC, F_DIC_l, F_TA, dH, d_zsnow
     return -BD, -BD_l, -2 * BD, dH, d_zsnow
 
