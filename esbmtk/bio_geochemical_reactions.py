@@ -20,12 +20,32 @@ from __future__ import annotations
 import typing as tp
 import numpy as np
 from math import log, sqrt
-from numba import jit, njit, float64, boolean
+from numba import jit, njit
 from esbmtk import Q_, register_return_values, get_new_ratio_from_alpha
 from .utility_functions import __checkkeys__, __addmissingdefaults__, __checktypes__
 
 if tp.TYPE_CHECKING:
     from esbmtk import Flux, Model, ReservoirGroup
+
+import functools
+
+
+def debug(func):
+    """Print the function signature and return value"""
+
+    @functools.wraps(func)
+    def wrapper_debug(*args, **kwargs):
+        args_repr = [f"{float(repr(a)):.2e}\n" for a in args]  # 1
+        kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]  # 2
+        signature = ", ".join(args_repr + kwargs_repr)  # 3
+        print(f"Calling {func.__name__}\n({signature})")
+        value = func(*args, **kwargs)
+        value = [f"{v:.2e}" for v in value]
+        print(f"\n{func.__name__!r} returned\n {value!r}\n")  # 4
+        breakpoint()
+        return value
+
+    return wrapper_debug
 
 
 @njit()
@@ -45,6 +65,7 @@ def photosynthesis(
     PUE,
     rain_rate,
     om_fractionation_factor,
+    alpha,
     VPDB_r0,  # reference ratio
 ) -> tuple:
     """Calculate the effects of photosynthesis in the surface boxes"""
@@ -58,33 +79,29 @@ def photosynthesis(
 
     # POM formation
     dMdt_po4 = -productivity * PUE  # remove PO4 into POM
-    dMdt_POM = -dMdt_po4 * PC_ratio  # mass of newly formed POM
+    POM_F = -dMdt_po4 * PC_ratio  # mass of newly formed POM
     r = get_new_ratio_from_alpha(dic, dic_l, om_fractionation_factor)
-    dMdt_POM_l = dMdt_POM * r  # mass of POM_l
-    dMdt_dic = -dMdt_POM  # remove DIC by POM formation
-    dMdt_dic_l = -dMdt_POM_l
-    dMdt_ta = dMdt_POM * NC_ratio  # add TA from nitrate uptake into POM
-    # print(f"dMdt_ta OM = {dMdt_ta:2e}")
+    POM_F_l = POM_F * r  # mass of POM_l
+    dMdt_dic = -POM_F  # remove DIC by POM formation
+    dMdt_dic_l = -POM_F_l
+    dMdt_ta = POM_F * NC_ratio  # add TA from nitrate uptake into POM
 
     # CaCO3 formation
-    CaCO3 = dMdt_POM / rain_rate  # newly formed CaCO3
-    dMdt_dic += -CaCO3  # dic removed
-    dMdt_dic_l += -CaCO3 * dic_l / dic
-    # print(f"dMdt_ta CaCO3 = {2 * -CaCO3:2e}")
-    dMdt_ta += 2 * -CaCO3  # TA removed
-    # print(f"dMdt_Ta = {dMdt_ta:2e}")
+    alpha = 1
+    PIC_F = POM_F * alpha / rain_rate  # newly formed CaCO3
+    PIC_F_l = PIC_F * dic_l / dic
+    dMdt_dic += -PIC_F  # dic removed
+    dMdt_dic_l += -PIC_F
+    dMdt_ta += 2 * -PIC_F  # TA removed
 
     # sulfur reactions, assuming that there is alwways enough O2
     dMdt_h2s = -h2s * volume  # H2S oxidation
     dMdt_so4 = dMdt_h2s  # add S to the sulfate pool
     dMdt_ta += 2 * dMdt_so4  # adjust Alkalinity
-    # print(f"dMdt_Ta returned = {dMdt_ta:2e}")
-    # print()
     # add O2 from photosynthesis - h2s oxidation
-    dCdt_o = dMdt_POM * O2C_ratio - 2 * h2s * volume
+    dCdt_o = POM_F * O2C_ratio - 2 * h2s * volume
 
-    # note that these are returned as fluxes
-    return (
+    return (  # note that these are returned as fluxes
         dCdt_o,
         dMdt_ta,
         dMdt_po4,
@@ -92,8 +109,10 @@ def photosynthesis(
         dMdt_h2s,
         dMdt_dic,
         dMdt_dic_l,
-        dMdt_POM,
-        dMdt_POM_l,
+        POM_F,
+        POM_F_l,
+        PIC_F,
+        PIC_F_l,
     )
 
 
@@ -123,6 +142,7 @@ def init_photosynthesis(rg, productivity):
             M.PUE,
             M.rain_rate,
             M.OM_frac / 1000.0 + 1.0,  # convert to actual ratio
+            M.alpha,
             M.C.r,  # VDPB reference ratio
         ],
         register=rg,
@@ -134,6 +154,7 @@ def init_photosynthesis(rg, productivity):
             {"F_rg.H2S": "photosynthesis"},
             {"F_rg.DIC": "photosynthesis"},
             {"F_rg.POM": "photosynthesis"},
+            {"F_rg.PIC": "photosynthesis"},
         ],
     )
     rg.mo.lpc_f.append(ec.fname)
@@ -148,23 +169,26 @@ def add_photosynthesis(rgs: list[ReservoirGroup], p_fluxes: list[Flux | Q_]):
     from esbmtk import register_return_values
 
     M = rgs[0].mo
-    for i, r in enumerate(rgs):
+    for i, rg in enumerate(rgs):
         if isinstance(p_fluxes[i], Q_):
             p_fluxes[i] = p_fluxes[i].to(M.f_unit).magnitude
-
-        ec = init_photosynthesis(r, p_fluxes[i])
-        register_return_values(ec, r)
-        r.has_cs1 = True
+            # print(f"rg = {rg.full_name}, f = {p_fluxes[i]}")
+        else:
+            pass
+            # print(f"rg = {rg.full_name}, f = {p_fluxes[i].full_name}")
+        ec = init_photosynthesis(rg, p_fluxes[i])
+        register_return_values(ec, rg)
+        rg.has_cs1 = True
 
 
 @njit()
 def remineralization(
-    om_fluxes: list,  # POM export fluxes
-    om_fluxes_l: list,  # POM_l export fluxes
-    dic_fluxes: list,
-    dic_fluxes_l: list,
-    om_remin_fractions: list,  # list of remineralization fractions
-    CaCO3_remin_fractions: float,
+    pom_fluxes: list,  # POM export fluxes
+    pom_fluxes_l: list,  # POM_l export fluxes
+    pic_fluxes: list,
+    pic_fluxes_l: list,
+    pom_remin_fractions: list,  # list of remineralization fractions
+    pic_remin_fractions: float,
     h2s: float,  # concentration
     so4: float,  # concentration
     o2: float,  # o2 concentration
@@ -173,6 +197,7 @@ def remineralization(
     PC_ratio: float,
     NC_ratio: float,
     O2C_ratio: float,
+    alpha: float,
     CaCO3_reactions=True,
     # burial: float,
 ) -> float:
@@ -181,24 +206,24 @@ def remineralization(
     high latitude POM flux. We only add the part that is remineralized.
     Note: The CaCO3 fluxes are handled below
     """
-    POM_flux = 0
-    POM_flux_l = 0
+    pom_flux = 0
+    pom_flux_l = 0
     # sum all POM and dic fluxes
-    for i, f in enumerate(om_fluxes):
-        POM_flux += f * om_remin_fractions[i]
-        POM_flux_l += om_fluxes_l[i] * om_remin_fractions[i]
+    for i, f in enumerate(pom_fluxes):
+        pom_flux += f * pom_remin_fractions[i]
+        pom_flux_l += pom_fluxes_l[i] * pom_remin_fractions[i]
 
     # remove Alkalinity and add dic and po4 from POM remineralization
     # this happens irrespective of oxygen levels
-    dMdt_po4 = POM_flux / PC_ratio  # return PO4
-    dMdt_ta = -POM_flux * NC_ratio  # remove Alkalinity from NO3
-    dMdt_dic = POM_flux  # add DIC from POM
-    dMdt_dic_l = POM_flux_l
+    dMdt_po4 = pom_flux / PC_ratio  # return PO4
+    dMdt_ta = -pom_flux * NC_ratio  # remove Alkalinity from NO3
+    dMdt_dic = pom_flux  # add DIC from POM
+    dMdt_dic_l = pom_flux_l
     m_h2s = h2s * volume
 
     m_o2 = o2 * volume
     # how much O2 is needed to oxidize all POM and H2S
-    m_o2_eq = POM_flux * O2C_ratio + 2 * m_h2s
+    m_o2_eq = pom_flux * O2C_ratio + 2 * m_h2s
 
     if m_o2 > m_o2_eq:  # box has enough oxygen
         dMdt_o2 = -m_o2_eq  # consume O2
@@ -208,48 +233,45 @@ def remineralization(
     else:  # box has not enough oxygen
         dMdt_o2 = -m_o2  # remove all available oxygen
         # calculate how much POM is left to oxidize
-        POM_flux = POM_flux - m_o2 / O2C_ratio
+        pom_flux = pom_flux - m_o2 / O2C_ratio
         # oxidize the remaining POM via sulfate reduction
-        dMdt_so4 = -POM_flux / 2  # one SO4 oxidizes 2 carbon, and add 2 mol to TA
+        dMdt_so4 = -pom_flux / 2  # one SO4 oxidizes 2 carbon, and add 2 mol to TA
         dMdt_h2s = -dMdt_so4  # move S to reduced reservoir
         dMdt_ta += 2 * -dMdt_so4  # adjust Alkalinity for changes in sulfate
 
     if CaCO3_reactions:
-        dic_flux = 0.0
+        pic_flux = 0.0
         dic_flux_l = 0.0
-        for i, f in enumerate(dic_fluxes):
-            dic_flux += f * CaCO3_remin_fractions[i]
-            dic_flux_l += dic_fluxes_l[i] * CaCO3_remin_fractions[i]
+        for i, f in enumerate(pic_fluxes):
+            pic_flux += f * pic_remin_fractions[i] * alpha
+            dic_flux_l += pic_fluxes_l[i] * pic_remin_fractions[i] * alpha
 
-        """ add Alkalinity and DIC from CaCO3 dissolution. Note that
-        the dic_flux comes with a negative sign, so we need to invert
-        the direction!
-        """
-        dMdt_dic += -dic_flux
-        dMdt_dic_l += -dic_flux_l
-        dMdt_ta += 2 * -dic_flux
+        # add Alkalinity and DIC from CaCO3 dissolution. Note that
+        dMdt_dic += pic_flux
+        dMdt_dic_l += dic_flux_l
+        dMdt_ta += 2 * pic_flux
 
     # note, these are returned as fluxes
-    return [dMdt_ta, dMdt_h2s, dMdt_so4, dMdt_o2, dMdt_po4]
+    return [dMdt_dic, dMdt_dic_l, dMdt_ta, dMdt_h2s, dMdt_so4, dMdt_o2, dMdt_po4]
 
 
 def init_remineralization(
     rg: ReservoirGroup,
-    om_fluxes: list[Flux],
-    om_fluxes_l: list[Flux],
-    CaCO3_fluxes: list[Flux],
-    CaCO3_fluxes_l: list[Flux],
-    om_remin_fractions: float | list[float],
-    CaCO3_remin_fractions: float | list[float],
+    pom_fluxes: list[Flux],
+    pom_fluxes_l: list[Flux],
+    pic_fluxes: list[Flux],
+    pic_fluxes_l: list[Flux],
+    pom_remin_fractions: float | list[float],
+    pic_remin_fractions: float | list[float],
     CaCO3_reactions: bool,
 ):
     """ """
     from esbmtk import ExternalCode
 
-    if not isinstance(om_remin_fractions, list):
-        om_remin_fractions = list(om_remin_fractions)
-    if not isinstance(CaCO3_remin_fractions, list):
-        CaCO3_remin_fractions = list(CaCO3_remin_fractions)
+    if not isinstance(pom_remin_fractions, list):
+        pom_remin_fractions = list(pom_remin_fractions)
+    if not isinstance(pic_remin_fractions, list):
+        pic_remin_fractions = list(pic_remin_fractions)
 
     M = rg.mo
     ec = ExternalCode(
@@ -261,12 +283,12 @@ def init_remineralization(
         # hplus is not used but needed in post processing
         vr_datafields={"Hplus": rg.swc.hplus},
         function_input_data=[
-            om_fluxes,
-            om_fluxes_l,
-            CaCO3_fluxes,
-            CaCO3_fluxes_l,
-            om_remin_fractions,
-            CaCO3_remin_fractions,
+            pom_fluxes,
+            pom_fluxes_l,
+            pic_fluxes,
+            pic_fluxes_l,
+            pom_remin_fractions,
+            pic_remin_fractions,
             rg.H2S,
             rg.SO4,
             rg.O2,
@@ -275,10 +297,12 @@ def init_remineralization(
             M.PC_ratio,
             M.NC_ratio,
             M.O2C_ratio,
+            M.alpha,
             CaCO3_reactions,
         ],
         register=rg,
         return_values=[
+            {"F_rg.DIC": "remineralization"},
             {"F_rg.TA": "remineralization"},
             {"F_rg.H2S": "remineralization"},
             {"F_rg.SO4": "remineralization"},
@@ -308,12 +332,12 @@ def add_remineralization(M: Model, f_map: dict) -> None:
     """
     # get sink name (e.g., M.A_ib) and source dict e.g. {M.H_sb: {"POM": 0.3}}
     for sink, source_dict in f_map.items():
-        om_fluxes = list()
-        om_fluxes_l = list()
-        om_remin = list()
-        CaCO3_fluxes = list()
-        CaCO3_fluxes_l = list()
-        CaCO3_remin = list()
+        pom_fluxes = list()
+        pom_fluxes_l = list()
+        pom_remin = list()
+        pic_fluxes = list()
+        pic_fluxes_l = list()
+        pic_remin = list()
 
         # create flux lists for POM and possibly CaCO3
         for source, type_dict in source_dict.items():
@@ -325,43 +349,43 @@ def add_remineralization(M: Model, f_map: dict) -> None:
                 )
                 for f in fl:
                     if f.name[-3:] == "F_l":
-                        om_fluxes_l.append(f)
+                        pom_fluxes_l.append(f)
                     else:
-                        om_fluxes.append(f)
-                        om_remin.append(type_dict["POM"])
+                        pom_fluxes.append(f)
+                        pom_remin.append(type_dict["POM"])
 
-            if "DIC" in type_dict:
+            if "PIC" in type_dict:
                 fl = M.flux_summary(
-                    filter_by=f"photosynthesis {source.name} DIC",
+                    filter_by=f"photosynthesis {source.name} PIC",
                     return_list=True,
                 )
                 for f in fl:
                     if f.name[-3:] == "F_l":
-                        CaCO3_fluxes_l.append(f)
+                        pic_fluxes_l.append(f)
                     else:
-                        CaCO3_fluxes.append(f)
-                        CaCO3_remin.append(type_dict["DIC"])
+                        pic_fluxes.append(f)
+                        pic_remin.append(type_dict["PIC"])
 
-        if len(CaCO3_fluxes) > 0:
+        if len(pic_fluxes) > 0:
             ec = init_remineralization(
                 sink,
-                om_fluxes,
-                om_fluxes_l,
-                CaCO3_fluxes,
-                CaCO3_fluxes_l,
-                om_remin,
-                CaCO3_remin,
+                pom_fluxes,
+                pom_fluxes_l,
+                pic_fluxes,
+                pic_fluxes_l,
+                pom_remin,
+                pic_remin,
                 True,
             )
         else:
             ec = init_remineralization(
                 sink,
-                om_fluxes,
-                om_fluxes_l,
-                om_fluxes,  # numba cannot deal with empty fluxes, so we
-                om_fluxes_l,  # add the om_fluxes, but ignore them
-                om_remin,
-                om_remin,
+                pom_fluxes,
+                pom_fluxes_l,
+                pom_fluxes,  # numba cannot deal with empty fluxes, so we
+                pom_fluxes_l,  # add the om_fluxes, but ignore them
+                pom_remin,
+                pom_remin,
                 False,
             )
         register_return_values(ec, sink)
@@ -370,7 +394,7 @@ def add_remineralization(M: Model, f_map: dict) -> None:
 
 def carbonate_system_3(
     rg: ReservoirGroup,  # 2 Reservoir handle
-    CaCO3_export: float,  # 3 CaCO3 export flux as DIC
+    pic_f: float,  # 3 CaCO3 export flux as DIC
     dic_db: float,  # 4 DIC in the deep box
     dic_db_l: float,  # 4 DIC in the deep box
     ta_db: float,  # 5 TA in the deep box
@@ -419,7 +443,6 @@ def carbonate_system_3(
     depth_area_table = rg.cs.depth_area_table
     area_dz_table = rg.cs.area_dz_table
     Csat_table = rg.cs.Csat_table
-    CaCO3_export = -CaCO3_export  # We need to flip sign
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus_0
     boh4: float = boron * KB / (hplus_0 + KB)
@@ -436,12 +459,10 @@ def carbonate_system_3(
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
     zsat = np.clip(zsat, zsat_min, zmax)
-    zcc = int(
-        zsat0 * log(CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
-    )  # eq3
+    zcc = int(zsat0 * log(pic_f * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
     zcc = np.clip(zcc, zsat_min, zmax)
     # get fractional areas
-    B_AD = CaCO3_export / AD
+    B_AD = pic_f / AD
     A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
     A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
     A_zcc_zmax = depth_area_table[zcc] - depth_area_table[zmax]
@@ -462,11 +483,9 @@ def carbonate_system_3(
     BPDC = max(BPDC, 0)  # prevent negative values
     d_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
 
-    """CACO3_export is the flux of CaCO3 into the box. However, the model should
-    use the bypass option and leave all flux calculations to the
-    cs_code.  As such, we simply add the fraction of the input flux
-    that dissolves, and ignore the fraction that is buried.  
-
+    """CaCO3_export is the flux of particulate CaCO3 into the box.
+    The fraction that is buried does not affect the water chemistry,
+    so here we only consider the carbonate that is dissolved.
     The isotope ratio of the dissolution flux is determined by the delta
     value of the sediments we are dissolving, and the delta of the carbonate rain.
     The currrent code, assumes that both are the same.
@@ -482,7 +501,7 @@ def carbonate_system_3(
 
 def init_carbonate_system_3(
     rg: ReservoirGroup,
-    export_flux: Flux,
+    pic_export_flux: Flux,
     r_sb: ReservoirGroup,
     r_db: ReservoirGroup,
     area_table: np.ndarray,
@@ -508,7 +527,7 @@ def init_carbonate_system_3(
         },
         function_input_data=[
             rg,  # 0
-            export_flux,  # 1
+            pic_export_flux,  # 1
             r_db.DIC,  # 2
             r_db.TA,  # 3
             r_sb.DIC,  # 4
@@ -545,7 +564,7 @@ def add_carbonate_system_3(**kwargs) -> None:
     Required keywords:
         r_sb: list of ReservoirGroup objects in the surface layer
         r_db: list of ReservoirGroup objects in the deep layer
-        carbonate_export_fluxes: list of flux objects which must match the
+        pic_export_flux: list of flux objects which must match the
                                  list of ReservoirGroup objects.
         zsat_min = depth of the upper boundary of the deep box
         z0 = upper depth limit for carbonate burial calculations
@@ -574,7 +593,7 @@ def add_carbonate_system_3(**kwargs) -> None:
     lkk: dict = {
         "r_db": list,  # list of deep reservoirs
         "r_sb": list,  # list of corresponding surface reservoirs
-        "carbonate_export_fluxes": list,
+        "pic_export_flux": list,
         "AD": float,
         "zsat": int,
         "zsat_min": int,
@@ -597,7 +616,7 @@ def add_carbonate_system_3(**kwargs) -> None:
     lrk: list[str] = [
         "r_db",
         "r_sb",
-        "carbonate_export_fluxes",
+        "pic_export_flux",
         "zsat_min",
         "z0",
     ]
@@ -651,7 +670,7 @@ def add_carbonate_system_3(**kwargs) -> None:
     for i, rg in enumerate(r_db):  # Setup the virtual reservoirs
         ec = init_carbonate_system_3(
             rg,
-            kwargs["carbonate_export_fluxes"][i],
+            kwargs["pic_export_flux"][i],
             r_sb[i],
             r_db[i],
             area_table,
