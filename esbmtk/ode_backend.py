@@ -60,6 +60,9 @@ def get_initial_conditions(
 
     i: int = 0
     for r in M.lic:
+        # if r.name == "O2_At":
+        #     print(f"r = {r.full_name:2e}")
+
         # collect all reservoirs that have initial conditions
         # if r.rtype != "flux_only":
         if len(r.lof) > 0 or r.rtype == "computed" or r.rtype == "passive":
@@ -91,6 +94,8 @@ def get_initial_conditions(
             else:
                 icl[r] = [i, i]
                 i += 1
+            # if r.name == "O2_At":
+            #     breakpoint()
 
     return R, icl, cpl, ipl, np.array(atol)
 
@@ -214,6 +219,7 @@ import numpy as np
 from esbmtk import Model, ReservoirGroup, AirSeaExchange, Reservoir
 from esbmtk import carbonate_system_1_ode, carbonate_system_2_ode
 from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes
+from esbmtk import gas_exchange_with_isotopes_2
 
 class setup_ode():
     '''Class stub to enable state in the equation system passed to ODEINT
@@ -474,6 +480,8 @@ def parse_esbmtk_return_data_types(d: any, r: Reservoir, ind: str, icl: dict) ->
     to external function objects, and convert them into a suitable string
     format that can be used in the ode equation file
     """
+    from esbmtk import GasReservoir
+
     # covert to object handle if need be
     if isinstance(d, str):
         o = getattr(r.register, d)
@@ -481,8 +489,12 @@ def parse_esbmtk_return_data_types(d: any, r: Reservoir, ind: str, icl: dict) ->
         k = next(iter(d))
         if k[0:2] == "F_":  # this is flux
             sp = k.split(".")[1]
-            o = getattr(r.register, f"{sp}")
-            sr = f"{o.full_name}.{d[k]}_F".replace(".", "_")
+            if isinstance(r.register, GasReservoir):
+                sr = f"M.{r.register.name}.{r.name}_F".replace(".", "_")
+                o = r.register
+            else:
+                o = getattr(r.register, f"{sp}")
+                sr = f"{o.full_name}.{d[k]}_F".replace(".", "_")
         else:
             o = getattr(r.register, k)
             sr = o.full_name.replace(".", "_")
@@ -503,11 +515,14 @@ def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> 
     format that can be used in the ode equation file
     """
     from esbmtk import Flux, Reservoir, ReservoirGroup, SeawaterConstants, Q_
+    from esbmtk import GasReservoir
 
     if isinstance(d, str):
         sr = getattr(r.register, d)
         a = f"{ind}{get_ic(sr, icl)},\n"
     elif isinstance(d, Reservoir):
+        a = f"{ind}{get_ic(d, icl,d.isotopes)},\n"
+    elif isinstance(d, GasReservoir):
         a = f"{ind}{get_ic(d, icl,d.isotopes)},\n"
     elif isinstance(d, ReservoirGroup):
         a = f"{ind}{d.full_name},\n"

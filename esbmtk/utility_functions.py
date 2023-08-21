@@ -20,7 +20,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import logging
 import typing as tp
-from collections import OrderedDict
 from esbmtk import Q_
 
 if tp.TYPE_CHECKING:
@@ -28,12 +27,33 @@ if tp.TYPE_CHECKING:
 
 np.set_printoptions(precision=4)
 
+import functools
+
+
+def debug(func):
+    """Print the function signature and return value"""
+
+    @functools.wraps(func)
+    def wrapper_debug(*args, **kwargs):
+        args_repr = [f"{float(repr(a)):.2e}\n" for a in args]  # 1
+        kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]  # 2
+        signature = ", ".join(args_repr + kwargs_repr)  # 3
+        print(f"Calling {func.__name__}\n({signature})")
+        value = func(*args, **kwargs)
+        value = [f"{v:.2e}" for v in value]
+        print(f"\n{func.__name__!r} returned\n {value!r}\n")  # 4
+        breakpoint()
+        return value
+
+    return wrapper_debug
+
 
 def register_return_values(ec, parent) -> None:
     """Check the return values of external function instances,
     and create the necessary reservoirs or fluxes
     """
     from .esbmtk import Reservoir, Flux
+    from .extended_classes import GasReservoir
 
     for v in ec.return_values:
         if isinstance(v, dict):
@@ -45,7 +65,11 @@ def register_return_values(ec, parent) -> None:
                 fid = v[n]
                 fn = f"{fid}_F"
                 n = n.split(".")[1]  # species name - reservoir name
-                r = getattr(parent, n)  # get r handle
+                if isinstance(parent, GasReservoir | Reservoir):
+                    r = parent  # get r handle
+                    fn = f"{ec.name}_F"
+                else:
+                    r = getattr(parent, n)  # get r handle
                 f = Flux(
                     name=fn,
                     species=r.species,
@@ -76,8 +100,8 @@ def register_return_values(ec, parent) -> None:
                 parent.lor.append(rt)
         elif isinstance(v, Reservoir):
             v.ef_results = True
-    
-            
+
+
 def summarize_results(M: Model) -> dict():
     """Summarize all model results at t_max into a hirarchical
     dictionary, where values are accessed in the following way:
@@ -364,7 +388,6 @@ def make_dict(keys: list, values: list) -> dict:
 
 
 def get_typed_list(data: list) -> list:
-
     tl = list()
     for x in data:
         tl.append(x)
@@ -461,7 +484,7 @@ def build_concentration_dicts(cd: dict, bg: dict) -> dict:
     else:
         raise ValueError("This should never happen")
 
-    icd: dict = OrderedDict()
+    icd: dict = {}
     td1: dict = {}  # temp dictionary
     td2: dict = {}  # temp dictionary
     td3: dict = {}  # temp dictionary
@@ -586,7 +609,6 @@ def expand_dict(d: dict, mt: str = "1:1") -> int:
     r: dict = {}  # the dict we will return
 
     for ck, cd in d.items():  # loop over connections
-
         # print(f"ck = {ck}")
         # print(f"cd = {cd}")
 
@@ -599,7 +621,6 @@ def expand_dict(d: dict, mt: str = "1:1") -> int:
         if isinstance(ck, tuple):
             # assume 1:1 mapping between tuple and connection parameters
             if mt == "1:1":
-
                 # prep dictionaries
                 if case == 0:
                     nd = cd

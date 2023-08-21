@@ -295,7 +295,6 @@ class SourceSink(esbmtkBase):
     """
 
     def __init__(self, **kwargs) -> None:
-
         from esbmtk import Species, Model, SourceSinkGroup
 
         # provide a dict of all known keywords and their type
@@ -344,7 +343,6 @@ class SourceSinkGroup(esbmtkBase):
     """
 
     def __init__(self, **kwargs) -> None:
-
         from esbmtk import Model, Species, Source, Sink
 
         # provide a dict of all known keywords and their type
@@ -1071,11 +1069,13 @@ class DataField(esbmtkBase):
             ],
             "y1_data": ["None", (np.ndarray, list)],
             "x1_data": ["None", (np.ndarray, list, str)],
+            "x1_as_time": [False, (bool)],
             "y1_label": ["Not Provided", (str, list)],
             "y1_legend": ["Not Provided", (str)],
             "y1_type": ["plot", (str, list)],
             "y2_data": ["None", (str, np.ndarray, list)],
             "x2_data": ["None", (np.ndarray, list, str)],
+            "x2_as_time": [False, (bool)],
             "y2_label": ["Not Provided", (str, list)],
             "y2_legend": ["Not Provided", (str)],
             "y2_type": ["plot", (str, list)],
@@ -1291,7 +1291,7 @@ class DataField(esbmtkBase):
         from esbmtk import set_y_limits
 
         # plot external data first
-        for (i, d) in enumerate(self.led):
+        for i, d in enumerate(self.led):
             time = (d.x * M.t_unit).to(M.d_unit).magnitude
             # yd = (d.y * M.c_unit).to(self.plt_units).magnitude
             leg = f"{d.legend}"
@@ -1307,10 +1307,14 @@ class DataField(esbmtkBase):
         ymin = list()
         ymax = list()
         for i, d in enumerate(self.y1_data):  # loop over datafield list
-            # print(self.y1_legend)
+            if self.x1_as_time:
+                x1 = (self.x1_data[i] * M.t_unit).to(M.d_unit).magnitude
+            else:
+                x1 = self.x1_data[i]
+
             self.__plot_data__(
                 ax,
-                self.x1_data[i],
+                x1,
                 self.y1_data[i],
                 self.y1_type,
                 self.y1_label[i],
@@ -1345,9 +1349,13 @@ class DataField(esbmtkBase):
             )
             axt = ax.twinx()
             for i, d in enumerate(self.y2_data):  # loop over datafield list
+                if self.x2_as_time:
+                    x2 = (self.x1_data[i] * M.t_unit).to(M.d_unit).magnitude
+                else:
+                    x2 = self.x1_data[i]
                 self.__plot_data__(
                     axt,
-                    self.x2_data[i],
+                    x2,
                     self.y2_data[i],
                     self.y2_type,
                     self.y2_label[i],
@@ -1479,7 +1487,7 @@ class ExternalCode(Reservoir_no_set):
                     fname = function name as string
                     function_input_data="DIC TA",
                     # Note that parameters must be individual float values
-                    function_params:tuple(float) 
+                    function_params:tuple(float)
                     # list of return values
                     return_values={  # these must be known speces definitions
                                   "Hplus": rg.swc.hplus,
@@ -1527,6 +1535,7 @@ class ExternalCode(Reservoir_no_set):
             SourceGroup,
             SinkGroup,
             ReservoirGroup,
+            Model,
         )
         from typing import Callable
 
@@ -1542,7 +1551,15 @@ class ExternalCode(Reservoir_no_set):
             "display_precision": [0.01, (int, float)],
             "register": [
                 "None",
-                (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, str),
+                (
+                    SourceGroup,
+                    SinkGroup,
+                    ReservoirGroup,
+                    ConnectionGroup,
+                    GasReservoir,
+                    Model,
+                    str,
+                ),
             ],
             "full_name": ["None", (str)],
             "isotopes": [False, (bool)],
@@ -1582,7 +1599,7 @@ class ExternalCode(Reservoir_no_set):
         name = f"{self.full_name}_generic_function".replace(".", "_")
         logging.info(f"creating {name}")
 
-        if self.vr_datafields is not "None":
+        if self.vr_datafields != "None":
             self.alias_list = list(self.vr_datafields.keys())
             # initialize data fields
             self.vr_data = list()
@@ -1996,7 +2013,9 @@ class GasReservoir(ReservoirBase):
         # self.l = get_l_mass(self.m, self.delta, self.species.r)
         self.l = get_l_mass(self.c, self.delta, self.species.r)
         # delta of reservoir
-        self.v: float = np.zeros(self.mo.steps) + self.volume.to(self.v_unit).magnitude  # mass of atmosphere
+        self.v: float = (
+            np.zeros(self.mo.steps) + self.volume.to(self.v_unit).magnitude
+        )  # mass of atmosphere
 
         if self.mo.number_of_solving_iterations > 0:
             self.mc = np.empty(0)
@@ -2098,7 +2117,6 @@ class ExternalData(esbmtkBase):
     """
 
     def __init__(self, **kwargs: dict[str, str]):
-
         from esbmtk import Q_, Model, Reservoir, DataField
 
         # dict of all known keywords and their type
