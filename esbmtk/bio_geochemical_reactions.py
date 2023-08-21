@@ -58,15 +58,7 @@ def photosynthesis(
     so4,
     h2s,
     productivity,  # actually P flux
-    volume,
-    PC_ratio,
-    NC_ratio,
-    O2C_ratio,
-    PUE,
-    rain_rate,
-    om_fractionation_factor,
-    alpha,
-    VPDB_r0,  # reference ratio
+    p: tuple[float],  # parameters
 ) -> tuple:
     """Calculate the effects of photosynthesis in the surface boxes"""
     """O2 in surface box as result of photosynthesis equals the primary
@@ -76,6 +68,18 @@ def photosynthesis(
     Note that this functions returns fluxes, so we need to calculate
     dMdt, not dCdt
     """
+
+    # unpack parameters
+    (
+        volume,
+        PC_ratio,
+        NC_ratio,
+        O2C_ratio,
+        PUE,
+        rain_rate,
+        om_fractionation_factor,
+        alpha,
+    ) = p
 
     # POM formation
     dMdt_po4 = -productivity * PUE  # remove PO4 into POM
@@ -135,16 +139,17 @@ def init_photosynthesis(rg, productivity):
             rg.SO4,
             rg.H2S,
             productivity,
+        ],
+        function_params=(
             rg.volume.magnitude,
             M.PC_ratio,
             M.NC_ratio,
             M.O2C_ratio,
             M.PUE,
             M.rain_rate,
-            M.OM_frac / 1000.0 + 1.0,  # convert to actual ratio
+            M.OM_frac / 1000.0 + 1.0,
             M.alpha,
-            M.C.r,  # VDPB reference ratio
-        ],
+        ),
         register=rg,
         return_values=[
             {"F_rg.O2": "photosynthesis"},

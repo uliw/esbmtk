@@ -565,8 +565,10 @@ def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> st
     for d in r.function_input_data:
         a += parse_esbmtk_input_data_types(d, r, ind3, icl)
 
-    eqs.write(f"{rv} = {r.fname}(\n{a}{ind2})\n\n")
-
+    if r.function_params == "None":
+        eqs.write(f"{rv} = {r.fname}(\n{a}{ind2})\n\n")
+    else:
+        eqs.write(f"{rv} = {r.fname}(\n{a}{ind2}{ind2}{r.function_params})\n\n")
     rel += f"{ind3}{rv},\n"
 
     return rel

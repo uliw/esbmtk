@@ -1479,16 +1479,7 @@ class ExternalCode(Reservoir_no_set):
                     fname = function name as string
                     function_input_data="DIC TA",
                     # Note that parameters must be individual float values
-                    function_params=list(
-                        [
-                            self.swc.K1,
-                            self.swc.K2,
-                            self.swc.KW,
-                            self.swc.KB,
-                            self.swc.boron,
-                            self.swc.hplus,
-                        ]
-                    ),
+                    function_params:tuple(float) 
                     # list of return values
                     return_values={  # these must be known speces definitions
                                   "Hplus": rg.swc.hplus,
@@ -1558,7 +1549,7 @@ class ExternalCode(Reservoir_no_set):
             "volume": ["None", (str, int, float)],
             "vr_datafields": ["None", (dict, str)],
             "function_input_data": ["None", (str, list)],
-            "function_params": ["None", (list)],
+            "function_params": ["None", (tuple)],
             "fname": ["None", (str)],
             "geometry": ["None", (list, str)],
             "alias_list": ["None", (list, str)],
