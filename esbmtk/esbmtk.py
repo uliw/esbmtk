@@ -386,12 +386,6 @@ class Model(esbmtkBase):
         their own CSV file
 
         """
-
-        # for k, v in kwargs.items():
-        #     if not isinstance(v, int):
-        #         print(f"{k} must be an integer number")
-        #         raise ValueError(f"{k} must be an integer number")
-
         prefix = ""
         stride = self.stride
         start = 0
