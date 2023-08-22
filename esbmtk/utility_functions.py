@@ -48,9 +48,14 @@ def debug(func):
     return wrapper_debug
 
 
-def register_return_values(ec, parent) -> None:
+def register_return_values(ec, parent, aux="None") -> None:
     """Check the return values of external function instances,
-    and create the necessary reservoirs or fluxes
+    and create the necessary reservoirs or fluxes.
+    This is a terrible hack, especially for the GasExchange process
+    The key problem, is that GE is a one to many process,
+    and it would be better to express this with several connection
+    objects, rather than overloading the source attribute of the
+    GasReservoir class.
     """
     from .esbmtk import Reservoir, Flux
     from .extended_classes import GasReservoir
@@ -76,9 +81,15 @@ def register_return_values(ec, parent) -> None:
                     rate=0,
                     register=r,
                 )
-                r.lof.append(f)
+                if isinstance(parent, GasReservoir):
+                    aux.lof.append(f)
+                    r.source = r
+                else:
+                    r.source = "None"
+
                 r.sink = r
-                r.source = "None"
+
+                r.lof.append(f)
                 r.ctype = "ignore"
                 if r.isotopes:
                     f = Flux(

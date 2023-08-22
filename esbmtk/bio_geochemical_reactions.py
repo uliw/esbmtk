@@ -308,6 +308,7 @@ def carbonate_system_3(
 
     return dMdt_dic, dMdt_dic_l, dMdt_ta, dH, d_zsnow
 
+
 @njit
 def gas_exchange_with_isotopes_2(
     gas_c,  # species concentration in atmosphere
@@ -352,7 +353,8 @@ def gas_exchange_with_isotopes_2(
     f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_c_aq * 1e3)
     f_l = f - f_h  # the corresponding flux of the light isotope
 
-    return -f, -f_l
+    return f, f_l
+
 
 @njit
 def gas_exchange_no_isotopes_2(
@@ -369,12 +371,10 @@ def gas_exchange_no_isotopes_2(
         piston_velocity,
         p_H2O,
     ) = p
-    scale = area * piston_velocity
 
+    scale = area * piston_velocity
     # Solibility with correction for pH2O
     beta = solubility * (1 - p_H2O)
     # f as afunction of solubility difference
     f = scale * (beta * gas_c - gas_c_aq * 1e3)
-    # isotope ratio of DIC
-
-    return -f
+    return f

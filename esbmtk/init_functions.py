@@ -218,7 +218,10 @@ def init_gas_exchange_no_isotopes(
     """Setup GasExchange instances"""
 
     # convert pv into model units
-    pv = piston_velocity.to(f"meter/{r_liquid.mo.t_unit}").magnitude
+    pv = piston_velocity.to(f"meter/yr").magnitude
+    print(f"pv = {pv:.2e}")
+    print(f"solubility = {solubility:.2e}")
+    print(f"r_liquid.parent.area = {r_liquid.parent.area:.2e}")
 
     ec = ExternalCode(
         name=f"{r_liquid.parent.name}_{r_liquid.name}_gexo2",
@@ -260,7 +263,7 @@ def init_gas_exchange_with_isotopes(
     """Setup GasExchange instances"""
 
     # convert pv into model units
-    pv = piston_velocity.to(f"meter/{r_liquid.mo.t_unit}").magnitude
+    pv = piston_velocity.to(f"meter/yr").magnitude
 
     ec = ExternalCode(
         name=f"{r_liquid.parent.name}_{r_liquid.name}_gexco2",
@@ -283,7 +286,7 @@ def init_gas_exchange_with_isotopes(
             r_liquid.parent.swc.a_dg,
             r_liquid.parent.swc.a_u,
         ),
-        register=r_liquid.parent,
+        register=r_gas,
         return_values=[
             {f"F_rg.{species.name}": "gexwi"},
         ],

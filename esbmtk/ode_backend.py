@@ -132,7 +132,8 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
                 # print(f"f = {flux.full_name}, p = {flux.parent.full_name}")
                 if flux.parent.source == r:
                     sign = "-"
-                elif flux.parent.sink == r:
+                else:
+                    # elif flux.parent.sink == r:
                     sign = "+"
 
                 fname = f'{flux.full_name.replace(".", "_")}'

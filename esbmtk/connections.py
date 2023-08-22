@@ -1418,10 +1418,15 @@ class AirSeaExchange(esbmtkBase):
         # esbmtk pCO2 = atm 
         # zeebe expresses kas as mol/(m^2 * uatm * yr)
         self.kas = self.solubility * self.piston_velocity
+        # print(f"Piston velocity = {self.piston_velocity:.2e}")
+        # print(f"self.solubility = {self.solubility:2e}")
+        # print(f"self.area = {self.area:2e}")
+
         self.kas_zeebe = self.kas * 1e-6
         
         swc = self.lr.swc if self.lr.register == "None" else self.lr.register.swc
         # initialize process instance
+        
         ph = GasExchange(
             name="_PGex",
             gas=self.gr,  # gas reservoir
@@ -1451,9 +1456,7 @@ class AirSeaExchange(esbmtkBase):
 
         # make sure piston velocity is in the right units
         self.piston_velocity = check_for_quantity(self.piston_velocity)
-        self.piston_velocity = self.piston_velocity.to(
-            f"meter/{self.liquid_reservoir.mo.t_unit}"
-        ).magnitude
+        self.piston_velocity = self.piston_velocity.to("meter/year").magnitude
 
         # ref_species can point to vr_data fields which are of type
         # numpy array

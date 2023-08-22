@@ -44,7 +44,6 @@ def carbonate_system_1_ode(
     ta: float,
     hplus: float,
 ) -> float:
-
     """Calculates and returns the H+ and carbonate alkalinity concentrations
      for the given reservoirgroup
 
@@ -235,11 +234,12 @@ def carbonate_system_2_ode(
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
     zsat = np.clip(zsat, zsat_min, zmax)
-    zcc = int(zsat0 * log(CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
+    zcc = int(
+        zsat0 * log(CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
+    )  # eq3
     zcc = np.clip(zcc, zsat_min, zmax)
     # get fractional areas
 
-    
     B_AD = CaCO3_export / AD
     A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
     A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
@@ -273,7 +273,7 @@ def carbonate_system_2_ode(
     """
     BD_l = BD * dic_sb_l / dic_sb
     dH = hplus - hplus_0
-    
+
     # F_DIC, F_DIC_l, F_TA, dH, d_zsnow
     return -BD, -BD_l, -2 * BD, dH, d_zsnow
 
@@ -282,15 +282,20 @@ def gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:
     """Calculate the gas exchange flux across the air sea interface
 
     Parameters:
-    scale: surface area in m^2
+    scale: surface area in m^2 * piston_velocity
     gas_c: species concentration in atmosphere
     p_H2O: water vapor partial pressure
     solubility: species solubility  mol/(m^3 atm)
     gc_aq: concentration of the dissolved gas in water
     """
+      
     beta = solubility * (1 - p_H2O)
     f = scale * (gas_c * beta - g_c_aq * 1e3)
-
+    # print("gas_exchange_ode")
+    # print(f"scale = {scale:2e}")
+    # print(f"beta = {beta:2e}")
+    # print(f" f = {f:2e}")
+    # breakpoint()
     return -f
 
 
@@ -307,7 +312,6 @@ def init_carbonate_system_2(
     AD: float,
     kwargs: dict,
 ):
-
     from esbmtk import ExternalCode, carbonate_system_2_ode
 
     ec = ExternalCode(
@@ -480,7 +484,6 @@ def add_carbonate_system_2(**kwargs) -> None:
     AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
 
     for i, rg in enumerate(r_db):  # Setup the virtual reservoirs
-
         ec = init_carbonate_system_2(
             rg,
             kwargs["carbonate_export_fluxes"][i],
@@ -575,7 +578,6 @@ def calc_pCO2(
     hplus,
     SW,
 ) -> np.ndarray:
-
     """
     Calculate the concentration of pCO2 as a function of DIC,
     H+, K1 and k2 and returns a numpy array containing
@@ -615,7 +617,6 @@ def calc_pCO2b(
     hplus: np.ndarray,
     SW: SeawaterConstants,
 ) -> np.ndarray:
-
     """
     Same as calc_pCO2, but accepts values/arrays rather than Reservoirs.
     Calculate the concentration of pCO2 as a function of DIC,
@@ -670,7 +671,6 @@ def get_hplus(
     ta: float,
     hplus: float,
 ) -> float:
-
     k1 = rg.swc.K1  # K1
     k2 = rg.swc.K2  # K2
     KW = rg.swc.KW  # KW
