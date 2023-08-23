@@ -215,8 +215,7 @@ def write_equations_2(
 
     # construct header and static code:
     header = """from __future__ import annotations\n\n
-import numpy as np
-from esbmtk import Model, ReservoirGroup, AirSeaExchange, Reservoir
+from numpy import array as npa
 from esbmtk import carbonate_system_1_ode, carbonate_system_2_ode
 from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes
 
@@ -491,7 +490,9 @@ def parse_esbmtk_return_data_types(d: any, r: Reservoir, ind: str, icl: dict) ->
         else:
             o = getattr(r.register, k)
             sr = f'dCdt_{o.full_name.replace(".", "_")}'
-
+    elif isinstance(d, Flux):
+        o = d
+        sr = o.full_name.replace(".", "_")
     else:  # argument is a regular reservoir
         o = d
         sr = f'dCdt_{o.full_name.replace(".", "_")}'
@@ -536,7 +537,7 @@ def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> 
         a = f"{ind}{d.magnitude},\n"
     elif isinstance(d, list | List):  # loo pover list elements
         a = f"{ind}{d},\n"
-        a = f"{ind}np.array(["
+        a = f"{ind}npa(["
         for e in d:
             a += f"{parse_esbmtk_input_data_types(e, r,'',icl)[0:-2]},"
         a += "]),\n"
@@ -994,7 +995,7 @@ def get_gas_exchange_w_isotopes_eq(
     if sp == "DIC":
         # here we reference the dyanamically calculated CO2aq from cs1,
         # and not the vector field of cs1
-        refsp = f"{c.liquid_reservoir.parent.full_name}.CO2aq".replace(".", "_")
+        refsp = f"dCdt_{c.liquid_reservoir.parent.full_name}.CO2aq".replace(".", "_")
         # refsp = f"{c.liquid_reservoir.parent.full_name}.CO2aq"
     else:
         raise ValueError(f"Species{sp} has no isotope definition for gas exchange")

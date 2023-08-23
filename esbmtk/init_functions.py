@@ -74,7 +74,7 @@ def init_photosynthesis(rg, productivity):
             rg.swc.KW,
             rg.swc.KB,
             rg.swc.boron,
-            M.Carbon.r
+            M.Carbon.r,
         ),
         register=rg,
         return_values=[
@@ -120,7 +120,6 @@ def init_remineralization(
         fname="remineralization",
         ftype="cs2",  # cs1 is independent of fluxes, cs2 is not
         # hplus is not used but needed in post processing
-        vr_datafields={"Hplus": rg.swc.hplus},
         function_input_data=[
             pom_fluxes,
             pom_fluxes_l,
@@ -132,13 +131,24 @@ def init_remineralization(
             rg.SO4,
             rg.O2,
             rg.PO4,
+            rg.DIC,
+            rg.TA,
+            "Hplus",
+        ],
+        function_params=(
             rg.volume.magnitude,
             M.PC_ratio,
             M.NC_ratio,
             M.O2C_ratio,
             M.alpha,
+            rg.swc.K1,
+            rg.swc.K1K1,
+            rg.swc.K1K2,
+            rg.swc.KW,
+            rg.swc.KB,
+            rg.swc.boron,
             CaCO3_reactions,
-        ],
+        ),
         register=rg,
         return_values=[
             {"F_rg.DIC": "remineralization"},
@@ -147,6 +157,7 @@ def init_remineralization(
             {"F_rg.SO4": "remineralization"},
             {"F_rg.O2": "remineralization"},
             {"F_rg.PO4": "remineralization"},
+            {"Hplus": rg.swc.hplus},
         ],
     )
     rg.mo.lpc_f.append(ec.fname)
@@ -172,6 +183,8 @@ def init_carbonate_system_3(
         ftype="cs2",
         r_s=r_sb,  # source (RG) of CaCO3 flux,
         r_d=r_db,  # sink (RG) of CaCO3 flux,
+        # this could be moved to the model, and then possibly passed into
+        # the ode system.
         vr_datafields={
             "depth_area_table": area_table,
             "area_dz_table": area_dz_table,
@@ -185,6 +198,8 @@ def init_carbonate_system_3(
             r_sb.DIC,  # 4
             "Hplus",  # 5
             "zsnow",  # 6
+        ],
+        function_params=(
             kwargs["Ksp0"],  # 7
             float(kwargs["kc"]),  # 8
             float(AD),  # 9
@@ -194,11 +209,14 @@ def init_carbonate_system_3(
             float(abs(kwargs["zsat_min"])),  # 13
             float(abs(kwargs["zmax"])),  # 14
             float(abs(kwargs["z0"])),  # 15
-        ],
+            rg.swc.K2,
+            rg.swc.K1K2,
+            rg.swc.ca2,
+            
+        ),
         return_values=[
             {"F_rg.DIC": "db_remineralization"},
             {"F_rg.TA": "db_remineralization"},
-            {"Hplus": rg.swc.hplus},
             {"zsnow": float(abs(kwargs["zsnow"]))},
         ],
         register=rg,

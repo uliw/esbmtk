@@ -27,7 +27,7 @@ if tp.TYPE_CHECKING:
     from esbmtk import ReservoirGroup
 
 
-# @njit()
+@njit()
 def photosynthesis(
     o2,
     ta,
@@ -78,14 +78,12 @@ def photosynthesis(
     boh4: float = boron * KB / (hplus + KB)
     fg: float = hplus - oh - boh4
     ca: float = ta + fg
-
     # hplus
     gamm: float = dic / ca
     dummy: float = (1 - gamm) * (1 - gamm) * k1k1 - k1k2 * (4 - 8 * gamm)
     hplus: float = 0.5 * ((gamm - 1) * k1 + sqrt(dummy))
     # co2aq is calcualted anew for each t, and used as is, so no need to get dMdt
     co2aq: float = dic / (1 + (k1 / hplus) + (k1k2 / (hplus * hplus)))
-
     # Note that these are not used in Reservoir calcuations, so we can return
     # dCdt instead of dMdt
     dCdt_H = hplus - hplus_0
@@ -99,7 +97,7 @@ def photosynthesis(
     dMdt_dic = -POM_F  # remove DIC by POM formation
     dMdt_dic_l = -POM_F_l
     dMdt_ta = POM_F * NC_ratio  # add TA from nitrate uptake into POM
-    
+
     # CaCO3 formation
     alpha = 1
     PIC_F = POM_F * alpha / rain_rate  # newly formed CaCO3
@@ -108,10 +106,6 @@ def photosynthesis(
     dMdt_dic_l += -PIC_F_l
     dMdt_ta += 2 * -PIC_F  # TA removed
 
-    # from esbmtk import get_delta_from_concentration
-    # dDIC = get_delta_from_concentration(PIC_F,  PIC_F_l, r_carbon)
-    # dPOM = get_delta_from_concentration(POM_F,  POM_F_l, r_carbon)
-    # breakpoint()
     # sulfur reactions, assuming that there is alwways enough O2
     dMdt_h2s = -h2s * volume  # H2S oxidation
     dMdt_so4 = dMdt_h2s  # add S to the sulfate pool
@@ -143,19 +137,49 @@ def remineralization(
     pic_fluxes: list,
     pic_fluxes_l: list,
     pom_remin_fractions: list,  # list of remineralization fractions
-    pic_remin_fractions: float,
+    pic_remin_fractions: float,  # can these g on to the parameter list?
     h2s: float,  # concentration
     so4: float,  # concentration
     o2: float,  # o2 concentration
     po4: float,  # po4 concentration
-    volume: float,  # box volume
-    PC_ratio: float,
-    NC_ratio: float,
-    O2C_ratio: float,
-    alpha: float,
-    CaCO3_reactions=True,
+    dic: float,
+    dic_l: float,
+    ta: float,
+    hplus: float,
+    p: tuple,  # parameter list
     # burial: float,
 ) -> float:
+    (
+        volume,
+        PC_ratio,
+        NC_ratio,
+        O2C_ratio,
+        alpha,
+        k1,
+        k1k1,
+        k1k2,
+        KW,
+        KB,
+        boron,
+        CaCO3_reactions,
+    ) = p
+
+    # save data from previous time step
+    hplus_0 = hplus
+    # calculates carbonate alkalinity (ca) based on H+ concentration from the
+    # previous time-step
+    oh: float = KW / hplus
+    boh4: float = boron * KB / (hplus + KB)
+    fg: float = hplus - oh - boh4
+    ca: float = ta + fg
+    # hplus
+    gamm: float = dic / ca
+    dummy: float = (1 - gamm) * (1 - gamm) * k1k1 - k1k2 * (4 - 8 * gamm)
+    hplus: float = 0.5 * ((gamm - 1) * k1 + sqrt(dummy))
+    # Note that these are not used in Reservoir calcuations, so we can return
+    # dCdt instead of dMdt
+    dCdt_H = hplus - hplus_0
+
     """Reservoirs can have multiple sources of POM with different
     remineralization efficiencies, e.g., low latidtude POM flux, vs
     high latitude POM flux. We only add the part that is remineralized.
@@ -174,10 +198,10 @@ def remineralization(
     dMdt_ta = -pom_flux * NC_ratio  # remove Alkalinity from NO3
     dMdt_dic = pom_flux  # add DIC from POM
     dMdt_dic_l = pom_flux_l
-    m_h2s = h2s * volume
 
+    # Calculate O2 requirement. Note that O2 & H2S are concentrations
     m_o2 = o2 * volume
-    # how much O2 is needed to oxidize all POM and H2S
+    m_h2s = h2s * volume
     m_o2_eq = pom_flux * O2C_ratio + 2 * m_h2s
 
     if m_o2 > m_o2_eq:  # box has enough oxygen
@@ -196,18 +220,26 @@ def remineralization(
 
     if CaCO3_reactions:
         pic_flux = 0.0
-        dic_flux_l = 0.0
+        pic_flux_l = 0.0
         for i, f in enumerate(pic_fluxes):
             pic_flux += f * pic_remin_fractions[i] * alpha
-            dic_flux_l += pic_fluxes_l[i] * pic_remin_fractions[i] * alpha
+            pic_flux_l += pic_fluxes_l[i] * pic_remin_fractions[i] * alpha
 
         # add Alkalinity and DIC from CaCO3 dissolution. Note that
         dMdt_dic += pic_flux
-        dMdt_dic_l += dic_flux_l
+        dMdt_dic_l += pic_flux_l
         dMdt_ta += 2 * pic_flux
 
-    # note, these are returned as fluxes
-    return [dMdt_dic, dMdt_dic_l, dMdt_ta, dMdt_h2s, dMdt_so4, dMdt_o2, dMdt_po4]
+    return [
+        dMdt_dic,
+        dMdt_dic_l,
+        dMdt_ta,
+        dMdt_h2s,
+        dMdt_so4,
+        dMdt_o2,
+        dMdt_po4,
+        dCdt_H,
+    ]
 
 
 def carbonate_system_3(
@@ -218,17 +250,9 @@ def carbonate_system_3(
     ta_db: float,  # 5 TA in the deep box
     dic_sb: float,  # 6 [DIC] in the surface box
     dic_sb_l: float,  # 7 [DIC_l] in the surface box
-    hplus_0: float,  # 8 hplus in the deep box at t-1
+    hplus: float,  # 8 hplus in the deep box at t-1
     zsnow: float,  # 9 snowline in meters below sealevel at t-1
-    ksp0,
-    kc,
-    AD,
-    zsat0,
-    I_caco3,
-    alpha,
-    zsat_min,
-    zmax,
-    z0,
+    p: tuple,
 ) -> tuple:
     """Calculates and returns the fraction of the carbonate rain that is
     dissolved an returned back into the ocean. This functions returns:
@@ -245,15 +269,21 @@ def carbonate_system_3(
     Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
     """
 
-    # Parameters
-    k1 = rg.swc.K1  # K1
-    k1k1 = rg.swc.K1K1
-    k2 = rg.swc.K2  # K2
-    k1k2 = rg.swc.K1K2  # K2
-    KW = rg.swc.KW  # KW
-    KB = rg.swc.KB  # KB
-    ca2 = rg.swc.ca2  # Ca2+
-    boron = rg.swc.boron  # boron
+    (  # unpack parameters
+        ksp0,
+        kc,
+        AD,
+        zsat0,
+        I_caco3,
+        alpha,
+        zsat_min,
+        zmax,
+        z0,
+        k2,
+        k1k2,
+        ca2,
+    ) = p
+    
     zsat0 = int(abs(zsat0))
     zsat_min = int(abs(zsat_min))
     zmax = int(abs(zmax))
@@ -261,19 +291,9 @@ def carbonate_system_3(
     depth_area_table = rg.cs.depth_area_table
     area_dz_table = rg.cs.area_dz_table
     Csat_table = rg.cs.Csat_table
-    # calc carbonate alkalinity based t-1
-    oh: float = KW / hplus_0
-    boh4: float = boron * KB / (hplus_0 + KB)
-    fg: float = hplus_0 - oh - boh4
-    ca: float = ta_db + fg
-
-    # calculate carbon speciation
-    # The following equations are after Follows et al. 2006
-    gamm: float = dic_db / ca
-    dummy: float = (1 - gamm) * (1 - gamm) * k1k1 - k1k2 * (4 - 8 * gamm)
-    hplus: float = 0.5 * ((gamm - 1) * k1 + sqrt(dummy))
-    co3 = max(dic_db / (1 + hplus / k2 + hplus * hplus / k1k2), 3.7e-05)
+    
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
+    co3 = max(dic_db / (1 + hplus / k2 + hplus * hplus / k1k2), 3.7e-05)
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
     zsat = np.clip(zsat, zsat_min, zmax)
@@ -312,9 +332,10 @@ def carbonate_system_3(
     dMdt_dic = BDS + BCC + BNS + BPDC
     dMdt_ta = 2 * dMdt_dic
     dMdt_dic_l = dMdt_dic * dic_sb_l / dic_sb
-    dMdt_H = hplus - hplus_0
 
-    return dMdt_dic, dMdt_dic_l, dMdt_ta, dMdt_H, d_zsnow
+    # breakpoint()
+    
+    return dMdt_dic, dMdt_dic_l, dMdt_ta, d_zsnow
 
 
 @njit
@@ -375,8 +396,6 @@ def gas_exchange_no_isotopes_2(
 
     area, solubility, piston_velocity, p_H2O = p
 
-    
-    
     scale = area * piston_velocity
     # Solibility with correction for pH2O
     beta = solubility * (1 - p_H2O)
