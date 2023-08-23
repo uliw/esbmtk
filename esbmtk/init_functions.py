@@ -74,6 +74,7 @@ def init_photosynthesis(rg, productivity):
             rg.swc.KW,
             rg.swc.KB,
             rg.swc.boron,
+            M.Carbon.r
         ),
         register=rg,
         return_values=[

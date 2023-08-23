@@ -66,6 +66,7 @@ def photosynthesis(
         KW,
         KB,
         boron,
+        r_carbon,
     ) = p
 
     # save data from previous time step
@@ -98,26 +99,30 @@ def photosynthesis(
     dMdt_dic = -POM_F  # remove DIC by POM formation
     dMdt_dic_l = -POM_F_l
     dMdt_ta = POM_F * NC_ratio  # add TA from nitrate uptake into POM
-
+    
     # CaCO3 formation
     alpha = 1
     PIC_F = POM_F * alpha / rain_rate  # newly formed CaCO3
     PIC_F_l = PIC_F * dic_l / dic
     dMdt_dic += -PIC_F  # dic removed
-    dMdt_dic_l += -PIC_F
+    dMdt_dic_l += -PIC_F_l
     dMdt_ta += 2 * -PIC_F  # TA removed
 
+    # from esbmtk import get_delta_from_concentration
+    # dDIC = get_delta_from_concentration(PIC_F,  PIC_F_l, r_carbon)
+    # dPOM = get_delta_from_concentration(POM_F,  POM_F_l, r_carbon)
+    # breakpoint()
     # sulfur reactions, assuming that there is alwways enough O2
     dMdt_h2s = -h2s * volume  # H2S oxidation
     dMdt_so4 = dMdt_h2s  # add S to the sulfate pool
     dMdt_ta += 2 * dMdt_so4  # adjust Alkalinity
     # add O2 from photosynthesis - h2s oxidation
-    dCdt_o = POM_F * O2C_ratio - 2 * h2s * volume
+    dMdt_o2 = POM_F * O2C_ratio - 2 * h2s * volume
 
     return (  # note that these are returned as fluxes
         dCdt_H,
         dCdt_co2aq,
-        dCdt_o,
+        dMdt_o2,
         dMdt_ta,
         dMdt_po4,
         dMdt_so4,

@@ -215,12 +215,10 @@ def write_equations_2(
 
     # construct header and static code:
     header = """from __future__ import annotations\n\n
-import typing as tp
 import numpy as np
 from esbmtk import Model, ReservoirGroup, AirSeaExchange, Reservoir
 from esbmtk import carbonate_system_1_ode, carbonate_system_2_ode
 from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes
-from esbmtk import gas_exchange_with_isotopes_2
 
 class setup_ode():
     '''Class stub to enable state in the equation system passed to ODEINT
@@ -231,7 +229,6 @@ class setup_ode():
         ''' Use this method to initialize all variables that require the state
             t-1
         '''
-        import numpy as np
 
     def eqs(self, t, R: list, M: Model) -> list:
         '''Auto generated esbmtk equations do not edit
