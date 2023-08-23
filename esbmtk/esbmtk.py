@@ -185,6 +185,7 @@ class Model(esbmtkBase):
             "parse_model": [True, (bool)],
             "rtol": [1.0e-6, (float)],
             "custom_functions": [False, (bool)],
+            "area_table": ["None", (str, np.ndarray)],
         }
 
         # provide a list of absolutely required keywords
@@ -378,9 +379,6 @@ class Model(esbmtkBase):
         for r in self.lor:  # loop over reservoirs
             r.__write_data__(prefix, start, stop, stride, False, directory)
 
-        # for r in self.lvr:
-        #    r.__write_data__(prefix, start, stop, stride, False, "state")
-
     def save_data(self, directory="./data") -> None:
         """Save the model results to a CSV file. Each reservoir will have
         their own CSV file
@@ -397,14 +395,6 @@ class Model(esbmtkBase):
             # print(f"R = {r.full_name}")
             # print(f"start = {start}, stop = {stop}, stride={stride}, append ={append}")
             r.__write_data__(prefix, start, stop, stride, append, directory)
-
-        # save data fields
-        # for r in self.ldf:
-        #     r.__write_data__(prefix, start, stop, stride, append)
-        # print("Writing virtual reservoir data")
-        # for r in self.lvr:
-        #    r.__write_data__(prefix, start, stop, stride, append, "data")
-        # print("done writing")
 
     def read_data(self, directory="./data") -> None:
         """Save the model results to a CSV file. Each reservoir will have
@@ -549,12 +539,6 @@ class Model(esbmtkBase):
         start: float = process_time()
         # new: np.ndarray = np.zeros(4)
 
-        # # put direction dictionary into a list
-        # for r in self.lor:  # loop over reservoirs
-        #     r.lodir = [r.lio[f] for f in r.lof]
-        # # take care of objects which require a delayed init
-        # for o in self.lto:
-        #     o.__delayed_init__()
 
         solver = "ode" if "solver" not in kwargs else kwargs["solver"]
         self.solver = solver
@@ -589,12 +573,6 @@ class Model(esbmtkBase):
                 r.m = r.c * r.volume
                 r.d = get_delta_h(r)
 
-        # for vr in self.lvr:
-        #     vr.d = get_delta_h(vr)
-
-        # for f in self.lof:
-        #     if f.save_flux_data:
-        #         f.d = get_delta_h(f)
 
     def sub_sample_data(self):
         """Subsample the data.  No need to save 100k lines of data You
@@ -657,18 +635,20 @@ class Model(esbmtkBase):
         method = kwargs["method"] if "method" in kwargs else "BDF"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
 
+        if isinstance(self.area_table, str):
+            self.area_table, self.area_dz_table, self.Csat_table = 0, 0, 0
+
         if stype == "solve_ivp":
             self.results = solve_ivp(
                 ode_system.eqs,
                 (self.time[0], self.time[-1]),
                 R,
-                args=(self,),
+                args=(self, self.area_table, self.area_dz_table, self.Csat_table),
                 method=method,
                 atol=atol,
                 rtol=self.rtol,
                 t_eval=self.time_ode,
                 first_step=Q_("1 second").to(self.t_unit).magnitude,
-                # dense_output=True,
                 max_step=self.max_step,
             )
 
@@ -1385,7 +1365,7 @@ class ReservoirBase(esbmtkBase):
             ax.spines["right"].set_visible(False)
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
-                                 
+
         ax.set_title(self.full_name)
 
     def info(self, **kwargs) -> None:

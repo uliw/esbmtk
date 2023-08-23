@@ -169,9 +169,9 @@ def init_carbonate_system_3(
     pic_export_flux: Flux,
     r_sb: ReservoirGroup,
     r_db: ReservoirGroup,
-    area_table: np.ndarray,
-    area_dz_table: np.ndarray,
-    Csat_table: np.ndarray,
+    # area_table: np.ndarray,
+    # area_dz_table: np.ndarray,
+    # Csat_table: np.ndarray,
     AD: float,
     kwargs: dict,
 ):
@@ -185,13 +185,13 @@ def init_carbonate_system_3(
         r_d=r_db,  # sink (RG) of CaCO3 flux,
         # this could be moved to the model, and then possibly passed into
         # the ode system.
-        vr_datafields={
-            "depth_area_table": area_table,
-            "area_dz_table": area_dz_table,
-            "Csat_table": Csat_table,
-        },
+        # vr_datafields={
+        #     "depth_area_table": area_table,
+        #     "area_dz_table": area_dz_table,
+        #     "Csat_table": Csat_table,
+        # },
         function_input_data=[
-            rg,  # 0
+            # rg,  # 0
             pic_export_flux,  # 1
             r_db.DIC,  # 2
             r_db.TA,  # 3
@@ -212,7 +212,9 @@ def init_carbonate_system_3(
             rg.swc.K2,
             rg.swc.K1K2,
             rg.swc.ca2,
-            
+            "area_table",
+            "area_dz_table",
+            "Csat_table",
         ),
         return_values=[
             {"F_rg.DIC": "db_remineralization"},

@@ -242,8 +242,9 @@ def remineralization(
     ]
 
 
+@njit()
 def carbonate_system_3(
-    rg: ReservoirGroup,  # 2 Reservoir handle
+    # rg: ReservoirGroup,  # 2 Reservoir handle
     pic_f: float,  # 3 CaCO3 export flux as DIC
     dic_db: float,  # 4 DIC in the deep box
     dic_db_l: float,  # 4 DIC in the deep box
@@ -282,23 +283,28 @@ def carbonate_system_3(
         k2,
         k1k2,
         ca2,
+        depth_area_table,
+        area_dz_table,
+        Csat_table,
     ) = p
-    
+
     zsat0 = int(abs(zsat0))
     zsat_min = int(abs(zsat_min))
     zmax = int(abs(zmax))
     z0 = int(abs(z0))
-    depth_area_table = rg.cs.depth_area_table
-    area_dz_table = rg.cs.area_dz_table
-    Csat_table = rg.cs.Csat_table
-    
+    # depth_area_table = rg.cs.depth_area_table
+    # area_dz_table = rg.cs.area_dz_table
+    # sat_table = rg.cs.Csat_table
+
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     co3 = max(dic_db / (1 + hplus / k2 + hplus * hplus / k1k2), 3.7e-05)
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
-    zsat = np.clip(zsat, zsat_min, zmax)
+    # zsat = np.clip(zsat, zsat_min, zmax)
+    zsat = min(zmax, max(zsat_min, zmax))
     zcc = int(zsat0 * log(pic_f * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
-    zcc = np.clip(zcc, zsat_min, zmax)
+    zcc = min(zmax, max(zsat_min, zcc))
+    # zcc = np.clip(zcc, zsat_min, zmax)
     # get fractional areas
     B_AD = pic_f / AD
     A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
@@ -333,8 +339,6 @@ def carbonate_system_3(
     dMdt_ta = 2 * dMdt_dic
     dMdt_dic_l = dMdt_dic * dic_sb_l / dic_sb
 
-    # breakpoint()
-    
     return dMdt_dic, dMdt_dic_l, dMdt_ta, d_zsnow
 
 

@@ -229,7 +229,7 @@ class setup_ode():
             t-1
         '''
 
-    def eqs(self, t, R: list, M: Model) -> list:
+    def eqs(self, t, R: list, M: Model, area_table, area_dz_table, Csat_table) -> list:
         '''Auto generated esbmtk equations do not edit
         '''
 
@@ -549,6 +549,19 @@ def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> 
     return a
 
 
+def parse_function_params(params, ind) -> str:
+    """Parse function_parameters and convert them into a suitable string
+    format that can be used in the ode equation file
+    """
+    a = ""
+    for p in params:
+        if isinstance(p, str):
+            a += f"{ind}{p},\n"
+        else:
+            a += f"{ind}{p},\n"
+    return a
+
+
 # ------------------------ define processes ------------------------- #
 def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> str:
     """Write external function call code
@@ -577,7 +590,8 @@ def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> st
     if r.function_params == "None":
         eqs.write(f"{rv} = {r.fname}(\n{a}{ind2})\n\n")
     else:
-        eqs.write(f"{rv} = {r.fname}(\n{a}{ind2}{ind2}{r.function_params})\n\n")
+        params = parse_function_params(r.function_params, ind2)
+        eqs.write(f"{rv} = {r.fname}(\n{a}{ind2}({ind2}{params}))\n\n")
     rel += f"{ind3}{rv},\n"
 
     return rel

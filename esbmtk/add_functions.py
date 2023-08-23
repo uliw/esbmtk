@@ -248,9 +248,9 @@ def add_carbonate_system_3(**kwargs) -> None:
             kwargs["pic_export_flux"][i],
             r_sb[i],
             r_db[i],
-            area_table,
-            area_dz_table,
-            Csat_table,
+            # area_table,
+            # area_dz_table,
+            # Csat_table,
             AD,
             kwargs,
         )
