@@ -590,8 +590,8 @@ def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> st
     if r.function_params == "None":
         eqs.write(f"{rv} = {r.fname}(\n{a}{ind2})\n\n")
     else:
-        params = parse_function_params(r.function_params, ind2)
-        eqs.write(f"{rv} = {r.fname}(\n{a}{ind2}({ind2}{params}))\n\n")
+        params = parse_function_params(r.function_params, ind3)
+        eqs.write(f"{rv} = {r.fname}(\n{a}{ind3}(\n{params}{ind3}),\n{ind2})\n\n")
     rel += f"{ind3}{rv},\n"
 
     return rel
