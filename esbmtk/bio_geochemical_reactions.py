@@ -27,7 +27,7 @@ if tp.TYPE_CHECKING:
     from esbmtk import ReservoirGroup
 
 
-@njit()
+# @njit()
 def photosynthesis(
     o2,
     ta,
@@ -68,10 +68,11 @@ def photosynthesis(
         boron,
     ) = p
 
-    # calculates carbonate alkalinity (ca) based on H+ concentration from the
-    # previous time-step
+    # save data from previous time step
     hplus_0 = hplus
     co2aq_0 = co2aq
+    # calculates carbonate alkalinity (ca) based on H+ concentration from the
+    # previous time-step
     oh: float = KW / hplus
     boh4: float = boron * KB / (hplus + KB)
     fg: float = hplus - oh - boh4
@@ -83,9 +84,11 @@ def photosynthesis(
     hplus: float = 0.5 * ((gamm - 1) * k1 + sqrt(dummy))
     # co2aq is calcualted anew for each t, and used as is, so no need to get dMdt
     co2aq: float = dic / (1 + (k1 / hplus) + (k1k2 / (hplus * hplus)))
-    # for H1 we need the state a t-1, so we need to return dMdt
-    dMdt_H = hplus - hplus_0
-    dMdt_co2aq = co2aq - co2aq_0
+
+    # Note that these are not used in Reservoir calcuations, so we can return
+    # dCdt instead of dMdt
+    dCdt_H = hplus - hplus_0
+    dCdt_co2aq = co2aq - co2aq_0
 
     # POM formation
     dMdt_po4 = -productivity * PUE  # remove PO4 into POM
@@ -112,8 +115,8 @@ def photosynthesis(
     dCdt_o = POM_F * O2C_ratio - 2 * h2s * volume
 
     return (  # note that these are returned as fluxes
-        dMdt_H,
-        dMdt_co2aq,
+        dCdt_H,
+        dCdt_co2aq,
         dCdt_o,
         dMdt_ta,
         dMdt_po4,
@@ -304,9 +307,9 @@ def carbonate_system_3(
     dMdt_dic = BDS + BCC + BNS + BPDC
     dMdt_ta = 2 * dMdt_dic
     dMdt_dic_l = dMdt_dic * dic_sb_l / dic_sb
-    dH = hplus - hplus_0
+    dMdt_H = hplus - hplus_0
 
-    return dMdt_dic, dMdt_dic_l, dMdt_ta, dH, d_zsnow
+    return dMdt_dic, dMdt_dic_l, dMdt_ta, dMdt_H, d_zsnow
 
 
 @njit
@@ -365,13 +368,10 @@ def gas_exchange_no_isotopes_2(
 ) -> tuple(float, float):
     """Calculate the gas exchange flux across the air sea interface"""
 
-    (
-        area,
-        solubility,
-        piston_velocity,
-        p_H2O,
-    ) = p
+    area, solubility, piston_velocity, p_H2O = p
 
+    
+    
     scale = area * piston_velocity
     # Solibility with correction for pH2O
     beta = solubility * (1 - p_H2O)

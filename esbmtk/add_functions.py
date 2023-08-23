@@ -294,4 +294,4 @@ def add_o2_gas_exchange(rg_list, gas_r):
         solubility = getattr(lr.swc, "SA_o2")
         ec = init_gas_exchange_no_isotopes(gas_r, lr, l_ref, species, pv, solubility)
         register_return_values(ec, gas_r, lr)
-        gas_r.has_cs1 = True       
+        gas_r.has_cs1 = True

@@ -21,13 +21,20 @@ import matplotlib.pyplot as plt
 import logging
 import typing as tp
 from esbmtk import Q_
+import functools
 
 if tp.TYPE_CHECKING:
     from esbmtk import Flux, Model, Connection, Connect
 
 np.set_printoptions(precision=4)
 
-import functools
+
+def phc(c: float) -> float:
+    # Calculate concentration as pH. c can be a number or numpy array
+    import numpy as np
+
+    pH: float = -np.log10(c)
+    return pH
 
 
 def debug(func):
@@ -51,9 +58,14 @@ def debug(func):
 def register_return_values(ec, parent, aux="None") -> None:
     """Check the return values of external function instances,
     and create the necessary reservoirs or fluxes.
-    This is a terrible hack, especially for the GasExchange process
-    The key problem, is that GE is a one to many process,
-    and it would be better to express this with several connection
+
+    These fluxes are not associated with a connection Object
+    so we register the source/sink relationship with the
+    reservoir they belong to.
+
+    This fails for GasReservoirs since they can have a 1:many
+    relatioship. The below is a terrible hack, it would be
+    better to express this with several connection
     objects, rather than overloading the source attribute of the
     GasReservoir class.
     """
@@ -62,19 +74,17 @@ def register_return_values(ec, parent, aux="None") -> None:
 
     for v in ec.return_values:
         if isinstance(v, dict):
-            # these fluxes are not associated with a connection Object
-            # so we register the source/sink relationship with the
-            # reservoir they belong to.
             n = next(iter(v))  # get first key
             if n[:2] == "F_":
                 fid = v[n]
-                fn = f"{fid}_F"
                 n = n.split(".")[1]  # species name - reservoir name
                 if isinstance(parent, GasReservoir | Reservoir):
                     r = parent  # get r handle
                     fn = f"{ec.name}_F"
                 else:
                     r = getattr(parent, n)  # get r handle
+                    fn = f"{fid}_F"
+
                 f = Flux(
                     name=fn,
                     species=r.species,
@@ -88,7 +98,6 @@ def register_return_values(ec, parent, aux="None") -> None:
                     r.source = "None"
 
                 r.sink = r
-
                 r.lof.append(f)
                 r.ctype = "ignore"
                 if r.isotopes:
@@ -98,7 +107,6 @@ def register_return_values(ec, parent, aux="None") -> None:
                         rate=0,
                         register=r,
                     )
-                    # r.lof.append(f) do not add!
             else:
                 rt = Reservoir(
                     name=n,

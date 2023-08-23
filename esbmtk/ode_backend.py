@@ -123,7 +123,7 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
         """
 
         if r.rtype != "flux_only":
-            name = f'{r.full_name.replace(".", "_")}'
+            name = f'dCdt_{r.full_name.replace(".", "_")}'
             fex = ""
             v_val = f"{r.volume.to(r.v_unit).magnitude}"
 
@@ -166,7 +166,7 @@ def write_reservoir_equations_with_isotopes(
             # create unique variable names. Reservoirs are typiclally called
             # M.rg.r so we replace all dots with underscore
             if r.isotopes:
-                name = f'{r.full_name.replace(".", "_")}_l'
+                name = f'dCdt_{r.full_name.replace(".", "_")}_l'
                 fex = ""
                 # add all fluxes
                 for flux in r.lof:  # check if in or outflux
@@ -342,17 +342,12 @@ class setup_ode():
         eqs.write(f"\n{sep}\n" f"{ind2}return [\n")
         # Write all initial conditions that are recorded in icl
         for k, v in icl.items():
-            eqs.write(f"{ind3}{k.full_name.replace('.', '_')},  # {v[0]}\n")
+            eqs.write(f"{ind3}dCdt_{k.full_name.replace('.', '_')},  # {v[0]}\n")
             if k.isotopes:
-                eqs.write(f"{ind3}{k.full_name.replace('.', '_')}_l,  # {v[1]}\n")
+                eqs.write(f"{ind3}dCdt_{k.full_name.replace('.', '_')}_l,  # {v[1]}\n")
 
         eqs.write(f"{ind2}]\n")
-        # if len(R) != len(rel.split(",")) - 1:
-        #     raise ValueError(
-        #         f"number of initial conditions ({len(R)})"
-        #         f"does not match number of return values"
-        #         f"({len(rel.split(','))-1}')\n\n"
-        #     )
+
     return fqfn
 
 
@@ -498,11 +493,11 @@ def parse_esbmtk_return_data_types(d: any, r: Reservoir, ind: str, icl: dict) ->
                 sr = f"{o.full_name}.{d[k]}_F".replace(".", "_")
         else:
             o = getattr(r.register, k)
-            sr = o.full_name.replace(".", "_")
+            sr = f'dCdt_{o.full_name.replace(".", "_")}'
 
     else:  # argument is a regular reservoir
         o = d
-        sr = o.full_name.replace(".", "_")
+        sr = f'dCdt_{o.full_name.replace(".", "_")}'
 
     if o.isotopes:
         sr = f"{sr}, {sr}_l"
