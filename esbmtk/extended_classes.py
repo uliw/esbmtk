@@ -1081,6 +1081,7 @@ class DataField(esbmtkBase):
             "y2_type": ["plot", (str, list)],
             "common_y_scale": ["no", (str)],
             "display_precision": [0.01, (int, float)],
+            "title": ["None", (str)],
         }
 
         # provide a list of absolutely required keywords
@@ -1288,8 +1289,6 @@ class DataField(esbmtkBase):
         ax: matplotlib axes handle
         """
 
-        from esbmtk import set_y_limits
-
         # plot external data first
         for i, d in enumerate(self.led):
             time = (d.x * M.t_unit).to(M.d_unit).magnitude
@@ -1382,6 +1381,10 @@ class DataField(esbmtkBase):
             ax.spines["right"].set_visible(False)
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
+        if self.title != "None":
+            ax.set_title(self.title)
+        else:
+            ax.set_title(self.register.full_name)
 
 
 class Reservoir_no_set(ReservoirBase):

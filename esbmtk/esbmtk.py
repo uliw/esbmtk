@@ -524,17 +524,14 @@ class Model(esbmtkBase):
                 for r in range(col):  # columns
                     if i < noo:
                         pl[i].__plot__(self, axs[c][r])
-                        axs[c][r].set_title(pl[i].full_name)
                         i = i + 1
                     else:
                         axs[c][r].remove()
             elif row > 1:
                 pl[i].__plot__(self, axs[c])
-                axs[c].set_title(pl[i].full_name)
                 i = i + 1
             else:
                 pl[i].__plot__(self, axs)
-                axs.set_title(pl[i].full_name)
                 i = i + 1
 
         fig.subplots_adjust(top=0.88)
@@ -1388,6 +1385,8 @@ class ReservoirBase(esbmtkBase):
             ax.spines["right"].set_visible(False)
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
+                                 
+        ax.set_title(self.full_name)
 
     def info(self, **kwargs) -> None:
         """Show an overview of the object properties.  Optional
@@ -2121,6 +2120,7 @@ class Flux(esbmtkBase):
             ax.spines["right"].set_visible(False)
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
+        ax.set_title(self.full_name)
 
     def __sub_sample_data__(self, stride) -> None:
         """There is usually no need to keep more than a thousand data
