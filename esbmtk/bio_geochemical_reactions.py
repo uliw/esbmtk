@@ -23,9 +23,6 @@ import numpy as np
 from numba import njit
 from esbmtk import get_new_ratio_from_alpha
 
-if tp.TYPE_CHECKING:
-    from esbmtk import ReservoirGroup
-
 
 @njit()
 def photosynthesis(
@@ -67,6 +64,7 @@ def photosynthesis(
         KB,
         boron,
         r_carbon,
+        CaCO3_reactions,
     ) = p
 
     # save data from previous time step
@@ -99,17 +97,20 @@ def photosynthesis(
     dMdt_ta = POM_F * NC_ratio  # add TA from nitrate uptake into POM
 
     # CaCO3 formation
-    alpha = 1
-    PIC_F = POM_F * alpha / rain_rate  # newly formed CaCO3
-    PIC_F_l = PIC_F * dic_l / dic
-    dMdt_dic += -PIC_F  # dic removed
-    dMdt_dic_l += -PIC_F_l
-    dMdt_ta += 2 * -PIC_F  # TA removed
+    if CaCO3_reactions:
+        #alpha = 1
+        # PIC_F = POM_F * alpha / rain_rate  # newly formed CaCO3
+        PIC_F = POM_F / rain_rate  # newly formed CaCO3
+        PIC_F_l = PIC_F * dic_l / dic
+        dMdt_dic += -PIC_F  # dic removed
+        dMdt_dic_l += -PIC_F_l
+        dMdt_ta += 2 * -PIC_F  # TA removed
 
     # sulfur reactions, assuming that there is alwways enough O2
     dMdt_h2s = -h2s * volume  # H2S oxidation
     dMdt_so4 = dMdt_h2s  # add S to the sulfate pool
     dMdt_ta += 2 * dMdt_so4  # adjust Alkalinity
+    
     # add O2 from photosynthesis - h2s oxidation
     dMdt_o2 = POM_F * O2C_ratio - 2 * h2s * volume
 

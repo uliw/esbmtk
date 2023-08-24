@@ -36,7 +36,9 @@ if tp.TYPE_CHECKING:
     from esbmtk import Flux, Model, ReservoirGroup
 
 
-def add_photosynthesis(rgs: list[ReservoirGroup], p_fluxes: list[Flux | Q_]):
+def add_photosynthesis(
+    rgs: list[ReservoirGroup], p_fluxes: list[Flux | Q_], CaCO3_reactions=True
+):
     """Add process to ReservoirGroup(s) in rgs. pfluxes must be list of Flux
     objects or float values that correspond to the rgs list
     """
@@ -50,7 +52,7 @@ def add_photosynthesis(rgs: list[ReservoirGroup], p_fluxes: list[Flux | Q_]):
         else:
             pass
             # print(f"rg = {rg.full_name}, f = {p_fluxes[i].full_name}")
-        ec = init_photosynthesis(rg, p_fluxes[i])
+        ec = init_photosynthesis(rg, p_fluxes[i], CaCO3_reactions)
         register_return_values(ec, rg)
         rg.has_cs1 = True
 

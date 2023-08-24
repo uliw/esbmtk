@@ -33,7 +33,7 @@ if tp.TYPE_CHECKING:
     from esbmtk import Flux, ReservoirGroup
 
 
-def init_photosynthesis(rg, productivity):
+def init_photosynthesis(rg, productivity, CaCO3_reactions):
     """Setup photosynthesis instances"""
 
     M = rg.mo
@@ -75,6 +75,7 @@ def init_photosynthesis(rg, productivity):
             rg.swc.KB,
             rg.swc.boron,
             M.Carbon.r,
+            CaCO3_reactions,
         ),
         register=rg,
         return_values=[
