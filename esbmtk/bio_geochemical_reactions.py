@@ -98,7 +98,7 @@ def photosynthesis(
 
     # CaCO3 formation
     if CaCO3_reactions:
-        #alpha = 1
+        alpha = 1
         # PIC_F = POM_F * alpha / rain_rate  # newly formed CaCO3
         PIC_F = POM_F / rain_rate  # newly formed CaCO3
         PIC_F_l = PIC_F * dic_l / dic
