@@ -946,7 +946,6 @@ class Connect(esbmtkBase):
             )
 
         elif self.ctype == "scale_with_concentration":
-
             if self.k_value != "None":
                 self.scale = self.k_value
                 print(
@@ -970,7 +969,6 @@ class Connect(esbmtkBase):
             # print(f"Process Name {ph.full_name}")
 
         elif self.ctype == "weathering":
-
             ph = weathering(
                 name="Pw",
                 source=self.source,
@@ -1078,7 +1076,6 @@ class Connect(esbmtkBase):
 
     @alpha.setter
     def alpha(self, a: tp.Union[float, int]) -> None:
-
         if self.update and a != "None":
             self.__delete_process__()
             self.__delete_flux__()
@@ -1110,7 +1107,6 @@ class Connect(esbmtkBase):
 
     @delta.setter
     def delta(self, d: tp.Union[float, int]) -> None:
-
         if self.update and d != "None":
             self.__delete_process__()
             self.__delete_flux__()
@@ -1166,7 +1162,6 @@ class ConnectionGroup(esbmtkBase):
     """
 
     def __init__(self, **kwargs) -> None:
-
         from esbmtk import (
             SourceGroup,
             ReservoirGroup,
@@ -1415,7 +1410,7 @@ class AirSeaExchange(esbmtkBase):
         # kas = air-sea gas exchange coefficient
         # esbmtk solubility in mol/(m^3 * atm)
         # esbmtk piston velocity in  m/d needs to be converted to
-        # esbmtk pCO2 = atm 
+        # esbmtk pCO2 = atm
         # zeebe expresses kas as mol/(m^2 * uatm * yr)
         self.kas = self.solubility * self.piston_velocity
         # print(f"Piston velocity = {self.piston_velocity:.2e}")
@@ -1423,10 +1418,10 @@ class AirSeaExchange(esbmtkBase):
         # print(f"self.area = {self.area:2e}")
 
         self.kas_zeebe = self.kas * 1e-6
-        
+
         swc = self.lr.swc if self.lr.register == "None" else self.lr.register.swc
         # initialize process instance
-        
+
         ph = GasExchange(
             name="_PGex",
             gas=self.gr,  # gas reservoir
@@ -1435,7 +1430,7 @@ class AirSeaExchange(esbmtkBase):
             flux=self.fh,  # flux handle
             register=self.fh,
             scale=self.scale,  # piston_velocity * area
-            solubility=self.solubility, # mol/(m^3 * atm)
+            solubility=self.solubility,  # mol/(m^3 * atm)
             water_vapor_pressure=self.water_vapor_pressure,
             seawaterconstants=swc,
             isotopes=True,
