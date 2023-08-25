@@ -50,7 +50,11 @@ class input_parsing(object):
     def __initialize_keyword_variables__(self, kwargs) -> None:
         """check, register and update keyword variables"""
 
+        import copy
+        
         self.update = False
+        # self.defaults_copy = copy.deepcopy(self.defaults)
+        # self.defaults_copy = {**self.defaults} # probably the wrong place.
         self.__check_mandatory_keywords__(self.lrk, kwargs)
         self.__register_variable_names__(self.defaults, kwargs)
         self.__update_dict_entries__(self.defaults, kwargs)
@@ -284,3 +288,13 @@ class esbmtkBase(input_parsing):
             raise ValueError(f"{arg} must be string or Quantity, not {type(arg)}")
 
         return arg
+
+    def help(self) -> None:
+        """Show all keywords, their fdefault values and allowed types."""
+        print(f"\n{self.full_name} has the following keywords:\n")
+        for k, v in self.defaults_copy.items():
+            print(f"{k} defaults to {v[0]}, allowed types = {v[1]}")
+        print()
+        print("The following keywords are mandatory:")
+        for kw in self.lrk:
+            print(f"{kw}")
