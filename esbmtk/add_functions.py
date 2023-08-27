@@ -229,28 +229,19 @@ def add_carbonate_system_3(**kwargs) -> None:
     # test that all keyword values are of the correct type
     __checktypes__(lkk, kwargs)
 
-    # establish some shared parameters
-    # depths_table = np.arange(0, 6001, 1)
-    # depths: np.ndarray = np.arange(0, 6002, 1, dtype=float)
-    # ca2 = r_db[0].swc.ca2
-    # pg = kwargs["pg"]
-    # pc = kwargs["pc"]
-    # z0 = kwargs["z0"]
-    # Ksp0 = kwargs["Ksp0"]
-    # C saturation(z) after Boudreau 2010
-    # Csat_table: np.ndarray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
-    # area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
-    # area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area'
-
-    for i, rg in enumerate(kwargs["r_db"]):  # Setup the virtual reservoirs
+    i = 0
+    j = 0
+    for rg in kwargs["r_db"]:  # Setup the virtual reservoirs
         ec = init_carbonate_system_3(
             rg,
-            kwargs["pic_export_flux"][i],
+            kwargs["pic_export_flux"][j],
             kwargs["r_sb"][i],
             kwargs["r_ib"][i],
             kwargs["r_db"][i],
             kwargs,
         )
+        i += 1
+        j += 2
 
         register_return_values(ec, rg)
         rg.has_cs2 = True

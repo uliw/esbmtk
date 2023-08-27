@@ -262,7 +262,6 @@ def remineralization(
         dCdt_H,
     ]
 
-
 @njit()
 def carbonate_system_3(
     # rg: ReservoirGroup,  # 2 Reservoir handle
@@ -361,9 +360,9 @@ def carbonate_system_3(
     dMdt_ta = 2 * dMdt_dic
     dMdt_dic_l = dMdt_dic * dic_sb_l / dic_sb
 
-    # breakpoint()
     # print(f"fractional_area = {fractional_area:.2f}")
     # print(f"pic_f = {pic_f:.2e}")
+    # breakpoint()
     # print(f"dMdt_dic = {dMdt_dic:.2e}")
     # print(f"dCdt_co3 = {dCdt_co3:.2e}")
     # print(f"d_znow = {d_zsnow:.2f}\n")
