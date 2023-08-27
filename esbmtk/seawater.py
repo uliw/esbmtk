@@ -19,6 +19,7 @@
 from __future__ import annotations
 import typing as tp
 import numpy as np
+import numpy.typing as npt
 from .esbmtk_base import esbmtkBase
 
 if tp.TYPE_CHECKING:
@@ -26,6 +27,9 @@ if tp.TYPE_CHECKING:
     from .extended_classes import ReservoirGroup
 
 
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
+    
 class SeawaterConstants(esbmtkBase):
     """Provide basic seawater properties as a function of T, P and Salinity.
     This module does not reca

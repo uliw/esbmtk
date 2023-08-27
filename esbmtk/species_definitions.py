@@ -1,6 +1,9 @@
 import numpy as np
+import numpy.typing as npt
 from .esbmtk import Element, Species
 
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
 np.set_printoptions(precision=4)
 
 

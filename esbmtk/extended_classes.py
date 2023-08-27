@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pandas import DataFrame
 import numpy as np
+import numpy.typing as npt
 import matplotlib.pyplot as plt
 import pandas as pd
 import logging
@@ -24,6 +25,9 @@ from .solver import (
 from .utility_functions import (
     get_string_between_brackets,
 )
+
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
 
 
 class ReservoirGroup(esbmtkBase):
@@ -68,7 +72,7 @@ class ReservoirGroup(esbmtkBase):
 
                  self.volume: in model units (usually liter)
                  self.area: surface area in m^2 at the upper bounding surface
-                 self.area_dz: area of seafloor which is intercepted by this box.
+                 self.sed_area: area of seafloor which is intercepted by this box.
                  self.area_fraction: area of seafloor which is intercepted by this
                                     relative to the total ocean floor area
 
@@ -682,8 +686,8 @@ class Signal(esbmtkBase):
     def __square__(self, s, e) -> None:
         """Create Square Signal"""
 
-        self.s_m: np.ndarray = np.zeros(e - s)
-        self.s_d: np.ndarray = np.zeros(e - s)
+        self.s_m: NDArrayFloat = np.zeros(e - s)
+        self.s_d: NDArrayFloat = np.zeros(e - s)
 
         if "mass" in self.kwd:
             h = self.mass / self.duration  # get the height of the square
@@ -716,14 +720,14 @@ class Signal(esbmtkBase):
 
         # create pyramid
         c: int = int(round((e - s) / 2))  # get the center index for the peak
-        x: np.ndarray = np.array([0, c, e - s])  # setup the x coordinates
-        y: np.ndarray = np.array([0, h, 0])  # setup the y coordinates
+        x: NDArrayFloat = np.array([0, c, e - s])  # setup the x coordinates
+        y: NDArrayFloat = np.array([0, h, 0])  # setup the y coordinates
 
-        d: np.ndarray = np.array([0, self.d, 0])  # setup the d coordinates
+        d: NDArrayFloat = np.array([0, self.d, 0])  # setup the d coordinates
         xi = np.arange(0, e - s)  # setup the points at which to interpolate
 
-        self.s_m: np.ndarray = np.interp(xi, x, y)  # interpolate flux
-        self.s_d: np.ndarray = np.interp(xi, x, d)  # interpolate delta
+        self.s_m: NDArrayFloat = np.interp(xi, x, y)  # interpolate flux
+        self.s_d: NDArrayFloat = np.interp(xi, x, d)  # interpolate delta
         self.s_l = get_l_mass(self.s_m, self.s_d, self.sp.r)
 
     def __bell__(self, s, e) -> None:
@@ -739,7 +743,7 @@ class Signal(esbmtkBase):
         import sys
 
         c: int = int(round((e - s) / 2))  # get the center index for the peak
-        x: np.ndarray = np.arange(-c, c + 1, 1)
+        x: NDArrayFloat = np.arange(-c, c + 1, 1)
         e: float = math.e
         pi: float = math.pi
         mu: float = 0
@@ -792,12 +796,12 @@ class Signal(esbmtkBase):
         yq = Q_(yh)
 
         # add these to the data we are are reading
-        self.s_time: np.ndarray = df.iloc[:, 0].to_numpy() * xq
-        self.s_data: np.ndarray = df.iloc[:, 1].to_numpy() * yq
+        self.s_time: NDArrayFloat = df.iloc[:, 0].to_numpy() * xq
+        self.s_data: NDArrayFloat = df.iloc[:, 1].to_numpy() * yq
 
         if zh:
             # delta is assumed to be without units
-            self.s_delta: np.ndarray = df.iloc[:, 2].to_numpy()
+            self.s_delta: NDArrayFloat = df.iloc[:, 2].to_numpy()
 
         # map into model units, and strip unit information
         self.s_time = self.s_time.to(self.mo.t_unit).magnitude
@@ -825,14 +829,14 @@ class Signal(esbmtkBase):
         # setup the points at which to interpolate
         xi = np.linspace(self.st, self.et, num_steps)
 
-        self.s_m: np.ndarray = np.interp(
+        self.s_m: NDArrayFloat = np.interp(
             xi, self.s_time, self.s_data
         )  # interpolate flux
         if zh:
-            self.s_d: np.ndarray = np.interp(xi, self.s_time, self.s_delta)
+            self.s_d: NDArrayFloat = np.interp(xi, self.s_time, self.s_delta)
             self.s_l = get_l_mass(self.s_m, self.s_d, self.sp.r)
         else:
-            self.s_l: np.ndarray = np.zeros(num_steps)
+            self.s_l: NDArrayFloat = np.zeros(num_steps)
 
         return num_steps
 
@@ -900,8 +904,8 @@ class Signal(esbmtkBase):
         ns.stop: float = stop
         ns.offset: float = stop - start + offset
         ns.times: float = times
-        ns.ms: np.ndarray = self.data.m[start:stop]  # get the data slice we are using
-        ns.ds: np.ndarray = self.data.d[start:stop]
+        ns.ms: NDArrayFloat = self.data.m[start:stop]  # get the data slice we are using
+        ns.ds: NDArrayFloat = self.data.d[start:stop]
 
         diff = 0
         for _ in range(times):
@@ -916,12 +920,12 @@ class Signal(esbmtkBase):
             else:
                 lds: int = len(ns.ds)
 
-            ns.data.m[start:stop]: np.ndarray = ns.data.m[start:stop] + ns.ms[:lds]
-            ns.data.d[start:stop]: np.ndarray = ns.data.d[start:stop] + ns.ds[:lds]
+            ns.data.m[start:stop]: NDArrayFloat = ns.data.m[start:stop] + ns.ms[:lds]
+            ns.data.d[start:stop]: NDArrayFloat = ns.data.d[start:stop] + ns.ds[:lds]
 
         # and recalculate li and hi
-        ns.data.l: np.ndarray
-        ns.data.h: np.ndarray
+        ns.data.l: NDArrayFloat
+        ns.data.h: NDArrayFloat
         [ns.data.l, ns.data.h] = get_imass(ns.data.m, ns.data.d, ns.data.sp.r)
         return ns
 
@@ -1012,11 +1016,11 @@ class DataField(esbmtkBase):
 
              DataField(name = "Name"
                        register = Model handle,
-                       y1_data = np.Ndarray or list of arrays
+                       y1_data = NDArrayFloat or list of arrays
                        y1_label = Data label(s)
                        y1_legend = Y-Axis Label
                        y1_type = "plot", | "scatter"
-                       y2_data = np.Ndarray    # optional
+                       y2_data = NDArrayFloat    # optional
                        y2_legend = Y-Axis label # optional
                        y2_label = Data legend(s) # optional
                        y2_type = "plot", | "scatter"
@@ -2006,12 +2010,12 @@ class GasReservoir(ReservoirBase):
         self.lm: str = f"{self.species.n} [{self.mu}]"
 
         # initialize vectors
-        self.m: np.ndarray = (
+        self.m: NDArrayFloat = (
             np.zeros(self.species.mo.steps) + self.species_mass.magnitude
         )
-        self.l: np.ndarray = np.zeros(self.mo.steps)
+        self.l: NDArrayFloat = np.zeros(self.mo.steps)
         # initialize concentration vector
-        self.c: np.ndarray = self.m / self.volume.to(self.v_unit).magnitude
+        self.c: NDArrayFloat = self.m / self.volume.to(self.v_unit).magnitude
         # isotope mass
         # self.l = get_l_mass(self.m, self.delta, self.species.r)
         self.l = get_l_mass(self.c, self.delta, self.species.r)
@@ -2187,8 +2191,8 @@ class ExternalData(esbmtkBase):
         ys = self.yq.to(self.register.plt_units).magnitude
 
         # scale input data into model  units
-        self.x: np.ndarray = self.df.iloc[:, 0].to_numpy() * xs
-        self.y: np.ndarray = self.df.iloc[:, 1].to_numpy() * ys
+        self.x: NDArrayFloat = self.df.iloc[:, 0].to_numpy() * xs
+        self.y: NDArrayFloat = self.df.iloc[:, 1].to_numpy() * ys
 
         # map into model space
         self.x = self.x - self.x[0] + self.offset
@@ -2237,7 +2241,7 @@ class ExternalData(esbmtkBase):
 
         """
 
-        xi: np.ndarray = self.model.time
+        xi: NDArrayFloat = self.model.time
 
         if (self.x[0] > xi[0]) or (self.x[-1] < xi[-1]):
             message = (
@@ -2249,7 +2253,7 @@ class ExternalData(esbmtkBase):
 
             raise ValueError(message)
         else:
-            self.y: np.ndarray = np.interp(xi, self.x, self.y)
+            self.y: NDArrayFloat = np.interp(xi, self.x, self.y)
             self.x = xi
 
     def plot(self) -> None:

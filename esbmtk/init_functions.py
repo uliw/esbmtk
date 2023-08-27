@@ -18,7 +18,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
 import typing as tp
-import numpy as np
 
 from esbmtk import (
     photosynthesis,
@@ -61,6 +60,8 @@ def init_photosynthesis(rg, productivity, CaCO3_reactions):
         ],
         function_params=(
             rg.volume.magnitude,
+            rg.area,
+            rg.sed_area,
             M.PC_ratio,
             M.NC_ratio,
             M.O2C_ratio,
@@ -138,9 +139,12 @@ def init_remineralization(
         ],
         function_params=(
             rg.volume.magnitude,
+            rg.area,
+            rg.sed_area,
             M.PC_ratio,
             M.NC_ratio,
             M.O2C_ratio,
+            M.P_burial,
             M.alpha,
             rg.swc.K1,
             rg.swc.K1K1,
@@ -169,11 +173,8 @@ def init_carbonate_system_3(
     rg: ReservoirGroup,
     pic_export_flux: Flux,
     r_sb: ReservoirGroup,
+    r_ib: ReservoirGroup,
     r_db: ReservoirGroup,
-    # area_table: np.ndarray,
-    # area_dz_table: np.ndarray,
-    # Csat_table: np.ndarray,
-    AD: float,
     kwargs: dict,
 ):
     ec = ExternalCode(
@@ -184,26 +185,18 @@ def init_carbonate_system_3(
         ftype="cs2",
         r_s=r_sb,  # source (RG) of CaCO3 flux,
         r_d=r_db,  # sink (RG) of CaCO3 flux,
-        # this could be moved to the model, and then possibly passed into
-        # the ode system.
-        # vr_datafields={
-        #     "depth_area_table": area_table,
-        #     "area_dz_table": area_dz_table,
-        #     "Csat_table": Csat_table,
-        # },
         function_input_data=[
-            # rg,  # 0
             pic_export_flux,  # 1
             r_db.DIC,  # 2
             r_db.TA,  # 3
             r_sb.DIC,  # 4
             "Hplus",  # 5
             "zsnow",  # 6
+            "CO3",
         ],
         function_params=(
             kwargs["Ksp0"],  # 7
             float(kwargs["kc"]),  # 8
-            float(AD),  # 9
             float(abs(kwargs["zsat0"])),  # 10
             float(kwargs["I_caco3"]),  # 11
             float(kwargs["alpha"]),  # 12
@@ -213,6 +206,8 @@ def init_carbonate_system_3(
             rg.swc.K2,
             rg.swc.K1K2,
             rg.swc.ca2,
+            r_ib.area,  # area at top of intermediate water
+            r_ib.mo.hyp.oa,  # total ocean area
             "area_table",
             "area_dz_table",
             "Csat_table",
@@ -221,6 +216,7 @@ def init_carbonate_system_3(
             {"F_rg.DIC": "db_remineralization"},
             {"F_rg.TA": "db_remineralization"},
             {"zsnow": float(abs(kwargs["zsnow"]))},
+            {"CO3": rg.swc.co3},
         ],
         register=rg,
     )

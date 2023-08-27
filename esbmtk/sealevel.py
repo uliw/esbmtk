@@ -17,7 +17,7 @@
      but WITHOUT ANY WARRANTY; without even the implied warranty of
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
      GNU General Public License for more details.
-
+ 
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
@@ -25,12 +25,15 @@
 # from pint import UnitRegistry
 from __future__ import annotations
 import numpy as np
+import numpy.typing as npt
 import matplotlib.pyplot as plt
 import pandas as pd
 import scipy as sp
 import scipy.interpolate
 from .esbmtk_base import esbmtkBase
 
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
 
 class hypsometry(esbmtkBase):
     """A class to provide hypsometric data for the depth interval between -6000 to 1000
@@ -152,7 +155,7 @@ class hypsometry(esbmtkBase):
         if l < -6002:
             raise ValueError("area_dz() is only defined to a depth of 6000 mbsl")
 
-        a: np.ndarray = sp.interpolate.splev([u, l], self.tck)
+        a: NDArrayFloat = sp.interpolate.splev([u, l], self.tck)
 
         return (a[0] - a[-1]) * self.sa
 
@@ -254,7 +257,7 @@ class hypsometry(esbmtkBase):
         ax.plot(depth, a)  # create a line plot
         plt.show()  # display figure
 
-    def get_lookup_table(self, min_depth: int, max_depth: int) -> np.ndarray:
+    def get_lookup_table(self, min_depth: int, max_depth: int) -> NDArrayFloat:
         """Generate a vector which contains the area(z) in 1 meter intervals
         The numbers are given in m^2 which represent the actual area.
 
@@ -272,7 +275,7 @@ class hypsometry(esbmtkBase):
             * self.sa
         )
 
-    def get_lookup_table_area_dz(self, min_depth: int, max_depth: int) -> np.ndarray:
+    def get_lookup_table_area_dz(self, min_depth: int, max_depth: int) -> NDArrayFloat:
         """Generate a vector which contains the first derivative of area(z) in 1 meter intervals
         Note that the numbers are in m^2
 
@@ -295,11 +298,11 @@ def get_box_geometry_parameters(box) -> None:
         box.volume = Q_(volume)
         box.volume = box.volume.to(box.mo.v_unit)
         box.area = box.mo.hyp.area(box.geometry[0]) * box.area_percentage
-        box.area_dz = (
+        box.sed_area = (
             box.mo.hyp.area_dz(box.geometry[0], box.geometry[1]) * box.area_percentage
         )
-        box.area_fraction = box.area_dz / box.mo.hyp.oa
+        box.area_fraction = box.sed_area / box.mo.hyp.oa
         box.geometry_unset = False
-
+        
     elif box.volume == "None":
         raise ValueError("You need to provide volume or geometry!")

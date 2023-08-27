@@ -19,12 +19,16 @@
 from __future__ import annotations
 import typing as tp
 import numpy as np
+import numpy.typing as npt
 from math import log, sqrt
 from .utility_functions import __checkkeys__, __addmissingdefaults__, __checktypes__
 
 if tp.TYPE_CHECKING:
     from .esbmtk import SeawaterConstants, ReservoirGroup
 
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
+    
 """
 Carbonate System 1 setup requires 3 steps: First we define the actual function,
 carbonate_system_1_ode().  In the second step we create a wrapper
@@ -253,8 +257,8 @@ def carbonate_system_2_ode(
     BDS = BDS_under + BDS_resp
     if zsnow > zmax:
         zsnow = zmax
-    diff: np.ndarray = Csat_table[zcc : int(zsnow)] - co3
-    area_p: np.ndarray = area_dz_table[zcc : int(zsnow)]
+    diff: NDArrayFloat = Csat_table[zcc : int(zsnow)] - co3
+    area_p: NDArrayFloat = area_dz_table[zcc : int(zsnow)]
     # integrate saturation difference over area
     BPDC = kc * area_p.dot(diff)
     BPDC = max(BPDC, 0)  # prevent negative values
@@ -304,9 +308,9 @@ def init_carbonate_system_2(
     ta_burial_flux: Flux,
     r_sb: ReservoirGroup,
     r_db: ReservoirGroup,
-    area_table: np.ndarray,
-    area_dz_table: np.ndarray,
-    Csat_table: np.ndarray,
+    area_table: NDArrayFloat,
+    area_dz_table: NDArrayFloat,
+    Csat_table: NDArrayFloat,
     AD: float,
     kwargs: dict,
 ):
@@ -461,7 +465,7 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     # establish some shared parameters
     # depths_table = np.arange(0, 6001, 1)
-    depths: np.ndarray = np.arange(0, 6002, 1, dtype=float)
+    depths: NDArrayFloat = np.arange(0, 6002, 1, dtype=float)
     r_db = kwargs["r_db"]
     r_sb = kwargs["r_sb"]
     ca2 = r_db[0].swc.ca2
@@ -476,7 +480,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         )
 
     # C saturation(z) after Boudreau 2010
-    Csat_table: np.ndarray = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
+    Csat_table: NDArrayFloat = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
     area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
     area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area'
     AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
@@ -576,8 +580,8 @@ def get_pco2(SW) -> float:
     hplus_c: float = SW.hplus
     k1: float = SW.K1
     k2: float = SW.K2
-    co2: np.ndarray = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c**2)))
-    pco2: np.ndarray = co2 / SW.K0 * 1e6
+    co2: NDArrayFloat = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c**2)))
+    pco2: NDArrayFloat = co2 / SW.K0 * 1e6
     return pco2
 
 
@@ -585,7 +589,7 @@ def calc_pCO2(
     dic,  # see above why no type hints
     hplus,
     SW,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """
     Calculate the concentration of pCO2 as a function of DIC,
     H+, K1 and k2 and returns a numpy array containing
@@ -607,24 +611,24 @@ def calc_pCO2(
 
     """
 
-    dic_c: np.ndarray = dic.c
-    hplus_c: np.ndarray = hplus.c
+    dic_c: NDArrayFloat = dic.c
+    hplus_c: NDArrayFloat = hplus.c
 
     k1: float = SW.K1
     k2: float = SW.K2
 
-    co2: np.ndarray = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c**2)))
+    co2: NDArrayFloat = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c**2)))
 
-    pco2: np.ndarray = co2 / SW.K0 * 1e6
+    pco2: NDArrayFloat = co2 / SW.K0 * 1e6
 
     return pco2
 
 
 def calc_pCO2b(
-    dic: np.ndarray,
-    hplus: np.ndarray,
+    dic: NDArrayFloat,
+    hplus: NDArrayFloat,
     SW: SeawaterConstants,
-) -> np.ndarray:
+) -> NDArrayFloat:
     """
     Same as calc_pCO2, but accepts values/arrays rather than Reservoirs.
     Calculate the concentration of pCO2 as a function of DIC,
@@ -644,16 +648,16 @@ def calc_pCO2b(
                        )
     """
 
-    dic_c: np.ndarray = dic
+    dic_c: NDArrayFloat = dic
 
-    hplus_c: np.ndarray = hplus
+    hplus_c: NDArrayFloat = hplus
 
     k1: float = SW.K1
     k2: float = SW.K2
 
-    co2: np.ndarray = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c**2)))
+    co2: NDArrayFloat = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c**2)))
 
-    pco2: np.ndarray = co2 / SW.K0 * 1e6
+    pco2: NDArrayFloat = co2 / SW.K0 * 1e6
 
     return pco2
 

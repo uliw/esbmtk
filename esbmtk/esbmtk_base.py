@@ -21,12 +21,13 @@
 from __future__ import annotations
 import time
 import numpy as np
-
+import numpy.typing as npt
 # import typing as tp
 
 # if tp.TYPE_CHECKING:
 #     from .esbmtk import Model
-
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
 
 class input_parsing(object):
     """Provides various routines to parse and process keyword

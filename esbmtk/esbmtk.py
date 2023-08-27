@@ -16,11 +16,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
-import typing as tp
 from pandas import DataFrame
 import time
 from time import process_time
 import numpy as np
+import typing as tp
+import numpy.typing as npt
 import matplotlib.pyplot as plt
 import pandas as pd
 import logging
@@ -43,6 +44,8 @@ from .solver import (
     get_delta_from_concentration,
 )
 
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
 
 if tp.TYPE_CHECKING:
     from .extended_classes import GasReservoir, ExternalData, DataField
@@ -537,7 +540,7 @@ class Model(esbmtkBase):
         # this has nothing todo with self.time below!
         wts = time.time()
         start: float = process_time()
-        # new: np.ndarray = np.zeros(4)
+        # new: NDArrayFloat = np.zeros(4)
 
 
         solver = "ode" if "solver" not in kwargs else kwargs["solver"]
@@ -1053,7 +1056,7 @@ class ReservoirBase(esbmtkBase):
     def __call__(self) -> None:  # what to do when called as a function ()
         return self
 
-    def __getitem__(self, i: int) -> np.ndarray:
+    def __getitem__(self, i: int) -> NDArrayFloat:
         """
         Get flux data by index
         """
@@ -1440,7 +1443,7 @@ class Reservoir(ReservoirBase):
     will also be set:
 
     self.volume in model units (usually liter) self.are:a surface area
-    in m^2 at the upper bounding surface self.area_dz: area of
+    in m^2 at the upper bounding surface self.sed_area: area of
     seafloor which is intercepted by this box.  self.area_fraction:
     area of seafloor which is intercepted by this relative to the
     total ocean floor area
@@ -1690,9 +1693,9 @@ class Reservoir(ReservoirBase):
         self.lm: str = f"{self.species.n} [{self.mu}/l]"
 
         # initialize mass vector
-        self.m: np.ndarray = np.zeros(self.species.mo.steps) + self.mass
-        self.l: np.ndarray = np.zeros(self.mo.steps)
-        self.v: np.ndarray = (
+        self.m: NDArrayFloat = np.zeros(self.species.mo.steps) + self.mass
+        self.l: NDArrayFloat = np.zeros(self.mo.steps)
+        self.v: NDArrayFloat = (
             np.zeros(self.mo.steps) + self.volume.to(self.mo.v_unit).magnitude
         )  # reservoir volume
 
@@ -1901,14 +1904,14 @@ class Flux(esbmtkBase):
             self.rate: float = self.rate
 
         li = get_l_mass(self.rate, self.delta, self.sp.r) if self.delta else 0
-        self.fa: np.ndarray = np.array([self.rate, li])
-
+        self.fa : NDArrayFloat = np.asarray([self.rate, li])
+                                 
         # in case we want to keep the flux data
         if self.save_flux_data:
-            self.m: np.ndarray = np.zeros(self.model.steps) + self.rate  # add the flux
+            self.m: NDArrayFloat = np.zeros(self.model.steps) + self.rate  # add the flux
 
             if self.isotopes:
-                self.l: np.ndarray = np.zeros(self.model.steps)
+                self.l: NDArrayFloat = np.zeros(self.model.steps)
                 if self.rate != 0:
                     self.l = get_l_mass(self.m, self.delta, self.species.r)
                     self.fa[1] = self.l[0]
@@ -1964,17 +1967,17 @@ class Flux(esbmtkBase):
             # self.__get_data__ = self.__get_without_isotopes__
 
     # setup a placeholder setitem function
-    def __setitem__(self, i: int, value: np.ndarray):
+    def __setitem__(self, i: int, value: NDArrayFloat):
         return self.__set_data__(i, value)
 
-    def __getitem__(self, i: int) -> np.ndarray:
+    def __getitem__(self, i: int) -> NDArrayFloat:
         """
         Get data by index
         """
         # return self.__get_data__(i)
         return self.fa
 
-    def __set_with_isotopes__(self, i: int, value: np.ndarray) -> None:
+    def __set_with_isotopes__(self, i: int, value: NDArrayFloat) -> None:
         """
         Write data by index
         """
@@ -1983,7 +1986,7 @@ class Flux(esbmtkBase):
         self.l[i] = value[1]
         self.fa = value[:4]
 
-    def __set_without_isotopes__(self, i: int, value: np.ndarray) -> None:
+    def __set_without_isotopes__(self, i: int, value: NDArrayFloat) -> None:
         """
         Write data by index
         """

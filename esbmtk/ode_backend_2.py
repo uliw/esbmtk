@@ -1,9 +1,13 @@
 from __future__ import annotations
 import typing as tp
 import numpy as np
+import numpy.typing as npt
 
 if tp.TYPE_CHECKING:
     from esbmtk import Model
+
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
 
 
 def set_tolerance(v: float, rtol: float) -> float:
@@ -54,14 +58,14 @@ def sort_fluxes_by_type(M) -> dict:
     return f_dict
 
 
-def get_types(M: Model, rtol: float) -> tuple(np.ndarray, np.ndarray, dict, dict):
+def get_types(M: Model, rtol: float) -> tuple(NDArrayFloat, NDArrayFloat, dict, dict):
     """Create the data that is needed to assemble the equation matrix
 
     :param M: Model hande
     :param rtol: relative tolerance,
 
-    :return atol: np.ndarray of absolute tolerances
-    :return IC: np.ndarray of initial conditions and constant/computed Fluxes
+    :return atol: NDArrayFloat of absolute tolerances
+    :return IC: NDArrayFloat of initial conditions and constant/computed Fluxes
     :return IC_i: dict of reservoir/flux index positions
     :return f_dict: dictionary of flux types
     """
@@ -174,7 +178,7 @@ def set_matrix_coefficients(C, coords):
         # print(C)
 
 
-def build_matrix(M: Model, IC: np.ndarray, IC_i: dict, f_dict: dict):
+def build_matrix(M: Model, IC: NDArrayFloat, IC_i: dict, f_dict: dict):
     """Create the initial co-efficient Matrix C[rows, cols]), where
     rows = number of reservoirs
     cols = number of initial condition + fixed an computed fluxes

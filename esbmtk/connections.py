@@ -28,6 +28,7 @@ from __future__ import annotations
 # from numbers import Number
 import typing as tp
 import numpy as np
+import numpy.typing as npt
 import copy as cp
 import logging
 import uuid
@@ -36,6 +37,8 @@ from .utility_functions import map_units
 from .utility_functions import check_for_quantity
 
 np.set_printoptions(precision=4)
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
 
 if tp.TYPE_CHECKING:
     from esbmtk import Process
@@ -1358,7 +1361,7 @@ class AirSeaExchange(esbmtkBase):
             "area": [0.0, (float)],
             "id": ["None", (str)],
             "name": ["None", (str)],
-            "water_vapor_pressure": [0, (int, float, np.float64)],
+            "water_vapor_pressure": [0, (int, float, np.ndarray)],
             "ref_species": ["None", (Reservoir, int, float, np.ndarray)],
             "species": ["None", (Species, str)],
             "register": ["None", (str, Model)],

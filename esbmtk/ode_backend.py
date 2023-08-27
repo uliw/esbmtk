@@ -1,15 +1,18 @@
 from __future__ import annotations
 import numpy as np
+import numpy.typing as npt
 from numba.typed import List
 from esbmtk import Flux, Reservoir, Model, Connection, Connect
 from esbmtk import AirSeaExchange
 
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
 
 def get_initial_conditions(
     M: Model,
     rtol: float,
     atol_d: float = 1e-7,
-) -> tuple[list, dict, list, list, np.ndarray]:
+) -> tuple[list, dict, list, list, NDArrayFloat]:
     """Get list of initial conditions.  This list needs to match the
     number of equations.
 

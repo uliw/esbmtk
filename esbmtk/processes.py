@@ -1,9 +1,12 @@
 from __future__ import annotations
 import numpy as np
+import numpy.typing as npt
 from . import Q_
 from .esbmtk_base import esbmtkBase  # , Reservoir, Flux, Source, Sink
 from .solver import get_l_mass
-import collections as col
+
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
 
 np.set_printoptions(precision=4)
 # from .connections import ConnnectionGroup
@@ -107,11 +110,11 @@ class Process(esbmtkBase):
             "reservoir": ["None", (str, Reservoir, Source, Sink, GasReservoir)],
             "flux": ["None", (str, Flux)],
             "ref_flux": ["None", (str, Flux)],
-            "rate": [0, (int, float, np.float64)],
-            "delta": ["None", (int, float, np.float64, str)],
+            "rate": [0, (int, float, np.ndarray)],
+            "delta": ["None", (int, float, np.ndarray, str)],
             "lt": ["None", (Flux)],
-            "alpha": [0, (int, float, np.float64)],
-            "scale": [1, (int, float, np.float64)],
+            "alpha": [0, (int, float, np.ndarray)],
+            "scale": [1, (int, float, np.ndarray)],
             "ref_reservoirs": ["None", (Flux, Reservoir, GasReservoir, list, str)],
             "model": ["None", (str, Model)],
             "source": ["None", (str, Source, Reservoir, GasReservoir)],
@@ -621,13 +624,13 @@ class RateConstant(Process):
 
         # update the allowed keywords
         defaults: dict[str, list[any, tuple]] = {
-            "scale": [1, (int, float, np.float64)],
-            "k_value": [1, (int, float, np.float64)],
+            "scale": [1, (int, float, np.ndarray)],
+            "k_value": [1, (int, float, np.ndarray)],
             "ref_reservoirs": ["None", (str, list)],
             "reservoir_ref": ["None", (str, Reservoir, GasReservoir)],
             "left": [
                 "None",
-                (str, list, Reservoir, int, float, np.float64, np.ndarray),
+                (str, list, Reservoir, int, float, np.ndarray, np.ndarray),
             ],
             "right": ["None", (str, list, Reservoir, int, float, np.ndarray)],
             "gas": [
@@ -635,9 +638,9 @@ class RateConstant(Process):
                 (str, Reservoir, GasReservoir, Source, Sink, np.ndarray, float),
             ],
             "liquid": ["None", (Reservoir, Source, Sink, float)],
-            "solubility": ["None", (str, int, float, np.float64)],
-            "piston_velocity": ["None", (str, int, float, np.float64)],
-            "water_vapor_pressure": ["None", (str, int, float, np.float64)],
+            "solubility": ["None", (str, int, float, np.ndarray)],
+            "piston_velocity": ["None", (str, int, float, np.ndarray)],
+            "water_vapor_pressure": ["None", (str, int, float, np.ndarray)],
             "ref_species": ["None", (str, np.ndarray, float)],
             "seawaterconstants": ["None", (str, SeawaterConstants)],
             "isotopes": [False, (bool)],

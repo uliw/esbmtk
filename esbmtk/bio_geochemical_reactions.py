@@ -17,12 +17,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
 
-import typing as tp
 from math import log, sqrt
 import numpy as np
+import numpy.typing as npt
 from numba import njit
 from esbmtk import get_new_ratio_from_alpha
 
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
 
 @njit()
 def photosynthesis(
@@ -50,6 +52,8 @@ def photosynthesis(
     # unpack parameters
     (
         volume,
+        surface_area,
+        sed_area,
         PC_ratio,
         NC_ratio,
         O2C_ratio,
@@ -98,21 +102,28 @@ def photosynthesis(
 
     # CaCO3 formation
     if CaCO3_reactions:
-        alpha = 1
-        # PIC_F = POM_F * alpha / rain_rate  # newly formed CaCO3
-        PIC_F = POM_F / rain_rate  # newly formed CaCO3
+        # newly formed CaCO3
+        PIC_F = POM_F / rain_rate
         PIC_F_l = PIC_F * dic_l / dic
-        dMdt_dic += -PIC_F  # dic removed
+        # Account for water column dissolution
+        # PIC_F -= PIC_F * alpha * sed_area / surface_area
+        # PIC_F_l -= PIC_F_l * alpha * sed_area / surface_area
+        # dic & ta removed by photosynthesis
+        dMdt_dic += -PIC_F
         dMdt_dic_l += -PIC_F_l
-        dMdt_ta += 2 * -PIC_F  # TA removed
+        dMdt_ta += 2 * -PIC_F
+
+        # Account for burial in shelf sediments
+        # PIC_F -= PIC_F * sed_area / surface_area
+        # PIC_F_l -= PIC_F_l * sed_area / surface_area
 
     # sulfur reactions, assuming that there is alwways enough O2
-    dMdt_h2s = -h2s * volume  # H2S oxidation
+    dMdt_h2s = 0  # -h2s * volume  # H2S oxidation
     dMdt_so4 = dMdt_h2s  # add S to the sulfate pool
     dMdt_ta += 2 * dMdt_so4  # adjust Alkalinity
-    
+
     # add O2 from photosynthesis - h2s oxidation
-    dMdt_o2 = POM_F * O2C_ratio - 2 * h2s * volume
+    dMdt_o2 = POM_F * O2C_ratio - 2 * dMdt_h2s
 
     return (  # note that these are returned as fluxes
         dCdt_H,
@@ -152,9 +163,12 @@ def remineralization(
 ) -> float:
     (
         volume,
+        area,
+        sed_area,
         PC_ratio,
         NC_ratio,
         O2C_ratio,
+        P_burial,
         alpha,
         k1,
         k1k1,
@@ -190,12 +204,12 @@ def remineralization(
     pom_flux_l = 0
     # sum all POM and dic fluxes
     for i, f in enumerate(pom_fluxes):
-        pom_flux += f * pom_remin_fractions[i]
+        pom_flux += pom_fluxes[i] * pom_remin_fractions[i]
         pom_flux_l += pom_fluxes_l[i] * pom_remin_fractions[i]
 
     # remove Alkalinity and add dic and po4 from POM remineralization
     # this happens irrespective of oxygen levels
-    dMdt_po4 = pom_flux / PC_ratio  # return PO4
+    dMdt_po4 = pom_flux * (1 - P_burial) / PC_ratio  # return PO4
     dMdt_ta = -pom_flux * NC_ratio  # remove Alkalinity from NO3
     dMdt_dic = pom_flux  # add DIC from POM
     dMdt_dic_l = pom_flux_l
@@ -213,18 +227,24 @@ def remineralization(
     else:  # box has not enough oxygen
         dMdt_o2 = -m_o2  # remove all available oxygen
         # calculate how much POM is left to oxidize
-        pom_flux = pom_flux - m_o2 / O2C_ratio
-        # oxidize the remaining POM via sulfate reduction
-        dMdt_so4 = -pom_flux / 2  # one SO4 oxidizes 2 carbon, and add 2 mol to TA
-        dMdt_h2s = -dMdt_so4  # move S to reduced reservoir
-        dMdt_ta += 2 * -dMdt_so4  # adjust Alkalinity for changes in sulfate
+        # pom_flux = pom_flux - m_o2 / O2C_ratio
+        # # oxidize the remaining POM via sulfate reduction
+        # dMdt_so4 = -pom_flux / 2  # one SO4 oxidizes 2 carbon, and add 2 mol to TA
+        # dMdt_h2s = -dMdt_so4  # move S to reduced reservoir
+        # dMdt_ta += 2 * -dMdt_so4  # adjust Alkalinity for changes in sulfate
 
     if CaCO3_reactions:
+        """photosynthesis calculates the total PIC production and removes DIC and TA
+        from the surface box accordingly. Most of the PIC flux either ends up as
+        sediment on the slope, or sinks further into the deep box. However, a fraction is
+        remineralized through aerobic respiration in the sediment and contributes DIc and TA
+        to the intermediate waters. See eq 8 in Boudreau 2010
+        """
         pic_flux = 0.0
         pic_flux_l = 0.0
         for i, f in enumerate(pic_fluxes):
-            pic_flux += f * pic_remin_fractions[i] * alpha
-            pic_flux_l += pic_fluxes_l[i] * pic_remin_fractions[i] * alpha
+            pic_flux += pic_fluxes[i] * sed_area / area * alpha
+            pic_flux_l += pic_fluxes_l[i] * sed_area / area * alpha
 
         # add Alkalinity and DIC from CaCO3 dissolution. Note that
         dMdt_dic += pic_flux
@@ -254,6 +274,7 @@ def carbonate_system_3(
     dic_sb_l: float,  # 7 [DIC_l] in the surface box
     hplus: float,  # 8 hplus in the deep box at t-1
     zsnow: float,  # 9 snowline in meters below sealevel at t-1
+    co3: float,
     p: tuple,
 ) -> tuple:
     """Calculates and returns the fraction of the carbonate rain that is
@@ -274,7 +295,6 @@ def carbonate_system_3(
     (  # unpack parameters
         ksp0,
         kc,
-        AD,
         zsat0,
         I_caco3,
         alpha,
@@ -284,6 +304,8 @@ def carbonate_system_3(
         k2,
         k1k2,
         ca2,
+        box_area,
+        ocean_area,
         depth_area_table,
         area_dz_table,
         Csat_table,
@@ -293,40 +315,39 @@ def carbonate_system_3(
     zsat_min = int(abs(zsat_min))
     zmax = int(abs(zmax))
     z0 = int(abs(z0))
-    # depth_area_table = rg.cs.depth_area_table
-    # area_dz_table = rg.cs.area_dz_table
-    # sat_table = rg.cs.Csat_table
 
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
+    co3_0 = co3  # save value from t-1
     co3 = max(dic_db / (1 + hplus / k2 + hplus * hplus / k1k2), 3.7e-05)
+    dCdt_co3 = co3 - co3_0
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
-    # zsat = np.clip(zsat, zsat_min, zmax)
     zsat = min(zmax, max(zsat_min, zmax))
-    zcc = int(zsat0 * log(pic_f * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
+    zcc = int(zsat0 * log(pic_f * ca2 / (ksp0 * box_area * kc) + ca2 * co3 / ksp0))  # eq3
     zcc = min(zmax, max(zsat_min, zcc))
-    # zcc = np.clip(zcc, zsat_min, zmax)
-    # get fractional areas
-    B_AD = pic_f / AD
-    A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
-    A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
-    A_zcc_zmax = depth_area_table[zcc] - depth_area_table[zmax]
+
+    # the below tables are for the entire ocean, so we needto scale them
+    # to the respective box area, in this case the top of intermediate box
+    fractional_area = box_area / ocean_area
+    A_z0_zsat = (depth_area_table[z0] - depth_area_table[zsat]) * fractional_area
+    A_zsat_zcc = (depth_area_table[zsat] - depth_area_table[zcc]) * fractional_area
+    A_zcc_zmax = (depth_area_table[zcc] - depth_area_table[zmax]) * fractional_area
     # ------------------------Calculate Burial Fluxes----------------------------- #
-    BCC = A_zcc_zmax * B_AD  # CCD dissolution
-    BNS = alpha * A_z0_zsat * B_AD  # water column dissolution
-    diff_co3 = Csat_table[zsat:zcc] - co3
-    area_p = area_dz_table[zsat:zcc]
-    BDS_under = kc * area_p.dot(diff_co3)
-    BDS_resp = alpha * (A_zsat_zcc * B_AD - BDS_under)
-    BDS = BDS_under + BDS_resp  # respiration
+    BCC: float = A_zcc_zmax * pic_f / box_area  # CCD dissolution
+    BNS: float = alpha * A_z0_zsat * pic_f / box_area  # water column dissolution
+    diff_co3: NDArrayFloat = Csat_table[zsat:zcc] - co3
+    area_p: NDArrayFloat = area_dz_table[zsat:zcc]
+    BDS_under: float = kc * area_p.dot(diff_co3) * fractional_area
+    BDS_resp: float = alpha * (A_zsat_zcc * pic_f / box_area - BDS_under)
+    BDS: float = BDS_under + BDS_resp  # respiration
     if zsnow > zmax:
         zsnow = zmax
-    diff: np.ndarray = Csat_table[zcc : int(zsnow)] - co3
-    area_p: np.ndarray = area_dz_table[zcc : int(zsnow)]
+    diff: NDArrayFloat = Csat_table[zcc : int(zsnow)] - co3
+    area_p: NDArrayFloat = area_dz_table[zcc : int(zsnow)]
     # integrate saturation difference over area
-    BPDC = kc * area_p.dot(diff)  # diss if zcc < zsnow
+    BPDC: float = kc * area_p.dot(diff) * fractional_area  # diss if zcc < zsnow
     BPDC = max(BPDC, 0)  # prevent negative values
-    d_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
+    d_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3 * fractional_area)
 
     """CaCO3_export is the flux of particulate CaCO3 into the box.
     The fraction that is buried does not affect the water chemistry,
@@ -340,10 +361,19 @@ def carbonate_system_3(
     dMdt_ta = 2 * dMdt_dic
     dMdt_dic_l = dMdt_dic * dic_sb_l / dic_sb
 
-    return dMdt_dic, dMdt_dic_l, dMdt_ta, d_zsnow
+    # breakpoint()
+    # print(f"fractional_area = {fractional_area:.2f}")
+    # print(f"pic_f = {pic_f:.2e}")
+    # print(f"dMdt_dic = {dMdt_dic:.2e}")
+    # print(f"dCdt_co3 = {dCdt_co3:.2e}")
+    # print(f"d_znow = {d_zsnow:.2f}\n")
+
+    # breakpoint()
+
+    return dMdt_dic, dMdt_dic_l, dMdt_ta, d_zsnow, dCdt_co3
 
 
-@njit
+@njit()
 def gas_exchange_with_isotopes_2(
     gas_c,  # species concentration in atmosphere
     gas_c_l,  # same but for the light isotope
@@ -390,7 +420,7 @@ def gas_exchange_with_isotopes_2(
     return f, f_l
 
 
-@njit
+@njit()
 def gas_exchange_no_isotopes_2(
     gas_c,  # species concentration in atmosphere
     liquid_c,  # c of the reference species (e.g., DIC)

@@ -1,9 +1,13 @@
 from __future__ import annotations
 import typing as tp
 import numpy as np
+import numpy.typing as npt
 
 if tp.TYPE_CHECKING:
     from .esbmtk import ReservoirGroup
+
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
 
 
 def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
@@ -99,6 +103,6 @@ def carbonate_system_2_pp(
     rg.CO2aq = dic - rg.CO3 - rg.HCO3
     rg.omega = rg.swc.ca2 * rg.CO3 / rg.swc.Ksp
     rg.pH: float = -np.log10(hplus)
-    rg.zsat = np.clip(zsat0 * np.log(ca2 * rg.CO3 / ksp0),  zsat_min, zmax)
+    rg.zsat = np.clip(zsat0 * np.log(ca2 * rg.CO3 / ksp0), zsat_min, zmax)
     rg.zcc = zsat0 * np.log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * rg.CO3 / ksp0)  # eq3
     # rg.zsnow = rg.zsnow.c

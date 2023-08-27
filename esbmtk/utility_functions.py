@@ -17,6 +17,7 @@
 """
 from __future__ import annotations
 import numpy as np
+import numpy.typing as npt
 import matplotlib.pyplot as plt
 import logging
 import typing as tp
@@ -27,7 +28,8 @@ if tp.TYPE_CHECKING:
     from esbmtk import Flux, Model, Connection, Connect
 
 np.set_printoptions(precision=4)
-
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
 
 def phc(c: float) -> float:
     # Calculate concentration as pH. c can be a number or numpy array
@@ -1170,7 +1172,7 @@ def __checkkeys__(lrk: list, lkk: list, kwargs: dict) -> None:
             for e in k:  # test how many matches are in this list
                 if (
                     e in kwargs
-                    and not isinstance(e, (np.ndarray, np.float64, list))
+                    and not isinstance(e, (np.ndarray, list))
                     and kwargs[e] != "None"
                 ):
                     s = s + 1

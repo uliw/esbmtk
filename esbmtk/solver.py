@@ -22,8 +22,12 @@ from __future__ import annotations
 # from nptyping import *
 from time import process_time
 import numpy as np
+import numpy.typing as npt
 import typing as tp
 from numba import njit
+
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
 
 if tp.TYPE_CHECKING:
     from esbmtk import Reservoir, GasReservoir, Flux
@@ -105,7 +109,7 @@ def get_new_ratio_from_alpha(
 
 
 # @njit()
-def get_flux_data(m: float, d: float, r: float) -> np.ndarray:
+def get_flux_data(m: float, d: float, r: float) -> NDArrayFloat:
     """
     Calculate the isotope masses from bulk mass and delta value.
     Arguments are m = mass, d= delta value, r = abundance ratio
@@ -120,7 +124,7 @@ def get_flux_data(m: float, d: float, r: float) -> np.ndarray:
 
 
 # @njit()
-def get_delta(l: np.ndarray, h: np.ndarray, r: float) -> np.ndarray:
+def get_delta(l: NDArrayFloat, h: NDArrayFloat, r: float) -> NDArrayFloat:
     """Calculate the delta from the mass of light and heavy isotope
 
     :param l: light isotope mass/concentration
@@ -195,7 +199,7 @@ def get_delta_h(R: Reservoir | GasReservoir | Flux) -> float:
 
 
 def execute(
-    time: np.ndarray,
+    time: NDArrayFloat,
     lop: list,
     lor: list,
     lpc_f: list,
