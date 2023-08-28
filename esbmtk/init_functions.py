@@ -21,7 +21,7 @@ import typing as tp
 
 from esbmtk import (
     photosynthesis,
-    remineralization,
+    OM_remineralization,
     gas_exchange_with_isotopes_2,
     gas_exchange_no_isotopes_2,
     carbonate_system_3,
@@ -97,7 +97,7 @@ def init_photosynthesis(rg, productivity, CaCO3_reactions):
     return ec
 
 
-def init_remineralization(
+def init_OM_remineralization(
     rg: ReservoirGroup,
     pom_fluxes: list[Flux],
     pom_fluxes_l: list[Flux],
@@ -118,8 +118,8 @@ def init_remineralization(
     ec = ExternalCode(
         name="rm",
         species=rg.mo.Carbon.CO2,
-        function=remineralization,
-        fname="remineralization",
+        function=OM_remineralization,
+        fname="OM_remineralization",
         ftype="cs2",  # cs1 is independent of fluxes, cs2 is not
         # hplus is not used but needed in post processing
         function_input_data=[
@@ -156,12 +156,12 @@ def init_remineralization(
         ),
         register=rg,
         return_values=[
-            {"F_rg.DIC": "remineralization"},
-            {"F_rg.TA": "remineralization"},
-            {"F_rg.H2S": "remineralization"},
-            {"F_rg.SO4": "remineralization"},
-            {"F_rg.O2": "remineralization"},
-            {"F_rg.PO4": "remineralization"},
+            {"F_rg.DIC": "OM_remineralization"},
+            {"F_rg.TA": "OM_remineralization"},
+            {"F_rg.H2S": "OM_remineralization"},
+            {"F_rg.SO4": "OM_remineralization"},
+            {"F_rg.O2": "OM_remineralization"},
+            {"F_rg.PO4": "OM_remineralization"},
             {"Hplus": rg.swc.hplus},
         ],
     )
@@ -213,8 +213,8 @@ def init_carbonate_system_3(
             "Csat_table",
         ),
         return_values=[
-            {"F_rg.DIC": "db_remineralization"},
-            {"F_rg.TA": "db_remineralization"},
+            {"F_rg.DIC": "db_OM_remineralization"},
+            {"F_rg.TA": "db_OM_remineralization"},
             {"zsnow": float(abs(kwargs["zsnow"]))},
             {"CO3": rg.swc.co3},
         ],

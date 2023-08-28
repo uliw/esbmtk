@@ -26,6 +26,7 @@ from esbmtk import get_new_ratio_from_alpha
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
+
 @njit()
 def photosynthesis(
     o2,
@@ -143,7 +144,7 @@ def photosynthesis(
 
 
 @njit()
-def remineralization(
+def OM_remineralization(
     pom_fluxes: list,  # POM export fluxes
     pom_fluxes_l: list,  # POM_l export fluxes
     pic_fluxes: list,
@@ -207,9 +208,14 @@ def remineralization(
         pom_flux += pom_fluxes[i] * pom_remin_fractions[i]
         pom_flux_l += pom_fluxes_l[i] * pom_remin_fractions[i]
 
+    # this needs to move in to the mo2 section
+    # remove the part of the OM matter flux is buried
+    pom_flux -= pom_flux * P_burial
+    pom_flux_l -= pom_flux_l * P_burial
+    # return the PO4 from the dissolved OM
+    dMdt_po4 = pom_flux / PC_ratio  # return PO4
     # remove Alkalinity and add dic and po4 from POM remineralization
     # this happens irrespective of oxygen levels
-    dMdt_po4 = pom_flux * (1 - P_burial) / PC_ratio  # return PO4
     dMdt_ta = -pom_flux * NC_ratio  # remove Alkalinity from NO3
     dMdt_dic = pom_flux  # add DIC from POM
     dMdt_dic_l = pom_flux_l
@@ -227,11 +233,11 @@ def remineralization(
     else:  # box has not enough oxygen
         dMdt_o2 = -m_o2  # remove all available oxygen
         # calculate how much POM is left to oxidize
-        # pom_flux = pom_flux - m_o2 / O2C_ratio
+        pom_flux = pom_flux - m_o2 / O2C_ratio
         # # oxidize the remaining POM via sulfate reduction
-        # dMdt_so4 = -pom_flux / 2  # one SO4 oxidizes 2 carbon, and add 2 mol to TA
-        # dMdt_h2s = -dMdt_so4  # move S to reduced reservoir
-        # dMdt_ta += 2 * -dMdt_so4  # adjust Alkalinity for changes in sulfate
+        dMdt_so4 = -pom_flux / 2  # one SO4 oxidizes 2 carbon, and add 2 mol to TA
+        dMdt_h2s = -dMdt_so4  # move S to reduced reservoir
+        dMdt_ta += 2 * -dMdt_so4  # adjust Alkalinity for changes in sulfate
 
     if CaCO3_reactions:
         """photosynthesis calculates the total PIC production and removes DIC and TA
@@ -261,6 +267,7 @@ def remineralization(
         dMdt_po4,
         dCdt_H,
     ]
+
 
 @njit()
 def carbonate_system_3(
@@ -322,7 +329,9 @@ def carbonate_system_3(
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
     zsat = min(zmax, max(zsat_min, zmax))
-    zcc = int(zsat0 * log(pic_f * ca2 / (ksp0 * box_area * kc) + ca2 * co3 / ksp0))  # eq3
+    zcc = int(
+        zsat0 * log(pic_f * ca2 / (ksp0 * box_area * kc) + ca2 * co3 / ksp0)
+    )  # eq3
     zcc = min(zmax, max(zsat_min, zcc))
 
     # the below tables are for the entire ocean, so we needto scale them

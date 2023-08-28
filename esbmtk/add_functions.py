@@ -22,7 +22,7 @@ import typing as tp
 from esbmtk import Q_, register_return_values
 from esbmtk import (
     init_photosynthesis,
-    init_remineralization,
+    init_OM_remineralization,
     init_carbonate_system_3,
     init_gas_exchange_with_isotopes,
     init_gas_exchange_no_isotopes,
@@ -56,15 +56,15 @@ def add_photosynthesis(
         rg.has_cs1 = True
 
 
-def add_remineralization(M: Model, f_map: dict) -> None:
+def add_OM_remineralization(M: Model, f_map: dict) -> None:
     """
-    Add remineralization fluxes to the model.
+    Add OM_remineralization fluxes to the model.
 
     Parameters:
     M (Model): The model object t
     f_map (dict): A dictionary that maps sink names to source dictionaries. The
     source dictionary should contain the source species and a list of type
-    and remineralization values. For example, {M.A_ib: {M.H_sb: ["POM", 0.3]}}.
+    and OM_remineralization values. For example, {M.A_ib: {M.H_sb: ["POM", 0.3]}}.
 
     Raises:
     ValueError: If an invalid type is specified in the source dictionary.
@@ -109,7 +109,7 @@ def add_remineralization(M: Model, f_map: dict) -> None:
                         pic_remin.append(type_dict["PIC"])
 
         if len(pic_fluxes) > 0:
-            ec = init_remineralization(
+            ec = init_OM_remineralization(
                 sink,
                 pom_fluxes,
                 pom_fluxes_l,
@@ -120,7 +120,7 @@ def add_remineralization(M: Model, f_map: dict) -> None:
                 True,
             )
         else:
-            ec = init_remineralization(
+            ec = init_OM_remineralization(
                 sink,
                 pom_fluxes,
                 pom_fluxes_l,
