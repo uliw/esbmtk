@@ -1169,6 +1169,7 @@ class ConnectionGroup(esbmtkBase):
             SourceGroup,
             ReservoirGroup,
             Reservoir,
+            GasReservoir,
             SinkGroup,
             Signal,
             Species,

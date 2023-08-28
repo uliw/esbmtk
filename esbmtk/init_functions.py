@@ -82,14 +82,14 @@ def init_photosynthesis(rg, productivity, CaCO3_reactions):
         return_values=[
             {"Hplus": rg.swc.hplus},
             {"CO2aq": rg.swc.co2aq},
-            {"F_rg.O2": "photosynthesis"},
-            {"F_rg.TA": "photosynthesis"},
-            {"F_rg.PO4": "photosynthesis"},
-            {"F_rg.SO4": "photosynthesis"},
-            {"F_rg.H2S": "photosynthesis"},
-            {"F_rg.DIC": "photosynthesis"},
-            {"F_rg.POM": "photosynthesis"},
-            {"F_rg.PIC": "photosynthesis"},
+            {f"F_{rg.name}.O2": "photosynthesis"},
+            {f"F_{rg.name}.TA": "photosynthesis"},
+            {f"F_{rg.name}.PO4": "photosynthesis"},
+            {f"F_{rg.name}.SO4": "photosynthesis"},
+            {f"F_{rg.name}.H2S": "photosynthesis"},
+            {f"F_{rg.name}.DIC": "photosynthesis"},
+            {f"F_{rg.name}.POM": "photosynthesis"},
+            {f"F_{rg.name}.PIC": "photosynthesis"},
         ],
     )
     rg.mo.lpc_f.append(ec.fname)
@@ -156,12 +156,12 @@ def init_OM_remineralization(
         ),
         register=rg,
         return_values=[
-            {"F_rg.DIC": "OM_remineralization"},
-            {"F_rg.TA": "OM_remineralization"},
-            {"F_rg.H2S": "OM_remineralization"},
-            {"F_rg.SO4": "OM_remineralization"},
-            {"F_rg.O2": "OM_remineralization"},
-            {"F_rg.PO4": "OM_remineralization"},
+            {f"F_{rg.name}.DIC": "OM_remineralization"},
+            {f"F_{rg.name}.TA": "OM_remineralization"},
+            {f"F_{rg.name}.H2S": "OM_remineralization"},
+            {f"F_{rg.name}.SO4": "OM_remineralization"},
+            {f"F_{rg.name}.O2": "OM_remineralization"},
+            {f"F_{rg.name}.PO4": "OM_remineralization"},
             {"Hplus": rg.swc.hplus},
         ],
     )
@@ -213,8 +213,8 @@ def init_carbonate_system_3(
             "Csat_table",
         ),
         return_values=[
-            {"F_rg.DIC": "db_OM_remineralization"},
-            {"F_rg.TA": "db_OM_remineralization"},
+            {f"F_{rg.name}.DIC": "db_OM_remineralization"},
+            {f"F_{rg.name}.TA": "db_OM_remineralization"},
             {"zsnow": float(abs(kwargs["zsnow"]))},
             {"CO3": rg.swc.co3},
         ],
@@ -258,7 +258,7 @@ def init_gas_exchange_no_isotopes(
         ),
         register=r_gas,
         return_values=[
-            {f"F_rg.{species.name}": "gex"},
+            {f"F_{r_gas.name}.{species.name}": "gex"},
         ],
     )
     # print(f"return value = {ec.return_values}")
@@ -303,7 +303,7 @@ def init_gas_exchange_with_isotopes(
         ),
         register=r_gas,
         return_values=[
-            {f"F_rg.{species.name}": "gexwi"},
+            {f"F_{r_gas.name}.{species.name}": "gexwi"},
         ],
     )
     r_liquid.mo.lpc_f.append(ec.fname)

@@ -207,11 +207,14 @@ def OM_remineralization(
     for i, f in enumerate(pom_fluxes):
         pom_flux += pom_fluxes[i] * pom_remin_fractions[i]
         pom_flux_l += pom_fluxes_l[i] * pom_remin_fractions[i]
+        # if i == 0:
+        #     pom_flux -= pom_flux * P_burial
+        #     pom_flux_l -= pom_flux_l * P_burial
 
     # this needs to move in to the mo2 section
     # remove the part of the OM matter flux is buried
-    pom_flux -= pom_flux * P_burial
-    pom_flux_l -= pom_flux_l * P_burial
+    #  pom_flux -= pom_flux * P_burial
+    # pom_flux_l -= pom_flux_l * P_burial
     # return the PO4 from the dissolved OM
     dMdt_po4 = pom_flux / PC_ratio  # return PO4
     # remove Alkalinity and add dic and po4 from POM remineralization
