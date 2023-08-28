@@ -8,6 +8,7 @@ from esbmtk import AirSeaExchange
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
+
 def get_initial_conditions(
     M: Model,
     rtol: float,
@@ -479,16 +480,21 @@ def parse_esbmtk_return_data_types(d: any, r: Reservoir, ind: str, icl: dict) ->
 
     # covert to object handle if need be
     if isinstance(d, str):
+        # use register kw as reference to get reservoir name
+        # maybe change to have actual name
         o = getattr(r.register, d)
     elif isinstance(d, dict):
         k = next(iter(d))
         if k[0:2] == "F_":  # this is flux
-            sp = k.split(".")[1]
+            rg_name, sp_name = k.split(".")
+            rg_name = rg_name[2:]
+            # if GasReservoir
             if isinstance(r.register, GasReservoir):
                 sr = f"M.{r.register.name}.{r.name}_F".replace(".", "_")
                 o = r.register
-            else:
-                o = getattr(r.register, f"{sp}")
+            else: # if ReservoirGroup
+                o = getattr(r.register.mo, rg_name)
+                o = getattr(o, f"{sp_name}")
                 sr = f"{o.full_name}.{d[k]}_F".replace(".", "_")
         else:
             o = getattr(r.register, k)
