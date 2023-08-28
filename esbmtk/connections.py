@@ -1179,8 +1179,8 @@ class ConnectionGroup(esbmtkBase):
 
         self.defaults: dict[str, any] = {
             "id": ["None", (str)],
-            "source": ["None", (str, SourceGroup, Reservoir, ReservoirGroup)],
-            "sink": ["None", (str, SinkGroup, Reservoir, ReservoirGroup)],
+            "source": ["None", (str, SourceGroup, Reservoir, ReservoirGroup, GasReservoir)],
+            "sink": ["None", (str, SinkGroup, Reservoir, ReservoirGroup, GasReservoir)],
             "delta": ["None", (str, dict, tuple, int, float)],
             "rate": ["None", (Q_, str, dict, tuple, int, float)],
             "pl": ["None", (str, dict, tuple)],
