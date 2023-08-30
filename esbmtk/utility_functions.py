@@ -31,6 +31,7 @@ np.set_printoptions(precision=4)
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
+
 def phc(c: float) -> float:
     # Calculate concentration as pH. c can be a number or numpy array
     import numpy as np
@@ -51,13 +52,118 @@ def debug(func):
         value = func(*args, **kwargs)
         value = [f"{v:.2e}" for v in value]
         print(f"\n{func.__name__!r} returned\n {value!r}\n")  # 4
-        breakpoint()
         return value
 
     return wrapper_debug
 
 
-def register_return_values(ec, parent, aux="None") -> None:
+def get_reservoir_reference(k, v, M):
+    """parse dict key and value to determine whether we have a
+    ReservoirGroup or just a (Gas) Reservoir and return the
+    species
+
+    :param v: e.g., "OM_remineralization
+    :param k: e.g., "F_M.CO2_At" or "F_M.A_sb.PO4"
+
+    :return reservoir: Reservoir/ReservoirGroup
+    :return species: Species
+    """
+
+    key_list = k[2:].split(".")  # get model, reservoir & species name
+
+    # print("\nget_reservoir_reference")
+    # print(f"k = {k}")
+    # print(f"klist = {key_list}, len =  {len(key_list)}")
+
+    if len(key_list) == 3:  # ReservoirGroup
+        model_name, reservoir_name, species_name = key_list
+        reservoir = getattr(M, reservoir_name)
+        if k[0:2] == "R_":
+            species = getattr(reservoir.mo, species_name)
+        elif k[0:2] == "F_":
+            species = getattr(reservoir, species_name).species
+
+    elif len(key_list) == 2:  # (Gas)Reservoir
+        model_name, reservoir_name = key_list
+        reservoir = getattr(M, reservoir_name)
+        # print(f"reservoir_name = {reservoir_name}")
+        # print(f"r.name = {reservoir.full_name}")
+        species = reservoir.species
+
+    else:
+        raise ValueError("kl should look like this F_M.CO2_At")
+
+    # print()
+
+    return reservoir, species
+
+
+def register_new_flux(r, sp, v, k, sink) -> list:
+    """Create new flux and register with parent object"""
+    from .esbmtk import Reservoir, Flux
+    from .extended_classes import GasReservoir
+
+    # print("\nregister_new_flux")
+    # print(f"r.full_name = {r.full_name}")
+    # print(f"rtype = {type(r)}")
+    # print(f"sp = {sp.name}")
+    # print(f"v = {v}")
+    ro = []  # return objects
+    if isinstance(r, GasReservoir | Reservoir):
+        r.source = r
+        fn = f"{r.name}2{sink.name}_{v}_F"
+        reg = r
+    else:
+        # print(f"parent = {r.full_name}")
+        # print(f"type = {type(r.full_name)}")
+        fn = f"{r.name}_{v}_F"
+        reg = getattr(r, sp.name)
+        reg.source = "None"
+
+    # print(f"Flux_name = {fn}")
+    f = Flux(
+        name=fn,
+        species=sp,
+        rate=0,
+        register=reg,
+    )
+    ro.append(f)
+    reg.sink = r  # denote sink
+    reg.lof.append(f)  # register flux
+    # print(f"added Flux to {reg.full_name}")
+    reg.ctype = "ignore"
+    if reg.isotopes:
+        f = Flux(
+            name=f"{fn}_l",
+            species=sp,
+            rate=0,
+            register=reg,
+        )
+        ro.append(f)
+    return ro
+
+
+def register_new_reservoir(r, sp, v):
+    """Register a new reservoir"""
+    from .esbmtk import Reservoir
+
+    # print(f"rn = {r.full_name}")
+    # print(f"sp = {sp.name}")
+    # print(f"v = {v}")
+    # print(f"creating reservoir for {r.full_name}")
+    rt = Reservoir(  # create new reservoir
+        name=sp.name,
+        species=sp,
+        concentration=f"{v} mol/kg",
+        register=r,
+        volume=r.volume,
+        rtype="computed",
+    )
+    r.lor.append(rt)
+    return [rt]
+
+
+def register_return_values(ec, sink) -> None:
     """Check the return values of external function instances,
     and create the necessary reservoirs or fluxes.
 
@@ -71,56 +177,27 @@ def register_return_values(ec, parent, aux="None") -> None:
     objects, rather than overloading the source attribute of the
     GasReservoir class.
     """
-    from .esbmtk import Reservoir, Flux
-    from .extended_classes import GasReservoir
+    from .esbmtk import Reservoir
 
-    for v in ec.return_values:
-        if isinstance(v, dict):
-            n = next(iter(v))  # get first key
-            if n[:2] == "F_":
-                fid = v[n]
-                n = n.split(".")[1]  # species name - reservoir name
-                if isinstance(parent, GasReservoir | Reservoir):
-                    r = parent  # get r handle
-                    fn = f"{ec.name}_F"
-                else:
-                    r = getattr(parent, n)  # get r handle
-                    fn = f"{fid}_F"
-
-                f = Flux(
-                    name=fn,
-                    species=r.species,
-                    rate=0,
-                    register=r,
-                )
-                if isinstance(parent, GasReservoir):
-                    aux.lof.append(f)
-                    r.source = r
-                else:
-                    r.source = "None"
-
-                r.sink = r
-                r.lof.append(f)
-                r.ctype = "ignore"
-                if r.isotopes:
-                    f = Flux(
-                        name=f"{fn}_l",
-                        species=r.species,
-                        rate=0,
-                        register=r,
-                    )
+    for line in ec.return_values:
+        if isinstance(line, dict):
+            k = next(iter(line))  # get first key
+            v = line[k]
+            r, sp = get_reservoir_reference(k, v, sink.mo)
+            if k[:2] == "F_":  # check if flux
+                o: list = register_new_flux(r, sp, v, k, sink)
+            elif k[:2] == "R_":  # Create new reservoir
+                o: list = register_new_reservoir(r, sp, v)
             else:
-                rt = Reservoir(
-                    name=n,
-                    species=getattr(parent.mo, n),
-                    concentration=f"{v[n]} mol/kg",
-                    register=parent,
-                    volume=parent.volume,
-                    rtype="computed",
-                )
-                parent.lor.append(rt)
+                raise ValueError(f"{k[0:2]} is not defined")
+
         elif isinstance(v, Reservoir):
             v.ef_results = True
+            o = [v]
+        # add to list of returned Objects
+        ec.lro.append(o[0])
+        if len(o) > 1:
+            ec.lro.append(o[1])
 
 
 def summarize_results(M: Model) -> dict():
@@ -229,7 +306,7 @@ def list_fluxes(self, name, i) -> None:
     """
     Echo all fluxes in the reservoir to the screen
     """
-    print(f"\nList of fluxes in {self.n}:")
+    # print(f"\nList of fluxes in {self.n}:")
 
     for f in self.lof:  # show the processes
         direction = self.lio[f.n]
@@ -240,12 +317,12 @@ def list_fluxes(self, name, i) -> None:
             t1 = "To  :"
             t2 = "Influx to"
 
-        print(f"\t {t2} {self.n} via {f.n}")
+        # print(f"\t {t2} {self.n} via {f.n}")
 
         for p in f.lop:
             p.describe()
 
-    print(" ")
+    # print(" ")
     for f in self.lof:
         f.describe(i)  # print out the flux data
 
@@ -353,7 +430,7 @@ def get_object_handle(res: list | string | Reservoir | ReservoirGroup, M: Model)
             # print(f"goh2: found {o} in __dict__\n")
         else:
             print(f"{o} is not known for model {M.name}")
-            # raise ValueError(f"{o} is not known for model {M.name}")
+            raise ValueError(f"{o} is not known for model {M.name}")
 
     if len(r_list) == 1:
         r_list = r_list[0]
@@ -396,10 +473,10 @@ def make_dict(keys: list, values: list) -> dict:
         if len(values) == len(keys):
             d: dict = dict(zip(keys, values))
         else:
-            print(f"len values ={len(values)}, len keys ={len(keys)}")
-            print(f"values = {values}")
-            for k in keys:
-                print(f"key = {k}")
+            # print(f"len values ={len(values)}, len keys ={len(keys)}")
+            # print(f"values = {values}")
+            # for k in keys:
+            #     print(f"key = {k}")
             raise ValueError("key and value list must be of equal length")
     else:
         values: list = [values] * len(keys)
@@ -887,11 +964,11 @@ def show_dict(d: dict, mt: str = "1:1") -> None:
 
     ct = expand_dict(d, mt)
     for ck, cv in ct.items():
-        print(f"{ck}")
+        # print(f"{ck}")
 
         for pk, pv in cv.items():
             x = get_simple_list(pv) if isinstance(pv, list) else get_name_only(pv)
-            print(f"     {pk} : {x}")
+            # print(f"     {pk} : {x}")
 
 
 def find_matching_fluxes(l: list, filter_by: str, exclude: str) -> list:
