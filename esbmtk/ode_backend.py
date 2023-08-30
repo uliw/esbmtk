@@ -471,42 +471,89 @@ def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
     return s1
 
 
-def parse_esbmtk_return_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> str:
+def parse_esbmtk_return_data_types():
+    pass
+
+
+def parse_esbmtk_return_data_types_old(
+    line: any, r: Reservoir, ind: str, icl: dict
+) -> str:
     """Parse esbmtk data types that are provided as arguments
     to external function objects, and convert them into a suitable string
     format that can be used in the ode equation file
     """
-    from esbmtk import GasReservoir
+    from esbmtk import GasReservoir, ReservoirGroup
+    from .utility_functions import get_reservoir_reference
 
-    # covert to object handle if need be
-    if isinstance(d, str):
-        # use register kw as reference to get reservoir name
-        # maybe change to have actual name
-        o = getattr(r.register, d)
-    elif isinstance(d, dict):
-        k = next(iter(d))
-        if k[0:2] == "F_":  # this is flux
-            rg_name, sp_name = k.split(".")
-            rg_name = rg_name[2:]
-            # if GasReservoir
-            if isinstance(r.register, GasReservoir):
-                sr = f"M.{r.register.name}.{r.name}_F".replace(".", "_")
-                o = r.register
-            else: # if ReservoirGroup
-                o = getattr(r.register.mo, rg_name)
-                o = getattr(o, f"{sp_name}")
-                sr = f"{o.full_name}.{d[k]}_F".replace(".", "_")
-        else:
-            o = getattr(r.register, k)
-            sr = f'dCdt_{o.full_name.replace(".", "_")}'
-    elif isinstance(d, Flux):
-        o = d
+    # convert to object handle if need be
+    if isinstance(line, str):
+        o = getattr(r.register, line)
+    elif isinstance(line, dict):
+        print("parse return data")
+        k = next(iter(line))  # get first key
+        v = line[k]
+        # get reservoir and species handle
+        print(f"k = {k}, v = {v}")
+        r, sp = get_reservoir_reference(k, v, r.mo)
+        if k[:2] == "F_":  # this is a flux
+            if isinstance(r, GasReservoir | Reservoir):
+                sr = f"{r.register.name}.{r.name}.{v}_F".replace(".", "_")
+                #  sr = f"M.{r.register.name}_F".replace(".", "_")
+                o = r
+                print(f"GR1 sr = {sr}")
+                breakpoint()
+            elif isinstance(r, ReservoirGroup):
+                print(f"line[k] = {line[k]}")
+                print(f"r name = {r.full_name}")
+                # sr = f"{r.full_name}.{sp.name}.{line[k]}_F".replace(".", "_")
+                sr = f"{r.full_name}.{sp.name}.{r.name}.{line[k]}_F".replace(".", "_")
+                o = r
+                print(f"RG2 sr = {sr}")
+            else:
+                raise ValueError(f"r = {type(r)}")
+
+        elif k[:2] == "R_":  # this is reservoir or reservoirgroup
+            if isinstance(r, GasReservoir | Reservoir):
+                sr = f"{r.full_name}".replace(".", "_")
+                o = r
+                print(f"GR3 sr = {sr}")
+            elif isinstance(r, ReservoirGroup):
+                sr = f"{r.full_name}.{sp.name}".replace(".", "_")
+                o = r
+                print(f"RG4 sr = {sr}")
+            else:
+                raise ValueError(f"r = {type(r)}")
+        # k = next(iter(d))
+        # if k[0:2] == "F_":  # this is flux
+        #     mo_name, rg_name, sp_name = k[2:].split(".")
+        #     # if GasReservoir
+        #     if isinstance(r.register, GasReservoir):
+        #         sr = f"M.{r.register.name}.{r.name}_F".replace(".", "_")
+        #         o = r.register
+        #     else:  # if ReservoirGroup
+        #         o = getattr(r.register.mo, rg_name)
+        #         o = getattr(o, f"{sp_name}")
+        #         sr = f"{o.full_name}.{d[k]}_F".replace(".", "_")
+        # elif k[0:2] == "R_":
+        #     print(f"k={k}")
+        #     mo_name, rg_name, sp_name = k[2:].split(".")
+        #     o = getattr(r.register.mo, rg_name)
+        #     o = getattr(o, f"{sp_name}")
+        #     sr = f'dCdt_{o.full_name.replace(".", "_")}'
+
+    elif isinstance(line, Flux):
+        o = line
         sr = o.full_name.replace(".", "_")
     else:  # argument is a regular reservoir
-        o = d
+        o = line
         sr = f'dCdt_{o.full_name.replace(".", "_")}'
 
-    if o.isotopes:
+    if isinstance(o, Reservoir | GasReservoir | Flux):
+        isotopes = o.isotopes
+    else:
+        isotopes = getattr(o, sp.name).isotopes
+    print(f"o = {o.full_name}, isotopes = {isotopes}")
+    if isotopes:
         sr = f"{sr}, {sr}_l"
 
     return sr
@@ -587,8 +634,14 @@ def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> st
 
     # get list of return values
     rv = ind2
-    for d in r.return_values:
-        rv += f"{parse_esbmtk_return_data_types(d, r, ind2, icl)}, "
+    # for d in r.return_values:
+    #     rv += f"{parse_esbmtk_return_data_types(d, r, ind2, icl)}, "
+    for o in r.lro:
+        rv += f"{o.full_name.replace('.', '_')}, "
+        # if o.isotopes:
+        #     rv += f"{o.full_name.replace('.', '_')}_l, "
+
+        print(f"rv = {rv}")
 
     rv = rv[:-2]
 
