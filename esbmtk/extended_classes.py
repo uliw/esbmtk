@@ -1595,6 +1595,7 @@ class ExternalCode(Reservoir_no_set):
         self.__initialize_keyword_variables__(kwargs)
 
         self.__set_legacy_names__(kwargs)
+        self.lro: list = []  # list of all return objects.
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
         self.plt_units = self.mo.c_unit
 

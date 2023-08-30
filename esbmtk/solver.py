@@ -32,7 +32,7 @@ NDArrayFloat = npt.NDArray[np.float64]
 if tp.TYPE_CHECKING:
     from esbmtk import Reservoir, GasReservoir, Flux
 
-
+@njit
 def get_l_mass(m: float, d: float, r: float) -> float:
     """
     :param m: mass or concentration

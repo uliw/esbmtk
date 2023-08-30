@@ -71,10 +71,6 @@ def get_reservoir_reference(k, v, M):
 
     key_list = k[2:].split(".")  # get model, reservoir & species name
 
-    # print("\nget_reservoir_reference")
-    # print(f"k = {k}")
-    # print(f"klist = {key_list}, len =  {len(key_list)}")
-
     if len(key_list) == 3:  # ReservoirGroup
         model_name, reservoir_name, species_name = key_list
         reservoir = getattr(M, reservoir_name)
@@ -86,14 +82,10 @@ def get_reservoir_reference(k, v, M):
     elif len(key_list) == 2:  # (Gas)Reservoir
         model_name, reservoir_name = key_list
         reservoir = getattr(M, reservoir_name)
-        # print(f"reservoir_name = {reservoir_name}")
-        # print(f"r.name = {reservoir.full_name}")
         species = reservoir.species
 
     else:
         raise ValueError("kl should look like this F_M.CO2_At")
-
-    # print()
 
     return reservoir, species
 
@@ -103,24 +95,16 @@ def register_new_flux(r, sp, v, k, sink) -> list:
     from .esbmtk import Reservoir, Flux
     from .extended_classes import GasReservoir
 
-    # print("\nregister_new_flux")
-    # print(f"r.full_name = {r.full_name}")
-    # print(f"rtype = {type(r)}")
-    # print(f"sp = {sp.name}")
-    # print(f"v = {v}")
     ro = []  # return objects
     if isinstance(r, GasReservoir | Reservoir):
         r.source = r
         fn = f"{r.name}2{sink.name}_{v}_F"
         reg = r
     else:
-        # print(f"parent = {r.full_name}")
-        # print(f"type = {type(r.full_name)}")
         fn = f"{r.name}_{v}_F"
         reg = getattr(r, sp.name)
         reg.source = "None"
 
-    # print(f"Flux_name = {fn}")
     f = Flux(
         name=fn,
         species=sp,
@@ -130,7 +114,6 @@ def register_new_flux(r, sp, v, k, sink) -> list:
     ro.append(f)
     reg.sink = r  # denote sink
     reg.lof.append(f)  # register flux
-    # print(f"added Flux to {reg.full_name}")
     reg.ctype = "ignore"
     if reg.isotopes:
         f = Flux(
@@ -147,10 +130,6 @@ def register_new_reservoir(r, sp, v):
     """Register a new reservoir"""
     from .esbmtk import Reservoir
 
-    # print(f"rn = {r.full_name}")
-    # print(f"sp = {sp.name}")
-    # print(f"v = {v}")
-    # print(f"creating reservoir for {r.full_name}")
     rt = Reservoir(  # create new reservoir
         name=sp.name,
         species=sp,
@@ -216,7 +195,7 @@ def summarize_results(M: Model) -> dict():
         basin_name = r.register.name[:1]
         level_name = r.register.name[-2:]
         species_value = r.c[-1]
-        # print(f"{basin_name},{level_name}, {species_name}, {species_value}")
+
         if basin_name not in results:
             results[basin_name] = {level_name: {species_name: species_value}}
         elif level_name not in results[basin_name]:
@@ -306,8 +285,6 @@ def list_fluxes(self, name, i) -> None:
     """
     Echo all fluxes in the reservoir to the screen
     """
-    # print(f"\nList of fluxes in {self.n}:")
-
     for f in self.lof:  # show the processes
         direction = self.lio[f.n]
         if direction == -1:
@@ -317,12 +294,9 @@ def list_fluxes(self, name, i) -> None:
             t1 = "To  :"
             t2 = "Influx to"
 
-        # print(f"\t {t2} {self.n} via {f.n}")
-
         for p in f.lop:
             p.describe()
 
-    # print(" ")
     for f in self.lof:
         f.describe(i)  # print out the flux data
 
@@ -340,11 +314,6 @@ def show_data(self, **kwargs) -> None:
 
     index = 0 if "index" not in kwargs else kwargs["index"]
     ind: str = kwargs["indent"] * " " if "indent" in kwargs else ""
-
-    # show the first 4 entries
-    # for i in range(index, index + 3):
-    #     print(f"{off}{ind}i = {i}, Mass = {self.m[i]:.2e}, li= {self.l[i]:.2f}")
-
 
 def set_y_limits(ax: plt.Axes, obj: any) -> None:
     """Prevent the display or arbitrarily small differences"""
@@ -421,13 +390,10 @@ def get_object_handle(res: list | string | Reservoir | ReservoirGroup, M: Model)
     if not isinstance(res, list):
         res = [res]
     for o in res:
-        # print(f"goh0: looking up {o} of {type(o)}")
         if o in M.dmo:  # is object known in global namespace
             r_list.append(M.dmo[o])
-            # print(f"goh1: found {o} in dmo")
         elif o in M.__dict__:  # or does it exist in Model namespace
             r_list.append(getattr(M, o))
-            # print(f"goh2: found {o} in __dict__\n")
         else:
             print(f"{o} is not known for model {M.name}")
             raise ValueError(f"{o} is not known for model {M.name}")
@@ -473,10 +439,6 @@ def make_dict(keys: list, values: list) -> dict:
         if len(values) == len(keys):
             d: dict = dict(zip(keys, values))
         else:
-            # print(f"len values ={len(values)}, len keys ={len(keys)}")
-            # print(f"values = {values}")
-            # for k in keys:
-            #     print(f"key = {k}")
             raise ValueError("key and value list must be of equal length")
     else:
         values: list = [values] * len(keys)
@@ -707,14 +669,9 @@ def expand_dict(d: dict, mt: str = "1:1") -> int:
     r: dict = {}  # the dict we will return
 
     for ck, cd in d.items():  # loop over connections
-        # print(f"ck = {ck}")
-        # print(f"cd = {cd}")
-
         rd: dict = {}  # temp dict
         nd: dict = {}  # temp dict
         case, length = get_longest_dict_entry(cd)
-
-        # print(f"length = {length}")
 
         if isinstance(ck, tuple):
             # assume 1:1 mapping between tuple and connection parameters
@@ -722,15 +679,11 @@ def expand_dict(d: dict, mt: str = "1:1") -> int:
                 # prep dictionaries
                 if case == 0:
                     nd = cd
-                    # print("case 0")
                 elif case == 1:  # only parameters present. Expand for each tuple entry
                     length = len(ck)
                     nd = convert_to_lists(cd, length)
-                    # print("case 1")
                 elif case == 2:  # mixed list present, Expand list
-                    # print(f"case 2, length = {length}")
                     nd = convert_to_lists(cd, length)
-                    # print(nd)
 
                 # for each connection group in the tuple
                 if length != len(ck):
@@ -869,12 +822,8 @@ def create_connection(n: str, p: dict, M: Model) -> None:
 
     from esbmtk import ConnectionGroup, Q_
 
-    # print(f"cc00: {n}",flush=True)
     # get the reservoir handles by splitting the key
     source, sink, cid = split_key(n, M)
-    # print(f"cc0: type of key {type(n)}", flush=True)
-    # print(f"cc1: key = {n}, source = {source}, sink = {sink}", flush=True)
-
     # create default connections parameters and replace with values in
     # the parameter dict if present.
     los = list(p["sp"]) if isinstance(p["sp"], list) else [p["sp"]]
@@ -964,11 +913,8 @@ def show_dict(d: dict, mt: str = "1:1") -> None:
 
     ct = expand_dict(d, mt)
     for ck, cv in ct.items():
-        # print(f"{ck}")
-
         for pk, pv in cv.items():
             x = get_simple_list(pv) if isinstance(pv, list) else get_name_only(pv)
-            # print(f"     {pk} : {x}")
 
 
 def find_matching_fluxes(l: list, filter_by: str, exclude: str) -> list:
@@ -1028,19 +974,12 @@ def get_connection_keys(
         # get connection and flux name
         fns = f.full_name.split(".")
         cnc = fns[1][3:]  # get key without leadinf C_
-        # print()
-        # print(f"gck0: flux = {f.full_name}, key = {cnc}")
-        # print(f"gck1: ref_id = {ref_id}, target_id = {target_id}")
         if inverse:
             cnc = reverse_key(cnc)
 
         cnc.replace(ref_id, target_id)
         # create new cnc string
         cnc = f"{cnc}_to_{target_id}"
-        # fix id vs connection Name
-        # parts = cnc.split('_to_')
-        # cnc = f"{parts[0]}@{parts[1]}"
-        # print(f"gck3: cnc = {cnc}")
         cnc_l.append(cnc)
 
     return cnc_l
@@ -1225,7 +1164,6 @@ def __checktypes__(av: dict[any, any], pv: dict[any, any]) -> None:
     for k, v in pv.items():
         # check av if provided value v is of correct type
         if av[k] != any and not isinstance(v, av[k]):
-            # print(f"k={k}, v= {v}, av[k] = {av[k]}")
             raise TypeError(
                 f"{type(v)} is the wrong type for '{k}', should be '{av[k]}'"
             )

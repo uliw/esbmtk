@@ -21,7 +21,7 @@ from math import log, sqrt
 import numpy as np
 import numpy.typing as npt
 from numba import njit
-from esbmtk import get_new_ratio_from_alpha
+from esbmtk import get_new_ratio_from_alpha, get_l_mass
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
@@ -143,7 +143,7 @@ def photosynthesis(
     )
 
 
-@njit()
+# @njit()
 def OM_remineralization(
     pom_fluxes: list,  # POM export fluxes
     pom_fluxes_l: list,  # POM_l export fluxes
@@ -177,6 +177,8 @@ def OM_remineralization(
         KW,
         KB,
         boron,
+        r_carbon,  # carbon reference value
+        omwd,  # delta of weathering organic carbon
         CaCO3_reactions,
     ) = p
 
@@ -199,7 +201,6 @@ def OM_remineralization(
     """Reservoirs can have multiple sources of POM with different
     remineralization efficiencies, e.g., low latidtude POM flux, vs
     high latitude POM flux. We only add the part that is remineralized.
-    Note: The CaCO3 fluxes are handled below
     """
     pom_flux = 0
     pom_flux_l = 0
@@ -207,16 +208,22 @@ def OM_remineralization(
     for i, f in enumerate(pom_fluxes):
         pom_flux += pom_fluxes[i] * pom_remin_fractions[i]
         pom_flux_l += pom_fluxes_l[i] * pom_remin_fractions[i]
-        # if i == 0:
-        #     pom_flux -= pom_flux * P_burial
-        #     pom_flux_l -= pom_flux_l * P_burial
 
-    # this needs to move in to the mo2 section
-    # remove the part of the OM matter flux is buried
-    #  pom_flux -= pom_flux * P_burial
-    # pom_flux_l -= pom_flux_l * P_burial
+    # get_om_burial_fluxes
+    om_burial = pom_flux * P_burial
+    # om_burial_l = pom_flux_l * P_burial
+    # burial must match weathering and CO2 in Atmosphere
+    dMdt_CO2_At = om_burial
+    dMdt_CO2_At_l = om_burial * 1000 / ((omwd + 1000) * r_carbon + 1000)
+    # burial must balance with O2
+    dMdt_O2_At = -om_burial
+    # adjust remainig fluxes
+    pom_flux -= om_burial
+    pom_flux_l -= om_burial
+
     # return the PO4 from the dissolved OM
     dMdt_po4 = pom_flux / PC_ratio  # return PO4
+    # dMdt_po4 = (1 - P_burial) * pom_flux / PC_ratio  # return PO4
     # remove Alkalinity and add dic and po4 from POM remineralization
     # this happens irrespective of oxygen levels
     dMdt_ta = -pom_flux * NC_ratio  # remove Alkalinity from NO3
@@ -248,6 +255,7 @@ def OM_remineralization(
         sediment on the slope, or sinks further into the deep box. However, a fraction is
         remineralized through aerobic respiration in the sediment and contributes DIc and TA
         to the intermediate waters. See eq 8 in Boudreau 2010
+        Move to CS3
         """
         pic_flux = 0.0
         pic_flux_l = 0.0
@@ -268,6 +276,9 @@ def OM_remineralization(
         dMdt_so4,
         dMdt_o2,
         dMdt_po4,
+        dMdt_O2_At,
+        dMdt_CO2_At,
+        dMdt_CO2_At_l,
         dCdt_H,
     ]
 

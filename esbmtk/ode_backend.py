@@ -64,13 +64,9 @@ def get_initial_conditions(
 
     i: int = 0
     for r in M.lic:
-        # if r.name == "O2_At":
-        #     print(f"r = {r.full_name:2e}")
-
         # collect all reservoirs that have initial conditions
         # if r.rtype != "flux_only":
         if len(r.lof) > 0 or r.rtype == "computed" or r.rtype == "passive":
-            # print(f"R = {r.full_name} c = {r.c[0]:.2e}")
             R.append(r.c[0])  # add initial condition
             if r.c[0] > 0:
                 # compute tol such that tol < rtol * abs(y)
@@ -82,7 +78,6 @@ def get_initial_conditions(
                 r.atol[0] = atol_d
 
             if r.isotopes:
-                # print(f"R = {r.full_name} l = {r.l[0]:.2e}")
                 if r.l[0] > 0:
                     # compute tol such that tol < rtol * abs(y)
                     tol = rtol * abs(r.l[0]) / 10
@@ -133,7 +128,6 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
 
             # add all fluxes
             for flux in r.lof:  # check if in or outflux
-                # print(f"f = {flux.full_name}, p = {flux.parent.full_name}")
                 if flux.parent.source == r:
                     sign = "-"
                 else:
@@ -489,26 +483,18 @@ def parse_esbmtk_return_data_types_old(
     if isinstance(line, str):
         o = getattr(r.register, line)
     elif isinstance(line, dict):
-        print("parse return data")
         k = next(iter(line))  # get first key
         v = line[k]
         # get reservoir and species handle
-        print(f"k = {k}, v = {v}")
         r, sp = get_reservoir_reference(k, v, r.mo)
         if k[:2] == "F_":  # this is a flux
             if isinstance(r, GasReservoir | Reservoir):
                 sr = f"{r.register.name}.{r.name}.{v}_F".replace(".", "_")
                 #  sr = f"M.{r.register.name}_F".replace(".", "_")
                 o = r
-                print(f"GR1 sr = {sr}")
-                breakpoint()
             elif isinstance(r, ReservoirGroup):
-                print(f"line[k] = {line[k]}")
-                print(f"r name = {r.full_name}")
-                # sr = f"{r.full_name}.{sp.name}.{line[k]}_F".replace(".", "_")
                 sr = f"{r.full_name}.{sp.name}.{r.name}.{line[k]}_F".replace(".", "_")
                 o = r
-                print(f"RG2 sr = {sr}")
             else:
                 raise ValueError(f"r = {type(r)}")
 
@@ -516,30 +502,11 @@ def parse_esbmtk_return_data_types_old(
             if isinstance(r, GasReservoir | Reservoir):
                 sr = f"{r.full_name}".replace(".", "_")
                 o = r
-                print(f"GR3 sr = {sr}")
             elif isinstance(r, ReservoirGroup):
                 sr = f"{r.full_name}.{sp.name}".replace(".", "_")
                 o = r
-                print(f"RG4 sr = {sr}")
             else:
                 raise ValueError(f"r = {type(r)}")
-        # k = next(iter(d))
-        # if k[0:2] == "F_":  # this is flux
-        #     mo_name, rg_name, sp_name = k[2:].split(".")
-        #     # if GasReservoir
-        #     if isinstance(r.register, GasReservoir):
-        #         sr = f"M.{r.register.name}.{r.name}_F".replace(".", "_")
-        #         o = r.register
-        #     else:  # if ReservoirGroup
-        #         o = getattr(r.register.mo, rg_name)
-        #         o = getattr(o, f"{sp_name}")
-        #         sr = f"{o.full_name}.{d[k]}_F".replace(".", "_")
-        # elif k[0:2] == "R_":
-        #     print(f"k={k}")
-        #     mo_name, rg_name, sp_name = k[2:].split(".")
-        #     o = getattr(r.register.mo, rg_name)
-        #     o = getattr(o, f"{sp_name}")
-        #     sr = f'dCdt_{o.full_name.replace(".", "_")}'
 
     elif isinstance(line, Flux):
         o = line
@@ -552,7 +519,6 @@ def parse_esbmtk_return_data_types_old(
         isotopes = o.isotopes
     else:
         isotopes = getattr(o, sp.name).isotopes
-    print(f"o = {o.full_name}, isotopes = {isotopes}")
     if isotopes:
         sr = f"{sr}, {sr}_l"
 
@@ -632,20 +598,19 @@ def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> st
     :returns: rel: modied string of reservoir names
     """
 
-    # get list of return values
+    # get list of return values. This is a bit of hack, since we imply
+    # anything that its not a flux, is a reservoir with no other inputs
     rv = ind2
-    # for d in r.return_values:
-    #     rv += f"{parse_esbmtk_return_data_types(d, r, ind2, icl)}, "
     for o in r.lro:
-        rv += f"{o.full_name.replace('.', '_')}, "
-        # if o.isotopes:
-        #     rv += f"{o.full_name.replace('.', '_')}_l, "
-
-        print(f"rv = {rv}")
+        if isinstance(o, Flux):
+            rv += f"{o.full_name.replace('.', '_')}, "
+        else:
+            rv += f"dCdt_{o.full_name.replace('.', '_')}, "
 
     rv = rv[:-2]
 
     a = ""
+    # this can probably be simplified simiar to the old parse_return_values()
     for d in r.function_input_data:
         a += parse_esbmtk_input_data_types(d, r, ind3, icl)
 
@@ -712,7 +677,6 @@ def write_cs_2(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> 
     if r.register.DIC.isotopes:
         source_m, source_l = get_ic(sb_DIC, icl, True).replace(" ", "").split(",")
     else:
-        # print(f"sb_DIC = {sb_DIC.full_name}")
         source_m = get_ic(sb_DIC, icl)
         source_l = 1
 
@@ -803,7 +767,6 @@ def check_isotope_effects(
         """
         if c.delta != "None":
             d = c.delta
-            # print(f"c-name = {c.name}, d= {d:.2f}")
             eq = f"{f_m} * 1000 / ({r} * ({d} + 1000) + 1000)"
         elif c.alpha != "None":
             a = c.alpha / 1000 + 1

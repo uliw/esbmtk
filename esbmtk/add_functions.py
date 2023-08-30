@@ -262,7 +262,8 @@ def add_co2_gas_exchange(rg_list, gas_r):
         l_ref = getattr(rg, "CO2aq")
         solubility = getattr(lr.swc, "SA_co2")
         ec = init_gas_exchange_with_isotopes(gas_r, lr, l_ref, species, pv, solubility)
-        register_return_values(ec, gas_r, lr)
+        # register_return_values(ec, gas_r)
+        register_return_values(ec, rg)
         rg.has_cs1 = True
 
 
@@ -281,5 +282,6 @@ def add_o2_gas_exchange(rg_list, gas_r):
         l_ref = getattr(rg, "O2")
         solubility = getattr(lr.swc, "SA_o2")
         ec = init_gas_exchange_no_isotopes(gas_r, lr, l_ref, species, pv, solubility)
-        register_return_values(ec, gas_r, lr)
+        # register_return_values(ec, gas_r, lr)
+        register_return_values(ec, rg)
         gas_r.has_cs1 = True
