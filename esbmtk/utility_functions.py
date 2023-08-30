@@ -97,13 +97,13 @@ def register_new_flux(r, sp, v, k, sink) -> list:
 
     ro = []  # return objects
     if isinstance(r, GasReservoir | Reservoir):
-        r.source = r
-        fn = f"{r.name}2{sink.name}_{v}_F"
+        r.source = sink
+        fn = f"{r.name}_2_{sink.name}_{v}_F"
         reg = r
     else:
         fn = f"{r.name}_{v}_F"
         reg = getattr(r, sp.name)
-        reg.source = "None"
+        reg.source = r
 
     f = Flux(
         name=fn,
@@ -112,8 +112,10 @@ def register_new_flux(r, sp, v, k, sink) -> list:
         register=reg,
     )
     ro.append(f)
-    reg.sink = r  # denote sink
     reg.lof.append(f)  # register flux
+    if "exchange" in f.name:
+        print(f"add {f.full_name} to {reg.full_name} and {sink.full_name}")
+        sink.lof.append(f)
     reg.ctype = "ignore"
     if reg.isotopes:
         f = Flux(
@@ -123,6 +125,9 @@ def register_new_flux(r, sp, v, k, sink) -> list:
             register=reg,
         )
         ro.append(f)
+        # regular reservoirs will test if _l fluxes are needed or not.
+        # if "exchange" in f.name:
+        #     sink.lof.append(f)
     return ro
 
 
@@ -314,6 +319,7 @@ def show_data(self, **kwargs) -> None:
 
     index = 0 if "index" not in kwargs else kwargs["index"]
     ind: str = kwargs["indent"] * " " if "indent" in kwargs else ""
+
 
 def set_y_limits(ax: plt.Axes, obj: any) -> None:
     """Prevent the display or arbitrarily small differences"""
