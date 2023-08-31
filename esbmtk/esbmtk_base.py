@@ -22,12 +22,14 @@ from __future__ import annotations
 import time
 import numpy as np
 import numpy.typing as npt
+
 # import typing as tp
 
 # if tp.TYPE_CHECKING:
 #     from .esbmtk import Model
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
+
 
 class input_parsing(object):
     """Provides various routines to parse and process keyword
@@ -52,7 +54,7 @@ class input_parsing(object):
         """check, register and update keyword variables"""
 
         import copy
-        
+
         self.update = False
         # self.defaults_copy = copy.deepcopy(self.defaults)
         # self.defaults_copy = {**self.defaults} # probably the wrong place.
@@ -133,7 +135,10 @@ class input_parsing(object):
             reg = self.parent.model
             # self.full_name, reg.lmo = self.__test_and_resolve_duplicates__(self.full_name, reg.lmo)
             if self.full_name in reg.lmo:
-                raise NameError(f"{self.full_name} is a duplicate name in reg.lmo")
+                print("\n -------------- Warning ------------- \n")
+                print(f"\t {self.full_name} is a duplicate name in reg.lmo")
+                print("\n ---------------------- ------------- \n")
+                # raise NameError(f"{self.full_name} is a duplicate name in reg.lmo")
             # register with model
             reg.lmo.append(self.full_name)
             reg.lmo2.append(self)

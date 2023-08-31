@@ -36,7 +36,12 @@ if tp.TYPE_CHECKING:
 
 
 def add_photosynthesis(
-    rgs: list[ReservoirGroup], p_fluxes: list[Flux | Q_], CaCO3_reactions=True
+    rgs: list[ReservoirGroup],
+    p_fluxes: list[Flux | Q_],
+    piston_velocity,
+    O2_At,
+    CO2_At,
+    CaCO3_reactions=True,
 ):
     """Add process to ReservoirGroup(s) in rgs. pfluxes must be list of Flux
     objects or float values that correspond to the rgs list
@@ -44,14 +49,14 @@ def add_photosynthesis(
     from esbmtk import register_return_values
 
     M = rgs[0].mo
+    pv = piston_velocity.to("meter/yr").magnitude
     for i, rg in enumerate(rgs):
         if isinstance(p_fluxes[i], Q_):
             p_fluxes[i] = p_fluxes[i].to(M.f_unit).magnitude
-            # print(f"rg = {rg.full_name}, f = {p_fluxes[i]}")
-        else:
-            pass
-            # print(f"rg = {rg.full_name}, f = {p_fluxes[i].full_name}")
-        ec = init_photosynthesis(rg, p_fluxes[i], CaCO3_reactions)
+
+        ec = init_photosynthesis(
+            rg, p_fluxes[i], pv, O2_At, CO2_At, CaCO3_reactions
+        )
         register_return_values(ec, rg)
         rg.has_cs1 = True
 
@@ -248,11 +253,13 @@ def add_carbonate_system_3(**kwargs) -> None:
 
 
 def add_co2_gas_exchange(rg_list, gas_r):
-    """Add gas_exchange
+    """Add gas_exchange. Note that this will register
+    the resulting flux only with the GasReservoir. So
+    we need to add it to the respective surface reservoir
+    manually. Approach. Scan e.c. return objects for the correct flux
+    not sure yet how to deal with sign
 
     :param rg_list: list of reservoir group names
-    :returns:
-
     """
     species = rg_list[0].mo.CO2
     pv = Q_("4.8 m/d")
@@ -262,8 +269,7 @@ def add_co2_gas_exchange(rg_list, gas_r):
         l_ref = getattr(rg, "CO2aq")
         solubility = getattr(lr.swc, "SA_co2")
         ec = init_gas_exchange_with_isotopes(gas_r, lr, l_ref, species, pv, solubility)
-        # register_return_values(ec, gas_r)
-        register_return_values(ec, rg)
+        register_return_values(ec, lr)
         rg.has_cs1 = True
 
 
@@ -271,8 +277,6 @@ def add_o2_gas_exchange(rg_list, gas_r):
     """Add gas_exchange
 
     :param rg_list: list of reservoir group names
-    :returns:
-
     """
     species = rg_list[0].mo.O2
     pv = Q_("4.8 m/d")
@@ -282,6 +286,5 @@ def add_o2_gas_exchange(rg_list, gas_r):
         l_ref = getattr(rg, "O2")
         solubility = getattr(lr.swc, "SA_o2")
         ec = init_gas_exchange_no_isotopes(gas_r, lr, l_ref, species, pv, solubility)
-        # register_return_values(ec, gas_r, lr)
-        register_return_values(ec, rg)
+        register_return_values(ec, lr)
         gas_r.has_cs1 = True

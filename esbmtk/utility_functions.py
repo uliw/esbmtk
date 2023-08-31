@@ -70,7 +70,6 @@ def get_reservoir_reference(k, v, M):
     """
 
     key_list = k[2:].split(".")  # get model, reservoir & species name
-
     if len(key_list) == 3:  # ReservoirGroup
         model_name, reservoir_name, species_name = key_list
         reservoir = getattr(M, reservoir_name)
@@ -113,9 +112,6 @@ def register_new_flux(r, sp, v, k, sink) -> list:
     )
     ro.append(f)
     reg.lof.append(f)  # register flux
-    if "exchange" in f.name:
-        print(f"add {f.full_name} to {reg.full_name} and {sink.full_name}")
-        sink.lof.append(f)
     reg.ctype = "ignore"
     if reg.isotopes:
         f = Flux(

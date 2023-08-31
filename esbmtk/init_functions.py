@@ -32,7 +32,14 @@ if tp.TYPE_CHECKING:
     from esbmtk import Flux, ReservoirGroup
 
 
-def init_photosynthesis(rg, productivity, CaCO3_reactions):
+def init_photosynthesis(
+    rg,
+    productivity,
+    piston_velocity,
+    O2_At,
+    CO2_At,
+    CaCO3_reactions,
+):
     """Setup photosynthesis instances"""
 
     M = rg.mo
@@ -48,6 +55,8 @@ def init_photosynthesis(rg, productivity, CaCO3_reactions):
             "CO2aq": rg.swc.co2,
         },
         function_input_data=[
+            O2_At,
+            CO2_At,
             rg.O2,
             rg.TA,
             rg.DIC,
@@ -76,6 +85,13 @@ def init_photosynthesis(rg, productivity, CaCO3_reactions):
             rg.swc.KB,
             rg.swc.boron,
             M.Carbon.r,
+            rg.swc.p_H2O,
+            piston_velocity,
+            rg.swc.SA_o2,
+            rg.swc.SA_co2,
+            rg.swc.a_db,
+            rg.swc.a_dg,
+            rg.swc.a_u,
             CaCO3_reactions,
         ),
         register=rg,
@@ -88,6 +104,8 @@ def init_photosynthesis(rg, productivity, CaCO3_reactions):
             {f"F_{rg.full_name}.SO4": "photosynthesis"},
             {f"F_{rg.full_name}.H2S": "photosynthesis"},
             {f"F_{rg.full_name}.DIC": "photosynthesis"},
+            {f"F_M.O2_At": "photosynthesis"},
+            {f"F_M.CO2_At": "photosynthesis"},
             {f"F_{rg.full_name}.POM": "photosynthesis"},
             {f"F_{rg.full_name}.PIC": "photosynthesis"},
         ],
@@ -243,7 +261,7 @@ def init_gas_exchange_no_isotopes(
     pv = piston_velocity.to("meter/yr").magnitude
 
     ec = ExternalCode(
-        name=f"{r_liquid.parent.name}_{r_liquid.name}_gexo2",
+        name=f"{r_liquid.parent.name}_{r_liquid.name}_exchange",
         species=species,
         fname="gas_exchange_no_isotopes_2",
         function=gas_exchange_no_isotopes_2,
@@ -252,7 +270,6 @@ def init_gas_exchange_no_isotopes(
         function_input_data=[
             r_gas,
             r_liquid,
-            r_reference,
         ],
         function_params=(
             r_liquid.parent.area,
@@ -262,8 +279,7 @@ def init_gas_exchange_no_isotopes(
         ),
         register=r_gas,
         return_values=[
-            # {f"F_{r_gas.full_name}.{species.name}": "gex"},
-            {f"F_{r_gas.full_name}": "gex"},
+            {f"F_{r_gas.full_name}": "exchange"},
         ],
     )
     # print(f"return value = {ec.return_values}")
@@ -286,7 +302,7 @@ def init_gas_exchange_with_isotopes(
     pv = piston_velocity.to("meter/yr").magnitude
 
     ec = ExternalCode(
-        name=f"{r_liquid.parent.name}_{r_liquid.name}_gexco2",
+        name=f"{r_liquid.parent.name}_{r_liquid.name}_exchange",
         species=species,
         fname="gas_exchange_with_isotopes_2",
         function=gas_exchange_with_isotopes_2,
@@ -308,8 +324,7 @@ def init_gas_exchange_with_isotopes(
         ),
         register=r_gas,
         return_values=[
-            # {f"F_{r_gas.full_name}.{species.name}": "gexwi"},
-            {f"F_{r_gas.full_name}": "gexwi"},
+            {f"F_{r_gas.full_name}": "exchange"},
         ],
     )
     r_liquid.mo.lpc_f.append(ec.fname)

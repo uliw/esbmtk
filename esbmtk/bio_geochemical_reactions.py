@@ -28,7 +28,72 @@ NDArrayFloat = npt.NDArray[np.float64]
 
 
 @njit()
+def gas_exchange_no_isotopes_2(
+    gas_c,  # species concentration in atmosphere
+    gas_c_aq,  # Gas concentration in liquid phase
+    p,  # parameters
+) -> float:
+    """Calculate the gas exchange flux across the air sea interface"""
+
+    area, solubility, piston_velocity, p_H2O = p
+    scale = area * piston_velocity
+    # Solibility with correction for pH2O
+    beta = solubility * (1 - p_H2O)
+    # f as afunction of solubility difference
+    f = scale * (beta * gas_c - gas_c_aq * 1e3)
+    return f
+
+
+@njit()
+def gas_exchange_with_isotopes_2(
+    gas_c,  # species concentration in atmosphere
+    gas_c_l,  # same but for the light isotope
+    liquid_c,  # c of the reference species (e.g., DIC)
+    liquid_c_l,  # same but for the light isotopeof DIC
+    gas_c_aq,  # Gas concentration in liquid phase
+    p,  # parameters
+) -> tuple(float, float):
+    """Calculate the gas exchange flux across the air sea interface
+    for co2 including isotope effects.
+
+    Note that this equation is for mmol but esbmtk uses mol, so we need to
+    multiply by 1E3
+
+    The Total flux across interface dpends on the difference in either
+    concentration or pressure the atmospheric pressure is known, as gas_c, and
+    we can calculate the equilibrium pressure that corresponds to the dissolved
+    gas in the water as [CO2]aq/beta.
+
+    Conversely, we can convert the the pCO2 into the amount of dissolved CO2 =
+    pCO2 * beta
+
+    The h/c ratio in HCO3 estimated via h/c in DIC. Zeebe writes C12/C13 ratio
+    but that does not work. the C13/C ratio results however in -8 permil
+    offset, which is closer to observations
+    """
+
+    area, solubility, piston_velocity, p_H2O, a_db, a_dg, a_u = p
+    scale = area * piston_velocity
+    # Solibility with correction for pH2O
+    beta = solubility * (1 - p_H2O)
+    # f as afunction of solubility difference
+    f = scale * (beta * gas_c - gas_c_aq * 1e3)
+    # isotope ratio of DIC
+    Rt = (liquid_c - liquid_c_l) / liquid_c
+    # get heavy isotope concentrations in atmosphere
+    gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
+    # get exchange of the heavy isotope
+    f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_c_aq * 1e3)
+    f_l = f - f_h  # the corresponding flux of the light isotope
+
+    return f, f_l
+
+
+@njit()
 def photosynthesis(
+    o2_atmosphere,
+    co2_atmosphere,
+    co2_atmosphere_l,
     o2,
     ta,
     dic,
@@ -41,11 +106,7 @@ def photosynthesis(
     productivity,  # actually P flux
     p: tuple[float],  # parameters
 ) -> tuple:
-    """Calculate the effects of photosynthesis in the surface boxes"""
-    """O2 in surface box as result of photosynthesis equals the primary
-    productivity export flux of organic C times the O2:C ratio
-    TA increases because of nitrate uptake during photosynthesis
-
+    """Calculate the effects of photosynthesis in the surface boxes
     Note that this functions returns fluxes, so we need to calculate
     dMdt, not dCdt
     """
@@ -69,7 +130,14 @@ def photosynthesis(
         KB,
         boron,
         r_carbon,
+        pH2O,
+        pv,
+        o2_solubility,
+        co2_solubility,
         CaCO3_reactions,
+        a_db,
+        a_dg,
+        a_u,
     ) = p
 
     # save data from previous time step
@@ -92,13 +160,40 @@ def photosynthesis(
     dCdt_H = hplus - hplus_0
     dCdt_co2aq = co2aq - co2aq_0
 
+    # Gas Exchange O2
+    o2_ex = gas_exchange_no_isotopes_2(
+        o2_atmosphere,  # species concentration in atmosphere
+        o2,  # c of the reference species (e.g., DIC)
+        (surface_area, o2_solubility, pv, pH2O),
+    )
+    # Gase exchange CO2
+    co2_ex, co2_ex_l = gas_exchange_with_isotopes_2(
+        co2_atmosphere,  # species concentration in atmosphere
+        co2_atmosphere_l,
+        dic,
+        dic_l,
+        co2aq,  # Gas concentration in liquid phase
+        (surface_area, co2_solubility, pv, pH2O, a_db, a_dg, a_u),
+    )
+
+    # check signs!
+    dMdt_o2_at = -o2_ex
+    dMdt_o2 = o2_ex
+    # print(f"dMdt_o2 gex = {dMdt_o2:.2e}")
+
+    # check signs!
+    dMdt_co2_at = -co2_ex
+    dMdt_co2_at_l = -co2_ex_l
+    dMdt_dic = co2_ex
+    dMdt_dic_l = co2_ex_l
+
     # POM formation
     dMdt_po4 = -productivity * PUE  # remove PO4 into POM
     POM_F = -dMdt_po4 * PC_ratio  # mass of newly formed POM
     r = get_new_ratio_from_alpha(dic, dic_l, om_fractionation_factor)
     POM_F_l = POM_F * r  # mass of POM_l
-    dMdt_dic = -POM_F  # remove DIC by POM formation
-    dMdt_dic_l = -POM_F_l
+    dMdt_dic += -POM_F  # remove DIC by POM formation
+    dMdt_dic_l += -POM_F_l
     dMdt_ta = POM_F * NC_ratio  # add TA from nitrate uptake into POM
 
     # CaCO3 formation
@@ -124,7 +219,7 @@ def photosynthesis(
     dMdt_ta += 2 * dMdt_so4  # adjust Alkalinity
 
     # add O2 from photosynthesis - h2s oxidation
-    dMdt_o2 = POM_F * O2C_ratio - 2 * dMdt_h2s
+    dMdt_o2 += POM_F * O2C_ratio - 2 * dMdt_h2s
 
     return (  # note that these are returned as fluxes
         dCdt_H,
@@ -136,6 +231,9 @@ def photosynthesis(
         dMdt_h2s,
         dMdt_dic,
         dMdt_dic_l,
+        dMdt_o2_at,
+        dMdt_co2_at,
+        dMdt_co2_at_l,
         POM_F,
         POM_F_l,
         PIC_F,
@@ -143,7 +241,7 @@ def photosynthesis(
     )
 
 
-# @njit()
+@njit()
 def OM_remineralization(
     pom_fluxes: list,  # POM export fluxes
     pom_fluxes_l: list,  # POM_l export fluxes
@@ -209,24 +307,32 @@ def OM_remineralization(
         pom_flux += pom_fluxes[i] * pom_remin_fractions[i]
         pom_flux_l += pom_fluxes_l[i] * pom_remin_fractions[i]
 
-    # get_om_burial_fluxes
-    om_burial = pom_flux * P_burial
-    # om_burial_l = pom_flux_l * P_burial
-    # burial must match weathering and CO2 in Atmosphere
-    dMdt_CO2_At = om_burial
-    dMdt_CO2_At_l = om_burial * 1000 / ((omwd + 1000) * r_carbon + 1000)
-    # burial must balance with O2
-    dMdt_O2_At = -om_burial
-    # adjust remainig fluxes
-    pom_flux -= om_burial
-    pom_flux_l -= om_burial
+    if False:
+        # get_om_burial_fluxes
+        om_burial = pom_flux * P_burial
+        # om_burial_l = pom_flux_l * P_burial
+        # burial must match weathering and CO2 in Atmosphere
+        dMdt_co2_At = om_burial
+        dMdt_co2_At_l = om_burial * 1000 / ((omwd + 1000) * r_carbon + 1000)
+        # burial must balance with O2
+        dMdt_o2_At = -om_burial * O2C_ratio
 
-    # return the PO4 from the dissolved OM
-    dMdt_po4 = pom_flux / PC_ratio  # return PO4
+        # adjust remainig fluxes
+        pom_flux -= om_burial
+        pom_flux_l -= pom_flux_l / pom_flux
+
+        # return the PO4 from the dissolved OM
+        dMdt_po4 = pom_flux / PC_ratio  # return PO4
+    else:
+        dMdt_co2_At = 0
+        dMdt_co2_At_l = 0
+        dMdt_o2_At = 0
+        dMdt_po4 = pom_flux * (1 - P_burial) / PC_ratio
+
     # dMdt_po4 = (1 - P_burial) * pom_flux / PC_ratio  # return PO4
     # remove Alkalinity and add dic and po4 from POM remineralization
     # this happens irrespective of oxygen levels
-    dMdt_ta = -pom_flux * NC_ratio  # remove Alkalinity from NO3
+    dMdt_ta = -pom_flux * NC_ratio  # reduce Alkalinity from NO3
     dMdt_dic = pom_flux  # add DIC from POM
     dMdt_dic_l = pom_flux_l
 
@@ -260,8 +366,8 @@ def OM_remineralization(
         pic_flux = 0.0
         pic_flux_l = 0.0
         for i, f in enumerate(pic_fluxes):
-            pic_flux += pic_fluxes[i] * sed_area / area * alpha
-            pic_flux_l += pic_fluxes_l[i] * sed_area / area * alpha
+            pic_flux += alpha * pic_fluxes[i] * sed_area / area
+            pic_flux_l += alpha * pic_fluxes_l[i] * sed_area / area
 
         # add Alkalinity and DIC from CaCO3 dissolution. Note that
         dMdt_dic += pic_flux
@@ -276,9 +382,9 @@ def OM_remineralization(
         dMdt_so4,
         dMdt_o2,
         dMdt_po4,
-        dMdt_O2_At,
-        dMdt_CO2_At,
-        dMdt_CO2_At_l,
+        dMdt_o2_At,
+        dMdt_co2_At,
+        dMdt_co2_At_l,
         dCdt_H,
     ]
 
@@ -383,79 +489,4 @@ def carbonate_system_3(
     dMdt_ta = 2 * dMdt_dic
     dMdt_dic_l = dMdt_dic * dic_sb_l / dic_sb
 
-    # print(f"fractional_area = {fractional_area:.2f}")
-    # print(f"pic_f = {pic_f:.2e}")
-    # breakpoint()
-    # print(f"dMdt_dic = {dMdt_dic:.2e}")
-    # print(f"dCdt_co3 = {dCdt_co3:.2e}")
-    # print(f"d_znow = {d_zsnow:.2f}\n")
-
-    # breakpoint()
-
     return dMdt_dic, dMdt_dic_l, dMdt_ta, d_zsnow, dCdt_co3
-
-
-@njit()
-def gas_exchange_with_isotopes_2(
-    gas_c,  # species concentration in atmosphere
-    gas_c_l,  # same but for the light isotope
-    liquid_c,  # c of the reference species (e.g., DIC)
-    liquid_c_l,  # same but for the light isotopeof DIC
-    gas_c_aq,  # Gas concentration in liquid phase
-    p,  # parameters
-) -> tuple(float, float):
-    """Calculate the gas exchange flux across the air sea interface
-    for co2 including isotope effects.
-
-    Note that the sink delta is co2aq as returned by the carbonate VR
-    this equation is for mmol but esbmtk uses mol, so we need to
-    multiply by 1E3
-
-    The Total flux across interface dpends on the difference in either
-    concentration or pressure the atmospheric pressure is known, as gas_c, and
-    we can calculate the equilibrium pressure that corresponds to the dissolved
-    gas in the water as [CO2]aq/beta.
-
-    Conversely, we can convert the the pCO2 into the amount of dissolved CO2 =
-    pCO2 * beta
-
-    The h/c ratio in HCO3 estimated via h/c in DIC. Zeebe writes C12/C13 ratio
-    but that does not work. the C13/C ratio results however in -8 permil
-    offset, which is closer to observations
-    """
-
-    area, solubility, piston_velocity, p_H2O, a_db, a_dg, a_u = p
-    scale = area * piston_velocity
-
-    # Solibility with correction for pH2O
-    beta = solubility * (1 - p_H2O)
-    # f as afunction of solubility difference
-    f = scale * (beta * gas_c - gas_c_aq * 1e3)
-    # isotope ratio of DIC
-    Rt = (liquid_c - liquid_c_l) / liquid_c
-    # get heavy isotope concentrations in atmosphere
-    gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
-    # get exchange of the heavy isotope
-    f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_c_aq * 1e3)
-    f_l = f - f_h  # the corresponding flux of the light isotope
-
-    return f, f_l
-
-
-@njit()
-def gas_exchange_no_isotopes_2(
-    gas_c,  # species concentration in atmosphere
-    liquid_c,  # c of the reference species (e.g., DIC)
-    gas_c_aq,  # Gas concentration in liquid phase
-    p,  # parameters
-) -> tuple(float, float):
-    """Calculate the gas exchange flux across the air sea interface"""
-
-    area, solubility, piston_velocity, p_H2O = p
-
-    scale = area * piston_velocity
-    # Solibility with correction for pH2O
-    beta = solubility * (1 - p_H2O)
-    # f as afunction of solubility difference
-    f = scale * (beta * gas_c - gas_c_aq * 1e3)
-    return f

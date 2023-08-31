@@ -170,7 +170,8 @@ def write_reservoir_equations_with_isotopes(
                 for flux in r.lof:  # check if in or outflux
                     if flux.parent.source == r:
                         sign = "-"
-                    elif flux.parent.sink == r:
+                    else:
+                        # elif flux.parent.sink == r:
                         sign = "+"
 
                     fname = f'{flux.full_name.replace(".", "_")}_l'
