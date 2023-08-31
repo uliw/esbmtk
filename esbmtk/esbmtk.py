@@ -374,7 +374,7 @@ class Model(esbmtkBase):
         last 10 time-steps
         """
 
-        start: int = -5
+        start: int = -2
         stop: int = None
         stride: int = 1
         prefix: str = "state_"
@@ -1299,7 +1299,7 @@ class ReservoirBase(esbmtkBase):
         if obj.isotopes:
             # obj.m[:] = df.iloc[-1, col+ 0]
             # col += 1
-            obj.l[:] = df.iloc[-1, col]
+            obj.l[:] = df.iloc[-1, col] # get last row
             col += 1
             obj.c[:] = df.iloc[-1, col]
             col += 1

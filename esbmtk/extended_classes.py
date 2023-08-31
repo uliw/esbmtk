@@ -1725,6 +1725,7 @@ class ExternalCode(Reservoir_no_set):
         # print(f"reading from {fn}")
         for i, n in enumerate(headers):
             # first column is time
+            breakpoint()
             if i > 0:
                 # print(f"i = {i}, header = {n}, data = {df.iloc[-3:, i]}")
                 self.vr_data[i - 1][:3] = df.iloc[-3:, i]
