@@ -22,6 +22,7 @@ import numpy as np
 import numpy.typing as npt
 from numba import njit
 from esbmtk import get_new_ratio_from_alpha, get_l_mass
+from esbmtk import get_delta_from_concentration
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
@@ -241,7 +242,7 @@ def photosynthesis(
     )
 
 
-@njit()
+# @njit()
 def OM_remineralization(
     pom_fluxes: list,  # POM export fluxes
     pom_fluxes_l: list,  # POM_l export fluxes
@@ -308,31 +309,31 @@ def OM_remineralization(
         pom_flux_l += pom_fluxes_l[i] * pom_remin_fractions[i]
 
     if False:
-        # get_om_burial_fluxes
+        # get_om_burial_fluxes. These are in isotopic equilibrium
+        # with the organic matter rain
         om_burial = pom_flux * P_burial
-        # om_burial_l = pom_flux_l * P_burial
-        # burial must match weathering and CO2 in Atmosphere
+        om_burial_l = pom_flux_l * P_burial
+        # burial must match weathering and CO2 in Atmosphere. The Isotope
+        # ratio depends however on the isotope ratio of the weathered OM
         dMdt_co2_At = om_burial
         dMdt_co2_At_l = om_burial * 1000 / ((omwd + 1000) * r_carbon + 1000)
-        # burial must balance with O2
+        # weathering consumes atmospheric O2. Here we force to be equal to burial
         dMdt_o2_At = -om_burial * O2C_ratio
 
-        # adjust remainig fluxes
+        # Reduce POM rain by the fraction that is buried
         pom_flux -= om_burial
-        pom_flux_l -= pom_flux_l / pom_flux
+        pom_flux_l -= om_burial_l
 
-        # return the PO4 from the dissolved OM
-        dMdt_po4 = pom_flux / PC_ratio  # return PO4
+        # Remove Alkalinity and add dic and po4 from POM remineralization
+        # Assume that all OM is always fully metabolized,
+        # irrespective of oxygen levels
+        dMdt_po4 = pom_flux / PC_ratio
     else:
+        dMdt_po4 = (1 - P_burial) * pom_flux / PC_ratio
         dMdt_co2_At = 0
         dMdt_co2_At_l = 0
         dMdt_o2_At = 0
-        dMdt_po4 = pom_flux * (1 - P_burial) / PC_ratio
 
-    # dMdt_po4 = (1 - P_burial) * pom_flux / PC_ratio  # return PO4
-    # remove Alkalinity and add dic and po4 from POM remineralization
-    # this happens irrespective of oxygen levels
-    dMdt_ta = -pom_flux * NC_ratio  # reduce Alkalinity from NO3
     dMdt_dic = pom_flux  # add DIC from POM
     dMdt_dic_l = pom_flux_l
 
@@ -343,6 +344,7 @@ def OM_remineralization(
 
     if m_o2 > m_o2_eq:  # box has enough oxygen
         dMdt_o2 = -m_o2_eq  # consume O2
+        dMdt_ta = -pom_flux * NC_ratio  # reduce Alkalinity from NO3
         dMdt_h2s = -m_h2s  # consume all h2s
         dMdt_so4 = -m_h2s  # add sulfate
 

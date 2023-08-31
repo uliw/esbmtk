@@ -57,7 +57,7 @@ def get_imass(m: float, d: float, r: float) -> [float, float]:
     return [l, h]
 
 
-# @njit()
+@njit()
 def get_li_mass(m: float, d: float, r: float) -> float:
     """
     Calculate the isotope masses from bulk mass and delta value.
@@ -69,7 +69,7 @@ def get_li_mass(m: float, d: float, r: float) -> float:
     return l
 
 
-# @njit()
+@njit()
 def get_frac(m: float, l: float, a: float) -> [float, float]:
     """Calculate the effect of the istope fractionation factor alpha on
     the ratio between the light and heavy isotope.
