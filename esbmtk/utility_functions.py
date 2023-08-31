@@ -1221,3 +1221,50 @@ def __addmissingdefaults__(lod: dict, kwargs: dict) -> dict:
 
     kwargs |= new
     return kwargs
+
+
+def data_summaries(M, species_names, box_names):
+    from esbmtk import DataField
+    pl = []
+    for sp in species_names:
+        data_list = []
+        label_list = []
+        for b in box_names:
+            a = getattr(b, f"{sp.name}")
+            data_list.append(a.c)
+            label_list.append(a.full_name)
+
+        df = DataField(
+            name=f"{sp.name}_df",
+            register=M.A_sb.O2,
+            x1_data=M.time,
+            y1_data=data_list,
+            y1_label=label_list,
+            y1_legend=f"{sp.element.name} [{sp.element.mass_unit}]",
+            x1_as_time=True,
+            title=f"{sp.name}",
+        )
+        pl.append(df)
+        # check if species has isotope data
+        data_list = []
+        label_list = []
+        for b in box_names:
+            a = getattr(b, f"{sp.name}")
+            if a.isotopes:
+                data_list.append(a.d)
+                label_list.append(a.full_name)
+
+        if len(data_list) > 0:
+            df = DataField(
+                name=f"d_{sp.name}_df",
+                register=M.A_sb.O2,
+                x1_data=M.time,
+                y1_data=data_list,
+                y1_label=label_list,
+                y1_legend=f"{sp.element.name} [{sp.element.d_scale}]",
+                x1_as_time=True,
+                title=f"d_{sp.name}",
+            )
+            pl.append(df)
+
+    return pl

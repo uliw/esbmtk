@@ -104,7 +104,7 @@ def photosynthesis(
     h2s,
     hplus,
     co2aq,
-    productivity,  # actually P flux
+    po4_upwelling_flux,  # actually P flux
     p: tuple[float],  # parameters
 ) -> tuple:
     """Calculate the effects of photosynthesis in the surface boxes
@@ -135,10 +135,10 @@ def photosynthesis(
         pv,
         o2_solubility,
         co2_solubility,
-        CaCO3_reactions,
         a_db,
         a_dg,
         a_u,
+        CaCO3_reactions,
     ) = p
 
     # save data from previous time step
@@ -189,8 +189,8 @@ def photosynthesis(
     dMdt_dic_l = co2_ex_l
 
     # POM formation
-    dMdt_po4 = -productivity * PUE  # remove PO4 into POM
-    POM_F = -dMdt_po4 * PC_ratio  # mass of newly formed POM
+    dMdt_po4 = -po4_upwelling_flux * PUE  # remove PO4 into POM
+    POM_F = po4_upwelling_flux * PUE * PC_ratio  # mass of newly formed POM
     r = get_new_ratio_from_alpha(dic, dic_l, om_fractionation_factor)
     POM_F_l = POM_F * r  # mass of POM_l
     dMdt_dic += -POM_F  # remove DIC by POM formation
@@ -201,18 +201,22 @@ def photosynthesis(
     if CaCO3_reactions:
         # newly formed CaCO3
         PIC_F = POM_F / rain_rate
-        PIC_F_l = PIC_F * dic_l / dic
-        # Account for water column dissolution
-        # PIC_F -= PIC_F * alpha * sed_area / surface_area
-        # PIC_F_l -= PIC_F_l * alpha * sed_area / surface_area
+        PIC_F_l = PIC_F * dic_l / dic  # same as water
+        # Account for burial in shelf sediments
+        # PIC_F -= PIC_F * sed_area / surface_area
+        # PIC_F_l -= PIC_F_l * sed_area / surface_area
+        # Account for sedimentary respiration
+        # diss = PIC_F * alpha * sed_area / surface_area
+        # diss_l = PIC_F_l * alpha * sed_area / surface_area
+        # dMdt_dic += diss
+        # dMdt_dic_l += diss_l
+        # dMdt_ta += 2 * diss
+        # PIC_F -= diss
+        # PIC_F_l -= diss_l
         # dic & ta removed by photosynthesis
         dMdt_dic += -PIC_F
         dMdt_dic_l += -PIC_F_l
         dMdt_ta += 2 * -PIC_F
-
-        # Account for burial in shelf sediments
-        # PIC_F -= PIC_F * sed_area / surface_area
-        # PIC_F_l -= PIC_F_l * sed_area / surface_area
 
     # sulfur reactions, assuming that there is alwways enough O2
     dMdt_h2s = 0  # -h2s * volume  # H2S oxidation
@@ -242,7 +246,7 @@ def photosynthesis(
     )
 
 
-# @njit()
+@njit()
 def OM_remineralization(
     pom_fluxes: list,  # POM export fluxes
     pom_fluxes_l: list,  # POM_l export fluxes
@@ -368,13 +372,13 @@ def OM_remineralization(
         pic_flux = 0.0
         pic_flux_l = 0.0
         for i, f in enumerate(pic_fluxes):
-            pic_flux += alpha * pic_fluxes[i] * sed_area / area
-            pic_flux_l += alpha * pic_fluxes_l[i] * sed_area / area
+            pic_flux += pic_fluxes[i]
+            pic_flux_l += pic_fluxes_l[i]
 
         # add Alkalinity and DIC from CaCO3 dissolution. Note that
-        dMdt_dic += pic_flux
-        dMdt_dic_l += pic_flux_l
-        dMdt_ta += 2 * pic_flux
+        dMdt_dic += alpha * pic_flux * sed_area / area
+        dMdt_dic_l += alpha * pic_flux_l * sed_area / area
+        dMdt_ta += 2 * alpha * pic_flux * sed_area / area
 
     return [
         dMdt_dic,
