@@ -21,14 +21,14 @@ import typing as tp
 import numpy as np
 import numpy.typing as npt
 from math import log, sqrt
-from .utility_functions import __checkkeys__, __addmissingdefaults__, __checktypes__
+from .utility_functions import __checkkeys__, __addmissingdefaults__, __checktypes__, register_return_values
 
 if tp.TYPE_CHECKING:
     from .esbmtk import SeawaterConstants, ReservoirGroup
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
-    
+
 """
 Carbonate System 1 setup requires 3 steps: First we define the actual function,
 carbonate_system_1_ode().  In the second step we create a wrapper
@@ -111,20 +111,23 @@ def init_carbonate_system_1(rg: ReservoirGroup):
         ftype="cs1",
         # this needs cleanup as it should be handled by the return_values
         # list.
-        vr_datafields={
-            "CO2aq": rg.swc.co2,  # 4
-        },
+        # vr_datafields={
+        #     "CO2aq": rg.swc.co2,  # 4
+        # },
         # function_input_data=[rg.DIC, rg.TA, rg.Hplus],
         function_input_data=[rg.swc, rg.DIC, rg.TA, "Hplus"],
         register=rg,
         # name and initial value pairs
         # return_values={"Hplus": rg.swc.hplus},
         return_values=[
-            {"Hplus": rg.swc.hplus},
-            {"CO2aq": rg.swc.co2aq},
+            {f"R_{rg.full_name}.Hplus": rg.swc.hplus},
+            {f"R_{rg.full_name}.CO2aq": rg.swc.co2aq},
+            # {"Hplus": rg.swc.hplus},
+            # {"CO2aq": rg.swc.co2aq},
         ],
         # return_values=["Hplus", "CO2aq"],
     )
+    rg.mo.lpc_f.append(ec.fname)
 
     return ec
 
@@ -152,22 +155,22 @@ def add_carbonate_system_1(rgs: list):
             raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
         ec = init_carbonate_system_1(rg)
-
-        # if the function returns computed values that are not part
-        # of the regular setup, add new reservoirs
-        for v in ec.return_values:
-            if isinstance(v, dict):
-                n = next(iter(v))
-                rt = Reservoir(
-                    name=n,
-                    species=getattr(rg.mo, n),
-                    concentration=f"{v[n]} mol/kg",
-                    register=rg,
-                    volume=rg.volume,
-                    rtype="computed",
-                )
-                rg.lor.append(rt)
+        register_return_values(ec, rg)
         rg.has_cs1 = True
+        # # if the function returns computed values that are not part
+        # # of the regular setup, add new reservoirs
+        # for v in ec.return_values:
+        #     if isinstance(v, dict):
+        #         n = next(iter(v))
+        #         rt = Reservoir(
+        #             name=n,
+        #             species=getattr(rg.mo, n),
+        #             concentration=f"{v[n]} mol/kg",
+        #             register=rg,
+        #             volume=rg.volume,
+        #             rtype="computed",
+        #         )
+        # rg.lor.append(rt)
 
 
 def carbonate_system_2_ode(
@@ -351,10 +354,14 @@ def init_carbonate_system_2(
             float(abs(kwargs["z0"])),  # 15
         ],
         return_values=[
-            dic_burial_flux,
-            ta_burial_flux,
-            {"Hplus": rg.swc.hplus},
-            {"zsnow": float(abs(kwargs["zsnow"]))},
+            {f"F_{rg.full_name}.DIC": "db_cs2"},
+            {f"F_{rg.full_name}.TA": "db_cs2"},
+            {f"R_{rg.full_name}.Hplus": rg.swc.hplus},
+            {f"R_{rg.full_name}.zsnow": float(abs(kwargs["zsnow"]))},
+            # dic_burial_flux,
+            # ta_burial_flux,
+            # {"Hplus": rg.swc.hplus},
+            # {"zsnow": float(abs(kwargs["zsnow"]))},
         ],
         register=rg,
     )
@@ -500,20 +507,21 @@ def add_carbonate_system_2(**kwargs) -> None:
             kwargs,
         )
 
-        for v in ec.return_values:
-            if isinstance(v, dict):
-                n = next(iter(v))
-                rt = Reservoir(
-                    name=n,
-                    species=getattr(model, n),
-                    concentration=f"{v[n]} mol/kg",
-                    register=rg,
-                    volume=rg.volume,
-                    rtype="computed",
-                )
-                rg.lor.append(rt)
-
+        #for v in ec.return_values:
+        register_return_values(ec, rg)
+            
         rg.has_cs2 = True
+            # if isinstance(v, dict):
+            #     n = next(iter(v))
+            #     rt = Reservoir(
+            #         name=n,
+            #         species=getattr(model, n),
+            #         concentration=f"{v[n]} mol/kg",
+            #         register=rg,
+            #         volume=rg.volume,
+            #         rtype="computed",
+            #     )
+            #     rg.lor.append(rt)
 
 
 def gas_exchange_ode_with_isotopes(
