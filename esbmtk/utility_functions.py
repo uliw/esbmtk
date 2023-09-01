@@ -171,7 +171,7 @@ def register_return_values(ec, sink) -> None:
             else:
                 raise ValueError(f"{k[0:2]} is not defined")
 
-        elif isinstance(v, Reservoir):
+        elif isinstance(line, Reservoir):
             v.ef_results = True
             o = [v]
         # add to list of returned Objects
