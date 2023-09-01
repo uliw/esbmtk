@@ -35,6 +35,7 @@ from .esbmtk_base import esbmtkBase
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
+
 class hypsometry(esbmtkBase):
     """A class to provide hypsometric data for the depth interval between -6000 to 1000
     meter (relative to sealevel)
@@ -286,6 +287,7 @@ class hypsometry(esbmtkBase):
 
 def get_box_geometry_parameters(box) -> None:
     from esbmtk import Q_
+    import warnings
 
     box.geometry_unset = True
 
@@ -302,7 +304,10 @@ def get_box_geometry_parameters(box) -> None:
             box.mo.hyp.area_dz(box.geometry[0], box.geometry[1]) * box.area_percentage
         )
         box.area_fraction = box.sed_area / box.mo.hyp.oa
+        box.area_dz = box.sed_area
         box.geometry_unset = False
-        
+
+        # Define the area_dz property
+
     elif box.volume == "None":
         raise ValueError("You need to provide volume or geometry!")
