@@ -202,9 +202,6 @@ def photosynthesis(
         # newly formed CaCO3
         PIC_F = POM_F / rain_rate
         PIC_F_l = PIC_F * dic_l / dic  # same as water
-        # Account for burial in shelf sediments
-        # PIC_F -= PIC_F * sed_area / surface_area
-        # PIC_F_l -= PIC_F_l * sed_area / surface_area
         # Account for sedimentary respiration
         # diss = PIC_F * alpha * sed_area / surface_area
         # diss_l = PIC_F_l * alpha * sed_area / surface_area
@@ -312,15 +309,15 @@ def OM_remineralization(
         pom_flux += pom_fluxes[i] * pom_remin_fractions[i]
         pom_flux_l += pom_fluxes_l[i] * pom_remin_fractions[i]
 
-    if False:
+    if True:
         # get_om_burial_fluxes. These are in isotopic equilibrium
         # with the organic matter rain
         om_burial = pom_flux * P_burial
         om_burial_l = pom_flux_l * P_burial
         # burial must match weathering and CO2 in Atmosphere. The Isotope
         # ratio depends however on the isotope ratio of the weathered OM
-        dMdt_co2_At = om_burial
-        dMdt_co2_At_l = om_burial * 1000 / ((omwd + 1000) * r_carbon + 1000)
+        dMdt_co2_At = 1.06 * om_burial
+        dMdt_co2_At_l = 1.06 * om_burial * 1000 / ((omwd + 1000) * r_carbon + 1000)
         # weathering consumes atmospheric O2. Here we force to be equal to burial
         dMdt_o2_At = -om_burial * O2C_ratio
 
