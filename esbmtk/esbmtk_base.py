@@ -31,6 +31,24 @@ import numpy.typing as npt
 NDArrayFloat = npt.NDArray[np.float64]
 
 
+class KeywordError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
+class MissingKeywordError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
+class InputError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
 class input_parsing(object):
     """Provides various routines to parse and process keyword
     arguments.  All derived classes need to declare the allowed
@@ -53,7 +71,7 @@ class input_parsing(object):
     def __initialize_keyword_variables__(self, kwargs) -> None:
         """check, register and update keyword variables"""
 
-        import copy
+        # import copy
 
         self.update = False
         # self.defaults_copy = copy.deepcopy(self.defaults)
@@ -73,7 +91,7 @@ class input_parsing(object):
                 if has_key != 1:
                     raise ValueError(f"give only one of {key}")
             elif key not in kwargs:
-                raise ValueError(f"{key} is a mandatory keyword")
+                raise MissingKeywordError(f"{key} is a mandatory keyword")
 
     def __register_variable_names__(
         self,
@@ -110,10 +128,10 @@ class input_parsing(object):
         """
         for key, value in kwargs.items():
             if key not in defaults:
-                raise ValueError(f"{key} is not a valid keyword")
+                raise KeywordError(f"{key} is not a valid keyword")
 
             if not isinstance(value, defaults[key][1]):
-                raise TypeError(
+                raise InputError(
                     f"{value} for {key} must be of type {defaults[key][1]}, not {type(value)}"
                 )
 
@@ -291,7 +309,7 @@ class esbmtkBase(input_parsing):
         elif isinstance(arg, str):
             arg = Q_(arg)
         else:
-            raise ValueError(f"{arg} must be string or Quantity, not {type(arg)}")
+            raise InputError(f"{arg} must be string or Quantity, not {type(arg)}")
 
         return arg
 
