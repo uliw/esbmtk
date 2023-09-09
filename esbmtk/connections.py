@@ -47,6 +47,12 @@ if tp.TYPE_CHECKING:
 #     from .processes import Process
 
 
+class ConnectionError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
 class Connect(esbmtkBase):
     """Two reservoirs connect to each other via at least one flux. This
      module creates the connecting flux and creates a connector object
@@ -409,7 +415,9 @@ class Connect(esbmtkBase):
             elif self.scale.check("[mass]/[volume]"):  # concentration
                 self.scale = self.scale.to(self.mo.c_unit)
             else:
-                ValueError(f"No conversion to model units for {self.scale} specified")
+                ConnectionError(
+                    f"No conversion to model units for {self.scale} specified"
+                )
 
         # if sink and source a regular, the name will be simply C_S_2_S
         # if we deal with ReservoirGroups we need to reflect this in the
@@ -567,12 +575,12 @@ class Connect(esbmtkBase):
             self.__register_species__(self.r1, self.r2.sp)
 
         elif isinstance(self.r1, Sink):
-            raise NameError(
+            raise ConnectionError(
                 "The Sink must be specified as a destination (i.e., as second argument"
             )
 
         elif isinstance(self.r2, Source):
-            raise NameError("The Source must be specified as first argument")
+            raise ConnectionError("The Source must be specified as first argument")
 
         else:  # this is a regular connection
             # add the flux name direction/pair
@@ -640,7 +648,7 @@ class Connect(esbmtkBase):
                     self.lop.insert(len(self.lop), n)  # multiplaction should come last
                     logging.debug(f"Inserting {n.n} in {self.name} for {self.r.n}")
                 else:
-                    raise ValueError(f"Signal type {p.ty} is not defined")
+                    raise ConnectionError(f"Signal type {p.ty} is not defined")
 
         # ensure that processes are in the correct order
         self.__move_process_to_top_of_queue__(self.lop, MultiplySignal)
@@ -740,7 +748,7 @@ class Connect(esbmtkBase):
             self.__rateconstant__()
         elif self.ctype != "manual":
             print(f"Connection Type {self.ctype} is unknown")
-            raise ValueError(f"Unknown connection type {self.ctype}")
+            raise ConnectionError(f"Unknown connection type {self.ctype}")
 
         # Set optional flux processes
         if self.alpha != "None":
@@ -803,7 +811,7 @@ class Connect(esbmtkBase):
         from esbmtk import ScaleFlux, Flux
 
         if not isinstance(self.ref_flux, Flux):
-            raise ValueError("Scale reference must be a flux")
+            raise ConnectionError("Scale reference must be a flux")
 
         if self.k_value != "None":
             self.scale = self.k_value
@@ -837,7 +845,7 @@ class Connect(esbmtkBase):
             )
 
         if not isinstance(self.kwargs["ref_reservoirs"], Flux):
-            raise ValueError("Scale reference must be a flux")
+            raise ConnectionError("Scale reference must be a flux")
 
         ph = ScaleFlux(
             name="PSFV",
@@ -868,7 +876,7 @@ class Connect(esbmtkBase):
             )
 
         if not isinstance(self.kwargs["ref_reservoirs"], list):
-            raise ValueError("ref must be a list")
+            raise ConnectionError("ref must be a list")
 
         ph = FluxDiff(
             name="PSF",
@@ -987,7 +995,7 @@ class Connect(esbmtkBase):
             )
 
         else:
-            raise ValueError(
+            raise ConnectionError(
                 f"This should not happen,and points to a keywords problem in {self.name}"
             )
 
@@ -1180,7 +1188,10 @@ class ConnectionGroup(esbmtkBase):
 
         self.defaults: dict[str, any] = {
             "id": ["None", (str)],
-            "source": ["None", (str, SourceGroup, Reservoir, ReservoirGroup, GasReservoir)],
+            "source": [
+                "None",
+                (str, SourceGroup, Reservoir, ReservoirGroup, GasReservoir),
+            ],
             "sink": ["None", (str, SinkGroup, Reservoir, ReservoirGroup, GasReservoir)],
             "delta": ["None", (str, dict, tuple, int, float)],
             "rate": ["None", (Q_, str, dict, tuple, int, float)],
@@ -1239,7 +1250,7 @@ class ConnectionGroup(esbmtkBase):
             # r = species/Reservoir Name
             # t = connnection type, i.e. regular etc.
             if t == "None":
-                raise ValueError(
+                raise ConnectionError(
                     f"Connectiongroup {self.name} must specify 'ctype'. See help(Connectiongroup)"
                 )
             self.connections.append(r)
@@ -1471,7 +1482,7 @@ class AirSeaExchange(esbmtkBase):
         self.gr = self.gas_reservoir
 
         if self.species.name not in ["CO2", "DIC", "O2"]:
-            raise ValueError(f"{self.species.name} not implemented yet")
+            raise ConnectionError(f"{self.species.name} not implemented yet")
 
         # decide if this connection needs isotope calculations
         self.isotopes = bool(self.gas_reservoir.isotopes)
