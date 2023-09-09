@@ -30,6 +30,54 @@ from .utility_functions import (
 NDArrayFloat = npt.NDArray[np.float64]
 
 
+class ReservoirGroupError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
+class SourceSinkGroupError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
+class FluxError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
+class SignalError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
+class DataFieldError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
+class ESBMTKFunctionError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
+class ExternalDataError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
+class GasResrvoirError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
 class ReservoirGroup(esbmtkBase):
     """This class allows the creation of a group of reservoirs which share
     a common volume, and potentially connections. E.g., if we have twoy
@@ -139,7 +187,7 @@ class ReservoirGroup(esbmtkBase):
         elif "mass" in kwargs:
             self.species: list = list(kwargs["mass"].keys())
         else:
-            raise ValueError("You must provide either mass or concentration")
+            raise ReservoirGroupError("You must provide either mass or concentration")
 
         self.__initialize_keyword_variables__(kwargs)
 
@@ -157,7 +205,7 @@ class ReservoirGroup(esbmtkBase):
         elif isinstance(self.volume, str):
             self.volume = Q_(self.volume).to(self.mo.v_unit)
         elif not isinstance(self.volume, Q_):
-            raise ValueError("Volume must be string or quantity")
+            raise ReservoirGroupError("Volume must be string or quantity")
 
         # register this group object in the global namespace
         # if self.mo.register == "local" and self.register == "None":
@@ -210,7 +258,7 @@ class ReservoirGroup(esbmtkBase):
         # loop over all entries in species and create the respective reservoirs
         for s in self.species:
             if not isinstance(s, Species):
-                raise ValueError(f"{s.n} needs to be a valid species name")
+                raise ReservoirGroupError(f"{s.n} needs to be a valid species name")
             if s.flux_only:
                 rtype = "flux_only"
             else:
@@ -238,14 +286,14 @@ class ReservoirGroup(esbmtkBase):
         if self.carbonate_system:
             # do some sanity checks:
             if not hasattr(self, "swc"):
-                raise AttributeError(
+                raise ReservoirGroupError(
                     f"{self.full_name} has no seawaterconstants instance"
                 )
             if not hasattr(self, "DIC"):
-                raise AttributeError(f"{self.full_name} has no DIC reservoir")
+                raise ReservoirGroupError(f"{self.full_name} has no DIC reservoir")
 
             if not hasattr(self, "TA"):
-                raise AttributeError(f"{self.full_name} has no TA reservoir")
+                raise ReservoirGroupError(f"{self.full_name} has no TA reservoir")
 
             ExternalCode(
                 name="cs",
@@ -381,7 +429,7 @@ class SourceSinkGroup(esbmtkBase):
         # loop over species names and setup sub-objects
         for i, s in enumerate(self.species):
             if not isinstance(s, Species):
-                raise ValueError(f"{s.n} needs to be a valid species name")
+                raise SourceSinkGroupError(f"{s.n} needs to be a valid species name")
 
             delta = self.delta[s] if s in self.delta else "None"
             if type(self).__name__ == "SourceGroup":
@@ -400,7 +448,9 @@ class SourceSinkGroup(esbmtkBase):
                     delta=delta,
                 )
             else:
-                raise TypeError(f"{type(self).__name__} is not a valid class type")
+                raise SourceSinkGroupError(
+                    f"{type(self).__name__} is not a valid class type"
+                )
 
             # register in local namespace
             self.lor.append(a)
@@ -630,7 +680,7 @@ class Signal(esbmtkBase):
         elif "filename" in self.kwargs:  # use an external data set
             self.length = self.__int_ext_data__()
         else:
-            raise ValueError(
+            raise SignalError(
                 "argument needs to be either square/pyramid, or an ExternalData object. "
             )
 
@@ -697,7 +747,7 @@ class Signal(esbmtkBase):
             h = self.magnitude
             self.mass = h * self.duration
         else:
-            raise ValueError("You must specify mass or magnitude of the signal")
+            raise SignalError("You must specify mass or magnitude of the signal")
 
         self.s_m = self.s_m + h  # add this to the section
         self.s_d = self.s_d + self.d  # add the delta offset
@@ -716,7 +766,7 @@ class Signal(esbmtkBase):
         elif "magnitude" in self.kwd:
             h = self.magnitude
         else:
-            raise ValueError("You must specify mass or magnitude of the signal")
+            raise SignalError("You must specify mass or magnitude of the signal")
 
         # create pyramid
         c: int = int(round((e - s) / 2))  # get the center index for the peak
@@ -764,7 +814,7 @@ class Signal(esbmtkBase):
         elif "magnitude" in self.kwargs:
             self.s_m = self.s_m * self.magnitude / max(self.s_m)
         else:
-            raise ValueError("Bell type signal require either mass or magnitude")
+            raise SignalError("Bell type signal require either mass or magnitude")
 
     def __int_ext_data__(self) -> None:
         """Interpolate External data as a signal. Unlike the other signals,
@@ -781,7 +831,7 @@ class Signal(esbmtkBase):
         from . import Q_
 
         if not os.path.exists(self.filename):  # check if the file is actually there
-            raise FileNotFoundError(f"Cannot find file {self.filename}")
+            raise SignalError(f"Cannot find file {self.filename}")
 
         # read external dataset
         df = pd.read_csv(self.filename)
@@ -818,7 +868,7 @@ class Signal(esbmtkBase):
             elif yq.check(["[mass]/[volume]"]):  # concentration
                 self.s_data = self.s_data.to(self.mo.c_unit).magnitude
             else:
-                ValueError(f"No conversion to model units for {self.scale} specified")
+                SignalError(f"No conversion to model units for {self.scale} specified")
 
         self.s_data = self.s_data * self.scale
 
@@ -1115,7 +1165,9 @@ class DataField(esbmtkBase):
             elif isinstance(self.register, Reservoir):
                 self.associated_with = self.register
             else:
-                raise ValueError("Set associated_with or register to a reservoir name")
+                raise DataFieldError(
+                    "Set associated_with or register to a reservoir name"
+                )
 
         if isinstance(self.associated_with, Reservoir):
             self.plt_units = self.associated_with.plt_units
@@ -1180,7 +1232,7 @@ class DataField(esbmtkBase):
         elif self.sp.mo.register == "local":
             fn = f"{directory}/{prefix}{rn}.csv"  # file name
         else:
-            raise ValueError(
+            raise DataFieldError(
                 f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
             )
 
@@ -1226,7 +1278,7 @@ class DataField(esbmtkBase):
         elif isinstance(y, list):
             y_l = len(y)
         else:
-            raise ValueError("Y data needs to be array, numpy array or list")
+            raise DataFieldError("Y data needs to be array, numpy array or list")
 
         # consider the x-axis next
         if isinstance(x, str):  # no x-data has been provided
@@ -1252,9 +1304,9 @@ class DataField(esbmtkBase):
             # print(f"after: {type(x)}")
         elif isinstance(x, list):  # assume that lists match
             if len(x) != len(y):
-                raise ValueError(f"Y data needs to match x data for {label}")
+                raise DataFieldError(f"Y data needs to match x data for {label}")
         else:
-            raise ValueError(
+            raise DataFieldError(
                 f"Y data needs to be array, numpy array or list for {label}"
             )
 
@@ -1537,7 +1589,6 @@ class ExternalCode(Reservoir_no_set):
 
         from esbmtk import (
             ConnectionGroup,
-            GenericFunction,
             Species,
             SourceGroup,
             SinkGroup,
@@ -1658,7 +1709,7 @@ class ExternalCode(Reservoir_no_set):
         # loop over provided kwargs
         for key, value in kwargs.items():
             if key not in allowed_keys:
-                raise ValueError(
+                raise ESBMTKFunctionError(
                     "you can only change function_input_data, or function_params"
                 )
             else:
@@ -1707,14 +1758,14 @@ class ExternalCode(Reservoir_no_set):
         elif self.sp.mo.register == "local":
             fn = f"{directory}/state_{self.full_name}.csv"
         else:
-            raise ValueError(
+            raise ESBMTKFunctionError(
                 f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
             )
 
         file_path = Path(fn)
 
         if not file_path.exists():
-            raise FileNotFoundError(f"File {fn} not found")
+            raise ESBMTKFunctionError(f"File {fn} not found")
         logging.info(f"reading state for {self.full_name} from {fn}")
 
         # read csv file into dataframe
@@ -1772,7 +1823,7 @@ class ExternalCode(Reservoir_no_set):
         elif self.sp.mo.register == "local":
             fn = f"{directory}/{prefix}{rn}.csv"  # file name
         else:
-            raise ValueError(
+            raise ESBMTKFunctionError(
                 f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
             )
 
@@ -1997,7 +2048,7 @@ class GasReservoir(ReservoirBase):
         # ).magnitude
 
         if self.v_unit != self.volume.units:
-            raise ValueError(
+            raise GasReservoirError(
                 f"\n\n{self.full_name} reservoir_mass units must be "
                 f"in {self.v_unit} "
                 f"not {self.volume.units}"
@@ -2165,21 +2216,21 @@ class ExternalData(esbmtkBase):
             self.display_precision = self.mo.display_precision
 
         if not os.path.exists(self.fn):  # check if the file is actually there
-            raise FileNotFoundError(f"Cannot find file {self.fn}")
+            raise ExternalDataError(f"Cannot find file {self.fn}")
 
         self.df: pd.DataFrame = pd.read_csv(self.fn)  # read file
 
         ncols = len(self.df.columns)
         if ncols < 2:  # test of we have at elast 2 columns
-            raise ValueError("CSV file must have at least 2 columns")
+            raise ExternalDataError("CSV file must have at least 2 columns")
         elif ncols == 2:
             self.isotopes = False
         elif ncols == 3:
             self.isotopes = True
         elif ncols > 3:
-            raise ValueError("External data only supports up to 2 Y columns")
+            raise ExternalDataError("External data only supports up to 2 Y columns")
         else:
-            raise ValueError("ED: This should not happen")
+            raise ExternalDataError("ED: This should not happen")
 
         # print(f"Model = {self.mo.full_name}, t_unit = {self.mo.t_unit}")
         self.offset = self.ensure_q(self.offset)
@@ -2203,7 +2254,7 @@ class ExternalData(esbmtkBase):
             if callable(self.plot_transform_c):
                 self.y = self.plot_transform_c(self.y)
             else:
-                raise ValueError("Plot transform must be a function")
+                raise ExternalDataError("Plot transform must be a function")
 
         # zh = self.df.columns[2]
         if self.isotopes:
@@ -2252,7 +2303,7 @@ class ExternalData(esbmtkBase):
                 f"model t(0) = {xi[0]}, tmax = {xi[-1]}"
             )
 
-            raise ValueError(message)
+            raise ExternalDataError(message)
         else:
             self.y: NDArrayFloat = np.interp(xi, self.x, self.y)
             self.x = xi
