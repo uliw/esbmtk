@@ -53,6 +53,24 @@ if tp.TYPE_CHECKING:
     from .processes import Process
 
 
+class ModelError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
+class ReservoirError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
+class FluxError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
 class Model(esbmtkBase):
     """This class is used to specify a new model.  See the __init__()
     method for a detailed explanation of the parameters
@@ -242,7 +260,7 @@ class Model(esbmtkBase):
         # Parse the strings which contain unit information and convert
         # into model base units For this we setup 3 variables which define
         if self.concentration_unit not in ["mol/kg", "mol/l", "mol/liter"]:
-            raise ValueError(
+            raise ModelError(
                 f"{self.concentration_unit} must be either mol/l or mol/kg"
             )
 
@@ -542,7 +560,6 @@ class Model(esbmtkBase):
         start: float = process_time()
         # new: NDArrayFloat = np.zeros(4)
 
-
         solver = "ode" if "solver" not in kwargs else kwargs["solver"]
         self.solver = solver
         if self.number_of_solving_iterations > 0:
@@ -576,7 +593,6 @@ class Model(esbmtkBase):
                 r.m = r.c * r.volume
                 r.d = get_delta_h(r)
 
-
     def sub_sample_data(self):
         """Subsample the data.  No need to save 100k lines of data You
         need to do this _after_ saving the state, but before plotting
@@ -601,7 +617,7 @@ class Model(esbmtkBase):
         if solver == "ode":
             self.ode_solver(kwargs)
         else:
-            raise ValueError(f"Solver={self.solver} is unkknown")
+            raise ModelError(f"Solver={self.solver} is unkknown")
 
     def ode_solver(self, kwargs):
         """
@@ -752,7 +768,7 @@ class Model(esbmtkBase):
             fby: list = kwargs["filter_by"].split(" ")
 
         if "filter" in kwargs:
-            raise ValueError("use filter_by instead of filter")
+            raise ModelError("use filter_by instead of filter")
 
         if "return_list" in kwargs:
             return_list = True
@@ -789,7 +805,7 @@ class Model(esbmtkBase):
             fby: bool = False
 
         if "filter" in kwargs:
-            raise ValueError("use filter_by instead of filter")
+            raise ModelError("use filter_by instead of filter")
 
         if "silent" not in kwargs:
             print(f"\n --- Connection Group Summary -- filtered by {fby}\n")
@@ -1134,7 +1150,7 @@ class ReservoirBase(esbmtkBase):
         elif self.sp.mo.register == "local":
             fn = f"{directory}/{prefix}{rn}.csv"  # file name
         else:
-            raise ValueError(
+            raise ReservoirError(
                 f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
             )
 
@@ -1217,7 +1233,7 @@ class ReservoirBase(esbmtkBase):
         elif self.sp.mo.register == "local":
             fn = f"{directory}/{prefix}{self.full_name}.csv"
         else:
-            raise ValueError(
+            raise ReservoirError(
                 f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
             )
 
@@ -1253,7 +1269,7 @@ class ReservoirBase(esbmtkBase):
                 logging.debug(f"found reservoir data for {name}")
                 col = self.__assign_reservoir_data__(self, df, col, True)
             else:
-                raise ValueError(f"Unable to find Flux {n} in {self.full_name}")
+                raise ReservoirError(f"Unable to find Flux {n} in {self.full_name}")
 
         # test if we missed any fluxes
         for f in list(curr.difference(read)):
@@ -1299,7 +1315,7 @@ class ReservoirBase(esbmtkBase):
         if obj.isotopes:
             # obj.m[:] = df.iloc[-1, col+ 0]
             # col += 1
-            obj.l[:] = df.iloc[-1, col] # get last row
+            obj.l[:] = df.iloc[-1, col]  # get last row
             col += 1
             obj.c[:] = df.iloc[-1, col]
             col += 1
@@ -1337,7 +1353,7 @@ class ReservoirBase(esbmtkBase):
             if callable(self.plot_transform_c):
                 y1 = self.plot_transform_c(self.c)
             else:
-                raise ValueError("Plot transform must be a function")
+                raise ReservoirError("Plot transform must be a function")
 
         # plot first axis
         ax.plot(x[1:-2], y1[1:-2], color="C0", label=y1_label)
@@ -1684,7 +1700,7 @@ class Reservoir(ReservoirBase):
             )
             self.display_as = "mass"
         else:
-            raise ValueError("You need to specify mass or concentration")
+            raise ReservoirError("You need to specify mass or concentration")
 
         self.state = 0
 
@@ -1904,11 +1920,13 @@ class Flux(esbmtkBase):
             self.rate: float = self.rate
 
         li = get_l_mass(self.rate, self.delta, self.sp.r) if self.delta else 0
-        self.fa : NDArrayFloat = np.asarray([self.rate, li])
-                                 
+        self.fa: NDArrayFloat = np.asarray([self.rate, li])
+
         # in case we want to keep the flux data
         if self.save_flux_data:
-            self.m: NDArrayFloat = np.zeros(self.model.steps) + self.rate  # add the flux
+            self.m: NDArrayFloat = (
+                np.zeros(self.model.steps) + self.rate
+            )  # add the flux
 
             if self.isotopes:
                 self.l: NDArrayFloat = np.zeros(self.model.steps)
@@ -2076,7 +2094,7 @@ class Flux(esbmtkBase):
             if callable(self.plot_transform_c):
                 y1 = self.plot_transform_c(self.c)
             else:
-                raise ValueError("Plot transform must be a function")
+                raise FluxError("Plot transform must be a function")
 
         # plot first axis
         ax.plot(x[1:-2], y1[1:-2], color="C0", label=self.legend_left)
