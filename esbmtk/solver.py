@@ -173,7 +173,7 @@ def get_flux_delta(f) -> float:
     return 1e3 * (h / l - r) / r
 
 
-def get_delta_h(R: Reservoir | GasReservoir | Flux) -> float:
+def get_delta_h(R) -> float:
     """Calculate the delta of a flux or reservoir
 
     :param R: Reservoir or Flux handle
@@ -186,7 +186,7 @@ def get_delta_h(R: Reservoir | GasReservoir | Flux) -> float:
     from esbmtk import Reservoir, GasReservoir, Flux
 
     r = R.species.r  # reference ratio
-    if isinstance(R, Reservoir | GasReservoir):
+    if isinstance(R, (Reservoir,GasReservoir)):
         d = np.where(R.l > 0, 1e3 * ((R.c - R.l) / R.l - r) / r, 0)
     elif isinstance(R, Flux):
         d = np.where(R.l > 0, 1e3 * ((R.m - R.l) / R.l - r) / r, 0)

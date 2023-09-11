@@ -37,7 +37,7 @@ if tp.TYPE_CHECKING:
 
 def add_photosynthesis(
     rgs: list[ReservoirGroup],
-    p_fluxes: list[Flux | Q_],
+    p_fluxes: list,
     piston_velocity,
     O2_At,
     CO2_At,

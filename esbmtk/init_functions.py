@@ -121,8 +121,8 @@ def init_OM_remineralization(
     pom_fluxes_l: list[Flux],
     pic_fluxes: list[Flux],
     pic_fluxes_l: list[Flux],
-    pom_remin_fractions: float | list[float],
-    pic_remin_fractions: float | list[float],
+    pom_remin_fractions: list[float],
+    pic_remin_fractions: list[float],
     CaCO3_reactions: bool,
 ):
     """ """

@@ -316,8 +316,9 @@ def OM_remineralization(
         om_burial_l = pom_flux_l * P_burial
         # burial must match weathering and CO2 in Atmosphere. The Isotope
         # ratio depends however on the isotope ratio of the weathered OM
-        dMdt_co2_At = 1.06 * om_burial
-        dMdt_co2_At_l = 1.06 * om_burial * 1000 / ((omwd + 1000) * r_carbon + 1000)
+        # dMdt_co2_At = 1.06 * om_burial
+        # dMdt_co2_At_l = 1.06 * om_burial * 1000 / ((omwd + 1000) * r_carbon + 1000)
+
         # weathering consumes atmospheric O2. Here we force to be equal to burial
         dMdt_o2_At = -om_burial * O2C_ratio
 
@@ -329,6 +330,14 @@ def OM_remineralization(
         # Assume that all OM is always fully metabolized,
         # irrespective of oxygen levels
         dMdt_po4 = pom_flux / PC_ratio
+
+        # if we do burial compensation locally
+        pom_flux += om_burial
+        pom_flux_l += om_burial * 1000 / ((omwd + 1000) * r_carbon + 1000)
+        dMdt_co2_At = 0
+        dMdt_co2_At_l = 0
+        dMdt_o2_At = 0
+
     else:
         dMdt_po4 = (1 - P_burial) * pom_flux / PC_ratio
         dMdt_co2_At = 0

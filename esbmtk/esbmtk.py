@@ -735,7 +735,7 @@ class Model(esbmtkBase):
             print(f"{e.n}")
             e.list_species()
 
-    def flux_summary(self, **kwargs: dict) -> [tuple | None]:
+    def flux_summary(self, **kwargs: dict):
         """Show a summary of all model fluxes
 
         Optional parameters:

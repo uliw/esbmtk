@@ -399,7 +399,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
     return ex, exl
 
 
-def check_signal_2(ex: str, exl: str, c: Connection | Connect) -> (str, str):
+def check_signal_2(ex: str, exl: str, c: Connection) -> (str, str):
     """Test if connection is affected by a signal
 
     :param ex: equation string
@@ -489,7 +489,7 @@ def parse_esbmtk_return_data_types_old(
         # get reservoir and species handle
         r, sp = get_reservoir_reference(k, v, r.mo)
         if k[:2] == "F_":  # this is a flux
-            if isinstance(r, GasReservoir | Reservoir):
+            if isinstance(r, (GasReservoir, Reservoir)):
                 sr = f"{r.register.name}.{r.name}.{v}_F".replace(".", "_")
                 #  sr = f"M.{r.register.name}_F".replace(".", "_")
                 o = r
@@ -500,7 +500,7 @@ def parse_esbmtk_return_data_types_old(
                 raise ValueError(f"r = {type(r)}")
 
         elif k[:2] == "R_":  # this is reservoir or reservoirgroup
-            if isinstance(r, GasReservoir | Reservoir):
+            if isinstance(r, (GasReservoir, Reservoir)):
                 sr = f"{r.full_name}".replace(".", "_")
                 o = r
             elif isinstance(r, ReservoirGroup):
@@ -516,7 +516,7 @@ def parse_esbmtk_return_data_types_old(
         o = line
         sr = f'dCdt_{o.full_name.replace(".", "_")}'
 
-    if isinstance(o, Reservoir | GasReservoir | Flux):
+    if isinstance(o, (Reservoir, GasReservoir, Flux)):
         isotopes = o.isotopes
     else:
         isotopes = getattr(o, sp.name).isotopes
@@ -548,7 +548,7 @@ def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> 
         a = f"{ind}{sr},\n"
     elif isinstance(d, SeawaterConstants):
         a = f"{ind}{d.full_name},\n"
-    elif isinstance(d, float | int | np.ndarray):
+    elif isinstance(d, (float, int, np.ndarray)):
         a = f"{ind}{d},\n"
     elif isinstance(d, dict):
         # get key and reservoiur handle
@@ -558,7 +558,7 @@ def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> 
         a = f"{ind}{d.magnitude},\n"
     elif isinstance(d, float):
         a = f"{ind}{d.magnitude},\n"
-    elif isinstance(d, list | List):  # loo pover list elements
+    elif isinstance(d, (list, List)):  # loo pover list elements
         a = f"{ind}{d},\n"
         a = f"{ind}npa(["
         for e in d:
@@ -624,9 +624,10 @@ def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> st
 
     return rel
 
+
 def get_regular_flux_eq(
     flux: Flux,  # flux instance
-    c: Connect | Connection,  # connection instance
+    c: Connection,  # connection instance
     icl: dict,  # list of initial conditions
     ind2,  # indentation
     ind3,  # indentation
@@ -653,7 +654,7 @@ def get_regular_flux_eq(
 
 def check_isotope_effects(
     f_m: str,
-    c: Connection | Connect,
+    c: Connection,
     icl: dict,
     ind3: str,
     ind2: str,
@@ -694,7 +695,7 @@ def check_isotope_effects(
 
 def get_scale_with_concentration_eq(
     flux: Flux,  # flux instance
-    c: Connect | Connection,  # connection instance
+    c: Connection,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: dict,  # list of initial conditions
     ind2: str,  # whitespace
@@ -727,7 +728,7 @@ def get_scale_with_concentration_eq(
 
 def get_scale_with_flux_eq(
     flux: Flux,  # flux instance
-    c: Connect | Connection,  # connection instance
+    c: Connection,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: dict,  # list of initial conditions
     ind2: str,  # indentation
@@ -765,7 +766,7 @@ def get_scale_with_flux_eq(
 
 def get_weathering_eq(
     flux: Flux,  # flux instance
-    c: Connect | Connection,  # connection instance
+    c: Connection,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: dict,  # list of initial conditions
     ind2: str,
@@ -895,7 +896,7 @@ def get_gas_exchange_eq(
 
 def get_gas_exchange_w_isotopes_eq(
     flux: Flux,  # flux instance
-    c: Connect | Connection,  # connection instance
+    c: Connection,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: dict,  # list of initial conditions
     ind2: str,

@@ -95,7 +95,7 @@ def register_new_flux(r, sp, v, k, sink) -> list:
     from .extended_classes import GasReservoir
 
     ro = []  # return objects
-    if isinstance(r, GasReservoir | Reservoir):
+    if isinstance(r, (GasReservoir, Reservoir)):
         r.source = sink
         fn = f"{r.name}_2_{sink.name}_{v}_F"
         reg = r
@@ -379,7 +379,7 @@ def sort_by_type(l: list, t: list, m: str) -> list:
     return rl
 
 
-def get_object_handle(res: list | string | Reservoir | ReservoirGroup, M: Model):
+def get_object_handle(res: list, M: Model):
     """Test if the key is a global reservoir handle
     or exists in the model namespace
 
@@ -987,7 +987,7 @@ def get_connection_keys(
     return cnc_l
 
 
-def gen_dict_entries(M: Model | list, **kwargs) -> tuple(tuple, list):
+def gen_dict_entries(M: Model, **kwargs) -> tuple(tuple, list):
     """Find all fluxes that contain the reference string, and create a new
     Connection instance that connects the flux matching ref_id, with a flux
     matching target_id.  The function will a tuple containig the new connection
@@ -1048,6 +1048,10 @@ def build_ct_dict(d: dict, p: dict) -> dict:
 
     """
 
+    # result = {}
+    # for k, v in d.items():
+    #     result[k] = {"sc": v}
+    # return result
     return {k: {"sc": v} | p for k, v in d.items()}
 
 
@@ -1225,6 +1229,7 @@ def __addmissingdefaults__(lod: dict, kwargs: dict) -> dict:
 
 def data_summaries(M, species_names, box_names):
     from esbmtk import DataField
+
     pl = []
     for sp in species_names:
         data_list = []
