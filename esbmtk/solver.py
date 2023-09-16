@@ -32,7 +32,7 @@ NDArrayFloat = npt.NDArray[np.float64]
 if tp.TYPE_CHECKING:
     from esbmtk import Reservoir, GasReservoir, Flux
 
-@njit
+@njit(fastmath=True)
 def get_l_mass(m: float, d: float, r: float) -> float:
     """
     :param m: mass or concentration
@@ -57,7 +57,7 @@ def get_imass(m: float, d: float, r: float) -> [float, float]:
     return [l, h]
 
 
-@njit()
+@njit(fastmath=True)
 def get_li_mass(m: float, d: float, r: float) -> float:
     """
     Calculate the isotope masses from bulk mass and delta value.
@@ -69,7 +69,7 @@ def get_li_mass(m: float, d: float, r: float) -> float:
     return l
 
 
-@njit()
+@njit(fastmath=True)
 def get_frac(m: float, l: float, a: float) -> [float, float]:
     """Calculate the effect of the istope fractionation factor alpha on
     the ratio between the light and heavy isotope.
@@ -87,7 +87,7 @@ def get_frac(m: float, l: float, a: float) -> [float, float]:
     return li, hi
 
 
-@njit()
+@njit(fastmath=True)
 def get_new_ratio_from_alpha(
     ref_mass: float,  # reference mass
     ref_l: float,  # reference light istope
@@ -108,7 +108,7 @@ def get_new_ratio_from_alpha(
     return new_ratio
 
 
-# @njit()
+@njit(fastmath=True)
 def get_flux_data(m: float, d: float, r: float) -> NDArrayFloat:
     """
     Calculate the isotope masses from bulk mass and delta value.
@@ -123,7 +123,7 @@ def get_flux_data(m: float, d: float, r: float) -> NDArrayFloat:
     return np.array([m, l, h, d])
 
 
-# @njit()
+@njit(fastmath=True)
 def get_delta(l: NDArrayFloat, h: NDArrayFloat, r: float) -> NDArrayFloat:
     """Calculate the delta from the mass of light and heavy isotope
 

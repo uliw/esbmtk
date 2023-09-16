@@ -21,7 +21,12 @@ import typing as tp
 import numpy as np
 import numpy.typing as npt
 from math import log, sqrt
-from .utility_functions import __checkkeys__, __addmissingdefaults__, __checktypes__, register_return_values
+from .utility_functions import (
+    __checkkeys__,
+    __addmissingdefaults__,
+    __checktypes__,
+    register_return_values,
+)
 
 if tp.TYPE_CHECKING:
     from .esbmtk import SeawaterConstants, ReservoirGroup
@@ -63,6 +68,7 @@ def carbonate_system_1_ode(
     """
 
     k1 = swc.K1  # K1
+    k2 = swc.K2  # K1
     k1k1 = swc.K1K1  # K1 * K1
     k1k2 = swc.K1K2  # K1 * K2
     KW = swc.KW  # KW
@@ -82,9 +88,10 @@ def carbonate_system_1_ode(
     dummy: float = (1 - gamm) * (1 - gamm) * k1k1 - k1k2 * (4 - 8 * gamm)
     hplus: float = 0.5 * ((gamm - 1) * k1 + sqrt(dummy))
     co2aq: float = dic / (1 + (k1 / hplus) + (k1k2 / (hplus * hplus)))
+    co3 = max(dic / (1 + hplus / k2 + hplus * hplus / k1k2), 3.7e-05)
     diff = hplus - hplus_0
 
-    return diff, co2aq
+    return diff, co2aq, co3
 
 
 def init_carbonate_system_1(rg: ReservoirGroup):
@@ -109,12 +116,6 @@ def init_carbonate_system_1(rg: ReservoirGroup):
         function=carbonate_system_1_ode,
         fname="carbonate_system_1_ode",
         ftype="cs1",
-        # this needs cleanup as it should be handled by the return_values
-        # list.
-        # vr_datafields={
-        #     "CO2aq": rg.swc.co2,  # 4
-        # },
-        # function_input_data=[rg.DIC, rg.TA, rg.Hplus],
         function_input_data=[rg.swc, rg.DIC, rg.TA, "Hplus"],
         register=rg,
         # name and initial value pairs
@@ -122,6 +123,7 @@ def init_carbonate_system_1(rg: ReservoirGroup):
         return_values=[
             {f"R_{rg.full_name}.Hplus": rg.swc.hplus},
             {f"R_{rg.full_name}.CO2aq": rg.swc.co2aq},
+            {f"R_{rg.full_name}.CO3": rg.swc.co3},
             # {"Hplus": rg.swc.hplus},
             # {"CO2aq": rg.swc.co2aq},
         ],
@@ -157,20 +159,6 @@ def add_carbonate_system_1(rgs: list):
         ec = init_carbonate_system_1(rg)
         register_return_values(ec, rg)
         rg.has_cs1 = True
-        # # if the function returns computed values that are not part
-        # # of the regular setup, add new reservoirs
-        # for v in ec.return_values:
-        #     if isinstance(v, dict):
-        #         n = next(iter(v))
-        #         rt = Reservoir(
-        #             name=n,
-        #             species=getattr(rg.mo, n),
-        #             concentration=f"{v[n]} mol/kg",
-        #             register=rg,
-        #             volume=rg.volume,
-        #             rtype="computed",
-        #         )
-        # rg.lor.append(rt)
 
 
 def carbonate_system_2_ode(
@@ -280,7 +268,7 @@ def carbonate_system_2_ode(
     BD_l = BD * dic_sb_l / dic_sb
     dH = hplus - hplus_0
     # F_DIC, F_DIC_l, F_TA, dH, d_zsnow
-    return -BD, -BD_l, -2 * BD, dH, d_zsnow
+    return BD, BD_l, 2 * BD, dH, d_zsnow, co3
 
 
 def gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:
@@ -296,19 +284,12 @@ def gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:
 
     beta = solubility * (1 - p_H2O)
     f = scale * (gas_c * beta - g_c_aq * 1e3)
-    # print("gas_exchange_ode")
-    # print(f"scale = {scale:2e}")
-    # print(f"beta = {beta:2e}")
-    # print(f" f = {f:2e}")
-    # breakpoint()
     return -f
 
 
 def init_carbonate_system_2(
     rg: ReservoirGroup,
     export_flux: Flux,
-    dic_burial_flux: Flux,
-    ta_burial_flux: Flux,
     r_sb: ReservoirGroup,
     r_db: ReservoirGroup,
     area_table: NDArrayFloat,
@@ -327,9 +308,6 @@ def init_carbonate_system_2(
         ftype="cs2",
         r_s=r_sb,  # source (RG) of CaCO3 flux,
         r_d=r_db,  # sink (RG) of CaCO3 flux,
-        # the vr_data_fields contains any data that is referenced inside the
-        # function, rather than passed as argument, and all data that is
-        # explicitly referenced by the model
         vr_datafields={
             "depth_area_table": area_table,
             "area_dz_table": area_dz_table,
@@ -358,10 +336,7 @@ def init_carbonate_system_2(
             {f"F_{rg.full_name}.TA": "db_cs2"},
             {f"R_{rg.full_name}.Hplus": rg.swc.hplus},
             {f"R_{rg.full_name}.zsnow": float(abs(kwargs["zsnow"]))},
-            # dic_burial_flux,
-            # ta_burial_flux,
-            # {"Hplus": rg.swc.hplus},
-            # {"zsnow": float(abs(kwargs["zsnow"]))},
+            {f"R_{rg.full_name}.CO3": rg.swc.co3},
         ],
         register=rg,
     )
@@ -407,8 +382,6 @@ def add_carbonate_system_2(**kwargs) -> None:
         "r_db": list,  # list of deep reservoirs
         "r_sb": list,  # list of corresponding surface reservoirs
         "carbonate_export_fluxes": list,
-        "dic_burial_fluxes": list,
-        "ta_burial_fluxes": list,
         "AD": float,
         "zsat": int,
         "zsat_min": int,
@@ -434,8 +407,6 @@ def add_carbonate_system_2(**kwargs) -> None:
         "carbonate_export_fluxes",
         "zsat_min",
         "z0",
-        "dic_burial_fluxes",
-        "ta_burial_fluxes",
     ]
 
     # we need the reference to the Model in order to set some
@@ -496,8 +467,6 @@ def add_carbonate_system_2(**kwargs) -> None:
         ec = init_carbonate_system_2(
             rg,
             kwargs["carbonate_export_fluxes"][i],
-            kwargs["dic_burial_fluxes"][i],
-            kwargs["ta_burial_fluxes"][i],
             r_sb[i],
             r_db[i],
             area_table,
@@ -507,21 +476,8 @@ def add_carbonate_system_2(**kwargs) -> None:
             kwargs,
         )
 
-        #for v in ec.return_values:
         register_return_values(ec, rg)
-            
         rg.has_cs2 = True
-            # if isinstance(v, dict):
-            #     n = next(iter(v))
-            #     rt = Reservoir(
-            #         name=n,
-            #         species=getattr(model, n),
-            #         concentration=f"{v[n]} mol/kg",
-            #         register=rg,
-            #         volume=rg.volume,
-            #         rtype="computed",
-            #     )
-            #     rg.lor.append(rt)
 
 
 def gas_exchange_ode_with_isotopes(

@@ -724,7 +724,8 @@ def expand_dict(d: dict, mt: str = "1:1") -> int:
             rd[ck] = nd
 
         # update the overall dict and move to the next entry
-        r |= rd
+        # r |= rd
+        r.update(rd)
 
     return r
 
@@ -1048,11 +1049,13 @@ def build_ct_dict(d: dict, p: dict) -> dict:
 
     """
 
-    # result = {}
-    # for k, v in d.items():
-    #     result[k] = {"sc": v}
-    # return result
-    return {k: {"sc": v} | p for k, v in d.items()}
+    # a = {k: {"sc": v} | p for k, v in d.items()}
+    a = {}
+    for k, v in d.items():
+        a[k] = p.copy()
+        a[k]["sc"] = v
+
+    return a
 
 
 def get_string_between_brackets(s: str) -> str:
@@ -1223,7 +1226,8 @@ def __addmissingdefaults__(lod: dict, kwargs: dict) -> dict:
             if k not in kwargs:
                 new[k] = v
 
-    kwargs |= new
+    # kwargs |= new
+    kwargs.update(new)
     return kwargs
 
 

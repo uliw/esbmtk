@@ -1,7 +1,7 @@
 from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
-from numba.typed import List
+# from numba.typed import List
 from esbmtk import Flux, Reservoir, Model, Connection, Connect
 from esbmtk import AirSeaExchange
 
@@ -558,7 +558,7 @@ def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> 
         a = f"{ind}{d.magnitude},\n"
     elif isinstance(d, float):
         a = f"{ind}{d.magnitude},\n"
-    elif isinstance(d, (list, List)):  # loo pover list elements
+    elif isinstance(d, list):  # loo pover list elements
         a = f"{ind}{d},\n"
         a = f"{ind}npa(["
         for e in d:

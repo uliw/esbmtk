@@ -761,7 +761,7 @@ class Connect(esbmtkBase):
             self.source.lof.remove(self.fh)
         elif self.bypass == "sink" and not isinstance(self.sink, Sink):
             self.sink.lof.remove(self.fh)
-            # print(f"removing {self.fh.full_name} from {self.sink.full_name} lof")
+            print(f"removing {self.fh.full_name} from {self.sink.full_name} lof")
 
         if self.save_flux_data:
             ph = SaveFluxData(
@@ -1437,11 +1437,16 @@ class AirSeaExchange(esbmtkBase):
         swc = self.lr.swc if self.lr.register == "None" else self.lr.register.swc
         # initialize process instance
 
+        if isinstance(self.ref_species, Reservoir):
+            rs = self.ref_species.c
+        else:
+            rs = self.ref_species
+
         ph = GasExchange(
             name="_PGex",
             gas=self.gr,  # gas reservoir
             liquid=self.lr,  # reservoir
-            ref_species=self.ref_species,  # concentration
+            ref_species=rs,  # concentration
             flux=self.fh,  # flux handle
             register=self.fh,
             scale=self.scale,  # piston_velocity * area

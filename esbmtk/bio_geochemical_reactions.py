@@ -28,7 +28,7 @@ from esbmtk import get_delta_from_concentration
 NDArrayFloat = npt.NDArray[np.float64]
 
 
-@njit()
+@njit(fastmath=True)
 def gas_exchange_no_isotopes_2(
     gas_c,  # species concentration in atmosphere
     gas_c_aq,  # Gas concentration in liquid phase
@@ -45,7 +45,7 @@ def gas_exchange_no_isotopes_2(
     return f
 
 
-@njit()
+@njit(fastmath=True)
 def gas_exchange_with_isotopes_2(
     gas_c,  # species concentration in atmosphere
     gas_c_l,  # same but for the light isotope
@@ -90,7 +90,7 @@ def gas_exchange_with_isotopes_2(
     return f, f_l
 
 
-@njit()
+@njit(fastmath=True)
 def photosynthesis(
     o2_atmosphere,
     co2_atmosphere,
@@ -214,7 +214,10 @@ def photosynthesis(
         dMdt_dic += -PIC_F
         dMdt_dic_l += -PIC_F_l
         dMdt_ta += 2 * -PIC_F
-
+    else:
+        PIC_F = 0.0
+        PIC_F_l = 0.0
+        
     # sulfur reactions, assuming that there is alwways enough O2
     dMdt_h2s = 0  # -h2s * volume  # H2S oxidation
     dMdt_so4 = dMdt_h2s  # add S to the sulfate pool
@@ -243,7 +246,7 @@ def photosynthesis(
     )
 
 
-@njit()
+@njit(fastmath=True)
 def OM_remineralization(
     pom_fluxes: list,  # POM export fluxes
     pom_fluxes_l: list,  # POM_l export fluxes
@@ -401,7 +404,7 @@ def OM_remineralization(
     ]
 
 
-@njit()
+@njit(fastmath=True)
 def carbonate_system_3(
     # rg: ReservoirGroup,  # 2 Reservoir handle
     pic_f: float,  # 3 CaCO3 export flux as DIC
