@@ -177,7 +177,10 @@ class Model(esbmtkBase):
                 :param ideal_water: if set, ignore seawater density/chemisrty
                  calculations
         """
-
+        from importlib.metadata import version
+        import datetime
+        from esbmtk import species_definitions, hypsometry
+        
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["M", (str)],
             "start": ["0 yrs", (str, Q_)],
@@ -329,7 +332,7 @@ class Model(esbmtkBase):
 
         # set_printoptions(precision=self.display_precision)
 
-        from esbmtk import species_definitions, hypsometry
+        
 
         if "element" in self.kwargs:
             if isinstance(self.kwargs["element"], list):
@@ -349,7 +352,7 @@ class Model(esbmtkBase):
 
         warranty = (
             f"\n"
-            f"ESBMTK  Copyright (C) 2020  Ulrich G.Wortmann\n"
+            f"ESBMTK {version('esbmtk')}  Copyright (C) 2020 - {datetime.date.today().year}  Ulrich G.Wortmann\n"
             f"This program comes with ABSOLUTELY NO WARRANTY\n"
             f"For details see the LICENSE file\n"
             f"This is free software, and you are welcome to redistribute it\n"

@@ -29,3 +29,6 @@ from .add_functions import *
 from .post_processing import *
 
 np.seterr(invalid="ignore")
+
+from . import _version
+__version__ = _version.get_versions()['version']
