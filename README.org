@@ -7,7 +7,12 @@ modeling more approachable for classroom teaching. At present the code is under 
 
 * News
 
-  - July 28^{th}, 2023, v 0.9.0.1 The ODEPACk backend is now fully functional, and the basic API is more or less stable. 
+  - Sept. 18^{th}, 2023 v 0.10.0.0 This is a breaking change. Remineralization and
+    photosynthesis must be implemented via functions, rather than transport
+    connections. CS1 and CS2 are retired, and replaced by photosynthesis,
+    organic-matter remineralization and carbonate-dissolution functions.
+
+  - July 28^{th}, 2023, v 0.9.0.1 The ODEPACk backend is now fully functional, and the basic API is more or less stable.
 
   - Nov. 11^{th} 2022, v 0.9.0.0 Moved to odepack based backend. Removed now defunct code. The odepack backend does not yet support isotope calculations.
   
