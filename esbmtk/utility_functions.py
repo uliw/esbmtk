@@ -1240,7 +1240,10 @@ def data_summaries(M, species_names, box_names):
         label_list = []
         for b in box_names:
             a = getattr(b, f"{sp.name}")
-            data_list.append(a.c)
+            if a.plot_transform_c == "None":
+                data_list.append(a.c)
+            else:
+                data_list.append(a.plot_transform_c(a.c))
             label_list.append(a.full_name)
 
         df = DataField(

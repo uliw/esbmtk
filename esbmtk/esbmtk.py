@@ -180,7 +180,7 @@ class Model(esbmtkBase):
         from importlib.metadata import version
         import datetime
         from esbmtk import species_definitions, hypsometry
-        
+
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["M", (str)],
             "start": ["0 yrs", (str, Q_)],
@@ -332,8 +332,6 @@ class Model(esbmtkBase):
 
         # set_printoptions(precision=self.display_precision)
 
-        
-
         if "element" in self.kwargs:
             if isinstance(self.kwargs["element"], list):
                 element_list = self.kwargs["element"]
@@ -415,7 +413,7 @@ class Model(esbmtkBase):
         append = False
 
         for r in self.lor:
-            if r.rtype != 'flux_only':
+            if r.rtype != "flux_only":
                 r.__write_data__(prefix, start, stop, stride, append, directory)
 
     def read_data(self, directory="./data") -> None:
@@ -961,6 +959,7 @@ class Species(esbmtkBase):
             "register": ["None", (Model, Element, Reservoir, GasReservoir)],
             "parent": ["None", (Model, Element, Reservoir, GasReservoir)],
             "flux_only": [False, (bool)],
+            "logdata": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
@@ -1575,6 +1574,7 @@ class Reservoir(ReservoirBase):
             ConnectionGroup,
             SeawaterConstants,
             get_box_geometry_parameters,
+            phc,
         )
 
         # provide a dict of all known keywords and their type
@@ -1741,6 +1741,8 @@ class Reservoir(ReservoirBase):
         else:
             self.__set_data__ = self.__set_without_isotopes__
 
+        if self.species.name == "Hplus":
+            self.plot_transform_c = phc 
         # any auxilliary init - normally empty, but we use it here to extend the
         # reservoir class in virtual reservoirs
         self.__aux_inits__()

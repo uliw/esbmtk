@@ -88,7 +88,7 @@ def Hydrogen(model):
 
     # add species
     Species(
-        name="Hplus", element=eh, display_as=r"$H^+$", register=eh
+        name="Hplus", element=eh, display_as=r"$H^+$", register=eh, logdata=True
     )  # Name & element handle
     Species(
         name="H2O", element=eh, display_as=r"H$_{2}$O", register=eh
