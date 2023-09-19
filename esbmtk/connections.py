@@ -53,6 +53,12 @@ class ConnectionError(Exception):
         super().__init__(message)
 
 
+class KeywordError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
 class Connect(esbmtkBase):
     """Two reservoirs connect to each other via at least one flux. This
      module creates the connecting flux and creates a connector object
@@ -341,7 +347,10 @@ class Connect(esbmtkBase):
         self.lof: list = []
 
         # validate and initialize instance variables
+        # try:
         self.__initialize_keyword_variables__(kwargs)
+        # except ConnectionError:
+        #    print("typo")
 
         if self.register == "None":
             self.register = self.source.register
