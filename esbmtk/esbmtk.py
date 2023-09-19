@@ -414,11 +414,9 @@ class Model(esbmtkBase):
         stop = self.steps
         append = False
 
-        # print(f"start = {start}, stop = {self.steps}, stride={0}, append ={append}")
         for r in self.lor:
-            # print(f"R = {r.full_name}")
-            # print(f"start = {start}, stop = {stop}, stride={stride}, append ={append}")
-            r.__write_data__(prefix, start, stop, stride, append, directory)
+            if r.rtype != 'flux_only':
+                r.__write_data__(prefix, start, stop, stride, append, directory)
 
     def read_data(self, directory="./data") -> None:
         """Save the model results to a CSV file. Each reservoir will have
@@ -1164,6 +1162,7 @@ class ReservoirBase(esbmtkBase):
         df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
         # df[f"{rn} {sn} [{smu}]"] = self.m.to(self.mo.m_unit).magnitude[start:stop:stride]  # mass
         if self.isotopes:
+            print(f"rn = {rn}, sp = {sp.name}")
             df[f"{rn} {sp.ln} [{cmu}]"] = self.l[start:stop:stride]  # light isotope
         df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
 
