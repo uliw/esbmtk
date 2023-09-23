@@ -32,6 +32,20 @@ np.set_printoptions(precision=4)
 NDArrayFloat = npt.NDArray[np.float64]
 
 
+def rmtree(f) -> None:
+    """Delete file, of file is directorym delete all files in
+
+    :param f: pathlib path object
+
+    """
+    if f.is_file():
+        f.unlink()
+    else:
+        for child in f.iterdir():
+            rmtree(child)
+        f.rmdir()
+
+
 def phc(c: float) -> float:
     # Calculate concentration as pH. c can be a number or numpy array
     import numpy as np
