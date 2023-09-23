@@ -392,11 +392,23 @@ class Model(esbmtkBase):
         """Save model state.  Similar to save data, but only saves the
         last 10 time-steps
         """
+        from pathlib import Path
+        from esbmtk import rmtree
 
         start: int = -2
         stop: int = None
         stride: int = 1
         prefix: str = "state_"
+
+        fn: str = directory  # file name
+        cwd: Path = Path.cwd()  # get the current working directory
+        fqfn: Path = Path(f"{cwd}/{fn}")  # fully qualified file name
+
+        if fqfn.exists():  # check if file exist
+            print(f"Found previous state, deleting {fqfn}")
+            rmtree(fqfn)
+            if fqfn.exists():
+                raise FileExistsError(f"Deleting {fqn} failed")
 
         for r in self.lor:  # loop over reservoirs
             r.__write_data__(prefix, start, stop, stride, False, directory)
@@ -657,6 +669,10 @@ class Model(esbmtkBase):
             self.area_table, self.area_dz_table, self.Csat_table = 0, 0, 0
 
         if stype == "solve_ivp":
+            # print(f"max_step = {self.max_step}")
+            # print(f'first_step = {Q_("1 second").to(self.t_unit).magnitude}')
+            # print(f"self.t_unit = {self.t_unit:.2e}")
+
             self.results = solve_ivp(
                 ode_system.eqs,
                 (self.time[0], self.time[-1]),
@@ -1161,7 +1177,7 @@ class ReservoirBase(esbmtkBase):
         df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
         # df[f"{rn} {sn} [{smu}]"] = self.m.to(self.mo.m_unit).magnitude[start:stop:stride]  # mass
         if self.isotopes:
-            print(f"rn = {rn}, sp = {sp.name}")
+            # print(f"rn = {rn}, sp = {sp.name}")
             df[f"{rn} {sp.ln} [{cmu}]"] = self.l[start:stop:stride]  # light isotope
         df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
 
@@ -1742,7 +1758,7 @@ class Reservoir(ReservoirBase):
             self.__set_data__ = self.__set_without_isotopes__
 
         if self.species.name == "Hplus":
-            self.plot_transform_c = phc 
+            self.plot_transform_c = phc
         # any auxilliary init - normally empty, but we use it here to extend the
         # reservoir class in virtual reservoirs
         self.__aux_inits__()
