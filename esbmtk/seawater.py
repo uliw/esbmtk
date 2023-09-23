@@ -141,7 +141,7 @@ class SeawaterConstants(esbmtkBase):
             print(f"{n} = {v * 1E6:.2f} nmol/kg")
 
         print()
-        print(f"pCO2 = {get_pco2(self):.2e}")
+        # print(f"pCO2 = {get_pco2(self):.2e}")
         print(f"pH = {-log10(self.hplus):.2f}")
         print(f"salinity = {self.salinity:.2f}")
         print(f"temperature = {self.temperature:.2f}\n")
