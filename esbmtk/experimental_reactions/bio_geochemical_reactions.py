@@ -354,13 +354,15 @@ def OM_remineralization(
     m_o2 = o2 * volume
     m_h2s = h2s * volume
     m_o2_eq = pom_flux * O2C_ratio + 2 * m_h2s
-
+    # reduce Alkalinity from NO3. This happens irrespective of O2
+    dMdt_ta = -pom_flux * NC_ratio
+    
     if m_o2 > m_o2_eq:  # box has enough oxygen
         dMdt_o2 = -m_o2_eq  # consume O2
-        dMdt_ta = -pom_flux * NC_ratio  # reduce Alkalinity from NO3
         dMdt_h2s = -m_h2s  # consume all h2s
-        dMdt_so4 = -m_h2s  # add sulfate
-
+        dMdt_so4 = dMdt_h2s  # add sulfate from h2s
+        dMdt_ta -= dMdt_so4 # reduce Alkalinity from sulfate addition
+        
     else:  # box has not enough oxygen
         dMdt_o2 = -m_o2  # remove all available oxygen
         # calculate how much POM is left to oxidize

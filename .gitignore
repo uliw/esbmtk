@@ -67,3 +67,4 @@ Notes.org
 /#README.org#
 /docs/
 /esbmtk/esbmtk.egg-info/
+__pycache__

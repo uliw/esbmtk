@@ -16,16 +16,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
-
 import typing as tp
-
-from esbmtk import (
+from esbmtk import ExternalCode
+from esbmtk.reactions.bio_geochemical_reactions import (
     photosynthesis,
     OM_remineralization,
     gas_exchange_with_isotopes_2,
     gas_exchange_no_isotopes_2,
     carbonate_system_3,
-    ExternalCode,
 )
 
 if tp.TYPE_CHECKING:

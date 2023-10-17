@@ -16,20 +16,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from __future__ import annotations
-
 import typing as tp
-
 from esbmtk import Q_, register_return_values
-from esbmtk import (
-    init_photosynthesis,
-    init_OM_remineralization,
-    init_carbonate_system_3,
-    init_gas_exchange_with_isotopes,
-    init_gas_exchange_no_isotopes,
-    Q_,
-)
-
-from .utility_functions import __addmissingdefaults__, __checkkeys__, __checktypes__
+from esbmtk.utility_functions import __addmissingdefaults__, __checkkeys__, __checktypes__
 
 if tp.TYPE_CHECKING:
     from esbmtk import Flux, Model, ReservoirGroup
@@ -47,6 +36,7 @@ def add_photosynthesis(
     objects or float values that correspond to the rgs list
     """
     from esbmtk import register_return_values
+    from esbmtk.reactions.init_functions import init_photosynthesis
 
     M = rgs[0].mo
     pv = piston_velocity.to("meter/yr").magnitude
@@ -54,9 +44,7 @@ def add_photosynthesis(
         if isinstance(p_fluxes[i], Q_):
             p_fluxes[i] = p_fluxes[i].to(M.f_unit).magnitude
 
-        ec = init_photosynthesis(
-            rg, p_fluxes[i], pv, O2_At, CO2_At, CaCO3_reactions
-        )
+        ec = init_photosynthesis(rg, p_fluxes[i], pv, O2_At, CO2_At, CaCO3_reactions)
         register_return_values(ec, rg)
         rg.has_cs1 = True
 
@@ -77,6 +65,8 @@ def add_OM_remineralization(M: Model, f_map: dict) -> None:
     Returns:
     None
     """
+    from esbmtk.reactions.init_functions import init_OM_remineralization
+
     # get sink name (e.g., M.A_ib) and source dict e.g. {M.H_sb: {"POM": 0.3}}
     for sink, source_dict in f_map.items():
         pom_fluxes = list()
@@ -169,6 +159,7 @@ def add_carbonate_system_3(**kwargs) -> None:
         Ksp = solubility product of calcite at in situ sea water conditions (mol^2/kg^2)
 
     """
+    from esbmtk.reactions.init_functions import init_carbonate_system_3
 
     # list of known keywords
     lkk: dict = {
@@ -261,6 +252,8 @@ def add_co2_gas_exchange(rg_list, gas_r):
 
     :param rg_list: list of reservoir group names
     """
+    from esbmtk.reactions.init_functions import init_gas_exchange_with_isotopes
+
     species = rg_list[0].mo.CO2
     pv = Q_("4.8 m/d")
 
@@ -278,6 +271,8 @@ def add_o2_gas_exchange(rg_list, gas_r):
 
     :param rg_list: list of reservoir group names
     """
+    from esbmtk.reactions.init_functions import init_gas_exchange_no_isotopes
+
     species = rg_list[0].mo.O2
     pv = Q_("4.8 m/d")
 

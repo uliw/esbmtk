@@ -208,6 +208,7 @@ class Model(esbmtkBase):
             # "max_step": ["None", (str)],
             "parse_model": [True, (bool)],
             "rtol": [1.0e-6, (float)],
+            "default_reactions": [True, (bool)],
             "custom_functions": [False, (bool)],
             "area_table": ["None", (str, np.ndarray)],
         }
@@ -348,6 +349,7 @@ class Model(esbmtkBase):
                 # register species with model
                 eh.__register_species_with_model__()
 
+        
         warranty = (
             f"\n"
             f"ESBMTK {version('esbmtk')}  Copyright (C) 2020 - {datetime.date.today().year}  Ulrich G.Wortmann\n"
@@ -395,20 +397,19 @@ class Model(esbmtkBase):
         from pathlib import Path
         from esbmtk import rmtree
 
-        start: int = -2
-        stop: int = None
-        stride: int = 1
-        prefix: str = "state_"
-
         fn: str = directory  # file name
         cwd: Path = Path.cwd()  # get the current working directory
         fqfn: Path = Path(f"{cwd}/{fn}")  # fully qualified file name
-
         if fqfn.exists():  # check if file exist
             print(f"Found previous state, deleting {fqfn}")
             rmtree(fqfn)
             if fqfn.exists():
-                raise FileExistsError(f"Deleting {fqn} failed")
+                raise FileExistsError(f"Deleting {fqfn} failed")
+
+        start: int = -2
+        stop: int = None
+        stride: int = 1
+        prefix: str = "state_"
 
         for r in self.lor:  # loop over reservoirs
             r.__write_data__(prefix, start, stop, stride, False, directory)
@@ -418,6 +419,18 @@ class Model(esbmtkBase):
         their own CSV file
 
         """
+        from pathlib import Path
+        from esbmtk import rmtree
+
+        fn: str = directory  # file name
+        cwd: Path = Path.cwd()  # get the current working directory
+        fqfn: Path = Path(f"{cwd}/{fn}")  # fully qualified file name
+        if fqfn.exists():  # check if file exist
+            print(f"Found previous state, deleting {fqfn}")
+            rmtree(fqfn)
+            if fqfn.exists():
+                raise FileExistsError(f"Deleting {fqfn} failed")
+
         prefix = ""
         stride = self.stride
         start = 0

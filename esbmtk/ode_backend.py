@@ -244,8 +244,12 @@ class setup_ode():
             hi = f"{ind2}from custom_functions import "
             for f in set(M.lpc_f):
                 hi += f"{f} ,"
+        elif M.default_reactions:
+            hi = f"{ind2}from esbmtk.reactions.bio_geochemical_reactions import "
+            for f in set(M.lpc_f):
+                hi += f"{f} ,"
         else:
-            hi = f"{ind2}from esbmtk import "
+            hi = f"{ind2}from esbmtk.experimental_reactions.bio_geochemical_reactions import "
             for f in set(M.lpc_f):
                 hi += f"{f} ,"
     else:
