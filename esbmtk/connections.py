@@ -956,7 +956,7 @@ class Connect(esbmtkBase):
                     f"\n Warning: use scale instead of k_value for scale with mass type\n"
                 )
 
-            self.scale = map_units(self.scale, self.mo.m_unit)
+            self.scale = map_units(self, self.scale, self.mo.m_unit)
             ph = ScaleRelativeToMass(
                 name="_PkM",
                 reservoir=self.ref_reservoirs,
@@ -973,11 +973,13 @@ class Connect(esbmtkBase):
                 )
 
             self.scale = map_units(
-                self.scale, self.mo.c_unit, self.mo.f_unit, self.mo.r_unit
+                self,
+                self.scale,
+                self.mo.c_unit,
+                self.mo.f_unit,
+                self.mo.r_unit,
+                self.mo.v_unit,
             )
-            # print(
-            #    f"Registering PKC with ref = {self.ref.full_name}, scale = {self.scale}"
-            # )
 
             ph = ScaleRelativeToConcentration(
                 name="PkC",
