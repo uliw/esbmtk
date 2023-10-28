@@ -1118,11 +1118,13 @@ def map_units(obj: any, v: any, *args) -> float:
     and extract magnitude, assign mangitude to return value
     if not, assign value to return value
 
-    v : a keyword value number/string/quantity
-    args: one or more quantities (units) see the Model class (e.g., f_unit)
+    :param obj: connection object 
+    :param v: input string/number/quantity
+    :args: list of model base units 
+    :returns: number 
 
+    :raises ScaleError: if input cannot be mapped to a model unit
     """
-
     from . import Q_
 
     m: float = 0
