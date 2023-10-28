@@ -32,6 +32,12 @@ np.set_printoptions(precision=4)
 NDArrayFloat = npt.NDArray[np.float64]
 
 
+class ScaleError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
 def rmtree(f) -> None:
     """Delete file, of file is directorym delete all files in
 
@@ -1106,7 +1112,7 @@ def check_for_quantity(kw) -> Q_:
     return kw
 
 
-def map_units(v: any, *args) -> float:
+def map_units(obj: any, v: any, *args) -> float:
     """parse v to see if it is a string. if yes, map to quantity.
     parse v to see if it is a quantity, if yes, map to model units
     and extract magnitude, assign mangitude to return value
@@ -1134,8 +1140,10 @@ def map_units(v: any, *args) -> float:
                 match = True
 
         if not match:
-            message = f"{v} is none of {print(*args)}"
-            raise ValueError(message)
+            raise ScaleError(
+                f"Missing base units for the scale in {obj.full_name}, this should not happen"
+                f"complain to the program author"
+            )
 
     else:  # no quantity, so it should be a number
         m = v
