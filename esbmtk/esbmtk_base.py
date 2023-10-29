@@ -23,10 +23,11 @@ import time
 import numpy as np
 import numpy.typing as npt
 
-# import typing as tp
+import typing as tp
 
-# if tp.TYPE_CHECKING:
-#     from .esbmtk import Model
+if tp.TYPE_CHECKING:
+    from .esbmtk import Species
+
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
@@ -44,6 +45,18 @@ class MissingKeywordError(Exception):
 
 
 class InputError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
+class FluxSpecificationError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
+class SpeciesMolweightError(Exception):
     def __init__(self, message):
         message = f"\n\n{message}\n"
         super().__init__(message)
@@ -322,3 +335,46 @@ class esbmtkBase(input_parsing):
         print("The following keywords are mandatory:")
         for kw in self.lrk:
             print(f"{kw}")
+
+    def set_flux(self, mass: str, time: str, substance: Species):
+        """
+        set_flux converts a flux rate that is specified as rate, time, substance
+        so that it matches the correct model units (i.e., kg/s or mol/s)
+
+        Example:
+
+        .. code-block:: python
+
+           M.set_flux("12 Tmol", "year", M.C)
+
+        if model mass units are in mol, no change will be made 
+        if model mass units are in kg, the above will return kg C/a (and vice verso)
+           
+        :param mass: e.g., "12 Tmol"
+        :param time: e.g., "year"
+        :param substance: e.g., Species Instance e.g., M.PO4
+        
+        :returns: mol/year or g/year
+        
+        :raises: FluxSpecificationError
+        :raises: SpeciesMolweightError
+    """
+        from esbmtk import Q_, ureg
+
+        if substance.m_weight > 0:
+            mass = Q_(mass)
+            g_per_mol = ureg("g/mol")
+            if mass.is_compatible_with("g") or mass.is_compatible_with("mol"):
+                r = mass.to(
+                    substance.mo.m_unit,  # mol
+                    "chemistry",  # context
+                    mw=substance.m_weight * g_per_mol,  # g/mol
+                )
+            else:
+                message = f"no known conversion for {mass}, and {substance}"
+                raise FluxSpecificationError(message)
+        else:
+            message = f"no mol weight defintion for {substance.full_name}"
+            raise SpeciesMolweightError(message)
+
+        return r / ureg(time)
