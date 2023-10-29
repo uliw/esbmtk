@@ -188,9 +188,10 @@ class Model(esbmtkBase):
             "offset": ["0 yrs", (str, Q_)],
             "timestep": ["None", (str, Q_)],
             "element": ["None", (str, list)],
-            "mass_unit": ["mol", (str, Q_)],
-            "volume_unit": ["m**3", (str, Q_)],
-            "concentration_unit": ["mol/kg", (str)],
+            "mass_unit": ["mol", (str)],
+            "volume_unit": ["m**3", (str)],
+            "time_unit": ["seconds", (str)],
+            # "concentration_unit": ["mol/kg", (str)],
             "time_label": ["Years", (str)],
             "display_precision": [0.01, (float)],
             "plot_style": ["default", (str)],
@@ -205,7 +206,6 @@ class Model(esbmtkBase):
             "debug": [False, (bool)],
             "ideal_water": [True, (bool)],
             "use_ode": [True, (bool)],
-            # "max_step": ["None", (str)],
             "parse_model": [True, (bool)],
             "rtol": [1.0e-6, (float)],
             "default_reactions": [True, (bool)],
@@ -220,7 +220,7 @@ class Model(esbmtkBase):
             "timestep",
             "mass_unit",
             "volume_unit",
-            "concentration_unit",
+            # "concentration_unit",
         ]
         self.__initialize_keyword_variables__(kwargs)
 
@@ -261,50 +261,33 @@ class Model(esbmtkBase):
         self.first_start = True  # keep track of repeated solver calls
         self.lof: list = []  # list of fluxes
 
-        # Parse the strings which contain unit information and convert
-        # into model base units For this we setup 3 variables which define
-        if self.concentration_unit not in ["mol/kg", "mol/l", "mol/liter"]:
-            raise ModelError(
-                f"{self.concentration_unit} must be either mol/l or mol/kg"
-            )
-
+        # unit defs
         self.l_unit = ureg.meter  # the length unit
-        self.t_unit = Q_(self.timestep).units  # the time unit
+        self.t_unit = Q_(self.time_unit).units  # the time unit
         self.d_unit = Q_(self.stop).units  # display time units
         self.m_unit = Q_(self.mass_unit).units  # the mass unit
-        self.c_unit = Q_(self.concentration_unit).units  # the mass unit
         self.v_unit = Q_(self.volume_unit).units  # the volume unit
-        # the concentration unit (mass/volume)
-
+        self.c_unit = self.m_unit / self.v_unit  # concentration unit
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
         self.r_unit = self.v_unit / self.t_unit  # flux as volume/time
 
-        # this is now defined in __init__.py
-        # ureg.define('Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups')
-
         # legacy variable names
-
         self.start = self.ensure_q(self.start).to(self.t_unit).magnitude
         self.stop = self.ensure_q(self.stop).to(self.t_unit).magnitude
+        self.timestep = self.ensure_q(self.timestep)
+        self.dt = self.timestep.to(self.t_unit).magnitude
+        self.max_step = self.dt
         self.offset = self.ensure_q(self.offset).to(self.t_unit).magnitude
         self.start = self.start + self.offset
         self.stop = self.stop + self.offset
-        self.bu = self.t_unit
-        self.base_unit = self.t_unit
-        self.dt = Q_(self.timestep).magnitude
-        self.max_step = self.dt
-        self.tu = str(self.bu)  # needs to be a string
         self.n = self.name
         self.mo = self.name
         self.model = self
         self.plot_style: list = [self.plot_style]
 
-        self.xl = f"Time [{self.bu}]"  # time axis label
+        self.xl = f"Time [{self.t_unit}]"  # time axis label
         self.length = int(abs(self.stop - self.start))
         self.steps = int(abs(round(self.length / self.dt)))
-        # self.steps = 100
-        # if self.steps < self.number_of_datapoints:
-        #     self.number_of_datapoints = self.steps
 
         self.time = (np.arange(self.steps) * self.dt) + self.start
         self.time_ode = np.linspace(
@@ -349,7 +332,6 @@ class Model(esbmtkBase):
                 # register species with model
                 eh.__register_species_with_model__()
 
-        
         warranty = (
             f"\n"
             f"ESBMTK {version('esbmtk')}  Copyright (C) 2020 - {datetime.date.today().year}  Ulrich G.Wortmann\n"
@@ -1942,7 +1924,7 @@ class Flux(esbmtkBase):
 
         # model units
         self.plt_units = Q_(self.rate).units
-        self.mu: str = f"{self.species.mu}/{self.mo.tu}"
+        self.mu: str = f"{self.species.mu}/{self.mo.t_unit}"
 
         # and convert flux into model units
         if isinstance(self.rate, str):
@@ -2270,7 +2252,7 @@ class SourceSink(esbmtkBase):
         self.sp = self.species
         self.mo = self.species.mo
         self.model = self.species.mo
-        self.u = self.species.mu + "/" + str(self.species.mo.bu)
+        self.u = self.species.mu + "/" + str(self.species.mo.t_unit)
         self.lio: list = []
         self.m = 1  # set default mass and concentration values
         self.c = 1
