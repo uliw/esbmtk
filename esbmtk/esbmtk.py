@@ -191,7 +191,6 @@ class Model(esbmtkBase):
             "mass_unit": ["mol", (str)],
             "volume_unit": ["m**3", (str)],
             "time_unit": ["seconds", (str)],
-            # "concentration_unit": ["mol/kg", (str)],
             "time_label": ["Years", (str)],
             "display_precision": [0.01, (float)],
             "plot_style": ["default", (str)],
@@ -220,7 +219,6 @@ class Model(esbmtkBase):
             "timestep",
             "mass_unit",
             "volume_unit",
-            # "concentration_unit",
         ]
         self.__initialize_keyword_variables__(kwargs)
 
@@ -966,6 +964,7 @@ class Species(esbmtkBase):
             "name": ["None", (str)],
             "element": ["None", (Element, str)],
             "display_as": [kwargs["name"], (str)],
+            "prefix": [kwargs["prefix"], (str)],
             "m_weight": [0, (int, float, str)],
             "register": ["None", (Model, Element, Reservoir, GasReservoir)],
             "parent": ["None", (Model, Element, Reservoir, GasReservoir)],
