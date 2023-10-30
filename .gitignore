@@ -45,7 +45,6 @@
 /tests/__pycache__/
 examples/
 tests/
-Documentation/
 /package.sh
 /esbmtk/.directory
 /esbmtk.egg-info/PKG-INFO
@@ -62,7 +61,7 @@ docs/_minted-*
 /notes.org
 
 /.sourcery.yaml
-/Documentation/_minted-ESBMTK-Quick-Start_Guide/
+/Documentation/_minted-*
 /#%2Aediff-merge%2A#a5u92t#
 /#Release_History.org#
 /#README.org#
