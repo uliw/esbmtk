@@ -1,8 +1,0 @@
-\begin{Verbatim}[commandchars=\\\{\}]
-\PYG{n}{Connection}\PYG{p}{(}
-    \PYG{n}{source}\PYG{o}{=}\PYG{n}{M}\PYG{o}{.}\PYG{n}{weathering}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{} source of flux}
-    \PYG{n}{sink}\PYG{o}{=}\PYG{n}{M}\PYG{o}{.}\PYG{n}{sb}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{} target of flux}
-    \PYG{n}{rate}\PYG{o}{=}\PYG{n}{F\PYGZus{}w}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{} rate of flux}
-    \PYG{n+nb}{id}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}river\PYGZdq{}}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{} connection id}
-\PYG{p}{)}
-\end{Verbatim}

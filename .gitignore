@@ -52,10 +52,12 @@ Documentation/
 /tests/.coverage
 /tests/TAGS
 /tests/foo.py
-b/tests/.coverage
+/tests/.coverage
 /esbmtk/.esbmtk.py.~undo-tree~
 *.~undo-tree~
 Notes.org
+/docs/ltximg/
+docs/_minted-*
 
 /notes.org
 

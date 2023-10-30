@@ -1,6 +1,0 @@
-\begin{Verbatim}[commandchars=\\\{\}]
-\PYG{c+c1}{\PYGZsh{} now try this}
-\PYG{k+kn}{from} \PYG{n+nn}{esbmtk} \PYG{k+kn}{import} \PYG{n}{Q\PYGZus{}}
-\PYG{n}{tau} \PYG{o}{=} \PYG{n}{Q\PYGZus{}}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}100 years\PYGZdq{}}\PYG{p}{)}
-\PYG{n}{tau} \PYG{o}{*} \PYG{l+m+mi}{12}
-\end{Verbatim}
