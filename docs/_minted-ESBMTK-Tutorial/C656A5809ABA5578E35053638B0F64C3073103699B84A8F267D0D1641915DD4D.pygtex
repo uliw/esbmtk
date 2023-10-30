@@ -1,0 +1,3 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{n}{M}\PYG{o}{.}\PYG{n}{flux\PYGZus{}summary}\PYG{p}{(}\PYG{n}{filter\PYGZus{}by}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}primary\PYGZus{}production\PYGZdq{}}\PYG{p}{,} \PYG{n}{return\PYGZus{}list}\PYG{o}{=}\PYG{k+kc}{True}\PYG{p}{)[}\PYG{l+m+mi}{0}\PYG{p}{]}
+\end{Verbatim}

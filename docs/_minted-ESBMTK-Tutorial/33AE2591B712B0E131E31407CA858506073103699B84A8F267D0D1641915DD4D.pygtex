@@ -1,0 +1,7 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{c+c1}{\PYGZsh{} boundary conditions}
+\PYG{n}{F\PYGZus{}w} \PYG{o}{=}  \PYG{n}{M}\PYG{o}{.}\PYG{n}{set\PYGZus{}flux}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}45 Gmol\PYGZdq{}}\PYG{p}{,} \PYG{l+s+s2}{\PYGZdq{}year\PYGZdq{}}\PYG{p}{,} \PYG{n}{M}\PYG{o}{.}\PYG{n}{P}\PYG{p}{)} \PYG{c+c1}{\PYGZsh{} P @280 ppm (Filipelli 2002)}
+\PYG{n}{tau} \PYG{o}{=} \PYG{n}{Q\PYGZus{}}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}100 year\PYGZdq{}}\PYG{p}{)}  \PYG{c+c1}{\PYGZsh{} PO4 residence time in surface box}
+\PYG{n}{F\PYGZus{}b} \PYG{o}{=} \PYG{l+m+mf}{0.01}  \PYG{c+c1}{\PYGZsh{} About 1\PYGZpc{} of the exported P is buried in the deep ocean}
+\PYG{n}{thc} \PYG{o}{=} \PYG{l+s+s2}{\PYGZdq{}20*Sv\PYGZdq{}}  \PYG{c+c1}{\PYGZsh{} Thermohaline circulation in Sverdrup}
+\end{Verbatim}

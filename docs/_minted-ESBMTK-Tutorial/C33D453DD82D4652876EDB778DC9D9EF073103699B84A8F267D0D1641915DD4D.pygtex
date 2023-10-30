@@ -1,0 +1,29 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{c+c1}{\PYGZsh{} Source definitions}
+\PYG{n}{Source}\PYG{p}{(}
+    \PYG{n}{name}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}weathering\PYGZdq{}}\PYG{p}{,}
+    \PYG{n}{species}\PYG{o}{=}\PYG{n}{M}\PYG{o}{.}\PYG{n}{PO4}\PYG{p}{,}
+    \PYG{n}{register}\PYG{o}{=}\PYG{n}{M}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{} i.e., the instance will be available as M.weathering}
+\PYG{p}{)}
+\PYG{n}{Sink}\PYG{p}{(}
+    \PYG{n}{name}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}burial\PYGZdq{}}\PYG{p}{,}
+    \PYG{n}{species}\PYG{o}{=}\PYG{n}{M}\PYG{o}{.}\PYG{n}{PO4}\PYG{p}{,}
+    \PYG{n}{register}\PYG{o}{=}\PYG{n}{M}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{}}
+\PYG{p}{)}
+
+\PYG{c+c1}{\PYGZsh{} reservoir definitions}
+\PYG{n}{Reservoir}\PYG{p}{(}
+    \PYG{n}{name}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}sb\PYGZdq{}}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{} box name}
+    \PYG{n}{species}\PYG{o}{=}\PYG{n}{M}\PYG{o}{.}\PYG{n}{PO4}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{} species in box}
+    \PYG{n}{register}\PYG{o}{=}\PYG{n}{M}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{} this box will be available as M.sb}
+    \PYG{n}{volume}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}3E16 m**3\PYGZdq{}}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{} surface box volume}
+    \PYG{n}{concentration}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}0 umol/l\PYGZdq{}}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{} initial concentration}
+\PYG{p}{)}
+\PYG{n}{Reservoir}\PYG{p}{(}
+    \PYG{n}{name}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}db\PYGZdq{}}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{} box name}
+    \PYG{n}{species}\PYG{o}{=}\PYG{n}{M}\PYG{o}{.}\PYG{n}{PO4}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{} species in box}
+    \PYG{n}{register}\PYG{o}{=}\PYG{n}{M}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{} this box will be available M.db}
+    \PYG{n}{volume}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}100E16 m**3\PYGZdq{}}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{} deeb box volume}
+    \PYG{n}{concentration}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}0 umol/l\PYGZdq{}}\PYG{p}{,}  \PYG{c+c1}{\PYGZsh{} initial concentration}
+\PYG{p}{)}
+\end{Verbatim}

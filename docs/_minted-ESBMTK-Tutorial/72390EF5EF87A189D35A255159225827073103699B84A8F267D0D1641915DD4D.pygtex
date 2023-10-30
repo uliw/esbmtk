@@ -1,0 +1,27 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k}{def} \PYG{n+nf}{dCdt}\PYG{p}{(}\PYG{n}{t}\PYG{p}{,} \PYG{n}{C\PYGZus{}0}\PYG{p}{,} \PYG{n}{V}\PYG{p}{,} \PYG{n}{F\PYGZus{}w}\PYG{p}{,} \PYG{n}{thx}\PYG{p}{):}
+\PYG{+w}{    }\PYG{l+s+sd}{\PYGZdq{}\PYGZdq{}\PYGZdq{}Calculate the change in concentration as}
+\PYG{l+s+sd}{    a function of time. After Glover 2011, Modeling}
+\PYG{l+s+sd}{    Methods for Marine Science.}
+
+\PYG{l+s+sd}{    :param C: list of initial concentrations mol/m*3}
+\PYG{l+s+sd}{    :param time: array of time points}
+\PYG{l+s+sd}{    :params V: lits of surface and deep ocean volume [m\PYGZca{}3]}
+\PYG{l+s+sd}{    :param F\PYGZus{}w: River (weathering) flux of PO4 mol/s}
+\PYG{l+s+sd}{    :param thx: thermohaline circulation in m*3/s}
+\PYG{l+s+sd}{    :returns dCdt: list of concentration changes mol/s}
+\PYG{l+s+sd}{    \PYGZdq{}\PYGZdq{}\PYGZdq{}}
+
+    \PYG{n}{C\PYGZus{}S} \PYG{o}{=} \PYG{n}{C\PYGZus{}0}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}  \PYG{c+c1}{\PYGZsh{} surface}
+    \PYG{n}{C\PYGZus{}D} \PYG{o}{=} \PYG{n}{C\PYGZus{}0}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{]}  \PYG{c+c1}{\PYGZsh{} deep}
+    \PYG{n}{F\PYGZus{}d} \PYG{o}{=} \PYG{n}{C\PYGZus{}S} \PYG{o}{*} \PYG{n}{thx}  \PYG{c+c1}{\PYGZsh{} downwelling}
+    \PYG{n}{F\PYGZus{}u} \PYG{o}{=} \PYG{n}{C\PYGZus{}D} \PYG{o}{*} \PYG{n}{thx}  \PYG{c+c1}{\PYGZsh{} upwelling}
+    \PYG{n}{tau} \PYG{o}{=} \PYG{l+m+mi}{100} \PYG{c+c1}{\PYGZsh{} residence time of P in surface waters [yrs]}
+    \PYG{n}{F\PYGZus{}POP} \PYG{o}{=} \PYG{n}{C\PYGZus{}S} \PYG{o}{*} \PYG{n}{V}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]} \PYG{o}{/} \PYG{n}{tau}  \PYG{c+c1}{\PYGZsh{} export production}
+    \PYG{n}{F\PYGZus{}b} \PYG{o}{=} \PYG{n}{F\PYGZus{}POP} \PYG{o}{/} \PYG{l+m+mi}{100}  \PYG{c+c1}{\PYGZsh{} burial}
+
+    \PYG{n}{dCdt}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]} \PYG{o}{=} \PYG{p}{(}\PYG{n}{F\PYGZus{}w} \PYG{o}{+} \PYG{n}{F\PYGZus{}u} \PYG{o}{\PYGZhy{}} \PYG{n}{F\PYGZus{}d} \PYG{o}{\PYGZhy{}} \PYG{n}{F\PYGZus{}POP}\PYG{p}{)} \PYG{o}{/} \PYG{n}{V}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}
+    \PYG{n}{dCdt}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{]} \PYG{o}{=} \PYG{p}{(}\PYG{n}{F\PYGZus{}d} \PYG{o}{+} \PYG{n}{F\PYGZus{}POP} \PYG{o}{\PYGZhy{}} \PYG{n}{F\PYGZus{}u} \PYG{o}{\PYGZhy{}} \PYG{n}{F\PYGZus{}b}\PYG{p}{)} \PYG{o}{/} \PYG{n}{V}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{]}
+
+    \PYG{k}{return} \PYG{n}{dCdt}
+\end{Verbatim}

@@ -1,0 +1,4 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{k+kn}{import} \PYG{n+nn}{sys}
+\PYG{err}{!}\PYG{p}{\PYGZob{}}\PYG{n}{sys}\PYG{o}{.}\PYG{n}{executable}\PYG{p}{\PYGZcb{}} \PYG{o}{\PYGZhy{}}\PYG{n}{m} \PYG{n}{pip} \PYG{n}{install} \PYG{n}{esbmtk}
+\end{Verbatim}

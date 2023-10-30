@@ -1,0 +1,5 @@
+\begin{Verbatim}[commandchars=\\\{\}]
+\PYG{c+c1}{\PYGZsh{} try the following}
+\PYG{n}{tau} \PYG{o}{=} \PYG{l+s+s2}{\PYGZdq{}100 years\PYGZdq{}}
+\PYG{n}{tau} \PYG{o}{*} \PYG{l+m+mi}{12}
+\end{Verbatim}
