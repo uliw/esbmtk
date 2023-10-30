@@ -11,6 +11,12 @@ Release_History.org
 pyproject.toml
 requirements.txt
 setup.cfg
+Documentation/ESBMTK-Tutorial.org
+Documentation/ESBMTK-Tutorial.pdf
+Documentation/mpc.png
+Documentation/po4_1.py
+Documentation/ltximg/org-ltximg_90283c65ec1ef8e75e917e41a14d78bfa1796652.png
+Documentation/ltximg/org-ltximg_98938d40f30c69013acd798599585db91f6da0cc.png
 docs/.directory
 esbmtk/Hypsometric_Curve_05m.csv
 esbmtk/TAGS
