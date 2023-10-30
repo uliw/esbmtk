@@ -1,24 +1,24 @@
-- [ESBMTK - An Earth-sciences box modeling toolkit](#org686e33b)
-- [News](#orgc524fac)
-- [Contributing](#org61310a7)
-- [Installation](#org695756c)
-- [Documentation](#org8fc9904)
-- [Todo](#org2ae7f4d)
-- [License](#orge4fb7f9)
+- [ESBMTK - An Earth-sciences box modeling toolkit](#org5b1a90d)
+- [News](#orga412cd6)
+- [Contributing](#orgfa0d7fb)
+- [Installation](#org836c15c)
+- [Documentation](#orge2691dd)
+- [Todo](#org0c0137c)
+- [License](#org4788aac)
 
 
-<a id="org686e33b"></a>
+<a id="org5b1a90d"></a>
 
 # ESBMTK - An Earth-sciences box modeling toolkit
 
 ESBMTK is a python library that aims to simplify typical box modeling projects in the Earth-Sciences. The general focus is to make box modeling more approachable for classroom teaching. At present the code is under active development and the API changes frequently.
 
 
-<a id="orgc524fac"></a>
+<a id="orga412cd6"></a>
 
 # News
 
--   Oct. 30<sup>th</sup>, 2023 v 0.10.0.0 This is a breaking change. Remineralization and photosynthesis must be implemented via functions, rather than transport connections. CS1 and CS2 are retired, and replaced by photosynthesis, organic-matter remineralization and carbonate-dissolution functions. I've started writing a user guide, see the docs folder. So far, only the very basics are covered. More to come!
+-   Oct. 30<sup>th</sup>, 2023 v 0.10.0.0 This is a breaking change. Remineralization and photosynthesis must be implemented via functions, rather than transport connections. CS1 and CS2 are retired, and replaced by photosynthesis, organic-matter remineralization and carbonate-dissolution functions. I've started writing a user guide, see the Documentation folder. So far, only the very basics are covered. More to come!
 
 -   July 28<sup>th</sup>, 2023, v 0.9.0.1 The ODEPACk backend is now fully functional, and the basic API is more or less stable.
 
@@ -49,14 +49,14 @@ ESBMTK is a python library that aims to simplify typical box modeling projects i
 Older releases are mentioned in the Release History.
 
 
-<a id="org61310a7"></a>
+<a id="orgfa0d7fb"></a>
 
 # Contributing
 
 Don't be shy. Contributing is as easy as finding bugs by using the code, or maybe you want to add a new process code? If you have plenty of time to spare, ESMBTK could use a solver for stiff problems, or a graphical interface ;-) See the todo section for ideas.
 
 
-<a id="org695756c"></a>
+<a id="org836c15c"></a>
 
 # Installation
 
@@ -74,7 +74,7 @@ If you work with conda, it is recommended to install the above via conda. If you
 -   pip install esbmtk
 
 
-<a id="org8fc9904"></a>
+<a id="orge2691dd"></a>
 
 # Documentation
 
@@ -83,7 +83,7 @@ The documentation is woefully out of date, at present, your best bet is the code
 The API documentation is available at <https://uliw.github.io/esbmtk/esbmtk/index.html>
 
 
-<a id="org2ae7f4d"></a>
+<a id="org0c0137c"></a>
 
 # Todo
 
@@ -92,7 +92,7 @@ The API documentation is available at <https://uliw.github.io/esbmtk/esbmtk/inde
 -   do more testing
 
 
-<a id="orge4fb7f9"></a>
+<a id="org4788aac"></a>
 
 # License
 

@@ -11,7 +11,7 @@ modeling more approachable for classroom teaching. At present the code is under 
     photosynthesis must be implemented via functions, rather than transport
     connections. CS1 and CS2 are retired, and replaced by photosynthesis,
     organic-matter remineralization and carbonate-dissolution functions.
-    I've started writing a user guide, see the docs folder. So far, only the very basics are covered. More to come!
+    I've started writing a user guide, see the Documentation folder. So far, only the very basics are covered. More to come!
  
   - July 28^{th}, 2023, v 0.9.0.1 The ODEPACk backend is now fully functional, and the basic API is more or less stable.
 
