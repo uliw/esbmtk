@@ -258,6 +258,7 @@ def init_gas_exchange_no_isotopes(
     # convert pv into model units
     pv = piston_velocity.to("meter/yr").magnitude
 
+    breakpoint()
     ec = ExternalCode(
         name=f"{r_liquid.parent.name}_{r_liquid.name}_exchange",
         species=species,

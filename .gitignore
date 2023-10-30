@@ -6,13 +6,10 @@
 
 # exclude everything
 
-
 # but add these 2 files
 # none at the moment
 
 # but allow the following directories
-
-
 
 # within this directory, allow for the following file types
 !LICENSE
@@ -46,7 +43,9 @@
 /auto/
 /dist/
 /tests/__pycache__/
-/examples/one-box-ocean/.directory
+examples/
+tests/
+Documentation/
 /package.sh
 /esbmtk/.directory
 /esbmtk.egg-info/PKG-INFO

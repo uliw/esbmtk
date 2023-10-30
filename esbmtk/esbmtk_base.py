@@ -338,7 +338,7 @@ class esbmtkBase(input_parsing):
 
     def set_flux(self, mass: str, time: str, substance: Species):
         """
-        set_flux converts a flux rate that is specified as rate, time, substance
+        set_flux converts() a flux rate that is specified as rate, time, substance
         so that it matches the correct model units (i.e., kg/s or mol/s)
 
         Example:
@@ -349,13 +349,13 @@ class esbmtkBase(input_parsing):
 
         if model mass units are in mol, no change will be made 
         if model mass units are in kg, the above will return kg C/a (and vice verso)
-           
+
         :param mass: e.g., "12 Tmol"
         :param time: e.g., "year"
         :param substance: e.g., Species Instance e.g., M.PO4
-        
+
         :returns: mol/year or g/year
-        
+
         :raises: FluxSpecificationError
         :raises: SpeciesMolweightError
     """

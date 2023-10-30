@@ -42,7 +42,7 @@ def add_photosynthesis(
     pv = piston_velocity.to("meter/yr").magnitude
     for i, rg in enumerate(rgs):
         if isinstance(p_fluxes[i], Q_):
-            p_fluxes[i] = p_fluxes[i].to(M.f_unit).magnitude
+            p_fluxes[i] = p_fluxes[i].to("mol/year").magnitude
 
         ec = init_photosynthesis(rg, p_fluxes[i], pv, O2_At, CO2_At, CaCO3_reactions)
         register_return_values(ec, rg)

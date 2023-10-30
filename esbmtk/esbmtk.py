@@ -124,26 +124,17 @@ class Model(esbmtkBase):
                                 start    = "0 yrs",    # optional: start time
                                 stop     = "10000 yrs", # end time
                                 timestep = "2 yrs",    # as a string "2 yrs"
-                                max_step = "1000 yrs", # str, optional
                                 offset = "0 yrs",    # optional: time offset for plot
-                                mass_unit = "mol",   #required
-                                volume_unit = "l", # required
-                                concentration_unit="mol/kg | mol/l", required
                                 element = ["Carbon", "Sulfur" ]
-                                time_label = #  optional, defaults to "Time"
                                 display_precision = #  optional, defaults to 0.01,
                                 m_type = "mass_only/both" # defaults to mass_only
                                 plot_style = #  optional defaults to 'default'
-                                save_flux_data = False, see below
                                 ideal_water = False,
-                                parse_model = True,
                               )
 
                 :param mass_unit: only tested with mol
 
                 :param volume_unit: only tested with liter
-
-                :concentration_unit: only tested with mol/kg
 
                 :param element: list with one or more species names
 
@@ -189,8 +180,9 @@ class Model(esbmtkBase):
             "timestep": ["None", (str, Q_)],
             "element": ["None", (str, list)],
             "mass_unit": ["mol", (str)],
-            "volume_unit": ["m**3", (str)],
-            "time_unit": ["seconds", (str)],
+            "volume_unit": ["liter", (str)],
+            "time_unit": ["year", (str)],
+            "concentration_unit": ["mol/liter", (str)],
             "time_label": ["Years", (str)],
             "display_precision": [0.01, (float)],
             "plot_style": ["default", (str)],
@@ -217,8 +209,6 @@ class Model(esbmtkBase):
             "name",
             "stop",
             "timestep",
-            "mass_unit",
-            "volume_unit",
         ]
         self.__initialize_keyword_variables__(kwargs)
 
@@ -265,7 +255,7 @@ class Model(esbmtkBase):
         self.d_unit = Q_(self.stop).units  # display time units
         self.m_unit = Q_(self.mass_unit).units  # the mass unit
         self.v_unit = Q_(self.volume_unit).units  # the volume unit
-        self.c_unit = self.m_unit / self.v_unit  # concentration unit
+        self.c_unit = Q_(self.concentration_unit).units
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
         self.r_unit = self.v_unit / self.t_unit  # flux as volume/time
 
@@ -869,7 +859,7 @@ class Element(esbmtkBase):
                "d_label": ["None", (str)],
                "d_scale": ["None", (str)],
                "r": [1, (float, int)],
-               "mass_unit": ["None", (str, Q_)],
+               "mass_unit": ["mol", (str, Q_)],
                "parent": ["None", (str, Model)],
 
         }
@@ -886,7 +876,7 @@ class Element(esbmtkBase):
             "d_label": ["None", (str)],
             "d_scale": ["None", (str)],
             "r": [1, (float, int)],
-            "mass_unit": ["None", (str, Q_)],
+            "mass_unit": ["", (str, Q_)],
             "parent": ["None", (str, Model)],
         }
 
@@ -964,7 +954,6 @@ class Species(esbmtkBase):
             "name": ["None", (str)],
             "element": ["None", (Element, str)],
             "display_as": [kwargs["name"], (str)],
-            "prefix": [kwargs["prefix"], (str)],
             "m_weight": [0, (int, float, str)],
             "register": ["None", (Model, Element, Reservoir, GasReservoir)],
             "parent": ["None", (Model, Element, Reservoir, GasReservoir)],
@@ -1369,7 +1358,7 @@ class ReservoirBase(esbmtkBase):
         # plot first axis
         ax.plot(x[1:-2], y1[1:-2], color="C0", label=y1_label)
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
-        ax.set_ylabel(f"{self.legend_left} [{M.c_unit:~P}]")
+        ax.set_ylabel(y1_label)
 
         # add any external data if present
         for i, d in enumerate(self.led):

@@ -13,7 +13,7 @@ def Carbon(model):
     eh = Element(
         name="Carbon",  # Element Name
         model=model,  # Model handle
-        mass_unit="mmol",  # base mass unit
+        mass_unit="mol",  # base mass unit
         li_label="C^{12}$S",  # Name of light isotope
         hi_label="C^{13}$S",  # Name of heavy isotope
         d_label=r"$\delta^{13}$C",  # Name of isotope delta
@@ -24,7 +24,7 @@ def Carbon(model):
 
     # add species
     Species(
-        name="CO2", element=eh, display_as=r"CO$_2$", register=eh
+        name="CO2", element=eh, display_as=r"CO$_2$", register=eh, m_weight=44.0095
     )  # Name & element handle
     Species(name="DIC", element=eh, register=eh)
     Species(name="OM", element=eh, register=eh)
@@ -32,10 +32,16 @@ def Carbon(model):
     Species(name="POM", element=eh, register=eh, flux_only=True)
     Species(name="PIC", element=eh, register=eh, flux_only=True)
     Species(name="DOC", element=eh, register=eh)
-    Species(name="CaCO3", element=eh, display_as=r"CaCO$_3$", register=eh)
-    Species(name="HCO3", element=eh, display_as=r"HCO$_3^-$", register=eh)
-    Species(name="CO3", element=eh, display_as="CO$_3^{2-}$", register=eh)
-    Species(name="C", element=eh, register=eh)
+    Species(
+        name="CaCO3", element=eh, display_as=r"CaCO$_3$", register=eh, m_weight=100.0869
+    )
+    Species(
+        name="HCO3", element=eh, display_as=r"HCO$_3^-$", register=eh, m_weight=61.01684
+    )
+    Species(
+        name="CO3", element=eh, display_as="CO$_3^{2-}$", register=eh, m_weight=60.0089
+    )
+    Species(name="C", element=eh, register=eh, m_weight=12.0107)
     Species(name="CO2aq", element=eh, register=eh)
     Species(name="ALK", element=eh, register=eh)  # Alkalinity
     Species(name="CALK", element=eh, register=eh)  # Carbonate Alkalinity
@@ -50,7 +56,7 @@ def Sulfur(model):
     eh = Element(
         name="Sulfur",
         model=model,  # model handle
-        mass_unit="mmol",  # base mass unit
+        mass_unit="mol",  # base mass unit
         li_label="$^{32}$S",  # Name of light isotope
         hi_label="$^{34}$S",  # Name of heavy isotope
         d_label=r"$\delta^{34}$S",  # Name of isotope delta
@@ -60,24 +66,39 @@ def Sulfur(model):
     )
 
     # add species
-    Species(name="SO4", element=eh, display_as=r"SO$_{4}^{2-}$", register=eh)
-    Species(name="SO4oxygen", element=eh, display_as=r"SO$_{4}^{2-}{_ox}$", register=eh)
-    Species(name="SO3", element=eh, display_as=r"SO$_{3}$", register=eh)
-    Species(name="SO2", element=eh, display_as=r"SO$_{2$}", register=eh)
-    Species(name="HS", element=eh, display_as=r"HS$^-$", register=eh)
-    Species(name="H2S", element=eh, display_as=r"H$_{2}$S", register=eh)
-    Species(name="FeS", element=eh, register=eh)
-    Species(name="FeS2", element=eh, display_as=r"FeS$_{2}$", register=eh)
-    Species(name="S0", element=eh, register=eh)
-    Species(name="S", element=eh, register=eh)
-    Species(name="S2minus", element=eh, display_as=r"S$^{2-}$", register=eh)
+    Species(
+        name="SO4",
+        element=eh,
+        display_as=r"SO$_{4}^{2-}$",
+        register=eh,
+        m_weight=96.0626,
+    )
+    Species(
+        name="SO3", element=eh, display_as=r"SO$_{3}$", register=eh, m_weight=80.0632
+    )
+    Species(
+        name="SO2", element=eh, display_as=r"SO$_{2$}", register=eh, m_weight=64.0638
+    )
+    Species(name="HS", element=eh, display_as=r"HS$^-$", register=eh, m_weight=33.07294)
+    Species(
+        name="H2S", element=eh, display_as=r"H$_{2}$S", register=eh, m_weight=34.08088
+    )
+    Species(name="FeS", element=eh, register=eh, m_weight=87.91)
+    Species(
+        name="FeS2", element=eh, display_as=r"FeS$_{2}$", register=eh, m_weight=119.975
+    )
+    Species(name="S0", element=eh, register=eh, m_weight=32.065)
+    Species(name="S", element=eh, register=eh, m_weight=32.065)
+    Species(
+        name="S2minus", element=eh, display_as=r"S$^{2-}$", register=eh, m_weight=64.13
+    )
 
 
 def Hydrogen(model):
     eh = Element(
         name="Hydrogen",
         model=model,  # model handle
-        mass_unit="mmol",  # base mass unit
+        mass_unit="milli",  # base mass unit
         li_label="$^{1$}H",  # Name of light isotope
         hi_label="$^{2}$H",  # Name of heavy isotope
         d_label=r"$\delta^{2}$D",  # Name of isotope delta
@@ -102,7 +123,7 @@ def Oxygen(model):
     eh = Element(
         name="Oxygen",
         model=model,  # model handle
-        mass_unit="mmol",  # base mass unit
+        mass_unit="mol",  # base mass unit
         li_label="$^{16$}O",  # Name of light isotope
         hi_label="$^{18}$)",  # Name of heavy isotope
         d_label=r"$\delta^{18}$)",  # Name of isotope delta
@@ -126,7 +147,7 @@ def Phosphor(model):
     eh = Element(
         name="Phosphor",
         model=model,  # model handle
-        mass_unit="mmol",  # base mass unit
+        mass_unit="mol",  # base mass unit
         li_label="LI",  # Name of light isotope
         hi_label="HL",  # Name of heavy isotope
         d_label="D",  # Name of isotope delta
@@ -137,16 +158,18 @@ def Phosphor(model):
 
     # add species
     Species(
-        name="PO4", element=eh, display_as=r"PO$_{4}$", register=eh
+        name="PO4", element=eh, display_as=r"PO$_{4}$", register=eh, m_weight=94.971362
     )  # Name & element handle
-    Species(name="P", element=eh, display_as=r"P", register=eh)  # Name & element handle
+    Species(
+        name="P", element=eh, display_as=r"P", register=eh, m_weight=30.973762
+    )  # Name & element handle
 
 
 def Nitrogen(model):
     eh = Element(
         name="Nitrogen",
         model=model,  # model handle
-        mass_unit="mmol",  # base mass unit
+        mass_unit="mol",  # base mass unit
         li_label=r"$^{15$}N",  # Name of light isotope
         hi_label=r"$^{14$}N",  # Name of heavy isotope
         d_label=r"$\delta^{15}$N",  # Name of isotope delta
