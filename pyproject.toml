@@ -3,4 +3,8 @@ requires = ["setuptools", "setuptools-scm", "setuptools-git-versioning"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools-git-versioning]
-enabled = true
+enabled = false
+
+# [project]
+# dynamic = ["version"]
+# [tool.setuptools_scm]
