@@ -91,7 +91,7 @@ libraries automatically. ESBMTK itself can be installed with pip
 * Documentation
 
 I've started writing a tutorial on how to use the package:
-https://github.com/uliw/esbmtk/blob/master/src/esbmtk/Documentation/ESBMTK-Tutorial.org
+[[https://github.com/uliw/esbmtk/blob/master/src/esbmtk/Documentation/ESBMTK-Tutorial.pdf]]
 
 The tutorial is also available as jupyter notebook, and code samples are provided as well.
 All ESBMTk classes have extensive help texts that you can access through the usual help command. Note however, that some of these help-texts are out of date. I am however in the process to update these.
