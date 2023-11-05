@@ -47,7 +47,7 @@ examples/
 tests/
 /package.sh
 /esbmtk/.directory
-/esbmtk.egg-info/PKG-INFO
+/esbmtk.egg-info/
 /tests/.coverage
 /tests/TAGS
 /tests/foo.py
@@ -67,5 +67,4 @@ docs/_minted-*
 /#README.org#
 /esbmtk/esbmtk.egg-info/
 __pycache__
-esbmtk.egg-info/PKG-INFO
-PKG-INFO
+
