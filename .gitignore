@@ -67,3 +67,4 @@ docs/_minted-*
 /#README.org#
 /esbmtk/esbmtk.egg-info/
 __pycache__
+esbmtk.egg-info/PKG-INFO
