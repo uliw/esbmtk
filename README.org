@@ -1,13 +1,12 @@
 * ESBMTK - An Earth-sciences box modeling toolkit
 
 ESBMTK is a python library that aims to simplify typical box modeling
-projects in the Earth-Sciences. The general focus is to make box
-modeling more approachable for classroom teaching. At present the code is under active development and the API changes frequently. 
+projects in the Earth-Sciences. The basic API is now stable, but the code to deploy complex models is still being improved.
 
 
 * News
 
-  - Oct. 30^{th}, 2023 v 0.10.0.0 This is a breaking change. Remineralization and
+  - Oct. 30^{th}, 2023 v 0.10.0.8 This is a breaking change. Remineralization and
     photosynthesis must be implemented via functions, rather than transport
     connections. CS1 and CS2 are retired, and replaced by photosynthesis,
     organic-matter remineralization and carbonate-dissolution functions.
@@ -70,10 +69,7 @@ modeling more approachable for classroom teaching. At present the code is under 
 * Contributing
 
 Don't be shy. Contributing is as easy as finding bugs by using the
-code, or maybe you want to add a new process code? If you have plenty
-of time to spare, ESMBTK could use a solver for stiff problems, or a
-graphical interface ;-) See the todo section for ideas.
-
+code, or maybe you want to add a new process code? 
 
 * Installation
 
@@ -94,10 +90,13 @@ libraries automatically. ESBMTK itself can be installed with pip
 
 * Documentation
 
-The documentation is woefully out of date, at present, your best bet is the code itself
+I've started writing a tutorial on how to use the package: https://github.com/uliw/esbmtk/blob/master/Documentation/ESBMTK-Tutorial.pdf
 
-The API documentation is available at
-https://uliw.github.io/esbmtk/esbmtk/index.html
+The tutorial is also available as jupyter notebook, and code samples are provided as well.
+All ESBMTk classes have extensive help texts that you can access through the usual help command. Note however, that some of these help-texts are out of date. I am however in the process to update these.
+
+# The API documentation is available at
+# https://uliw.github.io/esbmtk/esbmtk/index.html
 
 # At present, I also provide the following example cases (as py-files
 # and in jupyter notebook format)
