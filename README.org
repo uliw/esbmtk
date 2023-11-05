@@ -6,11 +6,11 @@ projects in the Earth-Sciences. The basic API is now stable, but the code to dep
 
 * News
 
-  - Oct. 30^{th}, 2023 v 0.10.0.8 This is a breaking change. Remineralization and
+  - Oct. 30^{th}, 2023 v 0.10.0.11 This is a breaking change. Remineralization and
     photosynthesis must be implemented via functions, rather than transport
     connections. CS1 and CS2 are retired, and replaced by photosynthesis,
     organic-matter remineralization and carbonate-dissolution functions.
-    I've started writing a user guide, see the Documentation folder. So far, only the very basics are covered. More to come!
+    I've started writing a user guide, see the =/scr/Documentation= folder. So far, only the very basics are covered. More to come!
  
   - July 28^{th}, 2023, v 0.9.0.1 The ODEPACk backend is now fully functional, and the basic API is more or less stable.
 
@@ -90,7 +90,8 @@ libraries automatically. ESBMTK itself can be installed with pip
 
 * Documentation
 
-I've started writing a tutorial on how to use the package: https://github.com/uliw/esbmtk/blob/master/Documentation/ESBMTK-Tutorial.pdf
+I've started writing a tutorial on how to use the package:
+https://github.com/uliw/esbmtk/blob/master/src/esbmtk/Documentation/ESBMTK-Tutorial.org
 
 The tutorial is also available as jupyter notebook, and code samples are provided as well.
 All ESBMTk classes have extensive help texts that you can access through the usual help command. Note however, that some of these help-texts are out of date. I am however in the process to update these.
