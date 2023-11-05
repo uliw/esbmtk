@@ -18,6 +18,7 @@ ltximg
 package.sh
 .directory
 notes.org
+docs
 
 # Project files
 .ropeproject
