@@ -1,70 +1,60 @@
-# gitignore file for ESS345 Computational Geology.
-
-# The goal is to only push files which make sense to the students
-# so we exclude everything but the Jupyter Notebooks files
-# and image files
-
-# exclude everything
-
-# but add these 2 files
-# none at the moment
-
-# but allow the following directories
-
-# within this directory, allow for the following file types
-!LICENSE
-!README.md
-!*.png
-!*.jpg
-!*.ipynb
-!*.py
-!*.xlsx
-!*.csv
-!*.txt
-!*.md
-!*.org
-!*.pdf
-!*.html
-!*
-
-# last but not least, make sure the above rules are applied
-# to all subdirs as well
-!*/
-/build/
-/.directory
-/.mypy_cache/
-/Documentation/.directory
-/Documentation/*.tex
+# Temporary and binary files
+*~
+*.py[cod]
+*.so
+*.cfg
+!.isort.cfg
+!setup.cfg
+*.orig
 *.log
-*.tex
-/esbmtk/*.py#
-./directory
-/esbmtk/__pycache__/
-/auto/
-/dist/
-/tests/__pycache__/
-examples/
-tests/
-/package.sh
-/esbmtk/.directory
-/esbmtk.egg-info/
-/tests/.coverage
-/tests/TAGS
-/tests/foo.py
-/tests/.coverage
-/esbmtk/.esbmtk.py.~undo-tree~
-*.~undo-tree~
-Notes.org
-/docs/ltximg/
-docs/_minted-*
+*.pot
+__pycache__/*
+.cache/*
+.*.swp
+*/.ipynb_checkpoints/*
+.DS_Store
+_minted*
+ltximg
+package.sh
+.directory
+notes.org
 
-/notes.org
+# Project files
+.ropeproject
+.project
+.pydevproject
+.settings
+.idea
+.vscode
+tags
 
-/.sourcery.yaml
-/Documentation/_minted-*
-/#%2Aediff-merge%2A#a5u92t#
-/#Release_History.org#
-/#README.org#
-/esbmtk/esbmtk.egg-info/
-__pycache__
+# Package files
+*.egg
+*.eggs/
+.installed.cfg
+*.egg-info
+
+# Unittest and coverage
+htmlcov/*
+.coverage
+.coverage.*
+.tox
+junit*.xml
+coverage.xml
+.pytest_cache/
+
+# Build and docs folder/files
+build/*
+dist/*
+sdist/*
+docs/api/*
+docs/_rst/*
+docs/_build/*
+cover/*
+MANIFEST
+
+# Per-project virtualenvs
+.venv*/
+.conda*/
+.python-version
 
