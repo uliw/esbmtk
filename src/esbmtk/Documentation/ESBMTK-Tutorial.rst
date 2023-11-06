@@ -13,6 +13,8 @@ A simple model of the marine P-cycle would consider the delivery of P from weath
 .. _pcycle:
 
 .. figure:: ./mpc.png
+    :width: 300
+
 
     A two-box model of the marine P-cycle. F\ :sub:`w`\ = weathering F\ :sub:`u`\ = upwelling, F\ :sub:`d`\ = downwelling, F\ :sub:`POP`\ = particulate organic phosphor, F\ :sub:`b`\ = burial.
 
