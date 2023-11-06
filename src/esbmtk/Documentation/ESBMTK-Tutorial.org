@@ -4,7 +4,7 @@
 #+BIND: org-export-use-babel nil
 #+STARTUP: showall 
 #+STARTUP: latexpreview
-#+OPTIONS: todo:nil tasks:nil tags:nil toc:nil
+#+OPTIONS: todo:nil tasks:nil tags:nil toc:nil author:nil
 #+PROPERTY: header-args :eval never-export
 #+EXCLUDE_TAGS: noexport
 #+LATEX_HEADER: \usepackage{breakurl}
@@ -23,7 +23,7 @@ A simple model of the marine P-cycle would consider the delivery of P from weath
 #+caption: A two-box model of the marine P-cycle. F_w = weathering
 #+caption: F_u = upwelling, F_d = downwelling, F_{POP} = particulate 
 #+caption: organic phosphor, F_b = burial.
-[[mpc.png]]
+[[./mpc.png]]
 
 If we define equations that control the export of particulate P (F_{POP}) as a fraction of the upwelling P (F_u), and the burial of P (F_b) as fraction of (F_{POP}), we express this model as coupled ordinary differential equations (ODE, or initial value problem):
 
