@@ -11,11 +11,7 @@ ESBMTK Tutorial
 
 A simple model of the marine P-cycle would consider the delivery of P from weathering, the burial of P in the sediments, the thermohaline transport of dissolved PO\ :sub:`4`\ as well as the export of P in form of sinking organic matter (POP). The concentration in the respective surface an deep water boxes is then sum of the respective fluxes (see Fig. `pcycle <pcycle>`_). The model parameters are taken from Glover 2011, Modeling Methods in the Marine Sciences.
 
-.. _pcycle:
-
-.. figure:: /home/uliw/user/python-scripts/esbmtk/Documentation/mpc.png
-
-    A two-box model of the marine P-cycle. F\ :sub:`w`\ = weathering F\ :sub:`u`\ = upwelling, F\ :sub:`d`\ = downwelling, F\ :sub:`POP`\ = particulate organic phosphor, F\ :sub:`b`\ = burial.
+[BROKEN LINK: mpc.png]
 
 If we define equations that control the export of particulate P (F\ :sub:`POP`\) as a fraction of the upwelling P (F\ :sub:`u`\), and the burial of P (F\ :sub:`b`\) as fraction of (F\ :sub:`POP`\), we express this model as coupled ordinary differential equations (ODE, or initial value problem):
 
