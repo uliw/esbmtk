@@ -3,7 +3,7 @@ ESBMTK Tutorial
 ===============
 
 
-\maketitle
+
 
 1 A simple example
 ------------------
@@ -229,10 +229,78 @@ The ``flux_summary()`` method will return a list of matching fluxes but since th
         id="burial",
     )
 
-1.2 Running the model, visualizing and saving the results
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1.2 Working with the model instance
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1.2.1 Running the model, visualizing and saving the results
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To run the model, use the ``run()`` method of the model instance, and plot the results with the ``plot()`` method. This method accepts a list of esbmtk instances, that will be plotted in a common window. Without further arguments, the plot will also be saved as a pdf file where filename defaults to the name of the model instance. The ``save_data()`` method will create (or recreate) the ``data`` directory which will then be populated by csv-files. 
 
 .. code:: ipython
 
     M.run()
     M.plot([M.sb, M.db])
+    M.save_data()
+
+1.2.2 Saving/restoring the model state
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Many models require a spin-up phase. Once the model is in equilibrium, you can save the save the state with the ``save_state()`` method. 
+
+.. code:: ipython
+
+    M.run()
+    M.save_state()
+
+Restarting the model from save state, requires that you first initialize the model geometry (i.e., declare all the connections etc), and then read the previously saved model state.
+
+.. code:: ipython
+
+    ....
+    ....
+    M.read_state()
+    M.run()
+
+Towards this end, that a repeated model run will not be initialized from the last known state, but rather starts from blank state.
+
+.. code:: ipython
+
+    .....
+    .....
+    M.run()
+
+To restart a model from the last known state, the above would need to be written as
+
+.. code:: ipython
+
+    .....
+    .....
+    M.run()
+    M.save_state()
+    M.read_state()
+    M.run()
+
+1.2.3 Introspection and data access
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+All esbmtk instances and instance methods support the usual python methods to show the documentation, and inspect object properties.
+
+.. code:: ipython
+
+    help(M.sb)  # will print the documentation for sb
+    dir(M.sb)  # will print all methods for sb
+    M.sb #  when issued in an interactive session, this will echo
+    # the arguments used to create the instance
+
+The concentration data for a given reservoir is stored in the following instance variables:
+
+.. code:: ipython
+
+    M.sb.c  # concentration
+    M.sb.m  # mass
+    M.sb.v  # volume
+    M.sb.d  # delta value (if used by model)
+    M.sb.l  # the concentration of the light isotope (if used)
+
+The model time axis is available as ``M.time`` and the model supports the ``connection_summary()`` and ``flux_summary`` methods to query the respective ``connection`` and ``flux`` objects. 

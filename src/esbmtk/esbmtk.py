@@ -81,11 +81,6 @@ class Model(esbmtkBase):
 
         - Model_Name.save_data()
 
-        - Model_Name.plot_data()
-
-        - Model_Name.plot_reservoirs() takes an optional filename as
-          argument
-
         - Model_Name.plot([sb.DIC, sb.TA]) plot any object in the list
 
         - Model_Name.save_state() Save the model state
@@ -93,7 +88,7 @@ class Model(esbmtkBase):
         - Model_name.read_state() Initialize with a previous model
           state
 
-        - Model_Name.run(),
+        - Model_Name.run()
 
         - Model_Name.list_species()
 
@@ -101,15 +96,7 @@ class Model(esbmtkBase):
 
         - Model_Name.connection_summary()
 
-    User facing variable are Model_Name.time which contains the time
-    axis.
-
-    Optional, you can provide the element keyword which will setup a
-    default set of Species for Carbon and Sulfur.  In this case, there
-    is no need to define elements or species.  The argument to this
-    keyword are either "Carbon", or "Sulfur" or both as a list
-    ["Carbon", "Sulfur"].
-
+   
 
     """
 
@@ -121,24 +108,20 @@ class Model(esbmtkBase):
             .. Example::
 
                     esbmtkModel(name   =  "Test_Model", # required
-                                start    = "0 yrs",    # optional: start time
                                 stop     = "10000 yrs", # end time
-                                timestep = "2 yrs",    # as a string "2 yrs"
-                                offset = "0 yrs",    # optional: time offset for plot
+                                timestep = "1 yr",    # as a string "2 yrs"
                                 element = ["Carbon", "Sulfur" ]
-                                display_precision = #  optional, defaults to 0.01,
-                                m_type = "mass_only/both" # defaults to mass_only
-                                plot_style = #  optional defaults to 'default'
-                                ideal_water = False,
                               )
 
-                :param mass_unit: only tested with mol
+                :param name: The model name, e.g., M
+
+                :param mass_unit: mol
 
                 :param volume_unit: only tested with liter
 
                 :param element: list with one or more species names
 
-                :param max_step: Limit automatic step size increase, i.e., the time
+                :param time_step: Limit automatic step size increase, i.e., the time
                 resolution of the model. Optional, defaults to the model duration/100
 
                 :param m_type: enables or disables isotope calculation for the
@@ -147,7 +130,7 @@ class Model(esbmtkBase):
                 the isotope keyword.  'mass_only' 'both' will override the
                 reservoir settings
 
-                :param ref_time: will offset the time axis by the specified
+                :param offset: will offset the time axis by the specified
                 amount, when plotting the data, .i.e., the model time runs
                 from to 100, but you want to plot data as if where from
                 2000 to 2100, you would specify a value of 2000.  This is
@@ -155,15 +138,10 @@ class Model(esbmtkBase):
                 Care must be taken that any external data references the
                 model time domain, and not the display time.
 
-                :param display precision: affects the on-screen display of data.
-                It is also cutoff for the graphicak output.  I.e., the
+                :param display_precision: affects the on-screen display of data.
+                It is also cutoff for the graphical output.  I.e., the
                 interval f the y-axis will not be smaller than the
                 display_precision.
-
-                :param save_flux_data: Normally, flux data is not stored.  Set
-                this to True for debugging puposes.  Note, fluxes with
-                signals are always stored.  You can also enable this
-                option for inidividual connections (fluxes).
 
                 :param ideal_water: if set, ignore seawater density/chemisrty
                  calculations
@@ -388,6 +366,12 @@ class Model(esbmtkBase):
         """Save the model results to a CSV file. Each reservoir will have
         their own CSV file
 
+        Calling save_data() without any arguments,  will create (or
+        recreate) the data directory in the current working directory
+        which will then be populated by csv-files
+
+        :param directory: a string with the directory name.
+        It defaults to 'data'
         """
         from pathlib import Path
         from esbmtk import rmtree
@@ -487,11 +471,15 @@ class Model(esbmtkBase):
     def plot(self, pl: list = None, **kwargs) -> None:
         """Plot all objects specified in pl
 
+        :param pl: a list of ESBMTK instance (e.g., reservoirs)
+
+        optional keywords: fn = filename, defaults to the Model name 
+
         Example::
 
             M.plot([sb.PO4, sb.DIC], fn='test.pdf')
 
-        fn is optional and defaults to the Model Name
+        will plot sb.PO4 and sb.DIC and save the plot as 'test.pdf'
         """
 
         if pl is None:
@@ -791,9 +779,11 @@ class Model(esbmtkBase):
 
         Optional parameters:
 
-        :param filter_by: str = "" # filter on flux name or part of
-            flux name words separated by blanks act as additional
-            conditions i.e., all words must occur in a given name
+        :param filter_by: str = "" # filter on connection id.
+        If more than one word is provided, all words must match
+
+        :param return_list: bool if set, return a list object instead
+        of printing to the terminal
         """
 
         rl = []
@@ -1438,7 +1428,7 @@ class Reservoir(ReservoirBase):
                   plot_transform_c = a function reference, optional (see below)
                   legend_left = str, optional, useful for plot transform
                   display_precision = number, optional, inherited from Model
-                  register = optional, use to register with Reservoir Group
+                  register = Model instance
                   isotopes = True/False otherwise use Model.m_type
                   seawater_parameters= dict, optional
                   )
@@ -1471,7 +1461,7 @@ class Reservoir(ReservoirBase):
     e.g.: seawater_parameters = {"temperature": 2, "pressure": 240,
     "salinity" : 35},
 
-    Using a transform function ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Using a transform function: ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     In some cases, it is useful to transform the reservoir
     concentration data before plotting it.  A good example is the H+
@@ -1488,7 +1478,6 @@ class Reservoir(ReservoirBase):
             return pH
 
     this function can then be added to a reservoir as::
-
 
     hplus.plot_transform_c = phc
 
@@ -2167,11 +2156,9 @@ class SourceSink(esbmtkBase):
             species = SO4,
             display_precision = number, optional, inherited from Model
             delta = number or str. optional defaults to "None"
+            register = Model handle
         )
-
-    where the first argument is a string, and the second is a
-    reservoir handle
-    """
+      """
 
     def __init__(self, **kwargs) -> None:
         """
@@ -2279,21 +2266,29 @@ class SourceSink(esbmtkBase):
 
 class Sink(SourceSink):
     """
-    This is just a wrapper to setup a Sink object Example::
+    This is a meta class to setup a Source/Sink objects.  These are
+    not actual reservoirs, but we stil need to have them as objects
+    Example::
 
-        Sink(name = "Pyrite",species =SO4)
-
-    where the first argument is a string, and the second is a species
-    handle
+        Sink(name = "Pyrite",
+            species = SO4,
+            display_precision = number, optional, inherited from Model
+            delta = number or str. optional defaults to "None"
+            register = Model handle
+        )
     """
 
 
 class Source(SourceSink):
     """
-    This is just a wrapper to setup a Source object Example::
+    This is a meta class to setup a Source/Sink objects.  These are
+    not actual reservoirs, but we stil need to have them as objects
+    Example::
 
-        Source(name = "SO4_diffusion", species ="SO4")
-
-    where the first argument is a string, and the second is a species
-    handle
+        Ssource(name = "weathering",
+            species = SO4,
+            display_precision = number, optional, inherited from Model
+            delta = number or str. optional defaults to "None"
+            register = Model handle
+        )
     """

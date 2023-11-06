@@ -92,3 +92,4 @@ Connection(  #
 
 M.run()
 M.plot([M.sb, M.db])
+M.save_data()

@@ -61,3 +61,6 @@ MANIFEST
 .python-version
 
 /ggg.rst
+/src/esbmtk/Documentation/equations.py
+/src/esbmtk/Documentation/data/
+/src/esbmtk/Documentation/state/
