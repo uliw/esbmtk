@@ -28,15 +28,15 @@ A simple model of the marine P-cycle would consider the delivery of P from weath
 
 If we define equations that control the export of particulate P (F_{POP}) as a fraction of the upwelling P (F_u), and the burial of P (F_b) as fraction of (F_{POP}), we express this model as coupled ordinary differential equations (ODE, or initial value problem):
 
-\begin{equation}\label{}
+\[
 \frac{d[PO_{4}]_{S}}{dt} = \frac{F_w + F_u - F_d - F_{POP}}{V_S}
-\end{equation}
+\]
 
 and for the deep ocean, 
 
-\begin{equation}\label{}
+\[
 \frac{d[PO_{4}]_{D}}{dt}= \frac{F_{POP} + F_d - F_u - F_b}{V_D}
-\end{equation}
+\]
 
 
 which is easily encoded as a python function
