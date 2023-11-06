@@ -1,10 +1,12 @@
 
 .. image:: https://img.shields.io/pypi/v/esbmtk.svg
-        :alt: PyPI-Server
-        :target: https://pypi.org/project/esbmtk/
+    :alt: PyPI-Server
+    :target: https://pypi.org/project/esbmtk/
+		 
 .. image:: https://img.shields.io/badge/Python-3.9-blue.svg
-        :alt: Python-3.9 badge
-        :target: https://www.python.org/
+    :alt: Python-3.9 badge
+    :target: https://www.python.org/
+		 
 .. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
     :alt: Project generated with PyScaffold
     :target: https://pyscaffold.org/
