@@ -18,7 +18,7 @@ A simple model of the marine P-cycle would consider the delivery of P from weath
 
     A two-box model of the marine P-cycle. F\ :sub:`w`\ = weathering F\ :sub:`u`\ = upwelling, F\ :sub:`d`\ = downwelling, F\ :sub:`POP`\ = particulate organic phosphor, F\ :sub:`b`\ = burial.
 
-If we define equations that control the export of particulate P (F\ :sub:`POP`\) as a fraction of the upwelling P (F\ :sub:`u`\), and the burial of P (F\ :sub:`b`\) as fraction of (F\ :sub:`POP`\), we express this model as coupled ordinary differential equations (ODE, or initial value problem):
+If we define equations that control the export of particulate P (F\ :sub:`POP`\) as a fraction of the upwelling P (F\ :sub:`u`\), and the burial of P (F\ :sub:`b`\) as fraction of (F\ :sub:`POP`\), we express this model as coupled ordinary differential equations (ODE, or initial value problem): Note that the following equations do not display on github. Please use the pdf version
 
 
 

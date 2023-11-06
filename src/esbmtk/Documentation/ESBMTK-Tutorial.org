@@ -26,7 +26,7 @@ A simple model of the marine P-cycle would consider the delivery of P from weath
 #+caption: organic phosphor, F_b = burial.
 [[./mpc.png]]
 
-If we define equations that control the export of particulate P (F_{POP}) as a fraction of the upwelling P (F_u), and the burial of P (F_b) as fraction of (F_{POP}), we express this model as coupled ordinary differential equations (ODE, or initial value problem):
+If we define equations that control the export of particulate P (F_{POP}) as a fraction of the upwelling P (F_u), and the burial of P (F_b) as fraction of (F_{POP}), we express this model as coupled ordinary differential equations (ODE, or initial value problem): Note that the following equations do not display on github. Please use the pdf version
 
 \[
 \frac{d[PO_{4}]_{S}}{dt} = \frac{F_w + F_u - F_d - F_{POP}}{V_S}
