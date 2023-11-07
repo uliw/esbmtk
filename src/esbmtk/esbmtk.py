@@ -370,8 +370,8 @@ class Model(esbmtkBase):
         recreate) the data directory in the current working directory
         which will then be populated by csv-files
 
-        :param directory: a string with the directory name.
-        It defaults to 'data'
+        :param directory: a string with the directory name. It defaults to 'data'
+        
         """
         from pathlib import Path
         from esbmtk import rmtree
@@ -779,11 +779,10 @@ class Model(esbmtkBase):
 
         Optional parameters:
 
-        :param filter_by: str = "" # filter on connection id.
-        If more than one word is provided, all words must match
+        :param filter_by: str = "" # filter on connection id. If more than one word is provided, all words must match
 
-        :param return_list: bool if set, return a list object instead
-        of printing to the terminal
+        :param return_list: bool if set, return a list object instead of printing to the terminal
+        
         """
 
         rl = []
@@ -1454,14 +1453,23 @@ class Reservoir(ReservoirBase):
     area of seafloor which is intercepted by this relative to the
     total ocean floor area
 
-    Adding seawater_properties: ~~~~~~~~~~~~~~~~~~~~~~~~~~~ If this
-    optional parameter is specified, a SeaWaterConstants instance will
+    Adding seawater_properties:
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    If this optional parameter is specified, a SeaWaterConstants instance will
     be registered for this Reservoir as Reservoir.swc See the
     SeaWaterConstants class for details how to specify the parameters,
-    e.g.: seawater_parameters = {"temperature": 2, "pressure": 240,
-    "salinity" : 35},
+    e.g.:
+                  
+    .. code-block:: python
+                  
+            seawater_parameters = {"temperature": 2,
+                                   "pressure": 240,
+                                   "salinity" : 35,
+                                  }
 
-    Using a transform function: ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Using a transform function:
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     In some cases, it is useful to transform the reservoir
     concentration data before plotting it.  A good example is the H+
@@ -1469,15 +1477,15 @@ class Reservoir(ReservoirBase):
     this by specifying a function to convert the reservoir
     concentration into pH units::
 
+    .. code-block:: python
+                                         
         def phc(c :float) -> float:
             # Calculate concentration as pH. c can be a number or numpy array
-
             import numpy as np
-
             pH :float = -np.log10(c)
             return pH
 
-    this function can then be added to a reservoir as::
+    this function can then be added to a reservoir as:
 
     hplus.plot_transform_c = phc
 
@@ -1489,7 +1497,8 @@ class Reservoir(ReservoirBase):
     The function must return a single argument which will be
     interpreted as the transformed reservoir concentration.
 
-    Accesing Reservoir Data: ~~~~~~~~~~~~~~~~~~~~~~~~
+    Accesing Reservoir Data:
+    ~~~~~~~~~~~~~~~~~~~~~~~~
 
     You can access the reservoir data as:
 
@@ -1504,6 +1513,7 @@ class Reservoir(ReservoirBase):
         - Name.write_data() # save data to file
 
         - Name.info() # info Reservoir
+    
     """
 
     def __init__(self, **kwargs) -> None:
