@@ -1003,7 +1003,10 @@ class Signal(esbmtkBase):
         import numpy as np
 
         m = np.interp(t, self.mo.time, self.data.m)
-        l = np.interp(t, self.mo.time, self.data.l)
+        if self.isotopes:
+            l = np.interp(t, self.mo.time, self.data.l)
+        else:
+            l = 0
 
         return [m, l]
 
