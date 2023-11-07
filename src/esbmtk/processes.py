@@ -223,19 +223,19 @@ class GenericFunction(Process):
 
 
 class AddSignal(Process):
-    """This process adds values to the current flux based on the values provided by the signal object.
-    This class is typically invoked through the connector object
+    """This process adds values to the current flux based on the values provided by
+    the signal object. This class is typically invoked through the connector object:
 
-     Example::
+    Example::
 
      AddSignal(name = "name",
                reservoir = upstream_reservoir_handle,
                flux = flux_to_act_upon,
-               lt = flux with lookup values)
+               lt = flux with lookup values,
+     )
 
-     where - the upstream reservoir is the reservoir the process belongs too
-             the flux is the flux to act upon
-             lt= contains the flux object we lookup from
+    where - the upstream reservoir is the reservoir the process belongs too,
+    the flux is the flux to act upon, and lt= contains the flux object we lookup from
 
     """
 
@@ -350,9 +350,9 @@ class SaveFluxData(Process):
     This process stores the flux data from each iteration into a vector
     Example::
 
-         SaveFluxData(name = "Name",
-                   flux = Flux Handle
-    )
+        SaveFluxData(name = "Name",
+                     flux = Flux Handle,
+                     )
 
     """
 
@@ -843,15 +843,17 @@ class MultiplySignal(Process):
     a given flux.  If you needto vary the delta value it is best to
     add a second signal which uses the add signal type.
 
-     Example::
-     MultiplySignal(name = "name",
+    Example::
+    
+       MultiplySignal(name = "name",
                reservoir = upstream_reservoir_handle,
                flux = flux_to_act_upon,
-               lt = flux with lookup values)
+               lt = flux with lookup values,
+          )
 
-     where the upstream reservoir is the reservoir the process belongs
-             too the flux is the flux to act upon lt= contains the
-             flux object we lookup from
+    where the upstream reservoir is the reservoir the process belongs
+    too the flux is the flux to act upon lt= contains the
+    flux object we lookup from
 
     """
 
@@ -928,11 +930,14 @@ class VarDeltaOut(Process):
     """Unlike a passive flux, this process sets the flux istope ratio
     equal to the isotopic ratio of the reservoir. The
     init and register methods are inherited from the process
-    class.
-    VarDeltaOut(name = "name",
+    class::
+    
+     VarDeltaOut(name = "name",
                 reservoir = upstream_reservoir_handle,
                 flux = flux handle,
-                rate = rate,)
+                rate = rate,
+     )
+     
     """
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
@@ -1023,29 +1028,29 @@ class VarDeltaOut(Process):
 
 class ScaleRelativeToMass(RateConstant):
     """This process scales the flux as a function of the upstream
-     reservoir Mass M and a constant which describes the
-     strength of relation between the reservoir mass and
-     the flux scaling
+    reservoir Mass M and a constant which describes the
+    strength of relation between the reservoir mass and
+    the flux scaling
 
-     F = F0 *  M * k
+    F = F0 *  M * k
 
-     where M denotes the mass in the ustream reservoir, k is a
-     constant and F0 is the initial unscaled flux. This process is
-     typically called by the connector instance. However you can
-     instantiate it manually as
+    where M denotes the mass in the ustream reservoir, k is a
+    constant and F0 is the initial unscaled flux. This process is
+    typically called by the connector instance. However you can
+    instantiate it manually as
 
-     Note that we scale the flux, rather than compute the flux!
+    Note that we scale the flux, rather than compute the flux!
 
-     This is faster than setting a new flux, computing the isotope
-     ratio and setting delta. So you either have to set the initial
-     flux F0 to 1, or calculate the scale accordingly
+    This is faster than setting a new flux, computing the isotope
+    ratio and setting delta. So you either have to set the initial
+    flux F0 to 1, or calculate the scale accordingly::
 
      ScaleRelativeToMass(
                        name = "Name",
                        reservoir= upstream_reservoir_handle,
                        flux = flux handle,
                        Scale =  1000,
-    )
+     )
 
     """
 
@@ -1086,8 +1091,9 @@ class ScaleRelativeToMass(RateConstant):
 
 class GasExchange(RateConstant):
     """
-
-    GasExchange(
+    Example::
+    
+      GasExchange(
           gas =GasReservoir, #
           liquid = Reservoir, #,
           ref_species = array of concentrations #
@@ -1096,8 +1102,7 @@ class GasExchange(RateConstant):
           piston_velocity = m/year
           seawaterconstants = Ocean.swc
           water_vapor_pressure=Ocean.swc.p_H2O,
-    )
-
+      )
 
     """
 
@@ -1225,15 +1230,15 @@ class GasExchange(RateConstant):
 
 class ScaleRelativeToConcentration(RateConstant):
     """This process calculates the flux as a function of the upstream
-     reservoir concentration C and a constant which describes thet
-     strength of relation between the reservoir concentration and
-     the flux scaling
+    reservoir concentration C and a constant which describes thet
+    strength of relation between the reservoir concentration and
+    the flux scaling:
 
-     F = C * k
+    F = C * k
 
-     where C denotes the concentration in the ustream reservoir, k is a
-     constant. This process is typically called by the connector
-     instance. However you can instantiate it manually as
+    where C denotes the concentration in the ustream reservoir, k is a
+    constant. This process is typically called by the connector
+    instance. However you can instantiate it manually as::
 
      ScaleRelativeToConcentration(
                        name = "Name",
@@ -1241,7 +1246,7 @@ class ScaleRelativeToConcentration(RateConstant):
                        flux = flux handle,
                        Scale =  1000,
                        delta = "None",
-    )
+     )
 
     If delta is given the fluxes uses a ficed delta, If not it uses
     the upestream delta
