@@ -2,11 +2,11 @@
 .. image:: https://img.shields.io/pypi/v/esbmtk.svg
     :alt: PyPI-Server
     :target: https://pypi.org/project/esbmtk/
-		 
+
 .. image:: https://img.shields.io/badge/Python-3.9-blue.svg
     :alt: Python-3.9 badge
     :target: https://www.python.org/
-		 
+
 .. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
     :alt: Project generated with PyScaffold
     :target: https://pyscaffold.org/
@@ -88,47 +88,7 @@ projects in the Earth-Sciences. The basic API is now stable, but the code to dep
 - January 8\ :sup:`th`\ 0.7.2.2 Fixed several isotope calculation
   regressions. Added 31 Unit tests.
 
-Older releases are mentioned in the Release History.
-
-3 Contributing
---------------
-
-Don't be shy. Contributing is as easy as finding bugs by using the
-code, or maybe you want to add a new process code? 
-
-4 Installation
---------------
-
-ESBMTK relies on the following python versions and libraries
-
-- python >= 3.9
-
-- matplotlib
-
-- numpy
-
-- pandas
-
-- typing
-
-- pint
-
-If you work with conda, it is recommended to install the above via
-conda. If you work with pip, the installer should install these
-libraries automatically. ESBMTK itself can be installed with pip
-
-- pip install esbmtk
-
-5 Documentation
----------------
-
-I've started writing a tutorial on how to use the package:
-`https://github.com/uliw/esbmtk/blob/master/src/esbmtk/Documentation/ESBMTK-Tutorial.pdf <https://github.com/uliw/esbmtk/blob/master/src/esbmtk/Documentation/ESBMTK-Tutorial.pdf>`_
-
-The tutorial is also available as jupyter notebook, and code samples are provided as well.
-All ESBMTk classes have extensive help texts that you can access through the usual help command. Note however, that some of these help-texts are out of date. I am however in the process to update these.
-
-6 Todo
+3 Todo
 ------
 
 - expand the documentation
@@ -137,7 +97,7 @@ All ESBMTk classes have extensive help texts that you can access through the usu
 
 - do more testing
 
-7 License
+4 License
 ---------
 
 ESBMTK: A general purpose Earth Science box model toolkit
@@ -154,4 +114,4 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program. If not, see `https://www.gnu.org/licenses/ <https://www.gnu.org/licenses/>`_.
+along with this program. If not, see `https://www.gnu.org/licenses/gpl-3.0.en.html <https://www.gnu.org/licenses/gpl-3.0.en.html>`_

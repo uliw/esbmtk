@@ -88,9 +88,9 @@ class Connect(esbmtkBase):
     The connection name is derived automatically, see the documentation of
     __set_name__() for details
 
-     Connection Types:
-     -----------------
-     Basic Connections (the advanced ones are below):
+    Connection Types:
+    -----------------
+    Basic Connections (the advanced ones are below):
 
      - If both =rate= and =delta= are given, the flux is treated as a
         fixed flux with a given isotope ratio. This is usually the case for
@@ -113,13 +113,10 @@ class Connect(esbmtkBase):
        fixed flux which is computed in such a way that the reservoir
        maintains steady state with respect to it's isotope ratio.
 
-     Examples of Basic Connections
-     -----------------------------
+    Connecting a Source to a Reservoir
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-     Connecting a Source to a Reservoir
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-     Unless you use a Signal, a source typically provides a steady stream with a given isotope ratio (if used)
+    Unless you use a Signal, a source typically provides a steady stream with a given isotope ratio (if used)
 
      Example::
 
@@ -127,148 +124,74 @@ class Connect(esbmtkBase):
                 sink = downstrean reservoir,
                 rate = "1 mol/s",
                 delta = optional,
-                signal = optional, see the signal documentation)
+                signal = optional, see the signal documentation
+                )
 
-     Connecting a Reservoir to Sink or another Reservoir
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-     Here we can distinguish between cases where we use fixed flux, or a flux that reacts to in some way to the
+    Connecting a Reservoir to Sink or another Reservoir
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                
+    Here we can distinguish between cases where we use fixed flux, or a flux that reacts to in some way to the
      upstream reservoir (see the Reservoir to Reservoir section for a more complete treatment):
 
-     Fixed outflux, with no isotope fractionation
+    Fixed outflux, with no isotope fractionation
 
-     Example::
+    Example::
 
           Connect(source =  upstream reservoir,
                 sink = Sink,
-                rate = "1 mol/s",)
+                rate = "1 mol/s",
+                )
 
-     Fixed outflux, with isotope fractionation
+    Fixed outflux, with isotope fractionation
 
-     Example::
+    Example::
 
           Connect(source =  upstream reservoir,
                 sink = Sink,
                 alpha = -28,
-                rate = "1 mol/s",)
+                rate = "1 mol/s",
+                )
 
-     Advanced Connections
-     --------------------
+    Advanced Connections
+    --------------------
 
-     You can aditionally define connection properties via the ctype
-     keyword. This requires additional keyword parameters. The following values are
-     recognized
+    You can aditionally define connection properties via the ctype
+    keyword. This requires additional keyword parameters. The following values are
+    recognized
 
-     ctype = "scale_with_flux"
-     ~~~~~~~~~~~~~~~~~~~~~~~~~
+    ctype = "scale_with_flux"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-     This will scale a flux relative to another flux:
+    This will scale a flux relative to another flux:
 
-     Example::
+    Example::
 
-         Connect(source =  upstream reservoir,
+        Connect(source =  upstream reservoir,
                 sink = downstream reservoir,
                 ctype = "scale_with_flux",
                 ref_flux = flux handle,
-                scale = a scaling factor, optional, defaults to 1
-                bypass :str = "source"/"sink"
+                scale = 1, # 
                 )
 
-    if bypass is set the flux will not affect the upstream or
-    downstream reservoir. This is a more generalized approach than the
-    virtual flux type. This is useful to describe reactions which
-    split into two elements (i.e., deprotonation), or combine fluxes
-    from two reservoirs (say S, and O) into a reservoir which records
-    SO4.
 
-    ctype = "virtual_flux"
-    ~~~~~~~~~~~~~~~~~~~~~~~~~
+    ctype = "scale_with_concentration"
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-    This will scale a flux relative to another flux, similar to
-    scaleflux. However, in this case, the flux will only affect the
-    sink, and not the source. This is useful to describe reactions which
-    split into two elements (i.e., deprotonation).
+    This will scale a flux relative to the mass or concentration of a reservoir
 
     Example::
 
          Connect(source =  upstream reservoir,
                 sink = downstream reservoir,
-                ctype = "scale_with_flux",
-                ref_flux = flux handle,
-                scale = a scaling factor, optional, defaults to 1
+                ctype = "scale_with_concentration",
+                ref_reservoirs = reservoir handle,
+                scale = 1, # scaling factor
                 )
 
-     ctype = "scale_with_mass" and "scale_with_concentration"
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-     This will scale a flux relative to the mass or concentration of a reservoir
-
-     Example::
-
-         Connect(source =  upstream reservoir,
-                sink = downstream reservoir,
-                ctype = "scale_with_mass",
-                ref_reservoirs = reservoir handle,
-                scale = a scaling factor, optional, defaults to 1
-    )
-
-     ctype = "scale_relative_to_multiple_reservoirs"
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-     This process scales the flux as a function one or more reservoirs
-     or constants which describes the
-     strength of relation between the reservoir concentrations and
-     the flux scaling
-
-     F = C1 * C2 * k
-
-     where Ci denotes the concentrartion in one  or more reservoirs, k is one
-     or more constants.
-
-     Example::
-
-         Connect(source =  upstream reservoir,
-                sink = downstream reservoir,
-                ctype = "scale_relative_to_multiple_reservoirs"
-                ref_reservoirs = [r1, r2, k etc] # you must provide at least one
-                scale = a scaling factor, optional, defaults to 1
-    )
-
-     scale is an overall scaling factor.
-
-
-     ctype = "flux_balance"
-     ~~~~~~~~~~~~~~~~~~~~~~
-
-    This type can be used to express equilibration fluxes
-    between two reservoirs. This connection type, takes three parameters:
-
-    - =left= is a list which can contain constants and/or reservoirs. The
-      list must contain at least one valid element. All elements in this
-      list will be multiplied with each other. E.g. if we have a list
-      with one constant and one reservoir, the reservoir concentration
-      will be multiplied with the constant. If we have two reservoirs,
-      the respective reservoir concentrations will be multiplied with
-      each other.
-    - =right= similar to =left= The final flux rate will be computed as
-      the difference between =left= and =right=
-    - =k_value= a constant which will be multiplied with the difference
-      between =left=and =right=
-
-     Example::
-
-         Connect(source=R_CO2,         # target of flux
-                 sink=R_HCO3,          # source of flux
-                 rate="1 mol/s",       # flux rate
-                 ctype="flux_balance", # connection type
-                 scale=1,            # global scaling factor, optional
-                 left=[K1, R_CO2],     # where K1 is a constant
-                 right=[R_HCO3, R_Hplus])
-
-
-     Useful methods in this class
-     ----------------------------
-     The following methods might prove useful
+    Useful methods in this class
+    ----------------------------
+                 
+    The following methods might prove useful:
 
       - info() will provide a short description of the connection objects.
       - list_processes() which will list all the processes which are associated with this connection.
@@ -1178,7 +1101,7 @@ class ConnectionGroup(esbmtkBase):
                         ALK: f"{0} Tmol/yr"},
                   ctype = {DIC: "Regular",
                            ALK: "Regular"},
-    )
+                )
 
 
     """
@@ -1342,7 +1265,7 @@ class AirSeaExchange(esbmtkBase):
     ocean), and a gas reservoir (i.e., the atmosphere).
 
     Example :
-    ~~~~~~~~
+    ~~~~~~~~~
 
     AirSeaExchange(
         gas_reservoir= must be a gasreservoir

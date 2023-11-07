@@ -353,10 +353,10 @@ def add_carbonate_system_2(**kwargs) -> None:
         r_sb: list of ReservoirGroup objects in the surface layer
         r_db: list of ReservoirGroup objects in the deep layer
         carbonate_export_fluxes: list of flux objects which must match the
-                                 list of ReservoirGroup objects.
+        list of ReservoirGroup objects.
         zsat_min = depth of the upper boundary of the deep box
         z0 = upper depth limit for carbonate burial calculations
-             typically zsat_min
+        typically zsat_min
 
     Optional Parameters:
 
@@ -571,6 +571,7 @@ def calc_pCO2(
                        y1_label = r"pCO_{2}",
                        y1_legend = r"pCO_{2}",
                        )
+                       
     Author: T. Tsan
 
     """
@@ -604,12 +605,14 @@ def calc_pCO2b(
     SW: Seawater = Seawater object for the model
     it is typically used with a DataField object, e.g.
     pco2 = calc_pCO2b(dic,h,SW)
-     DataField(name = "SurfaceWaterpCO2",
-                       associated_with = reservoir_handle,
-                       y1_data = pco2b,
-                       y1_label = r"pCO_{2}",
-                       y1_legend = r"pCO_{2}",
-                       )
+    
+    DataField(name = "SurfaceWaterpCO2",
+                      associated_with = reservoir_handle,
+                      y1_data = pco2b,
+                      y1_label = r"pCO_{2}",
+                      y1_legend = r"pCO_{2}",
+                      )
+                       
     """
 
     dic_c: NDArrayFloat = dic
