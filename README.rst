@@ -11,16 +11,16 @@
     :alt: Project generated with PyScaffold
     :target: https://pyscaffold.org/
 
-.. image:: https://img.shields.io/readthedocs/esbmtk
-    :alt: readthedocs esbmtk documentation
-    :target: https://esbmtk.readthedocs.io/
+.. image:: https://readthedocs.org/projects/esbmtk/badge/?version=latest
+    :target: https://esbmtk.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
 
 1 ESBMTK - The  Earth-sciences box modeling toolkit
 ---------------------------------------------------
 
 ESBMTK is a python library that aims to simplify typical box modeling
 projects in the Earth-Sciences. The basic API is now stable, but the code to deploy complex models is still being improved.
-See the tutorial at `https://esbmtk.readthedocs.io/en/latest/ESBMTK-Tutorial.htm <https://esbmtk.readthedocs.io/en/latest/ESBMTK-Tutorial.htm>`_
+See the tutorial at `https://esbmtk.readthedocs.io/en/latest/ESBMTK-Tutorial.html <https://esbmtk.readthedocs.io/en/latest/ESBMTK-Tutorial.html>`_
 
 2 Todo
 ------
