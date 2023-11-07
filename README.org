@@ -11,97 +11,17 @@
 .. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
     :alt: Project generated with PyScaffold
     :target: https://pyscaffold.org/
+
+.. image:: https://img.shields.io/readthedocs/esbmtk
+    :alt: readthedocs esbmtk documentation
+    :target: https://esbmtk.readthedocs.io/
 #+END_EXPORT
 
 * ESBMTK - The  Earth-sciences box modeling toolkit
 
 ESBMTK is a python library that aims to simplify typical box modeling
 projects in the Earth-Sciences. The basic API is now stable, but the code to deploy complex models is still being improved.
-
-
-* News
-
-  - Oct. 30^{th}, 2023 v 0.10.0.11 This is a breaking change. Remineralization and
-    photosynthesis must be implemented via functions, rather than transport
-    connections. CS1 and CS2 are retired, and replaced by photosynthesis,
-    organic-matter remineralization and carbonate-dissolution functions.
-    I've started writing a user guide, see the =/scr/Documentation= folder. So far, only the very basics are covered. More to come!
- 
-  - July 28^{th}, 2023, v 0.9.0.1 The ODEPACk backend is now fully functional, and the basic API is more or less stable.
-
-  - Nov. 11^{th} 2022, v 0.9.0.0 Moved to odepack based backend. Removed now defunct code. The odepack backend does not yet support isotope calculations.
-  
-  - 0.8.0.0
-    - Cleanup of naming scheme which is now strictly hierarchical.
-    - Bulk connection dictionaries now have to be specified as
-      =source_to_sink= instead of =source2sink=.
-    - The connection naming scheme has been revamped. Please see
-      =esbmtk.connect.__set_name__()= documentation for details.
-    - Model concentration units must now match 'mole/liter' or
-      'mol/kg'. Concentrations can still be specified as =mmol/l= or
-      =mmol/kg=, but model output will be in mole/liter or kg. At
-      present, the model does not provide for the automatic conversion
-      of mol/l to mol/kg. Thus you must specify units in a consistent
-      way.
-    - The SeawaterConstants class now always returns values as mol/kg solution. Caveat Emptor.
-    - The SeawaterConstants class no longer accepts the 'model' keyword
-    - All of his will break existing models.
-    - Models assume by default that they deal with ideal water, i.e.,
-      where the density equals one. To work with seawater, you must
-      set =ideal_water=False=. In that case, you should also set the
-      =concentration_unit= keyword to ='mol/kg'= (solution).
-    - Several classes now require the "register" keyword. You may need to fix your code accordingly
-    
-  - The flux and connection summary methods can be filtered by more
-    than one keyword. Provide a filter string in the following format
-    ="keyword_1 keyword_2= and it will only return results that match
-    both keywords.
-  - Removed the dependency on the nptyping and number libraries
-
-  - 0.7.3.9 Moved to setuptools build system. Lost of code fixes wrt
-    isotope calculations, minor fixes in the carbonate module.
-
-  - March 2^{nd} 0.7.3.4 =Flux_summary= now supports an =exclude=
-    keyword. Hot fixed an error in the gas exchange code, which
-    affected the total mass of atmosphere calculations. For the time
-    being, the mass of the atmosphere is treated as constant.
-
-  - 0.7.3.0 Flux data is no longer kept by default. This results in
-    huge memory savings. esbmtk now requires python 3.9 or higher, and
-    also depends on =os= and =psutil=. the scale with flux process now
-    uses the =ref_flux= keyword instead of =ref_reservoirs=. Models must
-    adapt their scripts accordingly. esbmtk objects no longer provide
-    delta values by default. Rather they need to be calculated in the
-    post-processing step via =M.get_delta_values()=. The =f_0= keyword in
-    the weathering connection is now called =rate=. Using the old
-    keyword will result in a unit error.
-
-  - January 8^{th} 0.7.2.2 Fixed several isotope calculation
-    regressions. Added 31 Unit tests.
-
-* COMMENT Documentation
-
-I've started writing a tutorial on how to use the package:
-[[https://github.com/uliw/esbmtk/blob/master/src/esbmtk/Documentation/ESBMTK-Tutorial.pdf]]
-
-The tutorial is also available as jupyter notebook, and code samples are provided as well.
-All ESBMTk classes have extensive help texts that you can access through the usual help command. Note however, that some of these help-texts are out of date. I am however in the process to update these.
-
-# The API documentation is available at
-# https://uliw.github.io/esbmtk/esbmtk/index.html
-
-# At present, I also provide the following example cases (as py-files
-# and in jupyter notebook format)
-
-#   - A trivial carbon cycle model which shows how to set up the model,
-#     and read an external csv file to force the model.
-#   - 
-#  - The same model as be before but now to demonstrate how to add
- #   pyramid shaped signal, and how to use the rate constant process to
- #   adjust concentration dependent flux rates . [[https://github.com/uliw/esbmtk/blob/master/Examples/Using%20a%20rate%20constant/rate_example.org][concentration dependent flux rates]]
-
-# Last but not least, I added a short [[https://github.com/uliw/esbmtk/blob/master/Documentation/Adding_your_own_Processes.org][guide how to add your own process
-# classes to the ESBMTK]] 
+See the tutorial at https://esbmtk.readthedocs.io/en/latest/ESBMTK-Tutorial.htm
 
 * Todo
 
