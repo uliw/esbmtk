@@ -14,7 +14,7 @@
 
 * A simple example
 
-A simple model of the marine P-cycle would consider the delivery of P from weathering, the burial of P in the sediments, the thermohaline transport of dissolved PO_4 as well as the export of P in form of sinking organic matter (POP). The concentration in the respective surface an deep water boxes is then sum of the respective fluxes (see Fig.\space{}ref:pcycle). The model parameters are taken from Glover 2011, Modeling Methods in the Marine Sciences.
+A simple model of the marine P-cycle would consider the delivery of P from weathering, the burial of P in the sediments, the thermohaline transport of dissolved PO_4 as well as the export of P in form of sinking organic matter (POP). The concentration in the respective surface an deep water boxes is then sum of the respective fluxes (see Fig. 1). The model parameters are taken from Glover 2011, Modeling Methods in the Marine Sciences.
 #+attr_org: :width 300
 #+attr_rst: :width 300
 #+attr_latex: :width 0.5\textwidth

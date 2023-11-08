@@ -11,3 +11,4 @@ scipy
 psutil
 IPython
 sphinx_rtd_theme
+typing
