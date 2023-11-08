@@ -23,7 +23,7 @@
 </a>
 
 <a href="https://pyscaffold.org">
-<img alt="Project generated with PyScaffold" src=""https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold"/>
+<img alt="Project generated with PyScaffold" src="https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold"/>
 </a>
 
 <a href="https://esbmtk.readthedocs.io/en/latest/?badge=latest">
