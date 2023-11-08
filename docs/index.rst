@@ -1,6 +1,6 @@
-==========
+=============================================
 The Earth Science Box Modeling Toolkit ESBMTK
-==========
+=============================================
 
 
 
@@ -10,13 +10,14 @@ Contents
 
 .. toctree::
    :maxdepth: 2
-
+	      
    Overview <readme>
-   Documentation <ESBMTK-Tutorial>
    Contributions & Help <contributing>
    Authors <authors>
    Changelog <changelog>
+   Documentation <manual/manual>
    Module Reference <api/modules>
+   License <license>
 
 
 Indices and tables

@@ -1,4 +1,4 @@
-#+TITLE: ESBMTK Tutorial 
+#+TITLE: ESBMTK Manual 
 #+AUTHOR:Ulrich G Wortmann
 #+OX-IPYNB-LANGUAGE: ipython
 #+BIND: org-export-use-babel nil

@@ -1,6 +1,6 @@
-===============
-ESBMTK Tutorial
-===============
+=============
+ESBMTK Manual
+=============
 
 
 
@@ -8,7 +8,7 @@ ESBMTK Tutorial
 1 A simple example
 ------------------
 
-A simple model of the marine P-cycle would consider the delivery of P from weathering, the burial of P in the sediments, the thermohaline transport of dissolved PO\ :sub:`4`\ as well as the export of P in form of sinking organic matter (POP). The concentration in the respective surface an deep water boxes is then sum of the respective fluxes (see Fig. `pcycle <pcycle>`_). The model parameters are taken from Glover 2011, Modeling Methods in the Marine Sciences.
+A simple model of the marine P-cycle would consider the delivery of P from weathering, the burial of P in the sediments, the thermohaline transport of dissolved PO\ :sub:`4`\ as well as the export of P in form of sinking organic matter (POP). The concentration in the respective surface an deep water boxes is then sum of the respective fluxes (see Fig. 1). The model parameters are taken from Glover 2011, Modeling Methods in the Marine Sciences.
 
 .. _pcycle:
 
