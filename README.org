@@ -21,9 +21,11 @@
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 #+END_EXPORT
 
- #+macro: readthedocs [[https://readthedocs.org/projects/esbmtk/badge/?version=latest]https://esbmtk.readthedocs.io/en/latest/?badge=latest]
- 
-{{{readthedocs}}}
+#+BEGIN_EXPORT html
+<a href="https://readthedocs.org/projects/esbmtk/badge/?version=latest">
+<img alt="Documentation Status" src="https://esbmtk.readthedocs.io/en/latest/?badge=latest" />
+</a>
+#+END_EXPORT
 
 
 * ESBMTK - The  Earth-sciences box modeling toolkit
