@@ -780,7 +780,7 @@ def get_weathering_eq(
 
     F = F_0 (pcO2/pCO2_0) * c, see Zeebe, 2012, doi:10.5194/gmd-5-149-2012
 
-    Example:
+    Example::
 
      M1_C_Fw_to_L_b_DIC_Ca_W__F = (
             M1.C_Fw_to_L_b_DIC_Ca_W.rate

@@ -29,20 +29,21 @@ if tp.TYPE_CHECKING:
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
-    
+
+
 class SeawaterConstants(esbmtkBase):
     """Provide basic seawater properties as a function of T, P and Salinity.
-    This module does not reca
+    This module does not recalculate these values after initialization!
 
-    Example:
+    Example::
 
-    Seawater(name="SW",
-             register=M # model handle
-             temperature = optional in C, defaults to 25,
-             salinity  = optional in psu, defaults to 35,
-             pressure = optional, defaults to 0 bars = 1atm,
-             pH = optional, defaults to 8.1,
-            )
+        Seawater(name="SW",
+                 register=M # model handle
+                 temperature = optional in C, defaults to 25,
+                 salinity  = optional in psu, defaults to 35,
+                 pressure = optional, defaults to 0 bars = 1atm,
+                 pH = 8.1, # optional
+                )
 
     Results are always in mol/kg
 
@@ -65,7 +66,6 @@ class SeawaterConstants(esbmtkBase):
     """
 
     def __init__(self, **kwargs: dict[str, str]):
-
         from esbmtk import Model, Reservoir, ReservoirGroup
 
         self.defaults: dict[list[any, tuple]] = {
@@ -589,5 +589,3 @@ class SeawaterConstants(esbmtkBase):
     SW: SeawaterConstants,
 
 """
-
-

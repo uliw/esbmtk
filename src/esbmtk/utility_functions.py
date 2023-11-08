@@ -482,24 +482,30 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
     in deg C, followed by pressure in bar
     the geometry is [upper depth datum, lower depth datum, area percentage]
 
-    bn = dictionary with box parameters
-    bn: dict = {  # name: [[geometry], T, P]
+    :param bn: dictionary with box parameters,
+
+    e.g.::
+    
+     bn: dict = {  # name: [[geometry], T, P]
                  "sb": {"g": [0, 200, 0.9], "T": 20, "P": 5},
                  "ib": {"g": [200, 1200, 1], "T": 10, "P": 100},
                 }
 
-    ic = dictionary with species default values. This is used to et up
-         initial conditions. Here we use shortcut and use the same conditions
-         in each box. If you need box specific initial conditions
-         use the output of build_concentration_dicts as starting point
+    :param ic: dictionary with species default values.
 
-    ic: dict = { # species: concentration, Isotopes, delta, f_only
+    ic is used to set up
+    initial conditions. Here we use shortcut and use the same conditions
+    in each box. If you need box specific initial conditions
+    use the output of build_concentration_dicts as starting point, e.g.,::
+
+      ic: dict = { # species: concentration, Isotopes, delta, f_only
                    PO4: [Q_("2.1 * umol/liter"), False, 0, False],
                    DIC: [Q_("2.1 mmol/liter"), False, 0, False],
                    ALK: [Q_("2.43 mmol/liter"), False, 0, False],
                }
 
-    M: Model object handle
+    :param M: Model object handle
+    
     """
 
     from esbmtk import ReservoirGroup, build_concentration_dicts
@@ -542,8 +548,11 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
 def build_concentration_dicts(cd: dict, bg: dict) -> dict:
     """Build a dict which can be used by create_reservoirs
 
-    bg : dict where the box_names are dict keys.
-    cd: dictionary with the following format:
+    :param bg: dict where the box_names are dict keys.
+    :param cd: dictionary
+
+    with the following format::
+
         cd = {
              # species: [concentration, isotopes]
              PO4: [Q_("2.1 * umol/liter"), False],
@@ -586,9 +595,9 @@ def build_concentration_dicts(cd: dict, bg: dict) -> dict:
 
 def calc_volumes(bg: dict, M: any, h: any) -> list:
     """Calculate volume contained in a given depth interval
-    bg is an ordered dictionary in the following format
+    bg is a dictionary in the following format::
 
-    bg=  {
+      bg={
           "hb": (0.1, 0, 200),
           "sb": (0.9, 0, 200),
          }
@@ -766,8 +775,7 @@ def create_bulk_connections(ct: dict, M: Model, mt: int = "1:1") -> dict:
     # de: delta, optional
     # bp: bypass, see scale_with_flux
     # si: signal
-    # mx: True, optional defaults to False. If set, it will create forward
-          and backward fluxes (i.e. mixing)
+    # mx: True, optional defaults to False. If set, it will create forward and backward fluxes (i.e. mixing)
 
     There are 6 different cases how to specify connections
 
@@ -778,8 +786,8 @@ def create_bulk_connections(ct: dict, M: Model, mt: int = "1:1") -> dict:
            This will be expanded to create connections for each species
            ct2 = {"sb2hb": {"ty": "scale", "sp": ["a", "b"]}}
 
-    Case 3 One connection complete set of multiple characters. Similar to case 2, but now
-           all parameters are given explicitly
+    Case 3 One connection complete set of multiple characters. Similar to case 2,
+           but now all parameters are given explicitly
            ct3 = {"sb2hb": {"ty": ["scale", "scale"], "sp": ["a", "b"]}}
 
     Case 4 Multiple connections, one set of parameters. This will create
@@ -1020,11 +1028,13 @@ def gen_dict_entries(M: Model, **kwargs) -> tuple(tuple, list):
     sb_to_dbPOM, but db_to_sb@POM
 
     :param M: Model or list
-    :param **kwargs: keyword dictionary, known keys are ref_id, and raget_id,
-        inverse
+    
+    :param kwargs: keyword dictionary, known keys are ref_id, and raget_id, inverse
 
     :return f_list: List of fluxes that match ref_id
+    
     :return k_tuples: tuple of connection keys
+    
     """
 
     from esbmtk import Model
@@ -1098,7 +1108,7 @@ def get_string_between_brackets(s: str) -> str:
 def check_for_quantity(kw) -> Q_:
     """check if keyword is quantity or string an convert as necessary
 
-    kw = str or Q_
+    :param kw: string or quantity
 
     """
 
@@ -1118,10 +1128,10 @@ def map_units(obj: any, v: any, *args) -> float:
     and extract magnitude, assign mangitude to return value
     if not, assign value to return value
 
-    :param obj: connection object 
+    :param obj: connection object
     :param v: input string/number/quantity
-    :args: list of model base units 
-    :returns: number 
+    :args: list of model base units
+    :returns: number
 
     :raises ScaleError: if input cannot be mapped to a model unit
     """

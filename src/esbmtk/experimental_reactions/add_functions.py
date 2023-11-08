@@ -18,7 +18,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 import typing as tp
 from esbmtk import Q_, register_return_values
-from esbmtk.utility_functions import __addmissingdefaults__, __checkkeys__, __checktypes__
+from esbmtk.utility_functions import (
+    __addmissingdefaults__,
+    __checkkeys__,
+    __checktypes__,
+)
 
 if tp.TYPE_CHECKING:
     from esbmtk import Flux, Model, ReservoirGroup
@@ -130,33 +134,48 @@ def add_OM_remineralization(M: Model, f_map: dict) -> None:
 
 
 def add_carbonate_system_3(**kwargs) -> None:
-    """Creates a new carbonate system virtual reservoir
+    """ Creates a new carbonate system virtual reservoir
     which will compute carbon species, saturation, compensation,
     and snowline depth, and compute the associated carbonate burial fluxes
 
     Required keywords:
-        r_sb: list of ReservoirGroup objects in the surface layer
-        r_db: list of ReservoirGroup objects in the deep layer
-        pic_export_flux: list of flux objects which must match the
-                                 list of ReservoirGroup objects.
-        zsat_min = depth of the upper boundary of the deep box
-        z0 = upper depth limit for carbonate burial calculations
-             typically zsat_min
 
+    :param r_sb : list of ReservoirGroup objects in the surface layer
+
+    :param r_db : list of ReservoirGroup objects in the deep layer
+
+    :param pic_export_flux : list of flux objects that match the ReservoirGroup objects
+
+    :param zsat_min: depth of the upper boundary of the deep box
+
+    :param z0: upper depth limit for carbonate burial calculations typically zsat_min
+
+    
     Optional Parameters:
 
-        zsat = initial saturation depth (m)
-        zcc = initial carbon compensation depth (m)
-        zsnow = initial snowline depth (m)
-        zsat0 = characteristic depth (m)
-        Ksp0 = solubility product of calcite at air-water interface (mol^2/kg^2)
-        kc = heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
-        Ca2 = calcium ion concentration (mol/kg)
-        pc = characteristic pressure (atm)
-        pg = seawater density multiplied by gravity due to acceleration (atm/m)
-        I = dissolvable CaCO3 inventory
-        co3 = CO3 concentration (mol/kg)
-        Ksp = solubility product of calcite at in situ sea water conditions (mol^2/kg^2)
+    :param zsat: initial saturation depth (m)
+
+    :param zcc: initial carbon compensation depth (m)
+
+    :param zsnow: initial snowline depth (m)
+
+    :param zsat0: characteristic depth (m)
+
+    :param Ksp0: solubility product of calcite at air-water interface (mol^2/kg^2)
+
+    :param kc: heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
+
+    :param Ca2: calcium ion concentration (mol/kg)
+
+    :param pc: characteristic pressure (atm)
+
+    :param pg: seawater density multiplied by gravity due to acceleration (atm/m)
+
+    :param I: dissolvable CaCO3 inventory
+
+    :param co3: CO3 concentration (mol/kg)
+
+    :param Ksp: olubility product of calcite at in situ sea water conditions (mol^2/kg^2)
 
     """
     from esbmtk.experimental_reactions.init_functions import init_carbonate_system_3
@@ -252,7 +271,9 @@ def add_co2_gas_exchange(rg_list, gas_r):
 
     :param rg_list: list of reservoir group names
     """
-    from esbmtk.experimental_reactions.init_functions import init_gas_exchange_with_isotopes
+    from esbmtk.experimental_reactions.init_functions import (
+        init_gas_exchange_with_isotopes,
+    )
 
     species = rg_list[0].mo.CO2
     pv = Q_("4.8 m/d")
@@ -271,7 +292,9 @@ def add_o2_gas_exchange(rg_list, gas_r):
 
     :param rg_list: list of reservoir group names
     """
-    from esbmtk.experimental_reactions.init_functions import init_gas_exchange_no_isotopes
+    from esbmtk.experimental_reactions.init_functions import (
+        init_gas_exchange_no_isotopes,
+    )
 
     species = rg_list[0].mo.O2
     pv = Q_("4.8 m/d")

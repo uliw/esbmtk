@@ -29,7 +29,7 @@ from .utility_functions import (
 )
 
 if tp.TYPE_CHECKING:
-    from .esbmtk import SeawaterConstants, ReservoirGroup
+    from .esbmtk import SeawaterConstants, ReservoirGroup, Flux
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]

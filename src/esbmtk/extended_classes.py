@@ -101,9 +101,9 @@ class ReservoirGroup(esbmtkBase):
                     register= model handle, required
                )
 
-    Notes: - The subreservoirs are derived from the keys in the concentration or mass
-             dictionary. Toward this end, the keys must be valid species handles and
-             -- not species names -- !
+    Notes: The subreservoirs are derived from the keys in the concentration or mass
+           dictionary. Toward this end, the keys must be valid species handles and
+           -- not species names -- !
 
     Connecting two reservoir groups requires that the names in both
     group match, or that you specify a dictionary which delineates the
@@ -116,13 +116,12 @@ class ReservoirGroup(esbmtkBase):
     depth interval, and the fraction of the total ocean area inhabited by the reservoir
 
     If the geometry parameter is supplied, the following instance variables will be
-    computed
+    computed:
 
-                 self.volume: in model units (usually liter)
-                 self.area: surface area in m^2 at the upper bounding surface
-                 self.sed_area: area of seafloor which is intercepted by this box.
-                 self.area_fraction: area of seafloor which is intercepted by this
-                                    relative to the total ocean floor area
+     - self.volume: in model units (usually liter)
+     - self.area: surface area in m^2 at the upper bounding surface
+     - self.sed_area: area of seafloor which is intercepted by this box.
+     - self.area_fraction: area of seafloor which is intercepted by this relative to the total ocean floor area
 
 
     carbonate_system:
@@ -131,20 +130,25 @@ class ReservoirGroup(esbmtkBase):
     If the reservoir group has a DIC and TA reservoir, and if the
     seawater_parameters key has been supplied as well, this keyword
     will add a carbonate_chemistry chemistry module to the reservoir
-    group. The values of the carbonate system are available assign
+    group. The values of the carbonate system are available assign:
 
-    self.cs.H
-    self.cs.CA
-    self.cs.HCO3
-    self.cs.CO3
-    self.CO2aq
+     - self.cs.H
+     - self.cs.CA
+     - self.cs.HCO3
+     - self.cs.CO3
+     - self.CO2aq
 
     seawater_parameters:
-    ~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~
+                    
     If this optional parameter is specified, a SeaWaterConstants instance will
     be registered for this Reservoir as Reservoir.swc
-    See the  SeaWaterConstants class for details how to specify the parameters, e.g.:
-    seawater_parameters = {"temperature": 2, "pressure": 240, "salinity" : 35},
+    See the  SeaWaterConstants class for details how to specify the parameters, e.g.::
+                    
+        seawater_parameters = {"temperature": 2,
+                           "pressure": 240,
+                           "salinity" : 35,
+                           },
 
     """
 
@@ -936,11 +940,11 @@ class Signal(esbmtkBase):
         """This method creates a new signal by repeating an existing signal.
         Example::
 
-        new_signal = signal.repeat(start,   # start time of signal slice to be repeated
-                                   stop,    # end time of signal slice to be repeated
-                                   offset,  # offset between repetitions
-                                   times,   # number of time to repeat the slice
-                              )
+            new_signal = signal.repeat(start,   # start time of signal slice to be repeated
+                                       stop,    # end time of signal slice to be repeated
+                                       offset,  # offset between repetitions
+                                       times,   # number of time to repeat the slice
+                                       )
 
         """
 
@@ -1533,18 +1537,16 @@ class ExternalCode(Reservoir_no_set):
     data inside a VR_no_set instance will only change in response to a
     user provided function but will otherwise remain unaffected. That is,
     it is up to the user provided function to manage changes in reponse to
-    external fluxes. A VR_no_set is declared in the following way
+    external fluxes. A VR_no_set is declared in the following way::
 
         ExternalCode(
                     name="cs",     # instance name
                     species=CO2,   # species, must be given
-
                     # the vr_data_fields contains any data that is referenced inside the
                     # function, rather than passed as argument, and all data that is
                     # explicitly referenced by the model
                     vr_datafields :dict ={"Hplus": self.swc.hplus,
                                           "Beta": 0.0},
-
                     function=calc_carbonates, # function reference, see below
                     fname = function name as string
                     function_input_data="DIC TA",
@@ -1555,30 +1557,26 @@ class ExternalCode(Reservoir_no_set):
                                   "Hplus": rg.swc.hplus,
                                    "zsnow": float(abs(kwargs["zsnow"])),
                                    },
-
                     register=rh # reservoir_handle to register with.
-
                 )
 
         the dict keys of vr_datafields will be used to create alias
         names which can be used to access the respective variable
 
 
-    The general template for a user defined function is a follows:
+    The general template for a user defined function is a follows::
 
-    def calc_carbonates(i: int, input_data: list, vr_data: list, params: list) -> None:
-        # i = index of current timestep
-        # input_data = list of np.arrays, typically data from other Reservoirs
-        # vr_data = list of np.arrays created during instance creation (i.e. the vr data)
-        # params = list of float values (at least one!)
-
-        pass
-
-    return
+      def calc_carbonates(i: int, input_data: list, vr_data: list, params: list) -> None:
+          # i = index of current timestep
+          # input_data = list of np.arrays, typically data from other Reservoirs
+          # vr_data = list of np.arrays created during instance creation (i.e. the vr data)
+          # params = list of float values (at least one!)
+          pass
+       return
 
     Note that this function should not return any values, and that all input fields must have
     at least one entry!
-
+                                   
     """
 
     def __init__(self, **kwargs) -> None:
@@ -1704,7 +1702,7 @@ class ExternalCode(Reservoir_no_set):
 
         Example::
 
-        VR.update(a1=new_parameter, a2=new_parameter)
+             VR.update(a1=new_parameter, a2=new_parameter)
 
         """
 
@@ -1856,7 +1854,7 @@ class VirtualReservoir(Reservoir):
 
     Example::
 
-    VirtualReservoir(name="foo",
+        VirtualReservoir(name="foo",
                     volume="10 liter",
                     concentration="1 mmol",
                     species=  ,
@@ -1942,7 +1940,7 @@ class VirtualReservoir(Reservoir):
 
         Example::
 
-        VR.update(a1=new_parameter, a2=new_parameter)
+            VR.update(a1=new_parameter, a2=new_parameter)
 
         """
 
