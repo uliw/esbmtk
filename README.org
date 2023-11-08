@@ -27,8 +27,7 @@
 </a>
 #+END_EXPORT
 
-
-[[https://esbmtk.readthedocs.io/en/latest/?badge=latest]https://readthedocs.org/projects/esbmtk/badge/?version=latest]
+[[https://readthedocs.org/projects/esbmtk/badge/?version=latest][https://esbmtk.readthedocs.io/en/latest/?badge=latest]]
 
 * ESBMTK - The  Earth-sciences box modeling toolkit
 

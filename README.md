@@ -1,7 +1,10 @@
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 
+<a href="https://readthedocs.org/projects/esbmtk/badge/?version=latest">
+<img alt="Documentation Status" src="https://esbmtk.readthedocs.io/en/latest/?badge=latest" />
+</a>
 
-[[<https://esbmtk.readthedocs.io/en/latest/?badge=latest>]<https://readthedocs.org/projects/esbmtk/badge/?version=latest>]
+[https://esbmtk.readthedocs.io/en/latest/?badge=latest](https://readthedocs.org/projects/esbmtk/badge/?version=latest)
 
 
 # ESBMTK - The  Earth-sciences box modeling toolkit
