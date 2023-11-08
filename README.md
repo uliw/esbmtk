@@ -2,6 +2,10 @@
 <img alt="Documentation Status" src="https://pypi.org/project/esbmtk/" />
 </a>
 
+<a href="https://pypi.org/project/esbmtk/">
+<img alt="Documentation Status" src="https://img.shields.io/pypi/v/esbmtk.svg"/>
+</a>
+
 <a href="https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold">
 <img alt="Project generated with PyScaffold" src="https://pyscaffold.org/" />
 </a>
