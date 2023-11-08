@@ -1,5 +1,6 @@
 from __future__ import annotations
 import numpy as np
+import typing as tp
 import numpy.typing as npt
 from . import Q_
 from .esbmtk_base import esbmtkBase  # , Reservoir, Flux, Source, Sink
@@ -11,7 +12,8 @@ NDArrayFloat = npt.NDArray[np.float64]
 np.set_printoptions(precision=4)
 # from .connections import ConnnectionGroup
 
-# if tp.TYPE_CHECKING:
+if tp.TYPE_CHECKING:
+    from esbmtk import Flux, Model
 #     from .esbmtk import Source, Reservoir, Sink, Flux, Model
 #     from .extended_classes import GasReservoir, ReservoirGroup
 #     from .connections import ConnectionGroup
@@ -25,7 +27,7 @@ class Process(esbmtkBase):
 
     """
 
-    from .esbmtk import Source, Reservoir, Sink, Flux, Model
+    from .esbmtk import Source, Reservoir, Sink
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """
@@ -45,7 +47,7 @@ class Process(esbmtkBase):
     def __postinit__(self) -> None:
         """Do some housekeeping for the process class"""
 
-        from esbmtk import Reservoir, Model, Flux
+        from esbmtk import Reservoir
 
         # legacy name aliases
         self.n: str = self.name  # display name of species
@@ -141,7 +143,7 @@ class Process(esbmtkBase):
 
         """
 
-        from esbmtk import Flux, Reservoir
+        from esbmtk import Reservoir
 
         # register the reservoir flux combination we are acting on
         self.f: Flux = flux
@@ -181,7 +183,7 @@ class GenericFunction(Process):
 
         """
 
-        from esbmtk import Model, ReservoirGroup
+        from esbmtk import ReservoirGroup
         from typing import Callable
         
         self.__defaultnames__()  # default kwargs names
