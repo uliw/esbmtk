@@ -1,7 +1,7 @@
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
 
-<a href="https://readthedocs.org/projects/esbmtk/badge/?version=latest">
-<img alt="Documentation Status" src="https://esbmtk.readthedocs.io/en/latest/?badge=latest" />
+<a href="https://esbmtk.readthedocs.io/en/latest/?badge=latest">
+<img alt="Documentation Status" src="https://readthedocs.org/projects/esbmtk/badge/?version=latest" />
 </a>
 
 
