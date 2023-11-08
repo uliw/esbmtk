@@ -1,4 +1,3 @@
-#+BEGIN_EXPORT html
 <a href="https://img.shields.io/pypi/v/esbmtk.svg">
 <img alt="Documentation Status" src="https://pypi.org/project/esbmtk/" />
 </a>
