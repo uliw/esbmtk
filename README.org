@@ -18,23 +18,17 @@
 #+END_EXPORT
 
 #+BEGIN_EXPORT html
-<a href="https://img.shields.io/pypi/v/esbmtk.svg">
-<img alt="Documentation Status" src="https://pypi.org/project/esbmtk/" />
-</a>
-
 <a href="https://pypi.org/project/esbmtk/">
 <img alt="Documentation Status" src="https://img.shields.io/pypi/v/esbmtk.svg"/>
 </a>
 
-<a href="https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold">
-<img alt="Project generated with PyScaffold" src="https://pyscaffold.org/" />
+<a href="https://pyscaffold.org">
+<img alt="Project generated with PyScaffold" src=""https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold"/>
 </a>
 
-<a href="https://readthedocs.org/projects/esbmtk/badge/?version=latest">
-<img alt="Documentation Status" src="https://esbmtk.readthedocs.io/en/latest/?badge=latest" />
+<a href="https://esbmtk.readthedocs.io/en/latest/?badge=latest">
+<img alt="Documentation Status" src="https://readthedocs.org/projects/esbmtk/badge/?version=latest" />
 </a>
-
-
 #+END_EXPORT
 
 
