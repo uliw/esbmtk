@@ -96,7 +96,7 @@ class Model(esbmtkBase):
 
         - Model_Name.connection_summary()
 
-   
+
 
     """
 
@@ -177,8 +177,7 @@ class Model(esbmtkBase):
             "use_ode": [True, (bool)],
             "parse_model": [True, (bool)],
             "rtol": [1.0e-6, (float)],
-            "default_reactions": [True, (bool)],
-            "custom_functions": [False, (bool)],
+            "ode_functions": ["default", (str)],  # custom/old
             "area_table": ["None", (str, np.ndarray)],
         }
 
@@ -371,7 +370,7 @@ class Model(esbmtkBase):
         which will then be populated by csv-files
 
         :param directory: a string with the directory name. It defaults to 'data'
-        
+
         """
         from pathlib import Path
         from esbmtk import rmtree
@@ -473,7 +472,7 @@ class Model(esbmtkBase):
 
         :param pl: a list of ESBMTK instance (e.g., reservoirs)
 
-        optional keywords: fn = filename, defaults to the Model name 
+        optional keywords: fn = filename, defaults to the Model name
 
         Example::
 
@@ -782,7 +781,7 @@ class Model(esbmtkBase):
         :param filter_by: str = "" # filter on connection id. If more than one word is provided, all words must match
 
         :param return_list: bool if set, return a list object instead of printing to the terminal
-        
+
         """
 
         rl = []
@@ -1460,9 +1459,9 @@ class Reservoir(ReservoirBase):
     be registered for this Reservoir as Reservoir.swc See the
     SeaWaterConstants class for details how to specify the parameters,
     e.g.:
-                  
+
     .. code-block:: python
-                  
+
             seawater_parameters = {"temperature": 2,
                                    "pressure": 240,
                                    "salinity" : 35,
@@ -1478,7 +1477,7 @@ class Reservoir(ReservoirBase):
     concentration into pH units::
 
     .. code-block:: python
-                                         
+
         def phc(c :float) -> float:
             # Calculate concentration as pH. c can be a number or numpy array
             import numpy as np
@@ -1513,7 +1512,7 @@ class Reservoir(ReservoirBase):
         - Name.write_data() # save data to file
 
         - Name.info() # info Reservoir
-    
+
     """
 
     def __init__(self, **kwargs) -> None:
@@ -2168,7 +2167,7 @@ class SourceSink(esbmtkBase):
             delta = number or str. optional defaults to "None"
             register = Model handle
         )
-      """
+    """
 
     def __init__(self, **kwargs) -> None:
         """
