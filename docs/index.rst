@@ -10,12 +10,11 @@ Contents
 
 .. toctree::
    :maxdepth: 2
-	      
-   Overview <readme>
+
+   Documentation <manual/manual>
    Contributions & Help <contributing>
    Authors <authors>
    Changelog <changelog>
-   Documentation <manual/manual>
    Module Reference <api/modules>
    License <license>
 
