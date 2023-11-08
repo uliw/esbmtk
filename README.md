@@ -1,3 +1,8 @@
+![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+
+<https://readthedocs.org/projects/esbmtk/badge/?version=latest>
+
+
 # ESBMTK - The  Earth-sciences box modeling toolkit
 
 ESBMTK is a python library that aims to simplify typical box modeling projects in the Earth-Sciences. The basic API is now stable, but the code to deploy complex models is still being improved. See the tutorial at <https://esbmtk.readthedocs.io/en/latest/ESBMTK-Tutorial.html>
