@@ -1341,6 +1341,9 @@ class ReservoirBase(esbmtkBase):
         elif self.display_as == "ppm":
             y1 = self.c * 1e6
             y1_label = "ppm"
+        elif self.display_as == "length":
+            y1 = (self.c * M.l_unit).to(self.plt_units).magnitude
+            y1_label = f"{self.legend_left} [{self.plt_units:~P}]"                    
         else:
             y1 = (self.c * M.c_unit).to(self.plt_units).magnitude
             y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
@@ -1676,55 +1679,60 @@ class Reservoir(ReservoirBase):
                     register=self,
                 )
             self.density = self.swc.density
-        if self.mass == "None":
-            if isinstance(self.concentration, (str, Q_)):
-                cc = Q_(self.concentration)
-                # concentration can be mol/kg or mol/l
-                sm, sc = str(cc.units).split(" / ")  # get
-                mm, mc = str(self.mo.c_unit).split(" / ")  # model
-                if mc == "liter" and sc == "kilogram":
-                    cc = Q_(f"{cc.magnitude} {str(self.mo.c_unit)}")
-                    warnings.warn(
-                        "\nConvert mol/kg to mol/liter assuming desnity = 1\n"
-                    )
-                elif sc != mc:
-                    raise ScaleError(
-                        f"no transformation for {cc.units} to {self.mo.c_unit}"
-                    )
-                self._concentration = cc.to(self.mo.c_unit)
-                self.plt_units = self.mo.c_unit
+
+        if self.sp.stype == "concentration":
+            if self.mass == "None":
+                if isinstance(self.concentration, (str, Q_)):
+                    cc = Q_(self.concentration)
+                    # concentration can be mol/kg or mol/l
+                    sm, sc = str(cc.units).split(" / ")  # get
+                    mm, mc = str(self.mo.c_unit).split(" / ")  # model
+                    if mc == "liter" and sc == "kilogram":
+                        cc = Q_(f"{cc.magnitude} {str(self.mo.c_unit)}")
+                        warnings.warn(
+                            "\nConvert mol/kg to mol/liter assuming density = 1\n"
+                        )
+                    elif sc != mc:
+                        raise ScaleError(
+                            f"no transformation for {cc.units} to {self.mo.c_unit}"
+                        )
+                    self._concentration = cc.to(self.mo.c_unit)
+                    self.plt_units = self.mo.c_unit
+                else:
+                    cc = self.concentration
+                    self.plt_units = self.mo.c_unit
+                    self._concentration = cc
+
+                self.mass = (
+                    self.concentration.to(self.mo.c_unit).magnitude
+                    * self.volume.to(self.mo.v_unit).magnitude
+                    * self.density
+                    / 1000
+                )
+                self.mass = Q_(f"{self.mass} {self.mo.c_unit}")
+                self.display_as = "concentration"
+
+                # fixme: c should be dimensionless, not sure why this happens
+                self.c = self.c.to(self.mo.c_unit).magnitude
+
+                if self.species.scale_to != "None":
+                    c, m = str(self.mo.c_unit).split(" / ")
+                    self.plt_units = Q_(f"{self.species.scale_to} / {m}")
+            elif self.concentration == "None":
+                m = Q_(self.mass)
+                self.plt_units = self.mo.m_unit
+                self.mass: tp.Union[int, float] = m.to(self.mo.m_unit).magnitude
+                self.concentration = self.massto(self.mo.m_unit) / self.volume.to(
+                    self.mo.v_unit
+                )
+                self.display_as = "mass"
             else:
-                cc = self.concentration
-                self.plt_units = self.mo.c_unit
-                self._concentration = cc
-
-            self.mass = (
-                self.concentration.to(self.mo.c_unit).magnitude
-                * self.volume.to(self.mo.v_unit).magnitude
-                * self.density
-                / 1000
-            )
-            self.mass = Q_(f"{self.mass} {self.mo.c_unit}")
-            self.display_as = "concentration"
-
-            # fixme: c should be dimensionless, not sure why this happens
-            self.c = self.c.to(self.mo.c_unit).magnitude
-
-            if self.species.scale_to != "None":
-                c, m = str(self.mo.c_unit).split(" / ")
-                self.plt_units = Q_(f"{self.species.scale_to} / {m}")
-
-        elif self.concentration == "None":
-            m = Q_(self.mass)
-            self.plt_units = self.mo.m_unit
-            self.mass: tp.Union[int, float] = m.to(self.mo.m_unit).magnitude
-            self.concentration = self.massto(self.mo.m_unit) / self.volume.to(
-                self.mo.v_unit
-            )
-            self.display_as = "mass"
-        else:
-            raise ReservoirError("You need to specify mass or concentration")
-
+                raise ReservoirError("You need to specify mass or concentration")
+                                 
+        elif self.sp.stype == "length":
+            self.plt_units = self.mo.l_unit
+            self.c = np.zeros(self.mo.steps) + Q_(self.concentration).magnitude
+            self.display_as = "length"
         self.state = 0
 
         # save the unit which was provided by the user for display purposes
@@ -1732,8 +1740,12 @@ class Reservoir(ReservoirBase):
         self.lm: str = f"{self.species.n} [{self.mu}/l]"
 
         # initialize mass vector
-        self.m: NDArrayFloat = np.zeros(self.species.mo.steps) + self.mass
+        if self.mass == "None":
+            self.m: NDArrayFloat = np.zeros(self.mo.steps)
+        else:
+            self.m: NDArrayFloat = np.zeros(self.species.mo.steps) + self.mass
         self.l: NDArrayFloat = np.zeros(self.mo.steps)
+        # self.c: NDArrayFloat = np.zeros(self.mo.steps)
         self.v: NDArrayFloat = (
             np.zeros(self.mo.steps) + self.volume.to(self.mo.v_unit).magnitude
         )  # reservoir volume
