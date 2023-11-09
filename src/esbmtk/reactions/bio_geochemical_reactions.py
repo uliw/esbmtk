@@ -21,8 +21,7 @@ from math import log, sqrt
 import numpy as np
 import numpy.typing as npt
 from numba import njit
-from esbmtk import get_new_ratio_from_alpha, get_l_mass
-from esbmtk import get_delta_from_concentration
+from esbmtk import get_new_ratio_from_alpha
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
@@ -217,7 +216,7 @@ def photosynthesis(
     else:
         PIC_F = 0.0
         PIC_F_l = 0.0
-        
+
     # sulfur reactions, assuming that there is alwways enough O2
     dMdt_h2s = 0  # -h2s * volume  # H2S oxidation
     dMdt_so4 = dMdt_h2s  # add S to the sulfate pool
@@ -356,13 +355,13 @@ def OM_remineralization(
     m_o2_eq = pom_flux * O2C_ratio + 2 * m_h2s
     # reduce Alkalinity from NO3. This happens irrespective of O2
     dMdt_ta = -pom_flux * NC_ratio
-    
+
     if m_o2 > m_o2_eq:  # box has enough oxygen
         dMdt_o2 = -m_o2_eq  # consume O2
         dMdt_h2s = -m_h2s  # consume all h2s
         dMdt_so4 = dMdt_h2s  # add sulfate from h2s
-        dMdt_ta -= dMdt_so4 # reduce Alkalinity from sulfate addition
-        
+        dMdt_ta -= dMdt_so4  # reduce Alkalinity from sulfate addition
+
     else:  # box has not enough oxygen
         dMdt_o2 = -m_o2  # remove all available oxygen
         # calculate how much POM is left to oxidize
