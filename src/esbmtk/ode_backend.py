@@ -1,6 +1,7 @@
 from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
+
 # from numba.typed import List
 from esbmtk import Flux, Reservoir, Model, Connection, Connect
 from esbmtk import AirSeaExchange
@@ -240,12 +241,16 @@ class setup_ode():
 
     # add optional import statements
     if len(M.lpc_f) > 0:
-        if M.custom_functions:
+        if M.ode_functions == "custom":
             hi = f"{ind2}from custom_functions import "
             for f in set(M.lpc_f):
                 hi += f"{f} ,"
-        elif M.default_reactions:
+        elif M.ode_functions == "default":
             hi = f"{ind2}from esbmtk.reactions.bio_geochemical_reactions import "
+            for f in set(M.lpc_f):
+                hi += f"{f} ,"
+        elif M.ode_functions == "old":
+            hi = f"{ind2}from esbmtk import "
             for f in set(M.lpc_f):
                 hi += f"{f} ,"
         else:
@@ -852,7 +857,7 @@ def get_gas_exchange_eq(
              R[10],  # pco2 in atmosphere
              M1.C_H_b_to_CO2_At.water_vapor_pressure,
              M1.C_H_b_to_CO2_At.solubility,
-             M1_H_b_CO2aq, # [co2]aq
+             M1.H_b.CO2aq, # [co2]aq
          )  # gas_exchange
 
     :param flux: Flux object
@@ -870,26 +875,28 @@ def get_gas_exchange_eq(
     lrn = f"{c.liquid_reservoir.full_name}"
     sp = lrn.split(".")[-1]
     # test if we refer to CO2 or other gas species
-    if sp == "DIC":
-        # here we reference the dyanamically calculated CO2aq from cs1,
-        # and not the vector field of cs1
-        refsp = f"{c.liquid_reservoir.parent.full_name}.CO2aq".replace(".", "_")
-        # refsp = f"{c.liquid_reservoir.parent.full_name}.CO2aq"
-    elif sp == "O2":
-        s_c = get_ic(c.liquid_reservoir, icl)
-        refsp = f"{s_c}"
-    else:
-        raise ValueError(f"Species{sp} has not definition for gex")
 
-    # get atmosphere pcO2 reference
-    pco2 = get_ic(c.gas_reservoir, icl)
+    # if sp == "DIC":
+    #     # here we reference the dyanamically calculated CO2aq from cs1,
+    #     # and not the vector field of cs1
+    #     # refsp = f"{c.liquid_reservoir.parent.full_name}.CO2aq".replace(".", "_")
+    #     refsp = f"{c.liquid_reservoir.full_name}.CO2aq"
+    # elif sp == "O2":
+    #     s_c = get_ic(c.liquid_reservoir, icl)
+    #     refsp = f"{s_c}"
+    # else:
+    #     raise ValueError(f"Species{sp} has not definition for gex")
+
+    gas_sp = f"{get_ic(c.gas_reservoir, icl)}"
+    ref_sp = f"{get_ic(c.ref_species, icl)}"
+
     ex = (
         f"gas_exchange_ode(\n"
         f"{ind3}{cfn}.scale,\n"
-        f"{ind3}{pco2},\n"
+        f"{ind3}{gas_sp},\n"
         f"{ind3}{cfn}.water_vapor_pressure,\n"
         f"{ind3}{cfn}.solubility,\n"
-        f"{ind3}{refsp},\n"
+        f"{ind3}{ref_sp},\n"
         f"{ind2})"
     )
     ex, exl = check_signal_2(ex, "", c)
