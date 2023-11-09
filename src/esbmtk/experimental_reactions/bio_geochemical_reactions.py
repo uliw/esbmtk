@@ -34,7 +34,10 @@ def gas_exchange_no_isotopes_2(
     gas_c_aq,  # Gas concentration in liquid phase
     p,  # parameters
 ) -> float:
-    """Calculate the gas exchange flux across the air sea interface"""
+    """ Calculate the gas exchange flux across the air sea interface
+    Note that this equation is for mmol but esbmtk uses mol, so we need to
+    multiply by 1E3
+    """
 
     area, solubility, piston_velocity, p_H2O = p
     scale = area * piston_velocity

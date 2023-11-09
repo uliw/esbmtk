@@ -50,7 +50,8 @@ def carbonate_system_1_ode(
     swc: any,
     dic: float,
     ta: float,
-    hplus: float,
+    hplus_0: float,
+    co2aq_0: float,
 ) -> float:
     """Calculates and returns the H+ and carbonate alkalinity concentrations
      for the given reservoirgroup
@@ -73,13 +74,13 @@ def carbonate_system_1_ode(
     KW = swc.KW  # KW
     KB = swc.KB  # KB
     boron = swc.boron  # boron
-    hplus_0 = hplus
+    # hplus_0 = hplus
 
     # calculates carbonate alkalinity (ca) based on H+ concentration from the
     # previous time-step
-    oh: float = KW / hplus
-    boh4: float = boron * KB / (hplus + KB)
-    fg: float = hplus - oh - boh4
+    oh: float = KW / hplus_0
+    boh4: float = boron * KB / (hplus_0 + KB)
+    fg: float = hplus_0 - oh - boh4
     ca: float = ta + fg
 
     # hplus
@@ -87,10 +88,11 @@ def carbonate_system_1_ode(
     dummy: float = (1 - gamm) * (1 - gamm) * k1k1 - k1k2 * (4 - 8 * gamm)
     hplus: float = 0.5 * ((gamm - 1) * k1 + sqrt(dummy))
     co2aq: float = dic / (1 + (k1 / hplus) + (k1k2 / (hplus * hplus)))
-    co3 = max(dic / (1 + hplus / k2 + hplus * hplus / k1k2), 3.7e-05)
-    diff = hplus - hplus_0
+    # co3 = max(dic / (1 + hplus / k2 + hplus * hplus / k1k2), 3.7e-05)
+    dCdt_Hplus = hplus - hplus_0
+    dCdt_co2aq = co2aq - co2aq_0
 
-    return diff, co2aq, co3
+    return dCdt_Hplus, dCdt_co2aq
 
 
 def init_carbonate_system_1(rg: ReservoirGroup):
@@ -115,14 +117,14 @@ def init_carbonate_system_1(rg: ReservoirGroup):
         function=carbonate_system_1_ode,
         fname="carbonate_system_1_ode",
         ftype="cs1",
-        function_input_data=[rg.swc, rg.DIC, rg.TA, "Hplus"],
+        function_input_data=[rg.swc, rg.DIC, rg.TA, "Hplus", "CO2aq"],
         register=rg,
         # name and initial value pairs
         # return_values={"Hplus": rg.swc.hplus},
         return_values=[
             {f"R_{rg.full_name}.Hplus": rg.swc.hplus},
             {f"R_{rg.full_name}.CO2aq": rg.swc.co2aq},
-            {f"R_{rg.full_name}.CO3": rg.swc.co3},
+            # {f"R_{rg.full_name}.CO3": rg.swc.co3},
             # {"Hplus": rg.swc.hplus},
             # {"CO2aq": rg.swc.co2aq},
         ],
@@ -217,7 +219,6 @@ def carbonate_system_2_ode(
     boh4: float = boron * KB / (hplus_0 + KB)
     fg: float = hplus_0 - oh - boh4
     ca: float = ta_db + fg
-
     # calculate carbon speciation
     # The following equations are after Follows et al. 2006
     gamm: float = dic_db / ca
@@ -253,7 +254,14 @@ def carbonate_system_2_ode(
     BPDC = kc * area_p.dot(diff)
     BPDC = max(BPDC, 0)  # prevent negative values
     d_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
-    BD: float = BDS + BCC + BNS + BPDC
+    dCdt_DIC: float = BDS + BCC + BNS + BPDC
+
+    # from math import log10
+    # print(f"zsnow = {zsnow:.2e}")
+    # print(f"zcc = {zcc:.2e}")
+    # print(f"zsat = {zsat:.2e}")
+    # print(f"co3 = {co3:.2e}")
+    # print(f"pH = {-log10(hplus):.2f}\n")
 
     """CACO3_export is the flux of CaCO3 into the box. However, the model should
     use the bypass option and leave all flux calculations to the
@@ -265,9 +273,9 @@ def carbonate_system_2_ode(
     The currrent code, assumes that both are the same.
     """
     # BD_l = BD * dic_sb_l / dic_sb
-    dH = hplus - hplus_0
+    dCdt_Hplus = hplus - hplus_0
     # F_DIC, F_DIC_l, F_TA, dH, d_zsnow
-    return BD, 2 * BD, dH, d_zsnow, co3
+    return dCdt_DIC, 2 * dCdt_DIC, dCdt_Hplus, d_zsnow
 
 
 def gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:
@@ -335,7 +343,7 @@ def init_carbonate_system_2(
             {f"F_{rg.full_name}.TA": "db_cs2"},
             {f"R_{rg.full_name}.Hplus": rg.swc.hplus},
             {f"R_{rg.full_name}.zsnow": float(abs(kwargs["zsnow"]))},
-            {f"R_{rg.full_name}.CO3": rg.swc.co3},
+            # {f"R_{rg.full_name}.CO3": rg.swc.co3},
         ],
         register=rg,
     )
@@ -570,7 +578,7 @@ def calc_pCO2(
                        y1_label = r"pCO_{2}",
                        y1_legend = r"pCO_{2}",
                        )
-                       
+
     Author: T. Tsan
 
     """
@@ -604,14 +612,14 @@ def calc_pCO2b(
     SW: Seawater = Seawater object for the model
     it is typically used with a DataField object, e.g.
     pco2 = calc_pCO2b(dic,h,SW)
-    
+
     DataField(name = "SurfaceWaterpCO2",
                       associated_with = reservoir_handle,
                       y1_data = pco2b,
                       y1_label = r"pCO_{2}",
                       y1_legend = r"pCO_{2}",
                       )
-                       
+
     """
 
     dic_c: NDArrayFloat = dic
