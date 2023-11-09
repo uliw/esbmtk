@@ -27,6 +27,7 @@ import pandas as pd
 import logging
 import os
 import psutil
+import warnings
 from . import ureg, Q_
 
 from .esbmtk_base import esbmtkBase
@@ -66,6 +67,12 @@ class ReservoirError(Exception):
 
 
 class FluxError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
+class ScaleError(Exception):
     def __init__(self, message):
         message = f"\n\n{message}\n"
         super().__init__(message)
@@ -948,6 +955,7 @@ class Species(esbmtkBase):
             "flux_only": [False, (bool)],
             "logdata": [False, (bool)],
             "scale_to": ["None", (str)],
+            "stype": ["concentration", (str)],
         }
 
         # provide a list of absolutely required keywords
@@ -1671,8 +1679,20 @@ class Reservoir(ReservoirBase):
         if self.mass == "None":
             if isinstance(self.concentration, (str, Q_)):
                 cc = Q_(self.concentration)
-                self.plt_units = cc.units
+                # concentration can be mol/kg or mol/l
+                sm, sc = str(cc.units).split(" / ")  # get
+                mm, mc = str(self.mo.c_unit).split(" / ")  # model
+                if mc == "liter" and sc == "kilogram":
+                    cc = Q_(f"{cc.magnitude} {str(self.mo.c_unit)}")
+                    warnings.warn(
+                        "\nConvert mol/kg to mol/liter assuming desnity = 1\n"
+                    )
+                elif sc != mc:
+                    raise ScaleError(
+                        f"no transformation for {cc.units} to {self.mo.c_unit}"
+                    )
                 self._concentration = cc.to(self.mo.c_unit)
+                self.plt_units = self.mo.c_unit
             else:
                 cc = self.concentration
                 self.plt_units = self.mo.c_unit
