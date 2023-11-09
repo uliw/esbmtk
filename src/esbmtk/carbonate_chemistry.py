@@ -49,7 +49,6 @@ The process for cs2 is analogous
 def carbonate_system_1_ode(
     swc: any,
     dic: float,
-    dic_l: float,
     ta: float,
     hplus: float,
 ) -> float:
@@ -148,7 +147,7 @@ def add_carbonate_system_1(rgs: list):
     for a given key key in the  vr_datafields dictionary (i.e., H, CA, etc.)
 
     """
-    from esbmtk import init_carbonate_system_1, Reservoir
+    from esbmtk import init_carbonate_system_1
 
     for rg in rgs:
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):
@@ -165,10 +164,10 @@ def carbonate_system_2_ode(
     rg: ReservoirGroup,  # 2 Reservoir handle
     CaCO3_export: float,  # 3 CaCO3 export flux as DIC
     dic_db: float,  # 4 DIC in the deep box
-    dic_db_l: float,  # 4 DIC in the deep box
+    # dic_db_l: float,  # 4 DIC in the deep box
     ta_db: float,  # 5 TA in the deep box
     dic_sb: float,  # 6 [DIC] in the surface box
-    dic_sb_l: float,  # 7 [DIC_l] in the surface box
+    # dic_sb_l: float,  # 7 [DIC_l] in the surface box
     hplus_0: float,  # 8 hplus in the deep box at t-1
     zsnow: float,  # 9 snowline in meters below sealevel at t-1
     ksp0,
@@ -265,10 +264,10 @@ def carbonate_system_2_ode(
     value of the sediments we are dissolving, and the delta of the carbonate rain.
     The currrent code, assumes that both are the same.
     """
-    BD_l = BD * dic_sb_l / dic_sb
+    # BD_l = BD * dic_sb_l / dic_sb
     dH = hplus - hplus_0
     # F_DIC, F_DIC_l, F_TA, dH, d_zsnow
-    return BD, BD_l, 2 * BD, dH, d_zsnow, co3
+    return BD, 2 * BD, dH, d_zsnow, co3
 
 
 def gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:
