@@ -42,7 +42,7 @@ def Carbon(model):
         name="CO3", element=eh, display_as="CO$_3^{2-}$", register=eh, m_weight=60.0089
     )
     Species(name="C", element=eh, register=eh, m_weight=12.0107)
-    Species(name="CO2aq", element=eh, register=eh)
+    Species(name="CO2aq", element=eh, register=eh, scale_to="umol")
     Species(name="ALK", element=eh, register=eh)  # Alkalinity
     Species(name="CALK", element=eh, register=eh)  # Carbonate Alkalinity
     Species(name="CA", element=eh, register=eh)
