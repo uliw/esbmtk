@@ -151,7 +151,6 @@ class Model(esbmtkBase):
         from esbmtk import species_definitions, hypsometry
 
         self.defaults: dict[str, list[any, tuple]] = {
-            "name": ["M", (str)],
             "start": ["0 yrs", (str, Q_)],
             "stop": ["None", (str, Q_)],
             "offset": ["0 yrs", (str, Q_)],
@@ -183,11 +182,12 @@ class Model(esbmtkBase):
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = [
-            "name",
             "stop",
             "timestep",
         ]
         self.__initialize_keyword_variables__(kwargs)
+
+        self.name = "M"
 
         # empty list which will hold all reservoir references
         self.lmo: list = []
@@ -198,7 +198,7 @@ class Model(esbmtkBase):
         for handler in logging.root.handlers[:]:
             logging.root.removeHandler(handler)
 
-        fn: str = f"{kwargs['name']}.log"
+        fn: str = f"{self.name}.log"
         logging.basicConfig(filename=fn, filemode="w", level=logging.CRITICAL)
         self.__register_name_new__()
 
@@ -947,6 +947,7 @@ class Species(esbmtkBase):
             "parent": ["None", (Model, Element, Reservoir, GasReservoir)],
             "flux_only": [False, (bool)],
             "logdata": [False, (bool)],
+            "scale_to": ["None", (str)],
         }
 
         # provide a list of absolutely required keywords
@@ -959,7 +960,8 @@ class Species(esbmtkBase):
 
         # legacy names
         self.n = self.name  # display name of species
-        self.mu = self.element.mu  # display name of mass unit
+        self.mass_unit = self.element.mass_unit
+        self.mu = self.mass_unit  # display name of mass unit
         self.ln = self.element.ln  # display name of light isotope
         self.hn = self.element.hn  # display name of heavy isotope
         self.dn = self.element.dn  # display string for delta
@@ -969,7 +971,6 @@ class Species(esbmtkBase):
         self.eh = self.element.n  # element name
         self.e = self.element  # element handle
         self.dsa = self.display_as  # the display string.
-
         # self.mo.lsp.append(self)   # register self on the list of model objects
         self.e.lsp.append(self)  # register this species with the element
 
@@ -1672,7 +1673,6 @@ class Reservoir(ReservoirBase):
                 cc = Q_(self.concentration)
                 self.plt_units = cc.units
                 self._concentration = cc.to(self.mo.c_unit)
-
             else:
                 cc = self.concentration
                 self.plt_units = self.mo.c_unit
@@ -1689,6 +1689,10 @@ class Reservoir(ReservoirBase):
 
             # fixme: c should be dimensionless, not sure why this happens
             self.c = self.c.to(self.mo.c_unit).magnitude
+
+            if self.species.scale_to != "None":
+                c, m = str(self.mo.c_unit).split(" / ")
+                self.plt_units = Q_(f"{self.species.scale_to} / {m}")
 
         elif self.concentration == "None":
             m = Q_(self.mass)
