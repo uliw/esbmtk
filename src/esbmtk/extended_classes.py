@@ -1073,11 +1073,13 @@ class VectorData(esbmtkBase):
             "register": ["None", (str, ReservoirGroup)],
             "species": ["None", (str, Species)],
             "data": ["None", (str, np.ndarray, float)],
+            "isotopes": [False, (bool)],
         }
         # provide a list of absolutely required keywords
         self.lrk: list = ["name", "register", "species", "data"]
         self.__initialize_keyword_variables__(kwargs)
         self.n = self.name
+        self.parent = self.register
         self.sp = self.species
         self.mo = self.species.mo
         self.model = self.species.mo
@@ -1364,7 +1366,6 @@ class DataField(esbmtkBase):
         :param i: index
 
         """
-
         if t == "plot":
             ax.plot(x, y, color=f"C{i}", label=l)
         else:
