@@ -248,20 +248,16 @@ def carbonate_system_2_ode(
     BDS = BDS_under + BDS_resp
     if zsnow > zmax:
         zsnow = zmax
+    # integrate saturation difference over area
     diff: NDArrayFloat = Csat_table[zcc : int(zsnow)] - co3
     area_p: NDArrayFloat = area_dz_table[zcc : int(zsnow)]
-    # integrate saturation difference over area
     BPDC = kc * area_p.dot(diff)
     BPDC = max(BPDC, 0)  # prevent negative values
-    d_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
-    dCdt_DIC: float = BDS + BCC + BNS + BPDC
 
-    # from math import log10
-    # print(f"zsnow = {zsnow:.2e}")
-    # print(f"zcc = {zcc:.2e}")
-    # print(f"zsat = {zsat:.2e}")
-    # print(f"co3 = {co3:.2e}")
-    # print(f"pH = {-log10(hplus):.2f}\n")
+    # calculate the differentials
+    dCdt_DIC: float = BDS + BCC + BNS + BPDC
+    dCdt_Hplus = hplus - hplus_0
+    dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
 
     """CACO3_export is the flux of CaCO3 into the box. However, the model should
     use the bypass option and leave all flux calculations to the
@@ -273,9 +269,9 @@ def carbonate_system_2_ode(
     The currrent code, assumes that both are the same.
     """
     # BD_l = BD * dic_sb_l / dic_sb
-    dCdt_Hplus = hplus - hplus_0
     # F_DIC, F_DIC_l, F_TA, dH, d_zsnow
-    return dCdt_DIC, 2 * dCdt_DIC, dCdt_Hplus, d_zsnow
+
+    return dCdt_DIC, 2 * dCdt_DIC, dCdt_Hplus, dzdt_zsnow
 
 
 def gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:
@@ -382,7 +378,7 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     """
 
-    from esbmtk import Reservoir, init_carbonate_system_2
+    from esbmtk import init_carbonate_system_2
 
     # list of known keywords
     lkk: dict = {
@@ -461,7 +457,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     # test if corresponding surface reservoirs have been defined
     if len(r_sb) == 0:
         raise ValueError(
-            "Please update your call to add_carbonate_system_2 and add the list of of corresponding surface reservoirs"
+            "Please update your call to add_carbonate_system_2 and add the list of corresponding surface reservoirs"
         )
 
     # C saturation(z) after Boudreau 2010
