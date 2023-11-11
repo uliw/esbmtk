@@ -14,7 +14,7 @@ if tp.TYPE_CHECKING:
     from esbmtk import Connection, Model
 
 from .esbmtk_base import esbmtkBase
-from .esbmtk import ReservoirBase, Reservoir
+from .esbmtk import ReservoirBase, Reservoir, Species
 
 from .solver import (
     get_imass,
@@ -140,11 +140,11 @@ class ReservoirGroup(esbmtkBase):
 
     seawater_parameters:
     ~~~~~~~~~~~~~~~~~~~~
-                    
+
     If this optional parameter is specified, a SeaWaterConstants instance will
     be registered for this Reservoir as Reservoir.swc
     See the  SeaWaterConstants class for details how to specify the parameters, e.g.::
-                    
+
         seawater_parameters = {"temperature": 2,
                            "pressure": 240,
                            "salinity" : 35,
@@ -1061,6 +1061,30 @@ class Signal(esbmtkBase):
             ax.xaxis.set_ticks_position("bottom")
 
 
+class VectorData(esbmtkBase):
+    """A simple container for 1-dimensional data. Typically used for
+    results obtained by postprocessing.
+    """
+
+    def __init__(self, **kwargs: dict[str, any]) -> None:
+        """Initialize this instance"""
+        self.defaults: dict[str, list(str, tuple)] = {
+            "name": ["None", (str)],
+            "register": ["None", (str, ReservoirGroup)],
+            "species": ["None", (str, Species)],
+            "data": ["None", (str, np.ndarray, float)],
+        }
+        # provide a list of absolutely required keywords
+        self.lrk: list = ["name", "register", "species", "data"]
+        self.__initialize_keyword_variables__(kwargs)
+        self.n = self.name
+        self.sp = self.species
+        self.mo = self.species.mo
+        self.model = self.species.mo
+        self.c = self.data
+        self.__register_name_new__()
+
+
 class DataField(esbmtkBase):
     """
     DataField: Datafields can be used to plot data which is computed after
@@ -1372,7 +1396,9 @@ class DataField(esbmtkBase):
             if self.x1_as_time:
                 x1 = (self.x1_data[i] * M.t_unit).to(M.d_unit).magnitude
             else:
-                x1 = self.x1_data[i]
+                # x1 = self.x1_data[i]
+                y1 = (self.c * M.c_unit).to(self.plt_units).magnitude
+                y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
 
             self.__plot_data__(
                 ax,
@@ -1576,7 +1602,7 @@ class ExternalCode(Reservoir_no_set):
 
     Note that this function should not return any values, and that all input fields must have
     at least one entry!
-                                   
+
     """
 
     def __init__(self, **kwargs) -> None:
