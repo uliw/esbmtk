@@ -485,7 +485,7 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
     :param bn: dictionary with box parameters,
 
     e.g.::
-    
+
      bn: dict = {  # name: [[geometry], T, P]
                  "sb": {"g": [0, 200, 0.9], "T": 20, "P": 5},
                  "ib": {"g": [200, 1200, 1], "T": 10, "P": 100},
@@ -505,7 +505,7 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
                }
 
     :param M: Model object handle
-    
+
     """
 
     from esbmtk import ReservoirGroup, build_concentration_dicts
@@ -1028,13 +1028,13 @@ def gen_dict_entries(M: Model, **kwargs) -> tuple(tuple, list):
     sb_to_dbPOM, but db_to_sb@POM
 
     :param M: Model or list
-    
+
     :param kwargs: keyword dictionary, known keys are ref_id, and raget_id, inverse
 
     :return f_list: List of fluxes that match ref_id
-    
+
     :return k_tuples: tuple of connection keys
-    
+
     """
 
     from esbmtk import Model
@@ -1265,24 +1265,31 @@ def __addmissingdefaults__(lod: dict, kwargs: dict) -> dict:
     return kwargs
 
 
-def data_summaries(M, species_names, box_names):
-    from esbmtk import DataField
+def data_summaries(M, species_names, box_names, register_with):
+    from esbmtk import DataField, VectorData
 
     pl = []
     for sp in species_names:
         data_list = []
         label_list = []
         for b in box_names:
-            a = getattr(b, f"{sp.name}")
-            if a.plot_transform_c == "None":
-                data_list.append(a.c)
-            else:
-                data_list.append(a.plot_transform_c(a.c))
+            if isinstance(b, VectorData):
+                data_list.append(a)
+            if hasattr(b, f"{sp.name}"):
+                a = getattr(b, f"{sp.name}")
+                if hasattr(a, ".plot_transform_c"):
+                    if a.plot_transform_c != "None":
+                        data_list.append(a.plot_transform_c(a.c))
+                    else:
+                        data_list.append(a.c)
+                else:
+                    data_list.append(a.c)
+
             label_list.append(a.full_name)
 
         df = DataField(
             name=f"{sp.name}_df",
-            register=M.A_sb.O2,
+            register=register_with,
             x1_data=M.time,
             y1_data=data_list,
             y1_label=label_list,
@@ -1295,10 +1302,11 @@ def data_summaries(M, species_names, box_names):
         data_list = []
         label_list = []
         for b in box_names:
-            a = getattr(b, f"{sp.name}")
-            if a.isotopes:
-                data_list.append(a.d)
-                label_list.append(a.full_name)
+            if hasattr(b, f"{sp.name}"):
+                a = getattr(b, f"{sp.name}")
+                if a.isotopes:
+                    data_list.append(a.d)
+                    label_list.append(a.full_name)
 
         if len(data_list) > 0:
             df = DataField(
