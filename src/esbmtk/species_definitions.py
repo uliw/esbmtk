@@ -117,6 +117,9 @@ def Hydrogen(model):
     Species(
         name="H", element=eh, display_as=r"$H^+$", register=eh
     )  # Name & element handle
+    Species(
+        name="pH", element=eh, display_as=r"$pH$", register=eh
+    )  # Name & element handle
 
 
 def Oxygen(model):
@@ -231,4 +234,5 @@ def misc_variables(model):
     # add species
     Species(name="zsnow", element=eh, display_as="zsnow", register=eh, stype="length")
     Species(name="zcc", element=eh, display_as="zcc", register=eh, stype="length")
+    Species(name="zsat", element=eh, display_as="zcc", register=eh, stype="length")
     # Name & element handle
