@@ -183,7 +183,7 @@ class Model(esbmtkBase):
             "use_ode": [True, (bool)],
             "parse_model": [True, (bool)],
             "rtol": [1.0e-6, (float)],
-            "ode_functions": ["default", (str)],  # custom/old
+            "bio_pump_functions": [0, (int)],  # custom/old
             "area_table": ["None", (str, np.ndarray)],
         }
 

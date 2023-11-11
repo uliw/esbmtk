@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 import typing as tp
 from esbmtk import ExternalCode
-from esbmtk.experimental_reactions.bio_geochemical_reactions import (
+from esbmtk.bio_pump_functions1.bio_geochemical_reactions import (
     photosynthesis,
     OM_remineralization,
     gas_exchange_with_isotopes_2,
@@ -258,6 +258,7 @@ def init_gas_exchange_no_isotopes(
     # convert pv into model units
     pv = piston_velocity.to("meter/yr").magnitude
 
+    breakpoint()
     ec = ExternalCode(
         name=f"{r_liquid.parent.name}_{r_liquid.name}_exchange",
         species=species,

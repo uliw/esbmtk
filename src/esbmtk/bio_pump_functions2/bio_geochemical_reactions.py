@@ -21,8 +21,6 @@ from math import log, sqrt
 import numpy as np
 import numpy.typing as npt
 from numba import njit
-from esbmtk import get_new_ratio_from_alpha, get_l_mass
-from esbmtk import get_delta_from_concentration
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]

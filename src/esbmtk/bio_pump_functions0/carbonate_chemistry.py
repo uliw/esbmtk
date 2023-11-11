@@ -21,7 +21,7 @@ import typing as tp
 import numpy as np
 import numpy.typing as npt
 from math import log, sqrt
-from .utility_functions import (
+from esbmtk.utility_functions import (
     __checkkeys__,
     __addmissingdefaults__,
     __checktypes__,

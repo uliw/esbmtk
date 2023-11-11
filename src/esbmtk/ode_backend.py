@@ -241,22 +241,9 @@ class setup_ode():
 
     # add optional import statements
     if len(M.lpc_f) > 0:
-        if M.ode_functions == "custom":
-            hi = f"{ind2}from custom_functions import "
-            for f in set(M.lpc_f):
-                hi += f"{f} ,"
-        elif M.ode_functions == "default":
-            hi = f"{ind2}from esbmtk.reactions.bio_geochemical_reactions import "
-            for f in set(M.lpc_f):
-                hi += f"{f} ,"
-        elif M.ode_functions == "old":
-            hi = f"{ind2}from esbmtk import "
-            for f in set(M.lpc_f):
-                hi += f"{f} ,"
-        else:
-            hi = f"{ind2}from esbmtk.experimental_reactions.bio_geochemical_reactions import "
-            for f in set(M.lpc_f):
-                hi += f"{f} ,"
+        hi = f"{ind2}from esbmtk.bio_pump_functions{M.bio_pump_functions} import "
+        for f in set(M.lpc_f):
+            hi += f"{f} ,"
     else:
         hi = "  "
 
