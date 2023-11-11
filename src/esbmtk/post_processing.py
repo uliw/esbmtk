@@ -25,7 +25,8 @@ def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
 
     :param rg: A reservoirgroup object with initialized carbonate system
     """
-
+    from esbmtk import VectorData
+    
     k1 = rg.swc.K1  # K1
     k2 = rg.swc.K2  # K2
     KW = rg.swc.KW  # KW
@@ -40,17 +41,39 @@ def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
     oh: float = KW / hplus
     boh4: float = boron * KB / (hplus + KB)
     fg: float = hplus - oh - boh4
-    rg.CA: float = ta + fg
-    rg.HCO3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
-    rg.CO3: float = (rg.CA - rg.HCO3) / 2
-    rg.omega = rg.swc.ca2 * rg.CO3 / rg.swc.Ksp
-    rg.pH: float = -np.log10(hplus)
-    rg.CO2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus**2)))
+    VectorData(
+        name="CA",
+        register=rg,
+        species=rg.mo.CA,
+        data=ta + fg,
+    )
+    VectorData(
+        name="HCO3",
+        register=rg,
+        species=rg.mo.HCO3,
+        data=dic / (1 + (hplus / k1) + (k2 / hplus)),
+    )
+    VectorData(
+        name="CO3",
+        register=rg,
+        species=rg.mo.CO3,
+        data=(rg.CA.c - rg.HCO3.c) / 2,
+    )
+    rg.CO3.c[rg.CO3.c < 0] = 0
+
+    VectorData(
+        name="pH",
+        register=rg,
+        species=rg.mo.pH,
+        data=-np.log10(hplus),
+    )
+    # rg.omega = rg.swc.ca2 * rg.CO3 / rg.swc.Ksp
+    # rg.CO2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus**2)))
 
 
 def carbonate_system_2_pp(
     rg: ReservoirGroup,  # 2 Reservoir handle
-    Bm: float,  # 3 CaCO3 export flux as DIC
+    export: float,  # 3 CaCO3 export flux as DIC
 ) -> None:
     """Calculates and returns the fraction of the carbonate rain that is
     dissolved an returned back into the ocean. This functions returns:
@@ -73,6 +96,8 @@ def carbonate_system_2_pp(
 
     """
 
+    from esbmtk import VectorData
+
     # Parameters
     k1 = rg.swc.K1  # K1
     k2 = rg.swc.K2  # K2
@@ -88,21 +113,53 @@ def carbonate_system_2_pp(
     kc = p[8]
     AD = p[9]
     zsat0 = int(abs(p[10]))
-    zsat_min = int(abs(p[13]))
-    zmax = int(abs(p[14]))
 
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus
     boh4: float = boron * KB / (hplus + KB)
     fg: float = hplus - oh - boh4
-    rg.CA: float = ta + fg
-    rg.HCO3: float = dic / (1 + (hplus / k1) + (k2 / hplus))
 
-    rg.CO3: float = (rg.CA - rg.HCO3) / 2
-    rg.CO3[rg.CO3 < 0] = 0
-    rg.CO2aq = dic - rg.CO3 - rg.HCO3
-    rg.omega = rg.swc.ca2 * rg.CO3 / rg.swc.Ksp
-    rg.pH: float = -np.log10(hplus)
-    rg.zsat = np.clip(zsat0 * np.log(ca2 * rg.CO3 / ksp0), zsat_min, zmax)
-    rg.zcc = zsat0 * np.log(Bm * ca2 / (ksp0 * AD * kc) + ca2 * rg.CO3 / ksp0)  # eq3
-    # rg.zsnow = rg.zsnow.c
+    VectorData(
+        name="CA",
+        register=rg,
+        species=rg.mo.CA,
+        data=ta + fg,
+    )
+    VectorData(
+        name="HCO3",
+        register=rg,
+        species=rg.mo.HCO3,
+        data=dic / (1 + (hplus / k1) + (k2 / hplus)),
+    )
+    VectorData(
+        name="CO3",
+        register=rg,
+        species=rg.mo.CO3,
+        data=(rg.CA.c - rg.HCO3.c) / 2,
+    )
+    rg.CO3.c[rg.CO3.c < 0] = 0
+
+    VectorData(
+        name="CO2aq",
+        register=rg,
+        species=rg.mo.CO2aq,
+        data=dic - rg.CO3.c - rg.HCO3.c,
+    )
+    VectorData(
+        name="pH",
+        register=rg,
+        species=rg.mo.pH,
+        data=-np.log10(hplus),
+    )
+    VectorData(
+        name="zsat",
+        register=rg,
+        species=rg.mo.zsat,
+        data=zsat0 * np.log(ca2 * rg.CO3.c / ksp0)
+    )
+    VectorData(
+        name="zcc",
+        register=rg,
+        species=rg.mo.zcc,
+        data=zsat0 * np.log(export * ca2 / (ksp0 * AD * kc) + ca2 * rg.CO3.c / ksp0),
+    )
