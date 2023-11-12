@@ -831,53 +831,61 @@ class Signal(esbmtkBase):
         i.e., the first row needs to be a header line
 
         """
+        #from .esbmtk import ExternalData
+        
+        # if not os.path.exists(self.filename):  # check if the file is actually there
+        #     raise SignalError(f"Cannot find file {self.filename}")
 
-        from . import Q_
+        # # read external dataset
+        # df = pd.read_csv(self.filename)
+        # # print(f"df = {df.head()}")
 
-        if not os.path.exists(self.filename):  # check if the file is actually there
-            raise SignalError(f"Cannot find file {self.filename}")
+        # # get unit information from each header
+        # xh = df.columns[0].split("[")[1].split("]")[0]
+        # yh = df.columns[1].split("[")[1].split("]")[0]
+        # zh = df.columns[2].split("[")[1].split("]")[0] if len(df.columns) > 2 else None
+        # # create the associated quantities
+        # xq = Q_(xh)
+        # yq = Q_(yh)
 
-        # read external dataset
-        df = pd.read_csv(self.filename)
-        # print(f"df = {df.head()}")
+        # # add these to the data we are are reading
+        # self.s_time: NDArrayFloat = df.iloc[:, 0].to_numpy() * xq
+        # self.s_data: NDArrayFloat = df.iloc[:, 1].to_numpy() * yq
 
-        # get unit information from each header
-        xh = df.columns[0].split("[")[1].split("]")[0]
-        yh = df.columns[1].split("[")[1].split("]")[0]
-        zh = df.columns[2].split("[")[1].split("]")[0] if len(df.columns) > 2 else None
-        # create the associated quantities
-        xq = Q_(xh)
-        yq = Q_(yh)
+        # if zh:
+        #     # delta is assumed to be without units
+        #     self.s_delta: NDArrayFloat = df.iloc[:, 2].to_numpy()
 
-        # add these to the data we are are reading
-        self.s_time: NDArrayFloat = df.iloc[:, 0].to_numpy() * xq
-        self.s_data: NDArrayFloat = df.iloc[:, 1].to_numpy() * yq
+        # # map into model units, and strip unit information
+        # self.s_time = self.s_time.to(self.mo.t_unit).magnitude
+        # # self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
 
-        if zh:
-            # delta is assumed to be without units
-            self.s_delta: NDArrayFloat = df.iloc[:, 2].to_numpy()
+        # if isinstance(yq, Q_):
+        #     # test what type of Quantity we have
+        #     if yq.check(["dimensionless"]):  # dimensionless
+        #         self.s_data = self.s_data.magnitude
+        #     elif yq.check("liter/yr"):  # flux
+        #         self.s_data = self.s_data.to(self.mo.r_unit).magnitude
+        #     elif yq.check("mol/yr"):  # flux
+        #         self.s_data = self.s_data.to(self.mo.f_unit).magnitude
+        #     elif yq.check("mol/liter"):  # concentration
+        #         self.s_data = self.s_data.to(self.mo.c_unit).magnitude
+        #     elif yq.check("mol/kg"):  # concentration
+        #         self.s_data = self.s_data.to(self.mo.c_unit).magnitude
+        #     else:
+        #         SignalError(f"No conversion to model units for {self.scale} specified")
 
-        # map into model units, and strip unit information
-        self.s_time = self.s_time.to(self.mo.t_unit).magnitude
-        # self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
-
-        if isinstance(yq, Q_):
-            # test what type of Quantity we have
-            if yq.check(["dimensionless"]):  # dimensionless
-                self.s_data = self.s_data.magnitude
-            elif yq.check("liter/yr"):  # flux
-                self.s_data = self.s_data.to(self.mo.r_unit).magnitude
-            elif yq.check("mol/yr"):  # flux
-                self.s_data = self.s_data.to(self.mo.f_unit).magnitude
-            elif yq.check("mol/liter"):  # concentration
-                self.s_data = self.s_data.to(self.mo.c_unit).magnitude
-            elif yq.check("mol/kg"):  # concentration
-                self.s_data = self.s_data.to(self.mo.c_unit).magnitude
-            else:
-                SignalError(f"No conversion to model units for {self.scale} specified")
-
-        self.s_data = self.s_data * self.scale
-
+        ed = ExternalData(
+            name=f"{self.name}_ed",
+            filename=self.filename,
+            register=self,
+            legend="None",
+        )
+        
+        self.s_time = ed.x
+        self.s_data = ed.y * self.scale
+         
+        
         self.st: float = self.s_time[0]  # start time
         self.et: float = self.s_time[-1]  # end time
         self.duration = int(round((self.et - self.st)))
@@ -888,7 +896,8 @@ class Signal(esbmtkBase):
         self.s_m: NDArrayFloat = np.interp(
             xi, self.s_time, self.s_data
         )  # interpolate flux
-        if zh:
+        if ed.zh:
+            self.s_delta = ed.d
             self.s_d: NDArrayFloat = np.interp(xi, self.s_time, self.s_delta)
             self.s_l = get_l_mass(self.s_m, self.s_d, self.sp.r)
         else:
@@ -2218,12 +2227,12 @@ class ExternalData(esbmtkBase):
             "offset": ["0 yrs", (Q_, str)],
             "display_precision": [0.01, (int, float)],
             "scale": [1, (int, float)],
-            "register": ["None", (str, Model, Reservoir, DataField, GasReservoir)],
+            "register": ["None", (str, Model, Reservoir, DataField, GasReservoir, Signal)],
             "plot_transform_c": ["None", (str, callable)],
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "filename", "legend", "reservoir"]
+        self.lrk: list = ["name", "filename", "legend", ["reservoir", "register"]]
 
         self.__initialize_keyword_variables__(kwargs)
 
@@ -2236,11 +2245,11 @@ class ExternalData(esbmtkBase):
         if isinstance(self.reservoir, Reservoir):
             self.mo: Model = self.reservoir.species.mo
         else:
-            self.mo = self.reservoir.mo
+            self.mo = self.register.mo
 
         self.model = self.mo
 
-        self.parent = self.reservoir
+        self.parent = self.register
         self.mo.led.append(self)  # keep track of this instance
 
         if self.display_precision == 0:
@@ -2280,7 +2289,7 @@ class ExternalData(esbmtkBase):
         # get unit information from each header
         xh = self.df.columns[0].split("[")[1].split("]")[0]
         yh = self.df.columns[1].split("[")[1].split("]")[0]
-        zh = (
+        self.zh = (
             self.df.columns[2].split("[")[1].split("]")[0]
             if len(self.df.columns) > 2
             else None
@@ -2294,9 +2303,11 @@ class ExternalData(esbmtkBase):
         self.x: NDArrayFloat = self.df.iloc[:, 0].to_numpy() * xq
         self.y: NDArrayFloat = self.df.iloc[:, 1].to_numpy() * yq
 
-        if zh:
+        if self.zh:
             # delta is assumed to be without units
             self.d: NDArrayFloat = self.df.iloc[:, 2].to_numpy()
+        else:
+            self.zh = False
 
         # map into model space
         # self.x = self.x - self.x[0] + self.offset
@@ -2330,10 +2341,10 @@ class ExternalData(esbmtkBase):
                 raise ExternalDataError("Plot transform must be a function")
 
         # register with reservoir
-        self.__register__(self.reservoir)
+        self.__register__(self.register)
 
-        if self.mo.register == "local" and self.register == "None":
-            self.register = self.mo
+        # if self.mo.register == "local" and self.register == "None":
+        #     self.register = self.mo
 
         self.__register_name_new__()
 
