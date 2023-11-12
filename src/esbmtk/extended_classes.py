@@ -2244,11 +2244,14 @@ class ExternalData(esbmtkBase):
         self.fn: str = self.filename  # string = filename of data
         if isinstance(self.reservoir, Reservoir):
             self.mo: Model = self.reservoir.species.mo
+        if isinstance(self.reservoir, Signal):
+            self.mo: Model = self.signal.species.mo
+        if isinstance(self.register, Model):
+            self.mo: Model = self.register
         else:
             self.mo = self.register.mo
 
         self.model = self.mo
-
         self.parent = self.register
         self.mo.led.append(self)  # keep track of this instance
 
