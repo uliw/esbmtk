@@ -2304,6 +2304,9 @@ class ExternalData(esbmtkBase):
         self.x = self.x.to(self.mo.t_unit).magnitude
         # self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
 
+        mol_liter = Q_("1 mol/liter").dimensionality
+        mol_kg = Q_("1 mol/kg").dimensionality
+
         if isinstance(yq, Q_):
             # test what type of Quantity we have
             if yq.is_compatible_with("dimensionless"):  # dimensionless
@@ -2312,14 +2315,13 @@ class ExternalData(esbmtkBase):
                 self.y = self.y.to(self.mo.r_unit).magnitude
             elif yq.is_compatible_with("mol/yr"):  # flux
                 self.y = self.y.to(self.mo.f_unit).magnitude
-            elif yq.is_compatible_with("mol/liter"):  # concentration
+            elif yq.dimensionality == mol_liter:  # concentration
                 self.y = self.y.to(self.mo.c_unit).magnitude
-            elif yq.is_compatible_with("mol/kg"):  # concentration
+            elif yq.dimensionality == mol_kg:  # concentration
                 self.y = self.y.to(self.mo.c_unit).magnitude
             else:
                 SignalError(f"No conversion to model units for {self.scale} specified")
 
-        self.s_data = self.s_data * self.scale
         # test for plt_transform
         if self.plot_transform_c != "None":
             if callable(self.plot_transform_c):
