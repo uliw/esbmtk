@@ -44,37 +44,42 @@ class hypsometry(esbmtkBase):
     Invoke as:
                hyspometry(name="hyp")
 
-    User facing methods:
-
-           hyp.area (z) return the ocean area at a given depth in m^2
-
-           hyp.area_dz(0,-200)
-
-                 will return the surface area between 0 and -200 mbsl (i.e.,
-                 the contintal shelves) in percent. This number has a small
-                 error since we exclude the areas below 6000 mbsl. The error
-                 is however a constant an likely within the uncertainty of
-                 the total surface area. The numbers obtained from
-                 http://www.physicalgeography.net/fundamentals/8o.html for
-                 total ocean area vary between 70.8% for all water covered
-                 areas and 72.5% for ocean surface. This routine returns
-                 70.5%
-
-           hyp.sa = Earth total surface area in m^2
-
-           hyp.volume(0,200)
-
-           hyp.get_lookup_table(self, min_depth: int, max_depth: int)
-
-                   Generate a vector which contains the area(z) in 1 meter intervals
-                   Note that the numbers are area_percentage. To get actual area, you need to_csv
-                   multiply with the total surface area (hyp.sa)
 
     """
 
     def __init__(self, **kwargs):
-        """Initialize a hypsometry object"""
+        """Initialize a hypsometry object
+        User facing methods:
 
+          hyp.area (z) return the ocean area at a given depth in m^2
+
+          hyp.area_dz(0,-200)::
+
+               will return the surface area between 0 and -200 mbsl (i.e.,
+               the contintal shelves). Note that this is the sediment area
+               projected to the ocean surface, not the actual surface area
+               of the sediment.
+
+               This number has a small
+               error since we exclude the areas below 6000 mbsl. The error
+               is however a constant an likely within the uncertainty of
+               the total surface area. The numbers obtained from
+               http://www.physicalgeography.net/fundamentals/8o.html for
+               total ocean area vary between 70.8% for all water covered
+               areas and 72.5% for ocean surface. This routine returns
+               70.5%
+
+          hyp.sa = Earth total surface area in m^2
+
+          hyp.volume(0,200)
+
+          hyp.get_lookup_table(self, min_depth: int, max_depth: int)::
+
+                  Generate a vector which contains the area(z) in 1 meter intervals
+                  Note that the numbers are area_percentage. To get actual area, you need to_csv
+                  multiply with the total surface area (hyp.sa)
+
+        """
         from esbmtk import Model
 
         # allowed keywords
@@ -285,29 +290,60 @@ class hypsometry(esbmtkBase):
         return np.diff(self.get_lookup_table(min_depth, max_depth))
 
 
-def get_box_geometry_parameters(box) -> None:
+def get_box_geometry_parameters(box, fraction=1) -> None:
+    """
+    Calculate box volume and area from the data in box.
+
+    :param box: list or dict with the geometry parameters
+    :fraction: 0 to 1 to specify a fractional part (i.e., Atlantic)
+
+    If box is a list the first entry is the upper
+    depth datum, the second entry is the lower depth datum, and the
+    third entry is the total ocean area.  E.g., to specify the upper
+    200 meters of the entire ocean, you would write:
+
+    geometry=[0,-200,3.6e14]
+
+    the corresponding ocean volume will then be calculated by the
+    calc_volume method in this case the following instance variables
+    will also be set:
+
+    self.volume in model units (usually liter) self.are:a surface area
+    in m^2 at the upper bounding surface self.sed_area: area of
+    seafloor which is intercepted by this box.  self.area_fraction:
+    area of seafloor which is intercepted by this relative to the
+    total ocean floor area
+
+    It is also possible to specify volume and area explicitly. In this
+    case provide a dictionary like this::
+                  box = {"area": "1e14 m**2", # surface area in m**2
+                              "volume": "3e16 m**3", # box volume in m**3
+                              "ta": "4e16 m**2", # reference area
+                             }
+
+    """
     from esbmtk import Q_
-    import warnings
 
     box.geometry_unset = True
 
-    if box.geometry != "None":
-        if not isinstance(box.geometry, list):
-            raise ValueError("geometry must be a list see the docs for details")
-        box.area_percentage = box.geometry[2]
-        volume = f"{box.mo.hyp.volume(box.geometry[0], box.geometry[1]) * box.area_percentage} m**3"
-
+    if isinstance(box.geometry, list):
+        # Calculate volume and area as a function of box geometry
+        fraction = box.geometry[2]
+        volume = (
+            f"{box.mo.hyp.volume(box.geometry[0], box.geometry[1]) * fraction} m**3"
+        )
         box.volume = Q_(volume)
         box.volume = box.volume.to(box.mo.v_unit)
-        box.area = box.mo.hyp.area(box.geometry[0]) * box.area_percentage
-        box.sed_area = (
-            box.mo.hyp.area_dz(box.geometry[0], box.geometry[1]) * box.area_percentage
-        )
-        box.area_fraction = box.sed_area / box.mo.hyp.oa
-        box.area_dz = box.sed_area
-        box.geometry_unset = False
-
-        # Define the area_dz property
-
-    elif box.volume == "None":
+        box.area = box.mo.hyp.area(box.geometry[0]) * fraction
+        box.sed_area = box.mo.hyp.area_dz(box.geometry[0], box.geometry[1]) * fraction
+        
+    elif isinstance(box.geometry, dict):
+        box.volume = Q_(box.geometry["volume"]).to(box.mo.v_unit)
+        box.area = Q_(box.geometry["area"]).to(box.mo.a_unit).magnitude
+        box.sed_area = box.area
+    else:
         raise ValueError("You need to provide volume or geometry!")
+
+    # box.area_fraction = box.sed_area / box.reference_area
+    box.area_dz = box.sed_area
+    box.geometry_unset = False

@@ -171,7 +171,7 @@ class ReservoirGroup(esbmtkBase):
             "concentration": ["None", (dict, str)],
             "mass": ["None", (str, dict)],
             "volume": ["None", (str, Q_)],
-            "geometry": ["None", (str, list)],
+            "geometry": ["None", (str, list, dict)],
             "plot": ["None", (str, dict)],
             "isotopes": [False, (dict, bool)],
             "seawater_parameters": ["None", (dict, str)],

@@ -174,7 +174,7 @@ def carbonate_system_2_ode(
     zsnow: float,  # 9 snowline in meters below sealevel at t-1
     ksp0,
     kc,
-    AD,
+    reference_area,
     zsat0,
     I_caco3,
     alpha,
@@ -230,11 +230,11 @@ def carbonate_system_2_ode(
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
     zsat = np.clip(zsat, zsat_min, zmax)
     zcc = int(
-        zsat0 * log(CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
+        zsat0 * log(CaCO3_export * ca2 / (ksp0 * reference_area * kc) + ca2 * co3 / ksp0)
     )  # eq3
     zcc = np.clip(zcc, zsat_min, zmax)
     # get fractional areas
-    B_AD = CaCO3_export / AD
+    B_AD = CaCO3_export / reference_area
     A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
     A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
     A_zcc_zmax = depth_area_table[zcc] - depth_area_table[zmax]
@@ -258,7 +258,7 @@ def carbonate_system_2_ode(
     dCdt_DIC: float = BDS + BCC + BNS + BPDC
     dCdt_Hplus = hplus - hplus_0
     dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
-
+    
     """CACO3_export is the flux of CaCO3 into the box. However, the model should
     use the bypass option and leave all flux calculations to the
     cs_code.  As such, we simply add the fraction of the input flux
@@ -298,11 +298,13 @@ def init_carbonate_system_2(
     area_table: NDArrayFloat,
     area_dz_table: NDArrayFloat,
     Csat_table: NDArrayFloat,
-    AD: float,
+    reference_area: str,
     kwargs: dict,
 ):
-    from esbmtk import ExternalCode, carbonate_system_2_ode
+    from esbmtk import ExternalCode, carbonate_system_2_ode, Q_
 
+    reference_area = Q_(reference_area).to(rg.mo.a_unit).magnitude
+    
     ec = ExternalCode(
         name="cs",
         species=rg.mo.Carbon.CO2,
@@ -326,7 +328,7 @@ def init_carbonate_system_2(
             "zsnow",  # 6
             kwargs["Ksp0"],  # 7
             float(kwargs["kc"]),  # 8
-            float(AD),  # 9
+            float(reference_area),  # 9
             float(abs(kwargs["zsat0"])),  # 10
             float(kwargs["I_caco3"]),  # 11
             float(kwargs["alpha"]),  # 12
@@ -378,14 +380,14 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     """
 
-    from esbmtk import init_carbonate_system_2
+    from esbmtk import init_carbonate_system_2, Q_
 
     # list of known keywords
     lkk: dict = {
         "r_db": list,  # list of deep reservoirs
         "r_sb": list,  # list of corresponding surface reservoirs
         "carbonate_export_fluxes": list,
-        "AD": float,
+        "reference_area": str,
         "zsat": int,
         "zsat_min": int,
         "zcc": int,
@@ -426,7 +428,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "zsat0": -5078,  # m
         "Ksp0": reservoir.swc.Ksp0,  # mol^2/kg^2
         "kc": 8.84 * 1000,  # m/yr converted to kg/(m^2 yr)
-        "AD": model.hyp.area_dz(-200, -6000),
+        "reference_area": f"{model.hyp.area_dz(-200, -6000)} m**2",
         "alpha": 0.6,  # 0.928771302395292, #0.75,
         "pg": 0.103,  # pressure in atm/m
         "pc": 511,  # characteristic pressure after Boudreau 2010
@@ -464,7 +466,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     Csat_table: NDArrayFloat = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
     area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
     area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area'
-    AD = model.hyp.area_dz(z0, -6000)  # Total Ocean Area
+    reference_area = Q_(kwargs['reference_area']).to(r_db[0].mo.a_unit)
 
     for i, rg in enumerate(r_db):  # Setup the virtual reservoirs
         ec = init_carbonate_system_2(
@@ -475,7 +477,7 @@ def add_carbonate_system_2(**kwargs) -> None:
             area_table,
             area_dz_table,
             Csat_table,
-            AD,
+            reference_area,
             kwargs,
         )
 

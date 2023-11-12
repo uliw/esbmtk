@@ -165,6 +165,7 @@ class Model(esbmtkBase):
             "element": ["None", (str, list)],
             "mass_unit": ["mol", (str)],
             "volume_unit": ["liter", (str)],
+            "area_unit": ["m**2", (str)],
             "time_unit": ["year", (str)],
             "concentration_unit": ["mol/liter", (str)],
             "time_label": ["Years", (str)],
@@ -239,6 +240,7 @@ class Model(esbmtkBase):
         self.d_unit = Q_(self.stop).units  # display time units
         self.m_unit = Q_(self.mass_unit).units  # the mass unit
         self.v_unit = Q_(self.volume_unit).units  # the volume unit
+        self.a_unit = Q_(self.area_unit).units  # the volume unit
         self.c_unit = Q_(self.concentration_unit).units
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
         self.r_unit = self.v_unit / self.t_unit  # flux as volume/time
@@ -996,6 +998,7 @@ class ReservoirBase(esbmtkBase):
         raise NotImplementedError(
             "ReservoirBase should never be used. Use the derived classes"
         )
+       
 
     def __set_legacy_names__(self, kwargs) -> None:
         """
@@ -1003,7 +1006,7 @@ class ReservoirBase(esbmtkBase):
         """
 
         from esbmtk import get_box_geometry_parameters
-
+        
         self.atol: list[float] = [1.0, 1.0]  # tolerances
         self.lof: list[Flux] = []  # flux references
         self.led: list[ExternalData] = []  # all external data references
@@ -1449,10 +1452,10 @@ class Reservoir(ReservoirBase):
     You must provide either the volume or the geometry keyword.  In
     the latter case provide a list where the first entry is the upper
     depth datum, the second entry is the lower depth datum, and the
-    third entry is the area percentage.  E.g., to specify the upper
+    third entry is the total ocean area.  E.g., to specify the upper
     200 meters of the entire ocean, you would write:
 
-    geometry=[0,-200,1]
+    geometry=[0,-200,3.6e14]
 
     the corresponding ocean volume will then be calculated by the
     calc_volume method in this case the following instance variables
@@ -1463,6 +1466,12 @@ class Reservoir(ReservoirBase):
     seafloor which is intercepted by this box.  self.area_fraction:
     area of seafloor which is intercepted by this relative to the
     total ocean floor area
+
+    It is also possible to specify volume and area explicitly. In this
+    case provide a dictionary like this::
+                  geometry = {"area": "1e14 m**2", # surface area
+                              "volume": "3e16 m**3", # box volume
+                             }
 
     Adding seawater_properties:
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1539,7 +1548,7 @@ class Reservoir(ReservoirBase):
               "concentration": ["None", (str, Q_, float)],
               "mass": ["None", (str, Q_)],
               "volume": ["None", (str, Q_)],
-              "geometry": ["None", (list, str)],
+              "geometry": ["None", (list, dict, str)],
               "plot_transform_c": ["None", (any)],
               "legend_left": ["None", (str)],
               "plot": ["yes", (str)],
@@ -1594,7 +1603,8 @@ class Reservoir(ReservoirBase):
             "concentration": ["None", (str, Q_, float)],
             "mass": ["None", (str, Q_)],
             "volume": ["None", (str, Q_)],
-            "geometry": ["None", (list, str)],
+            "geometry": ["None", (list, dict, str)],
+            "geometry_unset": [True, (bool)],
             "plot_transform_c": ["None", (any)],
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
