@@ -2,7 +2,12 @@
 Changelog
 =========
 
-
+- Oct. 12\ :sup:`th`\, 2023 v 0.11.0.0 This is a breaking change. Added support to specify
+  box area and volume explicitly, rather than as a function of hypsography. This is likely
+  to affect existing geoemtry definitions since the (area/total area) parameter has changed meaning
+  The area fraction is now calcualted automatically, and unless you split the model in specific basins
+  the last parameter in the geometry list should always be 1 (i.e.,  [0, -350, 1]).
+  
 - Oct. 30\ :sup:`th`\, 2023 v 0.10.0.11 This is a breaking change. Remineralization and
   photosynthesis must be implemented via functions, rather than transport
   connections. CS1 and CS2 are retired, and replaced by photosynthesis,

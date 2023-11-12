@@ -865,11 +865,13 @@ class Signal(esbmtkBase):
             # test what type of Quantity we have
             if yq.check(["dimensionless"]):  # dimensionless
                 self.s_data = self.s_data.magnitude
-            elif yq.check(["volume]/[time"]):  # flux
+            elif yq.check("liter/yr"):  # flux
                 self.s_data = self.s_data.to(self.mo.r_unit).magnitude
-            elif yq.check(["mass] / [time"]):  # flux
+            elif yq.check("mol/yr"):  # flux
                 self.s_data = self.s_data.to(self.mo.f_unit).magnitude
-            elif yq.check(["[mass]/[volume]"]):  # concentration
+            elif yq.check("mol/liter"):  # concentration
+                self.s_data = self.s_data.to(self.mo.c_unit).magnitude
+            elif yq.check("mol/kg"):  # concentration
                 self.s_data = self.s_data.to(self.mo.c_unit).magnitude
             else:
                 SignalError(f"No conversion to model units for {self.scale} specified")
@@ -1172,7 +1174,7 @@ class DataField(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", ["register", "associated_with"], "y1_data"]
+        self.lrk: list = ["name", "register", "associated_with", "y1_data"]
 
         # provide a dictionary entry for a keyword specific error message
         # see esbmtkBase.__initerrormessages__()
@@ -1220,12 +1222,12 @@ class DataField(esbmtkBase):
         # register with reservoir
         # self.associated_with.ldf.append(self)
         # register with model. needed for print_reservoirs
-        self.mo.ldf.append(self)
+        self.register.ldf.append(self)
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
         self.__register_name_new__()
-        if self.mo.state == 0:
+        if self.register.state == 0:
             print("")
             print(
                 "---------------------------------------------------------------------------\n\n"
@@ -1397,9 +1399,10 @@ class DataField(esbmtkBase):
             if self.x1_as_time:
                 x1 = (self.x1_data[i] * M.t_unit).to(M.d_unit).magnitude
             else:
-                # x1 = self.x1_data[i]
-                y1 = (self.c * M.c_unit).to(self.plt_units).magnitude
-                y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
+                x1 = self.x1_data[i]
+                # y1 = (self.y * M.c_unit).to(self.plt_units).magnitude
+                # 1 = self.y
+                # y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
 
             self.__plot_data__(
                 ax,
@@ -2264,29 +2267,65 @@ class ExternalData(esbmtkBase):
         self.offset = self.ensure_q(self.offset)
         self.offset = self.offset.to(self.mo.t_unit).magnitude
 
-        # get unit information
-        self.xq = Q_(get_string_between_brackets(self.df.columns[0]))
-        self.yq = Q_(get_string_between_brackets(self.df.columns[1]))
-        xs = self.xq.to(self.mo.d_unit).magnitude
-        ys = self.yq.to(self.register.plt_units).magnitude
+        # # get unit information
+        # self.xq = Q_(get_string_between_brackets(self.df.columns[0]))
+        # self.yq = Q_(get_string_between_brackets(self.df.columns[1]))
+        # xs = self.xq.to(self.mo.d_unit).magnitude
+        # ys = self.yq.to(self.register.plt_units).magnitude
 
         # scale input data into model  units
-        self.x: NDArrayFloat = self.df.iloc[:, 0].to_numpy() * xs
-        self.y: NDArrayFloat = self.df.iloc[:, 1].to_numpy() * ys
+        # self.x: NDArrayFloat = self.df.iloc[:, 0].to_numpy() * xs
+        # self.y: NDArrayFloat = self.df.iloc[:, 1].to_numpy() * ys
+
+        # get unit information from each header
+        xh = self.df.columns[0].split("[")[1].split("]")[0]
+        yh = self.df.columns[1].split("[")[1].split("]")[0]
+        zh = (
+            self.df.columns[2].split("[")[1].split("]")[0]
+            if len(self.df.columns) > 2
+            else None
+        )
+
+        # create the associated quantities
+        xq = Q_(xh)
+        yq = Q_(yh)
+
+        # add these to the data we are are reading
+        self.x: NDArrayFloat = self.df.iloc[:, 0].to_numpy() * xq
+        self.y: NDArrayFloat = self.df.iloc[:, 1].to_numpy() * yq
+
+        if zh:
+            # delta is assumed to be without units
+            self.d: NDArrayFloat = self.df.iloc[:, 2].to_numpy()
 
         # map into model space
-        self.x = self.x - self.x[0] + self.offset
+        # self.x = self.x - self.x[0] + self.offset
+        # map into model units, and strip unit information
+        self.x = self.x.to(self.mo.t_unit).magnitude
+        # self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
 
+        if isinstance(yq, Q_):
+            # test what type of Quantity we have
+            if yq.is_compatible_with("dimensionless"):  # dimensionless
+                self.y = self.y.magnitude
+            elif yq.is_compatible_with("liter/yr"):  # flux
+                self.y = self.y.to(self.mo.r_unit).magnitude
+            elif yq.is_compatible_with("mol/yr"):  # flux
+                self.y = self.y.to(self.mo.f_unit).magnitude
+            elif yq.is_compatible_with("mol/liter"):  # concentration
+                self.y = self.y.to(self.mo.c_unit).magnitude
+            elif yq.is_compatible_with("mol/kg"):  # concentration
+                self.y = self.y.to(self.mo.c_unit).magnitude
+            else:
+                SignalError(f"No conversion to model units for {self.scale} specified")
+
+        self.s_data = self.s_data * self.scale
         # test for plt_transform
         if self.plot_transform_c != "None":
             if callable(self.plot_transform_c):
                 self.y = self.plot_transform_c(self.y)
             else:
                 raise ExternalDataError("Plot transform must be a function")
-
-        # zh = self.df.columns[2]
-        if self.isotopes:
-            self.z = self.df.iloc[:, 2].to_numpy()
 
         # register with reservoir
         self.__register__(self.reservoir)
