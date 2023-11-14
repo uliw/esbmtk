@@ -5,20 +5,19 @@ from esbmtk import (
     Connection,  # the connection class
     Source,  # the source class
     Sink,  # sink class
-    Signal, 
+    Signal,
     Q_,  # Quantity operator
 )
 
 # define the basic model parameters
 M = Model(
-    name="M",  # model name
     stop="6 Myr",  # end time of model
     timestep="1 kyr",  # upper limit of time step
     element=["Phosphor"],  # list of element definitions
 )
 
 # boundary conditions
-F_w =  M.set_flux("45 Gmol", "year", M.P) # P @280 ppm (Filipelli 2002)
+F_w = M.set_flux("45 Gmol", "year", M.P)  # P @280 ppm (Filipelli 2002)
 tau = Q_("100 year")  # PO4 residence time in surface box
 F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
 thc = "20*Sv"  # Thermohaline circulation in Sverdrup
@@ -67,7 +66,7 @@ Connection(
     sink=M.sb,  # target of flux
     rate=F_w,  # rate of flux
     id="river",  # connection id
-    signal=M.CR,
+    # signal=M.CR,
 )
 
 Connection(  # thermohaline downwelling
@@ -104,5 +103,5 @@ Connection(  #
 )
 
 M.run()
-M.plot([M.sb, M.db,M.CR])
-#M.save_data()
+M.plot([M.sb, M.db, M.CR])
+# M.save_data()
