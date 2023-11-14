@@ -26,7 +26,7 @@ def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
     :param rg: A reservoirgroup object with initialized carbonate system
     """
     from esbmtk import VectorData
-    
+
     k1 = rg.swc.K1  # K1
     k2 = rg.swc.K2  # K2
     KW = rg.swc.KW  # KW
@@ -155,7 +155,7 @@ def carbonate_system_2_pp(
         name="zsat",
         register=rg,
         species=rg.mo.zsat,
-        data=zsat0 * np.log(ca2 * rg.CO3.c / ksp0)
+        data=zsat0 * np.log(ca2 * rg.CO3.c / ksp0),
     )
     VectorData(
         name="zcc",
@@ -163,3 +163,42 @@ def carbonate_system_2_pp(
         species=rg.mo.zcc,
         data=zsat0 * np.log(export * ca2 / (ksp0 * AD * kc) + ca2 * rg.CO3.c / ksp0),
     )
+
+
+def gas_exchange_fluxes(
+    liquid_reservoir: Reservoir,
+    gas_reservoir: GasReservoir,
+    pv: str,
+):
+    """Calculate gas exchange fluxes for a given Reservoir
+
+    :param liquid_reservoir: Reservoir handle
+    :param gas_reservoir:  Reservoir handle
+    :param pv: piston velocity as string e.g., "4.8 m/d"
+
+    :returns:
+
+    """
+    from esbmtk import Q_, gas_exchange_ode
+
+    if isinstance(pv, str):
+        pv = Q_(pv).to("meter/yr").magnitude
+    elif isinstance(pv, Q_):
+        pv = pv.to("meter/yr").magnitude
+    else:
+        raise ValueError("pv must be quantity or string")
+
+    scale = liquid_reservoir.register.area * pv
+    gas_c = gas_reservoir.c
+    p_H2O = liquid_reservoir.register.swc.p_H2O
+    
+    if liquid_reservoir.species.name == "DIC":
+        solubility = liquid_reservoir.register.swc.SA_co2
+        g_c_aq = liquid_reservoir.register.CO2aq.c
+    elif liquid_reservoir.species.name == "O2":
+        solubility = liquid_reservoir.register.swc.SA_o2
+        g_c_aq = liquid_reservoir.register.O2.c
+    else:
+        raise ValueError("flux calculation is only supported for DIC and O2")
+
+    return gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq)
