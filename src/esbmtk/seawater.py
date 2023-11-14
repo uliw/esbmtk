@@ -149,7 +149,7 @@ class SeawaterConstants(esbmtkBase):
         for n in self.constants:
             K = getattr(self, n)  # get K value
             pk = f"p{n.lower()}"  # get K name
-            print(f"{n} = {K:.2e}, {pk} = {-log10(K):.2f}")
+            print(f"{n} = {K:.2e}, {pk} = {-log10(K):.4f}")
 
     def __get_density__(self):
         """Calculate seawater density as function of temperature,
