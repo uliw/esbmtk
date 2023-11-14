@@ -1183,7 +1183,7 @@ class DataField(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "register", "associated_with", "y1_data"]
+        self.lrk: list = ["name", ["register", "associated_with"], "y1_data"]
 
         # provide a dictionary entry for a keyword specific error message
         # see esbmtkBase.__initerrormessages__()
@@ -1236,17 +1236,17 @@ class DataField(esbmtkBase):
             self.display_precision = self.mo.display_precision
 
         self.__register_name_new__()
-        if self.register.state == 0:
-            print("")
-            print(
-                "---------------------------------------------------------------------------\n\n"
-            )
-            print(
-                "Warning, you are initializing a datafield before the model results are known\n\n"
-            )
-            print(
-                "---------------------------------------------------------------------------"
-            )
+        # if self.register.state == 0:
+        #     print("")
+        #     print(
+        #         "---------------------------------------------------------------------------\n\n"
+        #     )
+        #     print(
+        #         "Warning, you are initializing a datafield before the model results are known\n\n"
+        #     )
+        #     print(
+        #         "---------------------------------------------------------------------------"
+        #     )
 
     def __write_data__(
         self,
@@ -2278,16 +2278,6 @@ class ExternalData(esbmtkBase):
         # print(f"Model = {self.mo.full_name}, t_unit = {self.mo.t_unit}")
         self.offset = self.ensure_q(self.offset)
         self.offset = self.offset.to(self.mo.t_unit).magnitude
-
-        # # get unit information
-        # self.xq = Q_(get_string_between_brackets(self.df.columns[0]))
-        # self.yq = Q_(get_string_between_brackets(self.df.columns[1]))
-        # xs = self.xq.to(self.mo.d_unit).magnitude
-        # ys = self.yq.to(self.register.plt_units).magnitude
-
-        # scale input data into model  units
-        # self.x: NDArrayFloat = self.df.iloc[:, 0].to_numpy() * xs
-        # self.y: NDArrayFloat = self.df.iloc[:, 1].to_numpy() * ys
 
         # get unit information from each header
         xh = self.df.columns[0].split("[")[1].split("]")[0]
