@@ -46,6 +46,38 @@ The process for cs2 is analogous
 """
 
 
+def get_hplus(KW, bt, hg, KB, ta, dic, k1k1, k1k2, k1, k2):
+    """Calculate H+ concentration"""
+    C_si = 569e-6  # Silica concentration
+    pt = 1.5000e-05  # PO4 concentration
+
+    KSi = 4.1686938347033463e-10
+    k1p = 0.024547089156850298
+    k2p = 1.096478196143185e-06
+    k3p = 1.6218100973589331e-09
+
+    # estimate contributions to total alk from borate, silicate, phosphate
+    bohg = bt * KB / (hg + KB)
+    siooh3g = C_si * KSi / (KSi + hg)
+    denom = hg * hg * hg + (k1p * hg * hg) + (k1p * k2p * hg) + (k1p * k2p * k3p)
+    h3po4g = (pt * hg * hg * hg) / denom
+    # h2po4g = (pt * k1p * hg * hg) / denom
+    hpo4g = (pt * k1p * k2p * hg) / denom
+    po4g = (pt * k1p * k2p * k3p) / denom
+
+    # estimate carbonate alkalinity
+    fg = -bohg - (KW / hg) + hg - hpo4g - 2.0 * po4g + h3po4g - siooh3g
+    fg = -bohg - (KW / hg) + hg
+    cag = ta + fg
+
+    # estimate new hplus
+    gamm: float = dic / cag
+    dummy: float = (1 - gamm) * (1 - gamm) * k1k1 - 4.0 * k1 * k2 * (1.0 - 2.0 * gamm)
+    H = 0.5 * ((gamm - 1.0) * k1 + sqrt(dummy))
+
+    return H
+
+
 def carbonate_system_1_ode(
     swc: any,
     dic: float,
@@ -73,20 +105,9 @@ def carbonate_system_1_ode(
     k1k2 = swc.K1K2  # K1 * K2
     KW = swc.KW  # KW
     KB = swc.KB  # KB
-    boron = swc.boron  # boron
-    # hplus_0 = hplus
-
-    # calculates carbonate alkalinity (ca) based on H+ concentration from the
-    # previous time-step
-    oh: float = KW / hplus_0
-    boh4: float = boron * KB / (hplus_0 + KB)
-    fg: float = hplus_0 - oh - boh4
-    ca: float = ta + fg
-
-    # hplus
-    gamm: float = dic / ca
-    dummy: float = (1 - gamm) * (1 - gamm) * k1k1 - k1k2 * (4 - 8 * gamm)
-    hplus: float = 0.5 * ((gamm - 1) * k1 + sqrt(dummy))
+    boron = swc.boron 
+    
+    hplus = get_hplus(KW, boron, hplus_0, KB, ta, dic, k1k1, k1k2, k1, k2)
     co2aq: float = dic / (1 + (k1 / hplus) + (k1k2 / (hplus * hplus)))
     # co3 = max(dic / (1 + hplus / k2 + hplus * hplus / k1k2), 3.7e-05)
     dCdt_Hplus = hplus - hplus_0
@@ -213,24 +234,19 @@ def carbonate_system_2_ode(
     depth_area_table = rg.cs.depth_area_table
     area_dz_table = rg.cs.area_dz_table
     Csat_table = rg.cs.Csat_table
+    
+    # co3 = max(dic_db / (1 + hplus_0 / k2 + hplus_0 * hplus_0 / k1k2), 3.7e-05)
+    hplus = get_hplus(KW, boron, hplus_0, KB, ta_db, dic_db, k1k1, k1k2, k1, k2)
+    co3 = dic_db / (1 + hplus_0 / k2 + hplus_0 * hplus_0 / k1k2)
 
-    # calc carbonate alkalinity based t-1
-    oh: float = KW / hplus_0
-    boh4: float = boron * KB / (hplus_0 + KB)
-    fg: float = hplus_0 - oh - boh4
-    ca: float = ta_db + fg
-    # calculate carbon speciation
-    # The following equations are after Follows et al. 2006
-    gamm: float = dic_db / ca
-    dummy: float = (1 - gamm) * (1 - gamm) * k1k1 - k1k2 * (4 - 8 * gamm)
-    hplus: float = 0.5 * ((gamm - 1) * k1 + sqrt(dummy))
-    co3 = max(dic_db / (1 + hplus / k2 + hplus * hplus / k1k2), 3.7e-05)
+    
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
     zsat = np.clip(zsat, zsat_min, zmax)
     zcc = int(
-        zsat0 * log(CaCO3_export * ca2 / (ksp0 * reference_area * kc) + ca2 * co3 / ksp0)
+        zsat0
+        * log(CaCO3_export * ca2 / (ksp0 * reference_area * kc) + ca2 * co3 / ksp0)
     )  # eq3
     zcc = np.clip(zcc, zsat_min, zmax)
     # get fractional areas
@@ -258,7 +274,7 @@ def carbonate_system_2_ode(
     dCdt_DIC: float = BDS + BCC + BNS + BPDC
     dCdt_Hplus = hplus - hplus_0
     dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
-    
+
     """CACO3_export is the flux of CaCO3 into the box. However, the model should
     use the bypass option and leave all flux calculations to the
     cs_code.  As such, we simply add the fraction of the input flux
@@ -304,7 +320,7 @@ def init_carbonate_system_2(
     from esbmtk import ExternalCode, carbonate_system_2_ode, Q_
 
     reference_area = Q_(reference_area).to(rg.mo.a_unit).magnitude
-    
+
     ec = ExternalCode(
         name="cs",
         species=rg.mo.Carbon.CO2,
@@ -424,7 +440,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "r_sb": [],  # empty list
         "zsat": -3715,  # m
         "zcc": -4750,  # m
-        "zsnow": -5000,  # m
+        "zsnow": -4750,  # m
         "zsat0": -5078,  # m
         "Ksp0": reservoir.swc.Ksp0,  # mol^2/kg^2
         "kc": 8.84 * 1000,  # m/yr converted to kg/(m^2 yr)
@@ -436,6 +452,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "zmax": -6000,  # max model depth
         "Ksp": reservoir.swc.Ksp,  # mol^2/kg^2
     }
+    
 
     # make sure all mandatory keywords are present
     __checkkeys__(lrk, lkk, kwargs)
@@ -466,7 +483,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     Csat_table: NDArrayFloat = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
     area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
     area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area'
-    reference_area = Q_(kwargs['reference_area']).to(r_db[0].mo.a_unit)
+    reference_area = Q_(kwargs["reference_area"]).to(r_db[0].mo.a_unit)
 
     for i, rg in enumerate(r_db):  # Setup the virtual reservoirs
         ec = init_carbonate_system_2(
@@ -649,29 +666,29 @@ def phc(m: float) -> float:
     return pH
 
 
-def get_hplus(
-    rg: ReservoirGroup,
-    dic: float,
-    ta: float,
-    hplus: float,
-) -> float:
-    k1 = rg.swc.K1  # K1
-    k2 = rg.swc.K2  # K2
-    KW = rg.swc.KW  # KW
-    KB = rg.swc.KB  # KB
-    boron = rg.swc.boron  # boron
-    hplus_0 = hplus
+# def get_hplus(
+#     rg: ReservoirGroup,
+#     dic: float,
+#     ta: float,
+#     hplus: float,
+# ) -> float:
+#     k1 = rg.swc.K1  # K1
+#     k2 = rg.swc.K2  # K2
+#     KW = rg.swc.KW  # KW
+#     KB = rg.swc.KB  # KB
+#     boron = rg.swc.boron  # boron
+#     hplus_0 = hplus
 
-    # calculates carbonate alkalinity (ca) based on H+ concentration from the
-    # previous time-step
-    oh: float = KW / hplus
-    boh4: float = boron * KB / (hplus + KB)
-    fg: float = hplus - oh - boh4
-    ca: float = ta + fg
+#     # calculates carbonate alkalinity (ca) based on H+ concentration from the
+#     # previous time-step
+#     oh: float = KW / hplus
+#     boh4: float = boron * KB / (hplus + KB)
+#     fg: float = hplus - oh - boh4
+#     ca: float = ta + fg
 
-    # hplus
-    gamm: float = dic / ca
-    dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
-    hplus: float = 0.5 * ((gamm - 1) * k1 + sqrt(dummy))
+#     # hplus
+#     gamm: float = dic / ca
+#     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
+#     hplus: float = 0.5 * ((gamm - 1) * k1 + sqrt(dummy))
 
-    return hplus - hplus_0
+#     return hplus - hplus_0
