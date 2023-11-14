@@ -48,31 +48,32 @@ The process for cs2 is analogous
 
 def get_hplus(KW, bt, hg, KB, ta, dic, k1k1, k1k2, k1, k2):
     """Calculate H+ concentration"""
-    C_si = 569e-6  # Silica concentration
-    pt = 1.5000e-05  # PO4 concentration
-
-    KSi = 4.1686938347033463e-10
-    k1p = 0.024547089156850298
-    k2p = 1.096478196143185e-06
-    k3p = 1.6218100973589331e-09
 
     # estimate contributions to total alk from borate, silicate, phosphate
+    oh = KW / hg
     bohg = bt * KB / (hg + KB)
-    siooh3g = C_si * KSi / (KSi + hg)
-    denom = hg * hg * hg + (k1p * hg * hg) + (k1p * k2p * hg) + (k1p * k2p * k3p)
-    h3po4g = (pt * hg * hg * hg) / denom
-    # h2po4g = (pt * k1p * hg * hg) / denom
-    hpo4g = (pt * k1p * k2p * hg) / denom
-    po4g = (pt * k1p * k2p * k3p) / denom
+    # C_si = 569e-6  # Silica concentration
+    # pt = 1.5000e-05  # PO4 concentration
+    # KSi = 4.1686938347033463e-10
+    # k1p = 0.024547089156850298
+    # k2p = 1.096478196143185e-06
+    # k3p = 1.6218100973589331e-09
+    # siooh3g = C_si * KSi / (KSi + hg)
+    # denom = hg * hg * hg + (k1p * hg * hg) + (k1p * k2p * hg) + (k1p * k2p * k3p)
+    # h3po4g = (pt * hg * hg * hg) / denom
+    # # h2po4g = (pt * k1p * hg * hg) / denom
+    # hpo4g = (pt * k1p * k2p * hg) / denom
+    # po4g = (pt * k1p * k2p * k3p) / denom
 
     # estimate carbonate alkalinity
-    fg = -bohg - (KW / hg) + hg - hpo4g - 2.0 * po4g + h3po4g - siooh3g
-    fg = -bohg - (KW / hg) + hg
+    # fg = -bohg - (KW / hg) + hg - hpo4g - 2.0 * po4g + h3po4g - siooh3g
+    fg = hg -bohg - oh
     cag = ta + fg
 
     # estimate new hplus
-    gamm: float = dic / cag
-    dummy: float = (1 - gamm) * (1 - gamm) * k1k1 - 4.0 * k1 * k2 * (1.0 - 2.0 * gamm)
+    gamm = dic / cag
+    dummy = (1 - gamm) * (1 - gamm) * k1k1 - 4.0 * k1k2 * (1.0 - 2.0 * gamm)
+    # dummy = (1 - gamm)**2 * k1k1 - 4.0 * k1k2 * - 8 * k1k2 * gamm
     H = 0.5 * ((gamm - 1.0) * k1 + sqrt(dummy))
 
     return H
