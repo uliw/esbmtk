@@ -998,7 +998,6 @@ class ReservoirBase(esbmtkBase):
         raise NotImplementedError(
             "ReservoirBase should never be used. Use the derived classes"
         )
-       
 
     def __set_legacy_names__(self, kwargs) -> None:
         """
@@ -1006,7 +1005,7 @@ class ReservoirBase(esbmtkBase):
         """
 
         from esbmtk import get_box_geometry_parameters
-        
+
         self.atol: list[float] = [1.0, 1.0]  # tolerances
         self.lof: list[Flux] = []  # flux references
         self.led: list[ExternalData] = []  # all external data references
@@ -1346,7 +1345,7 @@ class ReservoirBase(esbmtkBase):
             y1_label = "ppm"
         elif self.display_as == "length":
             y1 = (self.c * M.l_unit).to(self.plt_units).magnitude
-            y1_label = f"{self.legend_left} [{self.plt_units:~P}]"                    
+            y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
         else:
             y1 = (self.c * M.c_unit).to(self.plt_units).magnitude
             y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
@@ -1738,7 +1737,7 @@ class Reservoir(ReservoirBase):
                 self.display_as = "mass"
             else:
                 raise ReservoirError("You need to specify mass or concentration")
-                                 
+
         elif self.sp.stype == "length":
             self.plt_units = self.mo.l_unit
             self.c = np.zeros(self.mo.steps) + Q_(self.concentration).magnitude
