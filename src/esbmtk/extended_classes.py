@@ -1133,6 +1133,29 @@ class DataField(esbmtkBase):
     Name.y1_legend
 
     Similarly for y2
+
+    You can specify more than one data set, and be explicit about color and
+    linestyle choices.
+
+    Example::
+
+            DataField(
+                    name="df_pH",
+                    x1_data=[M.time, M.time, M.time, M.ef_hplus_l.x, M.ef_hplus_h.x, M.ef_hplus_d.x],
+                    y1_data=[
+                    -np.log10(M.L_b.Hplus.c),
+                    -np.log10(M.H_b.Hplus.c),
+                    -np.log10(M.D_b.Hplus.c),
+                    -np.log10(M.ef_hplus_l.y),
+                    -np.log10(M.ef_hplus_h.y),
+                    -np.log10(M.ef_hplus_d.y),
+                    ],
+                    y1_label="Low latitude, High latitude, Deep box, d_L, d_H, d_D".split(", "),
+                    y1_color="C0 C1 C2 C0 C1 C2".split(" "),
+                    y1_style="solid solid solid dotted dotted dotted".split(" "),
+                    y1_legend="pH",
+                    register=M,
+)
     """
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
@@ -1233,6 +1256,16 @@ class DataField(esbmtkBase):
             self.y1_style = []
             for i, d in enumerate(self.y1_data):
                 self.y1_style.append(f"solid")
+
+        if self.y2_color == "None":
+            self.y2_color = []
+            for i, d in enumerate(self.y2_data):
+                self.y2_color.append(f"C{i}")
+
+        if self.y2_style == "None":
+            self.y2_style = []
+            for i, d in enumerate(self.y2_data):
+                self.y2_style.append(f"solid")
 
         self.n = self.name
         self.led = []
@@ -1364,7 +1397,7 @@ class DataField(esbmtkBase):
 
         return x, y, label
 
-    def __plot_data__(self, ax, x, y, t, l, i) -> None:
+    def __plot_data__(self, ax, x, y, t, l, i, color, style) -> None:
         """Plot data either as line of scatterplot
 
         :param ax: axis handle
@@ -1377,9 +1410,9 @@ class DataField(esbmtkBase):
         """
         if t == "plot":
             # ax.plot(x, y, color=f"C{i}", label=l)
-            ax.plot(x, y, color=self.y1_color[i], linestyle=self.y1_style[i], label=l)
+            ax.plot(x, y, color=color[i], linestyle=style[i], label=l)
         else:
-            ax.scatter(x, y, color=self.y1_color[i], label=l)
+            ax.scatter(x, y, color=color[i], label=l)
 
     def __plot__(self, M: Model, ax) -> None:
         """Plot instructions.
@@ -1419,6 +1452,8 @@ class DataField(esbmtkBase):
                 self.y1_type,
                 self.y1_label[i],
                 i,
+                self.y1_color,
+                self.y1_style,
             )
             last_i = i
             u, v = ax.get_ylim()
@@ -1460,6 +1495,8 @@ class DataField(esbmtkBase):
                     self.y2_type,
                     self.y2_label[i],
                     i + last_i + 1,
+                    self.y2_color,
+                    self.y2_style,
                 )
             u, v = axt.get_ylim()
             ymin.append(u)
