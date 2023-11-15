@@ -1333,7 +1333,8 @@ class AirSeaExchange(esbmtkBase):
         self.scale = self.area * self.piston_velocity
 
         # create connection and flux name
-        self.name = f"C_{self.lr.register.name}_to_{self.gr.name}"
+        self.id = "GEX"
+        self.name = f"C_{self.gr.name}_to_{self.lr.register.name}"
         self.parent = self.register
         self.__register_name_new__()
 
@@ -1428,5 +1429,5 @@ class AirSeaExchange(esbmtkBase):
         self.mo = self.species.mo
         self.model = self.mo
         self.ctype = "gas_exchange"
-        self.source = self.liquid_reservoir
-        self.sink = self.gas_reservoir
+        self.sink = self.liquid_reservoir
+        self.source = self.gas_reservoir

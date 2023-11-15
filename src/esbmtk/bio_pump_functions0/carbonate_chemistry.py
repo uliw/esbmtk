@@ -67,7 +67,7 @@ def get_hplus(KW, bt, hg, KB, ta, dic, k1k1, k1k2, k1, k2):
 
     # estimate carbonate alkalinity
     # fg = -bohg - (KW / hg) + hg - hpo4g - 2.0 * po4g + h3po4g - siooh3g
-    fg = hg -bohg - oh
+    fg = hg - bohg - oh
     cag = ta + fg
 
     # estimate new hplus
@@ -106,8 +106,8 @@ def carbonate_system_1_ode(
     k1k2 = swc.K1K2  # K1 * K2
     KW = swc.KW  # KW
     KB = swc.KB  # KB
-    boron = swc.boron 
-    
+    boron = swc.boron
+
     hplus = get_hplus(KW, boron, hplus_0, KB, ta, dic, k1k1, k1k2, k1, k2)
     co2aq: float = dic / (1 + (k1 / hplus) + (k1k2 / (hplus * hplus)))
     dCdt_Hplus = hplus - hplus_0
@@ -234,12 +234,11 @@ def carbonate_system_2_ode(
     depth_area_table = rg.cs.depth_area_table
     area_dz_table = rg.cs.area_dz_table
     Csat_table = rg.cs.Csat_table
-    
+
     # co3 = max(dic_db / (1 + hplus_0 / k2 + hplus_0 * hplus_0 / k1k2), 3.7e-05)
     hplus = get_hplus(KW, boron, hplus_0, KB, ta_db, dic_db, k1k1, k1k2, k1, k2)
     co3 = dic_db / (1 + hplus_0 / k2 + hplus_0 * hplus_0 / k1k2)
 
-    
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
@@ -303,7 +302,8 @@ def gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:
 
     beta = solubility * (1 - p_H2O)
     f = scale * (gas_c * beta - g_c_aq * 1e3)
-    return -f
+
+    return f
 
 
 def init_carbonate_system_2(
@@ -452,7 +452,6 @@ def add_carbonate_system_2(**kwargs) -> None:
         "zmax": -6000,  # max model depth
         "Ksp": reservoir.swc.Ksp_ca,  # mol^2/kg^2
     }
-    
 
     # make sure all mandatory keywords are present
     __checkkeys__(lrk, lkk, kwargs)

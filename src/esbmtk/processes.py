@@ -1212,7 +1212,7 @@ class GasExchange(RateConstant):
         """The solver will use f and f12 to update mass, light
         isotope and concentration values in the Gas
         reservoir. However, Gas reservoirs track total gas pressure
-        in the volume variable. This will not be updated by the
+         in the volume variable. This will not be updated by the
         solver. So we need to do it ourseleves
 
         not working, see note below
