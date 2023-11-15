@@ -29,24 +29,10 @@ def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
 
     k1 = rg.swc.K1  # K1
     k2 = rg.swc.K2  # K2
-    KW = rg.swc.KW  # KW
-    KB = rg.swc.KB  # KB
-    boron = rg.swc.boron  # boron
+    k1k2 = rg.swc.K1K2
     hplus = rg.Hplus.c
     dic = rg.DIC.c
-    ta = rg.TA.c
 
-    # calculates carbonate alkalinity (ca) based on H+ concentration from the
-    # previous time-step
-    oh: float = KW / hplus
-    boh4: float = boron * KB / (hplus + KB)
-    fg: float = hplus - oh - boh4
-    VectorData(
-        name="CA",
-        register=rg,
-        species=rg.mo.CA,
-        data=ta + fg,
-    )
     VectorData(
         name="HCO3",
         register=rg,
@@ -57,7 +43,7 @@ def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
         name="CO3",
         register=rg,
         species=rg.mo.CO3,
-        data=(rg.CA.c - rg.HCO3.c) / 2,
+        data=dic / (1 + hplus / k2 + hplus * hplus / k1k2)
     )
     rg.CO3.c[rg.CO3.c < 0] = 0
 
@@ -101,6 +87,7 @@ def carbonate_system_2_pp(
     # Parameters
     k1 = rg.swc.K1  # K1
     k2 = rg.swc.K2  # K2
+    k1k2 = rg.swc.K1K2  # K2
     KW = rg.swc.KW  # KW
     KB = rg.swc.KB  # KB
     boron = rg.swc.boron  # boron
@@ -135,7 +122,7 @@ def carbonate_system_2_pp(
         name="CO3",
         register=rg,
         species=rg.mo.CO3,
-        data=(rg.CA.c - rg.HCO3.c) / 2,
+        data=dic / (1 + hplus / k2 + hplus * hplus / k1k2)
     )
     rg.CO3.c[rg.CO3.c < 0] = 0
 
@@ -143,7 +130,7 @@ def carbonate_system_2_pp(
         name="CO2aq",
         register=rg,
         species=rg.mo.CO2aq,
-        data=dic - rg.CO3.c - rg.HCO3.c,
+        data=dic / (1 + (k1 / hplus) + (k1k2 / (hplus * hplus)))
     )
     VectorData(
         name="pH",
