@@ -831,8 +831,8 @@ class Signal(esbmtkBase):
         i.e., the first row needs to be a header line
 
         """
-        #from .esbmtk import ExternalData
-        
+        # from .esbmtk import ExternalData
+
         # if not os.path.exists(self.filename):  # check if the file is actually there
         #     raise SignalError(f"Cannot find file {self.filename}")
 
@@ -881,11 +881,10 @@ class Signal(esbmtkBase):
             register=self,
             legend="None",
         )
-        
+
         self.s_time = ed.x
         self.s_data = ed.y * self.scale
-         
-        
+
         self.st: float = self.s_time[0]  # start time
         self.et: float = self.s_time[-1]  # end time
         self.duration = int(round((self.et - self.st)))
@@ -1172,12 +1171,16 @@ class DataField(esbmtkBase):
             "y1_label": ["Not Provided", (str, list)],
             "y1_legend": ["Not Provided", (str)],
             "y1_type": ["plot", (str, list)],
+            "y1_color": ["None", (str, list)],
+            "y1_style": ["None", (str, list)],
             "y2_data": ["None", (str, np.ndarray, list)],
             "x2_data": ["None", (np.ndarray, list, str)],
             "x2_as_time": [False, (bool)],
             "y2_label": ["Not Provided", (str, list)],
             "y2_legend": ["Not Provided", (str)],
             "y2_type": ["plot", (str, list)],
+            "y2_color": ["None", (str, list)],
+            "y2_style": ["None", (str, list)],
             "common_y_scale": ["no", (str)],
             "display_precision": [0.01, (int, float)],
             "title": ["None", (str)],
@@ -1221,10 +1224,15 @@ class DataField(esbmtkBase):
         else:
             raise ValueError("This needs fixing")
 
-        # if not isinstance(self.y2_data, str):
-        #     self.d = self.y2_data
-        #     self.legend_right = self.y2_legend
-        #     self.ld = self.y2_label
+        if self.y1_color == "None":
+            self.y1_color = []
+            for i, d in enumerate(self.y1_data):
+                self.y1_color.append(f"C{i}")
+
+        if self.y1_style == "None":
+            self.y1_style = []
+            for i, d in enumerate(self.y1_data):
+                self.y1_style.append(f"solid")
 
         self.n = self.name
         self.led = []
@@ -1237,17 +1245,6 @@ class DataField(esbmtkBase):
             self.display_precision = self.mo.display_precision
 
         self.__register_name_new__()
-        # if self.register.state == 0:
-        #     print("")
-        #     print(
-        #         "---------------------------------------------------------------------------\n\n"
-        #     )
-        #     print(
-        #         "Warning, you are initializing a datafield before the model results are known\n\n"
-        #     )
-        #     print(
-        #         "---------------------------------------------------------------------------"
-        #     )
 
     def __write_data__(
         self,
@@ -1379,9 +1376,10 @@ class DataField(esbmtkBase):
 
         """
         if t == "plot":
-            ax.plot(x, y, color=f"C{i}", label=l)
+            # ax.plot(x, y, color=f"C{i}", label=l)
+            ax.plot(x, y, color=self.y1_color[i], linestyle=self.y1_style[i], label=l)
         else:
-            ax.scatter(x, y, color=f"C{i}", label=l)
+            ax.scatter(x, y, color=self.y1_color[i], label=l)
 
     def __plot__(self, M: Model, ax) -> None:
         """Plot instructions.
@@ -2228,7 +2226,10 @@ class ExternalData(esbmtkBase):
             "offset": ["0 yrs", (Q_, str)],
             "display_precision": [0.01, (int, float)],
             "scale": [1, (int, float)],
-            "register": ["None", (str, Model, Reservoir, DataField, GasReservoir, Signal)],
+            "register": [
+                "None",
+                (str, Model, Reservoir, DataField, GasReservoir, Signal),
+            ],
             "plot_transform_c": ["None", (str, callable)],
         }
 
