@@ -110,7 +110,6 @@ def carbonate_system_1_ode(
     
     hplus = get_hplus(KW, boron, hplus_0, KB, ta, dic, k1k1, k1k2, k1, k2)
     co2aq: float = dic / (1 + (k1 / hplus) + (k1k2 / (hplus * hplus)))
-    # co3 = max(dic / (1 + hplus / k2 + hplus * hplus / k1k2), 3.7e-05)
     dCdt_Hplus = hplus - hplus_0
     dCdt_co2aq = co2aq - co2aq_0
 
@@ -451,7 +450,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "pc": 511,  # characteristic pressure after Boudreau 2010
         "I_caco3": 529,  # dissolveable CaCO3 in mol/m^2
         "zmax": -6000,  # max model depth
-        "Ksp": reservoir.swc.Ksp,  # mol^2/kg^2
+        "Ksp": reservoir.swc.Ksp_ca,  # mol^2/kg^2
     }
     
 

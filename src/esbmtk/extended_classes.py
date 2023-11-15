@@ -1095,6 +1095,7 @@ class VectorData(esbmtkBase):
         self.mo = self.species.mo
         self.model = self.species.mo
         self.c = self.data
+        self.label = self.name
         self.__register_name_new__()
 
 
