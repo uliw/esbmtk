@@ -86,7 +86,18 @@ class SeawaterConstants(esbmtkBase):
         self.n: str = self.name  # string =  name of this instance
         # self.mo: Model = self.model
         self.hplus = 10**-self.pH
-        self.constants: list = ["K0", "K1", "K2", "KW", "KB", "Ksp", "Ksp0", "KS", "KF"]
+        self.constants: list = [
+            "K0",
+            "K1",
+            "K2",
+            "KW",
+            "KB",
+            "Ksp_ca",
+            "Ksp_b",
+            "Ksp0",
+            "KS",
+            "KF",
+        ]
         self.species: list = [
             "dic",
             "ta",
@@ -132,9 +143,15 @@ class SeawaterConstants(esbmtkBase):
         self.ta = self.ca + self.boh4 + self.oh - self.hplus
 
     def show(self) -> None:
-        """Printout constants"""
+        """Printout constants. Units are mol/kg or
+        (mol**2/kg for doubly charged ions"""
 
         from math import log10
+
+        print(f"\nSeawater constants for {self.register.full_name}")
+        print(f"T = {self.temperature} [C]")
+        print(f"P = {self.pressure} [bar]")
+        print(f"S = {self.salinity} [PSU]\n")
 
         for n in self.species:
             v = getattr(self, n)
@@ -146,10 +163,13 @@ class SeawaterConstants(esbmtkBase):
         print(f"salinity = {self.salinity:.2f}")
         print(f"temperature = {self.temperature:.2f}\n")
 
+        print("Units are mol/kg or mol^2/kg\n")
         for n in self.constants:
             K = getattr(self, n)  # get K value
             pk = f"p{n.lower()}"  # get K name
             print(f"{n} = {K:.2e}, {pk} = {-log10(K):.4f}")
+
+        print()
 
     def __get_density__(self):
         """Calculate seawater density as function of temperature,
@@ -223,7 +243,7 @@ class SeawaterConstants(esbmtkBase):
         """
 
         self.dic = 0.00204
-        self.boron = 0.00042
+        self.boron = 0.000416 #
         self.oh = 0.00001
         self.so4 = 2.7123 / 96
         self.ca2 = 0.01028
@@ -250,6 +270,7 @@ class SeawaterConstants(esbmtkBase):
         )
 
         self.KF = np.exp(lnKF)
+        self.KF = self.__pressure_correction__("KF", self.KF)
         self.FT = 7e-5 * self.salinity / 35
 
     def __init_bisulfide__(self) -> None:
@@ -275,6 +296,7 @@ class SeawaterConstants(esbmtkBase):
         )
 
         self.KS = np.exp(lnKS)
+        self.KS = self.__pressure_correction__("KS", self.KS)
         self.ST = self.so4 * self.salinity / 35
 
     def __init_gasexchange__(self) -> None:
@@ -414,7 +436,7 @@ class SeawaterConstants(esbmtkBase):
 
         R: float = 83.131
         Tc: float = self.temperature
-        T: float = 273.15 + Tc
+        T: float = self.temperature + 273.15
         P: float = self.pressure
         RT: float = R * T
 
@@ -425,20 +447,14 @@ class SeawaterConstants(esbmtkBase):
         A["KW"]: list = [25.60, 0.2324, -3.6246, 5.13, 0.0794]
         A["KS"]: list = [18.03, 0.0466, 0.3160, 4.53, 0.0900]
         A["KF"]: list = [9.780, -0.0090, -0.942, 3.91, 0.054]
-        A["Kca"]: list = [48.76, 0.5304, 0.0, 11.76, 0.3692]
-        A["Kar"]: list = [46.00, 0.5304, 0.0, 11.76, 0.3692]
+        A["Ksp_ca"]: list = [48.76, 0.5304, 0.0, 11.76, 0.3692]
+        A["Ksp_ar"]: list = [46.00, 0.5304, 0.0, 11.76, 0.3692]
 
         a: list = A[n]
 
-        DV: float = -a[0] + (a[1] * Tc) + (a[2] / 1000 * Tc**2)
+        DV: float = -a[0] + a[1] * Tc + (a[2] / 1000 * Tc**2)
         DK: float = -a[3] / 1000 + (a[4] / 1000 * Tc) + (0 * Tc**2)
-
-        # print(f"DV = {DV}")
-        # print(f"DK = {DK}")
-        # print(f"log k= {log(K)}")
-
         lnkp: float = -(DV / RT) * P + (0.5 * DK / RT) * P**2 + log(K)
-        # print(lnkp)
 
         return exp(lnkp)
 
@@ -527,15 +543,35 @@ class SeawaterConstants(esbmtkBase):
         return F
 
     def __init_calcite__(self) -> None:
-        """Calculate Calcite solubility as a function of pressure following
+        """Calculate Calcite solubility
+
+        Ksp_b THis is after Boudreau as a function of pressure following
         Fig 1 in in Boudreau et al, 2010, https://doi.org/10.1029/2009gl041847
 
         Note that this equation assumes an idealized ocean temperature profile.
         So it cannot be applied to a warm ocean
 
+        Ksp_ca after Zeebe 2001
         """
+        from math import log10, exp
 
-        self.Ksp = 4.3513e-7 * np.exp(0.0019585 * self.pressure)
+        self.Ksp_b = 4.3513e-7 * np.exp(0.0019585 * self.pressure)
+
+        T = 273.15 + self.temperature  # Kelvin
+        S = self.salinity
+
+        logksp = (
+            -171.9065
+            - 0.077993 * T
+            + 2839.319 / T
+            + 71.595 * log10(T)
+            + (-0.77712 + 0.0028426 * T + 178.34 / T) * S**0.5
+            - 0.07711 * S
+            + 0.0041249 * S**1.5
+        )
+
+        self.Ksp_ca = 10**logksp
+        self.Ksp_ca = self.__pressure_correction__("Ksp_ca", self.Ksp_ca)
 
     def __init_c_fractionation_factors__(self):
         """Calculate the fractionation factors for the various carbon species transitions.

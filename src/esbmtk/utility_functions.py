@@ -1275,6 +1275,7 @@ def data_summaries(M, species_names, box_names, register_with):
         for b in box_names:
             if isinstance(b, VectorData):
                 data_list.append(a)
+                label_list.append(a.full_name)
             if hasattr(b, f"{sp.name}"):
                 a = getattr(b, f"{sp.name}")
                 if hasattr(a, ".plot_transform_c"):
@@ -1285,7 +1286,7 @@ def data_summaries(M, species_names, box_names, register_with):
                 else:
                     data_list.append(a.c)
 
-            label_list.append(a.full_name)
+                label_list.append(a.full_name)
 
         df = DataField(
             name=f"{sp.name}_df",
