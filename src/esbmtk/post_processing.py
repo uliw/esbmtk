@@ -43,7 +43,7 @@ def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
         name="CO3",
         register=rg,
         species=rg.mo.CO3,
-        data=dic / (1 + hplus / k2 + hplus * hplus / k1k2)
+        data=dic / (1 + hplus / k2 + hplus * hplus / k1k2),
     )
     rg.CO3.c[rg.CO3.c < 0] = 0
 
@@ -60,9 +60,18 @@ def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
 def carbonate_system_2_pp(
     rg: ReservoirGroup,  # 2 Reservoir handle
     export: float,  # 3 CaCO3 export flux as DIC
+    zsat_min: float,
+    zmax: float,
 ) -> None:
     """Calculates and returns the fraction of the carbonate rain that is
-    dissolved an returned back into the ocean. This functions returns:
+    dissolved an returned back into the ocean.
+
+    :param rg: ReservoirGroup, e.g., M.D_b
+    :param export: export flux in mol/year
+    :param zsat_min: depth of mixed layer
+    :param zmax: depth of lookup table
+
+    returns:
 
     DIC_burial, DIC_burial_l, Hplus, zsnow
 
@@ -122,7 +131,7 @@ def carbonate_system_2_pp(
         name="CO3",
         register=rg,
         species=rg.mo.CO3,
-        data=dic / (1 + hplus / k2 + hplus * hplus / k1k2)
+        data=dic / (1 + hplus / k2 + hplus * hplus / k1k2),
     )
     rg.CO3.c[rg.CO3.c < 0] = 0
 
@@ -130,7 +139,7 @@ def carbonate_system_2_pp(
         name="CO2aq",
         register=rg,
         species=rg.mo.CO2aq,
-        data=dic / (1 + (k1 / hplus) + (k1k2 / (hplus * hplus)))
+        data=dic / (1 + (k1 / hplus) + (k1k2 / (hplus * hplus))),
     )
     VectorData(
         name="pH",
@@ -142,7 +151,7 @@ def carbonate_system_2_pp(
         name="zsat",
         register=rg,
         species=rg.mo.zsat,
-        data=zsat0 * np.log(ca2 * rg.CO3.c / ksp0),
+        data=np.clip(zsat0 * np.log(ca2 * rg.CO3.c / ksp0), zsat_min, zmax),
     )
     VectorData(
         name="zcc",
@@ -178,7 +187,7 @@ def gas_exchange_fluxes(
     scale = liquid_reservoir.register.area * pv
     gas_c = gas_reservoir.c
     p_H2O = liquid_reservoir.register.swc.p_H2O
-    
+
     if liquid_reservoir.species.name == "DIC":
         solubility = liquid_reservoir.register.swc.SA_co2
         g_c_aq = liquid_reservoir.register.CO2aq.c
