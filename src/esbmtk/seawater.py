@@ -127,7 +127,7 @@ class SeawaterConstants(esbmtkBase):
             self.__initialize_keyword_variables__(kwargs)
 
         # update K values and species concentrations according to P, S, and T
-        self.__get_density__()
+        self.density = self.get_density(self.salinity, self.temperature, self.pressure)
         self.__init_std_seawater__()
         self.__init_bisulfide__()
         self.__init_hydrogen_floride__()
@@ -171,19 +171,17 @@ class SeawaterConstants(esbmtkBase):
 
         print()
 
-    def __get_density__(self):
-        """Calculate seawater density as function of temperature,
-        pressure and salinity in kg/m^3. Shamelessy copied
-        from R. Zeebes equic.m mathlab file.
+    def get_density(self, S, TC, P) -> float:
+        """Calculate seawater density as function of
+        temperature, salinity and pressure
 
-        TC = temp in C
-        P = pressure
-        S = salinity
+        :param S: salinity in PSU
+        :param TC:  temp in C
+        :param P: pressure in bar
+
+        :returns rho: in kg/m**3
         """
 
-        TC = self.temperature
-        P = self.pressure
-        S = self.salinity
         # density of pure water
         rhow = (
             999.842594
@@ -234,7 +232,7 @@ class SeawaterConstants(esbmtkBase):
             + P**2 * S * (-9.9348e-7 + 2.0816e-8 * TC + 9.1697e-10 * TC**2)
         )
         # Density of seawater at S,T,P in kg/m^3
-        self.density = rho0 / (1.0 - P / Ksbm)
+        return rho0 / (1.0 - P / Ksbm)
 
     def __init_std_seawater__(self) -> None:
         """Provide values for standard seawater. Data after Zeebe and Gladrow
@@ -242,11 +240,16 @@ class SeawaterConstants(esbmtkBase):
 
         """
 
-        self.dic = 0.00204
-        self.boron = 0.000416 #
+        self.co2aq = 0.00001
+        self.hco3 = 0.00177
+        self.co3 = 0.00026
+        self.dic = self.co2aq + self.hco3 + 2 * self.co3
+        self.boron = 0.000416  #
         self.oh = 0.00001
         self.so4 = 2.7123 / 96
         self.ca2 = 0.01028
+        self.mg2 = 0.05282
+        self.k = 0.01021
         self.Ksp0 = 4.29e-07  # after after Boudreau et al 2010
 
     def __init_hydrogen_floride__(self) -> None:
