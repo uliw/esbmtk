@@ -7,6 +7,8 @@ Changelog
   to affect existing geoemtry definitions since the (area/total area) parameter has changed meaning
   The area fraction is now calcualted automatically, and unless you split the model in specific basins
   the last parameter in the geometry list should always be 1 (i.e.,  [0, -350, 1]).
+
+  Updated K1 and K2 values after Millero 2006
   
 - Oct. 30\ :sup:`th`\, 2023 v 0.10.0.11 This is a breaking change. Remineralization and
   photosynthesis must be implemented via functions, rather than transport
