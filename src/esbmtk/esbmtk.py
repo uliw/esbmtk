@@ -1665,7 +1665,7 @@ class Reservoir(ReservoirBase):
                 if isinstance(self.seawater_parameters, str):
                     temperature = 25
                     salinity = 35
-                    pressure = 1
+                    pressure = 0
                 else:
                     if "temperature" in self.seawater_parameters:
                         temperature = self.seawater_parameters["temperature"]
