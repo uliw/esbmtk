@@ -21,6 +21,7 @@ import typing as tp
 import numpy as np
 import numpy.typing as npt
 import PyCO2SYS as pyco2
+import warnings
 
 from .esbmtk_base import esbmtkBase
 
@@ -82,6 +83,8 @@ class SeawaterConstants(esbmtkBase):
             "pH": [8.1, (int, float)],
             "pressure": [0, (int, float)],
             "register": ["None", (Model, Reservoir, ReservoirGroup)],
+            "dic": ["None", (str, float)],
+            "ta": ["None", (str, float)],
         }
 
         # provide a list of absolutely required keywords
@@ -123,8 +126,10 @@ class SeawaterConstants(esbmtkBase):
             "hplus",
         ]
 
-        self.__init_std_seawater__()
-        
+        if self.dic == "None" or self.ta == "None":
+            self.__init_std_seawater__()
+            warnings.warn(f"Initializing {self.name} with default seawater")
+
         self.update_parameters()
 
         if self.register != "None":
@@ -142,7 +147,7 @@ class SeawaterConstants(esbmtkBase):
             dic = self.register.DIC.c[0] * 1e6
         else:
             dic = self.dic
-            
+
         results = pyco2.sys(
             salinity=self.salinity,
             temperature=self.temperature,
@@ -156,7 +161,7 @@ class SeawaterConstants(esbmtkBase):
         )
         # update K values and species concentrations according to P, S, and T
         self.density = self.get_density(self.salinity, self.temperature, self.pressure)
-        self.ST = self.so4 * self.salinity / 35
+
         self.KF = results["k_fluoride"]
         self.FT = 7e-5 * self.salinity / 35
         self.KW = results["k_water"]
@@ -175,7 +180,21 @@ class SeawaterConstants(esbmtkBase):
         self.boron = results["total_borate"] * 1e-6
         self.boh3 = results["BOH3"] * 1e-6
         self.boh4 = results["BOH4"] * 1e-6
-        self.ca2 =  results["total_calcium"] * 1e-6
+        self.ph_free = results["pH_free"] * 1e-6
+        self.ph_total = results["pH_total"] * 1e-6
+        if self.register.mo.opt_pH_scale == 1:
+            self.hplus = 10 ** (-self.ph_total)
+        elif self.register.mo.opt_pH_scale == 3:
+            self.hplus = 10 ** (-self.ph_free)
+        else:
+            raise ValueError(
+                f"No definition for opt_pH_scale = {self.regsiter.mo.opt_pH_scale}"
+            )
+
+        self.ca2 = results["total_calcium"] * 1e-6
+        self.so4 = results["total_sulfate"] * 1e-6
+        self.ST = self.so4 * self.salinity / 35
+        self.Ksp0 = 4.29e-07  # after after Boudreau et al 2010
         self.__init_gasexchange__()
         self.__init_c_fractionation_factors__()
 
@@ -291,8 +310,8 @@ class SeawaterConstants(esbmtkBase):
         self.mg2 = 0.05282
         self.k = 0.01021
         self.dic = self.co2aq + self.hco3 + self.co3
-        self.ta = self.hco3 + 2 * self.co3 # estimate
-        self.Ksp0 = 4.29e-07  # after after Boudreau et al 2010
+        self.ta = self.hco3 + 2 * self.co3  # estimate
+        
 
     def __init_gasexchange__(self) -> None:
         """Initialize constants for gas-exchange processes"""
@@ -429,5 +448,3 @@ class SeawaterConstants(esbmtkBase):
         c = m * 5 + 0.95
         self.e_u: float = self.temperature * m - c
         self.a_u: float = 1 + self.e_u / 1000
-
-
