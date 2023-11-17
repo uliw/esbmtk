@@ -150,8 +150,9 @@ class Model(esbmtkBase):
                 interval f the y-axis will not be smaller than the
                 display_precision.
 
-                :param ideal_water: if set, ignore seawater density/chemisrty
-                 calculations
+                :param opt_k_carbonic: see  https://doi.org/10.5194/gmd-15-15-2022
+
+                :param opt_pH_scale: total = 1, free = 4, 
         """
         from importlib.metadata import version
         import datetime
@@ -186,6 +187,8 @@ class Model(esbmtkBase):
             "rtol": [1.0e-6, (float)],
             "bio_pump_functions": [0, (int)],  # custom/old
             "area_table": ["None", (str, np.ndarray)],
+            "opt_k_carbonic": [15, (int)],
+            "opt_pH_scale": [1, (int)],
         }
 
         # provide a list of absolutely required keywords
