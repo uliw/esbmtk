@@ -9,6 +9,7 @@ import os
 import math
 import copy as cp
 import typing as tp
+import warnings
 
 if tp.TYPE_CHECKING:
     from esbmtk import Connection, Model
@@ -155,6 +156,7 @@ class ReservoirGroup(esbmtkBase):
     def __init__(self, **kwargs) -> None:
         """Initialize a new reservoir group"""
 
+        from .utility_functions import dict_alternatives
         from esbmtk import (
             ExternalCode,
             Species,
@@ -216,29 +218,6 @@ class ReservoirGroup(esbmtkBase):
         #     self.register = self.mo
         self.__register_name_new__()
 
-        # register a seawater_parameter instance if necessary
-        if self.seawater_parameters != "None":
-            if "temperature" in self.seawater_parameters:
-                self.temperature = self.seawater_parameters["temperature"]
-            else:
-                self.temperature = 25
-            if "salinity" in self.seawater_parameters:
-                self.salinity = self.seawater_parameters["salinity"]
-            else:
-                self.salinity = 35
-            if "pressure" in self.seawater_parameters:
-                self.pressure = self.seawater_parameters["pressure"]
-            else:
-                self.pressure = 1
-
-            SeawaterConstants(
-                name="swc",
-                temperature=self.temperature,
-                pressure=self.pressure,
-                salinity=self.salinity,
-                register=self,
-            )
-
         # dict with all default values
         self.cd: dict = {}
         for s in self.species:
@@ -286,8 +265,34 @@ class ReservoirGroup(esbmtkBase):
             # register as part of this group
             self.lor.append(a)
 
+        # register a seawater_parameter instance if necessary
+
+        if self.seawater_parameters != "None":
+            temp = dict_alternatives(self.seawater_parameters, "temperature", "T")
+            sal = dict_alternatives(self.seawater_parameters, "salinity", "S")
+            bar = dict_alternatives(self.seawater_parameters, "pressure", "P")
+
+            if hasattr(self, "DIC") and hasattr(self, "DIC"):
+                SeawaterConstants(
+                    name="swc",
+                    temperature=temp,
+                    pressure=bar,
+                    salinity=sal,
+                    register=self,
+                    ta=self.TA.c[0],
+                    dic=self.DIC.c[0],
+                )
+            else:
+                warnings.warn(
+                    f"Using SeawaterConstants without provinding DIC"
+                    f"and TA values for {self.name}"
+                    f"You need to call swc.update_parameters()"
+                    f"once DIC and TA are specified"
+                )
+
         # depreceated
         if self.carbonate_system:
+            breakpoint()
             # do some sanity checks:
             if not hasattr(self, "swc"):
                 raise ReservoirGroupError(
@@ -1100,62 +1105,62 @@ class VectorData(esbmtkBase):
 
 class DataField(esbmtkBase):
     """
-    DataField: Datafields can be used to plot data which is computed after
-    the model finishes in the overview plot windows. Therefore, datafields will
-    plot in the same window as the reservoir they are associated with.
-    Datafields must share the same x-axis is the model, and can have up to two
-    y axis.
+        DataField: Datafields can be used to plot data which is computed after
+        the model finishes in the overview plot windows. Therefore, datafields will
+        plot in the same window as the reservoir they are associated with.
+        Datafields must share the same x-axis is the model, and can have up to two
+        y axis.
 
-    Example::
+        Example::
 
-             DataField(name = "Name"
-                       register = Model handle,
-                       y1_data = NDArrayFloat or list of arrays
-                       y1_label = Data label(s)
-                       y1_legend = Y-Axis Label
-                       y1_type = "plot", | "scatter"
-                       y2_data = NDArrayFloat    # optional
-                       y2_legend = Y-Axis label # optional
-                       y2_label = Data legend(s) # optional
-                       y2_type = "plot", | "scatter"
-                       common_y_scale = "no",  #optional, default "no"
-                       display_precision = number, optional, inherited from Model
-                       )
+                 DataField(name = "Name"
+                           register = Model handle,
+                           y1_data = NDArrayFloat or list of arrays
+                           y1_label = Data label(s)
+                           y1_legend = Y-Axis Label
+                           y1_type = "plot", | "scatter"
+                           y2_data = NDArrayFloat    # optional
+                           y2_legend = Y-Axis label # optional
+                           y2_label = Data legend(s) # optional
+                           y2_type = "plot", | "scatter"
+                           common_y_scale = "no",  #optional, default "no"
+                           display_precision = number, optional, inherited from Model
+                           )
 
-    Note that Datafield data is not mapped to model units. Care must be taken
-    that the data units match the model units.
+        Note that Datafield data is not mapped to model units. Care must be taken
+        that the data units match the model units.
 
-    The instance provides the following data
+        The instance provides the following data
 
-    Name.x    = X-axis = model X-axis
-    Name.y1_data
-    Name.y1_label
-    Name.y1_legend
+        Name.x    = X-axis = model X-axis
+        Name.y1_data
+        Name.y1_label
+        Name.y1_legend
 
-    Similarly for y2
+        Similarly for y2
 
-    You can specify more than one data set, and be explicit about color and
-    linestyle choices.
+        You can specify more than one data set, and be explicit about color and
+        linestyle choices.
 
-    Example::
+        Example::
 
-            DataField(
-                    name="df_pH",
-                    x1_data=[M.time, M.time, M.time, M.ef_hplus_l.x, M.ef_hplus_h.x, M.ef_hplus_d.x],
-                    y1_data=[
-                    -np.log10(M.L_b.Hplus.c),
-                    -np.log10(M.H_b.Hplus.c),
-                    -np.log10(M.D_b.Hplus.c),
-                    -np.log10(M.ef_hplus_l.y),
-                    -np.log10(M.ef_hplus_h.y),
-                    -np.log10(M.ef_hplus_d.y),
-                    ],
-                    y1_label="Low latitude, High latitude, Deep box, d_L, d_H, d_D".split(", "),
-                    y1_color="C0 C1 C2 C0 C1 C2".split(" "),
-                    y1_style="solid solid solid dotted dotted dotted".split(" "),
-                    y1_legend="pH",
-                    register=M,
-)
+                DataField(
+                        name="df_pH",
+                        x1_data=[M.time, M.time, M.time, M.ef_hplus_l.x, M.ef_hplus_h.x, M.ef_hplus_d.x],
+                        y1_data=[
+                        -np.log10(M.L_b.Hplus.c),
+                        -np.log10(M.H_b.Hplus.c),
+                        -np.log10(M.D_b.Hplus.c),
+                        -np.log10(M.ef_hplus_l.y),
+                        -np.log10(M.ef_hplus_h.y),
+                        -np.log10(M.ef_hplus_d.y),
+                        ],
+                        y1_label="Low latitude, High latitude, Deep box, d_L, d_H, d_D".split(", "),
+                        y1_color="C0 C1 C2 C0 C1 C2".split(" "),
+                        y1_style="solid solid solid dotted dotted dotted".split(" "),
+                        y1_legend="pH",
+                        register=M,
+    )
     """
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
