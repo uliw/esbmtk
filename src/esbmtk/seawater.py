@@ -180,8 +180,8 @@ class SeawaterConstants(esbmtkBase):
         self.boron = results["total_borate"] * 1e-6
         self.boh3 = results["BOH3"] * 1e-6
         self.boh4 = results["BOH4"] * 1e-6
-        self.ph_free = results["pH_free"] * 1e-6
-        self.ph_total = results["pH_total"] * 1e-6
+        self.ph_free = results["pH_free"]
+        self.ph_total = results["pH_total"]
         if self.register.mo.opt_pH_scale == 1:
             self.hplus = 10 ** (-self.ph_total)
         elif self.register.mo.opt_pH_scale == 3:
@@ -190,7 +190,7 @@ class SeawaterConstants(esbmtkBase):
             raise ValueError(
                 f"No definition for opt_pH_scale = {self.regsiter.mo.opt_pH_scale}"
             )
-
+                
         self.ca2 = results["total_calcium"] * 1e-6
         self.so4 = results["total_sulfate"] * 1e-6
         self.ST = self.so4 * self.salinity / 35
