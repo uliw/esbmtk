@@ -1212,6 +1212,30 @@ def __checktypes__(av: dict[any, any], pv: dict[any, any]) -> None:
             )
 
 
+def dict_alternatives(d: dict, e: str, a: str) -> any:
+    """ 
+    The =dict_alternatives= function takes a dictionary =d=, an expression =e=,
+    and an alternative expression =a=. It returns the value associated with
+    either =a= or =e= in the dictionary =d=.
+
+    :param d: A dictionary.
+    :param e: The first expression to check.
+    :param a: The alternative expression to check.
+    
+    :returns r: The value associated with either =a= or =e= in the dictionary =d=.
+    
+    :raises ValueError: If neither =a= nor =e= are found in the dictionary.
+    """
+    if a in d:
+        r = d[a]
+    elif e in d:
+        r = d[e]
+    else:
+        raise ValueError("You must specify either {e} or {a}")
+
+    return r
+
+
 def __checkkeys__(lrk: list, lkk: list, kwargs: dict) -> None:
     """check if the mandatory keys are present
 
