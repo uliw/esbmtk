@@ -20,6 +20,8 @@ from __future__ import annotations
 import typing as tp
 import numpy as np
 import numpy.typing as npt
+import PyCO2SYS as pyco2
+
 from .esbmtk_base import esbmtkBase
 
 if tp.TYPE_CHECKING:
@@ -33,7 +35,10 @@ NDArrayFloat = npt.NDArray[np.float64]
 
 class SeawaterConstants(esbmtkBase):
     """Provide basic seawater properties as a function of T, P and Salinity.
-    This module does not recalculate these values after initialization!
+    Since we cannot know if TA and DIC have already been specified, creating
+    the instance uses standard seawater composition. Updating/Setting TA & DIC
+    does not recalculate these values after initialization, unless
+    you explicitly call the update_parameters() method.
 
     Example::
 
@@ -57,12 +62,14 @@ class SeawaterConstants(esbmtkBase):
 
     useful methods:
 
-    SW.show() will list all known values
+    SW.show() will list values
 
     After initialization this class provides access to each value the following way
 
     instance_name.variable_name
 
+    Since this class is just a frontend to PyCO2SYS, it is easy to add parameters
+    that are supported in PyCO2SYS. See the update_parameter() method.
     """
 
     def __init__(self, **kwargs: dict[str, str]):
@@ -116,6 +123,8 @@ class SeawaterConstants(esbmtkBase):
             "hplus",
         ]
 
+        self.__init_std_seawater__()
+        
         self.update_parameters()
 
         if self.register != "None":
@@ -124,24 +133,51 @@ class SeawaterConstants(esbmtkBase):
     def update_parameters(self, **kwargs: dict) -> None:
         """Update values if necessary"""
 
-        if kwargs:
-            self.__initialize_keyword_variables__(kwargs)
+        if hasattr(self.register, "TA"):
+            ta = self.register.TA.c[0] * 1e6
+        else:
+            ta = self.ta
 
+        if hasattr(self.register, "DIC"):
+            dic = self.register.DIC.c[0] * 1e6
+        else:
+            dic = self.dic
+            
+        results = pyco2.sys(
+            salinity=self.salinity,
+            temperature=self.temperature,
+            pressure=self.pressure,
+            par1_type=1,  # "1" =  "alkalinity"
+            par1=ta,
+            par2_type=2,  # "1" = dic
+            par2=dic,
+            opt_k_carbonic=self.register.model.opt_k_carbonic,
+            opt_pH_scale=self.register.model.opt_pH_scale,
+        )
         # update K values and species concentrations according to P, S, and T
         self.density = self.get_density(self.salinity, self.temperature, self.pressure)
-        self.__init_std_seawater__()
-        self.__init_bisulfide__()
-        self.__init_hydrogen_floride__()
-        self.__init_carbon__()
-        self.__init_boron__()
-        self.__init_water__()
+        self.ST = self.so4 * self.salinity / 35
+        self.KF = results["k_fluoride"]
+        self.FT = 7e-5 * self.salinity / 35
+        self.KW = results["k_water"]
+        self.KB = results["k_borate"]
+        self.KS = results["k_bisulfate"]
+        self.K0 = results["k_CO2"]
+        self.K1 = results["k_carbonic_1"]
+        self.K2 = results["k_carbonic_2"]
+        self.Ksp_ca = float(results["k_calcite"])
+        self.Ksp_ar = float(results["k_aragonite"])
+        self.K1K1 = self.K1**2
+        self.K1K2 = self.K1 * self.K2
+        self.oh = results["OH"] * 1e-6
+        self.co3 = results["CO3"] * 1e-6
+        self.co2aq = results["aqueous_CO2"] * 1e-6
+        self.boron = results["total_borate"] * 1e-6
+        self.boh3 = results["BOH3"] * 1e-6
+        self.boh4 = results["BOH4"] * 1e-6
+        self.ca2 =  results["total_calcium"] * 1e-6
         self.__init_gasexchange__()
-        self.__init_calcite__()
         self.__init_c_fractionation_factors__()
-
-        # get total alkalinity
-        self.ca = self.hco3 + 2 * self.co3
-        self.ta = self.ca + self.boh4 + self.oh  # - self.hplus
 
     def show(self) -> None:
         """Printout constants. Units are mol/kg or
@@ -240,69 +276,23 @@ class SeawaterConstants(esbmtkBase):
         """Provide values for standard seawater. Data after Zeebe and Gladrow
         all values in mol/kg. All values after Zeebe and Gladrow 2001
 
+        This only used so that we can call pyco2SYS in order to get the
+        equilibrium constants. We can drop this once the program logic
+        initializes swc after the reservoir concentrations have been set.
         """
 
         self.co2aq = 0.00001
         self.hco3 = 0.00177
         self.co3 = 0.00026
-        self.dic = self.co2aq + self.hco3 + 2 * self.co3
         self.boron = 0.000416  #
         self.oh = 0.00001
         self.so4 = 2.7123 / 96
         self.ca2 = 0.01028
         self.mg2 = 0.05282
         self.k = 0.01021
+        self.dic = self.co2aq + self.hco3 + self.co3
+        self.ta = self.hco3 + 2 * self.co3 # estimate
         self.Ksp0 = 4.29e-07  # after after Boudreau et al 2010
-
-    def __init_hydrogen_floride__(self) -> None:
-        """Bisulfide ion concentration after Dickson 1994, cf.
-        Zeebe and Gladrow 2001, p 260
-
-        """
-
-        import numpy as np
-
-        T = 273.15 + self.temperature
-        S = self.salinity
-        I = (19.924 * S) / (1000 - 1.005 * S)
-
-        lnKF = (
-            1590.2 / T
-            - 12.641
-            + 1.525 * I**0.5
-            + np.log(1 - 0.001005 * S)
-            + np.log(1 + self.ST / self.KS)
-        )
-
-        self.KF = np.exp(lnKF)
-        self.KF = self.__pressure_correction__("KF", self.KF)
-        self.FT = 7e-5 * self.salinity / 35
-
-    def __init_bisulfide__(self) -> None:
-        """Bisulfide ion concentration after Dickson 1994, cf.
-        Zeebe and Gladrow 2001, p 260
-
-        """
-
-        import numpy as np
-
-        T = 273.15 + self.temperature
-        S = self.salinity
-        I = (19.924 * S) / (1000 - 1.005 * S)
-        lnKS = (
-            -4276.1 / T
-            + 141.328
-            - 23.093 * np.log(T)
-            + (-13856 / T + 324.57 - 47.986 * np.log(T)) * I**0.5
-            + (35474 / T - 771.54 + 114.723 * np.log(T)) * I
-            - 2698 / T * I**1.5
-            + 1776 / T * I**2
-            + np.log(1 - 0.001005 * S)
-        )
-
-        self.KS = np.exp(lnKS)
-        self.KS = self.__pressure_correction__("KS", self.KS)
-        self.ST = self.so4 * self.salinity / 35
 
     def __init_gasexchange__(self) -> None:
         """Initialize constants for gas-exchange processes"""
@@ -310,190 +300,6 @@ class SeawaterConstants(esbmtkBase):
         self.water_vapor_partial_pressure()
         self.co2_solubility_constant()
         self.o2_solubility_constant()
-
-    def __init_carbon__(self) -> None:
-        """Calculate the carbon equilibrium values as function of
-        temperature T and salinity S.
-        Updated after Millero 2006
-        oi:10.1016/j.marchem.2005.12.001
-        """
-
-        from math import log, exp
-
-        def get_pk(p0, p1, T):
-            """Calculate pk values for K1 and K2 after Millero 2006
-            doi:10.1016/j.marchem.2005.12.001
-
-            :param p0: parameters for ideal water
-            :param p1: parameters for salinity correction
-            :param T: temperature in K
-            :returns: K
-
-            """
-            b1, b2, b3 = p0
-            a0, a1, a2, a3, a4, a5, a6 = p1
-
-            pk_0 = b1 + b2 / T + b3 * log(T)
-            A = a0 * S**0.5 + a1 * S + a2 * S**2
-            B = a3 * S**0.5 + a4 * S
-            C = a5 * S**0.5
-            pk_1 = (A + B / T) + C * log(T)
-            pk = pk_1 + pk_0
-
-            return pk
-
-        T = 273.15 + self.temperature
-        S = self.salinity
-
-        # Parameters for pk1
-        p0 = [-126.34048, 6320.813, 19.568224]
-        p1 = [13.4191, 0.0331, -5.33e-5, -530.1228, -6.103, -2.06950, 0]
-        pk1 = get_pk(p0, p1, T)
-
-        p0 = [-90.18333, 5143.692, 14.613358]
-        p1 = [21.0894, 0.1248, -3.687e-4, -772.483, -20.051, -3.3336, 0]
-        pk2 = get_pk(p0, p1, T)
-
-        # After Weiss 1974
-        lnK0: float = (
-            93.4517 * 100 / T
-            - 60.2409
-            + 23.3585 * log(T / 100)
-            + S * (0.023517 - 0.023656 * T / 100 + 0.0047036 * (T / 100) ** 2)
-        )
-
-        # lnk1: float = (
-        #     -2307.1266 / T
-        #     + 2.83655
-        #     - 1.5529413 * log(T)
-        #     + S**0.5 * (-4.0484 / T - 0.20760841)
-        #     + S * 0.08468345
-        #     + S ** (3 / 2) * -0.00654208
-        #     + log(1 - 0.001006 * S)
-        # )
-
-        # lnk2: float = (
-        #     -9.226508
-        #     - 3351.6106 / T
-        #     - 0.2005743 * log(T)
-        #     + (-0.106901773 - 23.9722 / T) * S**0.5
-        #     + 0.1130822 * S
-        #     - 0.00846934 * S**1.5
-        #     + log(1 - 0.001006 * S)
-        # )
-
-        self.K0: float = exp(lnK0)
-        self.K1: float = 10**(-pk1)
-        self.K2: float = 10**(-pk2)
-
-        self.K1 = self.__pressure_correction__("K1", self.K1)
-        self.K2 = self.__pressure_correction__("K2", self.K2)
-
-        self.K1K1: float = self.K1 * self.K1
-        self.K1K2: float = self.K1 * self.K2
-
-        # self.K_l : list = [self.K0, self.K1, self.K2, self.K1K1, self.K1K2]
-
-        # self.co2 = self.dic / (
-        #    1 + self.K1 / self.hplus + self.K1 * self.K2 / self.hplus**2
-        # )
-        # #self.hco3 = self.dic / (1 + self.hplus / self.K1 + self.K2 / self.hplus)
-        # #self.co3 = self.dic / (
-        #     1 + self.hplus / self.K2 + self.hplus**2 / (self.K1 * self.K2)
-        # )
-        # self.co2aq = self.dic / (
-        #     1 + (self.K1 / self.hplus) + (self.K1 * self.K2 / (self.hplus**2))
-        # )
-
-    def __init_boron__(self) -> None:
-        """Calculate the boron equilibrium values as function of
-        temperature T and salinity S
-
-        """
-
-        from math import exp, log
-
-        T = 273.15 + self.temperature
-        S = self.salinity
-
-        lnkb = (
-            (
-                -8966.9
-                - 2890.53 * S**0.5
-                - 77.942 * S
-                + 1.728 * S**1.5
-                - 0.0996 * S**2
-            )
-            / T
-            + 148.0248
-            + 137.1942 * S**0.5
-            + 1.62142 * S
-            - (24.4344 + 25.085 * S**0.5 + 0.2474 * S) * log(T)
-            + 0.053105 * S**0.5 * T
-        )
-
-        self.KB = exp(lnkb)
-        self.KB = self.__pressure_correction__("KB", self.KB)
-
-        self.boh4 = self.boron * self.KB / (self.hplus + self.KB)
-        self.boh3 = self.boron - self.boh4
-
-    def __init_water__(self) -> None:
-        """Calculate the water equilibrium values as function of
-        temperature T and salinity S
-
-        """
-
-        from math import exp, log
-
-        T = 273.15 + self.temperature
-        S = self.salinity
-
-        lnKW = (
-            148.96502
-            - 13847.27 / T
-            - 23.6521 * log(T)
-            + (118.67 / T - 5.977 + 1.0495 * log(T)) * S**0.5
-            - 0.01615 * S
-        )
-        self.KW = exp(lnKW)
-        self.KW = self.__pressure_correction__("KW", self.KW)
-        # self.oh = self.KW / self.hplus
-
-    def __pressure_correction__(self, n: str, K: float) -> float:
-        """Correct K-values for pressure. After Zeebe and Wolf Gladrow 2001
-
-        name = name of K-value, i.e. "K1"
-        K = uncorrected value
-        T = temperature in Deg C
-        P = pressure in atm
-        """
-
-        from math import exp, log
-
-        R: float = 83.131
-        Tc: float = self.temperature
-        T: float = self.temperature + 273.15
-        P: float = self.pressure
-        RT: float = R * T
-
-        A: dict = {}
-        A["K1"]: list = [25.50, 0.1271, 0.0, 3.08, 0.0877]
-        A["K2"]: list = [15.82, -0.0219, 0.0, -1.13, -0.1475]
-        A["KB"]: list = [29.48, 0.1622, -2.6080, 2.84, 0.0]
-        A["KW"]: list = [25.60, 0.2324, -3.6246, 5.13, 0.0794]
-        A["KS"]: list = [18.03, 0.0466, 0.3160, 4.53, 0.0900]
-        A["KF"]: list = [9.780, -0.0090, -0.942, 3.91, 0.054]
-        A["Ksp_ca"]: list = [48.76, 0.5304, 0.0, 11.76, 0.3692]
-        A["Ksp_ar"]: list = [46.00, 0.5304, 0.0, 11.76, 0.3692]
-
-        a: list = A[n]
-
-        DV: float = -a[0] + a[1] * Tc + (a[2] / 1000 * Tc**2)
-        DK: float = -a[3] / 1000 + (a[4] / 1000 * Tc) + (0 * Tc**2)
-        lnkp: float = -(DV / RT) * P + (0.5 * DK / RT) * P**2 + log(K)
-
-        return exp(lnkp)
 
     def water_vapor_partial_pressure(self) -> None:
         """Calculate the water vapor partial pressure at sealevel (1 atm) as
@@ -579,37 +385,6 @@ class SeawaterConstants(esbmtkBase):
 
         return F
 
-    def __init_calcite__(self) -> None:
-        """Calculate Calcite solubility
-
-        Ksp_b THis is after Boudreau as a function of pressure following
-        Fig 1 in in Boudreau et al, 2010, https://doi.org/10.1029/2009gl041847
-
-        Note that this equation assumes an idealized ocean temperature profile.
-        So it cannot be applied to a warm ocean
-
-        Ksp_ca after Zeebe 2001
-        """
-        from math import log10, exp
-
-        self.Ksp_b = 4.3513e-7 * np.exp(0.0019585 * self.pressure)
-
-        T = 273.15 + self.temperature  # Kelvin
-        S = self.salinity
-
-        logksp = (
-            -171.9065
-            - 0.077993 * T
-            + 2839.319 / T
-            + 71.595 * log10(T)
-            + (-0.77712 + 0.0028426 * T + 178.34 / T) * S**0.5
-            - 0.07711 * S
-            + 0.0041249 * S**1.5
-        )
-
-        self.Ksp_ca = 10**logksp
-        self.Ksp_ca = self.__pressure_correction__("Ksp_ca", self.Ksp_ca)
-
     def __init_c_fractionation_factors__(self):
         """Calculate the fractionation factors for the various carbon species transitions.
         After Zeebe and Gladrow, 2001, Chapter 3.2.3, page 186
@@ -656,9 +431,3 @@ class SeawaterConstants(esbmtkBase):
         self.a_u: float = 1 + self.e_u / 1000
 
 
-"""
-    dic: tp.Union[Reservoir, esbmtk.extended_classes.VirtualReservoir],
-    hplus: tp.Union[Reservoir, esbmtk.extended_classes.VirtualReservoir],
-    SW: SeawaterConstants,
-
-"""
