@@ -538,7 +538,11 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
                 concentration=icd[k][0],
                 isotopes=icd[k][1],
                 delta=icd[k][2],
-                seawater_parameters={"temperature": v["T"], "pressure": v["P"]},
+                seawater_parameters={
+                    "temperature": v["T"],
+                    "pressure": v["P"],
+                    "salinity": v["S"],
+                },
                 register=M,
             )
 
@@ -1213,7 +1217,7 @@ def __checktypes__(av: dict[any, any], pv: dict[any, any]) -> None:
 
 
 def dict_alternatives(d: dict, e: str, a: str) -> any:
-    """ 
+    """
     The =dict_alternatives= function takes a dictionary =d=, an expression =e=,
     and an alternative expression =a=. It returns the value associated with
     either =a= or =e= in the dictionary =d=.
@@ -1221,17 +1225,17 @@ def dict_alternatives(d: dict, e: str, a: str) -> any:
     :param d: A dictionary.
     :param e: The first expression to check.
     :param a: The alternative expression to check.
-    
+
     :returns r: The value associated with either =a= or =e= in the dictionary =d=.
-    
+
     :raises ValueError: If neither =a= nor =e= are found in the dictionary.
     """
-    if a in d:
+    if a in d.keys():
         r = d[a]
     elif e in d:
         r = d[e]
     else:
-        raise ValueError("You must specify either {e} or {a}")
+        raise ValueError(f"You must specify either {e} or {a} \nd = {d}")
 
     return r
 
