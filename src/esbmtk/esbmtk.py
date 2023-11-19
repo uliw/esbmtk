@@ -152,7 +152,7 @@ class Model(esbmtkBase):
 
                 :param opt_k_carbonic: see  https://doi.org/10.5194/gmd-15-15-2022
 
-                :param opt_pH_scale: total = 1, free = 4, 
+                :param opt_pH_scale: total = 1, free = 4,
         """
         from importlib.metadata import version
         import datetime
@@ -236,6 +236,7 @@ class Model(esbmtkBase):
         self.los: list = []
         self.first_start = True  # keep track of repeated solver calls
         self.lof: list = []  # list of fluxes
+        self.lrg: list = []  # list of reservoirgroups
 
         # unit defs
         self.l_unit = ureg.meter  # the length unit
@@ -461,9 +462,10 @@ class Model(esbmtkBase):
             if isinstance(r, (Reservoir, GasReservoir)):
                 r.__read_state__(directory)
 
-        # for r in self.lvr:
-        #     # print(f"lvr  reading from {r.full_name}")
-        #     r.__read_state__("state")
+        # update swc object
+        for rg in self.lrg:
+            if hasattr(rg, "swc"):
+                rg.swc.update_parameters()
 
     def merge_temp_results(self):
         """Replace the datafields which were used for an individual
@@ -1239,8 +1241,6 @@ class ReservoirBase(esbmtkBase):
                 f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
             )
 
-        logging.info(f"reading state for {self.full_name} from {fn}")
-
         if not os.path.exists(fn):
             raise FileNotFoundError(
                 f"Flux {fn} does not exist in Reservoir {self.full_name}"
@@ -1268,7 +1268,7 @@ class ReservoirBase(esbmtkBase):
             logging.debug(f"Looking for {name}")
             # this finds the reservoir name
             if name == self.full_name:
-                logging.debug(f"found reservoir data for {name}")
+                # logging.debug(f"found reservoir data for {name}")
                 col = self.__assign_reservoir_data__(self, df, col, True)
             else:
                 raise ReservoirError(f"Unable to find Flux {n} in {self.full_name}")
@@ -1276,29 +1276,6 @@ class ReservoirBase(esbmtkBase):
         # test if we missed any fluxes
         for f in list(curr.difference(read)):
             print(f"\n Warning: Did not find values for {f}\n in saved state")
-
-    def __assign_flux_data__(
-        self, obj: any, df: pd.DataFrame, col: int, res: bool
-    ) -> int:
-        """Assign the third last entry data to all values in flux
-
-        :param obj: # Flux
-        :param df: pd.dataframe
-        :param col: int # index into column position
-        :param res: bool = False # indicates whether obj is reservoir
-        :returns: int # index into last column
-        """
-
-        obj.fa[0] = df.iloc[0, col]
-
-        if obj.isotopes:
-            obj.fa[1] = df.iloc[0, col + 1]
-            # obj.fa[2] = df.iloc[0, col + 2]
-            col += 1
-        else:
-            col += 1
-
-        return col
 
     def __assign_reservoir_data__(
         self, obj: any, df: pd.DataFrame, col: int, res: bool
@@ -1315,14 +1292,12 @@ class ReservoirBase(esbmtkBase):
 
         # this may need fixing
         if obj.isotopes:
-            # obj.m[:] = df.iloc[-1, col+ 0]
-            # col += 1
             obj.l[:] = df.iloc[-1, col]  # get last row
             col += 1
             obj.c[:] = df.iloc[-1, col]
             col += 1
         else:
-            # obj.m[:] = df.iloc[-1, col]
+            v = df.iloc[-1, col]
             obj.c[:] = df.iloc[-1, col]
             col += 1
 
@@ -1815,11 +1790,15 @@ class Reservoir(ReservoirBase):
     @concentration.setter
     def concentration(self, c) -> None:
         if self.update and c != "None":
-            self._concentration: float = c.to(self.mo.c_unit)
-            self.mass: float = (
+            breakpoint()
+            # this requires unit screening
+            # then conversion into model units and mganitude
+            # followed by updates to c and m
+            self._concentration = c.to(self.mo.c_unit)
+            self.mass = (
                 self._concentration * self.volume * self.density / 1000
             )  # caculate mass
-            self.c = self.c * 0 + self._concentration.to(self.mo_c_unit).magnitude
+            self.c = self.c * 0 + self._concentration.magnitude
             self.m = self.m * 0 + self.mass
 
     @delta.setter
