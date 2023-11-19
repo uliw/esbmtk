@@ -63,7 +63,7 @@ def get_hplus(dic, ta, h0, boron, K1, K2, KW, KB) -> float:
     :returns H: new H+ concentration in mol/kg
     """
     oh = KW / h0
-    boh4 = Boron * KB / (h0 + KB)
+    boh4 = boron * KB / (h0 + KB)
     fg = h0 - boh4 - oh
     cag = ta + fg
     gamm = dic / cag
@@ -132,16 +132,10 @@ def init_carbonate_system_1(rg: ReservoirGroup):
         ftype="cs1",
         function_input_data=[rg.swc, rg.DIC, rg.TA, "Hplus", "CO2aq"],
         register=rg,
-        # name and initial value pairs
-        # return_values={"Hplus": rg.swc.hplus},
         return_values=[
             {f"R_{rg.full_name}.Hplus": rg.swc.hplus},
             {f"R_{rg.full_name}.CO2aq": rg.swc.co2aq},
-            # {f"R_{rg.full_name}.CO3": rg.swc.co3},
-            # {"Hplus": rg.swc.hplus},
-            # {"CO2aq": rg.swc.co2aq},
         ],
-        # return_values=["Hplus", "CO2aq"],
     )
     rg.mo.lpc_f.append(ec.fname)
 
@@ -165,10 +159,10 @@ def add_carbonate_system_1(rgs: list):
     from esbmtk import init_carbonate_system_1
 
     for rg in rgs:
-        if hasattr(rg, "DIC") and hasattr(rg, "TA"):
-            pass
-        else:
-            raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
+        # if hasattr(rg, "DIC") and hasattr(rg, "TA"):
+        #     rg.swc.update_parameters()
+        # else:
+        #     raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
         ec = init_carbonate_system_1(rg)
         register_return_values(ec, rg)
@@ -227,8 +221,8 @@ def carbonate_system_2_ode(
     Csat_table = rg.cs.Csat_table
 
     hplus = get_hplus(dic_db, ta_db, hplus_0, boron, k1, k2, KW, KB)
-    co3 = max(dic_db / (1 + hplus_0 / k2 + hplus**2 / k1k2), 3.7e-05)
-
+    co3 = max(dic_db / (1 + hplus / k2 + hplus**2 / k1k2), 3.7e-05)
+    
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
@@ -259,17 +253,22 @@ def carbonate_system_2_ode(
     BPDC = kc * area_p.dot(diff)
     BPDC = max(BPDC, 0)  # prevent negative values
 
+    """CACO3_export is the flux of CaCO3 into the box.
+    Boudreau's orginal approach is as follows.
+
+    CACO3_export = B_diss + Fburial
+    
+    However, the model should use the bypass option and leave all flux
+    calculations to the carbonate_system code. As such, ignore the burial flux
+    (since it was never added), and only add the fraction of the input flux
+    that dissolves back into the box"""
+
     # calculate the differentials
-    dCdt_DIC: float = BDS + BCC + BNS + BPDC
+    dCdt_DIC = BDS + BCC + BNS + BPDC
     dCdt_Hplus = hplus - hplus_0
     dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
 
-    """CACO3_export is the flux of CaCO3 into the box. However, the model should
-    use the bypass option and leave all flux calculations to the
-    cs_code.  As such, we simply add the fraction of the input flux
-    that dissolves, and ignore the fraction that is buried.  
-
-    The isotope ratio of the dissolution flux is determined by the delta
+    """ The isotope ratio of the dissolution flux is determined by the delta
     value of the sediments we are dissolving, and the delta of the carbonate rain.
     The currrent code, assumes that both are the same.
     """
@@ -436,7 +435,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "kc": 8.84 * 1000,  # m/yr converted to kg/(m^2 yr)
         "reference_area": f"{model.hyp.area_dz(-200, -6000)} m**2",
         "alpha": 0.6,  # 0.928771302395292, #0.75,
-        "pg": 0.103,  # pressure in atm/m
+        "pg": 0.103,  # pressure in atm/km
         "pc": 511,  # characteristic pressure after Boudreau 2010
         "I_caco3": 529,  # dissolveable CaCO3 in mol/m^2
         "zmax": -6000,  # max model depth
@@ -475,6 +474,10 @@ def add_carbonate_system_2(**kwargs) -> None:
     reference_area = Q_(kwargs["reference_area"]).to(r_db[0].mo.a_unit)
 
     for i, rg in enumerate(r_db):  # Setup the virtual reservoirs
+        if hasattr(rg, "DIC") and hasattr(rg, "TA"):
+            rg.swc.update_parameters()
+        else:
+            raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
         ec = init_carbonate_system_2(
             rg,
             kwargs["carbonate_export_fluxes"][i],
