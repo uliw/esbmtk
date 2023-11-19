@@ -139,23 +139,19 @@ class SeawaterConstants(esbmtkBase):
         """Update values if necessary"""
 
         if hasattr(self.register, "TA"):
-            ta = self.register.TA.c[0] * 1e6
-        else:
-            ta = self.ta
+            self.ta = self.register.TA.c[0] * 1e6
 
         if hasattr(self.register, "DIC"):
-            dic = self.register.DIC.c[0] * 1e6
-        else:
-            dic = self.dic
-
+            self.dic = self.register.DIC.c[0] * 1e6
+            
         results = pyco2.sys(
             salinity=self.salinity,
             temperature=self.temperature,
             pressure=self.pressure,
             par1_type=1,  # "1" =  "alkalinity"
-            par1=ta,
+            par1=self.ta,
             par2_type=2,  # "1" = dic
-            par2=dic,
+            par2=self.dic,
             opt_k_carbonic=self.register.model.opt_k_carbonic,
             opt_pH_scale=self.register.model.opt_pH_scale,
         )
