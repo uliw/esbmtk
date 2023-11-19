@@ -289,54 +289,7 @@ class ReservoirGroup(esbmtkBase):
                     f"You need to call swc.update_parameters()"
                     f"once DIC and TA are specified"
                 )
-
-        # depreceated
-        if self.carbonate_system:
-            breakpoint()
-            # do some sanity checks:
-            if not hasattr(self, "swc"):
-                raise ReservoirGroupError(
-                    f"{self.full_name} has no seawaterconstants instance"
-                )
-            if not hasattr(self, "DIC"):
-                raise ReservoirGroupError(f"{self.full_name} has no DIC reservoir")
-
-            if not hasattr(self, "TA"):
-                raise ReservoirGroupError(f"{self.full_name} has no TA reservoir")
-
-            ExternalCode(
-                name="cs",
-                species=Model.CO2,
-                alias_list="H CA HCO3 CO3 CO2aq omega zsat".split(" "),
-                vr_datafields=list(
-                    [
-                        self.swc.hplus,
-                        self.swc.ca,
-                        self.swc.hco3,
-                        self.swc.co3,
-                        self.swc.co2,
-                        0.0,  # omega
-                        0.0,  # zsat
-                    ]
-                ),
-                function=calc_carbonates_2,
-                function_input_data=list([self.DIC.c, self.TA.c]),
-                function_params=list(
-                    [
-                        self.swc.K1,  # 0
-                        self.swc.K2,  # 1
-                        self.swc.KW,  # 2
-                        self.swc.KB,  # 3
-                        self.swc.boron,  # 4
-                        self.swc.hplus,  # 5
-                        self.swc.ca2,  # 6
-                        self.swc.Ksp,  # 7
-                        self.swc.Ksp0,  # 8
-                        self.swc.zsat0,  # zsat0 after Boudreau 2010
-                    ]
-                ),
-                register=self,
-            )
+        self.register.lrg.append(self)
 
 
 class SourceSink(esbmtkBase):
