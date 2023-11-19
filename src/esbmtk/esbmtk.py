@@ -152,7 +152,7 @@ class Model(esbmtkBase):
 
                 :param opt_k_carbonic: see  https://doi.org/10.5194/gmd-15-15-2022
 
-                :param opt_pH_scale: total = 1, free = 4,
+                :param opt_pH_scale: total = 1, free = 3,
         """
         from importlib.metadata import version
         import datetime
