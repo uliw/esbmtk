@@ -43,10 +43,9 @@ def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
         name="CO3",
         register=rg,
         species=rg.mo.CO3,
-        data=dic / (1 + hplus / k2 + hplus * hplus / k1k2),
+        data=dic / (1 + hplus / k2 + hplus**2 / k1k2),
     )
-    rg.CO3.c[rg.CO3.c < 0] = 0
-
+    
     VectorData(
         name="pH",
         register=rg,
@@ -125,21 +124,22 @@ def carbonate_system_2_pp(
         name="HCO3",
         register=rg,
         species=rg.mo.HCO3,
-        data=dic / (1 + (hplus / k1) + (k2 / hplus)),
+        data=dic / (1 + hplus / k1 + k2 / hplus),
     )
     VectorData(
         name="CO3",
         register=rg,
         species=rg.mo.CO3,
-        data=dic / (1 + hplus / k2 + hplus * hplus / k1k2),
+        data=dic / (1 + hplus / k2 + hplus**2 / k1k2),
     )
-    rg.CO3.c[rg.CO3.c < 0] = 0
 
+    # breakpoint()
+    
     VectorData(
         name="CO2aq",
         register=rg,
         species=rg.mo.CO2aq,
-        data=dic / (1 + (k1 / hplus) + (k1k2 / (hplus * hplus))),
+        data=dic / (1 + k1 / hplus + k1k2 / hplus*2),
     )
     VectorData(
         name="pH",
