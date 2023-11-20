@@ -147,13 +147,14 @@ class SeawaterConstants(esbmtkBase):
         results = pyco2.sys(
             salinity=self.salinity,
             temperature=self.temperature,
-            pressure=self.pressure,
+            pressure=self.pressure * 10, # in deci bar!
             par1_type=1,  # "1" =  "alkalinity"
             par1=self.ta,
             par2_type=2,  # "1" = dic
             par2=self.dic,
             opt_k_carbonic=self.register.model.opt_k_carbonic,
             opt_pH_scale=self.register.model.opt_pH_scale,
+            opt_buffers_mode=2, 
         )
         # update K values and species concentrations according to P, S, and T
         self.density = self.get_density(self.salinity, self.temperature, self.pressure)
@@ -178,15 +179,7 @@ class SeawaterConstants(esbmtkBase):
         self.boh4 = results["BOH4"] * 1e-6
         self.ph_free = results["pH_free"]
         self.ph_total = results["pH_total"]
-        if self.register.mo.opt_pH_scale == 1:
-            self.hplus = 10 ** (-self.ph_total)
-        elif self.register.mo.opt_pH_scale == 3:
-            self.hplus = 10 ** (-self.ph_free)
-        else:
-            raise ValueError(
-                f"No definition for opt_pH_scale = {self.regsiter.mo.opt_pH_scale}"
-            )
-                
+        self.hplus = results["Hfree"]
         self.ca2 = results["total_calcium"] * 1e-6
         self.so4 = results["total_sulfate"] * 1e-6
         self.ST = self.so4 * self.salinity / 35
