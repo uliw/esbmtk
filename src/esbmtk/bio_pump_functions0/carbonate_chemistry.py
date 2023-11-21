@@ -264,7 +264,7 @@ def carbonate_system_2_ode(
     that dissolves back into the box"""
 
     # calculate the differentials
-    dCdt_DIC = BDS + BCC + BNS + BPDC
+    F_dissolution = BDS + BCC + BNS + BPDC
     dCdt_Hplus = hplus - hplus_0
     dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
 
@@ -275,7 +275,7 @@ def carbonate_system_2_ode(
     # BD_l = BD * dic_sb_l / dic_sb
     # F_DIC, F_DIC_l, F_TA, dH, d_zsnow
 
-    return dCdt_DIC, 2 * dCdt_DIC, dCdt_Hplus, dzdt_zsnow
+    return F_dissolution, 2 * F_dissolution, dCdt_Hplus, dzdt_zsnow
 
 
 def gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:
