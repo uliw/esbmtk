@@ -8,7 +8,9 @@ Changelog
   The area fraction is now calcualted automatically, and unless you split the model in specific basins
   the last parameter in the geometry list should always be 1 (i.e.,  [0, -350, 1]).
 
-  Updated K1 and K2 values after Millero 2006
+  Equilibrium constants are now calculated by pyCO2SYS. This facilitates a wide selection of
+  parametrizations via the ``opt_k_carbonic`` and ``opt_pH_scale`` keywords in the Model definition.
+  Options and defaults are the same as for pyCO2SYS.
   
 - Oct. 30\ :sup:`th`\, 2023 v 0.10.0.11 This is a breaking change. Remineralization and
   photosynthesis must be implemented via functions, rather than transport
