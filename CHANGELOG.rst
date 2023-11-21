@@ -2,7 +2,7 @@
 Changelog
 =========
 
-- Oct. 12\ :sup:`th`\, 2023 v 0.11.0.0 This is a breaking change. Added support to specify
+- Oct. 12\ :sup:`th`\, 2023 v 0.11.0.2 This is a breaking change. Added support to specify
   box area and volume explicitly, rather than as a function of hypsography. This is likely
   to affect existing geoemtry definitions since the (area/total area) parameter has changed meaning
   The area fraction is now calcualted automatically, and unless you split the model in specific basins
