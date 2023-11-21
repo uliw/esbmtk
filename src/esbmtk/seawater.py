@@ -177,12 +177,14 @@ class SeawaterConstants(esbmtkBase):
         self.boron = results["total_borate"] * 1e-6
         self.boh3 = results["BOH3"] * 1e-6
         self.boh4 = results["BOH4"] * 1e-6
-        self.ph_free = results["pH_free"]
-        self.ph_total = results["pH_total"]
-        self.hplus = results["Hfree"]
+        self.pH_free = results["pH_free"]
+        self.pH_total = results["pH_total"]
+        self.hplus = 10**-self.pH_free
         self.ca2 = results["total_calcium"] * 1e-6
         self.so4 = results["total_sulfate"] * 1e-6
         self.ST = self.so4 * self.salinity / 35
+        self.pCO2 = results["pCO2"]
+        self.fCO2 = results["fCO2"]
         self.Ksp0 = 4.29e-07  # after after Boudreau et al 2010
         self.__init_gasexchange__()
         self.__init_c_fractionation_factors__()
@@ -349,10 +351,10 @@ class SeawaterConstants(esbmtkBase):
         B3 = 0.0053407
 
         # F in mol/(l * atm)
-        F = self.calc_solubility_term(S, T, A1, A2, A3, A4, B1, B2, B3)
+        self.F = self.calc_solubility_term(S, T, A1, A2, A3, A4, B1, B2, B3)
 
         # correct for water vapor partial pressure
-        self.SA_co2 = F / (1 - self.p_H2O)  # mol/(m^3 * atm)
+        self.SA_co2 = self.F / (1 - self.p_H2O)  # mol/(m^3 * atm)
 
     def o2_solubility_constant(self) -> None:
         """Calculate the solubility of CO2 at a given temperature and salinity. Coefficients
