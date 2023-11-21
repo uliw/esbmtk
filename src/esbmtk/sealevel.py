@@ -316,10 +316,11 @@ def get_box_geometry_parameters(box, fraction=1) -> None:
 
     It is also possible to specify volume and area explicitly. In this
     case provide a dictionary like this::
-                  box = {"area": "1e14 m**2", # surface area in m**2
-                              "volume": "3e16 m**3", # box volume in m**3
-                              "ta": "4e16 m**2", # reference area
-                             }
+
+        box = {"area": "1e14 m**2", # surface area in m**2
+               "volume": "3e16 m**3", # box volume in m**3
+               "ta": "4e16 m**2", # reference area
+              }
 
     """
     from esbmtk import Q_
@@ -336,7 +337,7 @@ def get_box_geometry_parameters(box, fraction=1) -> None:
         box.volume = box.volume.to(box.mo.v_unit)
         box.area = box.mo.hyp.area(box.geometry[0]) * fraction
         box.sed_area = box.mo.hyp.area_dz(box.geometry[0], box.geometry[1]) * fraction
-        
+
     elif isinstance(box.geometry, dict):
         box.volume = Q_(box.geometry["volume"]).to(box.mo.v_unit)
         box.area = Q_(box.geometry["area"]).to(box.mo.a_unit).magnitude
