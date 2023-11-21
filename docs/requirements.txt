@@ -12,5 +12,4 @@ psutil
 IPython
 sphinx_rtd_theme
 typing
-warnings
-PyCO2SYS
+pyCO2SYS
