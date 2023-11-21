@@ -1446,9 +1446,10 @@ class Reservoir(ReservoirBase):
 
     It is also possible to specify volume and area explicitly. In this
     case provide a dictionary like this::
-                  geometry = {"area": "1e14 m**2", # surface area
-                              "volume": "3e16 m**3", # box volume
-                             }
+                  
+        geometry = {"area": "1e14 m**2", # surface area
+                    "volume": "3e16 m**3", # box volume
+                   }
 
     Adding seawater_properties:
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~
