@@ -45,7 +45,7 @@ def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
         species=rg.mo.CO3,
         data=dic / (1 + hplus / k2 + hplus**2 / k1k2),
     )
-    
+
     VectorData(
         name="pH",
         register=rg,
@@ -108,12 +108,67 @@ def carbonate_system_2_pp(
     kc = p[8]
     AD = p[9]
     zsat0 = int(abs(p[10]))
+    depth_area_table = rg.cs.depth_area_table
+    area_dz_table = rg.cs.area_dz_table
+    Csat_table = rg.cs.Csat_table
+    reference_area = p[9]
+    alpha = p[12]
+    zsnow = rg.zsnow.c.astype(int)
+    z0 = int(p[15])
+    zmax = int(zmax)
 
     # calc carbonate alkalinity based t-1
     oh: float = KW / hplus
     boh4: float = boron * KB / (hplus + KB)
     fg: float = hplus - oh - boh4
+    hco3 = dic / (1 + hplus / k1 + k2 / hplus)
+    co3 = dic / (1 + hplus / k2 + hplus**2 / k1k2)
+    co2aq = dic / (1 + k1 / hplus + k1k2 / hplus * 2)
+    zsat = np.clip(zsat0 * np.log(ca2 * co3 / ksp0), zsat_min, zmax).astype(int)
+    zcc = (zsat0 * np.log(export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)).astype(
+        int
+    )
+    B_AD = export / reference_area
+    A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
+    A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
+    A_zcc_zmax = depth_area_table[zcc] - depth_area_table[zmax]
+  
+    # must be loop
+    Fdiss = zsat * 0
+    Fburial = zsat * 0
 
+    for i, e in enumerate(zsat):
+        BCC = A_zcc_zmax[i] * B_AD
+        BNS = alpha * A_z0_zsat[i] * B_AD
+        diff_co3 = Csat_table[zsat[i] : zcc[i]] - co3[i]
+        area_p = area_dz_table[zsat[i] : zcc[i]]
+        BDS_under = kc * area_p.dot(diff_co3)
+        BDS_resp = alpha * (A_zsat_zcc[i] * B_AD - BDS_under)
+        BDS = BDS_under + BDS_resp
+        if zsnow[i] > zmax:
+            zsnow[i] = zmax
+        # integrate satu ration difference over area
+        diff = Csat_table[zcc[i] : zsnow[i]] - co3[i]
+        area_p = area_dz_table[zcc[i] : zsnow[i]]
+        BPDC = kc * area_p.dot(diff)
+        BPDC = max(BPDC, 0)  # prevent negative values
+        Fdiss[i] = BDS + BCC + BNS + BPDC
+        Fburial[i] = export - Fdiss[i]
+
+    VectorData(
+        name="Fburial",
+        register=rg,
+        species=rg.mo.Fburial,
+        data=Fburial,
+    )
+
+    VectorData(
+        name="Fdiss",
+        register=rg,
+        species=rg.mo.Fdiss,
+        data=Fdiss,
+    )
+    
     VectorData(
         name="CA",
         register=rg,
@@ -124,22 +179,22 @@ def carbonate_system_2_pp(
         name="HCO3",
         register=rg,
         species=rg.mo.HCO3,
-        data=dic / (1 + hplus / k1 + k2 / hplus),
+        data=hco3,
     )
     VectorData(
         name="CO3",
         register=rg,
         species=rg.mo.CO3,
-        data=dic / (1 + hplus / k2 + hplus**2 / k1k2),
+        data=co3,
     )
 
     # breakpoint()
-    
+
     VectorData(
         name="CO2aq",
         register=rg,
         species=rg.mo.CO2aq,
-        data=dic / (1 + k1 / hplus + k1k2 / hplus*2),
+        data=co2aq,
     )
     VectorData(
         name="pH",
@@ -151,13 +206,13 @@ def carbonate_system_2_pp(
         name="zsat",
         register=rg,
         species=rg.mo.zsat,
-        data=np.clip(zsat0 * np.log(ca2 * rg.CO3.c / ksp0), zsat_min, zmax),
+        data=zsat,
     )
     VectorData(
         name="zcc",
         register=rg,
         species=rg.mo.zcc,
-        data=zsat0 * np.log(export * ca2 / (ksp0 * AD * kc) + ca2 * rg.CO3.c / ksp0),
+        data=zcc,
     )
 
 
