@@ -235,4 +235,6 @@ def misc_variables(model):
     Species(name="zsnow", element=eh, display_as="zsnow", register=eh, stype="length")
     Species(name="zcc", element=eh, display_as="zcc", register=eh, stype="length")
     Species(name="zsat", element=eh, display_as="zcc", register=eh, stype="length")
+    Species(name="Fburial", element=eh, display_as="Fburial", register=eh)
+    Species(name="Fdiss", element=eh, display_as="Fdiss", register=eh)
     # Name & element handle
