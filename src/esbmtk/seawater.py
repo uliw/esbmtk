@@ -138,11 +138,16 @@ class SeawaterConstants(esbmtkBase):
     def update_parameters(self, **kwargs: dict) -> None:
         """Update values if necessary"""
 
+        if 'pos' in kwargs:
+            pos = kwargs['pos']
+        else:
+            pos = -1
+
         if hasattr(self.register, "TA"):
-            self.ta = self.register.TA.c[0] * 1e6
+            self.ta = self.register.TA.c[pos] * 1e6
 
         if hasattr(self.register, "DIC"):
-            self.dic = self.register.DIC.c[0] * 1e6
+            self.dic = self.register.DIC.c[pos] * 1e6
             
         results = pyco2.sys(
             salinity=self.salinity,
@@ -179,7 +184,7 @@ class SeawaterConstants(esbmtkBase):
         self.boh4 = results["BOH4"] * 1e-6
         self.pH_free = results["pH_free"]
         self.pH_total = results["pH_total"]
-        self.hplus = 10**-self.pH_free
+        self.hplus = 10**-self.pH_total
         self.ca2 = results["total_calcium"] * 1e-6
         self.so4 = results["total_sulfate"] * 1e-6
         self.ST = self.so4 * self.salinity / 35
