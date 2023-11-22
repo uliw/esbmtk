@@ -90,10 +90,21 @@ def dCdt(t, C_0, V, F_w, thx):
 ** Implementing the P-cycle with ESBMTK
 While ESBMTK provides abstractions to efficiently define complex models, the following section will use the basic ESBMTK classes to define the above model. While quite verbose, it demonstrates the design philosophy behind ESBMTK. More complex approaches are described further down. 
 
+*** Installation
 #+BEGIN_SRC ipython
 import sys
 !{sys.executable} -m pip install esbmtk
 #+END_SRC
+*** Foundational Concepts
+ESBMTK uses a hierarchically structured object oriented approach to describe a model. The top most object is the model object that describes fundamental properties like run time, time step, elements and species information. All other objects derive from the model object. 
+#+attr_org: :width 300
+#+attr_rst: :width 600
+#+attr_latex: :width 0.5\textwidth
+#+name: m1
+#+caption: Schematic outlining the object hirarchie in ESBMTK
+[[./model1.png]]
+
+The model geometry is then parsed to build a suitable equation system.
 
 
 *** Defining the model geometry and initial conditions
@@ -233,6 +244,12 @@ Connection(  #
     id="burial",
 )
 #+END_SRC
+
+Running the above code (see the file =po4_1.py= in the examples directory), results in the following graph:
+#+name: po41
+#+caption: Example output from =po4_1.png=
+[[./po4_1.png]]
+
 
 
 ** Working with the model instance  

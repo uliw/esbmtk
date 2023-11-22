@@ -1,5 +1,3 @@
-.. todo:: THIS IS SUPPOSED TO BE AN EXAMPLE. MODIFY IT ACCORDING TO YOUR NEEDS!
-
    The document assumes you are using a source repository service that promotes a
    contribution model similar to `GitHub's fork and pull request workflow`_.
    While this is true for the majority of services (like GitHub, GitLab,
@@ -12,12 +10,7 @@
 
    Please make sure to check the document having these assumptions in mind
    and update things accordingly.
-
-.. todo:: Provide the correct links/replacements at the bottom of the document.
-
-.. todo:: You might want to have a look on `PyScaffold's contributor's guide`_,
-
-   especially if your project is open source. The text should be very similar to
+   Especially if your project is open source. The text should be very similar to
    this template, but there are a few extra contents that you might decide to
    also include, like mentioning labels of your issue tracker or automated
    releases.
@@ -72,11 +65,6 @@ by adding missing information and correcting mistakes.
 This means that the docs are kept in the same repository as the project code, and
 that any documentation update is done in the same way was a code contribution.
 
-.. todo:: Don't forget to mention which markup language you are using.
-
-    e.g.,  reStructuredText_ or CommonMark_ with MyST_ extensions.
-
-.. todo:: If your project is hosted on GitHub, you can also mention the following tip:
 
    .. tip::
       Please notice that the `GitHub web interface`_ provides a quick way of
@@ -106,11 +94,8 @@ and use Python's built-in web server for a preview in your web browser
 Code Contributions
 ==================
 
-.. todo:: Please include a reference or explanation about the internals of the project.
+Please see the code documentation at  https://esbmtk.readthedocs.io/en/latest/
 
-   An architecture description, design principles or at least a summary of the
-   main concepts will make it easy for potential contributors to get started
-   quickly.
 
 Submit an issue
 ---------------
@@ -151,15 +136,6 @@ Clone the repository
 
    to be able to import the package under development in the Python REPL.
 
-   .. todo:: if you are not using pre-commit, please remove the following item:
-
-#. Install |pre-commit|_::
-
-    pip install pre-commit
-    pre-commit install
-
-   ``esbmtk`` comes with a lot of hooks configured to automatically help the
-   developer to check the code being written.
 
 Implement your changes
 ----------------------
@@ -182,23 +158,7 @@ Implement your changes
 
    to record your changes in git_.
 
-   .. todo:: if you are not using pre-commit, please remove the following item:
-
-   Please make sure to see the validation messages from |pre-commit|_ and fix
-   any eventual issues.
-   This should automatically use flake8_/black_ to check/fix the code style
-   in a way that is compatible with the project.
-
-   .. important:: Don't forget to add unit tests and documentation in case your
-      contribution adds an additional feature and is not just a bugfix.
-
-      Moreover, writing a `descriptive commit message`_ is highly recommended.
-      In case of doubt, you can check the commit history with::
-
-         git log --graph --decorate --pretty=oneline --abbrev-commit --all
-
-      to look for recurring communication patterns.
-
+ 
 #. Please check that your changes don't break any unit tests with::
 
     tox
@@ -217,8 +177,6 @@ Submit your contribution
 
 #. Go to the web page of your fork and click |contribute button|
    to send your changes for review.
-
-   .. todo:: if you are using GitHub, you can uncomment the following paragraph
 
       Find more detailed information in `creating a PR`_. You might also want to open
       the PR as a draft first and mark it as ready for review after the feedbacks
@@ -278,8 +236,6 @@ Maintainer tasks
 Releases
 --------
 
-.. todo:: This section assumes you are using PyPI to publicly release your package.
-
    If instead you are using a different/private package index, please update
    the instructions accordingly.
 
@@ -308,15 +264,11 @@ on PyPI_, the following steps can be used to release a new version for
    of environments, including private companies and proprietary code bases.
 
 
-.. <-- start -->
-.. todo:: Please review and change the following definitions:
-
 .. |the repository service| replace:: GitHub
 .. |contribute button| replace:: "Create pull request"
 
-.. _repository: https://github.com/<USERNAME>/esbmtk
-.. _issue tracker: https://github.com/<USERNAME>/esbmtk/issues
-.. <-- end -->
+.. _repository: https://github.com/uliw/esbmtk
+.. _issue tracker: https://github.com/uliw/esbmtk/issues
 
 
 .. |virtualenv| replace:: ``virtualenv``

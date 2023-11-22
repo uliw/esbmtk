@@ -85,25 +85,15 @@ class Model(esbmtkBase):
     The user facing methods of the model class are
 
         - Model_Name.info()
-
         - Model_Name.save_data()
-
         - Model_Name.plot([sb.DIC, sb.TA]) plot any object in the list
-
         - Model_Name.save_state() Save the model state
-
         - Model_name.read_state() Initialize with a previous model
           state
-
         - Model_Name.run()
-
         - Model_Name.list_species()
-
         - Model_name.flux_summary()
-
         - Model_Name.connection_summary()
-
-
 
     """
 
@@ -121,16 +111,11 @@ class Model(esbmtkBase):
                               )
 
                 :param name: The model name, e.g., M
-
                 :param mass_unit: mol
-
                 :param volume_unit: only tested with liter
-
                 :param element: list with one or more species names
-
                 :param time_step: Limit automatic step size increase, i.e., the time
                 resolution of the model. Optional, defaults to the model duration/100
-
                 :param m_type: enables or disables isotope calculation for the
                 entire model.  The default value is "Not set" in this case
                 isotopes will only be calculated for reservoirs which set
@@ -1326,7 +1311,7 @@ class ReservoirBase(esbmtkBase):
             y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
         else:
             y1 = (self.c * M.c_unit).to(self.plt_units).magnitude
-            y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
+            y1_label = f"{self.legend_left} [{self.plt_units.units:~P}]"
 
         # test for plt_transform
         if self.plot_transform_c != "None":

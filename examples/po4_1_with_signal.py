@@ -28,8 +28,8 @@ Signal(
     species=M.PO4,  # Species
     start="3 Myrs",
     shape="pyramid",
-    duration="1 Myrs",q
-    mass=f"{45} Pmol",
+    duration="1 Myrs",
+    mass="45 Pmol",
     register=M,
 )
 
@@ -66,7 +66,7 @@ Connection(
     sink=M.sb,  # target of flux
     rate=F_w,  # rate of flux
     id="river",  # connection id
-    # signal=M.CR,
+    signal=M.CR,
 )
 
 Connection(  # thermohaline downwelling
@@ -103,5 +103,5 @@ Connection(  #
 )
 
 M.run()
-M.plot([M.sb, M.db, M.CR])
+M.plot([M.sb, M.db, M.CR], fn="po4_1_with_signal.png")
 M.save_state()

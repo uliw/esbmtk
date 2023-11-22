@@ -5,7 +5,6 @@ from esbmtk import (
     Connection,  # the connection class
     Source,  # the source class
     Sink,  # sink class
-    Signal,
     Q_,  # Quantity operator
 )
 
@@ -19,19 +18,8 @@ M = Model(
 # boundary conditions
 F_w = M.set_flux("45 Gmol", "year", M.P)  # P @280 ppm (Filipelli 2002)
 tau = Q_("100 year")  # PO4 residence time in surface box
-F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
+R_e = 1 - 0.01  # About 1% of the exported P is buried in the deep ocean
 thc = "20*Sv"  # Thermohaline circulation in Sverdrup
-
-
-Signal(
-    name="CR",  # Signal name
-    species=M.PO4,  # Species
-    start="3 Myrs",
-    shape="pyramid",
-    duration="1 Myrs",q
-    mass=f"{45} Pmol",
-    register=M,
-)
 
 # Source definitions
 Source(
@@ -66,7 +54,6 @@ Connection(
     sink=M.sb,  # target of flux
     rate=F_w,  # rate of flux
     id="river",  # connection id
-    # signal=M.CR,
 )
 
 Connection(  # thermohaline downwelling
@@ -98,10 +85,10 @@ Connection(  #
     sink=M.burial,  # target of flux
     ctype="scale_with_flux",
     ref_flux=M.flux_summary(filter_by="primary_production", return_list=True)[0],
-    scale=F_b,
+    scale=1 - R_e,
     id="burial",
 )
 
 M.run()
-M.plot([M.sb, M.db, M.CR])
-M.save_state()
+M.plot([M.sb, M.db], fn="po4_1.png")
+M.save_state(directory="state_po41")

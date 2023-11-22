@@ -1,0 +1,19 @@
+#+TITLE: ESBMTK Manual 
+#+AUTHOR:Ulrich G Wortmann
+#+OX-IPYNB-LANGUAGE: ipython
+#+BIND: org-export-use-babel nil
+#+STARTUP: showall 
+#+STARTUP: latexpreview
+#+OPTIONS: todo:nil tasks:nil tags:nil toc:nil author:nil
+#+PROPERTY: header-args :eval never-export
+#+EXCLUDE_TAGS: noexport
+#+LATEX_HEADER: \usepackage{breakurl}
+#+LATEX_HEADER: \usepackage{newuli}
+#+LATEX_HEADER: \usepackage{uli-german-paragraphs}
+#+TOC: headlines
+
+* Seawater & Carbon Chemistry
+
+** Seawater
+
+** Carbon Chemistry

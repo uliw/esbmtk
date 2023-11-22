@@ -161,10 +161,20 @@ def Phosphor(model):
 
     # add species
     Species(
-        name="PO4", element=eh, display_as=r"PO$_{4}$", register=eh, m_weight=94.971362
+        name="PO4",
+        element=eh,
+        display_as=r"PO$_{4}$",
+        register=eh,
+        m_weight=94.971362,
+        scale_to="umol",
     )  # Name & element handle
     Species(
-        name="P", element=eh, display_as=r"P", register=eh, m_weight=30.973762
+        name="P",
+        element=eh,
+        display_as=r"P",
+        register=eh,
+        m_weight=30.973762,
+        scale_to="umol",
     )  # Name & element handle
 
 

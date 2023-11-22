@@ -16,7 +16,9 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   Documentation <manual/manual>
+   Introduction <manual/manual>
+   Implementing more complex models <manual/manual-2>
+   Seawater & Carbon Chemisrty <manual/manual3>
    Contributions & Help <contributing>
    Authors <authors>
    Changelog <changelog>

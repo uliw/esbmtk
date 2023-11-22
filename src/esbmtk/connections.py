@@ -77,13 +77,9 @@ class Connect(esbmtkBase):
          - alpha: A fractionation factor, optional
          - id: A string wich will become part of the object name, it will override
            automatic name creation
-         - plot: "yes" or "no", defaults to "yes"
          - signal: An object handle of signal, optional
-         - pl: A list of process objects, optional
-         - ctype: connection type, optional, this allows to scale a flux in response to other
-           reservoirs and fluxes
+         - ctype: connection type, see below
          - bypass :str optional defaults to "None" see scale with flux
-         - save_flux_data: bool, defaults to model setting, unles specified
 
     The connection name is derived automatically, see the documentation of
     __set_name__() for details

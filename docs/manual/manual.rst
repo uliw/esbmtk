@@ -101,12 +101,30 @@ which is easily encoded as a python function
 
 While ESBMTK provides abstractions to efficiently define complex models, the following section will use the basic ESBMTK classes to define the above model. While quite verbose, it demonstrates the design philosophy behind ESBMTK. More complex approaches are described further down. 
 
+2.1.1 Installation
+^^^^^^^^^^^^^^^^^^
+
 .. code:: ipython
 
     import sys
     !{sys.executable} -m pip install esbmtk
 
-2.1.1 Defining the model geometry and initial conditions
+2.1.2 Foundational Concepts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ESBMTK uses a hierarchically structured object oriented approach to describe a model. The top most object is the model object that describes fundamental properties like run time, time step, elements and species information. All other objects derive from the model object. 
+
+.. _m1:
+
+.. figure:: ./model1.png
+    :width: 600
+
+
+    Schematic outlining the object hirarchie in ESBMTK
+
+The model geometry is then parsed to build a suitable equation system.
+
+2.1.3 Defining the model geometry and initial conditions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In a first step one needs to define a model object that describes fundamental model parameters. The following code first loads the various esbmtk classes that will help with model construction, and then defines the model object. Note that units are automatically translated into model units. While convenient, there are some import caveats: 
@@ -191,7 +209,7 @@ To set up the model geometry, we first  use the ``Source`` and  ``Reservoir`` cl
         concentration="0 umol/l",  # initial concentration
     )
 
-2.1.2 Model processes
+2.1.4 Model processes
 ^^^^^^^^^^^^^^^^^^^^^
 
 For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework this is accomplished through the ``Connection`` class. To connect the a weathering flux from the source object (M.w) to the surface ocean (M.sb) we declare a connection instance describing this relationship as follows:
@@ -257,6 +275,14 @@ The ``flux_summary()`` method will return a list of matching fluxes but since th
         scale=F_b,
         id="burial",
     )
+
+Running the above code (see the file ``po4_1.py`` in the examples directory), results in the following graph:
+
+.. _po41:
+
+.. figure:: ./po4_1.png
+
+    Example output from ``po4_1.png``
 
 2.2 Working with the model instance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

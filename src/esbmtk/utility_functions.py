@@ -337,7 +337,7 @@ def show_data(self, **kwargs) -> None:
     ind: str = kwargs["indent"] * " " if "indent" in kwargs else ""
 
 
-def set_y_limits(ax: plt.Axes, obj: any) -> None:
+def set_y_limits(ax : plt.Axes, obj: any) -> None:
     """Prevent the display or arbitrarily small differences"""
 
     bottom, top = ax.get_ylim()

@@ -445,13 +445,12 @@ class Signal(esbmtkBase):
     described by its startime (relative to the model time), it's
     size (as mass) and duration, or as duration and
     magnitude. Furthermore, we can presribe the signal shape
-    (square, pyramid) and whether the signal will repeat. You
+    (square, pyramid, bell, file )and whether the signal will repeat. You
     can also specify whether the event will affect the delta value.
 
-    The data in the signal class will simply be added to the data in
-    a given flux. So this class cannot be used for scaling (can we
-    add this functionality?)
-
+    The default is to add the signal to a given connection. It is however
+    also possible to use the signal data as a scaling factor.
+   
     Example::
 
           Signal(name = "Name",
