@@ -465,7 +465,7 @@ class Model(esbmtkBase):
         # update swc object
         for rg in self.lrg:
             if hasattr(rg, "swc"):
-                rg.swc.update_parameters()
+                rg.swc.update_parameters(pos=0)
 
     def merge_temp_results(self):
         """Replace the datafields which were used for an individual

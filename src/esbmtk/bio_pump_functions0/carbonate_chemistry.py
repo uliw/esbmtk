@@ -99,9 +99,8 @@ def carbonate_system_1_ode(
     KW = swc.KW  # KW
     KB = swc.KB  # KB
     boron = swc.boron
-
     hplus = get_hplus(dic, ta, hplus_0, boron, k1, k2, KW, KB)
-    co2aq: float = dic / (1 + k1 / hplus + k1k2 / hplus**2)
+    co2aq = dic / (1 + k1 / hplus + k1k2 / hplus**2)
     dCdt_Hplus = hplus - hplus_0
     dCdt_co2aq = co2aq - co2aq_0
 
@@ -284,9 +283,9 @@ def gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:
     Parameters:
     scale: surface area in m^2 * piston_velocity
     gas_c: species concentration in atmosphere
+    gc_aq: concentration of the dissolved gas in water
     p_H2O: water vapor partial pressure
     solubility: species solubility  mol/(m^3 atm)
-    gc_aq: concentration of the dissolved gas in water
     """
 
     beta = solubility * (1 - p_H2O)

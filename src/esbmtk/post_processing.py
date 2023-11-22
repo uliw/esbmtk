@@ -123,7 +123,7 @@ def carbonate_system_2_pp(
     fg: float = hplus - oh - boh4
     hco3 = dic / (1 + hplus / k1 + k2 / hplus)
     co3 = dic / (1 + hplus / k2 + hplus**2 / k1k2)
-    co2aq = dic / (1 + k1 / hplus + k1k2 / hplus * 2)
+    co2aq = dic / (1 + k1 / hplus + k1k2 / hplus**2)
     zsat = np.clip(zsat0 * np.log(ca2 * co3 / ksp0), zsat_min, zmax).astype(int)
     zcc = (zsat0 * np.log(export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)).astype(
         int
@@ -132,7 +132,7 @@ def carbonate_system_2_pp(
     A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
     A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
     A_zcc_zmax = depth_area_table[zcc] - depth_area_table[zmax]
-  
+
     # must be loop
     Fdiss = zsat * 0
     Fburial = zsat * 0
@@ -168,7 +168,7 @@ def carbonate_system_2_pp(
         species=rg.mo.Fdiss,
         data=Fdiss,
     )
-    
+
     VectorData(
         name="CA",
         register=rg,
