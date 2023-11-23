@@ -348,7 +348,7 @@ class SourceSinkGroup(esbmtkBase):
     actual reservoirs, but we stil need to have them as objects
     Example::
 
-           Sink(name = "Pyrite",
+           SinkGroup(name = "Pyrite",
                 species = [SO42, H2S],
                 delta = {"SO4": 10}
                 )
@@ -423,9 +423,11 @@ class SinkGroup(SourceSinkGroup):
     This is just a wrapper to setup a Sink object
     Example::
 
-           Sink(name = "Pyrite",species =SO4)
+           SinkGroup(name = "Burial",
+                species = [SO42, H2S],
+                delta = {"SO4": 10}
+                )
 
-    where the first argument is a string, and the second is a species handle
     """
 
 
@@ -433,10 +435,12 @@ class SourceGroup(SourceSinkGroup):
     """
     This is just a wrapper to setup a Source object
     Example::
+    
+        SourceGroup(name = "weathering",
+                species = [SO42, H2S],
+                delta = {"SO4": 10}
+                )
 
-           Sink(name = "SO4_diffusion", species ="SO4")
-
-    where the first argument is a string, and the second is a species handle
     """
 
 
