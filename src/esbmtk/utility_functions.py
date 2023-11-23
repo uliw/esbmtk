@@ -886,8 +886,6 @@ def create_connection(n: str, p: dict, M: Model) -> None:
     bypass = make_dict(los, bypass)
     signal = make_dict(los, signal)
 
-    print(f"scale = {scale}")
-        
     # name of connectiongroup
     name = f"{M.name}.CG_{source.name}_to_{sink.name}"
     if f"{name}" in M.lmo:  # Test if CG exists
@@ -1307,16 +1305,11 @@ def data_summaries(M, species_names, box_names, register_with):
                 data_list.append(a)
                 label_list.append(a.full_name)
             if hasattr(b, f"{sp.name}"):
-                a = getattr(b, f"{sp.name}")
-                if hasattr(a, ".plot_transform_c"):
-                    if a.plot_transform_c != "None":
-                        data_list.append(a.plot_transform_c(a.c))
-                    else:
-                        data_list.append(a.c)
-                else:
-                    data_list.append(a.c)
-
-                label_list.append(a.full_name)
+                a = getattr(b, f"{sp.name}") # this is a reservoir
+                y1, y1_label, unit = a.get_plot_format()
+                data_list.append(y1)
+                label_list.append(y1_label)
+                
 
         df = DataField(
             name=f"{sp.name}_df",
@@ -1324,7 +1317,7 @@ def data_summaries(M, species_names, box_names, register_with):
             x1_data=M.time,
             y1_data=data_list,
             y1_label=label_list,
-            y1_legend=f"{sp.element.name} [{sp.element.mass_unit}]",
+            y1_legend=f"{sp.element.name} [{unit}]",
             x1_as_time=True,
             title=f"{sp.name}",
         )
