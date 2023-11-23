@@ -435,7 +435,7 @@ class SourceGroup(SourceSinkGroup):
     """
     This is just a wrapper to setup a Source object
     Example::
-    
+
         SourceGroup(name = "weathering",
                 species = [SO42, H2S],
                 delta = {"SO4": 10}
@@ -454,7 +454,7 @@ class Signal(esbmtkBase):
 
     The default is to add the signal to a given connection. It is however
     also possible to use the signal data as a scaling factor.
-   
+
     Example::
 
           Signal(name = "Name",
@@ -1033,22 +1033,27 @@ class Signal(esbmtkBase):
 
 
 class VectorData(esbmtkBase):
-    """A simple container for 1-dimensional data. Typically used for
-    results obtained by postprocessing.
-    """
-
     def __init__(self, **kwargs: dict[str, any]) -> None:
-        """Initialize this instance"""
+        """A simple container for 1-dimensional data. Typically used for
+        results obtained by postprocessing.
+        """
+
+        from esbmtk import Q_
+        from pint import Unit
+
         self.defaults: dict[str, list(str, tuple)] = {
-            "name": ["None", (str)],
+            "name": ["None", (str,)],
             "register": ["None", (str, ReservoirGroup)],
             "species": ["None", (str, Species)],
             "data": ["None", (str, np.ndarray, float)],
-            "isotopes": [False, (bool)],
+            "isotopes": [False, (bool,)],
+            "plt_units": ["None", (str, Unit)],
+            "label": ["None", (str, bool)],
         }
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "register", "species", "data"]
+        self.lrk: list = ["name", "register", "species", "data", "label", "plt_units"]
         self.__initialize_keyword_variables__(kwargs)
+
         self.n = self.name
         self.parent = self.register
         self.sp = self.species
@@ -1058,66 +1063,85 @@ class VectorData(esbmtkBase):
         self.label = self.name
         self.__register_name_new__()
 
+    def get_plot_format(self):
+        """Return concentrat data in plot units"""
+
+        from esbmtk import Q_
+        from pint import Unit
+
+        if isinstance(self.plt_units, Q_):
+            unit = f"{self.plt_units.units:~P}"
+        elif isinstance(self.plt_units, Unit):
+            unit = f"{self.plt_units:~P}"
+        else:
+            unit = f"{self.plt_units}"
+
+        y1_label = f"{self.label} [{unit}]"
+
+        y1 = self.c
+
+        return y1, y1_label, unit
+
 
 class DataField(esbmtkBase):
     """
-        DataField: Datafields can be used to plot data which is computed after
-        the model finishes in the overview plot windows. Therefore, datafields will
-        plot in the same window as the reservoir they are associated with.
-        Datafields must share the same x-axis is the model, and can have up to two
-        y axis.
+    DataField: Datafields can be used to plot data which is computed after
+    the model finishes in the overview plot windows. Therefore, datafields will
+    plot in the same window as the reservoir they are associated with.
+    Datafields must share the same x-axis is the model, and can have up to two
+    y axis.
 
-        Example::
+    Example::
 
-                 DataField(name = "Name"
-                           register = Model handle,
-                           y1_data = NDArrayFloat or list of arrays
-                           y1_label = Data label(s)
-                           y1_legend = Y-Axis Label
-                           y1_type = "plot", | "scatter"
-                           y2_data = NDArrayFloat    # optional
-                           y2_legend = Y-Axis label # optional
-                           y2_label = Data legend(s) # optional
-                           y2_type = "plot", | "scatter"
-                           common_y_scale = "no",  #optional, default "no"
-                           display_precision = number, optional, inherited from Model
-                           )
+             DataField(name = "Name"
+                       register = Model handle,
+                       y1_data = NDArrayFloat or list of arrays
+                       y1_label = Data label(s)
+                       y1_legend = Y-Axis Label
+                       y1_type = "plot", | "scatter"
+                       y2_data = NDArrayFloat    # optional
+                       y2_legend = Y-Axis label # optional
+                       y2_label = Data legend(s) # optional
+                       y2_type = "plot", | "scatter"
+                       common_y_scale = "no",  #optional, default "no"
+                       display_precision = number, optional, inherited from Model
+                       )
 
-        Note that Datafield data is not mapped to model units. Care must be taken
-        that the data units match the model units.
+    Note that Datafield data is not mapped to model units. Care must be taken
+    that the data units match the model units.
 
-        The instance provides the following data
+    The instance provides the following data
 
-        Name.x    = X-axis = model X-axis
-        Name.y1_data
-        Name.y1_label
-        Name.y1_legend
+    Name.x    = X-axis = model X-axis
+    Name.y1_data
+    Name.y1_label
+    Name.y1_legend
 
-        Similarly for y2
+    Similarly for y2
 
-        You can specify more than one data set, and be explicit about color and
-        linestyle choices.
+    You can specify more than one data set, and be explicit about color and
+    linestyle choices.
 
-        Example::
+    Example::
 
-                DataField(
-                        name="df_pH",
-                        x1_data=[M.time, M.time, M.time, M.ef_hplus_l.x, M.ef_hplus_h.x, M.ef_hplus_d.x],
-                        y1_data=[
-                        -np.log10(M.L_b.Hplus.c),
-                        -np.log10(M.H_b.Hplus.c),
-                        -np.log10(M.D_b.Hplus.c),
-                        -np.log10(M.ef_hplus_l.y),
-                        -np.log10(M.ef_hplus_h.y),
-                        -np.log10(M.ef_hplus_d.y),
-                        ],
-                        y1_label="Low latitude, High latitude, Deep box, d_L, d_H, d_D".split(", "),
-                        y1_color="C0 C1 C2 C0 C1 C2".split(" "),
-                        y1_style="solid solid solid dotted dotted dotted".split(" "),
-                        y1_legend="pH",
-                        register=M,
-                        )
-                        
+            DataField(
+                    name="df_pH",
+                    x1_data=[M.time, M.time, M.time, M.ef_hplus_l.x, M.ef_hplus_h.x, M.ef_hplus_d.x],
+                    y1_data=[
+                    -np.log10(M.L_b.Hplus.c),
+                    -np.log10(M.H_b.Hplus.c),
+                    -np.log10(M.D_b.Hplus.c),
+                    -np.log10(M.ef_hplus_l.y),
+                    -np.log10(M.ef_hplus_h.y),
+                    -np.log10(M.ef_hplus_d.y),
+                    ],
+                    y1_label="Low latitude, High latitude, Deep box, d_L, d_H, d_D".split(", "),
+                    y1_color="C0 C1 C2 C0 C1 C2".split(" "),
+                    y1_style="solid solid solid dotted dotted dotted".split(" "),
+                    y1_legend="pH",
+                    register=M,
+                    )
+
     """
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
