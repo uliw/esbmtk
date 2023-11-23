@@ -1174,12 +1174,16 @@ class ConnectionGroup(esbmtkBase):
     def __create_connections__(self) -> None:
         """Create Connections"""
 
-        from esbmtk import Q_
+        from esbmtk import ReservoirGroup, SinkGroup, SourceGroup
 
         self.connections: list = []
 
         if isinstance(self.ctype, str):
-            self.connections = self.source.lor
+            if isinstance(self.source, (ReservoirGroup, SinkGroup, SourceGroup)):
+                for s in self.source.lor:
+                    self.connections.append(s.species)
+            else:
+                breakpoint()
         elif isinstance(self.ctype, dict):
             # find all sub reservoirs which have been specified by the ctype keyword
             for r, t in self.ctype.items():
@@ -1209,7 +1213,7 @@ class ConnectionGroup(esbmtkBase):
             for key, value in self.c_defaults[sp.name].items():
                 # test if key in default dict is also specified as connection keyword
                 # test if rate in kwargs, if sp in rate dict
-                if key in self.kwargs and  isinstance(self.kwargs[key], dict):
+                if key in self.kwargs and isinstance(self.kwargs[key], dict):
                     if key in self.kwargs and sp in self.kwargs[key]:
                         self.c_defaults[sp.n][key] = self.kwargs[key][sp]
                         # print(f"sp:{sp.n} k:{key} = {self.kwargs[key][sp]}")
@@ -1220,6 +1224,10 @@ class ConnectionGroup(esbmtkBase):
                         #  print(f"sp:{sp.n} k:{key} = {self.kwargs[key][sp]}")
                 else:
                     pass  # no updates necessary
+
+                # if key == "rate":
+                #     breakpoint()
+
             a = Connect(
                 source=getattr(self.source, sp.n),
                 sink=getattr(self.sink, sp.n),
