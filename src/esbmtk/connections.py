@@ -125,7 +125,7 @@ class Connect(esbmtkBase):
 
     Connecting a Reservoir to Sink or another Reservoir
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                
+
     Here we can distinguish between cases where we use fixed flux, or a flux that reacts to in some way to the
      upstream reservoir (see the Reservoir to Reservoir section for a more complete treatment):
 
@@ -166,7 +166,7 @@ class Connect(esbmtkBase):
                 sink = downstream reservoir,
                 ctype = "scale_with_flux",
                 ref_flux = flux handle,
-                scale = 1, # 
+                scale = 1, #
                 )
 
 
@@ -186,7 +186,7 @@ class Connect(esbmtkBase):
 
     Useful methods in this class
     ----------------------------
-                 
+
     The following methods might prove useful:
 
       - info() will provide a short description of the connection objects.
@@ -227,10 +227,10 @@ class Connect(esbmtkBase):
             "id": ["", str],
             "source": ["None", (str, Source, Reservoir, GasReservoir)],
             "sink": ["None", (str, Sink, Reservoir, GasReservoir)],
-            "delta": ["None", (int, float, str)],
-            "rate": ["None", (str, int, float, Q_)],
+            "delta": ["None", (int, float, str, dict)],
+            "rate": ["None", (str, int, float, Q_, dict)],
             "pl": ["None", (list, str)],
-            "alpha": ["None", (int, float, str)],
+            "alpha": ["None", (int, float, str, dict)],
             "species": ["None", (Species, str)],
             "ctype": ["regular", (str)],
             "ref_reservoirs": ["None", (Reservoir, GasReservoir, str, list)],
@@ -646,34 +646,34 @@ class Connect(esbmtkBase):
 
         elif self.ctype == "ignore":
             pass
-        elif self.ctype == "scale_to_input":
-            self.__scale_to_input__()
-        elif self.ctype == "flux_diff":
-            self.__vardeltaout__()
-            self.__flux_diff__()
+        # elif self.ctype == "scale_to_input":
+        #     self.__scale_to_input__()
+        # elif self.ctype == "flux_diff":
+        #     self.__vardeltaout__()
+        #     self.__flux_diff__()
         elif self.ctype == "scale_with_flux":
             self.__scaleflux__()
         elif self.ctype == "weathering":
             self.__rateconstant__()
-        elif self.ctype == "virtual_flux":
-            self.__virtual_flux__()
-            # self.__vardeltaout__()
-        elif self.ctype == "copy_flux":
-            self.__scaleflux__()
-            # self.__vardeltaout__()
-        elif self.ctype == "scale_with_mass":
-            self.__rateconstant__()
+        # elif self.ctype == "virtual_flux":
+        #     self.__virtual_flux__()
+        #     # self.__vardeltaout__()
+        # elif self.ctype == "copy_flux":
+        #     self.__scaleflux__()
+        #     # self.__vardeltaout__()
+        # elif self.ctype == "scale_with_mass":
+        #     self.__rateconstant__()
         elif self.ctype == "scale_with_concentration":
             self.__rateconstant__()
-        elif self.ctype == "scale_relative_to_multiple_reservoirs":
-            self.__rateconstant__()
-        elif self.ctype == "flux_balance":
-            self.__rateconstant__()
-        elif self.ctype == "react_with":
-            self.__reaction__()
-        elif self.ctype == "monod_type_limit":
-            # self.__vardeltaout__()
-            self.__rateconstant__()
+        # elif self.ctype == "scale_relative_to_multiple_reservoirs":
+        #     self.__rateconstant__()
+        # elif self.ctype == "flux_balance":
+        #     self.__rateconstant__()
+        # elif self.ctype == "react_with":
+        #     self.__reaction__()
+        # elif self.ctype == "monod_type_limit":
+        #     # self.__vardeltaout__()
+        #     self.__rateconstant__()
         elif self.ctype != "manual":
             print(f"Connection Type {self.ctype} is unknown")
             raise ConnectionError(f"Unknown connection type {self.ctype}")
@@ -700,38 +700,38 @@ class Connect(esbmtkBase):
             )
             self.lop.append(ph)
 
-    def __passivefluxfixeddelta__(self) -> None:
-        """Just a wrapper to keep the if statement manageable"""
+    # def __passivefluxfixeddelta__(self) -> None:
+    #     """Just a wrapper to keep the if statement manageable"""
 
-        from esbmtk import PassiveFlux_fixed_delta
+    #     from esbmtk import PassiveFlux_fixed_delta
 
-        ph = PassiveFlux_fixed_delta(
-            name="Pfd",
-            reservoir=self.r,
-            flux=self.fh,
-            register=self.fh,
-            delta=self.delta,
-        )  # initialize a passive flux process object
-        self.lop.append(ph)
+    #     ph = PassiveFlux_fixed_delta(
+    #         name="Pfd",
+    #         reservoir=self.r,
+    #         flux=self.fh,
+    #         register=self.fh,
+    #         delta=self.delta,
+    #     )  # initialize a passive flux process object
+    #     self.lop.append(ph)
 
-    def __vardeltaout__(self) -> None:
-        """Unlike a passive flux, this process sets the output flux from a
-        reservoir to a fixed value, but the isotopic ratio of the
-        output flux will be set equal to the isotopic ratio of the
-        upstream reservoir.
+    # def __vardeltaout__(self) -> None:
+    #     """Unlike a passive flux, this process sets the output flux from a
+    #     reservoir to a fixed value, but the isotopic ratio of the
+    #     output flux will be set equal to the isotopic ratio of the
+    #     upstream reservoir.
 
-        """
+    #     """
 
-        from esbmtk import VarDeltaOut
+    #     from esbmtk import VarDeltaOut
 
-        ph = VarDeltaOut(
-            name="Pvdo",
-            reservoir=self.source,
-            flux=self.fh,
-            register=self.fh,
-            rate=self.rate,
-        )
-        self.lop.append(ph)
+    #     ph = VarDeltaOut(
+    #         name="Pvdo",
+    #         reservoir=self.source,
+    #         flux=self.fh,
+    #         register=self.fh,
+    #         rate=self.rate,
+    #     )
+    #     self.lop.append(ph)
 
     def __scaleflux__(self) -> None:
         """Scale a flux relative to another flux"""
@@ -758,63 +758,63 @@ class Connect(esbmtkBase):
         )
         self.lop.append(ph)
 
-    def __virtual_flux__(self) -> None:
-        """Create a virtual flux. This is similar to __scaleflux__, however the new flux
-        will only affect the sink, and not the source.
+    # def __virtual_flux__(self) -> None:
+    #     """Create a virtual flux. This is similar to __scaleflux__, however the new flux
+    #     will only affect the sink, and not the source.
 
-        """
+    #     """
 
-        from esbmtk import ScaleFlux, Flux
+    #     from esbmtk import ScaleFlux, Flux
 
-        if self.k_value != "None":
-            self.scale = self.k_value
-            print(
-                f"\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n"
-            )
+    #     if self.k_value != "None":
+    #         self.scale = self.k_value
+    #         print(
+    #             f"\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n"
+    #         )
 
-        if not isinstance(self.kwargs["ref_reservoirs"], Flux):
-            raise ConnectionError("Scale reference must be a flux")
+    #     if not isinstance(self.kwargs["ref_reservoirs"], Flux):
+    #         raise ConnectionError("Scale reference must be a flux")
 
-        ph = ScaleFlux(
-            name="PSFV",
-            reservoir=self.r,
-            flux=self.fh,
-            register=self.fh,
-            scale=self.scale,
-            ref_flux=self.ref_flux,
-            delta=self.delta,
-        )
-        self.lop.append(ph)
+    #     ph = ScaleFlux(
+    #         name="PSFV",
+    #         reservoir=self.r,
+    #         flux=self.fh,
+    #         register=self.fh,
+    #         scale=self.scale,
+    #         ref_flux=self.ref_flux,
+    #         delta=self.delta,
+    #     )
+    #     self.lop.append(ph)
 
-        # this flux must not affect the source reservoir
-        self.r.lof.remove(self.fh)
+    #     # this flux must not affect the source reservoir
+    #     self.r.lof.remove(self.fh)
 
-    def __flux_diff__(self) -> None:
-        """Scale a flux relative to the difference between
-        two fluxes
+    # def __flux_diff__(self) -> None:
+    #     """Scale a flux relative to the difference between
+    #     two fluxes
 
-        """
+    #     """
 
-        from esbmtk import FluxDiff
+    #     from esbmtk import FluxDiff
 
-        if self.k_value != "None":
-            self.scale = self.k_value
-            print(
-                f"\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n"
-            )
+    #     if self.k_value != "None":
+    #         self.scale = self.k_value
+    #         print(
+    #             f"\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n"
+    #         )
 
-        if not isinstance(self.kwargs["ref_reservoirs"], list):
-            raise ConnectionError("ref must be a list")
+    #     if not isinstance(self.kwargs["ref_reservoirs"], list):
+    #         raise ConnectionError("ref must be a list")
 
-        ph = FluxDiff(
-            name="PSF",
-            reservoir=self.r,
-            flux=self.fh,
-            register=self.fh,
-            scale=self.scale,
-            ref_reservoirs=self.ref_reservoirs,
-        )
-        self.lop.append(ph)
+    #     ph = FluxDiff(
+    #         name="PSF",
+    #         reservoir=self.r,
+    #         flux=self.fh,
+    #         register=self.fh,
+    #         scale=self.scale,
+    #         ref_reservoirs=self.ref_reservoirs,
+    #     )
+    #     self.lop.append(ph)
 
     def __passiveflux__(self) -> None:
         """Just a wrapper to keep the if statement manageable"""
@@ -830,19 +830,19 @@ class Connect(esbmtkBase):
         )  # initialize a passive flux process object
         self.lop.append(ph)  # add this process to the process list
 
-    def __scale_to_input__(self) -> None:
-        """Just a wrapper to keep the if statement manageable"""
+    # def __scale_to_input__(self) -> None:
+    #     """Just a wrapper to keep the if statement manageable"""
 
-        from esbmtk import ScaleRelativeToInputFluxes
+    #     from esbmtk import ScaleRelativeToInputFluxes
 
-        ph = ScaleRelativeToInputFluxes(
-            name="_SRTIF",
-            reservoir=self.r,
-            register=self.fh,
-            flux=self.fh,
-            scale=self.scale,
-        )  # initialize a passive flux process object
-        self.lop.append(ph)  # add this process to the process list
+    #     ph = ScaleRelativeToInputFluxes(
+    #         name="_SRTIF",
+    #         reservoir=self.r,
+    #         register=self.fh,
+    #         flux=self.fh,
+    #         scale=self.scale,
+    #     )  # initialize a passive flux process object
+    #     self.lop.append(ph)  # add this process to the process
 
     def __alpha__(self) -> None:
         """Just a wrapper to keep the if statement manageable"""
@@ -868,23 +868,23 @@ class Connect(esbmtkBase):
             weathering,
         )
 
-        if self.ctype == "scale_with_mass":
-            if self.k_value != "None":
-                self.scale = self.k_value
-                print(
-                    f"\n Warning: use scale instead of k_value for scale with mass type\n"
-                )
+        # if self.ctype == "scale_with_mass":
+        #     if self.k_value != "None":
+        #         self.scale = self.k_value
+        #         print(
+        #             f"\n Warning: use scale instead of k_value for scale with mass type\n"
+        #         )
 
-            self.scale = map_units(self, self.scale, self.mo.m_unit)
-            ph = ScaleRelativeToMass(
-                name="_PkM",
-                reservoir=self.ref_reservoirs,
-                flux=self.fh,
-                register=self.fh,
-                scale=self.scale,
-            )
+        #     self.scale = map_units(self, self.scale, self.mo.m_unit)
+        #     ph = ScaleRelativeToMass(
+        #         name="_PkM",
+        #         reservoir=self.ref_reservoirs,
+        #         flux=self.fh,
+        #         register=self.fh,
+        #         scale=self.scale,
+        #     )
 
-        elif self.ctype == "scale_with_concentration":
+        if self.ctype == "scale_with_concentration":
             if self.k_value != "None":
                 self.scale = self.k_value
                 print(
@@ -1133,14 +1133,14 @@ class ConnectionGroup(esbmtkBase):
             "ref_reservoirs": ["None", (str, dict, tuple, Reservoir)],
             "ref_flux": ["None", (str, dict, tuple, Flux)],
             "plot": ["yes", (str, dict, tuple)],
-            "scale": [1, (str, dict, tuple, int, float)],
+            "scale": [1, (str, dict, tuple, int, float, Q_)],
             "bypass": ["None", (dict, tuple, str)],
             "register": ["None", (str, tuple, Model)],
             "save_flux_data": [False, (bool, tuple)],
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["source", "sink"]
+        self.lrk: list = ["source", "sink", "ctype"]
         self.__initialize_keyword_variables__(kwargs)
 
         if self.register == "None":
@@ -1154,7 +1154,7 @@ class ConnectionGroup(esbmtkBase):
         self.model = self.mo
         self.loc: list = []  # list of connection objects
 
-        self.name = f"CG_{self.source.name}_to_{self.sink.name}"
+        self.name = f"CG_{self.source.name}_to_{self.sink.name}_{self.id}"
         # fixme this results in duplicate names in the model namespace.
         # probably related to the create connection function
         # if self.id != "None":
@@ -1174,23 +1174,23 @@ class ConnectionGroup(esbmtkBase):
     def __create_connections__(self) -> None:
         """Create Connections"""
 
-        # find all sub reservoirs which have been specified by the ctype keyword
+        from esbmtk import Q_
+
         self.connections: list = []
-        for r, t in self.ctype.items():
-            # r = species/Reservoir Name
-            # t = connnection type, i.e. regular etc.
-            if t == "None":
-                raise ConnectionError(
-                    f"Connectiongroup {self.name} must specify 'ctype'. See help(Connectiongroup)"
-                )
-            self.connections.append(r)
+
+        if isinstance(self.ctype, str):
+            self.connections = self.source.lor
+        elif isinstance(self.ctype, dict):
+            # find all sub reservoirs which have been specified by the ctype keyword
+            for r, t in self.ctype.items():
+                self.connections.append(r)
 
         # now we need to create defaults for all connections
-        self.cd: dict = {}  # connection dictionary with defaults
+        self.c_defaults: dict = {}  # connection dictionary with defaults
         # loop over species
         for sp in self.connections:  # ["SO4", "H2S"]
             # print(f"found species: ----------- {sp.name} ------------")
-            self.cd[sp.n] = {
+            self.c_defaults[sp.n] = {
                 # "cid": self.id,
                 "cid": "None",
                 "plot": "yes",
@@ -1205,31 +1205,34 @@ class ConnectionGroup(esbmtkBase):
                 "signal": "None",
             }
 
-            # print(f"c0:\n Testing for {self.name}, sp = {sp.n}")
             # loop over entries in defaults dict
-            for kcd, vcd in self.cd[sp.name].items():
-                # print(f"c1: kcd = {kcd}, vcd = {vcd}")
+            for key, value in self.c_defaults[sp.name].items():
                 # test if key in default dict is also specified as connection keyword
-                if kcd in self.kwargs and sp in self.kwargs[kcd]:
-                    # print(f"c2: found kcd = {kcd} in kwargs, sp = {sp.n}")
-                    # update the entry
-                    self.cd[sp.n][kcd] = self.kwargs[kcd][sp]
-                # else:
-                # print(f"c3: did not find kcd = {kcd}, r = {sp.n}")
-
+                # test if rate in kwargs, if sp in rate dict
+                if key in self.kwargs and  isinstance(self.kwargs[key], dict):
+                    if key in self.kwargs and sp in self.kwargs[key]:
+                        self.c_defaults[sp.n][key] = self.kwargs[key][sp]
+                        # print(f"sp:{sp.n} k:{key} = {self.kwargs[key][sp]}")
+                elif key in self.kwargs and self.kwargs[key] != "None":
+                    # if value was supplied, update defaults dict
+                    if self.kwargs[key] != "None":
+                        self.c_defaults[sp.n][key] = self.kwargs[key]
+                        #  print(f"sp:{sp.n} k:{key} = {self.kwargs[key][sp]}")
+                else:
+                    pass  # no updates necessary
             a = Connect(
                 source=getattr(self.source, sp.n),
                 sink=getattr(self.sink, sp.n),
-                rate=self.cd[sp.n]["rate"],
-                delta=self.cd[sp.n]["delta"],
-                alpha=self.cd[sp.n]["alpha"],
-                plot=self.cd[sp.n]["plot"],
-                ctype=self.cd[sp.n]["ctype"],
-                scale=self.cd[sp.n]["scale"],
-                bypass=self.cd[sp.n]["bypass"],
-                signal=self.cd[sp.n]["signal"],
-                ref_reservoirs=self.cd[sp.n]["ref_reservoirs"],
-                ref_flux=self.cd[sp.n]["ref_flux"],
+                rate=self.c_defaults[sp.n]["rate"],
+                delta=self.c_defaults[sp.n]["delta"],
+                alpha=self.c_defaults[sp.n]["alpha"],
+                plot=self.c_defaults[sp.n]["plot"],
+                ctype=self.c_defaults[sp.n]["ctype"],
+                scale=self.c_defaults[sp.n]["scale"],
+                bypass=self.c_defaults[sp.n]["bypass"],
+                signal=self.c_defaults[sp.n]["signal"],
+                ref_reservoirs=self.c_defaults[sp.n]["ref_reservoirs"],
+                ref_flux=self.c_defaults[sp.n]["ref_flux"],
                 save_flux_data=self.save_flux_data,
                 groupname=True,
                 id=self.id,
