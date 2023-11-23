@@ -715,7 +715,7 @@ def get_scale_with_concentration_eq(
               in the total reservoir concentration and the
               concentration of the light isotope
     """
-    s_c = get_ic(c.source, icl)  # get index to concentration
+    s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration
     ex = f"{cfn}.scale * {s_c}"  # {c.id} scale with conc in {c.source.full_name}"
     exl = check_isotope_effects(ex, c, icl, ind3, ind2)
     ex, exl = check_signal_2(ex, exl, c)
