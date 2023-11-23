@@ -886,6 +886,8 @@ def create_connection(n: str, p: dict, M: Model) -> None:
     bypass = make_dict(los, bypass)
     signal = make_dict(los, signal)
 
+    print(f"scale = {scale}")
+        
     # name of connectiongroup
     name = f"{M.name}.CG_{source.name}_to_{sink.name}"
     if f"{name}" in M.lmo:  # Test if CG exists
