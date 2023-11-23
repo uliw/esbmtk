@@ -37,51 +37,52 @@ Sink(
 Reservoir(
     name="sb",  # box name
     species=M.PO4,  # species in box
-    register=M,  # this box will be available as M.sb
+    register=M,  # this box will be available as M.S_b
     volume="3E16 m**3",  # surface box volume
     concentration="0 umol/l",  # initial concentration
 )
 Reservoir(
     name="db",  # box name
     species=M.PO4,  # species in box
-    register=M,  # this box will be available M.db
+    register=M,  # this box will be available M.D_b
     volume="100E16 m**3",  # deeb box volume
     concentration="0 umol/l",  # initial concentration
 )
 
 Connection(
     source=M.weathering,  # source of flux
-    sink=M.sb,  # target of flux
+    sink=M.S_b,  # target of flux
     rate=F_w,  # rate of flux
     id="river",  # connection id
+    ctype="regular",
 )
 
 Connection(  # thermohaline downwelling
-    source=M.sb,  # source of flux
-    sink=M.db,  # target of flux
+    source=M.S_b,  # source of flux
+    sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
     scale=thc,
     id="downwelling_PO4",
-    # ref_reservoirs=M.sb, defaults to the source instance
+    # ref_reservoirs=M.S_b, defaults to the source instance
 )
 Connection(  # thermohaline upwelling
-    source=M.db,  # source of flux
-    sink=M.sb,  # target of flux
+    source=M.D_b,  # source of flux
+    sink=M.S_b,  # target of flux
     ctype="scale_with_concentration",
     scale=thc,
     id="upwelling_PO4",
 )
 
 Connection(  #
-    source=M.sb,  # source of flux
-    sink=M.db,  # target of flux
+    source=M.S_b,  # source of flux
+    sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
-    scale=M.sb.volume / tau,
+    scale=M.S_b.volume / tau,
     id="primary_production",
 )
 
 Connection(  #
-    source=M.db,  # source of flux
+    source=M.D_b,  # source of flux
     sink=M.burial,  # target of flux
     ctype="scale_with_flux",
     ref_flux=M.flux_summary(filter_by="primary_production", return_list=True)[0],
@@ -90,5 +91,5 @@ Connection(  #
 )
 
 M.run()
-M.plot([M.sb, M.db], fn="po4_1.png")
+M.plot([M.S_b, M.D_b], fn="po4_1.png")
 M.save_state(directory="state_po41")

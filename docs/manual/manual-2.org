@@ -54,5 +54,78 @@ This will result in the following output:
 
 
 ** Working with multiple species
+
+The basic building blocks introduced so far, are sufficient to create a model, but not necessarily convenient when a model contains more than one species. ESBMTK addresses this through =ReservoirGroup= class, that allows to group several =Reservoir= instances. A  =ReservoirGroup= shares common properties. e.g., the volume and name of a given box, as well as the connection properties. In other words, in a multi species model, one does not have to specify connections for each species, rather, it sufficient to specify the connection type for the  =ReservoirGroup= instance. Similarly, there are classes to group sources, sinks and connections.
+
+Using the previous example of a simple P-cycle model, we now express the P-cycling as a function of photosynthetic organic matter (OM) production and remineralization. First we import the new classes and we additionally load the species definitions for carbon.
+#+BEGIN_SRC ipython
+from esbmtk import (
+    ReservoirGroup,  # the reservoir class
+    ConnectionGroup,  # the connection class
+    SourceGroup,  # the source class
+    SinkGroup,  # sink class
+)
+M = Model(
+    stop="6 Myr",  # end time of model
+    timestep="1 kyr",  # upper limit of time step
+    element=["Phosphor", "Carbon"],  # list of species definitions
+)
+#+END_SRC
+
+Setting up a group source, is similar to a single Source, except that we now specify a species list:
+#+BEGIN_SRC ipython
+SourceGroup(
+    name="weathering",
+    species=[M.PO4, M.DIC],
+    register=M,  # i.e., the instance will be available as M.weathering
+)
+#+END_SRC
+Defining a =Reservoirgroup= follows the same pattern, except that we use a dictionary, so that we can specify the initial concentrations for each species as well:
+#+BEGIN_SRC ipython
+ReservoirGroup(
+    name="S_b",
+    volume="3E16 m**3",  # surface box volume
+    concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"},
+    register=M,
+)
+#+END_SRC
+The =ConnectionGroup= definition is equally straightforward, and the following expression will apply the thermohaline downwelling to all species in the =M.S_b= group.
+#+BEGIN_SRC ipython
+ConnectionGroup(  # thermohaline downwelling
+    source=M.S_b,  # source of flux
+    sink=M.D_b,  # target of flux
+    ctype="scale_with_concentration",
+    scale=thc,
+    id="downwelling_PO4",
+)
+#+END_SRC
+It is also possible, to specify individual rates or scale using a dictionary, as in this example that sets two different weathering fluxes:
+#+BEGIN_SRC ipython
+ConnectionGroup(
+    source=M.weathering,  # source of flux
+    sink=M.S_b,  # target of flux
+    rate={M.DIC: F_w_OM, M.PO4: F_w_PO4},  # rate of flux
+    ctype="regular",
+    id="river",  # connection id
+)
+#+END_SRC
+The following code defines primary production and its effects on DIC in the surface and deep box. The example is a bit contrived, but demonstrates the principle. Note the use of the =ref_reservoirs= keyword and =Redfield= ratio
+#+BEGIN_SRC ipython
+# Primary production as a function of P-concentration
+Connection(  #
+    source=M.S_b.DIC,  # source of flux
+    sink=M.D_b.DIC,  # target of flux
+    ref_reservoirs=M.S_b.PO4,
+    ctype="scale_with_concentration",
+    scale=Redfield * M.S_b.volume / tau,
+    id="OM_production",
+)
+#+END_SRC
+One can now proceed to define the particulate phosphate transport as a function of organic matter export
+#+BEGIN_SRC ipython
+
+#+END_SRC
+
+
 ** Adding isotopes
 ** Using many boxes

@@ -130,7 +130,7 @@ M = Model(
 )
 #+END_SRC
 
-Next, we need to declare some boundary conditions. Most ESBMTK classes will be able to accept input in the form of strings that also contain units (e.g., ="30 Gmol/a"= ). Internally these strings are parsed and converted into the model base units. This works most of the time, but not always. In the below example, we the residence time \tau.  This variable is then used as input to calculate the scale for the primary production as =M.sb.volume / tau= which must fail since =M.sb.volume= is a numeric value and =tau= is a string. 
+Next, we need to declare some boundary conditions. Most ESBMTK classes will be able to accept input in the form of strings that also contain units (e.g., ="30 Gmol/a"= ). Internally these strings are parsed and converted into the model base units. This works most of the time, but not always. In the below example, we the residence time \tau.  This variable is then used as input to calculate the scale for the primary production as =M.S_b.volume / tau= which must fail since =M.S_b.volume= is a numeric value and =tau= is a string. 
 #+BEGIN_SRC ipython
 # try the following
 tau = "100 years"
@@ -172,14 +172,14 @@ Sink(
 Reservoir(
     name="sb",  # box name
     species=M.PO4,  # species in box
-    register=M,  # this box will be available as M.sb
+    register=M,  # this box will be available as M.S_b
     volume="3E16 m**3",  # surface box volume
     concentration="0 umol/l",  # initial concentration
 )
 Reservoir(
     name="db",  # box name
     species=M.PO4,  # species in box
-    register=M,  # this box will be available M.db
+    register=M,  # this box will be available M.D_b
     volume="100E16 m**3",  # deeb box volume
     concentration="0 umol/l",  # initial concentration
 )
@@ -188,13 +188,14 @@ Reservoir(
 
 
 *** Model processes
-For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework this is accomplished through the =Connection= class. To connect the a weathering flux from the source object (M.w) to the surface ocean (M.sb) we declare a connection instance describing this relationship as follows:
+For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework this is accomplished through the =Connection= class. To connect the a weathering flux from the source object (M.w) to the surface ocean (M.S_b) we declare a connection instance describing this relationship as follows:
 #+BEGIN_SRC ipython :tangle po4_1.py
 Connection(
     source=M.weathering,  # source of flux
-    sink=M.sb,  # target of flux
+    sink=M.S_b,  # target of flux
     rate=F_w,  # rate of flux
     id="river",  # connection id
+    ctype="regular",
 )
 #+END_SRC
 Unless the=register= keyword is given, connections will be automatically registered withe the parent of the source, i.e., the model =M=. Unless explicitly given through the =name= keyword, connection names will be automatically constructed from the names of the source and sink instances. However, it is a good habit to provide the =id= keyword to keep connections separate in cases where two reservoir instances share more than one connection. The list of all connection instances can be obtained from the model object (see below).
@@ -202,16 +203,16 @@ Unless the=register= keyword is given, connections will be automatically registe
 To map the process of thermohaline circulation, we connect the surface and deep ocean boxes  using a connection type that scales the mass transfer as a function of the concentration in a given reservoir (=ctype ="scale_with_concentration"= ) . The concentration data is taken from the reference reservoir which defaults to the source reservoir. As such, in most cases the =ref_reservoirs= keyword can be omitted. The =scale= keyword can be a string, or a numerical value. If its provided as a string ESBMTK will map the value into model units. Note that the connection class does not require the =name= keyword. Rather the name is derived from the source and sink reservoir instances. Since reservoir instances can have more than one connection (i.e., surface to deep via downwelling, and surface to deep via primary production), it is required to set the =id= keyword.
 #+BEGIN_SRC ipython :tangle po4_1.py
 Connection(  # thermohaline downwelling
-    source=M.sb,  # source of flux
-    sink=M.db,  # target of flux
+    source=M.S_b,  # source of flux
+    sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
     scale=thc,
     id="downwelling_PO4",
-    # ref_reservoirs=M.sb, defaults to the source instance
+    # ref_reservoirs=M.S_b, defaults to the source instance
 )
 Connection(  # thermohaline upwelling
-    source=M.db,  # source of flux
-    sink=M.sb,  # target of flux
+    source=M.D_b,  # source of flux
+    sink=M.S_b,  # target of flux
     ctype="scale_with_concentration",
     scale=thc,
     id="upwelling_PO4",
@@ -221,10 +222,10 @@ Connection(  # thermohaline upwelling
 There are several ways to define the biological export production, e.g., as  function of the upwelling PO_4, or as function of the residence time of PO_4 in surface ocean. Here we follow Glover (2011), and use the residence time \tau = 100 years.
 #+BEGIN_SRC ipython :tangle po4_1.py
 Connection(  #
-    source=M.sb,  # source of flux
-    sink=M.db,  # target of flux
+    source=M.S_b,  # source of flux
+    sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
-    scale=M.sb.volume / tau,
+    scale=M.S_b.volume / tau,
     id="primary_production",
 )
 #+END_SRC
@@ -236,7 +237,7 @@ M.flux_summary(filter_by="primary_production", return_list=True)[0]
 The =flux_summary()= method will return a list of matching fluxes but since there is only one match, we can simply use  the first result, and use it to define the phosphor burial as a consequence of export production in the following way:
 #+BEGIN_SRC ipython :tangle po4_1.py
 Connection(  #
-    source=M.db,  # source of flux
+    source=M.D_b,  # source of flux
     sink=M.burial,  # target of flux
     ctype="scale_with_flux",
     ref_flux=M.flux_summary(filter_by="primary_production", return_list=True)[0],
@@ -257,7 +258,7 @@ Running the above code (see the file =po4_1.py= in the examples directory), resu
 To run the model, use the =run()= method of the model instance, and plot the results with the =plot()= method. This method accepts a list of esbmtk instances, that will be plotted in a common window. Without further arguments, the plot will also be saved as a pdf file where filename defaults to the name of the model instance. The =save_data()= method will create (or recreate) the =data= directory which will then be populated by csv-files. 
 #+BEGIN_SRC ipython :tangle po4_1.py
 M.run()
-M.plot([M.sb, M.db])
+M.plot([M.S_b, M.D_b])
 M.save_data()
 #+END_SRC
 
@@ -296,19 +297,19 @@ M.run()
 *** Introspection and data access
 All esbmtk instances and instance methods support the usual python methods to show the documentation, and inspect object properties.
 #+BEGIN_SRC ipython
-help(M.sb)  # will print the documentation for sb
-dir(M.sb)  # will print all methods for sb
-M.sb #  when issued in an interactive session, this will echo
+help(M.S_b)  # will print the documentation for sb
+dir(M.S_b)  # will print all methods for sb
+M.S_b #  when issued in an interactive session, this will echo
 # the arguments used to create the instance
 #+END_SRC
 
 The concentration data for a given reservoir is stored in the following instance variables:
 #+BEGIN_SRC ipython
-M.sb.c  # concentration
-M.sb.m  # mass
-M.sb.v  # volume
-M.sb.d  # delta value (if used by model)
-M.sb.l  # the concentration of the light isotope (if used)
+M.S_b.c  # concentration
+M.S_b.m  # mass
+M.S_b.v  # volume
+M.S_b.d  # delta value (if used by model)
+M.S_b.l  # the concentration of the light isotope (if used)
 #+END_SRC
 
 The model time axis is available as =M.time= and the model supports the =connection_summary()= and =flux_summary= methods to query the respective =connection= and =flux= objects. 

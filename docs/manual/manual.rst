@@ -150,7 +150,7 @@ Internally, the model uses 'year' as the time unit, mol as the mass unit, and li
         element=["Phosphor"],  # list of element definitions
     )
 
-Next, we need to declare some boundary conditions. Most ESBMTK classes will be able to accept input in the form of strings that also contain units (e.g., ``"30 Gmol/a"`` ). Internally these strings are parsed and converted into the model base units. This works most of the time, but not always. In the below example, we the residence time :math:`\tau`.  This variable is then used as input to calculate the scale for the primary production as ``M.sb.volume / tau`` which must fail since ``M.sb.volume`` is a numeric value and ``tau`` is a string. 
+Next, we need to declare some boundary conditions. Most ESBMTK classes will be able to accept input in the form of strings that also contain units (e.g., ``"30 Gmol/a"`` ). Internally these strings are parsed and converted into the model base units. This works most of the time, but not always. In the below example, we the residence time :math:`\tau`.  This variable is then used as input to calculate the scale for the primary production as ``M.S_b.volume / tau`` which must fail since ``M.S_b.volume`` is a numeric value and ``tau`` is a string. 
 
 .. code:: ipython
 
@@ -197,14 +197,14 @@ To set up the model geometry, we first  use the ``Source`` and  ``Reservoir`` cl
     Reservoir(
         name="sb",  # box name
         species=M.PO4,  # species in box
-        register=M,  # this box will be available as M.sb
+        register=M,  # this box will be available as M.S_b
         volume="3E16 m**3",  # surface box volume
         concentration="0 umol/l",  # initial concentration
     )
     Reservoir(
         name="db",  # box name
         species=M.PO4,  # species in box
-        register=M,  # this box will be available M.db
+        register=M,  # this box will be available M.D_b
         volume="100E16 m**3",  # deeb box volume
         concentration="0 umol/l",  # initial concentration
     )
@@ -212,15 +212,16 @@ To set up the model geometry, we first  use the ``Source`` and  ``Reservoir`` cl
 2.1.4 Model processes
 ^^^^^^^^^^^^^^^^^^^^^
 
-For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework this is accomplished through the ``Connection`` class. To connect the a weathering flux from the source object (M.w) to the surface ocean (M.sb) we declare a connection instance describing this relationship as follows:
+For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework this is accomplished through the ``Connection`` class. To connect the a weathering flux from the source object (M.w) to the surface ocean (M.S\ :sub:`b`\) we declare a connection instance describing this relationship as follows:
 
 .. code:: ipython
 
     Connection(
         source=M.weathering,  # source of flux
-        sink=M.sb,  # target of flux
+        sink=M.S_b,  # target of flux
         rate=F_w,  # rate of flux
         id="river",  # connection id
+        ctype="regular",
     )
 
 Unless the=register= keyword is given, connections will be automatically registered withe the parent of the source, i.e., the model ``M``. Unless explicitly given through the ``name`` keyword, connection names will be automatically constructed from the names of the source and sink instances. However, it is a good habit to provide the ``id`` keyword to keep connections separate in cases where two reservoir instances share more than one connection. The list of all connection instances can be obtained from the model object (see below).
@@ -230,16 +231,16 @@ To map the process of thermohaline circulation, we connect the surface and deep 
 .. code:: ipython
 
     Connection(  # thermohaline downwelling
-        source=M.sb,  # source of flux
-        sink=M.db,  # target of flux
+        source=M.S_b,  # source of flux
+        sink=M.D_b,  # target of flux
         ctype="scale_with_concentration",
         scale=thc,
         id="downwelling_PO4",
-        # ref_reservoirs=M.sb, defaults to the source instance
+        # ref_reservoirs=M.S_b, defaults to the source instance
     )
     Connection(  # thermohaline upwelling
-        source=M.db,  # source of flux
-        sink=M.sb,  # target of flux
+        source=M.D_b,  # source of flux
+        sink=M.S_b,  # target of flux
         ctype="scale_with_concentration",
         scale=thc,
         id="upwelling_PO4",
@@ -250,10 +251,10 @@ There are several ways to define the biological export production, e.g., as  fun
 .. code:: ipython
 
     Connection(  #
-        source=M.sb,  # source of flux
-        sink=M.db,  # target of flux
+        source=M.S_b,  # source of flux
+        sink=M.D_b,  # target of flux
         ctype="scale_with_concentration",
-        scale=M.sb.volume / tau,
+        scale=M.S_b.volume / tau,
         id="primary_production",
     )
 
@@ -268,7 +269,7 @@ The ``flux_summary()`` method will return a list of matching fluxes but since th
 .. code:: ipython
 
     Connection(  #
-        source=M.db,  # source of flux
+        source=M.D_b,  # source of flux
         sink=M.burial,  # target of flux
         ctype="scale_with_flux",
         ref_flux=M.flux_summary(filter_by="primary_production", return_list=True)[0],
@@ -295,7 +296,7 @@ To run the model, use the ``run()`` method of the model instance, and plot the r
 .. code:: ipython
 
     M.run()
-    M.plot([M.sb, M.db])
+    M.plot([M.S_b, M.D_b])
     M.save_data()
 
 2.2.2 Saving/restoring the model state
@@ -343,19 +344,19 @@ All esbmtk instances and instance methods support the usual python methods to sh
 
 .. code:: ipython
 
-    help(M.sb)  # will print the documentation for sb
-    dir(M.sb)  # will print all methods for sb
-    M.sb #  when issued in an interactive session, this will echo
+    help(M.S_b)  # will print the documentation for sb
+    dir(M.S_b)  # will print all methods for sb
+    M.S_b #  when issued in an interactive session, this will echo
     # the arguments used to create the instance
 
 The concentration data for a given reservoir is stored in the following instance variables:
 
 .. code:: ipython
 
-    M.sb.c  # concentration
-    M.sb.m  # mass
-    M.sb.v  # volume
-    M.sb.d  # delta value (if used by model)
-    M.sb.l  # the concentration of the light isotope (if used)
+    M.S_b.c  # concentration
+    M.S_b.m  # mass
+    M.S_b.v  # volume
+    M.S_b.d  # delta value (if used by model)
+    M.S_b.l  # the concentration of the light isotope (if used)
 
 The model time axis is available as ``M.time`` and the model supports the ``connection_summary()`` and ``flux_summary`` methods to query the respective ``connection`` and ``flux`` objects. 

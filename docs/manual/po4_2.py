@@ -1,6 +1,7 @@
 # import classes from the esbmtk library
 from esbmtk import (
     Model,  # the model class
+    Connection,
     ReservoirGroup,  # the reservoir class
     ConnectionGroup,  # the connection class
     SourceGroup,  # the source class
@@ -16,16 +17,18 @@ M = Model(
     element=["Phosphor", "Carbon"],  # list of element definitions
 )
 
-# boundary conditions
-F_w = M.set_flux("45 Gmol", "year", M.P)  # P @280 ppm (Filipelli 2002)
+# Fixed ratios
+Redfield = 130  # C:P ratio
+R_e = 0.01  # About 1% of the exported P is buried in the deep ocean
 tau = Q_("100 year")  # PO4 residence time in surface box
-R_e = 1 - 0.01  # About 1% of the exported P is buried in the deep ocean
 thc = "20*Sv"  # Thermohaline circulation in Sverdrup
+F_w_OM = M.set_flux("5850 Gmol", "year", M.C)  # P @280 ppm (Filipelli 2002)
+F_w_PO4 = F_w_OM / Redfield
 
 # Source definitions
 SourceGroup(
     name="weathering",
-    species=[M.PO4, M.DIC],
+    species=[M.DIC, M.PO4],
     register=M,  # i.e., the instance will be available as M.weathering
 )
 SinkGroup(
@@ -51,9 +54,9 @@ ReservoirGroup(
 ConnectionGroup(
     source=M.weathering,  # source of flux
     sink=M.S_b,  # target of flux
-    rate=F_w,  # rate of flux
+    rate={M.DIC: F_w_OM, M.PO4: F_w_PO4},  # rate of flux
     ctype="regular",  # required!
-    id="river",  # connection id
+    id="weathering",  # connection id
 )
 
 ConnectionGroup(  # thermohaline downwelling
@@ -61,33 +64,56 @@ ConnectionGroup(  # thermohaline downwelling
     sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
     scale=thc,
-    id="downwelling_PO4",
-    # ref_reservoirs=M.sb, defaults to the source instance
+    id="downwelling",
 )
 ConnectionGroup(  # thermohaline upwelling
     source=M.D_b,  # source of flux
     sink=M.S_b,  # target of flux
     ctype="scale_with_concentration",
     scale=thc,
-    id="upwelling_PO4",
+    id="upwelling",
 )
 
-ConnectionGroup(  #
-    source=M.S_b,  # source of flux
-    sink=M.D_b,  # target of flux
+# Primary production as a function of P-concentration
+Connection(  #
+    source=M.S_b.DIC,  # source of flux
+    sink=M.D_b.DIC,  # target of flux
+    ref_reservoirs=M.S_b.PO4,
     ctype="scale_with_concentration",
-    scale=M.S_b.volume / tau,
-    id="primary_production",
+    scale=Redfield * M.S_b.volume / tau,
+    id="OM_production",
 )
 
-ConnectionGroup(  #
-    source=M.D_b,  # source of flux
-    sink=M.burial,  # target of flux
+# POP export as a funtion of OM export
+Connection(  #
+    source=M.S_b.PO4,  # source of flux
+    sink=M.D_b.PO4,  # target of flux
     ctype="scale_with_flux",
-    ref_flux=M.flux_summary(filter_by="primary_production PO4", return_list=True)[0],
-    scale=1 - R_e,
-    id="burial",
+    ref_flux=M.flux_summary(filter_by="OM_production", return_list=True)[0],
+    scale=1 / Redfield,
+    id="POP",
 )
+
+# P burial
+Connection(  #
+    source=M.D_b.PO4,  # source of flux
+    sink=M.burial.PO4,  # target of flux
+    ctype="scale_with_flux",
+    ref_flux=M.flux_summary(filter_by="POP", return_list=True)[0],
+    scale=R_e,
+    id="P_burial",
+)
+
+# OM burial
+Connection(  #
+    source=M.D_b.DIC,  # source of flux
+    sink=M.burial.DIC,  # target of flux
+    ctype="scale_with_flux",
+    ref_flux=M.flux_summary(filter_by="OM_production", return_list=True)[0],
+    scale=R_e,
+    id="OM_burial",
+)
+
 
 M.run()
 pl = data_summaries(M, [M.DIC, M.PO4], [M.S_b, M.D_b], M)
