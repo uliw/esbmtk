@@ -34,16 +34,12 @@ def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
     dic = rg.DIC.c
 
     VectorData(
-        name="HCO3",
-        register=rg,
-        species=rg.mo.HCO3,
-        data=dic / (1 + (hplus / k1) + (k2 / hplus)),
-    )
-    VectorData(
         name="CO3",
         register=rg,
         species=rg.mo.CO3,
         data=dic / (1 + hplus / k2 + hplus**2 / k1k2),
+        label="CO32-",
+        plt_units=rg.mo.c_unit
     )
 
     VectorData(
@@ -51,6 +47,8 @@ def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
         register=rg,
         species=rg.mo.pH,
         data=-np.log10(hplus),
+        label="pH",
+        plt_units="total scale",
     )
     # rg.omega = rg.swc.ca2 * rg.CO3 / rg.swc.Ksp
     # rg.CO2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus**2)))
@@ -160,6 +158,8 @@ def carbonate_system_2_pp(
         register=rg,
         species=rg.mo.Fburial,
         data=Fburial,
+        label="Fburial",
+        plt_units=rg.mo.f_unit,
     )
 
     VectorData(
@@ -167,52 +167,51 @@ def carbonate_system_2_pp(
         register=rg,
         species=rg.mo.Fdiss,
         data=Fdiss,
+        label="Fdiss",
+        plt_units=rg.mo.f_unit,
     )
 
-    VectorData(
-        name="CA",
-        register=rg,
-        species=rg.mo.CA,
-        data=ta + fg,
-    )
-    VectorData(
-        name="HCO3",
-        register=rg,
-        species=rg.mo.HCO3,
-        data=hco3,
-    )
     VectorData(
         name="CO3",
         register=rg,
         species=rg.mo.CO3,
         data=co3,
+        label="CO32-",
+        plt_units=rg.mo.c_unit,
     )
-
-    # breakpoint()
 
     VectorData(
         name="CO2aq",
         register=rg,
         species=rg.mo.CO2aq,
         data=co2aq,
+        label="CO2aq",
+        plt_units=rg.mo.c_unit,
     )
+    
     VectorData(
         name="pH",
         register=rg,
         species=rg.mo.pH,
         data=-np.log10(hplus),
+        label="pH",
+        plt_units="total scale",
     )
     VectorData(
         name="zsat",
         register=rg,
         species=rg.mo.zsat,
         data=zsat,
+        label="zsat",
+        plt_units="m",
     )
     VectorData(
         name="zcc",
         register=rg,
         species=rg.mo.zcc,
         data=zcc,
+        label="zcc",
+        plt_units="m",
     )
 
 
