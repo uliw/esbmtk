@@ -1288,6 +1288,37 @@ class ReservoirBase(esbmtkBase):
 
         return col
 
+    def get_plot_format(self):
+        """Return concentrat data in plot units"""
+        from pint import Unit
+        if isinstance(self.plt_units, Q_):
+            unit = f"{self.plt_units.units:~P}"
+        elif isinstance(self.plt_units, Unit):
+            unit = f"{self.plt_units:~P}"
+        else:
+            unit = f"{self.plt_units}"
+                                 
+        y1_label = f"{self.legend_left} [{unit}]"
+                                 
+        if self.display_as == "mass":
+            y1 = (self.m * self.mo.m_unit).to(self.plt_units).magnitude
+        elif self.display_as == "ppm":
+            y1 = self.c * 1e6
+            y1_label = "ppm"
+        elif self.display_as == "length":
+            y1 = (self.c * self.mo.l_unit).to(self.plt_units).magnitude
+        else:
+            y1 = (self.c * self.mo.c_unit).to(self.plt_units).magnitude
+
+        # test for plt_transform
+        if self.plot_transform_c != "None":
+            if callable(self.plot_transform_c):
+                y1 = self.plot_transform_c(self.c)
+            else:
+                raise ReservoirError("Plot transform must be a function")
+
+        return y1, y1_label, unit
+
     def __plot__(self, M: Model, ax) -> None:
         """Plot Model data
 
@@ -1300,26 +1331,8 @@ class ReservoirBase(esbmtkBase):
         # convert time and data to display units
         x = (M.time * M.t_unit).to(M.d_unit).magnitude
 
-        if self.display_as == "mass":
-            y1 = (self.m * M.m_unit).to(self.plt_units).magnitude
-            y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
-        elif self.display_as == "ppm":
-            y1 = self.c * 1e6
-            y1_label = "ppm"
-        elif self.display_as == "length":
-            y1 = (self.c * M.l_unit).to(self.plt_units).magnitude
-            y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
-        else:
-            y1 = (self.c * M.c_unit).to(self.plt_units).magnitude
-            y1_label = f"{self.legend_left} [{self.plt_units.units:~P}]"
-
-        # test for plt_transform
-        if self.plot_transform_c != "None":
-            if callable(self.plot_transform_c):
-                y1 = self.plot_transform_c(self.c)
-            else:
-                raise ReservoirError("Plot transform must be a function")
-
+        y1, y1_label, unit = self.get_plot_format()
+        
         # plot first axis
         ax.plot(x[1:-2], y1[1:-2], color="C0", label=y1_label)
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
@@ -1431,7 +1444,7 @@ class Reservoir(ReservoirBase):
 
     It is also possible to specify volume and area explicitly. In this
     case provide a dictionary like this::
-                  
+
         geometry = {"area": "1e14 m**2", # surface area
                     "volume": "3e16 m**3", # box volume
                    }
