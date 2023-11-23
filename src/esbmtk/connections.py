@@ -1154,7 +1154,7 @@ class ConnectionGroup(esbmtkBase):
         self.model = self.mo
         self.loc: list = []  # list of connection objects
 
-        self.name = f"CG_{self.source.name}_to_{self.sink.name}_{self.id}"
+        self.name = f"CG_{self.source.name}_to_{self.sink.name}"
         # fixme this results in duplicate names in the model namespace.
         # probably related to the create connection function
         # if self.id != "None":
