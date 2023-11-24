@@ -116,6 +116,11 @@ Connection(  #
 
 
 M.run()
-pl = data_summaries(M, [M.DIC, M.PO4], [M.S_b, M.D_b], M)
+pl = data_summaries(
+    M,
+    [M.DIC, M.PO4],
+    [M.S_b, M.D_b],
+    M,
+)
 M.plot(pl, fn="po4_2.png")
 # M.save_state(directory="state_po42")

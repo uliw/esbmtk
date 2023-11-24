@@ -14,7 +14,7 @@
 
 * Installation
 ** Conda
-Currently ESBMTK is only available via https://pypi.org/project/esbmtk/, and there is no recipe to install with conda. ESBMTK relies on the following libraries that need to be installed with conda before you can install ESBMTk with =pip=: As usual, it is recommend to first create a new virtual environment, and then install the following:
+Currently, ESBMTK is only available via https://pypi.org/project/esbmtk/, and there is no recipe to install with conda. ESBMTK relies on the following libraries that need to be installed with conda before you can install ESBMTk with =pip=: As usual, it is recommended to first create a new virtual environment, and then install the following:
 
  - python >= 3.9
  - matplotlib
@@ -23,10 +23,10 @@ Currently ESBMTK is only available via https://pypi.org/project/esbmtk/, and the
  - typing
  - pint
  - scipy
+ - pyCO2sys
 
 afterwards you can install esbmtk with =python -m pip install esbmtk=
 
-If you want to use the provided jupyter notebooks, please also install jupyter and ipython
 
 ** pip & github
 
@@ -35,7 +35,7 @@ If you work with pip, simply install  with =python -m pip install esbmtk=, or do
 
 * A simple example
 
-A simple model of the marine P-cycle would consider the delivery of P from weathering, the burial of P in the sediments, the thermohaline transport of dissolved PO_4 as well as the export of P in form of sinking organic matter (POP). The concentration in the respective surface an deep water boxes is then sum of the respective fluxes (see Fig. 1). The model parameters are taken from Glover 2011, Modeling Methods in the Marine Sciences.
+A simple model of the marine P-cycle would consider the delivery of P from weathering, the burial of P in the sediments, the thermohaline transport of dissolved PO_4 as well as the export of P in the form of sinking organic matter (POP). The concentration in the respective surface and deep water boxes is then the sum of the respective fluxes (see Fig. 1). The model parameters are taken from Glover 2011, Modeling Methods in the Marine Sciences.
 #+attr_org: :width 300
 #+attr_rst: :width 300
 #+attr_latex: :width 0.5\textwidth
@@ -45,7 +45,7 @@ A simple model of the marine P-cycle would consider the delivery of P from weath
 #+caption: organic phosphor, F_b = burial.
 [[./mpc.png]]
 
-If we define equations that control the export of particulate P (F_{POP}) as a fraction of the upwelling P (F_u), and the burial of P (F_b) as fraction of (F_{POP}), we express this model as coupled ordinary differential equations (ODE, or initial value problem): Note that the following equations do not display on github. Please use the pdf version
+If we define equations that control the export of particulate P (F_{POP}) as a fraction of the upwelling P (F_u), and the burial of P (F_b) as a fraction of (F_{POP}), we express this model as coupled ordinary differential equations (ODE, or initial value problem):
 
 \[
 \frac{d[PO_{4}]_{S}}{dt} = \frac{F_w + F_u - F_d - F_{POP}}{V_S}
@@ -58,7 +58,7 @@ and for the deep ocean,
 \]
 
 
-which is easily encoded as a python function
+which is easily encoded as a Python function
 #+BEGIN_SRC ipython
 def dCdt(t, C_0, V, F_w, thx):
     """Calculate the change in concentration as
@@ -96,20 +96,27 @@ import sys
 !{sys.executable} -m pip install esbmtk
 #+END_SRC
 *** Foundational Concepts
-ESBMTK uses a hierarchically structured object oriented approach to describe a model. The top most object is the model object that describes fundamental properties like run time, time step, elements and species information. All other objects derive from the model object. 
+ESBMTK uses a hierarchically structured object-oriented approach to describe a model. The topmost object is the model object that describes fundamental properties like run time, time step, elements and species information. All other objects derive from the model object. 
 #+attr_org: :width 300
 #+attr_rst: :width 600
 #+attr_latex: :width 0.5\textwidth
 #+name: m1
-#+caption: Schematic outlining the object hirarchie in ESBMTK
-[[./model1.png]]
+#+caption: Schematic outlining the object hierarchy in ESBMTK
+#+caption: Reservoirs contain the data for a given species. Multiple
+#+caption: reservoirs form a group that share common characteristics, e.g.,
+#+caption: volume, area, pressure, temperature etc. The relationship between
+#+caption: reservoir groups (and/or Reservoirs) are defined by a connection object that defines e.g., 
+#+caption: a rate function etc. Connection objects can be dynamically modified
+#+caption: by a Signal. ReservoirGroups have various sub-classes that provide access to e.g., 
+#+caption: hypsographic data, or perform carbonate chemistry calculations.
+[[./model2.png]]
 
 The model geometry is then parsed to build a suitable equation system.
 
 
 *** Defining the model geometry and initial conditions
-In a first step one needs to define a model object that describes fundamental model parameters. The following code first loads the various esbmtk classes that will help with model construction, and then defines the model object. Note that units are automatically translated into model units. While convenient, there are some import caveats: 
-Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/l' rather than mol/m**3 or 'kg/s'. Ideally this would be caught by ESBMTK, but at present, this not guaranteed. So your mileage may vary, if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.
+In the first step, one needs to define a model object that describes fundamental model parameters. The following code first loads the various esbmtk classes that will help with model construction and then define the model object. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
+Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/l' rather than mol/m**3 or 'kg/s'. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. So your mileage may vary if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.
 #+BEGIN_SRC ipython :tangle po4_1.py
 # import classes from the esbmtk library
 from esbmtk import (
@@ -145,7 +152,7 @@ tau = Q_("100 years")
 tau * 12
 #+END_SRC
 
-Most ESBMTK classes accept quantities, strings that represent quantities as well as numerical values. Weathering and burial fluxes are often defined in =mol/year=, whereas ocean models use =kg/year=. ESBMTK provides a method (=set_flux()= )  that will automatically convert the input into the correct units. In this example it is not necessary since the flux and the model both use =mol= . It is however good practice to to relay on the automatic conversion. Note that it makes a difference for the mole to kilogram conversion whether ones uses =M.P= or =M.PO4= as the reference species!
+Most ESBMTK classes accept quantities, strings that represent quantities as well as numerical values. Weathering and burial fluxes are often defined in =mol/year=, whereas ocean models use =kg/year=. ESBMTK provides a method (=set_flux()= )  that will automatically convert the input into the correct units. In this example, it is not necessary since the flux and the model both use =mol= . It is however good practice to rely on the automatic conversion. Note that it makes a difference for the mol to kilogram conversion whether ones uses =M.P= or =M.PO4= as the reference species!
 #+BEGIN_SRC ipython :tangle po4_1.py
 # boundary conditions
 F_w =  M.set_flux("45 Gmol", "year", M.P) # P @280 ppm (Filipelli 2002)
@@ -154,7 +161,7 @@ F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
 thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 #+END_SRC
 
-To set up the model geometry, we first  use the =Source= and  =Reservoir= classes  to create a source for the weathering flux, a sink for the burial flux, and instances of the surface and deep oceans boxes. Since we loaded the element definitions for phosphor in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
+To set up the model geometry, we first use the =Source= and  =Reservoir= classes to create a source for the weathering flux, a sink for the burial flux, and instances of the surface and deep ocean boxes. Since we loaded the element definitions for phosphor in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
 #+BEGIN_SRC ipython :tangle po4_1.py
 # Source definitions
 Source(
@@ -188,7 +195,7 @@ Reservoir(
 
 
 *** Model processes
-For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework this is accomplished through the =Connection= class. To connect the a weathering flux from the source object (M.w) to the surface ocean (M.S_b) we declare a connection instance describing this relationship as follows:
+For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework, this is accomplished through the =Connection= class. To connect the weathering flux from the source object (M.w) to the surface ocean (M.S_b) we declare a connection instance describing this relationship as follows:
 #+BEGIN_SRC ipython :tangle po4_1.py
 Connection(
     source=M.weathering,  # source of flux
@@ -198,9 +205,9 @@ Connection(
     ctype="regular",
 )
 #+END_SRC
-Unless the=register= keyword is given, connections will be automatically registered withe the parent of the source, i.e., the model =M=. Unless explicitly given through the =name= keyword, connection names will be automatically constructed from the names of the source and sink instances. However, it is a good habit to provide the =id= keyword to keep connections separate in cases where two reservoir instances share more than one connection. The list of all connection instances can be obtained from the model object (see below).
+Unless the =register= keyword is given, connections will be automatically registered with the parent of the source, i.e., the model =M=. Unless explicitly given through the =name= keyword, connection names will be automatically constructed from the names of the source and sink instances. However, it is a good habit to provide the =id= keyword to keep connections separate in cases where two reservoir instances share more than one connection. The list of all connection instances can be obtained from the model object (see below).
 
-To map the process of thermohaline circulation, we connect the surface and deep ocean boxes  using a connection type that scales the mass transfer as a function of the concentration in a given reservoir (=ctype ="scale_with_concentration"= ) . The concentration data is taken from the reference reservoir which defaults to the source reservoir. As such, in most cases the =ref_reservoirs= keyword can be omitted. The =scale= keyword can be a string, or a numerical value. If its provided as a string ESBMTK will map the value into model units. Note that the connection class does not require the =name= keyword. Rather the name is derived from the source and sink reservoir instances. Since reservoir instances can have more than one connection (i.e., surface to deep via downwelling, and surface to deep via primary production), it is required to set the =id= keyword.
+To map the process of thermohaline circulation, we connect the surface and deep ocean boxes using a connection type that scales the mass transfer as a function of the concentration in a given reservoir (=ctype ="scale_with_concentration"= ). The concentration data is taken from the reference reservoir which defaults to the source reservoir. As such, in most cases, the =ref_reservoirs= keyword can be omitted. The =scale= keyword can be a string or a numerical value. If it is provided as a string ESBMTK will map the value into model units. Note that the connection class does not require the =name= keyword. Rather the name is derived from the source and sink reservoir instances. Since reservoir instances can have more than one connection (i.e., surface to deep via downwelling, and surface to deep via primary production), it is required to set the =id= keyword.
 #+BEGIN_SRC ipython :tangle po4_1.py
 Connection(  # thermohaline downwelling
     source=M.S_b,  # source of flux
@@ -219,7 +226,7 @@ Connection(  # thermohaline upwelling
 )
 #+END_SRC
 
-There are several ways to define the biological export production, e.g., as  function of the upwelling PO_4, or as function of the residence time of PO_4 in surface ocean. Here we follow Glover (2011), and use the residence time \tau = 100 years.
+There are several ways to define biological export production, e.g., as a function of the upwelling PO_4, or as a function of the residence time of PO_4 in the surface ocean. Here we follow Glover (2011) and use the residence time \tau = 100 years.
 #+BEGIN_SRC ipython :tangle po4_1.py
 Connection(  #
     source=M.S_b,  # source of flux
@@ -230,7 +237,7 @@ Connection(  #
 )
 #+END_SRC
 
-We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity, or use the previously calculated flux. We can query the export productivity using the =id_string= of the above connection with the =flux_summary()= method of the model instance:
+We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity or use the previously calculated flux. We can query the export productivity using the =id_string= of the above connection with the =flux_summary()= method of the model instance:
 #+BEGIN_SRC ipython
 M.flux_summary(filter_by="primary_production", return_list=True)[0]
 #+END_SRC
@@ -255,7 +262,7 @@ Running the above code (see the file =po4_1.py= in the examples directory), resu
 
 ** Working with the model instance  
 *** Running the model, visualizing and saving the results
-To run the model, use the =run()= method of the model instance, and plot the results with the =plot()= method. This method accepts a list of esbmtk instances, that will be plotted in a common window. Without further arguments, the plot will also be saved as a pdf file where filename defaults to the name of the model instance. The =save_data()= method will create (or recreate) the =data= directory which will then be populated by csv-files. 
+To run the model, use the =run()= method of the model instance, and plot the results with the =plot()= method. This method accepts a list of esbmtk instances, that will be plotted in a common window. Without further arguments, the plot will also be saved as a pdf file where =filename= defaults to the name of the model instance. The =save_data()= method will create (or recreate) the =data= directory which will then be populated by csv-files. 
 #+BEGIN_SRC ipython :tangle po4_1.py
 M.run()
 M.plot([M.S_b, M.D_b])
@@ -270,7 +277,7 @@ M.run()
 M.save_state()
 #+END_SRC
 
-Restarting the model from save state, requires that you first initialize the model geometry (i.e., declare all the connections etc), and then read the previously saved model state.
+Restarting the model from a saved state requires that you first initialize the model geometry (i.e., declare all the connections etc), and then read the previously saved model state.
 #+BEGIN_SRC ipython
 ....
 ....
@@ -278,7 +285,7 @@ M.read_state()
 M.run()
 #+END_SRC
 
-Towards this end, that a repeated model run will not be initialized from the last known state, but rather starts from blank state.
+Towards this end, note that a repeated model run will not be initialized from the last known state, but rather starts from a blank state.
 #+BEGIN_SRC ipython
 .....
 .....

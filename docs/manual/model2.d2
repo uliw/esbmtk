@@ -1,0 +1,105 @@
+model: Model {
+  shape: sql_table
+
+  start: "0 yrs"
+  stop: "10 kyr"
+  timestep: "1kyr"
+  elements: "Carbon, Phosphor"
+}
+
+geometry: Geometry Defintion {
+  direction: down
+  sb: SurfaceBoxRG {
+    rs: Reservoir {
+      shape: sql_table
+      name: "PO4"
+      volume: "3E16 m**3"
+      concentration: "0 umol/kg"
+    }
+
+    sp: Species {
+      shape: sql_table
+      name: PO4
+      weight: 44.0095
+      display_as: umol
+    }
+  }
+
+  c: Connection {
+    shape: sql_table
+    source: SurfaceBoxRG
+    sink: DeebBoxRG
+    ctype: scale_by_concentration
+  }
+
+  s: Signal {
+    shape: sql_table
+    type: bell
+    duration: 100
+    magnitude: 3 Pg
+  }
+
+  db: DeepBoxRG {
+    rd: Reservoir {
+      shape: sql_table
+      name: "PO4"
+      volume: "3E16 m**3"
+      concentration: "0 umol/kg"
+    }
+    sp: Species {
+      shape: sql_table
+      name: PO4
+      weight: 44.0095
+      display_as: umol
+    }
+  }
+
+  hypsp: Hypsometry {
+    shape: sql_table
+    z0: 0
+    z1: -200
+    area
+    area_dz
+    volume
+  }
+  hypdb: Hypsometry {
+    shape: sql_table
+    z0: -200
+    z1: -6000
+    area
+    area_dz
+    volume
+  }
+  cs_sb: Carbonate Chemistry {
+    shape: sql_table
+    pk1
+    pk2
+    pkB
+    pKW
+  }
+
+  cs_db: Carbonate Chemistry {
+    shape: sql_table
+
+    pk1
+    pk2
+    pkB
+    pKW
+  }
+
+  sb -> c
+  c -> db
+
+  c.signal <-> s.signal
+
+  sb.rs.species <-> sb.sp
+  db.rd.species <-> db.sp
+
+  sb <-> hypsp
+  db <-> hypdb
+
+  sb <-> cs_sb
+  db <-> cs_db
+}
+
+model -> geometry
