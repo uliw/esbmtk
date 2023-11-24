@@ -523,7 +523,7 @@ class Signal(esbmtkBase):
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "start": ["0 yrs", (str, Q_)],
-            "duration": ["1 yr", (str, Q_)],
+            "duration": ["0 yr", (str, Q_)],
             "species": ["None", (Species)],
             "delta": [0, (int, float)],
             "stype": [
@@ -574,13 +574,13 @@ class Signal(esbmtkBase):
 
         self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
 
-        if self.duration / self.species.mo.max_step < 10:
-            print("\n\n ------------------------------------------------\n")
-            print("\n\n   W A R N I N G \n\n")
-            print("Your signal duration is covered by less than 10")
-            print("Intergration steps. This may not be what you want")
-            print("Consider adjusting the max_step parameter of the model object\n\n")
-            print("\n\n ------------------------------------------------\n")
+        if self.duration > 0:
+            if self.duration / self.species.mo.max_step < 10:
+                warnings.warn(
+                    """\n\n Your signal duration is covered by less than 10
+                    Intergration steps. This may not be what you want
+                    Consider adjusting the max_step parameter of the model object\n"""
+                )
 
         # legacy name definitions
         self.full_name = ""

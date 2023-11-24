@@ -337,7 +337,7 @@ def show_data(self, **kwargs) -> None:
     ind: str = kwargs["indent"] * " " if "indent" in kwargs else ""
 
 
-def set_y_limits(ax : plt.Axes, obj: any) -> None:
+def set_y_limits(ax: plt.Axes, obj: any) -> None:
     """Prevent the display or arbitrarily small differences"""
 
     bottom, top = ax.get_ylim()
@@ -1293,8 +1293,26 @@ def __addmissingdefaults__(lod: dict, kwargs: dict) -> dict:
     return kwargs
 
 
-def data_summaries(M, species_names, box_names, register_with):
+def data_summaries(
+    M: Model,
+    species_names: list,
+    box_names: list,
+    register_with="None",
+) -> list:
+    """Group results by species and ReservoirGroups
+
+    :param M: model instance
+    :param species_names: list of species instances
+    :param box_names: list of ReservoirGroup instances
+    :param register_with: defaults to M
+    :returns pl: a list of datafield instance to be plotted
+
+    """
+
     from esbmtk import DataField, VectorData
+
+    if register_with == "None":
+        register_with = M
 
     pl = []
     for sp in species_names:
@@ -1305,11 +1323,10 @@ def data_summaries(M, species_names, box_names, register_with):
                 data_list.append(a)
                 label_list.append(a.full_name)
             if hasattr(b, f"{sp.name}"):
-                a = getattr(b, f"{sp.name}") # this is a reservoir
+                a = getattr(b, f"{sp.name}")  # this is a reservoir
                 y1, y1_label, unit = a.get_plot_format()
                 data_list.append(y1)
-                label_list.append(y1_label)
-                
+                label_list.append(f"{b.name}")
 
         df = DataField(
             name=f"{sp.name}_df",
@@ -1317,7 +1334,7 @@ def data_summaries(M, species_names, box_names, register_with):
             x1_data=M.time,
             y1_data=data_list,
             y1_label=label_list,
-            y1_legend=f"{sp.element.name} [{unit}]",
+            y1_legend=f"{sp.name} [{unit}]",
             x1_as_time=True,
             title=f"{sp.name}",
         )
