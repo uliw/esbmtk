@@ -98,7 +98,6 @@ class ReservoirGroup(esbmtkBase):
                     plot = {DIC:"yes", TA:"yes"}  defaults to yes
                     isotopes = {DIC: True/False} see Reservoir class for details
                     seawater_parameters = dict, optional, see below
-                    carbonate_system= False, see below
                     register= model handle, required
                )
 
@@ -123,21 +122,6 @@ class ReservoirGroup(esbmtkBase):
      - self.area: surface area in m^2 at the upper bounding surface
      - self.sed_area: area of seafloor which is intercepted by this box.
      - self.area_fraction: area of seafloor which is intercepted by this relative to the total ocean floor area
-
-
-    carbonate_system:
-    ~~~~~~~~~~~~~~~~~
-
-    If the reservoir group has a DIC and TA reservoir, and if the
-    seawater_parameters key has been supplied as well, this keyword
-    will add a carbonate_chemistry chemistry module to the reservoir
-    group. The values of the carbonate system are available assign:
-
-     - self.cs.H
-     - self.cs.CA
-     - self.cs.HCO3
-     - self.cs.CO3
-     - self.CO2aq
 
     seawater_parameters:
     ~~~~~~~~~~~~~~~~~~~~
@@ -301,7 +285,6 @@ class SourceSink(esbmtkBase):
            Sink(name = "Pyrite",
                species = SO4,
                display_precision = number, optional, inherited from Model
-               delta = number or str. optional defaults to "None"
            )
 
     where the first argument is a string, and the second is a reservoir handle
@@ -350,7 +333,6 @@ class SourceSinkGroup(esbmtkBase):
 
            SinkGroup(name = "Pyrite",
                 species = [SO42, H2S],
-                delta = {"SO4": 10}
                 )
 
     where the first argument is a string, and the second is a reservoir handle
