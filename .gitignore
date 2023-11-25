@@ -28,6 +28,10 @@ TAGS
 .settings
 .idea
 .vscode
+.coveragerc
+.gitattributes
+.projectile
+.readthedocs.yaml
 tags
 
 # Package files

@@ -19,11 +19,11 @@ Contents
    Introduction <manual/manual>
    Implementing more complex models <manual/manual-2>
    Seawater & Carbon Chemisrty <manual/manual3>
-   Contributions & Help <contributing>
-   Authors <authors>
-   Changelog <changelog>
+   Contributions & Help <manual/contributing>
+   Authors <manual/authors>
+   Changelog <manual/changelog>
    Module Reference <api/modules>
-   License <license>
+   License <manual/license>
 
 
 Indices and tables
