@@ -1318,16 +1318,23 @@ def data_summaries(
     for sp in species_names:
         data_list = []
         label_list = []
+        t = ""
         for b in box_names:
             if isinstance(b, VectorData):
                 data_list.append(a)
                 label_list.append(a.full_name)
+                t = b.name
             if hasattr(b, f"{sp.name}"):
                 a = getattr(b, f"{sp.name}")  # this is a reservoir
                 y1, y1_label, unit = a.get_plot_format()
                 data_list.append(y1)
                 label_list.append(f"{b.name}")
+                if hasattr(sp, "display_as"):
+                    t = sp.display_as
+                else:
+                    t = sp.name
 
+        
         df = DataField(
             name=f"{sp.name}_df",
             register=register_with,
@@ -1336,18 +1343,21 @@ def data_summaries(
             y1_label=label_list,
             y1_legend=f"{sp.name} [{unit}]",
             x1_as_time=True,
-            title=f"{sp.name}",
+            title=t,
         )
         pl.append(df)
-        # check if species has isotope data
+        """ check if species has isotope data. This needs to be done
+        after the above loop, so that the data is in its own datafield.
+        """
         data_list = []
         label_list = []
         for b in box_names:
             if hasattr(b, f"{sp.name}"):
                 a = getattr(b, f"{sp.name}")
                 if a.isotopes:
+                    unit = f"{a.species.element.d_label}"
                     data_list.append(a.d)
-                    label_list.append(a.full_name)
+                    label_list.append(f"{b.name}")
 
         if len(data_list) > 0:
             df = DataField(
@@ -1356,9 +1366,9 @@ def data_summaries(
                 x1_data=M.time,
                 y1_data=data_list,
                 y1_label=label_list,
-                y1_legend=f"{sp.element.name} [{sp.element.d_scale}]",
+                y1_legend=f"{unit} [{sp.element.d_scale}]",
                 x1_as_time=True,
-                title=f"d_{sp.name}",
+                title=sp.element.d_label,
             )
             pl.append(df)
 
