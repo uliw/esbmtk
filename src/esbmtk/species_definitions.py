@@ -26,7 +26,7 @@ def Carbon(model):
     Species(
         name="CO2", element=eh, display_as=r"CO$_2$", register=eh, m_weight=44.0095
     )  # Name & element handle
-    Species(name="DIC", element=eh, register=eh)
+    Species(name="DIC", element=eh, register=eh, display_as="DIC")
     Species(name="OM", element=eh, register=eh)
     # Particulate OM
     Species(name="POM", element=eh, register=eh, flux_only=True)
