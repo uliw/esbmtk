@@ -1352,7 +1352,7 @@ def data_summaries(
         if len(data_list) > 0:
             df = DataField(
                 name=f"d_{sp.name}_df",
-                register=M.A_sb.O2,
+                register=register_with,
                 x1_data=M.time,
                 y1_data=data_list,
                 y1_label=label_list,
