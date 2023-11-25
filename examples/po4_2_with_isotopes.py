@@ -12,8 +12,8 @@ from esbmtk import (
 
 # define the basic model parameters
 M = Model(
-    stop="6 Myr",  # end time of model
-    timestep="1 kyr",  # upper limit of time step
+    stop="500 yr",  # end time of model
+    timestep="1 yr",  # upper limit of time step
     element=["Phosphor", "Carbon"],  # list of element definitions
 )
 
@@ -30,13 +30,11 @@ SourceGroup(
     register=M,  # i.e., the instance will be available as M.weathering
     name="weathering",
     species=[M.DIC, M.PO4],
-    isotopes={M.DIC: True},
 )
 SinkGroup(
     register=M,  #
     name="burial",
     species=[M.PO4, M.DIC],
-    isotopes={M.DIC: True},
 )
 
 ReservoirGroup(
@@ -61,7 +59,7 @@ ConnectionGroup(
     source=M.weathering,  # source of flux
     sink=M.S_b,  # target of flux
     rate={M.DIC: F_w_OM, M.PO4: F_w_PO4},  # rate of flux
-    delta={M.DIC: -28},
+    delta={M.DIC: 0},
     ctype="regular",  # required!
     id="weathering",  # connection id
 )
@@ -89,7 +87,7 @@ Connection(  #
     ctype="scale_with_concentration",
     scale=Redfield * M.S_b.volume / tau,
     id="OM_production",
-    alpha=28,  # mUr
+    alpha=-28,  # mUr
 )
 
 # POP export as a funtion of OM export
@@ -120,15 +118,15 @@ Connection(  #
     ref_flux=M.flux_summary(filter_by="OM_production", return_list=True)[0],
     scale=R_e,
     id="OM_burial",
+    # alpha=0,
 )
 
 
 M.run()
 pl = data_summaries(
     M,
-    [M.DIC, M.PO4],
-    [M.S_b, M.D_b],
-    M,
+    [M.DIC],  # species
+    [M.S_b, M.D_b],  # boxes
 )
-M.plot(pl, fn="po4_2.png")
+M.plot(pl, fn="po4_2_with_isotopes.png")
 # M.save_state(directory="state_po42")
