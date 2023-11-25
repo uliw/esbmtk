@@ -364,6 +364,7 @@ class SourceSinkGroup(esbmtkBase):
             "name": ["None", (str)],
             "species": ["None", (str, list)],
             "delta": [{}, dict],
+            "isotopes": [{}, dict],
             "register": ["None", (str, Model)],
         }
 
