@@ -17,7 +17,7 @@ def Carbon(model):
         li_label="C^{12}$S",  # Name of light isotope
         hi_label="C^{13}$S",  # Name of heavy isotope
         d_label=r"$\delta^{13}$C",  # Name of isotope delta
-        d_scale="VPDB",  # Isotope scale. End of plot labels
+        d_scale="mUr VPDB",  # Isotope scale. End of plot labels
         r=0.0112372,  # VPDB C13/C12 ratio https://www-pub.iaea.org/MTCD/publications/PDF/te_825_prn.pdf
         register=model,
     )
@@ -60,7 +60,7 @@ def Sulfur(model):
         li_label="$^{32}$S",  # Name of light isotope
         hi_label="$^{34}$S",  # Name of heavy isotope
         d_label=r"$\delta^{34}$S",  # Name of isotope delta
-        d_scale="VCDT",  # Isotope scale. End of plot labels
+        d_scale="mUr VCDT",  # Isotope scale. End of plot labels
         r=0.044162589,  # isotopic abundance ratio for species
         register=model,
     )
@@ -102,7 +102,7 @@ def Hydrogen(model):
         li_label="$^{1$}H",  # Name of light isotope
         hi_label="$^{2}$H",  # Name of heavy isotope
         d_label=r"$\delta^{2}$D",  # Name of isotope delta
-        d_scale="VSMOV",  # Isotope scale. End of plot labels  # needs verification
+        d_scale="mUr VSMOV",  # Isotope scale. End of plot labels  # needs verification
         r=155.601e-6,  # After Groenig, 2000, Tab 40.1
         register=model,
     )
@@ -130,7 +130,7 @@ def Oxygen(model):
         li_label="$^{16$}O",  # Name of light isotope
         hi_label="$^{18}$)",  # Name of heavy isotope
         d_label=r"$\delta^{18}$)",  # Name of isotope delta
-        d_scale="VSMOV",  # Isotope scale. End of plot labels  # needs verification
+        d_scale="mUr VSMOV",  # Isotope scale. End of plot labels  # needs verification
         r=2005.201e-6,  # https://nucleus.iaea.org/rpst/documents/vsmow_slap.pdf
         register=model,
     )
@@ -186,7 +186,7 @@ def Nitrogen(model):
         li_label=r"$^{15$}N",  # Name of light isotope
         hi_label=r"$^{14$}N",  # Name of heavy isotope
         d_label=r"$\delta^{15}$N",  # Name of isotope delta
-        d_scale="Air",  # Isotope scale. End of plot labels  # needs verification
+        d_scale="mUr Air",  # Isotope scale. End of plot labels  # needs verification
         r=3676.5e-6,  # isotopic abundance ratio for species # needs verification
         register=model,
     )
@@ -215,7 +215,7 @@ def Boron(model):
         li_label=r"$^{11$}B",  # Name of light isotope
         hi_label=r"$^{10$}B",  # Name of heavy isotope
         d_label=r"$\delta{11}B",  # Name of isotope delta
-        d_scale="SRM951",  # Isotope scale. End of plot labels  # needs verification
+        d_scale="mUr SRM951",  # Isotope scale. End of plot labels  # needs verification
         r=0.26888,  # isotopic abundance ratio for species # needs verification
         register=model,
     )
