@@ -23,6 +23,7 @@ import logging
 import typing as tp
 from esbmtk import Q_
 import functools
+from numba import njit
 
 if tp.TYPE_CHECKING:
     from esbmtk import Flux, Model, Connection, Connect
@@ -1334,7 +1335,6 @@ def data_summaries(
                 else:
                     t = sp.name
 
-        
         df = DataField(
             name=f"{sp.name}_df",
             register=register_with,
@@ -1373,3 +1373,80 @@ def data_summaries(
             pl.append(df)
 
     return pl
+
+
+@njit(fastmath=True)
+def get_l_mass(m: float, d: float, r: float) -> float:
+    """
+    :param m: mass or concentration
+    :param d: delta value
+    :param r: isotopic reference ratio
+
+    return mass or concentration of the light isotopeb
+    """
+    return (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+
+
+def get_delta_h(R) -> float:
+    """Calculate the delta of a flux or reservoir
+
+    :param R: Reservoir or Flux handle
+
+    returns d as vector of delta values
+    R.c = total concentration
+    R.l = concentration of the light isotope
+    """
+
+    from esbmtk import Reservoir, GasReservoir, Flux
+
+    r = R.species.r  # reference ratio
+    if isinstance(R, (Reservoir, GasReservoir)):
+        d = np.where(R.l > 0, 1e3 * ((R.c - R.l) / R.l - r) / r, 0)
+    elif isinstance(R, Flux):
+        d = np.where(R.l > 0, 1e3 * ((R.m - R.l) / R.l - r) / r, 0)
+    else:
+        raise ValueError(
+            f"{R.full_name} must be of type Flux or Reservoir, not {type(R)}"
+        )
+
+    return d
+
+
+def get_delta_from_concentration(c, l, r):
+    """Calculate the delta from the mass of light and heavy isotope
+
+    :param c: total mass/concentration
+    :param l: light isotope mass/concentration
+    :param r: reference ratio
+
+    """
+    h = c - l
+    d = 1000 * (h / l - r) / r
+    return d
+
+
+def get_imass(m: float, d: float, r: float) -> [float, float]:
+    """
+    Calculate the isotope masses from bulk mass and delta value.
+    Arguments are m = mass, d= delta value, r = abundance ratio
+    species
+
+    """
+
+    l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
+    h: float = m - l
+    return [l, h]
+
+
+@njit(fastmath=True)
+def get_delta(l: NDArrayFloat, h: NDArrayFloat, r: float) -> NDArrayFloat:
+    """Calculate the delta from the mass of light and heavy isotope
+
+    :param l: light isotope mass/concentration
+    :param h: heavy isotope mass/concentration
+    :param r: reference ratio
+
+    :return : delta
+
+    """
+    return 1000 * (h / l - r) / r

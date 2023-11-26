@@ -37,10 +37,7 @@ from .utility_functions import (
     plot_geometry,
     get_plot_layout,
     find_matching_strings,
-)
-from .solver import (
     get_l_mass,
-    execute,
     get_delta_h,
     get_delta_from_concentration,
 )

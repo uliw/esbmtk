@@ -17,14 +17,11 @@ if tp.TYPE_CHECKING:
 from .esbmtk_base import esbmtkBase
 from .esbmtk import ReservoirBase, Reservoir, Species
 
-from .solver import (
+from .utility_functions import (
+    # get_string_between_brackets,
     get_imass,
     get_delta,
     get_l_mass,
-)
-
-from .utility_functions import (
-    get_string_between_brackets,
 )
 
 # declare numpy types
@@ -639,7 +636,7 @@ class Signal(esbmtkBase):
             rate=f"0 {self.sp.mo.f_unit}",
             delta=0,
             isotopes=self.isotopes,
-            save_flux_data=True,
+            # save_flux_data=True,
             register=self,
         )
 

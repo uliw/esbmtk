@@ -101,15 +101,7 @@ which is easily encoded as a Python function
 
 While ESBMTK provides abstractions to efficiently define complex models, the following section will use the basic ESBMTK classes to define the above model. While quite verbose, it demonstrates the design philosophy behind ESBMTK. More complex approaches are described further down. 
 
-2.1.1 Installation
-^^^^^^^^^^^^^^^^^^
-
-.. code:: ipython
-
-    import sys
-    !{sys.executable} -m pip install esbmtk
-
-2.1.2 Foundational Concepts
+2.1.1 Foundational Concepts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ESBMTK uses a hierarchically structured object-oriented approach to describe a model. The topmost object is the model object that describes fundamental properties like run time, time step, elements and species information. All other objects derive from the model object. 
@@ -124,11 +116,22 @@ ESBMTK uses a hierarchically structured object-oriented approach to describe a m
 
 The model geometry is then parsed to build a suitable equation system.
 
-2.1.3 Defining the model geometry and initial conditions
+2.1.2 Defining the model geometry and initial conditions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In the first step, one needs to define a model object that describes fundamental model parameters. The following code first loads the various esbmtk classes that will help with model construction and then define the model object. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
-Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/l' rather than mol/m\*\*3 or 'kg/s'. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. So your mileage may vary if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.
+In the first step, one needs to define a model object that describes fundamental model parameters. The following code first loads the following esbmtk classes that will help with model construction:
+
+- :py:class:`esbmtk.esbmtk.Model()`
+
+- :py:class:`esbmtk.esbmtk.Reservoir()`
+
+- :py:class:`esbmtk.connections.Connection()` class
+
+- :py:class:`esbmtk.esbmtk.Source()` class
+
+- :py:class:`esbmtk.esbmtk.Sink()` class
+
+- and ``Q_`` which belongs to the pint library.
 
 .. code:: ipython
 
@@ -142,6 +145,11 @@ Internally, the model uses 'year' as the time unit, mol as the mass unit, and li
         Q_,  # Quantity operator
     )
 
+Next we use the ``Model`` class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
+Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/l' rather than mol/m\*\*3 or 'kg/s'. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. So your mileage may vary if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.
+
+.. code:: ipython
+
     # define the basic model parameters
     M = Model(
         name="M",  # model name
@@ -150,7 +158,7 @@ Internally, the model uses 'year' as the time unit, mol as the mass unit, and li
         element=["Phosphor"],  # list of element definitions
     )
 
-Next, we need to declare some boundary conditions. Most ESBMTK classes will be able to accept input in the form of strings that also contain units (e.g., ``"30 Gmol/a"`` ). Internally these strings are parsed and converted into the model base units. This works most of the time, but not always. In the below example, we the residence time :math:`\tau`.  This variable is then used as input to calculate the scale for the primary production as ``M.S_b.volume / tau`` which must fail since ``M.S_b.volume`` is a numeric value and ``tau`` is a string. 
+Next, we need to declare some boundary conditions. Most ESBMTK classes will be able to accept input in the form of strings that also contain units (e.g., ``"30 Gmol/a"`` ). Internally these strings are parsed and converted into the model base units. This works most of the time, but not always. In the below example, we define the residence time :math:`\tau`.  This variable is then used as input to calculate the scale for the primary production as ``M.S_b.volume / tau`` which must fail since ``M.S_b.volume`` is a numeric value and ``tau`` is a string. 
 
 .. code:: ipython
 
@@ -177,7 +185,7 @@ Most ESBMTK classes accept quantities, strings that represent quantities as well
     F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
     thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 
-To set up the model geometry, we first use the ``Source`` and  ``Reservoir`` classes to create a source for the weathering flux, a sink for the burial flux, and instances of the surface and deep ocean boxes. Since we loaded the element definitions for phosphor in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
+To set up the model geometry, we first use the :py:class:`esbmtk.esbmtk.Source()` and :py:class:`esbmtk.esbmtk.Reservoir()` classes to create a source for the weathering flux, a sink for the burial flux, and instances of the surface and deep ocean boxes. Since we loaded the element definitions for phosphor in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
 
 .. code:: ipython
 
@@ -209,10 +217,10 @@ To set up the model geometry, we first use the ``Source`` and  ``Reservoir`` cla
         concentration="0 umol/l",  # initial concentration
     )
 
-2.1.4 Model processes
+2.1.3 Model processes
 ^^^^^^^^^^^^^^^^^^^^^
 
-For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework, this is accomplished through the ``Connection`` class. To connect the weathering flux from the source object (M.w) to the surface ocean (M.S\ :sub:`b`\) we declare a connection instance describing this relationship as follows:
+For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework, this is accomplished through the :py:class:`esbmtk.connections.Connection()` class. To connect the weathering flux from the source object (M.w) to the surface ocean (M.S\ :sub:`b`\) we declare a connection instance describing this relationship as follows:
 
 .. code:: ipython
 
@@ -258,7 +266,8 @@ There are several ways to define biological export production, e.g., as a functi
         id="primary_production",
     )
 
-We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity or use the previously calculated flux. We can query the export productivity using the ``id_string`` of the above connection with the ``flux_summary()`` method of the model instance:
+We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity or use the previously calculated flux. We can query the export productivity using the ``id_string`` of the above connection with the
+:py:meth:`esbmtk.esbmtk.Model.flux_summary()` method of the model instance:
 
 .. code:: ipython
 

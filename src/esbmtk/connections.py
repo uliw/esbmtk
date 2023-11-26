@@ -40,13 +40,6 @@ np.set_printoptions(precision=4)
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
-if tp.TYPE_CHECKING:
-    from esbmtk import Process
-#     from .extended_classes import GasReservoir, Signal, GasExchange, Q_
-#     from .extended_classes import SourceGroup, SinkGroup, ReservoirGroup
-#     from .processes import Process
-
-
 class ConnectionError(Exception):
     def __init__(self, message):
         message = f"\n\n{message}\n"
@@ -256,7 +249,7 @@ class Connect(esbmtkBase):
             "pco2_0": ["280 ppm", (str, Q_)],
             "piston_velocity": ["None", (str, int, float)],
             "function_ref": ["None", (str, callable)],
-            "save_flux_data": ["None", (bool, str)],
+            # "save_flux_data": ["None", (bool, str)],
         }
 
         # provide a list of absolutely required keywords
@@ -283,8 +276,8 @@ class Connect(esbmtkBase):
         self.model = self.mo
         self.sp = self.source.species
         self.p = 0  # the default process handle
-        self.r1: (Process, Reservoir) = self.source
-        self.r2: (Process, Reservoir) = self.sink
+        self.r1 = self.source
+        self.r2 = self.sink
         self.parent = self.register
 
         if isinstance(self.pco2_0, str):
@@ -292,16 +285,16 @@ class Connect(esbmtkBase):
         elif isinstance(self.pco2_0, Q_):
             self.pco2_0 = self.pco2_0.magnitude.to("ppm").magnitude * 1e-6
 
-        self.lop: list[Process] = self.pl if "pl" in kwargs else []
+        self.lop: list = self.pl if "pl" in kwargs else []
         if self.signal != "None":
             self.lop.append(self.signal)
 
         # if we have a signal, save flux data
-        if self.signal != "None":
-            self.save_flux_data = True
-        # else if save_flux_data is unsepcified, use model default
-        elif self.save_flux_data == "None":
-            self.save_flux_data = self.source.sp.mo.save_flux_data
+        # if self.signal != "None":
+        #     self.save_flux_data = True
+        # # else if save_flux_data is unsepcified, use model default
+        # elif self.save_flux_data == "None":
+        #     self.save_flux_data = self.source.sp.mo.save_flux_data
 
         if self.rate != "None":
             if isinstance(self.rate, str):
@@ -363,11 +356,6 @@ class Connect(esbmtkBase):
         self.source.loc.add(self)  # register connector with reservoir
         self.sink.loc.add(self)  # register connector with reservoir
         self.mo.loc.add(self)  # register connector with model
-
-        # This should probably move to register fluxes
-        self.__register_process__()
-
-        logging.info(f"Created {self.full_name}")
 
     def __set_name__(self):
         """The connection name is derived according to the following scheme:
@@ -482,7 +470,7 @@ class Connect(esbmtkBase):
             register=self,  # is this part of a group?
             isotopes=self.isotopes,
             id=self.id,
-            save_flux_data=self.save_flux_data,
+            # save_flux_data=self.save_flux_data,
         )
 
         # register flux with its reservoirs
@@ -533,92 +521,13 @@ class Connect(esbmtkBase):
         else:  # add key and first list value
             r.doe[sp.eh] = [self.fh]
 
-    def __register_process__(self) -> None:
-        """Register all flux related processes"""
-
-        from esbmtk import (
-            MultiplySignal,
-            AddSignal,
-            ScaleFlux,
-            VarDeltaOut,
-            SaveFluxData,
-            Signal,
-        )
-
-        p_copy = cp.copy(self.lop)
-        for p in p_copy:  # loop over process list if provided during init
-            if isinstance(p, Signal):
-                self.lop.remove(p)
-                if p.ty == "addition":
-                    # create AddSignal Process object
-                    n = AddSignal(
-                        name=f"{p.n}_addition_process",
-                        reservoir=self.r,
-                        flux=self.fh,
-                        lt=p.data,
-                        register=self.fh,
-                        model=self.mo,
-                    )
-
-                    self.lop.insert(0, n)  # signals must come first
-                    logging.debug(f"Inserting {n.n} in {self.name} for {self.r.n}")
-                elif p.ty == "multiplication":
-                    # create AddSignal Process object
-                    n = MultiplySignal(
-                        name=f"{p.n}_multiplication_process",
-                        reservoir=self.r,
-                        flux=self.fh,
-                        lt=p.data,
-                        register=self.fh,
-                        model=self.mo,
-                    )
-
-                    self.lop.insert(len(self.lop), n)  # multiplaction should come last
-                    logging.debug(f"Inserting {n.n} in {self.name} for {self.r.n}")
-                else:
-                    raise ConnectionError(f"Signal type {p.ty} is not defined")
-
-        # ensure that processes are in the correct order
-        self.__move_process_to_top_of_queue__(self.lop, MultiplySignal)
-        self.__move_process_to_top_of_queue__(self.lop, AddSignal)
-        self.__move_process_to_top_of_queue__(self.lop, ScaleFlux)
-        self.__move_process_to_top_of_queue__(self.lop, VarDeltaOut)
-        self.__move_process_to_end_of_queue__(self.lop, SaveFluxData)
-
-        for i, p in enumerate(self.lop):
-            if isinstance(p, (MultiplySignal)) and i > 0:
-                p.__execute__ = p.__multiply_with_flux_fa__
-                p.__get_process_args__ = p.__get_process_args_fa__
-            if isinstance(p, (AddSignal)) and i > 0:
-                print("Found Add signal")
-                p.__execute__ = p.__add_with_fa__
-                p.__get_process_args__ = p.__get_process_args_fa__
-
-            p.__register__(self.r, self.fh)
-
-    def __move_process_to_top_of_queue__(self, lop: list, ptype: any) -> None:
-        """Return a copy of lop where ptype has been moved to the top of lop"""
-        p_copy = cp.copy(lop)
-        for p in p_copy:  # loop over process list if provided during init
-            if isinstance(p, ptype):
-                lop.remove(p)
-                lop.insert(0, p)  # insert at top
-
-    def __move_process_to_end_of_queue__(self, lop: list, ptype: any) -> None:
-        """Return a copy of lop where ptype has been moved to the top of lop"""
-        p_copy = cp.copy(lop)
-        for p in p_copy:  # loop over process list if provided during init
-            if isinstance(p, ptype):
-                lop.remove(p)
-                lop.append(p)  # insert at end
-
     def __set_process_type__(self) -> None:
         """Deduce flux type based on the provided flux properties. The method calls the
         appropriate method init routine
         """
 
         from esbmtk import (
-            SaveFluxData,
+            # SaveFluxData,
             Source,
             Sink,
         )
@@ -630,113 +539,32 @@ class Connect(esbmtkBase):
 
         # if connection type is not set explicitly
         if self.ctype == "None" or self.ctype.casefold() == "regular":
-            # set the fundamental flux type based on the flux arguments given
-            if self.delta != "None" and self.rate != "None":
-                # self.__vardeltaout__()
-                pass  # if delta and rate are specified, do nothing
-            elif self.delta != "None":  # if delta is set
-                self.__passivefluxfixeddelta__()
-            elif self.rate == "None":  # if neither are given -> default varflux type
-                self._delta = 0
-                self.__passiveflux__()
-            # test for case where isotopes are true, but neither
-            # delta notr alpha are given
             if self.delta == "None" and self.alpha == "None" and self.isotopes:
                 self._alpha = 0
 
         elif self.ctype == "ignore":
             pass
-        # elif self.ctype == "scale_to_input":
-        #     self.__scale_to_input__()
-        # elif self.ctype == "flux_diff":
-        #     self.__vardeltaout__()
-        #     self.__flux_diff__()
         elif self.ctype == "scale_with_flux":
             self.__scaleflux__()
         elif self.ctype == "weathering":
             self.__rateconstant__()
-        # elif self.ctype == "virtual_flux":
-        #     self.__virtual_flux__()
-        #     # self.__vardeltaout__()
-        # elif self.ctype == "copy_flux":
-        #     self.__scaleflux__()
-        #     # self.__vardeltaout__()
-        # elif self.ctype == "scale_with_mass":
-        #     self.__rateconstant__()
         elif self.ctype == "scale_with_concentration":
             self.__rateconstant__()
-        # elif self.ctype == "scale_relative_to_multiple_reservoirs":
-        #     self.__rateconstant__()
-        # elif self.ctype == "flux_balance":
-        #     self.__rateconstant__()
-        # elif self.ctype == "react_with":
-        #     self.__reaction__()
-        # elif self.ctype == "monod_type_limit":
-        #     # self.__vardeltaout__()
-        #     self.__rateconstant__()
         elif self.ctype != "manual":
             print(f"Connection Type {self.ctype} is unknown")
             raise ConnectionError(f"Unknown connection type {self.ctype}")
 
-        # Set optional flux processes
-        if self.alpha != "None":
-            self.__alpha__()  # Set optional flux processes
-            # self.__vardeltaout__()
-
         # check if flux should bypass any reservoirs
-
         if self.bypass == "source" and not isinstance(self.source, Source):
             self.source.lof.remove(self.fh)
         elif self.bypass == "sink" and not isinstance(self.sink, Sink):
             self.sink.lof.remove(self.fh)
             print(f"removing {self.fh.full_name} from {self.sink.full_name} lof")
 
-        if self.save_flux_data:
-            ph = SaveFluxData(
-                name=f"{self.fh.full_name}_Pfd",
-                flux=self.fh,
-                model=self.mo,
-                register=self.fh,
-            )
-            self.lop.append(ph)
-
-    # def __passivefluxfixeddelta__(self) -> None:
-    #     """Just a wrapper to keep the if statement manageable"""
-
-    #     from esbmtk import PassiveFlux_fixed_delta
-
-    #     ph = PassiveFlux_fixed_delta(
-    #         name="Pfd",
-    #         reservoir=self.r,
-    #         flux=self.fh,
-    #         register=self.fh,
-    #         delta=self.delta,
-    #     )  # initialize a passive flux process object
-    #     self.lop.append(ph)
-
-    # def __vardeltaout__(self) -> None:
-    #     """Unlike a passive flux, this process sets the output flux from a
-    #     reservoir to a fixed value, but the isotopic ratio of the
-    #     output flux will be set equal to the isotopic ratio of the
-    #     upstream reservoir.
-
-    #     """
-
-    #     from esbmtk import VarDeltaOut
-
-    #     ph = VarDeltaOut(
-    #         name="Pvdo",
-    #         reservoir=self.source,
-    #         flux=self.fh,
-    #         register=self.fh,
-    #         rate=self.rate,
-    #     )
-    #     self.lop.append(ph)
-
     def __scaleflux__(self) -> None:
         """Scale a flux relative to another flux"""
 
-        from esbmtk import ScaleFlux, Flux
+        from esbmtk import Flux
 
         if not isinstance(self.ref_flux, Flux):
             raise ConnectionError("Scale reference must be a flux")
@@ -745,144 +573,8 @@ class Connect(esbmtkBase):
             self.scale = self.k_value
             print(f"\n Warning: use scale instead of k_value for scaleflux type\n")
 
-        ph = ScaleFlux(
-            name="PSF",
-            source=self.source,
-            reservoir=self.r,
-            flux=self.fh,
-            register=self.fh,
-            scale=self.scale,
-            ref_flux=self.ref_flux,
-            delta=self.delta,
-            model=self.mo,
-        )
-        self.lop.append(ph)
-
-    # def __virtual_flux__(self) -> None:
-    #     """Create a virtual flux. This is similar to __scaleflux__, however the new flux
-    #     will only affect the sink, and not the source.
-
-    #     """
-
-    #     from esbmtk import ScaleFlux, Flux
-
-    #     if self.k_value != "None":
-    #         self.scale = self.k_value
-    #         print(
-    #             f"\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n"
-    #         )
-
-    #     if not isinstance(self.kwargs["ref_reservoirs"], Flux):
-    #         raise ConnectionError("Scale reference must be a flux")
-
-    #     ph = ScaleFlux(
-    #         name="PSFV",
-    #         reservoir=self.r,
-    #         flux=self.fh,
-    #         register=self.fh,
-    #         scale=self.scale,
-    #         ref_flux=self.ref_flux,
-    #         delta=self.delta,
-    #     )
-    #     self.lop.append(ph)
-
-    #     # this flux must not affect the source reservoir
-    #     self.r.lof.remove(self.fh)
-
-    # def __flux_diff__(self) -> None:
-    #     """Scale a flux relative to the difference between
-    #     two fluxes
-
-    #     """
-
-    #     from esbmtk import FluxDiff
-
-    #     if self.k_value != "None":
-    #         self.scale = self.k_value
-    #         print(
-    #             f"\n Warning: use scale instead of k_value for scale relative to multiple reservoirs\n"
-    #         )
-
-    #     if not isinstance(self.kwargs["ref_reservoirs"], list):
-    #         raise ConnectionError("ref must be a list")
-
-    #     ph = FluxDiff(
-    #         name="PSF",
-    #         reservoir=self.r,
-    #         flux=self.fh,
-    #         register=self.fh,
-    #         scale=self.scale,
-    #         ref_reservoirs=self.ref_reservoirs,
-    #     )
-    #     self.lop.append(ph)
-
-    def __passiveflux__(self) -> None:
-        """Just a wrapper to keep the if statement manageable"""
-
-        from esbmtk import PassiveFlux
-
-        ph = PassiveFlux(
-            name="_PF",
-            reservoir=self.r,
-            register=self.fh,
-            flux=self.fh,
-            scale=self.scale,
-        )  # initialize a passive flux process object
-        self.lop.append(ph)  # add this process to the process list
-
-    # def __scale_to_input__(self) -> None:
-    #     """Just a wrapper to keep the if statement manageable"""
-
-    #     from esbmtk import ScaleRelativeToInputFluxes
-
-    #     ph = ScaleRelativeToInputFluxes(
-    #         name="_SRTIF",
-    #         reservoir=self.r,
-    #         register=self.fh,
-    #         flux=self.fh,
-    #         scale=self.scale,
-    #     )  # initialize a passive flux process object
-    #     self.lop.append(ph)  # add this process to the process
-
-    def __alpha__(self) -> None:
-        """Just a wrapper to keep the if statement manageable"""
-
-        from esbmtk import Fractionation
-
-        ph = Fractionation(
-            name="_Pa",
-            reservoir=self.r,
-            flux=self.fh,
-            register=self.fh,
-            alpha=self.alpha,
-            model=self.mo,
-        )
-        self.lop.append(ph)  #
-
     def __rateconstant__(self) -> None:
         """Add rate constant type process"""
-
-        from esbmtk import (
-            ScaleRelativeToMass,
-            ScaleRelativeToConcentration,
-            weathering,
-        )
-
-        # if self.ctype == "scale_with_mass":
-        #     if self.k_value != "None":
-        #         self.scale = self.k_value
-        #         print(
-        #             f"\n Warning: use scale instead of k_value for scale with mass type\n"
-        #         )
-
-        #     self.scale = map_units(self, self.scale, self.mo.m_unit)
-        #     ph = ScaleRelativeToMass(
-        #         name="_PkM",
-        #         reservoir=self.ref_reservoirs,
-        #         flux=self.fh,
-        #         register=self.fh,
-        #         scale=self.scale,
-        #     )
 
         if self.ctype == "scale_with_concentration":
             if self.k_value != "None":
@@ -899,38 +591,6 @@ class Connect(esbmtkBase):
                 self.mo.r_unit,
                 self.mo.v_unit,
             )
-
-            ph = ScaleRelativeToConcentration(
-                name="PkC",
-                reservoir=self.ref_reservoirs,
-                flux=self.fh,
-                register=self.fh,
-                scale=self.scale,
-            )
-            # print(f"Process Name {ph.full_name}")
-
-        elif self.ctype == "weathering":
-            ph = weathering(
-                name="Pw",
-                source=self.source,
-                reservoir=self.r,
-                flux=self.fh,
-                register=self.fh,
-                scale=self.scale,
-                reservoir_ref=self.reservoir_ref,
-                ex=self.ex,
-                pco2_0=self.pco2_0,
-                f_0=self.rate,
-                delta=self.delta,
-            )
-
-        else:
-            raise ConnectionError(
-                f"This should not happen,and points to a keywords problem in {self.name}"
-            )
-
-        # print(f"adding {ph.name} to {self.name}")
-        self.lop.append(ph)
 
     def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
@@ -954,52 +614,52 @@ class Connect(esbmtkBase):
         for f in sorted(self.lof):
             f.info(indent=indent, index=index)
 
-    def __delete_process__(self) -> None:
-        """Updates to the connection properties may change the connection type and thus
-        the processes which are associated with this connection. We thus have to
-        first delete the old processes, before we re-initialize the connection
+    # def __delete_process__(self) -> None:
+    #     """Updates to the connection properties may change the connection type and thus
+    #     the processes which are associated with this connection. We thus have to
+    #     first delete the old processes, before we re-initialize the connection
 
-        """
+    #     """
 
-        # identify which processes we need to delete
-        # unregister process from connection.lop, reservoir.lop, flux.lop, model.lmo
-        # delete process from global name space if present
+    #     # identify which processes we need to delete
+    #     # unregister process from connection.lop, reservoir.lop, flux.lop, model.lmo
+    #     # delete process from global name space if present
 
-        lop = cp.copy(self.lop)
+    #     lop = cp.copy(self.lop)
 
-        for p in lop:
-            for f in self.lof:
-                if isinstance(f.register, ConnectionGroup):
-                    # remove from Connection group list of model objects
-                    self.register.lmo.remove(f)
-                else:
-                    self.r1.lop.remove(p)
-                    self.fh.lop.remove(p)
-                    self.lop.remove(p)
-                    self.r1.mo.lmo.remove(p.n)
-                    del p
+    #     for p in lop:
+    #         for f in self.lof:
+    #             if isinstance(f.register, ConnectionGroup):
+    #                 # remove from Connection group list of model objects
+    #                 self.register.lmo.remove(f)
+    #             else:
+    #                 self.r1.lop.remove(p)
+    #                 self.fh.lop.remove(p)
+    #                 self.lop.remove(p)
+    #                 self.r1.mo.lmo.remove(p.n)
+    #                 del p
 
-    def __delete_flux__(self) -> None:
-        """Updates to the connection properties may change the connection type and thus
-        the processes which are associated with this connection. We thus have to
-        first delete the old flux, before we re-initialize the connection
+    # def __delete_flux__(self) -> None:
+    #     """Updates to the connection properties may change the connection type and thus
+    #     the processes which are associated with this connection. We thus have to
+    #     first delete the old flux, before we re-initialize the connection
 
-        """
+    #     """
 
-        # identify which processes we need to delete
-        # unregister process from connection.lop, reservoir.lop, flux.lop, model.lmo
-        # delete process from global name space if present
+    #     # identify which processes we need to delete
+    #     # unregister process from connection.lop, reservoir.lop, flux.lop, model.lmo
+    #     # delete process from global name space if present
 
-        lof = cp.copy(self.lof)
-        for f in lof:
-            if isinstance(f.register, ConnectionGroup):
-                # remove from Connection group list of model objects
-                self.register.lmo.remove(f)
-            else:
-                self.r1.lof.remove(f)
-                self.lof.remove(f)
-                self.r1.mo.lmo.remove(f.n)
-                del f
+    #     lof = cp.copy(self.lof)
+    #     for f in lof:
+    #         if isinstance(f.register, ConnectionGroup):
+    #             # remove from Connection group list of model objects
+    #             self.register.lmo.remove(f)
+    #         else:
+    #             self.r1.lof.remove(f)
+    #             self.lof.remove(f)
+    #             self.r1.mo.lmo.remove(f.n)
+    #             del f
 
     # ---- Property definitions to allow for connection updates --------
     """ Changing the below properties requires that we delete all
@@ -1022,7 +682,6 @@ class Connect(esbmtkBase):
             self.__delete_flux__()
             self._alpha = a
             self.__set_process_type__()  # derive flux type and create flux(es)
-            self.__register_process__()
 
     # ---- rate  ----
     @property
@@ -1039,7 +698,6 @@ class Connect(esbmtkBase):
             self._rate = Q_(r).to(self.model.f_unit).magnitude
             self.__create_flux__()  # Source/Sink/Regular
             self.__set_process_type__()  # derive flux type and create flux(es)
-            self.__register_process__()
 
     # ---- delta  ----
     @property
@@ -1055,7 +713,6 @@ class Connect(esbmtkBase):
             self.kwargs["delta"] = d
             self.__create_flux__()  # Source/Sink/Regular
             self.__set_process_type__()  # derive flux type and create flux(es)
-            self.__register_process__()
 
 
 class Connection(Connect):
@@ -1145,9 +802,9 @@ class ConnectionGroup(esbmtkBase):
 
         if self.register == "None":
             self.register = self.source.register
-        if self.save_flux_data == "None":
-            self.save_flux_data = self.register.save_flux_data
-            self.kwargs.update({"save_flux_data": self.register.save_flux_data})
+        # if self.save_flux_data == "None":
+        #     self.save_flux_data = self.register.save_flux_data
+        #     self.kwargs.update({"save_flux_data": self.register.save_flux_data})
 
         # # self.source.lor is a  list with the object names in the group
         self.mo = self.sink.lor[0].mo
@@ -1241,7 +898,7 @@ class ConnectionGroup(esbmtkBase):
                 signal=self.c_defaults[sp.n]["signal"],
                 ref_reservoirs=self.c_defaults[sp.n]["ref_reservoirs"],
                 ref_flux=self.c_defaults[sp.n]["ref_flux"],
-                save_flux_data=self.save_flux_data,
+                # save_flux_data=self.save_flux_data,
                 groupname=True,
                 id=self.id,
                 register=self,
@@ -1302,7 +959,7 @@ class AirSeaExchange(esbmtkBase):
             Model,
             Q_,
             Flux,
-            GasExchange,
+            # GasExchange,
             Signal,
         )
 
@@ -1384,24 +1041,6 @@ class AirSeaExchange(esbmtkBase):
         else:
             rs = self.ref_species
 
-        ph = GasExchange(
-            name="_PGex",
-            gas=self.gr,  # gas reservoir
-            liquid=self.lr,  # reservoir
-            ref_species=rs,  # concentration
-            flux=self.fh,  # flux handle
-            register=self.fh,
-            scale=self.scale,  # piston_velocity * area
-            solubility=self.solubility,  # mol/(m^3 * atm)
-            water_vapor_pressure=self.water_vapor_pressure,
-            seawaterconstants=swc,
-            isotopes=True,
-        )
-
-        # register process with reservoir
-        ph.__register__(self.lr, self.fh)
-        # register connector with liquid reservoirgroup
-        # spr = getattr(self.lr, self.lr.name)
         self.lr.loc.add(self)
         # register connector with gas reservoir
         self.gr.loc.add(self)

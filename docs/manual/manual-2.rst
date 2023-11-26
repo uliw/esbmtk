@@ -11,8 +11,7 @@ ESBMTK Manual
 1.1 Adding model forcing
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-ESBMTK realizes model forcing through the ``Signal`` class. Once defined, a signal instance can be associated with a ``Connection`` instance and will then act on the associated connection.
-This class provides the following methods to create a signal:
+ESBMTK realizes model forcing through the :py:class:`esbmtk.extended_classes.Signal()` class. Once defined, a signal instance can be associated with a :py:class:`esbmtk.connections.Connection()` instance that will then act on the associated connection. This class provides the following keywords to create a signal:
 
 - ``square()``, ``pyramid()``, ``bell()``  These are defined by specifying the signal start time (relative to the model time), its size (as mass) and duration, or as duration and magnitude (see the example below)
 
@@ -53,7 +52,8 @@ This will result in the following output:
 1.2 Working with multiple species
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The basic building blocks introduced so far, are sufficient to create a model, but not necessarily convenient when a model contains more than one species. ESBMTK addresses this through ``ReservoirGroup`` class, which allows to group of several ``Reservoir`` instances. A  ``ReservoirGroup`` shares common properties. e.g., the volume and name of a given box, as well as the connection properties. In other words, in a multi-species model, one does not have to specify connections for each species, rather, it is sufficient to specify the connection type for the  ``ReservoirGroup`` instance. Similarly, there are classes to group sources, sinks and connections.
+The basic building blocks introduced so far, are sufficient to create a model, but not necessarily convenient when a model contains more than one species. ESBMTK addresses this through the :py:class:`esbmtk.extended_classes.ReservoirGroup.()` class, which allows to group of several :py:class:`esbmtk.esbmtk.Reservoir()` instances.
+instances. A  ``ReservoirGroup`` shares common properties. e.g., the volume and name of a given box, as well as the connection properties. In other words, in a multi-species model, one does not have to specify connections for each species, rather, it is sufficient to specify the connection type for the  ``ReservoirGroup`` instance. Similarly, there are classes to group sources, sinks and connections.
 
 Using the previous example of a simple P-cycle model, we now express the P-cycling as a function of photosynthetic organic matter (OM) production and remineralization. First, we import the new classes and we additionally load the species definitions for carbon.
 
@@ -92,7 +92,7 @@ Defining a ``Reservoirgroup`` follows the same pattern, except that we use a dic
         register=M,
     )
 
-The ``ConnectionGroup`` definition is equally straightforward, and the following expression will apply the thermohaline downwelling to all species in the ``M.S_b`` group.
+The :py:class:`esbmtk.connections.ConnectionGroup.()` class definition is equally straightforward, and the following expression will apply the thermohaline downwelling to all species in the ``M.S_b`` group.
 
 .. code:: ipython
 
@@ -202,7 +202,7 @@ Let's assume that the weathering flux of carbon has :math:`\delta`\ :sup:`13`\C 
 
 Running the previous model with these additional 5 lines, results in the following graph. Note that the run-time has been reduced to 500 years, so that the graph does not just show the steady state, and that the P-data is not shown.
 
-.. _po4_2:
+.. _po4_2_with_isotopes:
 
 .. figure:: ./po4_2_with_isotopes.png
     :width: 300

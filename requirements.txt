@@ -6,4 +6,4 @@ pint
 typing
 os
 psutil
-pyCO2SYS
+PyCO2SYS
