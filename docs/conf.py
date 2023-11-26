@@ -43,7 +43,7 @@ except FileNotFoundError:
 try:
     import sphinx
 
-    cmd_line = f"sphinx-apidoc --implicit-namespaces -f -o {output_dir} {module_dir}"
+    cmd_line = f"sphinx-apidoc --module-first --implicit-namespaces -f -o {output_dir} {module_dir}"
 
     args = cmd_line.split(" ")
     if tuple(sphinx.__version__.split(".")) >= ("1", "7"):
@@ -76,6 +76,8 @@ extensions = [
 ]
 
 # autosummary_generate = []
+
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -119,7 +121,7 @@ release = version
 # non-false value, then it is used:
 # today = ''
 # Else, today_fmt is used as the format for a strftime call.
-# today_fmt = '%B %d, %Y'
+today_fmt = '%B %d, %Y'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -285,5 +287,8 @@ intersphinx_mapping = {
     "setuptools": ("https://setuptools.pypa.io/en/stable/", None),
     "pyscaffold": ("https://pyscaffold.org/en/stable", None),
 }
+
+
+autoapi_member_order = 'bysource'
 
 print(f"loading configurations for {project} {version} ...", file=sys.stderr)
