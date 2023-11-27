@@ -72,15 +72,16 @@ def get_hplus(dic, ta, h0, boron, K1, K2, KW, KB) -> float:
     return 0.5 * ((gamm - 1.0) * K1 + sqrt(dummy))
 
 
-def carbonate_system_1_ode(
-    swc: any,
-    dic: float,
-    ta: float,
-    hplus_0: float,
-    co2aq_0: float,
-) -> float:
+def carbonate_system_1_ode(dic, ta, hplus_0, co2aq_0, p) -> tuple:
     """Calculates and returns the H+ and carbonate alkalinity concentrations
      for the given reservoirgroup
+
+    :param dic: float with the dic concentration
+    :param ta: float with the ta concentration
+    :param hplus_0: float with the H+ concentration
+    :param co2aq_0: float with the [CO2]aq concentration
+    :param p: tuple with the parameter list
+    :returns:  dCdt_Hplus, dCdt_co2aq
 
     LIMITATIONS:
     - Assumes all concentrations are in mol/kg
@@ -90,15 +91,9 @@ def carbonate_system_1_ode(
     Calculations are based off equations from:
     Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
     Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
-
     """
 
-    k1 = swc.K1  # K1
-    k2 = swc.K2  # K1
-    k1k2 = swc.K1K2  # K1 * K2
-    KW = swc.KW  # KW
-    KB = swc.KB  # KB
-    boron = swc.boron
+    k1, k2, k1k2, KW, KB, boron = p
     hplus = get_hplus(dic, ta, hplus_0, boron, k1, k2, KW, KB)
     co2aq = dic / (1 + k1 / hplus + k1k2 / hplus**2)
     dCdt_Hplus = hplus - hplus_0
@@ -123,13 +118,15 @@ def init_carbonate_system_1(rg: ReservoirGroup):
     """
     from esbmtk import ExternalCode, carbonate_system_1_ode
 
+    p = (rg.swc.K1, rg.swc.K2, rg.swc.K1K2, rg.swc.KW, rg.swc.KB, rg.swc.boron)
     ec = ExternalCode(
         name="cs",
         species=rg.mo.Carbon.CO2,
         function=carbonate_system_1_ode,
         fname="carbonate_system_1_ode",
         ftype="cs1",
-        function_input_data=[rg.swc, rg.DIC, rg.TA, "Hplus", "CO2aq"],
+        function_input_data=[rg.DIC, rg.TA, "Hplus", "CO2aq"],
+        function_params=p,
         register=rg,
         return_values=[
             {f"R_{rg.full_name}.Hplus": rg.swc.hplus},
@@ -158,14 +155,12 @@ def add_carbonate_system_1(rgs: list):
     from esbmtk import init_carbonate_system_1
 
     for rg in rgs:
-        # if hasattr(rg, "DIC") and hasattr(rg, "TA"):
-        #     rg.swc.update_parameters()
-        # else:
-        #     raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
-
-        ec = init_carbonate_system_1(rg)
-        register_return_values(ec, rg)
-        rg.has_cs1 = True
+        if hasattr(rg, "DIC") and hasattr(rg, "TA"):
+            ec = init_carbonate_system_1(rg)
+            register_return_values(ec, rg)
+            rg.has_cs1 = True
+        else:
+            raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
 
 def carbonate_system_2_ode(
@@ -221,7 +216,7 @@ def carbonate_system_2_ode(
 
     hplus = get_hplus(dic_db, ta_db, hplus_0, boron, k1, k2, KW, KB)
     co3 = max(dic_db / (1 + hplus / k2 + hplus**2 / k1k2), 3.7e-05)
-    
+
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
