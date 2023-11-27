@@ -10,6 +10,7 @@
 import os
 import sys
 import shutil
+import importlib.metadata as im
 
 # -- Path setup --------------------------------------------------------------
 
@@ -104,12 +105,14 @@ copyright = "2023, Ulrich G. Wortmann"
 # If you don’t need the separation provided between version and release,
 # just set them both to the same value.
 try:
-    from esbmtk import __version__ as version
+    # from esbmtk import __version__ as version
+    version = im.version("esbmtk")
+    
 except ImportError:
-    version = ""
+    version = "unknown"
 
-if not version or version.lower() == "unknown":
-    version = os.getenv("READTHEDOCS_VERSION", "unknown")  # automatically set by RTD
+# if not version or version == "":
+#     version = os.getenv("READTHEDOCS_VERSION", "unknown")  # automatically set by RTD
 
 release = version
 
@@ -292,3 +295,4 @@ intersphinx_mapping = {
 autoapi_member_order = 'bysource'
 
 print(f"loading configurations for {project} {version} ...", file=sys.stderr)
+
