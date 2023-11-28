@@ -617,7 +617,6 @@ class Signal(esbmtkBase):
         # create signal vector
         if self.sh == "square":
             self.__square__(0, self.length)
-
         elif self.sh == "pyramid":
             self.__pyramid__(0, self.length)
         elif self.sh == "bell":
@@ -636,7 +635,7 @@ class Signal(esbmtkBase):
             rate=f"0 {self.sp.mo.f_unit}",
             delta=0,
             isotopes=self.isotopes,
-            # save_flux_data=True,
+            save_flux_data=True,
             register=self,
         )
 
