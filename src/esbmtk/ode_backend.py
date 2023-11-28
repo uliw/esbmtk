@@ -216,20 +216,9 @@ def write_equations_2(
     # construct header and static code:
     header = """from __future__ import annotations\n\n
 from numpy import array as npa
-from esbmtk import carbonate_system_1_ode, carbonate_system_2_ode
 from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes
 
-class setup_ode():
-    '''Class stub to enable state in the equation system passed to ODEINT
-    '''
-    
-
-    def __init__(self, M: Model)->None:
-        ''' Use this method to initialize all variables that require the state
-            t-1
-        '''
-
-    def eqs(self, t, R: list, M, gpt, area_table, area_dz_table, Csat_table) -> list:
+def eqs(t, R: list, M, gpt, area_table, area_dz_table, Csat_table) -> list:
         '''Auto generated esbmtk equations do not edit
         '''
 

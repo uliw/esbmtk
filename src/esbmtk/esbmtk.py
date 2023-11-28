@@ -626,15 +626,15 @@ class Model(esbmtkBase):
         sys.path.append(cwd)
 
         # import equation system
-        from equations import setup_ode
+        from equations import eqs
 
-        ode_system = setup_ode(self)  # create ode system instance
+        # ode_system = setup_ode(self)  # create ode system instance
         # self.ode_system = ode_system
         method = kwargs["method"] if "method" in kwargs else "BDF"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
 
-        if isinstance(self.area_table, str):
-            self.area_table, self.area_dz_table, self.Csat_table = 0, 0, 0
+        # if isinstance(self.area_table, str):
+        #     self.area_table, self.area_dz_table, self.Csat_table = 0, 0, 0
 
         if stype == "solve_ivp":
             # print(f"max_step = {self.max_step}")
@@ -642,7 +642,7 @@ class Model(esbmtkBase):
             # print(f"self.t_unit = {self.t_unit:.2e}")
 
             self.results = solve_ivp(
-                ode_system.eqs,
+                eqs,
                 (self.time[0], self.time[-1]),
                 R,
                 args=(
@@ -667,9 +667,9 @@ class Model(esbmtkBase):
         print(f"status={self.results.status}")
         print(f"message={self.results.message}\n")
 
-        self.post_process_data(self.results, ode_system)
+        self.post_process_data(self.results)
 
-    def post_process_data(self, results, ode_system) -> None:
+    def post_process_data(self, results) -> None:
         """Map solver results back into esbmtk structures
 
         :param results: numpy arrays with solver results

@@ -324,7 +324,7 @@ def init_carbonate_system_2(
         ],
         register=rg,
     )
-
+    rg.mo.lpc_f.append(ec.fname)
     return ec
 
 
