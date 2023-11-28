@@ -170,7 +170,8 @@ class Model(esbmtkBase):
             "bio_pump_functions": [0, (int)],  # custom/old
             "area_table": ["None", (str, np.ndarray)],
             "opt_k_carbonic": [15, (int)],
-            "opt_pH_scale": [1, (int)],
+            "opt_pH_scale": [1, (int)],  # 1: total scale
+            "opt_buffers_mode": [2, (int)],
         }
 
         # provide a list of absolutely required keywords
@@ -220,6 +221,8 @@ class Model(esbmtkBase):
         self.lof: list = []  # list of fluxes
         self.lrg: list = []  # list of reservoirgroups
         self.gpt: tuple = ()  # global parameter list
+        self.toc: tuple = ()  # global constants list
+        self.gcc: int = 0  # constants counter
         self.vpc: int = 0  # parameter counter
 
         # unit defs
@@ -633,14 +636,7 @@ class Model(esbmtkBase):
         method = kwargs["method"] if "method" in kwargs else "BDF"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
 
-        # if isinstance(self.area_table, str):
-        #     self.area_table, self.area_dz_table, self.Csat_table = 0, 0, 0
-
         if stype == "solve_ivp":
-            # print(f"max_step = {self.max_step}")
-            # print(f'first_step = {Q_("1 second").to(self.t_unit).magnitude}')
-            # print(f"self.t_unit = {self.t_unit:.2e}")
-
             self.results = solve_ivp(
                 eqs,
                 (self.time[0], self.time[-1]),
@@ -648,6 +644,7 @@ class Model(esbmtkBase):
                 args=(
                     self,
                     self.gpt,
+                    self.toc,
                     self.area_table,
                     self.area_dz_table,
                     self.Csat_table,
@@ -1632,6 +1629,10 @@ class Reservoir(ReservoirBase):
             get_box_geometry_parameters(self)
         else:
             self.volume = Q_(self.volume).to(self.mo.v_unit)
+
+        self.model.toc = (*self.model.toc, self.volume.to(self.model.v_unit).magnitude)
+        self.v_index = self.model.gcc
+        self.model.gcc = self.model.gcc + 1
 
         self.c_unit = self.model.c_unit
 
