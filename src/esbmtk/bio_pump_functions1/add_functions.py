@@ -137,40 +137,24 @@ def add_carbonate_system_3(**kwargs) -> None:
     Required keywords:
 
     :param r_sb : list of ReservoirGroup objects in the surface layer
-
     :param r_db : list of ReservoirGroup objects in the deep layer
-
     :param pic_export_flux : list of flux objects that match the ReservoirGroup objects
-
     :param zsat_min: depth of the upper boundary of the deep box
-
     :param z0: upper depth limit for carbonate burial calculations typically zsat_min
-
     
     Optional Parameters:
 
     :param zsat: initial saturation depth (m)
-
     :param zcc: initial carbon compensation depth (m)
-
     :param zsnow: initial snowline depth (m)
-
     :param zsat0: characteristic depth (m)
-
     :param Ksp0: solubility product of calcite at air-water interface (mol^2/kg^2)
-
     :param kc: heterogeneous rate constant/mass transfer coefficient for calcite dissolution (kg m^-2 yr^-1)
-
     :param Ca2: calcium ion concentration (mol/kg)
-
     :param pc: characteristic pressure (atm)
-
     :param pg: seawater density multiplied by gravity due to acceleration (atm/m)
-
     :param I: dissolvable CaCO3 inventory
-
     :param co3: CO3 concentration (mol/kg)
-
     :param Ksp: olubility product of calcite at in situ sea water conditions (mol^2/kg^2)
 
     """

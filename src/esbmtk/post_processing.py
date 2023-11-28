@@ -39,7 +39,7 @@ def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
         species=rg.mo.CO3,
         data=dic / (1 + hplus / k2 + hplus**2 / k1k2),
         label="CO32-",
-        plt_units=rg.mo.c_unit
+        plt_units=rg.mo.c_unit,
     )
 
     VectorData(
@@ -90,46 +90,29 @@ def carbonate_system_2_pp(
 
     from esbmtk import VectorData
 
-    # Parameters
-    k1 = rg.swc.K1  # K1
-    k2 = rg.swc.K2  # K2
-    k1k2 = rg.swc.K1K2  # K2
-    KW = rg.swc.KW  # KW
-    KB = rg.swc.KB  # KB
-    boron = rg.swc.boron  # boron
+    p = rg.cs.function_params
+    sp, cp, area_table, area_dz_table, Csat_table = p
+    ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0 = cp
+    k1, k2, k1k2, KW, KB, ca2, boron = sp
     hplus = rg.Hplus.c
-    ta = rg.TA.c
     dic = rg.DIC.c
-    p = rg.cs.function_input_data
-    ksp0 = p[7]
-    ca2 = rg.swc.ca2  # Ca2+
-    kc = p[8]
-    AD = p[9]
-    zsat0 = int(abs(p[10]))
-    depth_area_table = rg.cs.depth_area_table
-    area_dz_table = rg.cs.area_dz_table
-    Csat_table = rg.cs.Csat_table
-    reference_area = p[9]
-    alpha = p[12]
     zsnow = rg.zsnow.c.astype(int)
-    z0 = int(p[15])
-    zmax = int(zmax)
-
-    # calc carbonate alkalinity based t-1
-    oh: float = KW / hplus
-    boh4: float = boron * KB / (hplus + KB)
-    fg: float = hplus - oh - boh4
-    hco3 = dic / (1 + hplus / k1 + k2 / hplus)
+    area_table = rg.model.area_table
+    area_dz_table = rg.model.area_dz_table
+    Csat_table = rg.model.Csat_table
+    
+    # hco3 = dic / (1 + hplus / k1 + k2 / hplus)
     co3 = dic / (1 + hplus / k2 + hplus**2 / k1k2)
     co2aq = dic / (1 + k1 / hplus + k1k2 / hplus**2)
     zsat = np.clip(zsat0 * np.log(ca2 * co3 / ksp0), zsat_min, zmax).astype(int)
     zcc = (zsat0 * np.log(export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)).astype(
         int
     )
-    B_AD = export / reference_area
-    A_z0_zsat = depth_area_table[z0] - depth_area_table[zsat]
-    A_zsat_zcc = depth_area_table[zsat] - depth_area_table[zcc]
-    A_zcc_zmax = depth_area_table[zcc] - depth_area_table[zmax]
+    B_AD = export / AD
+    
+    A_z0_zsat = area_table[z0] - area_table[zsat]
+    A_zsat_zcc = area_table[zsat] - area_table[zcc]
+    A_zcc_zmax = area_table[zcc] - area_table[zmax]
 
     # must be loop
     Fdiss = zsat * 0
@@ -188,7 +171,7 @@ def carbonate_system_2_pp(
         label="CO2aq",
         plt_units=rg.mo.c_unit,
     )
-    
+
     VectorData(
         name="pH",
         register=rg,

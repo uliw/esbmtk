@@ -197,6 +197,10 @@ def init_carbonate_system_3(
     r_db: ReservoirGroup,
     kwargs: dict,
 ):
+    # s = r_db.swc
+    # p = (s.k1, s.k2, s.k1k2, s.KW, s.KB, s.ca2, s.boron s.zsat0, s.zsat_min, s.zmax, s.z0)
+    # tables = (s.depth_area_table, s.area_dz_table, s.Csat_table)
+
     ec = ExternalCode(
         name="cs",
         species=rg.mo.Carbon.CO2,

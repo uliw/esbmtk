@@ -13,5 +13,4 @@ IPython
 sphinx_rtd_theme
 typing
 pyCO2SYS
-importlib.metadata
 -e .

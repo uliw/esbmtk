@@ -73,6 +73,7 @@ extensions = [
     "sphinx.ext.ifconfig",
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
+    # "sphinx_autodoc_typehints",
     "IPython.sphinxext.ipython_console_highlighting",
 ]
 

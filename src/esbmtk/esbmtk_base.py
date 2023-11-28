@@ -22,7 +22,6 @@ from __future__ import annotations
 import time
 import numpy as np
 import numpy.typing as npt
-
 import typing as tp
 
 if tp.TYPE_CHECKING:
