@@ -29,8 +29,6 @@ from __future__ import annotations
 import typing as tp
 import numpy as np
 import numpy.typing as npt
-import copy as cp
-import logging
 import uuid
 from .esbmtk import esbmtkBase
 from .utility_functions import map_units
@@ -39,6 +37,7 @@ from .utility_functions import check_for_quantity
 np.set_printoptions(precision=4)
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
+
 
 class ConnectionError(Exception):
     def __init__(self, message):
@@ -339,7 +338,6 @@ class Connect(esbmtkBase):
                 ConnectionError(
                     f"No conversion to model units for {self.scale} specified"
                 )
-
         # if sink and source a regular, the name will be simply C_S_2_S
         # if we deal with ReservoirGroups we need to reflect this in the
         # connection name
@@ -356,6 +354,11 @@ class Connect(esbmtkBase):
         self.source.loc.add(self)  # register connector with reservoir
         self.sink.loc.add(self)  # register connector with reservoir
         self.mo.loc.add(self)  # register connector with model
+
+        # update ode constants
+        self.model.toc = (*self.model.toc, self.scale)
+        self.s_index = self.model.gcc
+        self.model.gcc = self.model.gcc + 1
 
     def __set_name__(self):
         """The connection name is derived according to the following scheme:
@@ -1032,20 +1035,23 @@ class AirSeaExchange(esbmtkBase):
         # print(f"self.area = {self.area:2e}")
 
         self.kas_zeebe = self.kas * 1e-6
-
-        swc = self.lr.swc if self.lr.register == "None" else self.lr.register.swc
-        # initialize process instance
-
-        if isinstance(self.ref_species, Reservoir):
-            rs = self.ref_species.c
-        else:
-            rs = self.ref_species
-
         self.lr.loc.add(self)
         # register connector with gas reservoir
         self.gr.loc.add(self)
         # register connector with model
         self.mo.loc.add(self)
+        # update ode constants
+        self.model.toc = (*self.model.toc, self.scale)
+        self.s_index = self.model.gcc
+        self.model.gcc = self.model.gcc + 1
+        
+        self.model.toc = (*self.model.toc, self.water_vapor_pressure)
+        self.vp_index = self.model.gcc
+        self.model.gcc = self.model.gcc + 1
+        
+        self.model.toc = (*self.model.toc, self.solubility)
+        self.solubility_index = self.model.gcc
+        self.model.gcc = self.model.gcc + 1
 
     def __misc_inits__(self) -> None:
         """Bits and pices of house keeping"""
