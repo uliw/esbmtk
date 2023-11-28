@@ -2099,6 +2099,9 @@ class GasReservoir(ReservoirBase):
         # we use the existing approach to calculate concentration
         # which will divide species_mass/volume.
         self.volume = self.reservoir_mass
+        self.model.toc = (*self.model.toc, self.volume.magnitude)
+        self.v_index = self.model.gcc
+        self.model.gcc = self.model.gcc + 1
         #    Q_(self.species_mass).magnitude / self.species_ppm.to("dimensionless")
         # ).magnitude
 

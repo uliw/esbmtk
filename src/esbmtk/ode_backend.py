@@ -125,7 +125,8 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
         if r.rtype != "flux_only":
             name = f'dCdt_{r.full_name.replace(".", "_")}'
             fex = ""
-            v_val = f"{r.volume.to(r.v_unit).magnitude}"
+            # v_val = f"{r.volume.to(r.v_unit).magnitude}"
+            v_val = f"toc[{r.v_index}]"
 
             # add all fluxes
             for flux in r.lof:  # check if in or outflux
@@ -160,7 +161,8 @@ def write_reservoir_equations_with_isotopes(
 
     for r in M.lor:  # loop over reservoirs
         if r.rtype != "flux_only":
-            v_val = f"{r.volume.to(r.v_unit).magnitude}"
+            # v_val = f"{r.volume.to(r.v_unit).magnitude}"
+            v_val = f"toc[{r.v_index}]"
             # Write equations for each reservoir
             # create unique variable names. Reservoirs are typiclally called
             # M.rg.r so we replace all dots with underscore
@@ -218,7 +220,7 @@ def write_equations_2(
 from numpy import array as npa
 from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes
 
-def eqs(t, R: list, M, gpt, area_table, area_dz_table, Csat_table) -> list:
+def eqs(t, R: list, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         '''Auto generated esbmtk equations do not edit
         '''
 
@@ -716,7 +718,8 @@ def get_scale_with_concentration_eq(
               concentration of the light isotope
     """
     s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration
-    ex = f"{cfn}.scale * {s_c}"  # {c.id} scale with conc in {c.source.full_name}"
+    # ex = f"{cfn}.scale * {s_c}"  # {c.id} scale with conc in {c.source.full_name}"
+    ex = f"toc[{c.s_index}] * {s_c}"
     exl = check_isotope_effects(ex, c, icl, ind3, ind2)
     ex, exl = check_signal_2(ex, exl, c)
     return ex, exl
@@ -750,7 +753,8 @@ def get_scale_with_flux_eq(
     p = flux.parent.ref_flux.parent
     fn = f"{p.full_name.replace('.', '_')}__F"
     # get the equation string for the flux
-    ex = f"{cfn}.scale * {fn}"
+    # ex = f"{cfn}.scale * {fn}"
+    ex = f"toc[{c.s_index}] * {fn}"
     """ The flux for the light isotope will computed as follows:
     We will use the mass of the flux we or scaling, but that we will set the
     delta|alpha according to isotope ratio of the reference flux
@@ -879,10 +883,10 @@ def get_gas_exchange_eq(
 
     ex = (
         f"gas_exchange_ode(\n"
-        f"{ind3}{cfn}.scale,\n"
+        f"{ind3}toc[{c.s_index}],\n"
         f"{ind3}{gas_sp},\n"
-        f"{ind3}{cfn}.water_vapor_pressure,\n"
-        f"{ind3}{cfn}.solubility,\n"
+        f"{ind3}toc[{c.vp_index}],\n"
+        f"{ind3}toc[{c.solubility_index}],\n"
         f"{ind3}{ref_sp},\n"
         f"{ind2})"
     )
@@ -953,13 +957,13 @@ def get_gas_exchange_w_isotopes_eq(
 
     ex = (
         f"gas_exchange_ode_with_isotopes(\n"
-        f"{ind3}{cfn}.scale,\n"  # surface area in m^2
+        f"{ind3}toc[{c.s_index}],\n"  # surface area in m^2
         f"{ind3}{pco2},\n"  # gas c in atmosphere
         f"{ind3}{pco2_l},\n"  # gas c_l in atmosphere
         f"{ind3}{dic},\n"  # c of reference species, e.g., DIC
         f"{ind3}{dic_l},\n"  # c_l reference species, e.g., DIC_12
-        f"{ind3}{cfn}.water_vapor_pressure,\n"
-        f"{ind3}{cfn}.solubility,\n"
+        f"{ind3}toc[{c.vp_index}],\n" # water_vapor_pressure,\n"
+        f"{ind3}toc[{c.solubility_index}],\n" # solubility 
         f"{ind3}{refsp},\n"  # gas concentration in liquid, e.g., [co2]aq
         f"{ind3}{a_db},\n"  # fractionation factor between dissolved CO2aq and HCO3-
         f"{ind3}{a_dg},\n"  # fractionation between CO2aq and CO2g

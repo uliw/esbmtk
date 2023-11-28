@@ -50,6 +50,15 @@ def carbonate_system_1_pp(rg: ReservoirGroup) -> None:
         label="pH",
         plt_units="total scale",
     )
+
+    VectorData(
+        name="Omega",
+        register=rg,
+        species=rg.mo.pH,
+        data=rg.swc.ca2 * rg.CO3.c / rg.swc.Ksp_ca,
+        label=r"$\Omega$-Calcite",
+        plt_units="",
+    )
     # rg.omega = rg.swc.ca2 * rg.CO3 / rg.swc.Ksp
     # rg.CO2aq: float = dic / (1 + (k1 / hplus) + (k1 * k2 / (hplus**2)))
 
@@ -100,7 +109,7 @@ def carbonate_system_2_pp(
     area_table = rg.model.area_table
     area_dz_table = rg.model.area_dz_table
     Csat_table = rg.model.Csat_table
-    
+
     # hco3 = dic / (1 + hplus / k1 + k2 / hplus)
     co3 = dic / (1 + hplus / k2 + hplus**2 / k1k2)
     co2aq = dic / (1 + k1 / hplus + k1k2 / hplus**2)
@@ -109,7 +118,7 @@ def carbonate_system_2_pp(
         int
     )
     B_AD = export / AD
-    
+
     A_z0_zsat = area_table[z0] - area_table[zsat]
     A_zsat_zcc = area_table[zsat] - area_table[zcc]
     A_zcc_zmax = area_table[zcc] - area_table[zmax]

@@ -159,7 +159,7 @@ class SeawaterConstants(esbmtkBase):
             par2=self.dic,
             opt_k_carbonic=self.register.model.opt_k_carbonic,
             opt_pH_scale=self.register.model.opt_pH_scale,
-            opt_buffers_mode=2, 
+            opt_buffers_mode=self.register.model.opt_buffers_mode,
         )
         # update K values and species concentrations according to P, S, and T
         self.density = self.get_density(self.salinity, self.temperature, self.pressure)
