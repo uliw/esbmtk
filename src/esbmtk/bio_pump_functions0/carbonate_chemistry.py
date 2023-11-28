@@ -272,9 +272,6 @@ def init_carbonate_system_2(
     export_flux: Flux,
     r_sb: ReservoirGroup,
     r_db: ReservoirGroup,
-    area_table: NDArrayFloat,
-    area_dz_table: NDArrayFloat,
-    Csat_table: NDArrayFloat,
     reference_area: str,
     kwargs: dict,
 ):
@@ -294,7 +291,6 @@ def init_carbonate_system_2(
         int(abs(kwargs["zmax"])),  # 14
         int(abs(kwargs["z0"])),  # 15
     )
-    tables = (area_table, area_dz_table, Csat_table)
 
     ec = ExternalCode(
         name="cs",
@@ -316,16 +312,15 @@ def init_carbonate_system_2(
         function_params=(
             sp,
             cp,
-            "area_table",
-            "area_dz_table",
-            "Csat_table",
+            rg.mo.area_table,
+            rg.mo.area_dz_table,
+            rg.mo.Csat_table,
         ),
         return_values=[
             {f"F_{rg.full_name}.DIC": "db_cs2"},
             {f"F_{rg.full_name}.TA": "db_cs2"},
             {f"R_{rg.full_name}.Hplus": rg.swc.hplus},
             {f"R_{rg.full_name}.zsnow": float(abs(kwargs["zsnow"]))},
-            # {f"R_{rg.full_name}.CO3": rg.swc.co3},
         ],
         register=rg,
     )
@@ -400,9 +395,9 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     # we need the reference to the Model in order to set some
     # default values.
-
     reservoir = kwargs["r_db"][0]
     model = reservoir.mo
+    
     # list of default values if none provided
     lod: dict = {
         "r_sb": [],  # empty list
@@ -432,24 +427,38 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     # establish some shared parameters
     # depths_table = np.arange(0, 6001, 1)
-    depths: NDArrayFloat = np.arange(0, 6002, 1, dtype=float)
+    # depths: NDArrayFloat = np.arange(0, 6002, 1, dtype=float)
+    # ca2 = r_db[0].swc.ca2
+    # z0   = kwargs["z0"]
+    # Ksp0 = kwargs["Ksp0"]
     r_db = kwargs["r_db"]
     r_sb = kwargs["r_sb"]
-    ca2 = r_db[0].swc.ca2
     pg = kwargs["pg"]
     pc = kwargs["pc"]
-    z0 = kwargs["z0"]
-    Ksp0 = kwargs["Ksp0"]
     # test if corresponding surface reservoirs have been defined
     if len(r_sb) == 0:
         raise ValueError(
             "Please update your call to add_carbonate_system_2 and add the list of corresponding surface reservoirs"
         )
 
-    # C saturation(z) after Boudreau 2010
-    Csat_table: NDArrayFloat = (Ksp0 / ca2) * np.exp((depths * pg) / pc)
-    area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
-    area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area'
+    # check if we already have the hypsometry and saturation tables
+    
+    if hasattr(model, "area_table"):
+        if model.area_table == 0 or model.area_table == 'None':
+            needs_table = True
+        else:
+            needs_table = False
+    else:
+        needs_table = True
+    
+    if needs_table:
+        depth_range = np.arange(0, 6002, 1, dtype=float)  # mbsl
+        model.area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
+        model.area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area
+        model.Csat_table = (model.D_b.swc.Ksp0 / model.D_b.swc.ca2) * np.exp(
+            (depth_range * pg) / pc
+        )
+
     reference_area = Q_(kwargs["reference_area"]).to(r_db[0].mo.a_unit)
 
     for i, rg in enumerate(r_db):  # Setup the virtual reservoirs
@@ -462,9 +471,6 @@ def add_carbonate_system_2(**kwargs) -> None:
             kwargs["carbonate_export_fluxes"][i],
             r_sb[i],
             r_db[i],
-            area_table,
-            area_dz_table,
-            Csat_table,
             reference_area,
             kwargs,
         )
@@ -636,30 +642,3 @@ def phc(m: float) -> float:
     pH = -np.log10(m)
     return pH
 
-
-# def get_hplus(
-#     rg: ReservoirGroup,
-#     dic: float,
-#     ta: float,
-#     hplus: float,
-# ) -> float:
-#     k1 = rg.swc.K1  # K1
-#     k2 = rg.swc.K2  # K2
-#     KW = rg.swc.KW  # KW
-#     KB = rg.swc.KB  # KB
-#     boron = rg.swc.boron  # boron
-#     hplus_0 = hplus
-
-#     # calculates carbonate alkalinity (ca) based on H+ concentration from the
-#     # previous time-step
-#     oh: float = KW / hplus
-#     boh4: float = boron * KB / (hplus + KB)
-#     fg: float = hplus - oh - boh4
-#     ca: float = ta + fg
-
-#     # hplus
-#     gamm: float = dic / ca
-#     dummy: float = (1 - gamm) * (1 - gamm) * k1 * k1 - 4 * k1 * k2 * (1 - (2 * gamm))
-#     hplus: float = 0.5 * ((gamm - 1) * k1 + sqrt(dummy))
-
-#     return hplus - hplus_0

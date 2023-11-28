@@ -219,6 +219,8 @@ class Model(esbmtkBase):
         self.first_start = True  # keep track of repeated solver calls
         self.lof: list = []  # list of fluxes
         self.lrg: list = []  # list of reservoirgroups
+        self.gpt: tuple = ()  # global parameter list
+        self.vpc: int = 0  # parameter counter
 
         # unit defs
         self.l_unit = ureg.meter  # the length unit
@@ -643,7 +645,13 @@ class Model(esbmtkBase):
                 ode_system.eqs,
                 (self.time[0], self.time[-1]),
                 R,
-                args=(self, self.area_table, self.area_dz_table, self.Csat_table),
+                args=(
+                    self,
+                    self.gpt,
+                    self.area_table,
+                    self.area_dz_table,
+                    self.Csat_table,
+                ),
                 method=method,
                 atol=atol,
                 rtol=self.rtol,
@@ -1288,15 +1296,16 @@ class ReservoirBase(esbmtkBase):
     def get_plot_format(self):
         """Return concentrat data in plot units"""
         from pint import Unit
+
         if isinstance(self.plt_units, Q_):
             unit = f"{self.plt_units.units:~P}"
         elif isinstance(self.plt_units, Unit):
             unit = f"{self.plt_units:~P}"
         else:
             unit = f"{self.plt_units}"
-                                 
+
         y1_label = f"{self.legend_left} [{unit}]"
-                                 
+
         if self.display_as == "mass":
             y1 = (self.m * self.mo.m_unit).to(self.plt_units).magnitude
         elif self.display_as == "ppm":
@@ -1329,7 +1338,7 @@ class ReservoirBase(esbmtkBase):
         x = (M.time * M.t_unit).to(M.d_unit).magnitude
 
         y1, y1_label, unit = self.get_plot_format()
-        
+
         # plot first axis
         ax.plot(x[1:-2], y1[1:-2], color="C0", label=y1_label)
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")

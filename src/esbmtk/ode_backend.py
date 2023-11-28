@@ -229,7 +229,7 @@ class setup_ode():
             t-1
         '''
 
-    def eqs(self, t, R: list, M: Model, area_table, area_dz_table, Csat_table) -> list:
+    def eqs(self, t, R: list, M, gpt, area_table, area_dz_table, Csat_table) -> list:
         '''Auto generated esbmtk equations do not edit
         '''
 
@@ -263,7 +263,7 @@ class setup_ode():
         for r in M.lpc_r:  # All virtual reservoirs need to be in this list
             if r.ftype == "cs1":
                 # rel = write_cs_1(eqs, r, icl, rel, ind2, ind3)
-                rel = write_ef(eqs, r, icl, rel, ind2, ind3)
+                rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
             elif r.ftype != "cs2":
                 raise ValueError(f"{r.ftype} is undefined")
 
@@ -307,7 +307,7 @@ class setup_ode():
                 pass  # see above
             elif r.ftype == "cs2":  #
                 # rel = write_cs_2(eqs, r, icl, rel, ind2, ind3)
-                rel = write_ef(eqs, r, icl, rel, ind2, ind3)
+                rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
             else:
                 raise ValueError(f"{r.ftype} is undefined")
 
@@ -582,7 +582,15 @@ def parse_function_params(params, ind) -> str:
 
 
 # ------------------------ define processes ------------------------- #
-def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> str:
+def write_ef(
+    eqs,
+    r: Reservoir,
+    icl: dict,
+    rel: str,
+    ind2: str,
+    ind3: str,
+    gpt: tuple,
+) -> str:
     """Write external function call code
 
     :param eqs: equation file handle
@@ -591,6 +599,7 @@ def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> st
     :param rel: string with reservoir names returned by setup_ode
     :param ind2: indent 2 times
     :param ind3: indent 3 times
+    :param gpt: tuple with global paramaters
 
     :returns: rel: modied string of reservoir names
     """
@@ -614,8 +623,10 @@ def write_ef(eqs, r: Reservoir, icl: dict, rel: str, ind2: str, ind3: str) -> st
     if r.function_params == "None":
         eqs.write(f"{rv} = {r.fname}(\n{a}{ind2})\n\n")
     else:
-        params = parse_function_params(r.function_params, ind3)
-        eqs.write(f"{rv} = {r.fname}(\n{a}{ind3}(\n{params}{ind3}),\n{ind2})\n\n")
+        s = f"gpt[{r.param_start}]"
+        eqs.write(f"{rv} = {r.fname}(\n{a}{ind3}{s},\n{ind2})\n\n")
+        # params = parse_function_params(r.function_params, ind3)
+        # eqs.write(f"{rv} = {r.fname}(\n{a}{ind3}(\n{params}{ind3}),\n{ind2})\n\n")
     rel += f"{ind3}{rv},\n"
 
     return rel

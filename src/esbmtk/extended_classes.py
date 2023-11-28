@@ -1727,12 +1727,26 @@ class ExternalCode(Reservoir_no_set):
         if self.alias_list != "None":
             self.create_alialises()
 
+        self.update_parameter_count()
+
     def create_alialises(self) -> None:
         """Register  alialises for each vr_datafield"""
 
         for i, a in enumerate(self.alias_list):
             # print(f"{a} = {self.vr_data[i][0]}")
             setattr(self, a, self.vr_data[i])
+
+    def update_parameter_count(self):
+        
+        if len(self.function_params) > 0:
+            self.param_start = self.model.vpc
+            self.model.vpc = self.param_start + 1
+            self.has_p = True
+            # upudate global parameter list
+            self.model.gpt = (*self.model.gpt, self.function_params)
+        else:
+            self.has_p = False
+
 
     def append(self, **kwargs) -> None:
         """This method allows to update GenericFunction parameters after the
