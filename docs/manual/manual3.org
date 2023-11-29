@@ -47,7 +47,7 @@ print(f"M.hyp.sa = {M.hyp.sa:.2e}")
 #+END_SRC
 
 Internally, the hypsometric data is parameterized as a spline function that provides a reasonable fit between -6000 mbsl to 1000 above sealevel. The data was fitted against hypsometric data derived from 
-Scripps’ SRTM15+V2.5.5 grid (Tozer et al., 2019, https://doi.org/10.1029/2019EA000658), which was down-sampled to a 5 minute grid before processing the hypsometry. The following figure shows a comparison between the spline fit, and the actual data.
+Scripps’ SRTM15+V2.5.5 grid (Tozer et al., 2019, https://doi.org/10.1029/2019EA000658), which was down-sampled to a 5 minute grid before processing the hypsometry. The following figure shows a comparison between the spline fit, and the actual data. The file =hypsometry.py= provides further examples.
 
 #+attr_org: :width 300
 #+attr_rst: :width 300
