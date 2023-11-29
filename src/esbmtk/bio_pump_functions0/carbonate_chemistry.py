@@ -447,9 +447,9 @@ def add_carbonate_system_2(**kwargs) -> None:
         depth_range = np.arange(0, 6002, 1, dtype=float)  # mbsl
         model.area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
         model.area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area
-        model.Csat_table = (model.D_b.swc.Ksp0 / model.D_b.swc.ca2) * np.exp(
-            (depth_range * pg) / pc
-        )
+        model.Csat_table = (
+            model.reservoir.swc.Ksp0 / model.reservoir.swc.ca2
+        ) * np.exp((depth_range * pg) / pc)
 
     reference_area = Q_(kwargs["reference_area"]).to(r_db[0].mo.a_unit)
 
