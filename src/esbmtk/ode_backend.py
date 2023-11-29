@@ -229,12 +229,13 @@ def eqs(t, R, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
 """
     ind2 = 8 * " "  # indention
     ind3 = 12 * " "  # indention
+    hi = ""
     if len(M.lpc_f) > 0:
         hi = f"from esbmtk.bio_pump_functions{M.bio_pump_functions} import "
         for f in set(M.lpc_f):
             hi += f"{f} ,"
-        
-    hi = hi[:-2] # strip comma and space
+        hi = hi[:-2] # strip comma and space
+            
     header = f"{h1}\n{hi}\n{h2}"
 
     rel = ""  # list of return values
