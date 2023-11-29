@@ -356,9 +356,25 @@ class Connect(esbmtkBase):
         self.mo.loc.add(self)  # register connector with model
 
         # update ode constants
-        self.model.toc = (*self.model.toc, self.scale)
-        self.s_index = self.model.gcc
-        self.model.gcc = self.model.gcc + 1
+        self.s_index = self.__update_ode_constants__(self.scale)
+        self.r_index = self.__update_ode_constants__(self.rate)
+        self.d_index = self.__update_ode_constants__(self.delta)
+        self.a_index = self.__update_ode_constants__(self.alpha)
+
+    def __update_ode_constants__(self, value) -> None:
+        """Place the value of self.name onto the global parameter list
+        store the index position and advance the index pointer
+
+        :param name: value for the parameter list
+        """
+        if value != "None":
+            self.model.toc = (*self.model.toc, value)
+            index = self.model.gcc
+            self.model.gcc = self.model.gcc + 1
+        else:
+            index = 0
+
+        return index
 
     def __set_name__(self):
         """The connection name is derived according to the following scheme:
@@ -1044,11 +1060,11 @@ class AirSeaExchange(esbmtkBase):
         self.model.toc = (*self.model.toc, self.scale)
         self.s_index = self.model.gcc
         self.model.gcc = self.model.gcc + 1
-        
+
         self.model.toc = (*self.model.toc, self.water_vapor_pressure)
         self.vp_index = self.model.gcc
         self.model.gcc = self.model.gcc + 1
-        
+
         self.model.toc = (*self.model.toc, self.solubility)
         self.solubility_index = self.model.gcc
         self.model.gcc = self.model.gcc + 1

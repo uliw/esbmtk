@@ -648,7 +648,6 @@ class Model(esbmtkBase):
                 (self.time[0], self.time[-1]),
                 R,
                 args=(
-                    self,
                     self.gpt,
                     self.toc,
                     self.area_table,

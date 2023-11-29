@@ -216,31 +216,27 @@ def write_equations_2(
     fqfn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
 
     # construct header and static code:
-    header = """from __future__ import annotations\n\n
+    # add optional import statements
+    h1 = """from __future__ import annotations\n\n
 from numpy import array as npa
-from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes
-
-def eqs(t, R: list, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
+from numba import njit
+from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes"""
+    h2 = """# @njit(fastmath=True) 
+def eqs(t, R, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         '''Auto generated esbmtk equations do not edit
         '''
-
 """
-
     ind2 = 8 * " "  # indention
     ind3 = 12 * " "  # indention
-    rel = ""  # list of return values
-
-    # add optional import statements
     if len(M.lpc_f) > 0:
-        hi = f"{ind2}from esbmtk.bio_pump_functions{M.bio_pump_functions} import "
+        hi = f"from esbmtk.bio_pump_functions{M.bio_pump_functions} import "
         for f in set(M.lpc_f):
             hi += f"{f} ,"
-    else:
-        hi = "  "
+        
+    hi = hi[:-2] # strip comma and space
+    header = f"{h1}\n{hi}\n{h2} \n\n"
 
-    hi = hi[0:-2]
-    header += f"{hi} \n\n"
-
+    rel = ""  # list of return values
     # """
     # write file
     with open(fqfn, "w", encoding="utf-8") as eqs:
@@ -643,7 +639,8 @@ def get_regular_flux_eq(
               the total flux, and the second describes the rate for
               the light isotope
     """
-    ex = f"{flux.full_name}.rate"  # get flux rate string
+    ex = f"toc[{c.r_index}]"
+    # ex = f"{flux.full_name}.rate"  # get flux rate string
     exl = check_isotope_effects(ex, c, icl, ind3, ind2)
     ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
 
@@ -718,7 +715,6 @@ def get_scale_with_concentration_eq(
               concentration of the light isotope
     """
     s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration
-    # ex = f"{cfn}.scale * {s_c}"  # {c.id} scale with conc in {c.source.full_name}"
     ex = f"toc[{c.s_index}] * {s_c}"
     exl = check_isotope_effects(ex, c, icl, ind3, ind2)
     ex, exl = check_signal_2(ex, exl, c)
@@ -753,7 +749,6 @@ def get_scale_with_flux_eq(
     p = flux.parent.ref_flux.parent
     fn = f"{p.full_name.replace('.', '_')}__F"
     # get the equation string for the flux
-    # ex = f"{cfn}.scale * {fn}"
     ex = f"toc[{c.s_index}] * {fn}"
     """ The flux for the light isotope will computed as follows:
     We will use the mass of the flux we or scaling, but that we will set the
@@ -863,21 +858,6 @@ def get_gas_exchange_eq(
     """
 
     # get co2_aq reference
-    lrn = f"{c.liquid_reservoir.full_name}"
-    sp = lrn.split(".")[-1]
-    # test if we refer to CO2 or other gas species
-
-    # if sp == "DIC":
-    #     # here we reference the dyanamically calculated CO2aq from cs1,
-    #     # and not the vector field of cs1
-    #     # refsp = f"{c.liquid_reservoir.parent.full_name}.CO2aq".replace(".", "_")
-    #     refsp = f"{c.liquid_reservoir.full_name}.CO2aq"
-    # elif sp == "O2":
-    #     s_c = get_ic(c.liquid_reservoir, icl)
-    #     refsp = f"{s_c}"
-    # else:
-    #     raise ValueError(f"Species{sp} has not definition for gex")
-
     gas_sp = f"{get_ic(c.gas_reservoir, icl)}"
     ref_sp = f"{get_ic(c.ref_species, icl)}"
 
@@ -962,8 +942,8 @@ def get_gas_exchange_w_isotopes_eq(
         f"{ind3}{pco2_l},\n"  # gas c_l in atmosphere
         f"{ind3}{dic},\n"  # c of reference species, e.g., DIC
         f"{ind3}{dic_l},\n"  # c_l reference species, e.g., DIC_12
-        f"{ind3}toc[{c.vp_index}],\n" # water_vapor_pressure,\n"
-        f"{ind3}toc[{c.solubility_index}],\n" # solubility 
+        f"{ind3}toc[{c.vp_index}],\n"  # water_vapor_pressure,\n"
+        f"{ind3}toc[{c.solubility_index}],\n"  # solubility
         f"{ind3}{refsp},\n"  # gas concentration in liquid, e.g., [co2]aq
         f"{ind3}{a_db},\n"  # fractionation factor between dissolved CO2aq and HCO3-
         f"{ind3}{a_dg},\n"  # fractionation between CO2aq and CO2g

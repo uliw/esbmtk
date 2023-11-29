@@ -771,50 +771,6 @@ class Signal(esbmtkBase):
         i.e., the first row needs to be a header line
 
         """
-        # from .esbmtk import ExternalData
-
-        # if not os.path.exists(self.filename):  # check if the file is actually there
-        #     raise SignalError(f"Cannot find file {self.filename}")
-
-        # # read external dataset
-        # df = pd.read_csv(self.filename)
-        # # print(f"df = {df.head()}")
-
-        # # get unit information from each header
-        # xh = df.columns[0].split("[")[1].split("]")[0]
-        # yh = df.columns[1].split("[")[1].split("]")[0]
-        # zh = df.columns[2].split("[")[1].split("]")[0] if len(df.columns) > 2 else None
-        # # create the associated quantities
-        # xq = Q_(xh)
-        # yq = Q_(yh)
-
-        # # add these to the data we are are reading
-        # self.s_time: NDArrayFloat = df.iloc[:, 0].to_numpy() * xq
-        # self.s_data: NDArrayFloat = df.iloc[:, 1].to_numpy() * yq
-
-        # if zh:
-        #     # delta is assumed to be without units
-        #     self.s_delta: NDArrayFloat = df.iloc[:, 2].to_numpy()
-
-        # # map into model units, and strip unit information
-        # self.s_time = self.s_time.to(self.mo.t_unit).magnitude
-        # # self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
-
-        # if isinstance(yq, Q_):
-        #     # test what type of Quantity we have
-        #     if yq.check(["dimensionless"]):  # dimensionless
-        #         self.s_data = self.s_data.magnitude
-        #     elif yq.check("liter/yr"):  # flux
-        #         self.s_data = self.s_data.to(self.mo.r_unit).magnitude
-        #     elif yq.check("mol/yr"):  # flux
-        #         self.s_data = self.s_data.to(self.mo.f_unit).magnitude
-        #     elif yq.check("mol/liter"):  # concentration
-        #         self.s_data = self.s_data.to(self.mo.c_unit).magnitude
-        #     elif yq.check("mol/kg"):  # concentration
-        #         self.s_data = self.s_data.to(self.mo.c_unit).magnitude
-        #     else:
-        #         SignalError(f"No conversion to model units for {self.scale} specified")
-
         ed = ExternalData(
             name=f"{self.name}_ed",
             filename=self.filename,

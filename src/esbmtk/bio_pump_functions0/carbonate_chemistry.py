@@ -19,6 +19,7 @@
 from __future__ import annotations
 import typing as tp
 import numpy as np
+from numba import njit
 import numpy.typing as npt
 from math import log, sqrt
 from esbmtk.utility_functions import (
@@ -46,6 +47,7 @@ The process for cs2 is analogous
 """
 
 
+@njit(fastmath=True)
 def get_hplus(dic, ta, h0, boron, K1, K2, KW, KB) -> float:
     """Calculate H+ concentration based on a previous estimate
     [H+]. After Follows et al. 2006,
@@ -72,6 +74,7 @@ def get_hplus(dic, ta, h0, boron, K1, K2, KW, KB) -> float:
     return 0.5 * ((gamm - 1.0) * K1 + sqrt(dummy))
 
 
+@njit(fastmath=True)
 def carbonate_system_1_ode(dic, ta, hplus_0, co2aq_0, p) -> tuple:
     """Calculates and returns the H+ and carbonate alkalinity concentrations
      for the given reservoirgroup
@@ -163,8 +166,9 @@ def add_carbonate_system_1(rgs: list):
             raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
 
+@njit(fastmath=True)
 def carbonate_system_2_ode(
-    rg: ReservoirGroup,  # 2 Reservoir handle
+    # rg: ReservoirGroup,  # 2 Reservoir handle
     CaCO3_export: float,  # 3 CaCO3 export flux as DIC
     dic_db: float,  # 4 DIC in the deep box
     # dic_db_l: float,  # 4 DIC in the deep box
@@ -199,11 +203,13 @@ def carbonate_system_2_ode(
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
-    zsat = np.clip(zsat, zsat_min, zmax)
+    # zsat = np.clip(zsat, zsat_min, zmax)
+    zsat = min(zmax, max(zsat_min, zmax))
     zcc = int(
         zsat0 * log(CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
     )  # eq3
-    zcc = np.clip(zcc, zsat_min, zmax)
+    #zcc = np.clip(zcc, zsat_min, zmax)
+    zcc = min(zmax, max(zsat_min, zcc))
     # get fractional areas
     B_AD = CaCO3_export / AD
     A_z0_zsat = area_table[z0] - area_table[zsat]
@@ -250,6 +256,7 @@ def carbonate_system_2_ode(
     return F_dissolution, 2 * F_dissolution, dCdt_Hplus, dzdt_zsnow
 
 
+@njit(fastmath=True)
 def gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:
     """Calculate the gas exchange flux across the air sea interface
 
@@ -301,7 +308,7 @@ def init_carbonate_system_2(
         r_s=r_sb,  # source (RG) of CaCO3 flux,
         r_d=r_db,  # sink (RG) of CaCO3 flux,
         function_input_data=[
-            rg,  # 0
+            # rg,  # 0
             export_flux,  # 1
             r_db.DIC,  # 2
             r_db.TA,  # 3
@@ -397,7 +404,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     # default values.
     reservoir = kwargs["r_db"][0]
     model = reservoir.mo
-    
+
     # list of default values if none provided
     lod: dict = {
         "r_sb": [],  # empty list
@@ -425,12 +432,6 @@ def add_carbonate_system_2(**kwargs) -> None:
     # test that all keyword values are of the correct type
     __checktypes__(lkk, kwargs)
 
-    # establish some shared parameters
-    # depths_table = np.arange(0, 6001, 1)
-    # depths: NDArrayFloat = np.arange(0, 6002, 1, dtype=float)
-    # ca2 = r_db[0].swc.ca2
-    # z0   = kwargs["z0"]
-    # Ksp0 = kwargs["Ksp0"]
     r_db = kwargs["r_db"]
     r_sb = kwargs["r_sb"]
     pg = kwargs["pg"]
@@ -442,15 +443,15 @@ def add_carbonate_system_2(**kwargs) -> None:
         )
 
     # check if we already have the hypsometry and saturation tables
-    
+
     if hasattr(model, "area_table"):
-        if model.area_table == 0 or model.area_table == 'None':
+        if model.area_table == 0 or model.area_table == "None":
             needs_table = True
         else:
             needs_table = False
     else:
         needs_table = True
-    
+
     if needs_table:
         depth_range = np.arange(0, 6002, 1, dtype=float)  # mbsl
         model.area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
@@ -479,6 +480,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         rg.has_cs2 = True
 
 
+@njit(fastmath=True)
 def gas_exchange_ode_with_isotopes(
     scale,  # surface area in m^2 * piston velocity
     gas_c,  # species concentration in atmosphere
@@ -641,4 +643,3 @@ def phc(m: float) -> float:
 
     pH = -np.log10(m)
     return pH
-
