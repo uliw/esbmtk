@@ -28,7 +28,7 @@ Signal(
     species=M.PO4,  # Species
     start="3 Myrs",
     shape="pyramid",
-    duration="1 Myrs",q
+    duration="1 Myrs",
     mass=f"{45} Pmol",
     register=M,
 )
@@ -47,14 +47,14 @@ Sink(
 
 # reservoir definitions
 Reservoir(
-    name="sb",  # box name
+    name="S_b",  # box name
     species=M.PO4,  # species in box
     register=M,  # this box will be available as M.S_b
     volume="3E16 m**3",  # surface box volume
     concentration="0 umol/l",  # initial concentration
 )
 Reservoir(
-    name="db",  # box name
+    name="D_b",  # box name
     species=M.PO4,  # species in box
     register=M,  # this box will be available M.D_b
     volume="100E16 m**3",  # deeb box volume
