@@ -223,7 +223,7 @@ from numba import njit
 from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes\n\n"""
     
     h2 = """# @njit(fastmath=True)
-def eqs(t, R, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
+def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         '''Auto generated esbmtk equations do not edit
         '''
 """
