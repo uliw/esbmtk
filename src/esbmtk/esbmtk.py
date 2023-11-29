@@ -636,6 +636,12 @@ class Model(esbmtkBase):
         method = kwargs["method"] if "method" in kwargs else "BDF"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
 
+        # check if using carbonate chemistry, if not provide dummy values
+        if self.area_table == "None":
+            self.area_table = 0
+            self.area_dz_table = 0
+            self.Csat_table = 0
+        
         if stype == "solve_ivp":
             self.results = solve_ivp(
                 eqs,
