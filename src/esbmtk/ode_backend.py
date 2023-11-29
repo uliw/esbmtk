@@ -217,11 +217,12 @@ def write_equations_2(
 
     # construct header and static code:
     # add optional import statements
-    h1 = """from __future__ import annotations\n\n
+    h1 = """from __future__ import annotations
 from numpy import array as npa
 from numba import njit
-from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes"""
-    h2 = """# @njit(fastmath=True) 
+from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes\n\n"""
+    
+    h2 = """# @njit(fastmath=True)
 def eqs(t, R, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         '''Auto generated esbmtk equations do not edit
         '''
@@ -234,7 +235,7 @@ def eqs(t, R, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
             hi += f"{f} ,"
         
     hi = hi[:-2] # strip comma and space
-    header = f"{h1}\n{hi}\n{h2} \n\n"
+    header = f"{h1}\n{hi}\n{h2}"
 
     rel = ""  # list of return values
     # """
