@@ -168,7 +168,7 @@ class Model(esbmtkBase):
             "parse_model": [True, (bool)],
             "rtol": [1.0e-6, (float)],
             "bio_pump_functions": [0, (int)],  # custom/old
-            "area_table": ["None", (str, np.ndarray)],
+            # "area_table": [None, (str, np.ndarray)],
             "opt_k_carbonic": [15, (int)],
             "opt_pH_scale": [1, (int)],  # 1: total scale
             "opt_buffers_mode": [2, (int)],
@@ -637,7 +637,7 @@ class Model(esbmtkBase):
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
 
         # check if using carbonate chemistry, if not provide dummy values
-        if self.area_table == "None":
+        if not hasattr(self, "area_table"):
             self.area_table = 0
             self.area_dz_table = 0
             self.Csat_table = 0
