@@ -71,12 +71,12 @@ class hypsometry(esbmtkBase):
 
           hyp.sa = Earth total surface area in m^2
 
-          hyp.volume(0,200)
+          hyp.volume(0,-200)
 
-          hyp.get_lookup_table(self, min_depth: int, max_depth: int)::
+          hyp.get_lookup_table(min_depth: int, max_depth: int)::
 
                   Generate a vector which contains the area(z) in 1 meter intervals
-                  Note that the numbers are area_percentage. To get actual area, you need to_csv
+                  Note that the numbers are area_percentage. To get actual area, you need to
                   multiply with the total surface area (hyp.sa)
 
         """
@@ -104,7 +104,8 @@ class hypsometry(esbmtkBase):
         # legacy variables
         self.pfn = "spline_paramaters.txt"
         self.hfn = "Hypsometric_Curve_05m.csv"
-        self.sa = 510067420e6  # total surfce area in square meters, http://www.physicalgeography.net/fundamentals/8o.html
+        # total surface area in square meters, http://www.physicalgeography.net/fundamentals/8o.html
+        self.sa = 510067420e6 
         self.mo = self.model
         self.__register_name_new__()
         self.__init_curve__()
@@ -228,7 +229,7 @@ class hypsometry(esbmtkBase):
 
         self.tck = (t, c, k)
 
-        self.hypdata = sp.interpolate.splev(np.arange(0, -6001, -1), self.tck)
+        self.hypdata = sp.interpolate.splev(np.arange(1000, -6001, -1), self.tck)
 
     def __bootstrap_curve__(self):
         """Regenerate the spline data based on the hypsometric data in
@@ -335,8 +336,9 @@ def get_box_geometry_parameters(box, fraction=1) -> None:
         )
         box.volume = Q_(volume)
         box.volume = box.volume.to(box.mo.v_unit)
-        box.area = box.mo.hyp.area(box.geometry[0]) * fraction
+        box.area = Q_(f"{box.mo.hyp.area(box.geometry[0]) * fraction} m**2")
         box.sed_area = box.mo.hyp.area_dz(box.geometry[0], box.geometry[1]) * fraction
+        box.sed_area = Q_(f"{box.sed_area} m**2")
 
     elif isinstance(box.geometry, dict):
         box.volume = Q_(box.geometry["volume"]).to(box.mo.v_unit)
