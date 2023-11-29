@@ -194,9 +194,6 @@ class ReservoirGroup(esbmtkBase):
         elif not isinstance(self.volume, Q_):
             raise ReservoirGroupError("Volume must be string or quantity")
 
-        # register this group object in the global namespace
-        # if self.mo.register == "local" and self.register == "None":
-        #     self.register = self.mo
         self.__register_name_new__()
 
         # dict with all default values
@@ -228,7 +225,6 @@ class ReservoirGroup(esbmtkBase):
             else:
                 rtype = "regular"
 
-            # create reservoir without registering it in the global name space
             a = Reservoir(
                 name=f"{s.name}",
                 register=self,
