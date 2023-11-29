@@ -361,21 +361,6 @@ class Connect(esbmtkBase):
         self.d_index = self.__update_ode_constants__(self.delta)
         self.a_index = self.__update_ode_constants__(self.alpha)
 
-    def __update_ode_constants__(self, value) -> None:
-        """Place the value of self.name onto the global parameter list
-        store the index position and advance the index pointer
-
-        :param name: value for the parameter list
-        """
-        if value != "None":
-            self.model.toc = (*self.model.toc, value)
-            index = self.model.gcc
-            self.model.gcc = self.model.gcc + 1
-        else:
-            index = 0
-
-        return index
-
     def __set_name__(self):
         """The connection name is derived according to the following scheme:
 
@@ -1040,16 +1025,7 @@ class AirSeaExchange(esbmtkBase):
         # register with connection
         self.lof.append(self.fh)
 
-        # kas = air-sea gas exchange coefficient
-        # esbmtk solubility in mol/(m^3 * atm)
-        # esbmtk piston velocity in  m/d needs to be converted to
-        # esbmtk pCO2 = atm
-        # zeebe expresses kas as mol/(m^2 * uatm * yr)
         self.kas = self.solubility * self.piston_velocity
-        # print(f"Piston velocity = {self.piston_velocity:.2e}")
-        # print(f"self.solubility = {self.solubility:2e}")
-        # print(f"self.area = {self.area:2e}")
-
         self.kas_zeebe = self.kas * 1e-6
         self.lr.loc.add(self)
         # register connector with gas reservoir
@@ -1057,17 +1033,9 @@ class AirSeaExchange(esbmtkBase):
         # register connector with model
         self.mo.loc.add(self)
         # update ode constants
-        self.model.toc = (*self.model.toc, self.scale)
-        self.s_index = self.model.gcc
-        self.model.gcc = self.model.gcc + 1
-
-        self.model.toc = (*self.model.toc, self.water_vapor_pressure)
-        self.vp_index = self.model.gcc
-        self.model.gcc = self.model.gcc + 1
-
-        self.model.toc = (*self.model.toc, self.solubility)
-        self.solubility_index = self.model.gcc
-        self.model.gcc = self.model.gcc + 1
+        self.s_index = self.__update_ode_constants__(self.scale)
+        self.vp_index = self.__update_ode_constants__(self.water_vapor_pressure)
+        self.solubility_index = self.__update_ode_constants__(self.solubility)
 
     def __misc_inits__(self) -> None:
         """Bits and pices of house keeping"""
