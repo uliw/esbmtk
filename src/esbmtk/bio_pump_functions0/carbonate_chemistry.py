@@ -203,12 +203,10 @@ def carbonate_system_2_ode(
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
     # all depths will be positive to facilitate the use of lookup_tables
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
-    # zsat = np.clip(zsat, zsat_min, zmax)
-    zsat = min(zmax, max(zsat_min, zmax))
+    zsat = min(zmax, max(zsat_min, zsat))
     zcc = int(
         zsat0 * log(CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
     )  # eq3
-    # zcc = np.clip(zcc, zsat_min, zmax)
     zcc = min(zmax, max(zsat_min, zcc))
     # get fractional areas
     B_AD = CaCO3_export / AD
@@ -447,9 +445,9 @@ def add_carbonate_system_2(**kwargs) -> None:
         depth_range = np.arange(0, 6002, 1, dtype=float)  # mbsl
         model.area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
         model.area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area
-        model.Csat_table = (
-            model.reservoir.swc.Ksp0 / model.reservoir.swc.ca2
-        ) * np.exp((depth_range * pg) / pc)
+        model.Csat_table = (reservoir.swc.Ksp0 / reservoir.swc.ca2) * np.exp(
+            (depth_range * pg) / pc
+        )
 
     reference_area = Q_(kwargs["reference_area"]).to(r_db[0].mo.a_unit)
 
