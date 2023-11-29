@@ -377,3 +377,18 @@ class esbmtkBase(input_parsing):
             raise SpeciesMolweightError(message)
 
         return r / ureg(time)
+
+    def __update_ode_constants__(self, value) -> None:
+        """Place the value of self.name onto the global parameter list
+        store the index position and advance the index pointer
+
+        :param name: value for the parameter list
+        """
+        if value != "None":
+            self.model.toc = (*self.model.toc, value)
+            index = self.model.gcc
+            self.model.gcc = self.model.gcc + 1
+        else:
+            index = 0
+
+        return index
