@@ -31,7 +31,9 @@ TAGS
 .coveragerc
 .gitattributes
 .projectile
-.readthedocs.yaml
+.readthedocs.yml
+.tox.ini
+setup.py
 tags
 
 # Package files
