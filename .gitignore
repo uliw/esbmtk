@@ -32,7 +32,7 @@ TAGS
 .gitattributes
 .projectile
 .readthedocs.yml
-.tox.ini
+tox.ini
 setup.py
 tags
 
