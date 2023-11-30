@@ -168,13 +168,10 @@ def add_carbonate_system_1(rgs: list):
 
 # @njit(fastmath=True)
 def carbonate_system_2_ode(
-    # rg: ReservoirGroup,  # 2 Reservoir handle
     CaCO3_export: float,  # 3 CaCO3 export flux as DIC
-    dic_db: float,  # 4 DIC in the deep box
-    # dic_db_l: float,  # 4 DIC in the deep box
+    dic_t_db: float | tuple,  # 4 DIC in the deep box
     ta_db: float,  # 5 TA in the deep box
-    dic_sb: float,  # 6 [DIC] in the surface box
-    # dic_sb_l: float,  # 7 [DIC_l] in the surface box
+    dic_t_sb: float | tuple,  # 6 [DIC] in the surface box
     hplus_0: float,  # 8 hplus in the deep box at t-1
     zsnow: float,  # 9 snowline in meters below sealevel at t-1
     p,
@@ -193,10 +190,17 @@ def carbonate_system_2_ode(
     Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
 
     """
-
     sp, cp, area_table, area_dz_table, Csat_table = p
     ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0 = cp
-    k1, k2, k1k2, KW, KB, ca2, boron = sp
+    k1, k2, k1k2, KW, KB, ca2, boron, isotopes = sp
+
+    if isotopes:
+        dic_db, dic_db_l = dic_t_db
+        dic_sb, dic_sb_l = dic_t_sb
+    else:
+        dic_db = dic_t_db
+        dic_sb = dic_t_sb
+
     hplus = get_hplus(dic_db, ta_db, hplus_0, boron, k1, k2, KW, KB)
     co3 = max(dic_db / (1 + hplus / k2 + hplus**2 / k1k2), 3.7e-05)
 
@@ -240,7 +244,7 @@ def carbonate_system_2_ode(
     that dissolves back into the box"""
 
     # calculate the differentials
-    F_dissolution = BDS + BCC + BNS + BPDC
+    F_diss = BDS + BCC + BNS + BPDC
     dCdt_Hplus = hplus - hplus_0
     dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
 
@@ -248,10 +252,13 @@ def carbonate_system_2_ode(
     value of the sediments we are dissolving, and the delta of the carbonate rain.
     The currrent code, assumes that both are the same.
     """
-    # BD_l = BD * dic_sb_l / dic_sb
-    # F_DIC, F_DIC_l, F_TA, dH, d_zsnow
+    if isotopes:
+        F_diss_l = F_diss * dic_sb_l / dic_sb
+        rv = (F_diss, F_diss_l, F_diss * 2, dCdt_Hplus, dzdt_zsnow)
+    else:
+        rv = (F_diss, F_diss * 2, dCdt_Hplus, dzdt_zsnow)
 
-    return F_dissolution, 2 * F_dissolution, dCdt_Hplus, dzdt_zsnow
+    return rv
 
 
 # @njit(fastmath=True)
@@ -284,7 +291,7 @@ def init_carbonate_system_2(
 
     reference_area = Q_(reference_area).to(rg.mo.a_unit).magnitude
     s = r_db.swc
-    sp = (s.K1, s.K2, s.K1K2, s.KW, s.KB, s.ca2, s.boron)
+    sp = (s.K1, s.K2, s.K1K2, s.KW, s.KB, s.ca2, s.boron, r_sb.DIC.isotopes)
     cp = (
         kwargs["Ksp0"],  # 7
         float(kwargs["kc"]),  # 8

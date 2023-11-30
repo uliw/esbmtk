@@ -102,7 +102,7 @@ def carbonate_system_2_pp(
     p = rg.cs.function_params
     sp, cp, area_table, area_dz_table, Csat_table = p
     ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0 = cp
-    k1, k2, k1k2, KW, KB, ca2, boron = sp
+    k1, k2, k1k2, KW, KB, ca2, boron, isotopes = sp
     hplus = rg.Hplus.c
     dic = rg.DIC.c
     zsnow = rg.zsnow.c.astype(int)

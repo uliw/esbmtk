@@ -437,12 +437,13 @@ def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
     if r in icl:
         s1 = f"R[{icl[r][0]}]"
         if isotopes:
-            s1 += f", R[{icl[r][1]}]"
+            # return a tuple!
+            s1 = f"({s1}, R[{icl[r][1]}])"
 
     elif isinstance(r, (Source, Sink)):
         s1 = f"{r.full_name}.c"
         if isotopes:
-            s1 += f", {r.full_name}.l"
+            s1 = f"({s1}, {r.full_name}.l)"
     else:
         raise ValueError(
             f"get_ic: can't find {r.full_name} in list of initial conditions"
