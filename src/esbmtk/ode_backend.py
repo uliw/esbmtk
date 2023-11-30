@@ -437,13 +437,12 @@ def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
     if r in icl:
         s1 = f"R[{icl[r][0]}]"
         if isotopes:
-            # return a tuple!
-            s1 = f"({s1}, R[{icl[r][1]}])"
+            s1 += f", R[{icl[r][1]}]"
 
     elif isinstance(r, (Source, Sink)):
         s1 = f"{r.full_name}.c"
         if isotopes:
-            s1 = f"({s1}, {r.full_name}.l)"
+            s1 += f", {r.full_name}.l"
     else:
         raise ValueError(
             f"get_ic: can't find {r.full_name} in list of initial conditions"
@@ -524,7 +523,7 @@ def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> 
         sr = getattr(r.register, d)
         a = f"{ind}{get_ic(sr, icl)},\n"
     elif isinstance(d, Reservoir):
-        a = f"{ind}{get_ic(d, icl,d.isotopes)},\n"
+        a = f"{ind}({get_ic(d, icl,d.isotopes)}),\n"
     elif isinstance(d, GasReservoir):
         a = f"{ind}{get_ic(d, icl,d.isotopes)},\n"
     elif isinstance(d, ReservoirGroup):
@@ -606,7 +605,7 @@ def write_ef(
     rv = rv[:-2]
 
     a = ""
-    # this can probably be simplified simiar to the old parse_return_values()
+    # this can probably be simplified similar to the old parse_return_values()
     for d in r.function_input_data:
         a += parse_esbmtk_input_data_types(d, r, ind3, icl)
 
