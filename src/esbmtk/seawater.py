@@ -96,35 +96,10 @@ class SeawaterConstants(esbmtkBase):
         self.n: str = self.name  # string =  name of this instance
         # self.mo: Model = self.model
         self.hplus = 10**-self.pH
-        self.constants: list = [
-            "K0",
-            "K1",
-            "K2",
-            "KW",
-            "KB",
-            "Ksp_ca",
-            "Ksp_b",
-            "Ksp0",
-            "KS",
-            "KF",
-        ]
-        self.species: list = [
-            "dic",
-            "ta",
-            "ca",
-            "co2aq",
-            "hco3",
-            "co3",
-            "boron",
-            "boh4",
-            "boh3",
-            "oh",
-            "ca2",
-            "mg2",
-            "k",
-            "so4",
-            "hplus",
-        ]
+        self.constants: list = ["K0", "K1", "K2", "KW", "KB", "Ksp_ca", "Ksp_ar"]
+        self.constants.extend(["Ksp0", "KS", "KF", "FT", "K1K1", "K1K2"])
+        self.species = ["dic", "ta", "co2aq", "co3", "boron"]
+        self.species.extend(["boh4", "boh3", "oh", "ca2", "so4", "hplus"])
 
         if self.dic == "None" or self.ta == "None":
             self.__init_std_seawater__()
@@ -138,8 +113,8 @@ class SeawaterConstants(esbmtkBase):
     def update_parameters(self, **kwargs: dict) -> None:
         """Update values if necessary"""
 
-        if 'pos' in kwargs:
-            pos = kwargs['pos']
+        if "pos" in kwargs:
+            pos = kwargs["pos"]
         else:
             pos = -1
 
@@ -148,11 +123,11 @@ class SeawaterConstants(esbmtkBase):
 
         if hasattr(self.register, "DIC"):
             self.dic = self.register.DIC.c[pos] * 1e6
-            
+
         results = pyco2.sys(
             salinity=self.salinity,
             temperature=self.temperature,
-            pressure=self.pressure * 10, # in deci bar!
+            pressure=self.pressure * 10,  # in deci bar!
             par1_type=1,  # "1" =  "alkalinity"
             par1=self.ta,
             par2_type=2,  # "1" = dic
@@ -307,7 +282,6 @@ class SeawaterConstants(esbmtkBase):
         self.k = 0.01021
         self.dic = self.co2aq + self.hco3 + self.co3
         self.ta = self.hco3 + 2 * self.co3  # estimate
-        
 
     def __init_gasexchange__(self) -> None:
         """Initialize constants for gas-exchange processes"""

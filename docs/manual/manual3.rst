@@ -1,12 +1,12 @@
-=============
-ESBMTK Manual
-=============
+==========================================
+Seawater & Carbon Chemistry & Gas Exchange
+==========================================
 
 
 
 
-1 Seawater & Carbon Chemistry
------------------------------
+1 Seawater & Carbon Chemistry & Gas Exchange
+--------------------------------------------
 
 ESBMTK provides several classes that abstract the handling of basin geometry, seawater chemistry and air-sea gas exchange.
 
@@ -58,5 +58,52 @@ Scripps’ SRTM15+V2.5.5 grid (Tozer et al., 2019, `https://doi.org/10.1029/2019
 1.2 Seawater
 ~~~~~~~~~~~~
 
+ESBMTK provides a :py:class:`esbmtk.seawater.seawaterConstants()` class that will be automatically instantiated when a :py:class:`esbmtk.extended_classes.ReservoirGroup()` instance 
+definition includes the ``seawater_parameters`` keyword. This keyword expects a dictionary that specifies temperature, salinity, and pressure for a given ``Reservoirgroup``. The class methods and instance variables are accessible via the ``swc`` instance.
+
+.. code:: ipython
+
+    ReservoirGroup(
+        name="S_b",  # box name
+        geometry=[-200, -800, 1],  # upper, lower, fraction
+        concentration={M.DIC: "2220 umol/kg", M.TA: "2300 umol/kg"},
+        seawater_parameters={
+            "T": 25,  # Deg celsius
+            "P": 0,  # Bar
+            "S": 35,  # PSU
+        },
+        register=M,
+    )
+    # Acess the sewater_parameters with the swc instance
+    print(f"M.S_b.density = {M.S_b.swc.density:.2e}")
+
+Apart from density, this class will provide access to a host of instance parameters, e.g., equilibrium constants - see :py:meth:`esbmtk.seawater.seaWaterConstants.update_parameters()` for the currently defined names. Most of these values are computed by ``pyCO2SYS`` (`https://doi.org/10.5194/gmd-15-15-2022 <https://doi.org/10.5194/gmd-15-15-2022>`_). Using  ``pyCO2SYS`` provides access to a variety of parametrizations for the respective equilibrium constants, various pH scales, as well a different methods to calculate buffer factors. Unless explicitly specified in the model definition, ESBMTK uses the defaults set by pyCO2SYS. Note that when using the seawater class, the model concentration unit must be set to ``mol/kg`` as in the following example:
+
+.. code:: ipython
+
+    M = Model(
+        stop="6 Myr",  # end time of model
+        timestep="1 kyr",  # upper limit of time step
+        element=["Carbon"],  # list of element definitions
+        concentration_unit="mol/kg",
+        opt_k_carbonic=13,  # Use Millero 2006
+        opt_pH_scale=1,  # 1:total, 3:free scale
+        opt_buffers_mode=2, # carbonate, borate water alkalinity only
+    )
+
+1.2.1 Caveats
+^^^^^^^^^^^^^
+
+- Seawater Parameters are only computed once when the ``ReservoirGroup`` is instantiated, in order to provide an initial steady state. Subsequent changes to seawater chemistry or physical parameters do not affect the initial state.
+
+- The ``swc`` instance provides a ``show()`` method listing most values. However, that list may not be comprehensive.
+
+- See the pyCO2SYS documentation for list of parameters and options `https://pyco2sys.readthedocs.io/en/latest/ <https://pyco2sys.readthedocs.io/en/latest/>`_
+
+- The code example ``seawater_example.py`` in the examples directory
+
 1.3 Carbon Chemistry
 ~~~~~~~~~~~~~~~~~~~~
+
+1.4 Gas Exchange
+~~~~~~~~~~~~~~~~
