@@ -12,7 +12,7 @@
 #+LATEX_HEADER: \usepackage{uli-german-paragraphs}
 #+TOC: headlines
 
-* Implementing more complex models
+* Adding complexity and isotopes
 
 ** Adding model forcing
 ESBMTK realizes model forcing through the @@rst::py:class:`esbmtk.extended_classes.Signal()`@@ class. Once defined, a signal instance can be associated with a @@rst::py:class:`esbmtk.connections.Connection()`@@ instance that will then act on the associated connection. This class provides the following keywords to create a signal:
@@ -142,14 +142,14 @@ which results in the below plot. The full code is available in the examples dire
 [[./po4_2.png]]
 
 ** Adding isotopes
- Let's assume that the weathering flux of carbon has \delta^{13}C value of 0 mUr, that photosynthesis, fractionates by -28 mUr, and that organic matter burial does not import any  carbon isotope fractionation. These changes require the following changes to the previous model code (the full code is available in the examples directory as =po4_2_with_isotopes.py=):
+ Let's assume that the weathering flux of carbon has \delta^{13}C value of 0 mUr, that photosynthesis fractionates by -28 mUr, and that organic matter burial does not import any carbon isotope fractionation. These changes require the following changes to the previous model code (the full code is available in the examples directory as =po4_2_with_isotopes.py=):
   1. Isotope ratios require non-zero concentrations to avoid a division by zero,
   2. You need to specify the initial isotope ratio for each reservoir
   3. You need to indicate for each reservoir that =DIC= requires isotope calculations
-  4. we need to specify the isotope ration of the weathering flux
+  4. we need to specify the isotope ratio of the weathering flux
   5. we need to specify the fractionation factor during photosynthesis
 #+BEGIN_SRC ipython
-# 1, 2 & 3 and similar forf the deep ocean box
+# 1, 2 & 3 and similar for the deep ocean box
 ReservoirGroup(
     name="S_b",
     register=M,
@@ -180,14 +180,14 @@ Connection(  #
     alpha=-28,  # mUr
 )
 #+END_SRC
-Running the previous model with these additional 5 lines, results in the following graph. Note that the run-time has been reduced to 500 years, so that the graph does not just show the steady state, and that the P-data is not shown.
+Running the previous model with these additional 5 lines, results in the following graph. Note that the run-time has been reduced to 500 years so that the graph does not just show the steady state and that the P-data is not shown.
 #+attr_org: :width 300
 #+attr_rst: :width 300
 #+attr_latex: :width 0.5\textwidth
 #+name: po4_2_with_isotopes
 #+caption: Output of =po4_2_with_isotopes=.py= Note that the run-time has 
 #+caption: been reduced to 500 years, so that the graph does not just show the steady state.
-#+caption: The upper box shows the gradual increase in DIC concentrations, and the lower
+#+caption: The upper box shows the gradual increase in DIC concentrations and the lower
 #+caption: shows the corresponding isotope ratios. The system will achieve isotopic 
 #+caption: equilibrium within approximately 2000 years. 
 [[./po4_2_with_isotopes.png]]
@@ -195,9 +195,9 @@ Running the previous model with these additional 5 lines, results in the followi
 
 ** Using many boxes
 
-Using the ESBMTK classes introduced so far, is sufficient to build complex models. However, it is easy to leverage pythons syntax to create a few utility functions that help in reducing overly verbose code. The esbmtk library comes with a few routines that help in this regard. However, they are not part of the core API, are not (yet) well documented and have not seen much testing. The following provides a brief introduction, but it may be useful to study the code for the Boudreau 2010 and LOSCAR-type  model in the example directory. All of these make heavy use of the Python dictionary class.
+Using the ESBMTK classes introduced so far is sufficient to build complex models. However, it is easy to leverage Python syntax to create a few utility functions that help in reducing overly verbose code. The ESBMTK library comes with a few routines that help in this regard. However, they are not part of the core API, are not (yet) well documented and have not seen much testing. The following provides a brief introduction, but it may be useful to study the code for the Boudreau 2010 and LOSCAR-type models in the example directory. All of these make heavy use of the Python dictionary class.
 
-In order for this functions to work correctly, box-names need to be specified following this template =Area_depth=, e.g., =A_sb= for the Atlantic surface water box, or =A_ib= for the Atlantic intermediate water box. The actual names, do not matter, but the underscore is used to differentiate between ocean area, and depth interval. The following code uses two dictionaries to specify the species an initial conditions for a multibox model.Both dictionaries are then used as input for a function that creates the actual instances. Note that the meaning and syntax for the geometry list and seawater parameters are explained in the next chapter.
+For this function to work correctly, box names need to be specified following this template =Area_depth=, e.g., =A_sb= for the Atlantic surface water box, or =A_ib= for the Atlantic intermediate water box. The actual names, do not matter, but the underscore is used to differentiate between ocean area and depth interval. The following code uses two dictionaries to specify the species and initial conditions for a multi-box model. Both dictionaries are then used as input for a function that creates the actual instances. Note that the meaning and syntax for the geometry list and seawater parameters are explained in the next chapter.
 #+BEGIN_SRC ipython
 # ud = upper depth datum, ld = lower depth datum, ap = area percentage
 # T = Temperature (C), P = Pressure (bar), S = Salinity in PSU 
@@ -215,7 +215,7 @@ box_parameters = {  # name: [[ud, ld ap], T, P, S]
         "P_sb": {"g": [0, -100, P_ap], "T": 20, "P": 5, "S": 34.7},
         "P_ib": {"g": [-100, -1000, P_ap], "T": 10, "P": 100, "S": 34.7},
         "P_db": {"g": [-1000, -6000, P_ap], "T": 2, "P": 240, "S": 34.7},
-        # High latidude box
+        # High latitude box
         "H_sb": {"g": [0, -250, H_ap], "T": 2, "P": 10, "S": 34.7},
         # Weathering sources
         "Fw": {"ty": "Source", "sp": [M.DIC, M.TA, M.PO4]},
@@ -234,7 +234,7 @@ initial_conditions= {
 create_reservoirs(box_names, initial_conditions, M)
 #+END_SRC
 
-similarly we can leverage a Python dictionaries to setup the transport matrix. The dictionary key must use the following template: =boxname_to_boxname@id= where the =id= is used similarly to the connection id in the =Connection= and =ConnectionGroup= classes. So to specify thermohaline upwelling from the Atlantic deep water to the Atlantic intermediate water you would use =A_db_to_A_ib@thc=  as the dictionary key, followed by the rate. The following examples defines the thermohaline transport in a LOSCAR type model:
+similarly, we can leverage  Python dictionaries to set up the transport matrix. The dictionary key must use the following template: =boxname_to_boxname@id= where the =id= is used similarly to the connection id in the =Connection= and =ConnectionGroup= classes. So to specify thermohaline upwelling from the Atlantic deep water to the Atlantic intermediate water you would use =A_db_to_A_ib@thc=  as the dictionary key, followed by the rate. The following examples define the thermohaline transport in a LOSCAR-type model:
 #+BEGIN_SRC ipython
 # Conveyor belt
 thc = Q_("20*Sv")
@@ -270,10 +270,10 @@ create_bulk_connections(connection_dictionary, M, mt="1:1")
 
 In the following example, we build the =connection_dictinary= in a more explicit way to define primary production as a function of P upwelling: The first line finds all the upwelling fluxes, and we can then use them as an argument in the =connection_dictionary= definition:
 #+BEGIN_SRC ipython
-# get all upwelling P fluxes except for the high latidude box
+# get all upwelling P fluxes except for the high latitude box
 pfluxes = M.flux_summary(filter_by="PO4_mix_up", exclude="H_", return_list=True)
 
-# define export productivity in the high latidude box
+# define export productivity in the high latitude box
 PO4_ex = Q_(f"{1.8 * M.H_sb.area/M.PC_ratio} mol/a")
 
 c_dict = {  # Surface box to ib, about 78% is remineralized in the ib
