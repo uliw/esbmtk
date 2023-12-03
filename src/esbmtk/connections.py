@@ -972,11 +972,11 @@ class AirSeaExchange(esbmtkBase):
             "liquid_reservoir": ["None", (str, Reservoir)],
             "solubility": ["None", (str, float)],
             "piston_velocity": ["None", (str, Q_)],
-            "area": [0.0, (float)],
+            "area": [0.0, (float, Q_)],
             "id": ["None", (str)],
             "name": ["None", (str)],
             "water_vapor_pressure": [0, (int, float, np.ndarray)],
-            "ref_species": ["None", (Reservoir, int, float, np.ndarray)],
+            "ref_species": ["None", (Reservoir)],
             "species": ["None", (Species, str)],
             "register": ["None", (str, Model)],
             "signal": ["None", (str, Signal)],
@@ -998,6 +998,12 @@ class AirSeaExchange(esbmtkBase):
         self.__misc_inits__()
 
         self.lof: list = []
+
+        if isinstance(self.area, Q_):
+            m = self.species.mo
+            self.area = self.area.to(m.a_unit).magnitude
+        if isinstance(self.piston_velocity, Q_):
+            self.piston_velocity = self.piston_velocity.to("meter/year").magnitude
         self.scale = self.area * self.piston_velocity
 
         # create connection and flux name

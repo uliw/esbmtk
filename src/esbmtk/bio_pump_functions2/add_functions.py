@@ -43,6 +43,7 @@ def add_photosynthesis(
     from esbmtk.reactions.init_functions import init_photosynthesis
 
     M = rgs[0].mo
+    
     pv = piston_velocity.to("meter/yr").magnitude
     for i, rg in enumerate(rgs):
         if isinstance(p_fluxes[i], Q_):

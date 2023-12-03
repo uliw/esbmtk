@@ -96,7 +96,10 @@ def carbonate_system_1_ode(dic, ta, hplus_0, co2aq_0, p) -> tuple:
     Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
     """
 
-    k1, k2, k1k2, KW, KB, boron = p
+    k1, k2, k1k2, KW, KB, boron, isotopes = p
+    if isotopes:  # dic = (x1, x2)
+        dic = dic[0]
+
     hplus = get_hplus(dic, ta, hplus_0, boron, k1, k2, KW, KB)
     co2aq = dic / (1 + k1 / hplus + k1k2 / hplus**2)
     dCdt_Hplus = hplus - hplus_0
@@ -121,7 +124,15 @@ def init_carbonate_system_1(rg: ReservoirGroup):
     """
     from esbmtk import ExternalCode, carbonate_system_1_ode
 
-    p = (rg.swc.K1, rg.swc.K2, rg.swc.K1K2, rg.swc.KW, rg.swc.KB, rg.swc.boron)
+    p = (
+        rg.swc.K1,
+        rg.swc.K2,
+        rg.swc.K1K2,
+        rg.swc.KW,
+        rg.swc.KB,
+        rg.swc.boron,
+        rg.DIC.isotopes,
+    )
     ec = ExternalCode(
         name="cs",
         species=rg.mo.Carbon.CO2,

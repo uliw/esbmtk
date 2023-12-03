@@ -875,7 +875,10 @@ def create_connection(n: str, p: dict, M: Model) -> None:
     signal = "None" if "si" not in p else p["si"]
 
     if isinstance(scale, Q_):
-        scale = scale.to("l/a").magnitude
+        if scale.check(['dimensionless']):
+            scale = scale.magnitude
+        else:
+            scale = scale.to(M.f_unit).magnitude
 
     # expand arguments
     ctype = make_dict(los, ctype)

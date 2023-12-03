@@ -231,7 +231,7 @@ class Model(esbmtkBase):
         self.d_unit = Q_(self.stop).units  # display time units
         self.m_unit = Q_(self.mass_unit).units  # the mass unit
         self.v_unit = Q_(self.volume_unit).units  # the volume unit
-        self.a_unit = Q_(self.area_unit).units  # the volume unit
+        self.a_unit = Q_(self.area_unit).units  # the area unit
         self.c_unit = Q_(self.concentration_unit).units
         self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
         self.r_unit = self.v_unit / self.t_unit  # flux as volume/time
@@ -641,7 +641,7 @@ class Model(esbmtkBase):
             self.area_table = 0
             self.area_dz_table = 0
             self.Csat_table = 0
-        
+
         if stype == "solve_ivp":
             self.results = solve_ivp(
                 eqs,
@@ -1623,11 +1623,14 @@ class Reservoir(ReservoirBase):
 
         self.__initialize_keyword_variables__(kwargs)
 
-        if self.register == "None":  # use a sensible default
-            self.register = self.species.element.register
-        self.model = self.register
+        if isinstance(self.register, Model):
+            self.model = self.register
+        else:
+            self.model = self.register.model
         self.parent = self.register
-
+        self.c = np.zeros(len(self.model.time))
+        self.l = np.zeros(len(self.model.time))
+        self.m = np.zeros(len(self.model.time))
         self.__set_legacy_names__(kwargs)
 
         # geoemtry information
@@ -1639,45 +1642,9 @@ class Reservoir(ReservoirBase):
         self.model.toc = (*self.model.toc, self.volume.to(self.model.v_unit).magnitude)
         self.v_index = self.model.gcc
         self.model.gcc = self.model.gcc + 1
-
         self.c_unit = self.model.c_unit
-
         # This should probably be species specific?
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
-
-        self.ideal_water = self.mo.ideal_water
-        if self.ideal_water:
-            self.density = 1000
-        else:
-            if isinstance(self.parent, ReservoirGroup):
-                self.swc = self.parent.swc
-            else:
-                if isinstance(self.seawater_parameters, str):
-                    temperature = 25
-                    salinity = 35
-                    pressure = 0
-                else:
-                    if "temperature" in self.seawater_parameters:
-                        temperature = self.seawater_parameters["temperature"]
-                    else:
-                        temperature = 25
-                    if "salinity" in self.seawater_parameters:
-                        salinity = self.seawater_parameters["salinity"]
-                    else:
-                        salinity = 35
-                    if "pressure" in self.seawater_parameters:
-                        pressure = self.seawater_parameters["pressure"]
-                    else:
-                        pressure = 1
-
-                SeawaterConstants(
-                    name="swc",
-                    temperature=temperature,
-                    pressure=pressure,
-                    salinity=salinity,
-                    register=self,
-                )
-            self.density = self.swc.density
 
         if self.sp.stype == "concentration":
             if self.mass == "None":
@@ -1705,8 +1672,6 @@ class Reservoir(ReservoirBase):
                 self.mass = (
                     self.concentration.to(self.mo.c_unit).magnitude
                     * self.volume.to(self.mo.v_unit).magnitude
-                    * self.density
-                    / 1000
                 )
                 self.mass = Q_(f"{self.mass} {self.mo.c_unit}")
                 self.display_as = "concentration"

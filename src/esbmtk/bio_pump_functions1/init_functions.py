@@ -260,9 +260,9 @@ def init_gas_exchange_no_isotopes(
     """Setup GasExchange instances"""
 
     # convert pv into model units
-    pv = piston_velocity.to("meter/yr").magnitude
-
-    breakpoint()
+    if isinstance(piston_velocity, Q_):
+        pv = piston_velocity.to("meter/yr").magnitude
+    
     ec = ExternalCode(
         name=f"{r_liquid.parent.name}_{r_liquid.name}_exchange",
         species=species,
@@ -300,9 +300,11 @@ def init_gas_exchange_with_isotopes(
     solubility,
 ):
     """Setup GasExchange instances"""
-
+    from esbmtk import Q_
+    
     # convert pv into model units
-    pv = piston_velocity.to("meter/yr").magnitude
+    if isinstance(piston_velocity, Q_):
+        pv = piston_velocity.to("meter/yr").magnitude
 
     ec = ExternalCode(
         name=f"{r_liquid.parent.name}_{r_liquid.name}_exchange",

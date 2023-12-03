@@ -243,7 +243,6 @@ class ReservoirGroup(esbmtkBase):
             self.lor.append(a)
 
         # register a seawater_parameter instance if necessary
-
         if self.seawater_parameters != "None":
             temp = dict_alternatives(self.seawater_parameters, "temperature", "T")
             sal = dict_alternatives(self.seawater_parameters, "salinity", "S")
