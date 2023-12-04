@@ -250,10 +250,10 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         eqs.write(f"\n{sep}\n")
 
         for r in M.lpc_r:  # All virtual reservoirs need to be in this list
-            if r.ftype == "cs1":
+            if r.ftype == "std":
                 # rel = write_cs_1(eqs, r, icl, rel, ind2, ind3)
                 rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
-            elif r.ftype != "cs2":
+            else:
                 raise ValueError(f"{r.ftype} is undefined")
 
         flist = []
