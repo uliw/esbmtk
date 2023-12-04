@@ -138,7 +138,7 @@ def init_carbonate_system_1(rg: ReservoirGroup):
         species=rg.mo.Carbon.CO2,
         function=carbonate_system_1_ode,
         fname="carbonate_system_1_ode",
-        ftype="cs1",
+        ftype="std",
         function_input_data=[rg.DIC, rg.TA, "Hplus", "CO2aq"],
         function_params=p,
         register=rg,
@@ -244,15 +244,13 @@ def carbonate_system_2_ode(
     BPDC = kc * area_p.dot(diff)
     BPDC = max(BPDC, 0)  # prevent negative values
 
-    """CACO3_export is the flux of CaCO3 into the box.
+    """ CACO3_export is the flux of CaCO3 into the box.
     Boudreau's orginal approach is as follows.
-
     CACO3_export = B_diss + Fburial
-    
     However, the model should use the bypass option and leave all flux
     calculations to the carbonate_system code. As such, ignore the burial flux
     (since it was never added), and only add the fraction of the input flux
-    that dissolves back into the box"""
+    that dissolves back into the box """
 
     # calculate the differentials
     F_diss = BDS + BCC + BNS + BPDC
@@ -320,7 +318,7 @@ def init_carbonate_system_2(
         species=rg.mo.Carbon.CO2,
         function=carbonate_system_2_ode,
         fname="carbonate_system_2_ode",
-        ftype="cs2",
+        ftype="std",
         r_s=r_sb,  # source (RG) of CaCO3 flux,
         r_d=r_db,  # sink (RG) of CaCO3 flux,
         function_input_data=[
