@@ -54,7 +54,19 @@ def rmtree(f) -> None:
 
 
 def phc(c: float) -> float:
-    # Calculate concentration as pH. c can be a number or numpy array
+    """Calculate concentration as pH. c can be a number or numpy array
+
+    Parameters
+    ----------
+    c : float
+        H+ concentration
+
+    Returns
+    -------
+    float
+        pH value
+
+    """
     import numpy as np
 
     pH: float = -np.log10(c)
@@ -78,52 +90,112 @@ def debug(func):
     return wrapper_debug
 
 
-def get_reservoir_reference(k, v, M):
-    """parse dict key and value to determine whether we have a
-    ReservoirGroup or just a (Gas) Reservoir and return the
-    species
+def get_reservoir_reference(k: str, M: Model) -> tuple:
+    """Get Species and Reservoir handles
 
-    :param v: e.g., "OM_remineralization
-    :param k: e.g., "F_M.CO2_At" or "F_M.A_sb.PO4"
+    Parameters
+    ----------
+    k : str
+        with the initial flux name, e.g., M_F_A_db_DIC
+    M : Model
+        Model handle
+    Returns
+    -------
+    tuple
+        Reservoir/Connection, Species
+    Raises
+    ------
+    ValueError
+        If reservoir_name is not of type Reservoir/Ggroup or Connection
 
-    :return reservoir: Reservoir/ReservoirGroup
-    :return species: Species
     """
+    from esbmtk import Reservoir, ReservoirGroup, Connection, Connect
+    from esbmtk import GasReservoir, Species
 
     key_list = k[2:].split(".")  # get model, reservoir & species name
+
     if len(key_list) == 3:  # ReservoirGroup
         model_name, reservoir_name, species_name = key_list
-        reservoir = getattr(M, reservoir_name)
+
+        if hasattr(M, reservoir_name):
+            obj = getattr(M, reservoir_name)
+        else:
+            raise ValueError(f"{reservoir_name} is not in the model")
+
         if k[0:2] == "R_":
-            species = getattr(reservoir.mo, species_name)
+            reservoir = obj
         elif k[0:2] == "F_":
-            species = getattr(reservoir, species_name).species
+            if isinstance(obj, Reservoir | ReservoirGroup):
+                reservoir = obj
+            elif isinstance(obj, Connection | Connect):
+                reservoir = obj
+                if isinstance(reservoir.source, GasReservoir):
+                    species_name = obj.sink.name
+                else:
+                    species_name = obj.source.name
+            else:
+                raise ValueError(
+                    f"{obj.name} must be Reservoir or Connection", f"not {type(obj)}"
+                )
 
     elif len(key_list) == 2:  # (Gas)Reservoir
         model_name, reservoir_name = key_list
         reservoir = getattr(M, reservoir_name)
-        species = reservoir.species
-
     else:
         raise ValueError("kl should look like this F_M.CO2_At")
 
+    species = getattr(M, species_name)
+    if not isinstance(species, Species):
+        breakpoint()
     return reservoir, species
 
 
-def register_new_flux(r, sp, v, k, sink) -> list:
-    """Create new flux and register with parent object"""
-    from .esbmtk import Reservoir, Flux
-    from .extended_classes import GasReservoir
+def register_new_flux(r, sp, v, sink) -> list:
+    """Register a new flux object with a Reservoir or Connection instance
 
+    Parameters
+    ----------
+    r : Reservoir | ReservoirGroup | Connection
+        instance to register with
+    sp : Species
+        species instance
+    v : int
+        id value
+    sink : Reservoir
+        Flux Destination Instance
+
+    Returns
+    -------
+    list
+        list of Flux instances
+
+    """
+    from .esbmtk import Reservoir, Flux, Source
+    from .extended_classes import GasReservoir, ReservoirGroup
+
+    print
     ro = []  # return objects
     if isinstance(r, (GasReservoir, Reservoir)):
         r.source = sink
         fn = f"{r.name}_2_{sink.name}_{v}_F"
         reg = r
-    else:
+    elif isinstance(r, Source):
+        # fn = f"{r.name}_{v}_F"
+        fn = f"{r.name}_2_{sink.name}_{v}_F"
+        # reg = getattr(r, sp.name)
+        reg = sink
+    elif isinstance(r, ReservoirGroup):
         fn = f"{r.name}_{v}_F"
         reg = getattr(r, sp.name)
-        reg.source = r
+    else:
+        fn = f"{r.name}_{v}_F"
+        # reg = getattr(r, sp.name)
+        # reg.source = r
+        reg = r
+
+    print(f"reg type = {type(reg)}")
+    print(f"reg name = {reg.full_name}")
+    print(f"f name = {fn}\n")
 
     f = Flux(
         name=fn,
@@ -142,9 +214,7 @@ def register_new_flux(r, sp, v, k, sink) -> list:
             register=reg,
         )
         ro.append(f)
-        # regular reservoirs will test if _l fluxes are needed or not.
-        # if "exchange" in f.name:
-        #     sink.lof.append(f)
+
     return ro
 
 
@@ -164,9 +234,23 @@ def register_new_reservoir(r, sp, v):
     return [rt]
 
 
-def register_return_values(ec, sink) -> None:
-    """Check the return values of external function instances,
-    and create the necessary reservoirs or fluxes.
+def register_return_values(ec: ExternalFunction, sink) -> None:
+    """Register the return values of an external function instance
+
+     Parameters
+    ----------
+        ec : ExternalFunction
+        ExternalFunction Instance
+    sink : unknown
+        unknown
+    Raises
+    ------
+    ValueError
+        If the return value type is undefined
+
+    Check the return values of external function instances,
+    and create the necessary reservoirs, fluxes, or connections
+    if they are missing.
 
     These fluxes are not associated with a connection Object
     so we register the source/sink relationship with the
@@ -180,23 +264,33 @@ def register_return_values(ec, sink) -> None:
     """
     from .esbmtk import Reservoir
 
+    # go through each entry in ec.return_values
     for line in ec.return_values:
         if isinstance(line, dict):
-            k = next(iter(line))  # get first key
-            v = line[k]
-            r, sp = get_reservoir_reference(k, v, sink.mo)
-            if k[:2] == "F_":  # check if flux
-                o: list = register_new_flux(r, sp, v, k, sink)
-            elif k[:2] == "R_":  # Create new reservoir
-                o: list = register_new_reservoir(r, sp, v)
+            dict_key = next(iter(line))  # get first key
+            dict_value = line[dict_key]
+            if dict_key[:2] == "F_":  # is flux
+                if dict_key[2:] in M.lof: # check if exist
+                    o = list(getattr(M, dict_key[2:]))
+                else:
+                    # o: list = register_new_flux(r, sp, dict_value, sink)
+                    raise ValueError(f"{dict_key[2:]} does not exist")
+                    
+            elif dict_key[:2] == "R_":  # is reservoir
+                if dict_key[2:] in M.lor:
+                o: list = register_new_reservoir(r, sp, dict_value)
+                
+            elif dict_key[:2] == "C_":  # is connection
+                    raise NotImplementedError
+            
             else:
-                raise ValueError(f"{k[0:2]} is not defined")
+                raise ValueError(f"{dict_key[0:2]} is not defined")
 
         elif isinstance(line, Reservoir):
             v.ef_results = True
             o = [v]
-        # add to list of returned Objects
-        ec.lro.append(o[0])
+       
+        ec.lro.append(o[0]) # add to list of returned Objects
         if len(o) > 1:
             ec.lro.append(o[1])
 
@@ -875,7 +969,7 @@ def create_connection(n: str, p: dict, M: Model) -> None:
     signal = "None" if "si" not in p else p["si"]
 
     if isinstance(scale, Q_):
-        if scale.check(['dimensionless']):
+        if scale.check(["dimensionless"]):
             scale = scale.magnitude
         else:
             scale = scale.to(M.f_unit).magnitude

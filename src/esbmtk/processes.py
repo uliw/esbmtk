@@ -31,11 +31,11 @@ from esbmtk.utility_functions import (
 #     from .esbmtk import SeawaterConstants, ReservoirGroup, Flux
 
 # declare numpy types
-NDArrayFloat = npt.NDArray[np.float64]
+# NDArrayFloat = npt.NDArray[np.float64]
 
 
 # @njit(fastmath=True)
-def weathering(pco2, pco2_0, area_fraction, ex, f0) -> float:
+def weathering(pco2t, p) -> float:
     """Calculates weathering as a function pCO2 concentration
 
     :param pco2: float current pco2
@@ -48,34 +48,42 @@ def weathering(pco2, pco2_0, area_fraction, ex, f0) -> float:
     F_w = area_fraction * f0 * (pco2/pco2_0)**ex
     """
 
+    pco2_0, area_fraction, ex, f0, isotopes = p
+
+    if isotopes:
+        pco2, pco2_0i = pco2t
+    else:
+        pco2 = pco2t
+
     return area_fraction * f0 * (pco2 / pco2_0) ** ex
 
 
-def init_weathering(rg, pco2, pco2_0, area_fraction, ex, f0):
-    """Creates a new external code instance 
-    
+def init_weathering(c, pco2, pco2_0, area_fraction, ex, f0):
+    """Creates a new external code instance
+
+    :param c: Connection
     :param pco2: float current pco2
     :param pco2_0: float reference pco2
     :area_fraction: float area/total area
     :param ex: exponent
     :f0: flux at pco2_0
-    
+
     """
     from esbmtk import ExternalCode
 
-    p = (pco2_0, area_fraction, ex, f0)
+    p = (pco2_0, area_fraction, ex, f0, c.source.isotopes)
     ec = ExternalCode(
         name="ec_weathering",
         fname="weathering",
         ftype="std",
-        function_input_data=[rg.CO2_At],
+        species=c.source.species,
+        function_input_data=[pco2],
         function_params=p,
-        register=rg,
+        register=c.model,
         return_values=[
-            {f"R_{rg.full_name}.Hplus": rg.swc.hplus},
-            {f"R_{rg.full_name}.CO2aq": rg.swc.co2aq},
+            {f"F_{c.fh.full_name}": "fww"},
         ],
     )
-    rg.mo.lpc_f.append(ec.fname)
+    c.mo.lpc_f.append(ec.fname)
 
     return ec

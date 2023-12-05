@@ -130,10 +130,11 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
 
             # add all fluxes
             for flux in r.lof:  # check if in or outflux
+                print(f"fp_name = {flux.parent.full_name}")
+                print(f"flux name = {flux.full_name}")
                 if flux.parent.source == r:
                     sign = "-"
                 else:
-                    # elif flux.parent.sink == r:
                     sign = "+"
 
                 fname = f'{flux.full_name.replace(".", "_")}'
@@ -220,8 +221,9 @@ def write_equations_2(
     h1 = """from __future__ import annotations
 from numpy import array as npa
 from numba import njit
+from esbmtk import weathering
 from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes\n\n"""
-    
+
     h2 = """# @njit(fastmath=True)
 def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         '''Auto generated esbmtk equations do not edit
@@ -230,12 +232,12 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
     ind2 = 8 * " "  # indention
     ind3 = 12 * " "  # indention
     hi = ""
-    if len(M.lpc_f) > 0:
+    if len(M.lpc_i) > 0:
         hi = f"from esbmtk.bio_pump_functions{M.bio_pump_functions} import "
         for f in set(M.lpc_f):
             hi += f"{f} ,"
-        hi = hi[:-2] # strip comma and space
-            
+        hi = hi[:-2]  # strip comma and space
+
     header = f"{h1}\n{hi}\n{h2}"
 
     rel = ""  # list of return values
@@ -253,6 +255,8 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
             if r.ftype == "std":
                 # rel = write_cs_1(eqs, r, icl, rel, ind2, ind3)
                 rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
+            elif r.ftype == "needs_flux":
+                pass
             else:
                 raise ValueError(f"{r.ftype} is undefined")
 
@@ -292,10 +296,9 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         eqs.write(f"\n{sep}\n")
 
         for r in M.lpc_r:  # All virtual reservoirs need to be in this list
-            if r.ftype == "cs1":
+            if r.ftype == "std":
                 pass  # see above
-            elif r.ftype == "cs2":  #
-                # rel = write_cs_2(eqs, r, icl, rel, ind2, ind3)
+            elif r.ftype == "needs_flux":  #
                 rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
             else:
                 raise ValueError(f"{r.ftype} is undefined")
@@ -451,66 +454,6 @@ def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
     return s1
 
 
-def parse_esbmtk_return_data_types():
-    pass
-
-
-def parse_esbmtk_return_data_types_old(
-    line: any, r: Reservoir, ind: str, icl: dict
-) -> str:
-    """Parse esbmtk data types that are provided as arguments
-    to external function objects, and convert them into a suitable string
-    format that can be used in the ode equation file
-    """
-    from esbmtk import GasReservoir, ReservoirGroup
-    from .utility_functions import get_reservoir_reference
-
-    # convert to object handle if need be
-    if isinstance(line, str):
-        o = getattr(r.register, line)
-    elif isinstance(line, dict):
-        k = next(iter(line))  # get first key
-        v = line[k]
-        # get reservoir and species handle
-        r, sp = get_reservoir_reference(k, v, r.mo)
-        if k[:2] == "F_":  # this is a flux
-            if isinstance(r, (GasReservoir, Reservoir)):
-                sr = f"{r.register.name}.{r.name}.{v}_F".replace(".", "_")
-                #  sr = f"M.{r.register.name}_F".replace(".", "_")
-                o = r
-            elif isinstance(r, ReservoirGroup):
-                sr = f"{r.full_name}.{sp.name}.{r.name}.{line[k]}_F".replace(".", "_")
-                o = r
-            else:
-                raise ValueError(f"r = {type(r)}")
-
-        elif k[:2] == "R_":  # this is reservoir or reservoirgroup
-            if isinstance(r, (GasReservoir, Reservoir)):
-                sr = f"{r.full_name}".replace(".", "_")
-                o = r
-            elif isinstance(r, ReservoirGroup):
-                sr = f"{r.full_name}.{sp.name}".replace(".", "_")
-                o = r
-            else:
-                raise ValueError(f"r = {type(r)}")
-
-    elif isinstance(line, Flux):
-        o = line
-        sr = o.full_name.replace(".", "_")
-    else:  # argument is a regular reservoir
-        o = line
-        sr = f'dCdt_{o.full_name.replace(".", "_")}'
-
-    if isinstance(o, (Reservoir, GasReservoir, Flux)):
-        isotopes = o.isotopes
-    else:
-        isotopes = getattr(o, sp.name).isotopes
-    if isotopes:
-        sr = f"{sr}, {sr}_l"
-
-    return sr
-
-
 def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> str:
     """Parse esbmtk data types that are provided as arguments
     to external function objects, and convert them into a suitable string
@@ -525,7 +468,8 @@ def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> 
     elif isinstance(d, Reservoir):
         a = f"{ind}({get_ic(d, icl,d.isotopes)}),\n"
     elif isinstance(d, GasReservoir):
-        a = f"{ind}{get_ic(d, icl,d.isotopes)},\n"
+        print(f" {d.full_name} isotopes {d.isotopes}")
+        a = f"{ind}({get_ic(d, icl,d.isotopes)}),\n"
     elif isinstance(d, ReservoirGroup):
         a = f"{ind}{d.full_name},\n"
     elif isinstance(d, Flux):
@@ -614,8 +558,7 @@ def write_ef(
     else:
         s = f"gpt[{r.param_start}]"
         eqs.write(f"{rv} = {r.fname}(\n{a}{ind3}{s},\n{ind2})\n\n")
-        # params = parse_function_params(r.function_params, ind3)
-        # eqs.write(f"{rv} = {r.fname}(\n{a}{ind3}(\n{params}{ind3}),\n{ind2})\n\n")
+
     rel += f"{ind3}{rv},\n"
 
     return rel

@@ -148,6 +148,7 @@ def init_carbonate_system_1(rg: ReservoirGroup):
         ],
     )
     rg.mo.lpc_f.append(ec.fname)
+    rg.mo.lpc_i.append(ec.fname) # list of function to be imported in ode backend
 
     return ec
 
@@ -318,11 +319,10 @@ def init_carbonate_system_2(
         species=rg.mo.Carbon.CO2,
         function=carbonate_system_2_ode,
         fname="carbonate_system_2_ode",
-        ftype="std",
+        ftype="needs_flux",
         r_s=r_sb,  # source (RG) of CaCO3 flux,
         r_d=r_db,  # sink (RG) of CaCO3 flux,
         function_input_data=[
-            # rg,  # 0
             export_flux,  # 1
             r_db.DIC,  # 2
             r_db.TA,  # 3
@@ -346,6 +346,7 @@ def init_carbonate_system_2(
         register=rg,
     )
     rg.mo.lpc_f.append(ec.fname)
+    rg.mo.lpc_i.append(ec.fname) # list of function to be imported in ode backend
     return ec
 
 

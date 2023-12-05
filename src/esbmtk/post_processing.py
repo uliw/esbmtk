@@ -107,7 +107,11 @@ def carbonate_system_2_pp(
         export_fluxes = [export_fluxes]
         
     for i, rg in enumerate(bn):
-        export = export_fluxes[i].c
+        if isinstance(export_fluxes[i], float):
+            export = export_fluxes[i]
+        else:
+            export = export_fluxes[i].c
+            
         p = rg.cs.function_params
         sp, cp, area_table, area_dz_table, Csat_table = p
         ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0 = cp

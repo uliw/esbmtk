@@ -20,5 +20,6 @@ from .ode_backend import *
 from .seawater import *
 from .bio_pump_functions0.carbonate_chemistry import *
 from .post_processing import *
+from .processes import *
 
 np.seterr(invalid="ignore")

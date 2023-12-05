@@ -205,6 +205,8 @@ class Model(esbmtkBase):
         self.lsp: list = []  # list which will hold all species references
         self.lop: list = []  # set of flux processes
         self.lpc_f: list = []  # list of external functions affecting fluxes
+        # list of external functions that needs to be imported in the ode_backend
+        self.lpc_i: list = []
         # list of external functions affecting virtual reservoirs
         self.lpc_r: list = []
         # list of virtual reservoirs
@@ -544,22 +546,7 @@ class Model(esbmtkBase):
 
         solver = "ode" if "solver" not in kwargs else kwargs["solver"]
         self.solver = solver
-        if self.number_of_solving_iterations > 0:
-            for i in range(self.number_of_solving_iterations):
-                print(
-                    f"\n Iteration {i+1} out of {self.number_of_solving_iterations}\n"
-                )
-                self.__run_solver__(solver)
-
-                print("Restarting model")
-                self.restart()
-
-            print("Merge results")
-            self.merge_temp_results()
-            self.steps = self.number_of_datapoints
-            # after merging, the model steps = number_of_datapoints
-        else:
-            self.__run_solver__(solver, kwargs)
+        self.__run_solver__(solver, kwargs)
 
         self.state = 1  # flag that the model has executed
         duration: float = process_time() - start

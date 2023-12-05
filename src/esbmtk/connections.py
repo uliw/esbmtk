@@ -288,13 +288,6 @@ class Connect(esbmtkBase):
         if self.signal != "None":
             self.lop.append(self.signal)
 
-        # if we have a signal, save flux data
-        # if self.signal != "None":
-        #     self.save_flux_data = True
-        # # else if save_flux_data is unsepcified, use model default
-        # elif self.save_flux_data == "None":
-        #     self.save_flux_data = self.source.sp.mo.save_flux_data
-
         if self.rate != "None":
             if isinstance(self.rate, str):
                 self._rate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
@@ -412,20 +405,16 @@ class Connect(esbmtkBase):
         else:
             self.name = f"{self.source.species.name}_to_{self.sink.species.name}"
 
-        # id set?
-        if self.id != "None":
+        # always overide name with id for manual connections
+        if self.ctype == "weathering":
+            self.name = f"{self.name}_{self.id}"
+        elif self.id != "None":
             if (self.source.species.name in self.id) or (
                 self.sink.species.name in self.id
             ):
                 self.name = f"{self.id}"
             else:
                 self.name = f"{self.name}_{self.id}"
-                # self.name = f"{self.name}@{self.id}"
-
-        # always overide name with id for manual connections
-        # if not isinstance(self.parent, ConnectionGroup):
-        #     if self.id != "None":
-        #         self.name = f"{self.source.name}_{self.id}_{self.sp.name}"
 
     def update(self, **kwargs):
         """Update connection properties. This will delete existing processes
@@ -551,7 +540,7 @@ class Connect(esbmtkBase):
         elif self.ctype == "scale_with_flux":
             self.__scaleflux__()
         elif self.ctype == "weathering":
-            self.__rateconstant__()
+            self.__weathering__()
         elif self.ctype == "scale_with_concentration":
             self.__rateconstant__()
         elif self.ctype != "manual":
@@ -576,6 +565,19 @@ class Connect(esbmtkBase):
         if self.k_value != "None":
             self.scale = self.k_value
             print(f"\n Warning: use scale instead of k_value for scaleflux type\n")
+
+    def __weathering__(self):
+        from esbmtk import init_weathering, register_return_values
+
+        ec = init_weathering(
+            self,  # connection object
+            self.reservoir_ref,  # current pCO2
+            self.pco2_0,  # reference pCO2
+            self.scale,  # area fraction
+            self.ex,  # exponent
+            self.rate,  # initial flux
+        )
+        register_return_values(ec, self.sink)
 
     def __rateconstant__(self) -> None:
         """Add rate constant type process"""
@@ -617,53 +619,6 @@ class Connect(esbmtkBase):
         print(f"{ind}Fluxes:")
         for f in sorted(self.lof):
             f.info(indent=indent, index=index)
-
-    # def __delete_process__(self) -> None:
-    #     """Updates to the connection properties may change the connection type and thus
-    #     the processes which are associated with this connection. We thus have to
-    #     first delete the old processes, before we re-initialize the connection
-
-    #     """
-
-    #     # identify which processes we need to delete
-    #     # unregister process from connection.lop, reservoir.lop, flux.lop, model.lmo
-    #     # delete process from global name space if present
-
-    #     lop = cp.copy(self.lop)
-
-    #     for p in lop:
-    #         for f in self.lof:
-    #             if isinstance(f.register, ConnectionGroup):
-    #                 # remove from Connection group list of model objects
-    #                 self.register.lmo.remove(f)
-    #             else:
-    #                 self.r1.lop.remove(p)
-    #                 self.fh.lop.remove(p)
-    #                 self.lop.remove(p)
-    #                 self.r1.mo.lmo.remove(p.n)
-    #                 del p
-
-    # def __delete_flux__(self) -> None:
-    #     """Updates to the connection properties may change the connection type and thus
-    #     the processes which are associated with this connection. We thus have to
-    #     first delete the old flux, before we re-initialize the connection
-
-    #     """
-
-    #     # identify which processes we need to delete
-    #     # unregister process from connection.lop, reservoir.lop, flux.lop, model.lmo
-    #     # delete process from global name space if present
-
-    #     lof = cp.copy(self.lof)
-    #     for f in lof:
-    #         if isinstance(f.register, ConnectionGroup):
-    #             # remove from Connection group list of model objects
-    #             self.register.lmo.remove(f)
-    #         else:
-    #             self.r1.lof.remove(f)
-    #             self.lof.remove(f)
-    #             self.r1.mo.lmo.remove(f.n)
-    #             del f
 
     # ---- Property definitions to allow for connection updates --------
     """ Changing the below properties requires that we delete all
