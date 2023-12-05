@@ -130,8 +130,6 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
 
             # add all fluxes
             for flux in r.lof:  # check if in or outflux
-                print(f"fp_name = {flux.parent.full_name}")
-                print(f"flux name = {flux.full_name}")
                 if flux.parent.source == r:
                     sign = "-"
                 else:
@@ -221,7 +219,6 @@ def write_equations_2(
     h1 = """from __future__ import annotations
 from numpy import array as npa
 from numba import njit
-from esbmtk import weathering
 from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes\n\n"""
 
     h2 = """# @njit(fastmath=True)
@@ -232,13 +229,21 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
     ind2 = 8 * " "  # indention
     ind3 = 12 * " "  # indention
     hi = ""
+    M.lpc_i = set(M.lpc_i)
+    M.lpc_f = set(M.lpc_f)
     if len(M.lpc_i) > 0:
         hi = f"from esbmtk.bio_pump_functions{M.bio_pump_functions} import "
+        for f in set(M.lpc_i):
+            hi += f"{f} ,"
+        hi = f"{hi[:-2]}\n"  # strip comma and space
+
+    if len(M.lpc_f) > 0:
+        hi += f"from esbmtk import "
         for f in set(M.lpc_f):
             hi += f"{f} ,"
-        hi = hi[:-2]  # strip comma and space
+        hi = f"{hi[:-2]}\n"  # strip comma and space
 
-    header = f"{h1}\n{hi}\n{h2}"
+    header = f"{h1}{hi}\n{h2}"
 
     rel = ""  # list of return values
     # """
@@ -468,7 +473,7 @@ def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> 
     elif isinstance(d, Reservoir):
         a = f"{ind}({get_ic(d, icl,d.isotopes)}),\n"
     elif isinstance(d, GasReservoir):
-        print(f" {d.full_name} isotopes {d.isotopes}")
+        # print(f" {d.full_name} isotopes {d.isotopes}")
         a = f"{ind}({get_ic(d, icl,d.isotopes)}),\n"
     elif isinstance(d, ReservoirGroup):
         a = f"{ind}{d.full_name},\n"

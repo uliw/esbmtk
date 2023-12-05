@@ -196,7 +196,7 @@ class Model(esbmtkBase):
         logging.basicConfig(filename=fn, filemode="w", level=logging.CRITICAL)
         self.__register_name_new__()
 
-        self.lor: list = []
+        self.lor: list = [] # list of all reservoir type objects
         self.lic: list = []  # list of all reservoir type objects
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
@@ -219,7 +219,7 @@ class Model(esbmtkBase):
         self.ldf: list = []
         # list of signals
         self.los: list = []
-        self.first_start = True  # keep track of repeated solver calls
+        # self.first_start = True  # keep track of repeated solver calls
         self.lof: list = []  # list of fluxes
         self.lrg: list = []  # list of reservoirgroups
         self.gpt: tuple = ()  # global parameter list

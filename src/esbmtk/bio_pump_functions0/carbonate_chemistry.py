@@ -147,7 +147,7 @@ def init_carbonate_system_1(rg: ReservoirGroup):
             {f"R_{rg.full_name}.CO2aq": rg.swc.co2aq},
         ],
     )
-    rg.mo.lpc_f.append(ec.fname)
+    # rg.mo.lpc_f.append(ec.fname)
     rg.mo.lpc_i.append(ec.fname) # list of function to be imported in ode backend
 
     return ec
@@ -345,7 +345,7 @@ def init_carbonate_system_2(
         ],
         register=rg,
     )
-    rg.mo.lpc_f.append(ec.fname)
+    # rg.mo.lpc_f.append(ec.fname)
     rg.mo.lpc_i.append(ec.fname) # list of function to be imported in ode backend
     return ec
 

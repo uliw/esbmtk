@@ -171,13 +171,26 @@ def register_new_flux(rg, dict_key, dict_value) -> list:
     from .esbmtk import Reservoir, Flux, Source
     from .extended_classes import GasReservoir, ReservoirGroup
 
+    if isinstance(rg, ReservoirGroup):
+        spn = dict_key.split(".")[-1]
+        sp = getattr(rg.mo, spn)
+        reg = getattr(rg, sp.name)
+    elif isinstance(rg, Reservoir):
+        print(f"dict_key = {dict_key}")
+        print(f"dict_value = {dict_value}")
+        rg.mo.flux_summary(filter_by="wca")
+        raise NotImplementedError
+    else:
+        print(f" type(rg) = {type(rg)}")
+        raise NotImplementedError
+
     spn = dict_key.split(".")[-1]
     sp = getattr(rg.mo, spn)
     reg = getattr(rg, sp.name)
 
-    if not hasattr(reg, 'source'):
-        setattr(reg, 'source', sp.name)
-        
+    if not hasattr(reg, "source"):
+        setattr(reg, "source", sp.name)
+
     ro = list()
     f = Flux(
         name=dict_value,
@@ -221,7 +234,7 @@ def register_return_values(ec: ExternalFunction, rg) -> None:
 
      Parameters
     ----------
-        ec : ExternalFunction
+    ec : ExternalFunction
         ExternalFunction Instance
     rg : ReservoirGroup | Reservoir
         The Resevoir or Reservoirgroup the external function is
@@ -254,8 +267,8 @@ def register_return_values(ec: ExternalFunction, rg) -> None:
             dict_key = next(iter(line))  # get first key
             dict_value = line[dict_key]
             if dict_key[:2] == "F_":  # is flux
-                if dict_key[2:] in M.lof:  # check if exist
-                    o = list(getattr(M, dict_key[2:]))
+                if hasattr(M, dict_key[2:].split(".")[1]):
+                    o = [(getattr(M, dict_key[2:].split(".")[1]))]
                 else:
                     o: list = register_new_flux(rg, dict_key[2:], dict_value)
 

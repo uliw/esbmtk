@@ -552,7 +552,7 @@ class Connect(esbmtkBase):
             self.source.lof.remove(self.fh)
         elif self.bypass == "sink" and not isinstance(self.sink, Sink):
             self.sink.lof.remove(self.fh)
-            print(f"removing {self.fh.full_name} from {self.sink.full_name} lof")
+            print(f"bypassing {self.fh.full_name} in {self.sink.full_name}")
 
     def __scaleflux__(self) -> None:
         """Scale a flux relative to another flux"""
