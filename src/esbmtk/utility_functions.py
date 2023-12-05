@@ -26,7 +26,7 @@ import functools
 from numba import njit
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Flux, Model, Connection, Connect
+    from esbmtk import Flux, Model, Connection, Connect, ExternalFunction
 
 np.set_printoptions(precision=4)
 # declare numpy types
@@ -150,19 +150,17 @@ def get_reservoir_reference(k: str, M: Model) -> tuple:
     return reservoir, species
 
 
-def register_new_flux(r, sp, v, sink) -> list:
+def register_new_flux(rg, dict_key, dict_value) -> list:
     """Register a new flux object with a Reservoir or Connection instance
 
     Parameters
     ----------
-    r : Reservoir | ReservoirGroup | Connection
+    rg : Reservoir | ReservoirGroup
         instance to register with
-    sp : Species
-        species instance
-    v : int
-        id value
-    sink : Reservoir
-        Flux Destination Instance
+    dict_key : str
+        E.g., "M.A_db.DIC"
+    dict_value : str
+        id value, e.g., "db_cs2"
 
     Returns
     -------
@@ -173,32 +171,16 @@ def register_new_flux(r, sp, v, sink) -> list:
     from .esbmtk import Reservoir, Flux, Source
     from .extended_classes import GasReservoir, ReservoirGroup
 
-    print
-    ro = []  # return objects
-    if isinstance(r, (GasReservoir, Reservoir)):
-        r.source = sink
-        fn = f"{r.name}_2_{sink.name}_{v}_F"
-        reg = r
-    elif isinstance(r, Source):
-        # fn = f"{r.name}_{v}_F"
-        fn = f"{r.name}_2_{sink.name}_{v}_F"
-        # reg = getattr(r, sp.name)
-        reg = sink
-    elif isinstance(r, ReservoirGroup):
-        fn = f"{r.name}_{v}_F"
-        reg = getattr(r, sp.name)
-    else:
-        fn = f"{r.name}_{v}_F"
-        # reg = getattr(r, sp.name)
-        # reg.source = r
-        reg = r
+    spn = dict_key.split(".")[-1]
+    sp = getattr(rg.mo, spn)
+    reg = getattr(rg, sp.name)
 
-    print(f"reg type = {type(reg)}")
-    print(f"reg name = {reg.full_name}")
-    print(f"f name = {fn}\n")
-
+    if not hasattr(reg, 'source'):
+        setattr(reg, 'source', sp.name)
+        
+    ro = list()
     f = Flux(
-        name=fn,
+        name=dict_value,
         species=sp,
         rate=0,
         register=reg,
@@ -234,15 +216,16 @@ def register_new_reservoir(r, sp, v):
     return [rt]
 
 
-def register_return_values(ec: ExternalFunction, sink) -> None:
+def register_return_values(ec: ExternalFunction, rg) -> None:
     """Register the return values of an external function instance
 
      Parameters
     ----------
         ec : ExternalFunction
         ExternalFunction Instance
-    sink : unknown
-        unknown
+    rg : ReservoirGroup | Reservoir
+        The Resevoir or Reservoirgroup the external function is
+        associated with
     Raises
     ------
     ValueError
@@ -264,33 +247,36 @@ def register_return_values(ec: ExternalFunction, sink) -> None:
     """
     from .esbmtk import Reservoir
 
+    M = rg.mo
     # go through each entry in ec.return_values
     for line in ec.return_values:
         if isinstance(line, dict):
             dict_key = next(iter(line))  # get first key
             dict_value = line[dict_key]
             if dict_key[:2] == "F_":  # is flux
-                if dict_key[2:] in M.lof: # check if exist
+                if dict_key[2:] in M.lof:  # check if exist
                     o = list(getattr(M, dict_key[2:]))
                 else:
-                    # o: list = register_new_flux(r, sp, dict_value, sink)
-                    raise ValueError(f"{dict_key[2:]} does not exist")
-                    
+                    o: list = register_new_flux(rg, dict_key[2:], dict_value)
+
             elif dict_key[:2] == "R_":  # is reservoir
                 if dict_key[2:] in M.lor:
-                o: list = register_new_reservoir(r, sp, dict_value)
-                
+                    o = list(getattr(M, dict_key))
+                else:
+                    r, sp = get_reservoir_reference(dict_key, M)
+                    o: list = register_new_reservoir(r, sp, dict_value)
+
             elif dict_key[:2] == "C_":  # is connection
-                    raise NotImplementedError
-            
+                raise NotImplementedError
+
             else:
                 raise ValueError(f"{dict_key[0:2]} is not defined")
 
         elif isinstance(line, Reservoir):
-            v.ef_results = True
-            o = [v]
-       
-        ec.lro.append(o[0]) # add to list of returned Objects
+            dict_value.ef_results = True
+            o = [dict_value]
+
+        ec.lro.append(o[0])  # add to list of returned Objects
         if len(o) > 1:
             ec.lro.append(o[1])
 
