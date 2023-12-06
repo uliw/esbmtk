@@ -4,14 +4,14 @@ import numpy.typing as npt
 import typing as tp
 
 # from esbmtk import Flux, Reservoir, Model, Connection, Connect
-# from esbmtk import AirSeaExchange, ExternalFunction
+# from esbmtk import ExternalFunction
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
 if tp.TYPE_CHECKING:
     from esbmtk import Flux, Reservoir, Model, Connection, Connect
-    from esbmtk import AirSeaExchange, ExternalFunction
+    from esbmtk import ExternalFunction
 
 
 def get_initial_conditions(
@@ -210,7 +210,7 @@ def write_equations_2(
         computed based on other reservoirs
     :param ipl: list of reservoir that do not change in concentration
     """
-    from esbmtk import Reservoir, AirSeaExchange
+    from esbmtk import Reservoir
     import pathlib as pl
 
     # get pathlib object
@@ -284,16 +284,10 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
 
                 ex, exl = get_flux(flux, M, R, icl)  # get flux expressions
                 fn = flux.full_name.replace(".", "_")
-                # check for types that return isotope data as well
-                # this should move to computed at some point
-                if isinstance(flux.parent, AirSeaExchange):
-                    if flux.parent.isotopes:  # add F_l if necessary
-                        fn = f"{fn}, {fn}_l"
-                    eqs.write(f"{ind2}{fn} = {ex}\n")
-                else:  # all others types that have separate expressions/isotope
-                    eqs.write(f"{ind2}{fn} = {ex}\n")
-                    if flux.parent.isotopes:  # add line for isotopes
-                        eqs.write(f"{ind2}{fn}_l = {exl}\n")
+                # all others types that have separate expressions/isotope
+                eqs.write(f"{ind2}{fn} = {ex}\n")
+                if flux.parent.isotopes:  # add line for isotopes
+                    eqs.write(f"{ind2}{fn}_l = {exl}\n")
 
         sep = (
             "# ---------------- write computed reservoir equations -------- #\n"

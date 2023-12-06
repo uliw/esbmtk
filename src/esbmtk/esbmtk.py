@@ -1832,7 +1832,6 @@ class Flux(esbmtkBase):
                       GasReservoir,
                       Connection,
                       Connect,
-                      AirSeaExchange,
                       Signal,
                   ),
               ],
@@ -1847,7 +1846,6 @@ class Flux(esbmtkBase):
 
         from esbmtk import (
             Q_,
-            AirSeaExchange,
             Reservoir,
             GasReservoir,
             Connect,
@@ -1872,7 +1870,6 @@ class Flux(esbmtkBase):
                     GasReservoir,
                     Connection,
                     Connect,
-                    AirSeaExchange,
                     Signal,
                 ),
             ],
