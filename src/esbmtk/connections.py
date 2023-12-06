@@ -459,7 +459,6 @@ class Connect(esbmtkBase):
             register=self,  # is this part of a group?
             isotopes=self.isotopes,
             id=self.id,
-            # save_flux_data=self.save_flux_data,
         )
 
         # register flux with its reservoirs
@@ -707,7 +706,6 @@ class ConnectionGroup(esbmtkBase):
            pl = [list]) process list. optional, shared between all connections
            id = optional identifier, passed on to individual connection
            plot = "yes/no" # defaults to yes, shared between all connections
-           save_flux_data = True/False, use model default if not set
         )
 
         ConnectionGroup(
@@ -765,9 +763,6 @@ class ConnectionGroup(esbmtkBase):
 
         if self.register == "None":
             self.register = self.source.register
-        # if self.save_flux_data == "None":
-        #     self.save_flux_data = self.register.save_flux_data
-        #     self.kwargs.update({"save_flux_data": self.register.save_flux_data})
 
         # # self.source.lor is a  list with the object names in the group
         self.mo = self.sink.lor[0].mo
@@ -861,7 +856,6 @@ class ConnectionGroup(esbmtkBase):
                 signal=self.c_defaults[sp.n]["signal"],
                 ref_reservoirs=self.c_defaults[sp.n]["ref_reservoirs"],
                 ref_flux=self.c_defaults[sp.n]["ref_flux"],
-                # save_flux_data=self.save_flux_data,
                 groupname=True,
                 id=self.id,
                 register=self,
@@ -887,148 +881,3 @@ class ConnectionGroup(esbmtkBase):
         print("")
 
 
-class AirSeaExchange(esbmtkBase):
-    """The class creates a connection between liquid reservoir (i.e., an
-    ocean), and a gas reservoir (i.e., the atmosphere).
-
-    Example :
-    ~~~~~~~~~
-
-    AirSeaExchange(
-        gas_reservoir= must be a gasreservoir
-        liquid_reservoir = must be a reservoir
-        solubility= as returned by the swc object
-        area = Ocean.area, [m^2]
-        piston_velocity = "4.8 m/d",
-        id = str, optional
-        water_vapor_pressure=Ocean.swc.p_H2O,
-        ref_quantity = optional
-        register = Model
-        )
-
-    In some cases the gas flux does not depend on the main reservoir species
-    but on a derived quantity, e.g., [CO2aq]. Specify the ref_quantity
-    keyword to point to a different species/calculated species.
-
-    """
-
-    def __init__(self, **kwargs) -> None:
-        """initialize instance"""
-
-        from esbmtk import (
-            GasReservoir,
-            Reservoir,
-            Species,
-            Model,
-            Q_,
-            Flux,
-            # GasExchange,
-            Signal,
-        )
-
-        self.defaults: dict[str, list[str, tuple]] = {
-            "gas_reservoir": ["None", (str, GasReservoir)],
-            "liquid_reservoir": ["None", (str, Reservoir)],
-            "solubility": ["None", (str, float)],
-            "piston_velocity": ["None", (str, Q_)],
-            "area": [0.0, (float, Q_)],
-            "id": ["None", (str)],
-            "name": ["None", (str)],
-            "water_vapor_pressure": [0, (int, float, np.ndarray)],
-            "ref_species": ["None", (Reservoir)],
-            "species": ["None", (Species, str)],
-            "register": ["None", (str, Model)],
-            "signal": ["None", (str, Signal)],
-            "ctype": ["gasexchange", (str)],
-        }
-        # provide a list of absolutely required keywords
-        self.lrk: list[str] = [
-            "gas_reservoir",
-            "liquid_reservoir",
-            "solubility",
-            "piston_velocity",
-            "area",
-            "water_vapor_pressure",
-            "species",
-            "register",
-        ]
-        self.__initialize_keyword_variables__(kwargs)
-
-        self.__misc_inits__()
-
-        self.lof: list = []
-
-        if isinstance(self.area, Q_):
-            m = self.species.mo
-            self.area = self.area.to(m.a_unit).magnitude
-        if isinstance(self.piston_velocity, Q_):
-            self.piston_velocity = self.piston_velocity.to("meter/year").magnitude
-        self.scale = self.area * self.piston_velocity
-
-        # create connection and flux name
-        # self.id = "GEX"
-        # self.name = f"C_{self.gr.name}_to_{self.lr.register.name}"
-        # self.parent = self.register
-        # self.__register_name_new__()
-
-        # initalize a flux instance
-        self.fh = Flux(
-            species=self.species,  # Species handle
-            delta=0,  # delta value of flux
-            rate="0 mol/a",  # flux value
-            register=self,  # register with this connection
-            isotopes=self.isotopes,
-            id=self.id,
-        )
-        # # register flux with liquid reservoir
-        # self.lr.lof.append(self.fh)
-        # self.lr.lio[self.fh] = 1  # flux direction
-
-        # # register flux with gas reservoir
-        # self.gr.lof.append(self.fh)
-        # self.gr.lio[self.fh] = -1  # flux direction
-        # # register with connection
-        self.lof.append(self.fh)
-
-        self.kas = self.solubility * self.piston_velocity
-        self.kas_zeebe = self.kas * 1e-6
-        self.lr.loc.add(self)
-        # register connector with gas reservoir
-        self.gr.loc.add(self)
-        # register connector with model
-        self.mo.loc.add(self)
-        # update ode constants
-        # self.s_index = self.__update_ode_constants__(self.scale)
-        # self.vp_index = self.__update_ode_constants__(self.water_vapor_pressure)
-        # self.solubility_index = self.__update_ode_constants__(self.solubility)
-
-    def __misc_inits__(self) -> None:
-        """Bits and pices of house keeping"""
-
-        # make sure piston velocity is in the right units
-        self.piston_velocity = check_for_quantity(self.piston_velocity, "m/yr")
-        self.piston_velocity = self.piston_velocity.to("meter/year").magnitude
-
-        # ref_species can point to vr_data fields which are of type
-        # numpy array
-        if isinstance(self.ref_species, np.ndarray):
-            testv = self.ref_species[0]
-        else:
-            testv = self.ref_species
-
-        if testv == "None":
-            self.ref_species = self.species
-
-        self.lr = self.liquid_reservoir
-        self.gr = self.gas_reservoir
-
-        if self.species.name not in ["CO2", "DIC", "O2"]:
-            raise ConnectionError(f"{self.species.name} not implemented yet")
-
-        # decide if this connection needs isotope calculations
-        self.isotopes = bool(self.gas_reservoir.isotopes)
-        self.mo = self.species.mo
-        self.model = self.mo
-        self.ctype = "gas_exchange"
-        self.sink = self.liquid_reservoir
-        self.source = self.gas_reservoir
