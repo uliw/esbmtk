@@ -530,17 +530,7 @@ def gas_exchange_ode_with_isotopes(
     # get exchange of the heavy isotope
     f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_c_aq * 1e3)
     f_l = f - f_h  # the corresponding flux of the light isotope
-    # print(f"scale = {scale:2e}")
-    # print(f"beta = {beta:2e}")
-    # print(f"gas_c = {gas_c:2e}")
-    # print(f"gas_c_aq = {gas_c_aq:2e}")
-    # print(f"liquid_c = {liquid_c:2e}")
-    # print(f"liquid_c_l = {liquid_c_l:2e}")
-    # print(f"gas_c_h = {gas_c_h:2e}")
-    # print(f"f = {f:2e}")
-    # print(f"f_l = {f_l:2e}")
-    # breakpoint()
-
+   
     return -f, -f_l
 
 

@@ -1210,10 +1210,10 @@ def get_string_between_brackets(s: str) -> str:
     return s[0]
 
 
-def check_for_quantity(kw) -> Q_:
+def check_for_quantity(kw, unit) -> Q_:
     """check if keyword is quantity or string an convert as necessary
 
-    :param kw: string or quantity
+    :param kw: string, quantity, float
 
     """
 
@@ -1221,8 +1221,10 @@ def check_for_quantity(kw) -> Q_:
 
     if isinstance(kw, str):
         kw = Q_(kw)
+    elif isinstance(kw, float | int):
+        kw = Q_(f"{kw} {unit}")
     elif not isinstance(kw, Q_):
-        raise ValueError("kw must be string or Quantity")
+        raise ValueError("kw must be string, number or Quantity")
 
     return kw
 

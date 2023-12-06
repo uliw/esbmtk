@@ -243,12 +243,13 @@ class Connect(esbmtkBase):
             "bypass": ["None", (str, Reservoir, GasReservoir)],
             "isotopes": [False, (bool)],
             "solubility": ["None", (str, int, float)],
-            "area": ["None", (str, int, float)],
+            "area": ["None", (str, int, float, Q_)],
             "ex": [1, (int, float)],
             "pco2_0": ["280 ppm", (str, Q_)],
             "piston_velocity": ["None", (str, int, float)],
             "function_ref": ["None", (str, callable)],
-            # "save_flux_data": ["None", (bool, str)],
+            "ref_species": ["None", (str, Reservoir)],
+            "water_vapor_pressure": ["None", (str, float)],
         }
 
         # provide a list of absolutely required keywords
@@ -435,12 +436,9 @@ class Connect(esbmtkBase):
         backward fluxes the species depends on the r2
 
         """
-
         from esbmtk import Source
 
-        # print(f"r1 = {r1.n}, r2 = {r2.n}")
         self.r = r1 if isinstance(self.r1, Source) else r2
-        # test if species was explicitly given
         self.sp = self.kwargs["species"] if "species" in self.kwargs else self.r.sp
 
     def __create_flux__(self) -> None:
@@ -452,8 +450,6 @@ class Connect(esbmtkBase):
         # test if default arguments present
         d = 0 if self.delta == "None" else self.delta
         r = f"0 {self.sp.mo.f_unit}" if self.rate == "None" else self.rate
-        # derive flux unit from species obbject
-        # funit = self.sp.mu + "/" + str(self.sp.mo.bu)  # xxx
 
         self.fh = Flux(
             species=self.sp,  # Species handle
@@ -541,6 +537,8 @@ class Connect(esbmtkBase):
             self.__scaleflux__()
         elif self.ctype == "weathering":
             self.__weathering__()
+        elif self.ctype == "gasexchange":
+            self.__gasexchange__()
         elif self.ctype == "scale_with_concentration":
             self.__rateconstant__()
         elif self.ctype != "manual":
@@ -577,6 +575,12 @@ class Connect(esbmtkBase):
             self.ex,  # exponent
             self.rate,  # initial flux
         )
+        register_return_values(ec, self.sink)
+
+    def __gasexchange__(self):
+        from esbmtk import init_gas_exchange, register_return_values
+
+        ec = init_gas_exchange(self)
         register_return_values(ec, self.sink)
 
     def __rateconstant__(self) -> None:
@@ -935,7 +939,7 @@ class AirSeaExchange(esbmtkBase):
             "species": ["None", (Species, str)],
             "register": ["None", (str, Model)],
             "signal": ["None", (str, Signal)],
-            "ctype": ["gas_exchange", (str)],
+            "ctype": ["gasexchange", (str)],
         }
         # provide a list of absolutely required keywords
         self.lrk: list[str] = [
@@ -962,10 +966,10 @@ class AirSeaExchange(esbmtkBase):
         self.scale = self.area * self.piston_velocity
 
         # create connection and flux name
-        self.id = "GEX"
-        self.name = f"C_{self.gr.name}_to_{self.lr.register.name}"
-        self.parent = self.register
-        self.__register_name_new__()
+        # self.id = "GEX"
+        # self.name = f"C_{self.gr.name}_to_{self.lr.register.name}"
+        # self.parent = self.register
+        # self.__register_name_new__()
 
         # initalize a flux instance
         self.fh = Flux(
@@ -976,14 +980,14 @@ class AirSeaExchange(esbmtkBase):
             isotopes=self.isotopes,
             id=self.id,
         )
-        # register flux with liquid reservoir
-        self.lr.lof.append(self.fh)
-        self.lr.lio[self.fh] = 1  # flux direction
+        # # register flux with liquid reservoir
+        # self.lr.lof.append(self.fh)
+        # self.lr.lio[self.fh] = 1  # flux direction
 
-        # register flux with gas reservoir
-        self.gr.lof.append(self.fh)
-        self.gr.lio[self.fh] = -1  # flux direction
-        # register with connection
+        # # register flux with gas reservoir
+        # self.gr.lof.append(self.fh)
+        # self.gr.lio[self.fh] = -1  # flux direction
+        # # register with connection
         self.lof.append(self.fh)
 
         self.kas = self.solubility * self.piston_velocity
@@ -994,15 +998,15 @@ class AirSeaExchange(esbmtkBase):
         # register connector with model
         self.mo.loc.add(self)
         # update ode constants
-        self.s_index = self.__update_ode_constants__(self.scale)
-        self.vp_index = self.__update_ode_constants__(self.water_vapor_pressure)
-        self.solubility_index = self.__update_ode_constants__(self.solubility)
+        # self.s_index = self.__update_ode_constants__(self.scale)
+        # self.vp_index = self.__update_ode_constants__(self.water_vapor_pressure)
+        # self.solubility_index = self.__update_ode_constants__(self.solubility)
 
     def __misc_inits__(self) -> None:
         """Bits and pices of house keeping"""
 
         # make sure piston velocity is in the right units
-        self.piston_velocity = check_for_quantity(self.piston_velocity)
+        self.piston_velocity = check_for_quantity(self.piston_velocity, "m/yr")
         self.piston_velocity = self.piston_velocity.to("meter/year").magnitude
 
         # ref_species can point to vr_data fields which are of type

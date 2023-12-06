@@ -1883,13 +1883,11 @@ class Flux(esbmtkBase):
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["species", "rate", "register"]
-
         self.__initialize_keyword_variables__(kwargs)
-
         self.parent = self.register
         # if save_flux_data is unsepcified, use model default
-        if self.save_flux_data == "None":
-            self.save_flux_data = self.species.mo.save_flux_data
+        # if self.save_flux_data == "None":
+        #     self.save_flux_data = self.species.mo.save_flux_data
 
         # legacy names
         self.n: str = self.name  # name of flux
@@ -1961,7 +1959,6 @@ class Flux(esbmtkBase):
                 self.name = f"{self.id}_F"
 
         self.__register_name_new__()
-        # print(f"f name set to {self.name}. fn =  {self.full_name}\n")
         self.mo.lof.append(self)  # register with model flux list
 
         # decide which setitem functions to use
