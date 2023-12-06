@@ -67,7 +67,7 @@ Connection(
     rate=F_w,  # rate of flux
     id="river",  # connection id
     ctype="regular",
-    # signal=M.CR,
+    signal=M.CR,
 )
 
 Connection(  # thermohaline downwelling
