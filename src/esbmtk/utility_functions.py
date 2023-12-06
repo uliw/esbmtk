@@ -176,8 +176,6 @@ def register_new_flux(rg, dict_key, dict_value) -> list:
         sp = getattr(rg.mo, spn)
         reg = getattr(rg, sp.name)
     elif isinstance(rg, Reservoir):
-        print(f"dict_key = {dict_key}")
-        print(f"dict_value = {dict_value}")
         rg.mo.flux_summary(filter_by="wca")
         raise NotImplementedError
     else:
@@ -197,18 +195,13 @@ def register_new_flux(rg, dict_key, dict_value) -> list:
         species=sp,
         rate=0,
         register=reg,
+        ftype="computed",
+        isotopes=reg.isotopes,
     )
+
     ro.append(f)
     reg.lof.append(f)  # register flux
-    reg.ctype = "ignore"
-    if reg.isotopes:
-        f = Flux(
-            name=f"{fn}_l",
-            species=sp,
-            rate=0,
-            register=reg,
-        )
-        ro.append(f)
+    reg.ctype = "ignore"  # FIXME why is this here?
 
     return ro
 
@@ -229,7 +222,7 @@ def register_new_reservoir(r, sp, v):
     return [rt]
 
 
-def register_return_values(ec: ExternalFunction, rg) -> None:
+def register_return_values(ef: ExternalFunction, rg) -> None:
     """Register the return values of an external function instance
 
      Parameters
@@ -258,40 +251,51 @@ def register_return_values(ec: ExternalFunction, rg) -> None:
     objects, rather than overloading the source attribute of the
     GasReservoir class.
     """
-    from .esbmtk import Reservoir
+    from esbmtk import Reservoir, ReservoirGroup, Flux, Connection, Connect
 
     M = rg.mo
     # go through each entry in ec.return_values
-    for line in ec.return_values:
+    for line in ef.return_values:
         if isinstance(line, dict):
             dict_key = next(iter(line))  # get first key
             dict_value = line[dict_key]
             if dict_key[:2] == "F_":  # is flux
-                if hasattr(M, dict_key[2:].split(".")[1]):
-                    o = [(getattr(M, dict_key[2:].split(".")[1]))]
+                key_str = dict_key[2:].split(".")[1]
+                if hasattr(M, key_str):
+                    o = getattr(M, key_str)
+                    if isinstance(o, Flux):
+                        o: list = [o]
+                    elif isinstance(o, Connection | Connect):
+                        o: list = [getattr(o, "_F")]  # get flux handle
+                    elif isinstance(o, Reservoir | ReservoirGroup):
+                        o: list = register_new_flux(rg, dict_key[2:], dict_value)
+                    else:
+                        raise ValueError(f"No recipie for {type(o)}")
                 else:
-                    o: list = register_new_flux(rg, dict_key[2:], dict_value)
+                    raise ValueError(f"{key_str} is not part of the Model definition")
 
             elif dict_key[:2] == "R_":  # is reservoir
                 if dict_key[2:] in M.lor:
-                    o = list(getattr(M, dict_key))
+                    o: list = [getattr(M, dict_key)]
                 else:
                     r, sp = get_reservoir_reference(dict_key, M)
                     o: list = register_new_reservoir(r, sp, dict_value)
 
             elif dict_key[:2] == "C_":  # is connection
                 raise NotImplementedError
-
             else:
                 raise ValueError(f"{dict_key[0:2]} is not defined")
 
         elif isinstance(line, Reservoir):
             dict_value.ef_results = True
             o = [dict_value]
+        else:
+            raise ValueError("This should not happen")
 
-        ec.lro.append(o[0])  # add to list of returned Objects
-        if len(o) > 1:
-            ec.lro.append(o[1])
+        # if ec.name == "ec_weathering":
+        # if ef.fname == "carbonate_system_2_ode":
+        #     breakpoint()
+        ef.lro.extend(o)  # add to list of returned Objects
 
 
 def summarize_results(M: Model) -> dict():

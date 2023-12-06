@@ -35,7 +35,7 @@ from esbmtk.utility_functions import (
 
 
 # @njit(fastmath=True)
-def weathering(pco2t, p) -> float:
+def weathering(pco2t, p) -> float | tuple:
     """Calculates weathering as a function pCO2 concentration
 
     :param pco2: float current pco2
@@ -43,19 +43,22 @@ def weathering(pco2t, p) -> float:
     :area_fraction: float area/total area
     :param ex: exponent
     :f0: flux at pco2_0
-    :returns:  F_w
+    :returns:  F_w or F_w, F_w_i
 
     F_w = area_fraction * f0 * (pco2/pco2_0)**ex
     """
-
     pco2_0, area_fraction, ex, f0, isotopes = p
-
     if isotopes:
         pco2, pco2_0i = pco2t
+        F_w = area_fraction * f0 * (pco2 / pco2_0) ** ex
+        F_w_i = F_w * pco2_0i / pco2
+        rv = F_w, F_w_i
     else:
         pco2 = pco2t
+        F_w = area_fraction * f0 * (pco2 / pco2_0) ** ex
+        rv = F_w
 
-    return area_fraction * f0 * (pco2 / pco2_0) ** ex
+    return rv
 
 
 def init_weathering(c, pco2, pco2_0, area_fraction, ex, f0):
@@ -72,6 +75,7 @@ def init_weathering(c, pco2, pco2_0, area_fraction, ex, f0):
     from esbmtk import ExternalCode
 
     p = (pco2_0, area_fraction, ex, f0, c.source.isotopes)
+    c.fh.ftype = "computed"
     ec = ExternalCode(
         name="ec_weathering",
         fname="weathering",

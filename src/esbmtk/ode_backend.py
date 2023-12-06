@@ -1,13 +1,17 @@
 from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
+import typing as tp
 
-# from numba.typed import List
-from esbmtk import Flux, Reservoir, Model, Connection, Connect
-from esbmtk import AirSeaExchange
+# from esbmtk import Flux, Reservoir, Model, Connection, Connect
+# from esbmtk import AirSeaExchange, ExternalFunction
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
+
+if tp.TYPE_CHECKING:
+    from esbmtk import Flux, Reservoir, Model, Connection, Connect
+    from esbmtk import AirSeaExchange, ExternalFunction
 
 
 def get_initial_conditions(
@@ -206,7 +210,7 @@ def write_equations_2(
         computed based on other reservoirs
     :param ipl: list of reservoir that do not change in concentration
     """
-    # from esbmtk import Model, ReservoirGroup
+    from esbmtk import Reservoir, AirSeaExchange
     import pathlib as pl
 
     # get pathlib object
@@ -269,26 +273,24 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         sep = "# ---------------- write all flux equations ------------------- #"
         eqs.write(f"\n{sep}\n")
         for flux in M.lof:  # loop over fluxes
-            if flux.register.ctype == "ignore":
+            if flux.register.ctype == "ignore" or flux.ftype == "computed":
                 continue  # skip
             # fluxes belong to at least 2 reservoirs, so we need to avoid duplication
             # we cannot use a set, since we need to preserve order
             if flux not in flist:
                 flist.append(flux)  # add to list of fluxes already computed
-
                 if isinstance(flux.parent, Reservoir):
                     continue  # skip computed fluxes
 
                 ex, exl = get_flux(flux, M, R, icl)  # get flux expressions
                 fn = flux.full_name.replace(".", "_")
-
                 # check for types that return isotope data as well
+                # this should move to computed at some point
                 if isinstance(flux.parent, AirSeaExchange):
                     if flux.parent.isotopes:  # add F_l if necessary
                         fn = f"{fn}, {fn}_l"
                     eqs.write(f"{ind2}{fn} = {ex}\n")
-
-                else:  # all others types
+                else:  # all others types that have separate expressions/isotope
                     eqs.write(f"{ind2}{fn} = {ex}\n")
                     if flux.parent.isotopes:  # add line for isotopes
                         eqs.write(f"{ind2}{fn}_l = {exl}\n")
@@ -373,7 +375,10 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
         ex, exl = get_scale_with_flux_eq(flux, c, cfn, icl, ind2, ind3)
 
     elif c.ctype == "weathering":
-        ex, exl = get_weathering_eq(flux, c, cfn, icl, ind2, ind3)
+        print("found weathering")
+        breakpoint()
+        #     ex, exl = get_weathering_eq(flux, c, cfn, icl, ind2, ind3)
+        # ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3)
 
     elif c.ctype == "gas_exchange":  # Gasexchange
         if c.isotopes:
@@ -522,7 +527,7 @@ def parse_function_params(params, ind) -> str:
 # ------------------------ define processes ------------------------- #
 def write_ef(
     eqs,
-    r: Reservoir,
+    ef: Reservoir | ExternalFunction,
     icl: dict,
     rel: str,
     ind2: str,
@@ -532,7 +537,7 @@ def write_ef(
     """Write external function call code
 
     :param eqs: equation file handle
-    :param r: reservoir_handle
+    :param ef: external_function handle
     :param icl: dict of reservoirs that have actual fluxes
     :param rel: string with reservoir names returned by setup_ode
     :param ind2: indent 2 times
@@ -541,28 +546,39 @@ def write_ef(
 
     :returns: rel: modied string of reservoir names
     """
+    from esbmtk import Flux
 
-    # get list of return values. This is a bit of hack, since we imply
-    # anything that its not a flux, is a reservoir with no other inputs
+    """ get list of return values. This is a bit of hack, since we imply
+    anything that its not a flux, is a reservoir with no other inputs.
+    Although, legacy fluxes do not come with a separate flux for isotopes,
+    whereas newly created fluxes do.
+    """
     rv = ind2
-    for o in r.lro:
+    for i, o in enumerate(ef.lro):
         if isinstance(o, Flux):
-            rv += f"{o.full_name.replace('.', '_')}, "
+            v = f"{o.full_name.replace('.', '_')}, "
         else:
-            rv += f"dCdt_{o.full_name.replace('.', '_')}, "
+            v = f"dCdt_{o.full_name.replace('.', '_')}, "
 
-    rv = rv[:-2]
+        rv += v
+        if ef.lro[i].isotopes:
+            rv += f"{v[:-2]}_l, "
 
+    rv = rv[:-2]  # strip the last comma
     a = ""
-    # this can probably be simplified similar to the old parse_return_values()
-    for d in r.function_input_data:
-        a += parse_esbmtk_input_data_types(d, r, ind3, icl)
 
-    if r.function_params == "None":
-        eqs.write(f"{rv} = {r.fname}(\n{a}{ind2})\n\n")
+    # if ef.fname == "weathering":
+    # if ef.fname == "carbonate_system_2_ode":
+    #     breakpoint()
+    # this can probably be simplified similar to the old parse_return_values()
+    for d in ef.function_input_data:
+        a += parse_esbmtk_input_data_types(d, ef, ind3, icl)
+
+    if ef.function_params == "None":
+        eqs.write(f"{rv} = {ef.fname}(\n{a}{ind2})\n\n")
     else:
-        s = f"gpt[{r.param_start}]"
-        eqs.write(f"{rv} = {r.fname}(\n{a}{ind3}{s},\n{ind2})\n\n")
+        s = f"gpt[{ef.param_start}]"
+        eqs.write(f"{rv} = {ef.fname}(\n{a}{ind3}{s},\n{ind2})\n\n")
 
     rel += f"{ind3}{rv},\n"
 
