@@ -28,7 +28,7 @@ from esbmtk.utility_functions import (
 )
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Connection, Connect
+    from esbmtk import Connection, Connect, Q_
 
 # declare numpy types
 # NDArrayFloat = npt.NDArray[np.float64]
@@ -53,15 +53,30 @@ def weathering(pco2t, p) -> float | tuple:
         F_w = area_fraction * f0 * (pco2 / pco2_0) ** ex
         F_w_i = F_w * pco2_0i / pco2
         rv = F_w, F_w_i
+        # print(f"pco2/pco2_0 = {pco2/pco2_0:.2e}")
+        # print(f"pco2 = {pco2:.2e}")
+        # print(f"pco2_0 = {pco2_0:.2e}")
+        # print(f"Fw = {F_w:.2e}, FW_i = {F_w_i:.2e}")
+
     else:
         pco2 = pco2t
         F_w = area_fraction * f0 * (pco2 / pco2_0) ** ex
         rv = F_w
+        # print(f"pco2 = {pco2:.2e}")
+        # print(f"pco2_0 = {pco2_0:.2e}")
+        # print(f"rv = {rv:.2e}\n")
 
     return rv
 
 
-def init_weathering(c, pco2, pco2_0, area_fraction, ex, f0):
+def init_weathering(
+    c: Connection | Connect,
+    pco2: float,
+    pco2_0: float | str | Q_,
+    area_fraction: float,
+    ex: float,
+    f0: float | str | Q_,
+):
     """Creates a new external code instance
 
     :param c: Connection
@@ -72,8 +87,11 @@ def init_weathering(c, pco2, pco2_0, area_fraction, ex, f0):
     :f0: flux at pco2_0
 
     """
-    from esbmtk import ExternalCode
+    from esbmtk import ExternalCode, check_for_quantity
 
+    f0 = check_for_quantity(f0, "mol/year").magnitude
+    pco2_0 = check_for_quantity(pco2_0, "ppm").magnitude
+    
     p = (pco2_0, area_fraction, ex, f0, c.source.isotopes)
     c.fh.ftype = "computed"
     ec = ExternalCode(
@@ -183,8 +201,21 @@ def gas_exchange(
     if isotopes:
         gas_c, gas_c_l = gas_c
         liquid_c, liquid_c_l = liquid_c
+    #  print(f"scale = {scale:.2e}")
+    #     print(f"p_H2O = {p_H2O:.2e}")
+    #     print(f"solubility = {solubility:.2e}")
+    #     print(f"gas_c = {gas_c:.2e}")
+    #     print(f"gas_c_l = {gas_c_l:.2e}")
+    #     print(f"liquid_c = {liquid_c:.2e}")
+    #     print(f"liquid_c_l = {liquid_c_l:.2e}")
+    # else:
+    #     print(f"scale = {scale:.2e}")
+    #     print(f"p_H2O = {p_H2O:.2e}")
+    #     print(f"solubility = {solubility:.2e}")
+    #     print(f"gas_c = {gas_c:.2e}")
+    #     print(f"liquid_c = {liquid_c:.2e}")
 
-    # Solibility with correction for pH2O
+    # Solubility with correction for pH2O
     beta = solubility * (1 - p_H2O)
     # f as afunction of solubility difference
     f = scale * (beta * gas_c - gas_aq * 1e3)
@@ -198,5 +229,8 @@ def gas_exchange(
         f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_aq * 1e3)
         f_l = f - f_h  # the corresponding flux of the light isotope
         rv = -f, -f_l
+        # print(f"rv = {rv[0]:.2e}, {rv[1]:.2e}\n")
+    # else:
+    #     print(f"rv = {rv:.2e}\n")
 
     return rv
