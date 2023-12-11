@@ -344,7 +344,6 @@ class SourceSinkGroup(esbmtkBase):
 
         # provide a list of absolutely required keywords
         self.lrk: list[str] = ["name", "species", "register"]
-
         self.__initialize_keyword_variables__(kwargs)
 
         # legacy variables
@@ -369,12 +368,15 @@ class SourceSinkGroup(esbmtkBase):
                 raise SourceSinkGroupError(f"{s.n} needs to be a valid species name")
 
             delta = self.delta[s] if s in self.delta else "None"
+            if s in self.isotopes:
+                isotopes  = self.isotopes[s]
             if type(self).__name__ == "SourceGroup":
                 a = Source(
                     name=f"{s.name}",
                     register=self,
                     species=s,
                     delta=delta,
+                    isotopes=isotopes,
                 )
 
             elif type(self).__name__ == "SinkGroup":
@@ -383,6 +385,7 @@ class SourceSinkGroup(esbmtkBase):
                     register=self,
                     species=s,
                     delta=delta,
+                    isotopes=isotopes,
                 )
             else:
                 raise SourceSinkGroupError(
@@ -404,6 +407,8 @@ class SinkGroup(SourceSinkGroup):
                 )
 
     """
+
+    # f __init__(self,super):
 
 
 class SourceGroup(SourceSinkGroup):
@@ -1687,7 +1692,6 @@ class ExternalCode(Reservoir_no_set):
             setattr(self, a, self.vr_data[i])
 
     def update_parameter_count(self):
-        
         if len(self.function_params) > 0:
             self.param_start = self.model.vpc
             self.model.vpc = self.param_start + 1
@@ -1696,7 +1700,6 @@ class ExternalCode(Reservoir_no_set):
             self.model.gpt = (*self.model.gpt, self.function_params)
         else:
             self.has_p = False
-
 
     def append(self, **kwargs) -> None:
         """This method allows to update GenericFunction parameters after the

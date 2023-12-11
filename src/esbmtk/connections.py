@@ -45,6 +45,12 @@ class ConnectionError(Exception):
         super().__init__(message)
 
 
+class ScaleFluxError(Exception):
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
 class KeywordError(Exception):
     def __init__(self, message):
         message = f"\n\n{message}\n"
@@ -258,11 +264,7 @@ class Connect(esbmtkBase):
         self.lop: list = []
         self.lof: list = []
 
-        # validate and initialize instance variables
-        # try:
         self.__initialize_keyword_variables__(kwargs)
-        # except ConnectionError:
-        #    print("typo")
 
         if self.register == "None":
             self.register = self.source.register
@@ -303,8 +305,18 @@ class Connect(esbmtkBase):
             self.ref_reservoirs = kwargs["source"]
 
         # decide if this connection needs isotope calculations
-        if self.source.isotopes or self.sink.isotopes:
+        if self.ctype == "scale_with_flux":
+            pass
+        elif self.source.isotopes and self.sink.isotopes:
             self.isotopes = True
+
+        if self.ctype == "scale_with_flux" and "wsi" in self.ref_flux.full_name:
+            print(f"self.ref_flux.full_name: = {self.ref_flux.full_name}")
+
+            print(
+                f"source = {self.source.full_name}, isotopes = {self.source.isotopes}"
+            )
+            print(f"sink = {self.sink.full_name}, isotopes = {self.sink.isotopes}")
 
         self.get_species(self.r1, self.r2)  #
         self.mo: Model = self.sp.mo  # the current model handle
@@ -312,16 +324,13 @@ class Connect(esbmtkBase):
         # get a list of all reservoirs registered for this species
         self.lor: list[Reservoir] = self.mo.lor
 
-        # make sure scale is a number in model units
-
         if self.scale == "None":
             self.scale = 1.0
 
         if isinstance(self.scale, str):
             self.scale = Q_(self.scale)
 
-        if isinstance(self.scale, Q_):
-            # test what type of Quantity we have
+        if isinstance(self.scale, Q_):  # test what type of Quantity we have
             if self.scale.check(["volume]/[time"]):  # flux
                 self.scale = self.scale.to(self.mo.r_unit)
             elif self.scale.check(["mass] / [time"]):  # flux
@@ -332,9 +341,6 @@ class Connect(esbmtkBase):
                 ConnectionError(
                     f"No conversion to model units for {self.scale} specified"
                 )
-        # if sink and source a regular, the name will be simply C_S_2_S
-        # if we deal with ReservoirGroups we need to reflect this in the
-        # connection name
 
         self.__set_name__()  # get name of connection
         self.__register_name_new__()  # register connection in namespace
@@ -451,16 +457,20 @@ class Connect(esbmtkBase):
         d = 0 if self.delta == "None" else self.delta
         r = f"0 {self.sp.mo.f_unit}" if self.rate == "None" else self.rate
 
+        if self.sink.isotopes and self.source.isotopes:
+            isotopes = True
+        else:
+            isotopes = False
+
         self.fh = Flux(
             species=self.sp,  # Species handle
             delta=d,  # delta value of flux
             rate=r,  # flux value
             plot=self.plot,  # display this flux?
             register=self,  # is this part of a group?
-            isotopes=self.isotopes,
+            isotopes=isotopes,
             id=self.id,
         )
-
         # register flux with its reservoirs
         if isinstance(self.r1, Source):
             # add the flux name direction/pair
@@ -486,15 +496,11 @@ class Connect(esbmtkBase):
         elif isinstance(self.r2, Source):
             raise ConnectionError("The Source must be specified as first argument")
 
-        else:  # this is a regular connection
-            # add the flux name direction/pair
+        else:  # add the flux name direction/pair
             self.r1.lio[self.fh] = self.outflux
-            # add the flux name direction/pair
             self.r2.lio[self.fh] = self.influx
-            # add flux to the upstream reservoir
-            self.r1.lof.append(self.fh)
-            # add flux to the downstream reservoir
-            self.r2.lof.append(self.fh)
+            self.r1.lof.append(self.fh)  # add flux to the upstream reservoir
+            self.r2.lof.append(self.fh)  # add flux to the downstream reservoir
             self.__register_species__(self.r1, self.r1.sp)
             self.__register_species__(self.r2, self.r2.sp)
 
@@ -502,10 +508,9 @@ class Connect(esbmtkBase):
 
     def __register_species__(self, r, sp) -> None:
         """Add flux to the correct element dictionary"""
-        # test if element key is present in reservoir
-        if sp.eh in r.doe:
-            # add flux handle to dictionary list
-            r.doe[sp.eh].append(self.fh)
+
+        if sp.eh in r.doe:  # test if element key is present in reservoir
+            r.doe[sp.eh].append(self.fh)  # add flux handle to dictionary list
         else:  # add key and first list value
             r.doe[sp.eh] = [self.fh]
 
@@ -558,6 +563,9 @@ class Connect(esbmtkBase):
 
         if not isinstance(self.ref_flux, Flux):
             raise ConnectionError("Scale reference must be a flux")
+
+        if self.isotopes == "None":
+            raise ScaleFluxError(f"{self.name}: You need to set the isotope keyword")
 
         if self.k_value != "None":
             self.scale = self.k_value
@@ -879,5 +887,3 @@ class ConnectionGroup(esbmtkBase):
             print(f"{c.name}: {self.name}.{c.name}.info()")
 
         print("")
-
-

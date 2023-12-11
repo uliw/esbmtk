@@ -313,13 +313,11 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         sep = "# ---------------- write regular reservoir equations ------------ #"
         eqs.write(f"\n{sep}\n")
 
-        # rel = write_reservoir_equations(eqs, M, rel, ind2, ind3)
         rel = write_reservoir_equations(eqs, M, rel, ind2, ind3)
 
         sep = "# ---------------- write isotope reservoir equations ------------ #"
         eqs.write(f"\n{sep}\n")
 
-        # rel = write_reservoir_equations(eqs, M, rel, ind2, ind3)
         rel = write_reservoir_equations_with_isotopes(eqs, M, rel, ind2, ind3)
 
         sep = "# ---------------- bits and pieces --------------------------- #"
@@ -609,7 +607,7 @@ def get_regular_flux_eq(
 
 def check_isotope_effects(
     f_m: str,
-    c: Connection,
+    c: Connection | Connect,
     icl: dict,
     ind3: str,
     ind2: str,
@@ -714,7 +712,10 @@ def get_scale_with_flux_eq(
     We will use the mass of the flux we or scaling, but that we will set the
     delta|alpha according to isotope ratio of the reference flux
     """
-    exl = check_isotope_effects(ex, c, icl, ind3, ind2)
+    if c.source.isotopes and c.sink.isotopes:
+        exl = check_isotope_effects(ex, c, icl, ind3, ind2)
+
+    else:
+        exl = ""
     ex, exl = check_signal_2(ex, exl, c)
     return ex, exl
-

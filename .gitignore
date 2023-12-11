@@ -20,6 +20,7 @@ package.sh
 .directory
 notes.org
 TAGS
+.pylintrc
 
 # Project files
 .ropeproject

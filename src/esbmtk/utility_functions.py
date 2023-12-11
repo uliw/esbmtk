@@ -169,7 +169,7 @@ def register_new_flux(rg, dict_key, dict_value) -> list:
 
     """
     from .esbmtk import Reservoir, Flux, Source
-    from .extended_classes import GasReservoir, ReservoirGroup
+    from .extended_classes import ReservoirGroup
 
     if isinstance(rg, ReservoirGroup):
         spn = dict_key.split(".")[-1]
@@ -292,9 +292,6 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
         else:
             raise ValueError("This should not happen")
 
-        # if ec.name == "ec_weathering":
-        # if ef.fname == "carbonate_system_2_ode":
-        #     breakpoint()
         ef.lro.extend(o)  # add to list of returned Objects
 
 
@@ -574,7 +571,7 @@ def get_typed_list(data: list) -> list:
     return tl
 
 
-def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
+def create_reservoirs(box_dict: dict, ic_dict: dict, M: any) -> dict:
     """boxes are defined by area and depth interval here we use an ordered
     dictionary to define the box geometries. The next column is temperature
     in deg C, followed by pressure in bar
@@ -584,7 +581,7 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
 
     e.g.::
 
-     bn: dict = {  # name: [[geometry], T, P]
+     box_dict: dict = {  # name: [[geometry], T, P]
                  "sb": {"g": [0, 200, 0.9], "T": 20, "P": 5},
                  "ib": {"g": [200, 1200, 1], "T": 10, "P": 100},
                 }
@@ -596,7 +593,7 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
     in each box. If you need box specific initial conditions
     use the output of build_concentration_dicts as starting point, e.g.,::
 
-      ic: dict = { # species: concentration, Isotopes, delta, f_only
+      ic_dict: dict = { # species: concentration, Isotopes, delta, f_only
                    PO4: [Q_("2.1 * umol/liter"), False, 0, False],
                    DIC: [Q_("2.1 mmol/liter"), False, 0, False],
                    ALK: [Q_("2.43 mmol/liter"), False, 0, False],
@@ -609,42 +606,57 @@ def create_reservoirs(bn: dict, ic: dict, M: any) -> dict:
     from esbmtk import ReservoirGroup, build_concentration_dicts
     from esbmtk import SourceGroup, SinkGroup
 
-    # parse for sources and sinks, create these and remove them from the list
-
     # loop over reservoir names
-    for k, v in bn.items():
+    for box_name, value in box_dict.items():
         # test key format
-        if M.name in k:
-            k = k.split(".")[1]
+        if M.name in box_name:
+            box_name = box_name.split(".")[1]
 
-        if "ty" in v:  # type is given
-            if v["ty"] == "Source":
-                if "delta" in v:
-                    SourceGroup(name=k, species=v["sp"], delta=v["delta"], register=M)
+        keyword_dict: dict = build_concentration_dicts(ic_dict, box_name)
+
+        if "ty" in value:  # type is given
+            if value["ty"] == "Source":
+                if "delta" in value:
+                    SourceGroup(
+                        name=box_name,
+                        species=value["sp"],
+                        delta=value["delta"],
+                        isotopes=keyword_dict[box_name][1],
+                        register=M,
+                    )
                 else:
-                    SourceGroup(name=k, species=v["sp"], register=M)
-            elif v["ty"] == "Sink":
-                SinkGroup(name=k, species=v["sp"], register=M)
+                    SourceGroup(
+                        name=box_name,
+                        species=value["sp"],
+                        register=M,
+                        isotopes=keyword_dict[box_name][1],
+                    )
+            elif value["ty"] == "Sink":
+                SinkGroup(
+                    name=box_name,
+                    species=value["sp"],
+                    register=M,
+                    isotopes=keyword_dict[box_name][1],
+                )
             else:
                 raise ValueError("'ty' must be either Source or Sink")
 
         else:  # create reservoirs
-            icd: dict = build_concentration_dicts(ic, k)
             rg = ReservoirGroup(
-                name=k,
-                geometry=v["g"],
-                concentration=icd[k][0],
-                isotopes=icd[k][1],
-                delta=icd[k][2],
+                name=box_name,
+                geometry=value["g"],
+                concentration=keyword_dict[box_name][0],
+                isotopes=keyword_dict[box_name][1],
+                delta=keyword_dict[box_name][2],
                 seawater_parameters={
-                    "temperature": v["T"],
-                    "pressure": v["P"],
-                    "salinity": v["S"],
+                    "temperature": value["T"],
+                    "pressure": value["P"],
+                    "salinity": value["S"],
                 },
                 register=M,
             )
 
-    return icd
+    return keyword_dict
 
 
 def build_concentration_dicts(cd: dict, bg: dict) -> dict:
@@ -987,11 +999,9 @@ def create_connection(n: str, p: dict, M: Model) -> None:
     bypass = make_dict(los, bypass)
     signal = make_dict(los, signal)
 
-    # name of connectiongroup
     name = f"{M.name}.CG_{source.name}_to_{sink.name}"
     if f"{name}" in M.lmo:  # Test if CG exists
-        # retriece CG object
-        cg = getattr(M, name.split(".")[1])
+        cg = getattr(M, name.split(".")[1])  # retriece CG object
         cg.add_connections(
             source=source,
             sink=sink,

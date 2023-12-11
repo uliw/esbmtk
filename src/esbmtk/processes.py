@@ -92,13 +92,13 @@ def init_weathering(
     f0 = check_for_quantity(f0, "mol/year").magnitude
     pco2_0 = check_for_quantity(pco2_0, "ppm").magnitude
     
-    p = (pco2_0, area_fraction, ex, f0, c.source.isotopes)
+    p = (pco2_0, area_fraction, ex, f0, c.sink.isotopes)
     c.fh.ftype = "computed"
     ec = ExternalCode(
         name=f"ec_weathering_{c.id}",
         fname="weathering",
         ftype="std",
-        species=c.source.species,
+        species=c.sink.species,
         function_input_data=[pco2],
         function_params=p,
         register=c.model,

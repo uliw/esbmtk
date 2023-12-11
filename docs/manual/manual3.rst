@@ -107,3 +107,15 @@ Apart from density, this class will provide access to a host of instance paramet
 
 1.4 Gas Exchange
 ~~~~~~~~~~~~~~~~
+
+1.5 Odds and Ends
+~~~~~~~~~~~~~~~~~
+
+1.5.1 Weathering
+^^^^^^^^^^^^^^^^
+
+1.5.2 Adding your own functions to ESBMTK
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1.5.3 Calling model specific functions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
