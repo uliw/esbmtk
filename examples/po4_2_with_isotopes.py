@@ -30,11 +30,13 @@ SourceGroup(
     register=M,  # i.e., the instance will be available as M.weathering
     name="weathering",
     species=[M.DIC, M.PO4],
+    isotopes={M.DIC: True, M.PO4: False},
 )
 SinkGroup(
     register=M,  #
     name="burial",
-    species=[M.PO4, M.DIC],
+    species=[M.DIC, M.PO4],
+    isotopes={M.DIC: True, M.PO4: False},
 )
 
 ReservoirGroup(

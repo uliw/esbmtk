@@ -21,6 +21,8 @@ package.sh
 notes.org
 TAGS
 .pylintrc
+.gitignore
+\#*
 
 # Project files
 .ropeproject
