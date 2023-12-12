@@ -305,18 +305,10 @@ class Connect(esbmtkBase):
             self.ref_reservoirs = kwargs["source"]
 
         # decide if this connection needs isotope calculations
-        if self.ctype == "scale_with_flux":
-            pass
-        elif self.source.isotopes and self.sink.isotopes:
+        # if self.ctype == "scale_with_flux":
+        #     pass
+        if self.source.isotopes and self.sink.isotopes:
             self.isotopes = True
-
-        if self.ctype == "scale_with_flux" and "wsi" in self.ref_flux.full_name:
-            print(f"self.ref_flux.full_name: = {self.ref_flux.full_name}")
-
-            print(
-                f"source = {self.source.full_name}, isotopes = {self.source.isotopes}"
-            )
-            print(f"sink = {self.sink.full_name}, isotopes = {self.sink.isotopes}")
 
         self.get_species(self.r1, self.r2)  #
         self.mo: Model = self.sp.mo  # the current model handle
@@ -462,6 +454,8 @@ class Connect(esbmtkBase):
         else:
             isotopes = False
 
+        #if self.ctype == "weathering" and self.sp.name == "DIC":
+        #    breakpoint()
         self.fh = Flux(
             species=self.sp,  # Species handle
             delta=d,  # delta value of flux

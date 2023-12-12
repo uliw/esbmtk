@@ -338,7 +338,7 @@ class SourceSinkGroup(esbmtkBase):
             "name": ["None", (str)],
             "species": ["None", (str, list)],
             "delta": [{}, dict],
-            "isotopes": [{}, dict],
+            "isotopes": [False, (dict, bool)],
             "register": ["None", (str, Model)],
         }
 
@@ -368,8 +368,11 @@ class SourceSinkGroup(esbmtkBase):
                 raise SourceSinkGroupError(f"{s.n} needs to be a valid species name")
 
             delta = self.delta[s] if s in self.delta else "None"
-            if s in self.isotopes:
-                isotopes  = self.isotopes[s]
+            if isinstance(self.isotopes, dict):
+                isotopes = self.isotopes[s]
+            else:
+                isotopes = self.isotopes
+
             if type(self).__name__ == "SourceGroup":
                 a = Source(
                     name=f"{s.name}",
@@ -391,8 +394,7 @@ class SourceSinkGroup(esbmtkBase):
                 raise SourceSinkGroupError(
                     f"{type(self).__name__} is not a valid class type"
                 )
-
-            # register in local namespace
+            # register in list of reservoirs
             self.lor.append(a)
 
 

@@ -287,7 +287,10 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
                 # all others types that have separate expressions/isotope
                 eqs.write(f"{ind2}{fn} = {ex}\n")
                 if flux.parent.isotopes:  # add line for isotopes
-                    eqs.write(f"{ind2}{fn}_l = {exl}\n")
+                    eqs.write(f"{ind2}{fn}_l =  {exl}\n")
+                    if flux.full_name == "M.CG_A_sb_to_A_ib.DIC_._F":
+                        print(f"wrote = {fn}_l  {exl}")
+
 
         sep = (
             "# ---------------- write computed reservoir equations -------- #\n"
@@ -559,8 +562,8 @@ def write_ef(
     rv = rv[:-2]  # strip the last comma
     a = ""
 
-    # if ef.fname == "weathering":
     # if ef.fname == "carbonate_system_2_ode":
+    # if ef.fname == "weathering":
     #     breakpoint()
     # this can probably be simplified similar to the old parse_return_values()
     for d in ef.function_input_data:

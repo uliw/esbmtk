@@ -30,7 +30,7 @@ from esbmtk.utility_functions import (
 )
 
 if tp.TYPE_CHECKING:
-    from .esbmtk import SeawaterConstants, ReservoirGroup, Flux
+    from .esbmtk import SeawaterConstants, ReservoirGroup, Flux, Q_
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
@@ -148,7 +148,7 @@ def init_carbonate_system_1(rg: ReservoirGroup):
         ],
     )
     # rg.mo.lpc_f.append(ec.fname)
-    rg.mo.lpc_i.append(ec.fname) # list of function to be imported in ode backend
+    rg.mo.lpc_i.append(ec.fname)  # list of function to be imported in ode backend
 
     return ec
 
@@ -294,11 +294,13 @@ def init_carbonate_system_2(
     export_flux: Flux,
     r_sb: ReservoirGroup,
     r_db: ReservoirGroup,
-    reference_area: str,
+        reference_area: str | Q_ | float,
     kwargs: dict,
 ):
-    from esbmtk import ExternalCode, carbonate_system_2_ode, Q_
+    from esbmtk import ExternalCode, carbonate_system_2_ode, Q_, check_for_quantity
 
+    reference_area = check_for_quantity(reference_area, "m**2")
+    
     reference_area = Q_(reference_area).to(rg.mo.a_unit).magnitude
     s = r_db.swc
     sp = (s.K1, s.K2, s.K1K2, s.KW, s.KB, s.ca2, s.boron, r_sb.DIC.isotopes)
@@ -314,6 +316,7 @@ def init_carbonate_system_2(
         int(abs(kwargs["z0"])),  # 15
     )
 
+    
     ec = ExternalCode(
         name="cs",
         species=rg.mo.Carbon.CO2,
@@ -346,7 +349,7 @@ def init_carbonate_system_2(
         register=rg,
     )
     # rg.mo.lpc_f.append(ec.fname)
-    rg.mo.lpc_i.append(ec.fname) # list of function to be imported in ode backend
+    rg.mo.lpc_i.append(ec.fname)  # list of function to be imported in ode backend
     return ec
 
 
@@ -388,7 +391,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "r_db": list,  # list of deep reservoirs
         "r_sb": list,  # list of corresponding surface reservoirs
         "carbonate_export_fluxes": list,
-        "reference_area": str,
+        "reference_area": (str, list),
         "zsat": int,
         "zsat_min": int,
         "zcc": int,
@@ -466,13 +469,16 @@ def add_carbonate_system_2(**kwargs) -> None:
             (depth_range * pg) / pc
         )
 
-    reference_area = Q_(kwargs["reference_area"]).to(r_db[0].mo.a_unit)
+    reference_area = kwargs["reference_area"]
 
     for i, rg in enumerate(r_db):  # Setup the virtual reservoirs
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):
             rg.swc.update_parameters()
         else:
             raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
+        if isinstance(reference_area, list):
+            reference_area = reference_area[i]
+
         ec = init_carbonate_system_2(
             rg,
             kwargs["carbonate_export_fluxes"][i],
@@ -530,7 +536,7 @@ def gas_exchange_ode_with_isotopes(
     # get exchange of the heavy isotope
     f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_c_aq * 1e3)
     f_l = f - f_h  # the corresponding flux of the light isotope
-   
+
     return -f, -f_l
 
 

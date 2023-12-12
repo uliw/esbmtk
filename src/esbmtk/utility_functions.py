@@ -1224,7 +1224,7 @@ def check_for_quantity(kw, unit) -> Q_:
     """check if keyword is quantity or string an convert as necessary
 
     :param kw: string, quantity, float
-
+    :returns : a quantity in the given unit
     """
 
     from esbmtk import Q_

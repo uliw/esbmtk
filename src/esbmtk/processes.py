@@ -53,18 +53,10 @@ def weathering(pco2t, p) -> float | tuple:
         F_w = area_fraction * f0 * (pco2 / pco2_0) ** ex
         F_w_i = F_w * pco2_0i / pco2
         rv = F_w, F_w_i
-        # print(f"pco2/pco2_0 = {pco2/pco2_0:.2e}")
-        # print(f"pco2 = {pco2:.2e}")
-        # print(f"pco2_0 = {pco2_0:.2e}")
-        # print(f"Fw = {F_w:.2e}, FW_i = {F_w_i:.2e}")
-
     else:
         pco2 = pco2t
         F_w = area_fraction * f0 * (pco2 / pco2_0) ** ex
         rv = F_w
-        # print(f"pco2 = {pco2:.2e}")
-        # print(f"pco2_0 = {pco2_0:.2e}")
-        # print(f"rv = {rv:.2e}\n")
 
     return rv
 
@@ -91,7 +83,6 @@ def init_weathering(
 
     f0 = check_for_quantity(f0, "mol/year").magnitude
     pco2_0 = check_for_quantity(pco2_0, "ppm").magnitude
-    
     p = (pco2_0, area_fraction, ex, f0, c.sink.isotopes)
     c.fh.ftype = "computed"
     ec = ExternalCode(
