@@ -1,5 +1,5 @@
 #+TITLE: Seawater & Carbon Chemistry & Gas Exchange
-#+AUTHOR:Ulrich G Wortmann
+#+AUTHOR:Ulrich G .Wortmann
 #+OX-IPYNB-LANGUAGE: ipython
 #+BIND: org-export-use-babel nil
 #+STARTUP: showall 
@@ -99,6 +99,92 @@ M = Model(
 
 
 ** Carbon Chemistry
+*** pH
+Unless explicitly requested (see above), pH will be reported on the total scale. The hydrogen ion concentration ([H^{+}]) is computed by pyCO2SYS based on the initial DIC and total alkalinity (TA) concentrations. Subsequent hydrogen concentration calculations use the iterative approach of Follows et al. 2005 (https://doi.org/10.1016/j.ocemod.2005.05.004). 
+
+Provided that the model has terms for DIC and TA, pH calculations for a given @@rst::py:class:`esbmtk.extended_classes.ReservoirGroup()`@@ instance are added using the @@rst::py:func:`esbmtk.utility_functions.add_carbonate_system_1()`@@ function:
+#+BEGIN_SRC ipython
+box_names = [A_sb, I_sb, P_sb, H_sb]  # list of ReservoirGroup handles
+add_carbonate_system_1(box_names)
+#+END_SRC
+
+This will create Reservoirs @@rst::py:class:`esbmtk.esbmtk.Reservoir()`@@ instances for =Hplus= and =CO2aq=. After running the model, the resulting concentration data is available in the usual manner as:
+#+BEGIN_SRC ipython
+A_sb.Hplus.c
+A_sb.CO2aq.c
+#+END_SRC
+The remaining carbonate species are calculated during post-processing (see the @@rst::py:func:`esbmtk.post_processing.carbonate_system_1_pp.()`@@ function) and are available as
+#+BEGIN_SRC ipython
+A_sb.pH
+A_sb.HCO3
+A_sb.CO3
+A_sb.Omega
+#+END_SRC
+Notes:
+ - that the resulting concentration data depends on the choice of equilibrium constants and how they are calculated (see the =opt_k_carbonic=, =opt_buffers_mode= keywords above).
+ - Also note that the data from post-processing is currently available as @@rst::py:class:`esbmtk.extended_classes.VectorField()`@@ instance, rather than as @@rst::py:class:`esbmtk.esbmtk.Reservoir()`@@ instance.
+ - Reservoirs that use carbonate system 2 (see below), do not need to use carbonate system 1
+
+*** Carbonate burial and dissolution
+Carbonate burial and dissolution use the parametrization proposed by Boudreau et al. 2010 (https://doi.org/10.1029/2009gb003654). The current ESBMTK implementation  has the following short comings:
+ - It only considers Calcium dissolution/burial (although it would be easy to add a Aragonite)
+ - Results will only be correct as long as the depth of the saturation horizon remains below the upper depth datum of the deep-water box. Future versions will address this limitation
+
+The following figure provides an overview of the parametrizations and variables used by the  @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemisrty.carbonate_system_2()`@@ and @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemisrty.add_carbonate_system_2()`@@ functions.
+#+attr_org: :width 600
+#+attr_rst: :width 800
+#+attr_latex: :width 0.8\textwidth
+#+name: boudreau
+#+caption:  Overview of the the parametrizations and variables used by the 
+#+caption: @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemisrty.carbonate_system_2()`@@ and
+#+caption:  @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemisrty.add_carbonate_system_2()`@@ functions.
+#+caption: Image Credit: Tina Tsan & Mahruk Niazi
+[[./boudreau.png]]
+
+Provided a given model has data for DIC & TA, and that the carbonate export flux is known, =carbonate_system_2= can be added to a ReservoirGroup instance in the following way:
+#+BEGIN_SRC ipython
+surface_boxes: list = [M.L_b]
+deep_boxes: list = [M.D_b]
+export_fluxes: list = M.flux_summary(filter_by="PIC_DIC L_b", return_list=True)
+
+add_carbonate_system_2(
+        r_db=deep_boxes,  # list of reservoir groups
+        r_sb=surface_boxes,  # list of reservoir groups
+        carbonate_export_fluxes=export_fluxes,  # list of export fluxes
+        z0=-200,  # depth of shelf
+        alpha=alpha,  # dissolution coefficient, typically around 0.6
+    )
+#+END_SRC
+Notes:
+ - boxes and fluxes are lists, since in some models there is more than one surface box (e.g., models that resolve individual ocean basins)
+ - ESBMTK only considers the sediment area to 6000 mbsl. The area contributed by the elevations below 6000 mbsl is negligible, and this constrain simplifies the hypsographic fit.
+ - The total sediment area of a given =ReservoirGroup= is known provided the box-geometry was specified correctly.
+ - The @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemisrty.carbonate_system_2()`@@ function only returns [H^{+}] and the dissolution flux for  given box. It does not return the burial flux.
+ - Please study the actual model implementations provided in the examples folder.
+
+*** Post processing
+As with =carbonate_system_1= the remaining carbonate species are not part of the equation system, rather they are calculated once a solution has been found. Since the solver does not store the carbonate export fluxes, one first has to calculate the relevant fluxes from the concentration data in the model solution. This however model dependent (i.e., export productivity as a function of residence time, or as function of upwelling flux), and as such post-processing of =carbonate_system_2=  is not done automatically, but has to be initiated manually, e.g., like this:
+#+BEGIN_SRC ipython
+# get CaCO3_export in mol/year
+CaCO3_export = M.CaCO3_export.to(f"{M.f_unit}").magnitude
+carbonate_system_2_pp(
+    M.D_b,  # ReservoirGroup
+    CaCO3_export,  # CaCO3 export flux
+    200,  # z0
+    6000,  # zmax
+)
+#+END_SRC
+
+This will compute all carbonate species similar to =carbonate_system_1_pp=, and in addition calculate:
+#+BEGIN_SRC ipython
+M.D_b.Fburial  # CaCO3 burial flux mol/year
+M.D_b.Fdiss  # CaCO3 dissolution flux mol/year
+M.D_b.zsat  # Saturation depth in mbsl
+M.D_b.zcc  # CCD depth in mbsl
+M.D_b.zsnow  # Snowline depth in mbsl
+#+END_SRC
+see  the @@rst::py:func:`esbmtk.post_processing.carbonate_system_2_pp.()`@@ function for details
+
 
 ** Gas Exchange
 

@@ -2,9 +2,11 @@
 Changelog
 =========
 
-- Dec. v 0.12.0.x This is a breaking change. Models taht use isotope calculations need to ensure that
-  sources and sink also specify the isotope keyword. Weathering and Gas-exchange have now been become
-  connection properties, this requires minor updates to the model definition.
+- Dec. v 0.12.0.x This is a breaking change that requires the following updates to the model definition.
+  - Models that use isotope calculations need to ensure that sources and sink also specify the isotope keyword.
+  - Weathering and Gas-exchange have now been become connection properties
+  - Models that used  carbonate_system_1_pp() no longer need to call this specifically, as this function is now called automatically
+    
 
 - Oct. 12\ :sup:`th`\, 2023 v 0.11.0.2 This is a breaking change. Added support to specify
   box area and volume explicitly, rather than as a function of hypsography. This is likely
