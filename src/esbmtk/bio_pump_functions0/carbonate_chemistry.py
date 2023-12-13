@@ -22,11 +22,13 @@ import numpy as np
 from numba import njit
 import numpy.typing as npt
 from math import log, sqrt
+from esbmtk import ExternalCode
 from esbmtk.utility_functions import (
     __checkkeys__,
     __addmissingdefaults__,
     __checktypes__,
     register_return_values,
+    check_for_quantity,
 )
 
 if tp.TYPE_CHECKING:
@@ -75,7 +77,7 @@ def get_hplus(dic, ta, h0, boron, K1, K2, KW, KB) -> float:
 
 
 # @njit(fastmath=True)
-def carbonate_system_1_ode(dic, ta, hplus_0, co2aq_0, p) -> tuple:
+def carbonate_system_1(dic, ta, hplus_0, co2aq_0, p) -> tuple:
     """Calculates and returns the H+ and carbonate alkalinity concentrations
      for the given reservoirgroup
 
@@ -122,7 +124,7 @@ def init_carbonate_system_1(rg: ReservoirGroup):
     for a given key key in the  vr_datafields dictionary (i.e., H, CA, etc.)
 
     """
-    from esbmtk import ExternalCode, carbonate_system_1_ode
+    from esbmtk import ExternalCode
 
     p = (
         rg.swc.K1,
@@ -136,8 +138,8 @@ def init_carbonate_system_1(rg: ReservoirGroup):
     ec = ExternalCode(
         name="cs",
         species=rg.mo.Carbon.CO2,
-        function=carbonate_system_1_ode,
-        fname="carbonate_system_1_ode",
+        function=carbonate_system_1,
+        fname="carbonate_system_1",
         ftype="std",
         function_input_data=[rg.DIC, rg.TA, "Hplus", "CO2aq"],
         function_params=p,
@@ -179,7 +181,7 @@ def add_carbonate_system_1(rgs: list):
 
 
 # @njit(fastmath=True)
-def carbonate_system_2_ode(
+def carbonate_system_2(
     CaCO3_export: float,  # 3 CaCO3 export flux as DIC
     dic_t_db: float | tuple,  # 4 DIC in the deep box
     ta_db: float,  # 5 TA in the deep box
@@ -272,7 +274,7 @@ def carbonate_system_2_ode(
 
 
 # @njit(fastmath=True)
-def gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:
+def gas_exchange(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:
     """Calculate the gas exchange flux across the air sea interface
 
     Parameters:
@@ -294,20 +296,16 @@ def init_carbonate_system_2(
     export_flux: Flux,
     r_sb: ReservoirGroup,
     r_db: ReservoirGroup,
-        reference_area: str | Q_ | float,
     kwargs: dict,
 ):
-    from esbmtk import ExternalCode, carbonate_system_2_ode, Q_, check_for_quantity
+    AD = float(check_for_quantity(rg.area, "m**2").magnitude)
 
-    reference_area = check_for_quantity(reference_area, "m**2")
-    
-    reference_area = Q_(reference_area).to(rg.mo.a_unit).magnitude
     s = r_db.swc
     sp = (s.K1, s.K2, s.K1K2, s.KW, s.KB, s.ca2, s.boron, r_sb.DIC.isotopes)
     cp = (
         kwargs["Ksp0"],  # 7
         float(kwargs["kc"]),  # 8
-        float(reference_area),  # 9
+        AD,  # 9
         int(abs(kwargs["zsat0"])),  # 10
         kwargs["I_caco3"],  # 11
         kwargs["alpha"],  # 12
@@ -316,12 +314,11 @@ def init_carbonate_system_2(
         int(abs(kwargs["z0"])),  # 15
     )
 
-    
     ec = ExternalCode(
         name="cs",
         species=rg.mo.Carbon.CO2,
-        function=carbonate_system_2_ode,
-        fname="carbonate_system_2_ode",
+        function=carbonate_system_2,
+        fname="carbonate_system_2",
         ftype="needs_flux",
         r_s=r_sb,  # source (RG) of CaCO3 flux,
         r_d=r_db,  # sink (RG) of CaCO3 flux,
@@ -384,14 +381,11 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     """
 
-    from esbmtk import init_carbonate_system_2, Q_
-
     # list of known keywords
     lkk: dict = {
         "r_db": list,  # list of deep reservoirs
         "r_sb": list,  # list of corresponding surface reservoirs
         "carbonate_export_fluxes": list,
-        "reference_area": (str, list),
         "zsat": int,
         "zsat_min": int,
         "zcc": int,
@@ -414,7 +408,6 @@ def add_carbonate_system_2(**kwargs) -> None:
         "r_db",
         "r_sb",
         "carbonate_export_fluxes",
-        "zsat_min",
         "z0",
     ]
 
@@ -432,7 +425,6 @@ def add_carbonate_system_2(**kwargs) -> None:
         "zsat0": -5078,  # m
         "Ksp0": reservoir.swc.Ksp0,  # mol^2/kg^2
         "kc": 8.84 * 1000,  # m/yr converted to kg/(m^2 yr)
-        "reference_area": f"{model.hyp.area_dz(-200, -6000)} m**2",
         "alpha": 0.6,  # 0.928771302395292, #0.75,
         "pg": 0.103,  # pressure in atm/km
         "pc": 511,  # characteristic pressure after Boudreau 2010
@@ -440,15 +432,15 @@ def add_carbonate_system_2(**kwargs) -> None:
         "zmax": -6000,  # max model depth
         "Ksp": reservoir.swc.Ksp_ca,  # mol^2/kg^2
     }
-
     # make sure all mandatory keywords are present
     __checkkeys__(lrk, lkk, kwargs)
-
     # add default values for keys which were not specified
     kwargs = __addmissingdefaults__(lod, kwargs)
-
     # test that all keyword values are of the correct type
     __checktypes__(lkk, kwargs)
+
+    if "zsat_min" not in kwargs:
+        kwargs["zsat_min"] = kwargs["z0"]
 
     r_db = kwargs["r_db"]
     r_sb = kwargs["r_sb"]
@@ -457,7 +449,8 @@ def add_carbonate_system_2(**kwargs) -> None:
     # test if corresponding surface reservoirs have been defined
     if len(r_sb) == 0:
         raise ValueError(
-            "Please update your call to add_carbonate_system_2 and add the list of corresponding surface reservoirs"
+            "Please update your call to add_carbonate_system_2 and add\
+            the list of corresponding surface reservoirs"
         )
 
     # check if we already have the hypsometry and saturation tables
@@ -469,22 +462,17 @@ def add_carbonate_system_2(**kwargs) -> None:
             (depth_range * pg) / pc
         )
 
-    reference_area = kwargs["reference_area"]
-
     for i, rg in enumerate(r_db):  # Setup the virtual reservoirs
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):
             rg.swc.update_parameters()
         else:
             raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
-        if isinstance(reference_area, list):
-            reference_area = reference_area[i]
 
         ec = init_carbonate_system_2(
             rg,
             kwargs["carbonate_export_fluxes"][i],
             r_sb[i],
             r_db[i],
-            reference_area,
             kwargs,
         )
 
@@ -493,7 +481,7 @@ def add_carbonate_system_2(**kwargs) -> None:
 
 
 # @njit(fastmath=True)
-def gas_exchange_ode_with_isotopes(
+def gas_exchange_with_isotopes(
     scale,  # surface area in m^2 * piston velocity
     gas_c,  # species concentration in atmosphere
     gas_c_l,  # same but for the light isotope

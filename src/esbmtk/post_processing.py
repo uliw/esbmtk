@@ -75,10 +75,10 @@ def carbonate_system_1_pp(box_names: ReservoirGroup) -> None:
 
 
 def carbonate_system_2_pp(
-    bn: ReservoirGroup,  # 2 Reservoir handle
-    export_fluxes: float,  # 3 CaCO3 export flux as DIC
-    zsat_min: float,
-    zmax: float,
+    bn: ReservoirGroup | list,  # 2 Reservoir handle
+    export_fluxes: float | list,  # 3 CaCO3 export flux as DIC
+    zsat_min: float = 200,
+    zmax: float = 6000,
 ) -> None:
     """Calculates and returns the fraction of the carbonate rain that is
     dissolved an returned back into the ocean.

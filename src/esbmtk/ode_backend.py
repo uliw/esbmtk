@@ -222,8 +222,7 @@ def write_equations_2(
     # add optional import statements
     h1 = """from __future__ import annotations
 from numpy import array as npa
-from numba import njit
-from esbmtk import gas_exchange_ode, gas_exchange_ode_with_isotopes\n\n"""
+from numba import njit\n\n"""
 
     h2 = """# @njit(fastmath=True)
 def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:

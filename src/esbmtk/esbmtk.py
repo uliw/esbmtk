@@ -608,7 +608,7 @@ class Model(esbmtkBase):
             eqs_file = write_equations_2(self, R, icl, cpl, ipl)
             # print(f"loc = {eqs_file.resolve()}")
         else:
-            print("\n WARNING: Reusing equation file\n")
+            warnings.warn("Reusing equation file\n")
 
         # ensure that cwd is in the load path. Required for windows
         cwd: pl.Path = pl.Path.cwd()
@@ -644,14 +644,13 @@ class Model(esbmtkBase):
                 method=method,
                 atol=atol,
                 rtol=self.rtol,
-                t_eval=self.time_ode,
+                # t_eval=self.time_ode,
                 first_step=Q_("1 second").to(self.t_unit).magnitude,
                 max_step=self.max_step,
             )
 
-        print()
         print(
-            f"nfev={self.results.nfev}, njev={self.results.njev}, nlu={self.results.nlu}"
+            f"\nnfev={self.results.nfev}, njev={self.results.njev}, nlu={self.results.nlu}\n"
         )
         print(f"status={self.results.status}")
         print(f"message={self.results.message}\n")
@@ -709,11 +708,15 @@ class Model(esbmtkBase):
         # calculate carbonate species for cs1
         for rg in self.lrg:
             if rg.has_cs1:
-                print(f"calling = {rg.full_name}")
-
                 carbonate_system_1_pp(rg)
 
-        # self.results = results # save results for debugging
+        # test for pH changes that exceed a certain threshold
+        dph = np.diff(self.L_b.pH.c)
+        dph_bool = dph > 0.01
+        if sum(dph_bool) > 0:
+            for i, v in dph_bool:
+                if v:
+                    warnings.warn(f"\nd pH = {dph[i]:.fe} at t = {results.t[i]}")
 
     def list_species(self):
         """List all  defined species."""
@@ -1262,7 +1265,7 @@ class ReservoirBase(esbmtkBase):
 
         # test if we missed any fluxes
         for f in list(curr.difference(read)):
-            print(f"\n Warning: Did not find values for {f}\n in saved state")
+            warnings.warn(f"\nDid not find values for {f}\n in saved state")
 
     def __assign_reservoir_data__(
         self, obj: any, df: pd.DataFrame, col: int, res: bool
