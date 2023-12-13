@@ -35,7 +35,6 @@ from .esbmtk_base import esbmtkBase
 from .utility_functions import (
     show_data,
     plot_geometry,
-    get_plot_layout,
     find_matching_strings,
     get_l_mass,
     get_delta_h,
@@ -46,7 +45,7 @@ from .utility_functions import (
 NDArrayFloat = npt.NDArray[np.float64]
 
 if tp.TYPE_CHECKING:
-    from .extended_classes import GasReservoir, ExternalData, DataField
+    from .extended_classes import ExternalData, DataField
     from .connections import Connection
     from .processes import Process
 
@@ -665,6 +664,8 @@ class Model(esbmtkBase):
         :param results: numpy arrays with solver results
         """
 
+        from esbmtk import carbonate_system_1_pp
+
         # interpolate signals into the ode time domain
         # must be done before changing model time domain
         for s in self.los:
@@ -697,7 +698,6 @@ class Model(esbmtkBase):
                 r.d = get_delta_from_concentration(r.c, r.l, r.sp.r)
 
         self.time = results.t
-
         steps = len(results.t)  # get number of solver steps
         for f in self.lof:
             if f.save_flux_data:
@@ -705,6 +705,13 @@ class Model(esbmtkBase):
                 if f.isotopes:
                     f.l = f.l[0:steps]
                     f.d = get_delta_h(f)
+
+        # calculate carbonate species for cs1
+        for rg in self.lrg:
+            if rg.has_cs1:
+                print(f"calling = {rg.full_name}")
+
+                carbonate_system_1_pp(rg)
 
         # self.results = results # save results for debugging
 

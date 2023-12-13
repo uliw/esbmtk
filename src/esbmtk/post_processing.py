@@ -10,7 +10,7 @@ if tp.TYPE_CHECKING:
 NDArrayFloat = npt.NDArray[np.float64]
 
 
-def carbonate_system_1_pp(bn: ReservoirGroup) -> None:
+def carbonate_system_1_pp(box_names: ReservoirGroup) -> None:
     """Calculates and returns various carbonate species based on previously calculated
     Hplus, TA, and DIC concentrations.
 
@@ -27,15 +27,24 @@ def carbonate_system_1_pp(bn: ReservoirGroup) -> None:
     """
     from esbmtk import VectorData
 
-    if not isinstance(bn, list):
-        bn = [bn]
+    if not isinstance(box_names, list):
+        box_names = [box_names]
 
-    for rg in bn:
+    for rg in box_names:
         k1 = rg.swc.K1  # K1
         k2 = rg.swc.K2  # K2
         k1k2 = rg.swc.K1K2
         hplus = rg.Hplus.c
         dic = rg.DIC.c
+
+        VectorData(
+            name="HCO3",
+            register=rg,
+            species=rg.mo.HCO3,
+            data=dic / (1 + hplus / k1 + k2 / hplus),
+            label="HCO3-",
+            plt_units=rg.mo.c_unit,
+        )
 
         VectorData(
             name="CO3",
@@ -63,7 +72,7 @@ def carbonate_system_1_pp(bn: ReservoirGroup) -> None:
             label=r"$\Omega$-Calcite",
             plt_units="",
         )
-    
+
 
 def carbonate_system_2_pp(
     bn: ReservoirGroup,  # 2 Reservoir handle
@@ -105,13 +114,13 @@ def carbonate_system_2_pp(
         bn = [bn]
     if not isinstance(export_fluxes, list):
         export_fluxes = [export_fluxes]
-        
+
     for i, rg in enumerate(bn):
         if isinstance(export_fluxes[i], float):
             export = export_fluxes[i]
         else:
             export = export_fluxes[i].c
-            
+
         p = rg.cs.function_params
         sp, cp, area_table, area_dz_table, Csat_table = p
         ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0 = cp
@@ -127,9 +136,9 @@ def carbonate_system_2_pp(
         co3 = dic / (1 + hplus / k2 + hplus**2 / k1k2)
         co2aq = dic / (1 + k1 / hplus + k1k2 / hplus**2)
         zsat = np.clip(zsat0 * np.log(ca2 * co3 / ksp0), zsat_min, zmax).astype(int)
-        zcc = (zsat0 * np.log(export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)).astype(
-            int
-        )
+        zcc = (
+            zsat0 * np.log(export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
+        ).astype(int)
         B_AD = export / AD
 
         A_z0_zsat = area_table[z0] - area_table[zsat]
