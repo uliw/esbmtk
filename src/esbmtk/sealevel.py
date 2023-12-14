@@ -105,7 +105,7 @@ class hypsometry(esbmtkBase):
         self.pfn = "spline_paramaters.txt"
         self.hfn = "Hypsometric_Curve_05m.csv"
         # total surface area in square meters, http://www.physicalgeography.net/fundamentals/8o.html
-        self.sa = 510067420e6 
+        self.sa = 510067420e6
         self.mo = self.model
         self.__register_name_new__()
         self.__init_curve__()
