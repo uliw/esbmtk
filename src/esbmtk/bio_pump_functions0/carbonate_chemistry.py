@@ -211,6 +211,11 @@ def carbonate_system_2(
     if isotopes:
         dic_db, dic_db_l = dic_t_db
         dic_sb, dic_sb_l = dic_t_sb
+        # print(f"dic_db = {dic_db:.2e}")
+        # print(f"dic_db_l = {dic_db_l:.2e}")
+        # print(f"dic_sb = {dic_sb:.2e}")
+        # print(f"dic_sb_l = {dic_sb_l:.2e}")
+
     else:
         dic_db = dic_t_db
         dic_sb = dic_t_sb
@@ -267,6 +272,8 @@ def carbonate_system_2(
     if isotopes:
         F_diss_l = F_diss * dic_sb_l / dic_sb
         rv = (F_diss, F_diss_l, F_diss * 2, dCdt_Hplus, dzdt_zsnow)
+        # print(f"F_diss = {F_diss:.2e}")
+        # print(f"F_diss_l = {F_diss_l:.2e}\n")
     else:
         rv = (F_diss, F_diss * 2, dCdt_Hplus, dzdt_zsnow)
 
