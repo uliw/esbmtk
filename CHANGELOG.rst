@@ -4,7 +4,7 @@ Changelog
 
 - Dec. v 0.12.0.x This is a breaking change that requires the following updates to the model definition.
   - Models that use isotope calculations need to ensure that sources and sink also specify the isotope keyword.
-  - Weathering and Gas-exchange have now been become connection properties
+  - Weathering and Gas-exchange have now become connection properties, see the examples in the online documentation
   - Models that used  carbonate_system_1_pp() no longer need to call this specifically, as this function is now called automatically
     
 
