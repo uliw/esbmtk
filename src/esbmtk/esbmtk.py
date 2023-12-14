@@ -644,7 +644,7 @@ class Model(esbmtkBase):
                 method=method,
                 atol=atol,
                 rtol=self.rtol,
-                # t_eval=self.time_ode,
+                t_eval=self.time_ode,
                 first_step=Q_("1 second").to(self.t_unit).magnitude,
                 max_step=self.max_step,
             )
@@ -714,9 +714,12 @@ class Model(esbmtkBase):
         dph = np.diff(self.L_b.pH.c)
         dph_bool = dph > 0.01
         if sum(dph_bool) > 0:
-            for i, v in dph_bool:
+            for i, v in enumerate(dph_bool):
                 if v:
-                    warnings.warn(f"\nd pH = {dph[i]:.fe} at t = {results.t[i]}")
+                    warnings.warn(
+                        f"\n\ndelta pH = {dph[i]:.2f}"
+                        f"at t = {results.t[i]:.2f} {self.t_unit:~P}\n"
+                    )
 
     def list_species(self):
         """List all  defined species."""
