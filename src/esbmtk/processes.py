@@ -52,12 +52,6 @@ def weathering(pco2t, p) -> float | tuple:
         F_w = area_fraction * f0 * (pco2 / pco2_0) ** ex
         F_w_i = F_w * pco2i / pco2
         rv = F_w, F_w_i
-        print(f"pco2_0 = {pco2_0:.2e}")
-        print(f"pco2 = {pco2:.2e}")
-        print(f"pco2i = {pco2i:.2e}")
-        print(f"F_w = {F_w:.2e}")
-        print(f"F_w_i = {F_w_i:.2e}")
-
     else:
         pco2 = pco2t
         F_w = area_fraction * f0 * (pco2 / pco2_0) ** ex
