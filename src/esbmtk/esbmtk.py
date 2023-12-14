@@ -657,6 +657,29 @@ class Model(esbmtkBase):
 
         self.post_process_data(self.results)
 
+    def test_d_pH(self, rg: ReservoirGroup, time: NDArrayFloat) -> None:
+        """Test if the change in pH exceeds more than 0.01 units per time step.
+        Note that this is only a crude test, since the solver interpolates
+        between intergration steps. So this may not catch all problems.
+
+        Parameters
+        ----------
+        rg : ReservoirGroup
+            ReservoirGroup instance
+        time: : NDArrayFloat
+            time vector as returned by the solver
+        """
+        hplus = getattr(rg, "Hplus")
+        dph = np.diff(-np.log10(hplus.c))
+        dph_bool = dph > 0.01
+        if sum(dph_bool) > 0:
+            for i, v in enumerate(dph_bool):
+                if v:
+                    warnings.warn(
+                        f"\n\n{rg.full_name} delta pH = {dph[i]:.2f} "
+                        f"at t = {time[i]:.2f} {self.t_unit:~P}\n"
+                    )
+
     def post_process_data(self, results) -> None:
         """Map solver results back into esbmtk structures
 
@@ -705,21 +728,13 @@ class Model(esbmtkBase):
                     f.l = f.l[0:steps]
                     f.d = get_delta_h(f)
 
+        # test for rapid changes in pH and
         # calculate carbonate species for cs1
         for rg in self.lrg:
+            if hasattr(rg, "Hplus"):
+                self.test_d_pH(rg, results.t)
             if rg.has_cs1:
                 carbonate_system_1_pp(rg)
-
-        # test for pH changes that exceed a certain threshold
-        dph = np.diff(self.L_b.pH.c)
-        dph_bool = dph > 0.01
-        if sum(dph_bool) > 0:
-            for i, v in enumerate(dph_bool):
-                if v:
-                    warnings.warn(
-                        f"\n\ndelta pH = {dph[i]:.2f}"
-                        f"at t = {results.t[i]:.2f} {self.t_unit:~P}\n"
-                    )
 
     def list_species(self):
         """List all  defined species."""
