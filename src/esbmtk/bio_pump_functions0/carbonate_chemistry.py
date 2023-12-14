@@ -211,11 +211,6 @@ def carbonate_system_2(
     if isotopes:
         dic_db, dic_db_l = dic_t_db
         dic_sb, dic_sb_l = dic_t_sb
-        # print(f"dic_db = {dic_db:.2e}")
-        # print(f"dic_db_l = {dic_db_l:.2e}")
-        # print(f"dic_sb = {dic_sb:.2e}")
-        # print(f"dic_sb_l = {dic_sb_l:.2e}")
-
     else:
         dic_db = dic_t_db
         dic_sb = dic_t_sb
@@ -272,41 +267,37 @@ def carbonate_system_2(
     if isotopes:
         F_diss_l = F_diss * dic_sb_l / dic_sb
         rv = (F_diss, F_diss_l, F_diss * 2, dCdt_Hplus, dzdt_zsnow)
-        # print(f"F_diss = {F_diss:.2e}")
-        # print(f"F_diss_l = {F_diss_l:.2e}\n")
     else:
         rv = (F_diss, F_diss * 2, dCdt_Hplus, dzdt_zsnow)
 
     return rv
 
 
-# @njit(fastmath=True)
-def gas_exchange(scale, gas_c, p_H2O, solubility, g_c_aq) -> float:
-    """Calculate the gas exchange flux across the air sea interface
-
-    Parameters:
-    scale: surface area in m^2 * piston_velocity
-    gas_c: species concentration in atmosphere
-    gc_aq: concentration of the dissolved gas in water
-    p_H2O: water vapor partial pressure
-    solubility: species solubility  mol/(m^3 atm)
-    """
-
-    beta = solubility * (1 - p_H2O)
-    f = scale * (gas_c * beta - g_c_aq * 1e3)
-
-    return f
-
-
 def init_carbonate_system_2(
-    rg: ReservoirGroup,
     export_flux: Flux,
-    r_sb: ReservoirGroup,
-    r_db: ReservoirGroup,
+    r_sb: ReservoirGroup,  # Surface box
+    r_db: ReservoirGroup,  # deep box
     kwargs: dict,
 ):
-    AD = float(check_for_quantity(rg.area, "m**2").magnitude)
+    """Initialize a carbonate system 2 instance
 
+    Parameters
+    ----------
+    export_flux : Flux
+        CaCO3 export flux from the surface box
+    r_sb : ReservoirGroup
+        ReservoirGroup instance of the surface box
+    # Surface box r_db : ReservoirGroup
+        ReservoirGroup instance of the deep box
+    # deep box kwargs : dict
+        dictionary of keyword value pairs
+
+    Note that the current implmentation assumes that the export flux is
+    the total export flux over surface area of the mixed layer, i.e.,
+    the sediment area between z0 and zmax
+    """
+
+    AD = r_sb.mo.hyp.area_dz(-abs(kwargs["z0"]), -abs(kwargs["zmax"]))
     s = r_db.swc
     sp = (s.K1, s.K2, s.K1K2, s.KW, s.KB, s.ca2, s.boron, r_sb.DIC.isotopes)
     cp = (
@@ -323,7 +314,7 @@ def init_carbonate_system_2(
 
     ec = ExternalCode(
         name="cs",
-        species=rg.mo.Carbon.CO2,
+        species=r_sb.mo.Carbon.CO2,
         function=carbonate_system_2,
         fname="carbonate_system_2",
         ftype="needs_flux",
@@ -340,20 +331,20 @@ def init_carbonate_system_2(
         function_params=(
             sp,
             cp,
-            rg.mo.area_table,
-            rg.mo.area_dz_table,
-            rg.mo.Csat_table,
+            r_db.mo.area_table,
+            r_db.mo.area_dz_table,
+            r_db.mo.Csat_table,
         ),
         return_values=[
-            {f"F_{rg.full_name}.DIC": "db_cs2"},
-            {f"F_{rg.full_name}.TA": "db_cs2"},
-            {f"R_{rg.full_name}.Hplus": rg.swc.hplus},
-            {f"R_{rg.full_name}.zsnow": float(abs(kwargs["zsnow"]))},
+            {f"F_{r_db.full_name}.DIC": "db_cs2"},
+            {f"F_{r_db.full_name}.TA": "db_cs2"},
+            {f"R_{r_db.full_name}.Hplus": r_db.swc.hplus},
+            {f"R_{r_db.full_name}.zsnow": float(abs(kwargs["zsnow"]))},
         ],
-        register=rg,
+        register=r_db,
     )
-    # rg.mo.lpc_f.append(ec.fname)
-    rg.mo.lpc_i.append(ec.fname)  # list of function to be imported in ode backend
+    r_db.mo.lpc_i.append(ec.fname)  # list of function to be imported in ode backend
+
     return ec
 
 
@@ -476,7 +467,6 @@ def add_carbonate_system_2(**kwargs) -> None:
             raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
         ec = init_carbonate_system_2(
-            rg,
             kwargs["carbonate_export_fluxes"][i],
             r_sb[i],
             r_db[i],
@@ -485,55 +475,6 @@ def add_carbonate_system_2(**kwargs) -> None:
 
         register_return_values(ec, rg)
         rg.has_cs2 = True
-
-
-# @njit(fastmath=True)
-def gas_exchange_with_isotopes(
-    scale,  # surface area in m^2 * piston velocity
-    gas_c,  # species concentration in atmosphere
-    gas_c_l,  # same but for the light isotope
-    liquid_c,  # c of the reference species (e.g., DIC)
-    liquid_c_l,  # same but for the light isotopeof DIC
-    p_H2O,  # water vapor pressure
-    solubility,  # solubility constant
-    gas_c_aq,  # Gas concentration in liquid phase
-    a_db,  # fractionation factor between dissolved CO2aq and HCO3-
-    a_dg,  # fractionation between CO2aq and CO2g
-    a_u,  # kinetic fractionation during gas exchange
-) -> tuple(float, float):
-    """Calculate the gas exchange flux across the air sea interface
-    for co2 including isotope effects.
-
-    Note that the sink delta is co2aq as returned by the carbonate VR
-    this equation is for mmol but esbmtk uses mol, so we need to
-    multiply by 1E3
-
-    The Total flux across interface dpends on the difference in either
-    concentration or pressure the atmospheric pressure is known, as gas_c, and
-    we can calculate the equilibrium pressure that corresponds to the dissolved
-    gas in the water as [CO2]aq/beta.
-
-    Conversely, we can convert the the pCO2 into the amount of dissolved CO2 =
-    pCO2 * beta
-
-    The h/c ratio in HCO3 estimated via h/c in DIC. Zeebe writes C12/C13 ratio
-    but that does not work. the C13/C ratio results however in -8 permil
-    offset, which is closer to observations
-    """
-    # Solibility with correction for pH2O
-    beta = solubility * (1 - p_H2O)
-    # f as afunction of solubility difference
-    f = scale * (beta * gas_c - gas_c_aq * 1e3)
-    # isotope ratio of DIC
-    Rt = (liquid_c - liquid_c_l) / liquid_c
-    # get heavy isotope concentrations in atmosphere
-    gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
-    # get exchange of the heavy isotope
-    f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_c_aq * 1e3)
-    f_l = f - f_h  # the corresponding flux of the light isotope
-
-    return -f, -f_l
-
 
 def get_pco2(SW) -> float:
     """Calculate the concentration of pCO2"""
