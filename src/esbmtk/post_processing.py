@@ -243,7 +243,7 @@ def gas_exchange_fluxes(
     :returns:
 
     """
-    from esbmtk import Q_, gas_exchange_ode
+    from esbmtk import Q_, gas_exchange
 
     if isinstance(pv, str):
         pv = Q_(pv).to("meter/yr").magnitude
@@ -265,4 +265,16 @@ def gas_exchange_fluxes(
     else:
         raise ValueError("flux calculation is only supported for DIC and O2")
 
-    return gas_exchange_ode(scale, gas_c, p_H2O, solubility, g_c_aq)
+    c = liquid_reservoir.register
+    swc = liquid_reservoir.register.swc
+    p = (
+        scale,
+        p_H2O,
+        solubility,
+        swc.a_db,
+        swc.a_dg,
+        swc.a_u,
+        liquid_reservoir.isotopes,
+    )
+
+    return gas_exchange(gas_c, liquid_reservoir.c, g_c_aq, p)
