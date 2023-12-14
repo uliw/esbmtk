@@ -194,7 +194,7 @@ Notes:
 1.3.3 Post processing
 ^^^^^^^^^^^^^^^^^^^^^
 
-As with ``carbonate_system_1`` the remaining carbonate species are not part of the equation system, rather they are calculated once a solution has been found. Since the solver does not store the carbonate export fluxes, one first has to calculate the relevant fluxes from the concentration data in the model solution. This however model dependent (i.e., export productivity as a function of residence time, or as function of upwelling flux), and as such post-processing of ``carbonate_system_2``  is not done automatically, but has to be initiated manually, e.g., like this:
+As with ``carbonate_system_1`` the remaining carbonate species are not part of the equation system, rather they are calculated once a solution has been found. Since the solver does not store the carbonate export fluxes, one first has to calculate the relevant fluxes from the concentration data in the model solution. This is however model dependent (i.e., export productivity as a function of residence time, or as function of upwelling flux), and as such post-processing of ``carbonate_system_2``  is not done automatically, but has to be initiated manually, e.g., like this:
 
 .. code:: ipython
 
@@ -217,10 +217,79 @@ This will compute all carbonate species similar to ``carbonate_system_1_pp``, an
     M.D_b.zcc  # CCD depth in mbsl
     M.D_b.zsnow  # Snowline depth in mbsl
 
-see  the :py:func:`esbmtk.post_processing.carbonate_system_2_pp.()` function for details
+see  the :py:func:`esbmtk.post_processing.carbonate_system_2_pp.()` function for details.
 
 1.4 Gas Exchange
 ~~~~~~~~~~~~~~~~
 
-1.5 Weathering
-~~~~~~~~~~~~~~
+ESBMTK implements gas exchange across the Air-Sea interface as a :py:class:`esbmtk.connection.Connection()` instance, between a :py:class:`esbmtk.extended_classes.Gasreservoir()` and a :py:class:`esbmtk.esbmkt.Reservoir()` instance. In the following example we first declare a ``Gasreservoir`` and then connect it with a regular surface box. Note that the CO\ :sub:`2`\ gas transfer calculation requires that the respective surface reservoir carries the ``CO2aq`` tracer as calculated by the :py:func:`esbmtk.bio_pump_functions_0.carbonate_chemisrty_carbonate_system_1.()` function, since the gas-transfer depends on the dissolved CO\ :sub:`2`\ rather then on the DIC concentration.
+
+.. code:: ipython
+
+    GasReservoir(
+        name="CO2_At",
+        species=M.CO2,
+        reservoir_mass="1.833E20 mol",
+        species_ppm="280 ppm",
+        register=M,
+    )
+
+    Connect(  # Example for CO2
+        source=M.CO2_At,  # GasReservoir
+        sink=M.L_b.DIC,  # ReservoirGroup
+        species=M.CO2,
+        ref_species=M.H_b.CO2aq,
+        solubility=M.H_b.swc.SA_co2,
+        area=M.L_b.area,  # surface area
+        id="L_b_GEX",  # connection id
+        piston_velocity="4.8 m/d",
+        water_vapor_pressure=M.H_b.swc.p_H2O,
+        register=M,
+        ctype="gasexchange",
+    )
+
+Defining gas-transfer for O2  uses the same approach, but note the use of the ``solubility`` and ``ref_species`` keywords. At present, ESBMTK only carries the  solubility constants for CO\ :sub:`2`\ and O\ :sub:`2`\.
+
+.. code:: ipython
+
+    Connect(  # Example for O2
+        source=M.O2_At,  # GasReservoir
+        sink=M.L_b.O2,  # ReservoirGroup
+        species=M.O2,
+        ref_species=M.L_b.O2,
+        solubility=M._b.swc.SA_o2,
+        area=M._b.area,
+        piston_velocity="4.8 m/d",
+        water_vapor_pressure=M.L_b.swc.p_H2O,
+        id=f"O2_gas_exchange_L_b",
+        register=M,
+        ctype="gasexchange",
+    )
+
+1.5 pCO\ :sub:`2`\ Dependent Weathering
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ESBMTK defines a simple power law function to calculate pCO\ :sub:`2`\ dependent weathering fluxes (see e.g., Walker and Hays, 1981, `https://doi.org/10.1029/jc086ic10p09776 <https://doi.org/10.1029/jc086ic10p09776>`_):
+
+
+.. math::
+
+    f =  A \times  f_{0} \times  \frac{pCO_{2}}{p_{0}CO_{2}}^{^c}
+
+
+where :math:`A` denotes the area, :math:`f_0` the weathering flux at :math:`p_{0}CO_2`, pCO\ :sub:`2`\ the CO\ :sub:`2`\ partial pressure at a given time :math:`t`, :math:`p_{0}CO_2` the reference partial pressure of CO\ :sub:`2`\ and :math:`c` a constant.  See the :py:func:`esbmtk.processes.weathering()` function for details. Within the context of ESBMTK, weathering fluxes are just another connection type:
+
+.. code:: ipython
+
+    Connect(  # CaCO3 weathering
+        source=M.Fw.DIC,  # source of flux
+        sink=M.L_b.DIC,
+        reservoir_ref=M.CO2_At,  # pCO2
+        ctype="weathering",
+        id="wca",
+        scale=1,  # optional, defaults to 1
+        ex=0.2,  # exponent c
+        pco2_0="280 ppm",  # reference pCO2
+        rate="12 Tmol/a",  # rate at pco2_0
+        register=M,
+    )
