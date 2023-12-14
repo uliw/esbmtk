@@ -18,7 +18,6 @@
 """
 from __future__ import annotations
 import typing as tp
-import numpy as np
 from numba import njit
 from esbmtk.utility_functions import (
     __checkkeys__,
@@ -49,10 +48,16 @@ def weathering(pco2t, p) -> float | tuple:
     """
     pco2_0, area_fraction, ex, f0, isotopes = p
     if isotopes:
-        pco2, pco2_0i = pco2t
+        pco2, pco2i = pco2t
         F_w = area_fraction * f0 * (pco2 / pco2_0) ** ex
-        F_w_i = F_w * pco2_0i / pco2
+        F_w_i = F_w * pco2i / pco2
         rv = F_w, F_w_i
+        print(f"pco2_0 = {pco2_0:.2e}")
+        print(f"pco2 = {pco2:.2e}")
+        print(f"pco2i = {pco2i:.2e}")
+        print(f"F_w = {F_w:.2e}")
+        print(f"F_w_i = {F_w_i:.2e}")
+
     else:
         pco2 = pco2t
         F_w = area_fraction * f0 * (pco2 / pco2_0) ** ex
@@ -80,6 +85,8 @@ def init_weathering(
 
     """
     from esbmtk import ExternalCode, check_for_quantity
+
+    print(f" initializing weathering with isotopes = {c.sink.isotopes}")
 
     f0 = check_for_quantity(f0, "mol/year").magnitude
     pco2_0 = check_for_quantity(pco2_0, "ppm").magnitude
@@ -192,36 +199,20 @@ def gas_exchange(
     if isotopes:
         gas_c, gas_c_l = gas_c
         liquid_c, liquid_c_l = liquid_c
-    #  print(f"scale = {scale:.2e}")
-    #     print(f"p_H2O = {p_H2O:.2e}")
-    #     print(f"solubility = {solubility:.2e}")
-    #     print(f"gas_c = {gas_c:.2e}")
-    #     print(f"gas_c_l = {gas_c_l:.2e}")
-    #     print(f"liquid_c = {liquid_c:.2e}")
-    #     print(f"liquid_c_l = {liquid_c_l:.2e}")
-    # else:
-    #     print(f"scale = {scale:.2e}")
-    #     print(f"p_H2O = {p_H2O:.2e}")
-    #     print(f"solubility = {solubility:.2e}")
-    #     print(f"gas_c = {gas_c:.2e}")
-    #     print(f"liquid_c = {liquid_c:.2e}")
 
     # Solubility with correction for pH2O
     beta = solubility * (1 - p_H2O)
     # f as afunction of solubility difference
     f = scale * (beta * gas_c - gas_aq * 1e3)
     rv = f
-    # isotope ratio of DIC
-    if isotopes:
+
+    if isotopes:  # isotope ratio of DIC
         Rt = (liquid_c - liquid_c_l) / liquid_c
         # get heavy isotope concentrations in atmosphere
         gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
         # get exchange of the heavy isotope
         f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_aq * 1e3)
         f_l = f - f_h  # the corresponding flux of the light isotope
-        rv = -f, -f_l
-        # print(f"rv = {rv[0]:.2e}, {rv[1]:.2e}\n")
-    # else:
-    #     print(f"rv = {rv:.2e}\n")
+        rv = f, f_l
 
     return rv
