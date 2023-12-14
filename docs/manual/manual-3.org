@@ -120,10 +120,11 @@ A_sb.HCO3
 A_sb.CO3
 A_sb.Omega
 #+END_SRC
-Notes:
+**** Notes:
  - that the resulting concentration data depends on the choice of equilibrium constants and how they are calculated (see the =opt_k_carbonic=, =opt_buffers_mode= keywords above).
  - Also note that the data from post-processing is currently available as @@rst::py:class:`esbmtk.extended_classes.VectorField()`@@ instance, rather than as @@rst::py:class:`esbmtk.esbmtk.Reservoir()`@@ instance.
  - Reservoirs that use carbonate system 2 (see below), do not need to use carbonate system 1
+ - ESBMTK will print a warning message of the pH changes by more than 0.01 units per time step. However, this is only a crude measure, since the solver also uses interpolation between integration steps. So this may not catch all possible scenarios.
 
 *** Carbonate burial and dissolution
 Carbonate burial and dissolution use the parametrization proposed by Boudreau et al. 2010 (https://doi.org/10.1029/2009gb003654). The current ESBMTK implementation  has the following short comings:
@@ -188,10 +189,7 @@ see  the @@rst::py:func:`esbmtk.post_processing.carbonate_system_2_pp.()`@@ func
 
 ** Gas Exchange
 
-** Odds and Ends
 
-*** Weathering
+** Weathering
 
-*** Adding your own functions to ESBMTK
 
-*** Calling model specific functions
