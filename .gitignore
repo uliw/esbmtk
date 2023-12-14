@@ -20,9 +20,7 @@ package.sh
 .directory
 notes.org
 TAGS
-.pylintrc
 \#*
-.flake8rc
 flyscheck*
 
 # Project files
@@ -34,8 +32,6 @@ flyscheck*
 .vscode
 .coveragerc
 .gitattributes
-.projectile
-.readthedocs.yml
 tags
 
 # Package files
