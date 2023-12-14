@@ -274,7 +274,7 @@ ESBMTK defines a simple power law function to calculate pCO\ :sub:`2`\ dependent
 
 .. math::
 
-    f =  A \times  f_{0} \times  \frac{pCO_{2}}{p_{0}CO_{2}}^{}^{c}
+    f =  A \times  f_{0} \times  \frac{pCO_{2}}{p_{0}CO_{2}}^{c}
 
 
 where :math:`A` denotes the area, :math:`f_0` the weathering flux at :math:`p_{0}CO_2`, pCO\ :sub:`2`\ the CO\ :sub:`2`\ partial pressure at a given time :math:`t`, :math:`p_{0}CO_2` the reference partial pressure of CO\ :sub:`2`\ and :math:`c` a constant.  See the :py:func:`esbmtk.processes.weathering()` function for details. Within the context of ESBMTK, weathering fluxes are just another connection type:
