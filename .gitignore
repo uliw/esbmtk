@@ -23,6 +23,8 @@ TAGS
 .pylintrc
 .gitignore
 \#*
+.flake8rc
+flyscheck*
 
 # Project files
 .ropeproject
