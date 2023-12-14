@@ -309,10 +309,10 @@ def get_box_geometry_parameters(box, fraction=1) -> None:
     calc_volume method in this case the following instance variables
     will also be set:
 
-    self.volume in model units (usually liter) self.are:a surface area
-    in m^2 at the upper bounding surface self.sed_area: area of
-    seafloor which is intercepted by this box.  self.area_fraction:
-    area of seafloor which is intercepted by this relative to the
+     - self.volume in model units (usually liter)
+     - self.are:a surface area in m^2 at the upper bounding surface
+     - self.sed_area: area of seafloor which is intercepted by this box.
+     - self.area_fraction: area of seafloor which is intercepted by this relative to the
     total ocean floor area
 
     It is also possible to specify volume and area explicitly. In this
@@ -330,14 +330,14 @@ def get_box_geometry_parameters(box, fraction=1) -> None:
 
     if isinstance(box.geometry, list):
         # Calculate volume and area as a function of box geometry
+        top = box.geometry[0]
+        bottom = box.geometry[1]
         fraction = box.geometry[2]
-        volume = (
-            f"{box.mo.hyp.volume(box.geometry[0], box.geometry[1]) * fraction} m**3"
-        )
+        volume = f"{box.mo.hyp.volume(top, bottom) * fraction} m**3"
         box.volume = Q_(volume)
         box.volume = box.volume.to(box.mo.v_unit)
-        box.area = Q_(f"{box.mo.hyp.area(box.geometry[0]) * fraction} m**2")
-        box.sed_area = box.mo.hyp.area_dz(box.geometry[0], box.geometry[1]) * fraction
+        box.area = Q_(f"{box.mo.hyp.area(top) * fraction} m**2")
+        box.sed_area = box.mo.hyp.area_dz(top, bottom) * fraction
         box.sed_area = Q_(f"{box.sed_area} m**2")
 
     elif isinstance(box.geometry, dict):
