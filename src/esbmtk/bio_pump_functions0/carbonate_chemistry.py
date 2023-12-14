@@ -197,8 +197,7 @@ def carbonate_system_2(
 
     LIMITATIONS:
     - Assumes all concentrations are in mol/kg
-    - Assumes your Model is in mol/kg ! Otherwise, DIC and TA updating will not
-    be correct.
+    - Assumes your Model is in mol/kg
 
     Calculations are based off equations from:
     Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
@@ -279,7 +278,10 @@ def init_carbonate_system_2(
     r_db: ReservoirGroup,  # deep box
     kwargs: dict,
 ):
-    """Initialize a carbonate system 2 instance
+    """Initialize a carbonate system 2 instance.
+    Note that the current implmentation assumes that the export flux is
+    the total export flux over surface area of the mixed layer, i.e.,
+    the sediment area between z0 and zmax
 
     Parameters
     ----------
@@ -287,14 +289,12 @@ def init_carbonate_system_2(
         CaCO3 export flux from the surface box
     r_sb : ReservoirGroup
         ReservoirGroup instance of the surface box
-    # Surface box r_db : ReservoirGroup
+    box r_db : ReservoirGroup
         ReservoirGroup instance of the deep box
-    # deep box kwargs : dict
+    kwargs : dict
         dictionary of keyword value pairs
 
-    Note that the current implmentation assumes that the export flux is
-    the total export flux over surface area of the mixed layer, i.e.,
-    the sediment area between z0 and zmax
+
     """
 
     AD = r_sb.mo.hyp.area_dz(-abs(kwargs["z0"]), -abs(kwargs["zmax"]))
@@ -475,6 +475,7 @@ def add_carbonate_system_2(**kwargs) -> None:
 
         register_return_values(ec, rg)
         rg.has_cs2 = True
+
 
 def get_pco2(SW) -> float:
     """Calculate the concentration of pCO2"""

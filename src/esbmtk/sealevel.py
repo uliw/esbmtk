@@ -312,8 +312,8 @@ def get_box_geometry_parameters(box, fraction=1) -> None:
      - self.volume in model units (usually liter)
      - self.are:a surface area in m^2 at the upper bounding surface
      - self.sed_area: area of seafloor which is intercepted by this box.
-     - self.area_fraction: area of seafloor which is intercepted by this relative to the
-    total ocean floor area
+     - self.area_fraction: area of seafloor which is intercepted by
+       this relative to the total ocean floor area
 
     It is also possible to specify volume and area explicitly. In this
     case provide a dictionary like this::

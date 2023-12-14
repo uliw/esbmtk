@@ -18,7 +18,7 @@ ESBMTK provides several classes that abstract the handling of basin geometry, se
 
 ** Hypsography
 
-For many modeling tasks, it is important to have knowledge of a globally averaged hypsometric curve. ESBMTK will automatically create a suitable hypsography instance if a @@rst::py:class:`esbmtk.esbmtk.Reservoir()`@@ or @@rst::py:class:`esbmtk.extended_classes.ReservoirGroup()`@@ instance is specified with the geometry keyword as in the following example where the first list item denotes the upper depth datum, the second list item, the lower depth datum, and the last list item denotes the fraction of the total ocean area if the upper boundary would be at sealevel.
+For many modeling tasks, it is important to know a globally averaged hypsometric curve. ESBMTK will automatically create a suitable hypsography instance if a @@rst::py:class:`esbmtk.esbmtk.Reservoir()`@@ or @@rst::py:class:`esbmtk.extended_classes.ReservoirGroup()`@@ instance is specified with the geometry keyword as in the following example where the first list item denotes the upper depth datum, the second list item, the lower depth datum, and the last list item denotes the fraction of the total ocean area if the upper boundary would be at sea level.
 #+BEGIN_SRC ipython
 Reservoir(
     name="S_b",  # Name of reservoir group
@@ -46,12 +46,12 @@ print(f"M.hyp.volume(0,-200) = {M.hyp.volume(0,-200):.2e}")
 print(f"M.hyp.sa = {M.hyp.sa:.2e}")
 #+END_SRC
 
-Internally, the hypsometric data is parameterized as a spline function that provides a reasonable fit between -6000 mbsl to 1000 above sealevel. The data was fitted against hypsometric data derived from 
-Scripps’ SRTM15+V2.5.5 grid (Tozer et al., 2019, https://doi.org/10.1029/2019EA000658), which was down-sampled to a 5 minute grid before processing the hypsometry. The following figure shows a comparison between the spline fit, and the actual data. The file =hypsometry.py= provides further examples.
+Internally, the hypsometric data is parameterized as a spline function that provides a reasonable fit between -6000 mbsl to 1000 above sea level. The data was fitted against hypsometric data derived from 
+Scripps’ SRTM15+V2.5.5 grid (Tozer et al., 2019, https://doi.org/10.1029/2019EA000658), which was down-sampled to a 5-minute grid before processing the hypsometry. The following figure shows a comparison between the spline fit, and the actual data. The file =hypsometry.py= provides further examples.
 
-#+attr_org: :width 300
-#+attr_rst: :width 300
-#+attr_latex: :width 0.5\textwidth
+#+attr_org: :width 600
+#+attr_rst: :width 600
+#+attr_latex: :width 0.6\textwidth
 #+name: hyp
 #+caption:  Comparison between spline fit, and the actual data.
 [[./hyp.png]]
@@ -59,7 +59,7 @@ Scripps’ SRTM15+V2.5.5 grid (Tozer et al., 2019, https://doi.org/10.1029/2019E
 
 ** Seawater
 
-ESBMTK provides a @@rst::py:class:`esbmtk.seawater.seawaterConstants()`@@ class that will be automatically instantiated when a @@rst::py:class:`esbmtk.extended_classes.ReservoirGroup()`@@ instance 
+ESBMTK provides a @@rst::py:class:`esbmtk.seawater.SeawaterConstants()`@@ class that will be automatically instantiated when a @@rst::py:class:`esbmtk.extended_classes.ReservoirGroup()`@@ instance 
 definition includes the =seawater_parameters= keyword. This keyword expects a dictionary that specifies temperature, salinity, and pressure for a given =Reservoirgroup=. The class methods and instance variables are accessible via the =swc= instance.
 #+BEGIN_SRC ipython
 ReservoirGroup(
@@ -77,7 +77,7 @@ ReservoirGroup(
 print(f"M.S_b.density = {M.S_b.swc.density:.2e}")
 #+END_SRC
 
-Apart from density, this class will provide access to a host of instance parameters, e.g., equilibrium constants - see @@rst::py:meth:`esbmtk.seawater.seaWaterConstants.update_parameters()`@@ for the currently defined names. Most of these values are computed by =pyCO2SYS= (https://doi.org/10.5194/gmd-15-15-2022). Using  =pyCO2SYS= provides access to a variety of parametrizations for the respective equilibrium constants, various pH scales, as well a different methods to calculate buffer factors. Unless explicitly specified in the model definition, ESBMTK uses the defaults set by pyCO2SYS. Note that when using the seawater class, the model concentration unit must be set to =mol/kg= as in the following example:
+Apart from density, this class will provide access to a host of instance parameters, e.g., equilibrium constants - see @@rst::py:meth:`esbmtk.seawater.SeawaterConstants.update_parameters()`@@ for the currently defined names. Most of these values are computed by =pyCO2SYS= (https://doi.org/10.5194/gmd-15-15-2022). Using  =pyCO2SYS= provides access to a variety of parametrizations for the respective equilibrium constants, various pH scales, as well as different methods to calculate buffer factors. Unless explicitly specified in the model definition, ESBMTK uses the defaults set by pyCO2SYS. Note that when using the seawater class, the model concentration unit must be set to =mol/kg= as in the following example:
 #+BEGIN_SRC ipython
 M = Model(
     stop="6 Myr",  # end time of model
@@ -92,9 +92,9 @@ M = Model(
 
 *** Caveats
 
-- Seawater Parameters are only computed once when the =ReservoirGroup= is instantiated, in order to provide an initial steady state. Subsequent changes to seawater chemistry or physical parameters do not affect the initial state.
+- Seawater Parameters are only computed once when the =ReservoirGroup= is instantiated, to provide an initial steady state. Subsequent changes to seawater chemistry or physical parameters do not affect the initial state.
 - The =swc= instance provides a =show()= method listing most values. However, that list may not be comprehensive.
-- See the pyCO2SYS documentation for list of parameters and options https://pyco2sys.readthedocs.io/en/latest/
+- See the pyCO2SYS documentation for a list of parameters and options https://pyco2sys.readthedocs.io/en/latest/
 - The code example =seawater_example.py= in the examples directory 
 
 
@@ -102,18 +102,18 @@ M = Model(
 *** pH
 Unless explicitly requested (see above), pH will be reported on the total scale. The hydrogen ion concentration ([H^{+}]) is computed by pyCO2SYS based on the initial DIC and total alkalinity (TA) concentrations. Subsequent hydrogen concentration calculations use the iterative approach of Follows et al. 2005 (https://doi.org/10.1016/j.ocemod.2005.05.004). 
 
-Provided that the model has terms for DIC and TA, pH calculations for a given @@rst::py:class:`esbmtk.extended_classes.ReservoirGroup()`@@ instance are added using the @@rst::py:func:`esbmtk.utility_functions.add_carbonate_system_1()`@@ function:
+Provided that the model has terms for DIC and TA, pH calculations for a given @@rst::py:class:`esbmtk.extended_classes.ReservoirGroup()`@@ instance are added using the @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry.add_carbonate_system_1()`@@ function:
 #+BEGIN_SRC ipython
 box_names = [A_sb, I_sb, P_sb, H_sb]  # list of ReservoirGroup handles
 add_carbonate_system_1(box_names)
 #+END_SRC
 
-This will create Reservoirs @@rst::py:class:`esbmtk.esbmtk.Reservoir()`@@ instances for =Hplus= and =CO2aq=. After running the model, the resulting concentration data is available in the usual manner as:
+This will create Reservoirs @@rst::py:class:`esbmtk.esbmtk.Reservoir()`@@ instances for =Hplus= and =CO2aq=. After running the model, the resulting concentration data is available in the usual manner:
 #+BEGIN_SRC ipython
 A_sb.Hplus.c
 A_sb.CO2aq.c
 #+END_SRC
-The remaining carbonate species are calculated during post-processing (see the @@rst::py:func:`esbmtk.post_processing.carbonate_system_1_pp.()`@@ function) and are available as
+The remaining carbonate species are calculated during post-processing (see the @@rst::py:func:`esbmtk.post_processing.carbonate_system_1_pp()`@@ function) and are available as
 #+BEGIN_SRC ipython
 A_sb.pH
 A_sb.HCO3
@@ -121,24 +121,24 @@ A_sb.CO3
 A_sb.Omega
 #+END_SRC
 **** Notes:
- - that the resulting concentration data depends on the choice of equilibrium constants and how they are calculated (see the =opt_k_carbonic=, =opt_buffers_mode= keywords above).
- - Also note that the data from post-processing is currently available as @@rst::py:class:`esbmtk.extended_classes.VectorField()`@@ instance, rather than as @@rst::py:class:`esbmtk.esbmtk.Reservoir()`@@ instance.
+ - The resulting concentration data depends on the choice of equilibrium constants and how they are calculated (see the =opt_k_carbonic=, =opt_buffers_mode= keywords above).
+ - The data from post-processing is currently available as @@rst::py:class:`esbmtk.extended_classes.VectorData()`@@ instance, rather than as @@rst::py:class:`esbmtk.esbmtk.Reservoir()`@@ instance.
  - Reservoirs that use carbonate system 2 (see below), do not need to use carbonate system 1
  - ESBMTK will print a warning message of the pH changes by more than 0.01 units per time step. However, this is only a crude measure, since the solver also uses interpolation between integration steps. So this may not catch all possible scenarios.
 
 *** Carbonate burial and dissolution
-Carbonate burial and dissolution use the parametrization proposed by Boudreau et al. 2010 (https://doi.org/10.1029/2009gb003654). The current ESBMTK implementation  has the following short comings:
- - It only considers Calcium dissolution/burial (although it would be easy to add a Aragonite)
- - Results will only be correct as long as the depth of the saturation horizon remains below the upper depth datum of the deep-water box. Future versions will address this limitation
+Carbonate burial and dissolution use the parametrization proposed by Boudreau et al. 2010 (https://doi.org/10.1029/2009gb003654). The current ESBMTK implementation  has the following shortcomings:
+ - It only considers Calcium dissolution/burial (although it would be easy to add Aragonite)
+ - Results will only be correct as long as the depth of the saturation horizon remains below the upper depth datum of the deep-water box. Future versions will address this limitation.
 
-The following figure provides an overview of the parametrizations and variables used by the  @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemisrty.carbonate_system_2()`@@ and @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemisrty.add_carbonate_system_2()`@@ functions.
+The following figure provides an overview of the parametrizations and variables used by the  @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry.carbonate_system_2()`@@ and @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry.add_carbonate_system_2()`@@ functions.
 #+attr_org: :width 600
 #+attr_rst: :width 800
 #+attr_latex: :width 0.8\textwidth
 #+name: boudreau
-#+caption:  Overview of the the parametrizations and variables used by the 
-#+caption: @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemisrty.carbonate_system_2()`@@ and
-#+caption:  @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemisrty.add_carbonate_system_2()`@@ functions.
+#+caption:  Overview of the parametrizations and variables used by the 
+#+caption: @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry.carbonate_system_2()`@@ and
+#+caption:  @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry.add_carbonate_system_2()`@@ functions.
 #+caption: Image Credit: Tina Tsan & Mahruk Niazi
 [[./boudreau.png]]
 
@@ -160,11 +160,11 @@ Notes:
  - boxes and fluxes are lists, since in some models there is more than one surface box (e.g., models that resolve individual ocean basins)
  - ESBMTK only considers the sediment area to 6000 mbsl. The area contributed by the elevations below 6000 mbsl is negligible, and this constrain simplifies the hypsographic fit.
  - The total sediment area of a given =ReservoirGroup= is known provided the box-geometry was specified correctly.
- - The @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemisrty.carbonate_system_2()`@@ function only returns [H^{+}] and the dissolution flux for  given box. It does not return the burial flux.
+ - The @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry.carbonate_system_2()`@@ function only returns [H^{+}] and the dissolution flux for  given box. It does not return the burial flux.
  - Please study the actual model implementations provided in the examples folder.
 
-*** Post processing
-As with =carbonate_system_1= the remaining carbonate species are not part of the equation system, rather they are calculated once a solution has been found. Since the solver does not store the carbonate export fluxes, one first has to calculate the relevant fluxes from the concentration data in the model solution. This is however model dependent (i.e., export productivity as a function of residence time, or as function of upwelling flux), and as such post-processing of =carbonate_system_2=  is not done automatically, but has to be initiated manually, e.g., like this:
+*** Post-Processing
+As with =carbonate_system_1= the remaining carbonate species are not part of the equation system, rather they are calculated once a solution has been found. Since the solver does not store the carbonate export fluxes, one first has to calculate the relevant fluxes from the concentration data in the model solution. This is however model dependent (i.e., export productivity as a function of residence time, or as a function of upwelling flux), and as such post-processing of =carbonate_system_2=  is not done automatically, but has to be initiated manually, e.g., like this:
 #+BEGIN_SRC ipython
 # get CaCO3_export in mol/year
 CaCO3_export = M.CaCO3_export.to(f"{M.f_unit}").magnitude
@@ -184,11 +184,11 @@ M.D_b.zsat  # Saturation depth in mbsl
 M.D_b.zcc  # CCD depth in mbsl
 M.D_b.zsnow  # Snowline depth in mbsl
 #+END_SRC
-see  the @@rst::py:func:`esbmtk.post_processing.carbonate_system_2_pp.()`@@ function for details.
+see  the @@rst::py:func:`esbmtk.post_processing.carbonate_system_2_pp()`@@ function for details.
 
 
 ** Gas Exchange
-ESBMTK implements gas exchange across the Air-Sea interface as a @@rst::py:class:`esbmtk.connection.Connection()`@@ instance, between a @@rst::py:class:`esbmtk.extended_classes.Gasreservoir()`@@ and a @@rst::py:class:`esbmtk.esbmkt.Reservoir()`@@ instance. In the following example we first declare a =Gasreservoir= and then connect it with a regular surface box. Note that the CO_{2} gas transfer calculation requires that the respective surface reservoir carries the =CO2aq= tracer as calculated by the @@rst::py:func:`esbmtk.bio_pump_functions_0.carbonate_chemisrty_carbonate_system_1.()`@@ function, since the gas-transfer depends on the dissolved CO_{2} rather then on the DIC concentration.
+ESBMTK implements gas exchange across the Air-Sea interface as a @@rst::py:class:`esbmtk.connections.Connection()`@@ instance, between a @@rst::py:class:`esbmtk.extended_classes.GasReservoir()`@@ and a @@rst::py:class:`esbmtk.esbmtk.Reservoir()`@@ instance. In the following example, we first declare a =Gasreservoir= and then connect it with a regular surface box. Note that the CO_{2} gas transfer calculation requires that the respective surface reservoir carries the =CO2aq= tracer as calculated by the @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry_carbonate_system_1.()`@@ function since the gas-transfer depends on the dissolved CO_{2} rather than on the DIC concentration.
 #+BEGIN_SRC ipython
 GasReservoir(
     name="CO2_At",
@@ -213,7 +213,7 @@ Connect(  # Example for CO2
 )
 #+END_SRC
 
-Defining gas-transfer for O2  uses the same approach, but note the use of the =solubility= and =ref_species= keywords. At present, ESBMTK only carries the  solubility constants for CO_{2} and O_2.
+Defining gas transfer for O2  uses the same approach, but note the use of the =solubility= and =ref_species= keywords. At present, ESBMTK only carries the solubility constants for CO_{2} and O_2.
 #+BEGIN_SRC ipython
 Connect(  # Example for O2
     source=M.O2_At,  # GasReservoir
@@ -234,7 +234,7 @@ Connect(  # Example for O2
 
 ** pCO_{2} Dependent Weathering
 ESBMTK defines a simple power law function to calculate pCO_{2} dependent weathering fluxes (see e.g., Walker and Hays, 1981, https://doi.org/10.1029/jc086ic10p09776):
-\[f =  A \times  f_{0} \times  \frac{pCO_{2}}{p_{0}CO_{2}}^{^c} \]
+\[f =  A \times  f_{0} \times  \frac{pCO_{2}}{p_{0}CO_{2}}^{}^{c}\]
 where $A$ denotes the area, $f_0$ the weathering flux at $p_{0}CO_2$, pCO_{2} the CO_2 partial pressure at a given time $t$, $p_{0}CO_2$ the reference partial pressure of CO_2 and $c$ a constant.  See the @@rst::py:func:`esbmtk.processes.weathering()`@@ function for details. Within the context of ESBMTK, weathering fluxes are just another connection type:
 #+BEGIN_SRC ipython
 Connect(  # CaCO3 weathering

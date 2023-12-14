@@ -225,13 +225,14 @@ def register_new_reservoir(r, sp, v):
 def register_return_values(ef: ExternalFunction, rg) -> None:
     """Register the return values of an external function instance
 
-     Parameters
+    Parameters
     ----------
     ec : ExternalFunction
         ExternalFunction Instance
     rg : ReservoirGroup | Reservoir
         The Resevoir or Reservoirgroup the external function is
         associated with
+    
     Raises
     ------
     ValueError
@@ -1220,13 +1221,28 @@ def get_string_between_brackets(s: str) -> str:
     return s[0]
 
 
-def check_for_quantity(kw, unit) -> Q_:
+def check_for_quantity(kw, unit):
     """check if keyword is quantity or string an convert as necessary
 
-    :param kw: string, quantity, float
-    :returns : a quantity in the given unit
-    """
+    Parameters
+    ----------
+    kw : str | quantity | float | int
+        keyword e.g., "12 m/s", or 12,
+    unit : str
+        desired unit for keyword, e.g., "m/s"
 
+    Returns
+    -------
+    Q\_
+        Returns a Quantity
+
+    Raises
+    ------
+    ValueError
+        if keywword is neither number, str or quantity
+    
+    """
+    
     from esbmtk import Q_
 
     if isinstance(kw, str):
