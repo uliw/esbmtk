@@ -36,8 +36,6 @@ flyscheck*
 .gitattributes
 .projectile
 .readthedocs.yml
-tox.ini
-setup.py
 tags
 
 # Package files
