@@ -13,8 +13,6 @@
 
 # ESBMTK - The  Earth Sciences Box Modeling Toolkit
 
-![img](./mpc.png)
-
 <img src="./mpc.png" width="200px">
 
 ESBMTK is a python library that aims to simplify typical box modeling
