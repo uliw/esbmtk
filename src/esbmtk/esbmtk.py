@@ -942,13 +942,17 @@ class Species(esbmtkBase):
     Defaults::
 
         self.defaults: dict[any, any] = {
-             "name": ["None", (str)],
-             "element": ["None", (Element, str)],
-             "display_as": [kwargs["name"], (str)],
-             "m_weight": [0, (int, float, str)],
-             "register": ["None", (Model, Element, Reservoir, GasReservoir)],
-             "parent": ["None", (Model, Element, Reservoir, GasReservoir)],
-         }
+            "name": ["None", (str)],
+            "element": ["None", (Element, str)],
+            "display_as": [kwargs["name"], (str)],
+            "m_weight": [0, (int, float, str)],
+            "register": ["None", (Model, Element, Reservoir, GasReservoir)],
+            "parent": ["None", (Model, Element, Reservoir, GasReservoir)],
+            "flux_only": [False, (bool)],
+            "logdata": [False, (bool)],
+            "scale_to": ["None", (str)],
+            "stype": ["concentration", (str)],
+        }
 
     Required keywords: "name", "element"
     """
@@ -965,7 +969,7 @@ class Species(esbmtkBase):
             "element": ["None", (Element, str)],
             "display_as": [kwargs["name"], (str)],
             "m_weight": [0, (int, float, str)],
-            "register": ["None", (Model, Element, Reservoir, GasReservoir)],
+            "register": [kwargs["element"], (Model, Element, Reservoir, GasReservoir)],
             "parent": ["None", (Model, Element, Reservoir, GasReservoir)],
             "flux_only": [False, (bool)],
             "logdata": [False, (bool)],
