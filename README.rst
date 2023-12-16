@@ -19,7 +19,7 @@
 ---------------------------------------------------
 
 .. image:: ./mpc.png
-    :width: 300
+    :width: 200
     :align: left
 
 ESBMTK is a python library that aims to simplify typical box modeling

@@ -34,8 +34,7 @@
 
 * ESBMTK - The  Earth Sciences Box Modeling Toolkit
 
-#+attr_md: :width 300 :align left
-#+attr_rst: :width 300 :align left
+#+attr_rst: :width 200 :align left
 #+attr_org: :width 300
 [[./mpc.png]]
 
