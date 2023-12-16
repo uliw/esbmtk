@@ -5,8 +5,8 @@ Seawater & Carbon Chemistry & Gas Exchange
 
 
 
-1 Seawater & Carbon Chemistry & Gas Exchange
---------------------------------------------
+1 Seawater and Carbon Chemistry
+-------------------------------
 
 ESBMTK provides several classes that abstract the handling of basin geometry, seawater chemistry and air-sea gas exchange.
 

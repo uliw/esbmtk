@@ -1,20 +1,8 @@
-#+TITLE: ESBMTK Manual 
-#+AUTHOR:Ulrich G Wortmann
-#+OX-IPYNB-LANGUAGE: ipython
-#+BIND: org-export-use-babel nil
-#+STARTUP: showall 
-#+STARTUP: latexpreview
-#+OPTIONS: todo:nil tasks:nil tags:nil toc:nil author:nil
-#+PROPERTY: header-args :eval never-export
-#+EXCLUDE_TAGS: noexport
-#+LATEX_HEADER: \usepackage{breakurl}
-#+LATEX_HEADER: \usepackage{newuli}
-#+LATEX_HEADER: \usepackage{uli-german-paragraphs}
-#+TOC: headlines
+#+options: toc:nil author:nil
 
-* Adding complexity and isotopes
 
-** Adding model forcing
+* Adding Complexity
+** Model forcing
 ESBMTK realizes model forcing through the @@rst::py:class:`esbmtk.extended_classes.Signal()`@@ class. Once defined, a signal instance can be associated with a @@rst::py:class:`esbmtk.connections.Connection()`@@ instance that will then act on the associated connection. This class provides the following keywords to create a signal:
 
 - =square()=, =pyramid()=, =bell()=  These are defined by specifying the signal start time (relative to the model time), its size (as mass) and duration, or as duration and magnitude (see the example below)

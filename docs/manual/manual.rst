@@ -1,15 +1,14 @@
-=============
-ESBMTK Manual
-=============
 
 
 
-
-1 Installation
+1 Introduction
 --------------
 
-1.1 Conda
-~~~~~~~~~
+1.1 Installation
+~~~~~~~~~~~~~~~~
+
+1.1.1 Conda
+^^^^^^^^^^^
 
 Currently, ESBMTK is only available via `https://pypi.org/project/esbmtk/ <https://pypi.org/project/esbmtk/>`_, and there is no recipe to install with conda. ESBMTK relies on the following libraries that need to be installed with conda before you can install ESBMTk with ``pip``: As usual, it is recommended to first create a new virtual environment, and then install the following:
 
@@ -31,13 +30,13 @@ Currently, ESBMTK is only available via `https://pypi.org/project/esbmtk/ <https
 
 afterwards you can install esbmtk with ``python -m pip install esbmtk``
 
-1.2 pip & github
-~~~~~~~~~~~~~~~~
+1.1.2 pip & github
+^^^^^^^^^^^^^^^^^^
 
 If you work with pip, simply install  with ``python -m pip install esbmtk``, or download the code from `https://github.com/uliw/esbmtk <https://github.com/uliw/esbmtk>`_
 
-2 A simple example
-------------------
+1.2 A simple example
+~~~~~~~~~~~~~~~~~~~~
 
 A simple model of the marine P-cycle would consider the delivery of P from weathering, the burial of P in the sediments, the thermohaline transport of dissolved PO\ :sub:`4`\ as well as the export of P in the form of sinking organic matter (POP). The concentration in the respective surface and deep water boxes is then the sum of the respective fluxes (see Fig. 1). The model parameters are taken from Glover 2011, Modeling Methods in the Marine Sciences.
 
@@ -96,12 +95,12 @@ which is easily encoded as a Python function
 
         return dCdt
 
-2.1 Implementing the P-cycle with ESBMTK
+1.3 Implementing the P-cycle with ESBMTK
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 While ESBMTK provides abstractions to efficiently define complex models, the following section will use the basic ESBMTK classes to define the above model. While quite verbose, it demonstrates the design philosophy behind ESBMTK. More complex approaches are described further down. 
 
-2.1.1 Foundational Concepts
+1.3.1 Foundational Concepts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 ESBMTK uses a hierarchically structured object-oriented approach to describe a model. The topmost object is the model object that describes fundamental properties like run time, time step, elements and species information. All other objects derive from the model object. 
@@ -116,7 +115,7 @@ ESBMTK uses a hierarchically structured object-oriented approach to describe a m
 
 The model geometry is then parsed to build a suitable equation system.
 
-2.1.2 Defining the model geometry and initial conditions
+1.3.2 Defining the model geometry and initial conditions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In the first step, one needs to define a model object that describes fundamental model parameters. The following code first loads the following esbmtk classes that will help with model construction:
@@ -217,7 +216,7 @@ To set up the model geometry, we first use the :py:class:`esbmtk.esbmtk.Source()
         concentration="0 umol/l",  # initial concentration
     )
 
-2.1.3 Model processes
+1.3.3 Model processes
 ^^^^^^^^^^^^^^^^^^^^^
 
 For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework, this is accomplished through the :py:class:`esbmtk.connections.Connection()` class. To connect the weathering flux from the source object (M.w) to the surface ocean (M.S\ :sub:`b`\) we declare a connection instance describing this relationship as follows:
@@ -294,10 +293,10 @@ Running the above code (see the file ``po4_1.py`` in the examples directory), re
 
     Example output from ``po4_1.png``
 
-2.2 Working with the model instance
+1.4 Working with the model instance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-2.2.1 Running the model, visualizing and saving the results
+1.4.1 Running the model, visualizing and saving the results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To run the model, use the ``run()`` method of the model instance, and plot the results with the ``plot()`` method. This method accepts a list of esbmtk instances, that will be plotted in a common window. Without further arguments, the plot will also be saved as a pdf file where ``filename`` defaults to the name of the model instance. The ``save_data()`` method will create (or recreate) the ``data`` directory which will then be populated by csv-files. 
@@ -308,7 +307,7 @@ To run the model, use the ``run()`` method of the model instance, and plot the r
     M.plot([M.S_b, M.D_b])
     M.save_data()
 
-2.2.2 Saving/restoring the model state
+1.4.2 Saving/restoring the model state
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Many models require a spin-up phase. Once the model is in equilibrium, you can save the save the state with the ``save_state()`` method. 
@@ -346,7 +345,7 @@ To restart a model from the last known state, the above would need to be written
     M.read_state()
     M.run()
 
-2.2.3 Introspection and data access
+1.4.3 Introspection and data access
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 All esbmtk instances and instance methods support the usual python methods to show the documentation, and inspect object properties.

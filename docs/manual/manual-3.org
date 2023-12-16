@@ -12,8 +12,10 @@
 #+LATEX_HEADER: \usepackage{uli-german-paragraphs}
 #+TOC: headlines
 
-* Seawater & Carbon Chemistry & Gas Exchange
+#+options: toc:nil author:nil
 
+
+* Seawater and Carbon Chemistry
 ESBMTK provides several classes that abstract the handling of basin geometry, seawater chemistry and air-sea gas exchange.
 
 ** Hypsography

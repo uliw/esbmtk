@@ -1,15 +1,11 @@
-=============
-ESBMTK Manual
-=============
 
 
 
+1 Adding Complexity
+-------------------
 
-1 Adding complexity and isotopes
---------------------------------
-
-1.1 Adding model forcing
-~~~~~~~~~~~~~~~~~~~~~~~~
+1.1 Model forcing
+~~~~~~~~~~~~~~~~~
 
 ESBMTK realizes model forcing through the :py:class:`esbmtk.extended_classes.Signal()` class. Once defined, a signal instance can be associated with a :py:class:`esbmtk.connections.Connection()` instance that will then act on the associated connection. This class provides the following keywords to create a signal:
 

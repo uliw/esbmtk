@@ -19,7 +19,7 @@ Contents
    Introduction <manual/manual>
    Implementing more complex models <manual/manual-2>
    Seawater & Carbon Chemisrty <manual/manual-3>
-   Odds and Ends <manual/manual-4>
+   Extending ESBMTK <manual/manual-4>
    Contributions & Help <contributing>
    Authors <authors>
    Changelog <changelog>

@@ -1,19 +1,9 @@
-#+TITLE: ESBMTK Manual 
-#+AUTHOR:Ulrich G Wortmann
-#+OX-IPYNB-LANGUAGE: ipython
-#+BIND: org-export-use-babel nil
-#+STARTUP: showall 
-#+STARTUP: latexpreview
-#+OPTIONS: todo:nil tasks:nil tags:nil toc:nil author:nil
-#+PROPERTY: header-args :eval never-export
-#+EXCLUDE_TAGS: noexport
-#+LATEX_HEADER: \usepackage{breakurl}
-#+LATEX_HEADER: \usepackage{newuli}
-#+LATEX_HEADER: \usepackage{uli-german-paragraphs}
-#+TOC: headlines
+#+options: toc:nil author:nil
 
-* Installation
-** Conda
+* Introduction
+
+** Installation
+*** Conda
 Currently, ESBMTK is only available via https://pypi.org/project/esbmtk/, and there is no recipe to install with conda. ESBMTK relies on the following libraries that need to be installed with conda before you can install ESBMTk with =pip=: As usual, it is recommended to first create a new virtual environment, and then install the following:
 
  - python >= 3.9
@@ -28,12 +18,12 @@ Currently, ESBMTK is only available via https://pypi.org/project/esbmtk/, and th
 afterwards you can install esbmtk with =python -m pip install esbmtk=
 
 
-** pip & github
+*** pip & github
 
 If you work with pip, simply install  with =python -m pip install esbmtk=, or download the code from https://github.com/uliw/esbmtk
 
 
-* A simple example
+** A simple example
 
 A simple model of the marine P-cycle would consider the delivery of P from weathering, the burial of P in the sediments, the thermohaline transport of dissolved PO_4 as well as the export of P in the form of sinking organic matter (POP). The concentration in the respective surface and deep water boxes is then the sum of the respective fluxes (see Fig. 1). The model parameters are taken from Glover 2011, Modeling Methods in the Marine Sciences.
 #+attr_org: :width 300
