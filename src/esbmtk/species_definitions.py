@@ -1,3 +1,22 @@
+"""
+esbmtk: A general purpose Earth Science box model toolkit Copyright
+(C), 2020 Ulrich G.  Wortmann
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or (at
+your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+from __future__ import annotations
+import typing as tp
 import numpy as np
 import numpy.typing as npt
 from .esbmtk import Element, Species
@@ -5,6 +24,8 @@ from .esbmtk import Element, Species
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 np.set_printoptions(precision=4)
+if tp.TYPE_CHECKING:
+    from .esbmtk import Model
 
 
 def Carbon(model):
@@ -122,7 +143,15 @@ def Hydrogen(model):
     )  # Name & element handle
 
 
-def Oxygen(model):
+def Oxygen(model: Model) -> None:
+    """Common Properties of Oxygen
+
+    Parameters
+    ----------
+    model : Model
+        Model instance
+
+    """
     eh = Element(
         name="Oxygen",
         model=model,  # model handle
@@ -136,13 +165,13 @@ def Oxygen(model):
     )
 
     # add species
-    Species(name="O", element=eh, display_as="O", register=eh)
+    Species(name="O", element=eh, display_as="O")
     # Name & element handle
     Species(
-        name="O2", element=eh, display_as=r"O$_{2}$", register=eh
+        name="O2", element=eh, display_as=r"O$_{2}$"
     )  # Name & element handle
     Species(
-        name="OH", element=eh, display_as=r"OH$^{-}$", register=eh
+        name="OH", element=eh, display_as=r"OH$^{-}$"
     )  # Name & element handle
 
 
@@ -192,18 +221,18 @@ def Nitrogen(model):
     )
 
     # add species
-    Species(name="N", element=eh, display_as=r"N", register=eh)
+    Species(name="N", element=eh, display_as=r"N")
     Species(
-        name="N2", element=eh, display_as=r"N$_{2}$", register=eh
+        name="N2", element=eh, display_as=r"N$_{2}$"
     )  # Name & element handle
     Species(
-        name="Nox", element=eh, display_as=r"Nox", register=eh
+        name="Nox", element=eh, display_as=r"Nox"
     )  # Name & element handle
     Species(
-        name="NH4", element=eh, display_as=r"NH$_{4}^{+}$", register=eh
+        name="NH4", element=eh, display_as=r"NH$_{4}^{+}$"
     )  # Name & element handle
     Species(
-        name="NH3", element=eh, display_as=r"NH$_{3}$", register=eh
+        name="NH3", element=eh, display_as=r"NH$_{3}$"
     )  # Name & element handle
 
 
@@ -221,15 +250,15 @@ def Boron(model):
     )
 
     # add species
-    Species(name="B", element=eh, display_as=r"B", register=eh)  # Name & element handle
+    Species(name="B", element=eh, display_as=r"B")  # Name & element handle
     Species(
-        name="BOH", element=eh, display_as=r"B", register=eh
+        name="BOH", element=eh, display_as=r"B"
     )  # Name & element handle
     Species(
-        name="BOH3", element=eh, display_as=r"B(OH)$_{3}$", register=eh
+        name="BOH3", element=eh, display_as=r"B(OH)$_{3}$"
     )  # Boric Acid
     Species(
-        name="BOH4", element=eh, display_as=r"B(OH)$_{4}^{-}$", register=eh
+        name="BOH4", element=eh, display_as=r"B(OH)$_{4}^{-}$"
     )  # Borate
 
 
@@ -240,11 +269,10 @@ def misc_variables(model):
         mass_unit="m",  # base mass unit
         register=model,
     )
-
     # add species
-    Species(name="zsnow", element=eh, display_as="zsnow", register=eh, stype="length")
-    Species(name="zcc", element=eh, display_as="zcc", register=eh, stype="length")
-    Species(name="zsat", element=eh, display_as="zcc", register=eh, stype="length")
-    Species(name="Fburial", element=eh, display_as="Fburial", register=eh)
-    Species(name="Fdiss", element=eh, display_as="Fdiss", register=eh)
+    Species(name="zsnow", element=eh, display_as="zsnow", stype="length")
+    Species(name="zcc", element=eh, display_as="zcc", stype="length")
+    Species(name="zsat", element=eh, display_as="zcc", stype="length")
+    Species(name="Fburial", element=eh, display_as="Fburial")
+    Species(name="Fdiss", element=eh, display_as="Fdiss")
     # Name & element handle
