@@ -229,6 +229,7 @@ def write_equations_2(
     """
     from esbmtk import Reservoir
     import pathlib as pl
+    import sys
 
     # get pathlib object
     fn: str = "equations.py"  # file name
@@ -239,8 +240,9 @@ def write_equations_2(
     # add optional import statements
     h1 = """from __future__ import annotations
 from numpy import array as npa
-from numba import njit\n\n"""
-
+from numba import njit
+"""
+    
     h2 = """# @njit(fastmath=True)
 def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         '''Auto generated esbmtk equations do not edit
@@ -253,7 +255,6 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
     # ensure there are no duplicates
     M.lpc_i = set(M.lpc_i)
     M.lpc_f = set(M.lpc_f)
-    M.luf = set(M.luf)
 
     if len(M.lpc_f) > 0:
         hi += f"from esbmtk import "
@@ -267,11 +268,10 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
             hi += f"{f} ,"
         hi = f"{hi[:-2]}\n"  # strip comma and space
 
-    if len(M.luf) > 0:  # test if user defined function imports are required
-        hi = f"from esbmtk.bio_pump_functions{M.bio_pump_functions} import "
-        for f in set(M.lpc_i):
-            hi += f"{f} ,"
-        hi = f"{hi[:-2]}\n"  # strip comma and space
+    if M.luf:  # test if user defined function imports are required
+        for function, args in M.luf.items():
+            source = args[0]
+            hi += f"from {source} import {function}\n"
 
     header = f"{h1}{hi}\n{h2}"
 

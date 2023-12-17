@@ -216,12 +216,12 @@ class Model(esbmtkBase):
         self.ldf: list = [] # list of datafield objects
         self.los: list = []  # list of signals
         self.lof: list = []  # list of fluxes
-        self.luf: list = []  # list of user functions
         self.lrg: list = []  # list of reservoirgroups
         self.gpt: tuple = ()  # global parameter list
         self.toc: tuple = ()  # global constants list
         self.gcc: int = 0  # constants counter
         self.vpc: int = 0  # parameter counter
+        self.luf: dict = {}  # user functions and source
 
         # unit defs
         self.l_unit = ureg.meter  # the length unit
@@ -610,12 +610,9 @@ class Model(esbmtkBase):
         # ensure that cwd is in the load path. Required for windows
         cwd: pl.Path = pl.Path.cwd()
         sys.path.append(cwd)
-
-        # import equation system
-        from equations import eqs
-
-        # ode_system = setup_ode(self)  # create ode system instance
-        # self.ode_system = ode_system
+      
+        from equations import eqs   # import equation system
+       
         method = kwargs["method"] if "method" in kwargs else "BDF"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
 

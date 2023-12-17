@@ -1592,6 +1592,8 @@ class ExternalCode(Reservoir_no_set):
             SourceGroup,
             SinkGroup,
             ReservoirGroup,
+            Reservoir,
+            Connection,
             Model,
         )
         from typing import Callable
@@ -1612,6 +1614,8 @@ class ExternalCode(Reservoir_no_set):
                     SourceGroup,
                     SinkGroup,
                     ReservoirGroup,
+                    Reservoir,
+                    Connection,
                     ConnectionGroup,
                     GasReservoir,
                     Model,
