@@ -208,18 +208,15 @@ class Model(esbmtkBase):
         self.lpc_i: list = []
         # list of external functions affecting virtual reservoirs
         self.lpc_r: list = []
-        # list of virtual reservoirs
-        self.lvr: list = []
+        self.lvr: list = [] # list of virtual reservoirs
         # optional keywords for use in the connector class
         self.olkk: list = []
         # list of objects which require a delayed initialize
         self.lto: list = []
-        # list of datafield objects
-        self.ldf: list = []
-        # list of signals
-        self.los: list = []
-        # self.first_start = True  # keep track of repeated solver calls
+        self.ldf: list = [] # list of datafield objects
+        self.los: list = []  # list of signals
         self.lof: list = []  # list of fluxes
+        self.luf: list = []  # list of user functions
         self.lrg: list = []  # list of reservoirgroups
         self.gpt: tuple = ()  # global parameter list
         self.toc: tuple = ()  # global constants list
