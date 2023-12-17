@@ -26,7 +26,7 @@ def init_carbonate_system_1(source, sink, species, scale)-> None:
     
     """
     
-    from esbmtk import ExternalCode
+    from esbmtk import ExternalCode, register_return_values
 
     p = (scale,)  # must be a tuple!
     ec = ExternalCode(
@@ -39,11 +39,12 @@ def init_carbonate_system_1(source, sink, species, scale)-> None:
         function_params=p,
         register=source,
         return_values=[
-            {f"F_{sink.full_name}": "any string"},
+            {f"F_{sink.full_name}.spcies.name": "any string"},
         ],
     )
     # Add to the list of functions to be imported in ode backend
-    source.mo.lpc_i.append(ec.fname)  
+    register_return_values(ec, source)
+    source.mo.lpc_i.append(ec.fname) 
 
 def add_my_burial(source, sink, species, scale)-> None:
     """ TBD """
