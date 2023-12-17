@@ -232,7 +232,7 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
     rg : ReservoirGroup | Reservoir
         The Resevoir or Reservoirgroup the external function is
         associated with
-    
+
     Raises
     ------
     ValueError
@@ -1240,9 +1240,9 @@ def check_for_quantity(kw, unit):
     ------
     ValueError
         if keywword is neither number, str or quantity
-    
+
     """
-    
+
     from esbmtk import Q_
 
     if isinstance(kw, str):
@@ -1599,3 +1599,30 @@ def get_new_ratio_from_alpha(
         new_ratio = 0.0
 
     return new_ratio
+
+
+def register_user_function(M: Model, lib_name: str, func_name: str | list) -> None:
+    """Register user supplied library and function with the model
+
+    Parameters
+    ----------
+    M : Model
+        Model handle
+    lib_name : str
+        name of python file that contains the function
+    func_name : str | list
+        Name of one or more user supplied function(s)
+
+    """
+    import pathlib as pl
+    import sys
+
+    if isinstance(func_name, str):
+        func_name = [func_name]
+
+    cwd: pl.Path = pl.Path.cwd()  # get the current working
+    if cwd not in sys.path:
+        sys.path.append(cwd)
+
+    for f in func_name:
+        M.luf[f] = [lib_name, cwd]
