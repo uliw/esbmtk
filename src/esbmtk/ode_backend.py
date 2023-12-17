@@ -249,17 +249,27 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
     ind2 = 8 * " "  # indention
     ind3 = 12 * " "  # indention
     hi = ""
+
+    # ensure there are no duplicates
     M.lpc_i = set(M.lpc_i)
     M.lpc_f = set(M.lpc_f)
-    if len(M.lpc_i) > 0:
+    M.luf = set(M.luf)
+
+    if len(M.lpc_f) > 0:
+        hi += f"from esbmtk import "
+        for f in set(M.lpc_f):
+            hi += f"{f} ,"
+        hi = f"{hi[:-2]}\n"  # strip comma and space
+
+    if len(M.lpc_i) > 0:  # test if functions imports are required
         hi = f"from esbmtk.bio_pump_functions{M.bio_pump_functions} import "
         for f in set(M.lpc_i):
             hi += f"{f} ,"
         hi = f"{hi[:-2]}\n"  # strip comma and space
 
-    if len(M.lpc_f) > 0:
-        hi += f"from esbmtk import "
-        for f in set(M.lpc_f):
+    if len(M.luf) > 0:  # test if user defined function imports are required
+        hi = f"from esbmtk.bio_pump_functions{M.bio_pump_functions} import "
+        for f in set(M.lpc_i):
             hi += f"{f} ,"
         hi = f"{hi[:-2]}\n"  # strip comma and space
 
@@ -306,7 +316,6 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
                     eqs.write(f"{ind2}{fn}_l =  {exl}\n")
                     if flux.full_name == "M.CG_A_sb_to_A_ib.DIC_._F":
                         print(f"wrote = {fn}_l  {exl}")
-
 
         sep = (
             "# ---------------- write computed reservoir equations -------- #\n"
