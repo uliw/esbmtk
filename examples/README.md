@@ -1,0 +1,15 @@
+
+
+# Code Examples
+
+-   `po4_1.py` Two box P-cycle model with primary production, introducing the basic ESBMTK building blocks.  See <https://esbmtk.readthedocs.io/>
+-   `po4_1.py` Two box P and DIC model demonstrating the use of the `scale_with_flux` connection type. See <https://esbmtk.readthedocs.io/>
+-   `po4_1_with_isotopes.py` Two box P and DIC model demonstrating how to add isotopes calculations. See <https://esbmtk.readthedocs.io/>
+-   `po4_1_with_signal.py` Two box P-cycle model with primary production, showing how to add model forcing with the `Signal` class. See <https://esbmtk.readthedocs.io/>
+-   `seawater_example.py` Code snippet showing how to add (and access) seawater parameters to a model. See <https://esbmtk.readthedocs.io/>
+-   `hypsometry.py` Code snipped demonstrating the use of the hypsometry class. See <https://esbmtk.readthedocs.io/>
+-   `user_defined_functions.py` Two box P-cycle model with primary production, demonstrating how to write and integrate custom functions. See <https://esbmtk.readthedocs.io/>
+
+
+# Model Examples
+
