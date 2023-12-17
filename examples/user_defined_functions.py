@@ -6,6 +6,7 @@ from esbmtk import (
     Source,  # the source class
     Sink,  # sink class
     Q_,  # Quantity operator
+    register_user_function,
 )
 
 # define the basic model parameters
@@ -13,6 +14,7 @@ M = Model(
     stop="6 Myr",  # end time of model
     timestep="1 kyr",  # upper limit of time step
     element=["Phosphor"],  # list of element definitions
+    # parse_model=False,
 )
 
 # boundary conditions
@@ -81,15 +83,25 @@ Connection(  #
     id="primary_production",
 )
 
-Connection(  #
-    source=M.D_b,  # source of flux
-    sink=M.burial,  # target of flux
-    ctype="scale_with_flux",
-    ref_flux=M.flux_summary(filter_by="primary_production", return_list=True)[0],
-    scale=1 - R_e,
-    id="burial",
-)
+# Connection(  #
+#     source=M.D_b,  # source of flux
+#     sink=M.burial,  # target of flux
+#     ctype="scale_with_flux",
+#     ref_flux=M.flux_summary(filter_by="primary_production", return_list=True)[0],
+#     scale=1 - R_e,
+#     id="burial",
+# )
+
+# --- add user defined function ---- #
+# register function and lib
+register_user_function(M, "my_functions", "my_burial")
+
+# load helper functions
+from my_functions import add_my_burial
+
+# apply user function
+add_my_burial(M.D_b, M.burial, M.PO4, M.S_b.volume / 1e3)
 
 M.run()
 M.plot([M.S_b, M.D_b], fn="po4_1.png")
-M.save_state(directory="state_po41")
+# M.save_state(directory="state_po41")
