@@ -11,8 +11,8 @@ from esbmtk import (
 
 # define the basic model parameters
 M = Model(
-    stop="6 Myr",  # end time of model
-    timestep="1 kyr",  # upper limit of time step
+    stop="1000 yr",  # end time of model
+    timestep="1 yr",  # upper limit of time step
     element=["Phosphor"],  # list of element definitions
     # parse_model=False,
 )
@@ -83,24 +83,32 @@ Connection(  #
     id="primary_production",
 )
 
-# Connection(  #
-#     source=M.D_b,  # source of flux
-#     sink=M.burial,  # target of flux
-#     ctype="scale_with_flux",
-#     ref_flux=M.flux_summary(filter_by="primary_production", return_list=True)[0],
-#     scale=1 - R_e,
-#     id="burial",
-# )
+# --- Adding a user supplied function into the model --- #
 
-# --- add user defined function ---- #
-# register function and lib
+""" To add a user supplied function, we need a local file
+(e.g., my_functions.py) where we define our new function
+(e.g.,  my_burial()). In addition we need some code that
+describes the relationship of this function with the model
+(e.g., add_my_function()).
+
+Assuming that the functions my_burial() and
+add_my_burial() exist in the local file my_functions.py,
+we can register the module my_functions.py, and the
+function my_burial() with the ESBMTK model using the aptly
+named register_user_function() function. Note that the
+function name can also be a list of several function names.
+"""
 register_user_function(M, "my_functions", "my_burial")
 
-# load helper functions
+""" Next we import the import the function add_my_burial()
+into this script, so that we connect it with the model.
+Unlike my_burial() the add_my_burial() function can also be
+defined in this script.
+"""
 from my_functions import add_my_burial
 
-# apply user function
-add_my_burial(M.D_b, M.burial, M.PO4, M.S_b.volume / 1e3)
+# Last but not least, apply the new function
+add_my_burial(M.D_b, M.burial, M.PO4, M.D_b.volume.magnitude / 2000.0)
 
 M.run()
 M.plot([M.S_b, M.D_b], fn="po4_1.png")

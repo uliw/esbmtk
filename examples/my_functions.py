@@ -1,4 +1,4 @@
-def my_burial(concentration: float, scale: float) -> float:
+def my_burial(concentration: float, p: tuple) -> float:
     """Calculate a flux as a function of concentration
 
     Parameters
@@ -11,24 +11,39 @@ def my_burial(concentration: float, scale: float) -> float:
     Returns
     -------
     float
-        flux
+        flux in model mass unit / time
 
+    Notes: the scale information is passed as a tuple, so we need
+    extract it from the tuple before using it
+
+    f is a burial flux, so we need to returm a negative number.
     """
+    (scale,) = p
+
     f = concentration * scale
 
-def init_carbonate_system_1(source, sink, species, scale)-> None:
-    """TBD
+    return -f
+
+
+def add_my_burial(source, sink, species, scale) -> None:
+    """This function initializes a user supplied function
+    so that it can be used within the ESBMTK eco-system
 
     Parameters
     ----------
-    r : Reservoir
-        Reservoir
-    
+    source : Source | Reservoir | ReservoirGroup
+        A source
+    sink : Sink | Reservoir | ReservoirGroup
+        A sink
+    species : Species
+        A model species
+    scale : float
+        A scaling factor
+
     """
-    
     from esbmtk import ExternalCode, register_return_values
 
-    p = (scale,)  # must be a tuple!
+    p = (scale,)  # convert float into tuple
     ec = ExternalCode(
         name="mb",
         species=source.species,
@@ -39,15 +54,8 @@ def init_carbonate_system_1(source, sink, species, scale)-> None:
         function_params=p,
         register=source,
         return_values=[
-            {f"F_{sink.full_name}.spcies.name": "any string"},
+            {f"F_{sink.full_name}.{species.name}": "id_string"},
         ],
     )
-    # Add to the list of functions to be imported in ode backend
+
     register_return_values(ec, source)
-    source.mo.lpc_i.append(ec.fname) 
-
-def add_my_burial(source, sink, species, scale)-> None:
-    """ TBD """
-
-    init_carbonate_system_1(source, sink, species, scale)
-    
