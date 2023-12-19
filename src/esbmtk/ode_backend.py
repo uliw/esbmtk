@@ -394,20 +394,6 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
     elif c.ctype == "scale_with_flux":
         ex, exl = get_scale_with_flux_eq(flux, c, cfn, icl, ind2, ind3)
 
-    elif c.ctype == "weathering":
-        print("found weathering")
-        breakpoint()
-        #     ex, exl = get_weathering_eq(flux, c, cfn, icl, ind2, ind3)
-        # ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3)
-
-    elif c.ctype == "gas_exchange":  # Gasexchange
-        print("found old gas_exchange")
-        breakpoint()
-        if c.isotopes:
-            ex = get_gas_exchange_w_isotopes_eq(flux, c, cfn, icl, ind2, ind3)
-        else:
-            ex = get_gas_exchange_eq(flux, c, cfn, icl, ind2, ind3)
-
     elif c.ctype == "ignore":
         pass  # do nothing
 
