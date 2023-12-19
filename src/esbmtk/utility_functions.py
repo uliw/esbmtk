@@ -176,16 +176,13 @@ def register_new_flux(rg, dict_key, dict_value) -> list:
         sp = getattr(rg.mo, spn)
         reg = getattr(rg, sp.name)
     elif isinstance(rg, Reservoir):
-        rg.mo.flux_summary(filter_by="wca")
-        raise NotImplementedError
+        spn = dict_key.split(".")[-1]
+        sp = getattr(rg.mo, spn)
+        reg = rg
     else:
         print(f" type(rg) = {type(rg)}")
         raise NotImplementedError
-
-    spn = dict_key.split(".")[-1]
-    sp = getattr(rg.mo, spn)
-    reg = getattr(rg, sp.name)
-
+   
     if not hasattr(reg, "source"):
         setattr(reg, "source", sp.name)
 
@@ -253,6 +250,7 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
     GasReservoir class.
     """
     from esbmtk import Reservoir, ReservoirGroup, Flux, Connection, Connect
+    from esbmtk import Sink, SinkGroup
 
     M = rg.mo
     # go through each entry in ec.return_values
@@ -269,6 +267,8 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
                     elif isinstance(o, Connection | Connect):
                         o: list = [getattr(o, "_F")]  # get flux handle
                     elif isinstance(o, Reservoir | ReservoirGroup):
+                        o: list = register_new_flux(rg, dict_key[2:], dict_value)
+                    elif isinstance(o, Sink | SinkGroup):
                         o: list = register_new_flux(rg, dict_key[2:], dict_value)
                     else:
                         raise ValueError(f"No recipie for {type(o)}")
@@ -1221,13 +1221,13 @@ def get_string_between_brackets(s: str) -> str:
     return s[0]
 
 
-def check_for_quantity(kw, unit):
+def check_for_quantity(quantity, unit):
     """check if keyword is quantity or string an convert as necessary
 
     Parameters
     ----------
-    kw : str | quantity | float | int
-        keyword e.g., "12 m/s", or 12,
+    quantity : str | quantity | float | int
+        e.g., "12 m/s", or 12,
     unit : str
         desired unit for keyword, e.g., "m/s"
 
@@ -1245,14 +1245,14 @@ def check_for_quantity(kw, unit):
 
     from esbmtk import Q_
 
-    if isinstance(kw, str):
-        kw = Q_(kw)
-    elif isinstance(kw, float | int):
-        kw = Q_(f"{kw} {unit}")
-    elif not isinstance(kw, Q_):
+    if isinstance(quantity, str):
+        quantity = Q_(quantity)
+    elif isinstance(quantity, float | int):
+        quantity = Q_(f"{quantity} {unit}")
+    elif not isinstance(quantity, Q_):
         raise ValueError("kw must be string, number or Quantity")
 
-    return kw
+    return quantity
 
 
 def map_units(obj: any, v: any, *args) -> float:
