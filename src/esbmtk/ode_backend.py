@@ -258,13 +258,13 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
 
     if len(M.lpc_f) > 0:
         hi += f"from esbmtk import "
-        for f in set(M.lpc_f):
+        for f in M.lpc_f:
             hi += f"{f} ,"
         hi = f"{hi[:-2]}\n"  # strip comma and space
 
     if len(M.lpc_i) > 0:  # test if functions imports are required
-        hi = f"from esbmtk.bio_pump_functions{M.bio_pump_functions} import "
-        for f in set(M.lpc_i):
+        hi += f"from esbmtk.bio_pump_functions{M.bio_pump_functions} import "
+        for f in M.lpc_i:
             hi += f"{f} ,"
         hi = f"{hi[:-2]}\n"  # strip comma and space
 
@@ -401,6 +401,8 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
         # ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3)
 
     elif c.ctype == "gas_exchange":  # Gasexchange
+        print("found old gas_exchange")
+        breakpoint()
         if c.isotopes:
             ex = get_gas_exchange_w_isotopes_eq(flux, c, cfn, icl, ind2, ind3)
         else:
