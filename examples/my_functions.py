@@ -16,7 +16,7 @@ def my_burial(concentration: float, p: tuple) -> float:
     Notes: the scale information is passed as a tuple, so we need
     extract it from the tuple before using it
 
-    f is a burial flux, so we need to returm a negative number.
+    f is a burial flux, so we need to return a negative number.
     """
     (scale,) = p
 

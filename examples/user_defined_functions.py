@@ -104,11 +104,22 @@ register_user_function(M, "my_functions", "my_burial")
 into this script, so that we connect it with the model.
 Unlike my_burial() the add_my_burial() function can also be
 defined in this script.
+Note that unless add_my_burial() contains code to correctly
+interpret quantities, you need to make sure that the parameters
+passed to add_my_burial() are float numbers in model units
+(e.g., liter, year, kg) etc. That is why the below code
+uses M.D_b.volume.magnitude rather than  M.D_b.volume (which
+is a quantity)
 """
 from my_functions import add_my_burial
 
 # Last but not least, apply the new function
-add_my_burial(M.D_b, M.burial, M.PO4, M.D_b.volume.magnitude / 2000.0)
+add_my_burial(
+    M.D_b,  # Source
+    M.burial,  # Sink
+    M.PO4,  # Species
+    M.D_b.volume.magnitude / 2000.0,  # Scale
+)
 
 M.run()
 M.plot([M.S_b, M.D_b], fn="po4_1.png")

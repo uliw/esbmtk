@@ -111,6 +111,82 @@ Note that in the above example, we leverage that =Element= instances keep track 
 
 *** Adding your own functions to ESBMTK
 
-*** Calling model specific functions
+#+BEGIN_SRC ipython
+def my_burial(concentration: float, p: tuple) -> float:
+    """Calculate a flux as a function of concentration
+
+    Parameters
+    ----------
+    concentration : float
+        substance concentration
+    scale : float
+        scaling factor
+
+    Returns
+    -------
+    float
+        flux in model mass unit / time
+
+    Notes: the scale information is passed as a tuple, so we need
+    extract it from the tuple before using it
+
+    f is a burial flux, so we need to return a negative number.
+    """
+    (scale,) = p
+
+    f = concentration * scale
+
+    return -f
+#+END_SRC
+
+#+BEGIN_SRC ipython
+def add_my_burial(source, sink, species, scale) -> None:
+    """This function initializes a user supplied function
+    so that it can be used within the ESBMTK eco-system
+
+    Parameters
+    ----------
+    source : Source | Reservoir | ReservoirGroup
+        A source
+    sink : Sink | Reservoir | ReservoirGroup
+        A sink
+    species : Species
+        A model species
+    scale : float
+        A scaling factor
+
+    """
+    from esbmtk import ExternalCode, register_return_values
+
+    p = (scale,)  # convert float into tuple
+    ec = ExternalCode(
+        name="mb",
+        species=source.species,
+        function=my_burial,
+        fname="my_burial",
+        ftype="std",
+        function_input_data=[source],
+        function_params=p,
+        register=source,
+        return_values=[
+            {f"F_{sink.full_name}.{species.name}": "id_string"},
+        ],
+    )
+
+    register_return_values(ec, source)
+#+END_SRC
 
 
+
+#+BEGIN_SRC ipython
+register_user_function(M, "my_functions", "my_burial")
+
+from my_functions import add_my_burial
+
+add_my_burial(
+    M.D_b,  # Source
+    M.burial,  # Sink
+    M.PO4,  # Species
+    M.D_b.volume.magnitude / 2000.0,  # Scale
+)
+#+END_SRC
