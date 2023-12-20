@@ -260,9 +260,9 @@ class ReservoirGroup(esbmtkBase):
                 )
             else:
                 warnings.warn(
-                    f"Using SeawaterConstants without provinding DIC"
-                    f"and TA values for {self.name}"
-                    f"You need to call swc.update_parameters()"
+                    f"Using SeawaterConstants without provinding DIC "
+                    f"and TA values for {self.name} "
+                    f"You need to call swc.update_parameters() "
                     f"once DIC and TA are specified"
                 )
         self.register.lrg.append(self)
