@@ -5,8 +5,8 @@ def my_burial(concentration: float, p: tuple) -> float:
     ----------
     concentration : float
         substance concentration
-    scale : float
-        scaling factor
+    p : tuple
+        tuple where the first element is the scaling factor
 
     Returns
     -------
