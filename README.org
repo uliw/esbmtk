@@ -34,7 +34,7 @@
 
 * ESBMTK - The  Earth Sciences Box Modeling Toolkit
 
-# #+html: <img src="./mpc.png" width="400px">
+# #+html: <img src="./mpc.png" width="800px">
 
 #+html: <img src="https://raw.githubusercontent.com/uliw/esbmtk/staging/mpc.png" width="200px" align="center">"
 
