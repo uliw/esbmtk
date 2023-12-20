@@ -150,7 +150,7 @@ Adding a custom function to ESBMTK requires the following considerations:
 The reason behind this rigid scheme has to do with memory management, but it is typically easy to adhere to them.
 
 A worked example
-::::::::::::::::
+^^^^^^^^^^^^^^^^
 
 Let's consider a simple case where we define a custom function ``my_burial()`` that returns a flux as a function of concentration. For this, we need a parameter that passes a concentration, and a parameter that passes a scaling factor. Since both are float, we could use this signature with an empty tuple
 
@@ -267,7 +267,7 @@ Note that  ``M.D_b.volume.magnitude`` is not a number but a quantity. So one nee
 The file ``user_defined_functions.py`` in the ``examples`` directory shows a working example. 
 
 Debugging custom function integration
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The current custom function integration interface is not very user-friendly and often requires investigating the actual ``equations.py`` file. In the default operating mode, ESBMTK will recreate this file for each model run, so that print statements and breakpoints that have been placed in ``equations.py`` have no effect.
 Use the ``parse_model`` keyword in the model instance to keep the edited ``equations.py`` for the next run:

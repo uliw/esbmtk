@@ -40,7 +40,7 @@ This will result in the following output:
 .. _sig:
 
 .. figure:: ./po4_1_with_signal.png
-    :width: 600
+    :width: 400
 
 
     Example output for the ``CR`` signal above. See ``po4_1_with_signal.py`` in the examples directory.
@@ -143,7 +143,7 @@ which results in the below plot. The full code is available in the examples dire
 .. _po4_2:
 
 .. figure:: ./po4_2.png
-    :width: 600
+    :width: 400
 
 
     Output of ``po4_2.py`` demonstrating the use of the ``data_summaries()`` function
@@ -201,7 +201,7 @@ Running the previous model with these additional 5 lines, results in the followi
 .. _po4_2_with_isotopes:
 
 .. figure:: ./po4_2_with_isotopes.png
-    :width: 600
+    :width: 400
 
 
     Output of ``po4_2_with_isotopes``.py= Note that the run-time has been reduced to 500 years, so that the graph does not just show the steady state. The upper box shows the gradual increase in DIC concentrations and the lower shows the corresponding isotope ratios. The system will achieve isotopic equilibrium within approximately 2000 years.

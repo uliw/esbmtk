@@ -43,7 +43,7 @@ A simple model of the marine P-cycle would consider the delivery of P from weath
 .. _pcycle:
 
 .. figure:: ./mpc.png
-    :width: 600
+    :width: 400
 
 
     A two-box model of the marine P-cycle. F\ :sub:`w`\ = weathering F\ :sub:`u`\ = upwelling, F\ :sub:`d`\ = downwelling, F\ :sub:`POP`\ = particulate organic phosphor, F\ :sub:`b`\ = burial.
@@ -108,7 +108,7 @@ ESBMTK uses a hierarchically structured object-oriented approach to describe a m
 .. _m1:
 
 .. figure:: ./model2.png
-    :width: 600
+    :width: 400
 
 
     Schematic outlining the object hierarchy in ESBMTK Reservoirs contain the data for a given species. Multiple reservoirs form a group that share common characteristics, e.g., volume, area, pressure, temperature etc. The relationship between reservoir groups (and/or Reservoirs) are defined by a connection object that defines e.g., a rate function etc. Connection objects can be dynamically modified by a Signal. ReservoirGroups have various sub-classes that provide access to e.g., hypsographic data, or perform carbonate chemistry calculations.
@@ -285,7 +285,8 @@ The ``flux_summary()`` method will return a list of matching fluxes but since th
         id="burial",
     )
 
-Running the above code (see the file ``po4_1.py`` in the examples directory), results in the following graph:
+Running the above code (see the file ``po4_1.py`` in the examples directory or [[`https://github.com/uliw/esbmtk/blob/master/examples/ <https://github.com/uliw/esbmtk/blob/master/examples/>`_][on github])
+results in the following graph:
 
 .. _po41:
 

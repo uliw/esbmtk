@@ -1,7 +1,3 @@
-==========================================
-Seawater & Carbon Chemistry & Gas Exchange
-==========================================
-
 
 
 
@@ -50,7 +46,7 @@ Scripps’ SRTM15+V2.5.5 grid (Tozer et al., 2019, `https://doi.org/10.1029/2019
 .. _hyp:
 
 .. figure:: ./hyp.png
-    :width: 600
+    :width: 400
 
 
     Comparison between spline fit, and the actual data.
