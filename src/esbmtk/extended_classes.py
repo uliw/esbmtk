@@ -1631,7 +1631,7 @@ class ExternalCode(Reservoir_no_set):
             "fname": ["None", (str)],
             "geometry": ["None", (list, str)],
             "alias_list": ["None", (list, str)],
-            "ftype": ["None", (str)],
+            "ftype": ["std", (str)],
             "ref_flux": ["None", (list, str)],
             "return_values": ["None", (list)],
             "arguments": ["None", (str, list)],
