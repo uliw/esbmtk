@@ -1,11 +1,11 @@
 
 
 
-1 Adding Complexity
--------------------
+Adding Complexity
+-----------------
 
-1.1 Model forcing
-~~~~~~~~~~~~~~~~~
+Model forcing
+~~~~~~~~~~~~~
 
 ESBMTK realizes model forcing through the :py:class:`esbmtk.extended_classes.Signal()` class. Once defined, a signal instance can be associated with a :py:class:`esbmtk.connections.Connection()` instance that will then act on the associated connection. This class provides the following keywords to create a signal:
 
@@ -40,13 +40,13 @@ This will result in the following output:
 .. _sig:
 
 .. figure:: ./po4_1_with_signal.png
-    :width: 300
+    :width: 600
 
 
     Example output for the ``CR`` signal above. See ``po4_1_with_signal.py`` in the examples directory.
 
-1.2 Working with multiple species
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Working with multiple species
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The basic building blocks introduced so far, are sufficient to create a model, but not necessarily convenient when a model contains more than one species. ESBMTK addresses this through the :py:class:`esbmtk.extended_classes.ReservoirGroup.()` class, which allows to group of several :py:class:`esbmtk.esbmtk.Reservoir()` instances.
 instances. A  ``ReservoirGroup`` shares common properties. e.g., the volume and name of a given box, as well as the connection properties. In other words, in a multi-species model, one does not have to specify connections for each species, rather, it is sufficient to specify the connection type for the  ``ReservoirGroup`` instance. Similarly, there are classes to group sources, sinks and connections.
@@ -143,13 +143,13 @@ which results in the below plot. The full code is available in the examples dire
 .. _po4_2:
 
 .. figure:: ./po4_2.png
-    :width: 300
+    :width: 600
 
 
     Output of ``po4_2.py`` demonstrating the use of the ``data_summaries()`` function
 
-1.3 Adding isotopes
-~~~~~~~~~~~~~~~~~~~
+Adding isotopes
+~~~~~~~~~~~~~~~
 
 Let's assume that the weathering flux of carbon has :math:`\delta`\ :sup:`13`\C value of 0 mUr, that photosynthesis fractionates by -28 mUr, and that organic matter burial does not import any carbon isotope fractionation. These changes require the following changes to the previous model code (the full code is available in the examples directory as ``po4_2_with_isotopes.py``):
 
@@ -201,13 +201,13 @@ Running the previous model with these additional 5 lines, results in the followi
 .. _po4_2_with_isotopes:
 
 .. figure:: ./po4_2_with_isotopes.png
-    :width: 300
+    :width: 600
 
 
     Output of ``po4_2_with_isotopes``.py= Note that the run-time has been reduced to 500 years, so that the graph does not just show the steady state. The upper box shows the gradual increase in DIC concentrations and the lower shows the corresponding isotope ratios. The system will achieve isotopic equilibrium within approximately 2000 years.
 
-1.4 Using many boxes
-~~~~~~~~~~~~~~~~~~~~
+Using many boxes
+~~~~~~~~~~~~~~~~
 
 Using the ESBMTK classes introduced so far is sufficient to build complex models. However, it is easy to leverage Python syntax to create a few utility functions that help in reducing overly verbose code. The ESBMTK library comes with a few routines that help in this regard. However, they are not part of the core API, are not (yet) well documented and have not seen much testing. The following provides a brief introduction, but it may be useful to study the code for the Boudreau 2010 and LOSCAR-type models in the example directory. All of these make heavy use of the Python dictionary class.
 

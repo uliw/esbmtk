@@ -5,13 +5,13 @@ Seawater & Carbon Chemistry & Gas Exchange
 
 
 
-1 Seawater and Carbon Chemistry
--------------------------------
+Seawater and Carbon Chemistry
+-----------------------------
 
 ESBMTK provides several classes that abstract the handling of basin geometry, seawater chemistry and air-sea gas exchange.
 
-1.1 Hypsography
-~~~~~~~~~~~~~~~
+Hypsography
+~~~~~~~~~~~
 
 For many modeling tasks, it is important to know a globally averaged hypsometric curve. ESBMTK will automatically create a suitable hypsography instance if a :py:class:`esbmtk.esbmtk.Reservoir()` or :py:class:`esbmtk.extended_classes.ReservoirGroup()` instance is specified with the geometry keyword as in the following example where the first list item denotes the upper depth datum, the second list item, the lower depth datum, and the last list item denotes the fraction of the total ocean area if the upper boundary would be at sea level.
 
@@ -55,8 +55,8 @@ Scripps’ SRTM15+V2.5.5 grid (Tozer et al., 2019, `https://doi.org/10.1029/2019
 
     Comparison between spline fit, and the actual data.
 
-1.2 Seawater
-~~~~~~~~~~~~
+Seawater
+~~~~~~~~
 
 ESBMTK provides a :py:class:`esbmtk.seawater.SeawaterConstants()` class that will be automatically instantiated when a :py:class:`esbmtk.extended_classes.ReservoirGroup()` instance 
 definition includes the ``seawater_parameters`` keyword. This keyword expects a dictionary that specifies temperature, salinity, and pressure for a given ``Reservoirgroup``. The class methods and instance variables are accessible via the ``swc`` instance.
@@ -91,8 +91,8 @@ Apart from density, this class will provide access to a host of instance paramet
         opt_buffers_mode=2, # carbonate, borate water alkalinity only
     )
 
-1.2.1 Caveats
-^^^^^^^^^^^^^
+Caveats
+^^^^^^^
 
 - Seawater Parameters are only computed once when the ``ReservoirGroup`` is instantiated, to provide an initial steady state. Subsequent changes to seawater chemistry or physical parameters do not affect the initial state.
 
@@ -102,11 +102,11 @@ Apart from density, this class will provide access to a host of instance paramet
 
 - The code example ``seawater_example.py`` in the examples directory
 
-1.3 Carbon Chemistry
-~~~~~~~~~~~~~~~~~~~~
+Carbon Chemistry
+~~~~~~~~~~~~~~~~
 
-1.3.1 pH
-^^^^^^^^
+pH
+^^
 
 Unless explicitly requested (see above), pH will be reported on the total scale. The hydrogen ion concentration ([H\ :sup:`+`\]) is computed by pyCO2SYS based on the initial DIC and total alkalinity (TA) concentrations. Subsequent hydrogen concentration calculations use the iterative approach of Follows et al. 2005 (`https://doi.org/10.1016/j.ocemod.2005.05.004 <https://doi.org/10.1016/j.ocemod.2005.05.004>`_). 
 
@@ -133,8 +133,8 @@ The remaining carbonate species are calculated during post-processing (see the :
     A_sb.CO3
     A_sb.Omega
 
-1.3.1.1 Notes:
-::::::::::::::
+Notes:
+::::::
 
 - The resulting concentration data depends on the choice of equilibrium constants and how they are calculated (see the ``opt_k_carbonic``, ``opt_buffers_mode`` keywords above).
 
@@ -144,8 +144,8 @@ The remaining carbonate species are calculated during post-processing (see the :
 
 - ESBMTK will print a warning message of the pH changes by more than 0.01 units per time step. However, this is only a crude measure, since the solver also uses interpolation between integration steps. So this may not catch all possible scenarios.
 
-1.3.2 Carbonate burial and dissolution
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Carbonate burial and dissolution
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Carbonate burial and dissolution use the parametrization proposed by Boudreau et al. 2010 (`https://doi.org/10.1029/2009gb003654 <https://doi.org/10.1029/2009gb003654>`_). The current ESBMTK implementation  has the following shortcomings:
 
@@ -191,8 +191,8 @@ Notes:
 
 - Please study the actual model implementations provided in the examples folder.
 
-1.3.3 Post-Processing
-^^^^^^^^^^^^^^^^^^^^^
+Post-Processing
+^^^^^^^^^^^^^^^
 
 As with ``carbonate_system_1`` the remaining carbonate species are not part of the equation system, rather they are calculated once a solution has been found. Since the solver does not store the carbonate export fluxes, one first has to calculate the relevant fluxes from the concentration data in the model solution. This is however model dependent (i.e., export productivity as a function of residence time, or as a function of upwelling flux), and as such post-processing of ``carbonate_system_2``  is not done automatically, but has to be initiated manually, e.g., like this:
 
@@ -219,8 +219,8 @@ This will compute all carbonate species similar to ``carbonate_system_1_pp``, an
 
 see  the :py:func:`esbmtk.post_processing.carbonate_system_2_pp()` function for details.
 
-1.4 Gas Exchange
-~~~~~~~~~~~~~~~~
+Gas Exchange
+~~~~~~~~~~~~
 
 ESBMTK implements gas exchange across the Air-Sea interface as a :py:class:`esbmtk.connections.Connection()` instance, between a :py:class:`esbmtk.extended_classes.GasReservoir()` and a :py:class:`esbmtk.esbmtk.Reservoir()` instance. In the following example, we first declare a ``Gasreservoir`` and then connect it with a regular surface box. Note that the CO\ :sub:`2`\ gas transfer calculation requires that the respective surface reservoir carries the ``CO2aq`` tracer as calculated by the :py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry_carbonate_system_1.()` function since the gas-transfer depends on the dissolved CO\ :sub:`2`\ rather than on the DIC concentration.
 
@@ -266,8 +266,8 @@ Defining gas transfer for O2  uses the same approach, but note the use of the ``
         ctype="gasexchange",
     )
 
-1.5 pCO\ :sub:`2`\ Dependent Weathering
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+pCO\ :sub:`2`\ Dependent Weathering
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ESBMTK defines a simple power law function to calculate pCO\ :sub:`2`\ dependent weathering fluxes (see e.g., Walker and Hays, 1981, `https://doi.org/10.1029/jc086ic10p09776 <https://doi.org/10.1029/jc086ic10p09776>`_):
 

@@ -1,4 +1,4 @@
-#+options: toc:nil author:nil
+#+options: toc:nil author:nil num:nil
 #+number-offset: 5
 
 * Adding Complexity
@@ -31,7 +31,7 @@ Connection(
 
 This will result in the following output:
 #+attr_org: :width 300
-#+attr_rst: :width 300
+#+attr_rst: :width 600
 #+attr_latex: :width 0.5\textwidth
 #+name: pcycle
 #+name: sig
@@ -122,7 +122,7 @@ M.plot(pl, fn="po4_2.png")
 #+END_SRC
 which results in the below plot. The full code is available in the examples directory as =po4_2.py=
 #+attr_org: :width 300
-#+attr_rst: :width 300
+#+attr_rst: :width 600
 #+attr_latex: :width 0.5\textwidth
 #+name: po4_2
 #+caption: Output of =po4_2.py= demonstrating the use of the 
@@ -170,7 +170,7 @@ Connection(  #
 #+END_SRC
 Running the previous model with these additional 5 lines, results in the following graph. Note that the run-time has been reduced to 500 years so that the graph does not just show the steady state and that the P-data is not shown.
 #+attr_org: :width 300
-#+attr_rst: :width 300
+#+attr_rst: :width 600
 #+attr_latex: :width 0.5\textwidth
 #+name: po4_2_with_isotopes
 #+caption: Output of =po4_2_with_isotopes=.py= Note that the run-time has 

@@ -1,4 +1,4 @@
-#+options: toc:nil author:nil
+#+options: toc:nil author:nil num:nil
 
 * Introduction
 
@@ -27,7 +27,7 @@ If you work with pip, simply install  with =python -m pip install esbmtk=, or do
 
 A simple model of the marine P-cycle would consider the delivery of P from weathering, the burial of P in the sediments, the thermohaline transport of dissolved PO_4 as well as the export of P in the form of sinking organic matter (POP). The concentration in the respective surface and deep water boxes is then the sum of the respective fluxes (see Fig. 1). The model parameters are taken from Glover 2011, Modeling Methods in the Marine Sciences.
 #+attr_org: :width 300
-#+attr_rst: :width 300
+#+attr_rst: :width 600
 #+attr_latex: :width 0.5\textwidth
 #+name: pcycle
 #+caption: A two-box model of the marine P-cycle. F_w = weathering

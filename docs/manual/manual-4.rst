@@ -127,8 +127,8 @@ In this example, I use Boron to demonstrate how to add a new element and its res
 
 Note that in the above example, we leverage that ``Element`` instances keep track of their species in the ``lsp`` variable. Provided that none of the species was defined previously, we can thus simply loop over the list of species to register them with the model.
 
-Adding your own functions to ESBMTK
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Adding custom functions to ESBMTK
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ESBMTK has some rudimentary support to add custom functions. This is currently not very user-friendly, and a better interface may become available in the future.
 Adding a custom function to ESBMTK requires the following considerations:
@@ -196,7 +196,7 @@ ESBMTK needs to import this function into the code that builds the equation syst
 
 Note that the last argument can also be a list of function names.
 
-Next, we need to create code that maps the model variables required by ``my_burial()`` to the actual function call. Most of this work is done by the :py:class:`esbmtk.extended_classes.ExternCode()` class. In the following example, we wrap this task into a dedicated function, but this is not a hard requirement. I add this function to the ``my_functions.py`` file, but you can also keep it with the code that defines the model.  Since we want to use this function to calculate a flux between two reservoirs (or a sink/source), we need to pass the source and sink reservoirs, as well as the species and the scale information, to ``add_my_burial()``.
+Next, we need to create code that maps the model variables required by ``my_burial()`` to the actual function call. Most of this work is done by the :py:class:`esbmtk.extended_classes.ExternalCode()` class. In the following example, we wrap this task into a dedicated function, but this is not a hard requirement. I add this function to the ``my_functions.py`` file, but you can also keep it with the code that defines the model.  Since we want to use this function to calculate a flux between two reservoirs (or a sink/source), we need to pass the source and sink reservoirs, as well as the species and the scale information, to ``add_my_burial()``.
 
 Notes on the below code:
 
@@ -262,7 +262,7 @@ Once these functions are defined, we can use them in the model definition as fol
         M.D_b.volume.magnitude / 2000.0,  # Scale
     )
 
-Note that  ``M.D_b.volume.magnitude`` is not a number but a quantity. So one needs to query the numerical value with ``.magnitude`` ., or add code to  ``add_my_burial`` to query the type of the input arguments and convert as necessary.
+Note that  ``M.D_b.volume.magnitude`` is not a number but a quantity. So one needs to query the numerical value with ``.magnitude``  or add code to  ``add_my_burial`` to query the type of the input arguments and convert as necessary.
 
 The file ``user_defined_functions.py`` in the ``examples`` directory shows a working example. 
 
