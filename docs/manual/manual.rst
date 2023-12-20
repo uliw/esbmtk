@@ -4,11 +4,6 @@
 Introduction
 ------------
 
-.. _ess:
-
-.. image:: /home/uliw/user/python-scripts/esbmtk/docs/manual/ess.png
-    :width: 400
-
 Installation
 ~~~~~~~~~~~~
 

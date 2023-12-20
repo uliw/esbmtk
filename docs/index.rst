@@ -3,6 +3,11 @@ The Earth Science Box Modeling Toolkit ESBMTK
 =============================================
 
 
+.. _ess:
+
+.. image:: ./ess.png
+    :width: 600
+	    
 The Earth Science Box Modeling Toolkit (ESBMTK) is a python library that  provides a an object oriented approach to development of Harvardton-Bear type models. The ESBMTK classes allow to describe models in a declarative way where the model definition serves also as the model documentation. 
 
 ESBMTK provides abstractions for a variety of processes, e.g., gas-exchange across the air-sea interface, or marine carbonate chemistry and isotope calculations. It's modular nature allows to easily extend or change existing models.
