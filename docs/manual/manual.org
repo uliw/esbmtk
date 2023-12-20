@@ -1,6 +1,12 @@
 #+options: toc:nil author:nil num:nil
 
 * Introduction
+#+attr_rst: :width 400
+#+attr_org: :width 400
+#+name: ess
+[[/home/uliw/user/python-scripts/esbmtk/docs/manual/ess.png]]
+
+
 
 ** Installation
 *** Conda
