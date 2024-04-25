@@ -10,15 +10,15 @@ from esbmtk import (
 
 # define the basic model parameters
 M = Model(
-    stop="6 Myr",  # end time of model
+    stop="3 Myr",  # end time of model
     timestep="1 kyr",  # upper limit of time step
     element=["Phosphor"],  # list of element definitions
 )
 
 # boundary conditions
-F_w = M.set_flux("45 Gmol", "year", M.P)  # P @280 ppm (Filipelli 2002)
-tau = Q_("100 year")  # PO4 residence time in surface box
-R_e = 1 - 0.01  # About 1% of the exported P is buried in the deep ocean
+F_w =  M.set_flux("45 Gmol", "year", M.P) # P @280 ppm (Filipelli 2002)
+tau = Q_("100 year")  # PO4 residence time in surface boxq
+F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
 thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 
 # Source definitions
@@ -86,10 +86,10 @@ Connection(  #
     sink=M.burial,  # target of flux
     ctype="scale_with_flux",
     ref_flux=M.flux_summary(filter_by="primary_production", return_list=True)[0],
-    scale=1 - R_e,
+    scale=F_b,
     id="burial",
 )
 
 M.run()
-M.plot([M.S_b, M.D_b], fn="po4_1.png")
-M.save_state(directory="state_po41")
+M.plot([M.S_b, M.D_b])
+M.save_data()

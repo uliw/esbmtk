@@ -151,7 +151,6 @@ Internally, the model uses 'year' as the time unit, mol as the mass unit, and li
 
     # define the basic model parameters
     M = Model(
-        name="M",  # model name
         stop="3 Myr",  # end time of model
         timestep="1 kyr",  # upper limit of time step
         element=["Phosphor"],  # list of element definitions
@@ -180,7 +179,7 @@ Most ESBMTK classes accept quantities, strings that represent quantities as well
 
     # boundary conditions
     F_w =  M.set_flux("45 Gmol", "year", M.P) # P @280 ppm (Filipelli 2002)
-    tau = Q_("100 year")  # PO4 residence time in surface box
+    tau = Q_("100 year")  # PO4 residence time in surface boxq
     F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
     thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 
@@ -202,14 +201,14 @@ To set up the model geometry, we first use the :py:class:`esbmtk.esbmtk.Source()
 
     # reservoir definitions
     Reservoir(
-        name="sb",  # box name
+        name="S_b",  # box name
         species=M.PO4,  # species in box
         register=M,  # this box will be available as M.S_b
         volume="3E16 m**3",  # surface box volume
         concentration="0 umol/l",  # initial concentration
     )
     Reservoir(
-        name="db",  # box name
+        name="D_b",  # box name
         species=M.PO4,  # species in box
         register=M,  # this box will be available M.D_b
         volume="100E16 m**3",  # deeb box volume

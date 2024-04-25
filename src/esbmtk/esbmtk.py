@@ -15,6 +15,7 @@ General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 from __future__ import annotations
 from pandas import DataFrame
 import time
@@ -208,12 +209,12 @@ class Model(esbmtkBase):
         self.lpc_i: list = []
         # list of external functions affecting virtual reservoirs
         self.lpc_r: list = []
-        self.lvr: list = [] # list of virtual reservoirs
+        self.lvr: list = []  # list of virtual reservoirs
         # optional keywords for use in the connector class
         self.olkk: list = []
         # list of objects which require a delayed initialize
         self.lto: list = []
-        self.ldf: list = [] # list of datafield objects
+        self.ldf: list = []  # list of datafield objects
         self.los: list = []  # list of signals
         self.lof: list = []  # list of fluxes
         self.lrg: list = []  # list of reservoirgroups
@@ -297,7 +298,8 @@ class Model(esbmtkBase):
 
         warranty = (
             f"\n"
-            f"ESBMTK {version('esbmtk')}  Copyright (C) 2020 - {datetime.date.today().year}  Ulrich G.Wortmann\n"
+            f"ESBMTK {version('esbmtk')}  Copyright (C) 2020 - "
+            f"{datetime.date.today().year}  Ulrich G.Wortmann\n"
             f"This program comes with ABSOLUTELY NO WARRANTY\n"
             f"For details see the LICENSE file\n"
             f"This is free software, and you are welcome to redistribute it\n"
@@ -610,9 +612,9 @@ class Model(esbmtkBase):
         # ensure that cwd is in the load path. Required for windows
         cwd: pl.Path = pl.Path.cwd()
         sys.path.append(cwd)
-      
-        from equations import eqs   # import equation system
-       
+
+        from equations import eqs  # import equation system
+
         method = kwargs["method"] if "method" in kwargs else "BDF"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
 

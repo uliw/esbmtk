@@ -16,6 +16,7 @@
      <https://www.gnu.org/licenses/>.
 
 """
+
 from __future__ import annotations
 import typing as tp
 import numpy as np

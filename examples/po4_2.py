@@ -29,7 +29,7 @@ F_w_PO4 = F_w_OM / Redfield
 SourceGroup(
     name="weathering",
     species=[M.DIC, M.PO4],
-    register=M,  # i.e., the instance will be available as M.weathering
+    register=M,  # i.e., the964 instance will be available as M.weathering
 )
 SinkGroup(
     name="burial",
