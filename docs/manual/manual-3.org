@@ -222,7 +222,7 @@ Connect(  # Example for O2
 
 ** pCO_{2} Dependent Weathering
 ESBMTK defines a simple power law function to calculate pCO_{2} dependent weathering fluxes (see e.g., Walker and Hays, 1981, https://doi.org/10.1029/jc086ic10p09776):
-\[f =  A \times  f_{0} \times  \frac{pCO_{2}}{p_{0}CO_{2}}^{c}\]
+\[f =  A \times  f_{0} \times  \left(\frac{pCO_{2}}{p_{0}CO_{2}}\right)^{c}\]
 where $A$ denotes the area, $f_0$ the weathering flux at $p_{0}CO_2$, pCO_{2} the CO_2 partial pressure at a given time $t$, $p_{0}CO_2$ the reference partial pressure of CO_2 and $c$ a constant.  See the @@rst::py:func:`esbmtk.processes.weathering()`@@ function for details. Within the context of ESBMTK, weathering fluxes are just another connection type:
 #+BEGIN_SRC ipython
 Connect(  # CaCO3 weathering

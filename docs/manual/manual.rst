@@ -10,25 +10,15 @@ Installation
 Conda
 ^^^^^
 
-Currently, ESBMTK is only available via `https://pypi.org/project/esbmtk/ <https://pypi.org/project/esbmtk/>`_, and there is no recipe to install with conda. ESBMTK relies on the following libraries that need to be installed with conda before you can install ESBMTk with ``pip``: As usual, it is recommended to first create a new virtual environment, and then install the following:
+Assuming you install into a new virtual environment the following should install the esbmtk framework
 
-- python >= 3.9
+.. code:: sh
 
-- matplotlib
+    conda create --name foo
+    conda activate foo
+    conda install esbmtk
 
-- numpy
-
-- pandas
-
-- typing
-
-- pint
-
-- scipy
-
-- pyCO2sys
-
-afterwards you can install esbmtk with ``python -m pip install esbmtk``
+To access the examples, please take a look at `https://github.com/uliw/esbmtk <https://github.com/uliw/esbmtk>`_
 
 pip & github
 ^^^^^^^^^^^^
@@ -118,6 +108,7 @@ The model geometry is then parsed to build a suitable equation system.
 Defining the model geometry and initial conditions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The below code examples are available at `https://github.com/uliw/esbmtk/tree/master/examples <https://github.com/uliw/esbmtk/tree/master/examples>`_
 In the first step, one needs to define a model object that describes fundamental model parameters. The following code first loads the following esbmtk classes that will help with model construction:
 
 - :py:class:`esbmtk.esbmtk.Model()`
@@ -143,6 +134,7 @@ In the first step, one needs to define a model object that describes fundamental
         Sink,  # sink class
         Q_,  # Quantity operator
     )
+    # Note that complete code examples are available from 
 
 Next we use the ``Model`` class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
 Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/l' rather than mol/m\*\*3 or 'kg/s'. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. So your mileage may vary if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.

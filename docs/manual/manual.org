@@ -5,19 +5,15 @@
 
 ** Installation
 *** Conda
-Currently, ESBMTK is only available via https://pypi.org/project/esbmtk/, and there is no recipe to install with conda. ESBMTK relies on the following libraries that need to be installed with conda before you can install ESBMTk with =pip=: As usual, it is recommended to first create a new virtual environment, and then install the following:
 
- - python >= 3.9
- - matplotlib
- - numpy
- - pandas
- - typing
- - pint
- - scipy
- - pyCO2sys
+Assuming you install into a new virtual environment the following should install the esbmtk framework
+#+BEGIN_SRC sh
+conda create --name foo
+conda activate foo
+conda install esbmtk
+#+END_SRC
 
-afterwards you can install esbmtk with =python -m pip install esbmtk=
-
+To access the examples, please take a look at https://github.com/uliw/esbmtk
 
 *** pip & github
 

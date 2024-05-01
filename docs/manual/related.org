@@ -1,0 +1,6 @@
+#+options: toc:nil author:nil num:nil
+
+* Related Software
+
+- pyCO2sys https://pyco2sys.readthedocs.io/en/latest/
+- A Python based LOSCAR implementation https://github.com/Shihan150/iloscar

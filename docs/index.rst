@@ -29,6 +29,8 @@ Contents
    Authors <authors>
    Changelog <changelog>
    Module Reference <api/modules>
+   Source Code  <https://github.com/uliw/esbmtk>
+   Related Software <manual/related>
    License <license>
 
 
