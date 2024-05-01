@@ -6,4 +6,5 @@ pint
 typing
 os
 psutil
+numba
 PyCO2SYS
