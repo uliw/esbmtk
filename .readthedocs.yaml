@@ -21,10 +21,15 @@ build:
   tools:
     python: "3.11"
   jobs:
+    pre_build:
+      - python -m sphinx -b linkcheck -D linkcheck_timeout=1 docs/ $READTHEDOCS_OUTPUT/linkcheck
     pre_install:
       - git update-index --assume-unchanged environment.yml docs/conf.py
     post_checkout:
       - git fetch --unshallow || true
+      - git fetch --tags
+      
+      
 
 python:
   install:
