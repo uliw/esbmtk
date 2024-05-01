@@ -21,6 +21,8 @@ build:
   tools:
     python: "3.11"
   jobs:
+    pre_install:
+      - git update-index --assume-unchanged environment.yml docs/conf.py
     post_checkout:
       - git fetch --unshallow || true
 

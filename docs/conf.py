@@ -95,7 +95,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "esbmtk"
-copyright = "2023, Ulrich G. Wortmann"
+copyright = "2024, Ulrich G. Wortmann"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
