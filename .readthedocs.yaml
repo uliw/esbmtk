@@ -24,7 +24,7 @@ build:
     pre_build:
       - python -m sphinx -b linkcheck -D linkcheck_timeout=1 docs/ $READTHEDOCS_OUTPUT/linkcheck
     post_checkout:
-      - git fetch --unshallow || true
+      # - git fetch --unshallow || true
       - git fetch --tags
       
 python:
