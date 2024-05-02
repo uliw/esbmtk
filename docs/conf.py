@@ -112,8 +112,8 @@ try:
 except ImportError:
     version = "unknown"
 
-# if not version or version == "":
-#     version = os.getenv("READTHEDOCS_VERSION", "unknown")  # automatically set by RTD
+if not version or version == "":
+    version = os.getenv("READTHEDOCS_VERSION", "unknown")  # automatically set by RTD
 
 release = version
 
