@@ -101,7 +101,7 @@ copyright = "2024, Ulrich G. Wortmann"
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-# version: The short X.Y version.
+# version: The short X.Y version. 
 # release: The full version, including alpha/beta/rc tags.
 # If you don’t need the separation provided between version and release,
 # just set them both to the same value.
