@@ -8,3 +8,5 @@ build-backend = "setuptools.build_meta"
 # check out https://github.com/pypa/setuptools_scm
 version_scheme = "no-guess-dev"
 # version_scheme = "only-version"
+# git_describe_command = ["common/scripts/git-describe.sh", "esbmtk"]
+# git_describe_command = "git describe --all"
