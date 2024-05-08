@@ -39,7 +39,8 @@ def Carbon(model):
         hi_label="C^{13}$S",  # Name of heavy isotope
         d_label=r"$\delta^{13}$C",  # Name of isotope delta
         d_scale="mUr VPDB",  # Isotope scale. End of plot labels
-        r=0.0112372,  # VPDB C13/C12 ratio https://www-pub.iaea.org/MTCD/publications/PDF/te_825_prn.pdf
+        r=0.0112372,  # VPDB C13/C12 ratio
+        reference=https://www-pub.iaea.org/MTCD/publications/PDF/te_825_prn.pdf"
         register=model,
     )
 
@@ -124,7 +125,8 @@ def Hydrogen(model):
         hi_label="$^{2}$H",  # Name of heavy isotope
         d_label=r"$\delta^{2}$D",  # Name of isotope delta
         d_scale="mUr VSMOV",  # Isotope scale. End of plot labels  # needs verification
-        r=155.601e-6,  # After Groenig, 2000, Tab 40.1
+        r=155.601e-6,
+        reference="After Groenig, 2000, Tab 40.1"
         register=model,
     )
 
@@ -160,7 +162,8 @@ def Oxygen(model: Model) -> None:
         hi_label="$^{18}$)",  # Name of heavy isotope
         d_label=r"$\delta^{18}$)",  # Name of isotope delta
         d_scale="mUr VSMOV",  # Isotope scale. End of plot labels  # needs verification
-        r=2005.201e-6,  # https://nucleus.iaea.org/rpst/documents/vsmow_slap.pdf
+        r=2005.201e-6,
+        reference="https://nucleus.iaea.org/rpst/documents/vsmow_slap.pdf"
         register=model,
     )
 

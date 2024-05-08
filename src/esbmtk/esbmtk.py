@@ -848,6 +848,7 @@ class Element(esbmtkBase):
                 d_label   =  r"$\delta^{34}$S",  # Label for delta value
                 d_scale   =  "VCDT",       # Isotope scale
                 r         = 0.044162589,   # isotopic abundance ratio for element
+                reference = "https://// or citation",
               )
     """
 
@@ -867,6 +868,7 @@ class Element(esbmtkBase):
                "r": [1, (float, int)],
                "mass_unit": ["mol", (str, Q_)],
                "parent": ["None", (str, Model)],
+               "reference": ["None", str],
 
         }
 
