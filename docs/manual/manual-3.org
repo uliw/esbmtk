@@ -84,7 +84,7 @@ M = Model(
 - The =swc= instance provides a =show()= method listing most values. However, that list may not be comprehensive.
 - See the pyCO2SYS documentation for a list of parameters and options https://pyco2sys.readthedocs.io/en/latest/
 - The code example =seawater_example.py= in the examples directory 
-
+  
 
 ** Carbon Chemistry
 *** pH

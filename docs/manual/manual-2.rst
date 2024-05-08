@@ -206,6 +206,12 @@ Running the previous model with these additional 5 lines, results in the followi
 
     Output of ``po4_2_with_isotopes``.py= Note that the run-time has been reduced to 500 years, so that the graph does not just show the steady state. The upper box shows the gradual increase in DIC concentrations and the lower shows the corresponding isotope ratios. The system will achieve isotopic equilibrium within approximately 2000 years.
 
+Note that isotope calculations are only available if the respective Element instances contain the necessary data. Assuming that the model imported the ``Carbon`` element instance, you can query its properties like this:
+
+.. code:: jupyter-python
+
+    print(M.Carbon)
+
 Using many boxes
 ~~~~~~~~~~~~~~~~
 
