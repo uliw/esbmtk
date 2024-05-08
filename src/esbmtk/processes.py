@@ -16,6 +16,7 @@
      <https://www.gnu.org/licenses/>.
 
 """
+
 from __future__ import annotations
 import typing as tp
 from numba import njit
@@ -34,27 +35,46 @@ if tp.TYPE_CHECKING:
 
 
 # @njit(fastmath=True)
-def weathering(pco2t, p) -> float | tuple:
-    """Calculates weathering as a function pCO2 concentration
+def weathering(c_pco2: float | list[float], p: tuple) -> float | tuple:
+    """Calculate weathering as a function of pCO2
 
-    :param pco2: float current pco2
-    :param pco2_0: float reference pco2
-    :area_fraction: float area/total area
-    :param ex: exponent
-    :f0: flux at pco2_0
-    :returns:  F_w or F_w, F_w_i
+    Parameters
+    ----------
+    c_pco2 : float | list[float]
+        current pCO2 concentration
+    p : tuple
+        a tuple with the following entries:
+        pco2_0 = reference pCO2
+        area_fraction = fraction of total surface area
+        ex = exponent used in the equation
+        f0 = flux at the reference value
+        isotopes = True/False
 
-    F_w = area_fraction * f0 * (pco2/pco2_0)**ex
+    Returns
+    -------
+    float | tuple
+        a float or list value for the weathering flux
+
+    Explanation
+    -----------
+    If the model uses isotopes, the function expects the concentration
+    values for hthe total mass and the light isotope as a list, and
+    will simiraly return the flux as a list of total flux and flux of
+    the light isotope.
+
+    The flux itself is calculated as
+
+     F_w = area_fraction * f0 * (pco2/pco2_0)**ex
+
     """
     pco2_0, area_fraction, ex, f0, isotopes = p
     if isotopes:
-        pco2, pco2i = pco2t
+        pco2, pco2i = c_pco2
         F_w = area_fraction * f0 * (pco2 / pco2_0) ** ex
         F_w_i = F_w * pco2i / pco2
         rv = F_w, F_w_i
     else:
-        pco2 = pco2t
-        F_w = area_fraction * f0 * (pco2 / pco2_0) ** ex
+        F_w = area_fraction * f0 * (c_pco2 / pco2_0) ** ex
         rv = F_w
 
     return rv
