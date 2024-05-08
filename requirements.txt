@@ -4,8 +4,6 @@ numpy
 pandas
 scipy
 pint
-typing
-os
-psutil
 numba
 PyCO2SYS
+psutil
