@@ -10,7 +10,7 @@ Installation
 Conda
 ^^^^^
 
-Assuming you install into a new virtual environment the following should install the esbmtk framework
+Assuming you install into a new virtual environment the following should install the ESBMTK framework
 
 .. code:: sh
 
@@ -60,7 +60,7 @@ which is easily encoded as a Python function
 .. code:: ipython
 
     def dCdt(t, C_0, V, F_w, thx):
-        """Calculate the change in concentration as
+        """ Calculate the change in concentration as
         a function of time. After Glover 2011, Modeling
         Methods for Marine Science.
 
@@ -109,7 +109,7 @@ Defining the model geometry and initial conditions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The below code examples are available at `https://github.com/uliw/esbmtk/tree/master/examples <https://github.com/uliw/esbmtk/tree/master/examples>`_
-In the first step, one needs to define a model object that describes fundamental model parameters. The following code first loads the following esbmtk classes that will help with model construction:
+In the first step, one needs to define a model object that describes fundamental model parameters. The following code first loads the following ESBMTK classes that will help with model construction:
 
 - :py:class:`esbmtk.esbmtk.Model()`
 
@@ -165,7 +165,7 @@ To avoid this we have to manually parse the string into a quantity. This is done
     tau = Q_("100 years")
     tau * 12
 
-Most ESBMTK classes accept quantities, strings that represent quantities as well as numerical values. Weathering and burial fluxes are often defined in ``mol/year``, whereas ocean models use ``kg/year``. ESBMTK provides a method (``set_flux()`` )  that will automatically convert the input into the correct units. In this example, it is not necessary since the flux and the model both use ``mol`` . It is however good practice to rely on the automatic conversion. Note that it makes a difference for the mol to kilogram conversion whether ones uses ``M.P`` or ``M.PO4`` as the reference species!
+Most ESBMTK classes accept quantities, strings that represent quantities as well as numerical values. Weathering and burial fluxes are often defined in ``mol/year``, whereas ocean models use ``kg/year``. ESBMTK provides a method (``set_flux()`` )  that will automatically convert the input into the correct units. In this example, it is not necessary since the flux and the model both use ``mol``. It is however good practice to rely on the automatic conversion. Note that it makes a difference for the mol to kilogram conversion whether one uses ``M.P`` or ``M.PO4`` as the reference species!
 
 .. code:: ipython
 
@@ -291,7 +291,7 @@ Working with the model instance
 Running the model, visualizing and saving the results
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To run the model, use the ``run()`` method of the model instance, and plot the results with the ``plot()`` method. This method accepts a list of esbmtk instances, that will be plotted in a common window. Without further arguments, the plot will also be saved as a pdf file where ``filename`` defaults to the name of the model instance. The ``save_data()`` method will create (or recreate) the ``data`` directory which will then be populated by csv-files. 
+To run the model, use the ``run()`` method of the model instance, and plot the results with the ``plot()`` method. This method accepts a list of ESBMTK instances, that will be plotted in a common window. Without further arguments, the plot will also be saved as a pdf file where ``filename`` defaults to the name of the model instance. The ``save_data()`` method will create (or recreate) the ``data`` directory which will then be populated by csv-files. 
 
 .. code:: ipython
 
@@ -340,7 +340,7 @@ To restart a model from the last known state, the above would need to be written
 Introspection and data access
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-All esbmtk instances and instance methods support the usual python methods to show the documentation, and inspect object properties.
+All ESBMTK instances and instance methods support the usual python methods to show the documentation, and inspect object properties.
 
 .. code:: ipython
 
