@@ -69,3 +69,4 @@ MANIFEST
 /src/esbmtk/Documentation/data/
 /src/esbmtk/Documentation/state/
 equations.py
+flycheck
