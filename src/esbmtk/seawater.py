@@ -16,6 +16,7 @@
      <https://www.gnu.org/licenses/>.
 
 """
+
 from __future__ import annotations
 import typing as tp
 import numpy as np
@@ -252,8 +253,7 @@ class SeawaterConstants(esbmtkBase):
         # Secant modulus of seawater at S,T,P
         Ksbm = (
             Ksbm0
-            + P
-            * (3.239908 + 1.43713e-3 * TC + 1.16092e-4 * TC**2 - 5.77905e-7 * TC**3)
+            + P * (3.239908 + 1.43713e-3 * TC + 1.16092e-4 * TC**2 - 5.77905e-7 * TC**3)
             + P * S * (2.2838e-3 - 1.0981e-5 * TC - 1.6078e-6 * TC**2)
             + P * S ** (3 / 2) * 1.91075e-4
             + P * P * (8.50935e-5 - 6.12293e-6 * TC + 5.2787e-8 * TC**2)
@@ -310,39 +310,25 @@ class SeawaterConstants(esbmtkBase):
 
     def co2_solubility_constant(self) -> None:
         """Calculate the solubility of CO2 at a given temperature and salinity.
-        Coefficients after Sarmiento and Gruber 2006 which includes
-        corrections for CO2 to correct for non ideal gas behavior
 
-        Parameters Ai & Bi from Tab 3.2.2 in  Sarmiento and Gruber 2006
-
-        The result is in mol/(m^3 * atm)
+        The value for K0 is taken from pyCO2sys which is in mol/kg-SW/atm
+        esbmtk uses mol/(t atm). pyCO2sys follows
+        Weiss, R. F., Marine Chemistry 2:203-215, 1974.
         """
 
-        # Calculate the volumetric solubility function F_A in mol/l
-        S = self.salinity  # unitless
-        T = 273.15 + self.temperature  # C
-        A1 = -160.7333
-        A2 = 215.4152
-        A3 = 89.892
-        A4 = -1.47759
-        B1 = 0.029941
-        B2 = -0.027455
-        B3 = 0.0053407
-
-        # F in mol/(l * atm)
-        self.F = self.calc_solubility_term(S, T, A1, A2, A3, A4, B1, B2, B3)
-
+        # F in mol/(1000 kg * atm)
+        self.F = self.K0 * 1000
         # correct for water vapor partial pressure
-        self.SA_co2 = self.F / (1 - self.p_H2O)  # mol/(m^3 * atm)
+        self.SA_co2 = self.F / (1 - self.p_H2O)  # mol/(1000 kg * atm)
 
     def o2_solubility_constant(self) -> None:
-        """Calculate the solubility of CO2 at a given temperature and salinity. Coefficients
-        after Sarmiento and Gruber 2006 which includes corrections for CO2 to correct for non
-        ideal gas behavior
+        """Calculate the solubility of CO2 at a given temperature and salinity.
+        Coefficients after Sarmiento and Gruber 2006 which includes corrections
+        for non ideal gas behavior
 
         Parameters Ai & Bi from Tab 3.2.2 in  Sarmiento and Gruber 2006
 
-        The result is in mol/(m^3 atm)
+        The result is in mol/(1000kg atm)
         """
 
         # Calculate the volumetric solubility function F_A in mol/l/m^3
@@ -361,6 +347,8 @@ class SeawaterConstants(esbmtkBase):
         # and convert from bunsen coefficient to solubility
         VA = 22.4136  # after Sarmiento & Gruber 2006
         self.SA_o2 = b / VA
+        # convert from mol/(m^3 atm) to mol/(1000kg atm)
+        self.SA_o2 = 1000 * self.SA_o2 / self.density
 
     def calc_solubility_term(self, S, T, A1, A2, A3, A4, B1, B2, B3) -> float:
         ln_F = (
@@ -375,14 +363,10 @@ class SeawaterConstants(esbmtkBase):
         return F
 
     def __init_c_fractionation_factors__(self):
-        """Calculate the fractionation factors for the various carbon species transitions.
-        After Zeebe and Gladrow, 2001, Chapter 3.2.3, page 186
+        """Calculate the fractionation factors for the various carbon species
+        transitions. After Zeebe and Gladrow, 2001, Chapter 3.2.3, page 186
 
-        e = (a -1) * 1E3
-
-        and
-
-        a =  1 + e / 1E3
+        e = (a -1) * 1E3  and a =  1 + e / 1E3
 
         where the subscripts denote:
 

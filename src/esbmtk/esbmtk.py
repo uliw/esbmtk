@@ -868,7 +868,7 @@ class Element(esbmtkBase):
                "r": [1, (float, int)],
                "mass_unit": ["mol", (str, Q_)],
                "parent": ["None", (str, Model)],
-               "reference": ["None", str],
+               "reference": ["None", (str)],
 
         }
 
@@ -886,6 +886,7 @@ class Element(esbmtkBase):
             "r": [1, (float, int)],
             "mass_unit": ["", (str, Q_)],
             "parent": ["None", (str, Model)],
+            "reference": ["None", (str)],
         }
 
         # list of absolutely required keywords
