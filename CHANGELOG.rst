@@ -2,7 +2,8 @@
 Changelog
 =========
 
-- May 1st, v 0.12.0.x ESBMTK can now be installed via conda. Various documentation updates
+- May  v 0.13.0.x fixes an error in the solubility calculation for oxygen and carbon dioxide. This will change the steady state results for pCO2 in existing models by about 4 ppm.
+- May 1st, v 0.12.0.28 ESBMTK can now be installed via conda. Various documentation updates
 - Dec. v 0.12.0.x This is a breaking change that requires the following updates to the model definition.
   - Models that use isotope calculations need to ensure that sources and sink also specify the isotope keyword.
   - Weathering and Gas-exchange have now become connection properties, see the examples in the online documentation

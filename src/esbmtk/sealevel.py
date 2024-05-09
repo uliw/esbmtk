@@ -23,7 +23,6 @@
 """
 
 # from pint import UnitRegistry
-from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
 import matplotlib.pyplot as plt
@@ -43,6 +42,7 @@ class hypsometry(esbmtkBase):
 
     Invoke as:
                hyspometry(name="hyp")
+
 
 
     """
@@ -76,8 +76,8 @@ class hypsometry(esbmtkBase):
           hyp.get_lookup_table(min_depth: int, max_depth: int)::
 
                   Generate a vector which contains the area(z) in 1 meter intervals
-                  Note that the numbers are area_percentage. To get actual area, you need to
-                  multiply with the total surface area (hyp.sa)
+                  Note that the numbers are area_percentage. To get actual area, you
+                  need to multiply with the total surface area (hyp.sa)
 
         """
         from esbmtk import Model
@@ -257,38 +257,61 @@ class hypsometry(esbmtkBase):
         depth = np.linspace(-6000, 1000, 50)
         a = sp.interpolate.splev(depth, tck)
 
-        plt.style.use(["ggplot"])
-        plt.figure()  # Create a figure instance called fig
-        ax = plt.subplot()  # Create a plot instance called ax
-        ax.plot(elevation, area)  # create a line plot
-        ax.plot(depth, a)  # create a line plot
-        plt.show()  # display figure
-
-    def get_lookup_table(self, min_depth: int, max_depth: int) -> NDArrayFloat:
+    def get_lookup_table(
+        self, min_depth: int, max_depth: int
+    ) -> (NDArrayFloat, NDArrayFloat):
         """Generate a vector which contains the area(z) in 1 meter intervals
         The numbers are given in m^2 which represent the actual area.
 
         The calculations multiply the area_percentage by the total surface area (hyp.sa)
         """
 
-        if not -6002 <= min_depth <= 0:
+        if not -6002 <= min_depth <= 1000:
             raise ValueError("min_depth must be <= 0 and >= -6000")
 
         if not -6002 <= max_depth <= min_depth:
             raise ValueError("max_depth must be <= 0 and >= -6000")
 
-        return (
-            sp.interpolate.splev(np.arange(min_depth, max_depth, -1), self.tck)
-            * self.sa
-        )
+        depth_interval = np.arange(min_depth, max_depth, -1)
+        lookup_table = sp.interpolate.splev(depth_interval, self.tck) * self.sa
+        return lookup_table
 
     def get_lookup_table_area_dz(self, min_depth: int, max_depth: int) -> NDArrayFloat:
-        """Generate a vector which contains the first derivative of area(z) in 1 meter intervals
-        Note that the numbers are in m^2
+        """Generate a vector which contains the first derivative of area(z) in 1 meter
+        intervals Note that the numbers are in m^2
 
         """
 
         return np.diff(self.get_lookup_table(min_depth, max_depth))
+
+    def show_data(self, min_depth, max_depth):
+        """Provide a diagnostic graph that shows the spline data versus
+        the actual data
+        """
+        # import matplotlib.pyplot as plt
+        from importlib import resources as impresources
+
+        fn = impresources.files("esbmtk") / "Hypsometric_Curve_05m.csv"
+        df = pd.read_csv(fn, float_precision="high", nrows=1799)
+
+        area = df.iloc[:, 2].to_numpy() * self.sa  # get cum area as numpy array
+        data_elevation = df.iloc[:, 1].to_numpy()  # get elevation as numpy array
+
+        spline_approximation = self.get_lookup_table(min_depth, max_depth) / self.sa
+        spline_elevation = np.arange(min_depth, max_depth, -1)
+
+        fig, ax = plt.subplots()
+        ax.scatter(100 - spline_approximation * 100, spline_elevation, color="C1")
+        ax.plot(100 - area * 100, data_elevation, color="C0")
+        ax.set_title("Spline approximation versus actual Data")
+        ax.set_xlabel("Cumulative Area [%]")
+        ax.set_ylabel("Elevation [m]")
+        ax.spines["right"].set_color("none")
+        ax.spines["top"].set_color("none")
+        ax.grid(True, which="both")
+        fig.tight_layout()
+        fig.savefig("Hysography_debug.pdf")
+        plt.show()
 
 
 def get_box_geometry_parameters(box, fraction=1) -> None:
