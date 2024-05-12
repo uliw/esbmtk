@@ -1,9 +1,8 @@
 """
 
-     esbmtk.connections
+     esbmtk.sealevel
 
-     Classes which handle the connections and fluxes between esbmtk objects
-     like Reservoirs, Sources, and Sinks.
+     Classes which provide access to hypsometric data
 
      esbmtk: A general purpose Earth Science box model toolkit
      Copyright (C), 2020 Ulrich G. Wortmann
@@ -22,13 +21,10 @@
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-# from pint import UnitRegistry
 import numpy as np
 import numpy.typing as npt
 import matplotlib.pyplot as plt
 import pandas as pd
-import scipy as sp
-import scipy.interpolate
 from .esbmtk_base import esbmtkBase
 
 # declare numpy types
@@ -38,13 +34,9 @@ NDArrayFloat = npt.NDArray[np.float64]
 class hypsometry(esbmtkBase):
     """A class to provide hypsometric data for the depth interval between -6000 to 1000
     meter (relative to sealevel)
-    The data is derived from etopo 2, but internally represented by a spline approximation
 
     Invoke as:
                hyspometry(name="hyp")
-
-
-
     """
 
     def __init__(self, **kwargs):
@@ -79,6 +71,8 @@ class hypsometry(esbmtkBase):
                   Note that the numbers are area_percentage. To get actual area, you
                   need to multiply with the total surface area (hyp.sa)
 
+        get_lookup_table_area_dz(0, -6002
+
         """
         from esbmtk import Model
 
@@ -87,6 +81,10 @@ class hypsometry(esbmtkBase):
             "name": ["None", (str)],
             "register": ["None", (Model, str)],
             "model": ["None", (str, Model)],
+            "max_elevation": [1000, int],
+            "max_depth": [-11000, int],
+            "basin": ["global", str],
+            "hyp_data_fn": ["Hypsometric_Curve_05m", str],
         }
 
         # required keywords
@@ -102,208 +100,190 @@ class hypsometry(esbmtkBase):
         self.parent = self.register
 
         # legacy variables
-        self.pfn = "spline_paramaters.txt"
-        self.hfn = "Hypsometric_Curve_05m.csv"
-        # total surface area in square meters, http://www.physicalgeography.net/fundamentals/8o.html
-        self.sa = 510067420e6
+        # total surface area in square meters,
+        # http://www.physicalgeography.net/fundamentals/8o.html
+        self.sa = 510067420e6  # area in m^2
         self.mo = self.model
         self.__register_name_new__()
-        self.__init_curve__()
-        self.oa = self.area_dz(0, -6000)  # total ocean area
+        self.read_data()
+        self.oa = 361e12  #  m^2 https://en.wikipedia.org/wiki/Ocean
+
+    def read_data(self) -> None:
+        """Read the hypsometry data from a pickle file.
+        If the pickle file is missing, create it from the
+        csv data
+
+        save the hypsometry data as a numpy array with
+        elevation, area, and area_dz in self.hypdata
+        """
+        from importlib import resources as impresources
+        import pathlib as pl
+
+        fn_csv = impresources.files("esbmtk") / f"{self.hyp_data_fn}.csv"
+        fqfn_csv: pl.Path = pl.Path(fn_csv)
+        fn_pickle: str = impresources.files("esbmtk") / f"{self.hyp_data_fn}.pickle"
+        fqfn_pickle: pl.Path = pl.Path(fn_pickle)
+
+        if fqfn_pickle.exists():  # check if pickle file exist
+            # get creation date of pickle file
+            pickle_date = pl.Path(fn_pickle).stat().st_ctime
+        else:
+            pickle_date = 0
+
+        csv_date = pl.Path(fn_csv).stat().st_ctime
+        if csv_date < pickle_date:  # pickle file is newer
+            df = pd.read_pickle(fn_pickle)
+        else:  # pickle file is older
+            if fqfn_csv.exists():
+                print(
+                    "pickle file is older/missing recreating hypsography pickle",
+                    f"from {self.hyp_data_fn}.csv",
+                )
+                df = pd.read_csv(fn_csv, float_precision="high")
+                df.to_pickle(fqfn_pickle)
+            else:
+                raise FileNotFoundError(f"Cannot find file {fqfn_csv}")
+
+        max_el = df.iloc[0, 0] - self.max_elevation
+        max_de = df.iloc[-1, 0] - self.max_elevation - self.max_depth
+
+        elevation = df.iloc[max_el:max_de, 0].to_numpy()
+        area = df.iloc[max_el:max_de, 1].to_numpy() * self.sa
+
+        # create lookup table with area and area_dz
+        self.hypdata = np.column_stack(
+            (
+                elevation[:-1],
+                area[:-1],
+                np.diff(area),
+            )
+        )
+
+    def get_lookup_table_area(self) -> NDArrayFloat:
+        """Return the area values between 0 and max_depth
+        as 1-D array
+        """
+        return self.hypdata[self.max_elevation :, 1]
+
+    def get_lookup_table_area_dz(self) -> NDArrayFloat:
+        """Return the are_dz values between 0 and max_depth
+        as 1-D array
+        """
+
+        return self.hypdata[self.max_elevation :, 2]
+
+    def area(self, elevation: int) -> float:
+        """Calculate the ocean area at a given depth
+
+        Parameters
+        ----------
+        elevation : int
+            Elevation datum in meters
+
+        Returns
+        -------
+        float
+            area in m^2
+
+        """
+
+        # calculate index
+        i = int(self.max_elevation - elevation)
+
+        if (elevation > self.max_elevation) or (elevation < self.max_depth):
+            raise ValueError(
+                (
+                    f"hyp.area: {elevation} must be between"
+                    f"{self.max_elevation} and {self.min_depth}"
+                )
+            )
+
+        return self.hypdata[i]
+
+    def area_dz(self, u: float, l: float) -> float:
+        """calculate the area between two elevation datums
+
+        Parameters
+        ----------
+        u : float
+            upper elevation datum in meters (relative to sealevel)
+        l : float
+            lower elevation datum relative to sealevel
+
+        Returns
+        -------
+        float
+            area in m^2
+
+        Raises
+        ------
+        ValueError
+            if elevation datums are outside the defined interval
+
+        """
+        if (u > self.max_elevation) or (l < self.max_depth):
+            raise ValueError(
+                (
+                    f"hyp.area: {u} must be < {self.max_elevation}"
+                    f"and {l} > {self.min_depth}"
+                )
+            )
+
+        u = self.max_elevation - int(u)
+        l = self.max_elevation - int(l)
+
+        return self.hypdata[u, 1] - self.hypdata[l, 1]
 
     def volume(self, u: float, l: float) -> float:
         """Calculate the area between two elevation datums
 
-        u = upper limit (e.g., -10)
-        l = lower limit (e.g., -100)
+         Parameters
+        ----------
+        u : float
+            upper elevation datum in meters (relative to sealevel)
+        l : float
+            lower elevation datum relative to sealevel
 
-        returns the volume in cubic meters
-        """
+        Returns
+        -------
+        float
+            volume in m^3
 
-        u = abs(u)
-        l = abs(l)
-        if l < u:
-            raise ValueError(f"hyp.volume: {l} must be higher than {u}")
-
-        return np.sum(self.hypdata[u:l]) * self.sa
-
-    def area(self, depth: int) -> float:
-        """Calculate the ocean area at a given depth
-
-        depth must be an integer between 0 and 6000 mbsl, or a
-        numpy array of integers between 0 and 6000 mbsl
+        Raises
+        ------
+        ValueError
+            if elevation datums are outside the defined interval
 
         """
 
-        depth = np.abs(depth).astype(int)
+        if (u > self.max_elevation) or (l < self.max_depth):
+            raise ValueError(
+                (
+                    f"hyp.area: {u} must be < {self.max_elevation}"
+                    f"and {l} > {self.min_depth}"
+                )
+            )
 
-        if np.max(depth) > 6001:
-            raise ValueError("area() is only defined to a depth of 6001 mbsl")
+        u = self.max_elevation - int(u)
+        l = self.max_elevation - int(l)
 
-        return np.take(self.hypdata, depth) * self.sa
+        return np.sum(self.hypdata[u:l])
 
-    def area_dz(self, u: float, l: float) -> float:
-        """Calculate the area between two elevation datums
-
-        u = upper limit
-        l = lower limit
-
-        the interpolation function returns a numpy array with
-        cumulative area percentages do the difference between the
-        lowest and highest value is the area contained between
-        both limits. The difference between the upper and lower
-        bounds is the area percentage contained between both depths.
-
-        The function returns this value multiplied by total surface area,
-        i.e., in square meters.
-
+    def show_data(self):
+        """Provide a diagnostic graph that shows the hypsometric data
+        use by ESBMTK
         """
 
-        if l < -6002:
-            raise ValueError("area_dz() is only defined to a depth of 6000 mbsl")
+        elevation = self.hypdata[:, 0]
+        area = self.hypdata[:, 1] / self.sa
 
-        a: NDArrayFloat = sp.interpolate.splev([u, l], self.tck)
+        import matplotlib.pyplot as plt
 
-        return (a[0] - a[-1]) * self.sa
-
-    def __init_curve__(self):
-        """Initialize Spline Parameters. See  __bootstrap_curve__ if you want
-        to change the default parameters
-
-        """
-        t = [
-            -6000.0,
-            -6000.0,
-            -6000.0,
-            -6000.0,
-            -5250.0,
-            -4500.0,
-            -3750.0,
-            -3000.0,
-            -1500.0,
-            -1120.0,
-            -750.0,
-            -560.0,
-            -370.0,
-            -180.0,
-            -90.0,
-            0.0,
-            380.0,
-            750.0,
-            1500.0,
-            2250.0,
-            3000.0,
-            5990.0,
-            5990.0,
-            5990.0,
-            5990.0,
-        ]
-        c = [
-            0.01018464,
-            0.00825062,
-            0.08976178,
-            0.26433525,
-            0.44127754,
-            0.5799517,
-            0.59791548,
-            0.6263245,
-            0.63035567,
-            0.63978284,
-            0.64800198,
-            0.6501602,
-            0.68030866,
-            0.75133294,
-            0.86590303,
-            0.92052208,
-            0.96111183,
-            0.97330001,
-            0.99966578,
-            0.99759724,
-            1.00067306,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ]
-        k = 3
-
-        self.tck = (t, c, k)
-
-        self.hypdata = sp.interpolate.splev(np.arange(1000, -6001, -1), self.tck)
-
-    def __bootstrap_curve__(self):
-        """Regenerate the spline data based on the hypsometric data in
-        Hypsometric_Curve_05m.csv,
-
-        """
-        df = pd.read_csv(
-            "Hypsometric_Curve_05m.csv",
-            float_precision="high",
-            nrows=1200,
-            skiprows=300,
-        )
-        area = df.iloc[:, 2].to_numpy()  # get area as numpy array
-        elevation = df.iloc[:, 1].to_numpy()  # get area as numpy array
-
-        tck = sp.interpolate.splrep(
-            elevation,
-            area,
-            s=0.001,
-        )
-        print(f"t = {tck[0].__repr__()}")
-        print(f"c = {tck[1].__repr__()}")
-        print(f"k = {tck[2].__repr__()}")
-
-        depth = np.linspace(-6000, 1000, 50)
-        a = sp.interpolate.splev(depth, tck)
-
-    def get_lookup_table(
-        self, min_depth: int, max_depth: int
-    ) -> (NDArrayFloat, NDArrayFloat):
-        """Generate a vector which contains the area(z) in 1 meter intervals
-        The numbers are given in m^2 which represent the actual area.
-
-        The calculations multiply the area_percentage by the total surface area (hyp.sa)
-        """
-
-        if not -6002 <= min_depth <= 1000:
-            raise ValueError("min_depth must be <= 0 and >= -6000")
-
-        if not -6002 <= max_depth <= min_depth:
-            raise ValueError("max_depth must be <= 0 and >= -6000")
-
-        depth_interval = np.arange(min_depth, max_depth, -1)
-        lookup_table = sp.interpolate.splev(depth_interval, self.tck) * self.sa
-        return lookup_table
-
-    def get_lookup_table_area_dz(self, min_depth: int, max_depth: int) -> NDArrayFloat:
-        """Generate a vector which contains the first derivative of area(z) in 1 meter
-        intervals Note that the numbers are in m^2
-
-        """
-
-        return np.diff(self.get_lookup_table(min_depth, max_depth))
-
-    def show_data(self, min_depth, max_depth):
-        """Provide a diagnostic graph that shows the spline data versus
-        the actual data
-        """
-        # import matplotlib.pyplot as plt
-        from importlib import resources as impresources
-
-        fn = impresources.files("esbmtk") / "Hypsometric_Curve_05m.csv"
-        df = pd.read_csv(fn, float_precision="high", nrows=1799)
-
-        area = df.iloc[:, 2].to_numpy() * self.sa  # get cum area as numpy array
-        data_elevation = df.iloc[:, 1].to_numpy()  # get elevation as numpy array
-
-        spline_approximation = self.get_lookup_table(min_depth, max_depth) / self.sa
-        spline_elevation = np.arange(min_depth, max_depth, -1)
+        plt.style.use("uli")
 
         fig, ax = plt.subplots()
-        ax.scatter(100 - spline_approximation * 100, spline_elevation, color="C1")
-        ax.plot(100 - area * 100, data_elevation, color="C0")
-        ax.set_title("Spline approximation versus actual Data")
+        ax.plot(100 - area * 100, elevation, color="C0")
+        ax.set_title("ESBMTK Hypsometric Data")
         ax.set_xlabel("Cumulative Area [%]")
         ax.set_ylabel("Elevation [m]")
         ax.spines["right"].set_color("none")

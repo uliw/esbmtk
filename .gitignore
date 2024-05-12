@@ -9,6 +9,7 @@
 *.log
 *.pot
 *.tex
+*.pickle
 __pycache__/*
 .cache/*
 .*.swp

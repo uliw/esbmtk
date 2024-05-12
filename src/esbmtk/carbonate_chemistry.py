@@ -17,13 +17,12 @@
 
 """
 
-from __future__ import annotations
 import typing as tp
-import numpy as np
-from numba import njit
-import numpy.typing as npt
 from math import log, sqrt
-from esbmtk import ExternalCode
+import numpy as np
+import numpy.typing as npt
+from numba import njit
+from esbmtk import ExternalCode, ReservoirGroup, Flux, SeawaterConstants
 from esbmtk.utility_functions import (
     __checkkeys__,
     __addmissingdefaults__,
@@ -32,8 +31,9 @@ from esbmtk.utility_functions import (
     check_for_quantity,
 )
 
+
 if tp.TYPE_CHECKING:
-    from .esbmtk import SeawaterConstants, ReservoirGroup, Flux, Q_
+    from .esbmtk import Q_
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
@@ -48,7 +48,6 @@ reservoirs.
 
 The process for cs2 is analogous
 """
-
 
 # @njit(fastmath=True)
 def get_hplus(dic, ta, h0, boron, K1, K2, KW, KB) -> float:
@@ -298,7 +297,7 @@ def init_carbonate_system_2(
 
     """
 
-    AD = r_sb.mo.hyp.area_dz(-abs(kwargs["z0"]), -abs(kwargs["zmax"]))
+    AD = r_sb.mo.hyp.area_dz(kwargs["z0"], kwargs["zmax"])
     s = r_db.swc
     sp = (s.K1, s.K2, s.K1K2, s.KW, s.KB, s.ca2, s.boron, r_sb.DIC.isotopes)
     cp = (
@@ -428,7 +427,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "pg": 0.103,  # pressure in atm/km
         "pc": 511,  # characteristic pressure after Boudreau 2010
         "I_caco3": 529,  # dissolveable CaCO3 in mol/m^2
-        "zmax": -6000,  # max model depth
+        "zmax": -9000,  # max model depth
         "Ksp": reservoir.swc.Ksp_ca,  # mol^2/kg^2
     }
     # make sure all mandatory keywords are present
@@ -445,6 +444,7 @@ def add_carbonate_system_2(**kwargs) -> None:
     r_sb = kwargs["r_sb"]
     pg = kwargs["pg"]
     pc = kwargs["pc"]
+    zmax = abs(int(kwargs["zmax"]))
     # test if corresponding surface reservoirs have been defined
     if len(r_sb) == 0:
         raise ValueError(
@@ -454,9 +454,9 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     # check if we already have the hypsometry and saturation tables
     if not hasattr(model, "area_table"):
-        depth_range = np.arange(0, 6002, 1, dtype=float)  # mbsl
-        model.area_table = model.hyp.get_lookup_table(0, -6002)  # area in m^2(z)
-        model.area_dz_table = model.hyp.get_lookup_table_area_dz(0, -6002) * -1  # area
+        depth_range = np.arange(0, zmax, 1, dtype=float)  # mbsl
+        model.area_table = model.hyp.get_lookup_table_area()  # area in m^2(z)
+        model.area_dz_table = model.hyp.get_lookup_table_area_dz() * -1  # area_dz
         model.Csat_table = (reservoir.swc.Ksp0 / reservoir.swc.ca2) * np.exp(
             (depth_range * pg) / pc
         )
@@ -487,86 +487,6 @@ def get_pco2(SW) -> float:
     k2: float = SW.K2
     co2: NDArrayFloat = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c**2)))
     pco2: NDArrayFloat = co2 / SW.K0 * 1e6
-    return pco2
-
-
-def calc_pCO2(
-    dic,  # see above why no type hints
-    hplus,
-    SW,
-) -> NDArrayFloat:
-    """
-    Calculate the concentration of pCO2 as a function of DIC,
-    H+, K1 and k2 and returns a numpy array containing
-    the pCO2 in uatm at each timestep. Calculations are based off
-    equations from Follows, 2006. doi:10.1016/j.ocemod.2005.05.004
-    dic: Reservoir  = DIC concentrations in mol/kg
-    hplus: Reservoir = H+ concentrations in mol/kg
-    SW: Seawater = Seawater object for the model
-    it is typically used with a DataField object, e.g.
-    pco2 = calc_pCO2(dic,h,SW)
-
-     DataField(name = "SurfaceWaterpCO2",
-                       associated_with = reservoir_handle,
-                       y1_data = pco2,
-                       y1_label = r"pCO_{2}",
-                       y1_legend = r"pCO_{2}",
-                       )
-
-    Author: T. Tsan
-
-    """
-
-    dic_c: NDArrayFloat = dic.c
-    hplus_c: NDArrayFloat = hplus.c
-
-    k1: float = SW.K1
-    k2: float = SW.K2
-
-    co2: NDArrayFloat = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c**2)))
-
-    pco2: NDArrayFloat = co2 / SW.K0 * 1e6
-
-    return pco2
-
-
-def calc_pCO2b(
-    dic: NDArrayFloat,
-    hplus: NDArrayFloat,
-    SW: SeawaterConstants,
-) -> NDArrayFloat:
-    """
-    Same as calc_pCO2, but accepts values/arrays rather than Reservoirs.
-    Calculate the concentration of pCO2 as a function of DIC,
-    H+, K1 and k2 and returns a numpy array containing
-    the pCO2 in uatm at each timestep. Calculations are based off
-    equations from Follows, 2006. doi:10.1016/j.ocemod.2005.05.004
-    dic:  = DIC concentrations in mol/kg
-    hplus: = H+ concentrations in mol/kg
-    SW: Seawater = Seawater object for the model
-    it is typically used with a DataField object, e.g.
-    pco2 = calc_pCO2b(dic,h,SW)
-
-    DataField(name = "SurfaceWaterpCO2",
-                      associated_with = reservoir_handle,
-                      y1_data = pco2b,
-                      y1_label = r"pCO_{2}",
-                      y1_legend = r"pCO_{2}",
-                      )
-
-    """
-
-    dic_c: NDArrayFloat = dic
-
-    hplus_c: NDArrayFloat = hplus
-
-    k1: float = SW.K1
-    k2: float = SW.K2
-
-    co2: NDArrayFloat = dic_c / (1 + (k1 / hplus_c) + (k1 * k2 / (hplus_c**2)))
-
-    pco2: NDArrayFloat = co2 / SW.K0 * 1e6
-
     return pco2
 
 
