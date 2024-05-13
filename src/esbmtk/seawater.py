@@ -27,8 +27,8 @@ import warnings
 from .esbmtk_base import esbmtkBase
 
 if tp.TYPE_CHECKING:
-    from .esbmtk import Reservoir, Model
-    from .extended_classes import ReservoirGroup
+    from .esbmtk import Species, Model
+    from .extended_classes import Reservoir
 
 
 # declare numpy types
@@ -75,7 +75,7 @@ class SeawaterConstants(esbmtkBase):
     """
 
     def __init__(self, **kwargs: dict[str, str]):
-        from esbmtk import Model, Reservoir, ReservoirGroup
+        from esbmtk import Model, Species, Reservoir
 
         self.defaults: dict[list[any, tuple]] = {
             "name": ["None", (str)],
@@ -83,7 +83,7 @@ class SeawaterConstants(esbmtkBase):
             "temperature": [25.0, (int, float)],
             "pH": [8.1, (int, float)],
             "pressure": [0, (int, float)],
-            "register": ["None", (Model, Reservoir, ReservoirGroup)],
+            "register": ["None", (Model, Species, Reservoir)],
             "dic": ["None", (str, float)],
             "ta": ["None", (str, float)],
         }

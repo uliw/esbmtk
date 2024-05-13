@@ -7,14 +7,14 @@ m: Model Definition {
     -timestep: "1kyr"
     -elements: "Carbon, Phosphor"
   }
-  element: Element {
+  element: ElementProperties {
     shape: class
     -name: Carbon
     -r: isotopic abundance
     -d_label: d13C
   }
 
-  species: Species {
+  species: SpeciesProperties {
     shape: class
     -name: CO2
     weight: 44.0095
@@ -47,5 +47,5 @@ geometry: Geometry Defintion {
   c -> db
 }
 
-m.model -> m.Element -> m.Species
+m.model -> m.ElementProperties -> m.SpeciesProperties
 m -> geometry

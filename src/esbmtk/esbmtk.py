@@ -15,8 +15,6 @@ General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
-from __future__ import annotations
 from pandas import DataFrame
 import time
 from time import process_time
@@ -333,7 +331,7 @@ class Model(esbmtkBase):
         print("Currently defined elements and their species:")
         for e in self.lel:
             print(f"{ind}{e}")
-            print(f"{off} Defined Species:")
+            print(f"{off} Defined SpeciesProperties:")
             for s in e.lsp:
                 print(f"{off}{off}{ind}{s.n}")
 
@@ -398,14 +396,14 @@ class Model(esbmtkBase):
         """Save the model results to a CSV file. Each reservoir will have
         their own CSV file
         """
-        from esbmtk import Reservoir, GasReservoir
+        from esbmtk import Species, GasSpecies
 
         prefix = ""
 
         print(f"reading data from {directory}")
 
         for r in self.lor:
-            if isinstance(r, (Reservoir, GasReservoir)):
+            if isinstance(r, (Species, GasSpecies)):
                 r.__read_state__(directory, prefix)
                 if r.isotopes:
                     r.d = get_delta_from_concentration(r.c, r.l, r.sp.r)
@@ -443,10 +441,10 @@ class Model(esbmtkBase):
         subsequent model run.
         """
 
-        from esbmtk import Reservoir, GasReservoir  # GasReservoir
+        from esbmtk import Species, GasSpecies  # GasSpecies
 
         for r in self.lor:
-            if isinstance(r, (Reservoir, GasReservoir)):
+            if isinstance(r, (Species, GasSpecies)):
                 r.__read_state__(directory)
 
         # update swc object
@@ -508,7 +506,7 @@ class Model(esbmtkBase):
 
         # ste plot parameters
         plt.style.use(self.plot_style)
-        fig.canvas.manager.set_window_title(f"{self.n} Reservoirs")
+        fig.canvas.manager.set_window_title(f"{self.n} Speciess")
         fig.set_size_inches(size)
 
         i = 0  # loop over objects
@@ -653,15 +651,15 @@ class Model(esbmtkBase):
 
         self.post_process_data(self.results)
 
-    def test_d_pH(self, rg: ReservoirGroup, time: NDArrayFloat) -> None:
+    def test_d_pH(self, rg: Reservoir, time: NDArrayFloat) -> None:
         """Test if the change in pH exceeds more than 0.01 units per time step.
         Note that this is only a crude test, since the solver interpolates
         between intergration steps. So this may not catch all problems.
 
         Parameters
         ----------
-        rg : ReservoirGroup
-            ReservoirGroup instance
+        rg : Reservoir
+            Reservoir instance
         time: : NDArrayFloat
             time vector as returned by the solver
         """
@@ -834,13 +832,13 @@ class Model(esbmtkBase):
             del __builtins__[o]
 
 
-class Element(esbmtkBase):
+class ElementProperties(esbmtkBase):
     """Each model, can have one or more elements.  This class sets
     element specific properties
 
     Example::
 
-        Element(name      = "S "           # the element name
+        ElementProperties(name      = "S "           # the element name
                 model     = Test_model     # the model handle
                 mass_unit =  "mol",        # base mass unit
                 li_label  =  "$^{32$S",    # Label of light isotope
@@ -927,13 +925,13 @@ class Element(esbmtkBase):
             setattr(self.model, s.name, s)
 
 
-class Species(esbmtkBase):
+class SpeciesProperties(esbmtkBase):
     """Each model, can have one or more species.  This class sets
     species specific properties
 
     Example::
 
-        Species(name = "SO4",
+        SpeciesProperties(name = "SO4",
                 element = S,
 
     )
@@ -942,11 +940,11 @@ class Species(esbmtkBase):
 
         self.defaults: dict[any, any] = {
             "name": ["None", (str)],
-            "element": ["None", (Element, str)],
+            "element": ["None", (ElementProperties, str)],
             "display_as": [kwargs["name"], (str)],
             "m_weight": [0, (int, float, str)],
-            "register": ["None", (Model, Element, Reservoir, GasReservoir)],
-            "parent": ["None", (Model, Element, Reservoir, GasReservoir)],
+            "register": ["None", (Model, ElementProperties, Species, GasSpecies)],
+            "parent": ["None", (Model, ElementProperties, Species, GasSpecies)],
             "flux_only": [False, (bool)],
             "logdata": [False, (bool)],
             "scale_to": ["None", (str)],
@@ -960,16 +958,16 @@ class Species(esbmtkBase):
     def __init__(self, **kwargs) -> None:
         """Initialize all instance variables"""
 
-        from esbmtk import GasReservoir
+        from esbmtk import GasSpecies
 
         # provide a list of all known keywords
         self.defaults: dict[any, any] = {
             "name": ["None", (str)],
-            "element": ["None", (Element, str)],
+            "element": ["None", (ElementProperties, str)],
             "display_as": [kwargs["name"], (str)],
             "m_weight": [0, (int, float, str)],
-            "register": [kwargs["element"], (Model, Element, Reservoir, GasReservoir)],
-            "parent": ["None", (Model, Element, Reservoir, GasReservoir)],
+            "register": [kwargs["element"], (Model, ElementProperties, Species, GasSpecies)],
+            "parent": ["None", (Model, ElementProperties, Species, GasSpecies)],
             "flux_only": [False, (bool)],
             "logdata": [False, (bool)],
             "scale_to": ["None", (str)],
@@ -1005,14 +1003,14 @@ class Species(esbmtkBase):
         self.__register_name_new__()
 
 
-class ReservoirBase(esbmtkBase):
+class SpeciesBase(esbmtkBase):
     """
-    Base class for all Reservoir objects
+    Base class for all Species objects
     """
 
     def __init__(self, **kwargs) -> None:
         raise NotImplementedError(
-            "ReservoirBase should never be used. Use the derived classes"
+            "SpeciesBase should never be used. Use the derived classes"
         )
 
     def __set_legacy_names__(self, kwargs) -> None:
@@ -1027,13 +1025,13 @@ class ReservoirBase(esbmtkBase):
         self.led: list[ExternalData] = []  # all external data references
         self.lio: dict[str, int] = {}  # flux name:direction pairs
         self.lop: list[Process] = []  # list holding all processe references
-        self.loe: list[Element] = []  # list of elements in thiis reservoir
-        self.doe: dict[Species, Flux] = {}  # species flux pairs
+        self.loe: list[ElementProperties] = []  # list of elements in thiis reservoir
+        self.doe: dict[SpeciesProperties, Flux] = {}  # species flux pairs
         self.loc: set[Connection] = set()  # set of connection objects
         self.ldf: list[DataField] = []  # list of datafield objects
         # list of processes which calculate reservoirs
         self.lpc: list[Process] = []
-        self.ef_results = False  # Reservoir has external function results
+        self.ef_results = False  # Species has external function results
 
         # legacy names
         self.n: str = self.name  # name of reservoir
@@ -1047,7 +1045,7 @@ class ReservoirBase(esbmtkBase):
         # else:
         #   self.pt = self.name
 
-        self.sp: Species = self.species  # species handle
+        self.sp: SpeciesProperties = self.species  # species handle
         self.mo: Model = self.species.mo  # model handle
         self.model = self.mo
         self.rvalue = self.sp.r
@@ -1164,7 +1162,7 @@ class ReservoirBase(esbmtkBase):
         elif self.sp.mo.register == "local":
             fn = f"{directory}/{prefix}{rn}.csv"  # file name
         else:
-            raise ReservoirError(
+            raise SpeciesError(
                 f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
             )
 
@@ -1229,11 +1227,11 @@ class ReservoirBase(esbmtkBase):
         """read data from csv-file into a dataframe
         The CSV file must have the following columns
             - Model Time t
-            - Reservoir_Name m
-            - Reservoir_Name l
-            - Reservoir_Name h
-            - Reservoir_Name d
-            - Reservoir_Name c
+            - Species_Name m
+            - Species_Name l
+            - Species_Name h
+            - Species_Name d
+            - Species_Name c
             - Flux_name m
             - Flux_name l etc etc.
         """
@@ -1248,13 +1246,13 @@ class ReservoirBase(esbmtkBase):
         elif self.sp.mo.register == "local":
             fn = f"{directory}/{prefix}{self.full_name}.csv"
         else:
-            raise ReservoirError(
+            raise SpeciesError(
                 f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
             )
 
         if not os.path.exists(fn):
             raise FileNotFoundError(
-                f"Flux {fn} does not exist in Reservoir {self.full_name}"
+                f"Flux {fn} does not exist in Species {self.full_name}"
             )
 
         self.df: pd.DataFrame = pd.read_csv(fn)
@@ -1282,7 +1280,7 @@ class ReservoirBase(esbmtkBase):
                 # logging.debug(f"found reservoir data for {name}")
                 col = self.__assign_reservoir_data__(self, df, col, True)
             else:
-                raise ReservoirError(f"Unable to find Flux {n} in {self.full_name}")
+                raise SpeciesError(f"Unable to find Flux {n} in {self.full_name}")
 
         # test if we missed any fluxes
         for f in list(curr.difference(read)):
@@ -1293,7 +1291,7 @@ class ReservoirBase(esbmtkBase):
     ) -> int:
         """Assign the third last entry data to all values in reservoir
 
-        :param obj: # Reservoir
+        :param obj: # Species
         :param df: pd.dataframe
         :param col: int # index into column position
         :param res: True # indicates whether obj is reservoir
@@ -1342,7 +1340,7 @@ class ReservoirBase(esbmtkBase):
             if callable(self.plot_transform_c):
                 y1 = self.plot_transform_c(self.c)
             else:
-                raise ReservoirError("Plot transform must be a function")
+                raise SpeciesError("Plot transform must be a function")
 
         return y1, y1_label, unit
 
@@ -1429,13 +1427,13 @@ class ReservoirBase(esbmtkBase):
         print("to see information on fluxes and processes")
 
 
-class Reservoir(ReservoirBase):
+class Species(SpeciesBase):
     """This object holds reservoir specific information.
 
     Example::
 
-        Reservoir(name = "foo",      # Name of reservoir
-                  species = S,          # Species handle
+        Species(name = "foo",      # Name of reservoir
+                  species = S,          # SpeciesProperties handle
                   delta = 20,           # initial delta - optional (defaults  to 0)
                   mass/concentration = "1 unit"  # species concentration or mass
                   volume/geometry = "1E5 l",      # reservoir volume (m^3)
@@ -1480,7 +1478,7 @@ class Reservoir(ReservoirBase):
     ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     If this optional parameter is specified, a SeaWaterConstants instance will
-    be registered for this Reservoir as Reservoir.swc See the
+    be registered for this Species as Species.swc See the
     SeaWaterConstants class for details how to specify the parameters,
     e.g.:
 
@@ -1520,7 +1518,7 @@ class Reservoir(ReservoirBase):
     The function must return a single argument which will be
     interpreted as the transformed reservoir concentration.
 
-    Accesing Reservoir Data:
+    Accesing Species Data:
     ~~~~~~~~~~~~~~~~~~~~~~~~
 
     You can access the reservoir data as:
@@ -1535,7 +1533,7 @@ class Reservoir(ReservoirBase):
 
         - Name.write_data() # save data to file
 
-        - Name.info() # info Reservoir
+        - Name.info() # info Species
 
     """
 
@@ -1546,7 +1544,7 @@ class Reservoir(ReservoirBase):
 
             self.defaults: dict[str, list[any, tuple]] = {
               "name": ["None", (str)],
-              "species": ["None", (str, Species)],
+              "species": ["None", (str, SpeciesProperties)],
               "delta": ["None", (int, float, str)],
               "concentration": ["None", (str, Q_, float)],
               "mass": ["None", (str, Q_)],
@@ -1561,11 +1559,11 @@ class Reservoir(ReservoirBase):
               "display_precision": [0.01, (int, float)],
               "register": [
                   "None",
-                  (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, Model, str),
+                  (SourceGroup, SinkGroup, Reservoir, ConnectionGroup, Model, str),
               ],
               "parent": [
                   "None",
-                  (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, Model, str),
+                  (SourceGroup, SinkGroup, Reservoir, ConnectionGroup, Model, str),
               ],
               "full_name": ["None", (str)],
               "seawater_parameters": ["None", (dict, str)],
@@ -1591,7 +1589,7 @@ class Reservoir(ReservoirBase):
         from esbmtk import (
             SourceGroup,
             SinkGroup,
-            ReservoirGroup,
+            Reservoir,
             ConnectionGroup,
             SeawaterConstants,
             get_box_geometry_parameters,
@@ -1601,7 +1599,7 @@ class Reservoir(ReservoirBase):
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
-            "species": ["None", (str, Species)],
+            "species": ["None", (str, SpeciesProperties)],
             "delta": ["None", (int, float, str)],
             "concentration": ["None", (str, Q_, float)],
             "mass": ["None", (str, Q_)],
@@ -1617,11 +1615,11 @@ class Reservoir(ReservoirBase):
             "display_precision": [0.01, (int, float)],
             "register": [
                 "None",
-                (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, Model, str),
+                (SourceGroup, SinkGroup, Reservoir, ConnectionGroup, Model, str),
             ],
             "parent": [
                 "None",
-                (SourceGroup, SinkGroup, ReservoirGroup, ConnectionGroup, Model, str),
+                (SourceGroup, SinkGroup, Reservoir, ConnectionGroup, Model, str),
             ],
             "full_name": ["None", (str)],
             "seawater_parameters": ["None", (dict, str)],
@@ -1709,7 +1707,7 @@ class Reservoir(ReservoirBase):
                 )
                 self.display_as = "mass"
             else:
-                raise ReservoirError("You need to specify mass or concentration")
+                raise SpeciesError("You need to specify mass or concentration")
 
         elif self.sp.stype == "length":
             self.plt_units = self.mo.l_unit
@@ -1849,7 +1847,7 @@ class Flux(esbmtkBase):
 
             self.defaults: dict[str, list[any, tuple]] = {
               "name": ["None", (str)],
-              "species": ["None", (str, Species)],
+              "species": ["None", (str, SpeciesProperties)],
               "delta": [0, (str, int, float)],
               "rate": ["None", (str, Q_, int, float)],
               "plot": ["yes", (str)],
@@ -1859,8 +1857,8 @@ class Flux(esbmtkBase):
                   "None",
                   (
                       str,
-                      Reservoir,
-                      GasReservoir,
+                      Species,
+                      GasSpecies,
                       Connection,
                       Connect,
                       Signal,
@@ -1877,8 +1875,8 @@ class Flux(esbmtkBase):
 
         from esbmtk import (
             Q_,
-            Reservoir,
-            GasReservoir,
+            Species,
+            GasSpecies,
             Connect,
             Connection,
             Signal,
@@ -1887,7 +1885,7 @@ class Flux(esbmtkBase):
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
-            "species": ["None", (str, Species)],
+            "species": ["None", (str, SpeciesProperties)],
             "delta": [0, (str, int, float)],
             "rate": ["None", (str, Q_, int, float)],
             "plot": ["yes", (str)],
@@ -1897,8 +1895,8 @@ class Flux(esbmtkBase):
                 "None",
                 (
                     str,
-                    Reservoir,
-                    GasReservoir,
+                    Species,
+                    GasSpecies,
                     Connection,
                     Connect,
                     Signal,
@@ -1919,7 +1917,7 @@ class Flux(esbmtkBase):
 
         # legacy names
         self.n: str = self.name  # name of flux
-        self.sp: Species = self.species  # species name
+        self.sp: SpeciesProperties = self.species  # species name
         self.mo: Model = self.species.mo  # model name
         self.model: Model = self.species.mo  # model handle
         self.rvalue = self.sp.r
@@ -2193,14 +2191,14 @@ class SourceSink(esbmtkBase):
 
             self.defaults: dict[str, list[any, tuple]] = {
                "name": ["None", (str)],
-               "species": ["None", (str, Species)],
+               "species": ["None", (str, SpeciesProperties)],
                "display_precision": [0.01, (int, float)],
                "register": [
                    "None",
                    (
                        SourceGroup,
                        SinkGroup,
-                       ReservoirGroup,
+                       Reservoir,
                        ConnectionGroup,
                        Model,
                        str,
@@ -2215,20 +2213,20 @@ class SourceSink(esbmtkBase):
         from esbmtk import (
             SourceGroup,
             SinkGroup,
-            ReservoirGroup,
+            Reservoir,
             ConnectionGroup,
         )
 
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
-            "species": ["None", (str, Species)],
+            "species": ["None", (str, SpeciesProperties)],
             "display_precision": [0.01, (int, float)],
             "register": [
                 "None",
                 (
                     SourceGroup,
                     SinkGroup,
-                    ReservoirGroup,
+                    Reservoir,
                     ConnectionGroup,
                     Model,
                     str,

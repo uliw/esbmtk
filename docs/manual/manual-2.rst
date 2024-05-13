@@ -19,7 +19,7 @@ The default is to add the signal to a given connection. It is however also possi
 
     Signal(
         name="CR",  # Signal name
-        species=M.PO4,  # Species
+        species=M.PO4,  # SpeciesProperties
         start="3 Myrs",
         shape="pyramid",
         duration="1 Myrs",
@@ -48,15 +48,15 @@ This will result in the following output:
 Working with multiple species
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The basic building blocks introduced so far, are sufficient to create a model, but not necessarily convenient when a model contains more than one species. ESBMTK addresses this through the :py:class:`esbmtk.extended_classes.ReservoirGroup.()` class, which allows to group of several :py:class:`esbmtk.esbmtk.Reservoir()` instances.
-instances. A  ``ReservoirGroup`` shares common properties. e.g., the volume and name of a given box, as well as the connection properties. In other words, in a multi-species model, one does not have to specify connections for each species, rather, it is sufficient to specify the connection type for the  ``ReservoirGroup`` instance. Similarly, there are classes to group sources, sinks and connections.
+The basic building blocks introduced so far, are sufficient to create a model, but not necessarily convenient when a model contains more than one species. ESBMTK addresses this through the :py:class:`esbmtk.extended_classes.Reservoir.()` class, which allows to group of several :py:class:`esbmtk.esbmtk.Species()` instances.
+instances. A  ``Reservoir`` shares common properties. e.g., the volume and name of a given box, as well as the connection properties. In other words, in a multi-species model, one does not have to specify connections for each species, rather, it is sufficient to specify the connection type for the  ``Reservoir`` instance. Similarly, there are classes to group sources, sinks and connections.
 
 Using the previous example of a simple P-cycle model, we now express the P-cycling as a function of photosynthetic organic matter (OM) production and remineralization. First, we import the new classes and we additionally load the species definitions for carbon.
 
 .. code:: ipython
 
     from esbmtk import (
-        ReservoirGroup,  # the reservoir class
+        Reservoir,  # the reservoir class
         ConnectionGroup,  # the connection class
         SourceGroup,  # the source class
         SinkGroup,  # sink class
@@ -81,7 +81,7 @@ Defining a ``Reservoirgroup`` follows the same pattern, except that we use a dic
 
 .. code:: ipython
 
-    ReservoirGroup(
+    Reservoir(
         name="S_b",
         volume="3E16 m**3",  # surface box volume
         concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"},
@@ -132,8 +132,8 @@ One can now proceed to define the particulate phosphate transport as a function 
 
     pl = data_summaries(
         M,  # model instance 
-        [M.DIC, M.PO4],  # Species list 
-        [M.S_b, M.D_b],  # ReservoirGroup list
+        [M.DIC, M.PO4],  # SpeciesProperties list 
+        [M.S_b, M.D_b],  # Reservoir list
         M,
     )
     M.plot(pl, fn="po4_2.png")
@@ -166,7 +166,7 @@ Let's assume that the weathering flux of carbon has :math:`\delta`\ :sup:`13`\C 
 .. code:: ipython
 
     # 1, 2 & 3 and similar for the deep ocean box
-    ReservoirGroup(
+    Reservoir(
         name="S_b",
         register=M,
         volume="3E16 m**3",  # surface box volume
@@ -206,7 +206,7 @@ Running the previous model with these additional 5 lines, results in the followi
 
     Output of ``po4_2_with_isotopes``.py= Note that the run-time has been reduced to 500 years, so that the graph does not just show the steady state. The upper box shows the gradual increase in DIC concentrations and the lower shows the corresponding isotope ratios. The system will achieve isotopic equilibrium within approximately 2000 years.
 
-Note that isotope calculations are only available if the respective Element instances contain the necessary data. Assuming that the model imported the ``Carbon`` element instance, you can query its properties like this:
+Note that isotope calculations are only available if the respective ElementProperties instances contain the necessary data. Assuming that the model imported the ``Carbon`` element instance, you can query its properties like this:
 
 .. code:: jupyter-python
 

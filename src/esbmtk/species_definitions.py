@@ -19,7 +19,7 @@ from __future__ import annotations
 import typing as tp
 import numpy as np
 import numpy.typing as npt
-from .esbmtk import Element, Species
+from .esbmtk import ElementProperties, SpeciesProperties
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
@@ -31,8 +31,8 @@ if tp.TYPE_CHECKING:
 def Carbon(model):
     """Some often used definitions"""
 
-    eh = Element(
-        name="Carbon",  # Element Name
+    eh = ElementProperties(
+        name="Carbon",  # ElementProperties Name
         model=model,  # Model handle
         mass_unit="mol",  # base mass unit
         li_label="C^{12}$S",  # Name of light isotope
@@ -45,37 +45,37 @@ def Carbon(model):
     )
 
     # add species
-    Species(
+    SpeciesProperties(
         name="CO2", element=eh, display_as=r"CO$_2$", register=eh, m_weight=44.0095
     )  # Name & element handle
-    Species(name="DIC", element=eh, register=eh, display_as="DIC")
-    Species(name="OM", element=eh, register=eh)
+    SpeciesProperties(name="DIC", element=eh, register=eh, display_as="DIC")
+    SpeciesProperties(name="OM", element=eh, register=eh)
     # Particulate OM
-    Species(name="POM", element=eh, register=eh, flux_only=True)
-    Species(name="PIC", element=eh, register=eh, flux_only=True)
-    Species(name="DOC", element=eh, register=eh)
-    Species(
+    SpeciesProperties(name="POM", element=eh, register=eh, flux_only=True)
+    SpeciesProperties(name="PIC", element=eh, register=eh, flux_only=True)
+    SpeciesProperties(name="DOC", element=eh, register=eh)
+    SpeciesProperties(
         name="CaCO3", element=eh, display_as=r"CaCO$_3$", register=eh, m_weight=100.0869
     )
-    Species(
+    SpeciesProperties(
         name="HCO3", element=eh, display_as=r"HCO$_3^-$", register=eh, m_weight=61.01684
     )
-    Species(
+    SpeciesProperties(
         name="CO3", element=eh, display_as="CO$_3^{2-}$", register=eh, m_weight=60.0089
     )
-    Species(name="C", element=eh, register=eh, m_weight=12.0107)
-    Species(name="CO2aq", element=eh, register=eh, scale_to="umol")
-    Species(name="ALK", element=eh, register=eh)  # Alkalinity
-    Species(name="CALK", element=eh, register=eh)  # Carbonate Alkalinity
-    Species(name="CA", element=eh, register=eh)
-    Species(name="TALK", element=eh, register=eh)  # Total Alkalinity
-    Species(name="TA", element=eh, register=eh)
-    Species(name="PALK", element=eh, register=eh)  # Practical Alkalinity
-    Species(name="PA", element=eh, register=eh)
+    SpeciesProperties(name="C", element=eh, register=eh, m_weight=12.0107)
+    SpeciesProperties(name="CO2aq", element=eh, register=eh, scale_to="umol")
+    SpeciesProperties(name="ALK", element=eh, register=eh)  # Alkalinity
+    SpeciesProperties(name="CALK", element=eh, register=eh)  # Carbonate Alkalinity
+    SpeciesProperties(name="CA", element=eh, register=eh)
+    SpeciesProperties(name="TALK", element=eh, register=eh)  # Total Alkalinity
+    SpeciesProperties(name="TA", element=eh, register=eh)
+    SpeciesProperties(name="PALK", element=eh, register=eh)  # Practical Alkalinity
+    SpeciesProperties(name="PA", element=eh, register=eh)
 
 
 def Sulfur(model):
-    eh = Element(
+    eh = ElementProperties(
         name="Sulfur",
         model=model,  # model handle
         mass_unit="mol",  # base mass unit
@@ -88,36 +88,36 @@ def Sulfur(model):
     )
 
     # add species
-    Species(
+    SpeciesProperties(
         name="SO4",
         element=eh,
         display_as=r"SO$_{4}^{2-}$",
         register=eh,
         m_weight=96.0626,
     )
-    Species(
+    SpeciesProperties(
         name="SO3", element=eh, display_as=r"SO$_{3}$", register=eh, m_weight=80.0632
     )
-    Species(
+    SpeciesProperties(
         name="SO2", element=eh, display_as=r"SO$_{2$}", register=eh, m_weight=64.0638
     )
-    Species(name="HS", element=eh, display_as=r"HS$^-$", register=eh, m_weight=33.07294)
-    Species(
+    SpeciesProperties(name="HS", element=eh, display_as=r"HS$^-$", register=eh, m_weight=33.07294)
+    SpeciesProperties(
         name="H2S", element=eh, display_as=r"H$_{2}$S", register=eh, m_weight=34.08088
     )
-    Species(name="FeS", element=eh, register=eh, m_weight=87.91)
-    Species(
+    SpeciesProperties(name="FeS", element=eh, register=eh, m_weight=87.91)
+    SpeciesProperties(
         name="FeS2", element=eh, display_as=r"FeS$_{2}$", register=eh, m_weight=119.975
     )
-    Species(name="S0", element=eh, register=eh, m_weight=32.065)
-    Species(name="S", element=eh, register=eh, m_weight=32.065)
-    Species(
+    SpeciesProperties(name="S0", element=eh, register=eh, m_weight=32.065)
+    SpeciesProperties(name="S", element=eh, register=eh, m_weight=32.065)
+    SpeciesProperties(
         name="S2minus", element=eh, display_as=r"S$^{2-}$", register=eh, m_weight=64.13
     )
 
 
 def Hydrogen(model):
-    eh = Element(
+    eh = ElementProperties(
         name="Hydrogen",
         model=model,  # model handle
         mass_unit="milli",  # base mass unit
@@ -131,16 +131,16 @@ def Hydrogen(model):
     )
 
     # add species
-    Species(
+    SpeciesProperties(
         name="Hplus", element=eh, display_as=r"$H^+$", register=eh, logdata=True
     )  # Name & element handle
-    Species(
+    SpeciesProperties(
         name="H2O", element=eh, display_as=r"H$_{2}$O", register=eh
     )  # Name & element handle
-    Species(
+    SpeciesProperties(
         name="H", element=eh, display_as=r"$H^+$", register=eh
     )  # Name & element handle
-    Species(
+    SpeciesProperties(
         name="pH", element=eh, display_as=r"$pH$", register=eh
     )  # Name & element handle
 
@@ -154,7 +154,7 @@ def Oxygen(model: Model) -> None:
         Model instance
 
     """
-    eh = Element(
+    eh = ElementProperties(
         name="Oxygen",
         model=model,  # model handle
         mass_unit="mol",  # base mass unit
@@ -168,18 +168,18 @@ def Oxygen(model: Model) -> None:
     )
 
     # add species
-    Species(name="O", element=eh, display_as="O")
+    SpeciesProperties(name="O", element=eh, display_as="O")
     # Name & element handle
-    Species(
+    SpeciesProperties(
         name="O2", element=eh, display_as=r"O$_{2}$"
     )  # Name & element handle
-    Species(
+    SpeciesProperties(
         name="OH", element=eh, display_as=r"OH$^{-}$"
     )  # Name & element handle
 
 
 def Phosphor(model):
-    eh = Element(
+    eh = ElementProperties(
         name="Phosphor",
         model=model,  # model handle
         mass_unit="mol",  # base mass unit
@@ -192,7 +192,7 @@ def Phosphor(model):
     )
 
     # add species
-    Species(
+    SpeciesProperties(
         name="PO4",
         element=eh,
         display_as=r"PO$_{4}$",
@@ -200,7 +200,7 @@ def Phosphor(model):
         m_weight=94.971362,
         scale_to="umol",
     )  # Name & element handle
-    Species(
+    SpeciesProperties(
         name="P",
         element=eh,
         display_as=r"P",
@@ -211,7 +211,7 @@ def Phosphor(model):
 
 
 def Nitrogen(model):
-    eh = Element(
+    eh = ElementProperties(
         name="Nitrogen",
         model=model,  # model handle
         mass_unit="mol",  # base mass unit
@@ -224,23 +224,23 @@ def Nitrogen(model):
     )
 
     # add species
-    Species(name="N", element=eh, display_as=r"N")
-    Species(
+    SpeciesProperties(name="N", element=eh, display_as=r"N")
+    SpeciesProperties(
         name="N2", element=eh, display_as=r"N$_{2}$"
     )  # Name & element handle
-    Species(
+    SpeciesProperties(
         name="Nox", element=eh, display_as=r"Nox"
     )  # Name & element handle
-    Species(
+    SpeciesProperties(
         name="NH4", element=eh, display_as=r"NH$_{4}^{+}$"
     )  # Name & element handle
-    Species(
+    SpeciesProperties(
         name="NH3", element=eh, display_as=r"NH$_{3}$"
     )  # Name & element handle
 
 
 def Boron(model):
-    eh = Element(
+    eh = ElementProperties(
         name="Boron",
         model=model,  # model handle
         mass_unit="mmol",  # base mass unit
@@ -253,29 +253,29 @@ def Boron(model):
     )
 
     # add species
-    Species(name="B", element=eh, display_as=r"B")  # Name & element handle
-    Species(
+    SpeciesProperties(name="B", element=eh, display_as=r"B")  # Name & element handle
+    SpeciesProperties(
         name="BOH", element=eh, display_as=r"B"
     )  # Name & element handle
-    Species(
+    SpeciesProperties(
         name="BOH3", element=eh, display_as=r"B(OH)$_{3}$"
     )  # Boric Acid
-    Species(
+    SpeciesProperties(
         name="BOH4", element=eh, display_as=r"B(OH)$_{4}^{-}$"
     )  # Borate
 
 
 def misc_variables(model):
-    eh = Element(
+    eh = ElementProperties(
         name="misc_variables",
         model=model,  # model handle
         mass_unit="m",  # base mass unit
         register=model,
     )
     # add species
-    Species(name="zsnow", element=eh, display_as="zsnow", stype="length")
-    Species(name="zcc", element=eh, display_as="zcc", stype="length")
-    Species(name="zsat", element=eh, display_as="zcc", stype="length")
-    Species(name="Fburial", element=eh, display_as="Fburial")
-    Species(name="Fdiss", element=eh, display_as="Fdiss")
+    SpeciesProperties(name="zsnow", element=eh, display_as="zsnow", stype="length")
+    SpeciesProperties(name="zcc", element=eh, display_as="zcc", stype="length")
+    SpeciesProperties(name="zsat", element=eh, display_as="zcc", stype="length")
+    SpeciesProperties(name="Fburial", element=eh, display_as="Fburial")
+    SpeciesProperties(name="Fdiss", element=eh, display_as="Fdiss")
     # Name & element handle

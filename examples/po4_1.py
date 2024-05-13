@@ -1,7 +1,7 @@
 # import classes from the esbmtk library
 from esbmtk import (
     Model,  # the model class
-    Reservoir,  # the reservoir class
+    Species,  # the reservoir class
     Connection,  # the connection class
     Source,  # the source class
     Sink,  # sink class
@@ -34,14 +34,14 @@ Sink(
 )
 
 # reservoir definitions
-Reservoir(
+Species(
     name="S_b",  # box name
     species=M.PO4,  # species in box
     register=M,  # this box will be available as M.S_b
     volume="3E16 m**3",  # surface box volume
     concentration="0 umol/l",  # initial concentration
 )
-Reservoir(
+Species(
     name="D_b",  # box name
     species=M.PO4,  # species in box
     register=M,  # this box will be available M.D_b

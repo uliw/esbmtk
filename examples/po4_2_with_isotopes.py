@@ -2,7 +2,7 @@
 from esbmtk import (
     Model,  # the model class
     Connection,
-    ReservoirGroup,  # the reservoir class
+    SpeciesGroup,  # the reservoir class
     ConnectionGroup,  # the connection class
     SourceGroup,  # the source class
     SinkGroup,  # sink class
@@ -39,7 +39,7 @@ SinkGroup(
     isotopes={M.DIC: True, M.PO4: False},
 )
 
-ReservoirGroup(
+Reservoir(
     name="S_b",
     register=M,
     volume="3E16 m**3",  # surface box volume
@@ -48,7 +48,7 @@ ReservoirGroup(
     delta={M.DIC: 0},
 )
 
-ReservoirGroup(
+Reservoir(
     name="D_b",  # box name
     register=M,  # this box will be available M.db
     volume="100E16 m**3",  # deeb box volume

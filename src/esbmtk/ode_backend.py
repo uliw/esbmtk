@@ -20,14 +20,14 @@ import numpy as np
 import numpy.typing as npt
 import typing as tp
 
-# from esbmtk import Flux, Reservoir, Model, Connection, Connect
+# from esbmtk import Flux, Species, Model, Connection, Connect
 # from esbmtk import ExternalFunction
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Flux, Reservoir, Model, Connection, Connect
+    from esbmtk import Flux, Species, Model, Connection, Connect
     from esbmtk import ExternalFunction
 
 
@@ -44,7 +44,7 @@ def get_initial_conditions(
     :param atol_d: default value for atol if c = 0
 
     :return: R = list of initial conditions as floats
-    :return: icl = dict[Reservoir, list[int, int]] where reservoir
+    :return: icl = dict[Species, list[int, int]] where reservoir
              indicates the reservoir handle, and the list contains the
              index into the reservoir data.  list[0] = concentration
              list[1] concentration of the light isotope.
@@ -55,15 +55,15 @@ def get_initial_conditions(
 
         We need to consider 3 types of reservoirs:
 
-        1) Reservoirs that change as a result of physical fluxes i.e.
+        1) Speciess that change as a result of physical fluxes i.e.
         r.lof > 0.  These require a flux statements and a reservoir
         equation.
 
-        2) Reservoirs that do not have active fluxes but are computed
+        2) Speciess that do not have active fluxes but are computed
         as a tracer, i.e.. HCO3.  These only require a reservoir
         equation
 
-        3) Reservoirs that do not change but are used as input.  Those
+        3) Speciess that do not change but are used as input.  Those
         should not happen in a well formed model, but we cannot
         exclude the possibility.  In this case, there is no flux
         equation, and we state that dR/dt = 0
@@ -80,7 +80,7 @@ def get_initial_conditions(
     atol: list = []  # list of tolerances for ode solver
     # dict that contains the reservoir_handle as key and the index positions
     # for c and l as a list
-    icl: dict[Reservoir, list[int, int]] = {}
+    icl: dict[Species, list[int, int]] = {}
     cpl: list = []  # list of reservoirs that are computed
     ipl: list = []  # list of static reservoirs that serve as input
 
@@ -139,7 +139,7 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
     for r in M.lor:  # loop over reservoirs
         """
         Write equations for each reservoir and create unique variable
-        names.  Reservoirs are typiclally called M.rg.r so we replace
+        names.  Speciess are typiclally called M.rg.r so we replace
         all dots with underscore -> M_rg_r
         """
 
@@ -184,7 +184,7 @@ def write_reservoir_equations_with_isotopes(
             # v_val = f"{r.volume.to(r.v_unit).magnitude}"
             v_val = f"toc[{r.v_index}]"
             # Write equations for each reservoir
-            # create unique variable names. Reservoirs are typiclally called
+            # create unique variable names. Speciess are typiclally called
             # M.rg.r so we replace all dots with underscore
             if r.isotopes:
                 name = f'dCdt_{r.full_name.replace(".", "_")}_l'
@@ -227,7 +227,7 @@ def write_equations_2(
         computed based on other reservoirs
     :param ipl: list of reservoir that do not change in concentration
     """
-    from esbmtk import Reservoir
+    from esbmtk import Species
     import pathlib as pl
     import sys
 
@@ -305,7 +305,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
             # we cannot use a set, since we need to preserve order
             if flux not in flist:
                 flist.append(flux)  # add to list of fluxes already computed
-                if isinstance(flux.parent, Reservoir):
+                if isinstance(flux.parent, Species):
                     continue  # skip computed fluxes
 
                 ex, exl = get_flux(flux, M, R, icl)  # get flux expressions
@@ -431,10 +431,10 @@ def check_signal_2(ex: str, exl: str, c: Connection) -> (str, str):
     return ex, exl
 
 
-def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
+def get_ic(r: Species, icl: dict, isotopes=False) -> str:
     """Get initial condition in a reservoir.  If the reservoir is icl,
     return index expression into R.c. If the reservoir is not in the
-    index, return the Reservoir concentration a t=0
+    index, return the Species concentration a t=0
 
     In both cases return these a string
 
@@ -442,7 +442,7 @@ def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
     concentration
 
     :param r: A reservoir handle
-    :param icl: icl = dict[Reservoir, list[int, int]] where reservoir
+    :param icl: icl = dict[Species, list[int, int]] where reservoir
         indicates the reservoir handle, and the list contains the
         index into the reservoir data.  list[0] = concentration
         list[1] concentration of the light isotope.
@@ -472,23 +472,23 @@ def get_ic(r: Reservoir, icl: dict, isotopes=False) -> str:
     return s1
 
 
-def parse_esbmtk_input_data_types(d: any, r: Reservoir, ind: str, icl: dict) -> str:
+def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> str:
     """Parse esbmtk data types that are provided as arguments
     to external function objects, and convert them into a suitable string
     format that can be used in the ode equation file
     """
-    from esbmtk import Flux, Reservoir, ReservoirGroup, SeawaterConstants, Q_
-    from esbmtk import GasReservoir
+    from esbmtk import Flux, Species, Reservoir, SeawaterConstants, Q_
+    from esbmtk import GasSpecies
 
     if isinstance(d, str):
         sr = getattr(r.register, d)
         a = f"{ind}{get_ic(sr, icl)},\n"
-    elif isinstance(d, Reservoir):
+    elif isinstance(d, Species):
         a = f"{ind}({get_ic(d, icl,d.isotopes)}),\n"
-    elif isinstance(d, GasReservoir):
+    elif isinstance(d, GasSpecies):
         # print(f" {d.full_name} isotopes {d.isotopes}")
         a = f"{ind}({get_ic(d, icl,d.isotopes)}),\n"
-    elif isinstance(d, ReservoirGroup):
+    elif isinstance(d, Reservoir):
         a = f"{ind}{d.full_name},\n"
     elif isinstance(d, Flux):
         sr = d.full_name.replace(".", "_")
@@ -535,7 +535,7 @@ def parse_function_params(params, ind) -> str:
 # ------------------------ define processes ------------------------- #
 def write_ef(
     eqs,
-    ef: Reservoir | ExternalFunction,
+    ef: Species | ExternalFunction,
     icl: dict,
     rel: str,
     ind2: str,
@@ -679,7 +679,7 @@ def get_scale_with_concentration_eq(
     :param flux: Flux object
     :param c: connection instance
     :param cfn: full name of the connection instance
-    :param icl: dict[Reservoir, list[int, int]] where reservoir
+    :param icl: dict[Species, list[int, int]] where reservoir
         indicates the reservoir handle, and the list contains the
         index into the reservoir data.  list[0] = concentration
         list[1] concentration of the light isotope.
@@ -709,7 +709,7 @@ def get_scale_with_flux_eq(
     :param flux: Flux object
     :param c: connection instance
     :param cfn: full name of the connection instance
-    :param icl: dict[Reservoir, list[int, int]] where reservoir
+    :param icl: dict[Species, list[int, int]] where reservoir
         indicates the reservoir handle, and the list contains the
         index into the reservoir data.  list[0] = concentration
         list[1] concentration of the light isotope.

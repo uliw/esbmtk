@@ -15,13 +15,11 @@
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
 import matplotlib.pyplot as plt
 import logging
 import typing as tp
-from esbmtk import Q_
 import functools
 from numba import njit
 
@@ -91,7 +89,7 @@ def debug(func):
 
 
 def get_reservoir_reference(k: str, M: Model) -> tuple:
-    """Get Species and Reservoir handles
+    """Get SpeciesProperties and Species handles
 
     Parameters
     ----------
@@ -102,19 +100,19 @@ def get_reservoir_reference(k: str, M: Model) -> tuple:
     Returns
     -------
     tuple
-        Reservoir/Connection, Species
+        Species/Connection, SpeciesProperties
     Raises
     ------
     ValueError
-        If reservoir_name is not of type Reservoir/Ggroup or Connection
+        If reservoir_name is not of type Species/Ggroup or Connection
 
     """
-    from esbmtk import Reservoir, ReservoirGroup, Connection, Connect
-    from esbmtk import GasReservoir, Species
+    from esbmtk import Species, Reservoir, Connection, Connect
+    from esbmtk import GasSpecies, SpeciesProperties
 
     key_list = k[2:].split(".")  # get model, reservoir & species name
 
-    if len(key_list) == 3:  # ReservoirGroup
+    if len(key_list) == 3:  # Reservoir
         model_name, reservoir_name, species_name = key_list
 
         if hasattr(M, reservoir_name):
@@ -125,37 +123,37 @@ def get_reservoir_reference(k: str, M: Model) -> tuple:
         if k[0:2] == "R_":
             reservoir = obj
         elif k[0:2] == "F_":
-            if isinstance(obj, Reservoir | ReservoirGroup):
+            if isinstance(obj, Species | Reservoir):
                 reservoir = obj
             elif isinstance(obj, Connection | Connect):
                 reservoir = obj
-                if isinstance(reservoir.source, GasReservoir):
+                if isinstance(reservoir.source, GasSpecies):
                     species_name = obj.sink.name
                 else:
                     species_name = obj.source.name
             else:
                 raise ValueError(
-                    f"{obj.name} must be Reservoir or Connection", f"not {type(obj)}"
+                    f"{obj.name} must be Species or Connection", f"not {type(obj)}"
                 )
 
-    elif len(key_list) == 2:  # (Gas)Reservoir
+    elif len(key_list) == 2:  # (Gas)Species
         model_name, reservoir_name = key_list
         reservoir = getattr(M, reservoir_name)
     else:
         raise ValueError("kl should look like this F_M.CO2_At")
 
     species = getattr(M, species_name)
-    if not isinstance(species, Species):
+    if not isinstance(species, SpeciesProperties):
         breakpoint()
     return reservoir, species
 
 
 def register_new_flux(rg, dict_key, dict_value) -> list:
-    """Register a new flux object with a Reservoir or Connection instance
+    """Register a new flux object with a Species or Connection instance
 
     Parameters
     ----------
-    rg : Reservoir | ReservoirGroup
+    rg : Species | Reservoir
         instance to register with
     dict_key : str
         E.g., "M.A_db.DIC"
@@ -168,14 +166,14 @@ def register_new_flux(rg, dict_key, dict_value) -> list:
         list of Flux instances
 
     """
-    from .esbmtk import Reservoir, Flux, Source
-    from .extended_classes import ReservoirGroup
+    from .esbmtk import Species, Flux, Source
+    from .extended_classes import Reservoir
 
-    if isinstance(rg, ReservoirGroup):
+    if isinstance(rg, Reservoir):
         spn = dict_key.split(".")[-1]
         sp = getattr(rg.mo, spn)
         reg = getattr(rg, sp.name)
-    elif isinstance(rg, Reservoir):
+    elif isinstance(rg, Species):
         spn = dict_key.split(".")[-1]
         sp = getattr(rg.mo, spn)
         reg = rg
@@ -205,9 +203,9 @@ def register_new_flux(rg, dict_key, dict_value) -> list:
 
 def register_new_reservoir(r, sp, v):
     """Register a new reservoir"""
-    from .esbmtk import Reservoir
+    from .esbmtk import Species
 
-    rt = Reservoir(  # create new reservoir
+    rt = Species(  # create new reservoir
         name=sp.name,
         species=sp,
         concentration=f"{v} mol/kg",
@@ -226,7 +224,7 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
     ----------
     ec : ExternalFunction
         ExternalFunction Instance
-    rg : ReservoirGroup | Reservoir
+    rg : Reservoir | Species
         The Resevoir or Reservoirgroup the external function is
         associated with
 
@@ -243,13 +241,13 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
     so we register the source/sink relationship with the
     reservoir they belong to.
 
-    This fails for GasReservoirs since they can have a 1:many
+    This fails for GasSpecies since they can have a 1:many
     relatioship. The below is a terrible hack, it would be
     better to express this with several connection
     objects, rather than overloading the source attribute of the
-    GasReservoir class.
+    GasSpecies class.
     """
-    from esbmtk import Reservoir, ReservoirGroup, Flux, Connection, Connect
+    from esbmtk import Species, Reservoir, Flux, Connection, Connect
     from esbmtk import Sink, SinkGroup
 
     M = rg.mo
@@ -266,7 +264,7 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
                         o: list = [o]
                     elif isinstance(o, Connection | Connect):
                         o: list = [getattr(o, "_F")]  # get flux handle
-                    elif isinstance(o, Reservoir | ReservoirGroup):
+                    elif isinstance(o, Species | Reservoir):
                         o: list = register_new_flux(rg, dict_key[2:], dict_value)
                     elif isinstance(o, Sink | SinkGroup):
                         o: list = register_new_flux(rg, dict_key[2:], dict_value)
@@ -287,7 +285,7 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
             else:
                 raise ValueError(f"{dict_key[0:2]} is not defined")
 
-        elif isinstance(line, Reservoir):
+        elif isinstance(line, Species):
             dict_value.ef_results = True
             o = [dict_value]
         else:
@@ -604,7 +602,7 @@ def create_reservoirs(box_dict: dict, ic_dict: dict, M: any) -> dict:
 
     """
 
-    from esbmtk import ReservoirGroup, build_concentration_dicts
+    from esbmtk import Reservoir, build_concentration_dicts
     from esbmtk import SourceGroup, SinkGroup
 
     # loop over reservoir names
@@ -643,7 +641,7 @@ def create_reservoirs(box_dict: dict, ic_dict: dict, M: any) -> dict:
                 raise ValueError("'ty' must be either Source or Sink")
 
         else:  # create reservoirs
-            rg = ReservoirGroup(
+            rg = SpeciesGroup(
                 name=box_name,
                 geometry=value["g"],
                 concentration=keyword_dict[box_name][0],
@@ -1037,10 +1035,10 @@ def create_connection(n: str, p: dict, M: Model) -> None:
 def get_name_only(o: any) -> any:
     """Test if item is an esbmtk type. If yes, extract the name"""
 
-    from esbmtk import Flux, Reservoir, ReservoirGroup, Species
+    from esbmtk import Flux, Species, Reservoir, SpeciesProperties
 
     return (
-        o.full_name if isinstance(o, (Flux, Reservoir, ReservoirGroup, Species)) else o
+        o.full_name if isinstance(o, (Flux, Species, Reservoir, SpeciesProperties)) else o
     )
 
 
@@ -1428,11 +1426,11 @@ def data_summaries(
     box_names: list,
     register_with="None",
 ) -> list:
-    """Group results by species and ReservoirGroups
+    """Group results by species and Reservoirs
 
     :param M: model instance
     :param species_names: list of species instances
-    :param box_names: list of ReservoirGroup instances
+    :param box_names: list of Reservoir instances
     :param register_with: defaults to M
     :returns pl: a list of datafield instance to be plotted
 
@@ -1518,23 +1516,23 @@ def get_l_mass(m: float, d: float, r: float) -> float:
 def get_delta_h(R) -> float:
     """Calculate the delta of a flux or reservoir
 
-    :param R: Reservoir or Flux handle
+    :param R: Species or Flux handle
 
     returns d as vector of delta values
     R.c = total concentration
     R.l = concentration of the light isotope
     """
 
-    from esbmtk import Reservoir, GasReservoir, Flux
+    from esbmtk import Species, GasSpecies, Flux
 
     r = R.species.r  # reference ratio
-    if isinstance(R, (Reservoir, GasReservoir)):
+    if isinstance(R, (Species, GasSpecies)):
         d = np.where(R.l > 0, 1e3 * ((R.c - R.l) / R.l - r) / r, 0)
     elif isinstance(R, Flux):
         d = np.where(R.l > 0, 1e3 * ((R.m - R.l) / R.l - r) / r, 0)
     else:
         raise ValueError(
-            f"{R.full_name} must be of type Flux or Reservoir, not {type(R)}"
+            f"{R.full_name} must be of type Flux or Species, not {type(R)}"
         )
 
     return d

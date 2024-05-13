@@ -4,13 +4,13 @@ import numpy as np
 import numpy.typing as npt
 
 if tp.TYPE_CHECKING:
-    from .esbmtk import ReservoirGroup, Reservoir, GasReservoir
+    from .esbmtk import Reservoir, Species, GasSpecies
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
 
-def carbonate_system_1_pp(box_names: ReservoirGroup) -> None:
+def carbonate_system_1_pp(box_names: SpeciesGroup) -> None:
     """Calculates and returns various carbonate species based on previously calculated
     Hplus, TA, and DIC concentrations.
 
@@ -75,7 +75,7 @@ def carbonate_system_1_pp(box_names: ReservoirGroup) -> None:
 
 
 def carbonate_system_2_pp(
-    bn: ReservoirGroup | list,  # 2 Reservoir handle
+    bn: Reservoir | list,  # 2 Reservoir handle
     export_fluxes: float | list,  # 3 CaCO3 export flux as DIC
     zsat_min: float = 200,
     zmax: float = 6000,
@@ -83,7 +83,7 @@ def carbonate_system_2_pp(
     """Calculates and returns the fraction of the carbonate rain that is
     dissolved an returned back into the ocean.
 
-    :param rg: ReservoirGroup, e.g., M.D_b
+    :param rg: Reservoir, e.g., M.D_b
     :param export: export flux in mol/year
     :param zsat_min: depth of mixed layer
     :param zmax: depth of lookup table
@@ -230,14 +230,14 @@ def carbonate_system_2_pp(
 
 
 def gas_exchange_fluxes(
-    liquid_reservoir: Reservoir,
-    gas_reservoir: GasReservoir,
+    liquid_reservoir: Species,
+    gas_reservoir: GasSpecies,
     pv: str,
 ):
     """Calculate gas exchange fluxes for a given reservoir
 
-    :param liquid_reservoir: Reservoir handle
-    :param gas_reservoir:  Reservoir handle
+    :param liquid_reservoir: Species handle
+    :param gas_reservoir:  Species handle
     :param pv: piston velocity as string e.g., "4.8 m/d"
 
     :returns:

@@ -22,7 +22,7 @@ from math import log, sqrt
 import numpy as np
 import numpy.typing as npt
 from numba import njit
-from esbmtk import ExternalCode, ReservoirGroup, Flux, SeawaterConstants
+from esbmtk import ExternalCode, Reservoir, Flux, SeawaterConstants
 from esbmtk.utility_functions import (
     __checkkeys__,
     __addmissingdefaults__,
@@ -110,14 +110,14 @@ def carbonate_system_1(dic, ta, hplus_0, co2aq_0, p) -> tuple:
     return dCdt_Hplus, dCdt_co2aq
 
 
-def init_carbonate_system_1(rg: ReservoirGroup):
+def init_carbonate_system_1(rg: Reservoir):
     """Creates a new carbonate system virtual reservoir for each
     reservoir in rgs. Note that rgs must be a list of reservoir groups.
 
     Required keywords:
         rgs: list = []  of Reservoir Group objects
 
-    These new virtual reservoirs are registered to their respective Reservoir
+    These new virtual reservoirs are registered to their respective Species
     as 'cs'.
 
     The respective data fields are available as rgs.r.cs.xxx where xxx stands
@@ -162,7 +162,7 @@ def add_carbonate_system_1(rgs: list):
     Required keywords:
         rgs: list = []  of Reservoir Group objects
 
-    These new virtual reservoirs are registered to their respective Reservoir
+    These new virtual reservoirs are registered to their respective Species
     as 'cs'.
 
     The respective data fields are available as rgs.r.cs.xxx where xxx stands
@@ -274,8 +274,8 @@ def carbonate_system_2(
 
 def init_carbonate_system_2(
     export_flux: Flux,
-    r_sb: ReservoirGroup,  # Surface box
-    r_db: ReservoirGroup,  # deep box
+    r_sb: Reservoir,  # Surface box
+    r_db: Reservoir,  # deep box
     kwargs: dict,
 ):
     """Initialize a carbonate system 2 instance.
@@ -287,10 +287,10 @@ def init_carbonate_system_2(
     ----------
     export_flux : Flux
         CaCO3 export flux from the surface box
-    r_sb : ReservoirGroup
-        ReservoirGroup instance of the surface box
-    box r_db : ReservoirGroup
-        ReservoirGroup instance of the deep box
+    r_sb : Reservoir
+        Reservoir instance of the surface box
+    box r_db : Reservoir
+        Reservoir instance of the deep box
     kwargs : dict
         dictionary of keyword value pairs
 
@@ -354,10 +354,10 @@ def add_carbonate_system_2(**kwargs) -> None:
     and snowline depth, and compute the associated carbonate burial fluxes
 
     Required keywords:
-        r_sb: list of ReservoirGroup objects in the surface layer
-        r_db: list of ReservoirGroup objects in the deep layer
+        r_sb: list of Reservoir objects in the surface layer
+        r_db: list of Reservoir objects in the deep layer
         carbonate_export_fluxes: list of flux objects which must match the
-        list of ReservoirGroup objects.
+        list of Reservoir objects.
         zsat_min = depth of the upper boundary of the deep box
         z0 = upper depth limit for carbonate burial calculations
         typically zsat_min

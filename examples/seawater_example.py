@@ -1,7 +1,7 @@
 from math import log10
 from esbmtk import (
     Model,  # the model class
-    ReservoirGroup,
+    Reservoir,
 )
 
 # define the basic model parameters
@@ -14,7 +14,7 @@ M = Model(
     opt_pH_scale=1,  # 1:total, 3:free scale
     opt_buffers_mode=2,  # carbonate, borate water alkalinity only
 )
-ReservoirGroup(
+Reservoir(
     name="S_b",  # box name
     geometry=[-200, -800, 1],  # upper, lower, fraction
     concentration={M.DIC: "2220 umol/kg", M.TA: "2300 umol/kg"},  # species in box

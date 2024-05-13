@@ -12,7 +12,7 @@ The default is to add the signal to a given connection. It is however also possi
 #+BEGIN_SRC ipython
 Signal(
     name="CR",  # Signal name
-    species=M.PO4,  # Species
+    species=M.PO4,  # SpeciesProperties
     start="3 Myrs",
     shape="pyramid",
     duration="1 Myrs",
@@ -43,13 +43,13 @@ This will result in the following output:
 
 ** Working with multiple species
 
-The basic building blocks introduced so far, are sufficient to create a model, but not necessarily convenient when a model contains more than one species. ESBMTK addresses this through the @@rst::py:class:`esbmtk.extended_classes.ReservoirGroup.()`@@ class, which allows to group of several @@rst::py:class:`esbmtk.esbmtk.Reservoir()`@@ instances.
-instances. A  =ReservoirGroup= shares common properties. e.g., the volume and name of a given box, as well as the connection properties. In other words, in a multi-species model, one does not have to specify connections for each species, rather, it is sufficient to specify the connection type for the  =ReservoirGroup= instance. Similarly, there are classes to group sources, sinks and connections.
+The basic building blocks introduced so far, are sufficient to create a model, but not necessarily convenient when a model contains more than one species. ESBMTK addresses this through the @@rst::py:class:`esbmtk.extended_classes.Reservoir.()`@@ class, which allows to group of several @@rst::py:class:`esbmtk.esbmtk.Species()`@@ instances.
+instances. A  =Reservoir= shares common properties. e.g., the volume and name of a given box, as well as the connection properties. In other words, in a multi-species model, one does not have to specify connections for each species, rather, it is sufficient to specify the connection type for the  =Reservoir= instance. Similarly, there are classes to group sources, sinks and connections.
 
 Using the previous example of a simple P-cycle model, we now express the P-cycling as a function of photosynthetic organic matter (OM) production and remineralization. First, we import the new classes and we additionally load the species definitions for carbon.
 #+BEGIN_SRC ipython
 from esbmtk import (
-    ReservoirGroup,  # the reservoir class
+    Reservoir,  # the reservoir class
     ConnectionGroup,  # the connection class
     SourceGroup,  # the source class
     SinkGroup,  # sink class
@@ -71,7 +71,7 @@ SourceGroup(
 #+END_SRC
 Defining a =Reservoirgroup= follows the same pattern, except that we use a dictionary so that we can specify the initial concentrations for each species as well:
 #+BEGIN_SRC ipython
-ReservoirGroup(
+Reservoir(
     name="S_b",
     volume="3E16 m**3",  # surface box volume
     concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"},
@@ -114,8 +114,8 @@ One can now proceed to define the particulate phosphate transport as a function 
 #+BEGIN_SRC ipython
 pl = data_summaries(
     M,  # model instance 
-    [M.DIC, M.PO4],  # Species list 
-    [M.S_b, M.D_b],  # ReservoirGroup list
+    [M.DIC, M.PO4],  # SpeciesProperties list 
+    [M.S_b, M.D_b],  # Reservoir list
     M,
 )
 M.plot(pl, fn="po4_2.png")
@@ -138,7 +138,7 @@ which results in the below plot. The full code is available in the examples dire
   5. we need to specify the fractionation factor during photosynthesis
 #+BEGIN_SRC ipython
 # 1, 2 & 3 and similar for the deep ocean box
-ReservoirGroup(
+Reservoir(
     name="S_b",
     register=M,
     volume="3E16 m**3",  # surface box volume
@@ -179,7 +179,7 @@ Running the previous model with these additional 5 lines, results in the followi
 #+caption: shows the corresponding isotope ratios. The system will achieve isotopic 
 #+caption: equilibrium within approximately 2000 years. 
 [[./po4_2_with_isotopes.png]]
-Note that isotope calculations are only available if the respective Element instances contain the necessary data. Assuming that the model imported the =Carbon= element instance, you can query its properties like this:
+Note that isotope calculations are only available if the respective ElementProperties instances contain the necessary data. Assuming that the model imported the =Carbon= element instance, you can query its properties like this:
 #+BEGIN_SRC jupyter-python
 print(M.Carbon)
 #+END_SRC

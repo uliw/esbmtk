@@ -101,7 +101,7 @@ ESBMTK uses a hierarchically structured object-oriented approach to describe a m
     :width: 400
 
 
-    Schematic outlining the object hierarchy in ESBMTK Reservoirs contain the data for a given species. Multiple reservoirs form a group that share common characteristics, e.g., volume, area, pressure, temperature etc. The relationship between reservoir groups (and/or Reservoirs) are defined by a connection object that defines e.g., a rate function etc. Connection objects can be dynamically modified by a Signal. ReservoirGroups have various sub-classes that provide access to e.g., hypsographic data, or perform carbonate chemistry calculations.
+    Schematic outlining the object hierarchy in ESBMTK Speciess contain the data for a given species. Multiple reservoirs form a group that share common characteristics, e.g., volume, area, pressure, temperature etc. The relationship between reservoir groups (and/or Speciess) are defined by a connection object that defines e.g., a rate function etc. Connection objects can be dynamically modified by a Signal. Reservoirs have various sub-classes that provide access to e.g., hypsographic data, or perform carbonate chemistry calculations.
 
 The model geometry is then parsed to build a suitable equation system.
 
@@ -113,7 +113,7 @@ In the first step, one needs to define a model object that describes fundamental
 
 - :py:class:`esbmtk.esbmtk.Model()`
 
-- :py:class:`esbmtk.esbmtk.Reservoir()`
+- :py:class:`esbmtk.esbmtk.Species()`
 
 - :py:class:`esbmtk.connections.Connection()` class
 
@@ -128,7 +128,7 @@ In the first step, one needs to define a model object that describes fundamental
     # import classes from the esbmtk library
     from esbmtk import (
         Model,  # the model class
-        Reservoir,  # the reservoir class
+        Species,  # the reservoir class
         Connection,  # the connection class
         Source,  # the source class
         Sink,  # sink class
@@ -175,7 +175,7 @@ Most ESBMTK classes accept quantities, strings that represent quantities as well
     F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
     thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 
-To set up the model geometry, we first use the :py:class:`esbmtk.esbmtk.Source()` and :py:class:`esbmtk.esbmtk.Reservoir()` classes to create a source for the weathering flux, a sink for the burial flux, and instances of the surface and deep ocean boxes. Since we loaded the element definitions for phosphor in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
+To set up the model geometry, we first use the :py:class:`esbmtk.esbmtk.Source()` and :py:class:`esbmtk.esbmtk.Species()` classes to create a source for the weathering flux, a sink for the burial flux, and instances of the surface and deep ocean boxes. Since we loaded the element definitions for phosphor in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
 
 .. code:: ipython
 
@@ -192,14 +192,14 @@ To set up the model geometry, we first use the :py:class:`esbmtk.esbmtk.Source()
     )
 
     # reservoir definitions
-    Reservoir(
+    Species(
         name="S_b",  # box name
         species=M.PO4,  # species in box
         register=M,  # this box will be available as M.S_b
         volume="3E16 m**3",  # surface box volume
         concentration="0 umol/l",  # initial concentration
     )
-    Reservoir(
+    Species(
         name="D_b",  # box name
         species=M.PO4,  # species in box
         register=M,  # this box will be available M.D_b

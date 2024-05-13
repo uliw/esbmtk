@@ -25,7 +25,7 @@ import numpy.typing as npt
 import typing as tp
 
 if tp.TYPE_CHECKING:
-    from .esbmtk import Species
+    from .esbmtk import SpeciesProperties
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
@@ -55,7 +55,7 @@ class FluxSpecificationError(Exception):
         super().__init__(message)
 
 
-class SpeciesMolweightError(Exception):
+class SpeciesPropertiesMolweightError(Exception):
     def __init__(self, message):
         message = f"\n\n{message}\n"
         super().__init__(message)
@@ -335,7 +335,7 @@ class esbmtkBase(input_parsing):
         for kw in self.lrk:
             print(f"{kw}")
 
-    def set_flux(self, mass: str, time: str, substance: Species):
+    def set_flux(self, mass: str, time: str, substance: SpeciesProperties):
         """
         set_flux converts() a flux rate that is specified as rate, time, substance
         so that it matches the correct model units (i.e., kg/s or mol/s)
@@ -351,12 +351,12 @@ class esbmtkBase(input_parsing):
 
         :param mass: e.g., "12 Tmol"
         :param time: e.g., "year"
-        :param substance: e.g., Species Instance e.g., M.PO4
+        :param substance: e.g., SpeciesProperties Instance e.g., M.PO4
 
         :returns: mol/year or g/year
 
         :raises: FluxSpecificationError
-        :raises: SpeciesMolweightError
+        :raises: SpeciesPropertiesMolweightError
     """
         from esbmtk import Q_, ureg
 
@@ -374,7 +374,7 @@ class esbmtkBase(input_parsing):
                 raise FluxSpecificationError(message)
         else:
             message = f"no mol weight defintion for {substance.full_name}"
-            raise SpeciesMolweightError(message)
+            raise SpeciesPropertiesMolweightError(message)
 
         return r / ureg(time)
 

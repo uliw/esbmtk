@@ -4,7 +4,7 @@ import pandas as pd
 import pathlib as pl
 from esbmtk import (
     Model,  # the model class
-    Reservoir,
+    Species,
     ExternalData,
     DataField,
 )
@@ -17,7 +17,7 @@ M = Model(
     concentration_unit="mol/kg",
 )
 
-Reservoir(
+Species(
     name="S_b",  # Name of reservoir group
     geometry=[-200, -800, 1],  # upper, lower, fraction
     concentration="1 mmol/kg",

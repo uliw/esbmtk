@@ -4,10 +4,10 @@
 Extending ESBMTK
 ----------------
 
-The Element and Species Classes
+The ElementProperties and SpeciesProperties Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-ESBMTK uses the :py:class:`esbmtk.esbmtk.Species()` and :py:class:`esbmtk.esbmtk.Element()` class primarily to control plot labeling. Each ``Species`` instance is a child of an ``Element`` instance. Within the model hierarchy,  one would access e.g., ``DIC`` as ``M.Carbon.DIC`` . However, this results in a lot of redundant code, so the ``Species`` instances are also registered with the ``Model`` instance.
+ESBMTK uses the :py:class:`esbmtk.esbmtk.SpeciesProperties()` and :py:class:`esbmtk.esbmtk.ElementProperties()` class primarily to control plot labeling. Each ``SpeciesProperties`` instance is a child of an ``ElementProperties`` instance. Within the model hierarchy,  one would access e.g., ``DIC`` as ``M.Carbon.DIC`` . However, this results in a lot of redundant code, so the ``SpeciesProperties`` instances are also registered with the ``Model`` instance.
 
 .. code:: ipython
 
@@ -19,7 +19,7 @@ ESBMTK uses the :py:class:`esbmtk.esbmtk.Species()` and :py:class:`esbmtk.esbmtk
     # Access using shorthand
     print(M.DIC)
 
-The distinction between Element and Species exists to group information that is common to all species of a given element. The current entry for Oxygen reads, e.g., like this
+The distinction between ElementProperties and SpeciesProperties exists to group information that is common to all species of a given element. The current entry for Oxygen reads, e.g., like this
 
 .. code:: ipython
 
@@ -32,7 +32,7 @@ The distinction between Element and Species exists to group information that is 
             Model instance
 
         """
-        eh = Element(
+        eh = ElementProperties(
             name="Oxygen",
             model=model,  # model handle
             mass_unit="mol",  # base mass unit
@@ -48,19 +48,19 @@ and the associated species definitions are:
 
 .. code:: ipython
 
-    Species(name="O", element=eh, display_as="O", register=eh)
-    Species(name="O2", element=eh, display_as=r"O$_{2}$", register=eh)
-    Species(name="OH", element=eh, display_as=r"OH$^{-}$", register=eh)
+    SpeciesProperties(name="O", element=eh, display_as="O", register=eh)
+    SpeciesProperties(name="O2", element=eh, display_as=r"O$_{2}$", register=eh)
+    SpeciesProperties(name="OH", element=eh, display_as=r"OH$^{-}$", register=eh)
 
-Note that the variable ``eh`` is used to associate the ``Species`` instance with the ``Element`` instance. Upon startup, ESBMTK loads all predefined species definitions for each element named in the ``element_list`` keyword and registers them with the model instance. See the file ``species_definitions.py`` in the source-code for the currently defined elements and species (`https://github.com/uliw/esbmtk/blob/master/src/esbmtk/species_definitions.py <https://github.com/uliw/esbmtk/blob/master/src/esbmtk/species_definitions.py>`_)
+Note that the variable ``eh`` is used to associate the ``SpeciesProperties`` instance with the ``ElementProperties`` instance. Upon startup, ESBMTK loads all predefined species definitions for each element named in the ``element_list`` keyword and registers them with the model instance. See the file ``species_definitions.py`` in the source-code for the currently defined elements and species (`https://github.com/uliw/esbmtk/blob/master/src/esbmtk/species_definitions.py <https://github.com/uliw/esbmtk/blob/master/src/esbmtk/species_definitions.py>`_)
 
-To see a list of all known species for a given element use the ``list_species`` method of the Element instance
+To see a list of all known species for a given element use the ``list_species`` method of the ElementProperties instance
 
 .. code:: ipython
 
     M.Oxygen.list_species()
 
-Modifying/Extending an existing Species/Element definition
+Modifying/Extending an existing SpeciesProperties/ElementProperties definition
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Modifying and existing definition is done after the model has been loaded, but
@@ -72,17 +72,17 @@ isotope scale of Oxygen from mUR to permil, and how to set the plot concentratio
     M.Oxygen.d_scale="\u2030"
     M.Oxygen.O2.scale_to="umol"
 
-see the :py:class:`esbmtk.esbmtk.Species()` and :py:class:`esbmtk.esbmtk.Element()` definitions for a full list of implemented properties.
+see the :py:class:`esbmtk.esbmtk.SpeciesProperties()` and :py:class:`esbmtk.esbmtk.ElementProperties()` definitions for a full list of implemented properties.
 
-Adding custom Species definitions
+Adding custom SpeciesProperties definitions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To add a new species follow the examples in the ``species_definitions.py`` source code file. Provided you loaded ``Oxygen`` in the model definition, defining a new species instance for dissolved oxygen would look like this
 
 .. code:: ipython
 
-    from esbmtk import Species
-    Species(
+    from esbmtk import SpeciesProperties
+    SpeciesProperties(
         name="O2aq",
         element=M.Oxygen,
         display_as=r"[O$_{2}$]$_{aq}$",
@@ -90,18 +90,18 @@ To add a new species follow the examples in the ``species_definitions.py`` sourc
     M.O2aq = M.Oxygen.O2aq  # register shorthand with model
     print(M.O2aq)
 
-Adding a new Element and its species
+Adding a new ElementProperties and its species
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this example, I use Boron to demonstrate how to add a new element and its respective species. Note, however, that Boron is already part of ESBMTK, for this example it is simply not loaded.
 
 .. code:: ipython
 
-    from esbmtk import Model, Element, Species
+    from esbmtk import Model, ElementProperties, SpeciesProperties
 
     M = Model(stop="6 Myr", timestep="1 kyr")
 
-    Element(
+    ElementProperties(
         name="Boron",
         model=M,  # model handle
         mass_unit="mmol",  # base mass unit
@@ -113,10 +113,10 @@ In this example, I use Boron to demonstrate how to add a new element and its res
         register=M,
     )
 
-    Species(name="B", element=M.Boron, display_as="B")
-    Species(name="BOH", element=M.Boron, display_as="BOH")
-    Species(name="BOH3", element=M.Boron, display_as=r"B(OH)$_{3}$")
-    Species(name="BOH4", element=M.Boron, display_as=r"B(OH)$_{4}^{-}$")
+    SpeciesProperties(name="B", element=M.Boron, display_as="B")
+    SpeciesProperties(name="BOH", element=M.Boron, display_as="BOH")
+    SpeciesProperties(name="BOH3", element=M.Boron, display_as=r"B(OH)$_{3}$")
+    SpeciesProperties(name="BOH4", element=M.Boron, display_as=r"B(OH)$_{4}^{-}$")
 
     # register the species shorthands with the model.
     for sp in M.Boron.lsp:
@@ -125,7 +125,7 @@ In this example, I use Boron to demonstrate how to add a new element and its res
     # verify the sucess
     print(M.BOH3)
 
-Note that in the above example, we leverage that ``Element`` instances keep track of their species in the ``lsp`` variable. Provided that none of the species was defined previously, we can thus simply loop over the list of species to register them with the model.
+Note that in the above example, we leverage that ``ElementProperties`` instances keep track of their species in the ``lsp`` variable. Provided that none of the species was defined previously, we can thus simply loop over the list of species to register them with the model.
 
 Adding custom functions to ESBMTK
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -202,11 +202,11 @@ Notes on the below code:
 
 - If ``my_buria()`` is defined in the same file as ``add_my_burial()`` there is no need to import ``my_burial()``
 
-- The ``function_input_data`` keyword requires the ``Reservoir`` instance, not the array with the concentration values (i.e., ``Reservoir.c``). More than one argument can be given.
+- The ``function_input_data`` keyword requires the ``Species`` instance, not the array with the concentration values (i.e., ``Species.c``). More than one argument can be given.
 
-- The ``return_values`` keyword expects a dictionary. If the return value is a flux, the dictionary key must be preceded by ``F_``. The key format must be ``{Reservoir.full_name}.{Species.name}``. The ``id_string`` must be unique within the model, and must not contain blanks or dots. If the return value is a Reservoir, the dictionary entry reads like this  ``{f"R_{rg.full_name}.Hplus": rg.swc.hplus},`` where dictionary value is used to set the initial condition.
+- The ``return_values`` keyword expects a dictionary. If the return value is a flux, the dictionary key must be preceded by ``F_``. The key format must be ``{Species.full_name}.{SpeciesProperties.name}``. The ``id_string`` must be unique within the model, and must not contain blanks or dots. If the return value is a Species, the dictionary entry reads like this  ``{f"R_{rg.full_name}.Hplus": rg.swc.hplus},`` where dictionary value is used to set the initial condition.
 
-- In the last step, the ``register_return_values`` parses the return value dictionary and creates the necessary :py:class:`esbmtk.esbmtk.Flux()` or :py:class:`esbmtk.esbmtk.Reservoir()` instances. This step may move to the init-section of the :py:class:`esbmtk.extended_classes.ExternalCode()` class definition in a future version.
+- In the last step, the ``register_return_values`` parses the return value dictionary and creates the necessary :py:class:`esbmtk.esbmtk.Flux()` or :py:class:`esbmtk.esbmtk.Species()` instances. This step may move to the init-section of the :py:class:`esbmtk.extended_classes.ExternalCode()` class definition in a future version.
 
 .. code:: ipython
 
@@ -216,11 +216,11 @@ Notes on the below code:
 
         Parameters
         ----------
-        source : Source | Reservoir | ReservoirGroup
+        source : Source | Species | SpeciesGroup
             A source
-        sink : Sink | Reservoir | ReservoirGroup
+        sink : Sink | Species | SpeciesGroup
             A sink
-        species : Species
+        species : SpeciesProperties
             A model species
         scale : float
             A scaling factor
@@ -258,7 +258,7 @@ Once these functions are defined, we can use them in the model definition as fol
     add_my_burial(
         M.D_b,  # Source
         M.burial,  # Sink
-        M.PO4,  # Species
+        M.PO4,  # SpeciesProperties
         M.D_b.volume.magnitude / 2000.0,  # Scale
     )
 

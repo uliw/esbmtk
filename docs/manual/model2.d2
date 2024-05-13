@@ -1,14 +1,14 @@
 geometry: Geometry Defintion {
   direction: down
   sb: SurfaceBoxRG {
-    rs: Reservoir {
+    rs: Species {
       shape: sql_table
       name: "PO4"
       volume: "3E16 m**3"
       concentration: "0 umol/kg"
     }
 
-    sp: Species {
+    sp: SpeciesProperties {
       shape: sql_table
       name: PO4
       weight: 44.0095
@@ -31,13 +31,13 @@ geometry: Geometry Defintion {
   }
 
   db: DeepBoxRG {
-    rd: Reservoir {
+    rd: Species {
       shape: sql_table
       name: "PO4"
       volume: "3E16 m**3"
       concentration: "0 umol/kg"
     }
-    sp: Species {
+    sp: SpeciesProperties {
       shape: sql_table
       name: PO4
       weight: 44.0095

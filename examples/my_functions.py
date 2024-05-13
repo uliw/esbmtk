@@ -31,11 +31,11 @@ def add_my_burial(source, sink, species, scale) -> None:
 
     Parameters
     ----------
-    source : Source | Reservoir | ReservoirGroup
+    source : Source | Species | Reservoir
         A source
-    sink : Sink | Reservoir | ReservoirGroup
+    sink : Sink | Species | Reservoir
         A sink
-    species : Species
+    species : SpeciesProperties
         A model species
     scale : float
         A scaling factor
