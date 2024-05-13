@@ -15,6 +15,7 @@ General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from __future__ import annotations
 from pandas import DataFrame
 import time
 from time import process_time
@@ -651,7 +652,7 @@ class Model(esbmtkBase):
 
         self.post_process_data(self.results)
 
-    def test_d_pH(self, rg: Reservoir, time: NDArrayFloat) -> None:
+    def test_d_pH(self, rg: Species, time: NDArrayFloat) -> None:
         """Test if the change in pH exceeds more than 0.01 units per time step.
         Note that this is only a crude test, since the solver interpolates
         between intergration steps. So this may not catch all problems.

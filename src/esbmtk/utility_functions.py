@@ -15,6 +15,7 @@
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
 import matplotlib.pyplot as plt
@@ -22,7 +23,6 @@ import logging
 import typing as tp
 import functools
 from numba import njit
-
 if tp.TYPE_CHECKING:
     from esbmtk import Flux, Model, Connection, Connect, ExternalFunction
 
@@ -641,7 +641,7 @@ def create_reservoirs(box_dict: dict, ic_dict: dict, M: any) -> dict:
                 raise ValueError("'ty' must be either Source or Sink")
 
         else:  # create reservoirs
-            rg = SpeciesGroup(
+            rg = Reservoir(
                 name=box_name,
                 geometry=value["g"],
                 concentration=keyword_dict[box_name][0],

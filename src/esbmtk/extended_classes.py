@@ -15,7 +15,7 @@ if tp.TYPE_CHECKING:
     from esbmtk import Connection, Model
 
 from .esbmtk_base import esbmtkBase
-from .esbmtk import ReservoirBase, Species, SpeciesProperties
+from .esbmtk import SpeciesBase, Species, SpeciesProperties
 
 from .utility_functions import (
     # get_string_between_brackets,
@@ -1448,7 +1448,7 @@ class DataField(esbmtkBase):
             ax.set_title(self.register.full_name)
 
 
-class Species_no_set(SpeciesBase):
+class SpeciesNoSet(SpeciesBase):
     """This class is similar to a regular reservoir, but we make no
     assumptions about the type of data contained. I.e., all data will be
     left alone
@@ -1530,7 +1530,7 @@ class Species_no_set(SpeciesBase):
         self.state = 0
 
 
-class ExternalCode(Species_no_set):
+class ExternalCode(SpeciesNoSet):
     """This class can be used to implement user provided functions. The
     data inside a VR_no_set instance will only change in response to a
     user provided function but will otherwise remain unaffected. That is,
@@ -1858,7 +1858,7 @@ class ExternalCode(Species_no_set):
         return df
 
 
-class VirtualSpecies_no_set(ExternalCode):
+class VirtualSpeciesNoSet(ExternalCode):
     """Alias to ensure backwards compatibility"""
 
 
