@@ -10,7 +10,53 @@ Changelog
   - ConnectionGroup -> ConnectionProperties
   - Connection -> Connect
   - SourceGroup -> SourceProperties
-  - SinkGroup -> SinkProperties  
+  - SinkGroup -> SinkProperties
+
+  the respective ConnectionProperty, SourceProperty and SinkProperty objects which correlate with the former ConnectionGroup, SourceGroup SinkGroup classes. As such, existing code must be changed from
+
+  .. code:: ipython
+	    
+	    Sink(
+	    name="burial",
+	    species=M.PO4,
+	    register=M,  #
+	    )
+
+  to
+
+  .. code:: ipython
+	    
+	    SinkProperties(
+	    name="burial",
+	    species=[M.PO4],
+	    register=M,  #
+	    )
+
+  and
+  
+  .. code:: ipython
+	    
+	    Connection(  #
+	    source=M.S_b,  # source of flux
+	    sink=M.D_b,  # target of flux
+	    ctype="scale_with_concentration",
+	    scale=M.S_b.volume / tau,
+	    id="primary_production",
+	    )
+
+to
+
+.. code:: ipython
+	  
+	  ConnectionProperties(  #
+	  source=M.S_b,  # source of flux
+	  sink=M.D_b,  # target of flux
+	  ctype="scale_with_concentration",
+	  scale=M.S_b.volume / tau,
+	  id="primary_production",
+	  species=[M.PO4],  # apply this only to PO4
+	  )
+
     
 - May 1st, v 0.12.0.28 ESBMTK can now be installed via conda. Various documentation updates
 - Dec. v 0.12.0.x This is a breaking change that requires the following updates to the model definition.

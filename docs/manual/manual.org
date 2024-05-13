@@ -46,7 +46,7 @@ and for the deep ocean,
 
 
 which is easily encoded as a Python function
-#+BEGIN_SRC ipython
+#+BEGIN_SRC jupyter-python
 def dCdt(t, C_0, V, F_w, thx):
     """ Calculate the change in concentration as
     a function of time. After Glover 2011, Modeling
@@ -109,7 +109,7 @@ In the first step, one needs to define a model object that describes fundamental
  - @@rst::py:class:`esbmtk.esbmtk.Source()`@@ class
  - @@rst::py:class:`esbmtk.esbmtk.Sink()`@@ class
  - and =Q_= which belongs to the pint library.
-#+BEGIN_SRC ipython :tangle po4_1.py
+#+BEGIN_SRC jupyter-python :tangle po4_1.py
 # import classes from the esbmtk library
 from esbmtk import (
     Model,  # the model class
@@ -123,7 +123,7 @@ from esbmtk import (
 #+END_SRC
 Next we use the =Model= class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
 Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/l' rather than mol/m**3 or 'kg/s'. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. So your mileage may vary if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.
-#+BEGIN_SRC ipython :tangle po4_1.py
+#+BEGIN_SRC jupyter-python :tangle po4_1.py
 # define the basic model parameters
 M = Model(
     stop="3 Myr",  # end time of model
@@ -133,14 +133,14 @@ M = Model(
 #+END_SRC
 
 Next, we need to declare some boundary conditions. Most ESBMTK classes will be able to accept input in the form of strings that also contain units (e.g., ="30 Gmol/a"= ). Internally these strings are parsed and converted into the model base units. This works most of the time, but not always. In the below example, we define the residence time \tau.  This variable is then used as input to calculate the scale for the primary production as =M.S_b.volume / tau= which must fail since =M.S_b.volume= is a numeric value and =tau= is a string. 
-#+BEGIN_SRC ipython
+#+BEGIN_SRC jupyter-python
 # try the following
 tau = "100 years"
 tau * 12
 #+END_SRC
 
 To avoid this we have to manually parse the string into a quantity. This is done with the quantity operator =Q_= Note that =Q_= is not part of ESBMTk but imported from the =pint= library. 
-#+BEGIN_SRC ipython
+#+BEGIN_SRC jupyter-python
 # now try this
 from esbmtk import Q_
 tau = Q_("100 years")
@@ -148,7 +148,7 @@ tau * 12
 #+END_SRC
 
 Most ESBMTK classes accept quantities, strings that represent quantities as well as numerical values. Weathering and burial fluxes are often defined in =mol/year=, whereas ocean models use =kg/year=. ESBMTK provides a method (=set_flux()= )  that will automatically convert the input into the correct units. In this example, it is not necessary since the flux and the model both use =mol=. It is however good practice to rely on the automatic conversion. Note that it makes a difference for the mol to kilogram conversion whether one uses =M.P= or =M.PO4= as the reference species!
-#+BEGIN_SRC ipython :tangle po4_1.py
+#+BEGIN_SRC jupyter-python :tangle po4_1.py
 # boundary conditions
 F_w =  M.set_flux("45 Gmol", "year", M.P) # P @280 ppm (Filipelli 2002)
 tau = Q_("100 year")  # PO4 residence time in surface boxq
@@ -157,7 +157,7 @@ thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 #+END_SRC
 
 To set up the model geometry, we first use the @@rst::py:class:`esbmtk.esbmtk.Source()`@@ and @@rst::py:class:`esbmtk.esbmtk.Species()`@@ classes to create a source for the weathering flux, a sink for the burial flux, and instances of the surface and deep ocean boxes. Since we loaded the element definitions for phosphor in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
-#+BEGIN_SRC ipython :tangle po4_1.py
+#+BEGIN_SRC jupyter-python :tangle po4_1.py
 # Source definitions
 SourceProperties(
     name="weathering",
@@ -189,7 +189,7 @@ Reservoir(
 
 *** Model processes
 For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework, this is accomplished through the @@rst::py:class:`esbmtk.connections.Connect()`@@ class. To connect the weathering flux from the source object (M.w) to the surface ocean (M.S_b) we declare a connection instance describing this relationship as follows:
-#+BEGIN_SRC ipython :tangle po4_1.py
+#+BEGIN_SRC jupyter-python :tangle po4_1.py
 ConnectionProperties(
     source=M.weathering,  # source of flux
     sink=M.S_b,  # target of flux
@@ -201,7 +201,7 @@ ConnectionProperties(
 Unless the =register= keyword is given, connections will be automatically registered with the parent of the source, i.e., the model =M=. Unless explicitly given through the =name= keyword, connection names will be automatically constructed from the names of the source and sink instances. However, it is a good habit to provide the =id= keyword to keep connections separate in cases where two reservoir instances share more than one connection. The list of all connection instances can be obtained from the model object (see below).
 
 To map the process of thermohaline circulation, we connect the surface and deep ocean boxes using a connection type that scales the mass transfer as a function of the concentration in a given reservoir (=ctype ="scale_with_concentration"= ). The concentration data is taken from the reference reservoir which defaults to the source reservoir. As such, in most cases, the =ref_reservoirs= keyword can be omitted. The =scale= keyword can be a string or a numerical value. If it is provided as a string ESBMTK will map the value into model units. Note that the connection class does not require the =name= keyword. Rather the name is derived from the source and sink reservoir instances. Since reservoir instances can have more than one connection (i.e., surface to deep via downwelling, and surface to deep via primary production), it is required to set the =id= keyword.
-#+BEGIN_SRC ipython :tangle po4_1.py
+#+BEGIN_SRC jupyter-python :tangle po4_1.py
 ConnectionProperties(  # thermohaline downwelling
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
@@ -220,7 +220,7 @@ ConnectionProperties(  # thermohaline upwelling
 #+END_SRC
 
 There are several ways to define biological export production, e.g., as a function of the upwelling PO_4, or as a function of the residence time of PO_4 in the surface ocean. Here we follow Glover (2011) and use the residence time \tau = 100 years. Note that the below code species explicitly specifies the species that is affected by this process.
-#+BEGIN_SRC ipython :tangle po4_1.py
+#+BEGIN_SRC jupyter-python :tangle po4_1.py
 ConnectionProperties(  #
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
@@ -233,11 +233,11 @@ ConnectionProperties(  #
 
 We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity or use the previously calculated flux. We can query the export productivity using the =id_string= of the above connection with the
 @@rst::py:meth:`esbmtk.esbmtk.Model.flux_summary()`@@ method of the model instance:
-#+BEGIN_SRC ipython
+#+BEGIN_SRC jupyter-python
 M.flux_summary(filter_by="primary_production", return_list=True)[0]
 #+END_SRC
 The =flux_summary()= method will return a list of matching fluxes but since there is only one match, we can simply use  the first result, and use it to define the phosphor burial as a consequence of export production in the following way:
-#+BEGIN_SRC ipython :tangle po4_1.py
+#+BEGIN_SRC jupyter-python :tangle po4_1.py
 ConnectionProperties(  #
     source=M.D_b,  # source of flux
     sink=M.burial,  # target of flux
@@ -260,7 +260,7 @@ results in the following graph:
 ** Working with the model instance  
 *** Running the model, visualizing and saving the results
 To run the model, use the =run()= method of the model instance, and plot the results with the =plot()= method. This method accepts a list of ESBMTK instances, that will be plotted in a common window. Without further arguments, the plot will also be saved as a pdf file where =filename= defaults to the name of the model instance. The =save_data()= method will create (or recreate) the =data= directory which will then be populated by csv-files. 
-#+BEGIN_SRC ipython :tangle po4_1.py
+#+BEGIN_SRC jupyter-python :tangle po4_1.py
 M.run()
 M.plot([M.S_b.PO4, M.D_b.PO4])
 M.save_data()
@@ -269,13 +269,13 @@ M.save_data()
 
 *** Saving/restoring the model state
 Many models require a spin-up phase. Once the model is in equilibrium, you can save the save the state with the =save_state()= method. 
-#+BEGIN_SRC ipython
+#+BEGIN_SRC jupyter-python
 M.run()
 M.save_state()
 #+END_SRC
 
 Restarting the model from a saved state requires that you first initialize the model geometry (i.e., declare all the connections etc), and then read the previously saved model state.
-#+BEGIN_SRC ipython
+#+BEGIN_SRC jupyter-python
 ....
 ....
 M.read_state()
@@ -283,13 +283,13 @@ M.run()
 #+END_SRC
 
 Towards this end, note that a repeated model run will not be initialized from the last known state, but rather starts from a blank state.
-#+BEGIN_SRC ipython
+#+BEGIN_SRC jupyter-python
 .....
 .....
 M.run()
 #+END_SRC
 To restart a model from the last known state, the above would need to be written as
-#+BEGIN_SRC ipython
+#+BEGIN_SRC jupyter-python
 .....
 .....
 M.run()
@@ -300,7 +300,7 @@ M.run()
 
 *** Introspection and data access
 All ESBMTK instances and instance methods support the usual python methods to show the documentation, and inspect object properties.
-#+BEGIN_SRC ipython
+#+BEGIN_SRC jupyter-python
 help(M.S_b)  # will print the documentation for sb
 dir(M.S_b)  # will print all methods for sb
 M.S_b #  when issued in an interactive session, this will echo
@@ -308,7 +308,7 @@ M.S_b #  when issued in an interactive session, this will echo
 #+END_SRC
 
 The concentration data for a given reservoir is stored in the following instance variables:
-#+BEGIN_SRC ipython
+#+BEGIN_SRC jupyter-python
 M.S_b.c  # concentration
 M.S_b.m  # mass
 M.S_b.v  # volume
