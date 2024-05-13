@@ -1,11 +1,11 @@
 # import classes from the esbmtk library
 from esbmtk import (
     Model,  # the model class
-    Connection,
+    Connect,
     SpeciesGroup,  # the reservoir class
-    ConnectionGroup,  # the connection class
-    SourceGroup,  # the source class
-    SinkGroup,  # sink class
+    ConnectProperties,  # the connection class
+    SourceProperties,  # the source class
+    SinkProperties,  # sink class
     Q_,  # Quantity operator
     data_summaries,
 )
@@ -26,13 +26,13 @@ F_w_OM = M.set_flux("5850 Gmol", "year", M.C)  # P @280 ppm (Filipelli 2002)
 F_w_PO4 = F_w_OM / Redfield
 
 # Source definitions
-SourceGroup(
+SourceProperties(
     register=M,  # i.e., the instance will be available as M.weathering
     name="weathering",
     species=[M.DIC, M.PO4],
     isotopes={M.DIC: True, M.PO4: False},
 )
-SinkGroup(
+SinkProperties(
     register=M,  #
     name="burial",
     species=[M.DIC, M.PO4],
@@ -57,7 +57,7 @@ Reservoir(
     delta={M.DIC: 0},
 )
 
-ConnectionGroup(
+ConnectProperties(
     source=M.weathering,  # source of flux
     sink=M.S_b,  # target of flux
     rate={M.DIC: F_w_OM, M.PO4: F_w_PO4},  # rate of flux
@@ -66,14 +66,14 @@ ConnectionGroup(
     id="weathering",  # connection id
 )
 
-ConnectionGroup(  # thermohaline downwelling
+ConnectProperties(  # thermohaline downwelling
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
     scale=thc,
     id="downwelling",
 )
-ConnectionGroup(  # thermohaline upwelling
+ConnectProperties(  # thermohaline upwelling
     source=M.D_b,  # source of flux
     sink=M.S_b,  # target of flux
     ctype="scale_with_concentration",
@@ -82,7 +82,7 @@ ConnectionGroup(  # thermohaline upwelling
 )
 
 # Primary production as a function of P-concentration
-Connection(  #
+Connect(  #
     source=M.S_b.DIC,  # source of flux
     sink=M.D_b.DIC,  # target of flux
     ref_reservoirs=M.S_b.PO4,
@@ -93,7 +93,7 @@ Connection(  #
 )
 
 # POP export as a funtion of OM export
-Connection(  #
+Connect(  #
     source=M.S_b.PO4,  # source of flux
     sink=M.D_b.PO4,  # target of flux
     ctype="scale_with_flux",
@@ -103,7 +103,7 @@ Connection(  #
 )
 
 # P burial
-Connection(  #
+Connect(  #
     source=M.D_b.PO4,  # source of flux
     sink=M.burial.PO4,  # target of flux
     ctype="scale_with_flux",
@@ -113,7 +113,7 @@ Connection(  #
 )
 
 # OM burial
-Connection(  #
+Connect(  #
     source=M.D_b.DIC,  # source of flux
     sink=M.burial.DIC,  # target of flux
     ctype="scale_with_flux",

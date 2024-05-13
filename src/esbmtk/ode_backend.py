@@ -20,14 +20,14 @@ import numpy as np
 import numpy.typing as npt
 import typing as tp
 
-# from esbmtk import Flux, Species, Model, Connection, Connect
+# from esbmtk import Flux, Species, Model, Connect, Connect
 # from esbmtk import ExternalFunction
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Flux, Species, Model, Connection, Connect
+    from esbmtk import Flux, Species, Model, Connect, Connect
     from esbmtk import ExternalFunction
 
 
@@ -399,13 +399,13 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
 
     else:
         raise ValueError(
-            f"Connection type {c.ctype} for {c.full_name} is not implmented"
+            f"Connect type {c.ctype} for {c.full_name} is not implmented"
         )
 
     return ex, exl
 
 
-def check_signal_2(ex: str, exl: str, c: Connection) -> (str, str):
+def check_signal_2(ex: str, exl: str, c: Connect) -> (str, str):
     """Test if connection is affected by a signal
 
     :param ex: equation string
@@ -478,14 +478,14 @@ def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> st
     format that can be used in the ode equation file
     """
     from esbmtk import Flux, Species, Reservoir, SeawaterConstants, Q_
-    from esbmtk import GasSpecies
+    from esbmtk import GasReservoir
 
     if isinstance(d, str):
         sr = getattr(r.register, d)
         a = f"{ind}{get_ic(sr, icl)},\n"
     elif isinstance(d, Species):
         a = f"{ind}({get_ic(d, icl,d.isotopes)}),\n"
-    elif isinstance(d, GasSpecies):
+    elif isinstance(d, GasReservoir):
         # print(f" {d.full_name} isotopes {d.isotopes}")
         a = f"{ind}({get_ic(d, icl,d.isotopes)}),\n"
     elif isinstance(d, Reservoir):
@@ -595,7 +595,7 @@ def write_ef(
 
 def get_regular_flux_eq(
     flux: Flux,  # flux instance
-    c: Connection,  # connection instance
+    c: Connect,  # connection instance
     icl: dict,  # list of initial conditions
     ind2,  # indentation
     ind3,  # indentation
@@ -623,7 +623,7 @@ def get_regular_flux_eq(
 
 def check_isotope_effects(
     f_m: str,
-    c: Connection | Connect,
+    c: Connect | Connect,
     icl: dict,
     ind3: str,
     ind2: str,
@@ -664,7 +664,7 @@ def check_isotope_effects(
 
 def get_scale_with_concentration_eq(
     flux: Flux,  # flux instance
-    c: Connection,  # connection instance
+    c: Connect,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: dict,  # list of initial conditions
     ind2: str,  # whitespace
@@ -697,7 +697,7 @@ def get_scale_with_concentration_eq(
 
 def get_scale_with_flux_eq(
     flux: Flux,  # flux instance
-    c: Connection,  # connection instance
+    c: Connect,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: dict,  # list of initial conditions
     ind2: str,  # indentation

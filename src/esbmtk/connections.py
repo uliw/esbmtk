@@ -1,5 +1,4 @@
 """
-
      esbmtk.connections
 
      Classes which handle the connections and fluxes between esbmtk objects
@@ -21,15 +20,11 @@
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
-# from pint import UnitRegistry
 from __future__ import annotations
-
-# from numbers import Number
+import uuid
 import typing as tp
 import numpy as np
 import numpy.typing as npt
-import uuid
 from .esbmtk import esbmtkBase
 from .utility_functions import map_units
 from .utility_functions import check_for_quantity
@@ -39,7 +34,7 @@ np.set_printoptions(precision=4)
 NDArrayFloat = npt.NDArray[np.float64]
 
 
-class ConnectionError(Exception):
+class ConnectError(Exception):
     def __init__(self, message):
         message = f"\n\n{message}\n"
         super().__init__(message)
@@ -82,9 +77,9 @@ class Connect(esbmtkBase):
     The connection name is derived automatically, see the documentation of
     __set_name__() for details
 
-    Connection Types:
+    Connect Types:
     -----------------
-    Basic Connections (the advanced ones are below):
+    Basic Connects (the advanced ones are below):
 
      - If both =rate= and =delta= are given, the flux is treated as a
         fixed flux with a given isotope ratio. This is usually the case for
@@ -146,7 +141,7 @@ class Connect(esbmtkBase):
                 rate = "1 mol/s",
                 )
 
-    Advanced Connections
+    Advanced Connects
     --------------------
 
     You can aditionally define connection properties via the ctype
@@ -211,11 +206,11 @@ class Connect(esbmtkBase):
             Sink,
             SpeciesProperties,
             Species,
-            GasSpecies,
+            GasReservoir,
             Model,
-            Connection,
             Connect,
-            ConnectionGroup,
+            Connect,
+            ConnectionProperties,
             Flux,
             Signal,
         )
@@ -223,16 +218,16 @@ class Connect(esbmtkBase):
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "id": ["", str],
-            "source": ["None", (str, Source, Species, GasSpecies)],
-            "sink": ["None", (str, Sink, Species, GasSpecies)],
+            "source": ["None", (str, Source, Species, GasReservoir)],
+            "sink": ["None", (str, Sink, Species, GasReservoir)],
             "delta": ["None", (int, float, str, dict)],
             "rate": ["None", (str, int, float, Q_, dict)],
             "pl": ["None", (list, str)],
             "alpha": ["None", (int, float, str, dict)],
             "species": ["None", (SpeciesProperties, str)],
             "ctype": ["regular", (str)],
-            "ref_reservoirs": ["None", (Species, GasSpecies, str, list)],
-            "reservoir_ref": ["None", (GasSpecies, str)],
+            "ref_reservoirs": ["None", (Species, GasReservoir, str, list)],
+            "reservoir_ref": ["None", (GasReservoir, str)],
             "ref_flux": ["None", (Flux, str, list)],
             "ratio": ["None", (int, float, str)],
             "scale": [1, (int, float, Q_, str)],
@@ -240,13 +235,13 @@ class Connect(esbmtkBase):
             "k_value": ["None", (int, float, str, Q_)],
             "a_value": ["None", (int, float)],
             "b_value": ["None", (int, float)],
-            "left": ["None", (list, int, float, Species, GasSpecies)],
-            "right": ["None", (list, int, float, Species, GasSpecies)],
+            "left": ["None", (list, int, float, Species, GasReservoir)],
+            "right": ["None", (list, int, float, Species, GasReservoir)],
             "plot": ["yes", (str)],
             "groupname": [False, (bool)],
-            "register": ["None", (str, Model, Connection, Connect, ConnectionGroup)],
+            "register": ["None", (str, Model, Connect, Connect, ConnectionProperties)],
             "signal": ["None", (Signal, str)],
-            "bypass": ["None", (str, Species, GasSpecies)],
+            "bypass": ["None", (str, Species, GasReservoir)],
             "isotopes": [False, (bool)],
             "solubility": ["None", (str, int, float)],
             "area": ["None", (str, int, float, Q_)],
@@ -330,7 +325,7 @@ class Connect(esbmtkBase):
             elif self.scale.check("[mass]/[volume]"):  # concentration
                 self.scale = self.scale.to(self.mo.c_unit)
             else:
-                ConnectionError(
+                ConnectError(
                     f"No conversion to model units for {self.scale} specified"
                 )
 
@@ -362,7 +357,7 @@ class Connect(esbmtkBase):
             otherwise
                name = C_source.species_name2sink.species_name
 
-        if parent == ConnectionGroup
+        if parent == ConnectionProperties
            if sink and source species are equal
                name = species name
             otherwise
@@ -373,7 +368,7 @@ class Connect(esbmtkBase):
 
         """
 
-        from esbmtk import Reservoir, Source, SourceGroup
+        from esbmtk import Reservoir, Source, SourceProperties
 
         # same species?
         if self.sink.species.name == self.source.species.name:
@@ -381,13 +376,13 @@ class Connect(esbmtkBase):
         else:
             self.name = f"{self.source.species.name}_to_{self.sink.species.name}"
 
-        # Connection by itself
-        if not isinstance(self.parent, ConnectionGroup):  # manual connection
+        # Connect by itself
+        if not isinstance(self.parent, ConnectionProperties):  # manual connection
             if isinstance(self.source.parent, Reservoir):
                 so = self.source.parent.name
             elif isinstance(self.source.parent, Source):
                 so = self.source.parent.name
-            elif isinstance(self.source.parent, SourceGroup):
+            elif isinstance(self.source.parent, SourceProperties):
                 so = self.source.parent.name
             else:
                 so = self.source.name
@@ -483,12 +478,12 @@ class Connect(esbmtkBase):
             self.__register_species__(self.r1, self.r2.sp)
 
         elif isinstance(self.r1, Sink):
-            raise ConnectionError(
+            raise ConnectError(
                 "The Sink must be specified as a destination (i.e., as second argument"
             )
 
         elif isinstance(self.r2, Source):
-            raise ConnectionError("The Source must be specified as first argument")
+            raise ConnectError("The Source must be specified as first argument")
 
         else:  # add the flux name direction/pair
             self.r1.lio[self.fh] = self.outflux
@@ -540,8 +535,8 @@ class Connect(esbmtkBase):
         elif self.ctype == "scale_with_concentration":
             self.__rateconstant__()
         elif self.ctype != "manual":
-            print(f"Connection Type {self.ctype} is unknown")
-            raise ConnectionError(f"Unknown connection type {self.ctype}")
+            print(f"Connect Type {self.ctype} is unknown")
+            raise ConnectError(f"Unknown connection type {self.ctype}")
 
         # check if flux should bypass any reservoirs
         if self.bypass == "source" and not isinstance(self.source, Source):
@@ -556,7 +551,7 @@ class Connect(esbmtkBase):
         from esbmtk import Flux
 
         if not isinstance(self.ref_flux, Flux):
-            raise ConnectionError("Scale reference must be a flux")
+            raise ConnectError("Scale reference must be a flux")
 
         if self.isotopes == "None":
             raise ScaleFluxError(f"{self.name}: You need to set the isotope keyword")
@@ -618,7 +613,7 @@ class Connect(esbmtkBase):
             indent = kwargs["indent"]
             ind = " " * indent
 
-        # print basic data bout this Connection
+        # print basic data bout this Connect
         print(f"{ind}{self.__str__(kwargs)}")
 
         print(f"{ind}Fluxes:")
@@ -679,12 +674,9 @@ class Connect(esbmtkBase):
             self.__set_process_type__()  # derive flux type and create flux(es)
 
 
-class Connection(Connect):
-    """Alias for the Connect class"""
 
-
-class ConnectionGroup(esbmtkBase):
-    """ConnectionGroup
+class ConnectionProperties(esbmtkBase):
+    """ConnectionProperties
 
         Connect reservoir/sink/source groups when at least one of the
         arguments is a reservoirs_group object. This method will
@@ -695,7 +687,7 @@ class ConnectionGroup(esbmtkBase):
 
     Example::
 
-        ConnectionGroup(source =  upstream reservoir / upstream reservoir group
+        ConnectionProperties(source =  upstream reservoir / upstream reservoir group
            sink = downstrean reservoir / downstream reservoirs_group
            delta = defaults to zero and has to be set manually
            alpha =  defaults to zero and has to be set manually
@@ -710,7 +702,7 @@ class ConnectionGroup(esbmtkBase):
            plot = "yes/no" # defaults to yes, shared between all connections
         )
 
-        ConnectionGroup(
+        ConnectionProperties(
                   source=OM_Weathering,
                   sink=Ocean,
                   rate={DIC: f"{OM_w} Tmol/yr" ,
@@ -724,11 +716,11 @@ class ConnectionGroup(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
         from esbmtk import (
-            SourceGroup,
+            SourceProperties,
             Reservoir,
             Species,
-            GasSpecies,
-            SinkGroup,
+            GasReservoir,
+            SinkProperties,
             Signal,
             SpeciesProperties,
             Flux,
@@ -740,15 +732,15 @@ class ConnectionGroup(esbmtkBase):
             "id": ["None", (str)],
             "source": [
                 "None",
-                (str, SourceGroup, Species, Reservoir, GasSpecies),
+                (str, SourceProperties, Species, Reservoir, GasReservoir),
             ],
-            "sink": ["None", (str, SinkGroup, Species, Reservoir, GasSpecies)],
+            "sink": ["None", (str, SinkProperties, Species, Reservoir, GasReservoir)],
             "delta": ["None", (str, dict, tuple, int, float)],
             "rate": ["None", (Q_, str, dict, tuple, int, float)],
             "pl": ["None", (str, dict, tuple)],
             "signal": ["None", (str, Signal, dict)],
             "alpha": ["None", (str, dict, tuple, int, float)],
-            "species": ["None", (str, dict, tuple, SpeciesProperties)],
+            "species": ["None", (str, dict, tuple, list, SpeciesProperties)],
             "ctype": ["None", (str, dict, tuple)],
             "ref_reservoirs": ["None", (str, dict, tuple, Species)],
             "ref_flux": ["None", (str, dict, tuple, Flux)],
@@ -789,14 +781,14 @@ class ConnectionGroup(esbmtkBase):
         self.__create_connections__()
 
     def __create_connections__(self) -> None:
-        """Create Connections"""
+        """Create Connects"""
 
-        from esbmtk import Reservoir, SinkGroup, SourceGroup
+        from esbmtk import Reservoir, SinkProperties, SourceProperties
 
         self.connections: list = []
 
         if isinstance(self.ctype, str):
-            if isinstance(self.source, (Reservoir, SinkGroup, SourceGroup)):
+            if isinstance(self.source, (Reservoir, SinkProperties, SourceProperties)):
                 for s in self.source.lor:
                     self.connections.append(s.species)
             else:
@@ -874,8 +866,8 @@ class ConnectionGroup(esbmtkBase):
     def info(self) -> None:
         """List all connections in this group"""
 
-        print(f"Group Connection from {self.source.name} to {self.sink.name}\n")
-        print("The following Connections are part of this group\n")
+        print(f"Group Connect from {self.source.name} to {self.sink.name}\n")
+        print("The following Connects are part of this group\n")
         print(f"You can query the details of each connection like this:\n")
         for c in self.loc:
             print(f"{c.name}: {self.name}.{c.name}.info()")

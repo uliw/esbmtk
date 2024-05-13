@@ -46,7 +46,7 @@ NDArrayFloat = npt.NDArray[np.float64]
 
 if tp.TYPE_CHECKING:
     from .extended_classes import ExternalData, DataField
-    from .connections import Connection
+    from .connections import Connect
     from .processes import Process
 
 
@@ -397,14 +397,14 @@ class Model(esbmtkBase):
         """Save the model results to a CSV file. Each reservoir will have
         their own CSV file
         """
-        from esbmtk import Species, GasSpecies
+        from esbmtk import Species, GasReservoir
 
         prefix = ""
 
         print(f"reading data from {directory}")
 
         for r in self.lor:
-            if isinstance(r, (Species, GasSpecies)):
+            if isinstance(r, (Species, GasReservoir)):
                 r.__read_state__(directory, prefix)
                 if r.isotopes:
                     r.d = get_delta_from_concentration(r.c, r.l, r.sp.r)
@@ -442,10 +442,10 @@ class Model(esbmtkBase):
         subsequent model run.
         """
 
-        from esbmtk import Species, GasSpecies  # GasSpecies
+        from esbmtk import Species, GasReservoir  # GasReservoir
 
         for r in self.lor:
-            if isinstance(r, (Species, GasSpecies)):
+            if isinstance(r, (Species, GasReservoir)):
                 r.__read_state__(directory)
 
         # update swc object
@@ -811,7 +811,7 @@ class Model(esbmtkBase):
             raise ModelError("use filter_by instead of filter")
 
         if "silent" not in kwargs:
-            print(f"\n --- Connection Group Summary -- filtered by {fby}\n")
+            print(f"\n --- Connect Group Summary -- filtered by {fby}\n")
             print(f"       run the following command to see more details:\n")
 
         # test if all words of the fby list occur in c.full_name. If yes,
@@ -944,8 +944,8 @@ class SpeciesProperties(esbmtkBase):
             "element": ["None", (ElementProperties, str)],
             "display_as": [kwargs["name"], (str)],
             "m_weight": [0, (int, float, str)],
-            "register": ["None", (Model, ElementProperties, Species, GasSpecies)],
-            "parent": ["None", (Model, ElementProperties, Species, GasSpecies)],
+            "register": ["None", (Model, ElementProperties, Species, GasReservoir)],
+            "parent": ["None", (Model, ElementProperties, Species, GasReservoir)],
             "flux_only": [False, (bool)],
             "logdata": [False, (bool)],
             "scale_to": ["None", (str)],
@@ -959,7 +959,7 @@ class SpeciesProperties(esbmtkBase):
     def __init__(self, **kwargs) -> None:
         """Initialize all instance variables"""
 
-        from esbmtk import GasSpecies
+        from esbmtk import GasReservoir
 
         # provide a list of all known keywords
         self.defaults: dict[any, any] = {
@@ -967,8 +967,8 @@ class SpeciesProperties(esbmtkBase):
             "element": ["None", (ElementProperties, str)],
             "display_as": [kwargs["name"], (str)],
             "m_weight": [0, (int, float, str)],
-            "register": [kwargs["element"], (Model, ElementProperties, Species, GasSpecies)],
-            "parent": ["None", (Model, ElementProperties, Species, GasSpecies)],
+            "register": [kwargs["element"], (Model, ElementProperties, Species, GasReservoir)],
+            "parent": ["None", (Model, ElementProperties, Species, GasReservoir)],
             "flux_only": [False, (bool)],
             "logdata": [False, (bool)],
             "scale_to": ["None", (str)],
@@ -1028,7 +1028,7 @@ class SpeciesBase(esbmtkBase):
         self.lop: list[Process] = []  # list holding all processe references
         self.loe: list[ElementProperties] = []  # list of elements in thiis reservoir
         self.doe: dict[SpeciesProperties, Flux] = {}  # species flux pairs
-        self.loc: set[Connection] = set()  # set of connection objects
+        self.loc: set[Connect] = set()  # set of connection objects
         self.ldf: list[DataField] = []  # list of datafield objects
         # list of processes which calculate reservoirs
         self.lpc: list[Process] = []
@@ -1560,11 +1560,11 @@ class Species(SpeciesBase):
               "display_precision": [0.01, (int, float)],
               "register": [
                   "None",
-                  (SourceGroup, SinkGroup, Reservoir, ConnectionGroup, Model, str),
+                  (SourceProperties, SinkProperties, Reservoir, ConnectionProperties, Model, str),
               ],
               "parent": [
                   "None",
-                  (SourceGroup, SinkGroup, Reservoir, ConnectionGroup, Model, str),
+                  (SourceProperties, SinkProperties, Reservoir, ConnectionProperties, Model, str),
               ],
               "full_name": ["None", (str)],
               "seawater_parameters": ["None", (dict, str)],
@@ -1588,10 +1588,10 @@ class Species(SpeciesBase):
         """
 
         from esbmtk import (
-            SourceGroup,
-            SinkGroup,
+            SourceProperties,
+            SinkProperties,
             Reservoir,
-            ConnectionGroup,
+            ConnectionProperties,
             SeawaterConstants,
             get_box_geometry_parameters,
             phc,
@@ -1616,11 +1616,11 @@ class Species(SpeciesBase):
             "display_precision": [0.01, (int, float)],
             "register": [
                 "None",
-                (SourceGroup, SinkGroup, Reservoir, ConnectionGroup, Model, str),
+                (SourceProperties, SinkProperties, Reservoir, ConnectionProperties, Model, str),
             ],
             "parent": [
                 "None",
-                (SourceGroup, SinkGroup, Reservoir, ConnectionGroup, Model, str),
+                (SourceProperties, SinkProperties, Reservoir, ConnectionProperties, Model, str),
             ],
             "full_name": ["None", (str)],
             "seawater_parameters": ["None", (dict, str)],
@@ -1859,8 +1859,8 @@ class Flux(esbmtkBase):
                   (
                       str,
                       Species,
-                      GasSpecies,
-                      Connection,
+                      GasReservoir,
+                      Connect,
                       Connect,
                       Signal,
                   ),
@@ -1877,9 +1877,9 @@ class Flux(esbmtkBase):
         from esbmtk import (
             Q_,
             Species,
-            GasSpecies,
+            GasReservoir,
             Connect,
-            Connection,
+            Connect,
             Signal,
         )
 
@@ -1897,8 +1897,8 @@ class Flux(esbmtkBase):
                 (
                     str,
                     Species,
-                    GasSpecies,
-                    Connection,
+                    GasReservoir,
+                    Connect,
                     Connect,
                     Signal,
                 ),
@@ -1979,7 +1979,7 @@ class Flux(esbmtkBase):
         self.sink: str = ""  # Name of reservoir which acts as flux sink
 
         if self.name == "None":
-            if isinstance(self.parent, (Connection, Connect)):
+            if isinstance(self.parent, (Connect, Connect)):
                 self.name = "_F"
                 self.n = self.name
             else:
@@ -2197,10 +2197,10 @@ class SourceSink(esbmtkBase):
                "register": [
                    "None",
                    (
-                       SourceGroup,
-                       SinkGroup,
+                       SourceProperties,
+                       SinkProperties,
                        Reservoir,
-                       ConnectionGroup,
+                       ConnectionProperties,
                        Model,
                        str,
                    ),
@@ -2212,10 +2212,10 @@ class SourceSink(esbmtkBase):
         """
 
         from esbmtk import (
-            SourceGroup,
-            SinkGroup,
+            SourceProperties,
+            SinkProperties,
             Reservoir,
-            ConnectionGroup,
+            ConnectionProperties,
         )
 
         self.defaults: dict[str, list[any, tuple]] = {
@@ -2225,10 +2225,10 @@ class SourceSink(esbmtkBase):
             "register": [
                 "None",
                 (
-                    SourceGroup,
-                    SinkGroup,
+                    SourceProperties,
+                    SinkProperties,
                     Reservoir,
-                    ConnectionGroup,
+                    ConnectionProperties,
                     Model,
                     str,
                 ),
@@ -2243,7 +2243,7 @@ class SourceSink(esbmtkBase):
         if self.register == "None":  # use a sensible default
             self.register = self.species.element.register
 
-        self.loc: set[Connection] = set()  # set of connection objects
+        self.loc: set[Connect] = set()  # set of connection objects
 
         # legacy names
         # if self.register != "None":

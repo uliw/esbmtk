@@ -24,7 +24,7 @@ import typing as tp
 import functools
 from numba import njit
 if tp.TYPE_CHECKING:
-    from esbmtk import Flux, Model, Connection, Connect, ExternalFunction
+    from esbmtk import Flux, Model, Connect, Connect, ExternalFunction
 
 np.set_printoptions(precision=4)
 # declare numpy types
@@ -100,15 +100,15 @@ def get_reservoir_reference(k: str, M: Model) -> tuple:
     Returns
     -------
     tuple
-        Species/Connection, SpeciesProperties
+        Species/Connect, SpeciesProperties
     Raises
     ------
     ValueError
-        If reservoir_name is not of type Species/Ggroup or Connection
+        If reservoir_name is not of type Species/Ggroup or Connect
 
     """
-    from esbmtk import Species, Reservoir, Connection, Connect
-    from esbmtk import GasSpecies, SpeciesProperties
+    from esbmtk import Species, Reservoir, Connect, Connect
+    from esbmtk import GasReservoir, SpeciesProperties
 
     key_list = k[2:].split(".")  # get model, reservoir & species name
 
@@ -125,15 +125,15 @@ def get_reservoir_reference(k: str, M: Model) -> tuple:
         elif k[0:2] == "F_":
             if isinstance(obj, Species | Reservoir):
                 reservoir = obj
-            elif isinstance(obj, Connection | Connect):
+            elif isinstance(obj, Connect | Connect):
                 reservoir = obj
-                if isinstance(reservoir.source, GasSpecies):
+                if isinstance(reservoir.source, GasReservoir):
                     species_name = obj.sink.name
                 else:
                     species_name = obj.source.name
             else:
                 raise ValueError(
-                    f"{obj.name} must be Species or Connection", f"not {type(obj)}"
+                    f"{obj.name} must be Species or Connect", f"not {type(obj)}"
                 )
 
     elif len(key_list) == 2:  # (Gas)Species
@@ -149,7 +149,7 @@ def get_reservoir_reference(k: str, M: Model) -> tuple:
 
 
 def register_new_flux(rg, dict_key, dict_value) -> list:
-    """Register a new flux object with a Species or Connection instance
+    """Register a new flux object with a Species or Connect instance
 
     Parameters
     ----------
@@ -241,14 +241,14 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
     so we register the source/sink relationship with the
     reservoir they belong to.
 
-    This fails for GasSpecies since they can have a 1:many
+    This fails for GasReservoir since they can have a 1:many
     relatioship. The below is a terrible hack, it would be
     better to express this with several connection
     objects, rather than overloading the source attribute of the
-    GasSpecies class.
+    GasReservoir class.
     """
-    from esbmtk import Species, Reservoir, Flux, Connection, Connect
-    from esbmtk import Sink, SinkGroup
+    from esbmtk import Species, Reservoir, Flux, Connect, Connect
+    from esbmtk import Sink, SinkProperties
 
     M = rg.mo
     # go through each entry in ec.return_values
@@ -262,11 +262,11 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
                     o = getattr(M, key_str)
                     if isinstance(o, Flux):
                         o: list = [o]
-                    elif isinstance(o, Connection | Connect):
+                    elif isinstance(o, Connect | Connect):
                         o: list = [getattr(o, "_F")]  # get flux handle
                     elif isinstance(o, Species | Reservoir):
                         o: list = register_new_flux(rg, dict_key[2:], dict_value)
-                    elif isinstance(o, Sink | SinkGroup):
+                    elif isinstance(o, Sink | SinkProperties):
                         o: list = register_new_flux(rg, dict_key[2:], dict_value)
                     else:
                         raise ValueError(f"No recipie for {type(o)}")
@@ -603,7 +603,7 @@ def create_reservoirs(box_dict: dict, ic_dict: dict, M: any) -> dict:
     """
 
     from esbmtk import Reservoir, build_concentration_dicts
-    from esbmtk import SourceGroup, SinkGroup
+    from esbmtk import SourceProperties, SinkProperties
 
     # loop over reservoir names
     for box_name, value in box_dict.items():
@@ -616,7 +616,7 @@ def create_reservoirs(box_dict: dict, ic_dict: dict, M: any) -> dict:
         if "ty" in value:  # type is given
             if value["ty"] == "Source":
                 if "delta" in value:
-                    SourceGroup(
+                    SourceProperties(
                         name=box_name,
                         species=value["sp"],
                         delta=value["delta"],
@@ -624,14 +624,14 @@ def create_reservoirs(box_dict: dict, ic_dict: dict, M: any) -> dict:
                         register=M,
                     )
                 else:
-                    SourceGroup(
+                    SourceProperties(
                         name=box_name,
                         species=value["sp"],
                         register=M,
                         isotopes=keyword_dict[box_name][1],
                     )
             elif value["ty"] == "Sink":
-                SinkGroup(
+                SinkProperties(
                     name=box_name,
                     species=value["sp"],
                     register=M,
@@ -964,7 +964,7 @@ def create_connection(n: str, p: dict, M: Model) -> None:
     :param M: the model handle
     """
 
-    from esbmtk import ConnectionGroup, Q_
+    from esbmtk import ConnectionProperties, Q_
 
     # get the reservoir handles by splitting the key
     source, sink, cid = split_key(n, M)
@@ -1015,8 +1015,8 @@ def create_connection(n: str, p: dict, M: Model) -> None:
             signal=signal,
             id=cid,  # get id from dictionary
         )
-    else:  # Create New ConnectionGroup
-        cg = ConnectionGroup(
+    else:  # Create New ConnectionProperties
+        cg = ConnectionProperties(
             source=source,
             sink=sink,
             ctype=ctype,
@@ -1132,7 +1132,7 @@ def get_connection_keys(
 
 def gen_dict_entries(M: Model, **kwargs) -> tuple(tuple, list):
     """Find all fluxes that contain the reference string, and create a new
-    Connection instance that connects the flux matching ref_id, with a flux
+    Connect instance that connects the flux matching ref_id, with a flux
     matching target_id.  The function will a tuple containig the new connection
     keys that can be used by the create bulk_connection() function.  The second
     return value is a list containing the reference fluxes.
@@ -1523,10 +1523,10 @@ def get_delta_h(R) -> float:
     R.l = concentration of the light isotope
     """
 
-    from esbmtk import Species, GasSpecies, Flux
+    from esbmtk import Species, GasReservoir, Flux
 
     r = R.species.r  # reference ratio
-    if isinstance(R, (Species, GasSpecies)):
+    if isinstance(R, (Species, GasReservoir)):
         d = np.where(R.l > 0, 1e3 * ((R.c - R.l) / R.l - r) / r, 0)
     elif isinstance(R, Flux):
         d = np.where(R.l > 0, 1e3 * ((R.m - R.l) / R.l - r) / r, 0)

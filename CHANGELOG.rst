@@ -2,7 +2,16 @@
 Changelog
 =========
 
-- May  v 0.13.0.x fixes an error in the solubility calculation for oxygen and carbon dioxide. This will change the steady state results for pCO2 in existing models by about 4 ppm.
+- May 10th  v 0.13.0.x fixes an error in the solubility calculation for oxygen and carbon dioxide. This will change the steady state results for pCO2 in existing models by about 4 ppm. Renamed many classes. Existing models may need some renaming
+  - Element -> ElementProperties
+  - Species -> SpeciesProperties
+  - Reservoir -> Species
+  - ReservoirGroup -> Reservoir
+  - ConnectionGroup -> ConnectionProperties
+  - Connection -> Connect
+  - SourceGroup -> SourceProperties
+  - SinkGroup -> SinkProperties  
+    
 - May 1st, v 0.12.0.28 ESBMTK can now be installed via conda. Various documentation updates
 - Dec. v 0.12.0.x This is a breaking change that requires the following updates to the model definition.
   - Models that use isotope calculations need to ensure that sources and sink also specify the isotope keyword.

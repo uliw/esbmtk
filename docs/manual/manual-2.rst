@@ -7,7 +7,7 @@ Adding Complexity
 Model forcing
 ~~~~~~~~~~~~~
 
-ESBMTK realizes model forcing through the :py:class:`esbmtk.extended_classes.Signal()` class. Once defined, a signal instance can be associated with a :py:class:`esbmtk.connections.Connection()` instance that will then act on the associated connection. This class provides the following keywords to create a signal:
+ESBMTK realizes model forcing through the :py:class:`esbmtk.extended_classes.Signal()` class. Once defined, a signal instance can be associated with a :py:class:`esbmtk.connections.Connect()` instance that will then act on the associated connection. This class provides the following keywords to create a signal:
 
 - ``square()``, ``pyramid()``, ``bell()``  These are defined by specifying the signal start time (relative to the model time), its size (as mass) and duration, or as duration and magnitude (see the example below)
 
@@ -27,7 +27,7 @@ The default is to add the signal to a given connection. It is however also possi
         register=M,
     )
 
-    Connection(
+    Connect(
         source=M.weathering,  # source of flux
         sink=M.sb,  # target of flux
         rate=F_w,  # rate of flux
@@ -57,9 +57,9 @@ Using the previous example of a simple P-cycle model, we now express the P-cycli
 
     from esbmtk import (
         Reservoir,  # the reservoir class
-        ConnectionGroup,  # the connection class
-        SourceGroup,  # the source class
-        SinkGroup,  # sink class
+        ConnectProperties,  # the connection class
+        SourceProperties,  # the source class
+        SinkProperties,  # sink class
     )
     M = Model(
         stop="6 Myr",  # end time of model
@@ -71,7 +71,7 @@ Setting up a group source, is similar to a single Source, except that we now spe
 
 .. code:: ipython
 
-    SourceGroup(
+    SourceProperties(
         name="weathering",
         species=[M.PO4, M.DIC],
         register=M,  # i.e., the instance will be available as M.weathering
@@ -88,11 +88,11 @@ Defining a ``Reservoirgroup`` follows the same pattern, except that we use a dic
         register=M,
     )
 
-The :py:class:`esbmtk.connections.ConnectionGroup.()` class definition is equally straightforward, and the following expression will apply the thermohaline downwelling to all species in the ``M.S_b`` group.
+The :py:class:`esbmtk.connections.ConnectProperties.()` class definition is equally straightforward, and the following expression will apply the thermohaline downwelling to all species in the ``M.S_b`` group.
 
 .. code:: ipython
 
-    ConnectionGroup(  # thermohaline downwelling
+    ConnectProperties(  # thermohaline downwelling
         source=M.S_b,  # source of flux
         sink=M.D_b,  # target of flux
         ctype="scale_with_concentration",
@@ -104,7 +104,7 @@ It is also possible, to specify individual rates or scales using a dictionary, a
 
 .. code:: ipython
 
-    ConnectionGroup(
+    ConnectProperties(
         source=M.weathering,  # source of flux
         sink=M.S_b,  # target of flux
         rate={M.DIC: F_w_OM, M.PO4: F_w_PO4},  # rate of flux
@@ -117,7 +117,7 @@ The following code defines primary production and its effects on DIC in the surf
 .. code:: ipython
 
     # Primary production as a function of P-concentration
-    Connection(  #
+    Connect(  #
         source=M.S_b.DIC,  # source of flux
         sink=M.D_b.DIC,  # target of flux
         ref_reservoirs=M.S_b.PO4,
@@ -176,7 +176,7 @@ Let's assume that the weathering flux of carbon has :math:`\delta`\ :sup:`13`\C 
     )
 
     # 4 weathering flux
-    ConnectionGroup(
+    ConnectProperties(
         source=M.weathering,  # source of flux
         sink=M.S_b,  # target of flux
         rate={M.DIC: F_w_OM, M.PO4: F_w_PO4},  # rate of flux
@@ -186,7 +186,7 @@ Let's assume that the weathering flux of carbon has :math:`\delta`\ :sup:`13`\C 
     )
 
     # 5 photosynthesis
-    Connection(  #
+    Connect(  #
         source=M.S_b.DIC,  # source of flux
         sink=M.D_b.DIC,  # target of flux
         ref_reservoirs=M.S_b.PO4,
@@ -255,7 +255,7 @@ For this function to work correctly, box names need to be specified following th
 
     create_reservoirs(box_names, initial_conditions, M)
 
-similarly, we can leverage  Python dictionaries to set up the transport matrix. The dictionary key must use the following template: ``boxname_to_boxname@id`` where the ``id`` is used similarly to the connection id in the ``Connection`` and ``ConnectionGroup`` classes. So to specify thermohaline upwelling from the Atlantic deep water to the Atlantic intermediate water you would use ``A_db_to_A_ib@thc``  as the dictionary key, followed by the rate. The following examples define the thermohaline transport in a LOSCAR-type model:
+similarly, we can leverage  Python dictionaries to set up the transport matrix. The dictionary key must use the following template: ``boxname_to_boxname@id`` where the ``id`` is used similarly to the connection id in the ``Connect`` and ``ConnectProperties`` classes. So to specify thermohaline upwelling from the Atlantic deep water to the Atlantic intermediate water you would use ``A_db_to_A_ib@thc``  as the dictionary key, followed by the rate. The following examples define the thermohaline transport in a LOSCAR-type model:
 
 .. code:: ipython
 

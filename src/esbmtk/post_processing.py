@@ -4,7 +4,7 @@ import numpy as np
 import numpy.typing as npt
 
 if tp.TYPE_CHECKING:
-    from .esbmtk import Reservoir, Species, GasSpecies
+    from .esbmtk import Reservoir, Species, GasReservoir
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
@@ -231,7 +231,7 @@ def carbonate_system_2_pp(
 
 def gas_exchange_fluxes(
     liquid_reservoir: Species,
-    gas_reservoir: GasSpecies,
+    gas_reservoir: GasReservoir,
     pv: str,
 ):
     """Calculate gas exchange fluxes for a given reservoir

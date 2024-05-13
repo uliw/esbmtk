@@ -12,7 +12,7 @@ import typing as tp
 import warnings
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Connection, Model
+    from esbmtk import Connect, Model
 
 from .esbmtk_base import esbmtkBase
 from .esbmtk import SpeciesBase, Species, SpeciesProperties
@@ -34,7 +34,7 @@ class ReservoirError(Exception):
         super().__init__(message)
 
 
-class SourceSinkGroupError(Exception):
+class SourceSinkPropertiesError(Exception):
     def __init__(self, message):
         message = f"\n\n{message}\n"
         super().__init__(message)
@@ -284,14 +284,14 @@ class SourceSink(esbmtkBase):
     """
 
     def __init__(self, **kwargs) -> None:
-        from esbmtk import SpeciesProperties, Model, SourceSinkGroup
+        from esbmtk import SpeciesProperties, Model, SourceSinkProperties
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "species": ["None", (str, SpeciesProperties)],
             "display_precision": [0.01, (int, float)],
-            "register": ["None", (str, Model, SourceSinkGroup)],
+            "register": ["None", (str, Model, SourceSinkProperties)],
             "delta": ["None", (int, float, str)],
             "isotopes": [False, (bool)],
         }
@@ -301,7 +301,7 @@ class SourceSink(esbmtkBase):
 
         self.__initialize_keyword_variables__(kwargs)
 
-        self.loc: set[Connection] = set()  # set of connection objects
+        self.loc: set[Connect] = set()  # set of connection objects
 
         # legacy names
         # if self.register != "None":
@@ -317,13 +317,13 @@ class SourceSink(esbmtkBase):
         self.__register_name_new__()
 
 
-class SourceSinkGroup(esbmtkBase):
+class SourceSinkProperties(esbmtkBase):
     """
     This is a meta class to setup  Source/Sink Groups. These are not
     actual reservoirs, but we stil need to have them as objects
     Example::
 
-           SinkGroup(name = "Pyrite",
+           SinkProperties(name = "Pyrite",
                 species = [SO42, H2S],
                 )
 
@@ -349,7 +349,7 @@ class SourceSinkGroup(esbmtkBase):
         # legacy variables
         self.n = self.name
         self.parent = self.register
-        self.loc: set[Connection] = set()  # set of connection objects
+        self.loc: set[Connect] = set()  # set of connection objects
 
         # register this object in the global namespace
         self.mo = self.species[0].mo  # get model handle
@@ -365,7 +365,7 @@ class SourceSinkGroup(esbmtkBase):
         # loop over species names and setup sub-objects
         for i, s in enumerate(self.species):
             if not isinstance(s, SpeciesProperties):
-                raise SourceSinkGroupError(f"{s.n} needs to be a valid species name")
+                raise SourceSinkPropertiesError(f"{s.n} needs to be a valid species name")
 
             delta = self.delta[s] if s in self.delta else "None"
             if isinstance(self.isotopes, dict):
@@ -373,7 +373,7 @@ class SourceSinkGroup(esbmtkBase):
             else:
                 isotopes = self.isotopes
 
-            if type(self).__name__ == "SourceGroup":
+            if type(self).__name__ == "SourceProperties":
                 a = Source(
                     name=f"{s.name}",
                     register=self,
@@ -382,7 +382,7 @@ class SourceSinkGroup(esbmtkBase):
                     isotopes=isotopes,
                 )
 
-            elif type(self).__name__ == "SinkGroup":
+            elif type(self).__name__ == "SinkProperties":
                 a = Sink(
                     name=f"{s.name}",
                     register=self,
@@ -391,19 +391,19 @@ class SourceSinkGroup(esbmtkBase):
                     isotopes=isotopes,
                 )
             else:
-                raise SourceSinkGroupError(
+                raise SourceSinkPropertiesError(
                     f"{type(self).__name__} is not a valid class type"
                 )
             # register in list of reservoirs
             self.lor.append(a)
 
 
-class SinkGroup(SourceSinkGroup):
+class SinkProperties(SourceSinkProperties):
     """
     This is just a wrapper to setup a Sink object
     Example::
 
-           SinkGroup(name = "Burial",
+           SinkProperties(name = "Burial",
                 species = [SO42, H2S],
                 delta = {"SO4": 10}
                 )
@@ -413,12 +413,12 @@ class SinkGroup(SourceSinkGroup):
     # f __init__(self,super):
 
 
-class SourceGroup(SourceSinkGroup):
+class SourceProperties(SourceSinkProperties):
     """
     This is just a wrapper to setup a Source object
     Example::
 
-        SourceGroup(name = "weathering",
+        SourceProperties(name = "weathering",
                 species = [SO42, H2S],
                 delta = {"SO4": 10}
                 )
@@ -1465,10 +1465,10 @@ class SpeciesNoSet(SpeciesBase):
         """
 
         from esbmtk import (
-            ConnectionGroup,
+            ConnectionProperties,
             SpeciesProperties,
-            SourceGroup,
-            SinkGroup,
+            SourceProperties,
+            SinkProperties,
             Reservoir,
         )
 
@@ -1484,7 +1484,7 @@ class SpeciesNoSet(SpeciesBase):
             "display_precision": [0.01, (int, float)],
             "register": [
                 "None",
-                (SourceGroup, SinkGroup, Reservoir, ConnectionGroup, str),
+                (SourceProperties, SinkProperties, Reservoir, ConnectionProperties, str),
             ],
             "full_name": ["None", (str)],
             "isotopes": [False, (bool)],
@@ -1587,13 +1587,13 @@ class ExternalCode(SpeciesNoSet):
         """
 
         from esbmtk import (
-            ConnectionGroup,
+            ConnectionProperties,
             SpeciesProperties,
-            SourceGroup,
-            SinkGroup,
+            SourceProperties,
+            SinkProperties,
             Reservoir,
             Species,
-            Connection,
+            Connect,
             Model,
         )
         from typing import Callable
@@ -1611,13 +1611,13 @@ class ExternalCode(SpeciesNoSet):
             "register": [
                 "None",
                 (
-                    SourceGroup,
-                    SinkGroup,
+                    SourceProperties,
+                    SinkProperties,
                     Reservoir,
                     Species,
-                    Connection,
-                    ConnectionGroup,
-                    GasSpecies,
+                    Connect,
+                    ConnectionProperties,
+                    GasReservoir,
                     Model,
                     str,
                 ),
@@ -1967,7 +1967,7 @@ class VirtualSpecies(Species):
             setattr(self.gfh, key, value)  # update function
 
 
-class GasSpecies(SpeciesBase):
+class GasReservoir(SpeciesBase):
     """This object holds reservoir specific information similar to the Species class
 
           Example::
@@ -2066,7 +2066,7 @@ class GasSpecies(SpeciesBase):
         # ).magnitude
 
         if self.v_unit != self.volume.units:
-            raise GasSpeciesError(
+            raise GasReservoirError(
                 f"\n\n{self.full_name} reservoir_mass units must be "
                 f"in {self.v_unit} "
                 f"not {self.volume.units}"
@@ -2201,13 +2201,13 @@ class ExternalData(esbmtkBase):
             "name": ["None", (str)],
             "filename": ["None", (str)],
             "legend": ["None", (str)],
-            "reservoir": ["None", (str, Species, DataField, GasSpecies)],
+            "reservoir": ["None", (str, Species, DataField, GasReservoir)],
             "offset": ["0 yrs", (Q_, str)],
             "display_precision": [0.01, (int, float)],
             "scale": [1, (int, float)],
             "register": [
                 "None",
-                (str, Model, Species, DataField, GasSpecies, Signal),
+                (str, Model, Species, DataField, GasReservoir, Signal),
             ],
             "plot_transform_c": ["None", (str, callable)],
         }

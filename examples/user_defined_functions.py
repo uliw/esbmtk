@@ -2,7 +2,7 @@
 from esbmtk import (
     Model,  # the model class
     Species,  # the reservoir class
-    Connection,  # the connection class
+    Connect,  # the connection class
     Source,  # the source class
     Sink,  # sink class
     Q_,  # Quantity operator
@@ -51,7 +51,7 @@ Species(
     concentration="0 umol/l",  # initial concentration
 )
 
-Connection(
+Connect(
     source=M.weathering,  # source of flux
     sink=M.S_b,  # target of flux
     rate=F_w,  # rate of flux
@@ -59,7 +59,7 @@ Connection(
     ctype="regular",
 )
 
-Connection(  # thermohaline downwelling
+Connect(  # thermohaline downwelling
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
@@ -67,7 +67,7 @@ Connection(  # thermohaline downwelling
     id="downwelling_PO4",
     # ref_reservoirs=M.S_b, defaults to the source instance
 )
-Connection(  # thermohaline upwelling
+Connect(  # thermohaline upwelling
     source=M.D_b,  # source of flux
     sink=M.S_b,  # target of flux
     ctype="scale_with_concentration",
@@ -75,7 +75,7 @@ Connection(  # thermohaline upwelling
     id="upwelling_PO4",
 )
 
-Connection(  #
+Connect(  #
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
