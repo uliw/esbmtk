@@ -15,19 +15,16 @@ General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
 import typing as tp
 
-# from esbmtk import Flux, Species, Model, Connect, Connect
-# from esbmtk import ExternalFunction
-
-# declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Flux, Species, Model, Connect, Connect
+    from esbmtk import Flux, Species, Model, Species2Species
     from esbmtk import ExternalFunction
 
 
@@ -242,7 +239,7 @@ def write_equations_2(
 from numpy import array as npa
 from numba import njit
 """
-    
+
     h2 = """# @njit(fastmath=True)
 def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         '''Auto generated esbmtk equations do not edit
@@ -399,13 +396,13 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
 
     else:
         raise ValueError(
-            f"Connect type {c.ctype} for {c.full_name} is not implmented"
+            f"Species2Species type {c.ctype} for {c.full_name} is not implmented"
         )
 
     return ex, exl
 
 
-def check_signal_2(ex: str, exl: str, c: Connect) -> (str, str):
+def check_signal_2(ex: str, exl: str, c: Species2Species) -> (str, str):
     """Test if connection is affected by a signal
 
     :param ex: equation string
@@ -595,7 +592,7 @@ def write_ef(
 
 def get_regular_flux_eq(
     flux: Flux,  # flux instance
-    c: Connect,  # connection instance
+    c: Species2Species,  # connection instance
     icl: dict,  # list of initial conditions
     ind2,  # indentation
     ind3,  # indentation
@@ -623,7 +620,7 @@ def get_regular_flux_eq(
 
 def check_isotope_effects(
     f_m: str,
-    c: Connect | Connect,
+    c: Species2Species,
     icl: dict,
     ind3: str,
     ind2: str,
@@ -664,7 +661,7 @@ def check_isotope_effects(
 
 def get_scale_with_concentration_eq(
     flux: Flux,  # flux instance
-    c: Connect,  # connection instance
+    c: Species2Species,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: dict,  # list of initial conditions
     ind2: str,  # whitespace
@@ -697,7 +694,7 @@ def get_scale_with_concentration_eq(
 
 def get_scale_with_flux_eq(
     flux: Flux,  # flux instance
-    c: Connect,  # connection instance
+    c: Species2Species,  # connection instance
     cfn: str,  # full name of the connection instance
     icl: dict,  # list of initial conditions
     ind2: str,  # indentation

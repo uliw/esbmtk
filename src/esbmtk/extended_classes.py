@@ -12,7 +12,7 @@ import typing as tp
 import warnings
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Connect, Model
+    from esbmtk import Species2Species, Model
 
 from .esbmtk_base import esbmtkBase
 from .esbmtk import SpeciesBase, Species, SpeciesProperties
@@ -301,7 +301,7 @@ class SourceSink(esbmtkBase):
 
         self.__initialize_keyword_variables__(kwargs)
 
-        self.loc: set[Connect] = set()  # set of connection objects
+        self.loc: set[Species2Species] = set()  # set of connection objects
 
         # legacy names
         # if self.register != "None":
@@ -349,7 +349,7 @@ class SourceSinkProperties(esbmtkBase):
         # legacy variables
         self.n = self.name
         self.parent = self.register
-        self.loc: set[Connect] = set()  # set of connection objects
+        self.loc: set[Species2Species] = set()  # set of connection objects
 
         # register this object in the global namespace
         self.mo = self.species[0].mo  # get model handle
@@ -808,12 +808,12 @@ class Signal(esbmtkBase):
         Maybe this logic should be me moved elsewhere?
         """
 
-        from esbmtk import Source, Connect
+        from esbmtk import Source, Species2Species
 
         if self.source == "None":
             self.source = Source(name=f"{self.name}_Source", species=self.sp)
 
-        Connect(
+        Species2Species(
             source=self.source,  # source of flux
             sink=self.reservoir,  # target of flux
             rate="0 mol/yr",  # flux rate
@@ -1593,7 +1593,7 @@ class ExternalCode(SpeciesNoSet):
             SinkProperties,
             Reservoir,
             Species,
-            Connect,
+            Species2Species,
             Model,
         )
         from typing import Callable
@@ -1615,7 +1615,7 @@ class ExternalCode(SpeciesNoSet):
                     SinkProperties,
                     Reservoir,
                     Species,
-                    Connect,
+                    Species2Species,
                     ConnectionProperties,
                     GasReservoir,
                     Model,

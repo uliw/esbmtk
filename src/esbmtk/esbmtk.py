@@ -46,7 +46,7 @@ NDArrayFloat = npt.NDArray[np.float64]
 
 if tp.TYPE_CHECKING:
     from .extended_classes import ExternalData, DataField
-    from .connections import Connect
+    from .connections import Species2Species
     from .processes import Process
 
 
@@ -1028,7 +1028,7 @@ class SpeciesBase(esbmtkBase):
         self.lop: list[Process] = []  # list holding all processe references
         self.loe: list[ElementProperties] = []  # list of elements in thiis reservoir
         self.doe: dict[SpeciesProperties, Flux] = {}  # species flux pairs
-        self.loc: set[Connect] = set()  # set of connection objects
+        self.loc: set[Species2Species] = set()  # set of connection objects
         self.ldf: list[DataField] = []  # list of datafield objects
         # list of processes which calculate reservoirs
         self.lpc: list[Process] = []
@@ -1819,7 +1819,7 @@ class Flux(esbmtkBase):
     the mass and time unit, and store data of the total flux rate at
     any given time step.  Similarly, they store the flux of the light
     and heavy isotope flux, as well as the delta of the flux.  This is
-    typically handled through the Connect object.  If you set it up
+    typically handled through the Species2Species object.  If you set it up
     manually
 
     Example::
@@ -1860,8 +1860,8 @@ class Flux(esbmtkBase):
                       str,
                       Species,
                       GasReservoir,
-                      Connect,
-                      Connect,
+                      Species2Species,
+                      Species2Species,
                       Signal,
                   ),
               ],
@@ -1878,8 +1878,8 @@ class Flux(esbmtkBase):
             Q_,
             Species,
             GasReservoir,
-            Connect,
-            Connect,
+            Species2Species,
+            Species2Species,
             Signal,
         )
 
@@ -1898,8 +1898,8 @@ class Flux(esbmtkBase):
                     str,
                     Species,
                     GasReservoir,
-                    Connect,
-                    Connect,
+                    Species2Species,
+                    Species2Species,
                     Signal,
                 ),
             ],
@@ -1979,7 +1979,7 @@ class Flux(esbmtkBase):
         self.sink: str = ""  # Name of reservoir which acts as flux sink
 
         if self.name == "None":
-            if isinstance(self.parent, (Connect, Connect)):
+            if isinstance(self.parent, (Species2Species)):
                 self.name = "_F"
                 self.n = self.name
             else:
@@ -2243,7 +2243,7 @@ class SourceSink(esbmtkBase):
         if self.register == "None":  # use a sensible default
             self.register = self.species.element.register
 
-        self.loc: set[Connect] = set()  # set of connection objects
+        self.loc: set[Species2Species] = set()  # set of connection objects
 
         # legacy names
         # if self.register != "None":

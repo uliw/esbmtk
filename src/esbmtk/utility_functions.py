@@ -15,6 +15,7 @@
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 from __future__ import annotations
 import numpy as np
 import numpy.typing as npt
@@ -23,8 +24,9 @@ import logging
 import typing as tp
 import functools
 from numba import njit
+
 if tp.TYPE_CHECKING:
-    from esbmtk import Flux, Model, Connect, Connect, ExternalFunction
+    from esbmtk import Flux, Model, Species2Species, ExternalFunction
 
 np.set_printoptions(precision=4)
 # declare numpy types
@@ -100,14 +102,14 @@ def get_reservoir_reference(k: str, M: Model) -> tuple:
     Returns
     -------
     tuple
-        Species/Connect, SpeciesProperties
+        Species2Species, SpeciesProperties
     Raises
     ------
     ValueError
-        If reservoir_name is not of type Species/Ggroup or Connect
+        If reservoir_name is not of type ConnectionProperties or Species2Species
 
     """
-    from esbmtk import Species, Reservoir, Connect, Connect
+    from esbmtk import Species, Reservoir, Species2Species
     from esbmtk import GasReservoir, SpeciesProperties
 
     key_list = k[2:].split(".")  # get model, reservoir & species name
@@ -125,7 +127,7 @@ def get_reservoir_reference(k: str, M: Model) -> tuple:
         elif k[0:2] == "F_":
             if isinstance(obj, Species | Reservoir):
                 reservoir = obj
-            elif isinstance(obj, Connect | Connect):
+            elif isinstance(obj, Species2Species):
                 reservoir = obj
                 if isinstance(reservoir.source, GasReservoir):
                     species_name = obj.sink.name
@@ -133,7 +135,7 @@ def get_reservoir_reference(k: str, M: Model) -> tuple:
                     species_name = obj.source.name
             else:
                 raise ValueError(
-                    f"{obj.name} must be Species or Connect", f"not {type(obj)}"
+                    f"{obj.name} must be Species2Species", f"not {type(obj)}"
                 )
 
     elif len(key_list) == 2:  # (Gas)Species
@@ -149,7 +151,7 @@ def get_reservoir_reference(k: str, M: Model) -> tuple:
 
 
 def register_new_flux(rg, dict_key, dict_value) -> list:
-    """Register a new flux object with a Species or Connect instance
+    """Register a new flux object with a Species2Species instance
 
     Parameters
     ----------
@@ -180,7 +182,7 @@ def register_new_flux(rg, dict_key, dict_value) -> list:
     else:
         print(f" type(rg) = {type(rg)}")
         raise NotImplementedError
-   
+
     if not hasattr(reg, "source"):
         setattr(reg, "source", sp.name)
 
@@ -247,7 +249,7 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
     objects, rather than overloading the source attribute of the
     GasReservoir class.
     """
-    from esbmtk import Species, Reservoir, Flux, Connect, Connect
+    from esbmtk import Species, Reservoir, Flux, Species2Species
     from esbmtk import Sink, SinkProperties
 
     M = rg.mo
@@ -262,7 +264,7 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
                     o = getattr(M, key_str)
                     if isinstance(o, Flux):
                         o: list = [o]
-                    elif isinstance(o, Connect | Connect):
+                    elif isinstance(o, Species2Species):
                         o: list = [getattr(o, "_F")]  # get flux handle
                     elif isinstance(o, Species | Reservoir):
                         o: list = register_new_flux(rg, dict_key[2:], dict_value)
@@ -1038,7 +1040,9 @@ def get_name_only(o: any) -> any:
     from esbmtk import Flux, Species, Reservoir, SpeciesProperties
 
     return (
-        o.full_name if isinstance(o, (Flux, Species, Reservoir, SpeciesProperties)) else o
+        o.full_name
+        if isinstance(o, (Flux, Species, Reservoir, SpeciesProperties))
+        else o
     )
 
 
@@ -1132,7 +1136,7 @@ def get_connection_keys(
 
 def gen_dict_entries(M: Model, **kwargs) -> tuple(tuple, list):
     """Find all fluxes that contain the reference string, and create a new
-    Connect instance that connects the flux matching ref_id, with a flux
+    Species2Species instance that connects the flux matching ref_id, with a flux
     matching target_id.  The function will a tuple containig the new connection
     keys that can be used by the create bulk_connection() function.  The second
     return value is a list containing the reference fluxes.

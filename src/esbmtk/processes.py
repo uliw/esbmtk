@@ -28,7 +28,7 @@ from esbmtk.utility_functions import (
 )
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Connect, Connect, Q_
+    from esbmtk import Species2Species, Q_
 
 # declare numpy types
 # NDArrayFloat = npt.NDArray[np.float64]
@@ -81,7 +81,7 @@ def weathering(c_pco2: float | list[float], p: tuple) -> float | tuple:
 
 
 def init_weathering(
-    c: Connect | Connect,
+    c: Species2Species,
     pco2: float,
     pco2_0: float | str | Q_,
     area_fraction: float,
@@ -90,7 +90,7 @@ def init_weathering(
 ):
     """Creates a new external code instance
 
-    :param c: Connect
+    :param c: Species2Species
     :param pco2: float current pco2
     :param pco2_0: float reference pco2
     :area_fraction: float area/total area
@@ -123,12 +123,12 @@ def init_weathering(
     return ec
 
 
-def init_gas_exchange(c: Connect | Connect):
+def init_gas_exchange(c: Species2Species):
     """Create an ExternalCode instance for gas exchange reactions
 
     Parameters
     ----------
-    c : Connect
+    c : Species2Species
         connection instance
     """
     from esbmtk import ExternalCode, check_for_quantity
