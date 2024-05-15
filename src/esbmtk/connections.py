@@ -2,7 +2,7 @@
      esbmtk.connections
 
      Classes which handle the connections and fluxes between esbmtk objects
-     like Speciess, Sources, and Sinks.
+     like Species, Sources, and Sinks.
 
      esbmtk: A general purpose Earth Science box model toolkit
      Copyright (C), 2020 Ulrich G. Wortmann
@@ -786,7 +786,7 @@ class ConnectionProperties(esbmtkBase):
         self.__create_connections__()
 
     def __create_connections__(self) -> None:
-        """Create Species2Speciess"""
+        """Create Species2Species"""
 
         from esbmtk import Reservoir, SinkProperties, SourceProperties
 
@@ -877,7 +877,7 @@ class ConnectionProperties(esbmtkBase):
         """List all connections in this group"""
 
         print(f"Group Connect from {self.source.name} to {self.sink.name}\n")
-        print("The following Species2Speciess are part of this group\n")
+        print("The following Species2Species are part of this group\n")
         print(f"You can query the details of each connection like this:\n")
         for c in self.loc:
             print(f"{c.name}: {self.name}.{c.name}.info()")
