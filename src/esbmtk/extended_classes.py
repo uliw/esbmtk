@@ -165,7 +165,6 @@ class Reservoir(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: list = [
             "name",
-            "register",
             ["volume", "geometry"],
         ]
 
@@ -178,6 +177,8 @@ class Reservoir(esbmtkBase):
 
         self.__initialize_keyword_variables__(kwargs)
 
+        if self.register == "None":
+            self.register = self.species[0].mo
         # legacy variable
         self.n = self.name
         self.mo = self.species[0].mo
@@ -343,23 +344,19 @@ class SourceSinkProperties(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list[str] = ["name", "species", "register"]
+        self.lrk: list[str] = ["name", "species"]
         self.__initialize_keyword_variables__(kwargs)
 
+        # register this object 
+        self.mo = self.species[0].mo  # get model handle
+        self.model = self.mo
+        if self.register == "None":
+            self.register = self.mo
         # legacy variables
         self.n = self.name
         self.parent = self.register
         self.loc: set[Species2Species] = set()  # set of connection objects
-
-        # register this object in the global namespace
-        self.mo = self.species[0].mo  # get model handle
-        self.model = self.species[0].mo
-
-        if self.mo.register == "local" and self.register == "None":
-            self.register = self.mo
-
         self.__register_name_new__()
-
         self.lor: list = []  # list of sub reservoirs in this group
 
         # loop over species names and setup sub-objects
