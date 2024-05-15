@@ -507,7 +507,7 @@ class Model(esbmtkBase):
 
         # ste plot parameters
         plt.style.use(self.plot_style)
-        fig.canvas.manager.set_window_title(f"{self.n} Speciess")
+        fig.canvas.manager.set_window_title(f"{self.n} Species")
         fig.set_size_inches(size)
 
         i = 0  # loop over objects
@@ -2234,6 +2234,7 @@ class SourceSink(esbmtkBase):
                 ),
             ],
             "delta": ["None", (str, int, float)],
+            "alpha": ["None", (str, int, float)],
             "isotopes": [False, (bool)],
         }
         # provide a list of absolutely required keywords
