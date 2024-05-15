@@ -531,11 +531,10 @@ class Signal(esbmtkBase):
             "species",
             ["shape", "filename"],
             ["magnitude", "mass", "filename"],
-            "register",
         ]
 
         self.__initialize_keyword_variables__(kwargs)
-
+        
         # list of signals we are based on
         self.los: list[Signal] = []
 
@@ -568,6 +567,8 @@ class Signal(esbmtkBase):
         self.sp: SpeciesProperties = self.species  # the species
         self.mo: Model = self.species.mo  # the model handle
         self.model = self.mo
+        if self.register == "None":
+            self.register = self.mo
         self.parent = self.register
         self.ty: str = self.stype  # type of signal
         self.sh: str = self.shape  # shape the event
@@ -588,8 +589,7 @@ class Signal(esbmtkBase):
         self.legend_right = self.data.legend_right
         # update isotope values
         # self.data.li = get_l_mass(self.data.m, self.data.d, self.sp.r)
-        if self.mo.register == "local" and self.register == "None":
-            self.register = self.mo
+       
         self.__register_name_new__()
         self.mo.los.append(self)  # register with model
 
