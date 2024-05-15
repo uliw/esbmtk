@@ -52,15 +52,15 @@ def get_initial_conditions(
 
         We need to consider 3 types of reservoirs:
 
-        1) Speciess that change as a result of physical fluxes i.e.
+        1) Species that change as a result of physical fluxes i.e.
         r.lof > 0.  These require a flux statements and a reservoir
         equation.
 
-        2) Speciess that do not have active fluxes but are computed
+        2) Species that do not have active fluxes but are computed
         as a tracer, i.e.. HCO3.  These only require a reservoir
         equation
 
-        3) Speciess that do not change but are used as input.  Those
+        3) Species that do not change but are used as input.  Those
         should not happen in a well formed model, but we cannot
         exclude the possibility.  In this case, there is no flux
         equation, and we state that dR/dt = 0
@@ -136,7 +136,7 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
     for r in M.lor:  # loop over reservoirs
         """
         Write equations for each reservoir and create unique variable
-        names.  Speciess are typiclally called M.rg.r so we replace
+        names.  Species are typiclally called M.rg.r so we replace
         all dots with underscore -> M_rg_r
         """
 
@@ -181,7 +181,7 @@ def write_reservoir_equations_with_isotopes(
             # v_val = f"{r.volume.to(r.v_unit).magnitude}"
             v_val = f"toc[{r.v_index}]"
             # Write equations for each reservoir
-            # create unique variable names. Speciess are typiclally called
+            # create unique variable names. Species are typiclally called
             # M.rg.r so we replace all dots with underscore
             if r.isotopes:
                 name = f'dCdt_{r.full_name.replace(".", "_")}_l'
