@@ -237,7 +237,7 @@ class hypsometry(esbmtkBase):
     def volume(self, u: float, l: float) -> float:
         """Calculate the area between two elevation datums
 
-         Parameters
+        Parameters
         ----------
         u : float
             upper elevation datum in meters (relative to sealevel)
