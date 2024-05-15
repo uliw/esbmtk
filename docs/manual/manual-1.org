@@ -288,7 +288,7 @@ To run the model, use the =run()= method of the model instance, and plot the res
 #+name: p10
 #+BEGIN_SRC ipython :tangle po4_1.py
 M.run()
-M.plot([M.S_b.PO4, M.D_b.PO4])
+M.plot([M.S_b.PO4, M.D_b.PO4], fn="po4_1.png")
 M.save_data()
 #+END_SRC
 

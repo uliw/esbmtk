@@ -112,7 +112,7 @@ Provided that the model has terms for DIC and TA, pH calculations for a given :p
     box_names = [A_sb, I_sb, P_sb, H_sb]  # list of Reservoir handles
     add_carbonate_system_1(box_names)
 
-This will create Speciess :py:class:`esbmtk.esbmtk.Species()` instances for ``Hplus`` and ``CO2aq``. After running the model, the resulting concentration data is available in the usual manner:
+This will create Species :py:class:`esbmtk.esbmtk.Species()` instances for ``Hplus`` and ``CO2aq``. After running the model, the resulting concentration data is available in the usual manner:
 
 .. code:: ipython
 
@@ -135,7 +135,7 @@ Notes:
 
 - The data from post-processing is currently available as :py:class:`esbmtk.extended_classes.VectorData()` instance, rather than as :py:class:`esbmtk.esbmtk.Species()` instance.
 
-- Speciess that use carbonate system 2 (see below), do not need to use carbonate system 1
+- Species that use carbonate system 2 (see below), do not need to use carbonate system 1
 
 - ESBMTK will print a warning message of the pH changes by more than 0.01 units per time step. However, this is only a crude measure, since the solver also uses interpolation between integration steps. So this may not catch all possible scenarios.
 

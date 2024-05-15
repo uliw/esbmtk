@@ -94,7 +94,7 @@ box_names = [A_sb, I_sb, P_sb, H_sb]  # list of Reservoir handles
 add_carbonate_system_1(box_names)
 #+END_SRC
 
-This will create Speciess @@rst::py:class:`esbmtk.esbmtk.Species()`@@ instances for =Hplus= and =CO2aq=. After running the model, the resulting concentration data is available in the usual manner:
+This will create Species @@rst::py:class:`esbmtk.esbmtk.Species()`@@ instances for =Hplus= and =CO2aq=. After running the model, the resulting concentration data is available in the usual manner:
 #+BEGIN_SRC ipython
 A_sb.Hplus.c
 A_sb.CO2aq.c
@@ -109,7 +109,7 @@ A_sb.Omega
 **** Notes:
  - The resulting concentration data depends on the choice of equilibrium constants and how they are calculated (see the =opt_k_carbonic=, =opt_buffers_mode= keywords above).
  - The data from post-processing is currently available as @@rst::py:class:`esbmtk.extended_classes.VectorData()`@@ instance, rather than as @@rst::py:class:`esbmtk.esbmtk.Species()`@@ instance.
- - Speciess that use carbonate system 2 (see below), do not need to use carbonate system 1
+ - Species that use carbonate system 2 (see below), do not need to use carbonate system 1
  - ESBMTK will print a warning message of the pH changes by more than 0.01 units per time step. However, this is only a crude measure, since the solver also uses interpolation between integration steps. So this may not catch all possible scenarios.
 
 *** Carbonate burial and dissolution

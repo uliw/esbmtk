@@ -8,7 +8,7 @@ from esbmtk import (
     Q_,
 )
 M = Model(
-    stop="6 Myr",  # end time of model
+    stop="1 Myr",  # end time of model
     timestep="1 kyr",  # upper limit of time step
     element=["Phosphor", "Carbon"],  # list of species definitions
 )
@@ -23,20 +23,26 @@ Redfield = 106 # C:P
 SourceProperties(
     name="weathering",
     species=[M.PO4, M.DIC],
+    isotopes={M.DIC: True},
 )
 SinkProperties(
     name="burial",
     species=[M.PO4, M.DIC],
+    isotopes={M.DIC: True},
 )
 Reservoir(
     name="S_b",
     volume="3E16 m**3",  # surface box volume
-    concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"},
+    concentration={M.DIC: "2 umol/l", M.PO4: "0 umol/l"},
+    isotopes={M.DIC: True},
+    delta={M.DIC: 0},
 )
 Reservoir(
     name="D_b",
     volume="100E16 m**3",  # deeb box volume
-    concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"},
+    concentration={M.DIC: "2 umol/l", M.PO4: "0 umol/l"},
+    isotopes={M.DIC: True},
+    delta={M.DIC: 0},
 )
 
 ConnectionProperties(  # thermohaline downwelling
@@ -60,6 +66,7 @@ ConnectionProperties(
     rate={M.DIC: F_w_PO4 * Redfield, M.PO4: F_w_PO4},  # rate of flux
     ctype="regular",
     id="weathering",  # connection id
+    delta={M.DIC: 0},
 )
 
 # P-uptake by photosynthesis
@@ -80,6 +87,7 @@ ConnectionProperties(  #
     scale=Redfield * M.S_b.volume / tau,
     species=[M.DIC],
     id="OM_production",
+    alpha=-28,  # mUr
 )
 # P burial 
 ConnectionProperties(  #
@@ -89,6 +97,7 @@ ConnectionProperties(  #
     ref_flux=M.flux_summary(filter_by="primary_production",return_list=True)[0],
     scale={M.PO4: F_b, M.DIC: F_b * Redfield},
     id="burial",
+    alpha={M.DIC: 0},
 )
 
 M.run()
@@ -97,4 +106,4 @@ pl = data_summaries(
     [M.DIC, M.PO4],  # SpeciesProperties list 
     [M.S_b, M.D_b],  # Reservoir list
 )
-M.plot(pl, fn="po4_3.png")
+M.plot(pl, fn="po4_4.png")

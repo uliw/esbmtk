@@ -38,18 +38,18 @@ The default is to add the signal to a given connection. It is however also possi
         ctype="regular",
     )
     M.run()
-    M.plot([M.S_b.PO4, M.D_b.PO4, M.CR])
+    M.plot([M.S_b.PO4, M.D_b.PO4, M.CR], fn="po4_2.png")
     M.save_data()
 
 This will result in the following output:
 
 .. _sig:
 
-.. figure:: ./po4_1_with_signal.png
+.. figure:: ./po4_2.png
     :width: 400
 
 
-    Example output for the ``CR`` signal above. See ``po4_1_with_signal.py`` in the examples directory.
+    Example output for the ``CR`` signal above. See ``po4_2.py`` in the examples directory.
 
 Working with multiple species
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -174,80 +174,103 @@ One can now proceed to define the particulate phosphate transport as a function 
         [M.DIC, M.PO4],  # SpeciesProperties list 
         [M.S_b, M.D_b],  # Reservoir list
     )
-    M.plot(pl, fn="po4_2.png")
+    M.plot(pl, fn="po4_3.png")
 
 which results in the below plot. The full code is available in the examples directory as ``po4_2.py``
 
 .. _po4_2:
 
-.. figure:: ./po4_2.png
+.. figure:: ./po4_3.png
     :width: 400
 
 
-    Output of ``po4_2.py`` demonstrating the use of the ``data_summaries()`` function
+    Output of ``po4_3.py`` demonstrating the use of the ``data_summaries()`` function
 
 Adding isotopes
 ~~~~~~~~~~~~~~~
 
-Let's assume that the weathering flux of carbon has :math:`\delta`\ :sup:`13`\C value of 0 mUr, that photosynthesis fractionates by -28 mUr, and that organic matter burial does not import any carbon isotope fractionation. These changes require the following changes to the previous model code (the full code is available in the examples directory as ``po4_2_with_isotopes.py``):
+Let's assume that the weathering flux of carbon has :math:`\delta`\ :sup:`13`\C value of 0 mUr, that photosynthesis fractionates by -28 mUr, and that organic matter burial does not fractionate . These changes require the following changes to the previous model code (the full code is available in the examples directory as ``po4_4`` at `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_):
 
 1. Isotope ratios require non-zero concentrations to avoid a division by zero,
 
 2. You need to specify the initial isotope ratio for each reservoir
 
-3. You need to indicate for each reservoir that ``DIC`` requires isotope calculations
+3. Sources and Sinks require a flag for each Species that uses isotopes
 
-4. we need to specify the isotope ratio of the weathering flux
+4. You need to indicate for each reservoir that ``DIC`` requires isotope calculations
 
-5. we need to specify the fractionation factor during photosynthesis
+5. You  need to specify the isotope ratio of the weathering flux
+
+6. You  need to specify the fractionation factor during photosynthesis
+
+7. You need to specify the fractionation factor during burial
 
 .. code:: ipython
 
-    # 1, 2 & 3 and similar for the deep ocean box
+    SourceProperties(
+        name="weathering",
+        species=[M.PO4, M.DIC],
+        isotopes={M.DIC: True},
+    )
+    SinkProperties(
+        name="burial",
+        species=[M.PO4, M.DIC],
+        isotopes={M.DIC: True},
+    )
     Reservoir(
         name="S_b",
         volume="3E16 m**3",  # surface box volume
-        concentration={M.DIC: "1 umol/l", M.PO4: "0 umol/l"},
+        concentration={M.DIC: "2 umol/l", M.PO4: "0 umol/l"},
         isotopes={M.DIC: True},
         delta={M.DIC: 0},
     )
-
+    Reservoir(
+        name="D_b",
+        volume="100E16 m**3",  # deeb box volume
+        concentration={M.DIC: "2 umol/l", M.PO4: "0 umol/l"},
+        isotopes={M.DIC: True},
+        delta={M.DIC: 0},
+    )
     # 4 weathering flux
     ConnectionProperties(
         source=M.weathering,  # source of flux
         sink=M.S_b,  # target of flux
-        rate={M.DIC: F_w_OM, M.PO4: F_w_PO4},  # rate of flux
-        delta={M.DIC: 0},
-        ctype="regular",  # required!
+        rate={M.DIC: F_w_PO4 * Redfield, M.PO4: F_w_PO4},  # rate of flux
+        ctype="regular",
         id="weathering",  # connection id
+        delta={M.DIC: 0},
     )
-
     # 5 photosynthesis
-    Species2Species(  #
-        source=M.S_b.DIC,  # source of flux
-        sink=M.D_b.DIC,  # target of flux
+    ConnectionProperties(  #
+        source=M.S_b,  # source of flux
+        sink=M.D_b,  # target of flux
         ref_reservoirs=M.S_b.PO4,
         ctype="scale_with_concentration",
         scale=Redfield * M.S_b.volume / tau,
+        species=[M.DIC],
         id="OM_production",
         alpha=-28,  # mUr
     )
+    # Burial
+    ConnectionProperties(  #
+        source=M.D_b,  # source of flux
+        sink=M.burial,  # target of flux
+        ctype="scale_with_flux",
+        ref_flux=M.flux_summary(filter_by="primary_production",return_list=True)[0],
+        scale={M.PO4: F_b, M.DIC: F_b * Redfield},
+        id="burial",
+        alpha={M.DIC: 0},
+    )
 
-Running the previous model with these additional 5 lines, results in the following graph. Note that the run-time has been reduced to 500 years so that the graph does not just show the steady state and that the P-data is not shown.
+Running the previous model with these additional 7 lines, results in the following graph. Note that the run-time has been reduced to 500 years so that the graph does not just show the steady state and that the P-data is not shown.
 
 .. _po4_2_with_isotopes:
 
-.. figure:: ./po4_2_with_isotopes.png
+.. figure:: ./po4_4.png
     :width: 400
 
 
-    Output of ``po4_2_with_isotopes``.py= Note that the run-time has been reduced to 500 years, so that the graph does not just show the steady state. The upper box shows the gradual increase in DIC concentrations and the lower shows the corresponding isotope ratios. The system will achieve isotopic equilibrium within approximately 2000 years.
-
-Note that isotope calculations are only available if the respective ElementProperties instances contain the necessary data. Assuming that the model imported the ``Carbon`` element instance, you can query its properties like this:
-
-.. code:: ipython
-
-    print(M.Carbon)
+    Output of ``po4_4.py`` Note that the run-time has been reduced to 1000 years, so that the graph does not just show the steady state. The upper box shows the gradual increase in DIC concentrations and the lower shows the corresponding isotope ratios. The system will achieve isotopic equilibrium within approximately 2000 years.
 
 Using many boxes
 ~~~~~~~~~~~~~~~~
@@ -367,7 +390,7 @@ In the following example, we build the ``connection_dictinary`` in a more explic
     }
     create_bulk_connections(c_dict, M, mt="1:1")
 
-In the last example, we use the ``gen_dict_entries`` function to extract a list of connection keys that can be used in the ``connection_dictionary`` . The following code specifies to find all connection keys that match the particulate organic phosphor fluxes (``POM_P``) defined in the code above, and to replace them with a connection key that uses ``POM_DIC`` as id-string. The function returns a list of fluxes and matching keys that can be used to specify new connections. See also the file ``ze.py`` in the example directory that contains extensive comments. It is also recommended to read through ``boudreau2010`` which uses a less complex setup.
+In the last example, we use the ``gen_dict_entries`` function to extract a list of connection keys that can be used in the ``connection_dictionary`` . The following code specifies to find all connection keys that match the particulate organic phosphor fluxes (``POM_P``) defined in the code above, and to replace them with a connection key that uses ``POM_DIC`` as id-string. The function returns a list of fluxes and matching keys that can be used to specify new connections. See also ``boudreau2010.py`` which uses a less complex setup (`https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_).
 
 .. code:: ipython
 

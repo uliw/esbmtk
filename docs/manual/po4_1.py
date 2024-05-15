@@ -91,5 +91,5 @@ ConnectionProperties(  #
 )
 
 M.run()
-M.plot([M.S_b.PO4, M.D_b.PO4])
+M.plot([M.S_b.PO4, M.D_b.PO4], fn="po4_1.png")
 M.save_data()
