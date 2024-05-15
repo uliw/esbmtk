@@ -269,55 +269,6 @@ class Reservoir(esbmtkBase):
         self.register.lrg.append(self)
 
 
-class SourceSink(esbmtkBase):
-    """
-    This is a meta class to setup a Source/Sink objects. These are not
-    actual reservoirs, but we stil need to have them as objects
-    Example::
-
-           Sink(name = "Pyrite",
-               species = SO4,
-               display_precision = number, optional, inherited from Model
-           )
-
-    where the first argument is a string, and the second is a reservoir handle
-
-    """
-
-    def __init__(self, **kwargs) -> None:
-        from esbmtk import SpeciesProperties, Model, SourceSinkProperties
-
-        # provide a dict of all known keywords and their type
-        self.defaults: dict[str, list[any, tuple]] = {
-            "name": ["None", (str)],
-            "species": ["None", (str, SpeciesProperties)],
-            "display_precision": [0.01, (int, float)],
-            "register": ["None", (str, Model, SourceSinkProperties)],
-            "delta": ["None", (int, float, str)],
-            "isotopes": [False, (bool)],
-        }
-
-        # provide a list of absolutely required keywords
-        self.lrk: list[str] = ["name", "species", "register"]
-
-        self.__initialize_keyword_variables__(kwargs)
-
-        self.loc: set[Species2Species] = set()  # set of connection objects
-
-        # legacy names
-        # if self.register != "None":
-        #    self.full_name = f"{self.name}.{self.register.name}"
-
-        self.parent = self.register
-        self.n = self.name
-        self.sp = self.species
-        self.mo = self.species.mo
-        self.u = self.species.mu + "/" + str(self.species.mo.bu)
-        self.lio: list = []
-
-        self.__register_name_new__()
-
-
 class SourceSinkProperties(esbmtkBase):
     """
     This is a meta class to setup  Source/Sink Groups. These are not
@@ -339,6 +290,7 @@ class SourceSinkProperties(esbmtkBase):
             "name": ["None", (str)],
             "species": ["None", (str, list)],
             "delta": [{}, dict],
+            "alpha": [{}, dict],
             "isotopes": [False, (dict, bool)],
             "register": ["None", (str, Model)],
         }
@@ -347,7 +299,7 @@ class SourceSinkProperties(esbmtkBase):
         self.lrk: list[str] = ["name", "species"]
         self.__initialize_keyword_variables__(kwargs)
 
-        # register this object 
+        # register this object
         self.mo = self.species[0].mo  # get model handle
         self.model = self.mo
         if self.register == "None":
@@ -362,29 +314,26 @@ class SourceSinkProperties(esbmtkBase):
         # loop over species names and setup sub-objects
         for i, s in enumerate(self.species):
             if not isinstance(s, SpeciesProperties):
-                raise SourceSinkPropertiesError(f"{s.n} needs to be a valid species name")
-
-            delta = self.delta[s] if s in self.delta else "None"
-            if isinstance(self.isotopes, dict):
+                raise SourceSinkPropertiesError(
+                    f"{s.n} needs to be a valid species name"
+                )
+            if s in self.isotopes:
                 isotopes = self.isotopes[s]
             else:
-                isotopes = self.isotopes
+                isotopes = False
 
             if type(self).__name__ == "SourceProperties":
                 a = Source(
                     name=f"{s.name}",
                     register=self,
                     species=s,
-                    delta=delta,
                     isotopes=isotopes,
                 )
-
             elif type(self).__name__ == "SinkProperties":
                 a = Sink(
                     name=f"{s.name}",
                     register=self,
                     species=s,
-                    delta=delta,
                     isotopes=isotopes,
                 )
             else:
@@ -534,7 +483,7 @@ class Signal(esbmtkBase):
         ]
 
         self.__initialize_keyword_variables__(kwargs)
-        
+
         # list of signals we are based on
         self.los: list[Signal] = []
 
@@ -589,7 +538,7 @@ class Signal(esbmtkBase):
         self.legend_right = self.data.legend_right
         # update isotope values
         # self.data.li = get_l_mass(self.data.m, self.data.d, self.sp.r)
-       
+
         self.__register_name_new__()
         self.mo.los.append(self)  # register with model
 
@@ -1481,7 +1430,13 @@ class SpeciesNoSet(SpeciesBase):
             "display_precision": [0.01, (int, float)],
             "register": [
                 "None",
-                (SourceProperties, SinkProperties, Reservoir, ConnectionProperties, str),
+                (
+                    SourceProperties,
+                    SinkProperties,
+                    Reservoir,
+                    ConnectionProperties,
+                    str,
+                ),
             ],
             "full_name": ["None", (str)],
             "isotopes": [False, (bool)],
@@ -1563,7 +1518,7 @@ class ExternalCode(SpeciesNoSet):
 
       def calc_carbonates(i: int, input_data: list, vr_data: list, params: list) -> None:
           # i = index of current timestep
-          # input_data = list of np.arrays, typically data from other Speciess
+          # input_data = list of np.arrays, typically data from other Species
           # vr_data = list of np.arrays created during instance creation (i.e. the vr data)
           # params = list of float values (at least one!)
           pass
