@@ -5,7 +5,7 @@ Extending ESBMTK
 ----------------
 
 The ElementProperties and SpeciesProperties Classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ESBMTK uses the :py:class:`esbmtk.esbmtk.SpeciesProperties()` and :py:class:`esbmtk.esbmtk.ElementProperties()` class primarily to control plot labeling. Each ``SpeciesProperties`` instance is a child of an ``ElementProperties`` instance. Within the model hierarchy,  one would access e.g., ``DIC`` as ``M.Carbon.DIC`` . However, this results in a lot of redundant code, so the ``SpeciesProperties`` instances are also registered with the ``Model`` instance.
 
@@ -61,7 +61,7 @@ To see a list of all known species for a given element use the ``list_species`` 
     M.Oxygen.list_species()
 
 Modifying/Extending an existing SpeciesProperties/ElementProperties definition
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Modifying and existing definition is done after the model has been loaded, but
 before running the solver. The following two lines, show, e.g, how to change the
@@ -75,7 +75,7 @@ isotope scale of Oxygen from mUR to permil, and how to set the plot concentratio
 see the :py:class:`esbmtk.esbmtk.SpeciesProperties()` and :py:class:`esbmtk.esbmtk.ElementProperties()` definitions for a full list of implemented properties.
 
 Adding custom SpeciesProperties definitions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To add a new species follow the examples in the ``species_definitions.py`` source code file. Provided you loaded ``Oxygen`` in the model definition, defining a new species instance for dissolved oxygen would look like this
 
@@ -91,7 +91,7 @@ To add a new species follow the examples in the ``species_definitions.py`` sourc
     print(M.O2aq)
 
 Adding a new ElementProperties and its species
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this example, I use Boron to demonstrate how to add a new element and its respective species. Note, however, that Boron is already part of ESBMTK, for this example it is simply not loaded.
 
@@ -216,9 +216,9 @@ Notes on the below code:
 
         Parameters
         ----------
-        source : Source | Species | SpeciesGroup
+        source : Source | Species | Reservoir
             A source
-        sink : Sink | Species | SpeciesGroup
+        sink : Sink | Species | Reservoir
             A sink
         species : SpeciesProperties
             A model species

@@ -16,7 +16,7 @@ For many modeling tasks, it is important to know a globally averaged hypsometric
     Reservoir(
         name="S_b",  # Name of reservoir group
         geometry=[-200, -800, 1],  # upper, lower, fraction
-        concentration="1 mmol/kg",
+        concentration="0 mmol/kg",
         species=M.DIC,
         register=M,
     )
@@ -40,8 +40,7 @@ This will register 3 new instance variables, and also create a hypsometry instan
     # return the total surface area of earth in m**2
     print(f"M.hyp.sa = {M.hyp.sa:.2e}")
 
-Internally, the hypsometric data is parameterized as a spline function that provides a reasonable fit between -6000 mbsl to 1000 above sea level. The data was fitted against hypsometric data derived from 
-Scripps’ SRTM15+V2.5.5 grid (Tozer et al., 2019, `https://doi.org/10.1029/2019EA000658 <https://doi.org/10.1029/2019EA000658>`_), which was down-sampled to a 5-minute grid before processing the hypsometry. The following figure shows a comparison between the spline fit, and the actual data. The file ``hypsometry.py`` provides further examples.
+The hypsometric data is based on the Scripps’ SRTM15+V2.5.5 grid (Tozer et al., 2019, `https://doi.org/10.1029/2019EA000658 <https://doi.org/10.1029/2019EA000658>`_), which was down-sampled to a 5-minute grid before processing the hypsometry. 
 
 .. _hyp:
 
@@ -218,7 +217,7 @@ see  the :py:func:`esbmtk.post_processing.carbonate_system_2_pp()` function for 
 Gas Exchange
 ~~~~~~~~~~~~
 
-ESBMTK implements gas exchange across the Air-Sea interface as a :py:class:`esbmtk.connections.Connect()` instance, between a :py:class:`esbmtk.extended_classes.GasReservoir()` and a :py:class:`esbmtk.esbmtk.Species()` instance. In the following example, we first declare a ``Gasreservoir`` and then connect it with a regular surface box. Note that the CO\ :sub:`2`\ gas transfer calculation requires that the respective surface reservoir carries the ``CO2aq`` tracer as calculated by the :py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry_carbonate_system_1.()` function since the gas-transfer depends on the dissolved CO\ :sub:`2`\ rather than on the DIC concentration.
+ESBMTK implements gas exchange across the Air-Sea interface as a :py:class:`esbmtk.connections.Species2Species()` instance, between a :py:class:`esbmtk.extended_classes.GasReservoir()` and a :py:class:`esbmtk.esbmtk.Species()` instance. In the following example, we first declare a ``Gasreservoir`` and then connect it with a regular surface box. Note that the CO\ :sub:`2`\ gas transfer calculation requires that the respective surface reservoir carries the ``CO2aq`` tracer as calculated by the :py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry_carbonate_system_1.()` function since the gas-transfer depends on the dissolved CO\ :sub:`2`\ rather than on the DIC concentration.
 
 .. code:: ipython
 
@@ -230,7 +229,7 @@ ESBMTK implements gas exchange across the Air-Sea interface as a :py:class:`esbm
         register=M,
     )
 
-    Connect(  # Example for CO2
+    Species2Species(  # Example for CO2
         source=M.CO2_At,  # GasReservoir
         sink=M.L_b.DIC,  # Reservoir
         species=M.CO2,
@@ -248,7 +247,7 @@ Defining gas transfer for O2  uses the same approach, but note the use of the ``
 
 .. code:: ipython
 
-    Connect(  # Example for O2
+    Species2Species(  # Example for O2
         source=M.O2_At,  # GasReservoir
         sink=M.L_b.O2,  # Reservoir
         species=M.O2,
@@ -277,7 +276,7 @@ where :math:`A` denotes the area, :math:`f_0` the weathering flux at :math:`p_{0
 
 .. code:: ipython
 
-    Connect(  # CaCO3 weathering
+    Species2Species(  # CaCO3 weathering
         source=M.Fw.DIC,  # source of flux
         sink=M.L_b.DIC,
         reservoir_ref=M.CO2_At,  # pCO2

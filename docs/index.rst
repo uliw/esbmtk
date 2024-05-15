@@ -21,7 +21,7 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   Introduction <manual/manual>
+   Introduction <manual/manual-1>
    Implementing more complex models <manual/manual-2>
    Seawater & Carbon Chemisrty <manual/manual-3>
    Extending ESBMTK <manual/manual-4>

@@ -2,7 +2,7 @@
 from esbmtk import (
     Model,  # the model class
     Species,  # the reservoir class
-    Connect,  # the connection class
+    Species2Species,  # the connection class
     Source,  # the source class
     Sink,  # sink class
     Signal,
@@ -61,7 +61,7 @@ Species(
     concentration="0 umol/l",  # initial concentration
 )
 
-Connect(
+Species2Species(
     source=M.weathering,  # source of flux
     sink=M.S_b,  # target of flux
     rate=F_w,  # rate of flux
@@ -70,7 +70,7 @@ Connect(
     signal=M.CR,
 )
 
-Connect(  # thermohaline downwelling
+Species2Species(  # thermohaline downwelling
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
@@ -78,7 +78,7 @@ Connect(  # thermohaline downwelling
     id="downwelling_PO4",
     # ref_reservoirs=M.S_b, defaults to the source instance
 )
-Connect(  # thermohaline upwelling
+Species2Species(  # thermohaline upwelling
     source=M.D_b,  # source of flux
     sink=M.S_b,  # target of flux
     ctype="scale_with_concentration",
@@ -86,7 +86,7 @@ Connect(  # thermohaline upwelling
     id="upwelling_PO4",
 )
 
-Connect(  #
+Species2Species(  #
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
@@ -94,7 +94,7 @@ Connect(  #
     id="primary_production",
 )
 
-Connect(  #
+Species2Species(  #
     source=M.D_b,  # source of flux
     sink=M.burial,  # target of flux
     ctype="scale_with_flux",

@@ -1,7 +1,7 @@
 # import classes from the esbmtk library
 from esbmtk import (
     Model,  # the model class
-    Connect,
+    Species2Species,
     SpeciesGroup,  # the reservoir class
     ConnectProperties,  # the connection class
     SourceProperties,  # the source class
@@ -82,7 +82,7 @@ ConnectProperties(  # thermohaline upwelling
 )
 
 # Primary production as a function of P-concentration
-Connect(  #
+Species2Species(  #
     source=M.S_b.DIC,  # source of flux
     sink=M.D_b.DIC,  # target of flux
     ref_reservoirs=M.S_b.PO4,
@@ -93,7 +93,7 @@ Connect(  #
 )
 
 # POP export as a funtion of OM export
-Connect(  #
+Species2Species(  #
     source=M.S_b.PO4,  # source of flux
     sink=M.D_b.PO4,  # target of flux
     ctype="scale_with_flux",
@@ -103,7 +103,7 @@ Connect(  #
 )
 
 # P burial
-Connect(  #
+Species2Species(  #
     source=M.D_b.PO4,  # source of flux
     sink=M.burial.PO4,  # target of flux
     ctype="scale_with_flux",
@@ -113,7 +113,7 @@ Connect(  #
 )
 
 # OM burial
-Connect(  #
+Species2Species(  #
     source=M.D_b.DIC,  # source of flux
     sink=M.burial.DIC,  # target of flux
     ctype="scale_with_flux",

@@ -93,53 +93,90 @@ While ESBMTK provides abstractions to efficiently define complex models, the fol
 Foundational Concepts
 ^^^^^^^^^^^^^^^^^^^^^
 
-ESBMTK uses a hierarchically structured object-oriented approach to describe a model. The topmost object is the model object that describes fundamental properties like run time, time step, elements and species information. All other objects derive from the model object. 
+ESBMTK uses a hierarchically structured object-oriented approach to describe a model. 
+ The topmost object is the model object that describes fundamental properties like run time, time step, elements and species information. All other objects derive from the model object. Reservoir objects define properties like volume or geometry, pressure and temperature, whereas species objects store initial conditions and concentration versus time data. Species Property objects store names and labels, and Element Property objects store e.g., isotopic reference ratios etc. 
 
-.. _m1:
+::
 
-.. figure:: ./model2.png
-    :width: 400
+    Model
+       ├── Reservoir_1
+       │   ├── Species_1
+       │   │   └── SpeciesProperties
+       │   │       └── ElementProperties
+       │   └── Species_2
+       │       └── SpeciesProperties
+       │           └── ElementProperties
+       └── Reservoir_2
+           ├── Species_1
+           │   └── SpeciesProperties
+           │       └── ElementProperties
+           └── Species_2
+               └── SpeciesProperties
+                   └── ElementProperties
 
+The relationship between two reservoirs is specified by a connection properties object that specifies which reservoir is the upstream source, and which is the downstream sink. It also specifies the type of connection, e.g., to scale the flux between from upstream to downstream by the respective species concentrations. 
 
-    Schematic outlining the object hierarchy in ESBMTK Speciess contain the data for a given species. Multiple reservoirs form a group that share common characteristics, e.g., volume, area, pressure, temperature etc. The relationship between reservoir groups (and/or Speciess) are defined by a connection object that defines e.g., a rate function etc. Connection objects can be dynamically modified by a Signal. Reservoirs have various sub-classes that provide access to e.g., hypsographic data, or perform carbonate chemistry calculations.
+::
 
-The model geometry is then parsed to build a suitable equation system.
+    Model
+       └── ConnectionProperties
+           ├── Species2Species_1
+           │   ├── Sink
+           │   │   └── Reservoir
+           │   │       └── Species_1
+           │   ├── Source
+           │   │   └── Reservoir
+           │   │       └── Species_1
+           │   └── Type
+           │       └── ProcessProperties
+           └── Species2Species_2
+               ├── Sink
+               │   └── Reservoir
+               │       └── Species_2
+               ├── Source
+               │   └── Reservoir
+               │       └── Species_2
+               └── Type
+                   └── ProcessProperties
+
+The model geometry is then parsed to build a suitable equation system which is passed to an ODE solver library which returns the results once integration has finished. Since Python objects are persistent, the object hierarchy is open to introspection using the regular Python syntax.
 
 Defining the model geometry and initial conditions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The below code examples are available at `https://github.com/uliw/esbmtk/tree/master/examples <https://github.com/uliw/esbmtk/tree/master/examples>`_
+The below code examples are available at `https://github.com/uliw/esbmtk-examples <https://github.com/uliw/esbmtk-examples>`_
 In the first step, one needs to define a model object that describes fundamental model parameters. The following code first loads the following ESBMTK classes that will help with model construction:
 
 - :py:class:`esbmtk.esbmtk.Model()`
 
-- :py:class:`esbmtk.esbmtk.Species()`
+- :py:class:`esbmtk.esbmtk.Reservoir()`
 
-- :py:class:`esbmtk.connections.Connection()` class
+- :py:class:`esbmtk.connections.ConnectionProperties()` class
 
-- :py:class:`esbmtk.esbmtk.Source()` class
+- :py:class:`esbmtk.esbmtk.SourceProperties()` class
 
-- :py:class:`esbmtk.esbmtk.Sink()` class
+- :py:class:`esbmtk.esbmtk.SinkProperties()` class
 
 - and ``Q_`` which belongs to the pint library.
 
 .. code:: ipython
+    :name: p1
 
     # import classes from the esbmtk library
     from esbmtk import (
         Model,  # the model class
-        Species,  # the reservoir class
-        Connection,  # the connection class
-        Source,  # the source class
-        Sink,  # sink class
+        Reservoir,  # the reservoir class
+        ConnectionProperties,  # the connection class
+        SourceProperties,  # the source class
+        SinkProperties,  # sink class
         Q_,  # Quantity operator
     )
-    # Note that complete code examples are available from 
 
 Next we use the ``Model`` class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
 Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/l' rather than mol/m\*\*3 or 'kg/s'. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. So your mileage may vary if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.
 
 .. code:: ipython
+    :name: p2
 
     # define the basic model parameters
     M = Model(
@@ -159,6 +196,7 @@ Next, we need to declare some boundary conditions. Most ESBMTK classes will be a
 To avoid this we have to manually parse the string into a quantity. This is done with the quantity operator ``Q_`` Note that ``Q_`` is not part of ESBMTk but imported from the ``pint`` library. 
 
 .. code:: ipython
+    :name: p3
 
     # now try this
     from esbmtk import Q_
@@ -168,6 +206,7 @@ To avoid this we have to manually parse the string into a quantity. This is done
 Most ESBMTK classes accept quantities, strings that represent quantities as well as numerical values. Weathering and burial fluxes are often defined in ``mol/year``, whereas ocean models use ``kg/year``. ESBMTK provides a method (``set_flux()`` )  that will automatically convert the input into the correct units. In this example, it is not necessary since the flux and the model both use ``mol``. It is however good practice to rely on the automatic conversion. Note that it makes a difference for the mol to kilogram conversion whether one uses ``M.P`` or ``M.PO4`` as the reference species!
 
 .. code:: ipython
+    :name: p4
 
     # boundary conditions
     F_w =  M.set_flux("45 Gmol", "year", M.P) # P @280 ppm (Filipelli 2002)
@@ -178,43 +217,39 @@ Most ESBMTK classes accept quantities, strings that represent quantities as well
 To set up the model geometry, we first use the :py:class:`esbmtk.esbmtk.Source()` and :py:class:`esbmtk.esbmtk.Species()` classes to create a source for the weathering flux, a sink for the burial flux, and instances of the surface and deep ocean boxes. Since we loaded the element definitions for phosphor in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
 
 .. code:: ipython
+    :name: p5
 
     # Source definitions
-    Source(
+    SourceProperties(
         name="weathering",
-        species=M.PO4,
-        register=M,  # i.e., the instance will be available as M.weathering
+        species=[M.PO4],
     )
-    Sink(
+    SinkProperties(
         name="burial",
-        species=M.PO4,
-        register=M,  #
+        species=[M.PO4],
     )
 
     # reservoir definitions
-    Species(
+    Reservoir(
         name="S_b",  # box name
-        species=M.PO4,  # species in box
-        register=M,  # this box will be available as M.S_b
         volume="3E16 m**3",  # surface box volume
-        concentration="0 umol/l",  # initial concentration
+        concentration={M.PO4: "0 umol/l"},  # initial concentration
     )
-    Species(
+    Reservoir(
         name="D_b",  # box name
-        species=M.PO4,  # species in box
-        register=M,  # this box will be available M.D_b
         volume="100E16 m**3",  # deeb box volume
-        concentration="0 umol/l",  # initial concentration
+        concentration={M.PO4: "0 umol/l"},  # initial concentration
     )
 
 Model processes
 ^^^^^^^^^^^^^^^
 
-For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework, this is accomplished through the :py:class:`esbmtk.connections.Connection()` class. To connect the weathering flux from the source object (M.w) to the surface ocean (M.S\ :sub:`b`\) we declare a connection instance describing this relationship as follows:
+For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework, this is accomplished through the :py:class:`esbmtk.connections.Species2Species()` class. To connect the weathering flux from the source object (M.w) to the surface ocean (M.S\ :sub:`b`\) we declare a connection instance describing this relationship as follows:
 
 .. code:: ipython
+    :name: p6
 
-    Connection(
+    ConnectionProperties(
         source=M.weathering,  # source of flux
         sink=M.S_b,  # target of flux
         rate=F_w,  # rate of flux
@@ -227,16 +262,16 @@ Unless the ``register`` keyword is given, connections will be automatically regi
 To map the process of thermohaline circulation, we connect the surface and deep ocean boxes using a connection type that scales the mass transfer as a function of the concentration in a given reservoir (``ctype ="scale_with_concentration"`` ). The concentration data is taken from the reference reservoir which defaults to the source reservoir. As such, in most cases, the ``ref_reservoirs`` keyword can be omitted. The ``scale`` keyword can be a string or a numerical value. If it is provided as a string ESBMTK will map the value into model units. Note that the connection class does not require the ``name`` keyword. Rather the name is derived from the source and sink reservoir instances. Since reservoir instances can have more than one connection (i.e., surface to deep via downwelling, and surface to deep via primary production), it is required to set the ``id`` keyword.
 
 .. code:: ipython
+    :name: p7
 
-    Connection(  # thermohaline downwelling
+    ConnectionProperties(  # thermohaline downwelling
         source=M.S_b,  # source of flux
         sink=M.D_b,  # target of flux
         ctype="scale_with_concentration",
         scale=thc,
         id="downwelling_PO4",
-        # ref_reservoirs=M.S_b, defaults to the source instance
     )
-    Connection(  # thermohaline upwelling
+    ConnectionProperties(  # thermohaline upwelling
         source=M.D_b,  # source of flux
         sink=M.S_b,  # target of flux
         ctype="scale_with_concentration",
@@ -244,16 +279,18 @@ To map the process of thermohaline circulation, we connect the surface and deep 
         id="upwelling_PO4",
     )
 
-There are several ways to define biological export production, e.g., as a function of the upwelling PO\ :sub:`4`\, or as a function of the residence time of PO\ :sub:`4`\ in the surface ocean. Here we follow Glover (2011) and use the residence time :math:`\tau` = 100 years.
+There are several ways to define biological export production, e.g., as a function of the upwelling PO\ :sub:`4`\, or as a function of the residence time of PO\ :sub:`4`\ in the surface ocean. Here we follow Glover (2011) and use the residence time :math:`\tau` = 100 years. Note that the below code species explicitly specifies the species that is affected by this process.
 
 .. code:: ipython
+    :name: p8
 
-    Connection(  #
+    ConnectionProperties(  #
         source=M.S_b,  # source of flux
         sink=M.D_b,  # target of flux
         ctype="scale_with_concentration",
         scale=M.S_b.volume / tau,
         id="primary_production",
+        species=[M.PO4],  # apply this only to PO4
     )
 
 We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity or use the previously calculated flux. We can query the export productivity using the ``id_string`` of the above connection with the
@@ -266,18 +303,19 @@ We require one more connection to describe the burial of P in the sediment. We d
 The ``flux_summary()`` method will return a list of matching fluxes but since there is only one match, we can simply use  the first result, and use it to define the phosphor burial as a consequence of export production in the following way:
 
 .. code:: ipython
+    :name: p9
 
-    Connection(  #
+    ConnectionProperties(  #
         source=M.D_b,  # source of flux
         sink=M.burial,  # target of flux
         ctype="scale_with_flux",
-        ref_flux=M.flux_summary(filter_by="primary_production", return_list=True)[0],
+        ref_flux=M.flux_summary(filter_by="primary_production",return_list=True)[0],
         scale=F_b,
         id="burial",
+        species=[M.PO4],
     )
 
-Running the above code (see the file ``po4_1.py`` in the examples directory or [[`https://github.com/uliw/esbmtk/blob/master/examples/ <https://github.com/uliw/esbmtk/blob/master/examples/>`_][on github])
-results in the following graph:
+Running the above code (see the file ``po4_1.py`` at `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_) and results in the following graph:
 
 .. _po41:
 
@@ -294,9 +332,10 @@ Running the model, visualizing and saving the results
 To run the model, use the ``run()`` method of the model instance, and plot the results with the ``plot()`` method. This method accepts a list of ESBMTK instances, that will be plotted in a common window. Without further arguments, the plot will also be saved as a pdf file where ``filename`` defaults to the name of the model instance. The ``save_data()`` method will create (or recreate) the ``data`` directory which will then be populated by csv-files. 
 
 .. code:: ipython
+    :name: p10
 
     M.run()
-    M.plot([M.S_b, M.D_b])
+    M.plot([M.S_b.PO4, M.D_b.PO4])
     M.save_data()
 
 Saving/restoring the model state

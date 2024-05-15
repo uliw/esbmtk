@@ -7,33 +7,39 @@ Adding Complexity
 Model forcing
 ~~~~~~~~~~~~~
 
-ESBMTK realizes model forcing through the :py:class:`esbmtk.extended_classes.Signal()` class. Once defined, a signal instance can be associated with a :py:class:`esbmtk.connections.Connect()` instance that will then act on the associated connection. This class provides the following keywords to create a signal:
+ESBMTK realizes model forcing through the :py:class:`esbmtk.extended_classes.Signal()` class. Once defined, a signal instance can be associated with a :py:class:`esbmtk.connections.Species2Species()` instance that will then act on the associated connection. This class provides the following keywords to create a signal:
 
 - ``square()``, ``pyramid()``, ``bell()``  These are defined by specifying the signal start time (relative to the model time), its size (as mass) and duration, or as duration and magnitude (see the example below)
 
 - ``filename()`` a string pointing to a CSV file that specifies the following columns: ``Time [yr]``, ``Rate/Scale [units]``, ``delta value [dimensionless]`` The class will attempt to convert the data into the correct model units. This process is however not very robust.
 
-The default is to add the signal to a given connection. It is however also possible to use the signal data as a scaling factor. Signals are cumulative, i.e., complex signals are created by adding one signal to another (i.e., Snew = S1 + S2). Using the P-cycle model from the previous chapter (see ``po4_1.py`` in the examples directory) we can add a signal by first defining a signal instance, and then associating the instance with a weathering connection instance:
+The default is to add the signal to a given connection. It is however also possible to use the signal data as a scaling factor. Signals are cumulative, i.e., complex signals are created by adding one signal to another (i.e., Snew = S1 + S2). Using the P-cycle model from the previous chapter (see ``po4_1.py``) we can add a signal by first defining a signal instance, and then associating the instance with a weathering connection instance (this model is available as ``po4_2.p4`` see `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_)
 
 .. code:: ipython
+
+    from esbmtk import Signal
 
     Signal(
         name="CR",  # Signal name
         species=M.PO4,  # SpeciesProperties
-        start="3 Myrs",
+        start="1 Myrs",
         shape="pyramid",
         duration="1 Myrs",
         mass="45 Pmol",
-        register=M,
     )
 
-    Connect(
+    ConnectionProperties(
         source=M.weathering,  # source of flux
-        sink=M.sb,  # target of flux
+        sink=M.S_b,  # target of flux
         rate=F_w,  # rate of flux
         id="river",  # connection id
         signal=M.CR,
+        species=[M.PO4],
+        ctype="regular",
     )
+    M.run()
+    M.plot([M.S_b.PO4, M.D_b.PO4, M.CR])
+    M.save_data()
 
 This will result in the following output:
 
@@ -48,18 +54,19 @@ This will result in the following output:
 Working with multiple species
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The basic building blocks introduced so far, are sufficient to create a model, but not necessarily convenient when a model contains more than one species. ESBMTK addresses this through the :py:class:`esbmtk.extended_classes.Reservoir.()` class, which allows to group of several :py:class:`esbmtk.esbmtk.Species()` instances.
-instances. A  ``Reservoir`` shares common properties. e.g., the volume and name of a given box, as well as the connection properties. In other words, in a multi-species model, one does not have to specify connections for each species, rather, it is sufficient to specify the connection type for the  ``Reservoir`` instance. Similarly, there are classes to group sources, sinks and connections.
-
-Using the previous example of a simple P-cycle model, we now express the P-cycling as a function of photosynthetic organic matter (OM) production and remineralization. First, we import the new classes and we additionally load the species definitions for carbon.
+The basic building blocks introduced so far, are sufficient to create a single species model. Adding further species, is straightforward. First one needs to import the species definitions. They than can be simply used by extending the dictionaries and lists used in the previous example.
+Using the previous example of a simple P-cycle model, we now express the P-cycling as a function of photosynthetic organic matter (OM) production and remineralization. First, we import the new classes and we additionally load the species definitions for carbon (this code is available as ``po4_3.p4`` see `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_).
 
 .. code:: ipython
 
     from esbmtk import (
+        Model,
         Reservoir,  # the reservoir class
-        ConnectProperties,  # the connection class
+        ConnectionProperties,  # the connection class
         SourceProperties,  # the source class
         SinkProperties,  # sink class
+        data_summaries,
+        Q_,
     )
     M = Model(
         stop="6 Myr",  # end time of model
@@ -67,74 +74,105 @@ Using the previous example of a simple P-cycle model, we now express the P-cycli
         element=["Phosphor", "Carbon"],  # list of species definitions
     )
 
-Setting up a group source, is similar to a single Source, except that we now specify a species list:
-
-.. code:: ipython
+    # boundary conditions
+    F_w_PO4 =  M.set_flux("45 Gmol", "year", M.PO4) # P @280 ppm (Filipelli 2002)
+    tau = Q_("100 year")  # PO4 residence time in surface boxq
+    F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
+    thc = "20*Sv"  # Thermohaline circulation in Sverdrup
+    Redfield = 106 # C:P
 
     SourceProperties(
         name="weathering",
         species=[M.PO4, M.DIC],
-        register=M,  # i.e., the instance will be available as M.weathering
     )
-
-Defining a ``Reservoirgroup`` follows the same pattern, except that we use a dictionary so that we can specify the initial concentrations for each species as well:
-
-.. code:: ipython
-
+    SinkProperties(
+        name="burial",
+        species=[M.PO4, M.DIC],
+    )
     Reservoir(
         name="S_b",
         volume="3E16 m**3",  # surface box volume
         concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"},
-        register=M,
+    )
+    Reservoir(
+        name="D_b",
+        volume="100E16 m**3",  # deeb box volume
+        concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"},
     )
 
-The :py:class:`esbmtk.connections.ConnectProperties.()` class definition is equally straightforward, and the following expression will apply the thermohaline downwelling to all species in the ``M.S_b`` group.
+The :py:class:`esbmtk.connections.ConnectionProperties.()` class definition is equally straightforward, and the following expression will apply the thermohaline downwelling to all species in the ``M.S_b`` group.
 
 .. code:: ipython
 
-    ConnectProperties(  # thermohaline downwelling
+    ConnectionProperties(  # thermohaline downwelling
         source=M.S_b,  # source of flux
         sink=M.D_b,  # target of flux
         ctype="scale_with_concentration",
         scale=thc,
-        id="downwelling_PO4",
+        id="thc_up",
+    )
+    ConnectionProperties(  # thermohaline upwelling
+        source=M.D_b,  # source of flux
+        sink=M.S_b,  # target of flux
+        ctype="scale_with_concentration",
+        scale=thc,
+        id="thc_down",
     )
 
 It is also possible, to specify individual rates or scales using a dictionary, as in this example that sets two different weathering fluxes:
 
 .. code:: ipython
 
-    ConnectProperties(
+    ConnectionProperties(
         source=M.weathering,  # source of flux
         sink=M.S_b,  # target of flux
-        rate={M.DIC: F_w_OM, M.PO4: F_w_PO4},  # rate of flux
+        rate={M.DIC: F_w_PO4 * Redfield, M.PO4: F_w_PO4},  # rate of flux
         ctype="regular",
-        id="river",  # connection id
+        id="weathering",  # connection id
     )
 
 The following code defines primary production and its effects on DIC in the surface and deep box. The example is a bit contrived but demonstrates the principle. Note the use of the ``ref_reservoirs`` keyword and ``Redfield`` ratio
 
 .. code:: ipython
 
-    # Primary production as a function of P-concentration
-    Connect(  #
-        source=M.S_b.DIC,  # source of flux
-        sink=M.D_b.DIC,  # target of flux
+    # P-uptake by photosynthesis
+    ConnectionProperties(  #
+        source=M.S_b,  # source of flux
+        sink=M.D_b,  # target of flux
+        ctype="scale_with_concentration",
+        scale=M.S_b.volume / tau,
+        id="primary_production",
+        species=[M.PO4],  # apply this only to PO4
+    )
+    # OM Primary production as a function of P-concentration
+    ConnectionProperties(  #
+        source=M.S_b,  # source of flux
+        sink=M.D_b,  # target of flux
         ref_reservoirs=M.S_b.PO4,
         ctype="scale_with_concentration",
         scale=Redfield * M.S_b.volume / tau,
+        species=[M.DIC],
         id="OM_production",
+    )
+    # P burial 
+    ConnectionProperties(  #
+        source=M.D_b,  # source of flux
+        sink=M.burial,  # target of flux
+        ctype="scale_with_flux",
+        ref_flux=M.flux_summary(filter_by="primary_production",return_list=True)[0],
+        scale={M.PO4: F_b, M.DIC: F_b * Redfield},
+        id="burial",
     )
 
 One can now proceed to define the particulate phosphate transport as a function of organic matter export
 
 .. code:: ipython
 
+    M.run()
     pl = data_summaries(
         M,  # model instance 
         [M.DIC, M.PO4],  # SpeciesProperties list 
         [M.S_b, M.D_b],  # Reservoir list
-        M,
     )
     M.plot(pl, fn="po4_2.png")
 
@@ -168,7 +206,6 @@ Let's assume that the weathering flux of carbon has :math:`\delta`\ :sup:`13`\C 
     # 1, 2 & 3 and similar for the deep ocean box
     Reservoir(
         name="S_b",
-        register=M,
         volume="3E16 m**3",  # surface box volume
         concentration={M.DIC: "1 umol/l", M.PO4: "0 umol/l"},
         isotopes={M.DIC: True},
@@ -176,7 +213,7 @@ Let's assume that the weathering flux of carbon has :math:`\delta`\ :sup:`13`\C 
     )
 
     # 4 weathering flux
-    ConnectProperties(
+    ConnectionProperties(
         source=M.weathering,  # source of flux
         sink=M.S_b,  # target of flux
         rate={M.DIC: F_w_OM, M.PO4: F_w_PO4},  # rate of flux
@@ -186,7 +223,7 @@ Let's assume that the weathering flux of carbon has :math:`\delta`\ :sup:`13`\C 
     )
 
     # 5 photosynthesis
-    Connect(  #
+    Species2Species(  #
         source=M.S_b.DIC,  # source of flux
         sink=M.D_b.DIC,  # target of flux
         ref_reservoirs=M.S_b.PO4,
@@ -208,7 +245,7 @@ Running the previous model with these additional 5 lines, results in the followi
 
 Note that isotope calculations are only available if the respective ElementProperties instances contain the necessary data. Assuming that the model imported the ``Carbon`` element instance, you can query its properties like this:
 
-.. code:: jupyter-python
+.. code:: ipython
 
     print(M.Carbon)
 
@@ -255,7 +292,7 @@ For this function to work correctly, box names need to be specified following th
 
     create_reservoirs(box_names, initial_conditions, M)
 
-similarly, we can leverage  Python dictionaries to set up the transport matrix. The dictionary key must use the following template: ``boxname_to_boxname@id`` where the ``id`` is used similarly to the connection id in the ``Connect`` and ``ConnectProperties`` classes. So to specify thermohaline upwelling from the Atlantic deep water to the Atlantic intermediate water you would use ``A_db_to_A_ib@thc``  as the dictionary key, followed by the rate. The following examples define the thermohaline transport in a LOSCAR-type model:
+similarly, we can leverage  Python dictionaries to set up the transport matrix. The dictionary key must use the following template: ``boxname_to_boxname@id`` where the ``id`` is used similarly to the connection id in the ``Species2Species`` and ``ConnectionProperties`` classes. So to specify thermohaline upwelling from the Atlantic deep water to the Atlantic intermediate water you would use ``A_db_to_A_ib@thc``  as the dictionary key, followed by the rate. The following examples define the thermohaline transport in a LOSCAR-type model:
 
 .. code:: ipython
 
