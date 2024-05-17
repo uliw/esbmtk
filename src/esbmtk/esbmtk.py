@@ -471,9 +471,7 @@ class Model(esbmtkBase):
         """Plot all objects specified in pl
 
         :param pl: a list of ESBMTK instance (e.g., reservoirs)
-
         optional keywords: fn = filename, defaults to the Model name
-
         Example::
 
             M.plot([sb.PO4, sb.DIC], fn='test.pdf')
@@ -484,6 +482,7 @@ class Model(esbmtkBase):
         if pl is None:
             pl = []
         filename = kwargs.get("fn", f"{self.n}.pdf")
+        plot_title = kwargs.get("title", "None")
         noo: int = len(pl)
         size, [row, col] = plot_geometry(noo)  # adjust layout
         fig, ax = plt.subplots(row, col)  # row, col
@@ -507,7 +506,10 @@ class Model(esbmtkBase):
 
         # ste plot parameters
         plt.style.use(self.plot_style)
-        fig.canvas.manager.set_window_title(f"{self.n} Species")
+        if plot_title == "None":
+           fig.canvas.manager.set_window_title(f"{self.n} Species")
+        else:
+           fig.canvas.manager.set_window_title(plot_title)
         fig.set_size_inches(size)
 
         i = 0  # loop over objects
