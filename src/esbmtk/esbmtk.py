@@ -642,6 +642,7 @@ class Model(esbmtkBase):
                 t_eval=self.time_ode,
                 first_step=Q_("1 second").to(self.t_unit).magnitude,
                 max_step=self.max_step,
+                vectorized=False,
             )
 
         print(

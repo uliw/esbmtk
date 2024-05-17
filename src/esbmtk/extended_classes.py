@@ -1928,7 +1928,7 @@ class GasReservoir(SpeciesBase):
                             species = CO2,    # SpeciesProperties handle
                             delta = 20,       # initial delta - optional (defaults  to 0)
                             reservoir_mass = quantity # total mass of all gases
-                                             defaults to 1.833E20 mol
+                                             defaults to 1.78E20 mol
                             species_ppm =  number # concentration in ppm
                             plot = "yes"/"no", defaults to yes
                             plot_transform_c = a function reference, optional (see below)
@@ -1968,7 +1968,7 @@ class GasReservoir(SpeciesBase):
             "name": ["None", (str)],
             "species": ["None", (str, SpeciesProperties)],
             "delta": [0, (int, float)],
-            "reservoir_mass": ["1.833E20 mol", (str, Q_)],
+            "reservoir_mass": ["1.7786E20 mol", (str, Q_)],
             "species_ppm": ["None", (str, Q_)],
             "plot_transform_c": ["None", (str, Callable)],
             "legend_left": ["None", (str)],
@@ -1992,9 +1992,10 @@ class GasReservoir(SpeciesBase):
         ]
 
         self.__initialize_keyword_variables__(kwargs)
-
         self.__set_legacy_names__(kwargs)
 
+        # we re-use the volume instance variable but instead of a
+        # volume, we use it store the mass. Use .m instead?
         self.v_unit = Q_("mole").units
 
         # setup base data
@@ -2052,7 +2053,7 @@ class GasReservoir(SpeciesBase):
             self.lc = np.empty(0)
             self.vc = np.empty(0)
 
-        self.mo.lor.append(self)  # add fthis reservoir to the model
+        self.mo.lor.append(self)  # add this reservoir to the model
         self.mo.lic.append(self)  # reservoir type object list
         # register instance name in global name space
 
