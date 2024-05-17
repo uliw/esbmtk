@@ -35,13 +35,6 @@ print(f"M.hyp.sa = {M.hyp.sa:.2e}")
 #+END_SRC
 The hypsometric data is based on the Scripps’ SRTM15+V2.5.5 grid (Tozer et al., 2019, https://doi.org/10.1029/2019EA000658), which was down-sampled to a 5-minute grid before processing the hypsometry. 
 
-#+attr_org: :width 600
-#+attr_rst: :width 400
-#+attr_latex: :width 0.6\textwidth
-#+name: hyp
-#+caption:  Comparison between spline fit, and the actual data.
-[[./hyp.png]]
-
 
 ** Seawater
 
@@ -179,7 +172,6 @@ ESBMTK implements gas exchange across the Air-Sea interface as a @@rst::py:class
 GasReservoir(
     name="CO2_At",
     species=M.CO2,
-    reservoir_mass="1.833E20 mol",
     species_ppm="280 ppm",
     register=M,
 )
