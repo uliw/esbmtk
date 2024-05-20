@@ -160,7 +160,8 @@ class SeawaterConstants(esbmtkBase):
         self.boh4 = results["BOH4"] * 1e-6
         self.pH_free = results["pH_free"]
         self.pH_total = results["pH_total"]
-        self.hplus = 10**-self.pH_total
+        self.pH = results["pH"]
+        self.hplus = 10**-self.pH
         self.ca2 = results["total_calcium"] * 1e-6
         self.so4 = results["total_sulfate"] * 1e-6
         self.ST = self.so4 * self.salinity / 35
