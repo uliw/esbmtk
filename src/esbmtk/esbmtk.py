@@ -545,12 +545,12 @@ class Model(esbmtkBase):
                 i = i + 1
 
         fig.subplots_adjust(top=0.88)
-        if kwargs.get("no_show", False):
+        if not kwargs.get("no_show", False):
             fig.tight_layout()
             plt.show(block=False)  # create the plot windows
             fig.savefig(filename)
 
-        return fig, axs
+        return plt, fig, axs
 
     def run(self, **kwargs) -> None:
         """Loop over the time vector, and for each time step, calculate the
