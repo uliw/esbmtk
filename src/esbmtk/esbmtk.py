@@ -15,6 +15,7 @@ General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 from __future__ import annotations
 from pandas import DataFrame
 import time
@@ -467,23 +468,35 @@ class Model(esbmtkBase):
         for r in self.lvr:
             r.__merge_temp_results__()
 
-    def plot(self, pl: tp.List = None, **kwargs) -> None:
-        """Plot all objects specified in pl
+    def plot(self, pl: tp.List = None, **kwargs) -> tuple:
+        """Plot all objects specified in ``pl``.
 
-        :param pl: a list of ESBMTK instance (e.g., reservoirs)
-        optional keywords: fn = filename, defaults to the Model name
-        Example::
+        :param pl: a list of ESBMTK instances (e.g., reservoirs)
+        :kwargs: a dict with optional keywords
 
-            M.plot([sb.PO4, sb.DIC], fn='test.pdf')
+        - fn: a string, optional, default is 'model_name'. The filename to save the plot.
+        - title: a string to set the optional plot title
+        - no_show: bool, if set to True, do not show & save figure. Useful
+          to if one needs to add figure elements manually.
 
-        will plot sb.PO4 and sb.DIC and save the plot as 'test.pdf'
+        :returns: a tuple with the
+        figure instance, list of axs objects
+
+
+        :Example:
+
+        .. code-block:: python
+
+        M.plot([sb.PO4, sb.DIC], fn='test.pdf')
+
+        The above code will plot ``sb.PO4`` and ``sb.DIC`` and save the plot as 'test.pdf'.
         """
 
         if pl is None:
             pl = []
         if not isinstance(pl, list):
             pl = [pl]
-            
+
         filename = kwargs.get("fn", f"{self.n}.pdf")
         plot_title = kwargs.get("title", "None")
         noo: int = len(pl)
@@ -510,9 +523,9 @@ class Model(esbmtkBase):
         # ste plot parameters
         plt.style.use(self.plot_style)
         if plot_title == "None":
-           fig.canvas.manager.set_window_title(f"{self.n} Species")
+            fig.canvas.manager.set_window_title(f"{self.n} Species")
         else:
-           fig.canvas.manager.set_window_title(plot_title)
+            fig.canvas.manager.set_window_title(plot_title)
         fig.set_size_inches(size)
 
         i = 0  # loop over objects
@@ -532,9 +545,12 @@ class Model(esbmtkBase):
                 i = i + 1
 
         fig.subplots_adjust(top=0.88)
-        fig.tight_layout()
-        plt.show(block=False)  # create the plot windows
-        fig.savefig(filename)
+        if kwargs.get("no_show", False):
+            fig.tight_layout()
+            plt.show(block=False)  # create the plot windows
+            fig.savefig(filename)
+
+        return fig, axs
 
     def run(self, **kwargs) -> None:
         """Loop over the time vector, and for each time step, calculate the
@@ -973,7 +989,10 @@ class SpeciesProperties(esbmtkBase):
             "element": ["None", (ElementProperties, str)],
             "display_as": [kwargs["name"], (str)],
             "m_weight": [0, (int, float, str)],
-            "register": [kwargs["element"], (Model, ElementProperties, Species, GasReservoir)],
+            "register": [
+                kwargs["element"],
+                (Model, ElementProperties, Species, GasReservoir),
+            ],
             "parent": ["None", (Model, ElementProperties, Species, GasReservoir)],
             "flux_only": [False, (bool)],
             "logdata": [False, (bool)],
@@ -1622,11 +1641,25 @@ class Species(SpeciesBase):
             "display_precision": [0.01, (int, float)],
             "register": [
                 "None",
-                (SourceProperties, SinkProperties, Reservoir, ConnectionProperties, Model, str),
+                (
+                    SourceProperties,
+                    SinkProperties,
+                    Reservoir,
+                    ConnectionProperties,
+                    Model,
+                    str,
+                ),
             ],
             "parent": [
                 "None",
-                (SourceProperties, SinkProperties, Reservoir, ConnectionProperties, Model, str),
+                (
+                    SourceProperties,
+                    SinkProperties,
+                    Reservoir,
+                    ConnectionProperties,
+                    Model,
+                    str,
+                ),
             ],
             "full_name": ["None", (str)],
             "seawater_parameters": ["None", (dict, str)],
