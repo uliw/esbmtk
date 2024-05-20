@@ -198,7 +198,7 @@ class hypsometry(esbmtkBase):
                 )
             )
 
-        return self.hypdata[i]
+        return self.hypdata[i,1]
 
     def area_dz(self, u: float, l: float) -> float:
         """calculate the area between two elevation datums
