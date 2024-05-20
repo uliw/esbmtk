@@ -50,7 +50,7 @@ The process for cs2 is analogous
 """
 
 # @njit(fastmath=True)
-def get_hplus(dic, ta, h0, boron, K1, K2, KW, KB) -> float:
+def get_hplus(dic, ta, h0, boron, K1, K1K2, KW, KB) -> float:
     """Calculate H+ concentration based on a previous estimate
     [H+]. After Follows et al. 2006,
     doi:10.1016/j.ocemod.2005.05.004
@@ -60,7 +60,7 @@ def get_hplus(dic, ta, h0, boron, K1, K2, KW, KB) -> float:
     :param h0: initial guess for H+ mol/kg
     :param boron: boron concentration
     :param K1: Ksp1
-    :param K2: Ksp2
+    :param K1K2: Ksp1 * Ksp2
     :param KW: K_water
     :param KB: K_boron
 
@@ -71,7 +71,7 @@ def get_hplus(dic, ta, h0, boron, K1, K2, KW, KB) -> float:
     fg = h0 - boh4 - oh
     cag = ta + fg
     gamm = dic / cag
-    dummy = (1 - gamm) ** 2 * K1**2 - 4.0 * K1 * K2 * (1.0 - 2.0 * gamm)
+    dummy = (1 - gamm) ** 2 * K1**2 - 4.0 * K1K2 * (1.0 - 2.0 * gamm)
 
     return 0.5 * ((gamm - 1.0) * K1 + sqrt(dummy))
 
@@ -102,7 +102,7 @@ def carbonate_system_1(dic, ta, hplus_0, co2aq_0, p) -> tuple:
     if isotopes:  # dic = (x1, x2)
         dic = dic[0]
 
-    hplus = get_hplus(dic, ta, hplus_0, boron, k1, k2, KW, KB)
+    hplus = get_hplus(dic, ta, hplus_0, boron, k1, k1k2, KW, KB)
     co2aq = dic / (1 + k1 / hplus + k1k2 / hplus**2)
     dCdt_Hplus = hplus - hplus_0
     dCdt_co2aq = co2aq - co2aq_0
@@ -214,7 +214,7 @@ def carbonate_system_2(
         dic_db = dic_t_db
         dic_sb = dic_t_sb
 
-    hplus = get_hplus(dic_db, ta_db, hplus_0, boron, k1, k2, KW, KB)
+    hplus = get_hplus(dic_db, ta_db, hplus_0, boron, k1, k1k2, KW, KB)
     co3 = max(dic_db / (1 + hplus / k2 + hplus**2 / k1k2), 3.7e-05)
 
     # ---------- compute critical depth intervals eq after  Boudreau (2010)
