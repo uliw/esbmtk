@@ -77,7 +77,7 @@ def get_initial_conditions(
     atol: list = []  # list of tolerances for ode solver
     # dict that contains the reservoir_handle as key and the index positions
     # for c and l as a list
-    icl: dict[Species, list[int, int]] = {}
+    icl: dict[Species, List[int, int]] = {}
     cpl: list = []  # list of reservoirs that are computed
     ipl: list = []  # list of static reservoirs that serve as input
 
