@@ -88,7 +88,7 @@ class hypsometry(esbmtkBase):
         }
 
         # required keywords
-        self.lrk: list = [
+        self.lrk: tp.List = [
             "name",
         ]
 
@@ -298,7 +298,7 @@ def get_box_geometry_parameters(box, fraction=1) -> None:
     """
     Calculate box volume and area from the data in box.
 
-    :param box: list or dict with the geometry parameters
+    :param box: tp.List or dict with the geometry parameters
     :fraction: 0 to 1 to specify a fractional part (i.e., Atlantic)
 
     If box is a list the first entry is the upper

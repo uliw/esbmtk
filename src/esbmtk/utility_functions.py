@@ -263,13 +263,13 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
                 if hasattr(M, key_str):
                     o = getattr(M, key_str)
                     if isinstance(o, Flux):
-                        o: list = [o]
+                        o: tp.List = [o]
                     elif isinstance(o, Species2Species):
-                        o: list = [getattr(o, "_F")]  # get flux handle
+                        o: tp.List = [getattr(o, "_F")]  # get flux handle
                     elif isinstance(o, Species | Reservoir):
-                        o: list = register_new_flux(rg, dict_key[2:], dict_value)
+                        o: tp.List = register_new_flux(rg, dict_key[2:], dict_value)
                     elif isinstance(o, Sink | SinkProperties):
-                        o: list = register_new_flux(rg, dict_key[2:], dict_value)
+                        o: tp.List = register_new_flux(rg, dict_key[2:], dict_value)
                     else:
                         raise ValueError(f"No recipie for {type(o)}")
                 else:
@@ -277,10 +277,10 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
 
             elif dict_key[:2] == "R_":  # is reservoir
                 if dict_key[2:] in M.lor:
-                    o: list = [getattr(M, dict_key)]
+                    o: tp.List = [getattr(M, dict_key)]
                 else:
                     r, sp = get_reservoir_reference(dict_key, M)
-                    o: list = register_new_reservoir(r, sp, dict_value)
+                    o: tp.List = register_new_reservoir(r, sp, dict_value)
 
             elif dict_key[:2] == "C_":  # is connection
                 raise NotImplementedError
@@ -323,7 +323,7 @@ def summarize_results(M: Model) -> dict():
     return results
 
 
-def find_matching_strings(s: str, fl: list[str]) -> bool:
+def find_matching_strings(s: str, fl: tp.List[str]) -> bool:
     """test if all elements of fl occur in s. Return True if yes,
     otherwise False
 
@@ -443,13 +443,13 @@ def set_y_limits(ax: plt.Axes, obj: any) -> None:
         ax.set_ylim(bottom, top)
 
 
-def is_name_in_list(n: str, l: list) -> bool:
+def is_name_in_list(n: str, l: tp.List) -> bool:
     """Test if an object name is part of the object list"""
 
     return any(e.full_name == n for e in l)
 
 
-def get_object_from_list(name: str, l: list) -> any:
+def get_object_from_list(name: str, l: tp.List) -> any:
     """Match a name to a list of objects. Return the object"""
 
     match: bool = False
@@ -464,7 +464,7 @@ def get_object_from_list(name: str, l: list) -> any:
         raise ValueError(f"Object = {o.full_name} has no matching flux {name}")
 
 
-def sort_by_type(l: list, t: list, m: str) -> list:
+def sort_by_type(l: tp.List, t: tp.List, m: str) -> list:
     """divide a list by type into new lists. This function will return a
     list and it is up to the calling code to unpack the list
 
@@ -495,15 +495,15 @@ def sort_by_type(l: list, t: list, m: str) -> list:
     return rl
 
 
-def get_object_handle(res: list, M: Model):
+def get_object_handle(res: tp.List, M: Model):
     """Test if the key is a global reservoir handle
     or exists in the model namespace
 
-    :param res: list of strings, or reservoir handles
+    :param res: tp.List of strings, or reservoir handles
     :param M: Model handle
     """
 
-    r_list: list = []
+    r_list: tp.List = []
 
     if not isinstance(res, list):
         res = [res]
@@ -546,7 +546,7 @@ def split_key(k: str, M: any) -> tp.Union[any, any, str]:
     return (source, sink, cid)
 
 
-def make_dict(keys: list, values: list) -> dict:
+def make_dict(keys: tp.List, values: tp.List) -> dict:
     """Create a dictionary from a list and value, or from
     two lists
 
@@ -559,13 +559,13 @@ def make_dict(keys: list, values: list) -> dict:
         else:
             raise ValueError("key and value list must be of equal length")
     else:
-        values: list = [values] * len(keys)
+        values: tp.List = [values] * len(keys)
         d: dict = dict(zip(keys, values))
 
     return d
 
 
-def get_typed_list(data: list) -> list:
+def get_typed_list(data: tp.List) -> list:
     tl = list()
     for x in data:
         tl.append(x)
@@ -682,11 +682,11 @@ def build_concentration_dicts(cd: dict, bg: dict) -> dict:
     """
 
     if isinstance(bg, dict):
-        box_names: list = bg.keys()
+        box_names: tp.List = bg.keys()
     elif isinstance(bg, list):
-        box_names: list = bg
+        box_names: tp.List = bg
     elif isinstance(bg, str):
-        box_names: list = [bg]
+        box_names: tp.List = [bg]
     else:
         raise ValueError("This should never happen")
 
@@ -701,7 +701,7 @@ def build_concentration_dicts(cd: dict, bg: dict) -> dict:
         td2[k] = v[1]
         td3[k] = v[2]
 
-    # box_names: list = bg.keys()
+    # box_names: tp.List = bg.keys()
     for bn in box_names:  # loop over box names
         icd[bn] = [td1, td2, td3]
 
@@ -730,7 +730,7 @@ def calc_volumes(bg: dict, M: any, h: any) -> list:
 
     # from esbmtk import hypsometry
 
-    v: list = []  # list of volumes
+    v: tp.List = []  # list of volumes
 
     for v in bg.values():
         a = v[0]
@@ -1046,7 +1046,7 @@ def get_name_only(o: any) -> any:
     )
 
 
-def get_simple_list(l: list) -> list:
+def get_simple_list(l: tp.List) -> list:
     """return a list which only has the full name
     rather than all the object properties
 
@@ -1066,7 +1066,7 @@ def show_dict(d: dict, mt: str = "1:1") -> None:
             x = get_simple_list(pv) if isinstance(pv, list) else get_name_only(pv)
 
 
-def find_matching_fluxes(l: list, filter_by: str, exclude: str) -> list:
+def find_matching_fluxes(l: tp.List, filter_by: str, exclude: str) -> list:
     """Loop over all reservoir in l, and extract the names of all fluxes
     which match the filter string. Return the list of names (not objects!)
 
@@ -1117,7 +1117,7 @@ def get_connection_keys(
     sb2db@POM, but db2s@POM
     """
 
-    cnc_l: list = []  # list of connection keys
+    cnc_l: tp.List = []  # list of connection keys
 
     for f in f_list:
         # get connection and flux name
@@ -1149,7 +1149,7 @@ def gen_dict_entries(M: Model, **kwargs) -> tuple(tuple, list):
 
     :param kwargs: keyword dictionary, known keys are ref_id, and raget_id, inverse
 
-    :return f_list: List of fluxes that match ref_id
+    :return f_list: tp.List of fluxes that match ref_id
 
     :return k_tuples: tuple of connection keys
 
@@ -1164,13 +1164,13 @@ def gen_dict_entries(M: Model, **kwargs) -> tuple(tuple, list):
 
     # find matching fluxes
     if isinstance(M, Model):
-        f_list: list = find_matching_fluxes(
+        f_list: tp.List = find_matching_fluxes(
             M.loc,
             filter_by=ref_id,
             exclude=exclude_str,
         )
     elif isinstance(M, list):
-        f_list: list = find_matching_fluxes(
+        f_list: tp.List = find_matching_fluxes(
             M,
             filter_by=ref_id,
             exclude=exclude_str,
@@ -1178,7 +1178,7 @@ def gen_dict_entries(M: Model, **kwargs) -> tuple(tuple, list):
     else:
         raise ValueError(f"gen_dict_entries: M must be list or Model, not {type(M)}")
 
-    k_tuples: list = get_connection_keys(
+    k_tuples: tp.List = get_connection_keys(
         f_list,
         ref_id,
         target_id,
@@ -1265,7 +1265,7 @@ def map_units(obj: any, v: any, *args) -> float:
 
     :param obj: connection object
     :param v: input string/number/quantity
-    :args: list of model base units
+    :args: tp.List of model base units
     :returns: number
 
     :raises ScaleError: if input cannot be mapped to a model unit
@@ -1301,14 +1301,14 @@ def map_units(obj: any, v: any, *args) -> float:
     return m
 
 
-def __find_flux__(reservoirs: list, full_name: str):
+def __find_flux__(reservoirs: tp.List, full_name: str):
     """Helper function to find a Flux object based on its full_name in the reservoirs
     in the list of provided reservoirs.
 
     PRECONDITIONS: full_name must contain the full_name of the Flux
 
     Parameters:
-        reservoirs: List containing all reservoirs
+        reservoirs: tp.List containing all reservoirs
         full_name: str specifying the full name of the flux (boxes.flux_name)
     """
     needed_flux = None
@@ -1371,7 +1371,7 @@ def dict_alternatives(d: dict, e: str, a: str) -> any:
     return r
 
 
-def __checkkeys__(lrk: list, lkk: list, kwargs: dict) -> None:
+def __checkkeys__(lrk: tp.List, lkk: tp.List, kwargs: dict) -> None:
     """check if the mandatory keys are present
 
     lrk = list of required keywords
@@ -1399,7 +1399,7 @@ def __checkkeys__(lrk: list, lkk: list, kwargs: dict) -> None:
         elif k not in kwargs:
             raise ValueError(f"You need to specify a value for {k}")
 
-    tl: list[str] = [k for k, v in lkk.items()]
+    tl: tp.List[str] = [k for k, v in lkk.items()]
     # test if we know all keys
     for k in kwargs:
         if k not in lkk:
@@ -1426,15 +1426,15 @@ def __addmissingdefaults__(lod: dict, kwargs: dict) -> dict:
 
 def data_summaries(
     M: Model,
-    species_names: list,
-    box_names: list,
+    species_names: tp.List,
+    box_names: tp.List,
     register_with="None",
 ) -> list:
     """Group results by species and Reservoirs
 
     :param M: model instance
-    :param species_names: list of species instances
-    :param box_names: list of Reservoir instances
+    :param species_names: tp.List of species instances
+    :param box_names: tp.List of Reservoir instances
     :param register_with: defaults to M
     :returns pl: a list of datafield instance to be plotted
 

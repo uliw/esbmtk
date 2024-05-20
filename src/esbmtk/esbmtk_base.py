@@ -93,7 +93,7 @@ class input_parsing(object):
         self.__update_dict_entries__(self.defaults, kwargs)
         self.update = True
 
-    def __check_mandatory_keywords__(self, lrk: list, kwargs: dict) -> None:
+    def __check_mandatory_keywords__(self, lrk: tp.List, kwargs: dict) -> None:
         """Verify that all elements of lrk have a corresponding key in
         kwargs.  If not, print error message"""
 
@@ -195,7 +195,7 @@ class esbmtkBase(input_parsing):
     Useful methods in this class:
 
     define required keywords in lrk dict:
-       self.lrk: list = ["name"]
+       self.lrk: tp.List = ["name"]
 
     define allowed type per keyword in lkk dict:
        self.defaults: dict[str, list[any, tuple]] = {

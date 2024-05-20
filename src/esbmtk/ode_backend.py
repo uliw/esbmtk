@@ -74,12 +74,12 @@ def get_initial_conditions(
     import numpy as np
 
     R = []  # list of initial conditions
-    atol: list = []  # list of tolerances for ode solver
+    atol: tp.List = []  # list of tolerances for ode solver
     # dict that contains the reservoir_handle as key and the index positions
     # for c and l as a list
     icl: dict[Species, List[int, int]] = {}
-    cpl: list = []  # list of reservoirs that are computed
-    ipl: list = []  # list of static reservoirs that serve as input
+    cpl: tp.List = []  # list of reservoirs that are computed
+    ipl: tp.List = []  # list of static reservoirs that serve as input
 
     i: int = 0
     for r in M.lic:
@@ -210,19 +210,19 @@ def write_reservoir_equations_with_isotopes(
 
 
 def write_equations_2(
-    M: Model, R: list[float], icl: dict, cpl: list, ipl: list
+    M: Model, R: tp.List[float], icl: dict, cpl: tp.List, ipl: tp.List
 ) -> tuple:
     """Write file that contains the ode-equations for the Model
     Returns the list R that contains the initial condition for each
     reservoir
 
     :param Model: Model handle
-    :param R: list of floats with the initial conditions for each
+    :param R: tp.List of floats with the initial conditions for each
               reservoir
     :param icl: dict of reservoirs that have actual fluxes
-    :param cpl: list of reservoirs that have no fluxes but are
+    :param cpl: tp.List of reservoirs that have no fluxes but are
         computed based on other reservoirs
-    :param ipl: list of reservoir that do not change in concentration
+    :param ipl: tp.List of reservoir that do not change in concentration
     """
     from esbmtk import Species
     import pathlib as pl
@@ -358,7 +358,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
     return fqfn
 
 
-def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str):
+def get_flux(flux: Flux, M: Model, R: tp.List[float], icl: dict) -> tuple(str, str):
     """Create formula expressions that calcultes the flux F.  Return
     the equation expression as string
 

@@ -163,15 +163,15 @@ class Reservoir(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = [
+        self.lrk: tp.List = [
             "name",
             ["volume", "geometry"],
         ]
 
         if "concentration" in kwargs:
-            self.species: list = list(kwargs["concentration"].keys())
+            self.species: tp.List = list(kwargs["concentration"].keys())
         elif "mass" in kwargs:
-            self.species: list = list(kwargs["mass"].keys())
+            self.species: tp.List = list(kwargs["mass"].keys())
         else:
             raise ReservoirError("You must provide either mass or concentration")
 
@@ -216,7 +216,7 @@ class Reservoir(esbmtkBase):
                     # self.cd['SO4_name']['delta'] = self.kwargs['delta'][SO4]
                     self.cd[s.name][kcd] = self.kwargs[kcd][s]
 
-        self.lor: list = []  # list of reservoirs in this group.
+        self.lor: tp.List = []  # list of reservoirs in this group.
         # loop over all entries in species and create the respective reservoirs
         for s in self.species:
             if not isinstance(s, SpeciesProperties):
@@ -296,7 +296,7 @@ class SourceSinkProperties(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list[str] = ["name", "species"]
+        self.lrk: tp.List[str] = ["name", "species"]
         self.__initialize_keyword_variables__(kwargs)
 
         # register this object
@@ -309,7 +309,7 @@ class SourceSinkProperties(esbmtkBase):
         self.parent = self.register
         self.loc: set[Species2Species] = set()  # set of connection objects
         self.__register_name_new__()
-        self.lor: list = []  # list of sub reservoirs in this group
+        self.lor: tp.List = []  # list of sub reservoirs in this group
 
         # loop over species names and setup sub-objects
         for i, s in enumerate(self.species):
@@ -474,7 +474,7 @@ class Signal(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list[str] = [
+        self.lrk: tp.List[str] = [
             "name",
             ["duration", "filename"],
             "species",
@@ -485,7 +485,7 @@ class Signal(esbmtkBase):
         self.__initialize_keyword_variables__(kwargs)
 
         # list of signals we are based on
-        self.los: list[Signal] = []
+        self.los: tp.List[Signal] = []
 
         # convert units to model units
         self.st: tp.Union[int, float] = int(
@@ -523,7 +523,7 @@ class Signal(esbmtkBase):
         self.sh: str = self.shape  # shape the event
         self.d: float = self.delta  # delta value offset during the event
         self.kwd: dict[str, any] = self.kwargs  # list of keywords
-        self.led: list = []
+        self.led: tp.List = []
 
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
@@ -934,7 +934,7 @@ class VectorData(esbmtkBase):
             "label": ["None", (str, bool)],
         }
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "register", "species", "data", "label", "plt_units"]
+        self.lrk: tp.List = ["name", "register", "species", "data", "label", "plt_units"]
         self.__initialize_keyword_variables__(kwargs)
 
         self.n = self.name
@@ -1079,7 +1079,7 @@ class DataField(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", ["register", "associated_with"], "y1_data"]
+        self.lrk: tp.List = ["name", ["register", "associated_with"], "y1_data"]
 
         # provide a dictionary entry for a keyword specific error message
         # see esbmtkBase.__initerrormessages__()
@@ -1450,7 +1450,7 @@ class SpeciesNoSet(SpeciesBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = [
+        self.lrk: tp.List = [
             "name",
             "species",
         ]
@@ -1516,7 +1516,7 @@ class ExternalCode(SpeciesNoSet):
 
     The general template for a user defined function is a follows::
 
-      def calc_carbonates(i: int, input_data: list, vr_data: list, params: list) -> None:
+      def calc_carbonates(i: int, input_data: tp.List, vr_data: tp.List, params: tp.List) -> None:
           # i = index of current timestep
           # input_data = list of np.arrays, typically data from other Species
           # vr_data = list of np.arrays created during instance creation (i.e. the vr data)
@@ -1592,7 +1592,7 @@ class ExternalCode(SpeciesNoSet):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = [
+        self.lrk: tp.List = [
             "name",
             "species",
             "register",
@@ -1601,7 +1601,7 @@ class ExternalCode(SpeciesNoSet):
         self.__initialize_keyword_variables__(kwargs)
 
         self.__set_legacy_names__(kwargs)
-        self.lro: list = []  # list of all return objects.
+        self.lro: tp.List = []  # list of all return objects.
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
         self.plt_units = self.mo.c_unit
 
@@ -1672,7 +1672,7 @@ class ExternalCode(SpeciesNoSet):
 
         """
 
-        allowed_keys: list = ["function_input_data, function_params"]
+        allowed_keys: tp.List = ["function_input_data, function_params"]
         # loop over provided kwargs
         for key, value in kwargs.items():
             if key not in allowed_keys:
@@ -1737,7 +1737,7 @@ class ExternalCode(SpeciesNoSet):
 
         # read csv file into dataframe
         self.df: pd.DataFrame = pd.read_csv(fn)
-        self.headers: list = list(self.df.columns.values)
+        self.headers: tp.List = list(self.df.columns.values)
         df = self.df
         headers = self.headers
         # print(f"reading from {fn}")
@@ -1755,7 +1755,7 @@ class ExternalCode(SpeciesNoSet):
 
         # print(f"subsampling {self.fullname}")
 
-        new: list = []
+        new: tp.List = []
         for d in self.vr_data:
             n = d[2:-2:stride]
             new.append(n)
@@ -1910,7 +1910,7 @@ class VirtualSpecies(Species):
 
         """
 
-        allowed_keys: list = ["a1", "a2", "a3", "a4", "a5", "a6", "volume"]
+        allowed_keys: tp.List = ["a1", "a2", "a3", "a4", "a5", "a6", "volume"]
         # loop over provided kwargs
         for key, value in kwargs.items():
             if key not in allowed_keys:
@@ -1984,7 +1984,7 @@ class GasReservoir(SpeciesBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = [
+        self.lrk: tp.List = [
             "name",
             "species",
             "species_ppm",
@@ -2166,7 +2166,7 @@ class ExternalData(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "filename", "legend", ["reservoir", "register"]]
+        self.lrk: tp.List = ["name", "filename", "legend", ["reservoir", "register"]]
 
         self.__initialize_keyword_variables__(kwargs)
 

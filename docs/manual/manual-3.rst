@@ -162,9 +162,9 @@ Provided a given model has data for DIC & TA, and that the carbonate export flux
 
 .. code:: ipython
 
-    surface_boxes: list = [M.L_b]
-    deep_boxes: list = [M.D_b]
-    export_fluxes: list = M.flux_summary(filter_by="PIC_DIC L_b", return_list=True)
+    surface_boxes: tp.List = [M.L_b]
+    deep_boxes: tp.List = [M.D_b]
+    export_fluxes: tp.List = M.flux_summary(filter_by="PIC_DIC L_b", return_list=True)
 
     add_carbonate_system_2(
             r_db=deep_boxes,  # list of reservoir groups

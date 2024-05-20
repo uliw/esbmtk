@@ -89,7 +89,7 @@ class SeawaterConstants(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name"]
+        self.lrk: tp.List = ["name"]
         self.__initialize_keyword_variables__(kwargs)
         self.parent = self.register
 
@@ -97,7 +97,7 @@ class SeawaterConstants(esbmtkBase):
         self.n: str = self.name  # string =  name of this instance
         # self.mo: Model = self.model
         self.hplus = 10**-self.pH
-        self.constants: list = ["K0", "K1", "K2", "KW", "KB", "Ksp_ca", "Ksp_ar"]
+        self.constants: tp.List = ["K0", "K1", "K2", "KW", "KB", "Ksp_ca", "Ksp_ar"]
         self.constants.extend(["Ksp0", "KS", "KF", "FT", "K1K1", "K1K2"])
         self.species = ["dic", "ta", "co2aq", "co3", "boron"]
         self.species.extend(["boh4", "boh3", "oh", "ca2", "so4", "hplus"])

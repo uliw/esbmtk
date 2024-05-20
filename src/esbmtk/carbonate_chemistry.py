@@ -115,7 +115,7 @@ def init_carbonate_system_1(rg: Reservoir):
     reservoir in rgs. Note that rgs must be a list of reservoir groups.
 
     Required keywords:
-        rgs: list = []  of Reservoir Group objects
+        rgs: tp.List = []  of Reservoir Group objects
 
     These new virtual reservoirs are registered to their respective Species
     as 'cs'.
@@ -155,12 +155,12 @@ def init_carbonate_system_1(rg: Reservoir):
     return ec
 
 
-def add_carbonate_system_1(rgs: list):
+def add_carbonate_system_1(rgs: tp.List):
     """Creates a new carbonate system virtual reservoir for each
     reservoir in rgs. Note that rgs must be a list of reservoir groups.
 
     Required keywords:
-        rgs: list = []  of Reservoir Group objects
+        rgs: tp.List = []  of Reservoir Group objects
 
     These new virtual reservoirs are registered to their respective Species
     as 'cs'.
@@ -354,9 +354,9 @@ def add_carbonate_system_2(**kwargs) -> None:
     and snowline depth, and compute the associated carbonate burial fluxes
 
     Required keywords:
-        r_sb: list of Reservoir objects in the surface layer
-        r_db: list of Reservoir objects in the deep layer
-        carbonate_export_fluxes: list of flux objects which must match the
+        r_sb: tp.List of Reservoir objects in the surface layer
+        r_db: tp.List of Reservoir objects in the deep layer
+        carbonate_export_fluxes: tp.List of flux objects which must match the
         list of Reservoir objects.
         zsat_min = depth of the upper boundary of the deep box
         z0 = upper depth limit for carbonate burial calculations
@@ -381,9 +381,9 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     # list of known keywords
     lkk: dict = {
-        "r_db": list,  # list of deep reservoirs
-        "r_sb": list,  # list of corresponding surface reservoirs
-        "carbonate_export_fluxes": list,
+        "r_db": tp.List,  # list of deep reservoirs
+        "r_sb": tp.List,  # list of corresponding surface reservoirs
+        "carbonate_export_fluxes": tp.List,
         "zsat": int,
         "zsat_min": int,
         "zcc": int,
@@ -402,7 +402,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         # "BM": (float, int),
     }
     # provide a list of absolutely required keywords
-    lrk: list[str] = [
+    lrk: tp.List[str] = [
         "r_db",
         "r_sb",
         "carbonate_export_fluxes",

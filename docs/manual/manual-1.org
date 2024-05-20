@@ -52,12 +52,12 @@ def dCdt(t, C_0, V, F_w, thx):
     a function of time. After Glover 2011, Modeling
     Methods for Marine Science.
 
-    :param C: list of initial concentrations mol/m*3
+    :param C: tp.List of initial concentrations mol/m*3
     :param time: array of time points
     :params V: lits of surface and deep ocean volume [m^3]
     :param F_w: River (weathering) flux of PO4 mol/s
     :param thx: thermohaline circulation in m*3/s
-    :returns dCdt: list of concentration changes mol/s
+    :returns dCdt: tp.List of concentration changes mol/s
     """
 
     C_S = C_0[0]  # surface

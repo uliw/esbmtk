@@ -255,10 +255,10 @@ class Species2Species(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["source", "sink"]
+        self.lrk: tp.List = ["source", "sink"]
 
-        self.lop: list = []
-        self.lof: list = []
+        self.lop: tp.List = []
+        self.lof: tp.List = []
 
         self.__initialize_keyword_variables__(kwargs)
 
@@ -283,7 +283,7 @@ class Species2Species(esbmtkBase):
         elif isinstance(self.pco2_0, Q_):
             self.pco2_0 = self.pco2_0.magnitude.to("ppm").magnitude * 1e-6
 
-        self.lop: list = self.pl if "pl" in kwargs else []
+        self.lop: tp.List = self.pl if "pl" in kwargs else []
         if self.signal != "None":
             self.lop.append(self.signal)
 
@@ -308,9 +308,9 @@ class Species2Species(esbmtkBase):
 
         self.get_species(self.r1, self.r2)  #
         self.mo: Model = self.sp.mo  # the current model handle
-        self.lof: list[Flux] = []  # list of fluxes in this connection
+        self.lof: tp.List[Flux] = []  # list of fluxes in this connection
         # get a list of all reservoirs registered for this species
-        self.lor: list[Species] = self.mo.lor
+        self.lor: tp.List[Species] = self.mo.lor
 
         if self.scale == "None":
             self.scale = 1.0
@@ -757,7 +757,7 @@ class ConnectionProperties(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["source", "sink", "ctype"]
+        self.lrk: tp.List = ["source", "sink", "ctype"]
         self.__initialize_keyword_variables__(kwargs)
 
         if self.register == "None":
@@ -766,7 +766,7 @@ class ConnectionProperties(esbmtkBase):
         # # self.source.lor is a  list with the object names in the group
         self.mo = self.sink.lor[0].mo
         self.model = self.mo
-        self.loc: list = []  # list of connection objects
+        self.loc: tp.List = []  # list of connection objects
 
         self.name = f"CG_{self.source.name}_to_{self.sink.name}_{self.id}"
         # fixme this results in duplicate names in the model namespace.
@@ -790,7 +790,7 @@ class ConnectionProperties(esbmtkBase):
 
         from esbmtk import Reservoir, SinkProperties, SourceProperties
 
-        self.connections: list = []
+        self.connections: tp.List = []
 
         if isinstance(self.ctype, str):
             if isinstance(self.source, (Reservoir, SinkProperties, SourceProperties)):
