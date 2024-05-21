@@ -427,14 +427,11 @@ def add_carbonate_system_2(**kwargs) -> None:
         "pg": 0.103,  # pressure in atm/km
         "pc": 511,  # characteristic pressure after Boudreau 2010
         "I_caco3": 529,  # dissolveable CaCO3 in mol/m^2
-        "zmax": -9000,  # max model depth
+        "zmax": -10999,  # max model depth
         "Ksp": reservoir.swc.Ksp_ca,  # mol^2/kg^2
     }
-    # make sure all mandatory keywords are present
     __checkkeys__(lrk, lkk, kwargs)
-    # add default values for keys which were not specified
     kwargs = __addmissingdefaults__(lod, kwargs)
-    # test that all keyword values are of the correct type
     __checktypes__(lkk, kwargs)
 
     if "zsat_min" not in kwargs:
