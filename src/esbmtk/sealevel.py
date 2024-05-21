@@ -144,12 +144,11 @@ class hypsometry(esbmtkBase):
             else:
                 raise FileNotFoundError(f"Cannot find file {fqfn_csv}")
 
+        # offset the dat, since we do not need land data
         max_el = df.iloc[0, 0] - self.max_elevation
-        max_de = df.iloc[-1, 0] - self.max_elevation - self.max_depth
-
-        elevation = df.iloc[max_el:max_de, 0].to_numpy()
-        area = df.iloc[max_el:max_de, 1].to_numpy() * self.sa
-
+        elevation = df.iloc[max_el:, 0].to_numpy()
+        area = df.iloc[max_el:, 1].to_numpy() * self.sa
+        
         # create lookup table with area and area_dz
         self.hypdata = np.column_stack(
             (
@@ -231,7 +230,7 @@ class hypsometry(esbmtkBase):
 
         u = self.max_elevation - int(u)
         l = self.max_elevation - int(l)
-
+        
         return self.hypdata[u, 1] - self.hypdata[l, 1]
 
     def volume(self, u: float, l: float) -> float:
