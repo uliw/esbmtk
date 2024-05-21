@@ -245,9 +245,9 @@ def carbonate_system_2(
 
     # sediment dissolution if zcc is deeper than snowline
     if zsnow <= zcc:  # reset zsnow
-        zsnow = zcc
+        dzdt_zsnow = abs(zsnow - zcc)
         BPDC = 0
-        dzdt_zsnow = 0
+        zsnow = zcc
     else:  # integrate saturation difference over area
         if zsnow > zmax:  # limit zsnow to ocean depth
             zsnow = zmax
