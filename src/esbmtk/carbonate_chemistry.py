@@ -49,6 +49,7 @@ reservoirs.
 The process for cs2 is analogous
 """
 
+
 # @njit(fastmath=True)
 def get_hplus(dic, ta, h0, boron, K1, K1K2, KW, KB) -> float:
     """Calculate H+ concentration based on a previous estimate
@@ -217,16 +218,19 @@ def carbonate_system_2(
     hplus = get_hplus(dic_db, ta_db, hplus_0, boron, k1, k1k2, KW, KB)
     co3 = max(dic_db / (1 + hplus / k2 + hplus**2 / k1k2), 3.7e-05)
 
-    # ---------- compute critical depth intervals eq after  Boudreau (2010)
-    # all depths will be positive to facilitate the use of lookup_tables
+    """ --- Compute critical depth intervals eq after  Boudreau (2010) ---
+   All depths will be positive to facilitate the use of lookup_tables.
+   Note that these tables are different than the hyspometry data tables
+   that expect positive and negative numbers.
+    """
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
     zsat = min(zmax, max(zsat_min, zsat))
     zcc = int(
         zsat0 * log(CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
     )  # eq3
     zcc = min(zmax, max(zsat_min, zcc))
-    # get fractional areas
-    B_AD = CaCO3_export / AD
+
+    B_AD = CaCO3_export / AD  # get fractional areas
     A_z0_zsat = area_table[z0] - area_table[zsat]
     A_zsat_zcc = area_table[zsat] - area_table[zcc]
     A_zcc_zmax = area_table[zcc] - area_table[zmax]
@@ -234,17 +238,24 @@ def carbonate_system_2(
     BCC = A_zcc_zmax * B_AD
     BNS = alpha * A_z0_zsat * B_AD
     diff_co3 = Csat_table[zsat:zcc] - co3
-    area_p = area_dz_table[zsat:zcc]
-    BDS_under = kc * area_p.dot(diff_co3)
+    area_sat_cc = area_dz_table[zsat:zcc]
+    BDS_under = kc * area_sat_cc.dot(diff_co3)
     BDS_resp = alpha * (A_zsat_zcc * B_AD - BDS_under)
     BDS = BDS_under + BDS_resp
-    if zsnow > zmax:
-        zsnow = zmax
-    # integrate saturation difference over area
-    diff: NDArrayFloat = Csat_table[zcc : int(zsnow)] - co3
-    area_p: NDArrayFloat = area_dz_table[zcc : int(zsnow)]
-    BPDC = kc * area_p.dot(diff)
-    BPDC = max(BPDC, 0)  # prevent negative values
+
+    # sediment dissolution if zcc is deeper than snowline
+    if zsnow <= zcc:  # reset zsnow
+        zsnow = zcc
+        BPDC = 0
+        dzdt_zsnow = 0
+    else:  # integrate saturation difference over area
+        if zsnow > zmax:  # limit zsnow to ocean depth
+            zsnow = zmax
+
+        diff: NDArrayFloat = Csat_table[zcc : int(zsnow)] - co3
+        area_cc_snow: NDArrayFloat = area_dz_table[zcc : int(zsnow)]
+        BPDC = max(0, kc * area_cc_snow.dot(diff))
+        dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
 
     """ CACO3_export is the flux of CaCO3 into the box.
     Boudreau's orginal approach is as follows.
@@ -252,12 +263,10 @@ def carbonate_system_2(
     However, the model should use the bypass option and leave all flux
     calculations to the carbonate_system code. As such, ignore the burial flux
     (since it was never added), and only add the fraction of the input flux
-    that dissolves back into the box """
-
-    # calculate the differentials
+    that dissolves back into the box
+    """
     F_diss = BDS + BCC + BNS + BPDC
     dCdt_Hplus = hplus - hplus_0
-    dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
 
     """ The isotope ratio of the dissolution flux is determined by the delta
     value of the sediments we are dissolving, and the delta of the carbonate rain.
