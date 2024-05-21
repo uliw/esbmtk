@@ -157,13 +157,18 @@ def carbonate_system_2_pp(
             BDS_under = kc * area_p.dot(diff_co3)
             BDS_resp = alpha * (A_zsat_zcc[i] * B_AD - BDS_under)
             BDS = BDS_under + BDS_resp
-            if zsnow[i] > zmax:
-                zsnow[i] = zmax
-            # integrate satu ration difference over area
-            diff = Csat_table[zcc[i] : zsnow[i]] - co3[i]
-            area_p = area_dz_table[zcc[i] : zsnow[i]]
-            BPDC = kc * area_p.dot(diff)
-            BPDC = max(BPDC, 0)  # prevent negative values
+
+            if zsnow[i] <= zcc[i]: # reset zsnow
+                zsnow[i] = zcc[i]
+                BPDC = 0
+            else:  # integrate saturation difference over area
+                if zsnow[i] > zmax:
+                    zsnow[i] = zmax
+                # integrate saturation difference over area
+                diff = Csat_table[zcc[i] : zsnow[i]] - co3[i]
+                area_p = area_dz_table[zcc[i] : zsnow[i]]
+                BPDC = max(0, kc * area_p.dot(diff))
+
             Fdiss[i] = BDS + BCC + BNS + BPDC
             Fburial[i] = export - Fdiss[i]
 
@@ -175,7 +180,6 @@ def carbonate_system_2_pp(
             label="Fburial",
             plt_units=rg.mo.f_unit,
         )
-
         VectorData(
             name="Fdiss",
             register=rg,
@@ -184,7 +188,6 @@ def carbonate_system_2_pp(
             label="Fdiss",
             plt_units=rg.mo.f_unit,
         )
-
         VectorData(
             name="CO3",
             register=rg,
@@ -202,7 +205,6 @@ def carbonate_system_2_pp(
             label="CO2aq",
             plt_units=rg.mo.c_unit,
         )
-
         VectorData(
             name="pH",
             register=rg,
@@ -227,6 +229,7 @@ def carbonate_system_2_pp(
             label="zcc",
             plt_units="m",
         )
+        
 
 
 def gas_exchange_fluxes(
