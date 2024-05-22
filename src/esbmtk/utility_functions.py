@@ -368,26 +368,26 @@ def plot_geometry(noo: int) -> tuple():
     """Define plot geometry based on number of objects to plot"""
 
     if noo < 2:
-        geo = [1, 1]  # one row, one column
-        size = [5, 3]  # size in inches
+        geometry = [1, 1]  # one row, one column
+        size = [5, 3]  # width, height in inches 
     elif 1 < noo < 3:
-        geo = [2, 1]  # two rows, one column
-        size = [5, 6]  # size in inches
+        geometry = [2, 1]  # two rows, one column
+        size = [5, 6]  # width, height in inches 
     elif 2 < noo < 5:
-        geo = [2, 2]  # two rows, two columns
-        size = [10, 6]  # size in inches
+        geometry = [2, 2]  # two rows, two columns
+        size = [10, 6]  # width, height in inches 
     elif 4 < noo < 7:
-        geo = [2, 3]  # two rows, three columns
-        size = [15, 6]  # size in inches
+        geometry = [3, 2]  # 3 rows, 2 columns
+        size = [10, 9]  # width, height in inches 
     elif 6 < noo < 10:
-        geo = [3, 3]  # two rows, three columns
-        size = [15, 9]  # size in inches
+        geometry = [4, 2]  # 4 rows, 2 columns
+        size = [10, 12]  # width, height in inches 
     elif 9 < noo < 13:
-        geo = [4, 3]  # two rows, three columns
-        size = [15, 12]  # size in inches
+        geometry = [5, 2]  # 5 rows, 2 columns
+        size = [10, 15]  #  width, height in inches 
     elif 12 < noo < 16:
-        geo = [5, 3]  # two rows, three columns
-        size = [15, 15]  # size in inches
+        geometry = [6, 2]  # 6 rows, 2 columns
+        size = [10, 18]  #width, height in inches 
     else:
         m = (
             "plot geometry for more than 15 fluxes is not yet defined"
@@ -395,7 +395,7 @@ def plot_geometry(noo: int) -> tuple():
         )
         raise ValueError(m)
 
-    return size, geo
+    return size, geometry
 
 
 def list_fluxes(self, name, i) -> None:
