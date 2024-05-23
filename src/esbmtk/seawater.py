@@ -16,13 +16,12 @@
      <https://www.gnu.org/licenses/>.
 
 """
-
 from __future__ import annotations
 import typing as tp
+import warnings
 import numpy as np
 import numpy.typing as npt
 import PyCO2SYS as pyco2
-import warnings
 
 from .esbmtk_base import esbmtkBase
 
@@ -77,7 +76,7 @@ class SeawaterConstants(esbmtkBase):
     def __init__(self, **kwargs: dict[str, str]):
         from esbmtk import Model, Species, Reservoir
 
-        self.defaults: dict[list[any, tuple]] = {
+        self.defaults: dict[tp.List[any, tuple]] = {
             "name": ["None", (str)],
             "salinity": [35.0, (int, float)],
             "temperature": [25.0, (int, float)],
