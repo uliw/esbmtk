@@ -42,14 +42,6 @@ This will register 3 new instance variables, and also create a hypsometry instan
 
 The hypsometric data is based on the Scripps’ SRTM15+V2.5.5 grid (Tozer et al., 2019, `https://doi.org/10.1029/2019EA000658 <https://doi.org/10.1029/2019EA000658>`_), which was down-sampled to a 5-minute grid before processing the hypsometry. 
 
-.. _hyp:
-
-.. figure:: ./hyp.png
-    :width: 400
-
-
-    Comparison between spline fit, and the actual data.
-
 Seawater
 ~~~~~~~~
 
@@ -224,7 +216,6 @@ ESBMTK implements gas exchange across the Air-Sea interface as a :py:class:`esbm
     GasReservoir(
         name="CO2_At",
         species=M.CO2,
-        reservoir_mass="1.833E20 mol",
         species_ppm="280 ppm",
         register=M,
     )

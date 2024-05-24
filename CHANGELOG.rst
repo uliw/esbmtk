@@ -5,7 +5,11 @@
 1 Changelog
 -----------
 
-- May 10th v 0.13.0.x fixes an error in the solubility calculation for
+- 0.13.0.x The equations file is now a temporary file with a random name. This allows for the parallel execution of model code.
+
+- 0.13.0.x plot() will now return the figure and axes handles, and accepts the ``no_show`` option. This allows for the addition of manual plot elements in post-processing
+
+- May 10th v 0.13.0.0 fixes an error in the solubility calculation for
   oxygen and carbon dioxide. This will change the steady state results
   for pCO2 in existing models by about 4 ppm. This version renamed many classes.
   Existing models may need some editing.
