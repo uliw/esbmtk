@@ -476,12 +476,9 @@ class Model(esbmtkBase):
 
         - fn: a string, optional, default is 'model_name'. The filename to save the plot.
         - title: a string to set the optional plot title
-        - no_show: bool, if set to True, do not show & save figure. Useful
-          to if one needs to add figure elements manually.
+        - no_show: bool, if set to True, do not show & save figure. Useful if one needs to add figure elements manually.
 
-        :returns: a tuple with the
-        figure instance, list of axs objects
-
+        :returns: a tuple with the figure instance, list of axs objects
 
         :Example:
 
@@ -490,6 +487,7 @@ class Model(esbmtkBase):
         M.plot([sb.PO4, sb.DIC], fn='test.pdf')
 
         The above code will plot ``sb.PO4`` and ``sb.DIC`` and save the plot as 'test.pdf'.
+        
         """
 
         if pl is None:
