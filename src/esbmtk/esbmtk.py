@@ -19,6 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 from pandas import DataFrame
 import time
+import tempfile
+from pathlib import Path
 from time import process_time
 import numpy as np
 import typing as tp
@@ -277,8 +279,6 @@ class Model(esbmtkBase):
             self.reset_stride = int(round(self.steps / self.number_of_datapoints))
             self.steps = self.step_limit
             self.time = (np.arange(self.steps) * self.dt) + self.start
-
-        # set_printoptions(precision=self.display_precision)
 
         if "element" in self.kwargs:
             if isinstance(self.kwargs["element"], list):
@@ -622,18 +622,26 @@ class Model(esbmtkBase):
         self.cpl = cpl
         self.ipl = ipl
 
-        # write equation system
+        cwd = Path.cwd()
+        sys.path.append(cwd)  # required on windows
         if self.parse_model:
-            eqs_file = write_equations_2(self, R, icl, cpl, ipl)
-            # print(f"loc = {eqs_file.resolve()}")
+            tempfile.tempdir = cwd
+            with tempfile.NamedTemporaryFile(suffix=".py") as tmp_file:
+                eqs_fn = tmp_file.name
+                eqs_mod = eqs_fn.split("/")[-1].split(".")[0]
+                eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
+                eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
         else:
-            warnings.warn("Reusing equation file\n")
-
-        # ensure that cwd is in the load path. Required for windows
-        cwd: pl.Path = pl.Path.cwd()
-        sys.path.append(cwd)
-
-        from equations import eqs  # import equation system
+            fn: str = "equations.py"  # file name
+            eqs_fn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
+            if eqs_fn.is_file():
+                warnings.warn(
+                    """ Re-using equation file. Delete it manually if you
+                        want an updated version"""
+                )
+            else:
+                eqs_mod = eqs_fn.split("/")[-1].split(".")[0]
+                eqs = getattr(__import__(eqs_mod), "eqs")  # import equati
 
         method = kwargs["method"] if "method" in kwargs else "BDF"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"

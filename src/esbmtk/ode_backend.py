@@ -210,7 +210,12 @@ def write_reservoir_equations_with_isotopes(
 
 
 def write_equations_2(
-    M: Model, R: tp.List[float], icl: dict, cpl: tp.List, ipl: tp.List
+    M: Model,
+    R: tp.List[float],
+    icl: dict,
+    cpl: tp.List,
+    ipl: tp.List,
+    fn: str,
 ) -> tuple:
     """Write file that contains the ode-equations for the Model
     Returns the list R that contains the initial condition for each
@@ -223,15 +228,10 @@ def write_equations_2(
     :param cpl: tp.List of reservoirs that have no fluxes but are
         computed based on other reservoirs
     :param ipl: tp.List of reservoir that do not change in concentration
+    :param fn: str, filename
     """
     from esbmtk import Species
-    import pathlib as pl
-    import sys
 
-    # get pathlib object
-    fn: str = "equations.py"  # file name
-    cwd: pl.Path = pl.Path.cwd()  # get the current working directory
-    fqfn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
 
     # construct header and static code:
     # add optional import statements
@@ -275,7 +275,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
     rel = ""  # list of return values
     # """
     # write file
-    with open(fqfn, "w", encoding="utf-8") as eqs:
+    with open(fn, "w", encoding="utf-8") as eqs:
         eqs.write(header)
         sep = (
             "# ---------------- write computed reservoir equations -------- #\n"
@@ -355,7 +355,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
 
         eqs.write(f"{ind2}]\n")
 
-    return fqfn
+    return fn
 
 
 def get_flux(flux: Flux, M: Model, R: tp.List[float], icl: dict) -> tuple(str, str):
