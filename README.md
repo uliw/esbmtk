@@ -17,11 +17,12 @@
 
 ESBMTK is a python library that aims to simplify typical box modeling projects in the Earth-Sciences. It uses a declarative approach to describe models, and abstracts typical modeling tasks like gas-exchange and carbonate dissolution through python classes.
 
-Before updating, please see the [Changelog](https://esbmtk.readthedocs.io/en/latest/changelog.html)
+See the manual at <https://esbmtk.readthedocs.io/> for installation instructions, usage, and example code.
 
 ESBMTK is available via
 
 -   GitHub `git clone https://github.com/uliw/esbmtk.git`
 -   pypi <https://pypi.org/project/esbmtk/>
 -   conda-forge <https://anaconda.org/conda-forge/esbmtk>
--   See the manual at <https://esbmtk.readthedocs.io/en/latest> for installation instructions, usage, and example code
+
+ESBMTK is under active development, before updating, please check the [Changelog](https://esbmtk.readthedocs.io/en/latest/changelog.html)

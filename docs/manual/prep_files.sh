@@ -17,3 +17,5 @@ cp *.py /home/uliw/user/python-scripts/esbmtk_examples/Examples_from_the_manual/
 cd /home/uliw/user/python-scripts/esbmtk/
 emacsclient -e "(progn (switch-to-buffer (find-file-noselect \"CHANGELOG.org\")) (end-of-buffer) (org-rst-export-to-rst) (kill-buffer))"
 pandoc README.org -o README.md
+
+emacsclient -e "(progn (switch-to-buffer (find-file-noselect \"README.org\")) (end-of-buffer) (org-gfm-export-to-markdown) (kill-buffer))"
