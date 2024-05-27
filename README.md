@@ -1,21 +1,3 @@
-```{=rst}
-.. image:: https://img.shields.io/pypi/v/esbmtk.svg
-    :alt: PyPI-Server
-    :target: https://pypi.org/project/esbmtk/
-
-.. image:: https://img.shields.io/badge/Python-3.9-blue.svg
-    :alt: Python-3.9 badge
-    :target: https://www.python.org/
-
-.. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
-    :alt: Project generated with PyScaffold
-    :target: https://pyscaffold.org/
-
-.. image:: https://readthedocs.org/projects/esbmtk/badge/?version=latest
-    :target: https://esbmtk.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
-```
-```{=html}
 <a href="https://pypi.org/project/esbmtk/">
 <img alt="Documentation Status" src="https://img.shields.io/pypi/v/esbmtk.svg"/>
 </a>
@@ -27,24 +9,19 @@
 <a href="https://esbmtk.readthedocs.io/en/latest/?badge=latest">
 <img alt="Documentation Status" src="https://readthedocs.org/projects/esbmtk/badge/?version=latest" />
 </a>
-```
-# ESBMTK - The Earth Sciences Box Modeling Toolkit
 
-```{=html}
+
+# ESBMTK - The  Earth Sciences Box Modeling Toolkit
+
 <img src="https://raw.githubusercontent.com/uliw/esbmtk/staging/mpc.png" width="600px" align="center">"
-```
-ESBMTK is a python library that aims to simplify typical box modeling
-projects in the Earth-Sciences. It uses a declarative approach to
-describe models, and abstracts typical modeling tasks like gas-exchange
-and carbonate dissolution through python classes.
 
-Before updating, please see the
-[Changelog](https://esbmtk.readthedocs.io/en/latest/changelog.html)
+ESBMTK is a python library that aims to simplify typical box modeling projects in the Earth-Sciences. It uses a declarative approach to describe models, and abstracts typical modeling tasks like gas-exchange and carbonate dissolution through python classes.
+
+Before updating, please see the [Changelog](https://esbmtk.readthedocs.io/en/latest/changelog.html)
 
 ESBMTK is available via
 
--   GitHub `git clone https://github.com/uliw/esbmtk.git`{.verbatim}
+-   GitHub `git clone https://github.com/uliw/esbmtk.git`
 -   pypi <https://pypi.org/project/esbmtk/>
 -   conda-forge <https://anaconda.org/conda-forge/esbmtk>
--   See the manual at <https://esbmtk.readthedocs.io/en/latest> for
-    installation instructions, usage, and example code
+-   See the manual at <https://esbmtk.readthedocs.io/en/latest> for installation instructions, usage, and example code
