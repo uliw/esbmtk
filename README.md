@@ -24,5 +24,6 @@ ESBMTK is available via
 -   GitHub `git clone https://github.com/uliw/esbmtk.git`
 -   pypi <https://pypi.org/project/esbmtk/>
 -   conda-forge <https://anaconda.org/conda-forge/esbmtk>
+-   sample code is available at <https://github.com/uliw/ESBMTK-Examples>
 
 ESBMTK is under active development, before updating, please check the [Changelog](https://esbmtk.readthedocs.io/en/latest/changelog.html)
