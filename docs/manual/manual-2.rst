@@ -70,7 +70,7 @@ Using the previous example of a simple P-cycle model, we now express the P-cycli
     )
     M = Model(
         stop="6 Myr",  # end time of model
-        timestep="1 kyr",  # upper limit of time step
+        max_timestep="1 kyr",  # upper limit of time step
         element=["Phosphor", "Carbon"],  # list of species definitions
     )
 

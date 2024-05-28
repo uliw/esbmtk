@@ -8,7 +8,7 @@ def test_manual_ph_calculation():
     """
     M = Model(
         stop="1 yr",
-        timestep="1 d",
+        max_timestep="1 d",
         element=[
             "Carbon",
             "Boron",
@@ -61,7 +61,7 @@ def test_pyco2sys_ph_calculation():
     """
     M = Model(
         stop="1 yr",
-        timestep="1 d",
+        max_timestep="1 d",
         element=[
             "Carbon",
             "Boron",

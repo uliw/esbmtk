@@ -60,7 +60,7 @@ Apart from density, this class will provide access to a host of instance paramet
 #+BEGIN_SRC ipython
 M = Model(
     stop="6 Myr",  # end time of model
-    timestep="1 kyr",  # upper limit of time step
+    max_timestep="1 kyr",  # upper limit of time step
     element=["Carbon"],  # list of element definitions
     concentration_unit="mol/kg",
     opt_k_carbonic=13,  # Use Millero 2006

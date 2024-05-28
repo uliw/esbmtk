@@ -1517,7 +1517,7 @@ class ExternalCode(SpeciesNoSet):
     The general template for a user defined function is a follows::
 
       def calc_carbonates(i: int, input_data: tp.List, vr_data: tp.List, params: tp.List) -> None:
-          # i = index of current timestep
+          # i = index of current max_timestep
           # input_data = list of np.arrays, typically data from other Species
           # vr_data = list of np.arrays created during instance creation (i.e. the vr data)
           # params = list of float values (at least one!)
@@ -1854,7 +1854,7 @@ class VirtualSpecies(Species):
 
         def my_func(i, a1, a2, a3) -> tuple:
             #
-            # i = index of the current timestep
+            # i = index of the current max_timestep
             # a1 to a3 =  optional function parameter. These must be present,
             # even if your function will not use it See above for details
 

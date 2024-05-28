@@ -151,7 +151,7 @@ Internally, the model uses 'year' as the time unit, mol as the mass unit, and li
 # define the basic model parameters
 M = Model(
     stop="3 Myr",  # end time of model
-    timestep="1 kyr",  # upper limit of time step
+    max_timestep="1 kyr",  # upper limit of time step
     element=["Phosphor"],  # list of element definitions
 )
 #+END_SRC

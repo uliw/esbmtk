@@ -13,7 +13,7 @@ ESBMTK uses the :py:class:`esbmtk.esbmtk.SpeciesProperties()` and :py:class:`esb
 
     from esbmtk import Model
 
-    M = Model(stop="6 Myr", timestep="1 kyr", element=["Carbon", "Oxygen"])
+    M = Model(stop="6 Myr", max_timestep="1 kyr", element=["Carbon", "Oxygen"])
     # Access using complete hirarchy
     print(M.Carbon.DIC)
     # Access using shorthand
@@ -99,7 +99,7 @@ In this example, I use Boron to demonstrate how to add a new element and its res
 
     from esbmtk import Model, ElementProperties, SpeciesProperties
 
-    M = Model(stop="6 Myr", timestep="1 kyr")
+    M = Model(stop="6 Myr", max_timestep="1 kyr")
 
     ElementProperties(
         name="Boron",
@@ -276,7 +276,7 @@ Use the ``parse_model`` keyword in the model instance to keep the edited ``equat
 
     M = Model(
         stop="1000 yr",  # end time of model
-        timestep="1 yr",  # upper limit of time step
+        max_timestep="1 yr",  # upper limit of time step
         element=["Phosphor"],  # list of element definitions
         parse_model=False,  # do not overwrite equations.py
     )
