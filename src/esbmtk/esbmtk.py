@@ -149,7 +149,7 @@ class Model(esbmtkBase):
             "stop": ["None", (str, Q_)],
             "offset": ["0 yrs", (str, Q_)],
             "max_timestep": ["None", (str, Q_)],
-            "min_timestep": ["1 second", (str, Q)],
+            "min_timestep": ["1 second", (str, Q_)],
             "timestep": ["None", (str, Q_)],
             "element": ["None", (str, list)],
             "mass_unit": ["mol", (str)],
@@ -183,7 +183,7 @@ class Model(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: tp.List[str] = [
             "stop",
-            "max_timestep",
+            ["max_timestep", "timestep"],
         ]
         self.__initialize_keyword_variables__(kwargs)
 
@@ -244,13 +244,14 @@ class Model(esbmtkBase):
         # legacy variable names
         self.start = self.ensure_q(self.start).to(self.t_unit).magnitude
         self.stop = self.ensure_q(self.stop).to(self.t_unit).magnitude
+        
         if self.timestep != "None":
-            self.max_timestep = self.ensure_q(self.timestep)
+            self.max_timestep = self.ensure_q(self.timestep).to(self.t_unit).magnitude
             deprecated_keyword("timestep is depreciated. Please use max_timestep")
         else:
             self.max_timestep = self.ensure_q(self.max_timestep).to(self.t_unit).magnitude
-            self.min_timestep = self.ensure_q(self.min_timestep).to(self.t_unit).magnitude
             
+        self.min_timestep = self.ensure_q(self.min_timestep).to(self.t_unit).magnitude
         self.dt = self.max_timestep
         self.max_step = self.dt
         self.offset = self.ensure_q(self.offset).to(self.t_unit).magnitude
