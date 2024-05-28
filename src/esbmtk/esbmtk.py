@@ -149,7 +149,7 @@ class Model(esbmtkBase):
             "stop": ["None", (str, Q_)],
             "offset": ["0 yrs", (str, Q_)],
             "max_timestep": ["None", (str, Q_)],
-            "min_timestep": ["1 s", (str, Q_)],
+            "min_timestep": ["1 second", (str, Q)],
             "timestep": ["None", (str, Q_)],
             "element": ["None", (str, list)],
             "mass_unit": ["mol", (str)],
@@ -248,8 +248,10 @@ class Model(esbmtkBase):
             self.max_timestep = self.ensure_q(self.timestep)
             deprecated_keyword("timestep is depreciated. Please use max_timestep")
         else:
-            self.max_timestep = self.ensure_q(self.max_timestep)
-        self.dt = self.max_timestep.to(self.t_unit).magnitude
+            self.max_timestep = self.ensure_q(self.max_timestep).to(self.t_unit).magnitude
+            self.min_timestep = self.ensure_q(self.min_timestep).to(self.t_unit).magnitude
+            
+        self.dt = self.max_timestep
         self.max_step = self.dt
         self.offset = self.ensure_q(self.offset).to(self.t_unit).magnitude
         self.start = self.start + self.offset
@@ -675,7 +677,7 @@ class Model(esbmtkBase):
                 atol=atol,
                 rtol=self.rtol,
                 t_eval=self.time_ode,
-                first_step=Q_("1 second").to(self.t_unit).magnitude,
+                first_step=self.min_timestep,
                 max_step=self.max_step,
                 vectorized=False,
             )
