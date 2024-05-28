@@ -76,6 +76,8 @@ class ScaleError(Exception):
         message = f"\n\n{message}\n"
         super().__init__(message)
 
+def deprecated_keyword(message):
+    warnings.warn(message, DeprecationWarning, stacklevel=2)
 
 class Model(esbmtkBase):
     """This class is used to specify a new model.  See the __init__()
@@ -105,7 +107,7 @@ class Model(esbmtkBase):
 
                     esbmtkModel(name   =  "Test_Model", # required
                                 stop     = "10000 yrs", # end time
-                                timestep = "1 yr",    # as a string "2 yrs"
+                                max_timestep = "1 yr",    # as a string "2 yrs"
                                 element = ["Carbon", "Sulfur" ]
                               )
 
@@ -146,6 +148,8 @@ class Model(esbmtkBase):
             "start": ["0 yrs", (str, Q_)],
             "stop": ["None", (str, Q_)],
             "offset": ["0 yrs", (str, Q_)],
+            "max_timestep": ["None", (str, Q_)],
+            "min_timestep": ["1 s", (str, Q_)],
             "timestep": ["None", (str, Q_)],
             "element": ["None", (str, list)],
             "mass_unit": ["mol", (str)],
@@ -179,7 +183,7 @@ class Model(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: tp.List[str] = [
             "stop",
-            "timestep",
+            "max_timestep",
         ]
         self.__initialize_keyword_variables__(kwargs)
 
@@ -240,8 +244,12 @@ class Model(esbmtkBase):
         # legacy variable names
         self.start = self.ensure_q(self.start).to(self.t_unit).magnitude
         self.stop = self.ensure_q(self.stop).to(self.t_unit).magnitude
-        self.timestep = self.ensure_q(self.timestep)
-        self.dt = self.timestep.to(self.t_unit).magnitude
+        if self.timestep != "None":
+            self.max_timestep = self.ensure_q(self.timestep)
+            deprecated_keyword("timestep is depreciated. Please use max_timestep")
+        else:
+            self.max_timestep = self.ensure_q(self.max_timestep)
+        self.dt = self.max_timestep.to(self.t_unit).magnitude
         self.max_step = self.dt
         self.offset = self.ensure_q(self.offset).to(self.t_unit).magnitude
         self.start = self.start + self.offset
