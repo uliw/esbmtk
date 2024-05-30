@@ -402,3 +402,43 @@ class SeawaterConstants(esbmtkBase):
         c = m * 5 + 0.95
         self.e_u: float = self.temperature * m - c
         self.a_u: float = 1 + self.e_u / 1000
+
+def process_slice(
+    start: int,
+    end: int,
+    lat: NDArrayFloat,
+    grid: NDArrayFloat,
+    dz: int,
+    elevation_minimum: int,
+    elevation_maximum: int,
+    elevations: NDArrayFloat,
+    dx: float,
+) -> NDArrayFloat:
+    """Process a slice of the grid
+
+    :param start: start index of the slice
+    :type start: int
+    :param end: end index of the slice
+    :type end: int
+    :param lat: latitude array
+    :type lat: NDArrayFloat
+    :param grid: grid of elevation data
+    :type grid: NDArrayFloat
+    :param dz: elevation interval
+    :type dz: int
+    :param elevation_minimum: minimum elevation in the grid
+    :type elevation_minimum: int
+    :param elevation_maximum: maximum elevation in the grid
+    :type elevation_maximum: int
+    :param elevations: elevation array
+    :type elevations: NDArrayFloat
+    :param dx: grid resolution in degrees
+    :type dx: float
+    :return: elevation count array for each latitudinal slice
+    :rtype: NDArrayFloat
+    """
+    lat_slice = lat[start:end]
+    weight = np.array([grid_area(lat_val, dx) for lat_val in lat_slice])
+    return slice_count(
+        start, end, weight, grid, elevation_minimum, elevation_maximum,
+        elevations, dz)
