@@ -317,11 +317,12 @@ class SourceSinkProperties(esbmtkBase):
                 raise SourceSinkPropertiesError(
                     f"{s.n} needs to be a valid species name"
                 )
-            if s in self.isotopes:
-                isotopes = self.isotopes[s]
+            if isinstance(self.isotopes, dict):
+                if s in self.isotopes:
+                    isotopes = self.isotopes[s]
             else:
-                isotopes = False
-
+                isotopes = self.isotopes
+                    
             if type(self).__name__ == "SourceProperties":
                 a = Source(
                     name=f"{s.name}",

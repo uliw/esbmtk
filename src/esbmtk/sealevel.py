@@ -148,7 +148,12 @@ class hypsometry(esbmtkBase):
         max_el = df.iloc[0, 0] - self.max_elevation
         elevation = df.iloc[max_el:, 0].to_numpy()
         area = df.iloc[max_el:, 1].to_numpy() * self.sa
-        
+
+        dz = df.iloc[0, 0] - df.iloc[1, 0]
+        if dz != 1:  # in case we need to interpolate the data
+            dzi = np.arange(elevation[0], elevation[-1], -1)
+            area = np.interp(dzi, elevation, area)
+            elevation = dzi
         # create lookup table with area and area_dz
         self.hypdata = np.column_stack(
             (
@@ -197,7 +202,7 @@ class hypsometry(esbmtkBase):
                 )
             )
 
-        return self.hypdata[i,1]
+        return self.hypdata[i, 1]
 
     def area_dz(self, u: float, l: float) -> float:
         """calculate the area between two elevation datums
@@ -230,7 +235,7 @@ class hypsometry(esbmtkBase):
 
         u = self.max_elevation - int(u)
         l = self.max_elevation - int(l)
-        
+
         return self.hypdata[u, 1] - self.hypdata[l, 1]
 
     def volume(self, u: float, l: float) -> float:
@@ -430,8 +435,7 @@ def slice_count(
     """
     sub_grid = grid[start:end, ...]
 
-    count = np.zeros(int((elevation_maximum - elevation_minimum) // dz),
-                     dtype=float)
+    count = np.zeros(int((elevation_maximum - elevation_minimum) // dz), dtype=float)
 
     for i, e in enumerate(elevations):
         a = np.sum(np.logical_and(sub_grid > e, sub_grid < e + dz), axis=1)
@@ -480,5 +484,5 @@ def process_slice(
     lat_slice = lat[start:end]
     weight = np.array([grid_area(lat_val, dx) for lat_val in lat_slice])
     return slice_count(
-        start, end, weight, grid, elevation_minimum, elevation_maximum,
-        elevations, dz)
+        start, end, weight, grid, elevation_minimum, elevation_maximum, elevations, dz
+    )
