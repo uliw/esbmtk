@@ -2290,7 +2290,7 @@ class SourceSink(esbmtkBase):
                 ),
             ],
             "delta": ["None", (str, int, float)],
-            "alpha": ["None", (str, int, float)],
+            "epsilon": ["None", (str, int, float)],
             "isotopes": [False, (bool)],
         }
         # provide a list of absolutely required keywords

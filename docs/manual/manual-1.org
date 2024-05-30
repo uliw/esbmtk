@@ -13,8 +13,6 @@ conda activate foo
 conda install esbmtk
 #+END_SRC
 
-To access the examples, please take a look at https://github.com/uliw/esbmtk
-
 *** pip & github
 
 If you work with pip, simply install  with =python -m pip install esbmtk=, or download the code from https://github.com/uliw/esbmtk

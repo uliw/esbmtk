@@ -68,7 +68,7 @@ class Species2Species(esbmtkBase):
          - rate: A quantity (e.g., "1 mol/s"), optional
          - delta: The isotope ratio, optional
          - ref_reservoirs: Species or flux reference
-         - alpha: A fractionation factor, optional
+         - epsilon: A fractionation factor, optional
          - id: A string wich will become part of the object name, it will override
            automatic name creation
          - signal: An object handle of signal, optional
@@ -87,10 +87,10 @@ class Species2Species(esbmtkBase):
         most source objects (they can still be affected by a signal, see
         above), but makes little sense for reservoirs and sinks.
 
-     - If both the =rate= and =alpha= are given, the flux rate is fixed
+     - If both the =rate= and =epsilon= are given, the flux rate is fixed
        (subject to any signals), but the isotopic ratio of the output
        flux depends on the isotopic ratio of the upstream reservoir
-       plus any isotopic fractionation specified by =alpha=. This is
+       plus any isotopic fractionation specified by =epsilon=. This is
        typically the case for fluxes which include an isotopic
        fractionation (i.e., pyrite burial). This combination is not
        particularly useful for source objects.
@@ -138,7 +138,7 @@ class Species2Species(esbmtkBase):
 
           Species2Species(source =  upstream reservoir,
                 sink = Sink,
-                alpha = -28,
+                epsilon = -28,
                 rate = "1 mol/s",
                 )
 
@@ -224,7 +224,7 @@ class Species2Species(esbmtkBase):
             "delta": ["None", (int, float, str, dict)],
             "rate": ["None", (str, int, float, Q_, dict)],
             "pl": ["None", (list, str)],
-            "alpha": ["None", (int, float, str, dict)],
+            "epsilon": ["None", (int, float, str, dict)],
             "species": ["None", (SpeciesProperties, str)],
             "ctype": ["regular", (str)],
             "ref_reservoirs": ["None", (Species, GasReservoir, str, list)],
@@ -345,7 +345,7 @@ class Species2Species(esbmtkBase):
         self.s_index = self.__update_ode_constants__(self.scale)
         self.r_index = self.__update_ode_constants__(self.rate)
         self.d_index = self.__update_ode_constants__(self.delta)
-        self.a_index = self.__update_ode_constants__(self.alpha)
+        self.a_index = self.__update_ode_constants__(self.epsilon)
 
     def __set_name__(self):
         """The connection name is derived according to the following scheme:
@@ -520,8 +520,8 @@ class Species2Species(esbmtkBase):
 
         # if connection type is not set explicitly
         if self.ctype == "None" or self.ctype.casefold() == "regular":
-            if self.delta == "None" and self.alpha == "None" and self.isotopes:
-                self._alpha = 0
+            if self.delta == "None" and self.epsilon == "None" and self.isotopes:
+                self._epsilon = 0
 
         elif self.ctype == "ignore":
             pass
@@ -628,17 +628,17 @@ class Species2Species(esbmtkBase):
 
     """
 
-    # ---- alpha ----
+    # ---- epsilon ----
     @property
-    def alpha(self) -> tp.Union[float, int]:
-        return self._alpha
+    def epsilon(self) -> tp.Union[float, int]:
+        return self._epsilon
 
-    @alpha.setter
-    def alpha(self, a: tp.Union[float, int]) -> None:
+    @epsilon.setter
+    def epsilon(self, a: tp.Union[float, int]) -> None:
         if self.update and a != "None":
             self.__delete_process__()
             self.__delete_flux__()
-            self._alpha = a
+            self._epsilon = a
             self.__set_process_type__()  # derive flux type and create flux(es)
 
     # ---- rate  ----
@@ -688,7 +688,7 @@ class ConnectionProperties(esbmtkBase):
         ConnectionProperties(source =  upstream reservoir / upstream reservoir group
            sink = downstrean reservoir / downstream reservoirs_group
            delta = defaults to zero and has to be set manually
-           alpha =  defaults to zero and has to be set manually
+           epsilon =  defaults to zero and has to be set manually
            rate = shared between all connections
            ref_reservoirs = shared between all connections
            ref_flux = shared between all connections
@@ -737,7 +737,7 @@ class ConnectionProperties(esbmtkBase):
             "rate": ["None", (Q_, str, dict, tuple, int, float)],
             "pl": ["None", (str, dict, tuple)],
             "signal": ["None", (str, Signal, dict)],
-            "alpha": ["None", (str, dict, tuple, int, float)],
+            "epsilon": ["None", (str, dict, tuple, int, float)],
             "species": ["None", (str, dict, tuple, list, SpeciesProperties)],
             "ctype": ["None", (str, dict, tuple)],
             "ref_reservoirs": ["None", (str, dict, tuple, Species)],
@@ -818,7 +818,7 @@ class ConnectionProperties(esbmtkBase):
                 "cid": "None",
                 "plot": "yes",
                 "delta": "None",
-                "alpha": "None",
+                "epsilon": "None",
                 "rate": "None",
                 "scale": "None",
                 "ctype": "None",
@@ -852,7 +852,7 @@ class ConnectionProperties(esbmtkBase):
                 sink=getattr(self.sink, sp.n),
                 rate=self.c_defaults[sp.n]["rate"],
                 delta=self.c_defaults[sp.n]["delta"],
-                alpha=self.c_defaults[sp.n]["alpha"],
+                epsilon=self.c_defaults[sp.n]["epsilon"],
                 plot=self.c_defaults[sp.n]["plot"],
                 ctype=self.c_defaults[sp.n]["ctype"],
                 scale=self.c_defaults[sp.n]["scale"],

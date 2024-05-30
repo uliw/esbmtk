@@ -87,7 +87,7 @@ ConnectionProperties(  #
     scale=Redfield * M.S_b.volume / tau,
     species=[M.DIC],
     id="OM_production",
-    alpha=-28,  # mUr
+    epsilon=-28,  # mUr
 )
 # P burial 
 ConnectionProperties(  #
@@ -97,7 +97,7 @@ ConnectionProperties(  #
     ref_flux=M.flux_summary(filter_by="primary_production",return_list=True)[0],
     scale={M.PO4: F_b, M.DIC: F_b * Redfield},
     id="burial",
-    alpha={M.DIC: 0},
+    epsilon={M.DIC: 0},
 )
 
 M.run()

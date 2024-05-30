@@ -290,7 +290,7 @@ class SourceSinkProperties(esbmtkBase):
             "name": ["None", (str)],
             "species": ["None", (str, list)],
             "delta": [{}, dict],
-            "alpha": [{}, dict],
+            "epsilon": [{}, dict],
             "isotopes": [False, (dict, bool)],
             "register": ["None", (str, Model)],
         }

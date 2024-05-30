@@ -249,7 +249,7 @@ Let's assume that the weathering flux of carbon has :math:`\delta`\ :sup:`13`\C 
         scale=Redfield * M.S_b.volume / tau,
         species=[M.DIC],
         id="OM_production",
-        alpha=-28,  # mUr
+        epsilon=-28,  # mUr
     )
     # Burial
     ConnectionProperties(  #
@@ -259,7 +259,7 @@ Let's assume that the weathering flux of carbon has :math:`\delta`\ :sup:`13`\C 
         ref_flux=M.flux_summary(filter_by="primary_production",return_list=True)[0],
         scale={M.PO4: F_b, M.DIC: F_b * Redfield},
         id="burial",
-        alpha={M.DIC: 0},
+        epsilon={M.DIC: 0},
     )
 
 Running the previous model with these additional 7 lines, results in the following graph. Note that the run-time has been reduced to 500 years so that the graph does not just show the steady state and that the P-data is not shown.

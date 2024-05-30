@@ -886,7 +886,7 @@ def create_bulk_connections(ct: dict, M: Model, mt: int = "1:1") -> dict:
     # ra: rate, Quantity
     # sc: scale, Number
     # re: reference, optional
-    # al: alpha, optional
+    # al: epsilon, optional
     # de: delta, optional
     # bp: bypass, see scale_with_flux
     # si: signal
@@ -977,7 +977,7 @@ def create_connection(n: str, p: dict, M: Model) -> None:
     scale = 1 if "sc" not in p else p["sc"]
     rate = Q_("0 mol/a") if "ra" not in p else p["ra"]
     ref_flux = "None" if "re" not in p else p["re"]
-    alpha = "None" if "al" not in p else p["al"]
+    epsilon = "None" if "al" not in p else p["al"]
     delta = "None" if "de" not in p else p["de"]
     cid = f"{cid}"
     bypass = "None" if "bp" not in p else p["bp"]
@@ -995,7 +995,7 @@ def create_connection(n: str, p: dict, M: Model) -> None:
     scale = make_dict(los, scale)  # get rate from dictionary
     rate = make_dict(los, rate)
     ref_flux = make_dict(los, ref_flux)
-    alpha = make_dict(los, alpha)
+    epsilon = make_dict(los, epsilon)
     delta = make_dict(los, delta)
     bypass = make_dict(los, bypass)
     signal = make_dict(los, signal)
@@ -1010,7 +1010,7 @@ def create_connection(n: str, p: dict, M: Model) -> None:
             scale=scale,  # get rate from dictionary
             rate=rate,
             ref_flux=ref_flux,
-            alpha=alpha,
+            epsilon=epsilon,
             delta=delta,
             bypass=bypass,
             register=M,
@@ -1025,7 +1025,7 @@ def create_connection(n: str, p: dict, M: Model) -> None:
             scale=scale,  # get rate from dictionary
             rate=rate,
             ref_flux=ref_flux,
-            alpha=alpha,
+            epsilon=epsilon,
             delta=delta,
             bypass=bypass,
             register=M,

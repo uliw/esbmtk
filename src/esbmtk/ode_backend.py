@@ -640,7 +640,7 @@ def check_isotope_effects(
         s = get_ic(c.source, icl, True)
         s_c, s_l = s.replace(" ", "").split(",")
         """ Calculate the flux of the light isotope (f_l) as a function of the isotope
-        ratios in the source reservoir soncentrations (s_c, s_l), and alpha (a) as
+        ratios in the source reservoir soncentrations (s_c, s_l), and epsilon (a) as
         f_l = f_m * 1000/(r * (d + 1000) + 1000)
 
         Note that the scale has already been applaied to f_m in the calling function.
@@ -648,8 +648,8 @@ def check_isotope_effects(
         if c.delta != "None":
             d = c.delta
             eq = f"{f_m} * 1000 / ({r} * ({d} + 1000) + 1000)"
-        elif c.alpha != "None":
-            a = c.alpha / 1000 + 1
+        elif c.epsilon != "None":
+            a = c.epsilon / 1000 + 1
             eq = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
         else:
             eq = f"{f_m} * {s_l} / {s_c}"
@@ -723,7 +723,7 @@ def get_scale_with_flux_eq(
     ex = f"toc[{c.s_index}] * {fn}"
     """ The flux for the light isotope will computed as follows:
     We will use the mass of the flux we or scaling, but that we will set the
-    delta|alpha according to isotope ratio of the reference flux
+    delta|epsilon according to isotope ratio of the reference flux
     """
     if c.source.isotopes and c.sink.isotopes:
         exl = check_isotope_effects(ex, c, icl, ind3, ind2)
