@@ -601,7 +601,6 @@ def create_reservoirs(box_dict: dict, ic_dict: dict, M: any) -> dict:
                }
 
     :param M: Model object handle
-
     """
 
     from esbmtk import Reservoir, build_concentration_dicts
