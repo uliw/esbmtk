@@ -369,25 +369,25 @@ def plot_geometry(noo: int) -> tuple():
 
     if noo < 2:
         geometry = [1, 1]  # one row, one column
-        size = [5, 3]  # width, height in inches 
+        size = [5, 3]  # width, height in inches
     elif 1 < noo < 3:
         geometry = [2, 1]  # two rows, one column
-        size = [5, 6]  # width, height in inches 
+        size = [5, 6]  # width, height in inches
     elif 2 < noo < 5:
         geometry = [2, 2]  # two rows, two columns
-        size = [10, 6]  # width, height in inches 
+        size = [10, 6]  # width, height in inches
     elif 4 < noo < 7:
         geometry = [3, 2]  # 3 rows, 2 columns
-        size = [10, 9]  # width, height in inches 
+        size = [10, 9]  # width, height in inches
     elif 6 < noo < 10:
         geometry = [4, 2]  # 4 rows, 2 columns
-        size = [10, 12]  # width, height in inches 
+        size = [10, 12]  # width, height in inches
     elif 9 < noo < 13:
         geometry = [5, 2]  # 5 rows, 2 columns
-        size = [10, 15]  #  width, height in inches 
+        size = [10, 15]  #  width, height in inches
     elif 12 < noo < 16:
         geometry = [6, 2]  # 6 rows, 2 columns
-        size = [10, 18]  #width, height in inches 
+        size = [10, 18]  # width, height in inches
     else:
         m = (
             "plot geometry for more than 15 fluxes is not yet defined"
@@ -642,6 +642,7 @@ def create_reservoirs(box_dict: dict, ic_dict: dict, M: any) -> dict:
                 raise ValueError("'ty' must be either Source or Sink")
 
         else:  # create reservoirs
+            breakpoint()
             rg = Reservoir(
                 name=box_name,
                 geometry=value["g"],
