@@ -76,8 +76,10 @@ class ScaleError(Exception):
         message = f"\n\n{message}\n"
         super().__init__(message)
 
+
 def deprecated_keyword(message):
     warnings.warn(message, DeprecationWarning, stacklevel=2)
+
 
 class Model(esbmtkBase):
     """This class is used to specify a new model.  See the __init__()
@@ -244,13 +246,15 @@ class Model(esbmtkBase):
         # legacy variable names
         self.start = self.ensure_q(self.start).to(self.t_unit).magnitude
         self.stop = self.ensure_q(self.stop).to(self.t_unit).magnitude
-        
+
         if self.timestep != "None":
             self.max_timestep = self.ensure_q(self.timestep).to(self.t_unit).magnitude
             deprecated_keyword("timestep is depreciated. Please use max_timestep")
         else:
-            self.max_timestep = self.ensure_q(self.max_timestep).to(self.t_unit).magnitude
-            
+            self.max_timestep = (
+                self.ensure_q(self.max_timestep).to(self.t_unit).magnitude
+            )
+
         self.min_timestep = self.ensure_q(self.min_timestep).to(self.t_unit).magnitude
         self.dt = self.max_timestep
         self.max_step = self.dt
@@ -498,7 +502,7 @@ class Model(esbmtkBase):
         M.plot([sb.PO4, sb.DIC], fn='test.pdf')
 
         The above code will plot ``sb.PO4`` and ``sb.DIC`` and save the plot as 'test.pdf'.
-        
+
         """
 
         if pl is None:
@@ -507,6 +511,7 @@ class Model(esbmtkBase):
             pl = [pl]
 
         filename = kwargs.get("fn", f"{self.n}.pdf")
+        blocking = kwargs.get("blocking", True)
         plot_title = kwargs.get("title", "None")
         noo: int = len(pl)
         size, [row, col] = plot_geometry(noo)  # adjust layout
@@ -556,7 +561,7 @@ class Model(esbmtkBase):
         fig.subplots_adjust(top=0.88)
         if not kwargs.get("no_show", False):
             fig.tight_layout()
-            plt.show(block=False)  # create the plot windows
+            plt.show(block=blocking)  # create the plot windows
             fig.savefig(filename)
 
         return plt, fig, axs
