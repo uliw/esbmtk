@@ -197,24 +197,11 @@ class Reservoir(esbmtkBase):
 
         self.__register_name_new__()
 
-        # dict with all default values
-        self.cd: dict = {}
-        for s in self.species:
-            self.cd[s.name]: dict = {
-                "mass": "None",
-                "concentration": "None",
-                "delta": "None",
-                "plot": "yes",
-                "isotopes": False,
-            }
-
-            # now we loop trough all keys for this reservoir and see
-            # if we find a corresponding item in the kwargs
-            for kcd, vcd in self.cd[s.name].items():  # kcd  = delta, plot, etc
-                if kcd in self.kwargs and s in self.kwargs[kcd]:
-                    # update the entry with the value provided in kwargs
-                    # self.cd['SO4_name']['delta'] = self.kwargs['delta'][SO4]
-                    self.cd[s.name][kcd] = self.kwargs[kcd][s]
+        # if len(self.species) == 1:
+        la = "mass concentration delta plot isotopes".split(" ")
+        for a in la:
+            if not isinstance(getattr(self, a), dict):
+                setattr(self, a, {self.species[0]: getattr(self, a)})
 
         self.lor: tp.List = []  # list of reservoirs in this group.
         # loop over all entries in species and create the respective reservoirs
@@ -230,14 +217,12 @@ class Reservoir(esbmtkBase):
                 name=f"{s.name}",
                 register=self,
                 species=s,
-                delta=self.cd[s.n]["delta"],
-                mass=self.cd[s.n]["mass"],
-                concentration=self.cd[s.n]["concentration"],
+                delta=self.delta.get(s, "None"),
+                concentration=self.concentration.get(s, "0 mol/kg"),
+                isotopes=self.isotopes.get(s, False),
+                plot=self.plot.get(s, "None"),
                 volume=self.volume,
-                # geometry=self.geometry,
-                plot=self.cd[s.n]["plot"],
                 groupname=self.name,
-                isotopes=self.cd[s.n]["isotopes"],
                 rtype=rtype,
             )
             # register as part of this group
@@ -290,7 +275,6 @@ class SourceSinkProperties(esbmtkBase):
             "name": ["None", (str)],
             "species": ["None", (str, list)],
             "delta": [{}, dict],
-            "epsilon": [{}, dict],
             "isotopes": [False, (dict, bool)],
             "register": ["None", (str, Model)],
         }
@@ -311,31 +295,33 @@ class SourceSinkProperties(esbmtkBase):
         self.__register_name_new__()
         self.lor: tp.List = []  # list of sub reservoirs in this group
 
+        # input variables can be either dictionaries, single values
+        if isinstance(self.species, list):
+            la = "delta isotopes".split(" ")
+            for a in la:
+                if not isinstance(getattr(self, a), dict):
+                    setattr(self, a, {self.species[0]: getattr(self, a)})
+
         # loop over species names and setup sub-objects
         for i, s in enumerate(self.species):
             if not isinstance(s, SpeciesProperties):
                 raise SourceSinkPropertiesError(
                     f"{s.n} needs to be a valid species name"
                 )
-            if isinstance(self.isotopes, dict):
-                if s in self.isotopes:
-                    isotopes = self.isotopes[s]
-            else:
-                isotopes = self.isotopes
-                    
+            
             if type(self).__name__ == "SourceProperties":
                 a = Source(
                     name=f"{s.name}",
                     register=self,
                     species=s,
-                    isotopes=isotopes,
+                    isotopes=self.isotopes.get("s", False),
                 )
             elif type(self).__name__ == "SinkProperties":
                 a = Sink(
                     name=f"{s.name}",
                     register=self,
                     species=s,
-                    isotopes=isotopes,
+                    isotopes=self.isotopes.get("s", False),
                 )
             else:
                 raise SourceSinkPropertiesError(
@@ -935,7 +921,14 @@ class VectorData(esbmtkBase):
             "label": ["None", (str, bool)],
         }
         # provide a list of absolutely required keywords
-        self.lrk: tp.List = ["name", "register", "species", "data", "label", "plt_units"]
+        self.lrk: tp.List = [
+            "name",
+            "register",
+            "species",
+            "data",
+            "label",
+            "plt_units",
+        ]
         self.__initialize_keyword_variables__(kwargs)
 
         self.n = self.name

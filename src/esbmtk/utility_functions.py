@@ -571,6 +571,56 @@ def get_typed_list(data: tp.List) -> list:
         tl.append(x)
     return tl
 
+def initialize_reservoirs(M: Model, box_dict) -> None:
+    """ """
+
+    from esbmtk import Reservoir, build_concentration_dicts
+    from esbmtk import SourceProperties, SinkProperties, SpeciesProperties
+
+    # loop over reservoir names
+    for box_name, value in box_dict.items():
+        match value.get("ty"):  # type is given
+            case "Source":
+                SourceProperties(
+                    name=box_name,
+                    species=value["sp"],
+                    delta=value.get("d", {}),
+                    isotopes=value.get("i", {}),
+                    register=M,
+                )
+            case "Sink":
+                SinkProperties(
+                    name=box_name,
+                    species=value["sp"],
+                    delta=value.get("d", {}),
+                    isotopes=value.get("i", {}),
+                    register=M,
+                )
+            case _:  # default to creating a reservoir
+                rg = Reservoir(
+                    name=box_name,
+                    geometry=value["g"],
+                    concentration=value.get("c", "0 mol/kg"),
+                    delta=value.get("d", {}),
+                    isotopes=value.get("i", {}),
+                    plot=value.get("p", {}),
+                    seawater_parameters={
+                        "temperature": value["T"],
+                        "pressure": value["P"],
+                        "salinity": value["S"],
+                    },
+                    register=M,
+                )
+    first_key = list(box_dict.keys())[0]
+    species_dict = box_dict[first_key].get("c", "None")
+    if isinstance(species_dict, dict):
+        species_list = list(species_dict.keys())
+        if not isinstance(species_list[0], SpeciesProperties):
+            raise ValueError(f"{species_list[0]} must be of type SpeciesProperties",
+                             f"not {type(species_list[0])}")
+    else:
+        raise ValueError("No species in species dict!")
+    return species_list
 
 def create_reservoirs(box_dict: dict, ic_dict: dict, M: any) -> dict:
     """boxes are defined by area and depth interval here we use an ordered
