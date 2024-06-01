@@ -192,7 +192,6 @@ SinkProperties(
     name="burial",
     species=[M.PO4],
 )
-
 # reservoir definitions
 Reservoir(
     name="S_b",  # box name
@@ -287,7 +286,8 @@ To run the model, use the =run()= method of the model instance, and plot the res
 #+BEGIN_SRC ipython :tangle po4_1.py
 M.run()
 M.plot([M.S_b.PO4, M.D_b.PO4], fn="po4_1.png")
-M.save_data()
+# optionally, save data
+# M.save_data(directory="./po4_1_data")
 #+END_SRC
 
 
@@ -342,8 +342,9 @@ M.S_b.l  # the concentration of the light isotope (if used)
 
 The model time axis is available as =M.time= and the model supports the =connection_summary()= and =flux_summary= methods to query the respective =connection= and =flux= objects. 
 
-#+name: po41wrapper
-#+BEGIN_SRC org :noweb yes :exports none
+# output a testcase
+#+name: po41testwrapper
+#+BEGIN_SRC org :noweb yes :exports none :tangle po_4_1_test.py
 <<p1>>
 <<p2>>
 <<p3>>
@@ -352,4 +353,22 @@ The model time axis is available as =M.time= and the model supports the =connect
 <<p7>>
 <<p8>>
 <<p9>>
+#+END_SRC
+
+#+BEGIN_SRC jupyter-python :exports none :tangle test_po_4_1.py
+import pytest
+import po_4_1
+
+M = po_4_1.M
+tol = 1e-12  # tolerance
+
+test_values = [ # result, reference value
+    (M.S_b.PO4.c[-1], 0.0000149597179598576),
+    (M.D_b.PO4.c[-1], 0.0000219990964241379),
+]
+
+@pytest.mark.parametrize("test_input, expected", test_values)
+def test_S_b(test_input, expected):
+    t = 1e-12
+    assert expected * (1 - t) <= test_input <= expected * (1 + t)
 #+END_SRC
