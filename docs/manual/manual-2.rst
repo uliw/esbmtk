@@ -41,8 +41,7 @@ The default is to add the signal to a given connection. It is however also possi
     M.run()
 
 Note that the ``plot()`` method accepts the signal object as well. In general, any ESBMTK object that has data that varies with time, can be plotted by the ``plot()`` method. ESBMTK also provides classes to include
-external data  :py:class:`esbmtk.extended_classes.ExternalData()`   as well as classes to mix and match data into the same plot :py:class:`esbmtk.extended_classes.DataField()`. The file ``is92a_comparison_plots.py`` (see  `https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010 <https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010>`_) shows a use case. Furthermore, 
- :py:class:`esbmtk.esbmtk.Model.plot()`  returns a tuple with the figure instance, list of axs objects, which allows even more complex figure manipulations (see ``steady_state_plots.py`` in the same repository).
+external data  :py:class:`esbmtk.extended_classes.ExternalData()`   as well as classes to mix and match data into the same plot :py:class:`esbmtk.extended_classes.DataField()`. The file ``is92a_comparison_plots.py`` (see  `https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010 <https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010>`_) shows a use case. Furthermore, :py:class:`esbmtk.esbmtk.Model.plot()`  returns a tuple with the figure instance, list of axs objects, which allows even more complex figure manipulations (see ``steady_state_plots.py`` in the same repository).
 
 .. code:: ipython
 
@@ -295,7 +294,7 @@ Let's assume that the weathering flux of carbon has :math:`\delta`\ :sup:`13`\C 
     )
 
 Note that in order to enable isotope calculations, we only had to add/modify 8 lines (4, 9, 15, 16, 22, 32, 63, 72).
-Running this code and using the :py:class:`esbmtk.utility_functions.data_summaries.()` class to simplify the plotting command
+Running this code and using the :py:class:`esbmtk.utility_functions.data_summaries()` class to simplify the plotting command
 
 .. code:: ipython
     :name: po44_3
@@ -323,8 +322,7 @@ Using many boxes
 
 Using the ESBMTK classes introduced so far is sufficient to build complex models. However, it is easy to leverage Python syntax to create a few utility functions that help in reducing overly verbose code. The ESBMTK library comes with a few routines that help in this regard. However, they are not part of the core API, are not (yet) well documented and have not seen much testing. The following provides a brief introduction, but it may be useful to study the code for the Boudreau 2010 and LOSCAR-type models in the example directory. All of these make heavy use of the Python dictionary class.
 
-For this function to work correctly, box names need to be specified following this template ``Area_depth``, e.g., ``A_sb`` for the Atlantic surface water box, or ``A_ib`` for the Atlantic intermediate water box. The actual names, do not matter, but the underscore is used to differentiate between ocean area and depth interval. The following code uses two dictionaries to specify the species and initial conditions for a multi-box model. Both dictionaries are then used as input for a function that creates the actual instances. Note that the meaning and syntax for the geometry list and seawater parameters are explained in the next chapter. Both dictionaries are than passed to the
- :py:function:`esbmtk.utility_functions.create_reservoirs.()` function to instantiate the respective ``Reservoir`` objects.
+For this function to work correctly, box names need to be specified following this template ``Area_depth``, e.g., ``A_sb`` for the Atlantic surface water box, or ``A_ib`` for the Atlantic intermediate water box. The actual names, do not matter, but the underscore is used to differentiate between ocean area and depth interval. The following code uses two dictionaries to specify the species and initial conditions for a multi-box model. Both dictionaries are then used as input for a function that creates the actual instances. Note that the meaning and syntax for the geometry list and seawater parameters are explained in the next chapter. Both dictionaries are than passed to the :py:class:`esbmtk.utility_functions.create_reservoirs()`  function to instantiate the respective ``Reservoir`` objects.
 
 .. code:: ipython
 
@@ -344,7 +342,7 @@ For this function to work correctly, box names need to be specified following th
             "P_sb": {"g": [0, -100, P_ap], "T": 20, "P": 5, "S": 34.7},
             "P_ib": {"g": [-100, -1000, P_ap], "T": 10, "P": 100, "S": 34.7},
             "P_db": {"g": [-1000, -6000, P_ap], "T": 2, "P": 240, "S": 34.7},
-            # High latitude box
+             # High latitude box
             "H_sb": {"g": [0, -250, H_ap], "T": 2, "P": 10, "S": 34.7},
             # Weathering sources
             "Fw": {"ty": "Source", "sp": [M.DIC, M.TA, M.PO4]},
@@ -362,7 +360,7 @@ For this function to work correctly, box names need to be specified following th
     create_reservoirs(box_names, initial_conditions, M)
 
 
-The above code could also be written with explicit initial conditions on a per reservoir/species base and then initialized with the :py:function::`esbmtk.utility_functions.initialize_reservoirs.()` function. The ``Boudrea2010.py`` example at `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_ shows a use case for this approach.
+The above code could also be written with explicit initial conditions on a per reservoir/species base and then initialized with the :py:class:`esbmtk.utility_functions.initialize_reservoirs()` function. The ``Boudrea2010.py`` example at `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_ shows a use case for this approach.
 
 .. code:: ipython
 
