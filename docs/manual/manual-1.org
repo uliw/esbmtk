@@ -142,7 +142,7 @@ from esbmtk import (
     Q_,  # Quantity operator
 )
 #+END_SRC
-Next we use the =Model= class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
+Next we use the @@rst::py:class:`esbmtk.esbmtk.Model()`@@  class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
 Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/l' rather than mol/m**3 or 'kg/s'. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. So your mileage may vary if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.
 #+name: p2
 #+BEGIN_SRC ipython :tangle po4_1.py
@@ -272,6 +272,10 @@ ConnectionProperties(  #
 )
 #+END_SRC
 
+#+BEGIN_SRC ipython :tangle po4_1.py :exports none
+M.run()
+#+END_SRC
+
 Running the above code (see the file =po4_1.py= at https://github.com/uliw/ESBMTK-Examples) and results in the following graph:
 #+name: po41
 #+caption: Example output from =po4_1.png=
@@ -284,7 +288,6 @@ Running the above code (see the file =po4_1.py= at https://github.com/uliw/ESBMT
 To run the model, use the =run()= method of the model instance, and plot the results with the =plot()= method. This method accepts a list of ESBMTK instances, that will be plotted in a common window. Without further arguments, the plot will also be saved as a pdf file where =filename= defaults to the name of the model instance. The =save_data()= method will create (or recreate) the =data= directory which will then be populated by csv-files. 
 #+name: p10
 #+BEGIN_SRC ipython :tangle po4_1.py
-M.run()
 M.plot([M.S_b.PO4, M.D_b.PO4], fn="po4_1.png")
 # optionally, save data
 # M.save_data(directory="./po4_1_data")
@@ -340,35 +343,47 @@ M.S_b.d  # delta value (if used by model)
 M.S_b.l  # the concentration of the light isotope (if used)
 #+END_SRC
 
-The model time axis is available as =M.time= and the model supports the =connection_summary()= and =flux_summary= methods to query the respective =connection= and =flux= objects. 
+The model time axis is available as =M.time= and the model supports the @@rst::py:class:`esbmtk.esbmtk.Model.connection_summary()`@@ and @@rst::py:class:`esbmtk.esbmtk.Model.flux_summary()`@@   
 
 # output a testcase
-#+name: po41testwrapper
-#+BEGIN_SRC org :noweb yes :exports none :tangle po_4_1_test.py
+#+name: po41definition
+#+BEGIN_SRC org :noweb yes :exports none
 <<p1>>
 <<p2>>
 <<p3>>
 <<p4>>
 <<p5>>
+<<p6>>
 <<p7>>
 <<p8>>
 <<p9>>
 #+END_SRC
 
-#+BEGIN_SRC jupyter-python :exports none :tangle test_po_4_1.py
-import pytest
-import po_4_1
+#+name: po41testwrapper
+#+BEGIN_SRC ipython :noweb yes :exports none :tangle po4_1_test.py
+<<po41definition>>
+M.run()
+#+END_SRC
+# create a test runner
+#+name: testrunner
+#+BEGIN_SRC ipython :exports none value_test.py
+# run tests
+@pytest.mark.parametrize("test_input, expected", test_values)
+def test_values(test_input, expected):
+    t = 1e-12
+    assert abs(expected) * (1 - t) <= abs(test_input) <= abs(expected) * (1 + t)
+#+END_SRC
 
-M = po_4_1.M
+#+BEGIN_SRC ipython :noweb yes :exports none :tangle test_po4_1.py
+import pytest
+import po4_1_test  # import script
+
+M = po4_1_test.M  # get model handle 
 tol = 1e-12  # tolerance
 
 test_values = [ # result, reference value
     (M.S_b.PO4.c[-1], 0.0000149597179598576),
     (M.D_b.PO4.c[-1], 0.0000219990964241379),
 ]
-
-@pytest.mark.parametrize("test_input, expected", test_values)
-def test_S_b(test_input, expected):
-    t = 1e-12
-    assert expected * (1 - t) <= test_input <= expected * (1 + t)
+<<testrunner>>
 #+END_SRC

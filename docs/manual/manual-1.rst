@@ -18,8 +18,6 @@ Assuming you install into a new virtual environment the following should install
     conda activate foo
     conda install esbmtk
 
-To access the examples, please take a look at `https://github.com/uliw/esbmtk <https://github.com/uliw/esbmtk>`_
-
 pip & github
 ^^^^^^^^^^^^
 
@@ -172,7 +170,7 @@ In the first step, one needs to define a model object that describes fundamental
         Q_,  # Quantity operator
     )
 
-Next we use the ``Model`` class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
+Next we use the :py:class:`esbmtk.esbmtk.Model()`  class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
 Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/l' rather than mol/m\*\*3 or 'kg/s'. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. So your mileage may vary if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.
 
 .. code:: ipython
@@ -228,7 +226,6 @@ To set up the model geometry, we first use the :py:class:`esbmtk.esbmtk.Source()
         name="burial",
         species=[M.PO4],
     )
-
     # reservoir definitions
     Reservoir(
         name="S_b",  # box name
@@ -334,9 +331,9 @@ To run the model, use the ``run()`` method of the model instance, and plot the r
 .. code:: ipython
     :name: p10
 
-    M.run()
     M.plot([M.S_b.PO4, M.D_b.PO4], fn="po4_1.png")
-    M.save_data()
+    # optionally, save data
+    # M.save_data(directory="./po4_1_data")
 
 Saving/restoring the model state
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -398,4 +395,13 @@ The concentration data for a given reservoir is stored in the following instance
     M.S_b.d  # delta value (if used by model)
     M.S_b.l  # the concentration of the light isotope (if used)
 
-The model time axis is available as ``M.time`` and the model supports the ``connection_summary()`` and ``flux_summary`` methods to query the respective ``connection`` and ``flux`` objects. 
+The model time axis is available as ``M.time`` and the model supports the :py:class:`esbmtk.esbmtk.Model.connection_summary()` and :py:class:`esbmtk.esbmtk.Model.flux_summary()`   
+
+.. code:: ipython
+    :name: testrunner
+
+    # run tests
+    @pytest.mark.parametrize("test_input, expected", test_values)
+    def test_values(test_input, expected):
+        t = 1e-12
+        assert abs(expected) * (1 - t) <= abs(test_input) <= abs(expected) * (1 + t)

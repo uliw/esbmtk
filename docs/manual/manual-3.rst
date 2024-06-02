@@ -4,7 +4,7 @@
 Seawater and Carbon Chemistry
 -----------------------------
 
-ESBMTK provides several classes that abstract the handling of basin geometry, seawater chemistry and air-sea gas exchange.
+ESBMTK provides several classes that abstract the handling of basin geometry, seawater chemistry and air-sea gas exchange.  See ``Boudreau2010.py`` `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_ for an actual example how these classes are used to define a model.
 
 Hypsography
 ~~~~~~~~~~~

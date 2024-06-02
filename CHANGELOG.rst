@@ -5,6 +5,12 @@
 1 Changelog
 -----------
 
+- 0.13.0.8 added new testing framework, and 16 unit tests. Updated the documentation
+
+- 0.13.0.7 the isotope fractionation factor has been renamed from ``alpha`` to ``epsilon``
+
+- 0.13.0.5 ``tinmestep`` keyword is now deprecated and should be replaced with ``max_timestep``. ``min_time_step`` is now a configurable option.
+
 - 0.13.0.x The equations file is now a temporary file with a random name. This allows for the parallel execution of model code.
 
 - 0.13.0.x plot() will now return the figure and axes handles, and accepts the ``no_show`` option. This allows for the addition of manual plot elements in post-processing

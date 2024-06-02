@@ -331,8 +331,8 @@ def find_matching_strings(s: str, fl: tp.List[str]) -> bool:
     return all(f in s for f in fl)
 
 
-def insert_into_namespace(name, value, name_space=globals()):
-    name_space[name] = value
+# def insert_into_namespace(name, value, name_space=globals()):
+#     name_space[name] = value
 
 
 def add_to(l, e):
@@ -571,8 +571,47 @@ def get_typed_list(data: tp.List) -> list:
         tl.append(x)
     return tl
 
-def initialize_reservoirs(M: Model, box_dict) -> None:
-    """ """
+
+def initialize_reservoirs(M: Model, box_dict: dict) -> tp.List(Species):
+    """This function will initialize one or more reservoirs based
+    on the data in box_dict (see the example below). This is useful
+    when we need to specify different initil conditions in reservoir.
+    Otherwise use :func:`create_reservoirs`.
+
+    Parameters
+    ----------
+    M : Model
+        Model handle
+    box_dict : dict
+        dictionary with reservoir parameters
+
+    Returns
+    -------
+    tp.List
+        list of all Species objects in box_dict
+    
+    Raises
+    ------
+    ValueError
+        If there are no Species objects in the dictionary
+
+    
+    Example::
+
+        box_parameters = {  # name: [[ud, ld ap], T, P, S]
+            # Atlantic Ocean
+            "M.A_sb": {
+                "g": [0, -100, A_ap],
+                "T": 20,
+                "P": 5,
+                "S": 34.7,
+                "c": {M.PO4: "2.1 mmol/kg",
+                      M.DIC: "2.21 mmol/kg",
+                      M.TA: "2.31 mmol/kg",
+                      }
+        species_list = initialize_reservoirs(M, box_parameters)
+
+    """
 
     from esbmtk import Reservoir, build_concentration_dicts
     from esbmtk import SourceProperties, SinkProperties, SpeciesProperties
@@ -616,11 +655,14 @@ def initialize_reservoirs(M: Model, box_dict) -> None:
     if isinstance(species_dict, dict):
         species_list = list(species_dict.keys())
         if not isinstance(species_list[0], SpeciesProperties):
-            raise ValueError(f"{species_list[0]} must be of type SpeciesProperties",
-                             f"not {type(species_list[0])}")
+            raise ValueError(
+                f"{species_list[0]} must be of type SpeciesProperties",
+                f"not {type(species_list[0])}",
+            )
     else:
         raise ValueError("No species in species dict!")
     return species_list
+
 
 def create_reservoirs(box_dict: dict, ic_dict: dict, M: any) -> dict:
     """boxes are defined by area and depth interval here we use an ordered

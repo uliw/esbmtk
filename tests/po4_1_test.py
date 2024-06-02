@@ -7,25 +7,21 @@ from esbmtk import (
     SinkProperties,  # sink class
     Q_,  # Quantity operator
 )
-
 # define the basic model parameters
 M = Model(
     stop="3 Myr",  # end time of model
     max_timestep="1 kyr",  # upper limit of time step
     element=["Phosphor"],  # list of element definitions
 )
-
 # now try this
 from esbmtk import Q_
 tau = Q_("100 years")
 tau * 12
-
 # boundary conditions
 F_w =  M.set_flux("45 Gmol", "year", M.P) # P @280 ppm (Filipelli 2002)
 tau = Q_("100 year")  # PO4 residence time in surface boxq
 F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
 thc = "20*Sv"  # Thermohaline circulation in Sverdrup
-
 # Source definitions
 SourceProperties(
     name="weathering",
@@ -35,7 +31,6 @@ SinkProperties(
     name="burial",
     species=[M.PO4],
 )
-
 # reservoir definitions
 Reservoir(
     name="S_b",  # box name
@@ -47,7 +42,6 @@ Reservoir(
     volume="100E16 m**3",  # deeb box volume
     concentration={M.PO4: "0 umol/l"},  # initial concentration
 )
-
 ConnectionProperties(
     source=M.weathering,  # source of flux
     sink=M.S_b,  # target of flux
@@ -55,7 +49,6 @@ ConnectionProperties(
     id="river",  # connection id
     ctype="regular",
 )
-
 ConnectionProperties(  # thermohaline downwelling
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
@@ -70,7 +63,6 @@ ConnectionProperties(  # thermohaline upwelling
     scale=thc,
     id="upwelling_PO4",
 )
-
 ConnectionProperties(  #
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
@@ -79,7 +71,6 @@ ConnectionProperties(  #
     id="primary_production",
     species=[M.PO4],  # apply this only to PO4
 )
-
 ConnectionProperties(  #
     source=M.D_b,  # source of flux
     sink=M.burial,  # target of flux
@@ -89,8 +80,4 @@ ConnectionProperties(  #
     id="burial",
     species=[M.PO4],
 )
-
 M.run()
-M.plot([M.S_b.PO4, M.D_b.PO4], fn="po4_1.png")
-# optionally, save data
-# M.save_data(directory="./po4_1_data")

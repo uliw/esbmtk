@@ -19,7 +19,6 @@ tau = Q_("100 year")  # PO4 residence time in surface boxq
 F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
 thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 Redfield = 106 # C:P
-
 SourceProperties(
     name="weathering",
     species=[M.PO4, M.DIC],
@@ -44,7 +43,6 @@ Reservoir(
     isotopes={M.DIC: True},
     delta={M.DIC: 0},
 )
-
 ConnectionProperties(  # thermohaline downwelling
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
@@ -59,8 +57,7 @@ ConnectionProperties(  # thermohaline upwelling
     scale=thc,
     id="thc_down",
 )
-
-ConnectionProperties(
+ConnectionProperties(  # weathering
     source=M.weathering,  # source of flux
     sink=M.S_b,  # target of flux
     rate={M.DIC: F_w_PO4 * Redfield, M.PO4: F_w_PO4},  # rate of flux
@@ -68,9 +65,7 @@ ConnectionProperties(
     id="weathering",  # connection id
     delta={M.DIC: 0},
 )
-
-# P-uptake by photosynthesis
-ConnectionProperties(  #
+ConnectionProperties(  # P-uptake by photosynthesis
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
@@ -78,8 +73,7 @@ ConnectionProperties(  #
     id="primary_production",
     species=[M.PO4],  # apply this only to PO4
 )
-# OM Primary production as a function of P-concentration
-ConnectionProperties(  #
+ConnectionProperties(  # OM Primary production as a function of P-concentration
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
     ref_reservoirs=M.S_b.PO4,
@@ -89,21 +83,13 @@ ConnectionProperties(  #
     id="OM_production",
     epsilon=-28,  # mUr
 )
-# P burial 
-ConnectionProperties(  #
+ConnectionProperties(  # P burial
     source=M.D_b,  # source of flux
     sink=M.burial,  # target of flux
     ctype="scale_with_flux",
-    ref_flux=M.flux_summary(filter_by="primary_production",return_list=True)[0],
+    ref_flux=M.flux_summary(filter_by="primary_production", return_list=True)[0],
     scale={M.PO4: F_b, M.DIC: F_b * Redfield},
     id="burial",
     epsilon={M.DIC: 0},
 )
-
 M.run()
-pl = data_summaries(
-    M,  # model instance 
-    [M.DIC, M.PO4],  # SpeciesProperties list 
-    [M.S_b, M.D_b],  # Reservoir list
-)
-M.plot(pl, fn="po4_4.png")

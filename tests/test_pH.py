@@ -2,6 +2,7 @@ from math import log10
 import pytest
 from esbmtk import Model, Reservoir, get_hplus
 import PyCO2SYS as pyco2
+import pytest
 
 def test_manual_ph_calculation():
     """ Test convergence of interative pH calculation
@@ -56,7 +57,7 @@ def test_manual_ph_calculation():
     assert abs(hplus0 - hplus) < 1e-12
 
 def test_pyco2sys_ph_calculation():
-     """ Compare result of pH computation with the value
+    """ Compare result of pH computation with the value
     provided by pyCO2sys
     """
     M = Model(

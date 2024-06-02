@@ -12,7 +12,7 @@ for i in *.org; do
      emacsclient -e "(progn (switch-to-buffer (find-file-noselect \"$i\")) (end-of-buffer) (org-rst-export-to-rst) (kill-buffer))"
 done
 
-mv test_*.py /home/uliw/user/python-scripts/esbmtk/tests/
+mv *test*.py /home/uliw/user/python-scripts/esbmtk/tests/
 mv *.py /home/uliw/user/python-scripts/esbmtk_examples/Examples_from_the_manual/
 
 cd /home/uliw/user/python-scripts/esbmtk/
