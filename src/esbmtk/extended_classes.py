@@ -314,14 +314,14 @@ class SourceSinkProperties(esbmtkBase):
                     name=f"{s.name}",
                     register=self,
                     species=s,
-                    isotopes=self.isotopes.get("s", False),
+                    isotopes=self.isotopes.get(s, False),
                 )
             elif type(self).__name__ == "SinkProperties":
                 a = Sink(
                     name=f"{s.name}",
                     register=self,
                     species=s,
-                    isotopes=self.isotopes.get("s", False),
+                    isotopes=self.isotopes.get(s, False),
                 )
             else:
                 raise SourceSinkPropertiesError(
