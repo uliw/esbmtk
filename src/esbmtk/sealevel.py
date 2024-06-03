@@ -84,7 +84,7 @@ class hypsometry(esbmtkBase):
             "max_elevation": [1000, int],
             "max_depth": [-11000, int],
             "basin": ["global", str],
-            "hyp_data_fn": ["Hypsometric_Curve_05m", str],
+            "hyp_data_fn": ["Hypsometric_Curve_05m_1", str],
         }
 
         # required keywords
@@ -105,23 +105,36 @@ class hypsometry(esbmtkBase):
         self.sa = 510067420e6  # area in m^2
         self.mo = self.model
         self.__register_name_new__()
-        self.read_data()
+        self.read_data(self.hyp_data_fn)
         self.oa = 361e12  #  m^2 https://en.wikipedia.org/wiki/Ocean
 
-    def read_data(self) -> None:
+    def read_data(self, fn: str) -> None:
         """Read the hypsometry data from a pickle file.
         If the pickle file is missing, create it from the
-        csv data
-
-        save the hypsometry data as a numpy array with
+        csv data save the hypsometry data as a numpy array with
         elevation, area, and area_dz in self.hypdata
+
+        Parameters
+        ----------
+        fn : str
+            file name to read from
+
+        Raises
+        ------
+        FileNotFoundError
+
+        The file structure must follow this scheme
+
+        Elevation[m], Cumsum
+        -11000, 0
+
         """
         from importlib import resources as impresources
         import pathlib as pl
 
-        fn_csv = impresources.files("esbmtk") / f"{self.hyp_data_fn}.csv"
+        fn_csv = impresources.files("esbmtk") / f"{fn}.csv"
         fqfn_csv: pl.Path = pl.Path(fn_csv)
-        fn_pickle: str = impresources.files("esbmtk") / f"{self.hyp_data_fn}.pickle"
+        fn_pickle: str = impresources.files("esbmtk") / f"{fn}.pickle"
         fqfn_pickle: pl.Path = pl.Path(fn_pickle)
 
         if fqfn_pickle.exists():  # check if pickle file exist
@@ -137,23 +150,34 @@ class hypsometry(esbmtkBase):
             if fqfn_csv.exists():
                 print(
                     "pickle file is older/missing recreating hypsography pickle",
-                    f"from {self.hyp_data_fn}.csv",
+                    f"from {fn}.csv",
                 )
                 df = pd.read_csv(fn_csv, float_precision="high")
+                # strangely, this is necessary
+                df.sort_values(by=["Elevation"], ascending=True, inplace=True)
                 df.to_pickle(fqfn_pickle)
             else:
                 raise FileNotFoundError(f"Cannot find file {fqfn_csv}")
 
-        # offset the dat, since we do not need land data
-        max_el = df.iloc[0, 0] - self.max_elevation
-        elevation = df.iloc[max_el:, 0].to_numpy()
-        area = df.iloc[max_el:, 1].to_numpy() * self.sa
-
-        dz = df.iloc[0, 0] - df.iloc[1, 0]
+        """ Test if we need to interpolate the data, and extract only 
+        a subset
+        """
+        deepest = df.iloc[0, 0]
+        heighest = df.iloc[-1, 0]
+        dz = df.iloc[1, 0] - deepest
         if dz != 1:  # in case we need to interpolate the data
-            dzi = np.arange(elevation[0], elevation[-1], -1)
-            area = np.interp(dzi, elevation, area)
-            elevation = dzi
+            elevation = np.arange(deepest, heighest, 1)
+            area = np.interp(elevation, df.Elevation, df.CumSum)
+        else:
+            elevation = df.Elevation.to_numpy()
+            area = df.CumSum.to_numpy()
+
+        # offset the data, since we do not need land data
+        max_el_idx = self.max_elevation + abs(deepest) + 1
+        elevation = np.flip(elevation[0:max_el_idx])  # deepest to max_elev
+        area = np.flip(area[0:max_el_idx] * self.sa)
+
+        print(f"elevation[1000] = {elevation[1000]}")
         # create lookup table with area and area_dz
         self.hypdata = np.column_stack(
             (
@@ -167,6 +191,7 @@ class hypsometry(esbmtkBase):
         """Return the area values between 0 and max_depth
         as 1-D array
         """
+
         return self.hypdata[self.max_elevation :, 1]
 
     def get_lookup_table_area_dz(self) -> NDArrayFloat:
