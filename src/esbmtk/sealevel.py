@@ -84,7 +84,7 @@ class hypsometry(esbmtkBase):
             "max_elevation": [1000, int],
             "max_depth": [-11000, int],
             "basin": ["global", str],
-            "hyp_data_fn": ["Hypsometric_Curve_05m_1", str],
+            "hyp_data_fn": ["Hypsometric_Curve_05m_100", str],
         }
 
         # required keywords
@@ -175,6 +175,8 @@ class hypsometry(esbmtkBase):
         # offset the data, since we do not need land data
         max_el_idx = self.max_elevation + abs(deepest) + 1
         elevation = np.flip(elevation[0:max_el_idx])  # deepest to max_elev
+        print(f"e_min = {elevation[0]}, e-max = {elevation[-3:]}")
+        print(f"sum = {np.sum(elevation)}\n")
         area = np.flip(area[0:max_el_idx] * self.sa)
 
         print(f"elevation[1000] = {elevation[1000]}")

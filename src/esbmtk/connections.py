@@ -798,8 +798,6 @@ class ConnectionProperties(esbmtkBase):
                     for s in self.source.lor:
                         self.connections.append(s.species)
                 else:
-                    # if "Fw" in self.name:
-                    #     breakpoint()
                     for s in self.species:
                         self.connections.append(s)
 
@@ -835,18 +833,11 @@ class ConnectionProperties(esbmtkBase):
                 if key in self.kwargs and isinstance(self.kwargs[key], dict):
                     if key in self.kwargs and sp in self.kwargs[key]:
                         self.c_defaults[sp.n][key] = self.kwargs[key][sp]
-                        # print(f"sp:{sp.n} k:{key} = {self.kwargs[key][sp]}")
                 elif key in self.kwargs and self.kwargs[key] != "None":
                     # if value was supplied, update defaults dict
                     if self.kwargs[key] != "None":
                         self.c_defaults[sp.n][key] = self.kwargs[key]
-                        #  print(f"sp:{sp.n} k:{key} = {self.kwargs[key][sp]}")
-                else:
-                    pass  # no updates necessary
-
-                # if key == "rate":
-                #     breakpoint()
-
+        
             a = Species2Species(
                 source=getattr(self.source, sp.n),
                 sink=getattr(self.sink, sp.n),
@@ -865,8 +856,7 @@ class ConnectionProperties(esbmtkBase):
                 register=self,
             )
 
-            # add connection to list of connections
-            self.loc.append(a)
+            self.loc.append(a) # add connection to list of connections
             if self.mo.debug:
                 print(
                     f"created connection with full name {a.full_name}, registered to {self.name} "
