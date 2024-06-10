@@ -1,8 +1,7 @@
-from math import log10
 import pytest
+from math import log10
 from esbmtk import Model, Reservoir, get_hplus
 import PyCO2SYS as pyco2
-import pytest
 
 def test_manual_ph_calculation():
     """ Test convergence of interative pH calculation
