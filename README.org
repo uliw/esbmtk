@@ -1,22 +1,4 @@
 #+options: toc:nil author:nil
-#+BEGIN_EXPORT rst
-.. image:: https://img.shields.io/pypi/v/esbmtk.svg
-    :alt: PyPI-Server
-    :target: https://pypi.org/project/esbmtk/
-
-.. image:: https://img.shields.io/badge/Python-3.9-blue.svg
-    :alt: Python-3.9 badge
-    :target: https://www.python.org/
-
-.. image:: https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold
-    :alt: Project generated with PyScaffold
-    :target: https://pyscaffold.org/
-
-.. image:: https://readthedocs.org/projects/esbmtk/badge/?version=latest
-    :target: https://esbmtk.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
-#+END_EXPORT
-
 #+BEGIN_EXPORT html
 <a href="https://pypi.org/project/esbmtk/">
 <img alt="Documentation Status" src="https://img.shields.io/pypi/v/esbmtk.svg"/>
@@ -29,6 +11,13 @@
 <a href="https://esbmtk.readthedocs.io/en/latest/?badge=latest">
 <img alt="Documentation Status" src="https://readthedocs.org/projects/esbmtk/badge/?version=latest" />
 </a>
+
+<a href="https://img.shields.io/badge/Python-3.11-blue.svg">
+<img alt="Python 3.11 ready" src="https://www.python.org" />
+</a>
+
+<a href="https://doi.org/10.5281/zenodo.11959366">
+<img alt=Zenodo DOI src="https://zenodo.org/badge/DOI/10.5281/zenodo.11959366.svg" alt="DOI"></a>
 #+END_EXPORT
 
 
