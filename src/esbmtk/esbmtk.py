@@ -495,14 +495,11 @@ class Model(esbmtkBase):
 
         :returns: a tuple with the figure instance, list of axs objects
 
-        :Example:
+        Example::
 
-        .. code-block:: python
-
-        M.plot([sb.PO4, sb.DIC], fn='test.pdf')
+            M.plot([sb.PO4, sb.DIC], fn='test.pdf')
 
         The above code will plot ``sb.PO4`` and ``sb.DIC`` and save the plot as 'test.pdf'.
-
         """
 
         if pl is None:
