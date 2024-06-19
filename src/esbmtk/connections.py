@@ -326,7 +326,9 @@ class Species2Species(esbmtkBase):
             elif self.scale.check("[mass]/[volume]"):  # concentration
                 self.scale = self.scale.to(self.mo.c_unit)
             else:
-                Species2SpeciesError(f"No conversion to model units for {self.scale} specified")
+                Species2SpeciesError(
+                    f"No conversion to model units for {self.scale} specified"
+                )
 
         self.__set_name__()  # get name of connection
         self.__register_name_new__()  # register connection in namespace
@@ -508,7 +510,6 @@ class Species2Species(esbmtkBase):
         """
 
         from esbmtk import (
-            # SaveFluxData,
             Source,
             Sink,
         )
@@ -519,7 +520,12 @@ class Species2Species(esbmtkBase):
             self._rate = 0
 
         # if connection type is not set explicitly
-        if self.ctype == "None" or self.ctype.casefold() == "regular":
+        if (
+            self.ctype == "None"
+            or self.ctype.casefold() == "regular"
+            or self.ctype.casefold() == "fixed"
+        ):
+            self.ctype = "regular"
             if self.delta == "None" and self.epsilon == "None" and self.isotopes:
                 self._epsilon = 0
 
@@ -837,7 +843,7 @@ class ConnectionProperties(esbmtkBase):
                     # if value was supplied, update defaults dict
                     if self.kwargs[key] != "None":
                         self.c_defaults[sp.n][key] = self.kwargs[key]
-        
+
             a = Species2Species(
                 source=getattr(self.source, sp.n),
                 sink=getattr(self.sink, sp.n),
@@ -856,7 +862,7 @@ class ConnectionProperties(esbmtkBase):
                 register=self,
             )
 
-            self.loc.append(a) # add connection to list of connections
+            self.loc.append(a)  # add connection to list of connections
             if self.mo.debug:
                 print(
                     f"created connection with full name {a.full_name}, registered to {self.name} "
