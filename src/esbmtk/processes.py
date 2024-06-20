@@ -134,16 +134,32 @@ def init_gas_exchange(c: Species2Species):
     from esbmtk import ExternalCode, check_for_quantity
 
     c.fh.ftype = "computed"
-    swc = c.sink.register.swc  # sink - liquid
+   
+   
+
+    # model = c.source.model
+    sink_reservoir = c.sink.register
+    swc = sink_reservoir.swc  # sink - liquid
+    
+    if c.species.name == "CO2":
+        ref_species = sink_reservoir.CO2aq
+        solubility = swc.SA_co2
+    elif c.species.name == "O2":
+        ref_species = sink_reservoir.O2
+        solubility = swc.SA_O2
+    else:
+        raise ValueError(f"Gas exchange is undefined for {c.species.name}")
+
     piston_velocity = (
         check_for_quantity(c.piston_velocity, "m/yr").to("meter/year").magnitude
     )
-    area = check_for_quantity(c.area, "m**2").to("meter**2").magnitude
+    area = check_for_quantity(sink_reservoir.area, "m**2").to("meter**2").magnitude
+        
     scale = area * piston_velocity
     p = (
         scale,
-        c.water_vapor_pressure,
-        c.solubility,
+        swc.p_H2O,
+        solubility,
         swc.a_db,
         swc.a_dg,
         swc.a_u,
@@ -155,7 +171,7 @@ def init_gas_exchange(c: Species2Species):
         fname="gas_exchange",
         ftype="std",
         species=c.source.species,
-        function_input_data=[c.source, c.sink, c.ref_species],
+        function_input_data=[c.source, c.sink, ref_species],
         function_params=p,
         register=c.model,
         return_values=[
