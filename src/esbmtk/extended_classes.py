@@ -308,7 +308,7 @@ class SourceSinkProperties(esbmtkBase):
                 raise SourceSinkPropertiesError(
                     f"{s.n} needs to be a valid species name"
                 )
-            
+
             if type(self).__name__ == "SourceProperties":
                 a = Source(
                     name=f"{s.name}",
@@ -984,6 +984,7 @@ class DataField(esbmtkBase):
                        display_precision = number, optional, inherited from Model
                        )
 
+    All y1 and y2 keywords can be either a single value or a list of values.
     Note that Datafield data is not mapped to model units. Care must be taken
     that the data units match the model units.
 
@@ -1308,11 +1309,16 @@ class DataField(esbmtkBase):
                 # 1 = self.y
                 # y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
 
+            if isinstance(self.y1_type, list):
+                ptype = self.y1_type[i]
+            else:
+                ptype = self.y1_type
+
             self.__plot_data__(
                 ax,
                 x1,
                 self.y1_data[i],
-                self.y1_type,
+                ptype,
                 self.y1_label[i],
                 i,
                 self.y1_color,
