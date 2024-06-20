@@ -2,8 +2,6 @@ import pytest
 import po4_1_test  # import script
 
 M = po4_1_test.M  # get model handle 
-tol = 1e-12  # tolerance
-
 test_values = [ # result, reference value
     (M.S_b.PO4.c[-1], 0.0000149597179598576),
     (M.D_b.PO4.c[-1], 0.0000219990964241379),

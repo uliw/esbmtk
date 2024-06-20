@@ -75,7 +75,6 @@ Apart from density, this class will provide access to a host of instance paramet
         concentration_unit="mol/kg",
         opt_k_carbonic=13,  # Use Millero 2006
         opt_pH_scale=1,  # 1:total, 3:free scale
-        opt_buffers_mode=2, # carbonate, borate water alkalinity only
     )
 
 Caveats
@@ -217,40 +216,17 @@ ESBMTK implements gas exchange across the Air-Sea interface as a :py:class:`esbm
         name="CO2_At",
         species=M.CO2,
         species_ppm="280 ppm",
-        register=M,
     )
-
     Species2Species(  # Example for CO2
         source=M.CO2_At,  # GasReservoir
         sink=M.L_b.DIC,  # Reservoir
         species=M.CO2,
-        ref_species=M.H_b.CO2aq,
-        solubility=M.H_b.swc.SA_co2,
-        area=M.L_b.area,  # surface area
+        piston_velocity="4.8 m/d",
+        ctype="gasexchange",
         id="L_b_GEX",  # connection id
-        piston_velocity="4.8 m/d",
-        water_vapor_pressure=M.H_b.swc.p_H2O,
-        register=M,
-        ctype="gasexchange",
     )
 
-Defining gas transfer for O2  uses the same approach, but note the use of the ``solubility`` and ``ref_species`` keywords. At present, ESBMTK only carries the solubility constants for CO\ :sub:`2`\ and O\ :sub:`2`\.
-
-.. code:: ipython
-
-    Species2Species(  # Example for O2
-        source=M.O2_At,  # GasReservoir
-        sink=M.L_b.O2,  # Reservoir
-        species=M.O2,
-        ref_species=M.L_b.O2,
-        solubility=M._b.swc.SA_o2,
-        area=M._b.area,
-        piston_velocity="4.8 m/d",
-        water_vapor_pressure=M.L_b.swc.p_H2O,
-        id=f"O2_gas_exchange_L_b",
-        register=M,
-        ctype="gasexchange",
-    )
+Defining gas transfer for O2  uses the same approach. 
 
 pCO\ :sub:`2`\ Dependent Weathering
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -271,11 +247,10 @@ where :math:`A` denotes the area, :math:`f_0` the weathering flux at :math:`p_{0
         source=M.Fw.DIC,  # source of flux
         sink=M.L_b.DIC,
         reservoir_ref=M.CO2_At,  # pCO2
-        ctype="weathering",
-        id="wca",
         scale=1,  # optional, defaults to 1
         ex=0.2,  # exponent c
         pco2_0="280 ppm",  # reference pCO2
         rate="12 Tmol/a",  # rate at pco2_0
-        register=M,
+        ctype="weathering",
+        id="wca",
     )

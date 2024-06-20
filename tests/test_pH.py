@@ -3,9 +3,9 @@ from math import log10
 from esbmtk import Model, Reservoir, get_hplus
 import PyCO2SYS as pyco2
 
+
 def test_manual_ph_calculation():
-    """ Test convergence of interative pH calculation
-    """
+    """Test convergence of interative pH calculation"""
     M = Model(
         stop="1 yr",
         max_timestep="1 d",
@@ -38,7 +38,7 @@ def test_manual_ph_calculation():
             "S": 35,
         },
     )
-    
+
     hplus0 = M.S_b.swc.hplus
     hplus = hplus0 * 10
     for i in range(10):
@@ -52,11 +52,12 @@ def test_manual_ph_calculation():
             M.S_b.swc.KW,
             M.S_b.swc.KB,
         )
-        
+
     assert abs(hplus0 - hplus) < 1e-12
 
+
 def test_pyco2sys_ph_calculation():
-    """ Compare result of pH computation with the value
+    """Compare result of pH computation with the value
     provided by pyCO2sys
     """
     M = Model(
@@ -97,15 +98,15 @@ def test_pyco2sys_ph_calculation():
         temperature=M.S_b.swc.temperature,
         pressure=M.S_b.swc.pressure * 10,
         par1_type=1,
-        par1=M.S_b.TA.c[0] * 1E6,
+        par1=M.S_b.TA.c[0] * 1e6,
         par2_type=2,
-        par2=M.S_b.DIC.c[0] * 1E6,
+        par2=M.S_b.DIC.c[0] * 1e6,
         opt_k_carbonic=M.opt_k_carbonic,
         opt_pH_scale=M.opt_pH_scale,
         opt_buffers_mode=M.opt_buffers_mode,
     )
     results = pyco2.sys(**params)
-    pH = results['pH']
+    pH = results["pH"]
 
     hplus0 = M.S_b.swc.hplus
     hplus = hplus0 * 10

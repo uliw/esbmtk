@@ -5,7 +5,6 @@ from esbmtk import (
     ConnectionProperties,  # the connection class
     SourceProperties,  # the source class
     SinkProperties,  # sink class
-    Q_,  # Quantity operator
 )
 # define the basic model parameters
 M = Model(
@@ -19,7 +18,7 @@ tau = Q_("100 years")
 tau * 12
 # boundary conditions
 F_w =  M.set_flux("45 Gmol", "year", M.P) # P @280 ppm (Filipelli 2002)
-tau = Q_("100 year")  # PO4 residence time in surface boxq
+tau = Q_("100 year")  # PO4 residence time in surface box
 F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
 thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 # Source definitions

@@ -5,6 +5,8 @@
 1 Changelog
 -----------
 
+- 0.14.0.x simplified the setup of the gas exchange connections, documentation improvements
+
 - 0.13.0.8 added new testing framework, and 16 unit tests. Updated the documentation
 
 - 0.13.0.7 the isotope fractionation factor has been renamed from ``alpha`` to ``epsilon``

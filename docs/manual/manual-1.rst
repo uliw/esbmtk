@@ -62,9 +62,9 @@ which is easily encoded as a Python function
         a function of time. After Glover 2011, Modeling
         Methods for Marine Science.
 
-        :param C: tp.List of initial concentrations mol/m*3
+        :param C_0: tp.List of initial concentrations mol/m*3
         :param time: array of time points
-        :params V: lits of surface and deep ocean volume [m^3]
+        :params V: list of surface and deep ocean volume [m^3]
         :param F_w: River (weathering) flux of PO4 mol/s
         :param thx: thermohaline circulation in m*3/s
         :returns dCdt: tp.List of concentration changes mol/s
@@ -167,7 +167,6 @@ In the first step, one needs to define a model object that describes fundamental
         ConnectionProperties,  # the connection class
         SourceProperties,  # the source class
         SinkProperties,  # sink class
-        Q_,  # Quantity operator
     )
 
 Next we use the :py:class:`esbmtk.esbmtk.Model()`  class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
@@ -208,7 +207,7 @@ Most ESBMTK classes accept quantities, strings that represent quantities as well
 
     # boundary conditions
     F_w =  M.set_flux("45 Gmol", "year", M.P) # P @280 ppm (Filipelli 2002)
-    tau = Q_("100 year")  # PO4 residence time in surface boxq
+    tau = Q_("100 year")  # PO4 residence time in surface box
     F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
     thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 

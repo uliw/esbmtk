@@ -10,6 +10,13 @@
 <img alt="Documentation Status" src="https://readthedocs.org/projects/esbmtk/badge/?version=latest" />
 </a>
 
+<a href="https://img.shields.io/badge/Python-3.11-blue.svg">
+<img alt="Python 3.11 ready" src="https://www.python.org" />
+</a>
+
+<a href="https://doi.org/10.5281/zenodo.11959366">
+<img alt=Zenodo DOI src="https://zenodo.org/badge/DOI/10.5281/zenodo.11959366.svg" alt="DOI"></a>
+
 
 # ESBMTK - The  Earth Sciences Box Modeling Toolkit
 
