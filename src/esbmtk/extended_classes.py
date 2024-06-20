@@ -1988,7 +1988,6 @@ class GasReservoir(SpeciesBase):
             "name",
             "species",
             "species_ppm",
-            "register",
         ]
 
         self.__initialize_keyword_variables__(kwargs)
@@ -2057,9 +2056,10 @@ class GasReservoir(SpeciesBase):
         self.mo.lic.append(self)  # reservoir type object list
         # register instance name in global name space
 
-        # register this group object in the global namespace
-        if self.mo.register == "local" and self.register == "None":
+        # register to model unless a value is given
+        if self.register == "None":
             self.register = self.mo
+            self.parent = self.register
 
         self.__register_name_new__()
 
