@@ -1311,8 +1311,10 @@ class DataField(esbmtkBase):
 
             if isinstance(self.y1_type, list):
                 ptype = self.y1_type[i]
+                breakpoint()
             else:
                 ptype = self.y1_type
+                breakpoint()
 
             self.__plot_data__(
                 ax,
