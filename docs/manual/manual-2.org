@@ -512,7 +512,7 @@ c_dict = {  # Surface box to ib, about 78% is remineralized in the ib
             PO4_ex * 0.4,
         ],
         "sp": M.PO4,
-        "ty": "Regular",
+        "ty": "Fixed",
     },
 }
 create_bulk_connections(c_dict, M, mt="1:1")

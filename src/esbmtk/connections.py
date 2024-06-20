@@ -332,7 +332,7 @@ class Species2Species(esbmtkBase):
 
         self.__set_name__()  # get name of connection
         self.__register_name_new__()  # register connection in namespace
-        self.__create_flux__()  # Source/Sink/Regular
+        self.__create_flux__()  # Source/Sink/Fixed
         self.__set_process_type__()  # derive flux type and create flux(es)
 
         # print(f"mo.reg = {self.mo.register}, slf reg = {self.register}")
@@ -660,7 +660,7 @@ class Species2Species(esbmtkBase):
             self.__delete_process__()
             self.__delete_flux__()
             self._rate = Q_(r).to(self.model.f_unit).magnitude
-            self.__create_flux__()  # Source/Sink/Regular
+            self.__create_flux__()  # Source/Sink/Fixed
             self.__set_process_type__()  # derive flux type and create flux(es)
 
     # ---- delta  ----
@@ -675,7 +675,7 @@ class Species2Species(esbmtkBase):
             self.__delete_flux__()
             self._delta = d
             self.kwargs["delta"] = d
-            self.__create_flux__()  # Source/Sink/Regular
+            self.__create_flux__()  # Source/Sink/Fixed
             self.__set_process_type__()  # derive flux type and create flux(es)
 
 
@@ -699,7 +699,7 @@ class ConnectionProperties(esbmtkBase):
            ref_reservoirs = shared between all connections
            ref_flux = shared between all connections
            species = list, optional, if present, only these species will be connected
-           ctype = needs to be set for all connections. Use "Regular"
+           ctype = needs to be set for all connections. Use "Fixed"
                    unless you require a specific connection type
            pl = [list]) process list. optional, shared between all connections
            id = optional identifier, passed on to individual connection
@@ -711,8 +711,8 @@ class ConnectionProperties(esbmtkBase):
                   sink=Ocean,
                   rate={DIC: f"{OM_w} Tmol/yr" ,
                         ALK: f"{0} Tmol/yr"},
-                  ctype = {DIC: "Regular",
-                           ALK: "Regular"},
+                  ctype = {DIC: "Fixed",
+                           ALK: "Fixed"},
                 )
 
 

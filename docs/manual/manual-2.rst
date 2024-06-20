@@ -447,7 +447,7 @@ In the following example, we build the ``connection_dictinary`` in a more explic
                 PO4_ex * 0.4,
             ],
             "sp": M.PO4,
-            "ty": "Regular",
+            "ty": "Fixed",
         },
     }
     create_bulk_connections(c_dict, M, mt="1:1")
