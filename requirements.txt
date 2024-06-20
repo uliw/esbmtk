@@ -1,6 +1,6 @@
 python >= 3.9
 matplotlib
-numpy
+numpy=<2.0
 pandas
 scipy
 pint
