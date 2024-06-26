@@ -57,10 +57,14 @@ def calculate_burial(po4_export_flux: float, o2_con: float) -> float:
 
     return burial_flux
 
-# Define a function to add the custom burial to the model
-def add_my_burial(source, sink, species, scale) -> None:
+
+
+
+from esbmtk import ExternalCode
+
+def add_my_burial(source, sink, species, po4_export_flux: float, o2_con: float, scale) -> None:
     """This function initializes a user supplied function
-    so that it can be used within the ESBMTK eco-system
+    so that it can be used within the ESBMTK ecosystem.
 
     Parameters
     ----------
@@ -70,21 +74,22 @@ def add_my_burial(source, sink, species, scale) -> None:
         A sink
     species : SpeciesProperties
         A model species
+    po4_export_flux : float
+        PO4 export flux in umol/L
+    o2_con : float
+        Oxygen concentration in umol/L
     scale : float
         A scaling factor
-
     """
-    from esbmtk import ExternalCode
-
     p = (scale,)  # convert float into tuple
     ec = ExternalCode(
-        name="mb",
-        species=source.species,
-        function=my_burial,
-        fname="my_burial",
-        function_input_data=[po4_export_flux],[o2_con]
+        name="calculate_burial",
+        species=species,
+        function=calculate_burial,
+        fname="calculate_burial",
+        function_input_data=[po4_export_flux, o2_con],
         function_params=p,
         return_values=[
-            {f"F_{sed}.{po4}": "po4_burial"},
+            {f"F_{sediment}.{po4}": "po4_burial"},
         ],
     )
