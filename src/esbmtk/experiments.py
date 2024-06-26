@@ -42,12 +42,16 @@ def calculate_burial(po4_export_flux: float, o2_con: float) -> float:
     # burial fraction to [oxygen] approximation of relationship from 0.01 to 0.1
     min_burial_fraction = 0.01
     max_burial_fraction = 0.1
-    burial_fraction = min_burial_fraction + (max_burial_fraction - min_burial_fraction) * (o2_con / 100)
+    burial_fraction = min_burial_fraction + (
+        max_burial_fraction - min_burial_fraction
+    ) * (o2_con / 100)
 
-    deep_ocean_v = 1E18  # in litres
+    deep_ocean_v = 1e18  # in litres
 
     # productivity in mol/year
-    productivity_mol_year = po4_export_flux * deep_ocean_v * 1E-6  # Convert umol/L to mol
+    productivity_mol_year = (
+        po4_export_flux * deep_ocean_v * 1e-6
+    )  # Convert umol/L to mol
 
     burial_flux = productivity_mol_year * burial_fraction
 
