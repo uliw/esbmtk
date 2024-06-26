@@ -27,7 +27,8 @@ from esbmtk import (
     Q_,
 )
 
-#def define_model(F_w: str, tau: Q_, thc: Q_, F_b: Q_) -> tuple[float, float, float, float, Model]:
+
+# def define_model(F_w: str, tau: Q_, thc: Q_, F_b: Q_) -> tuple[float, float, float, float, Model]:
 def define_model(F_w: str, tau: Q_, thc: Q_, F_b: Q_) -> tuple[float, float]:
     """
     Runs the ESBMTK model with the given parameters and returns the final oxygen concentrations.
@@ -43,7 +44,7 @@ def define_model(F_w: str, tau: Q_, thc: Q_, F_b: Q_) -> tuple[float, float]:
     :return: Final oxygen concentrations in S_b and D_b
     :rtype: tuple[float, float]
     """
-    
+
     # Basic model parameters
     M = Model(
         stop="6 Myr",
@@ -67,13 +68,19 @@ def define_model(F_w: str, tau: Q_, thc: Q_, F_b: Q_) -> tuple[float, float]:
     Reservoir(
         name="S_b",
         volume="3E16 m**3",
-        concentration={M.PO4: "0 umol/l", M.O2: "300 umol/l"},  # Initial O2 set to 300 umol/l
+        concentration={
+            M.PO4: "0 umol/l",
+            M.O2: "300 umol/l",
+        },  # Initial O2 set to 300 umol/l
     )
 
     Reservoir(
         name="D_b",
         volume="100E16 m**3",
-        concentration={M.PO4: "0 umol/l", M.O2: "100 umol/l"},  # Initial O2 set to 100 umol/l
+        concentration={
+            M.PO4: "0 umol/l",
+            M.O2: "100 umol/l",
+        },  # Initial O2 set to 100 umol/l
     )
 
     # Connection Properties (Fluxes)
@@ -91,7 +98,7 @@ def define_model(F_w: str, tau: Q_, thc: Q_, F_b: Q_) -> tuple[float, float]:
         ctype="scale_with_concentration",
         scale=thc,
         id="downwelling",
-        species=[M.O2, M.PO4]
+        species=[M.O2, M.PO4],
     )
 
     ConnectionProperties(
@@ -100,7 +107,7 @@ def define_model(F_w: str, tau: Q_, thc: Q_, F_b: Q_) -> tuple[float, float]:
         ctype="scale_with_concentration",
         scale=thc,
         id="upwelling",
-        species=[M.O2, M.PO4]
+        species=[M.O2, M.PO4],
     )
 
     ConnectionProperties(
@@ -133,13 +140,14 @@ def define_model(F_w: str, tau: Q_, thc: Q_, F_b: Q_) -> tuple[float, float]:
     )
     M.read_state()
     M.run()
-    
-    S_b_O2 = M.S_b.O2.c[-1] * 1E6
-    D_b_O2 = M.D_b.O2.c[-1] * 1E6
-    S_b_PO4 = M.S_b.PO4.c[-1] * 1E6
-    D_b_PO4 = M.D_b.PO4.c[-1] * 1E6
+
+    S_b_O2 = M.S_b.O2.c[-1] * 1e6
+    D_b_O2 = M.D_b.O2.c[-1] * 1e6
+    S_b_PO4 = M.S_b.PO4.c[-1] * 1e6
+    D_b_PO4 = M.D_b.PO4.c[-1] * 1e6
 
     return S_b_O2, D_b_O2, S_b_PO4, D_b_PO4, M
+
 
 def calculate_burial(po4_export_flux: float, o2_con: float) -> float:
     """
@@ -155,12 +163,16 @@ def calculate_burial(po4_export_flux: float, o2_con: float) -> float:
     # burial fraction to [oxygen] approximation of relationship from 0.01 to 0.1
     min_burial_fraction = 0.01
     max_burial_fraction = 0.1
-    burial_fraction = min_burial_fraction + (max_burial_fraction - min_burial_fraction) * (o2_con / 100)
+    burial_fraction = min_burial_fraction + (
+        max_burial_fraction - min_burial_fraction
+    ) * (o2_con / 100)
 
-    deep_ocean_v = 1E18  # in litres
+    deep_ocean_v = 1e18  # in litres
 
     # productivity in mol/year
-    productivity_mol_year = po4_export_flux * deep_ocean_v * 1E-6  # Convert umol/L to mol
+    productivity_mol_year = (
+        po4_export_flux * deep_ocean_v * 1e-6
+    )  # Convert umol/L to mol
 
     burial_flux = productivity_mol_year * burial_fraction
 
