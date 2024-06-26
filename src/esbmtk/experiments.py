@@ -139,4 +139,4 @@ def define_model(F_w: str, tau: Q_, thc: Q_, F_b: Q_) -> tuple[float, float]:
     S_b_PO4 = M.S_b.PO4.c[-1] * 1E6
     D_b_PO4 = M.D_b.PO4.c[-1] * 1E6
 
-    return S_b_O2, D_b_O2, S_b_PO4, D_b_PO4
+    return S_b_O2, D_b_O2, S_b_PO4, D_b_PO4, M
