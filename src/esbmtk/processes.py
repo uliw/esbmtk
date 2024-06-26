@@ -58,7 +58,7 @@ def weathering(c_pco2: float | list[float], p: tuple) -> float | tuple:
     Explanation
     -----------
     If the model uses isotopes, the function expects the concentration
-    values for hthe total mass and the light isotope as a list, and
+    values for the total mass and the light isotope as a list, and
     will simiraly return the flux as a list of total flux and flux of
     the light isotope.
 

@@ -502,7 +502,7 @@ def phc(m: float) -> float:
     display the H+ concentrations as pH. After import, you can use it
     with like this in the reservoir definition
 
-     plot_transform_c=phc,
+    plot_transform_c=phc,
 
     """
     import numpy as np
