@@ -140,3 +140,28 @@ def define_model(F_w: str, tau: Q_, thc: Q_, F_b: Q_) -> tuple[float, float]:
     D_b_PO4 = M.D_b.PO4.c[-1] * 1E6
 
     return S_b_O2, D_b_O2, S_b_PO4, D_b_PO4, M
+
+def calculate_burial(po4_export_flux: float, o2_con: float) -> float:
+    """
+    Calculate burial as a function of productivity and oxygen concentration.
+
+    :param po4_export_flux: Surface ocean productivity in umol/L
+    :type po4_export_flux: float
+    :param o2_con: Oxygen concentration in the deep box in umol/L
+    :type o2_con: float
+    :return: Burial flux in mol/year
+    :rtype: float
+    """
+    # burial fraction to [oxygen] approximation of relationship from 0.01 to 0.1
+    min_burial_fraction = 0.01
+    max_burial_fraction = 0.1
+    burial_fraction = min_burial_fraction + (max_burial_fraction - min_burial_fraction) * (o2_con / 100)
+
+    deep_ocean_v = 1E18  # in litres
+
+    # productivity in mol/year
+    productivity_mol_year = po4_export_flux * deep_ocean_v * 1E-6  # Convert umol/L to mol
+
+    burial_flux = productivity_mol_year * burial_fraction
+
+    return burial_flux
