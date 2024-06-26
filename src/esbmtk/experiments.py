@@ -28,129 +28,8 @@ from esbmtk import (
 )
 
 
-# def define_model(F_w: str, tau: Q_, thc: Q_, F_b: Q_) -> tuple[float, float, float, float, Model]:
-def define_model(F_w: str, tau: Q_, thc: Q_, F_b: Q_) -> tuple[float, float]:
-    """
-    Runs the ESBMTK model with the given parameters and returns the final oxygen concentrations.
-
-    :param F_w: Weathering flux in Gmol/year
-    :type F_w: str
-    :param tau: Residence time in years
-    :type tau: Q_
-    :param thc: THC in Sverdrup (Sv)
-    :type thc: Q_
-    :param F_b: Burial flux in fraction
-    :type F_b: Q_
-    :return: Final oxygen concentrations in S_b and D_b
-    :rtype: tuple[float, float]
-    """
-
-    # Basic model parameters
-    M = Model(
-        stop="6 Myr",
-        timestep="1 kyr",
-        element=["Phosphor", "Oxygen"],
-    )
-
-    # Parameters
-
-    SourceProperties(
-        name="weathering",
-        species=[M.PO4],
-    )
-
-    SinkProperties(
-        name="burial",
-        species=[M.PO4],
-    )
-
-    # Reservoir Definitions
-    Reservoir(
-        name="S_b",
-        volume="3E16 m**3",
-        concentration={
-            M.PO4: "0 umol/l",
-            M.O2: "300 umol/l",
-        },  # Initial O2 set to 300 umol/l
-    )
-
-    Reservoir(
-        name="D_b",
-        volume="100E16 m**3",
-        concentration={
-            M.PO4: "0 umol/l",
-            M.O2: "100 umol/l",
-        },  # Initial O2 set to 100 umol/l
-    )
-
-    # Connection Properties (Fluxes)
-    ConnectionProperties(
-        source=M.weathering,
-        sink=M.S_b,
-        rate=str(F_w),  # Convert F_w to string
-        id="river",
-        ctype="regular",
-    )
-
-    ConnectionProperties(
-        source=M.S_b,
-        sink=M.D_b,
-        ctype="scale_with_concentration",
-        scale=thc,
-        id="downwelling",
-        species=[M.O2, M.PO4],
-    )
-
-    ConnectionProperties(
-        source=M.D_b,
-        sink=M.S_b,
-        ctype="scale_with_concentration",
-        scale=thc,
-        id="upwelling",
-        species=[M.O2, M.PO4],
-    )
-
-    ConnectionProperties(
-        source=M.S_b,
-        sink=M.D_b,
-        ctype="scale_with_concentration",
-        scale=M.S_b.volume / tau,
-        id="primary_production",
-        species=[M.PO4],
-    )
-
-    ConnectionProperties(
-        source=M.D_b,
-        sink=M.burial,
-        ctype="scale_with_flux",
-        ref_flux=M.flux_summary(filter_by="primary_production", return_list=True)[0],
-        scale=F_b,
-        id="burial",
-        species=[M.PO4],
-    )
-
-    ConnectionProperties(
-        source=M.D_b,
-        sink=M.S_b,
-        ctype="scale_with_flux",
-        ref_flux=M.flux_summary(filter_by="primary_production", return_list=True)[0],
-        scale=(1 - F_b) * 138,
-        id="O2upwelling",
-        species=[M.O2],
-    )
-    M.read_state()
-    M.run()
-
-    S_b_O2 = M.S_b.O2.c[-1] * 1e6
-    D_b_O2 = M.D_b.O2.c[-1] * 1e6
-    S_b_PO4 = M.S_b.PO4.c[-1] * 1e6
-    D_b_PO4 = M.D_b.PO4.c[-1] * 1e6
-
-    return S_b_O2, D_b_O2, S_b_PO4, D_b_PO4, M
-
-
 def calculate_burial(po4_export_flux: float, o2_con: float) -> float:
-    """
+    """#add an empty tuple
     Calculate burial as a function of productivity and oxygen concentration.
 
     :param po4_export_flux: Surface ocean productivity in umol/L
@@ -163,16 +42,12 @@ def calculate_burial(po4_export_flux: float, o2_con: float) -> float:
     # burial fraction to [oxygen] approximation of relationship from 0.01 to 0.1
     min_burial_fraction = 0.01
     max_burial_fraction = 0.1
-    burial_fraction = min_burial_fraction + (
-        max_burial_fraction - min_burial_fraction
-    ) * (o2_con / 100)
+    burial_fraction = min_burial_fraction + (max_burial_fraction - min_burial_fraction) * (o2_con / 100)
 
-    deep_ocean_v = 1e18  # in litres
+    deep_ocean_v = 1E18  # in litres
 
     # productivity in mol/year
-    productivity_mol_year = (
-        po4_export_flux * deep_ocean_v * 1e-6
-    )  # Convert umol/L to mol
+    productivity_mol_year = po4_export_flux * deep_ocean_v * 1E-6  # Convert umol/L to mol
 
     burial_flux = productivity_mol_year * burial_fraction
 
