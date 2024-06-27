@@ -88,7 +88,7 @@ def add_my_burial(
         species=species,
         function=calculate_burial,
         fname="calculate_burial",
-        function_input_data=[po4_export_flux, o2_con],
+        function_input_data=[po4_export_flux, F_b],
         function_params=p,
         return_values=[
             {f"F_{sink}.{M.PO4}": "po4_burial"},
