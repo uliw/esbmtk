@@ -52,7 +52,6 @@ def add_my_burial(
     o2_c,
     po4_export_flux: float,
     frac_burial,
-    dbv,  # can query source.v
     min_burial_fraction,
     max_burial_fraction,
 ) -> None:
@@ -74,6 +73,7 @@ def add_my_burial(
     F_b : float
         A scaling factor of burial fraction
     """
+    dbv = source.v
     p = (frac_burial, dbv, min_burial_fraction, max_burial_fraction)  # float into tuple
     ec = ExternalCode(
         name="calculate_burial",
