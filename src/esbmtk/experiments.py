@@ -21,7 +21,7 @@ from esbmtk import (
 )
 
 
-def calculate_burial(po4_export_flux: float, o2_c: float) -> float:
+def calculate_burial(po4_export_flux: float, o2_c: float, p: tuple) -> float:
     """#add an empty tuple
     Calculate burial as a function of productivity and oxygen concentration.
 
@@ -80,6 +80,6 @@ def add_my_burial(
         function_input_data=[po4_export_flux, o2_c],
         function_params=p,
         return_values=[
-            {f"F_{sink}.{M.PO4}": "po4_burial"},
+            {f"F_{sink}.{species}": "po4_burial"},
         ],
     )
