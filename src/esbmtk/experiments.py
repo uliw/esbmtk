@@ -17,13 +17,7 @@
 """
 
 from esbmtk import (
-    Model,
-    # Reservoir,
-    ConnectionProperties,
-    SourceProperties,
-    SinkProperties,
     ExternalCode,
-    Q_,
 )
 
 
