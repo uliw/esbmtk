@@ -560,8 +560,9 @@ class Model(esbmtkBase):
             fig.tight_layout()
             plt.show(block=blocking)  # create the plot windows
             fig.savefig(filename)
-
-        return plt, fig, axs
+            return
+        else:
+            return plt, fig, axs
 
     def run(self, **kwargs) -> None:
         """Loop over the time vector, and for each time step, calculate the
