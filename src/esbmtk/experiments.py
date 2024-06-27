@@ -32,6 +32,7 @@ def calculate_burial(po4_export_flux: float, o2_c: float, p: tuple) -> float:
     :return: Burial flux in mol/year
     :rtype: float
     """
+    frac_burial, dbv = p
 
     min_burial_fraction = 0.01
     max_burial_fraction = 0.1
@@ -39,13 +40,10 @@ def calculate_burial(po4_export_flux: float, o2_c: float, p: tuple) -> float:
         o2_c / 100
     )
 
-    dbv = 1e18  # L
-
     # productivity in mol/year
     productivity_mol_year = po4_export_flux * dbv * 1e-6  # Convert umol/L to mol
 
     burial_flux = productivity_mol_year * frac_burial
-    p = frac_burial, dbv
 
     return burial_flux
 
