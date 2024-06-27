@@ -18,6 +18,7 @@
 
 from esbmtk import (
     ExternalCode,
+    register_return_values,
 )
 
 
@@ -73,7 +74,7 @@ def add_my_burial(
     F_b : float
         A scaling factor of burial fraction
     """
-    dbv = source.v
+    dbv = source.volume
     p = (frac_burial, dbv, min_burial_fraction, max_burial_fraction)  # float into tuple
     ec = ExternalCode(
         name="calculate_burial",
@@ -83,6 +84,8 @@ def add_my_burial(
         function_input_data=[po4_export_flux, o2_c],
         function_params=p,
         return_values=[
-            {f"F_{sink}.{species}": "po4_burial"},
+            {f"F_{sink}.{species}": "M.burial"},
         ],
+        register=source.model,
     )
+    register_return_values(ec, source.model)
