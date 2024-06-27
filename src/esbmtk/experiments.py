@@ -32,10 +32,8 @@ def calculate_burial(po4_export_flux: float, o2_c: float, p: tuple) -> float:
     :return: Burial flux in mol/year
     :rtype: float
     """
-    frac_burial, dbv = p
+    frac_burial, dbv, min_burial_fraction, max_burial_fraction = p
 
-    min_burial_fraction = 0.01
-    max_burial_fraction = 0.1
     frac_burial = min_burial_fraction + (max_burial_fraction - min_burial_fraction) * (
         o2_c / 100
     )
@@ -49,7 +47,15 @@ def calculate_burial(po4_export_flux: float, o2_c: float, p: tuple) -> float:
 
 
 def add_my_burial(
-    source, sink, species, o2_c, po4_export_flux: float, frac_burial, dbv
+    source,
+    sink,
+    species,
+    o2_c,
+    po4_export_flux: float,
+    frac_burial,
+    dbv,
+    min_burial_fraction,
+    max_burial_fraction,
 ) -> None:
     """This function initializes a user supplied function
     so that it can be used within the ESBMTK ecosystem.
@@ -69,7 +75,7 @@ def add_my_burial(
     F_b : float
         A scaling factor of burial fraction
     """
-    p = (frac_burial, dbv)  # float into tuple
+    p = (frac_burial, dbv, min_burial_fraction, max_burial_fraction)  # float into tuple
     ec = ExternalCode(
         name="calculate_burial",
         species=species,
