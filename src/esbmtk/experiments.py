@@ -84,7 +84,7 @@ def add_my_burial(
         function_input_data=[po4_export_flux, o2_c],
         function_params=p,
         return_values=[
-            {f"F_{sink}.{species}": "M.burial"},
+            {f"F_{sink.name}.{species.name}": "burial_flux"},
         ],
         register=source.model,
     )
