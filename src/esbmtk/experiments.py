@@ -86,6 +86,6 @@ def add_my_burial(
         return_values=[
             {f"F_{sink.name}.{species.name}": "burial_flux"},
         ],
-        register=source.model,
+        register=source,
     )
-    register_return_values(ec, source.model)
+    register_return_values(ec, source)
