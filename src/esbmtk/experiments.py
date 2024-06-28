@@ -56,8 +56,8 @@ def add_my_burial(
     min_burial_fraction,
     max_burial_fraction,
 ) -> None:
-    """This function initializes a user supplied function
-    so that it can be used within the ESBMTK ecosystem.
+    """
+    This function initializes a user supplied function so that it can be used within the ESBMTK ecosystem.
 
     Parameters
     ----------
@@ -69,11 +69,19 @@ def add_my_burial(
         A model species
     po4_export_flux : float
         PO4 export flux in umol/L
-    o2_con : float
+    o2_c : float
         Oxygen concentration in umol/L
-    F_b : float
+    frac_burial : float
         A scaling factor of burial fraction
+    min_burial_fraction : float
+        Minimum burial fraction
+    max_burial_fraction : float
+        Maximum burial fraction
     """
+    print(f"Type of source: {type(source)}")
+    print(f"Type of sink: {type(sink)}")
+    print(f"Type of species: {type(species)}")
+
     dbv = source.volume
     p = (frac_burial, dbv, min_burial_fraction, max_burial_fraction)  # float into tuple
     ec = ExternalCode(
