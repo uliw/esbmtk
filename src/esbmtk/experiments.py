@@ -83,7 +83,9 @@ def add_my_burial(
     print(f"Type of species: {type(species)}")
 
     dbv = source.volume
+
     p = (frac_burial, dbv, min_burial_fraction, max_burial_fraction)  # float into tuple
+
     ec = ExternalCode(
         name="calculate_burial",
         species=species,
