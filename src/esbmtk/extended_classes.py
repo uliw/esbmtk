@@ -1547,6 +1547,8 @@ class ExternalCode(SpeciesNoSet):
             Species,
             Species2Species,
             Model,
+            Source,
+            Sink,
         )
         from typing import Callable
 
@@ -1555,8 +1557,8 @@ class ExternalCode(SpeciesNoSet):
             "name": ["None", (str)],
             "species": ["None", (str, SpeciesProperties, Species)],
             "plot_transform_c": ["None", (str, Callable)],
-            "source": ["None", (str, Reservoir)],
-            "sink": ["None", (str, Reservoir)],
+            "source": ["None", (str, Source, Sink, Species)],
+            "sink": ["None", (str, Source, Sink, Species)],
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
             "groupname": ["None", (str)],
