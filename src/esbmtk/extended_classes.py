@@ -1483,50 +1483,35 @@ class SpeciesNoSet(SpeciesBase):
 
 
 class ExternalCode(SpeciesNoSet):
-    """This class can be used to implement user provided functions. The
-    data inside a VR_no_set instance will only change in response to a
-    user provided function but will otherwise remain unaffected. That is,
-    it is up to the user provided function to manage changes in reponse to
-    external fluxes. A VR_no_set is declared in the following way::
+    """
+    This class can be used to implement user-provided functions.
+    The data inside an ExternalCode instance will only change in response to a
+    user-provided function but will otherwise remain unaffected. That is, it is
+    up to the user-provided function to manage changes in response to external fluxes.
+
+    An ExternalCode instance is declared in the following way::
 
         ExternalCode(
-                    name="cs",     # instance name
-                    species=CO2,   # species, must be given
-                    # the vr_data_fields contains any data that is referenced inside the
-                    # function, rather than passed as argument, and all data that is
-                    # explicitly referenced by the model
-                    vr_datafields :dict ={"Hplus": self.swc.hplus,
-                                          "Beta": 0.0},
-                    function=calc_carbonates, # function reference, see below
-                    fname = function name as string
-                    function_input_data="DIC TA",
-                    # Note that parameters must be individual float values
-                    function_params:tuple(float)
-                    # list of return values
-                    return_values={  # these must be known speces definitions
-                                  "Hplus": rg.swc.hplus,
-                                   "zsnow": float(abs(kwargs["zsnow"])),
-                                   },
-                    register=rh # reservoir_handle to register with.
-                )
+            name="cs",                  # instance name
+            species=CO2,                # species, must be given
+            vr_datafields={             # the vr_datafields contain any data that is referenced inside the
+                "Hplus": self.swc.hplus, # function, rather than passed as an argument, and all data
+                "Beta": 0.0             # that is explicitly referenced by the model
+            },
+            function=calc_carbonates,   # function reference, see below
+            fname="function name as string",
+            function_input_data="DIC TA",
+            function_params=(float),    # Note that parameters must be individual float values
+            return_values={             # list of return values, these must be known species definitions
+                "Hplus": rg.swc.hplus,
+                "zsnow": float(abs(kwargs["zsnow"])),
+            },
+            register=rh                # reservoir_handle to register with
+        )
 
-        the dict keys of vr_datafields will be used to create alias
-        names which can be used to access the respective variable
-
-
-    The general template for a user defined function is a follows::
-
-      def calc_carbonates(i: int, input_data: tp.List, vr_data: tp.List, params: tp.List) -> None:
-          # i = index of current max_timestep
-          # input_data = list of np.arrays, typically data from other Species
-          # vr_data = list of np.arrays created during instance creation (i.e. the vr data)
-          # params = list of float values (at least one!)
-          pass
-       return
-
-    Note that this function should not return any values, and that all input fields must have
-    at least one entry!
-
+    The dictionary keys of `vr_datafields` will be used to create alias names which c
+    an be used to access the respective variables. See the online documentation:
+    https://esbmtk.readthedocs.io/
     """
 
     def __init__(self, **kwargs) -> None:
@@ -1553,7 +1538,7 @@ class ExternalCode(SpeciesNoSet):
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
-            "species": ["None", (str, SpeciesProperties)],
+            "species": ["None", (str, Species, SpeciesProperties)],
             "plot_transform_c": ["None", (str, Callable)],
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
