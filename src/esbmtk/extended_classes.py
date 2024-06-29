@@ -1493,7 +1493,7 @@ class ExternalCode(SpeciesNoSet):
 
         ExternalCode(
             name="cs",                  # instance name
-            species=CO2,                # species, must be given
+            species=M.CO2,                # must be Speciesproperties instance
             vr_datafields={             # the vr_datafields contain any data that is referenced inside the
                 "Hplus": self.swc.hplus, # function, rather than passed as an argument, and all data
                 "Beta": 0.0             # that is explicitly referenced by the model
@@ -1538,7 +1538,7 @@ class ExternalCode(SpeciesNoSet):
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
-            "species": ["None", (str, Species, SpeciesProperties, Species)],
+            "species": ["None", (str, Species, SpeciesProperties)],
             "plot_transform_c": ["None", (str, Callable)],
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
