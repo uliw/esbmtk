@@ -1538,7 +1538,7 @@ class ExternalCode(SpeciesNoSet):
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
-            "species": ["None", (str, Species, SpeciesProperties)],
+            "species": ["None", (str, Species, SpeciesProperties, Species)],
             "plot_transform_c": ["None", (str, Callable)],
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
