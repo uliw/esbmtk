@@ -1555,6 +1555,8 @@ class ExternalCode(SpeciesNoSet):
             "name": ["None", (str)],
             "species": ["None", (str, SpeciesProperties, Species)],
             "plot_transform_c": ["None", (str, Callable)],
+            "source": ["None", (str, Reservoir)],
+            "sink": ["None", (str, Reservoir)],
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
             "groupname": ["None", (str)],
