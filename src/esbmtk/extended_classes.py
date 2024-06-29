@@ -1491,7 +1491,7 @@ class ExternalCode(SpeciesNoSet):
 
         ExternalCode(
                     name="cs",     # instance name
-                    species=CO2,   # species, must be given
+                    species=M.CO2,   # must be a SpeciesProperties instance
                     # the vr_data_fields contains any data that is referenced inside the
                     # function, rather than passed as argument, and all data that is
                     # explicitly referenced by the model
@@ -1555,7 +1555,7 @@ class ExternalCode(SpeciesNoSet):
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
-            "species": ["None", (str, SpeciesProperties, Species)],
+            "species": ["None", (str, SpeciesProperties)],
             "plot_transform_c": ["None", (str, Callable)],
             "source": ["None", (str, Source, Sink, Species)],
             "sink": ["None", (str, Source, Sink, Species)],
