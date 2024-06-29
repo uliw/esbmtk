@@ -1547,14 +1547,18 @@ class ExternalCode(SpeciesNoSet):
             Species,
             Species2Species,
             Model,
+            Source,
+            Sink,
         )
         from typing import Callable
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
-            "species": ["None", (str, SpeciesProperties)],
+            "species": ["None", (str, SpeciesProperties, Species)],
             "plot_transform_c": ["None", (str, Callable)],
+            "source": ["None", (str, Source, Sink, Species)],
+            "sink": ["None", (str, Source, Sink, Species)],
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
             "groupname": ["None", (str)],
