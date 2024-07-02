@@ -174,6 +174,7 @@ class Model(esbmtkBase):
             "ideal_water": [True, (bool)],
             "use_ode": [True, (bool)],
             "parse_model": [True, (bool)],
+            "keep_equations": [False, (bool)],
             "rtol": [1.0e-6, (float)],
             "bio_pump_functions": [0, (int)],  # custom/old
             # "area_table": [None, (str, np.ndarray)],
@@ -646,14 +647,18 @@ class Model(esbmtkBase):
         else:
             fn: str = "equations.py"  # file name
             eqs_fn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
+            eqs_mod = eqs_fn.stem  # just the file wo extension
             if eqs_fn.is_file():
                 warnings.warn(
                     """ Re-using equation file. Delete it manually if you
                         want an updated version"""
                 )
+               
+                eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
             else:
-                eqs_mod = eqs_fn.split("/")[-1].split(".")[0]
-                eqs = getattr(__import__(eqs_mod), "eqs")  # import equati
+                eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
+                eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
+
 
         method = kwargs["method"] if "method" in kwargs else "BDF"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
