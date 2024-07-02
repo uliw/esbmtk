@@ -16,10 +16,19 @@
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import numpy as np
+import numpy.typing as npt
 from esbmtk import (
     ExternalCode,
     register_return_values,
+    Flux,
+    Species,
+    SpeciesProperties,
+    Reservoir,
 )
+
+# declare numpy types
+NDArrayFloat = npt.NDArray[np.float64]
 
 
 def calculate_burial(po4_export_flux: float, o2_c: float, p: tuple) -> float:
@@ -43,18 +52,18 @@ def calculate_burial(po4_export_flux: float, o2_c: float, p: tuple) -> float:
     productivity_mol_year = po4_export_flux * dbv * 1e-6  # Convert umol/L to mol
 
     burial_flux = productivity_mol_year * frac_burial
-    return burial_flux
+    return -burial_flux
 
 
 def add_my_burial(
-    source,
-    sink,
-    species,
-    o2_c,
-    po4_export_flux: float,
-    frac_burial,
-    min_burial_fraction,
-    max_burial_fraction,
+    source: Reservoir,
+    sink: Reservoir,
+    species: SpeciesProperties,
+    o2_c: Species,
+    po4_export_flux: Flux,
+    frac_burial: float,
+    min_burial_fraction: float,
+    max_burial_fraction:float,
 ) -> None:
     """
     This function initializes a user supplied function so that it can be used within the ESBMTK ecosystem.
@@ -82,20 +91,27 @@ def add_my_burial(
     print(f"Type of sink: {type(sink)}")
     print(f"Type of species: {type(species)}")
 
-    dbv = source.volume
+    model = species.mo
+    dbv: float = source.volume.to(model.v_unit).magnitude
 
-    p = (frac_burial, dbv, min_burial_fraction, max_burial_fraction)  # float into tuple
     print(f"Source name: {source.full_name}")
     ec = ExternalCode(
         name="calculate_burial",
         species=species,
+        ftype="needs_flux",
         function=calculate_burial,
         fname="calculate_burial",
         function_input_data=[po4_export_flux, o2_c],
-        function_params=p,
+        function_params=(
+            frac_burial,
+            dbv,
+            min_burial_fraction,
+            max_burial_fraction,
+        ),
         return_values=[
             {f"F_{sink.full_name}.{species.name}": "burial_flux"},
         ],
         register=source,
     )
     register_return_values(ec, source)
+    source.mo.lpc_f.append(ec.fname)
