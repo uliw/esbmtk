@@ -30,6 +30,8 @@ from esbmtk import (
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
+counter = 0
+
 
 def calculate_burial(po4_export_flux: float, o2_c: float, p: tuple) -> float:
     """#add an empty tuple
@@ -42,17 +44,36 @@ def calculate_burial(po4_export_flux: float, o2_c: float, p: tuple) -> float:
     :return: Burial flux in mol/year
     :rtype: float
     """
-    frac_burial, dbv, min_burial_fraction, max_burial_fraction = p
+    global counter
+    counter += 1
 
+    frac_burial, dbv, min_burial_fraction, max_burial_fraction = p
+    """
     frac_burial = min_burial_fraction + (max_burial_fraction - min_burial_fraction) * (
         o2_c / 100
     )
+    # )
+    """
+    frac_burial = min_burial_fraction
 
     # productivity in mol/year
-    productivity_mol_year = po4_export_flux * dbv * 1e-6  # Convert umol/L to mol
+    productivity_mol_year = po4_export_flux  # Convert umol/L to mol
 
-    burial_flux = productivity_mol_year * frac_burial
-    return -burial_flux
+    burial_flux = productivity_mol_year * (frac_burial)
+
+    p_remineralisation_flux = (productivity_mol_year - frac_burial) * 138
+    """+ (7.6e9 * (1 - 0.2))"""
+    # burial_flux += 5.56e-24 * (1 - burial_flux) ** 2.5
+    # Debug prints every 100th run
+    """
+    if counter % 100 == 0:
+        print(f"po4_export_flux: {po4_export_flux}, o2_c: {o2_c}")
+        print(f"Burial Flux: {burial_flux}, Frac Burial: {frac_burial}")
+        print(
+            f"Burial Flux from Fe-P: {burial_flux-(productivity_mol_year * frac_burial)}"
+        )
+    """
+    return -burial_flux, p_remineralisation_flux
 
 
 def add_my_burial(
@@ -63,7 +84,9 @@ def add_my_burial(
     po4_export_flux: Flux,
     frac_burial: float,
     min_burial_fraction: float,
-    max_burial_fraction:float,
+    max_burial_fraction: float,
+    my_id1,
+    my_id2,
 ) -> None:
     """
     This function initializes a user supplied function so that it can be used within the ESBMTK ecosystem.
@@ -87,14 +110,18 @@ def add_my_burial(
     max_burial_fraction : float
         Maximum burial fraction
     """
-    print(f"Type of source: {type(source)}")
-    print(f"Type of sink: {type(sink)}")
-    print(f"Type of species: {type(species)}")
+    # print(f"Type of source: {type(source)}")
+    # print(f"Type of sink: {type(sink)}")
+    # print(f"Type of species: {type(species)}")
 
+    # ensure that the volume is in actual model units, and then strip
+    # the unit information
+
+    # print(f"po4_export_flux: {po4_export_flux}, o2_c: {o2_c}")
     model = species.mo
     dbv: float = source.volume.to(model.v_unit).magnitude
 
-    print(f"Source name: {source.full_name}")
+    # print(f"Source name: {source.full_name}")
     ec = ExternalCode(
         name="calculate_burial",
         species=species,
@@ -109,9 +136,18 @@ def add_my_burial(
             max_burial_fraction,
         ),
         return_values=[
-            {f"F_{sink.full_name}.{species.name}": "burial_flux"},
+            {f"F_{sink.full_name}.{species.name}": f"{my_id1}_burial_flux"},
+            {
+                f"F_{source.full_name}.{species.name}": f"{my_id2}_p_remineralisation_flux"
+            },
         ],
         register=source,
     )
     register_return_values(ec, source)
     source.mo.lpc_f.append(ec.fname)
+
+    # Debug prints
+    # print(f"Source name: {source.full_name}, Sink name: {sink.full_name}")
+    # print(
+    #   f"Function Params: {frac_burial}, {dbv}, {min_burial_fraction}, {max_burial_fraction}"
+    # )
