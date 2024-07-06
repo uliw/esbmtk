@@ -861,7 +861,7 @@ class ConnectionProperties(esbmtkBase):
                 id=self.id,
                 register=self,
             )
-
+    
             self.loc.append(a)  # add connection to list of connections
             if self.mo.debug:
                 print(
