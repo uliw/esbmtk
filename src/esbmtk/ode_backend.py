@@ -232,7 +232,6 @@ def write_equations_2(
     """
     from esbmtk import Species
 
-
     # construct header and static code:
     # add optional import statements
     h1 = """from __future__ import annotations
@@ -302,7 +301,12 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
             # we cannot use a set, since we need to preserve order
             if flux not in flist:
                 flist.append(flux)  # add to list of fluxes already computed
-                if isinstance(flux.parent, Species):
+                # this is ugly
+                if isinstance(flux.parent, Species) and flux.ftype == "other":
+                    rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
+                    # M.lpc_r.remove(flux)
+                    continue
+                elif isinstance(flux.parent, Species):
                     continue  # skip computed fluxes
 
                 ex, exl = get_flux(flux, M, R, icl)  # get flux expressions
@@ -322,7 +326,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         eqs.write(f"\n{sep}\n")
 
         for r in M.lpc_r:  # All virtual reservoirs need to be in this list
-            if r.ftype == "std":
+            if r.ftype == "std" or r.ftype == "other":
                 pass  # see above
             elif r.ftype == "needs_flux":  #
                 rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
@@ -717,8 +721,9 @@ def get_scale_with_flux_eq(
     """
 
     # get the reference flux name
-    p = flux.parent.ref_flux.parent
-    fn = f"{p.full_name.replace('.', '_')}__F"
+    # fn = f"{p.full_name.replace('.', '_')}__F"
+    fn = f"{c.ref_flux.full_name.replace('.', '_')}"
+    
     # get the equation string for the flux
     ex = f"toc[{c.s_index}] * {fn}"
     """ The flux for the light isotope will computed as follows:
@@ -731,4 +736,7 @@ def get_scale_with_flux_eq(
     else:
         exl = ""
     ex, exl = check_signal_2(ex, exl, c)
+
     return ex, exl
+
+
