@@ -1515,12 +1515,7 @@ class ExternalCode(SpeciesNoSet):
     """
 
     def __init__(self, **kwargs) -> None:
-        """The original class will calculate delta and concentration from mass
-        an d and h and l. Since we want to use this class without a
-        priory knowledge of how the reservoir arrays are being used we
-        overwrite the data generated during initialization with the
-        values provided in the keywords
-
+        """
         """
 
         from esbmtk import (
@@ -1532,6 +1527,7 @@ class ExternalCode(SpeciesNoSet):
             Species,
             Species2Species,
             Model,
+            Flux,
         )
         from typing import Callable
 
@@ -1569,6 +1565,7 @@ class ExternalCode(SpeciesNoSet):
             "geometry": ["None", (list, str)],
             "alias_list": ["None", (list, str)],
             "ftype": ["std", (str)],
+            "after_flux": ["None", (str, Flux)],
             "ref_flux": ["None", (list, str)],
             "return_values": ["None", (list)],
             "arguments": ["None", (str, list)],
