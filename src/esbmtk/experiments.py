@@ -62,9 +62,9 @@ def calculate_burial(po4_export_flux: float, o2_c: float, p: tuple) -> float:
     burial_flux = productivity_mol_year * (frac_burial)
 
     p_remineralisation_flux = (productivity_mol_year - frac_burial) * 138
-        
+
     # print(f"bf = {-burial_flux:.2e}, rf = { p_remineralisation_flux:.2e}")
-    
+
     return -burial_flux, p_remineralisation_flux
 
 
@@ -79,7 +79,7 @@ def add_my_burial(
     max_burial_fraction: float,
     my_id1,
     my_id2,
-    pos,
+    # pos,
 ) -> None:
     """
     This function initializes a user supplied function so that it can be used within the ESBMTK ecosystem.
@@ -135,7 +135,7 @@ def add_my_burial(
         register=source,
     )
     register_return_values(ec, source)
-    source.mo.lpc_f.append(ec.fname)
+    source.mo.lpc_f.append(ec.fname)  # omitted for some reason?
 
     # Debug prints
     # print(f"Source name: {source.full_name}, Sink name: {sink.full_name}")
