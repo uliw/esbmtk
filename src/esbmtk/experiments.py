@@ -44,8 +44,8 @@ def calculate_burial(po4_export_flux: float, o2_c: float, p: tuple) -> float:
     :return: Burial flux in mol/year
     :rtype: float
     """
-    global counter
-    counter += 1
+    # global counter # never ever use global variables!
+    # counter += 1
 
     frac_burial, dbv, min_burial_fraction, max_burial_fraction = p
     """
@@ -62,17 +62,9 @@ def calculate_burial(po4_export_flux: float, o2_c: float, p: tuple) -> float:
     burial_flux = productivity_mol_year * (frac_burial)
 
     p_remineralisation_flux = (productivity_mol_year - frac_burial) * 138
-    """+ (7.6e9 * (1 - 0.2))"""
-    # burial_flux += 5.56e-24 * (1 - burial_flux) ** 2.5
-    # Debug prints every 100th run
-    """
-    if counter % 100 == 0:
-        print(f"po4_export_flux: {po4_export_flux}, o2_c: {o2_c}")
-        print(f"Burial Flux: {burial_flux}, Frac Burial: {frac_burial}")
-        print(
-            f"Burial Flux from Fe-P: {burial_flux-(productivity_mol_year * frac_burial)}"
-        )
-    """
+        
+    # print(f"bf = {-burial_flux:.2e}, rf = { p_remineralisation_flux:.2e}")
+    
     return -burial_flux, p_remineralisation_flux
 
 
@@ -126,8 +118,7 @@ def add_my_burial(
     ec = ExternalCode(
         name="calculate_burial",
         species=species,
-        ftype="needs_flux",
-        after_flux=pos,
+        ftype="in_sequence",
         function=calculate_burial,
         fname="calculate_burial",
         function_input_data=[po4_export_flux, o2_c],
