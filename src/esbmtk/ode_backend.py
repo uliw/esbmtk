@@ -295,9 +295,21 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         sep = "# ---------------- write all flux equations ------------------- #"
         eqs.write(f"\n{sep}\n")
         for flux in M.lof:  # loop over fluxes
-            # avoid computing fluxes twice
+            """ This loop will only write regular flux equations, withe the sole
+            exception of fluxes belonging to ExternalCode objects that need to be
+            in a given sequence" All other fluxes must be on the M.lpr_r list
+            below.
+            """
+            if flux.ftype == "computed":
+                continue
+
             if flux not in flist:
-                flist.append(flux)  # add to list of fluxes already computed
+                # functions can return more than one flux, but we only need to
+                # call the function once
+                if flux.computed_by != "None":
+                    flist = flist + flux.computed_by.lof
+                else:
+                    flist.append(flux)  # add to list of fluxes already computed
 
                 # include computed fluxes that need to be in sequence
                 if flux.ftype == "in_sequence":
@@ -318,7 +330,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         eqs.write(f"\n{sep}\n")
 
         for r in M.lpc_r:  # All virtual reservoirs need to be in this list
-            if r.ftype == "needs_flux":  #
+            if r.ftype == "computed":  #
                 rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
 
         sep = "# ---------------- write input only reservoir equations -------- #"
