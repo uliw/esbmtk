@@ -1512,6 +1512,10 @@ class ExternalCode(SpeciesNoSet):
     The dictionary keys of `vr_datafields` will be used to create alias names which c
     an be used to access the respective variables. See the online documentation:
     https://esbmtk.readthedocs.io/
+
+    In the default configuration, ExternalCode instances are computed after all regular connections
+    have been established. However, sometimes, a connection may depend on a computed value. In this case
+    set the optional parameter ftype to "in_sequence"
     """
 
     def __init__(self, **kwargs) -> None:
@@ -1564,8 +1568,7 @@ class ExternalCode(SpeciesNoSet):
             "fname": ["None", (str)],
             "geometry": ["None", (list, str)],
             "alias_list": ["None", (list, str)],
-            "ftype": ["std", (str)],
-            "after_flux": ["None", (str, Flux)],
+            "ftype": ["computed", (str)],
             "ref_flux": ["None", (list, str)],
             "return_values": ["None", (list)],
             "arguments": ["None", (str, list)],
@@ -1607,17 +1610,9 @@ class ExternalCode(SpeciesNoSet):
 
         self.mo.lpc_r.append(self)
         # self.mo.lpc_r.append(self.gfh)
-
         self.mo.lor.remove(self)
         # but lets keep track of  virtual reservoir in lvr.
         self.mo.lvr.append(self)
-
-        # print(f"added {self.name} to lvr 2")
-
-        # create temporary memory if we use multiple solver iterations
-        if self.mo.number_of_solving_iterations > 0:
-            for i, d in enumerate(self.vr_data):
-                setattr(self, f"vrd_{i}", np.empty(0))
 
         if self.alias_list != "None":
             self.create_alialises()
