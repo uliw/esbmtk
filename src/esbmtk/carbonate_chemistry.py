@@ -326,7 +326,6 @@ def init_carbonate_system_2(
         species=r_sb.mo.Carbon.CO2,
         function=carbonate_system_2,
         fname="carbonate_system_2",
-        ftype="needs_flux",
         r_s=r_sb,  # source (RG) of CaCO3 flux,
         r_d=r_db,  # sink (RG) of CaCO3 flux,
         function_input_data=[
