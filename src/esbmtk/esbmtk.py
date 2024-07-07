@@ -653,12 +653,11 @@ class Model(esbmtkBase):
                     """ Re-using equation file. Delete it manually if you
                         want an updated version"""
                 )
-               
+
                 eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
             else:
                 eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
                 eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
-
 
         method = kwargs["method"] if "method" in kwargs else "BDF"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
@@ -1943,7 +1942,7 @@ class Flux(esbmtkBase):
             Species,
             GasReservoir,
             Species2Species,
-            Species2Species,
+            ExternalCode,
             Signal,
         )
 
@@ -1970,6 +1969,7 @@ class Flux(esbmtkBase):
             "save_flux_data": [False, (bool)],
             "id": ["None", (str)],
             "ftype": ["None", (str)],
+            "computed_by": ["None", (str, ExternalCode)],
         }
 
         # provide a list of absolutely required keywords
