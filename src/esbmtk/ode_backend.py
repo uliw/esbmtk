@@ -282,56 +282,44 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         )
         eqs.write(f"\n{sep}\n")
 
+        """  Computed reservoirs and computed fluxes are both stored in  M.lpc_r
+        At this point, we only print the reservoirs.
+        TODO: This should really be cleaned up
+        """
         for r in M.lpc_r:  # All virtual reservoirs need to be in this list
             if r.ftype == "std":
-                # rel = write_cs_1(eqs, r, icl, rel, ind2, ind3)
                 rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
-            elif r.ftype == "needs_flux":
-                pass
-            else:
-                raise ValueError(f"{r.ftype} is undefined")
 
+        # write all fluxes in M.lof
         flist = []
         sep = "# ---------------- write all flux equations ------------------- #"
         eqs.write(f"\n{sep}\n")
         for flux in M.lof:  # loop over fluxes
-            if flux.register.ctype == "ignore" or flux.ftype == "computed":
-                continue  # skip
-            # fluxes belong to at least 2 reservoirs, so we need to avoid duplication
-            # we cannot use a set, since we need to preserve order
+            # avoid computing fluxes twice
             if flux not in flist:
                 flist.append(flux)  # add to list of fluxes already computed
-                # this is ugly
-                if isinstance(flux.parent, Species) and flux.ftype == "other":
-                    rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
-                    # M.lpc_r.remove(flux)
-                    continue
-                elif isinstance(flux.parent, Species):
-                    continue  # skip computed fluxes
 
-                ex, exl = get_flux(flux, M, R, icl)  # get flux expressions
-                fn = flux.full_name.replace(".", "_")
-                # all others types that have separate expressions/isotope
-                eqs.write(f"{ind2}{fn} = {ex}\n")
-                if flux.parent.isotopes:  # add line for isotopes
-                    eqs.write(f"{ind2}{fn}_l =  {exl}\n")
-                    if flux.full_name == "M.CG_A_sb_to_A_ib.DIC_._F":
-                        print(f"wrote = {fn}_l  {exl}")
+                # include computed fluxes that need to be in sequence
+                if flux.ftype == "in_sequence":
+                    rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
+                    continue
+                else:
+                    ex, exl = get_flux(flux, M, R, icl)  # get flux expressions
+                    fn = flux.full_name.replace(".", "_")
+                    # all others types that have separate expressions/isotope
+                    eqs.write(f"{ind2}{fn} = {ex}\n")
+                    if flux.parent.isotopes:  # add line for isotopes
+                        eqs.write(f"{ind2}{fn}_l =  {exl}\n")
 
         sep = (
             "# ---------------- write computed reservoir equations -------- #\n"
             + "# that do depend on fluxes"
         )
-
         eqs.write(f"\n{sep}\n")
 
         for r in M.lpc_r:  # All virtual reservoirs need to be in this list
-            if r.ftype == "std" or r.ftype == "other":
-                pass  # see above
-            elif r.ftype == "needs_flux":  #
+            if r.ftype == "needs_flux":  #
                 rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
-            else:
-                raise ValueError(f"{r.ftype} is undefined")
 
         sep = "# ---------------- write input only reservoir equations -------- #"
         eqs.write(f"\n{sep}\n")
@@ -400,7 +388,7 @@ def get_flux(flux: Flux, M: Model, R: tp.List[float], icl: dict) -> tuple(str, s
 
     else:
         raise ValueError(
-            f"Species2Species type {c.ctype} for {c.full_name} is not implmented"
+            f"Species2Species type {c.ctype} for {c.full_name} is not implemented"
         )
 
     return ex, exl
@@ -723,7 +711,7 @@ def get_scale_with_flux_eq(
     # get the reference flux name
     # fn = f"{p.full_name.replace('.', '_')}__F"
     fn = f"{c.ref_flux.full_name.replace('.', '_')}"
-    
+
     # get the equation string for the flux
     ex = f"toc[{c.s_index}] * {fn}"
     """ The flux for the light isotope will computed as follows:
@@ -738,5 +726,3 @@ def get_scale_with_flux_eq(
     ex, exl = check_signal_2(ex, exl, c)
 
     return ex, exl
-
-
