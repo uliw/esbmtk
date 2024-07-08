@@ -33,7 +33,9 @@ NDArrayFloat = npt.NDArray[np.float64]
 counter = 0
 
 
-def calculate_burial(po4_export_flux: float, o2_c: float, p: tuple) -> float:
+def calculate_burial(
+    po4_export_flux: float, o2_c: float, frac_burial_params: tuple
+) -> float:
     """#add an empty tuple
     Calculate burial as a function of productivity and oxygen concentration.
 
@@ -47,7 +49,7 @@ def calculate_burial(po4_export_flux: float, o2_c: float, p: tuple) -> float:
     # global counter # never ever use global variables!
     # counter += 1
 
-    frac_burial, dbv, min_burial_fraction, max_burial_fraction = p
+    frac_burial, dbv, min_burial_fraction, max_burial_fraction = frac_burial_params
     """
     frac_burial = min_burial_fraction + (max_burial_fraction - min_burial_fraction) * (
         o2_c / 100
