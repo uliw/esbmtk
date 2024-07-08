@@ -65,7 +65,16 @@ def calculate_burial(
 
     p_remineralisation_flux = (productivity_mol_year - frac_burial) * 138
 
-    # print(f"bf = {-burial_flux:.2e}, rf = { p_remineralisation_flux:.2e}")
+    print(
+        f"\n----------------------------------\nbf = {-burial_flux:.2e}, rf = { p_remineralisation_flux:.2e}"
+    )
+    print(
+        f"PO4 export flux = {po4_export_flux:.2e}, burial fraction = { frac_burial:.2e}"
+    )
+    print(
+        f"PO4 export flux = {po4_export_flux:.2e}, burial fraction = { frac_burial:.2e}"
+    )
+    print(f"O2_c = {o2_c:.2e}")
 
     return -burial_flux, p_remineralisation_flux
 
