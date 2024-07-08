@@ -137,7 +137,7 @@ def add_my_burial(
         register=source,
     )
     register_return_values(ec, source)
-    source.mo.lpc_f.append(ec.fname)  # omitted for some reason?
+    source.mo.lpc_f.append(ec.fname)
 
     # Debug prints
     # print(f"Source name: {source.full_name}, Sink name: {sink.full_name}")
