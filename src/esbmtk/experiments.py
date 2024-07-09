@@ -66,12 +66,13 @@ def calculate_burial(
     p_remineralisation_flux = productivity_mol_year - (
         productivity_mol_year * frac_burial
     )
-    """
-    #Potential specific fluxes:
-    DOA= o2_c/250  #250 is max O2 content in umol/l in deep ocean
-    fe_p_burial = 7.60E15 * (1- DOA)  #in umol/year using k59 from van cap 
 
-    ap_burial = 5.56E30 * (productivity_mol_year - burial_flux)^2.5 #from van cap in umol/year
+    # Potential specific fluxes:
+    DOA = o2_c / 250  # 250 is max O2 content in umol/l in deep ocean
+    fe_p_burial = 7.60e9 * (1 - DOA)  # in umol/year using k59 from van cap
+    burial_flux += fe_p_burial
+    """
+    ap_burial = 5.56E24 * (po4_export_flux - burial_flux)^2.5 #from van cap in umol/year
     """
     """
     print(
