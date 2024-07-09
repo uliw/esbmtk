@@ -67,6 +67,13 @@ def calculate_burial(
         productivity_mol_year * frac_burial
     )
     """
+    #Potential specific fluxes:
+    DOA= o2_c/250  #250 is max O2 content in umol/l in deep ocean
+    fe_p_burial = 7.60E15 * (1- DOA)  #in umol/year using k59 from van cap 
+
+    ap_burial = 5.56E30 * (productivity_mol_year - burial_flux)^2.5 #from van cap in umol/year
+    """
+    """
     print(
         f"BF = {-burial_flux:.2e}, rf = { p_remineralisation_flux:.2e}, PO4 export flux = {po4_export_flux:.2e}, O2_c = {o2_c:.2e}, burial fraction = { frac_burial:.2e}"
     )
