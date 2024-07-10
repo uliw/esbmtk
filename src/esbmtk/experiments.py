@@ -143,8 +143,8 @@ def add_my_burial(
             max_burial_fraction,
         ),
         return_values=[
-            {f"F_{sink.full_name}.{species.name}": f"{my_id1}__F"},
-            {f"F_{source.full_name}.{species.name}": f"{my_id2}__F"},
+            {f"F_{sink.full_name}.{species.name}": f"{my_id1}__F"},  # po4 burial
+            {f"F_{source.full_name}.{species.name}": f"{my_id2}__F"},  # po4 rmin
         ],
         register=source,
     )
