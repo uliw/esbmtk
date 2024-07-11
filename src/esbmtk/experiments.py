@@ -85,11 +85,12 @@ def calculate_burial(
 
     burial_flux = productivity_mol_year / (frac_burial)
 
+    # useful for debug
     POP_flux = burial_flux
 
     p_remineralisation_flux = productivity_mol_year - burial_flux
 
-    fe_p_burial = 7.60e9 * (1 - DOA)  # in umol/year using k59 from van cap
+    fe_p_burial = 7.60e9 * (1 - (DOA * 1e6))  # in umol/year using k59 from van cap
 
     ap_burial = 5.56e-24 * (p_remineralisation_flux**2.5)  # from van cap in umol/year
 
@@ -117,7 +118,7 @@ def calculate_burial(
     )
     """
     """
-    #if for use in debugging (first and last)
+    # if for use in debugging (first and last)
     if counter == 0 or counter == 6000:
         print(
             f"THC = {thc} BF = {-burial_flux:.2e}, rf = {p_remineralisation_flux:.2e}\n"
