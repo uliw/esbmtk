@@ -30,7 +30,8 @@ from esbmtk import (
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
-# counter = 0
+
+counter = 0
 
 
 def calculate_burial(
@@ -46,12 +47,19 @@ def calculate_burial(
     :return: Burial flux in mol/year
     :rtype: float
     """
-    # global counter # never ever use global variables!
-    # counter += 1
+    global counter  # never ever use global variables!
+    counter += 1
 
-    frac_burial, dbv, min_burial_fraction, max_burial_fraction, cp_ox, cp_anox = (
-        frac_burial_params
-    )
+    (
+        frac_burial,
+        dbv,
+        min_burial_fraction,
+        max_burial_fraction,
+        cp_ox,
+        cp_anox,
+        thc,
+        # flux_values,
+    ) = frac_burial_params
 
     DOA = o2_c / 250  # 250 is max O2 content in umol/l in deep ocean
 
@@ -77,6 +85,8 @@ def calculate_burial(
 
     burial_flux = productivity_mol_year / (frac_burial)
 
+    POP_flux = burial_flux
+
     p_remineralisation_flux = productivity_mol_year - burial_flux
 
     fe_p_burial = 7.60e9 * (1 - DOA)  # in umol/year using k59 from van cap
@@ -85,14 +95,30 @@ def calculate_burial(
 
     burial_flux += fe_p_burial + ap_burial
 
-    print(
-        f"BF = {-burial_flux:.2e}, rf = {p_remineralisation_flux:.2e}, "
-        f"fe-p_burial = {fe_p_burial:.2e}, ap_burial = {ap_burial:.2e}, "
-        f"PO4 export flux = {po4_export_flux:.2e}, O2_c = {o2_c:.2e}, "
-        f"burial fraction = {frac_burial:.2e}"
-    )
+    """
+    flux_values = {
+        "BF": -burial_flux,
+        "rf": p_remineralisation_flux,
+        "fe_p_burial": fe_p_burial,
+        "ap_burial": ap_burial,
+        "PO4_export_flux": po4_export_flux,
+        "POP_flux": POP_flux,
+        "O2_c": o2_c,
+        "burial_fraction": frac_burial,
+    }
+    """
+    if counter == 0 or counter == 6000:
+        print(
+            f"THC = {thc} BF = {-burial_flux:.2e}, rf = {p_remineralisation_flux:.2e}\n"
+            f"fe-p_burial = {fe_p_burial:.2e}, ap_burial = {ap_burial:.2e}\n"
+            f"PO4 export flux = {po4_export_flux:.2e}, POP_flux = {POP_flux:.2e}\n"
+            f"O2_c = {o2_c:.2e}, DOA = {DOA} burial fraction = {frac_burial:.2e}\n"
+        )
+        if counter == 6000:
+            print("---------------------------------------------")
+            counter = 0
 
-    return -burial_flux, p_remineralisation_flux
+    return -burial_flux, p_remineralisation_flux  # , flux_values
 
 
 def add_my_burial(
@@ -106,9 +132,9 @@ def add_my_burial(
     max_burial_fraction: float,
     cp_ox: float,
     cp_anox: float,
+    thc: float,
     my_id1,
     my_id2,
-    # pos,
 ) -> None:
     """
     This function initializes a user supplied function so that it can be used within the ESBMTK ecosystem.
@@ -158,6 +184,7 @@ def add_my_burial(
             max_burial_fraction,
             cp_ox,
             cp_anox,
+            thc,
         ),
         return_values=[
             {f"F_{sink.full_name}.{species.name}": f"{my_id1}__F"},  # po4 burial
@@ -167,6 +194,7 @@ def add_my_burial(
     )
     register_return_values(ec, source)
     source.mo.lpc_f.append(ec.fname)
+    # return flux_values
 
     # Debug prints
     # print(f"Source name: {source.full_name}, Sink name: {sink.full_name}")
