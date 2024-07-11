@@ -84,10 +84,10 @@ def calculate_burial(
     burial_flux += fe_p_burial + ap_burial
 
     print(
-        f"BF = {-burial_flux:.2e}, rf = { p_remineralisation_flux:.2e},
-        e-p_burial = {fe_p_burial:.2e}, ap_burial = {ap_burial:.2e},
-        PO4 export flux = {po4_export_flux:.2e}, O2_c = {o2_c:.2e}, 
-        burial fraction = { frac_burial:.2e}"
+        f"BF = {-burial_flux:.2e}, rf = {p_remineralisation_flux:.2e}, "
+        f"fe-p_burial = {fe_p_burial:.2e}, ap_burial = {ap_burial:.2e}, "
+        f"PO4 export flux = {po4_export_flux:.2e}, O2_c = {o2_c:.2e}, "
+        f"burial fraction = {frac_burial:.2e}"
     )
 
     return -burial_flux, p_remineralisation_flux
