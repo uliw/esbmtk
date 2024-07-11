@@ -49,7 +49,9 @@ def calculate_burial(
     # global counter # never ever use global variables!
     # counter += 1
 
-    frac_burial, dbv, min_burial_fraction, max_burial_fraction = frac_burial_params
+    frac_burial, dbv, min_burial_fraction, max_burial_fraction, cp_ox, cp_anox = (
+        frac_burial_params
+    )
     """
     frac_burial = min_burial_fraction + (max_burial_fraction - min_burial_fraction) * (
         (o2_c) / 100
