@@ -31,7 +31,7 @@ from esbmtk import (
 NDArrayFloat = npt.NDArray[np.float64]
 
 
-counter = 0
+# counter = 0
 
 
 def calculate_burial(
@@ -47,8 +47,8 @@ def calculate_burial(
     :return: Burial flux in mol/year
     :rtype: float
     """
-    global counter  # never ever use global variables!
-    counter += 1
+    # global counter  # never ever use global variables!
+    # counter += 1
 
     (
         frac_burial,
@@ -107,6 +107,14 @@ def calculate_burial(
         "burial_fraction": frac_burial,
     }
     """
+    print(
+        f"THC = {thc} BF = {-burial_flux:.2e}, rf = {p_remineralisation_flux:.2e}\n"
+        f"fe-p_burial = {fe_p_burial:.2e}, ap_burial = {ap_burial:.2e}\n"
+        f"PO4 export flux = {po4_export_flux:.2e}, POP_flux = {POP_flux:.2e}\n"
+        f"O2_c = {o2_c:.2e}, DOA = {DOA} burial fraction = {frac_burial:.2e}\n"
+    )
+    """
+    #if for use in debugging (first and last)
     if counter == 0 or counter == 6000:
         print(
             f"THC = {thc} BF = {-burial_flux:.2e}, rf = {p_remineralisation_flux:.2e}\n"
@@ -117,7 +125,7 @@ def calculate_burial(
         if counter == 6000:
             print("---------------------------------------------")
             counter = 0
-
+    """
     return -burial_flux, p_remineralisation_flux  # , flux_values
 
 
