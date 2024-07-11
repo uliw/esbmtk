@@ -79,7 +79,7 @@ def calculate_burial(
     DOA = o2_c / 250  # 250 is max O2 content in umol/l in deep ocean
     fe_p_burial = 7.60e9 * (1 - DOA)  # in umol/year using k59 from van cap
 
-    ap_burial = 5.56e24 * (p_remineralisation_flux**2.5)  # from van cap in umol/year
+    ap_burial = 5.56e-24 * (p_remineralisation_flux**2.5)  # from van cap in umol/year
 
     burial_flux += fe_p_burial + ap_burial
 
