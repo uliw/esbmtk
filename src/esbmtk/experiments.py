@@ -50,10 +50,12 @@ def calculate_burial(
     # counter += 1
 
     frac_burial, dbv, min_burial_fraction, max_burial_fraction = frac_burial_params
-
+    """
     frac_burial = min_burial_fraction + (max_burial_fraction - min_burial_fraction) * (
         o2_c / 100
     )
+    """
+    frac_burial = po4_export_flux**1.09
 
     # frac_burial = min_burial_fraction
 
@@ -71,7 +73,7 @@ def calculate_burial(
     fe_p_burial = 7.60e9 * (1 - DOA)  # in umol/year using k59 from van cap
     burial_flux += fe_p_burial
     """
-    ap_burial = 5.56E24 * (po4_export_flux - burial_flux)^2.5 #from van cap in umol/year
+    ap_burial = 5.56E24 * (po4_export_flux - burial_flux)**2.5 #from van cap in umol/year
     """
 
     print(
