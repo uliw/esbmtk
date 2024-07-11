@@ -50,15 +50,17 @@ def calculate_burial(
     # counter += 1
 
     frac_burial, dbv, min_burial_fraction, max_burial_fraction = frac_burial_params
-    """
+
     frac_burial = min_burial_fraction + (max_burial_fraction - min_burial_fraction) * (
-        o2_c / 100
+        (po4_export_flux**1.09) / 100
     )
+
     """
+    #failed idea
     frac_burial = (
         1.2e-26 * po4_export_flux**1.09
     )  # 1.2e-26 is k36, po4 export is fixed P, 1.09 from vancap
-
+    """
     # frac_burial = min_burial_fraction
 
     # productivity in mol/year
