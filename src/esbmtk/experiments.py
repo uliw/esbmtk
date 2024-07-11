@@ -55,7 +55,9 @@ def calculate_burial(
         o2_c / 100
     )
     """
-    frac_burial = po4_export_flux**1.09
+    frac_burial = (
+        1.2e-26 * po4_export_flux**1.09
+    )  # 1.2e-26 is k36, po4 export is fixed P, 1.09 from vancap
 
     # frac_burial = min_burial_fraction
 
