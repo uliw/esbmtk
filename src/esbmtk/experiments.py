@@ -52,8 +52,10 @@ def calculate_burial(
     frac_burial, dbv, min_burial_fraction, max_burial_fraction = frac_burial_params
 
     frac_burial = min_burial_fraction + (max_burial_fraction - min_burial_fraction) * (
-        (po4_export_flux**1.09) / 100
+        (po4_export_flux) / 100
     )
+
+    frac_burial = min(frac_burial, max_burial_fraction)
 
     """
     #failed idea
