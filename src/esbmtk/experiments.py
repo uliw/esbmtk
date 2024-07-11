@@ -50,14 +50,15 @@ def calculate_burial(
     # counter += 1
 
     frac_burial, dbv, min_burial_fraction, max_burial_fraction = frac_burial_params
-
+    """
     frac_burial = min_burial_fraction + (max_burial_fraction - min_burial_fraction) * (
         (o2_c) / 100
     )
 
     # cannot exceed max fraction
     frac_burial = min(frac_burial, max_burial_fraction)
-
+    """
+    frac_burial = (cp_ox * cp_anox) / ((1 - DOA) * cp_anox + DOA * cp_ox)
     """
     #failed idea
     frac_burial = (
@@ -102,6 +103,8 @@ def add_my_burial(
     frac_burial: float,
     min_burial_fraction: float,
     max_burial_fraction: float,
+    cp_ox: float,
+    cp_anox: float,
     my_id1,
     my_id2,
     # pos,
@@ -152,6 +155,8 @@ def add_my_burial(
             dbv,
             min_burial_fraction,
             max_burial_fraction,
+            cp_ox,
+            cp_anox,
         ),
         return_values=[
             {f"F_{sink.full_name}.{species.name}": f"{my_id1}__F"},  # po4 burial
