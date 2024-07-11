@@ -75,11 +75,9 @@ def calculate_burial(
     # productivity in mol/year
     productivity_mol_year = po4_export_flux  # Convert umol/L to mol
 
-    burial_flux = productivity_mol_year * (frac_burial)
+    burial_flux = productivity_mol_year / (frac_burial)
 
-    p_remineralisation_flux = productivity_mol_year - (
-        productivity_mol_year * frac_burial
-    )
+    p_remineralisation_flux = productivity_mol_year - burial_flux
 
     fe_p_burial = 7.60e9 * (1 - DOA)  # in umol/year using k59 from van cap
 
