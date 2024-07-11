@@ -52,9 +52,10 @@ def calculate_burial(
     frac_burial, dbv, min_burial_fraction, max_burial_fraction = frac_burial_params
 
     frac_burial = min_burial_fraction + (max_burial_fraction - min_burial_fraction) * (
-        (po4_export_flux) / 100
+        (o2_c) / 100
     )
 
+    # cannot exceed max fraction
     frac_burial = min(frac_burial, max_burial_fraction)
 
     """
@@ -77,13 +78,13 @@ def calculate_burial(
     # Potential specific fluxes:
     DOA = o2_c / 250  # 250 is max O2 content in umol/l in deep ocean
     fe_p_burial = 7.60e9 * (1 - DOA)  # in umol/year using k59 from van cap
-    burial_flux += fe_p_burial
-    """
-    ap_burial = 5.56E24 * (po4_export_flux - burial_flux)**2.5 #from van cap in umol/year
-    """
+
+    ap_burial = 5.56e24 * (p_remineralisation_flux**2.5)  # from van cap in umol/year
+
+    burial_flux += fe_p_burial + ap_burial
 
     print(
-        f"BF = {-burial_flux:.2e}, rf = { p_remineralisation_flux:.2e}, PO4 export flux = {po4_export_flux:.2e}, O2_c = {o2_c:.2e}, burial fraction = { frac_burial:.2e}"
+        f"BF = {-burial_flux:.2e}, rf = { p_remineralisation_flux:.2e}, ap_burial = {ap_burial:.2e} PO4 export flux = {po4_export_flux:.2e}, O2_c = {o2_c:.2e}, burial fraction = { frac_burial:.2e}"
     )
 
     return -burial_flux, p_remineralisation_flux
