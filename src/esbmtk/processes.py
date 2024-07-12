@@ -134,10 +134,6 @@ def init_gas_exchange(c: Species2Species):
     from esbmtk import ExternalCode, check_for_quantity
 
     c.fh.ftype = "computed"
-   
-   
-
-    # model = c.source.model
     sink_reservoir = c.sink.register
     swc = sink_reservoir.swc  # sink - liquid
     
@@ -231,7 +227,8 @@ def gas_exchange(
         liquid_c, liquid_c_l = liquid_c
 
     # Solubility with correction for pH2O
-    beta = solubility * (1 - p_H2O)
+    # beta = solubility * (1 - p_H2O)
+    beta = solubility  # solubility is already corrected for p_H20
     # f as afunction of solubility difference
     f = scale * (beta * gas_c - gas_aq * 1e3)
     rv = f
