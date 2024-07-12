@@ -16,6 +16,7 @@
      <https://www.gnu.org/licenses/>.
 
 """
+
 from __future__ import annotations
 import typing as tp
 import warnings
@@ -316,10 +317,20 @@ class SeawaterConstants(esbmtkBase):
         Weiss, R. F., Marine Chemistry 2:203-215, 1974.
         """
 
-        # F in mol/(1000 kg * atm)
-        self.F = self.K0 * 1000
+        S = self.salinity  # unit less
+        T = self.temperature  # in C
+        A1 = -160.7333
+        A2 = 215.4152
+        A3 = 89.8920
+        A4 = -1.47759
+        B1 = 0.029941
+        B2 = -0.027455
+        B3 = 0.0053407
+
+        self.F = self.calc_solubility_term(S, T, A1, A2, A3, A4, B1, B2, B3)
+
         # correct for water vapor partial pressure
-        self.SA_co2 = self.F / (1 - self.p_H2O)  # mol/(1000 kg * atm)
+        self.SA_co2 = self.F / (1 - self.p_H2O)
 
     def o2_solubility_constant(self) -> None:
         """Calculate the solubility of CO2 at a given temperature and salinity.
@@ -328,12 +339,12 @@ class SeawaterConstants(esbmtkBase):
 
         Parameters Ai & Bi from Tab 3.2.2 in  Sarmiento and Gruber 2006
 
-        The result is in mol/(1000kg atm)
+        The result is in mol/(l atm)
         """
 
         # Calculate the volumetric solubility function F_A in mol/l/m^3
         S = self.salinity  # unit less
-        T = 273.15 + self.temperature  # in C
+        T = self.temperature  # in C
         A1 = -58.3877
         A2 = 85.8079
         A3 = 23.8439
@@ -345,12 +356,12 @@ class SeawaterConstants(esbmtkBase):
         b = self.calc_solubility_term(S, T, A1, A2, A3, A4, B1, B2, B3)
 
         # and convert from bunsen coefficient to solubility
-        VA = 22.4136  # after Sarmiento & Gruber 2006
+        VA = 22.4136  # molar volume page 80
+
         self.SA_o2 = b / VA
-        # convert from mol/(m^3 atm) to mol/(1000kg atm)
-        self.SA_o2 = 1000 * self.SA_o2 / self.density
 
     def calc_solubility_term(self, S, T, A1, A2, A3, A4, B1, B2, B3) -> float:
+        T = T + 273.15
         ln_F = (
             A1
             + A2 * (100 / T)
