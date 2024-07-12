@@ -80,7 +80,7 @@ def calculate_burial(
     # cannot exceed max fraction
     frac_burial = min(frac_burial, max_burial_fraction)
     """
-    frac_burial = (cp_ox * cp_anox) / (((1 - DOA_alt) * cp_anox) + ((DOA_alt) * cp_ox))
+    frac_burial = (cp_ox * cp_anox) / (((1 - DOA) * cp_anox) + ((DOA) * cp_ox))
     """
     #failed idea
     frac_burial = (
