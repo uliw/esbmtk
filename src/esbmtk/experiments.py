@@ -31,7 +31,7 @@ from esbmtk import (
 NDArrayFloat = npt.NDArray[np.float64]
 
 
-counter = 0
+# counter = 0
 
 
 def calculate_burial(
@@ -47,8 +47,8 @@ def calculate_burial(
     :return: Burial flux in mol/year
     :rtype: float
     """
-    global counter  # never ever use global variables!
-    counter += 1
+    # global counter  # never ever use global variables!
+    # counter += 1
 
     (
         frac_burial,
@@ -83,14 +83,9 @@ def calculate_burial(
     frac_burial = min(frac_burial, max_burial_fraction)
     """
     frac_burial = (cp_ox * cp_anox) / (((1 - DOA) * cp_anox) + ((DOA) * cp_ox))
-    """
-    #failed idea
-    frac_burial = (
-        1.2e-26 * po4_export_flux**1.09
-    )  # 1.2e-26 is k36, po4 export is fixed P, 1.09 from vancap
-    """
-    # frac_burial = min_burial_fraction
 
+    # frac_burial = min_burial_fraction
+    # unstable function
     # productivity in mol/year
     productivity_mol_year = po4_export_flux  # Convert umol/L to mol
 
@@ -99,7 +94,7 @@ def calculate_burial(
     POP_flux = productivity_mol_year / (frac_burial)
 
     # unsstable yet logical funciton
-    # useful for debug
+    """
     burial_flux += POP_flux
 
     fe_p_burial = 7.60e9 * (1 - DOA_alt)  # in umol/year using k59 from van cap
@@ -113,20 +108,23 @@ def calculate_burial(
     burial_flux += ap_burial
 
     p_remineralisation_flux = productivity_mol_year - burial_flux
-
     """
-    #stable function
-    # useful for debug
-    POP_flux = burial_flux
+
+    # stable function
+    burial_flux += POP_flux
 
     p_remineralisation_flux = productivity_mol_year - burial_flux
 
-    fe_p_burial = 7.60e9 * (1 - DOA_alt)  # in umol/year using k59 from van cap
-
     ap_burial = 5.56e-24 * (p_remineralisation_flux**2.5)  # from van cap in umol/year
 
-    burial_flux += fe_p_burial + ap_burial
-    """
+    burial_flux += ap_burial
+
+    fe_p_burial = 7.60e9 * (1 - DOA_alt)  # in umol/year using k59 from van cap
+
+    burial_flux += fe_p_burial
+
+    p_remineralisation_flux = productivity_mol_year - burial_flux
+
     # debugging:
     """
     flux_values = {
@@ -149,7 +147,7 @@ def calculate_burial(
     )
     """
     # if for use in debugging (first and last)
-
+    """
     if counter == 6000:
         print(
             f"THC = {thc} BF = {-burial_flux:.2e}, rf = {p_remineralisation_flux:.2e}\n"
@@ -160,7 +158,7 @@ def calculate_burial(
         if counter == 6000:
             print("---------------------------------------------")
             counter = 0
-
+    """
     return -burial_flux, p_remineralisation_flux  # , flux_values
 
 
