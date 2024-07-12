@@ -31,7 +31,7 @@ from esbmtk import (
 NDArrayFloat = npt.NDArray[np.float64]
 
 
-# counter = 0
+counter = 0
 
 
 def calculate_burial(
@@ -47,8 +47,8 @@ def calculate_burial(
     :return: Burial flux in mol/year
     :rtype: float
     """
-    # global counter  # never ever use global variables!
-    # counter += 1
+    global counter  # never ever use global variables!
+    counter += 1
 
     (
         frac_burial,
@@ -61,7 +61,9 @@ def calculate_burial(
         # flux_values,
     ) = frac_burial_params
 
-    DOA = o2_c / 2.5e-4  # 250 is max O2 content in umol/l in deep ocean
+    DOA = (
+        o2_c / 1.5e-4
+    )  # 250 is max O2 content in umol/l in deep ocean, 150 is the max average
     DOA_alt = 1 - DOA
     # DOA_alt = 1 - (DOA * 1e6)
     # DOA_alt = ((1 - (DOA * 1e6)) - 0.62) / (0.73 - 0.62)
@@ -92,8 +94,28 @@ def calculate_burial(
     # productivity in mol/year
     productivity_mol_year = po4_export_flux  # Convert umol/L to mol
 
-    burial_flux = productivity_mol_year / (frac_burial)
+    burial_flux = 0
 
+    POP_flux = productivity_mol_year / (frac_burial)
+
+    # unsstable yet logical funciton
+    # useful for debug
+    burial_flux += POP_flux
+
+    fe_p_burial = 7.60e9 * (1 - DOA_alt)  # in umol/year using k59 from van cap
+
+    burial_flux += fe_p_burial
+
+    p_remineralisation_flux = productivity_mol_year - burial_flux
+
+    ap_burial = 5.56e-24 * (p_remineralisation_flux**2.5)  # from van cap in umol/year
+
+    burial_flux += ap_burial
+
+    p_remineralisation_flux = productivity_mol_year - burial_flux
+
+    """
+    #stable function
     # useful for debug
     POP_flux = burial_flux
 
@@ -104,6 +126,7 @@ def calculate_burial(
     ap_burial = 5.56e-24 * (p_remineralisation_flux**2.5)  # from van cap in umol/year
 
     burial_flux += fe_p_burial + ap_burial
+    """
     # debugging:
     """
     flux_values = {
@@ -122,11 +145,11 @@ def calculate_burial(
         f"THC = {thc} BF = {-burial_flux:.2e}, rf = {p_remineralisation_flux:.2e}\n"
         f"fe-p_burial = {fe_p_burial:.2e}, ap_burial = {ap_burial:.2e}\n"
         f"PO4 export flux = {po4_export_flux:.2e}, POP_flux = {POP_flux:.2e}\n"
-        f"O2_c = {o2_c:.2e}, DOA = {DOA} burial fraction = {frac_burial:.2e}\n"
+        f"O2_c = {o2_c:.2e}, DOA = {DOA}, DOA = {DOA_alt}, burial fraction = {frac_burial:.2e}\n"
     )
     """
     # if for use in debugging (first and last)
-    """
+
     if counter == 6000:
         print(
             f"THC = {thc} BF = {-burial_flux:.2e}, rf = {p_remineralisation_flux:.2e}\n"
@@ -137,7 +160,7 @@ def calculate_burial(
         if counter == 6000:
             print("---------------------------------------------")
             counter = 0
-    """
+
     return -burial_flux, p_remineralisation_flux  # , flux_values
 
 
