@@ -14,6 +14,10 @@
 
      You should have received a copy of the GNU General Public License
      along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+     This function add_my_burial is called externally to introduce a new flux to the esbtmk ecosystem. 
+     Here it calls another function known as calculate_burial, which calculates fluxes based on oxygenation 
+     of deep water in line with Van Capellan & Ingall, 1994. These fluxes are returned at every model run.
 """
 
 import numpy as np
