@@ -166,43 +166,43 @@ def calculate_burial(
     return -burial_flux, p_remineralisation_flux
 
 
-def add_my_burial(
-    source: Reservoir,
-    sink: Reservoir,
-    species: SpeciesProperties,
-    o2_c: Species,
-    po4_export_flux: Flux,
-    frac_burial: float,
-    min_burial_fraction: float,
-    max_burial_fraction: float,
-    cp_ox: float,
-    cp_anox: float,
-    thc: float,
-    my_id1,
-    my_id2,
-) -> None:
+def add_my_burial(**kwargs) -> None:
     """
-    This function initializes a user supplied function so that it can be used within the ESBMTK ecosystem.
+    This function initializes a user-supplied function so that it can be used within the ESBMTK ecosystem.
 
     Parameters
     ----------
-    source : Source | Species | Reservoir
-        A source
-    sink : Sink | Species | Reservoir
-        A sink
-    species : SpeciesProperties
-        A model species
-    po4_export_flux : float
-        PO4 export flux in umol/L
-    o2_c : float
-        Oxygen concentration in umol/L
-    frac_burial : float
-        A scaling factor of burial fraction
-    min_burial_fraction : float
-        Minimum burial fraction
-    max_burial_fraction : float
-        Maximum burial fraction
+    kwargs : dict
+        A dictionary of function arguments, including:
+        - source : Source | Species | Reservoir
+        - sink : Sink | Species | Reservoir
+        - species : SpeciesProperties
+        - po4_export_flux : float
+        - o2_c : float
+        - frac_burial : float
+        - min_burial_fraction : float
+        - max_burial_fraction : float
+        - cp_ox : float
+        - cp_anox : float
+        - thc : float
+        - my_id1
+        - my_id2
     """
+    # Extracting arguments from kwargs
+    source = kwargs.get("source")
+    sink = kwargs.get("sink")
+    species = kwargs.get("species")
+    o2_c = kwargs.get("o2_c")
+    po4_export_flux = kwargs.get("po4_export_flux")
+    frac_burial = kwargs.get("frac_burial")
+    min_burial_fraction = kwargs.get("min_burial_fraction")
+    max_burial_fraction = kwargs.get("max_burial_fraction")
+    cp_ox = kwargs.get("cp_ox")
+    cp_anox = kwargs.get("cp_anox")
+    thc = kwargs.get("thc")
+    my_id1 = kwargs.get("my_id1")
+    my_id2 = kwargs.get("my_id2")
+
     # Useful type prints for debugging:
     """
     print(f"Type of source: {type(source)}")
