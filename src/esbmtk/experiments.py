@@ -86,9 +86,17 @@ def calculate_burial(
     productivity_mol_year = po4_export_flux  # productivity in mol/year
 
     burial_flux = 0 #need to define
+    
+    #POP flux more realistic
+    
+    NPP = 106 * productivity_mol_year
 
+    oc_b = 1.2e-26 * (NPP**2.5)
+
+    POP_flux = oc_b / frac_burial
+    
+    #POP flux less realistic but returns overall 
     POP_flux = productivity_mol_year / (frac_burial)
-
     burial_flux += POP_flux
 
     fe_p_burial = 7.60e9 * (1 - DOA_alt)  # in umol/year using k59 from van cap
@@ -112,7 +120,15 @@ def calculate_burial(
     productivity_mol_year = po4_export_flux  # productivity in mol/year
 
     burial_flux = 0  # need to define
+    # POP flux more realistic
+    """
+    NPP = 106 * productivity_mol_year
 
+    oc_b = 1.2e-26 * (NPP**2.5)
+
+    POP_flux = oc_b / frac_burial
+    """
+    # POP flux less realistic but returns overall
     POP_flux = productivity_mol_year / (frac_burial)
 
     burial_flux += POP_flux
