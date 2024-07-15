@@ -30,7 +30,7 @@ from esbmtk import (
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
-
+# debug counter
 # counter = 0
 
 
@@ -47,6 +47,7 @@ def calculate_burial(
     :return: Burial flux in mol/year
     :rtype: float
     """
+    # global debug counter
     # global counter  # never ever use global variables!
     # counter += 1
 
@@ -58,9 +59,9 @@ def calculate_burial(
         cp_ox,
         cp_anox,
         thc,
-        # flux_values,
     ) = frac_burial_params
 
+    # DOA Calc
     DOA = (
         o2_c / 1.5e-4
     )  # 250 is max O2 content in umol/l in deep ocean, 150 is the max average
@@ -74,27 +75,16 @@ def calculate_burial(
     elif DOA_alt > 1:
         DOA_alt = 1
 
+    # unstable yet logical funciton
     """
-    frac_burial = min_burial_fraction + (max_burial_fraction - min_burial_fraction) * (
-        (o2_c) / 100
-    )
+    frac_burial = (cp_ox * cp_anox) / (((1 - DOA_alt) * cp_anox) + ((DOA_alt) * cp_ox))
 
-    # cannot exceed max fraction
-    frac_burial = min(frac_burial, max_burial_fraction)
-    """
-    frac_burial = (cp_ox * cp_anox) / (((1 - DOA) * cp_anox) + ((DOA) * cp_ox))
+    productivity_mol_year = po4_export_flux  # productivity in mol/year
 
-    # frac_burial = min_burial_fraction
-    # unstable function
-    # productivity in mol/year
-    productivity_mol_year = po4_export_flux  # Convert umol/L to mol
-
-    burial_flux = 0
+    burial_flux = 0 #need to define
 
     POP_flux = productivity_mol_year / (frac_burial)
 
-    # unsstable yet logical funciton
-    """
     burial_flux += POP_flux
 
     fe_p_burial = 7.60e9 * (1 - DOA_alt)  # in umol/year using k59 from van cap
@@ -111,6 +101,16 @@ def calculate_burial(
     """
 
     # stable function
+    frac_burial = (cp_ox * cp_anox) / (
+        ((1 - DOA) * cp_anox) + ((DOA) * cp_ox)
+    )  # Wrong directionality
+
+    productivity_mol_year = po4_export_flux  # productivity in mol/year
+
+    burial_flux = 0  # need to define
+
+    POP_flux = productivity_mol_year / (frac_burial)
+
     burial_flux += POP_flux
 
     p_remineralisation_flux = productivity_mol_year - burial_flux
@@ -159,7 +159,7 @@ def calculate_burial(
             print("---------------------------------------------")
             counter = 0
     """
-    return -burial_flux, p_remineralisation_flux  # , flux_values
+    return -burial_flux, p_remineralisation_flux
 
 
 def add_my_burial(
@@ -199,14 +199,17 @@ def add_my_burial(
     max_burial_fraction : float
         Maximum burial fraction
     """
-    # print(f"Type of source: {type(source)}")
-    # print(f"Type of sink: {type(sink)}")
-    # print(f"Type of species: {type(species)}")
-
-    # ensure that the volume is in actual model units, and then strip
-    # the unit information
-
-    # print(f"po4_export_flux: {po4_export_flux}, o2_c: {o2_c}")
+    # Useful type prints for debugging:
+    """
+    print(f"Type of source: {type(source)}")
+    print(f"Type of sink: {type(sink)}")
+    print(f"Type of species: {type(species)}")
+    print(f"po4_export_flux: {po4_export_flux}, o2_c: {o2_c}")
+    print(f"Source name: {source.full_name}, Sink name: {sink.full_name}")
+    # print(
+    #   f"Function Params: {frac_burial}, {dbv}, {min_burial_fraction}, {max_burial_fraction}"
+    # )
+    """
     model = species.mo
     dbv: float = source.volume.to(model.v_unit).magnitude
 
@@ -235,10 +238,3 @@ def add_my_burial(
     )
     register_return_values(ec, source)
     source.mo.lpc_f.append(ec.fname)
-    # return flux_values
-
-    # Debug prints
-    # print(f"Source name: {source.full_name}, Sink name: {sink.full_name}")
-    # print(
-    #   f"Function Params: {frac_burial}, {dbv}, {min_burial_fraction}, {max_burial_fraction}"
-    # )
