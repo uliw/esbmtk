@@ -57,9 +57,6 @@ def calculate_burial(
 
     (
         frac_burial,
-        dbv,
-        min_burial_fraction,
-        max_burial_fraction,
         cp_ox,
         cp_anox,
         thc,
@@ -196,8 +193,6 @@ def add_my_burial(**kwargs) -> None:
         - po4_export_flux : float
         - o2_c : float
         - frac_burial : float
-        - min_burial_fraction : float
-        - max_burial_fraction : float
         - cp_ox : float
         - cp_anox : float
         - thc : float
@@ -211,8 +206,6 @@ def add_my_burial(**kwargs) -> None:
     o2_c = kwargs.get("o2_c")
     po4_export_flux = kwargs.get("po4_export_flux")
     frac_burial = kwargs.get("frac_burial")
-    min_burial_fraction = kwargs.get("min_burial_fraction")
-    max_burial_fraction = kwargs.get("max_burial_fraction")
     cp_ox = kwargs.get("cp_ox")
     cp_anox = kwargs.get("cp_anox")
     thc = kwargs.get("thc")
@@ -229,10 +222,9 @@ def add_my_burial(**kwargs) -> None:
     # print(
     #   f"Function Params: {frac_burial}, {dbv}, {min_burial_fraction}, {max_burial_fraction}"
     # )
-    """
     model = species.mo
     dbv: float = source.volume.to(model.v_unit).magnitude
-
+    """
     # print(f"Source name: {source.full_name}")
     ec = ExternalCode(
         name="calculate_burial",
@@ -243,9 +235,6 @@ def add_my_burial(**kwargs) -> None:
         function_input_data=[po4_export_flux, o2_c],
         function_params=(
             frac_burial,
-            dbv,
-            min_burial_fraction,
-            max_burial_fraction,
             cp_ox,
             cp_anox,
             thc,
