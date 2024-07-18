@@ -177,7 +177,7 @@ def calculate_burial(
     """
     # if for use in debugging (first and last)
 
-    if counter == 6000:
+    if counter == 20000:
         print(
             f"THC = {thc} BF = {-burial_flux:.2e}, rf = {p_remineralisation_flux:.2e}\n"
             f"fe-p_burial = {fe_p_burial:.2e}, ap_burial = {ap_burial:.2e}\n"
@@ -185,7 +185,7 @@ def calculate_burial(
             f"O2_c = {o2_c:.2e},  DOA = {DOA:.2e} DOA_alt = {DOA_alt:.2e} \n"
             f"NPP = {NPP:.2e}, burial fraction = {frac_burial:.2e}\n"
         )
-        if counter == 6000:
+        if counter == 20000:
             print("---------------------------------------------")
             counter = 0
 
