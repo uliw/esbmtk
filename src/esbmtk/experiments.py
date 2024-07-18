@@ -69,26 +69,30 @@ def calculate_burial(
     if o2_c < 0:
         o2_c = 0
 
-    """
     # koa = 6.58e14  # mol/m Koa is  an apparent constant which is proportional to the
-    # average dissolved oxygen concentrationof downwelling surfacewaters
+    # average dissolved oxygen concentration of downwelling surface waters
     DOA_alt = 1 - (
         6.58e14 * ((thc / 11.448) / NPP)
     )  # 11.448 is the conversion factor between vmix and sv.
-    """
-    DOA = (
-        o2_c / 1.5e-4
-    )  # 250 is max O2 content in umol/l in deep ocean, 150 is the max average
-    DOA_alt = 1 - DOA
 
-    # DOA_alt = 1 - (DOA * 1e6)
-    # DOA_alt = ((1 - (DOA * 1e6)) - 0.62) / (0.73 - 0.62)
+    DOA = (
+        o2_c / 1.92e-4
+    )  # 250 is max O2 content in umol/l in deep ocean, 150 is the max average
+    DOA = 1 - DOA
+    """
+    DOA_alt = 1 - DOA
+    """
 
     # Apply min and max to ensure DOA_alt is within [0, 1]
     if DOA_alt < 0:
         DOA_alt = 0
     elif DOA_alt > 1:
         DOA_alt = 1
+
+    if DOA < 0:
+        DOA = 0
+    elif DOA > 1:
+        DOA = 1
 
     # unstable yet logical funciton
     """
@@ -124,9 +128,7 @@ def calculate_burial(
     """
 
     # stable function
-    frac_burial = (cp_ox * cp_anox) / (
-        ((1 - DOA_alt) * cp_anox) + ((DOA_alt) * cp_ox)
-    )  # Wrong directionality
+    frac_burial = (cp_ox * cp_anox) / (((1 - DOA) * cp_anox) + ((DOA) * cp_ox))
 
     burial_flux = 0  # need to define
     # POP flux more realistic
@@ -146,7 +148,7 @@ def calculate_burial(
 
     burial_flux += ap_burial
 
-    fe_p_burial = 7.60e9 * (1 - DOA_alt)  # in umol/year using k59 from van cap
+    fe_p_burial = 7.60e9 * (1 - DOA)  # in umol/year using k59 from van cap
 
     burial_flux += fe_p_burial
 
@@ -180,7 +182,8 @@ def calculate_burial(
             f"THC = {thc} BF = {-burial_flux:.2e}, rf = {p_remineralisation_flux:.2e}\n"
             f"fe-p_burial = {fe_p_burial:.2e}, ap_burial = {ap_burial:.2e}\n"
             f"PO4 export flux = {po4_export_flux:.2e}, POP_flux = {POP_flux:.2e}\n"
-            f"O2_c = {o2_c:.2e}, DOA = {DOA_alt} burial fraction = {frac_burial:.2e}\n"
+            f"O2_c = {o2_c:.2e},  DOA = {DOA:.2e} DOA_alt = {DOA_alt:.2e} \n"
+            f"NPP = {NPP:.2e}, burial fraction = {frac_burial:.2e}\n"
         )
         if counter == 6000:
             print("---------------------------------------------")
