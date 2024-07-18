@@ -35,7 +35,7 @@ from esbmtk import (
 NDArrayFloat = npt.NDArray[np.float64]
 
 # debug counter
-counter = 0
+# counter = 0
 
 
 def calculate_burial(
@@ -52,8 +52,8 @@ def calculate_burial(
     :rtype: float
     """
     # global debug counter
-    global counter  # never ever use global variables!
-    counter += 1
+    # global counter  # never ever use global variables!
+    # counter += 1
 
     (
         frac_burial,
@@ -75,13 +75,10 @@ def calculate_burial(
         6.58e14 * ((thc / 11.448) / NPP)
     )  # 11.448 is the conversion factor between vmix and sv.
 
-    DOA = (
+    DOA = 1 - (
         o2_c / 1.92e-4
-    )  # 250 is max O2 content in umol/l in deep ocean, 150 is the max average
-    DOA = 1 - DOA
-    """
-    DOA_alt = 1 - DOA
-    """
+    )  # 250 is max O2 content in umol/l in deep ocean, 150 is the max average,
+    # this was determined to maintian realistic present o2_c
 
     # Apply min and max to ensure DOA_alt is within [0, 1]
     if DOA_alt < 0:
@@ -176,7 +173,7 @@ def calculate_burial(
     )
     """
     # if for use in debugging (first and last)
-
+    """
     if counter == 20000:
         print(
             f"THC = {thc} BF = {-burial_flux:.2e}, rf = {p_remineralisation_flux:.2e}\n"
@@ -188,7 +185,7 @@ def calculate_burial(
         if counter == 20000:
             print("---------------------------------------------")
             counter = 0
-
+    """
     return -burial_flux, p_remineralisation_flux
 
 
