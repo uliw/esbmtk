@@ -35,7 +35,7 @@ from esbmtk import (
 NDArrayFloat = npt.NDArray[np.float64]
 
 # debug counter
-# counter = 0
+counter = 0
 
 
 def calculate_burial(
@@ -52,8 +52,8 @@ def calculate_burial(
     :rtype: float
     """
     # global debug counter
-    # global counter  # never ever use global variables!
-    # counter += 1
+    global counter  # never ever use global variables!
+    counter += 1
 
     (
         frac_burial,
@@ -62,11 +62,25 @@ def calculate_burial(
         thc,
     ) = frac_burial_params
 
+    productivity_mol_year = po4_export_flux  # productivity in mol/year
+    NPP = 106 * productivity_mol_year
+
     # DOA Calc
+    if o2_c < 0:
+        o2_c = 0
+
+    """
+    # koa = 6.58e14  # mol/m Koa is  an apparent constant which is proportional to the
+    # average dissolved oxygen concentrationof downwelling surfacewaters
+    DOA_alt = 1 - (
+        6.58e14 * ((thc / 11.448) / NPP)
+    )  # 11.448 is the conversion factor between vmix and sv.
+    """
     DOA = (
         o2_c / 1.5e-4
     )  # 250 is max O2 content in umol/l in deep ocean, 150 is the max average
     DOA_alt = 1 - DOA
+
     # DOA_alt = 1 - (DOA * 1e6)
     # DOA_alt = ((1 - (DOA * 1e6)) - 0.62) / (0.73 - 0.62)
 
@@ -111,22 +125,18 @@ def calculate_burial(
 
     # stable function
     frac_burial = (cp_ox * cp_anox) / (
-        ((1 - DOA) * cp_anox) + ((DOA) * cp_ox)
+        ((1 - DOA_alt) * cp_anox) + ((DOA_alt) * cp_ox)
     )  # Wrong directionality
-
-    productivity_mol_year = po4_export_flux  # productivity in mol/year
 
     burial_flux = 0  # need to define
     # POP flux more realistic
-    """
-    NPP = 106 * productivity_mol_year
 
     oc_b = 1.2e-26 * (NPP**2.5)
 
     POP_flux = oc_b / frac_burial
-    """
+
     # POP flux less realistic but returns overall
-    POP_flux = productivity_mol_year / (frac_burial)
+    # POP_flux = productivity_mol_year / (frac_burial)
 
     burial_flux += POP_flux
 
@@ -164,7 +174,7 @@ def calculate_burial(
     )
     """
     # if for use in debugging (first and last)
-    """
+
     if counter == 6000:
         print(
             f"THC = {thc} BF = {-burial_flux:.2e}, rf = {p_remineralisation_flux:.2e}\n"
@@ -175,7 +185,7 @@ def calculate_burial(
         if counter == 6000:
             print("---------------------------------------------")
             counter = 0
-    """
+
     return -burial_flux, p_remineralisation_flux
 
 
