@@ -34,14 +34,11 @@ from esbmtk import (
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
-# debug counter
-# counter = 0
-
 
 def calculate_burial(
     po4_export_flux: float, o2_c: float, frac_burial_params: tuple
 ) -> float:
-    """#add an empty tuple
+    """
     Calculate burial as a function of productivity and oxygen concentration.
 
     :param po4_export_flux: Surface ocean productivity in umol/L
@@ -51,16 +48,7 @@ def calculate_burial(
     :return: Burial flux in mol/year
     :rtype: float
     """
-    # global debug counter
-    # global counter  # never ever use global variables!
-    # counter += 1
-
-    (
-        frac_burial,
-        cp_ox,
-        cp_anox,
-        thc,
-    ) = frac_burial_params
+    frac_burial, cp_ox, cp_anox, thc = frac_burial_params
 
     productivity_mol_year = po4_export_flux  # productivity in mol/year
     NPP = 106 * productivity_mol_year
@@ -69,101 +57,52 @@ def calculate_burial(
     if o2_c < 0:
         o2_c = 0
 
-    # koa = 6.58e14  # mol/m Koa is  an apparent constant which is proportional to the
-    # average dissolved oxygen concentration of downwelling surface waters
-    DOA_alt = 1 - (
-        6.58e14 * ((thc / 11.448) / NPP)
-    )  # 11.448 is the conversion factor between vmix and sv.
-
-    DOA = 1 - (
-        o2_c / 1.92e-4
-    )  # 250 is max O2 content in umol/l in deep ocean, 150 is the max average,
-    # this was determined to maintian realistic present o2_c
-
+    """ DOA alt is the method of calculation used in Van Cappellen & Ingall, 1994. 
+    koa = 6.58e14  # mol/m Koa is  an apparent constant which is proportional to the
+    average dissolved oxygen concentration of downwelling surface waters.
+    11.448 is the conversion factor between vmix and sv.
+    This method does not directly correlate with D_b oxygen.
+    """
+    DOA_alt = 1 - (6.58e14 * (thc / 11.448) / NPP)
     # Apply min and max to ensure DOA_alt is within [0, 1]
     if DOA_alt < 0:
         DOA_alt = 0
     elif DOA_alt > 1:
         DOA_alt = 1
 
+    DOA = 1 - (o2_c / 1.92e-4)  # 1.92e-4 is determined to return DOA = 0.21 @ thc=35
+    # Apply min and max to ensure DOA is within [0, 1]
     if DOA < 0:
         DOA = 0
     elif DOA > 1:
         DOA = 1
 
-    # unstable yet logical funciton
-    """
-    frac_burial = (cp_ox * cp_anox) / (((1 - DOA_alt) * cp_anox) + ((DOA_alt) * cp_ox))
-
-    productivity_mol_year = po4_export_flux  # productivity in mol/year
-
-    burial_flux = 0 #need to define
-    
-    #POP flux more realistic
-    
-    NPP = 106 * productivity_mol_year
-
-    oc_b = 1.2e-26 * (NPP**2.5)
-
-    POP_flux = oc_b / frac_burial
-    
-    #POP flux less realistic but returns overall 
-    POP_flux = productivity_mol_year / (frac_burial)
-    burial_flux += POP_flux
-
-    fe_p_burial = 7.60e9 * (1 - DOA_alt)  # in umol/year using k59 from van cap
-
-    burial_flux += fe_p_burial
-
-    p_remineralisation_flux = productivity_mol_year - burial_flux
-
-    ap_burial = 5.56e-24 * (p_remineralisation_flux**2.5)  # from van cap in umol/year
-
-    burial_flux += ap_burial
-
-    p_remineralisation_flux = productivity_mol_year - burial_flux
-    """
-
-    # stable function
+    # C/P burial ratio calcualtion
     frac_burial = (cp_ox * cp_anox) / (((1 - DOA) * cp_anox) + ((DOA) * cp_ox))
-
-    burial_flux = 0  # need to define
-    # POP flux more realistic
-
+    # Approximation of OC burial
     oc_b = 1.2e-26 * (NPP**2.5)
 
+    burial_flux = 0  # definition as 0
+    # POP burial flux
     POP_flux = oc_b / frac_burial
-
-    # POP flux less realistic but returns overall
-    # POP_flux = productivity_mol_year / (frac_burial)
-
     burial_flux += POP_flux
-
     p_remineralisation_flux = productivity_mol_year - burial_flux
 
-    ap_burial = 5.56e-24 * (p_remineralisation_flux**2.5)  # from van cap in umol/year
-
+    # Apatite burial calculation:
+    ap_burial = 5.56e-24 * (
+        p_remineralisation_flux**2.5
+    )  # from van cap in umol/year using k58 from Van Cappellen & Ingall, 1994
     burial_flux += ap_burial
 
-    fe_p_burial = 7.60e9 * (1 - DOA)  # in umol/year using k59 from van cap
-
+    fe_p_burial = 7.60e9 * (
+        1 - DOA
+    )  # in umol/year using k59 from Van Cappellen & Ingall, 1994
     burial_flux += fe_p_burial
 
+    # Final Rmin calculation
     p_remineralisation_flux = productivity_mol_year - burial_flux
 
-    # debugging:
-    """
-    flux_values = {
-        "BF": -burial_flux,
-        "rf": p_remineralisation_flux,
-        "fe_p_burial": fe_p_burial,
-        "ap_burial": ap_burial,
-        "PO4_export_flux": po4_export_flux,
-        "POP_flux": POP_flux,
-        "O2_c": o2_c,
-        "burial_fraction": frac_burial,
-    }
-    """
+    # debugging prints:
     """
     print(
         f"THC = {thc} BF = {-burial_flux:.2e}, rf = {p_remineralisation_flux:.2e}\n"
@@ -172,8 +111,8 @@ def calculate_burial(
         f"O2_c = {o2_c:.2e}, DOA = {DOA}, DOA = {DOA_alt}, burial fraction = {frac_burial:.2e}\n"
     )
     """
-    # if for use in debugging (first and last)
     """
+    #first define a counter to minimise prints
     if counter == 20000:
         print(
             f"THC = {thc} BF = {-burial_flux:.2e}, rf = {p_remineralisation_flux:.2e}\n"
