@@ -51,9 +51,10 @@ def calculate_burial(
     frac_burial, cp_ox, cp_anox, thc = frac_burial_params
 
     productivity_mol_year = po4_export_flux  # productivity in mol/year
-    NPP = 106 * productivity_mol_year
+    NPP = 106 * productivity_mol_year  # 106 is redfield ratio
 
     # DOA Calc
+    # ensuring o2_c cannot go negative
     if o2_c < 0:
         o2_c = 0
 
@@ -70,7 +71,9 @@ def calculate_burial(
     elif DOA_alt > 1:
         DOA_alt = 1
 
-    DOA = 1 - (o2_c / 1.92e-4)  # 1.92e-4 is determined to return DOA = 0.21 @ thc=35
+    DOA = 1 - (
+        o2_c / 1.92e-4
+    )  # 1.92e-4 is determined to return DOA = 0.21 @ thc=35 it is a tuning parameter to calibrate DOA
     # Apply min and max to ensure DOA is within [0, 1]
     if DOA < 0:
         DOA = 0
@@ -80,7 +83,7 @@ def calculate_burial(
     # C/P burial ratio calcualtion
     frac_burial = (cp_ox * cp_anox) / (((1 - DOA) * cp_anox) + ((DOA) * cp_ox))
     # Approximation of OC burial
-    oc_b = 1.2e-26 * (NPP**2.5)
+    oc_b = 1.2e-26 * (NPP**2.5)  # define
 
     burial_flux = 0  # definition as 0
     # POP burial flux
@@ -91,12 +94,13 @@ def calculate_burial(
     # Apatite burial calculation:
     ap_burial = 5.56e-24 * (
         p_remineralisation_flux**2.5
-    )  # from van cap in umol/year using k58 from Van Cappellen & Ingall, 1994
+    )  # from van cap in umol/year using k58=5.56e-24 from Van Cappellen & Ingall, 1994
     burial_flux += ap_burial
 
     fe_p_burial = 7.60e9 * (
         1 - DOA
-    )  # in umol/year using k59 from Van Cappellen & Ingall, 1994
+    )  # in umol/year using k59=7.60e9 from Van Cappellen & Ingall, 1994,
+    # which represents feOOH present in the D_b from riverine flux
     burial_flux += fe_p_burial
 
     # Final Rmin calculation
