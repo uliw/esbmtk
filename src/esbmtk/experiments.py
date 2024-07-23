@@ -64,15 +64,16 @@ def calculate_burial(
     11.448 is the conversion factor between vmix and sv.
     This method does not directly correlate with D_b oxygen.
     """
+    """
     DOA_alt = 1 - (6.58e14 * (thc / 11.448) / NPP)
     # Apply min and max to ensure DOA_alt is within [0, 1]
     if DOA_alt < 0:
         DOA_alt = 0
     elif DOA_alt > 1:
         DOA_alt = 1
-
+    """
     DOA = 1 - (
-        o2_c / 1.92e-4
+        o2_c / 1.85e-4
     )  # 1.92e-4 is determined to return DOA = 0.21 @ thc=35 it is a tuning parameter to calibrate DOA
     # Apply min and max to ensure DOA is within [0, 1]
     if DOA < 0:
