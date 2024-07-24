@@ -74,7 +74,7 @@ def calculate_burial(
     """
     DOA = 1 - (
         o2_c / 1.05e-4
-    )  # 1.92e-4 is determined to return DOA = 0.21 @ thc=35 it is a tuning parameter to calibrate DOA
+    )  # 1.05e-4 is determined to return DOA = 0.21 @ thc=20 it is a tuning parameter to calibrate DOA
     # Apply min and max to ensure DOA is within [0, 1]
     if DOA < 0:
         DOA = 0
@@ -100,8 +100,9 @@ def calculate_burial(
 
     fe_p_burial = ((7.60 * 0.149) * (10**7)) * (
         1 - DOA
-    )  # in umol/year using k59=7.60e9 from Van Cappellen & Ingall, 1994,
-    # which represents feOOH present in the D_b from riverine flux
+    )  # in umol/year adapted from k59=7.60e9 from Van Cappellen & Ingall, 1994,
+    # which represents feOOH present in the D_b from riverine flux. This is an intial
+    # condition which is calibrated for introduction to the model alongside F_w
     burial_flux += fe_p_burial
 
     # Final Rmin calculation
