@@ -15,6 +15,7 @@ General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 from __future__ import annotations
 import typing as tp
 import numpy as np
@@ -101,7 +102,9 @@ def Sulfur(model):
     SpeciesProperties(
         name="SO2", element=eh, display_as=r"SO$_{2$}", register=eh, m_weight=64.0638
     )
-    SpeciesProperties(name="HS", element=eh, display_as=r"HS$^-$", register=eh, m_weight=33.07294)
+    SpeciesProperties(
+        name="HS", element=eh, display_as=r"HS$^-$", register=eh, m_weight=33.07294
+    )
     SpeciesProperties(
         name="H2S", element=eh, display_as=r"H$_{2}$S", register=eh, m_weight=34.08088
     )
@@ -171,7 +174,10 @@ def Oxygen(model: Model) -> None:
     SpeciesProperties(name="O", element=eh, display_as="O")
     # Name & element handle
     SpeciesProperties(
-        name="O2", element=eh, display_as=r"O$_{2}$"
+        name="O2",
+        element=eh,
+        display_as=r"O$_{2}$",
+        scale_to="umol",
     )  # Name & element handle
     SpeciesProperties(
         name="OH", element=eh, display_as=r"OH$^{-}$"
@@ -254,15 +260,9 @@ def Boron(model):
 
     # add species
     SpeciesProperties(name="B", element=eh, display_as=r"B")  # Name & element handle
-    SpeciesProperties(
-        name="BOH", element=eh, display_as=r"B"
-    )  # Name & element handle
-    SpeciesProperties(
-        name="BOH3", element=eh, display_as=r"B(OH)$_{3}$"
-    )  # Boric Acid
-    SpeciesProperties(
-        name="BOH4", element=eh, display_as=r"B(OH)$_{4}^{-}$"
-    )  # Borate
+    SpeciesProperties(name="BOH", element=eh, display_as=r"B")  # Name & element handle
+    SpeciesProperties(name="BOH3", element=eh, display_as=r"B(OH)$_{3}$")  # Boric Acid
+    SpeciesProperties(name="BOH4", element=eh, display_as=r"B(OH)$_{4}^{-}$")  # Borate
 
 
 def misc_variables(model):
