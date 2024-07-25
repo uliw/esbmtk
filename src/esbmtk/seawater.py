@@ -358,7 +358,7 @@ class SeawaterConstants(esbmtkBase):
         # and convert from bunsen coefficient to solubility
         VA = 22.4136  # molar volume page 80
 
-        self.SA_o2 = b / VA
+        self.SA_O2 = b / VA
 
     def calc_solubility_term(self, S, T, A1, A2, A3, A4, B1, B2, B3) -> float:
         T = T + 273.15
