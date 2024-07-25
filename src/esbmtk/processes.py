@@ -135,6 +135,8 @@ def init_gas_exchange(c: Species2Species):
 
     c.fh.ftype = "computed"
     sink_reservoir = c.sink.register
+
+    
     swc = sink_reservoir.swc  # sink - liquid
     
     if c.species.name == "CO2":
