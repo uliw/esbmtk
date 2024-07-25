@@ -245,11 +245,18 @@ class Reservoir(esbmtkBase):
                     dic=self.DIC.c[0],
                 )
             else:
+                SeawaterConstants(
+                    name="swc",
+                    temperature=temp,
+                    pressure=bar,
+                    salinity=sal,
+                    register=self,
+                    ta=0.002,
+                    dic=0.002,
+                )
                 warnings.warn(
-                    f"Using SeawaterConstants without provinding DIC "
-                    f"and TA values for {self.name} "
-                    f"You need to call swc.update_parameters() "
-                    f"once DIC and TA are specified"
+                    f"\n\nUsing SeawaterConstants without provinding DIC "
+                    f"and TA values for {self.name}\n\n"
                 )
         self.register.lrg.append(self)
 
@@ -1519,8 +1526,7 @@ class ExternalCode(SpeciesNoSet):
     """
 
     def __init__(self, **kwargs) -> None:
-        """
-        """
+        """ """
 
         from esbmtk import (
             ConnectionProperties,
