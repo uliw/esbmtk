@@ -73,7 +73,7 @@ def calculate_burial(
         DOA_alt = 1
     """
     DOA = 1 - (
-        o2_c / 16.2e-6
+        o2_c / 90e-6
     )  # 1.05e-4 is determined to return DOA = 0.21 @ thc=20 it is a tuning parameter to calibrate DOA
     # Apply min and max to ensure DOA is within [0, 1]
     if DOA < 0:
@@ -84,7 +84,7 @@ def calculate_burial(
     # C/P burial ratio calcualtion
     frac_burial = (cp_ox * cp_anox) / (((1 - DOA) * cp_anox) + ((DOA) * cp_ox))
     # Approximation of OC burial
-    oc_b = 1.2e-26 * (NPP**2.5)  # define
+    oc_b = ((1.2 * 42) * (10**-24)) * (NPP**2.5)  # define
 
     burial_flux = 0  # definition as 0
     # POP burial flux
@@ -93,12 +93,12 @@ def calculate_burial(
     p_remineralisation_flux = productivity_mol_year - burial_flux
 
     # Apatite burial calculation:
-    ap_burial = 5.56e-24 * (
+    ap_burial = ((5.56 * 42) * (10**-22)) * (
         p_remineralisation_flux**2.5
     )  # from van cap in umol/year using k58=5.56e-24 from Van Cappellen & Ingall, 1994
     burial_flux += ap_burial
 
-    fe_p_burial = ((7.60 * 0.16) * (10**7)) * (
+    fe_p_burial = ((7.60 * 1.5) * (10**9)) * (
         1 - DOA
     )  # in umol/year adapted from k59=7.60e9 from Van Cappellen & Ingall, 1994,
     # which represents feOOH present in the D_b from riverine flux. This is an intial
