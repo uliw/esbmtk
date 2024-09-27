@@ -721,6 +721,7 @@ class ConnectionProperties(esbmtkBase):
     def __init__(self, **kwargs) -> None:
         from esbmtk import (
             SourceProperties,
+            Source,
             Reservoir,
             Species,
             GasReservoir,
@@ -732,7 +733,7 @@ class ConnectionProperties(esbmtkBase):
             Q_,
         )
 
-        self.defaults: dict[str, any] = {
+        self.defaults: dict[str, tp.Any] = {
             "id": ["None", (str)],
             "source": [
                 "None",
@@ -861,7 +862,7 @@ class ConnectionProperties(esbmtkBase):
                 id=self.id,
                 register=self,
             )
-    
+
             self.loc.append(a)  # add connection to list of connections
             if self.mo.debug:
                 print(
