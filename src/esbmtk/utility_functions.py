@@ -270,7 +270,6 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
                 key_str = dict_key[2:].split(".")[1]
                 if hasattr(M, key_str):
                     o = getattr(M, key_str)
-                    print(f"o = {o.full_name}")
                     if isinstance(o, Flux):
                         o: tp.List = [o]
                     elif isinstance(o, Species2Species):
