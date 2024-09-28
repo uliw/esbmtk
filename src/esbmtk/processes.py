@@ -100,12 +100,11 @@ def init_weathering(
     """
     from esbmtk import ExternalCode, check_for_quantity
 
-    print(f" initializing weathering with isotopes = {c.sink.isotopes}")
-
     f0 = check_for_quantity(f0, "mol/year").magnitude
     pco2_0 = check_for_quantity(pco2_0, "ppm").magnitude
     p = (pco2_0, area_fraction, ex, f0, c.sink.isotopes)
     c.fh.ftype = "computed"
+
     ec = ExternalCode(
         name=f"ec_weathering_{c.id}",
         fname="weathering",
@@ -119,7 +118,6 @@ def init_weathering(
         ],
     )
     c.mo.lpc_f.append(ec.fname)
-
     return ec
 
 
@@ -136,9 +134,8 @@ def init_gas_exchange(c: Species2Species):
     c.fh.ftype = "computed"
     sink_reservoir = c.sink.register
 
-    
     swc = sink_reservoir.swc  # sink - liquid
-    
+
     if c.species.name == "CO2":
         ref_species = sink_reservoir.CO2aq
         solubility = swc.SA_co2
@@ -152,7 +149,7 @@ def init_gas_exchange(c: Species2Species):
         check_for_quantity(c.piston_velocity, "m/yr").to("meter/year").magnitude
     )
     area = check_for_quantity(sink_reservoir.area, "m**2").to("meter**2").magnitude
-        
+
     scale = area * piston_velocity
     p = (
         scale,
@@ -171,13 +168,12 @@ def init_gas_exchange(c: Species2Species):
         species=c.source.species,
         function_input_data=[c.source, c.sink, ref_species],
         function_params=p,
-        register=c.model,
+        register=c.sink,
         return_values=[
             {f"F_{c.fh.full_name}": "gex"},
         ],
     )
     c.mo.lpc_f.append(ec.fname)
-
     return ec
 
 
