@@ -175,35 +175,34 @@ def register_new_flux(ec, rg, dict_key, dict_value) -> list:
     if isinstance(rg, Reservoir):
         spn = dict_key.split(".")[-1]
         sp = getattr(rg.mo, spn)
-        reg = getattr(rg, sp.name)
+        reservoir_object = getattr(rg, sp.name)  # species to regester flux with
     elif isinstance(rg, Species):
-        spn = dict_key.split(".")[-1]
-        sp = getattr(rg.mo, spn)
-        reg = rg
+        # in this case rg contains a species not a reservoirgroup
+        sp = rg.species
+        rg = rg.register  # get associated reservoir
+        reservoir_object = getattr(rg, sp.name)
     else:
         print(f" type(rg) = {type(rg)}")
         raise NotImplementedError
 
-    if not hasattr(reg, "source"):
-        setattr(reg, "source", sp.name)
+    if not hasattr(reservoir_object, "source"):
+        setattr(reservoir_object, "source", sp.name)
 
     ro = list()
-
     # this also registers the flux with M.lof
-    f = Flux( 
+    f = Flux(
         name=dict_value,
         species=sp,
         rate=0,
-        register=reg,
+        register=reservoir_object,
         ftype=ec.ftype,
-        isotopes=reg.isotopes,
+        isotopes=reservoir_object.isotopes,
         computed_by=ec,
     )
 
     ro.append(f)
     ec.lof.append(f)
-    reg.lof.append(f)  # register flux
-    # reg.ctype = "ignore"  # FIXME why is this here?
+    reservoir_object.lof.append(f)  # register flux
 
     return ro
 
@@ -255,7 +254,7 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
     GasReservoir class.
     """
     from esbmtk import Species, Reservoir, Flux, Species2Species
-    from esbmtk import Sink, SinkProperties
+    from esbmtk import Sink, SinkProperties, Source, SourceProperties
 
     M = rg.mo
     # go through each entry in ec.return_values
@@ -264,9 +263,14 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
             dict_key = next(iter(line))  # get first key
             dict_value = line[dict_key]
             if dict_key[:2] == "F_":  # is flux
+                """ The following code needs to extract the connection
+                object. Names must have the following scheme
+                M.Conn_CO2_At_to_H_b_CO2_H_b._F
+                """
                 key_str = dict_key[2:].split(".")[1]
                 if hasattr(M, key_str):
                     o = getattr(M, key_str)
+                    print(f"o = {o.full_name}")
                     if isinstance(o, Flux):
                         o: tp.List = [o]
                     elif isinstance(o, Species2Species):
@@ -274,6 +278,8 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
                     elif isinstance(o, Species | Reservoir):
                         o: tp.List = register_new_flux(ef, rg, dict_key[2:], dict_value)
                     elif isinstance(o, Sink | SinkProperties):
+                        o: tp.List = register_new_flux(ef, rg, dict_key[2:], dict_value)
+                    elif isinstance(o, Source | SourceProperties):
                         o: tp.List = register_new_flux(ef, rg, dict_key[2:], dict_value)
                     else:
                         raise ValueError(f"No recipie for {type(o)}")
@@ -1095,7 +1101,7 @@ def create_connection(n: str, p: dict, M: Model) -> None:
     bypass = make_dict(los, bypass)
     signal = make_dict(los, signal)
 
-    name = f"{M.name}.CG_{source.name}_to_{sink.name}"
+    name = f"{M.name}.ConnGrp_{source.name}_to_{sink.name}"
     if f"{name}" in M.lmo:  # Test if CG exists
         cg = getattr(M, name.split(".")[1])  # retriece CG object
         cg.add_connections(
