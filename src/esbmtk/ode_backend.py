@@ -363,7 +363,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
 
 
 def get_flux(flux: Flux, M: Model, R: tp.List[float], icl: dict) -> tuple(str, str):
-    """Create formula expressions that calcultes the flux F.  Return
+    """Create formula expressions that calculates the flux F.  Return
     the equation expression as string
 
     :param flux: The flux object for which we create the equation
@@ -380,9 +380,13 @@ def get_flux(flux: Flux, M: Model, R: tp.List[float], icl: dict) -> tuple(str, s
 
     ex = ""  # expression string
     exl = ""  # expression string for light isotope
+
     c = flux.parent  # shorthand for the connection object
     cfn = flux.parent.full_name  # shorthand for the connection object name
 
+    print(f"flux.full_name = {flux.full_name}")
+    print(f"flux.parent.full_name = {flux.parent.full_name}\n")
+    
     if c.ctype.casefold() == "regular":
         ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3)
 
@@ -579,6 +583,7 @@ def write_ef(
     # if ef.fname == "carbonate_system_2_ode":
     # if ef.fname == "weathering":
     #     breakpoint()
+    
     # this can probably be simplified similar to the old parse_return_values()
     for d in ef.function_input_data:
         a += parse_esbmtk_input_data_types(d, ef, ind3, icl)
@@ -674,8 +679,8 @@ def get_scale_with_concentration_eq(
     """Create equation string defining a flux that scales with the
     concentration in the upstream reservoir
 
-    Example: M1_CG_D_b_to_L_b_TA_thc__F =
-    M1.CG_D_b_to_L_b.TA_thc.scale * R[5]
+    Example: M1_ConnGrp_D_b_to_L_b_TA_thc__F =
+    M1.ConnGrp_D_b_to_L_b.TA_thc.scale * R[5]
 
     :param flux: Flux object
     :param c: connection instance
