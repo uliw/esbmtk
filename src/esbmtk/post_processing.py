@@ -78,7 +78,7 @@ def carbonate_system_2_pp(
     bn: Reservoir | list,  # 2 Reservoir handle
     export_fluxes: float | list,  # 3 CaCO3 export flux as DIC
     zsat_min: float = 200,
-    zmax: float = 6000,
+    zmax: float = 10000,
 ) -> None:
     """Calculates and returns the fraction of the carbonate rain that is
     dissolved an returned back into the ocean.
@@ -110,16 +110,14 @@ def carbonate_system_2_pp(
 
     from esbmtk import VectorData
 
+    # ensure that all objects are lists
     if not isinstance(bn, list):
         bn = [bn]
     if not isinstance(export_fluxes, list):
         export_fluxes = [export_fluxes]
 
+    # loop over boxes
     for i, rg in enumerate(bn):
-        if isinstance(export_fluxes[i], float):
-            export = export_fluxes[i]
-        else:
-            export = export_fluxes[i].c
 
         p = rg.cs.function_params
         sp, cp, area_table, area_dz_table, Csat_table = p
@@ -131,6 +129,14 @@ def carbonate_system_2_pp(
         area_table = rg.model.area_table
         area_dz_table = rg.model.area_dz_table
         Csat_table = rg.model.Csat_table
+        export = export_fluxes[i]
+        
+        # test the type of export flux information
+        if isinstance(export, float):
+            # ensure we have a vector
+            export = dic * 0 + export
+        elif not isinstance(export, np.ndarray):
+            export = dic * 0 + export.c
 
         # hco3 = dic / (1 + hplus / k1 + k2 / hplus)
         co3 = dic / (1 + hplus / k2 + hplus**2 / k1k2)
@@ -139,26 +145,27 @@ def carbonate_system_2_pp(
         zcc = (
             zsat0 * np.log(export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
         ).astype(int)
+
         B_AD = export / AD
 
         A_z0_zsat = area_table[z0] - area_table[zsat]
         A_zsat_zcc = area_table[zsat] - area_table[zcc]
+        # FIXME: Is  A_zsat_zcc a vector?
         A_zcc_zmax = area_table[zcc] - area_table[zmax]
 
-        # must be loop
         Fdiss = zsat * 0
         Fburial = zsat * 0
 
         for i, e in enumerate(zsat):
-            BCC = A_zcc_zmax[i] * B_AD
-            BNS = alpha * A_z0_zsat[i] * B_AD
+            BCC = A_zcc_zmax[i] * B_AD[i]
+            BNS = alpha * A_z0_zsat[i] * B_AD[i]
             diff_co3 = Csat_table[zsat[i] : zcc[i]] - co3[i]
             area_p = area_dz_table[zsat[i] : zcc[i]]
             BDS_under = kc * area_p.dot(diff_co3)
-            BDS_resp = alpha * (A_zsat_zcc[i] * B_AD - BDS_under)
+            BDS_resp = alpha * (A_zsat_zcc[i] * B_AD[i] - BDS_under)
             BDS = BDS_under + BDS_resp
 
-            if zsnow[i] <= zcc[i]: # reset zsnow
+            if zsnow[i] <= zcc[i]:  # reset zsnow
                 zsnow[i] = zcc[i]
                 BPDC = 0
             else:  # integrate saturation difference over area
@@ -170,7 +177,7 @@ def carbonate_system_2_pp(
                 BPDC = max(0, kc * area_p.dot(diff))
 
             Fdiss[i] = BDS + BCC + BNS + BPDC
-            Fburial[i] = export - Fdiss[i]
+            Fburial[i] = export[i] - Fdiss[i]
 
         VectorData(
             name="Fburial",
@@ -229,7 +236,6 @@ def carbonate_system_2_pp(
             label="zcc",
             plt_units="m",
         )
-        
 
 
 def gas_exchange_fluxes(
