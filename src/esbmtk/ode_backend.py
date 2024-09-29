@@ -384,9 +384,6 @@ def get_flux(flux: Flux, M: Model, R: tp.List[float], icl: dict) -> tuple(str, s
     c = flux.parent  # shorthand for the connection object
     cfn = flux.parent.full_name  # shorthand for the connection object name
 
-    print(f"flux.full_name = {flux.full_name}")
-    print(f"flux.parent.full_name = {flux.parent.full_name}\n")
-    
     if c.ctype.casefold() == "regular":
         ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3)
 
