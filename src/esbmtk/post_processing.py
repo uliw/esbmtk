@@ -136,8 +136,10 @@ def carbonate_system_2_pp(
         # and ensure we have a vector
         if isinstance(export_data, float):
             export: NDArrayFloat = dic * 0 + export_data
-        elif not isinstance(export, np.ndarray):
+        elif not isinstance(export_data, np.ndarray):
             export: NDArrayFloat = dic * 0 + export_data.c
+        else:
+            export: NDArrayFloat = export_data
 
         # hco3 = dic / (1 + hplus / k1 + k2 / hplus)
         co3: NDArrayFloat = dic / (1 + hplus / k2 + hplus**2 / k1k2)
