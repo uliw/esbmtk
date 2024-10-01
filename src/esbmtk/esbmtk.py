@@ -410,6 +410,9 @@ class Model(esbmtkBase):
             if r.rtype != "flux_only":
                 r.__write_data__(prefix, start, stop, stride, append, directory)
 
+        for s in self.los:
+            s.__write_data__(prefix, start, stop, stride, append, directory)
+
     def read_data(self, directory="./data") -> None:
         """Save the model results to a CSV file. Each reservoir will have
         their own CSV file
@@ -856,7 +859,7 @@ class Model(esbmtkBase):
         if "filter" in kwargs:
             raise ModelError("use filter_by instead of filter")
 
-        if "silent" not in kwargs:
+        if not "return_list" in kwargs:
             print(f"\n --- Connect Group Summary -- filtered by {fby}\n")
             print(f"       run the following command to see more details:\n")
 
