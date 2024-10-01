@@ -599,13 +599,13 @@ class Signal(esbmtkBase):
 
         if self.mo.debug:
             print(
-                f"dt1 = {dt1}, dt2 = {dt2}, offset = {self.mo.offset}"
-                f"insert start time = {insert_start_time} "
-                f"insert_stop time = {insert_stop_time} "
+                f"dt1 = {dt1}, dt2 = {dt2}, offset = {self.mo.offset}\n"
+                f"insert start time = {insert_start_time}\n"
+                f"insert_stop time = {insert_stop_time}\n"
                 f"duration = {self.duration}\n"
-                f"msi = {model_start_index}, msp = {model_stop_index} "
+                f"msi = {model_start_index}, msp = {model_stop_index}\n"
                 f"model num_steps = {model_stop_index-model_start_index}\n"
-                f"ssi = {signal_start_index}, ssp = {signal_stop_index} "
+                f"ssi = {signal_start_index}, ssp = {signal_stop_index}\n"
                 f"signal num_steps = {signal_stop_index-signal_start_index}\n"
             )
 
@@ -907,6 +907,63 @@ class Signal(esbmtkBase):
             ax.spines["right"].set_visible(False)
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
+
+    def __write_data__(
+        self,
+        prefix: str,
+        start: int,
+        stop: int,
+        stride: int,
+        append: bool,
+        directory: str,
+    ) -> None:
+        """Write data to file.  This function is called by the
+        write_data() and save_state() methods
+
+        :param prefix:
+        :param start:
+        :param stop:
+        :param stride:
+        :param append:
+        :param directory:
+        """
+        from pathlib import Path
+
+        p = Path(directory)
+        p.mkdir(parents=True, exist_ok=True)
+
+        # some short hands
+        sn = self.sp.n  # species name
+        sp = self.sp  # species handle
+        mo = self.sp.mo  # model handle
+
+        smu = f"{mo.m_unit:~P}"
+        mtu = f"{mo.t_unit:~P}"
+        fmu = f"{mo.f_unit:~P}"
+        cmu = f"{mo.c_unit:~P}"
+
+        rn = self.full_name  # reservoir name
+        mn = self.sp.mo.n  # model name
+        fn = f"{directory}/{prefix}{rn}.csv"  # file name
+
+        # build the dataframe
+        df: pd.dataframe = DataFrame()
+
+        # breakpoint()
+        df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
+        # df[f"{rn} {sn} [{smu}]"] = self.m.to(self.mo.m_unit).magnitude[start:stop:stride]  # mass
+        if self.isotopes:
+            # print(f"rn = {rn}, sp = {sp.name}")
+            df[f"{rn} {sp.ln} [{cmu}]"] = self.l[start:stop:stride]  # light isotope
+        df[f"{rn} {sn} [{cmu}]"] = self.data.m[start:stop:stride]  # concentration
+
+        file_path = Path(fn)
+        print(f"saving signal to {file_path}")
+        if append and file_path.exists():
+            df.to_csv(file_path, header=False, mode="a", index=False)
+        else:
+            df.to_csv(file_path, header=True, mode="w", index=False)
+        return df
 
 
 class VectorData(esbmtkBase):
