@@ -445,7 +445,7 @@ class Signal(esbmtkBase):
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "start": ["0 yrs", (str, Q_)],
-            "duration": ["0 yr", (str, Q_)],
+            "duration": ["None", (str, Q_)],
             "species": ["None", (SpeciesProperties)],
             "delta": [0, (int, float)],
             "stype": [
@@ -491,17 +491,16 @@ class Signal(esbmtkBase):
         elif "magnitude" in self.kwargs:
             self.magnitude = Q_(self.magnitude).to(self.species.mo.f_unit).magnitude
 
-        self.duration = int(Q_(self.duration).to(self.species.mo.t_unit).magnitude)
-
-        self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
-
-        if self.duration > 0:
+        if "duration" in self.kwargs:
+            self.duration = int(Q_(self.duration).to(self.species.mo.t_unit).magnitude)
             if self.duration / self.species.mo.max_step < 10:
                 warnings.warn(
                     """\n\n Your signal duration is covered by less than 10
                     Intergration steps. This may not be what you want
                     Consider adjusting the max_step parameter of the model object\n"""
                 )
+
+        self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
 
         # legacy name definitions
         self.full_name = ""
@@ -548,13 +547,13 @@ class Signal(esbmtkBase):
         3. Create an empty flux and replace it with the signal vector data.
 
         Note that this flux will then be added to an existing flux.
-
         """
 
         from esbmtk import Flux
 
         # these are signal times, not model time
-        self.length: int = int(round(self.duration / self.mo.dt))
+        if self.duration != "None":
+            self.length: int = int(round(self.duration / self.mo.dt))
 
         # create signal vector
         if self.sh == "square":
@@ -588,14 +587,14 @@ class Signal(esbmtkBase):
         insert_start_time = self.st - self.mo.offset
         insert_stop_time = insert_start_time + self.duration
 
-        dt1 = int((self.st - self.mo.offset - self.mo.start))
-        dt2 = int((self.st + self.duration - self.mo.stop - self.mo.offset))
+        dt1 = abs(int((self.st - self.mo.offset - self.mo.start)))
+        dt2 = abs(int((self.st + self.duration - self.mo.stop - self.mo.offset)))
 
         # This fails if actual model steps != dt
         model_start_index = int(max(insert_start_time / self.mo.dt, 0))
         model_stop_index = int(min((self.mo.steps + dt2 / self.mo.dt), self.mo.steps))
-        signal_start_index = int(min(dt1, 0) * -1)
-        signal_stop_index = int(self.length - max(0, dt2))
+        signal_start_index = int(min(dt1, 0))
+        signal_stop_index = int(self.length - max(0, dt2) - 1)
 
         if self.mo.debug:
             print(
@@ -607,11 +606,16 @@ class Signal(esbmtkBase):
                 f"model num_steps = {model_stop_index-model_start_index}\n"
                 f"ssi = {signal_start_index}, ssp = {signal_stop_index}\n"
                 f"signal num_steps = {signal_stop_index-signal_start_index}\n"
+                f"self.nf.m[{model_start_index}:{model_stop_index}] = self.s_m[{signal_start_index}:{signal_stop_index}]"
             )
-
+        """ FIXME: This code is a mess! Start by creating vector with default
+        values. If multiplication type, fill with ones, if addition type fill
+        with zeros. Test if flux is still necessary. Clean up insertion code.
+        """
         if signal_start_index < signal_stop_index:
-            self.nf.m[model_start_index:model_stop_index] = self.s_m[
-                signal_start_index:signal_stop_index
+            si = min(model_stop_index, signal_stop_index)
+            self.nf.m[model_start_index:si] = self.s_m[
+                signal_start_index:si
             ]
             if self.nf.isotopes:
                 self.nf.l[model_start_index:model_stop_index] = self.s_l[
@@ -718,6 +722,7 @@ class Signal(esbmtkBase):
             filename=self.filename,
             register=self,
             legend="None",
+            disp_units=False,  # we need the data in model units
         )
 
         self.s_time = ed.x
@@ -2198,6 +2203,7 @@ class ExternalData(esbmtkBase):
             "offset": ["0 yrs", (Q_, str)],
             "display_precision": [0.01, (int, float)],
             "scale": [1, (int, float)],
+            "disp_units": [True, (bool)],
             "register": [
                 "None",
                 (str, Model, Species, DataField, GasReservoir, Signal),
@@ -2263,12 +2269,12 @@ class ExternalData(esbmtkBase):
         )
 
         # create the associated quantities
-        xq = Q_(xh)
-        yq = Q_(yh)
+        self.xq = Q_(xh)
+        self.yq = Q_(yh)
 
         # add these to the data we are are reading
-        self.x: NDArrayFloat = self.df.iloc[:, 0].to_numpy() * xq
-        self.y: NDArrayFloat = self.df.iloc[:, 1].to_numpy() * yq
+        self.x: NDArrayFloat = self.df.iloc[:, 0].to_numpy() * self.xq
+        self.y: NDArrayFloat = self.df.iloc[:, 1].to_numpy() * self.yq
 
         if self.zh:
             # delta is assumed to be without units
@@ -2279,23 +2285,26 @@ class ExternalData(esbmtkBase):
         # map into model space
         # self.x = self.x - self.x[0] + self.offset
         # map into model units, and strip unit information
-        self.x = self.x.to(self.mo.d_unit).magnitude
+        if self.disp_units:
+            self.x = self.x.to(self.mo.d_unit).magnitude
+        else:
+            self.x = self.x.to(self.mo.t_unit).magnitude
         # self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
 
         mol_liter = Q_("1 mol/liter").dimensionality
         mol_kg = Q_("1 mol/kg").dimensionality
 
-        if isinstance(yq, Q_):
+        if isinstance(self.yq, Q_):
             # test what type of Quantity we have
-            if yq.is_compatible_with("dimensionless"):  # dimensionless
+            if self.yq.is_compatible_with("dimensionless"):  # dimensionless
                 self.y = self.y.magnitude
-            elif yq.is_compatible_with("liter/yr"):  # flux
+            elif self.yq.is_compatible_with("liter/yr"):  # flux
                 self.y = self.y.to(self.mo.r_unit).magnitude
-            elif yq.is_compatible_with("mol/yr"):  # flux
+            elif self.yq.is_compatible_with("mol/yr"):  # flux
                 self.y = self.y.to(self.mo.f_unit).magnitude
-            elif yq.dimensionality == mol_liter:  # concentration
+            elif self.yq.dimensionality == mol_liter:  # concentration
                 self.y = self.y.to(self.mo.c_unit).magnitude
-            elif yq.dimensionality == mol_kg:  # concentration
+            elif self.yq.dimensionality == mol_kg:  # concentration
                 self.y = self.y.to(self.mo.c_unit).magnitude
             else:
                 SignalError(f"No conversion to model units for {self.scale} specified")
