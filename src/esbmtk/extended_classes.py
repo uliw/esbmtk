@@ -2279,7 +2279,7 @@ class ExternalData(esbmtkBase):
         # map into model space
         # self.x = self.x - self.x[0] + self.offset
         # map into model units, and strip unit information
-        self.x = self.x.to(self.mo.t_unit).magnitude
+        self.x = self.x.to(self.mo.d_unit).magnitude
         # self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
 
         mol_liter = Q_("1 mol/liter").dimensionality
