@@ -281,8 +281,7 @@ class Model(esbmtkBase):
         self.state = 0
 
         # calculate stride
-        self.stride = int(self.steps / self.number_of_datapoints)
-        self.reset_stride = self.stride
+        self.stride = 1
 
         if self.step_limit == "None":
             self.number_of_solving_iterations: int = 0
@@ -403,7 +402,8 @@ class Model(esbmtkBase):
         prefix = ""
         stride = self.stride
         start = 0
-        stop = self.steps
+        stop = len(self.time)
+        
         append = False
 
         for r in self.lor:
@@ -1222,7 +1222,6 @@ class SpeciesBase(esbmtkBase):
         # build the dataframe
         df: pd.dataframe = DataFrame()
 
-        # breakpoint()
         df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
         # df[f"{rn} {sn} [{smu}]"] = self.m.to(self.mo.m_unit).magnitude[start:stop:stride]  # mass
         if self.isotopes:
