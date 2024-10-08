@@ -367,16 +367,19 @@ class SourceProperties(SourceSinkProperties):
 
 
 class Signal(esbmtkBase):
-    """This class will create a signal which is
-    described by its startime (relative to the model time), it's
-    size (as mass) and duration, or as duration and
-    magnitude. Furthermore, we can presribe the signal shape
-    (square, pyramid, bell, file )and whether the signal will repeat. You
-    can also specify whether the event will affect the delta value.
+    """This class will create a signal which is described by its startime
+    (relative to the model time), it's size (as mass) and duration, or as
+    duration and magnitude. Furthermore, we can presribe the signal shape
+    (square, pyramid, bell, file )and whether the signal will repeat. You can
+    also specify whether the event will affect the delta value.
+    Alternatively, signal can be read from a CSV file. The file needs to
+    specify
+    Time [unit], Flux [unit/time unit], delta value 
 
-    The default is to add the signal to a given connection. It is however
-    also possible to use the signal data as a scaling factor.
-
+    The delta value column is optional.The units must be of similar
+    dimensions as the model dimensions (e.g., mol/l or mol/kg). Data
+    will be automatically interpolated.
+   
     Example::
 
           Signal(name = "Name",
@@ -384,7 +387,7 @@ class Signal(esbmtkBase):
                  start = "0 yrs",     # optional
                  duration = "0 yrs",  #
                  delta = 0,           # optional
-                 stype = "addition"   # optional, currently the only type
+                 stype = "addition"   # or multiplication
                  shape = "square/pyramid/bell/filename"
                  mass/magnitude/filename  # give one
                  offset = '0 yrs',     #
@@ -427,13 +430,19 @@ class Signal(esbmtkBase):
     provide a source name the connection will be made between the
     provided source (this can be useful if you use source groups).
 
-
     This class has the following methods
 
       Signal.repeat()
       Signal.plot()
       Signal.info()
 
+    The sinal class provides the following data fields
+    
+        self.data.m which contains the interpolated signal
+        self.data.l which contain the interpolated isotope
+                    data in the form of the light isotope
+                    If no isotope data is given, it is 0
+    
     """
 
     def __init__(self, **kwargs) -> None:
