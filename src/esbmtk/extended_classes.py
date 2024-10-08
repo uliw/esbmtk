@@ -439,10 +439,15 @@ class Signal(esbmtkBase):
     The sinal class provides the following data fields
 
         self.data.m which contains the interpolated signal
+                    also available as self.m
         self.data.l which contain the interpolated isotope
                     data in the form of the light isotope
+                    also availavle as self.l
                     If no isotope data is given, it is 0
 
+        self.ed is the object reference for the externaldata
+                   instance in cases wher data is read from
+                   a csv file
     """
 
     def __init__(self, **kwargs) -> None:
@@ -774,12 +779,11 @@ class Signal(esbmtkBase):
         )
 
     def __add__(self, other):
-        """allow the addition of two signals and return a new signal"""
+        """allow the addition of two signals and return a new signal
+        FIXME: this requires cleanup
+        """
 
         ns = cp.deepcopy(self)
-        # update name
-        self.name = f"{self.name}_p_{other.name}"
-        # add the data of both fluxes
         ns.data.m = self.data.m + other.data.m
         # get delta of self
         if self.isotopes:
