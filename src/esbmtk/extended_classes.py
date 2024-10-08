@@ -772,17 +772,19 @@ class Signal(esbmtkBase):
         ns = cp.deepcopy(self)
 
         # add the data of both fluxes
-        # get delta of self
-        sd = get_delta(self.data.l, self.data.m - self.data.l, self.data.sp.r)
-        od = get_delta(other.data.l, other.data.m - other.data.l, other.data.sp.r)
         ns.data.m = self.data.m + other.data.m
-        ns.data.l = get_l_mass(ns.data.m, sd + od, ns.data.sp.r)
+        # get delta of self
+        if self.isotopes:
+            sd = get_delta(self.data.l, self.data.m - self.data.l, self.data.sp.r)
+            od = get_delta(other.data.l, other.data.m - other.data.l, other.data.sp.r)
+            ns.data.l = get_l_mass(ns.data.m, sd + od, ns.data.sp.r)
+            ns.l = max(self.l, other.l)
 
         ns.n: str = self.n + "_and_" + other.n
         # print(f"adding {self.n} to {other.n}, returning {ns.n}")
         ns.data.n: str = self.n + "_and_" + other.n + "_data"
         ns.st = min(self.st, other.st)
-        ns.l = max(self.l, other.l)
+       
         ns.sh = "compound"
         ns.los.append(self)
         ns.los.append(other)
@@ -2213,7 +2215,6 @@ class ExternalData(esbmtkBase):
 
         # provide a list of absolutely required keywords
         self.lrk: tp.List = ["name", "filename", "legend", ["reservoir", "register"]]
-
         self.__initialize_keyword_variables__(kwargs)
 
         # legacy names
@@ -2222,6 +2223,7 @@ class ExternalData(esbmtkBase):
 
         self.n: str = self.name  # string =  name of this instance
         self.fn: str = self.filename  # string = filename of data
+
         if isinstance(self.reservoir, Species):
             self.mo: Model = self.reservoir.species.mo
         if isinstance(self.reservoir, Signal):
