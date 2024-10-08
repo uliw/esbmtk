@@ -374,12 +374,12 @@ class Signal(esbmtkBase):
     also specify whether the event will affect the delta value.
     Alternatively, signal can be read from a CSV file. The file needs to
     specify
-    Time [unit], Flux [unit/time unit], delta value 
+    Time [unit], Flux [unit/time unit], delta value
 
     The delta value column is optional.The units must be of similar
     dimensions as the model dimensions (e.g., mol/l or mol/kg). Data
     will be automatically interpolated.
-   
+
     Example::
 
           Signal(name = "Name",
@@ -437,12 +437,12 @@ class Signal(esbmtkBase):
       Signal.info()
 
     The sinal class provides the following data fields
-    
+
         self.data.m which contains the interpolated signal
         self.data.l which contain the interpolated isotope
                     data in the form of the light isotope
                     If no isotope data is given, it is 0
-    
+
     """
 
     def __init__(self, **kwargs) -> None:
@@ -623,9 +623,7 @@ class Signal(esbmtkBase):
         """
         if signal_start_index < signal_stop_index:
             si = min(model_stop_index, signal_stop_index)
-            self.nf.m[model_start_index:si] = self.s_m[
-                signal_start_index:si
-            ]
+            self.nf.m[model_start_index:si] = self.s_m[signal_start_index:si]
             if self.nf.isotopes:
                 self.nf.l[model_start_index:model_stop_index] = self.s_l[
                     signal_start_index:signal_stop_index
@@ -726,7 +724,7 @@ class Signal(esbmtkBase):
         i.e., the first row needs to be a header line
 
         """
-        ed = ExternalData(
+        self.ed = ExternalData(
             name=f"{self.name}_ed",
             filename=self.filename,
             register=self,
@@ -734,8 +732,8 @@ class Signal(esbmtkBase):
             disp_units=False,  # we need the data in model units
         )
 
-        self.s_time = ed.x
-        self.s_data = ed.y * self.scale
+        self.s_time = self.ed.x
+        self.s_data = self.ed.y * self.scale
 
         self.st: float = self.s_time[0]  # start time
         self.et: float = self.s_time[-1]  # end time
@@ -747,8 +745,8 @@ class Signal(esbmtkBase):
         self.s_m: NDArrayFloat = np.interp(
             xi, self.s_time, self.s_data
         )  # interpolate flux
-        if ed.zh:
-            self.s_delta = ed.d
+        if self.ed.zh:
+            self.s_delta = self.ed.d
             self.s_d: NDArrayFloat = np.interp(xi, self.s_time, self.s_delta)
             self.s_l = get_l_mass(self.s_m, self.s_d, self.sp.r)
         else:
@@ -779,7 +777,8 @@ class Signal(esbmtkBase):
         """allow the addition of two signals and return a new signal"""
 
         ns = cp.deepcopy(self)
-
+        # update name
+        self.name = f"{self.name}_p_{other.name}"
         # add the data of both fluxes
         ns.data.m = self.data.m + other.data.m
         # get delta of self
@@ -793,7 +792,7 @@ class Signal(esbmtkBase):
         # print(f"adding {self.n} to {other.n}, returning {ns.n}")
         ns.data.n: str = self.n + "_and_" + other.n + "_data"
         ns.st = min(self.st, other.st)
-       
+
         ns.sh = "compound"
         ns.los.append(self)
         ns.los.append(other)
