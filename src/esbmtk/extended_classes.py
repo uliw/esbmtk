@@ -783,25 +783,25 @@ class Signal(esbmtkBase):
         FIXME: this requires cleanup
         """
 
-        ns = cp.deepcopy(self)
-        ns.data.m = self.data.m + other.data.m
+        new_signal = cp.deepcopy(self)
+        new_signal.m = self.m + other.m
         # get delta of self
         if self.isotopes:
-            sd = get_delta(self.data.l, self.data.m - self.data.l, self.data.sp.r)
-            od = get_delta(other.data.l, other.data.m - other.data.l, other.data.sp.r)
-            ns.data.l = get_l_mass(ns.data.m, sd + od, ns.data.sp.r)
-            ns.l = max(self.l, other.l)
+            this_delta = get_delta(self.l, self.m - self.l, self.data.sp.r)
+            other_delta = get_delta(other.l, other.m - other.l, other.data.sp.r)
+            new_signal.l = get_l_mass(new_signal.m, this_delta + other_delta, new_signal.data.sp.r)
+            # new_signal.l = max(self.l, other.l)
 
-        ns.n: str = self.n + "_and_" + other.n
+        new_signal.name: str = self.name + "_and_" + other.name
         # print(f"adding {self.n} to {other.n}, returning {ns.n}")
-        ns.data.n: str = self.n + "_and_" + other.n + "_data"
-        ns.st = min(self.st, other.st)
+        # new_signal.data.n: str = self.n + "_and_" + other.n + "_data"
+        new_signal.st = min(self.st, other.st)
 
-        ns.sh = "compound"
-        ns.los.append(self)
-        ns.los.append(other)
+        new_signal.sh = "compound"
+        new_signal.los.append(self)
+        new_signal.los.append(other)
 
-        return ns
+        return new_signal
 
     def repeat(self, start, stop, offset, times) -> None:
         """This method creates a new signal by repeating an existing signal.
@@ -873,9 +873,9 @@ class Signal(esbmtkBase):
 
         import numpy as np
 
-        m = np.interp(t, self.mo.time, self.data.m)
+        m = np.interp(t, self.mo.time, self.m)
         if self.isotopes:
-            l = np.interp(t, self.mo.time, self.data.l)
+            l = np.interp(t, self.mo.time, self.l)
         else:
             l = 0
 
