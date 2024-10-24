@@ -352,7 +352,7 @@ class Model(esbmtkBase):
             for s in e.lsp:
                 print(f"{off}{off}{ind}{s.n}")
 
-    def save_state(self, directory="state") -> None:
+    def save_state(self, directory="state", prefix="state_") -> None:
         """Save model state.  Similar to save data, but only saves the
         last 10 time-steps
         """
@@ -371,7 +371,6 @@ class Model(esbmtkBase):
         start: int = -2
         stop: int = None
         stride: int = 1
-        prefix: str = "state_"
 
         for r in self.lor:  # loop over reservoirs
             r.__write_data__(prefix, start, stop, stride, False, directory)
