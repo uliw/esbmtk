@@ -789,7 +789,9 @@ class Signal(esbmtkBase):
         if self.isotopes:
             this_delta = get_delta(self.l, self.m - self.l, self.data.sp.r)
             other_delta = get_delta(other.l, other.m - other.l, other.data.sp.r)
-            new_signal.l = get_l_mass(new_signal.m, this_delta + other_delta, new_signal.data.sp.r)
+            new_signal.l = get_l_mass(
+                new_signal.m, this_delta + other_delta, new_signal.data.sp.r
+            )
             # new_signal.l = max(self.l, other.l)
 
         new_signal.name: str = self.name + "_and_" + other.name
@@ -1021,7 +1023,73 @@ class VectorData(esbmtkBase):
         self.model = self.species.mo
         self.c = self.data
         self.label = self.name
+        self.register.model.lvd.append(self)
         self.__register_name_new__()
+
+    def __write_data__(
+        self,
+        prefix: str,
+        start: int,
+        stop: int,
+        stride: int,
+        append: bool,
+        directory: str,
+    ) -> None:
+        """Write data to file.  This function is called by the
+        write_data() and save_state() methods
+
+        :param prefix:
+        :param start:
+        :param stop:
+        :param stride:
+        :param append:
+        :param directory:
+        """
+        from pathlib import Path
+
+        p = Path(directory)
+        p.mkdir(parents=True, exist_ok=True)
+
+        # some short hands
+        sn = self.sp.n  # species name
+        sp = self.sp  # species handle
+        mo = self.sp.mo  # model handle
+
+        smu = f"{mo.m_unit:~P}"
+        mtu = f"{mo.t_unit:~P}"
+        fmu = f"{mo.f_unit:~P}"
+        cmu = f"{mo.c_unit:~P}"
+
+        # sdn = self.sp.dn  # delta name
+        # sds = self.sp.ds  # delta scale
+        rn = self.full_name  # reservoir name
+        mn = self.sp.mo.n  # model name
+        if self.sp.mo.register == "None":
+            fn = f"{directory}/{prefix}{mn}_{rn}.csv"  # file name
+        elif self.sp.mo.register == "local":
+            fn = f"{directory}/{prefix}{rn}.csv"  # file name
+        else:
+            raise SpeciesError(
+                f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
+            )
+
+        print(f"saving to {fn}")
+        # build the dataframe
+        df: pd.dataframe = DataFrame()
+
+        df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
+        # df[f"{rn} {sn} [{smu}]"] = self.m.to(self.mo.m_unit).magnitude[start:stop:stride]  # mass
+        if self.isotopes:
+            # print(f"rn = {rn}, sp = {sp.name}")
+            df[f"{rn} {sp.ln} [{cmu}]"] = self.l[start:stop:stride]  # light isotope
+        df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
+
+        file_path = Path(fn)
+        if append and file_path.exists():
+            df.to_csv(file_path, header=False, mode="a", index=False)
+        else:
+            df.to_csv(file_path, header=True, mode="w", index=False)
+        return df
 
     def get_plot_format(self):
         """Return concentrat data in plot units"""
