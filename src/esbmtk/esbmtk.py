@@ -232,6 +232,7 @@ class Model(esbmtkBase):
         self.gcc: int = 0  # constants counter
         self.vpc: int = 0  # parameter counter
         self.luf: dict = {}  # user functions and source
+        self.lvd: List = []  # list of vector data objects
 
         # unit defs
         self.l_unit = ureg.meter  # the length unit
@@ -402,7 +403,7 @@ class Model(esbmtkBase):
         stride = self.stride
         start = 0
         stop = len(self.time)
-        
+
         append = False
 
         for r in self.lor:
@@ -410,6 +411,9 @@ class Model(esbmtkBase):
                 r.__write_data__(prefix, start, stop, stride, append, directory)
 
         for s in self.los:
+            s.__write_data__(prefix, start, stop, stride, append, directory)
+
+        for s in self.lvd:
             s.__write_data__(prefix, start, stop, stride, append, directory)
 
     def read_data(self, directory="./data") -> None:
