@@ -119,7 +119,6 @@ def carbonate_system_2_pp(
 
     # loop over boxes
     for i, rg in enumerate(bn):
-
         p = rg.cs.function_params
         sp, cp, area_table, area_dz_table, Csat_table = p
         ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0 = cp
@@ -245,6 +244,14 @@ def carbonate_system_2_pp(
             data=zcc,
             label="zcc",
             plt_units="m",
+        )
+        VectorData(
+            name="CaCO3_export",
+            register=rg,
+            species=rg.mo.DIC,
+            data=export_data,
+            label="CaCO3_export",
+            plt_units="mol/year",
         )
 
 
