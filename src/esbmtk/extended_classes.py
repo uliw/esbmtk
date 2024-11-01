@@ -568,7 +568,6 @@ class Signal(esbmtkBase):
         # these are signal times, not model time
         if self.duration != "None":
             self.length: int = int(round(self.duration / self.mo.dt))
-
         # create signal vector
         if self.sh == "square":
             self.__square__(0, self.length)
@@ -743,9 +742,20 @@ class Signal(esbmtkBase):
         self.st: float = self.s_time[0]  # start time
         self.et: float = self.s_time[-1]  # end time
         self.duration = int(round((self.et - self.st)))
-        num_steps = int(self.duration / self.mo.dt)
+        # num_steps = int(self.duration / self.mo.dt)
+        if len(self.ed.x) > self.mo.number_of_datapoints:
+            message = (
+                f"\n{self.filename} contains {len(self.ed.x)} datapoints\n",
+                f"but model resolves only {self.mo.number_of_datapoints} datapoints\n",
+                f"adjust the number_of_datapoints option in the model object\n",
+            )
+            raise ValueError(message)
+        else:
+            num_steps = self.mo.number_of_datapoints
+
+        
         # setup the points at which to interpolate
-        xi = np.linspace(self.st, self.et, num_steps)
+        xi = np.linspace(self.st, self.et, num_steps+1)
 
         self.s_m: NDArrayFloat = np.interp(
             xi, self.s_time, self.s_data
