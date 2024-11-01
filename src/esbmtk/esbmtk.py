@@ -117,8 +117,9 @@ class Model(esbmtkBase):
                 :param mass_unit: mol
                 :param volume_unit: only tested with liter
                 :param element: tp.List with one or more species names
-                :param time_step: Limit automatic step size increase, i.e., the time
+                :param max_timestep: Limit automatic step size increase, i.e., the time
                 resolution of the model. Optional, defaults to the model duration/100
+                :number_of_datapoints: defaults to 1E3, increase for complex signal data or postprocessing
                 :param m_type: enables or disables isotope calculation for the
                 entire model.  The default value is "Not set" in this case
                 isotopes will only be calculated for reservoirs which set
@@ -277,7 +278,7 @@ class Model(esbmtkBase):
             self.start,
             # self.stop - (self.stop - self.start) / 100,
             self.stop - self.start,
-            num=self.number_of_datapoints+1,
+            num=self.number_of_datapoints + 1,
         )
         self.time = self.time_ode
         self.timec = np.empty(0)
@@ -1783,7 +1784,7 @@ class Species(SpeciesBase):
         elif self.sp.stype == "length":
             self.plt_units = self.mo.l_unit
             self.c = (
-                np.zeros(self.mo.number_of_datapoints+1)
+                np.zeros(self.mo.number_of_datapoints + 1)
                 + Q_(self.concentration).magnitude
             )
             self.display_as = "length"
@@ -1795,13 +1796,13 @@ class Species(SpeciesBase):
 
         # initialize mass vector
         if self.mass == "None":
-            self.m: NDArrayFloat = np.zeros(self.mo.number_of_datapoints+1)
+            self.m: NDArrayFloat = np.zeros(self.mo.number_of_datapoints + 1)
         else:
             self.m: NDArrayFloat = np.zeros(self.species.mo.steps) + self.mass
-        self.l: NDArrayFloat = np.zeros(self.mo.number_of_datapoints+1)
+        self.l: NDArrayFloat = np.zeros(self.mo.number_of_datapoints + 1)
         # self.c: NDArrayFloat = np.zeros(self.mo.steps)
         self.v: NDArrayFloat = (
-            np.zeros(self.mo.number_of_datapoints+1)
+            np.zeros(self.mo.number_of_datapoints + 1)
             + self.volume.to(self.mo.v_unit).magnitude
         )  # reservoir volume
 
@@ -1883,7 +1884,7 @@ class Species(SpeciesBase):
             """ problem: m_unit can be mole, but data can be in liter * mole /kg
             this should not happen and results in an error converting to magnitide
             """
-            self.m = np.zeros(self.species.mo.number_of_datapoints+1) + m
+            self.m = np.zeros(self.species.mo.number_of_datapoints + 1) + m
             self.c = self.m / self.volume.to(self.mo.v_unit).magnitude
 
 
@@ -2019,11 +2020,11 @@ class Flux(esbmtkBase):
         # in case we want to keep the flux data
         if self.save_flux_data:
             self.m: NDArrayFloat = (
-                np.zeros(self.model.number_of_datapoints+1) + self.rate
+                np.zeros(self.model.number_of_datapoints + 1) + self.rate
             )  # add the flux
 
             if self.isotopes:
-                self.l: NDArrayFloat = np.zeros(self.model.number_of_datapoints+1)
+                self.l: NDArrayFloat = np.zeros(self.model.number_of_datapoints + 1)
                 if self.rate != 0:
                     self.l = get_l_mass(self.m, self.delta, self.species.r)
                     self.fa[1] = self.l[0]
