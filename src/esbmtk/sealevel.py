@@ -295,7 +295,7 @@ class hypsometry(esbmtkBase):
         u = self.max_elevation - int(u)
         l = self.max_elevation - int(l)
 
-        return np.sum(self.hypdata[u:l])
+        return np.sum(self.hypdata[u:l]) * self.fraction
 
     def show_data(self):
         """Provide a diagnostic graph that shows the hypsometric data
@@ -363,12 +363,12 @@ def get_box_geometry_parameters(box, fraction=1) -> None:
         # Calculate volume and area as a function of box geometry
         top = box.geometry[0]
         bottom = box.geometry[1]
-        fraction = box.geometry[2]
-        volume = f"{box.mo.hyp.volume(top, bottom) * fraction} m**3"
+        self.fraction = box.geometry[2]
+        volume = f"{box.mo.hyp.volume(top, bottom) * self.fraction} m**3"
         box.volume = Q_(volume)
         box.volume = box.volume.to(box.mo.v_unit)
-        box.area = Q_(f"{box.mo.hyp.area(top) * fraction} m**2")
-        box.sed_area = box.mo.hyp.area_dz(top, bottom) * fraction
+        box.area = Q_(f"{box.mo.hyp.area(top) * self.fraction} m**2")
+        box.sed_area = box.mo.hyp.area_dz(top, bottom) * self.fraction
         box.sed_area = Q_(f"{box.sed_area} m**2")
 
     elif isinstance(box.geometry, dict):
