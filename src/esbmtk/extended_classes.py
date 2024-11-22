@@ -607,7 +607,7 @@ class Signal(esbmtkBase):
         model_start_index = int(max(insert_start_time / self.mo.dt, 0))
         model_stop_index = int(min((self.mo.steps + dt2 / self.mo.dt), self.mo.steps))
         signal_start_index = int(min(dt1, 0))
-        signal_stop_index = int(self.length - max(0, dt2) - 1)
+        signal_stop_index = int(self.length) # - max(0, dt2) + 1)
 
         if self.mo.debug:
             print(
@@ -632,6 +632,7 @@ class Signal(esbmtkBase):
                 self.nf.l[model_start_index:model_stop_index] = self.s_l[
                     signal_start_index:signal_stop_index
                 ]
+
         return self.nf
 
     def __square__(self, s, e) -> None:
