@@ -349,7 +349,6 @@ class SeawaterConstants(esbmtkBase):
         self.SA_o2 = b / VA
         # convert from mol/(m^3 atm) to mol/(1000kg atm)
         self.SA_o2 = 1000 * self.SA_o2 / self.density
-        self.SA_O2 = 1000 * self.SA_o2 / self.density
 
     def calc_solubility_term(self, S, T, A1, A2, A3, A4, B1, B2, B3) -> float:
         ln_F = (
