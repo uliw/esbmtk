@@ -290,6 +290,7 @@ class Species2Species(esbmtkBase):
 
         if self.rate != "None":
             if isinstance(self.rate, str):
+                breakpoint()
                 self._rate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
             elif isinstance(self.rate, Q_):
                 self._rate: float = self.rate.to(self.mo.f_unit).magnitude

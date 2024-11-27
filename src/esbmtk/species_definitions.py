@@ -64,6 +64,7 @@ def Carbon(model):
     SpeciesProperties(
         name="CO3", element=eh, display_as="CO$_3^{2-}$", register=eh, m_weight=60.0089
     )
+    SpeciesProperties(name="D14C", element=eh, display_as="$\Delta^{14}$C", register=eh)
     SpeciesProperties(name="C", element=eh, register=eh, m_weight=12.0107)
     SpeciesProperties(name="CO2aq", element=eh, register=eh, scale_to="umol")
     SpeciesProperties(name="ALK", element=eh, register=eh)  # Alkalinity
