@@ -1029,7 +1029,7 @@ class SpeciesProperties(esbmtkBase):
             "parent": ["None", (Model, ElementProperties, Species, GasReservoir)],
             "flux_only": [False, (bool)],
             "logdata": [False, (bool)],
-            "scale_to": ["None", (str)],
+            "scale_to": ["mmol", (str)],
             "stype": ["concentration", (str)],
         }
 
