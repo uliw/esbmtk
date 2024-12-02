@@ -163,8 +163,8 @@ def Oxygen(model: Model) -> None:
         model=model,  # model handle
         mass_unit="mol",  # base mass unit
         li_label="$^{16$}O",  # Name of light isotope
-        hi_label="$^{18}$)",  # Name of heavy isotope
-        d_label=r"$\delta^{18}$)",  # Name of isotope delta
+        hi_label="$^{18}$O",  # Name of heavy isotope
+        d_label=r"$\delta^{18}$O",  # Name of isotope delta
         d_scale="mUr VSMOV",  # Isotope scale. End of plot labels  # needs verification
         r=2005.201e-6,
         reference="https://nucleus.iaea.org/rpst/documents/vsmow_slap.pdf",
