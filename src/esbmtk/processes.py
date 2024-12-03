@@ -139,9 +139,15 @@ def init_gas_exchange(c: Species2Species):
     if c.species.name == "CO2":
         ref_species = sink_reservoir.CO2aq
         solubility = swc.SA_co2
+        a_db  = swc.a_db
+        a_dg =  swc.a_dg
+        a_u = swc.a_u
     elif c.species.name == "O2":
         ref_species = sink_reservoir.O2
         solubility = swc.SA_O2
+        a_db  = swc.o2_a_db
+        a_dg =  swc.o2_a_dg
+        a_u = swc.o2_a_u
     else:
         raise ValueError(f"Gas exchange is undefined for {c.species.name}")
 
@@ -155,12 +161,11 @@ def init_gas_exchange(c: Species2Species):
         scale,
         swc.p_H2O,
         solubility,
-        swc.a_db,
-        swc.a_dg,
-        swc.a_u,
-        c.source.isotopes,
+        a_db,
+        a_dg,
+        a_u,
+        c.isotopes, # c.source.isotopes,
     )
-
     ec = ExternalCode(
         name=f"gas_exchange{c.id}",
         fname="gas_exchange",
@@ -180,7 +185,7 @@ def init_gas_exchange(c: Species2Species):
 def gas_exchange(
     gas_c: float | tuple,
     liquid_c: float | tuple,
-    gas_aq: float,
+    gas_aq_c: float,
     p: tuple,
 ) -> float | tuple:
     """Calculate the gas exchange flux across the air sea interface
@@ -222,13 +227,14 @@ def gas_exchange(
 
     if isotopes:
         gas_c, gas_c_l = gas_c
+        gas_aq_c, gas_aq_l = gas_aq_c
         liquid_c, liquid_c_l = liquid_c
 
     # Solubility with correction for pH2O
     # beta = solubility * (1 - p_H2O)
     beta = solubility  # solubility is already corrected for p_H20
     # f as afunction of solubility difference
-    f = scale * (beta * gas_c - gas_aq * 1e3)
+    f = scale * (beta * gas_c - gas_aq_c * 1e3)
     rv = f
 
     if isotopes:  # isotope ratio of DIC
@@ -236,7 +242,7 @@ def gas_exchange(
         # get heavy isotope concentrations in atmosphere
         gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
         # get exchange of the heavy isotope
-        f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_aq * 1e3)
+        f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_aq_c * 1e3)
         f_l = f - f_h  # the corresponding flux of the light isotope
         rv = f, f_l
 
