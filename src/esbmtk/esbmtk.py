@@ -628,6 +628,15 @@ class Model(esbmtkBase):
         else:
             raise ModelError(f"Solver={self.solver} is unkknown")
 
+    def write_temp_equations(self, cwd, write_equations_2, R, icl, cpl, ipl):
+        tempfile.tempdir = cwd
+        with tempfile.NamedTemporaryFile(suffix=".py") as tmp_file:
+            eqs_fn = tmp_file.name
+            eqs_mod = eqs_fn.split("/")[-1].split(".")[0]
+            eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
+            eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
+        return eqs
+
     def ode_solver(self, kwargs):
         """
         Use the ode solver
@@ -646,25 +655,28 @@ class Model(esbmtkBase):
 
         cwd = Path.cwd()
         sys.path.append(cwd)  # required on windows
+        fn: str = "equations.py"  # file name
+        eqs_fn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
+        eqs_mod = eqs_fn.stem
         if self.parse_model:
-            tempfile.tempdir = cwd
-            with tempfile.NamedTemporaryFile(suffix=".py") as tmp_file:
-                eqs_fn = tmp_file.name
-                eqs_mod = eqs_fn.split("/")[-1].split(".")[0]
-                eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
-                eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
+            if eqs_fn.exists():  # delete any leftover files
+                eqs_fn.unlink()
+            eqs = self.write_temp_equations(cwd, write_equations_2, R, icl, cpl, ipl)
         else:
-            fn: str = "equations.py"  # file name
-            eqs_fn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
-            eqs_mod = eqs_fn.stem  # just the file wo extension
-            if eqs_fn.is_file():
-                warnings.warn(
-                    """ Re-using equation file. Delete it manually if you
-                        want an updated version"""
+            if eqs_fn.exists():
+                print("\n\n Warning re-using the equations file \n")
+                print(
+                    "\n type y to proceed. Any other key will delete the file and create a new one"
                 )
-
-                eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
-            else:
+                k = input("type y/n :")
+                if k == "y":  # read old file
+                    eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
+                else:  # delete old file, and create new one
+                    eqs_fn.unlink()
+                    eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
+                    eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
+            else:  # this is the first run. Create persistent equations file
+                breakpoint()
                 eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
                 eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
 
