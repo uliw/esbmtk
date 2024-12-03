@@ -2105,7 +2105,7 @@ class GasReservoir(SpeciesBase):
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "species": ["None", (str, SpeciesProperties)],
-            "delta": [0, (int, float)],
+            "delta": ["None", (int, float)],
             "reservoir_mass": ["1.7786E20 mol", (str, Q_)],
             "species_ppm": ["None", (str, Q_)],
             "plot_transform_c": ["None", (str, Callable)],
@@ -2176,10 +2176,11 @@ class GasReservoir(SpeciesBase):
         self.l: NDArrayFloat = np.zeros(self.mo.steps)
         # initialize concentration vector
         self.c: NDArrayFloat = self.m / self.volume.to(self.v_unit).magnitude
-        # isotope mass
-        # self.l = get_l_mass(self.m, self.delta, self.species.r)
-        self.l = get_l_mass(self.c, self.delta, self.species.r)
-        # delta of reservoir
+
+        if self.delta != "None":
+            self.isotopes = True
+            self.l = get_l_mass(self.c, self.delta, self.species.r)
+        
         self.v: float = (
             np.zeros(self.mo.steps) + self.volume.to(self.v_unit).magnitude
         )  # mass of atmosphere
