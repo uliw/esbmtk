@@ -1732,6 +1732,9 @@ class Species(SpeciesBase):
         self.m = np.zeros(len(self.model.time))
         self.__set_legacy_names__(kwargs)
 
+        if self.delta != "None":
+            self.isotopes = True
+
         # geoemtry information
         if self.volume == "None":
             get_box_geometry_parameters(self)
