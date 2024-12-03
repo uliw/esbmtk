@@ -676,7 +676,6 @@ class Model(esbmtkBase):
                     eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
                     eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
             else:  # this is the first run. Create persistent equations file
-                breakpoint()
                 eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
                 eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
 
