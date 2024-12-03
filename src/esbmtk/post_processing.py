@@ -279,15 +279,21 @@ def gas_exchange_fluxes(
         raise ValueError("pv must be quantity or string")
 
     scale = liquid_reservoir.register.area * pv
-    gas_c = gas_reservoir.c
+    gas_c = gas_reservoir
     p_H2O = liquid_reservoir.register.swc.p_H2O
 
     if liquid_reservoir.species.name == "DIC":
         solubility = liquid_reservoir.register.swc.SA_co2
-        g_c_aq = liquid_reservoir.register.CO2aq.c
+        g_c_aq = liquid_reservoir.register.CO2aq
+        a_db = liquid_reservoir.register.swc.co2_a_db
+        a_dg = liquid_reservoir.register.swc.co2_a_dg
+        a_u = liquid_reservoir.register.swc.co2_a_u
     elif liquid_reservoir.species.name == "O2":
         solubility = liquid_reservoir.register.swc.SA_o2
-        g_c_aq = liquid_reservoir.register.O2.c
+        g_c_aq = liquid_reservoir.register.O2
+        a_db = liquid_reservoir.register.swc.o2_a_db
+        a_dg = liquid_reservoir.register.swc.o2_a_dg
+        a_u = liquid_reservoir.register.swc.o2_a_u
     else:
         raise ValueError("flux calculation is only supported for DIC and O2")
 
@@ -297,10 +303,10 @@ def gas_exchange_fluxes(
         scale,
         p_H2O,
         solubility,
-        swc.a_db,
-        swc.a_dg,
-        swc.a_u,
+        a_db,
+        a_dg,
+        a_u,
         liquid_reservoir.isotopes,
     )
 
-    return gas_exchange(gas_c, liquid_reservoir.c, g_c_aq, p)
+    return gas_exchange(gas_c, liquid_reservoir, g_c_aq, p)
