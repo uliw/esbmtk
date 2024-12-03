@@ -23,8 +23,9 @@ Contents
 
    Introduction <manual/manual-1>
    Implementing more complex models <manual/manual-2>
-   Seawater & Carbon Chemisrty <manual/manual-3>
-   Extending ESBMTK <manual/manual-4>
+   Isotopes <manual/manual-3>
+   Seawater & Carbon Chemistry <manual/manual-4>
+   Extending ESBMTK <manual/manual-5>
    Contributions & Help <contributing>
    Authors <authors>
    Changelog <changelog>
