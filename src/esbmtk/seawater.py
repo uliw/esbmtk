@@ -170,6 +170,7 @@ class SeawaterConstants(esbmtkBase):
         self.Ksp0 = 4.29e-07  # after after Boudreau et al 2010
         self.__init_gasexchange__()
         self.__init_c_fractionation_factors__()
+        self.__init_o_fractionation_factors__()
 
     def show(self) -> None:
         """Printout constants. Units are mol/kg or
@@ -391,25 +392,42 @@ class SeawaterConstants(esbmtkBase):
         T = 273.15 + self.temperature
 
         # CO2g versus HCO3, e = epsilon, a = alpha
-        self.e_gb: float = -9483 / T + 23.89
-        self.a_gb: float = 1 + self.e_gb / 1000
+        self.co2_e_gb: float = -9483 / T + 23.89
+        self.co2_a_gb: float = 1 + self.co2_e_gb / 1000
 
         # CO2aq versus CO2g
-        self.e_dg: float = -373 / T + 0.19
-        self.a_dg: float = 1 + self.e_dg / 1000
+        self.co2_e_dg: float = -373 / T + 0.19
+        self.co2_a_dg: float = 1 + self.co2_e_dg / 1000
 
         # CO2aq versus HCO3
-        self.e_db: float = -9866 / T + 24.12
-        self.a_db: float = 1 + self.e_db / 1000
+        self.co2_e_db: float = -9866 / T + 24.12
+        self.co2_a_db: float = 1 + self.co2_e_db / 1000
 
         # CO32- versus HCO3
-        self.e_cb: float = -867 / T + 2.52
-        self.a_cb: float = 1 + self.e_cb / 1000
+        self.co2_e_cb: float = -867 / T + 2.52
+        self.co2_a_cb: float = 1 + self.co2_e_cb / 1000
 
         # kinetic fractionation during gas exchange
         # parameters after Zhang et. al.1995
         # https://doi.org/10.1016/0016-7037(95)91550-D
         m = 0.14 / 16
         c = m * 5 + 0.95
-        self.e_u: float = self.temperature * m - c
-        self.a_u: float = 1 + self.e_u / 1000
+        self.co2_e_u: float = self.temperature * m - c
+        self.co2_a_u: float = 1 + self.co2_e_u / 1000
+
+    def __init_o_fractionation_factors__(self):
+        """Fractionation factors for O2 gas exchange
+
+        g = gaseous CO2
+        d = dissolved CO2
+        b = bicarbonate ion
+        c = carbonate ion
+
+        """
+        T = 273.15 + self.temperature
+
+        # kinetic fractionation factor alpha # Knox et al. 1992
+        self.o2_a_u = 0.9972
+        # equilibrium fractionation factor alpha # Benson & Krause 1984
+        self.o2_a_dg = 1 + (-0.73 + (427 / T)) / 1000
+        self.o2_a_db = 1  # not used for O2, but must be present
