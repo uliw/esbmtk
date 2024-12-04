@@ -21,27 +21,27 @@ thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 Redfield = 106 # C:P
 SourceProperties(
     name="weathering",
-    species=[M.PO4, M.DIC],
-    isotopes={M.DIC: True},
+    species=[M.PO4, M.C],
+    isotopes={M.C: True},
 )
 SinkProperties(
     name="burial",
-    species=[M.PO4, M.DIC],
-    isotopes={M.DIC: True},
+    species=[M.PO4, M.C],
+    isotopes={M.C: True},
 )
 Reservoir(
     name="S_b",
     volume="3E16 m**3",  # surface box volume
-    concentration={M.DIC: "2 umol/l", M.PO4: "0 umol/l"},
-    isotopes={M.DIC: True},
-    delta={M.DIC: 0},
+    concentration={M.C: "1 umol/l", M.PO4: "0 umol/l"},
+    isotopes={M.C: True},
+    delta={M.C: 0},
 )
 Reservoir(
     name="D_b",
     volume="100E16 m**3",  # deeb box volume
-    concentration={M.DIC: "2 umol/l", M.PO4: "0 umol/l"},
-    isotopes={M.DIC: True},
-    delta={M.DIC: 0},
+    concentration={M.C: "1 umol/l", M.PO4: "0 umol/l"},
+    isotopes={M.C: True},
+    delta={M.C: 0},
 )
 ConnectionProperties(  # thermohaline downwelling
     source=M.S_b,  # source of flux
@@ -60,10 +60,10 @@ ConnectionProperties(  # thermohaline upwelling
 ConnectionProperties(  # weathering
     source=M.weathering,  # source of flux
     sink=M.S_b,  # target of flux
-    rate={M.DIC: F_w_PO4 * Redfield, M.PO4: F_w_PO4},  # rate of flux
+    rate={M.C: F_w_PO4 * Redfield, M.PO4: F_w_PO4},  # rate of flux
     ctype="regular",
     id="weathering",  # connection id
-    delta={M.DIC: 0},
+    delta={M.C: -28},
 )
 ConnectionProperties(  # P-uptake by photosynthesis
     source=M.S_b,  # source of flux
@@ -79,7 +79,7 @@ ConnectionProperties(  # OM Primary production as a function of P-concentration
     ref_reservoirs=M.S_b.PO4,
     ctype="scale_with_concentration",
     scale=Redfield * M.S_b.volume / tau,
-    species=[M.DIC],
+    species=[M.C],
     id="OM_production",
     epsilon=-28,  # mUr
 )
@@ -88,8 +88,17 @@ ConnectionProperties(  # P burial
     sink=M.burial,  # target of flux
     ctype="scale_with_flux",
     ref_flux=M.flux_summary(filter_by="primary_production", return_list=True)[0],
-    scale={M.PO4: F_b, M.DIC: F_b * Redfield},
+    scale={M.PO4: F_b, M.C: F_b * Redfield},
     id="burial",
-    epsilon={M.DIC: 0},
+    epsilon={M.C: 0},
 )
+
+M.run()
+pl = data_summaries(
+    M,  # model instance 
+    [M.C, M.PO4],  # SpeciesProperties list 
+    [M.S_b, M.D_b],  # Reservoir list
+)
+M.plot(pl, fn="po4_4.png")
+
 M.run()
