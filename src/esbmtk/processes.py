@@ -139,9 +139,9 @@ def init_gas_exchange(c: Species2Species):
     if c.species.name == "CO2":
         ref_species = sink_reservoir.CO2aq
         solubility = swc.SA_co2
-        a_db  = swc.a_db
-        a_dg =  swc.a_dg
-        a_u = swc.a_u
+        a_db  = swc.co2_a_db
+        a_dg =  swc.co2_a_dg
+        a_u = swc.co2_a_u
     elif c.species.name == "O2":
         ref_species = sink_reservoir.O2
         solubility = swc.SA_O2
