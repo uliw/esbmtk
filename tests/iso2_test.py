@@ -35,7 +35,6 @@ ConnectionProperties(  # thermohaline upwelling
     ctype="scale_with_concentration",
     scale="20 Sv",
     id="upwelling",
-    epsilon = 5, # mUr
+    epsilon=5, # mUr
 )
 M.run()
-M.plot([M.S_b.O2, M.D_b.O2], fn="iso_2.png")

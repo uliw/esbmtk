@@ -5,7 +5,6 @@ from esbmtk import (
     GasReservoir,  # sink class
     Species2Species,
 )
-
 M = Model(
     stop="1 yr",  # end time of model
     max_timestep="1 month",  # upper limit of time step
@@ -33,4 +32,3 @@ Species2Species(  # High Latitude surface to atmosphere F8
     id="ex_O2",
 )
 M.run()
-M.plot([M.S_b.O2, M.O2_At], fn="iso_3.png")

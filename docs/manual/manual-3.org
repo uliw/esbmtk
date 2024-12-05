@@ -1,6 +1,4 @@
 #+options: toc:nil author:nil num:nil
-#+number-offset: 5
-
 
 * Adding isotopes
  ESBMTK support the use of isotopes for many processes and species out of the box. This is best demonstrated with an example. In the following we use tow reservoirs of equal size, and apply an exchange flux. The reservoirs have similar concentrations but their isotopic ratios are different (-20 mUr versus +20 mUr [VSMOV].  After 3\space{}ky both reservoirs are isotopically homogeneous and have approached a \delta^{18}O value of 0 mUr  [VSMOV]. Note that this only required code changes on lines 17 and 23 where declare the initial delta values.
@@ -44,9 +42,12 @@ ConnectionProperties(  # thermohaline upwelling
     id="upwelling",
 )
 M.run()
+#+END_SRC
+Plotting with
+#+BEGIN_SRC jupyter-python :tangle iso_1.py :exports none
 M.plot([M.S_b.O2, M.D_b.O2], fn="iso_1.png")
 #+END_SRC
-This will result in the following output:
+results in the following output:
 #+attr_org: :width 300
 #+attr_rst: :width 400
 #+attr_latex: :width 0.5\textwidth
@@ -99,12 +100,15 @@ ConnectionProperties(  # thermohaline upwelling
     ctype="scale_with_concentration",
     scale="20 Sv",
     id="upwelling",
-    epsilon = 5, # mUr
+    epsilon=5, # mUr
 )
 M.run()
+#+END_SRC
+Plotting with 
+#+BEGIN_SRC jupyter-python :tangle iso_2.py :exports none
 M.plot([M.S_b.O2, M.D_b.O2], fn="iso_2.png")
 #+END_SRC
-This will result in the following output:
+results in the following output:
 #+attr_org: :width 300
 #+attr_rst: :width 400
 #+attr_latex: :width 0.5\textwidth
@@ -140,7 +144,6 @@ from esbmtk import (
     GasReservoir,  # sink class
     Species2Species,
 )
-
 M = Model(
     stop="1 yr",  # end time of model
     max_timestep="1 month",  # upper limit of time step
@@ -168,16 +171,18 @@ Species2Species(  # High Latitude surface to atmosphere F8
     id="ex_O2",
 )
 M.run()
+#+END_SRC
+plotting with
+#+BEGIN_SRC jupyter-python :tangle iso_3.py :exports none
 M.plot([M.S_b.O2, M.O2_At], fn="iso_3.png")
 #+END_SRC
-This will result in the following output:
+results in the following output:
 #+attr_org: :width 300
 #+attr_rst: :width 400
 #+attr_latex: :width 0.5\textwidth
 #+name: iso3
 #+caption: It takes about 3 kys to fully fractionate both ocean boxes.
 [[./iso_3.png]]
-
 
 # define a test function
 #+name: testrunner
@@ -205,10 +210,10 @@ import  iso2_test # import script
 
 M = iso2_test.M  # get model handle
 test_values = [  # result, reference value
-    (M.S_b.O2.c[-1], 0.00019999999999999998)
-    (M.D_b.O2.c[-1], 0.00019999999999999998)
-    (M.S_b.O2.d[-1], 2.4921132299215945)
-    (M.D_b.O2.d[-1], -2.492088372772069)
+    (M.S_b.O2.c[-1], 0.00019999999999999998),
+    (M.D_b.O2.c[-1], 0.00019999999999999998),
+    (M.S_b.O2.d[-1], 2.4921132299215945),
+    (M.D_b.O2.d[-1], -2.492088372772069),
 ]
 <<testrunner>>
 #+END_SRC
@@ -220,10 +225,10 @@ import  iso3_test # import script
 
 M = iso3_test.M  # get model handle
 test_values = [  # result, reference value
-    (M.S_b.O2.c[-1], 0.0002306171887706928)
-    (M.O2_At.c[-1], 0.20999483573786618)
-    (M.S_b.O2.d[-1], 0.7204862035835163)
-    (M.O2_At.d[-1], -0.0001334598621533160)
+    (M.S_b.O2.c[-1], 0.0002306171887706928),
+    (M.O2_At.c[-1], 0.20999483573786618),
+    (M.S_b.O2.d[-1], 0.7204862035835163),
+    (M.O2_At.d[-1], -0.0001334598621533160),
 ]
 <<testrunner>>
 #+END_SRC

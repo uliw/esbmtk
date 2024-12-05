@@ -5,7 +5,8 @@ Adding isotopes
 ---------------
 
  ESBMTK support the use of isotopes for many processes and species out of the box. This is best demonstrated with an example. In the following we use tow reservoirs of equal size, and apply an exchange flux. The reservoirs have similar concentrations but their isotopic ratios are different (-20 mUr versus +20 mUr [VSMOV].  After 3 ky both reservoirs are isotopically homogeneous and have approached a :math:`\delta`\ :sup:`18`\O value of 0 mUr  [VSMOV]. Note that this only required code changes on lines 17 and 23 where declare the initial delta values.
-This will result in the following output:
+Plotting with
+results in the following output:
 
 .. _iso1:
 
@@ -25,7 +26,8 @@ In the next example, we use two reservoirs of equal size, and equal isotope rati
 
 
 Similarly to the first example, the system reaches equilibrium after about 3 kyrs. The above is then easily adapted to model, e.g., isotope fractionation during the evaporation of water.
-This will result in the following output:
+Plotting with 
+results in the following output:
 
 .. _iso2:
 
@@ -63,7 +65,8 @@ For carbon there a further variables that define the fractionation between CO2aq
 If no such modifications are required, it is sufficient to declare the initial isotope ratio of the atmosphere (line 18) and ocean surface box.
 
 Note however, that in order to calculate gas-exchange fluxes, we need to declare the surface area, of ``S_b`` (line 22), as well as the pressure, temperature and salinity conditions (line 25). Presently ESBMTK does not support the automatic matching of liquid species to gas reservoirs. Therefore we have to declare each gas-exchange flux individually using the ``Species2Species`` connection type (line 27 to 33). In the following example the atmosphere equilibrates withe the surface ocean with a couple of months.
-This will result in the following output:
+plotting with
+results in the following output:
 
 .. _iso3:
 
