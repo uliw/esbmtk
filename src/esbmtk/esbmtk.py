@@ -898,6 +898,18 @@ class Model(esbmtkBase):
             print(f"deleting {o}")
             del __builtins__[o]
 
+    def __init_dimensionalities__(self, ureg):
+        """This is need to test the dimensionality of input
+        data
+        """
+        self.substance_per_volume_d = ureg("mol/liter").dimensionality
+        self.substance_per_mass_d = ureg("mol/kg").dimensionality
+        self.substance_d = ureg("mol").dimensionality
+        self.mass_d = ureg("kg").dimensionality
+        self.length_d = ureg("m").dimensionality
+        self.flux_d = ureg("mol/s").dimensionality
+        self.time_d = ureg("s").dimensionality
+
 
 class ElementProperties(esbmtkBase):
     """Each model, can have one or more elements.  This class sets
