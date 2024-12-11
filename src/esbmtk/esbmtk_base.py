@@ -18,6 +18,7 @@
      This module defines some shared methods
 
 """
+
 from __future__ import annotations
 import time
 import numpy as np
@@ -156,6 +157,7 @@ class input_parsing(object):
         and set full name to parent.full-name + self.name
         if self.parent == "None", full_name = name
         """
+        from esbmtk import Species2Species, ConnectionProperties
 
         if self.parent == "None":
             self.full_name = self.name
@@ -346,7 +348,7 @@ class esbmtkBase(input_parsing):
 
            M.set_flux("12 Tmol", "year", M.C)
 
-        if model mass units are in mol, no change will be made 
+        if model mass units are in mol, no change will be made
         if model mass units are in kg, the above will return kg C/a (and vice verso)
 
         :param mass: e.g., "12 Tmol"
@@ -357,7 +359,7 @@ class esbmtkBase(input_parsing):
 
         :raises: FluxSpecificationError
         :raises: SpeciesPropertiesMolweightError
-    """
+        """
         from esbmtk import Q_, ureg
 
         if substance.m_weight > 0:

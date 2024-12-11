@@ -4,10 +4,11 @@ import numpy as np
 import numpy.typing as npt
 
 if tp.TYPE_CHECKING:
-    from .esbmtk import Reservoir, Species, GasReservoir
+    from .esbmtk import Reservoir, Species, GasReservoir, SpeciesGroup
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
+NDArrayInt = npt.NDArray[np.int64]
 
 
 def carbonate_system_1_pp(box_names: SpeciesGroup) -> None:
@@ -78,7 +79,7 @@ def carbonate_system_2_pp(
     bn: Reservoir | list,  # 2 Reservoir handle
     export_fluxes: float | list,  # 3 CaCO3 export flux as DIC
     zsat_min: float = 200,
-    zmax: float = 6000,
+    zmax: float = 10000,
 ) -> None:
     """Calculates and returns the fraction of the carbonate rain that is
     dissolved an returned back into the ocean.
@@ -107,70 +108,85 @@ def carbonate_system_2_pp(
     Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
 
     """
-
+    from math import log
     from esbmtk import VectorData
 
+    # ensure that all objects are lists
     if not isinstance(bn, list):
         bn = [bn]
     if not isinstance(export_fluxes, list):
         export_fluxes = [export_fluxes]
 
+    # loop over boxes
     for i, rg in enumerate(bn):
-        if isinstance(export_fluxes[i], float):
-            export = export_fluxes[i]
-        else:
-            export = export_fluxes[i].c
-
         p = rg.cs.function_params
         sp, cp, area_table, area_dz_table, Csat_table = p
         ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0 = cp
         k1, k2, k1k2, KW, KB, ca2, boron, isotopes = sp
-        hplus = rg.Hplus.c
-        dic = rg.DIC.c
-        zsnow = rg.zsnow.c.astype(int)
-        area_table = rg.model.area_table
-        area_dz_table = rg.model.area_dz_table
-        Csat_table = rg.model.Csat_table
+        hplus: NDArrayFloat = rg.Hplus.c
+        dic: NDArrayFloat = rg.DIC.c
+        zsnow: NDArrayInt = rg.zsnow.c.astype(int)
+        # area_table: NDArrayFloat = rg.model.area_table
+        # area_dz_table: NDArrayFloat = rg.model.area_dz_table
+        # Csat_table: NDArrayFloat = rg.model.Csat_table
+        export_data = export_fluxes[i]
+
+        # test the type of export flux information
+        # and ensure we have a vector
+        if isinstance(export_data, float):
+            export: NDArrayFloat = dic * 0 + export_data
+        elif not isinstance(export_data, np.ndarray):
+            export: NDArrayFloat = dic * 0 + export_data.c
+        else:
+            export: NDArrayFloat = export_data
 
         # hco3 = dic / (1 + hplus / k1 + k2 / hplus)
-        co3 = dic / (1 + hplus / k2 + hplus**2 / k1k2)
-        co2aq = dic / (1 + k1 / hplus + k1k2 / hplus**2)
-        zsat = np.clip(zsat0 * np.log(ca2 * co3 / ksp0), zsat_min, zmax).astype(int)
-        zcc = (
-            zsat0 * np.log(export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
+        co3: NDArrayFloat = dic / (1 + hplus / k2 + hplus**2 / k1k2)
+        co2aq: NDArrayFloat = dic / (1 + k1 / hplus + k1k2 / hplus**2)
+        zsat: NDArrayInt = np.clip(
+            zsat0 * np.log(ca2 * co3 / ksp0),
+            zsat_min,
+            zmax,
         ).astype(int)
-        B_AD = export / AD
 
-        A_z0_zsat = area_table[z0] - area_table[zsat]
-        A_zsat_zcc = area_table[zsat] - area_table[zcc]
-        A_zcc_zmax = area_table[zcc] - area_table[zmax]
+        B_AD: NDArrayFloat = export / AD
+        Fdiss: NDArrayFloat = co3 * 0
+        Fburial: NDArrayFloat = co3 * 0
+        zcc: NDArrayInt = co3.astype(int) * 0
 
-        # must be loop
-        Fdiss = zsat * 0
-        Fburial = zsat * 0
+        for i, z in enumerate(zsat):
+            zcc[i] = int(
+                zsat0 * log(export[i] * ca2 / (ksp0 * AD * kc) + ca2 * co3[i] / ksp0)
+            )  # eq3
+            A_z0_zsat: float = area_table[z0] - area_table[z]
+            A_zsat_zcc: float = area_table[z] - area_table[zcc[i]]
+            A_zcc_zmax: float = area_table[zcc[i]] - area_table[zmax]
+            BCC: float = A_zcc_zmax * B_AD[i]
+            BNS: float = alpha * A_z0_zsat * B_AD[i]
+            diff_co3: float = Csat_table[z : zcc[i]] - co3[i]
+            area_p: NDArrayFloat = area_dz_table[z : zcc[i]]
+            BDS_under: float = kc * area_p.dot(diff_co3)
+            BDS_resp: float = alpha * (A_zsat_zcc * B_AD[i] - BDS_under)
+            BDS: float = BDS_under + BDS_resp
 
-        for i, e in enumerate(zsat):
-            BCC = A_zcc_zmax[i] * B_AD
-            BNS = alpha * A_z0_zsat[i] * B_AD
-            diff_co3 = Csat_table[zsat[i] : zcc[i]] - co3[i]
-            area_p = area_dz_table[zsat[i] : zcc[i]]
-            BDS_under = kc * area_p.dot(diff_co3)
-            BDS_resp = alpha * (A_zsat_zcc[i] * B_AD - BDS_under)
-            BDS = BDS_under + BDS_resp
-
-            if zsnow[i] <= zcc[i]: # reset zsnow
-                zsnow[i] = zcc[i]
-                BPDC = 0
+            """ Note that we do not recalculate zsnow in post processing
+            since it is already known from the original run
+            """
+            if zsnow[i] <= zcc[i]:  # reset zsnow
+                # dzdt_zsnow: int = abs(zsnow - zcc)
+                # zsnow[i] = zcc[i]
+                BPDC: float = 0.0
             else:  # integrate saturation difference over area
-                if zsnow[i] > zmax:
-                    zsnow[i] = zmax
+                # if zsnow[i] > zmax:
+                # zsnow[i] = zmax
                 # integrate saturation difference over area
-                diff = Csat_table[zcc[i] : zsnow[i]] - co3[i]
-                area_p = area_dz_table[zcc[i] : zsnow[i]]
-                BPDC = max(0, kc * area_p.dot(diff))
+                diff: float = Csat_table[zcc[i] : zsnow[i]] - co3[i]
+                area_p_snow: NDArrayFloat = area_dz_table[zcc[i] : zsnow[i]]
+                BPDC = max(0, kc * area_p_snow.dot(diff))
+                # dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
 
             Fdiss[i] = BDS + BCC + BNS + BPDC
-            Fburial[i] = export - Fdiss[i]
+            Fburial[i] = export[i] - Fdiss[i]
 
         VectorData(
             name="Fburial",
@@ -229,7 +245,14 @@ def carbonate_system_2_pp(
             label="zcc",
             plt_units="m",
         )
-        
+        VectorData(
+            name="CaCO3_export",
+            register=rg,
+            species=rg.mo.DIC,
+            data=export_data,
+            label="CaCO3_export",
+            plt_units="mol/year",
+        )
 
 
 def gas_exchange_fluxes(

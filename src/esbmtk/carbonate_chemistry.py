@@ -228,8 +228,7 @@ def carbonate_system_2(
     zcc = int(
         zsat0 * log(CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
     )  # eq3
-    zcc = min(zmax, max(zsat_min, zcc))
-
+    zcc = int(min(zmax, max(zsat_min, zcc)))
     B_AD = CaCO3_export / AD  # get fractional areas
     A_z0_zsat = area_table[z0] - area_table[zsat]
     A_zsat_zcc = area_table[zsat] - area_table[zcc]
@@ -326,7 +325,6 @@ def init_carbonate_system_2(
         species=r_sb.mo.Carbon.CO2,
         function=carbonate_system_2,
         fname="carbonate_system_2",
-        ftype="needs_flux",
         r_s=r_sb,  # source (RG) of CaCO3 flux,
         r_d=r_db,  # sink (RG) of CaCO3 flux,
         function_input_data=[
@@ -502,7 +500,7 @@ def phc(m: float) -> float:
     display the H+ concentrations as pH. After import, you can use it
     with like this in the reservoir definition
 
-     plot_transform_c=phc,
+    plot_transform_c=phc,
 
     """
     import numpy as np

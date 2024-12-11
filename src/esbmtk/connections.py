@@ -256,14 +256,15 @@ class Species2Species(esbmtkBase):
 
         # provide a list of absolutely required keywords
         self.lrk: tp.List = ["source", "sink"]
-
         self.lop: tp.List = []
         self.lof: tp.List = []
 
         self.__initialize_keyword_variables__(kwargs)
 
         if self.register == "None":
-            self.register = self.source.register
+            self.register = self.source.model
+        elif isinstance(self.register, str):
+            breakpoint()
         if self.id == "None":
             self.id = str(uuid.uuid4())[:8]
 
@@ -300,9 +301,6 @@ class Species2Species(esbmtkBase):
         if self.ref_reservoirs == "None":
             self.ref_reservoirs = kwargs["source"]
 
-        # decide if this connection needs isotope calculations
-        # if self.ctype == "scale_with_flux":
-        #     pass
         if self.source.isotopes and self.sink.isotopes:
             self.isotopes = True
 
@@ -394,12 +392,12 @@ class Species2Species(esbmtkBase):
                 else self.sink.name
             )
 
-            self.name = f"C_{so}_to_{si}_{self.source.sp.name}"
+            self.name = f"Conn_{so}_to_{si}_{self.source.sp.name}"
+
         elif self.sink.species.name == self.source.species.name:
             self.name = f"{self.source.species.name}"
         else:
             self.name = f"{self.source.species.name}_to_{self.sink.species.name}"
-
         # always overide name with id for manual connections
         if self.ctype == "weathering":
             self.name = f"{self.name}_{self.id}"
@@ -721,6 +719,7 @@ class ConnectionProperties(esbmtkBase):
     def __init__(self, **kwargs) -> None:
         from esbmtk import (
             SourceProperties,
+            Source,
             Reservoir,
             Species,
             GasReservoir,
@@ -732,7 +731,7 @@ class ConnectionProperties(esbmtkBase):
             Q_,
         )
 
-        self.defaults: dict[str, any] = {
+        self.defaults: dict[str, tp.Any] = {
             "id": ["None", (str)],
             "source": [
                 "None",
@@ -767,14 +766,14 @@ class ConnectionProperties(esbmtkBase):
         self.__initialize_keyword_variables__(kwargs)
 
         if self.register == "None":
-            self.register = self.source.register
+            self.register = self.source.model
 
         # # self.source.lor is a  list with the object names in the group
         self.mo = self.sink.lor[0].mo
         self.model = self.mo
         self.loc: tp.List = []  # list of connection objects
 
-        self.name = f"CG_{self.source.name}_to_{self.sink.name}_{self.id}"
+        self.name = f"ConnGrp_{self.source.name}_to_{self.sink.name}_{self.id}"
         # fixme this results in duplicate names in the model namespace.
         # probably related to the create connection function
         # if self.id != "None":
@@ -859,15 +858,9 @@ class ConnectionProperties(esbmtkBase):
                 ref_flux=self.c_defaults[sp.n]["ref_flux"],
                 groupname=True,
                 id=self.id,
-                register=self,
+                register=self.model,
             )
-
             self.loc.append(a)  # add connection to list of connections
-            if self.mo.debug:
-                print(
-                    f"created connection with full name {a.full_name}, registered to {self.name} "
-                    f"fn = {self.full_name}"
-                )
 
     def info(self) -> None:
         """List all connections in this group"""

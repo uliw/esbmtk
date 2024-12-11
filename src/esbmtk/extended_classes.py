@@ -245,11 +245,18 @@ class Reservoir(esbmtkBase):
                     dic=self.DIC.c[0],
                 )
             else:
+                SeawaterConstants(
+                    name="swc",
+                    temperature=temp,
+                    pressure=bar,
+                    salinity=sal,
+                    register=self,
+                    ta=0.002,
+                    dic=0.002,
+                )
                 warnings.warn(
-                    f"Using SeawaterConstants without provinding DIC "
-                    f"and TA values for {self.name} "
-                    f"You need to call swc.update_parameters() "
-                    f"once DIC and TA are specified"
+                    f"\n\nUsing SeawaterConstants without provinding DIC "
+                    f"and TA values for {self.name}\n\n"
                 )
         self.register.lrg.append(self)
 
@@ -360,15 +367,18 @@ class SourceProperties(SourceSinkProperties):
 
 
 class Signal(esbmtkBase):
-    """This class will create a signal which is
-    described by its startime (relative to the model time), it's
-    size (as mass) and duration, or as duration and
-    magnitude. Furthermore, we can presribe the signal shape
-    (square, pyramid, bell, file )and whether the signal will repeat. You
-    can also specify whether the event will affect the delta value.
+    """This class will create a signal which is described by its startime
+    (relative to the model time), it's size (as mass) and duration, or as
+    duration and magnitude. Furthermore, we can presribe the signal shape
+    (square, pyramid, bell, file )and whether the signal will repeat. You can
+    also specify whether the event will affect the delta value.
+    Alternatively, signal can be read from a CSV file. The file needs to
+    specify
+    Time [unit], Flux [unit/time unit], delta value
 
-    The default is to add the signal to a given connection. It is however
-    also possible to use the signal data as a scaling factor.
+    The delta value column is optional.The units must be of similar
+    dimensions as the model dimensions (e.g., mol/l or mol/kg). Data
+    will be automatically interpolated.
 
     Example::
 
@@ -377,7 +387,7 @@ class Signal(esbmtkBase):
                  start = "0 yrs",     # optional
                  duration = "0 yrs",  #
                  delta = 0,           # optional
-                 stype = "addition"   # optional, currently the only type
+                 stype = "addition"   # or multiplication
                  shape = "square/pyramid/bell/filename"
                  mass/magnitude/filename  # give one
                  offset = '0 yrs',     #
@@ -420,13 +430,24 @@ class Signal(esbmtkBase):
     provide a source name the connection will be made between the
     provided source (this can be useful if you use source groups).
 
-
     This class has the following methods
 
       Signal.repeat()
       Signal.plot()
       Signal.info()
 
+    The sinal class provides the following data fields
+
+        self.data.m which contains the interpolated signal
+                    also available as self.m
+        self.data.l which contain the interpolated isotope
+                    data in the form of the light isotope
+                    also availavle as self.l
+                    If no isotope data is given, it is 0
+
+        self.ed is the object reference for the externaldata
+                   instance in cases wher data is read from
+                   a csv file
     """
 
     def __init__(self, **kwargs) -> None:
@@ -438,7 +459,7 @@ class Signal(esbmtkBase):
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "start": ["0 yrs", (str, Q_)],
-            "duration": ["0 yr", (str, Q_)],
+            "duration": ["None", (str, Q_)],
             "species": ["None", (SpeciesProperties)],
             "delta": [0, (int, float)],
             "stype": [
@@ -484,17 +505,16 @@ class Signal(esbmtkBase):
         elif "magnitude" in self.kwargs:
             self.magnitude = Q_(self.magnitude).to(self.species.mo.f_unit).magnitude
 
-        self.duration = int(Q_(self.duration).to(self.species.mo.t_unit).magnitude)
-
-        self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
-
-        if self.duration > 0:
+        if "duration" in self.kwargs:
+            self.duration = int(Q_(self.duration).to(self.species.mo.t_unit).magnitude)
             if self.duration / self.species.mo.max_step < 10:
                 warnings.warn(
                     """\n\n Your signal duration is covered by less than 10
                     Intergration steps. This may not be what you want
                     Consider adjusting the max_step parameter of the model object\n"""
                 )
+
+        self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
 
         # legacy name definitions
         self.full_name = ""
@@ -541,14 +561,13 @@ class Signal(esbmtkBase):
         3. Create an empty flux and replace it with the signal vector data.
 
         Note that this flux will then be added to an existing flux.
-
         """
 
         from esbmtk import Flux
 
         # these are signal times, not model time
-        self.length: int = int(round(self.duration / self.mo.dt))
-
+        if self.duration != "None":
+            self.length: int = int(round(self.duration / self.mo.dt))
         # create signal vector
         if self.sh == "square":
             self.__square__(0, self.length)
@@ -581,35 +600,39 @@ class Signal(esbmtkBase):
         insert_start_time = self.st - self.mo.offset
         insert_stop_time = insert_start_time + self.duration
 
-        dt1 = int((self.st - self.mo.offset - self.mo.start))
-        dt2 = int((self.st + self.duration - self.mo.stop - self.mo.offset))
+        dt1 = abs(int((self.st - self.mo.offset - self.mo.start)))
+        dt2 = abs(int((self.st + self.duration - self.mo.stop - self.mo.offset)))
 
         # This fails if actual model steps != dt
         model_start_index = int(max(insert_start_time / self.mo.dt, 0))
         model_stop_index = int(min((self.mo.steps + dt2 / self.mo.dt), self.mo.steps))
-        signal_start_index = int(min(dt1, 0) * -1)
-        signal_stop_index = int(self.length - max(0, dt2))
+        signal_start_index = int(min(dt1, 0))
+        signal_stop_index = int(self.length) # - max(0, dt2) + 1)
 
         if self.mo.debug:
             print(
-                f"dt1 = {dt1}, dt2 = {dt2}, offset = {self.mo.offset}"
-                f"insert start time = {insert_start_time} "
-                f"insert_stop time = {insert_stop_time} "
+                f"dt1 = {dt1}, dt2 = {dt2}, offset = {self.mo.offset}\n"
+                f"insert start time = {insert_start_time}\n"
+                f"insert_stop time = {insert_stop_time}\n"
                 f"duration = {self.duration}\n"
-                f"msi = {model_start_index}, msp = {model_stop_index} "
+                f"msi = {model_start_index}, msp = {model_stop_index}\n"
                 f"model num_steps = {model_stop_index-model_start_index}\n"
-                f"ssi = {signal_start_index}, ssp = {signal_stop_index} "
+                f"ssi = {signal_start_index}, ssp = {signal_stop_index}\n"
                 f"signal num_steps = {signal_stop_index-signal_start_index}\n"
+                f"self.nf.m[{model_start_index}:{model_stop_index}] = self.s_m[{signal_start_index}:{signal_stop_index}]"
             )
-
+        """ FIXME: This code is a mess! Start by creating vector with default
+        values. If multiplication type, fill with ones, if addition type fill
+        with zeros. Test if flux is still necessary. Clean up insertion code.
+        """
         if signal_start_index < signal_stop_index:
-            self.nf.m[model_start_index:model_stop_index] = self.s_m[
-                signal_start_index:signal_stop_index
-            ]
+            si = min(model_stop_index, signal_stop_index)
+            self.nf.m[model_start_index:si] = self.s_m[signal_start_index:si]
             if self.nf.isotopes:
                 self.nf.l[model_start_index:model_stop_index] = self.s_l[
                     signal_start_index:signal_stop_index
                 ]
+
         return self.nf
 
     def __square__(self, s, e) -> None:
@@ -706,28 +729,40 @@ class Signal(esbmtkBase):
         i.e., the first row needs to be a header line
 
         """
-        ed = ExternalData(
+        self.ed = ExternalData(
             name=f"{self.name}_ed",
             filename=self.filename,
             register=self,
             legend="None",
+            disp_units=False,  # we need the data in model units
         )
 
-        self.s_time = ed.x
-        self.s_data = ed.y * self.scale
+        self.s_time = self.ed.x
+        self.s_data = self.ed.y * self.scale
 
         self.st: float = self.s_time[0]  # start time
         self.et: float = self.s_time[-1]  # end time
         self.duration = int(round((self.et - self.st)))
-        num_steps = int(self.duration / self.mo.dt)
+        # num_steps = int(self.duration / self.mo.dt)
+        if len(self.ed.x) > self.mo.number_of_datapoints:
+            message = (
+                f"\n{self.filename} contains {len(self.ed.x)} datapoints\n",
+                f"but model resolves only {self.mo.number_of_datapoints} datapoints\n",
+                f"adjust the number_of_datapoints option in the model object\n",
+            )
+            raise ValueError(message)
+        else:
+            num_steps = self.mo.number_of_datapoints
+
+        
         # setup the points at which to interpolate
-        xi = np.linspace(self.st, self.et, num_steps)
+        xi = np.linspace(self.st, self.et, num_steps+1)
 
         self.s_m: NDArrayFloat = np.interp(
             xi, self.s_time, self.s_data
         )  # interpolate flux
-        if ed.zh:
-            self.s_delta = ed.d
+        if self.ed.zh:
+            self.s_delta = self.ed.d
             self.s_d: NDArrayFloat = np.interp(xi, self.s_time, self.s_delta)
             self.s_l = get_l_mass(self.s_m, self.s_d, self.sp.r)
         else:
@@ -755,27 +790,31 @@ class Signal(esbmtkBase):
         )
 
     def __add__(self, other):
-        """allow the addition of two signals and return a new signal"""
+        """allow the addition of two signals and return a new signal
+        FIXME: this requires cleanup
+        """
 
-        ns = cp.deepcopy(self)
-
-        # add the data of both fluxes
+        new_signal = cp.deepcopy(self)
+        new_signal.m = self.m + other.m
         # get delta of self
-        sd = get_delta(self.data.l, self.data.m - self.data.l, self.data.sp.r)
-        od = get_delta(other.data.l, other.data.m - other.data.l, other.data.sp.r)
-        ns.data.m = self.data.m + other.data.m
-        ns.data.l = get_l_mass(ns.data.m, sd + od, ns.data.sp.r)
+        if self.isotopes:
+            this_delta = get_delta(self.l, self.m - self.l, self.data.sp.r)
+            other_delta = get_delta(other.l, other.m - other.l, other.data.sp.r)
+            new_signal.l = get_l_mass(
+                new_signal.m, this_delta + other_delta, new_signal.data.sp.r
+            )
+            # new_signal.l = max(self.l, other.l)
 
-        ns.n: str = self.n + "_and_" + other.n
+        new_signal.name: str = self.name + "_and_" + other.name
         # print(f"adding {self.n} to {other.n}, returning {ns.n}")
-        ns.data.n: str = self.n + "_and_" + other.n + "_data"
-        ns.st = min(self.st, other.st)
-        ns.l = max(self.l, other.l)
-        ns.sh = "compound"
-        ns.los.append(self)
-        ns.los.append(other)
+        # new_signal.data.n: str = self.n + "_and_" + other.n + "_data"
+        new_signal.st = min(self.st, other.st)
 
-        return ns
+        new_signal.sh = "compound"
+        new_signal.los.append(self)
+        new_signal.los.append(other)
+
+        return new_signal
 
     def repeat(self, start, stop, offset, times) -> None:
         """This method creates a new signal by repeating an existing signal.
@@ -847,9 +886,9 @@ class Signal(esbmtkBase):
 
         import numpy as np
 
-        m = np.interp(t, self.mo.time, self.data.m)
+        m = np.interp(t, self.mo.time, self.m)
         if self.isotopes:
-            l = np.interp(t, self.mo.time, self.data.l)
+            l = np.interp(t, self.mo.time, self.l)
         else:
             l = 0
 
@@ -901,6 +940,63 @@ class Signal(esbmtkBase):
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
 
+    def __write_data__(
+        self,
+        prefix: str,
+        start: int,
+        stop: int,
+        stride: int,
+        append: bool,
+        directory: str,
+    ) -> None:
+        """Write data to file.  This function is called by the
+        write_data() and save_state() methods
+
+        :param prefix:
+        :param start:
+        :param stop:
+        :param stride:
+        :param append:
+        :param directory:
+        """
+        from pathlib import Path
+
+        p = Path(directory)
+        p.mkdir(parents=True, exist_ok=True)
+
+        # some short hands
+        sn = self.sp.n  # species name
+        sp = self.sp  # species handle
+        mo = self.sp.mo  # model handle
+
+        smu = f"{mo.m_unit:~P}"
+        mtu = f"{mo.t_unit:~P}"
+        fmu = f"{mo.f_unit:~P}"
+        cmu = f"{mo.c_unit:~P}"
+
+        rn = self.full_name  # reservoir name
+        mn = self.sp.mo.n  # model name
+        fn = f"{directory}/{prefix}{rn}.csv"  # file name
+
+        # build the dataframe
+        df: pd.dataframe = DataFrame()
+
+        # breakpoint()
+        df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
+        # df[f"{rn} {sn} [{smu}]"] = self.m.to(self.mo.m_unit).magnitude[start:stop:stride]  # mass
+        if self.isotopes:
+            # print(f"rn = {rn}, sp = {sp.name}")
+            df[f"{rn} {sp.ln} [{cmu}]"] = self.l[start:stop:stride]  # light isotope
+        df[f"{rn} {sn} [{cmu}]"] = self.data.m[start:stop:stride]  # concentration
+
+        file_path = Path(fn)
+        print(f"saving signal to {file_path}")
+        if append and file_path.exists():
+            df.to_csv(file_path, header=False, mode="a", index=False)
+        else:
+            df.to_csv(file_path, header=True, mode="w", index=False)
+        return df
+
 
 class VectorData(esbmtkBase):
     def __init__(self, **kwargs: dict[str, any]) -> None:
@@ -938,7 +1034,73 @@ class VectorData(esbmtkBase):
         self.model = self.species.mo
         self.c = self.data
         self.label = self.name
+        self.register.model.lvd.append(self)
         self.__register_name_new__()
+
+    def __write_data__(
+        self,
+        prefix: str,
+        start: int,
+        stop: int,
+        stride: int,
+        append: bool,
+        directory: str,
+    ) -> None:
+        """Write data to file.  This function is called by the
+        write_data() and save_state() methods
+
+        :param prefix:
+        :param start:
+        :param stop:
+        :param stride:
+        :param append:
+        :param directory:
+        """
+        from pathlib import Path
+
+        p = Path(directory)
+        p.mkdir(parents=True, exist_ok=True)
+
+        # some short hands
+        sn = self.sp.n  # species name
+        sp = self.sp  # species handle
+        mo = self.sp.mo  # model handle
+
+        smu = f"{mo.m_unit:~P}"
+        mtu = f"{mo.t_unit:~P}"
+        fmu = f"{mo.f_unit:~P}"
+        cmu = f"{mo.c_unit:~P}"
+
+        # sdn = self.sp.dn  # delta name
+        # sds = self.sp.ds  # delta scale
+        rn = self.full_name  # reservoir name
+        mn = self.sp.mo.n  # model name
+        if self.sp.mo.register == "None":
+            fn = f"{directory}/{prefix}{mn}_{rn}.csv"  # file name
+        elif self.sp.mo.register == "local":
+            fn = f"{directory}/{prefix}{rn}.csv"  # file name
+        else:
+            raise SpeciesError(
+                f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
+            )
+
+        print(f"saving to {fn}")
+        # build the dataframe
+        df: pd.dataframe = DataFrame()
+
+        df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
+        # df[f"{rn} {sn} [{smu}]"] = self.m.to(self.mo.m_unit).magnitude[start:stop:stride]  # mass
+        if self.isotopes:
+            # print(f"rn = {rn}, sp = {sp.name}")
+            df[f"{rn} {sp.ln} [{cmu}]"] = self.l[start:stop:stride]  # light isotope
+        df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
+
+        file_path = Path(fn)
+        if append and file_path.exists():
+            df.to_csv(file_path, header=False, mode="a", index=False)
+        else:
+            df.to_csv(file_path, header=True, mode="w", index=False)
+        return df
 
     def get_plot_format(self):
         """Return concentrat data in plot units"""
@@ -1483,60 +1645,43 @@ class SpeciesNoSet(SpeciesBase):
 
 
 class ExternalCode(SpeciesNoSet):
-    """This class can be used to implement user provided functions. The
-    data inside a VR_no_set instance will only change in response to a
-    user provided function but will otherwise remain unaffected. That is,
-    it is up to the user provided function to manage changes in reponse to
-    external fluxes. A VR_no_set is declared in the following way::
+    """
+    This class can be used to implement user-provided functions.
+    The data inside an ExternalCode instance will only change in response to a
+    user-provided function but will otherwise remain unaffected. That is, it is
+    up to the user-provided function to manage changes in response to external fluxes.
+
+    An ExternalCode instance is declared in the following way::
 
         ExternalCode(
-                    name="cs",     # instance name
-                    species=CO2,   # species, must be given
-                    # the vr_data_fields contains any data that is referenced inside the
-                    # function, rather than passed as argument, and all data that is
-                    # explicitly referenced by the model
-                    vr_datafields :dict ={"Hplus": self.swc.hplus,
-                                          "Beta": 0.0},
-                    function=calc_carbonates, # function reference, see below
-                    fname = function name as string
-                    function_input_data="DIC TA",
-                    # Note that parameters must be individual float values
-                    function_params:tuple(float)
-                    # list of return values
-                    return_values={  # these must be known speces definitions
-                                  "Hplus": rg.swc.hplus,
-                                   "zsnow": float(abs(kwargs["zsnow"])),
-                                   },
-                    register=rh # reservoir_handle to register with.
-                )
+            name="cs",                  # instance name
+            species=M.CO2,                # must be Speciesproperties instance
+            vr_datafields={             # the vr_datafields contain any data that is referenced inside the
+                "Hplus": self.swc.hplus, # function, rather than passed as an argument, and all data
+                "Beta": 0.0             # that is explicitly referenced by the model
+            },
+            function=calc_carbonates,   # function reference, see below
+            fname="function name as string",
+            function_input_data="DIC TA",
+            function_params=(float),    # Note that parameters must be individual float values
+            return_values={             # list of return values, these must be known species definitions
+                "Hplus": rg.swc.hplus,
+                "zsnow": float(abs(kwargs["zsnow"])),
+            },
+            register=rh                # reservoir_handle to register with
+        )
 
-        the dict keys of vr_datafields will be used to create alias
-        names which can be used to access the respective variable
+    The dictionary keys of `vr_datafields` will be used to create alias names which c
+    an be used to access the respective variables. See the online documentation:
+    https://esbmtk.readthedocs.io/
 
-
-    The general template for a user defined function is a follows::
-
-      def calc_carbonates(i: int, input_data: tp.List, vr_data: tp.List, params: tp.List) -> None:
-          # i = index of current max_timestep
-          # input_data = list of np.arrays, typically data from other Species
-          # vr_data = list of np.arrays created during instance creation (i.e. the vr data)
-          # params = list of float values (at least one!)
-          pass
-       return
-
-    Note that this function should not return any values, and that all input fields must have
-    at least one entry!
-
+    In the default configuration, ExternalCode instances are computed after all regular connections
+    have been established. However, sometimes, a connection may depend on a computed value. In this case
+    set the optional parameter ftype to "in_sequence"
     """
 
     def __init__(self, **kwargs) -> None:
-        """The original class will calculate delta and concentration from mass
-        an d and h and l. Since we want to use this class without a
-        priory knowledge of how the reservoir arrays are being used we
-        overwrite the data generated during initialization with the
-        values provided in the keywords
-
-        """
+        """ """
 
         from esbmtk import (
             ConnectionProperties,
@@ -1547,13 +1692,14 @@ class ExternalCode(SpeciesNoSet):
             Species,
             Species2Species,
             Model,
+            Flux,
         )
         from typing import Callable
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
-            "species": ["None", (str, SpeciesProperties)],
+            "species": ["None", (str, Species, SpeciesProperties)],
             "plot_transform_c": ["None", (str, Callable)],
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
@@ -1583,7 +1729,7 @@ class ExternalCode(SpeciesNoSet):
             "fname": ["None", (str)],
             "geometry": ["None", (list, str)],
             "alias_list": ["None", (list, str)],
-            "ftype": ["std", (str)],
+            "ftype": ["computed", (str)],
             "ref_flux": ["None", (list, str)],
             "return_values": ["None", (list)],
             "arguments": ["None", (str, list)],
@@ -1625,17 +1771,9 @@ class ExternalCode(SpeciesNoSet):
 
         self.mo.lpc_r.append(self)
         # self.mo.lpc_r.append(self.gfh)
-
         self.mo.lor.remove(self)
         # but lets keep track of  virtual reservoir in lvr.
         self.mo.lvr.append(self)
-
-        # print(f"added {self.name} to lvr 2")
-
-        # create temporary memory if we use multiple solver iterations
-        if self.mo.number_of_solving_iterations > 0:
-            for i, d in enumerate(self.vr_data):
-                setattr(self, f"vrd_{i}", np.empty(0))
 
         if self.alias_list != "None":
             self.create_alialises()
@@ -2158,6 +2296,7 @@ class ExternalData(esbmtkBase):
             "offset": ["0 yrs", (Q_, str)],
             "display_precision": [0.01, (int, float)],
             "scale": [1, (int, float)],
+            "disp_units": [True, (bool)],
             "register": [
                 "None",
                 (str, Model, Species, DataField, GasReservoir, Signal),
@@ -2167,7 +2306,6 @@ class ExternalData(esbmtkBase):
 
         # provide a list of absolutely required keywords
         self.lrk: tp.List = ["name", "filename", "legend", ["reservoir", "register"]]
-
         self.__initialize_keyword_variables__(kwargs)
 
         # legacy names
@@ -2176,6 +2314,7 @@ class ExternalData(esbmtkBase):
 
         self.n: str = self.name  # string =  name of this instance
         self.fn: str = self.filename  # string = filename of data
+
         if isinstance(self.reservoir, Species):
             self.mo: Model = self.reservoir.species.mo
         if isinstance(self.reservoir, Signal):
@@ -2223,12 +2362,12 @@ class ExternalData(esbmtkBase):
         )
 
         # create the associated quantities
-        xq = Q_(xh)
-        yq = Q_(yh)
+        self.xq = Q_(xh)
+        self.yq = Q_(yh)
 
         # add these to the data we are are reading
-        self.x: NDArrayFloat = self.df.iloc[:, 0].to_numpy() * xq
-        self.y: NDArrayFloat = self.df.iloc[:, 1].to_numpy() * yq
+        self.x: NDArrayFloat = self.df.iloc[:, 0].to_numpy() * self.xq
+        self.y: NDArrayFloat = self.df.iloc[:, 1].to_numpy() * self.yq
 
         if self.zh:
             # delta is assumed to be without units
@@ -2239,23 +2378,26 @@ class ExternalData(esbmtkBase):
         # map into model space
         # self.x = self.x - self.x[0] + self.offset
         # map into model units, and strip unit information
-        self.x = self.x.to(self.mo.t_unit).magnitude
+        if self.disp_units:
+            self.x = self.x.to(self.mo.d_unit).magnitude
+        else:
+            self.x = self.x.to(self.mo.t_unit).magnitude
         # self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
 
         mol_liter = Q_("1 mol/liter").dimensionality
         mol_kg = Q_("1 mol/kg").dimensionality
 
-        if isinstance(yq, Q_):
+        if isinstance(self.yq, Q_):
             # test what type of Quantity we have
-            if yq.is_compatible_with("dimensionless"):  # dimensionless
+            if self.yq.is_compatible_with("dimensionless"):  # dimensionless
                 self.y = self.y.magnitude
-            elif yq.is_compatible_with("liter/yr"):  # flux
+            elif self.yq.is_compatible_with("liter/yr"):  # flux
                 self.y = self.y.to(self.mo.r_unit).magnitude
-            elif yq.is_compatible_with("mol/yr"):  # flux
+            elif self.yq.is_compatible_with("mol/yr"):  # flux
                 self.y = self.y.to(self.mo.f_unit).magnitude
-            elif yq.dimensionality == mol_liter:  # concentration
+            elif self.yq.dimensionality == mol_liter:  # concentration
                 self.y = self.y.to(self.mo.c_unit).magnitude
-            elif yq.dimensionality == mol_kg:  # concentration
+            elif self.yq.dimensionality == mol_kg:  # concentration
                 self.y = self.y.to(self.mo.c_unit).magnitude
             else:
                 SignalError(f"No conversion to model units for {self.scale} specified")

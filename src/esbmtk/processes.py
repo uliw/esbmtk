@@ -58,7 +58,7 @@ def weathering(c_pco2: float | list[float], p: tuple) -> float | tuple:
     Explanation
     -----------
     If the model uses isotopes, the function expects the concentration
-    values for hthe total mass and the light isotope as a list, and
+    values for the total mass and the light isotope as a list, and
     will simiraly return the flux as a list of total flux and flux of
     the light isotope.
 
@@ -100,12 +100,11 @@ def init_weathering(
     """
     from esbmtk import ExternalCode, check_for_quantity
 
-    print(f" initializing weathering with isotopes = {c.sink.isotopes}")
-
     f0 = check_for_quantity(f0, "mol/year").magnitude
     pco2_0 = check_for_quantity(pco2_0, "ppm").magnitude
     p = (pco2_0, area_fraction, ex, f0, c.sink.isotopes)
     c.fh.ftype = "computed"
+
     ec = ExternalCode(
         name=f"ec_weathering_{c.id}",
         fname="weathering",
@@ -119,7 +118,6 @@ def init_weathering(
         ],
     )
     c.mo.lpc_f.append(ec.fname)
-
     return ec
 
 
@@ -134,13 +132,10 @@ def init_gas_exchange(c: Species2Species):
     from esbmtk import ExternalCode, check_for_quantity
 
     c.fh.ftype = "computed"
-   
-   
-
-    # model = c.source.model
     sink_reservoir = c.sink.register
+
     swc = sink_reservoir.swc  # sink - liquid
-    
+
     if c.species.name == "CO2":
         ref_species = sink_reservoir.CO2aq
         solubility = swc.SA_co2
@@ -154,7 +149,7 @@ def init_gas_exchange(c: Species2Species):
         check_for_quantity(c.piston_velocity, "m/yr").to("meter/year").magnitude
     )
     area = check_for_quantity(sink_reservoir.area, "m**2").to("meter**2").magnitude
-        
+
     scale = area * piston_velocity
     p = (
         scale,
@@ -173,13 +168,12 @@ def init_gas_exchange(c: Species2Species):
         species=c.source.species,
         function_input_data=[c.source, c.sink, ref_species],
         function_params=p,
-        register=c.model,
+        register=c.sink,
         return_values=[
             {f"F_{c.fh.full_name}": "gex"},
         ],
     )
     c.mo.lpc_f.append(ec.fname)
-
     return ec
 
 
@@ -231,7 +225,8 @@ def gas_exchange(
         liquid_c, liquid_c_l = liquid_c
 
     # Solubility with correction for pH2O
-    beta = solubility * (1 - p_H2O)
+    # beta = solubility * (1 - p_H2O)
+    beta = solubility  # solubility is already corrected for p_H20
     # f as afunction of solubility difference
     f = scale * (beta * gas_c - gas_aq * 1e3)
     rv = f

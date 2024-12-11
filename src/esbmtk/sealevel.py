@@ -175,11 +175,8 @@ class hypsometry(esbmtkBase):
         # offset the data, since we do not need land data
         max_el_idx = self.max_elevation + abs(deepest) + 1
         elevation = np.flip(elevation[0:max_el_idx])  # deepest to max_elev
-        print(f"e_min = {elevation[0]}, e-max = {elevation[-3:]}")
-        print(f"sum = {np.sum(elevation)}\n")
         area = np.flip(area[0:max_el_idx] * self.sa)
 
-        print(f"elevation[1000] = {elevation[1000]}")
         # create lookup table with area and area_dz
         self.hypdata = np.column_stack(
             (
@@ -325,7 +322,7 @@ class hypsometry(esbmtkBase):
         plt.show()
 
 
-def get_box_geometry_parameters(box, fraction=1) -> None:
+def get_box_geometry_parameters(box) -> None:
     """
     Calculate box volume and area from the data in box.
 
@@ -366,12 +363,11 @@ def get_box_geometry_parameters(box, fraction=1) -> None:
         # Calculate volume and area as a function of box geometry
         top = box.geometry[0]
         bottom = box.geometry[1]
-        fraction = box.geometry[2]
-        volume = f"{box.mo.hyp.volume(top, bottom) * fraction} m**3"
+        volume = f"{box.mo.hyp.volume(top, bottom)} m**3"
         box.volume = Q_(volume)
         box.volume = box.volume.to(box.mo.v_unit)
-        box.area = Q_(f"{box.mo.hyp.area(top) * fraction} m**2")
-        box.sed_area = box.mo.hyp.area_dz(top, bottom) * fraction
+        box.area = Q_(f"{box.mo.hyp.area(top)} m**2")
+        box.sed_area = box.mo.hyp.area_dz(top, bottom)
         box.sed_area = Q_(f"{box.sed_area} m**2")
 
     elif isinstance(box.geometry, dict):

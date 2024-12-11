@@ -117,8 +117,9 @@ class Model(esbmtkBase):
                 :param mass_unit: mol
                 :param volume_unit: only tested with liter
                 :param element: tp.List with one or more species names
-                :param time_step: Limit automatic step size increase, i.e., the time
+                :param max_timestep: Limit automatic step size increase, i.e., the time
                 resolution of the model. Optional, defaults to the model duration/100
+                :number_of_datapoints: defaults to 1E3, increase for complex signal data or postprocessing
                 :param m_type: enables or disables isotope calculation for the
                 entire model.  The default value is "Not set" in this case
                 isotopes will only be calculated for reservoirs which set
@@ -174,6 +175,7 @@ class Model(esbmtkBase):
             "ideal_water": [True, (bool)],
             "use_ode": [True, (bool)],
             "parse_model": [True, (bool)],
+            "keep_equations": [False, (bool)],
             "rtol": [1.0e-6, (float)],
             "bio_pump_functions": [0, (int)],  # custom/old
             # "area_table": [None, (str, np.ndarray)],
@@ -231,6 +233,7 @@ class Model(esbmtkBase):
         self.gcc: int = 0  # constants counter
         self.vpc: int = 0  # parameter counter
         self.luf: dict = {}  # user functions and source
+        self.lvd: List = []  # list of vector data objects
 
         # unit defs
         self.l_unit = ureg.meter  # the length unit
@@ -270,18 +273,19 @@ class Model(esbmtkBase):
         self.length = int(abs(self.stop - self.start))
         self.steps = int(abs(round(self.length / self.dt)))
 
-        self.time = (np.arange(self.steps) * self.dt) + self.start
+        # self.time = (np.arange(self.steps) * self.dt) + self.start
         self.time_ode = np.linspace(
             self.start,
-            self.stop - (self.stop - self.start) / 100,
-            num=100,
+            # self.stop - (self.stop - self.start) / 100,
+            self.stop - self.start,
+            num=self.number_of_datapoints + 1,
         )
+        self.time = self.time_ode
         self.timec = np.empty(0)
         self.state = 0
 
         # calculate stride
-        self.stride = int(self.steps / self.number_of_datapoints)
-        self.reset_stride = self.stride
+        self.stride = 1
 
         if self.step_limit == "None":
             self.number_of_solving_iterations: int = 0
@@ -352,7 +356,7 @@ class Model(esbmtkBase):
             for s in e.lsp:
                 print(f"{off}{off}{ind}{s.n}")
 
-    def save_state(self, directory="state") -> None:
+    def save_state(self, directory="state", prefix="state_") -> None:
         """Save model state.  Similar to save data, but only saves the
         last 10 time-steps
         """
@@ -371,7 +375,6 @@ class Model(esbmtkBase):
         start: int = -2
         stop: int = None
         stride: int = 1
-        prefix: str = "state_"
 
         for r in self.lor:  # loop over reservoirs
             r.__write_data__(prefix, start, stop, stride, False, directory)
@@ -402,12 +405,19 @@ class Model(esbmtkBase):
         prefix = ""
         stride = self.stride
         start = 0
-        stop = self.steps
+        stop = len(self.time)
+
         append = False
 
         for r in self.lor:
             if r.rtype != "flux_only":
                 r.__write_data__(prefix, start, stop, stride, append, directory)
+
+        for s in self.los:
+            s.__write_data__(prefix, start, stop, stride, append, directory)
+
+        for s in self.lvd:
+            s.__write_data__(prefix, start, stop, stride, append, directory)
 
     def read_data(self, directory="./data") -> None:
         """Save the model results to a CSV file. Each reservoir will have
@@ -560,8 +570,9 @@ class Model(esbmtkBase):
             fig.tight_layout()
             plt.show(block=blocking)  # create the plot windows
             fig.savefig(filename)
-
-        return plt, fig, axs
+            return
+        else:
+            return plt, fig, axs
 
     def run(self, **kwargs) -> None:
         """Loop over the time vector, and for each time step, calculate the
@@ -645,14 +656,17 @@ class Model(esbmtkBase):
         else:
             fn: str = "equations.py"  # file name
             eqs_fn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
+            eqs_mod = eqs_fn.stem  # just the file wo extension
             if eqs_fn.is_file():
                 warnings.warn(
                     """ Re-using equation file. Delete it manually if you
                         want an updated version"""
                 )
+
+                eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
             else:
-                eqs_mod = eqs_fn.split("/")[-1].split(".")[0]
-                eqs = getattr(__import__(eqs_mod), "eqs")  # import equati
+                eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
+                eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
 
         method = kwargs["method"] if "method" in kwargs else "BDF"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
@@ -851,7 +865,7 @@ class Model(esbmtkBase):
         if "filter" in kwargs:
             raise ModelError("use filter_by instead of filter")
 
-        if "silent" not in kwargs:
+        if not "return_list" in kwargs:
             print(f"\n --- Connect Group Summary -- filtered by {fby}\n")
             print(f"       run the following command to see more details:\n")
 
@@ -1015,7 +1029,7 @@ class SpeciesProperties(esbmtkBase):
             "parent": ["None", (Model, ElementProperties, Species, GasReservoir)],
             "flux_only": [False, (bool)],
             "logdata": [False, (bool)],
-            "scale_to": ["None", (str)],
+            "scale_to": ["mmol", (str)],
             "stype": ["concentration", (str)],
         }
 
@@ -1214,7 +1228,6 @@ class SpeciesBase(esbmtkBase):
         # build the dataframe
         df: pd.dataframe = DataFrame()
 
-        # breakpoint()
         df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
         # df[f"{rn} {sn} [{smu}]"] = self.m.to(self.mo.m_unit).magnitude[start:stop:stride]  # mass
         if self.isotopes:
@@ -1770,7 +1783,10 @@ class Species(SpeciesBase):
 
         elif self.sp.stype == "length":
             self.plt_units = self.mo.l_unit
-            self.c = np.zeros(self.mo.steps) + Q_(self.concentration).magnitude
+            self.c = (
+                np.zeros(self.mo.number_of_datapoints + 1)
+                + Q_(self.concentration).magnitude
+            )
             self.display_as = "length"
         self.state = 0
 
@@ -1780,13 +1796,14 @@ class Species(SpeciesBase):
 
         # initialize mass vector
         if self.mass == "None":
-            self.m: NDArrayFloat = np.zeros(self.mo.steps)
+            self.m: NDArrayFloat = np.zeros(self.mo.number_of_datapoints + 1)
         else:
             self.m: NDArrayFloat = np.zeros(self.species.mo.steps) + self.mass
-        self.l: NDArrayFloat = np.zeros(self.mo.steps)
+        self.l: NDArrayFloat = np.zeros(self.mo.number_of_datapoints + 1)
         # self.c: NDArrayFloat = np.zeros(self.mo.steps)
         self.v: NDArrayFloat = (
-            np.zeros(self.mo.steps) + self.volume.to(self.mo.v_unit).magnitude
+            np.zeros(self.mo.number_of_datapoints + 1)
+            + self.volume.to(self.mo.v_unit).magnitude
         )  # reservoir volume
 
         if self.delta != "None":
@@ -1867,7 +1884,7 @@ class Species(SpeciesBase):
             """ problem: m_unit can be mole, but data can be in liter * mole /kg
             this should not happen and results in an error converting to magnitide
             """
-            self.m = np.zeros(self.species.mo.steps) + m
+            self.m = np.zeros(self.species.mo.number_of_datapoints + 1) + m
             self.c = self.m / self.volume.to(self.mo.v_unit).magnitude
 
 
@@ -1937,7 +1954,7 @@ class Flux(esbmtkBase):
             Species,
             GasReservoir,
             Species2Species,
-            Species2Species,
+            ExternalCode,
             Signal,
         )
 
@@ -1964,6 +1981,7 @@ class Flux(esbmtkBase):
             "save_flux_data": [False, (bool)],
             "id": ["None", (str)],
             "ftype": ["None", (str)],
+            "computed_by": ["None", (str, ExternalCode)],
         }
 
         # provide a list of absolutely required keywords
@@ -2002,11 +2020,11 @@ class Flux(esbmtkBase):
         # in case we want to keep the flux data
         if self.save_flux_data:
             self.m: NDArrayFloat = (
-                np.zeros(self.model.steps) + self.rate
+                np.zeros(self.model.number_of_datapoints + 1) + self.rate
             )  # add the flux
 
             if self.isotopes:
-                self.l: NDArrayFloat = np.zeros(self.model.steps)
+                self.l: NDArrayFloat = np.zeros(self.model.number_of_datapoints + 1)
                 if self.rate != 0:
                     self.l = get_l_mass(self.m, self.delta, self.species.r)
                     self.fa[1] = self.l[0]

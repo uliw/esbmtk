@@ -26,7 +26,7 @@ import functools
 from numba import njit
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Flux, Model, Species2Species, ExternalFunction
+    from esbmtk import Model, ExternalFunction
 
 np.set_printoptions(precision=4)
 # declare numpy types
@@ -146,15 +146,16 @@ def get_reservoir_reference(k: str, M: Model) -> tuple:
 
     species = getattr(M, species_name)
     if not isinstance(species, SpeciesProperties):
-        breakpoint()
+        raise NotImplementedError()
     return reservoir, species
 
 
-def register_new_flux(rg, dict_key, dict_value) -> list:
+def register_new_flux(ec, rg, dict_key, dict_value) -> list:
     """Register a new flux object with a Species2Species instance
 
     Parameters
     ----------
+    ec : ExternalCode object
     rg : Species | Reservoir
         instance to register with
     dict_key : str
@@ -168,37 +169,40 @@ def register_new_flux(rg, dict_key, dict_value) -> list:
         list of Flux instances
 
     """
-    from .esbmtk import Species, Flux, Source
+    from .esbmtk import Species, Flux
     from .extended_classes import Reservoir
 
     if isinstance(rg, Reservoir):
         spn = dict_key.split(".")[-1]
         sp = getattr(rg.mo, spn)
-        reg = getattr(rg, sp.name)
+        reservoir_object = getattr(rg, sp.name)  # species to regester flux with
     elif isinstance(rg, Species):
-        spn = dict_key.split(".")[-1]
-        sp = getattr(rg.mo, spn)
-        reg = rg
+        # in this case rg contains a species not a reservoirgroup
+        sp = rg.species
+        rg = rg.register  # get associated reservoir
+        reservoir_object = getattr(rg, sp.name)
     else:
         print(f" type(rg) = {type(rg)}")
         raise NotImplementedError
 
-    if not hasattr(reg, "source"):
-        setattr(reg, "source", sp.name)
+    if not hasattr(reservoir_object, "source"):
+        setattr(reservoir_object, "source", sp.name)
 
     ro = list()
+    # this also registers the flux with M.lof
     f = Flux(
         name=dict_value,
         species=sp,
         rate=0,
-        register=reg,
-        ftype="computed",
-        isotopes=reg.isotopes,
+        register=reservoir_object,
+        ftype=ec.ftype,
+        isotopes=reservoir_object.isotopes,
+        computed_by=ec,
     )
 
     ro.append(f)
-    reg.lof.append(f)  # register flux
-    reg.ctype = "ignore"  # FIXME why is this here?
+    ec.lof.append(f)
+    reservoir_object.lof.append(f)  # register flux
 
     return ro
 
@@ -250,7 +254,7 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
     GasReservoir class.
     """
     from esbmtk import Species, Reservoir, Flux, Species2Species
-    from esbmtk import Sink, SinkProperties
+    from esbmtk import Sink, SinkProperties, Source, SourceProperties
 
     M = rg.mo
     # go through each entry in ec.return_values
@@ -259,6 +263,10 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
             dict_key = next(iter(line))  # get first key
             dict_value = line[dict_key]
             if dict_key[:2] == "F_":  # is flux
+                """ The following code needs to extract the connection
+                object. Names must have the following scheme
+                M.Conn_CO2_At_to_H_b_CO2_H_b._F
+                """
                 key_str = dict_key[2:].split(".")[1]
                 if hasattr(M, key_str):
                     o = getattr(M, key_str)
@@ -267,9 +275,11 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
                     elif isinstance(o, Species2Species):
                         o: tp.List = [getattr(o, "_F")]  # get flux handle
                     elif isinstance(o, Species | Reservoir):
-                        o: tp.List = register_new_flux(rg, dict_key[2:], dict_value)
+                        o: tp.List = register_new_flux(ef, rg, dict_key[2:], dict_value)
                     elif isinstance(o, Sink | SinkProperties):
-                        o: tp.List = register_new_flux(rg, dict_key[2:], dict_value)
+                        o: tp.List = register_new_flux(ef, rg, dict_key[2:], dict_value)
+                    elif isinstance(o, Source | SourceProperties):
+                        o: tp.List = register_new_flux(ef, rg, dict_key[2:], dict_value)
                     else:
                         raise ValueError(f"No recipie for {type(o)}")
                 else:
@@ -589,13 +599,13 @@ def initialize_reservoirs(M: Model, box_dict: dict) -> tp.List(Species):
     -------
     tp.List
         list of all Species objects in box_dict
-    
+
     Raises
     ------
     ValueError
         If there are no Species objects in the dictionary
 
-    
+
     Example::
 
         box_parameters = {  # name: [[ud, ld ap], T, P, S]
@@ -613,7 +623,7 @@ def initialize_reservoirs(M: Model, box_dict: dict) -> tp.List(Species):
 
     """
 
-    from esbmtk import Reservoir, build_concentration_dicts
+    from esbmtk import Reservoir
     from esbmtk import SourceProperties, SinkProperties, SpeciesProperties
 
     # loop over reservoir names
@@ -699,55 +709,53 @@ def create_reservoirs(box_dict: dict, ic_dict: dict, M: any) -> dict:
     from esbmtk import SourceProperties, SinkProperties
 
     # loop over reservoir names
-    for box_name, value in box_dict.items():
-        # test key format
-        if M.name in box_name:
-            box_name = box_name.split(".")[1]
+    if M.name in box_name:
+        box_name = box_name.split(".")[1]
 
-        keyword_dict: dict = build_concentration_dicts(ic_dict, box_name)
+    keyword_dict: dict = build_concentration_dicts(ic_dict, box_name)
 
-        if "ty" in value:  # type is given
-            if value["ty"] == "Source":
-                if "delta" in value:
-                    SourceProperties(
-                        name=box_name,
-                        species=value["sp"],
-                        delta=value["delta"],
-                        isotopes=keyword_dict[box_name][1],
-                        register=M,
-                    )
-                else:
-                    SourceProperties(
-                        name=box_name,
-                        species=value["sp"],
-                        register=M,
-                        isotopes=keyword_dict[box_name][1],
-                    )
-            elif value["ty"] == "Sink":
-                SinkProperties(
+    if "ty" in value:  # type is given
+        if value["ty"] == "Source":
+            if "delta" in value:
+                SourceProperties(
+                    name=box_name,
+                    species=value["sp"],
+                    delta=value["delta"],
+                    isotopes=keyword_dict[box_name][1],
+                    register=M,
+                )
+            else:
+                SourceProperties(
                     name=box_name,
                     species=value["sp"],
                     register=M,
                     isotopes=keyword_dict[box_name][1],
                 )
-            else:
-                raise ValueError("'ty' must be either Source or Sink")
-
-        else:  # create reservoirs
-            breakpoint()
-            rg = Reservoir(
+        elif value["ty"] == "Sink":
+            SinkProperties(
                 name=box_name,
-                geometry=value["g"],
-                concentration=keyword_dict[box_name][0],
-                isotopes=keyword_dict[box_name][1],
-                delta=keyword_dict[box_name][2],
-                seawater_parameters={
-                    "temperature": value["T"],
-                    "pressure": value["P"],
-                    "salinity": value["S"],
-                },
+                species=value["sp"],
                 register=M,
+                isotopes=keyword_dict[box_name][1],
             )
+        else:
+            raise ValueError("'ty' must be either Source or Sink")
+
+    else:  # create reservoirs
+        raise NotImplementedError()
+        rg = Reservoir(
+            name=box_name,
+            geometry=value["g"],
+            concentration=keyword_dict[box_name][0],
+            isotopes=keyword_dict[box_name][1],
+            delta=keyword_dict[box_name][2],
+            seawater_parameters={
+                "temperature": value["T"],
+                "pressure": value["P"],
+                "salinity": value["S"],
+            },
+            register=M,
+        )
 
     return keyword_dict
 
@@ -1092,7 +1100,7 @@ def create_connection(n: str, p: dict, M: Model) -> None:
     bypass = make_dict(los, bypass)
     signal = make_dict(los, signal)
 
-    name = f"{M.name}.CG_{source.name}_to_{sink.name}"
+    name = f"{M.name}.ConnGrp_{source.name}_to_{sink.name}"
     if f"{name}" in M.lmo:  # Test if CG exists
         cg = getattr(M, name.split(".")[1])  # retriece CG object
         cg.add_connections(
