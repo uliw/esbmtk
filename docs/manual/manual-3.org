@@ -2,7 +2,9 @@
 
 * Adding isotopes
  ESBMTK support the use of isotopes for many processes and species out of the box. This is best demonstrated with an example. In the following we use tow reservoirs of equal size, and apply an exchange flux. The reservoirs have similar concentrations but their isotopic ratios are different (-20 mUr versus +20 mUr [VSMOV].  After 3\space{}ky both reservoirs are isotopically homogeneous and have approached a \delta^{18}O value of 0 mUr  [VSMOV]. Note that this only required code changes on lines 17 and 23 where declare the initial delta values.
-#+BEGIN_SRC jupyter-python :tangle iso_1.py :exports none
+#+BEGIN_SRC jupyter-python :tangle iso_1.py
+# This example is available as iso_1.py in ESBMTK Examples Repository
+# https://github.com/uliw/ESBMTK-Examples/tree/main/Examples_from_the_manual
 from esbmtk import (
     Model,  # the model class
     Reservoir,  # the reservoir class
@@ -44,7 +46,7 @@ ConnectionProperties(  # thermohaline upwelling
 M.run()
 #+END_SRC
 Plotting with
-#+BEGIN_SRC jupyter-python :tangle iso_1.py :exports none
+#+BEGIN_SRC jupyter-python :tangle iso_1.py
 M.plot([M.S_b.O2, M.D_b.O2], fn="iso_1.png")
 #+END_SRC
 results in the following output:
@@ -61,8 +63,10 @@ In the next example, we use two reservoirs of equal size, and equal isotope rati
 \epsilon = (\alpha -1) \times 1000
 \]
 Similarly to the first example, the system reaches equilibrium after about 3\space{}kyrs. The above is then easily adapted to model, e.g., isotope fractionation during the evaporation of water.
-#+name:iso2code
-#+BEGIN_SRC jupyter-python :tangle iso_2.py :exports none
+#+name:iso3code
+#+BEGIN_SRC jupyter-python :tangle iso_3.py
+# This example is available as iso_3.py in ESBMTK Examples Repository
+# https://github.com/uliw/ESBMTK-Examples/tree/main/Examples_from_the_manual
 from esbmtk import (
     Model,  # the model class
     Reservoir,  # the reservoir class
@@ -104,39 +108,40 @@ ConnectionProperties(  # thermohaline upwelling
 )
 M.run()
 #+END_SRC
+
 Plotting with 
-#+BEGIN_SRC jupyter-python :tangle iso_2.py :exports none
-M.plot([M.S_b.O2, M.D_b.O2], fn="iso_2.png")
+#+BEGIN_SRC jupyter-python :tangle iso_3.py
+M.plot([M.S_b.O2, M.D_b.O2], fn="iso_3.png")
 #+END_SRC
 results in the following output:
 #+attr_org: :width 300
 #+attr_rst: :width 400
 #+attr_latex: :width 0.5\textwidth
-#+name: iso2
+#+name: iso
 #+caption: It takes about 3 kys to fully fractionate both ocean boxes.
-[[./iso_2.png]]
+[[./iso_3.png]]
 
-In the last example, we model the oxygen isotope fractionation during the air-sea gas exchange. This involves kinetic fractionation during degassing, and equilibrium fractionation during gas solution. At present, ESBMTK uses the equilibrium fractionation factor parametrization of [[cite:&benson-1984-concen-isotop]]
+** Isotopes and Gas Exchange
+In the last example, we model the oxygen isotope fractionation during the air-sea gas exchange. This involves kinetic fractionation during degassing, and equilibrium fractionation during gas solution. At present, ESBMTK
+
+ uses the equilibrium fractionation factor parametrization of  Benson and Krause, 1984 (http://dx.doi.org/10.4319/lo.1984.29.3.0620)
+
 \[
-\alpha_eq =  1 + (-0.73 + (427 / T)) / 1000
+\alpha_{dg}=  1 + (-0.73 + (427 / T)) / 1000
 \] 
 
-and the kinetic fraction factor of [[cite:&knox-1992-kinet-isotop]]
+and the kinetic fraction factor of Knox and  McElroy 1984 (http://dx.doi.org/10.1029/JD089iD03p04629)
+
 \[ \alpha_u =  0.9972
 \] 
-The fractionation factors for CO_{2} follow the parametrization of [[cite:&Zeebe2012]].
-Users can provide their own fractionation factor parametrizations by redefining the following variables after model initialization:
-#+BEGIN_SRC jupyter-python
-M.S_b.swc.o2_a_u =  0.9972 # kinetic fractionation
-M.S_b.swc.o2_a_dg = 1.00073 # equilibrium fractionation
-#+END_SRC
-For carbon there a further variables that define the fractionation between CO2aq and HCO_{3}^{-} and HCO_{3}^{-} and CO_{3}^{2-}. 
-(e.g., =...swc.CO_{2}_a_db= and  =...swc.CO_{2}_a_cb=  respectively).
-If no such modifications are required, it is sufficient to declare the initial isotope ratio of the atmosphere (line 18) and ocean surface box.
 
-Note however, that in order to calculate gas-exchange fluxes, we need to declare the surface area, of =S_b= (line 22), as well as the pressure, temperature and salinity conditions (line 25). Presently ESBMTK does not support the automatic matching of liquid species to gas reservoirs. Therefore we have to declare each gas-exchange flux individually using the =Species2Species= connection type (line 27 to 33). In the following example the atmosphere equilibrates withe the surface ocean with a couple of months.
-#+name:iso3code
-#+BEGIN_SRC jupyter-python :tangle iso_3.py :exports none
+The fractionation factors for CO_{2} follow the parametrization of Zeebe 2012 (http://dx.doi.org/10.1029/JD089iD03p04629)
+
+Note however, that in order to calculate gas-exchange fluxes, we need to declare the surface area, of =S_b= (line 22), as well as the pressure, temperature and salinity conditions (line 25). The base model code looks like this: 
+#+name:iso4code
+#+BEGIN_SRC jupyter-python :tangle iso_4.py
+# This example is available as iso_4.py in ESBMTK Examples Repository
+# https://github.com/uliw/ESBMTK-Examples/tree/main/Examples_from_the_manual
 from esbmtk import (
     Model,  # the model class
     Reservoir,  # the reservoir class
@@ -162,7 +167,11 @@ Reservoir(
     delta={M.O2: 0},
     seawater_parameters={"T": 21.5, "P": 1, "S": 35},
 )
-Species2Species(  # High Latitude surface to atmosphere F8
+#+END_SRC
+Presently ESBMTK does not support the automatic matching of liquid species to gas reservoirs. Therefore we have to declare each gas-exchange flux individually using the =Species2Species= connection type:
+#+name: iso4codegx
+#+BEGIN_SRC jupyter-python :tangle iso_4.py
+Species2Species(  # Ocean to atmosphere F8
     source=M.O2_At,  # Reservoir Species
     sink=M.S_b.O2,  # Reservoir Species
     species=M.O2,
@@ -172,17 +181,79 @@ Species2Species(  # High Latitude surface to atmosphere F8
 )
 M.run()
 #+END_SRC
+In the following example the atmosphere equilibrates withe the surface ocean within a couple of months.
 plotting with
-#+BEGIN_SRC jupyter-python :tangle iso_3.py :exports none
-M.plot([M.S_b.O2, M.O2_At], fn="iso_3.png")
+#+BEGIN_SRC jupyter-python :tangle iso_4.py
+M.plot([M.S_b.O2, M.O2_At], fn="iso_4.png")
 #+END_SRC
 results in the following output:
 #+attr_org: :width 300
 #+attr_rst: :width 400
 #+attr_latex: :width 0.5\textwidth
-#+name: iso3
+#+name: iso4
 #+caption: It takes about 3 kys to fully fractionate both ocean boxes.
-[[./iso_3.png]]
+[[./iso_4.png]]
+
+
+** Using user supplied parametrizations and custom species for gas exchange reactions.
+Currently ESBMTK provides useful defaults for CO_{2} and O_2, but other gas species (or parametrizations) can be easily added. 
+Users can provide their own fractionation factor parametrizations by providing their own values to the connection object. To make simple example that considers fixed values:
+#+name: iso5
+#+BEGIN_SRC jupyter-python
+Species2Species(  # Ocean to atmosphere F8
+    source=M.O2_At,  # Reservoir Species
+    sink=M.S_b.O2,  # Reservoir Species
+    species=M.O2,
+    solubility="1098 mmol/(m^3 * atm)",  # solubility
+    a_u=0.9972,  # kinetic fractionation factor
+    a_dg=1.00073,  # equilibrium fractionation factor
+    piston_velocity="4.8 m/d",
+    ctype="gasexchange",
+    id="ex_O2",
+)
+#+END_SRC
+# create testable script
+#+BEGIN_SRC ipython :noweb yes :tangle iso5_test.py :exports none
+<<iso4code>>
+<<iso5>>
+M.run()
+M.plot([M.S_b.O2, M.O2_At])
+#+END_SRC
+Note that in the above case, the ESBMTK will automatically correct the
+solubility value for water vapor pressure.  For carbon there is another variable
+that defines the fractionation between CO_{2}aq and HCO_{3}^{-} (=a_db=, the
+fractionation between HCO_{3}^{-} and CO_{3}^{2-} is currently not considered by ESBMTK).
+Instead of variables, one can also pass a function that calculates the respective values:
+#+name: iso6
+#+BEGIN_SRC jupyter-python
+def o2_eq(t):
+    """Calculate the equilibrium fractionation factor
+    between dissolved and gaseous O2, after Benson & Krause 1984
+    """
+    T = 273.15 + t
+    a = 1 + (-0.73 + (427 / T)) / 1000
+    return a
+
+Species2Species(  # Ocean to atmosphere F8
+    source=M.O2_At,  # Reservoir Species
+    sink=M.S_b.O2,  # Reservoir Species
+    species=M.O2,
+    solubility="1098 mmol/(m^3 * atm)",  # solubility
+    a_u=0.9972,  # kinetic fractionation factor
+    a_dg=o2_eq(M.S_b.swc.temperature),
+    piston_velocity="4.8 m/d",
+    ctype="gasexchange",
+    id="ex_O2",
+)
+#+END_SRC
+# create testable script
+#+BEGIN_SRC ipython :noweb yes :tangle iso6_test.py :exports none
+<<iso4code>>
+<<iso6>>
+M.run()
+M.plot([M.S_b.O2, M.O2_At])
+#+END_SRC
+Note however, that currently, the function is only evaluated once during model initialization, and that the user must ensure that the return value is in the units ("mol/(m^3 atm)"), or that the function returns a string with units (e.g., ="1098 mmol/(m^3 * atm)"=)
 
 # define a test function
 #+name: testrunner
@@ -200,7 +271,8 @@ def test_values(test_input, expected):
 
 # create testable script
 #+BEGIN_SRC ipython :noweb yes :tangle iso3_test.py :exports none
-<<iso3code>>
+<<iso4code>>
+<<iso4codegx>>
 #+END_SRC
 
 # create unit test for iso2 case
@@ -219,9 +291,9 @@ test_values = [  # result, reference value
 #+END_SRC
 
 # create unit test for iso3 case
-#+BEGIN_SRC ipython :noweb yes :tangle test_iso3.py :exports none
+#+BEGIN_SRC ipython :noweb yes :tangle test_iso4.py :exports none
 import pytest
-import  iso3_test # import script
+import  iso4_test # import script
 
 M = iso3_test.M  # get model handle
 test_values = [  # result, reference value
