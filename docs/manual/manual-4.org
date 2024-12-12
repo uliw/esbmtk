@@ -182,7 +182,7 @@ Species2Species(  # Example for CO2
     id="L_b_GEX",  # connection id
 )
 #+END_SRC
-Defining gas transfer for O2  uses the same approach. 
+Defining gas transfer for O_2  uses the same approach.  Currently ESBMTK provides useful defaults for CO_{2} and O_2 only. See the isotope chapter on how to define gas exchange reactions for custom species.
 
 
 ** pCO_{2} Dependent Weathering
