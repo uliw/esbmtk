@@ -136,20 +136,37 @@ def init_gas_exchange(c: Species2Species):
 
     swc = sink_reservoir.swc  # sink - liquid
 
-    if c.species.name == "CO2":
-        ref_species = sink_reservoir.CO2aq
-        solubility = swc.SA_co2
-        a_db  = swc.co2_a_db
-        a_dg =  swc.co2_a_dg
-        a_u = swc.co2_a_u
-    elif c.species.name == "O2":
-        ref_species = sink_reservoir.O2
-        solubility = swc.SA_O2
-        a_db  = swc.o2_a_db
-        a_dg =  swc.o2_a_dg
-        a_u = swc.o2_a_u
-    else:
-        raise ValueError(f"Gas exchange is undefined for {c.species.name}")
+    if c.solubility == "None":  # use predefined values
+        if c.species.name == "CO2":
+            ref_species = sink_reservoir.CO2aq
+            solubility = swc.SA_co2
+            a_db = swc.co2_a_db
+            a_dg = swc.co2_a_dg
+            a_u = swc.co2_a_u
+        elif c.species.name == "O2":
+            ref_species = sink_reservoir.O2
+            solubility = swc.SA_O2
+            a_db = swc.o2_a_db
+            a_dg = swc.o2_a_dg
+            a_u = swc.o2_a_u
+        else:
+            raise ValueError(
+                f"Gas exchange is undefined for {c.species.name}\n"
+                f"consider manual setup?\n"
+            )
+    else:  # use user supplied values
+        if c.ref_species == "None":
+            ref_species = sink_reservoir.O2
+        else:
+            ref_species = c.ref_species
+        solubility = (
+            check_for_quantity(c.solubility, "mol/(m^3 * atm)")
+            .to("mol/(m^3 * atm)")
+            .magnitude
+        )
+        a_db = c.a_db
+        a_dg = c.a_dg
+        a_u = c.a_u
 
     piston_velocity = (
         check_for_quantity(c.piston_velocity, "m/yr").to("meter/year").magnitude
@@ -164,7 +181,7 @@ def init_gas_exchange(c: Species2Species):
         a_db,
         a_dg,
         a_u,
-        c.isotopes, # c.source.isotopes,
+        c.isotopes,  # c.source.isotopes,
     )
     ec = ExternalCode(
         name=f"gas_exchange{c.id}",
