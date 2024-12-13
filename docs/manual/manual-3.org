@@ -223,37 +223,6 @@ Note that in the above case, the ESBMTK will automatically correct the
 solubility value for water vapor pressure.  For carbon there is another variable
 that defines the fractionation between CO_{2}aq and HCO_{3}^{-} (=a_db=, the
 fractionation between HCO_{3}^{-} and CO_{3}^{2-} is currently not considered by ESBMTK).
-Instead of variables, one can also pass a function that calculates the respective values:
-#+name: iso6
-#+BEGIN_SRC jupyter-python
-def o2_eq(t):
-    """Calculate the equilibrium fractionation factor
-    between dissolved and gaseous O2, after Benson & Krause 1984
-    """
-    T = 273.15 + t
-    a = 1 + (-0.73 + (427 / T)) / 1000
-    return a
-
-Species2Species(  # Ocean to atmosphere F8
-    source=M.O2_At,  # Reservoir Species
-    sink=M.S_b.O2,  # Reservoir Species
-    species=M.O2,
-    solubility="1098 mmol/(m^3 * atm)",  # solubility
-    a_u=0.9972,  # kinetic fractionation factor
-    a_dg=o2_eq(M.S_b.swc.temperature),
-    piston_velocity="4.8 m/d",
-    ctype="gasexchange",
-    id="ex_O2",
-)
-#+END_SRC
-# create testable script
-#+BEGIN_SRC ipython :noweb yes :tangle iso6_test.py :exports none
-<<iso4code>>
-<<iso6>>
-M.run()
-M.plot([M.S_b.O2, M.O2_At])
-#+END_SRC
-Note however, that currently, the function is only evaluated once during model initialization, and that the user must ensure that the return value is in the units ("mol/(m^3 atm)"), or that the function returns a string with units (e.g., ="1098 mmol/(m^3 * atm)"=)
 
 # define a test function
 #+name: testrunner
