@@ -26,6 +26,7 @@ Contents
    Isotopes <manual/manual-3>
    Seawater & Carbon Chemistry <manual/manual-4>
    Extending ESBMTK <manual/manual-5>
+   Debugging ESBMTK <manual/manual-6>
    Contributions & Help <contributing>
    Authors <authors>
    Changelog <changelog>
