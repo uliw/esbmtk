@@ -2,7 +2,7 @@
 
 * Adding isotopes
  ESBMTK support the use of isotopes for many processes and species out of the box. This is best demonstrated with an example. In the following we use tow reservoirs of equal size, and apply an exchange flux. The reservoirs have similar concentrations but their isotopic ratios are different (-20 mUr versus +20 mUr [VSMOV].  After 3\space{}ky both reservoirs are isotopically homogeneous and have approached a \delta^{18}O value of 0 mUr  [VSMOV]. Note that this only required code changes on lines 17 and 23 where declare the initial delta values.
-#+BEGIN_SRC jupyter-python :tangle iso_1.py
+#+BEGIN_SRC ipython :tangle iso_1.py
 # This example is available as iso_1.py in ESBMTK Examples Repository
 # https://github.com/uliw/ESBMTK-Examples/tree/main/Examples_from_the_manual
 from esbmtk import (
@@ -46,7 +46,7 @@ ConnectionProperties(  # thermohaline upwelling
 M.run()
 #+END_SRC
 Plotting with
-#+BEGIN_SRC jupyter-python :tangle iso_1.py
+#+BEGIN_SRC ipython :tangle iso_1.py
 M.plot([M.S_b.O2, M.D_b.O2], fn="iso_1.png")
 #+END_SRC
 results in the following output:
@@ -64,7 +64,7 @@ In the next example, we use two reservoirs of equal size, and equal isotope rati
 \]
 Similarly to the first example, the system reaches equilibrium after about 3\space{}kyrs. The above is then easily adapted to model, e.g., isotope fractionation during the evaporation of water.
 #+name:iso3code
-#+BEGIN_SRC jupyter-python :tangle iso_3.py
+#+BEGIN_SRC ipython :tangle iso_3.py
 # This example is available as iso_3.py in ESBMTK Examples Repository
 # https://github.com/uliw/ESBMTK-Examples/tree/main/Examples_from_the_manual
 from esbmtk import (
@@ -110,7 +110,7 @@ M.run()
 #+END_SRC
 
 Plotting with 
-#+BEGIN_SRC jupyter-python :tangle iso_3.py
+#+BEGIN_SRC ipython :tangle iso_3.py
 M.plot([M.S_b.O2, M.D_b.O2], fn="iso_3.png")
 #+END_SRC
 results in the following output:
@@ -139,7 +139,7 @@ The fractionation factors for CO_{2} follow the parametrization of Zeebe 2012 (h
 
 Note however, that in order to calculate gas-exchange fluxes, we need to declare the surface area, of =S_b= (line 22), as well as the pressure, temperature and salinity conditions (line 25). The base model code looks like this: 
 #+name:iso4code
-#+BEGIN_SRC jupyter-python :tangle iso_4.py
+#+BEGIN_SRC ipython :tangle iso_4.py
 # This example is available as iso_4.py in ESBMTK Examples Repository
 # https://github.com/uliw/ESBMTK-Examples/tree/main/Examples_from_the_manual
 from esbmtk import (
@@ -170,7 +170,7 @@ Reservoir(
 #+END_SRC
 Presently ESBMTK does not support the automatic matching of liquid species to gas reservoirs. Therefore we have to declare each gas-exchange flux individually using the =Species2Species= connection type:
 #+name: iso4codegx
-#+BEGIN_SRC jupyter-python :tangle iso_4.py
+#+BEGIN_SRC ipython :tangle iso_4.py
 Species2Species(  # Ocean to atmosphere F8
     source=M.O2_At,  # Reservoir Species
     sink=M.S_b.O2,  # Reservoir Species
@@ -183,7 +183,7 @@ M.run()
 #+END_SRC
 In the following example the atmosphere equilibrates withe the surface ocean within a couple of months.
 plotting with
-#+BEGIN_SRC jupyter-python :tangle iso_4.py
+#+BEGIN_SRC ipython :tangle iso_4.py
 M.plot([M.S_b.O2, M.O2_At], fn="iso_4.png")
 #+END_SRC
 results in the following output:
@@ -199,7 +199,7 @@ results in the following output:
 Currently ESBMTK provides useful defaults for CO_{2} and O_2, but other gas species (or parametrizations) can be easily added. 
 Users can provide their own fractionation factor parametrizations by providing their own values to the connection object. To make simple example that considers fixed values:
 #+name: iso5
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC ipython
 Species2Species(  # Ocean to atmosphere F8
     source=M.O2_At,  # Reservoir Species
     sink=M.S_b.O2,  # Reservoir Species
@@ -221,8 +221,8 @@ M.plot([M.S_b.O2, M.O2_At])
 #+END_SRC
 Note that in the above case, the ESBMTK will automatically correct the
 solubility value for water vapor pressure.  For carbon there is another variable
-that defines the fractionation between CO_{2}aq and HCO_{3}^{-} (=a_db=, the
-fractionation between HCO_{3}^{-} and CO_{3}^{2-} is currently not considered by ESBMTK).
+that defines the fractionation between CO_{2}aq and HCO_{3}^{-} (=a_db= the
+fractionation between HCO_{3}^{-} and CO_{3}^{2-} ) is currently not considered by ESBMTK.
 
 # define a test function
 #+name: testrunner

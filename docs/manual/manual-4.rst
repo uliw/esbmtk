@@ -226,7 +226,7 @@ ESBMTK implements gas exchange across the Air-Sea interface as a :py:class:`esbm
         id="L_b_GEX",  # connection id
     )
 
-Defining gas transfer for O2  uses the same approach. 
+Defining gas transfer for O\ :sub:`2`\  uses the same approach.  Currently ESBMTK provides useful defaults for CO\ :sub:`2`\ and O\ :sub:`2`\ only. See the isotope chapter on how to define gas exchange reactions for custom species.
 
 pCO\ :sub:`2`\ Dependent Weathering
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

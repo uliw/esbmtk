@@ -4,7 +4,7 @@
 * Debugging and Tips & Tricks
 ** Key spelling errors
 ESBMTK does some rudimentary error checking on the key-value pairs that are used to initialize the ESBMTK objects. It will catch typos if a key is misspelled, e.g., in the following example, we use =elements= instead of =element=, and this will result in stack trace where the first entry points to the location in the model code where the error occurs,, and where the last line indicates that =elements= is not a valid keyword
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC ipython
 from esbmtk import Model
 
 M = Model(
@@ -60,7 +60,7 @@ elements is not a valid keyword
 ** Value errors
 ESBMTK will test if the provided value is of the right type, (i.e., a number, or a string). So in the following example, it will raise 
 an input error since =time_step= is given without a time unit.
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC ipython
 from esbmtk import Model
 
 M = Model(
@@ -94,7 +94,7 @@ InputError:
 ** Key-type errors
 ESBMTK will check that absolutely  necessary keys are provided, e.g., omitting the =timestep= key will result in a =Missingkeyworderror=.
 
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC ipython
 from esbmtk import Model
 
 M = Model(
@@ -125,7 +125,7 @@ timestep is a mandatory keyword
 :END:
 
 However, ESBMTK classes like  =Connectionproperties= accept a large range of keywords, and presently ESBMTK has no mechanism to test if all of these are suitable to the given connection or not. A typical mistake is shown in the following example that defines a connection where the flux is based on the concentration in the source reservoir. 
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC ipython
 Species2Species(  # Surface to deep box
     source=M.L_b.PO4,
     sink=M.D_b.PO4,
@@ -136,7 +136,7 @@ Species2Species(  # Surface to deep box
 It is a common mistake to replace the =scale= keyword with the =rate= keyword. This error will not be caught by ESBMTK since =rate= is valid keyword for other connection types. This can result in difficult to track errors. 
 ** Using introspection
 All ESBMTK objects maintain state, it is thus possible to inspect them. If we create e.g., the following model 
-#+BEGIN_SRC jupyter-python :results silent
+#+BEGIN_SRC ipython :results silent
 from esbmtk import Model, Reservoir
 
 M = Model(
@@ -154,7 +154,7 @@ Reservoir(
 
 
 we can query the parameters that we used to create the Reservoir instance by printing the model instance.
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC ipython
 print(M)
 #+END_SRC
 
@@ -166,7 +166,7 @@ print(M)
 : 
 
 Since ESBMTK follows a hierarchical structure we can query the element properties for Phosphor like this
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC ipython
 print(M.Carbon)
 #+END_SRC
 
@@ -183,7 +183,7 @@ print(M.Carbon)
 : 
 
 and the DIC reservoir in the surface box as
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC ipython
 print(M.S_b.DIC)
 #+END_SRC
 
@@ -200,14 +200,14 @@ print(M.S_b.DIC)
 : 
 
 to get a list of species that are defined for =M.Carbon= , we can use the =vars()= function (this results in a long list, so it is not shown here)
-#+BEGIN_SRC jupyter-python :results silent
+#+BEGIN_SRC ipython :results silent
 vars(M.Carbon)
 #+END_SRC
 
 
 ** Accessing ESBMTK objects that are created implicitly
 Inspecting objects that are explicitly defined is straightforward, however, connection objects like:
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC ipython
 Species2Species(  # Surface to deep box
     source=M.L_b.PO4,
     sink=M.D_b.PO4,
@@ -216,7 +216,7 @@ Species2Species(  # Surface to deep box
     id="productivity")
 #+END_SRC
 do not have an obvious name. The same is true for Flux instances. I.e., if we want scale the flux of organic bound phosphor as a function of the primary production of organic matter (OM), we need to know how the reference the OM flux. ESBMTK provides a lookup function for fluxes
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC ipython
 M.flux_summary(
     filter_by="productivity",
     exclude="H_b", # optional
@@ -224,7 +224,7 @@ M.flux_summary(
 )
 #+END_SRC
 as well as for connections:
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC ipython
 M.flux_summary(
     filter_by="productivity",
     return_list=True, # optional
@@ -234,7 +234,7 @@ The returned objects can then be inspected as usual.
 
 ** Inspecting the model equations
 Under normal circumstances the model equations are transient and created on the fly. It is however possible to create a permanent version and write the equations to the file =equations.py= . To enable this feature, on has to set the =debug_equations_file= key
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC ipython
 M = Model(
     stop="6 Myr",
     timestep="1 kyr",
