@@ -151,8 +151,6 @@ class Model(esbmtkBase):
             "start": ["0 yrs", (str, Q_)],
             "stop": ["None", (str, Q_)],
             "offset": ["0 yrs", (str, Q_)],
-            "max_timestep": ["None", (str, Q_)],
-            "min_timestep": ["1 second", (str, Q_)],
             "timestep": ["None", (str, Q_)],
             "element": ["None", (str, list)],
             "mass_unit": ["mol", (str)],
@@ -177,7 +175,6 @@ class Model(esbmtkBase):
             "debug_equations_file": [False, (bool)],
             "rtol": [1.0e-6, (float)],
             "bio_pump_functions": [0, (int)],  # custom/old
-            # "area_table": [None, (str, np.ndarray)],
             "opt_k_carbonic": [15, (int)],
             "opt_pH_scale": [1, (int)],  # 1: total scale
             "opt_buffers_mode": [2, (int)],
@@ -186,7 +183,7 @@ class Model(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: tp.List[str] = [
             "stop",
-            ["max_timestep", "timestep"],
+            "timestep",
         ]
         self.__initialize_keyword_variables__(kwargs)
 
@@ -316,7 +313,7 @@ class Model(esbmtkBase):
 
         warranty = (
             f"\n"
-            f"ESBMTK {version('esbmtk')}  Copyright (C) 2020 - "
+            f"ESBMTK {version('esbmtk')}  \n Copyright (C) 2020 - "
             f"{datetime.date.today().year}  Ulrich G.Wortmann\n"
             f"This program comes with ABSOLUTELY NO WARRANTY\n"
             f"For details see the LICENSE file\n"
