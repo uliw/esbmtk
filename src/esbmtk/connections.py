@@ -589,12 +589,6 @@ class Species2Species(esbmtkBase):
         """Add rate constant type process"""
 
         if self.ctype == "scale_with_concentration":
-            if self.k_value != "None":
-                self.scale = self.k_value
-                print(
-                    f"\n Warning: use scale instead of k_value for scale with concentration type\n"
-                )
-
             self.scale = map_units(
                 self,
                 self.scale,
