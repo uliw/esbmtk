@@ -153,6 +153,7 @@ class Model(esbmtkBase):
             "offset": ["0 yrs", (str, Q_)],
             "timestep": ["None", (str, Q_)],
             "element": ["None", (str, list)],
+            "min_timestep": ["1 second", (str, Q_)],
             "mass_unit": ["mol", (str)],
             "volume_unit": ["liter", (str)],
             "area_unit": ["m**2", (str)],
