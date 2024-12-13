@@ -174,8 +174,7 @@ class Model(esbmtkBase):
             "debug": [False, (bool)],
             "ideal_water": [True, (bool)],
             "use_ode": [True, (bool)],
-            "parse_model": [True, (bool)],
-            "keep_equations": [False, (bool)],
+            "debug_equations_file": [False, (bool)],
             "rtol": [1.0e-6, (float)],
             "bio_pump_functions": [0, (int)],  # custom/old
             # "area_table": [None, (str, np.ndarray)],
@@ -658,7 +657,7 @@ class Model(esbmtkBase):
         fn: str = "equations.py"  # file name
         eqs_fn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
         eqs_mod = eqs_fn.stem
-        if self.parse_model:
+        if self.debug_equations_file:
             if eqs_fn.exists():  # delete any leftover files
                 eqs_fn.unlink()
             eqs = self.write_temp_equations(cwd, write_equations_2, R, icl, cpl, ipl)
