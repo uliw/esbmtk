@@ -302,4 +302,4 @@ def gas_exchange_fluxes(
         liquid_reservoir.isotopes,
     )
 
-    return gas_exchange(gas_c, liquid_reservoir, g_c_aq, p)
+    return gas_exchange(gas_c.c, liquid_reservoir.c, g_c_aq.c, p)
