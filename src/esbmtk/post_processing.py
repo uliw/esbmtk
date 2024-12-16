@@ -126,19 +126,12 @@ def carbonate_system_2_pp(
         hplus: NDArrayFloat = rg.Hplus.c
         dic: NDArrayFloat = rg.DIC.c
         zsnow: NDArrayInt = rg.zsnow.c.astype(int)
-        # area_table: NDArrayFloat = rg.model.area_table
-        # area_dz_table: NDArrayFloat = rg.model.area_dz_table
-        # Csat_table: NDArrayFloat = rg.model.Csat_table
         export_data = export_fluxes[i]
-
-        # test the type of export flux information
-        # and ensure we have a vector
-        if isinstance(export_data, float):
+        # make sure we have a vector
+        if isinstance(export_data, (float, int)):
             export: NDArrayFloat = dic * 0 + export_data
-        elif not isinstance(export_data, np.ndarray):
-            export: NDArrayFloat = dic * 0 + export_data.c
         else:
-            export: NDArrayFloat = export_data
+            export = export_data
 
         # hco3 = dic / (1 + hplus / k1 + k2 / hplus)
         co3: NDArrayFloat = dic / (1 + hplus / k2 + hplus**2 / k1k2)
@@ -249,7 +242,7 @@ def carbonate_system_2_pp(
             name="CaCO3_export",
             register=rg,
             species=rg.mo.DIC,
-            data=export_data,
+            data=export,
             label="CaCO3_export",
             plt_units="mol/year",
         )
