@@ -121,6 +121,36 @@ results in the following output:
 #+caption: It takes about 3 kys to fully fractionate both ocean boxes.
 [[./iso_3.png]]
 
+# define a test function
+#+name: testrunner
+#+BEGIN_SRC ipython :exports none
+# run tests
+@pytest.mark.parametrize("test_input, expected", test_values)
+def test_values(test_input, expected):
+    t = 1e-6
+    assert abs(expected) * (1 - t) <= abs(test_input) <= abs(expected) * (1 + t)
+#+END_SRC
+# create testable script
+#+BEGIN_SRC jupyter-python :noweb yes :tangle iso3_test.py :exports none
+<<iso3code>>
+#+END_SRC
+# create test runner 
+# create unit test for iso3 case
+#+BEGIN_SRC ipython :noweb yes :tangle test_iso3.py :exports none
+import pytest
+import  iso3_test # import script
+
+M = iso3_test.M  # get model handle
+test_values = [  # result, reference value
+    (M.S_b.O2.c[-1], 0.00019999999999999998),
+    (M.D_b.O2.c[-1], 0.00019999999999999998),
+    (M.S_b.O2.d[-1], 2.4921132299215945),
+    (M.D_b.O2.d[-1], -2.492088372772069),
+]
+<<testrunner>>
+#+END_SRC
+
+
 ** Isotopes and Gas Exchange
 In the last example, we model the oxygen isotope fractionation during the air-sea gas exchange. This involves kinetic fractionation during degassing, and equilibrium fractionation during gas solution. At present, ESBMTK
 
@@ -193,6 +223,26 @@ results in the following output:
 #+name: iso4
 #+caption: It takes about 3 kys to fully fractionate both ocean boxes.
 [[./iso_4.png]]
+# create testable script
+#+BEGIN_SRC jupyter-python :noweb yes :tangle iso4_test.py :exports none
+<<iso4code>>
+<<iso4codegx>>
+#+END_SRC
+# create test runner 
+# create unit test for iso2 case
+#+BEGIN_SRC ipython :noweb yes :tangle test_iso4.py :exports none
+import pytest
+import  iso4_test # import script
+
+M = iso4_test.M  # get model handle
+test_values = [  # result, reference value
+    (M.S_b.O2.c[-1], 0.0002306171887706928),
+    (M.O2_At.c[-1], 0.20999483573786618),
+    (M.S_b.O2.d[-1], 0.7204862035835163),
+    (M.O2_At.d[-1], -0.00013345986215331608),
+]
+<<testrunner>>
+#+END_SRC
 
 
 ** Using user supplied parametrizations and custom species for gas exchange reactions.
@@ -212,8 +262,8 @@ Species2Species(  # Ocean to atmosphere F8
     id="ex_O2",
 )
 #+END_SRC
-# create testable script
-#+BEGIN_SRC ipython :noweb yes :tangle iso5_test.py :exports none
+# create example script
+#+BEGIN_SRC ipython :noweb yes :tangle iso_5.py :exports none
 <<iso4code>>
 <<iso5>>
 M.run()
@@ -223,53 +273,3 @@ Note that in the above case, the ESBMTK will automatically correct the
 solubility value for water vapor pressure.  For carbon there is another variable
 that defines the fractionation between CO_{2}aq and HCO_{3}^{-} (=a_db= the
 fractionation between HCO_{3}^{-} and CO_{3}^{2-} ) is currently not considered by ESBMTK.
-
-# define a test function
-#+name: testrunner
-#+BEGIN_SRC ipython :exports none
-# run tests
-@pytest.mark.parametrize("test_input, expected", test_values)
-def test_values(test_input, expected):
-    t = 1e-6
-    assert abs(expected) * (1 - t) <= abs(test_input) <= abs(expected) * (1 + t)
-#+END_SRC
-# create testable script
-#+BEGIN_SRC ipython :noweb yes :tangle iso2_test.py :exports none
-<<iso2code>>
-#+END_SRC
-
-# create testable script
-#+BEGIN_SRC ipython :noweb yes :tangle iso3_test.py :exports none
-<<iso4code>>
-<<iso4codegx>>
-#+END_SRC
-
-# create unit test for iso2 case
-#+BEGIN_SRC ipython :noweb yes :tangle test_iso2.py :exports none
-import pytest
-import  iso2_test # import script
-
-M = iso2_test.M  # get model handle
-test_values = [  # result, reference value
-    (M.S_b.O2.c[-1], 0.00019999999999999998),
-    (M.D_b.O2.c[-1], 0.00019999999999999998),
-    (M.S_b.O2.d[-1], 2.4921132299215945),
-    (M.D_b.O2.d[-1], -2.492088372772069),
-]
-<<testrunner>>
-#+END_SRC
-
-# create unit test for iso3 case
-#+BEGIN_SRC ipython :noweb yes :tangle test_iso4.py :exports none
-import pytest
-import  iso4_test # import script
-
-M = iso3_test.M  # get model handle
-test_values = [  # result, reference value
-    (M.S_b.O2.c[-1], 0.0002306171887706928),
-    (M.O2_At.c[-1], 0.20999483573786618),
-    (M.S_b.O2.d[-1], 0.7204862035835163),
-    (M.O2_At.d[-1], -0.0001334598621533160),
-]
-<<testrunner>>
-#+END_SRC
