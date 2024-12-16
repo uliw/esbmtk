@@ -507,7 +507,7 @@ class Signal(esbmtkBase):
 
         if "duration" in self.kwargs:
             self.duration = int(Q_(self.duration).to(self.species.mo.t_unit).magnitude)
-            if self.duration / self.species.mo.max_step < 10:
+            if self.duration / self.species.mo.dt < 10:
                 warnings.warn(
                     """\n\n Your signal duration is covered by less than 10
                     Intergration steps. This may not be what you want
