@@ -250,5 +250,5 @@ Users can provide their own fractionation factor parametrizations by providing t
 
 Note that in the above case, the ESBMTK will automatically correct the
 solubility value for water vapor pressure.  For carbon there is another variable
-that defines the fractionation between CO\ :sub:`2`\aq and HCO\ :sub:`3`\ \ :sup:`-`\ (``a_db``, the
-fractionation between HCO\ :sub:`3`\ \ :sup:`-`\ and CO\ :sub:`3`\ \ :sup:`2-`\ is currently not considered by ESBMTK).
+that defines the fractionation between CO\ :sub:`2`\aq and HCO\ :sub:`3`\ \ :sup:`-`\ (``a_db`` the
+fractionation between HCO\ :sub:`3`\ \ :sup:`-`\ and CO\ :sub:`3`\ \ :sup:`2-`\ ) is currently not considered by ESBMTK.

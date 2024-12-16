@@ -29,12 +29,8 @@ Species2Species(  # Ocean to atmosphere F8
     source=M.O2_At,  # Reservoir Species
     sink=M.S_b.O2,  # Reservoir Species
     species=M.O2,
-    solubility="1098 mmol/(m^3 * atm)",  # solubility
-    a_u=0.9972,  # kinetic fractionation factor
-    a_dg=1.00073,  # equilibrium fractionation factor
     piston_velocity="4.8 m/d",
     ctype="gasexchange",
     id="ex_O2",
 )
 M.run()
-M.plot([M.S_b.O2, M.O2_At])
