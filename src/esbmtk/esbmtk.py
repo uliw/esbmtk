@@ -150,10 +150,11 @@ class Model(esbmtkBase):
         self.defaults: dict[str, tp.List[any, tuple]] = {
             "start": ["0 yrs", (str, Q_)],
             "stop": ["None", (str, Q_)],
-            "offset": ["0 yrs", (str, Q_)],
-            "timestep": ["None", (str, Q_)],
-            "element": ["None", (str, list)],
+            "offset": ["0 yrs", (str, Q_)],  # depreceated
+            "timestep": ["None", (str, Q_)],  # depreceated
+            "max_timestep": ["None", (str, Q_)],
             "min_timestep": ["1 second", (str, Q_)],
+            "element": ["None", (str, list)],
             "mass_unit": ["mol", (str)],
             "volume_unit": ["liter", (str)],
             "area_unit": ["m**2", (str)],
@@ -163,7 +164,7 @@ class Model(esbmtkBase):
             "display_precision": [0.01, (float)],
             "plot_style": ["default", (str)],
             "m_type": ["Not Set", (str)],
-            "number_of_datapoints": [1000, (int)],
+            # "number_of_datapoints": [1000, (int)],
             "step_limit": [1e9, (int, float, str)],
             "register": ["local", (str)],
             "save_flux_data": [False, (bool)],
@@ -184,12 +185,17 @@ class Model(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: tp.List[str] = [
             "stop",
-            "timestep",
+            ["timestep", "max_timestep"],
         ]
         self.__initialize_keyword_variables__(kwargs)
+        # chyeck for deprecated key-words
+        if self.timestep != "None":
+            self.max_timestep = self.timestep
+            raise DeprecationWarning(
+                "\ntimestep is depreceated, please replace with max_timestep\n"
+            )
 
         self.name = "M"
-
         # empty list which will hold all reservoir references
         self.lmo: tp.List = []
         self.lmo2: tp.List = []
@@ -257,7 +263,6 @@ class Model(esbmtkBase):
 
         self.min_timestep = self.ensure_q(self.min_timestep).to(self.t_unit).magnitude
         self.dt = self.max_timestep
-        self.max_step = self.dt
         self.offset = self.ensure_q(self.offset).to(self.t_unit).magnitude
         self.start = self.start + self.offset
         self.stop = self.stop + self.offset
@@ -269,6 +274,7 @@ class Model(esbmtkBase):
         self.xl = f"Time [{self.t_unit}]"  # time axis label
         self.length = int(abs(self.stop - self.start))
         self.steps = int(abs(round(self.length / self.dt)))
+        self.number_of_datapoints = self.steps
 
         # self.time = (np.arange(self.steps) * self.dt) + self.start
         self.time_ode = np.linspace(
@@ -656,10 +662,6 @@ class Model(esbmtkBase):
         eqs_fn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
         eqs_mod = eqs_fn.stem
         if self.debug_equations_file:
-            if eqs_fn.exists():  # delete any leftover files
-                eqs_fn.unlink()
-            eqs = self.write_temp_equations(cwd, write_equations_2, R, icl, cpl, ipl)
-        else:
             if eqs_fn.exists():
                 print("\n\n Warning re-using the equations file \n")
                 print(
@@ -675,6 +677,10 @@ class Model(esbmtkBase):
             else:  # this is the first run. Create persistent equations file
                 eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
                 eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
+        else:
+            if eqs_fn.exists():  # delete any leftover files
+                eqs_fn.unlink()
+            eqs = self.write_temp_equations(cwd, write_equations_2, R, icl, cpl, ipl)
 
         method = kwargs["method"] if "method" in kwargs else "BDF"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
@@ -703,7 +709,7 @@ class Model(esbmtkBase):
                 rtol=self.rtol,
                 t_eval=self.time_ode,
                 first_step=self.min_timestep,
-                max_step=self.max_step,
+                max_step=self.dt,
                 vectorized=False,
             )
 
