@@ -1093,6 +1093,7 @@ class VectorData(esbmtkBase):
         if self.isotopes:
             # print(f"rn = {rn}, sp = {sp.name}")
             df[f"{rn} {sp.ln} [{cmu}]"] = self.l[start:stop:stride]  # light isotope
+
         df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
 
         file_path = Path(fn)
