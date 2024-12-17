@@ -553,6 +553,9 @@ class Signal(esbmtkBase):
         if self.reservoir != "None":
             self.__apply_signal__()
 
+
+    
+        
     def __init_signal_data__(self) -> None:
         """1. Create a vector which contains the signal data. The vector length
            can exceed the modelling domain.
@@ -596,44 +599,74 @@ class Signal(esbmtkBase):
         # remove signal fluxes from global flux list
         self.mo.lof.remove(self.nf)
 
-        # map into model space
-        insert_start_time = self.st - self.mo.offset
-        insert_stop_time = insert_start_time + self.duration
+        # Creating signal time array 
+        dt = self.mo.dt # model time step
+        model_start      = self.mo.start
+        model_end      = self.mo.stop 
+        signal_start      = self.st
+        signal_end      = self.st+self.duration # calculated end time
 
-        dt1 = abs(int((self.st - self.mo.offset - self.mo.start)))
-        dt2 = abs(int((self.st + self.duration - self.mo.stop - self.mo.offset)))
+        model_time = self.mo.time # model time array
+        signal_time = np.arange(signal_start,signal_end,self.duration/len(self.s_m)) # this currently only works with the right input, e.g. length of signal data has to be a common denominator of signal duration (i.e. self.duration)
+        
+        # Checking variable values
+        print(
+            f"dt: {dt}\n"
+            f"model start time: {model_start     }\n"
+            f"model end time: {model_end     }\n"
+            f"signal start time: {signal_start     }\n"
+            f"signal end time: {signal_end     }\n"
+            f"model time: {model_time}\n"
+            f"model time step calc: {self.mo.time[2]-self.mo.time[1]}\n"
+            f"check signal time in model domain: {signal_start      in model_time}\n"
+            f"signal data: {self.s_m}\n"
+            f"signal data length: {len(self.s_m)}\n"
+            f"model time length:  {len(model_time)}\n"
+            f"signal time constr: {signal_time}\n"
+            f"signal time length: {len(signal_time)}\n"
+        )
 
-        # This fails if actual model steps != dt
-        model_start_index = int(max(insert_start_time / self.mo.dt, 0))
-        model_stop_index = int(min((self.mo.steps + dt2 / self.mo.dt), self.mo.steps))
-        signal_start_index = int(min(dt1, 0))
-        signal_stop_index = int(self.length) # - max(0, dt2) + 1)
+       
+        
+        if self.duration % dt != 0 or self.st % dt != 0:
+            print("Signal time is not applicable to model time step. Please try again. (Model time step has to be common denominator of signal start time and signal duration")
+            return
+            # signal time is sliceable to model time steps
+            # signal_time = np.ndarray(signal_start, dt, signal_end) --> should give an array with times divided into time steps
 
-        if self.mo.debug:
-            print(
-                f"dt1 = {dt1}, dt2 = {dt2}, offset = {self.mo.offset}\n"
-                f"insert start time = {insert_start_time}\n"
-                f"insert_stop time = {insert_stop_time}\n"
-                f"duration = {self.duration}\n"
-                f"msi = {model_start_index}, msp = {model_stop_index}\n"
-                f"model num_steps = {model_stop_index-model_start_index}\n"
-                f"ssi = {signal_start_index}, ssp = {signal_stop_index}\n"
-                f"signal num_steps = {signal_stop_index-signal_start_index}\n"
-                f"self.nf.m[{model_start_index}:{model_stop_index}] = self.s_m[{signal_start_index}:{signal_stop_index}]"
-            )
-        """ FIXME: This code is a mess! Start by creating vector with default
-        values. If multiplication type, fill with ones, if addition type fill
-        with zeros. Test if flux is still necessary. Clean up insertion code.
-        """
-        if signal_start_index < signal_stop_index:
-            si = min(model_stop_index, signal_stop_index)
-            self.nf.m[model_start_index:si] = self.s_m[signal_start_index:si]
-            if self.nf.isotopes:
-                self.nf.l[model_start_index:model_stop_index] = self.s_l[
-                    signal_start_index:signal_stop_index
-                ]
 
-        return self.nf
+        # Create initial results, which are all nan
+        mapped_time = np.full_like(model_time, np.nan, dtype=float)
+        mapped_m = np.full_like(model_time, np.nan, dtype=float)
+        mapped_l= np.full_like(model_time, np.nan, dtype=float)
+
+        mask = np.in1d(model_time, signal_time)
+        mapped_time[mask] = model_time[mask] 
+
+        # Go through mapped_time to check where there was a match between model and signal times. Collect signal data for where times matched
+        for i,t in enumerate(mapped_time):
+            if t >= 0:
+                signal_index = np.searchsorted(signal_time,t)
+                mapped_m[i] = self.s_m[signal_index]
+                if self.nf.isotopes:
+                    mapped_l[i] = self.s_l[signal_index]
+                
+
+        # Control
+        print(f"Mapped time: {mapped_time}\n"
+              f"Model time: {model_time}\n"
+              f"Mapped time length: {len(mapped_time)}\n"
+              f"Model time length: {len(model_time)}\n"
+              f"Mapped data m: {mapped_m}\n"
+              f"Mapped data m length: {len(mapped_m)}\n"
+              f"Signal data m: {self.s_m}\n"
+              f"Signal data m length: {len(self.s_m)}\n"
+              )
+              
+        breakpoint()
+        # Return is currently a tuple with all three arrays
+        return (mapped_time, mapped_m, mapped_l)
+        
 
     def __square__(self, s, e) -> None:
         """Create Square Signal"""
