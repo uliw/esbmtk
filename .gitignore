@@ -71,3 +71,4 @@ MANIFEST
 /src/esbmtk/Documentation/state/
 equations.py
 flycheck
+/src/esbmtk/extended_classes_OG.py
