@@ -553,9 +553,6 @@ class Signal(esbmtkBase):
         if self.reservoir != "None":
             self.__apply_signal__()
 
-
-    
-        
     def __init_signal_data__(self) -> None:
         """1. Create a vector which contains the signal data. The vector length
            can exceed the modelling domain.
@@ -599,16 +596,18 @@ class Signal(esbmtkBase):
         # remove signal fluxes from global flux list
         self.mo.lof.remove(self.nf)
 
-        # Creating signal time array 
-        dt = self.mo.dt # model time step
-        model_start      = self.mo.start
-        model_end      = self.mo.stop 
-        signal_start      = self.st
-        signal_end      = self.st+self.duration # calculated end time
+        # Creating signal time array
+        dt = self.mo.dt  # model time step
+        model_start = self.mo.start
+        model_end = self.mo.stop
+        signal_start = self.st
+        signal_end = self.st + self.duration  # calculated end time
 
-        model_time = self.mo.time # model time array
-        signal_time = np.arange(signal_start,signal_end,self.duration/len(self.s_m)) # this currently only works with the right input, e.g. length of signal data has to be a common denominator of signal duration (i.e. self.duration)
-        
+        model_time = self.mo.time  # model time array
+        signal_time = np.arange(
+            signal_start, signal_end, self.duration / len(self.s_m)
+        )  # this currently only works with the right input, e.g. length of signal data has to be a common denominator of signal duration (i.e. self.duration)
+
         # Checking variable values
         print(
             f"dt: {dt}\n"
@@ -626,47 +625,45 @@ class Signal(esbmtkBase):
             f"signal time length: {len(signal_time)}\n"
         )
 
-       
-        
         if self.duration % dt != 0 or self.st % dt != 0:
-            print("Signal time is not applicable to model time step. Please try again. (Model time step has to be common denominator of signal start time and signal duration")
+            print(
+                "Signal time is not applicable to model time step. Please try again. (Model time step has to be common denominator of signal start time and signal duration"
+            )
             return
             # signal time is sliceable to model time steps
             # signal_time = np.ndarray(signal_start, dt, signal_end) --> should give an array with times divided into time steps
 
-
         # Create initial results, which are all nan
         mapped_time = np.full_like(model_time, np.nan, dtype=float)
         mapped_m = np.full_like(model_time, np.nan, dtype=float)
-        mapped_l= np.full_like(model_time, np.nan, dtype=float)
+        mapped_l = np.full_like(model_time, np.nan, dtype=float)
 
         mask = np.in1d(model_time, signal_time)
-        mapped_time[mask] = model_time[mask] 
+        mapped_time[mask] = model_time[mask]
 
         # Go through mapped_time to check where there was a match between model and signal times. Collect signal data for where times matched
-        for i,t in enumerate(mapped_time):
+        for i, t in enumerate(mapped_time):
             if t >= 0:
-                signal_index = np.searchsorted(signal_time,t)
+                signal_index = np.searchsorted(signal_time, t)
                 mapped_m[i] = self.s_m[signal_index]
                 if self.nf.isotopes:
                     mapped_l[i] = self.s_l[signal_index]
-                
 
         # Control
-        print(f"Mapped time: {mapped_time}\n"
-              f"Model time: {model_time}\n"
-              f"Mapped time length: {len(mapped_time)}\n"
-              f"Model time length: {len(model_time)}\n"
-              f"Mapped data m: {mapped_m}\n"
-              f"Mapped data m length: {len(mapped_m)}\n"
-              f"Signal data m: {self.s_m}\n"
-              f"Signal data m length: {len(self.s_m)}\n"
-              )
-              
+        print(
+            f"Mapped time: {mapped_time}\n"
+            f"Model time: {model_time}\n"
+            f"Mapped time length: {len(mapped_time)}\n"
+            f"Model time length: {len(model_time)}\n"
+            f"Mapped data m: {mapped_m}\n"
+            f"Mapped data m length: {len(mapped_m)}\n"
+            f"Signal data m: {self.s_m}\n"
+            f"Signal data m length: {len(self.s_m)}\n"
+        )
+
         breakpoint()
         # Return is currently a tuple with all three arrays
         return (mapped_time, mapped_m, mapped_l)
-        
 
     def __square__(self, s, e) -> None:
         """Create Square Signal"""
@@ -787,9 +784,8 @@ class Signal(esbmtkBase):
         else:
             num_steps = self.mo.number_of_datapoints
 
-        
         # setup the points at which to interpolate
-        xi = np.linspace(self.st, self.et, num_steps+1)
+        xi = np.linspace(self.st, self.et, num_steps + 1)
 
         self.s_m: NDArrayFloat = np.interp(
             xi, self.s_time, self.s_data
