@@ -263,7 +263,7 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
             dict_key = next(iter(line))  # get first key
             dict_value = line[dict_key]
             if dict_key[:2] == "F_":  # is flux
-                """ The following code needs to extract the connection
+                """The following code needs to extract the connection
                 object. Names must have the following scheme
                 M.Conn_CO2_At_to_H_b_CO2_H_b._F
                 """
@@ -1324,7 +1324,10 @@ def get_string_between_brackets(s: str) -> str:
 
 
 def check_for_quantity(quantity, unit):
-    """check if keyword is quantity or string an convert as necessary
+    """check if keyword is quantity or string an convert as necessary.
+    - If input is a string, convert string into a quantity
+    - If input is a quantity, do nothing
+    - if input is a number, convert to default quantity
 
     Parameters
     ----------

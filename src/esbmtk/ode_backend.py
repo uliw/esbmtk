@@ -488,7 +488,6 @@ def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> st
     elif isinstance(d, Species):
         a = f"{ind}({get_ic(d, icl,d.isotopes)}),\n"
     elif isinstance(d, GasReservoir):
-        # print(f" {d.full_name} isotopes {d.isotopes}")
         a = f"{ind}({get_ic(d, icl,d.isotopes)}),\n"
     elif isinstance(d, Reservoir):
         a = f"{ind}{d.full_name},\n"

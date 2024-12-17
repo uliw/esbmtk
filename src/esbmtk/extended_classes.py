@@ -507,7 +507,7 @@ class Signal(esbmtkBase):
 
         if "duration" in self.kwargs:
             self.duration = int(Q_(self.duration).to(self.species.mo.t_unit).magnitude)
-            if self.duration / self.species.mo.max_step < 10:
+            if self.duration / self.species.mo.dt < 10:
                 warnings.warn(
                     """\n\n Your signal duration is covered by less than 10
                     Intergration steps. This may not be what you want
@@ -1122,6 +1122,7 @@ class VectorData(esbmtkBase):
         if self.isotopes:
             # print(f"rn = {rn}, sp = {sp.name}")
             df[f"{rn} {sp.ln} [{cmu}]"] = self.l[start:stop:stride]  # light isotope
+
         df[f"{rn} {sn} [{cmu}]"] = self.c[start:stop:stride]  # concentration
 
         file_path = Path(fn)
@@ -2134,7 +2135,7 @@ class GasReservoir(SpeciesBase):
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "species": ["None", (str, SpeciesProperties)],
-            "delta": [0, (int, float)],
+            "delta": ["None", (int, float)],
             "reservoir_mass": ["1.7786E20 mol", (str, Q_)],
             "species_ppm": ["None", (str, Q_)],
             "plot_transform_c": ["None", (str, Callable)],
@@ -2205,10 +2206,11 @@ class GasReservoir(SpeciesBase):
         self.l: NDArrayFloat = np.zeros(self.mo.steps)
         # initialize concentration vector
         self.c: NDArrayFloat = self.m / self.volume.to(self.v_unit).magnitude
-        # isotope mass
-        # self.l = get_l_mass(self.m, self.delta, self.species.r)
-        self.l = get_l_mass(self.c, self.delta, self.species.r)
-        # delta of reservoir
+
+        if self.delta != "None":
+            self.isotopes = True
+            self.l = get_l_mass(self.c, self.delta, self.species.r)
+        
         self.v: float = (
             np.zeros(self.mo.steps) + self.volume.to(self.v_unit).magnitude
         )  # mass of atmosphere

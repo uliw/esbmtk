@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 import uuid
-import typing as tp
+from typing import List, Union, Callable, Any
 import numpy as np
 import numpy.typing as npt
 from .esbmtk import esbmtkBase
@@ -245,6 +245,9 @@ class Species2Species(esbmtkBase):
             "bypass": ["None", (str, Species, GasReservoir)],
             "isotopes": [False, (bool)],
             "solubility": ["None", (str, int, float)],
+            "a_db": [1, (Callable, int, float)],
+            "a_dg": [1, (Callable, int, float)],
+            "a_u": [1, (Callable, int, float)],
             "area": ["None", (str, int, float, Q_)],
             "ex": [1, (int, float)],
             "pco2_0": ["280 ppm", (str, Q_)],
@@ -255,9 +258,9 @@ class Species2Species(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: tp.List = ["source", "sink"]
-        self.lop: tp.List = []
-        self.lof: tp.List = []
+        self.lrk: List = ["source", "sink"]
+        self.lop: List = []
+        self.lof: List = []
 
         self.__initialize_keyword_variables__(kwargs)
 
@@ -284,7 +287,7 @@ class Species2Species(esbmtkBase):
         elif isinstance(self.pco2_0, Q_):
             self.pco2_0 = self.pco2_0.magnitude.to("ppm").magnitude * 1e-6
 
-        self.lop: tp.List = self.pl if "pl" in kwargs else []
+        self.lop: List = self.pl if "pl" in kwargs else []
         if self.signal != "None":
             self.lop.append(self.signal)
 
@@ -306,9 +309,9 @@ class Species2Species(esbmtkBase):
 
         self.get_species(self.r1, self.r2)  #
         self.mo: Model = self.sp.mo  # the current model handle
-        self.lof: tp.List[Flux] = []  # list of fluxes in this connection
+        self.lof: List[Flux] = []  # list of fluxes in this connection
         # get a list of all reservoirs registered for this species
-        self.lor: tp.List[Species] = self.mo.lor
+        self.lor: List[Species] = self.mo.lor
 
         if self.scale == "None":
             self.scale = 1.0
@@ -586,12 +589,6 @@ class Species2Species(esbmtkBase):
         """Add rate constant type process"""
 
         if self.ctype == "scale_with_concentration":
-            if self.k_value != "None":
-                self.scale = self.k_value
-                print(
-                    f"\n Warning: use scale instead of k_value for scale with concentration type\n"
-                )
-
             self.scale = map_units(
                 self,
                 self.scale,
@@ -634,11 +631,11 @@ class Species2Species(esbmtkBase):
 
     # ---- epsilon ----
     @property
-    def epsilon(self) -> tp.Union[float, int]:
+    def epsilon(self) -> Union[float, int]:
         return self._epsilon
 
     @epsilon.setter
-    def epsilon(self, a: tp.Union[float, int]) -> None:
+    def epsilon(self, a: Union[float, int]) -> None:
         if self.update and a != "None":
             self.__delete_process__()
             self.__delete_flux__()
@@ -647,7 +644,7 @@ class Species2Species(esbmtkBase):
 
     # ---- rate  ----
     @property
-    def rate(self) -> tp.Union[float, int]:
+    def rate(self) -> Union[float, int]:
         return self._rate
 
     @rate.setter
@@ -663,11 +660,11 @@ class Species2Species(esbmtkBase):
 
     # ---- delta  ----
     @property
-    def delta(self) -> tp.Union[float, int]:
+    def delta(self) -> Union[float, int]:
         return self._delta
 
     @delta.setter
-    def delta(self, d: tp.Union[float, int]) -> None:
+    def delta(self, d: Union[float, int]) -> None:
         if self.update and d != "None":
             self.__delete_process__()
             self.__delete_flux__()
@@ -731,7 +728,7 @@ class ConnectionProperties(esbmtkBase):
             Q_,
         )
 
-        self.defaults: dict[str, tp.Any] = {
+        self.defaults: dict[str, Any] = {
             "id": ["None", (str)],
             "source": [
                 "None",
@@ -762,7 +759,7 @@ class ConnectionProperties(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: tp.List = ["source", "sink", "ctype"]
+        self.lrk: List = ["source", "sink", "ctype"]
         self.__initialize_keyword_variables__(kwargs)
 
         if self.register == "None":
@@ -771,7 +768,7 @@ class ConnectionProperties(esbmtkBase):
         # # self.source.lor is a  list with the object names in the group
         self.mo = self.sink.lor[0].mo
         self.model = self.mo
-        self.loc: tp.List = []  # list of connection objects
+        self.loc: List = []  # list of connection objects
 
         self.name = f"ConnGrp_{self.source.name}_to_{self.sink.name}_{self.id}"
         # fixme this results in duplicate names in the model namespace.
@@ -795,7 +792,7 @@ class ConnectionProperties(esbmtkBase):
 
         from esbmtk import Reservoir, SinkProperties, SourceProperties
 
-        self.connections: tp.List = []
+        self.connections: List = []
 
         if isinstance(self.ctype, str):
             if isinstance(self.source, (Reservoir, SinkProperties, SourceProperties)):

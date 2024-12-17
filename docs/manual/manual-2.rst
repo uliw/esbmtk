@@ -41,7 +41,7 @@ The default is to add the signal to a given connection. It is however also possi
     M.run()
 
 Note that the ``plot()`` method accepts the signal object as well. In general, any ESBMTK object that has data that varies with time, can be plotted by the ``plot()`` method. ESBMTK also provides classes to include
-external data  :py:class:`esbmtk.extended_classes.ExternalData()`   as well as classes to mix and match data into the same plot :py:class:`esbmtk.extended_classes.DataField()`. The file ``is92a_comparison_plots.py`` (see  `https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010 <https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010>`_) shows a use case. Furthermore, :py:class:`esbmtk.esbmtk.Model.plot()`  returns a tuple with the figure instance, list of axs objects, which allows even more complex figure manipulations (see ``steady_state_plots.py`` in the same repository).
+external data  :py:class:`esbmtk.extended_classes.ExternalData()`   as well as classes to mix and match data into the same plot :py:class:`esbmtk.extended_classes.DataField()`. The file ``is92a_comparison_plots.py`` (see  `https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010 <https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010>`_) shows a use case. Furthermore, :py:class:`esbmtk.esbmtk.Model.plot()`  returns a tuple with the figure instance, list of ``axs`` objects, which allows even more complex figure manipulations (see ``steady_state_plots.py`` in the same repository).
 
 .. code:: ipython
 
@@ -196,126 +196,6 @@ which results in the below plot. The full code is available in the examples dire
 
 
     Output of ``po4_3.py`` demonstrating the use of the ``data_summaries()`` function
-
-Adding isotopes
-~~~~~~~~~~~~~~~
-
-Let's assume that the weathering flux of carbon has :math:`\delta`\ :sup:`13`\C value of 0 mUr, that photosynthesis fractionates by -28 mUr, and that organic matter burial does not fractionate . These changes require the following changes to the previous model code (the full code is available in the examples directory as ``po4_4`` at `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_):
-
-1. Isotope ratios require non-zero concentrations to avoid a division by zero,
-
-2. You need to specify the initial isotope ratio for each reservoir
-
-3. Sources and Sinks require a flag for each Species that uses isotopes
-
-4. You need to indicate for each reservoir that ``DIC`` requires isotope calculations
-
-5. You  need to specify the isotope ratio of the weathering flux
-
-6. You  need to specify the fractionation factor during photosynthesis
-
-7. You need to specify the fractionation factor during burial
-
-.. code:: ipython
-    :name: po44_2
-
-    SourceProperties(
-        name="weathering",
-        species=[M.PO4, M.DIC],
-        isotopes={M.DIC: True},
-    )
-    SinkProperties(
-        name="burial",
-        species=[M.PO4, M.DIC],
-        isotopes={M.DIC: True},
-    )
-    Reservoir(
-        name="S_b",
-        volume="3E16 m**3",  # surface box volume
-        concentration={M.DIC: "2 umol/l", M.PO4: "0 umol/l"},
-        isotopes={M.DIC: True},
-        delta={M.DIC: 0},
-    )
-    Reservoir(
-        name="D_b",
-        volume="100E16 m**3",  # deeb box volume
-        concentration={M.DIC: "2 umol/l", M.PO4: "0 umol/l"},
-        isotopes={M.DIC: True},
-        delta={M.DIC: 0},
-    )
-    ConnectionProperties(  # thermohaline downwelling
-        source=M.S_b,  # source of flux
-        sink=M.D_b,  # target of flux
-        ctype="scale_with_concentration",
-        scale=thc,
-        id="thc_up",
-    )
-    ConnectionProperties(  # thermohaline upwelling
-        source=M.D_b,  # source of flux
-        sink=M.S_b,  # target of flux
-        ctype="scale_with_concentration",
-        scale=thc,
-        id="thc_down",
-    )
-    ConnectionProperties(  # weathering
-        source=M.weathering,  # source of flux
-        sink=M.S_b,  # target of flux
-        rate={M.DIC: F_w_PO4 * Redfield, M.PO4: F_w_PO4},  # rate of flux
-        ctype="regular",
-        id="weathering",  # connection id
-        delta={M.DIC: 0},
-    )
-    ConnectionProperties(  # P-uptake by photosynthesis
-        source=M.S_b,  # source of flux
-        sink=M.D_b,  # target of flux
-        ctype="scale_with_concentration",
-        scale=M.S_b.volume / tau,
-        id="primary_production",
-        species=[M.PO4],  # apply this only to PO4
-    )
-    ConnectionProperties(  # OM Primary production as a function of P-concentration
-        source=M.S_b,  # source of flux
-        sink=M.D_b,  # target of flux
-        ref_reservoirs=M.S_b.PO4,
-        ctype="scale_with_concentration",
-        scale=Redfield * M.S_b.volume / tau,
-        species=[M.DIC],
-        id="OM_production",
-        epsilon=-28,  # mUr
-    )
-    ConnectionProperties(  # P burial
-        source=M.D_b,  # source of flux
-        sink=M.burial,  # target of flux
-        ctype="scale_with_flux",
-        ref_flux=M.flux_summary(filter_by="primary_production", return_list=True)[0],
-        scale={M.PO4: F_b, M.DIC: F_b * Redfield},
-        id="burial",
-        epsilon={M.DIC: 0},
-    )
-
-Note that in order to enable isotope calculations, we only had to add/modify 8 lines (4, 9, 15, 16, 22, 32, 63, 72).
-Running this code and using the :py:class:`esbmtk.utility_functions.data_summaries()` class to simplify the plotting command
-
-.. code:: ipython
-    :name: po44_3
-
-    M.run()
-    pl = data_summaries(
-        M,  # model instance 
-        [M.DIC, M.PO4],  # SpeciesProperties list 
-        [M.S_b, M.D_b],  # Reservoir list
-    )
-    M.plot(pl, fn="po4_4.png")
-
-results in the following graph. Note that the run-time has been reduced to 1000 years so that the graph does not just show the steady state.
-
-.. _po4_2_with_isotopes:
-
-.. figure:: ./po4_4.png
-    :width: 400
-
-
-    Output of ``po4_4.py`` Note that the run-time has been reduced to 1000 years, so that the graph does not just show the steady state. The upper box shows the gradual increase in DIC concentrations and the lower shows the corresponding isotope ratios. The system will achieve isotopic equilibrium within approximately 2000 years.
 
 Using many boxes
 ~~~~~~~~~~~~~~~~

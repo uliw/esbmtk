@@ -139,6 +139,8 @@ class input_parsing(object):
         Note that this function assumes that all defaults have been registered
         with the instance via __register_variable_names__()
         """
+        import sys
+
         for key, value in kwargs.items():
             if key not in defaults:
                 raise KeywordError(f"{key} is not a valid keyword")

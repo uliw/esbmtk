@@ -126,19 +126,12 @@ def carbonate_system_2_pp(
         hplus: NDArrayFloat = rg.Hplus.c
         dic: NDArrayFloat = rg.DIC.c
         zsnow: NDArrayInt = rg.zsnow.c.astype(int)
-        # area_table: NDArrayFloat = rg.model.area_table
-        # area_dz_table: NDArrayFloat = rg.model.area_dz_table
-        # Csat_table: NDArrayFloat = rg.model.Csat_table
         export_data = export_fluxes[i]
-
-        # test the type of export flux information
-        # and ensure we have a vector
-        if isinstance(export_data, float):
+        # make sure we have a vector
+        if isinstance(export_data, (float, int)):
             export: NDArrayFloat = dic * 0 + export_data
-        elif not isinstance(export_data, np.ndarray):
-            export: NDArrayFloat = dic * 0 + export_data.c
         else:
-            export: NDArrayFloat = export_data
+            export = export_data
 
         # hco3 = dic / (1 + hplus / k1 + k2 / hplus)
         co3: NDArrayFloat = dic / (1 + hplus / k2 + hplus**2 / k1k2)
@@ -249,7 +242,7 @@ def carbonate_system_2_pp(
             name="CaCO3_export",
             register=rg,
             species=rg.mo.DIC,
-            data=export_data,
+            data=export,
             label="CaCO3_export",
             plt_units="mol/year",
         )
@@ -279,15 +272,21 @@ def gas_exchange_fluxes(
         raise ValueError("pv must be quantity or string")
 
     scale = liquid_reservoir.register.area * pv
-    gas_c = gas_reservoir.c
+    gas_c = gas_reservoir
     p_H2O = liquid_reservoir.register.swc.p_H2O
 
     if liquid_reservoir.species.name == "DIC":
         solubility = liquid_reservoir.register.swc.SA_co2
-        g_c_aq = liquid_reservoir.register.CO2aq.c
+        g_c_aq = liquid_reservoir.register.CO2aq
+        a_db = liquid_reservoir.register.swc.co2_a_db
+        a_dg = liquid_reservoir.register.swc.co2_a_dg
+        a_u = liquid_reservoir.register.swc.co2_a_u
     elif liquid_reservoir.species.name == "O2":
         solubility = liquid_reservoir.register.swc.SA_o2
-        g_c_aq = liquid_reservoir.register.O2.c
+        g_c_aq = liquid_reservoir.register.O2
+        a_db = liquid_reservoir.register.swc.o2_a_db
+        a_dg = liquid_reservoir.register.swc.o2_a_dg
+        a_u = liquid_reservoir.register.swc.o2_a_u
     else:
         raise ValueError("flux calculation is only supported for DIC and O2")
 
@@ -297,10 +296,10 @@ def gas_exchange_fluxes(
         scale,
         p_H2O,
         solubility,
-        swc.a_db,
-        swc.a_dg,
-        swc.a_u,
+        a_db,
+        a_dg,
+        a_u,
         liquid_reservoir.isotopes,
     )
 
-    return gas_exchange(gas_c, liquid_reservoir.c, g_c_aq, p)
+    return gas_exchange(gas_c.c, liquid_reservoir.c, g_c_aq.c, p)

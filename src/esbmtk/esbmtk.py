@@ -150,10 +150,10 @@ class Model(esbmtkBase):
         self.defaults: dict[str, tp.List[any, tuple]] = {
             "start": ["0 yrs", (str, Q_)],
             "stop": ["None", (str, Q_)],
-            "offset": ["0 yrs", (str, Q_)],
+            "offset": ["0 yrs", (str, Q_)],  # depreceated
+            "timestep": ["None", (str, Q_)],  # depreceated
             "max_timestep": ["None", (str, Q_)],
             "min_timestep": ["1 second", (str, Q_)],
-            "timestep": ["None", (str, Q_)],
             "element": ["None", (str, list)],
             "mass_unit": ["mol", (str)],
             "volume_unit": ["liter", (str)],
@@ -164,7 +164,7 @@ class Model(esbmtkBase):
             "display_precision": [0.01, (float)],
             "plot_style": ["default", (str)],
             "m_type": ["Not Set", (str)],
-            "number_of_datapoints": [1000, (int)],
+            # "number_of_datapoints": [1000, (int)],
             "step_limit": [1e9, (int, float, str)],
             "register": ["local", (str)],
             "save_flux_data": [False, (bool)],
@@ -174,11 +174,9 @@ class Model(esbmtkBase):
             "debug": [False, (bool)],
             "ideal_water": [True, (bool)],
             "use_ode": [True, (bool)],
-            "parse_model": [True, (bool)],
-            "keep_equations": [False, (bool)],
+            "debug_equations_file": [False, (bool)],
             "rtol": [1.0e-6, (float)],
             "bio_pump_functions": [0, (int)],  # custom/old
-            # "area_table": [None, (str, np.ndarray)],
             "opt_k_carbonic": [15, (int)],
             "opt_pH_scale": [1, (int)],  # 1: total scale
             "opt_buffers_mode": [2, (int)],
@@ -187,12 +185,17 @@ class Model(esbmtkBase):
         # provide a list of absolutely required keywords
         self.lrk: tp.List[str] = [
             "stop",
-            ["max_timestep", "timestep"],
+            ["timestep", "max_timestep"],
         ]
         self.__initialize_keyword_variables__(kwargs)
+        # chyeck for deprecated key-words
+        if self.timestep != "None":
+            self.max_timestep = self.timestep
+            raise DeprecationWarning(
+                "\ntimestep is depreceated, please replace with max_timestep\n"
+            )
 
         self.name = "M"
-
         # empty list which will hold all reservoir references
         self.lmo: tp.List = []
         self.lmo2: tp.List = []
@@ -260,7 +263,6 @@ class Model(esbmtkBase):
 
         self.min_timestep = self.ensure_q(self.min_timestep).to(self.t_unit).magnitude
         self.dt = self.max_timestep
-        self.max_step = self.dt
         self.offset = self.ensure_q(self.offset).to(self.t_unit).magnitude
         self.start = self.start + self.offset
         self.stop = self.stop + self.offset
@@ -272,6 +274,7 @@ class Model(esbmtkBase):
         self.xl = f"Time [{self.t_unit}]"  # time axis label
         self.length = int(abs(self.stop - self.start))
         self.steps = int(abs(round(self.length / self.dt)))
+        self.number_of_datapoints = self.steps
 
         # self.time = (np.arange(self.steps) * self.dt) + self.start
         self.time_ode = np.linspace(
@@ -317,7 +320,7 @@ class Model(esbmtkBase):
 
         warranty = (
             f"\n"
-            f"ESBMTK {version('esbmtk')}  Copyright (C) 2020 - "
+            f"ESBMTK {version('esbmtk')}  \n Copyright (C) 2020 - "
             f"{datetime.date.today().year}  Ulrich G.Wortmann\n"
             f"This program comes with ABSOLUTELY NO WARRANTY\n"
             f"For details see the LICENSE file\n"
@@ -628,6 +631,15 @@ class Model(esbmtkBase):
         else:
             raise ModelError(f"Solver={self.solver} is unkknown")
 
+    def write_temp_equations(self, cwd, write_equations_2, R, icl, cpl, ipl):
+        tempfile.tempdir = cwd
+        with tempfile.NamedTemporaryFile(suffix=".py") as tmp_file:
+            eqs_fn = tmp_file.name
+            eqs_mod = eqs_fn.split("/")[-1].split(".")[0]
+            eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
+            eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
+        return eqs
+
     def ode_solver(self, kwargs):
         """
         Use the ode solver
@@ -646,27 +658,29 @@ class Model(esbmtkBase):
 
         cwd = Path.cwd()
         sys.path.append(cwd)  # required on windows
-        if self.parse_model:
-            tempfile.tempdir = cwd
-            with tempfile.NamedTemporaryFile(suffix=".py") as tmp_file:
-                eqs_fn = tmp_file.name
-                eqs_mod = eqs_fn.split("/")[-1].split(".")[0]
+        fn: str = "equations.py"  # file name
+        eqs_fn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
+        eqs_mod = eqs_fn.stem
+        if self.debug_equations_file:
+            if eqs_fn.exists():
+                print("\n\n Warning re-using the equations file \n")
+                print(
+                    "\n type y to proceed. Any other key will delete the file and create a new one"
+                )
+                k = input("type y/n :")
+                if k == "y":  # read old file
+                    eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
+                else:  # delete old file, and create new one
+                    eqs_fn.unlink()
+                    eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
+                    eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
+            else:  # this is the first run. Create persistent equations file
                 eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
                 eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
         else:
-            fn: str = "equations.py"  # file name
-            eqs_fn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
-            eqs_mod = eqs_fn.stem  # just the file wo extension
-            if eqs_fn.is_file():
-                warnings.warn(
-                    """ Re-using equation file. Delete it manually if you
-                        want an updated version"""
-                )
-
-                eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
-            else:
-                eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
-                eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
+            if eqs_fn.exists():  # delete any leftover files
+                eqs_fn.unlink()
+            eqs = self.write_temp_equations(cwd, write_equations_2, R, icl, cpl, ipl)
 
         method = kwargs["method"] if "method" in kwargs else "BDF"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
@@ -695,7 +709,7 @@ class Model(esbmtkBase):
                 rtol=self.rtol,
                 t_eval=self.time_ode,
                 first_step=self.min_timestep,
-                max_step=self.max_step,
+                max_step=self.dt,
                 vectorized=False,
             )
 
@@ -886,6 +900,18 @@ class Model(esbmtkBase):
         for o in self.lmo:
             print(f"deleting {o}")
             del __builtins__[o]
+
+    def __init_dimensionalities__(self, ureg):
+        """This is need to test the dimensionality of input
+        data
+        """
+        self.substance_per_volume_d = ureg("mol/liter").dimensionality
+        self.substance_per_mass_d = ureg("mol/kg").dimensionality
+        self.substance_d = ureg("mol").dimensionality
+        self.mass_d = ureg("kg").dimensionality
+        self.length_d = ureg("m").dimensionality
+        self.flux_d = ureg("mol/s").dimensionality
+        self.time_d = ureg("s").dimensionality
 
 
 class ElementProperties(esbmtkBase):
@@ -1720,6 +1746,9 @@ class Species(SpeciesBase):
         self.l = np.zeros(len(self.model.time))
         self.m = np.zeros(len(self.model.time))
         self.__set_legacy_names__(kwargs)
+
+        if self.delta != "None":
+            self.isotopes = True
 
         # geoemtry information
         if self.volume == "None":

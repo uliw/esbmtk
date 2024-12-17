@@ -21,6 +21,5 @@ from .seawater import *
 from .post_processing import *
 from .processes import *
 from .carbonate_chemistry import *
-from .experiments import *
 
 np.seterr(invalid="ignore")
