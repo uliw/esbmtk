@@ -535,7 +535,8 @@ class Signal(esbmtkBase):
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
-        self.data = self.__init_signal_data__()
+        self.s_m, self.s_l = self.__init_signal_data__() 
+        self.data.m, self.data.l = self.__mapping_signal_model_domain__()
         self.m = self.data.m
         if self.isotopes:
             self.l = self.data.l
@@ -596,6 +597,9 @@ class Signal(esbmtkBase):
         # remove signal fluxes from global flux list
         self.mo.lof.remove(self.nf)
 
+        return self.s_m, self.s_l
+       
+    def __mapping_signal_model_domain__(self) -> None:
         # Creating signal time array
         dt = self.mo.dt  # model time step
         model_start = self.mo.start
@@ -605,9 +609,10 @@ class Signal(esbmtkBase):
 
         model_time = self.mo.time  # model time array
         signal_time = np.arange(
-            signal_start, signal_end, self.duration / len(self.s_m)
-        )  # this currently only works with the right input, e.g. length of signal data has to be a common denominator of signal duration (i.e. self.duration)
+            signal_start, signal_end, self.duration / len(self.s_m))
 
+            
+    
         # Checking variable values
         print(
             f"dt: {dt}\n"
@@ -625,18 +630,18 @@ class Signal(esbmtkBase):
             f"signal time length: {len(signal_time)}\n"
         )
 
-        if self.duration % dt != 0 or self.st % dt != 0:
-            print(
-                "Signal time is not applicable to model time step. Please try again. (Model time step has to be common denominator of signal start time and signal duration"
-            )
-            return
-            # signal time is sliceable to model time steps
-            # signal_time = np.ndarray(signal_start, dt, signal_end) --> should give an array with times divided into time steps
-
         # Create initial results, which are all nan
+        # Check with self.stype whether it's addition, then 0 as default, or multiplication then 1 as default (instead of nan)
         mapped_time = np.full_like(model_time, np.nan, dtype=float)
-        mapped_m = np.full_like(model_time, np.nan, dtype=float)
-        mapped_l = np.full_like(model_time, np.nan, dtype=float)
+        if self.stype == 'addition':
+            mapped_m = np.full_like(model_time, 0, dtype=float)
+        elif self.stype == 'multiplication':
+            mapped_m = np.full_like(model_time, 1, dtype=float)
+        else:
+            # in case something is wrong with stype, still create mapped data
+            mapped_m = np.full_like(model_time, np.nan, dtype=float)
+            
+        mapped_l = np.full_like(model_time, np.nan, dtype=float) # keep it as is for isotopes until clarified
 
         mask = np.in1d(model_time, signal_time)
         mapped_time[mask] = model_time[mask]
@@ -647,7 +652,7 @@ class Signal(esbmtkBase):
                 signal_index = np.searchsorted(signal_time, t)
                 mapped_m[i] = self.s_m[signal_index]
                 if self.nf.isotopes:
-                    mapped_l[i] = self.s_l[signal_index]
+                    mapped_l[i] = self.s_l[signal_index] # TODO: for future thinking how to calculate isotope fluxes
 
         # Control
         print(
@@ -662,8 +667,8 @@ class Signal(esbmtkBase):
         )
 
         breakpoint()
-        # Return is currently a tuple with all three arrays
-        return (mapped_time, mapped_m, mapped_l)
+        
+        return mapped_m, mapped_l
 
     def __square__(self, s, e) -> None:
         """Create Square Signal"""
