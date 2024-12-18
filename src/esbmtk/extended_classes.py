@@ -537,6 +537,13 @@ class Signal(esbmtkBase):
 
         self.s_m, self.s_l = self.__init_signal_data__()
         self.data = self.__map_signal__()
+        """ self.__map_signal__() returns a Flux object, so we need to remove this
+        from the list of model Fluxes, with
+        self.mo.lof.remove(self.data)
+        since we do not use is as a Flux. Probably
+        better to just create a vector object instead. FIXME sometime
+        """
+        self.mo.lof.remove(self.data)
         self.m = self.data.m
         if self.isotopes:
             self.l = self.data.l
@@ -585,7 +592,7 @@ class Signal(esbmtkBase):
 
         return self.s_m, self.s_l
 
-    def __map_signal__(self) -> None:
+    def __map_signal__(self) -> Flux:
         """
         Maps signal to model domain, s.t. signal data fits the time grid of model.
         Returns mapped data.
@@ -602,10 +609,6 @@ class Signal(esbmtkBase):
             save_flux_data=True,
             register=self,
         )
-        # Do we need this line?
-        # remove signal fluxes from global flux list
-        # self.mo.lof.remove(self.mapped_signal_data)
-
         # Creating signal time array
         dt = self.mo.dt  # model time step
         model_start = self.mo.start
@@ -616,8 +619,9 @@ class Signal(esbmtkBase):
         model_time = self.mo.time  # model time array
         signal_time = np.arange(signal_start, signal_end, self.duration / len(self.s_m))
 
-        # Create initial results, which are all nan
-        # Check with self.stype whether it's addition, then 0 as default, or multiplication then 1 as default (instead of nan)
+        # Create initial results, which are all nan Check with self.stype
+        # whether it's addition, then 0 as default, or multiplication then 1 as
+        # default (instead of nan)
         mapped_time = np.full_like(model_time, np.nan, dtype=float)
         if self.stype == "addition":
             mapped_m = np.full_like(model_time, 0, dtype=float)
@@ -634,7 +638,8 @@ class Signal(esbmtkBase):
         mask = np.in1d(model_time, signal_time)
         mapped_time[mask] = model_time[mask]
 
-        # Go through mapped_time to check where there was a match between model and signal times. Collect signal data for where times matched
+        # Go through mapped_time to check where there was a match between model
+        # and signal times. Collect signal data for where times matched
         for i, t in enumerate(mapped_time):
             if t >= 0:
                 signal_index = np.searchsorted(signal_time, t)
