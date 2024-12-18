@@ -436,7 +436,7 @@ class Signal(esbmtkBase):
       Signal.plot()
       Signal.info()
 
-    The sinal class provides the following data fields
+    The signal class provides the following data fields
 
         self.data.m which contains the interpolated signal
                     also available as self.m
@@ -535,8 +535,8 @@ class Signal(esbmtkBase):
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
-        self.s_m, self.s_l = self.__init_signal_data__() 
-        self.data.m, self.data.l = self.__mapping_signal_model_domain__()
+        self.s_m, self.s_l = self.__init_signal_data__()
+        self.data = self.__map_signal__()
         self.m = self.data.m
         if self.isotopes:
             self.l = self.data.l
@@ -583,8 +583,17 @@ class Signal(esbmtkBase):
                 "argument needs to be either square/pyramid, or an ExternalData object. "
             )
 
-        # create a dummy flux we can act up
-        self.nf: Flux = Flux(
+        return self.s_m, self.s_l
+
+    def __map_signal__(self) -> None:
+        """
+        Maps signal to model domain, s.t. signal data fits the time grid of model.
+        Returns mapped data.
+        """
+        from esbmtk import Flux
+
+        # Create a dummy flux we can act up
+        mapped_signal_data: Flux = Flux(
             name=self.n + "_data",
             species=self.sp,
             rate=f"0 {self.sp.mo.f_unit}",
@@ -593,13 +602,10 @@ class Signal(esbmtkBase):
             save_flux_data=True,
             register=self,
         )
-
+        # Do we need this line?
         # remove signal fluxes from global flux list
-        self.mo.lof.remove(self.nf)
+        # self.mo.lof.remove(self.mapped_signal_data)
 
-        return self.s_m, self.s_l
-       
-    def __mapping_signal_model_domain__(self) -> None:
         # Creating signal time array
         dt = self.mo.dt  # model time step
         model_start = self.mo.start
@@ -608,40 +614,22 @@ class Signal(esbmtkBase):
         signal_end = self.st + self.duration  # calculated end time
 
         model_time = self.mo.time  # model time array
-        signal_time = np.arange(
-            signal_start, signal_end, self.duration / len(self.s_m))
-
-            
-    
-        # Checking variable values
-        print(
-            f"dt: {dt}\n"
-            f"model start time: {model_start     }\n"
-            f"model end time: {model_end     }\n"
-            f"signal start time: {signal_start     }\n"
-            f"signal end time: {signal_end     }\n"
-            f"model time: {model_time}\n"
-            f"model time step calc: {self.mo.time[2]-self.mo.time[1]}\n"
-            f"check signal time in model domain: {signal_start      in model_time}\n"
-            f"signal data: {self.s_m}\n"
-            f"signal data length: {len(self.s_m)}\n"
-            f"model time length:  {len(model_time)}\n"
-            f"signal time constr: {signal_time}\n"
-            f"signal time length: {len(signal_time)}\n"
-        )
+        signal_time = np.arange(signal_start, signal_end, self.duration / len(self.s_m))
 
         # Create initial results, which are all nan
         # Check with self.stype whether it's addition, then 0 as default, or multiplication then 1 as default (instead of nan)
         mapped_time = np.full_like(model_time, np.nan, dtype=float)
-        if self.stype == 'addition':
+        if self.stype == "addition":
             mapped_m = np.full_like(model_time, 0, dtype=float)
-        elif self.stype == 'multiplication':
+        elif self.stype == "multiplication":
             mapped_m = np.full_like(model_time, 1, dtype=float)
         else:
             # in case something is wrong with stype, still create mapped data
             mapped_m = np.full_like(model_time, np.nan, dtype=float)
-            
-        mapped_l = np.full_like(model_time, np.nan, dtype=float) # keep it as is for isotopes until clarified
+
+        mapped_l = np.full_like(
+            model_time, np.nan, dtype=float
+        )  # keep it as is for isotopes until clarified
 
         mask = np.in1d(model_time, signal_time)
         mapped_time[mask] = model_time[mask]
@@ -651,24 +639,15 @@ class Signal(esbmtkBase):
             if t >= 0:
                 signal_index = np.searchsorted(signal_time, t)
                 mapped_m[i] = self.s_m[signal_index]
-                if self.nf.isotopes:
-                    mapped_l[i] = self.s_l[signal_index] # TODO: for future thinking how to calculate isotope fluxes
+                if self.isotopes:
+                    mapped_l[i] = self.s_l[
+                        signal_index
+                    ]  # TODO: for future thinking how to calculate isotope fluxes
 
-        # Control
-        print(
-            f"Mapped time: {mapped_time}\n"
-            f"Model time: {model_time}\n"
-            f"Mapped time length: {len(mapped_time)}\n"
-            f"Model time length: {len(model_time)}\n"
-            f"Mapped data m: {mapped_m}\n"
-            f"Mapped data m length: {len(mapped_m)}\n"
-            f"Signal data m: {self.s_m}\n"
-            f"Signal data m length: {len(self.s_m)}\n"
-        )
+        mapped_signal_data.m = mapped_m
+        mapped_signal_data.l = mapped_l
 
-        breakpoint()
-        
-        return mapped_m, mapped_l
+        return mapped_signal_data
 
     def __square__(self, s, e) -> None:
         """Create Square Signal"""
@@ -2215,7 +2194,7 @@ class GasReservoir(SpeciesBase):
         if self.delta != "None":
             self.isotopes = True
             self.l = get_l_mass(self.c, self.delta, self.species.r)
-        
+
         self.v: float = (
             np.zeros(self.mo.steps) + self.volume.to(self.v_unit).magnitude
         )  # mass of atmosphere
