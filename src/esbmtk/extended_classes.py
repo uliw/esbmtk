@@ -436,7 +436,7 @@ class Signal(esbmtkBase):
       Signal.plot()
       Signal.info()
 
-    The sinal class provides the following data fields
+    The signal class provides the following data fields
 
         self.data.m which contains the interpolated signal
                     also available as self.m
@@ -535,14 +535,22 @@ class Signal(esbmtkBase):
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
-        self.data = self.__init_signal_data__()
-        self.m = self.data.m
+        self.s_m, self.s_l = self.__init_signal_data__()
+        self.signal_data = self.__map_signal__()
+        """ self.__map_signal__() returns a Flux object, so we need to remove this
+        from the list of model Fluxes, with
+        self.mo.lof.remove(self.data)
+        since we do not use is as a Flux. Probably
+        better to just create a vector object instead. FIXME sometime
+        """
+        self.mo.lof.remove(self.signal_data)
+        self.m = self.signal_data.m
         if self.isotopes:
-            self.l = self.data.l
+            self.l = self.signal_data.l
 
-        self.data.n: str = self.name + "_data"  # update the name of the signal data
-        self.legend_left = self.data.legend_left
-        self.legend_right = self.data.legend_right
+        self.signal_data.n: str = self.name + "_data"  # update the name of the signal data
+        self.legend_left = self.signal_data.legend_left
+        self.legend_right = self.signal_data.legend_right
         # update isotope values
         # self.data.li = get_l_mass(self.data.m, self.data.d, self.sp.r)
 
@@ -582,8 +590,17 @@ class Signal(esbmtkBase):
                 "argument needs to be either square/pyramid, or an ExternalData object. "
             )
 
-        # create a dummy flux we can act up
-        self.nf: Flux = Flux(
+        return self.s_m, self.s_l
+
+    def __map_signal__(self) -> Flux:
+        """
+        Maps signal to model domain, s.t. signal data fits the time grid of model.
+        Returns mapped data.
+        """
+        from esbmtk import Flux
+
+        # Create a dummy flux we can act up
+        mapped_signal_data: Flux = Flux(
             name=self.n + "_data",
             species=self.sp,
             rate=f"0 {self.sp.mo.f_unit}",
@@ -592,48 +609,50 @@ class Signal(esbmtkBase):
             save_flux_data=True,
             register=self,
         )
+        # Creating signal time array
+        dt = self.mo.dt  # model time step
+        model_start = self.mo.start
+        model_end = self.mo.stop
+        signal_start = self.st
+        signal_end = self.st + self.duration  # calculated end time
 
-        # remove signal fluxes from global flux list
-        self.mo.lof.remove(self.nf)
+        model_time = self.mo.time  # model time array
+        signal_time = np.arange(signal_start, signal_end, self.duration / len(self.s_m))
 
-        # map into model space
-        insert_start_time = self.st - self.mo.offset
-        insert_stop_time = insert_start_time + self.duration
+        # Create initial results, which are all nan Check with self.stype
+        # whether it's addition, then 0 as default, or multiplication then 1 as
+        # default (instead of nan)
+        mapped_time = np.full_like(model_time, np.nan, dtype=float)
+        if self.stype == "addition":
+            mapped_m = np.full_like(model_time, 0, dtype=float)
+        elif self.stype == "multiplication":
+            mapped_m = np.full_like(model_time, 1, dtype=float)
+        else:
+            # in case something is wrong with stype, still create mapped data
+            mapped_m = np.full_like(model_time, np.nan, dtype=float)
 
-        dt1 = abs(int((self.st - self.mo.offset - self.mo.start)))
-        dt2 = abs(int((self.st + self.duration - self.mo.stop - self.mo.offset)))
+        mapped_l = np.full_like(
+            model_time, np.nan, dtype=float
+        )  # keep it as is for isotopes until clarified
 
-        # This fails if actual model steps != dt
-        model_start_index = int(max(insert_start_time / self.mo.dt, 0))
-        model_stop_index = int(min((self.mo.steps + dt2 / self.mo.dt), self.mo.steps))
-        signal_start_index = int(min(dt1, 0))
-        signal_stop_index = int(self.length) # - max(0, dt2) + 1)
+        mask = np.in1d(model_time, signal_time)
+        mapped_time[mask] = model_time[mask]
 
-        if self.mo.debug:
-            print(
-                f"dt1 = {dt1}, dt2 = {dt2}, offset = {self.mo.offset}\n"
-                f"insert start time = {insert_start_time}\n"
-                f"insert_stop time = {insert_stop_time}\n"
-                f"duration = {self.duration}\n"
-                f"msi = {model_start_index}, msp = {model_stop_index}\n"
-                f"model num_steps = {model_stop_index-model_start_index}\n"
-                f"ssi = {signal_start_index}, ssp = {signal_stop_index}\n"
-                f"signal num_steps = {signal_stop_index-signal_start_index}\n"
-                f"self.nf.m[{model_start_index}:{model_stop_index}] = self.s_m[{signal_start_index}:{signal_stop_index}]"
-            )
-        """ FIXME: This code is a mess! Start by creating vector with default
-        values. If multiplication type, fill with ones, if addition type fill
-        with zeros. Test if flux is still necessary. Clean up insertion code.
-        """
-        if signal_start_index < signal_stop_index:
-            si = min(model_stop_index, signal_stop_index)
-            self.nf.m[model_start_index:si] = self.s_m[signal_start_index:si]
-            if self.nf.isotopes:
-                self.nf.l[model_start_index:model_stop_index] = self.s_l[
-                    signal_start_index:signal_stop_index
-                ]
+        # Go through mapped_time to check where there was a match between model
+        # and signal times. Collect signal data for where times matched
+        for i, t in enumerate(mapped_time):
+            if t >= 0:
+                signal_index = np.searchsorted(signal_time, t)
+                mapped_m[i] = self.s_m[signal_index]
+                if self.isotopes:
+                    mapped_l[i] = self.s_l[
+                        signal_index
+                    ]  # TODO: for future thinking how to calculate isotope fluxes
 
-        return self.nf
+        mapped_signal_data.m = mapped_m
+        mapped_signal_data.l = mapped_l
+
+        return mapped_signal_data
 
     def __square__(self, s, e) -> None:
         """Create Square Signal"""
@@ -754,9 +773,8 @@ class Signal(esbmtkBase):
         else:
             num_steps = self.mo.number_of_datapoints
 
-        
         # setup the points at which to interpolate
-        xi = np.linspace(self.st, self.et, num_steps+1)
+        xi = np.linspace(self.st, self.et, num_steps + 1)
 
         self.s_m: NDArrayFloat = np.interp(
             xi, self.s_time, self.s_data
@@ -798,10 +816,10 @@ class Signal(esbmtkBase):
         new_signal.m = self.m + other.m
         # get delta of self
         if self.isotopes:
-            this_delta = get_delta(self.l, self.m - self.l, self.data.sp.r)
+            this_delta = get_delta(self.l, self.m - self.l, self.signal_data.sp.r)
             other_delta = get_delta(other.l, other.m - other.l, other.data.sp.r)
             new_signal.l = get_l_mass(
-                new_signal.m, this_delta + other_delta, new_signal.data.sp.r
+                new_signal.m, this_delta + other_delta, new_signal.signal_data.sp.r
             )
             # new_signal.l = max(self.l, other.l)
 
@@ -830,7 +848,7 @@ class Signal(esbmtkBase):
 
         ns: Signal = cp.deepcopy(self)
         ns.n: str = self.n + f"_repeated_{times}_times"
-        ns.data.n: str = self.n + f"_repeated_{times}_times_data"
+        ns.signal_data.n: str = self.n + f"_repeated_{times}_times_data"
         start: int = int(start / self.mo.dt)  # convert from time to index
         stop: int = int(stop / self.mo.dt)
         offset: int = int(offset / self.mo.dt)
@@ -838,29 +856,29 @@ class Signal(esbmtkBase):
         ns.stop: float = stop
         ns.offset: float = stop - start + offset
         ns.times: float = times
-        ns.ms: NDArrayFloat = self.data.m[start:stop]  # get the data slice we are using
-        ns.ds: NDArrayFloat = self.data.d[start:stop]
+        ns.ms: NDArrayFloat = self.signal_data.m[start:stop]  # get the data slice we are using
+        ns.ds: NDArrayFloat = self.signal_data.d[start:stop]
 
         diff = 0
         for _ in range(times):
             start += ns.offset
             stop += ns.offset
-            if start > len(self.data.m):
+            if start > len(self.signal_data.m):
                 break
-            elif stop > len(self.data.m):  # end index larger than data size
-                diff: int = stop - len(self.data.m)  # difference
+            elif stop > len(self.signal_data.m):  # end index larger than data size
+                diff: int = stop - len(self.signal_data.m)  # difference
                 stop -= diff
                 lds: int = len(ns.ds) - diff
             else:
                 lds: int = len(ns.ds)
 
-            ns.data.m[start:stop]: NDArrayFloat = ns.data.m[start:stop] + ns.ms[:lds]
-            ns.data.d[start:stop]: NDArrayFloat = ns.data.d[start:stop] + ns.ds[:lds]
+            ns.signal_data.m[start:stop]: NDArrayFloat = ns.signal_data.m[start:stop] + ns.ms[:lds]
+            ns.signal_data.d[start:stop]: NDArrayFloat = ns.signal_data.d[start:stop] + ns.ds[:lds]
 
         # and recalculate li and hi
-        ns.data.l: NDArrayFloat
-        ns.data.h: NDArrayFloat
-        [ns.data.l, ns.data.h] = get_imass(ns.data.m, ns.data.d, ns.data.sp.r)
+        ns.signal_data.l: NDArrayFloat
+        ns.signal_data.h: NDArrayFloat
+        [ns.signal_data.l, ns.signal_data.h] = get_imass(ns.signal_data.m, ns.signal_data.d, ns.signal_data.sp.r)
         return ns
 
     def __register_with_flux__(self, flux) -> None:
@@ -904,7 +922,7 @@ class Signal(esbmtkBase):
 
         # convert time and data to display units
         x = (M.time * M.t_unit).to(M.d_unit).magnitude
-        y1 = (self.data.m * M.f_unit).to(self.data.plt_units).magnitude
+        y1 = (self.signal_data.m * M.f_unit).to(self.signal_data.plt_units).magnitude
         legend = f"{self.legend_left} [{M.f_unit}]"
 
         # # test for plt_transform
@@ -926,7 +944,7 @@ class Signal(esbmtkBase):
             axt = ax.twinx()
             y2 = self.d  # no conversion for isotopes
             ln2 = axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
-            axt.set_ylabel(self.data.ld)
+            axt.set_ylabel(self.signal_data.ld)
             set_y_limits(axt, M)
             x.spines["top"].set_visible(False)
             # set combined legend
@@ -987,7 +1005,7 @@ class Signal(esbmtkBase):
         if self.isotopes:
             # print(f"rn = {rn}, sp = {sp.name}")
             df[f"{rn} {sp.ln} [{cmu}]"] = self.l[start:stop:stride]  # light isotope
-        df[f"{rn} {sn} [{cmu}]"] = self.data.m[start:stop:stride]  # concentration
+        df[f"{rn} {sn} [{cmu}]"] = self.signal_data.m[start:stop:stride]  # concentration
 
         file_path = Path(fn)
         print(f"saving signal to {file_path}")
@@ -2181,7 +2199,7 @@ class GasReservoir(SpeciesBase):
         if self.delta != "None":
             self.isotopes = True
             self.l = get_l_mass(self.c, self.delta, self.species.r)
-        
+
         self.v: float = (
             np.zeros(self.mo.steps) + self.volume.to(self.v_unit).magnitude
         )  # mass of atmosphere

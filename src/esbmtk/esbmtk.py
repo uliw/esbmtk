@@ -755,16 +755,16 @@ class Model(esbmtkBase):
         # interpolate signals into the ode time domain
         # must be done before changing model time domain
         for s in self.los:
-            s.data.m = np.interp(
+            s.signal_data.m = np.interp(
                 results.t,
                 self.time,
-                s.data.m,
+                s.signal_data.m,
             )
             if s.isotopes:
-                s.data.l = np.interp(
+                s.signal_data.l = np.interp(
                     results.t,
                     self.time,
-                    s.data.l,
+                    s.signal_data.l,
                 )
 
         # interpolate external data into ode time domain
