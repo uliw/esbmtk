@@ -379,8 +379,8 @@ import po4_1_test  # import script
 
 M = po4_1_test.M  # get model handle 
 test_values = [ # result, reference value
-    (M.S_b.PO4.c[-1], 0.0000149597179598576),
-    (M.D_b.PO4.c[-1], 0.0000219990964241379),
+    (M.S_b.PO4.c[-1], 1.4962054508166254e-05),
+    (M.D_b.PO4.c[-1], 2.2002543362315368e-05),
 ]
 <<testrunner>>
 #+END_SRC
