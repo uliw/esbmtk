@@ -1008,7 +1008,6 @@ class Signal(esbmtkBase):
         df[f"{rn} {sn} [{cmu}]"] = self.signal_data.m[start:stop:stride]  # concentration
 
         file_path = Path(fn)
-        print(f"saving signal to {file_path}")
         if append and file_path.exists():
             df.to_csv(file_path, header=False, mode="a", index=False)
         else:
@@ -1102,8 +1101,6 @@ class VectorData(esbmtkBase):
                 f"Model register keyword must be 'None'/'local' not {self.sp.mo.register}"
             )
 
-        print(f"saving to {fn}")
-        # build the dataframe
         df: pd.dataframe = DataFrame()
 
         df[f"{rn} Time [{mtu}]"] = self.mo.time[start:stop:stride]  # time
