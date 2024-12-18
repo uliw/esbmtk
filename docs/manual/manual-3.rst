@@ -139,6 +139,11 @@ results in the following output:
 
     It takes about 3 kys to fully fractionate both ocean boxes.
 
+Isotope and Signals
+~~~~~~~~~~~~~~~~~~~
+
+While signals can be used to multiply or add, e.g., a given flux, care must be taken when signals also modify isotope values, since there is currently no universal way how to interpret the delta value. As such, the signal delta value is ignored for multiplication type signals. For addition type signals, ESBMTK will not perform isotope mixing calculations. It is thus best, to add signals not o an existing flux, but to create a new flux with a value of zero, and assign a signal to this zero-value flux.
+
 Isotopes and Gas Exchange
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 

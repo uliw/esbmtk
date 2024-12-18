@@ -226,10 +226,10 @@ import po4_3_test  # import script
 
 M = po4_3_test.M  # get model handle 
 test_values = [ # result, reference value
-    (M.S_b.PO4.c[-1], 1.4999891897165636e-05),
-    (M.S_b.DIC.c[-1], 0.0015899885410995674),
-    (M.D_b.PO4.c[-1], 2.2058362084399994e-05),
-    (M.D_b.DIC.c[-1], 0.002338186380946409),
+    (M.S_b.PO4.c[-1], 1.4999904076830489e-05),
+    (M.S_b.DIC.c[-1], 0.0015899898321440323),
+    (M.D_b.PO4.c[-1], 2.205838005216536e-05),
+    (M.D_b.DIC.c[-1], 0.002338188285529528),
 ]
 <<testrunner>>
 #+END_SRC
