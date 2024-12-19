@@ -14,8 +14,11 @@
 <img alt="Python 3.11 ready" src="https://www.python.org" />
 </a>
 
-<a href="https://doi.org/10.5281/zenodo.11959366">
-<img alt=Zenodo DOI src="https://zenodo.org/badge/DOI/10.5281/zenodo.11959366.svg" alt="DOI"></a>
+<a href="https://doi.org/10.5281/zenodo.14531759"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.14531759.svg" alt="DOI"></a>
+
+<a href="https://anaconda.org/conda-forge/scores"> <img src="https://anaconda.org/conda-forge/scores/badges/version.svg" /> </a>
+
+<a href="https://anaconda.org/conda-forge/scores"> <img src="https://anaconda.org/conda-forge/scores/badges/latest_release_relative_date.svg" /> </a>
 
 
 # ESBMTK - The  Earth Sciences Box Modeling Toolkit
