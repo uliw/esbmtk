@@ -5,7 +5,6 @@
 # necessaryt libraries is already already running
 
 cd /home/uliw/user/python-scripts/esbmtk/docs/manual/
-rm *.py
 for i in *.org; do
     [ -f "$i" ] || break
     emacsclient -e "(progn (switch-to-buffer (find-file-noselect \"$i\")) (end-of-buffer) (org-babel-tangle) (kill-buffer))"
@@ -14,6 +13,22 @@ for i in *.org; do
 done
 
 mv *test*.py /home/uliw/user/python-scripts/esbmtk/tests/
+
+# regenerate images
+directory="/home/uliw/user/python-scripts/esbmtk/docs/manual/"
+
+# Loop through all Python files in the directory and execute them
+for script in "$directory"/*.py; do
+  # Check if the file exists (in case there are no .py files)
+  if [ -f "$script" ]; then
+    echo "Executing $script..."
+    python "$script"  # You can replace 'python' with 'python3' if needed
+  else
+    echo "No Python scripts found in $directory"
+  fi
+done
+
+# move python files to Example repository
 mv *.py /home/uliw/user/python-scripts/esbmtk_examples/Examples_from_the_manual/
 
 cd /home/uliw/user/python-scripts/esbmtk/
