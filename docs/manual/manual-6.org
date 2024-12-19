@@ -9,7 +9,7 @@ from esbmtk import Model
 
 M = Model(
     stop="6 Myr",
-    timestep="1 kyr",
+    max_timestep="1 kyr",
     elements=["Carbon", "Oxygen"])
 #+END_SRC
 
@@ -23,7 +23,7 @@ Cell In[4], line 3
       1 from esbmtk import Model
 ----> 3 M = Model(
       4     stop="6 Myr",
-      5     timestep="1 kyr",
+      5     max_timestep="1 kyr",
       6     elements=["Carbon", "Oxygen"],
       7 )
 
@@ -65,7 +65,7 @@ from esbmtk import Model
 
 M = Model(
     stop="6 Myr",
-    timestep=1,
+    max_timestep=1,
     elements=["Carbon", "Oxygen"])
 #+END_SRC
 
@@ -79,7 +79,7 @@ Cell In[5], line 3
       1 from esbmtk import Model
 ----> 3 M = Model(
       4     stop="6 Myr",
-      5     timestep=1,
+      5     max_timestep=1,
       6     elements=["Carbon", "Oxygen"],
       7 )
 ...
@@ -88,11 +88,11 @@ Cell In[5], line 3
 
 InputError: 
 
-1 for timestep must be of type (<class 'str'>, <class 'pint.Quantity'>), not <class 'int'>
+1 for max_timestep must be of type (<class 'str'>, <class 'pint.Quantity'>), not <class 'int'>
 #+end_example
 :END:
 ** Key-type errors
-ESBMTK will check that absolutely  necessary keys are provided, e.g., omitting the =timestep= key will result in a =Missingkeyworderror=.
+ESBMTK will check that absolutely  necessary keys are provided, e.g., omitting the =max_timestep= key will result in a =Missingkeyworderror=.
 
 #+BEGIN_SRC ipython
 from esbmtk import Model
@@ -120,7 +120,7 @@ Cell In[7], line 3
 
 MissingKeywordError: 
 
-timestep is a mandatory keyword
+max_timestep is a mandatory keyword
 #+end_example
 :END:
 
@@ -141,7 +141,7 @@ from esbmtk import Model, Reservoir
 
 M = Model(
     stop="6 Myr",
-    timestep="1 kyr",
+    max_timestep="1 kyr",
     element=["Carbon"])
 
 Reservoir(
@@ -161,7 +161,7 @@ print(M)
 #+RESULTS:
 : M (Model)
 :   stop = 6 Myr
-:   timestep = 1 kyr
+:   max_timestep = 1 kyr
 :   element = ['Carbon']
 : 
 
@@ -237,7 +237,7 @@ Under normal circumstances the model equations are transient and created on the 
 #+BEGIN_SRC ipython
 M = Model(
     stop="6 Myr",
-    timestep="1 kyr",
+    max_timestep="1 kyr",
     elements=["Carbon", "Oxygen"],
     debug_equations_file=True,
 )
