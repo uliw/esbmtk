@@ -646,7 +646,7 @@ class Signal(esbmtkBase):
         mapped_time[mask] = model_time[mask]
         print(f"Model time: {model_time}")
         print(f"Signal time: {signal_time}")
-        print(f"Signal time length: {len(signal_time)})
+        print(f"Signal time length: {len(signal_time)}")
         print(len(self.s_m))
         print(len(mapped_time))
 
