@@ -5,6 +5,7 @@
 # necessaryt libraries is already already running
 
 cd /home/uliw/user/python-scripts/esbmtk/docs/manual/
+rm *.py
 for i in *.org; do
     [ -f "$i" ] || break
     emacsclient -e "(progn (switch-to-buffer (find-file-noselect \"$i\")) (end-of-buffer) (org-babel-tangle) (kill-buffer))"
