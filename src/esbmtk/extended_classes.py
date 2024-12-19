@@ -614,12 +614,15 @@ class Signal(esbmtkBase):
         # Creating signal time array
         dt = self.mo.dt  # model time step
         print(f"model time step on line 613 {dt}")
-        self.st: float = self.s_time[0]  # signal start time
-        self.et: float = self.s_time[-1]  # signal end time
+        #self.st: float = self.s_time[0]  # signal start time
+        #self.et: float = self.s_time[-1]  # signal end time
         model_start = self.mo.start
         model_end = self.mo.stop
         signal_start = self.st
-        signal_end = self.et  # calculated end time
+        if self.filename == "None":
+            signal_end = self.st+self.duration  # calculated end time
+        else:
+            signal_end = self.et
 
         model_time = self.mo.time  # model time array
         signal_time = np.arange(signal_start, signal_end, dt)
