@@ -622,7 +622,8 @@ class Signal(esbmtkBase):
         signal_end = self.et  # calculated end time
 
         model_time = self.mo.time  # model time array
-        signal_time = np.arange(signal_start, signal_end + dt, dt)
+        signal_time = np.arange(signal_start, signal_end, dt)
+        
         # signal_time = np.round(self.s_time)
 
         # Create initial results, which are all nan Check with self.stype
@@ -786,9 +787,9 @@ class Signal(esbmtkBase):
         else:
             signal_duration = self.et - self.st
             model_time_step = self.mo.dt
-            num_steps = round(
+            num_steps = int(round(
                 signal_duration / model_time_step
-            )  # how many signal data points are needed to match model time step. TOFIX: what if duration/modeltimestep will not result in signal time points matching any of model time point (is that possible?)
+            ))  # how many signal data points are needed to match model time step. TOFIX: what if duration/modeltimestep will not result in signal time points matching any of model time point (is that possible?)
             print(signal_duration)
             print(f"model time step on line 785 {model_time_step}")
             print(num_steps)
