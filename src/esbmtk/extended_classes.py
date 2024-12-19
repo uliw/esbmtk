@@ -644,12 +644,11 @@ class Signal(esbmtkBase):
 
         mask = np.in1d(model_time, signal_time)
         mapped_time[mask] = model_time[mask]
-        print(model_time)
+        print(f"Model time: {model_time}")
         print(signal_time)
         print(len(signal_time))
         print(len(self.s_m))
         print(len(mapped_time))
-        breakpoint()
 
         # Go through mapped_time to check where there was a match between model
         # and signal times. Collect signal data for where times matched
