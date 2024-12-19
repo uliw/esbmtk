@@ -548,7 +548,9 @@ class Signal(esbmtkBase):
         if self.isotopes:
             self.l = self.signal_data.l
 
-        self.signal_data.n: str = self.name + "_data"  # update the name of the signal data
+        self.signal_data.n: str = (
+            self.name + "_data"
+        )  # update the name of the signal data
         self.legend_left = self.signal_data.legend_left
         self.legend_right = self.signal_data.legend_right
         # update isotope values
@@ -611,13 +613,17 @@ class Signal(esbmtkBase):
         )
         # Creating signal time array
         dt = self.mo.dt  # model time step
+        print(f"model time step on line 613 {dt}")
+        self.st: float = self.s_time[0]  # signal start time
+        self.et: float = self.s_time[-1]  # signal end time
         model_start = self.mo.start
         model_end = self.mo.stop
         signal_start = self.st
-        signal_end = self.st + self.duration  # calculated end time
+        signal_end = self.et  # calculated end time
 
         model_time = self.mo.time  # model time array
-        signal_time = np.arange(signal_start, signal_end, self.duration / len(self.s_m))
+        signal_time = np.arange(signal_start, signal_end + dt, dt)
+        # signal_time = np.round(self.s_time)
 
         # Create initial results, which are all nan Check with self.stype
         # whether it's addition, then 0 as default, or multiplication then 1 as
@@ -637,6 +643,12 @@ class Signal(esbmtkBase):
 
         mask = np.in1d(model_time, signal_time)
         mapped_time[mask] = model_time[mask]
+        print(model_time)
+        print(signal_time)
+        print(len(signal_time))
+        print(len(self.s_m))
+        print(len(mapped_time))
+        breakpoint()
 
         # Go through mapped_time to check where there was a match between model
         # and signal times. Collect signal data for where times matched
@@ -651,7 +663,8 @@ class Signal(esbmtkBase):
 
         mapped_signal_data.m = mapped_m
         mapped_signal_data.l = mapped_l
-
+        print(mapped_m)
+        print(len(mapped_m))
         return mapped_signal_data
 
     def __square__(self, s, e) -> None:
@@ -759,8 +772,8 @@ class Signal(esbmtkBase):
         self.s_time = self.ed.x
         self.s_data = self.ed.y * self.scale
 
-        self.st: float = self.s_time[0]  # start time
-        self.et: float = self.s_time[-1]  # end time
+        self.st: float = self.s_time[0]  # signal start time
+        self.et: float = self.s_time[-1]  # signal end time
         self.duration = int(round((self.et - self.st)))
         # num_steps = int(self.duration / self.mo.dt)
         if len(self.ed.x) > self.mo.number_of_datapoints:
@@ -771,8 +784,15 @@ class Signal(esbmtkBase):
             )
             raise ValueError(message)
         else:
-            num_steps = self.mo.number_of_datapoints
-
+            signal_duration = self.et - self.st
+            model_time_step = self.mo.dt
+            num_steps = round(
+                signal_duration / model_time_step
+            )  # how many signal data points are needed to match model time step. TOFIX: what if duration/modeltimestep will not result in signal time points matching any of model time point (is that possible?)
+            print(signal_duration)
+            print(f"model time step on line 785 {model_time_step}")
+            print(num_steps)
+        # breakpoint()
         # setup the points at which to interpolate
         xi = np.linspace(self.st, self.et, num_steps + 1)
 
@@ -856,7 +876,9 @@ class Signal(esbmtkBase):
         ns.stop: float = stop
         ns.offset: float = stop - start + offset
         ns.times: float = times
-        ns.ms: NDArrayFloat = self.signal_data.m[start:stop]  # get the data slice we are using
+        ns.ms: NDArrayFloat = self.signal_data.m[
+            start:stop
+        ]  # get the data slice we are using
         ns.ds: NDArrayFloat = self.signal_data.d[start:stop]
 
         diff = 0
@@ -872,13 +894,19 @@ class Signal(esbmtkBase):
             else:
                 lds: int = len(ns.ds)
 
-            ns.signal_data.m[start:stop]: NDArrayFloat = ns.signal_data.m[start:stop] + ns.ms[:lds]
-            ns.signal_data.d[start:stop]: NDArrayFloat = ns.signal_data.d[start:stop] + ns.ds[:lds]
+            ns.signal_data.m[start:stop]: NDArrayFloat = (
+                ns.signal_data.m[start:stop] + ns.ms[:lds]
+            )
+            ns.signal_data.d[start:stop]: NDArrayFloat = (
+                ns.signal_data.d[start:stop] + ns.ds[:lds]
+            )
 
         # and recalculate li and hi
         ns.signal_data.l: NDArrayFloat
         ns.signal_data.h: NDArrayFloat
-        [ns.signal_data.l, ns.signal_data.h] = get_imass(ns.signal_data.m, ns.signal_data.d, ns.signal_data.sp.r)
+        [ns.signal_data.l, ns.signal_data.h] = get_imass(
+            ns.signal_data.m, ns.signal_data.d, ns.signal_data.sp.r
+        )
         return ns
 
     def __register_with_flux__(self, flux) -> None:
@@ -1005,7 +1033,9 @@ class Signal(esbmtkBase):
         if self.isotopes:
             # print(f"rn = {rn}, sp = {sp.name}")
             df[f"{rn} {sp.ln} [{cmu}]"] = self.l[start:stop:stride]  # light isotope
-        df[f"{rn} {sn} [{cmu}]"] = self.signal_data.m[start:stop:stride]  # concentration
+        df[f"{rn} {sn} [{cmu}]"] = self.signal_data.m[
+            start:stop:stride
+        ]  # concentration
 
         file_path = Path(fn)
         print(f"saving signal to {file_path}")
