@@ -613,21 +613,17 @@ class Signal(esbmtkBase):
         )
         # Creating signal time array
         dt = self.mo.dt  # model time step
-        print(f"model time step on line 613 {dt}")
-        #self.st: float = self.s_time[0]  # signal start time
-        #self.et: float = self.s_time[-1]  # signal end time
         model_start = self.mo.start
         model_end = self.mo.stop
         signal_start = self.st
         if self.filename == "None":
-            signal_end = self.st+self.duration  # calculated end time
+            signal_end = self.st + self.duration  # calculated end time
         else:
             signal_end = self.et
 
         model_time = self.mo.time  # model time array
+        # imitate signal time array with same size as interpolated signal data (self.s_m)
         signal_time = np.arange(signal_start, signal_end, dt)
-        
-        # signal_time = np.round(self.s_time)
 
         # Create initial results, which are all nan Check with self.stype
         # whether it's addition, then 0 as default, or multiplication then 1 as
@@ -645,13 +641,12 @@ class Signal(esbmtkBase):
             model_time, np.nan, dtype=float
         )  # keep it as is for isotopes until clarified
 
+        # Filter signal time which exists in model time
+        # If signal time in model time, return True in mask
+        # Every time element in model time flagged with True is
+        # collected in mapped_time (array is only used within this method)
         mask = np.in1d(model_time, signal_time)
         mapped_time[mask] = model_time[mask]
-        print(f"Model time: {model_time}")
-        print(f"Signal time: {signal_time}")
-        print(f"Signal time length: {len(signal_time)}")
-        print(len(self.s_m))
-        print(len(mapped_time))
 
         # Go through mapped_time to check where there was a match between model
         # and signal times. Collect signal data for where times matched
@@ -666,8 +661,7 @@ class Signal(esbmtkBase):
 
         mapped_signal_data.m = mapped_m
         mapped_signal_data.l = mapped_l
-        print(mapped_m)
-        print(len(mapped_m))
+
         return mapped_signal_data
 
     def __square__(self, s, e) -> None:
@@ -778,7 +772,6 @@ class Signal(esbmtkBase):
         self.st: float = self.s_time[0]  # signal start time
         self.et: float = self.s_time[-1]  # signal end time
         self.duration = int(round((self.et - self.st)))
-        # num_steps = int(self.duration / self.mo.dt)
         if len(self.ed.x) > self.mo.number_of_datapoints:
             message = (
                 f"\n{self.filename} contains {len(self.ed.x)} datapoints\n",
@@ -789,13 +782,9 @@ class Signal(esbmtkBase):
         else:
             signal_duration = self.et - self.st
             model_time_step = self.mo.dt
-            num_steps = int(round(
-                signal_duration / model_time_step
-            ))  # how many signal data points are needed to match model time step. TOFIX: what if duration/modeltimestep will not result in signal time points matching any of model time point (is that possible?)
-            print(signal_duration)
-            print(f"model time step on line 785 {model_time_step}")
-            print(num_steps)
-        # breakpoint()
+            # Calculate how many data points are needed to interpolate signal duration with model time step
+            num_steps = int(round(signal_duration / model_time_step))
+
         # setup the points at which to interpolate
         xi = np.linspace(self.st, self.et, num_steps + 1)
 
