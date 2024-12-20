@@ -462,10 +462,8 @@ class Signal(esbmtkBase):
             "duration": ["None", (str, Q_)],
             "species": ["None", (SpeciesProperties)],
             "delta": [0, (int, float)],
-            "stype": [
-                "addition",
-                (str),
-            ],
+            "stype": ["addition", (str)],
+            "reverse": [False, (bool)],
             "shape": ["None", (str)],
             "filename": ["None", (str)],
             "mass": ["None", (str, Q_)],
@@ -659,8 +657,12 @@ class Signal(esbmtkBase):
                         signal_index
                     ]  # TODO: for future thinking how to calculate isotope fluxes
 
-        mapped_signal_data.m = mapped_m
-        mapped_signal_data.l = mapped_l
+        if self.reverse:
+            mapped_signal_data.m = np.flip(mapped_m)
+            mapped_signal_data.l = np.flip(mapped_l)
+        else:
+            mapped_signal_data.m = mapped_m
+            mapped_signal_data.l = mapped_l
 
         return mapped_signal_data
 
@@ -768,23 +770,12 @@ class Signal(esbmtkBase):
 
         self.s_time = self.ed.x
         self.s_data = self.ed.y * self.scale
-
         self.st: float = self.s_time[0]  # signal start time
         self.et: float = self.s_time[-1]  # signal end time
-        self.duration = int(round((self.et - self.st)))
-        if len(self.ed.x) > self.mo.number_of_datapoints:
-            message = (
-                f"\n{self.filename} contains {len(self.ed.x)} datapoints\n",
-                f"but model resolves only {self.mo.number_of_datapoints} datapoints\n",
-                f"adjust the number_of_datapoints option in the model object\n",
-            )
-            raise ValueError(message)
-        else:
-            signal_duration = self.et - self.st
-            model_time_step = self.mo.dt
-            # Calculate how many data points are needed to interpolate signal duration with model time step
-            num_steps = int(round(signal_duration / model_time_step))
-
+        signal_duration = self.et - self.st
+        model_time_step = self.mo.dt
+        # Calculate how many data points are needed to interpolate signal duration with model time step
+        num_steps = int(signal_duration / model_time_step)
         # setup the points at which to interpolate
         xi = np.linspace(self.st, self.et, num_steps + 1)
 
