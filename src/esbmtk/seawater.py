@@ -1,25 +1,27 @@
 """esbmtk: A general purpose Earth Science box model toolkit Copyright
-     (C), 2020-2021 Ulrich G. Wortmann
+(C), 2020-2021 Ulrich G. Wortmann
 
-     This program is free software: you can redistribute it and/or
-     modify it under the terms of the GNU General Public License as
-     published by the Free Software Foundation, either version 3 of
-     the License, or (at your option) any later version.
+This program is free software: you can redistribute it and/or
+modify it under the terms of the GNU General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
 
-     This program is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-     General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
 
-     You should have received a copy of the GNU General Public License
-     along with this program.  If not, see
-     <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see
+<https://www.gnu.org/licenses/>.
 
 """
 
 from __future__ import annotations
+
 import typing as tp
 import warnings
+
 import numpy as np
 import numpy.typing as npt
 import PyCO2SYS as pyco2
@@ -27,8 +29,7 @@ import PyCO2SYS as pyco2
 from .esbmtk_base import esbmtkBase
 
 if tp.TYPE_CHECKING:
-    from .esbmtk import Species, Model
-    from .extended_classes import Reservoir
+    pass
 
 
 # declare numpy types
@@ -75,9 +76,9 @@ class SeawaterConstants(esbmtkBase):
     """
 
     def __init__(self, **kwargs: dict[str, str]):
-        from esbmtk import Model, Species, Reservoir
+        from esbmtk import Model, Reservoir, Species
 
-        self.defaults: dict[tp.List[any, tuple]] = {
+        self.defaults: dict[list[any, tuple]] = {
             "name": ["None", (str)],
             "salinity": [35.0, (int, float)],
             "temperature": [25.0, (int, float)],
@@ -89,7 +90,7 @@ class SeawaterConstants(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: tp.List = ["name"]
+        self.lrk: list = ["name"]
         self.__initialize_keyword_variables__(kwargs)
         self.parent = self.register
 
@@ -97,7 +98,7 @@ class SeawaterConstants(esbmtkBase):
         self.n: str = self.name  # string =  name of this instance
         # self.mo: Model = self.model
         self.hplus = 10**-self.pH
-        self.constants: tp.List = ["K0", "K1", "K2", "KW", "KB", "Ksp_ca", "Ksp_ar"]
+        self.constants: list = ["K0", "K1", "K2", "KW", "KB", "Ksp_ca", "Ksp_ar"]
         self.constants.extend(["Ksp0", "KS", "KF", "FT", "K1K1", "K1K2"])
         self.species = ["dic", "ta", "co2aq", "co3", "boron"]
         self.species.extend(["boh4", "boh3", "oh", "ca2", "so4", "hplus"])
@@ -113,7 +114,6 @@ class SeawaterConstants(esbmtkBase):
 
     def update_parameters(self, **kwargs: dict) -> None:
         """Update values if necessary"""
-
         if "pos" in kwargs:
             pos = kwargs["pos"]
         else:
@@ -174,8 +174,8 @@ class SeawaterConstants(esbmtkBase):
 
     def show(self) -> None:
         """Printout constants. Units are mol/kg or
-        (mol**2/kg for doubly charged ions"""
-
+        (mol**2/kg for doubly charged ions
+        """
         from math import log10
 
         print(f"\nSeawater constants for {self.register.full_name}")
@@ -212,7 +212,6 @@ class SeawaterConstants(esbmtkBase):
 
         :returns rho: in kg/m**3
         """
-
         # density of pure water
         rhow = (
             999.842594
@@ -272,7 +271,6 @@ class SeawaterConstants(esbmtkBase):
         equilibrium constants. We can drop this once the program logic
         initializes swc after the reservoir concentrations have been set.
         """
-
         self.co2aq = 0.00001
         self.hco3 = 0.00177
         self.co3 = 0.00026
@@ -287,7 +285,6 @@ class SeawaterConstants(esbmtkBase):
 
     def __init_gasexchange__(self) -> None:
         """Initialize constants for gas-exchange processes"""
-
         self.water_vapor_partial_pressure()
         self.co2_solubility_constant()
         self.o2_solubility_constant()
@@ -302,7 +299,6 @@ class SeawaterConstants(esbmtkBase):
 
         The result is in p/1atm (i.e., a percentage)
         """
-
         T = self.temperature + 273.15
         S = self.salinity
 
@@ -317,7 +313,6 @@ class SeawaterConstants(esbmtkBase):
         esbmtk uses mol/(t atm). pyCO2sys follows
         Weiss, R. F., Marine Chemistry 2:203-215, 1974.
         """
-
         S = self.salinity  # unit less
         T = self.temperature  # in C
         A1 = -160.7333
@@ -342,7 +337,6 @@ class SeawaterConstants(esbmtkBase):
 
         The result is in mol/(l atm)
         """
-
         # Calculate the volumetric solubility function F_A in mol/l/m^3
         S = self.salinity  # unit less
         T = self.temperature  # in C
@@ -388,7 +382,6 @@ class SeawaterConstants(esbmtkBase):
         c = carbonate ion
 
         """
-
         T = 273.15 + self.temperature
 
         # CO2g versus HCO3, e = epsilon, a = alpha

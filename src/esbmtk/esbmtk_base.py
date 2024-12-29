@@ -1,29 +1,30 @@
-"""
-     esbmtk: A general purpose Earth Science box model toolkit
-     Copyright (C), 2020 Ulrich G. Wortmann
+"""esbmtk: A general purpose Earth Science box model toolkit
+Copyright (C), 2020 Ulrich G. Wortmann
 
-     This program is free software: you can redistribute it and/or modify
-     it under the terms of the GNU General Public License as published by
-     the Free Software Foundation, either version 3 of the License, or
-     (at your option) any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-     This program is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-     GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-     You should have received a copy of the GNU General Public License
-     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-     This module defines some shared methods
+This module defines some shared methods
 
 """
 
 from __future__ import annotations
+
 import time
+import typing as tp
+
 import numpy as np
 import numpy.typing as npt
-import typing as tp
 
 if tp.TYPE_CHECKING:
     from .esbmtk import SpeciesProperties
@@ -62,7 +63,7 @@ class SpeciesPropertiesMolweightError(Exception):
         super().__init__(message)
 
 
-class input_parsing(object):
+class input_parsing:
     """Provides various routines to parse and process keyword
     arguments.  All derived classes need to declare the allowed
     keyword arguments, their defualt values and the type in the
@@ -83,7 +84,6 @@ class input_parsing(object):
 
     def __initialize_keyword_variables__(self, kwargs) -> None:
         """check, register and update keyword variables"""
-
         # import copy
 
         self.update = False
@@ -94,10 +94,10 @@ class input_parsing(object):
         self.__update_dict_entries__(self.defaults, kwargs)
         self.update = True
 
-    def __check_mandatory_keywords__(self, lrk: tp.List, kwargs: dict) -> None:
+    def __check_mandatory_keywords__(self, lrk: list, kwargs: dict) -> None:
         """Verify that all elements of lrk have a corresponding key in
-        kwargs.  If not, print error message"""
-
+        kwargs.  If not, print error message
+        """
         for key in lrk:
             if isinstance(key, list):
                 has_key = sum(k in kwargs and kwargs[k] != "None" for k in key)
@@ -139,8 +139,6 @@ class input_parsing(object):
         Note that this function assumes that all defaults have been registered
         with the instance via __register_variable_names__()
         """
-        import sys
-
         for key, value in kwargs.items():
             if key not in defaults:
                 raise KeywordError(f"{key} is not a valid keyword")
@@ -155,12 +153,10 @@ class input_parsing(object):
             setattr(self, f"_{key}", value)
 
     def __register_name_new__(self) -> None:
-        """if self.parent is set, register self as attribute of self.parent,
+        """If self.parent is set, register self as attribute of self.parent,
         and set full name to parent.full-name + self.name
         if self.parent == "None", full_name = name
         """
-        from esbmtk import Species2Species, ConnectionProperties
-
         if self.parent == "None":
             self.full_name = self.name
             reg = self
@@ -236,9 +232,7 @@ class esbmtkBase(input_parsing):
                 # check if this is not another esbmtk object
                 if "esbmtk" in str(type(v)):
                     m = f"{m}    {k} = {v.name},\n"
-                elif isinstance(v, str):
-                    m = f"{m}    {k} = '{v}',\n"
-                elif isinstance(v, Q_):
+                elif isinstance(v, str) or isinstance(v, Q_):
                     m = f"{m}    {k} = '{v}',\n"
                 elif isinstance(v, (list, np.ndarray)):
                     m = f"{m}    {k} = '{v[:3]}',\n"
@@ -270,9 +264,7 @@ class esbmtkBase(input_parsing):
                 # check if this is not another esbmtk object
                 if "esbmtk" in str(type(v)):
                     pass
-                elif isinstance(v, str) and k != "name":
-                    m = f"{m}{ind}{off}{k} = {v}\n"
-                elif isinstance(v, Q_):
+                elif isinstance(v, str) and k != "name" or isinstance(v, Q_):
                     m = f"{m}{ind}{off}{k} = {v}\n"
                 elif isinstance(v, np.ndarray):
                     m = f"{m}{ind}{off}{k}[{index}] = {v[index]:.2e}\n"
@@ -283,12 +275,10 @@ class esbmtkBase(input_parsing):
 
     def __lt__(self, other) -> None:
         """This is needed for sorting with sorted()"""
-
         return self.n < other.n
 
     def __gt__(self, other) -> None:
         """This is needed for sorting with sorted()"""
-
         return self.n > other.n
 
     def info(self, **kwargs) -> None:
@@ -298,7 +288,6 @@ class esbmtkBase(input_parsing):
         indent :int = 0 indentation
 
         """
-
         if "indent" not in kwargs:
             indent = 0
             ind = ""
@@ -311,7 +300,6 @@ class esbmtkBase(input_parsing):
 
     def __aux_inits__(self) -> None:
         """Aux initialization code. Not normally used"""
-
         pass
 
     def ensure_q(self, arg):
@@ -340,8 +328,7 @@ class esbmtkBase(input_parsing):
             print(f"{kw}")
 
     def set_flux(self, mass: str, time: str, substance: SpeciesProperties):
-        """
-        set_flux converts() a flux rate that is specified as rate, time, substance
+        """set_flux converts() a flux rate that is specified as rate, time, substance
         so that it matches the correct model units (i.e., kg/s or mol/s)
 
         Example:
@@ -361,6 +348,7 @@ class esbmtkBase(input_parsing):
 
         :raises: FluxSpecificationError
         :raises: SpeciesPropertiesMolweightError
+
         """
         from esbmtk import Q_, ureg
 

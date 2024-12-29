@@ -1,34 +1,36 @@
-"""
-     esbmtk.connections
+"""esbmtk.connections
 
-     Classes which handle the connections and fluxes between esbmtk objects
-     like Species, Sources, and Sinks.
+Classes which handle the connections and fluxes between esbmtk objects
+like Species, Sources, and Sinks.
 
-     esbmtk: A general purpose Earth Science box model toolkit
-     Copyright (C), 2020 Ulrich G. Wortmann
+esbmtk: A general purpose Earth Science box model toolkit
+Copyright (C), 2020 Ulrich G. Wortmann
 
-     This program is free software: you can redistribute it and/or modify
-     it under the terms of the GNU General Public License as published by
-     the Free Software Foundation, either version 3 of the License, or
-     (at your option) any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-     This program is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-     GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-     You should have received a copy of the GNU General Public License
-     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from __future__ import annotations
+
 import uuid
-from typing import List, Union, Callable, Any
+from collections.abc import Callable
+from typing import Any
+
 import numpy as np
 import numpy.typing as npt
+
 from .esbmtk import esbmtkBase
 from .utility_functions import map_units
-from .utility_functions import check_for_quantity
 
 np.set_printoptions(precision=4)
 # declare numpy types
@@ -62,7 +64,8 @@ class Species2Species(esbmtkBase):
      from the specified parameters.  For complex connections, the flux
      type must be set explicitly. See the examples below:
 
-     Parameters:
+    Parameters
+    ----------
          - source: An object handle for a Source or Species
          - sink: An object handle for a Sink or Species
          - rate: A quantity (e.g., "1 mol/s"), optional
@@ -200,20 +203,18 @@ class Species2Species(esbmtkBase):
         see the class documentation for details and examples
 
         """
-
         from esbmtk import (
             Q_,
-            Source,
-            Sink,
-            SpeciesProperties,
-            Species,
-            GasReservoir,
-            Model,
-            Species2Species,
-            Species2Species,
             ConnectionProperties,
             Flux,
+            GasReservoir,
+            Model,
             Signal,
+            Sink,
+            Source,
+            Species,
+            Species2Species,
+            SpeciesProperties,
         )
 
         # provide a dict of all known keywords and their type
@@ -258,9 +259,9 @@ class Species2Species(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: List = ["source", "sink"]
-        self.lop: List = []
-        self.lof: List = []
+        self.lrk: list = ["source", "sink"]
+        self.lop: list = []
+        self.lof: list = []
 
         self.__initialize_keyword_variables__(kwargs)
 
@@ -287,7 +288,7 @@ class Species2Species(esbmtkBase):
         elif isinstance(self.pco2_0, Q_):
             self.pco2_0 = self.pco2_0.magnitude.to("ppm").magnitude * 1e-6
 
-        self.lop: List = self.pl if "pl" in kwargs else []
+        self.lop: list = self.pl if "pl" in kwargs else []
         if self.signal != "None":
             self.lop.append(self.signal)
 
@@ -309,9 +310,9 @@ class Species2Species(esbmtkBase):
 
         self.get_species(self.r1, self.r2)  #
         self.mo: Model = self.sp.mo  # the current model handle
-        self.lof: List[Flux] = []  # list of fluxes in this connection
+        self.lof: list[Flux] = []  # list of fluxes in this connection
         # get a list of all reservoirs registered for this species
-        self.lor: List[Species] = self.mo.lor
+        self.lor: list[Species] = self.mo.lor
 
         if self.scale == "None":
             self.scale = 1.0
@@ -369,7 +370,6 @@ class Species2Species(esbmtkBase):
         taken as as connection name, otherwise, append id to the name
 
         """
-
         from esbmtk import Reservoir, Source, SourceProperties
 
         # same species?
@@ -380,11 +380,7 @@ class Species2Species(esbmtkBase):
 
         # Connect by itself
         if not isinstance(self.parent, ConnectionProperties):  # manual connection
-            if isinstance(self.source.parent, Reservoir):
-                so = self.source.parent.name
-            elif isinstance(self.source.parent, Source):
-                so = self.source.parent.name
-            elif isinstance(self.source.parent, SourceProperties):
+            if isinstance(self.source.parent, Reservoir) or isinstance(self.source.parent, Source) or isinstance(self.source.parent, SourceProperties):
                 so = self.source.parent.name
             else:
                 so = self.source.name
@@ -418,7 +414,6 @@ class Species2Species(esbmtkBase):
         self.kwargs dict, and then re-initialize the connection.
 
         """
-
         raise NotImplementedError
         self.__delete_process__()
         self.__delete_flux__()
@@ -438,9 +433,9 @@ class Species2Species(esbmtkBase):
 
     def __create_flux__(self) -> None:
         """Create flux object, and register with reservoir and global
-        namespace"""
-
-        from esbmtk import Flux, Source, Sink
+        namespace
+        """
+        from esbmtk import Flux, Sink, Source
 
         # test if default arguments present
         d = 0 if self.delta == "None" else self.delta
@@ -499,7 +494,6 @@ class Species2Species(esbmtkBase):
 
     def __register_species__(self, r, sp) -> None:
         """Add flux to the correct element dictionary"""
-
         if sp.eh in r.doe:  # test if element key is present in reservoir
             r.doe[sp.eh].append(self.fh)  # add flux handle to dictionary list
         else:  # add key and first list value
@@ -509,10 +503,9 @@ class Species2Species(esbmtkBase):
         """Deduce flux type based on the provided flux properties. The method calls the
         appropriate method init routine
         """
-
         from esbmtk import (
-            Source,
             Sink,
+            Source,
         )
 
         self.r = self.r2 if isinstance(self.r1, Source) else self.r1
@@ -553,7 +546,6 @@ class Species2Species(esbmtkBase):
 
     def __scaleflux__(self) -> None:
         """Scale a flux relative to another flux"""
-
         from esbmtk import Flux
 
         if not isinstance(self.ref_flux, Flux):
@@ -564,7 +556,7 @@ class Species2Species(esbmtkBase):
 
         if self.k_value != "None":
             self.scale = self.k_value
-            print(f"\n Warning: use scale instead of k_value for scaleflux type\n")
+            print("\n Warning: use scale instead of k_value for scaleflux type\n")
 
     def __weathering__(self):
         from esbmtk import init_weathering, register_return_values
@@ -587,7 +579,6 @@ class Species2Species(esbmtkBase):
 
     def __rateconstant__(self) -> None:
         """Add rate constant type process"""
-
         if self.ctype == "scale_with_concentration":
             self.scale = map_units(
                 self,
@@ -631,11 +622,11 @@ class Species2Species(esbmtkBase):
 
     # ---- epsilon ----
     @property
-    def epsilon(self) -> Union[float, int]:
+    def epsilon(self) -> float | int:
         return self._epsilon
 
     @epsilon.setter
-    def epsilon(self, a: Union[float, int]) -> None:
+    def epsilon(self, a: float | int) -> None:
         if self.update and a != "None":
             self.__delete_process__()
             self.__delete_flux__()
@@ -644,7 +635,7 @@ class Species2Species(esbmtkBase):
 
     # ---- rate  ----
     @property
-    def rate(self) -> Union[float, int]:
+    def rate(self) -> float | int:
         return self._rate
 
     @rate.setter
@@ -660,11 +651,11 @@ class Species2Species(esbmtkBase):
 
     # ---- delta  ----
     @property
-    def delta(self) -> Union[float, int]:
+    def delta(self) -> float | int:
         return self._delta
 
     @delta.setter
-    def delta(self, d: Union[float, int]) -> None:
+    def delta(self, d: float | int) -> None:
         if self.update and d != "None":
             self.__delete_process__()
             self.__delete_flux__()
@@ -715,17 +706,16 @@ class ConnectionProperties(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
         from esbmtk import (
-            SourceProperties,
-            Source,
-            Reservoir,
-            Species,
-            GasReservoir,
-            SinkProperties,
-            Signal,
-            SpeciesProperties,
-            Flux,
-            Model,
             Q_,
+            Flux,
+            GasReservoir,
+            Model,
+            Reservoir,
+            Signal,
+            SinkProperties,
+            SourceProperties,
+            Species,
+            SpeciesProperties,
         )
 
         self.defaults: dict[str, Any] = {
@@ -759,7 +749,7 @@ class ConnectionProperties(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: List = ["source", "sink", "ctype"]
+        self.lrk: list = ["source", "sink", "ctype"]
         self.__initialize_keyword_variables__(kwargs)
 
         if self.register == "None":
@@ -768,7 +758,7 @@ class ConnectionProperties(esbmtkBase):
         # # self.source.lor is a  list with the object names in the group
         self.mo = self.sink.lor[0].mo
         self.model = self.mo
-        self.loc: List = []  # list of connection objects
+        self.loc: list = []  # list of connection objects
 
         self.name = f"ConnGrp_{self.source.name}_to_{self.sink.name}_{self.id}"
         # fixme this results in duplicate names in the model namespace.
@@ -783,16 +773,14 @@ class ConnectionProperties(esbmtkBase):
 
     def add_connections(self, **kwargs) -> None:
         """Add connections to the connection group"""
-
         self.__initialize_keyword_variables__(kwargs)
         self.__create_connections__()
 
     def __create_connections__(self) -> None:
         """Create Species2Species"""
-
         from esbmtk import Reservoir, SinkProperties, SourceProperties
 
-        self.connections: List = []
+        self.connections: list = []
 
         if isinstance(self.ctype, str):
             if isinstance(self.source, (Reservoir, SinkProperties, SourceProperties)):
@@ -861,10 +849,9 @@ class ConnectionProperties(esbmtkBase):
 
     def info(self) -> None:
         """List all connections in this group"""
-
         print(f"Group Connect from {self.source.name} to {self.sink.name}\n")
         print("The following Species2Species are part of this group\n")
-        print(f"You can query the details of each connection like this:\n")
+        print("You can query the details of each connection like this:\n")
         for c in self.loc:
             print(f"{c.name}: {self.name}.{c.name}.info()")
 

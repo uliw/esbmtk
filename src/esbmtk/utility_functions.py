@@ -1,32 +1,33 @@
-"""
-     esbmtk: A general purpose Earth Science box model toolkit
-     Copyright (C), 2020 Ulrich G. Wortmann
+"""esbmtk: A general purpose Earth Science box model toolkit
+Copyright (C), 2020 Ulrich G. Wortmann
 
-     This program is free software: you can redistribute it and/or modify
-     it under the terms of the GNU General Public License as published by
-     the Free Software Foundation, either version 3 of the License, or
-     (at your option) any later version.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-     This program is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-     GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-     You should have received a copy of the GNU General Public License
-     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from __future__ import annotations
-import numpy as np
-import numpy.typing as npt
-import matplotlib.pyplot as plt
+
+import functools
 import logging
 import typing as tp
-import functools
+
+import matplotlib.pyplot as plt
+import numpy as np
+import numpy.typing as npt
 from numba import njit
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Model, ExternalFunction
+    from esbmtk import ExternalFunction, Model
 
 np.set_printoptions(precision=4)
 # declare numpy types
@@ -99,18 +100,25 @@ def get_reservoir_reference(k: str, M: Model) -> tuple:
         with the initial flux name, e.g., M_F_A_db_DIC
     M : Model
         Model handle
+
     Returns
     -------
     tuple
         Species2Species, SpeciesProperties
+
     Raises
     ------
     ValueError
         If reservoir_name is not of type ConnectionProperties or Species2Species
 
     """
-    from esbmtk import Species, Reservoir, Species2Species
-    from esbmtk import GasReservoir, SpeciesProperties
+    from esbmtk import (
+        GasReservoir,
+        Reservoir,
+        Species,
+        Species2Species,
+        SpeciesProperties,
+    )
 
     key_list = k[2:].split(".")  # get model, reservoir & species name
 
@@ -169,7 +177,7 @@ def register_new_flux(ec, rg, dict_key, dict_value) -> list:
         list of Flux instances
 
     """
-    from .esbmtk import Species, Flux
+    from .esbmtk import Flux, Species
     from .extended_classes import Reservoir
 
     if isinstance(rg, Reservoir):
@@ -186,7 +194,7 @@ def register_new_flux(ec, rg, dict_key, dict_value) -> list:
         raise NotImplementedError
 
     if not hasattr(reservoir_object, "source"):
-        setattr(reservoir_object, "source", sp.name)
+        reservoir_object.source = sp.name
 
     ro = list()
     # this also registers the flux with M.lof
@@ -252,9 +260,18 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
     better to express this with several connection
     objects, rather than overloading the source attribute of the
     GasReservoir class.
+
     """
-    from esbmtk import Species, Reservoir, Flux, Species2Species
-    from esbmtk import Sink, SinkProperties, Source, SourceProperties
+    from esbmtk import (
+        Flux,
+        Reservoir,
+        Sink,
+        SinkProperties,
+        Source,
+        SourceProperties,
+        Species,
+        Species2Species,
+    )
 
     M = rg.mo
     # go through each entry in ec.return_values
@@ -271,15 +288,11 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
                 if hasattr(M, key_str):
                     o = getattr(M, key_str)
                     if isinstance(o, Flux):
-                        o: tp.List = [o]
+                        o: list = [o]
                     elif isinstance(o, Species2Species):
-                        o: tp.List = [getattr(o, "_F")]  # get flux handle
-                    elif isinstance(o, Species | Reservoir):
-                        o: tp.List = register_new_flux(ef, rg, dict_key[2:], dict_value)
-                    elif isinstance(o, Sink | SinkProperties):
-                        o: tp.List = register_new_flux(ef, rg, dict_key[2:], dict_value)
-                    elif isinstance(o, Source | SourceProperties):
-                        o: tp.List = register_new_flux(ef, rg, dict_key[2:], dict_value)
+                        o: list = [o._F]  # get flux handle
+                    elif isinstance(o, Species | Reservoir) or isinstance(o, Sink | SinkProperties) or isinstance(o, Source | SourceProperties):
+                        o: list = register_new_flux(ef, rg, dict_key[2:], dict_value)
                     else:
                         raise ValueError(f"No recipie for {type(o)}")
                 else:
@@ -287,10 +300,10 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
 
             elif dict_key[:2] == "R_":  # is reservoir
                 if dict_key[2:] in M.lor:
-                    o: tp.List = [getattr(M, dict_key)]
+                    o: list = [getattr(M, dict_key)]
                 else:
                     r, sp = get_reservoir_reference(dict_key, M)
-                    o: tp.List = register_new_reservoir(r, sp, dict_value)
+                    o: list = register_new_reservoir(r, sp, dict_value)
 
             elif dict_key[:2] == "C_":  # is connection
                 raise NotImplementedError
@@ -333,8 +346,8 @@ def summarize_results(M: Model) -> dict():
     return results
 
 
-def find_matching_strings(s: str, fl: tp.List[str]) -> bool:
-    """test if all elements of fl occur in s. Return True if yes,
+def find_matching_strings(s: str, fl: list[str]) -> bool:
+    """Test if all elements of fl occur in s. Return True if yes,
     otherwise False
 
     """
@@ -346,11 +359,9 @@ def find_matching_strings(s: str, fl: tp.List[str]) -> bool:
 
 
 def add_to(l, e):
-    """
-    add element e to list l, but check if the entry already exist. If so, throw
+    """Add element e to list l, but check if the entry already exist. If so, throw
     exception. Otherwise add
     """
-
     if e not in l:  # if not present, append element
         l.append(e)
 
@@ -361,7 +372,6 @@ def get_plot_layout(obj):
     contains the list of fluxes in the reservoir
 
     """
-
     noo = 1 + sum(f.plot == "yes" for f in obj.lof)
     for _ in obj.ldf:
         noo += 1
@@ -376,7 +386,6 @@ def get_plot_layout(obj):
 
 def plot_geometry(noo: int) -> tuple():
     """Define plot geometry based on number of objects to plot"""
-
     if noo < 2:
         geometry = [1, 1]  # one row, one column
         size = [5, 3]  # width, height in inches
@@ -394,7 +403,7 @@ def plot_geometry(noo: int) -> tuple():
         size = [10, 12]  # width, height in inches
     elif 9 < noo < 13:
         geometry = [5, 2]  # 5 rows, 2 columns
-        size = [10, 15]  #  width, height in inches
+        size = [10, 15]  # width, height in inches
     elif 12 < noo < 16:
         geometry = [6, 2]  # 6 rows, 2 columns
         size = [10, 18]  # width, height in inches
@@ -409,8 +418,7 @@ def plot_geometry(noo: int) -> tuple():
 
 
 def list_fluxes(self, name, i) -> None:
-    """
-    Echo all fluxes in the reservoir to the screen
+    """Echo all fluxes in the reservoir to the screen
     """
     for f in self.lof:  # show the processes
         direction = self.lio[f.n]
@@ -436,7 +444,6 @@ def show_data(self, **kwargs) -> None:
     index :int = 0 starting index
     indent :int = 0 indentation
     """
-
     off: str = "  "
 
     index = 0 if "index" not in kwargs else kwargs["index"]
@@ -445,7 +452,6 @@ def show_data(self, **kwargs) -> None:
 
 def set_y_limits(ax: plt.Axes, obj: any) -> None:
     """Prevent the display or arbitrarily small differences"""
-
     bottom, top = ax.get_ylim()
     if (top - bottom) < obj.display_precision:
         top = bottom + obj.display_precision
@@ -453,15 +459,13 @@ def set_y_limits(ax: plt.Axes, obj: any) -> None:
         ax.set_ylim(bottom, top)
 
 
-def is_name_in_list(n: str, l: tp.List) -> bool:
+def is_name_in_list(n: str, l: list) -> bool:
     """Test if an object name is part of the object list"""
-
     return any(e.full_name == n for e in l)
 
 
-def get_object_from_list(name: str, l: tp.List) -> any:
+def get_object_from_list(name: str, l: list) -> any:
     """Match a name to a list of objects. Return the object"""
-
     match: bool = False
     for o in l:
         if o.full_name == name:
@@ -474,15 +478,14 @@ def get_object_from_list(name: str, l: tp.List) -> any:
         raise ValueError(f"Object = {o.full_name} has no matching flux {name}")
 
 
-def sort_by_type(l: tp.List, t: tp.List, m: str) -> list:
-    """divide a list by type into new lists. This function will return a
+def sort_by_type(l: list, t: list, m: str) -> list:
+    """Divide a list by type into new lists. This function will return a
     list and it is up to the calling code to unpack the list
 
     l is list with various object types
     t is a list which contains the object types used for sorting
     m is a string for the error function
     """
-
     # from numbers import Number
 
     lc = l.copy()
@@ -505,15 +508,14 @@ def sort_by_type(l: tp.List, t: tp.List, m: str) -> list:
     return rl
 
 
-def get_object_handle(res: tp.List, M: Model):
+def get_object_handle(res: list, M: Model):
     """Test if the key is a global reservoir handle
     or exists in the model namespace
 
     :param res: tp.List of strings, or reservoir handles
     :param M: Model handle
     """
-
-    r_list: tp.List = []
+    r_list: list = []
 
     if not isinstance(res, list):
         res = [res]
@@ -532,12 +534,11 @@ def get_object_handle(res: tp.List, M: Model):
     return r_list
 
 
-def split_key(k: str, M: any) -> tp.Union[any, any, str]:
-    """split the string k with letters _to_, and test if optional
+def split_key(k: str, M: any) -> any | any | str:
+    """Split the string k with letters _to_, and test if optional
     id string is present
 
     """
-
     if "_to_" not in k:
         raise ValueError("Name must follow 'Source_to_Sink' format")
 
@@ -556,7 +557,7 @@ def split_key(k: str, M: any) -> tp.Union[any, any, str]:
     return (source, sink, cid)
 
 
-def make_dict(keys: tp.List, values: tp.List) -> dict:
+def make_dict(keys: list, values: list) -> dict:
     """Create a dictionary from a list and value, or from
     two lists
 
@@ -565,24 +566,24 @@ def make_dict(keys: tp.List, values: tp.List) -> dict:
 
     if isinstance(values, list):
         if len(values) == len(keys):
-            d: dict = dict(zip(keys, values))
+            d: dict = dict(zip(keys, values, strict=False))
         else:
             raise ValueError("key and value list must be of equal length")
     else:
-        values: tp.List = [values] * len(keys)
-        d: dict = dict(zip(keys, values))
+        values: list = [values] * len(keys)
+        d: dict = dict(zip(keys, values, strict=False))
 
     return d
 
 
-def get_typed_list(data: tp.List) -> list:
+def get_typed_list(data: list) -> list:
     tl = list()
     for x in data:
         tl.append(x)
     return tl
 
 
-def initialize_reservoirs(M: Model, box_dict: dict) -> tp.List(Species):
+def initialize_reservoirs(M: Model, box_dict: dict) -> list(Species):
     """This function will initialize one or more reservoirs based
     on the data in box_dict (see the example below). This is useful
     when we need to specify different initil conditions in reservoir.
@@ -622,9 +623,7 @@ def initialize_reservoirs(M: Model, box_dict: dict) -> tp.List(Species):
         species_list = initialize_reservoirs(M, box_parameters)
 
     """
-
-    from esbmtk import Reservoir
-    from esbmtk import SourceProperties, SinkProperties, SpeciesProperties
+    from esbmtk import Reservoir, SinkProperties, SourceProperties, SpeciesProperties
 
     # loop over reservoir names
     for box_name, value in box_dict.items():
@@ -675,7 +674,7 @@ def initialize_reservoirs(M: Model, box_dict: dict) -> tp.List(Species):
 
 
 def create_reservoirs(box_dict: dict, ic_dict: dict, M: any) -> dict:
-    """boxes are defined by area and depth interval here we use an ordered
+    """Boxes are defined by area and depth interval here we use an ordered
     dictionary to define the box geometries. The next column is temperature
     in deg C, followed by pressure in bar
     the geometry is [upper depth datum, lower depth datum, area percentage]
@@ -704,9 +703,12 @@ def create_reservoirs(box_dict: dict, ic_dict: dict, M: any) -> dict:
 
     :param M: Model object handle
     """
-
-    from esbmtk import Reservoir, build_concentration_dicts
-    from esbmtk import SourceProperties, SinkProperties
+    from esbmtk import (
+        Reservoir,
+        SinkProperties,
+        SourceProperties,
+        build_concentration_dicts,
+    )
 
     # loop over reservoir names
     if M.name in box_name:
@@ -780,13 +782,12 @@ def build_concentration_dicts(cd: dict, bg: dict) -> dict:
     d= {"bn": [{PO4: .., DIC: ..},{PO4:False, DIC:False}]}
 
     """
-
     if isinstance(bg, dict):
-        box_names: tp.List = bg.keys()
+        box_names: list = bg.keys()
     elif isinstance(bg, list):
-        box_names: tp.List = bg
+        box_names: list = bg
     elif isinstance(bg, str):
-        box_names: tp.List = [bg]
+        box_names: list = [bg]
     else:
         raise ValueError("This should never happen")
 
@@ -827,10 +828,9 @@ def calc_volumes(bg: dict, M: any, h: any) -> list:
     The function returns a list with the corresponding volumes
 
     """
-
     # from esbmtk import hypsometry
 
-    v: tp.List = []  # list of volumes
+    v: list = []  # list of volumes
 
     for v in bg.values():
         a = v[0]
@@ -876,7 +876,7 @@ def get_longest_dict_entry(d: dict) -> int:
 
 
 def convert_to_lists(d: dict, l: int) -> dict:
-    """expand mixed dict entries (i.e. list and single value) such
+    """Expand mixed dict entries (i.e. list and single value) such
     that they are all lists of equal length
 
     """
@@ -891,11 +891,10 @@ def convert_to_lists(d: dict, l: int) -> dict:
 
 
 def get_sub_key(d: dict, i: int) -> dict:
-    """take a dict which has where the value is a list, and return the
+    """Take a dict which has where the value is a list, and return the
     key with the n-th value of that list
 
     """
-
     return {k: v[i] for k, v in d.items()}
 
 
@@ -1034,7 +1033,6 @@ def create_bulk_connections(ct: dict, M: Model, mt: int = "1:1") -> dict:
     dictionary produces the correct results!
 
     """
-
     from esbmtk import create_connection, expand_dict
 
     # expand dictionary into a well formed dict where each connection
@@ -1055,7 +1053,7 @@ def create_bulk_connections(ct: dict, M: Model, mt: int = "1:1") -> dict:
 
 
 def create_connection(n: str, p: dict, M: Model) -> None:
-    """called by create_bulk_connections in order to create a connection group
+    """Called by create_bulk_connections in order to create a connection group
     It is assumed that all rates are in liter/year or mol per year.  This may
     not be what you want or need.
 
@@ -1065,8 +1063,7 @@ def create_connection(n: str, p: dict, M: Model) -> None:
     :param p: a dictionary holding the connection properties
     :param M: the model handle
     """
-
-    from esbmtk import ConnectionProperties, Q_
+    from esbmtk import Q_, ConnectionProperties
 
     # get the reservoir handles by splitting the key
     source, sink, cid = split_key(n, M)
@@ -1136,8 +1133,7 @@ def create_connection(n: str, p: dict, M: Model) -> None:
 
 def get_name_only(o: any) -> any:
     """Test if item is an esbmtk type. If yes, extract the name"""
-
-    from esbmtk import Flux, Species, Reservoir, SpeciesProperties
+    from esbmtk import Flux, Reservoir, Species, SpeciesProperties
 
     return (
         o.full_name
@@ -1146,19 +1142,17 @@ def get_name_only(o: any) -> any:
     )
 
 
-def get_simple_list(l: tp.List) -> list:
-    """return a list which only has the full name
+def get_simple_list(l: list) -> list:
+    """Return a list which only has the full name
     rather than all the object properties
 
     """
-
     return [get_name_only(e) for e in l]
 
 
 def show_dict(d: dict, mt: str = "1:1") -> None:
-    """show dict entries in an organized manner"""
-
-    from esbmtk import expand_dict, get_simple_list, get_name_only
+    """Show dict entries in an organized manner"""
+    from esbmtk import expand_dict, get_name_only, get_simple_list
 
     ct = expand_dict(d, mt)
     for ck, cv in ct.items():
@@ -1166,12 +1160,11 @@ def show_dict(d: dict, mt: str = "1:1") -> None:
             x = get_simple_list(pv) if isinstance(pv, list) else get_name_only(pv)
 
 
-def find_matching_fluxes(l: tp.List, filter_by: str, exclude: str) -> list:
+def find_matching_fluxes(l: list, filter_by: str, exclude: str) -> list:
     """Loop over all reservoir in l, and extract the names of all fluxes
     which match the filter string. Return the list of names (not objects!)
 
     """
-
     lof: set = set()
 
     for r in l:
@@ -1183,8 +1176,7 @@ def find_matching_fluxes(l: tp.List, filter_by: str, exclude: str) -> list:
 
 
 def reverse_key(key: str) -> str:
-    """reverse a connection key e.g., sb2db@POM becomes db2sb@POM"""
-
+    """Reverse a connection key e.g., sb2db@POM becomes db2sb@POM"""
     left = key.split("@")
     left = left[0]
     rs = left.split("_to_")
@@ -1201,8 +1193,7 @@ def get_connection_keys(
     inverse: bool,
     exclude: str,
 ) -> list[str]:
-    """
-    extract connection keys from set of flux names, replace ref_id with
+    """Extract connection keys from set of flux names, replace ref_id with
     target_id so that the key can be used in create_bulk_connnections()
 
     :param f_list: a set with flux objects
@@ -1216,8 +1207,7 @@ def get_connection_keys(
     flux direction needs to be reversed, i.e., the returned key will not read
     sb2db@POM, but db2s@POM
     """
-
-    cnc_l: tp.List = []  # list of connection keys
+    cnc_l: list = []  # list of connection keys
 
     for f in f_list:
         # get connection and flux name
@@ -1254,7 +1244,6 @@ def gen_dict_entries(M: Model, **kwargs) -> tuple(tuple, list):
     :return k_tuples: tuple of connection keys
 
     """
-
     from esbmtk import Model
 
     ref_id = kwargs["ref_id"]
@@ -1264,13 +1253,13 @@ def gen_dict_entries(M: Model, **kwargs) -> tuple(tuple, list):
 
     # find matching fluxes
     if isinstance(M, Model):
-        f_list: tp.List = find_matching_fluxes(
+        f_list: list = find_matching_fluxes(
             M.loc,
             filter_by=ref_id,
             exclude=exclude_str,
         )
     elif isinstance(M, list):
-        f_list: tp.List = find_matching_fluxes(
+        f_list: list = find_matching_fluxes(
             M,
             filter_by=ref_id,
             exclude=exclude_str,
@@ -1278,7 +1267,7 @@ def gen_dict_entries(M: Model, **kwargs) -> tuple(tuple, list):
     else:
         raise ValueError(f"gen_dict_entries: M must be list or Model, not {type(M)}")
 
-    k_tuples: tp.List = get_connection_keys(
+    k_tuples: list = get_connection_keys(
         f_list,
         ref_id,
         target_id,
@@ -1290,13 +1279,12 @@ def gen_dict_entries(M: Model, **kwargs) -> tuple(tuple, list):
 
 
 def build_ct_dict(d: dict, p: dict) -> dict:
-    """build a connection dictionary from a dict containing connection
+    """Build a connection dictionary from a dict containing connection
     keys, and a dict containing connection properties. This is most
     useful for connections which a characterized by a fixed rate but
     apply to many species. E.g., mixing fluxes in a complex model etc.
 
     """
-
     # a = {k: {"sc": v} | p for k, v in d.items()}
     a = {}
     for k, v in d.items():
@@ -1308,7 +1296,6 @@ def build_ct_dict(d: dict, p: dict) -> dict:
 
 def get_string_between_brackets(s: str) -> str:
     """Parse string and extract substring between square brackets"""
-
     s = s.split("[")
     if len(s) < 2:
         raise ValueError(f"Column header {s} must include units in square brackets")
@@ -1324,7 +1311,7 @@ def get_string_between_brackets(s: str) -> str:
 
 
 def check_for_quantity(quantity, unit):
-    """check if keyword is quantity or string an convert as necessary.
+    """Check if keyword is quantity or string an convert as necessary.
     - If input is a string, convert string into a quantity
     - If input is a quantity, do nothing
     - if input is a number, convert to default quantity
@@ -1347,7 +1334,6 @@ def check_for_quantity(quantity, unit):
         if keywword is neither number, str or quantity
 
     """
-
     from esbmtk import Q_
 
     if isinstance(quantity, str):
@@ -1361,7 +1347,7 @@ def check_for_quantity(quantity, unit):
 
 
 def map_units(obj: any, v: any, *args) -> float:
-    """parse v to see if it is a string. if yes, map to quantity.
+    """Parse v to see if it is a string. if yes, map to quantity.
     parse v to see if it is a quantity, if yes, map to model units
     and extract magnitude, assign mangitude to return value
     if not, assign value to return value
@@ -1404,15 +1390,17 @@ def map_units(obj: any, v: any, *args) -> float:
     return m
 
 
-def __find_flux__(reservoirs: tp.List, full_name: str):
+def __find_flux__(reservoirs: list, full_name: str):
     """Helper function to find a Flux object based on its full_name in the reservoirs
     in the list of provided reservoirs.
 
     PRECONDITIONS: full_name must contain the full_name of the Flux
 
-    Parameters:
+    Parameters
+    ----------
         reservoirs: tp.List containing all reservoirs
         full_name: str specifying the full name of the flux (boxes.flux_name)
+
     """
     needed_flux = None
     for res in reservoirs:
@@ -1431,13 +1419,12 @@ def __find_flux__(reservoirs: tp.List, full_name: str):
 
 
 def __checktypes__(av: dict[any, any], pv: dict[any, any]) -> None:
-    """this method will use the the dict key in the user provided
+    """This method will use the the dict key in the user provided
     key value data (pv) to look up the allowed data type for this key in av
 
     av = dictinory with the allowed input keys and their type
     pv = dictionary with the user provided key-value data
     """
-
     k: any
     v: any
 
@@ -1451,8 +1438,7 @@ def __checktypes__(av: dict[any, any], pv: dict[any, any]) -> None:
 
 
 def dict_alternatives(d: dict, e: str, a: str) -> any:
-    """
-    The =dict_alternatives= function takes a dictionary =d=, an expression =e=,
+    """The =dict_alternatives= function takes a dictionary =d=, an expression =e=,
     and an alternative expression =a=. It returns the value associated with
     either =a= or =e= in the dictionary =d=.
 
@@ -1464,7 +1450,7 @@ def dict_alternatives(d: dict, e: str, a: str) -> any:
 
     :raises ValueError: If neither =a= nor =e= are found in the dictionary.
     """
-    if a in d.keys():
+    if a in d:
         r = d[a]
     elif e in d:
         r = d[e]
@@ -1474,15 +1460,14 @@ def dict_alternatives(d: dict, e: str, a: str) -> any:
     return r
 
 
-def __checkkeys__(lrk: tp.List, lkk: tp.List, kwargs: dict) -> None:
-    """check if the mandatory keys are present
+def __checkkeys__(lrk: list, lkk: list, kwargs: dict) -> None:
+    """Check if the mandatory keys are present
 
     lrk = list of required keywords
     lkk = list of all known keywords
     kwargs = dictionary with key-value pairs
 
     """
-
     k: str
     v: any
     # test if the required keywords are given
@@ -1502,7 +1487,7 @@ def __checkkeys__(lrk: tp.List, lkk: tp.List, kwargs: dict) -> None:
         elif k not in kwargs:
             raise ValueError(f"You need to specify a value for {k}")
 
-    tl: tp.List[str] = [k for k, v in lkk.items()]
+    tl: list[str] = [k for k, v in lkk.items()]
     # test if we know all keys
     for k in kwargs:
         if k not in lkk:
@@ -1510,12 +1495,10 @@ def __checkkeys__(lrk: tp.List, lkk: tp.List, kwargs: dict) -> None:
 
 
 def __addmissingdefaults__(lod: dict, kwargs: dict) -> dict:
-    """
-    test if the keys in lod exist in kwargs, otherwise add them with the default values
+    """Test if the keys in lod exist in kwargs, otherwise add them with the default values
     from lod
 
     """
-
     new: dict = {}
     if lod:
         for k, v in lod.items():
@@ -1529,8 +1512,8 @@ def __addmissingdefaults__(lod: dict, kwargs: dict) -> dict:
 
 def data_summaries(
     M: Model,
-    species_names: tp.List,
-    box_names: tp.List,
+    species_names: list,
+    box_names: list,
     register_with="None",
 ) -> list:
     """Group results by species and Reservoirs
@@ -1542,7 +1525,6 @@ def data_summaries(
     :returns pl: a list of datafield instance to be plotted
 
     """
-
     from esbmtk import DataField, VectorData
 
     if register_with == "None":
@@ -1610,8 +1592,7 @@ def data_summaries(
 
 @njit(fastmath=True)
 def get_l_mass(m: float, d: float, r: float) -> float:
-    """
-    :param m: mass or concentration
+    """:param m: mass or concentration
     :param d: delta value
     :param r: isotopic reference ratio
 
@@ -1629,8 +1610,7 @@ def get_delta_h(R) -> float:
     R.c = total concentration
     R.l = concentration of the light isotope
     """
-
-    from esbmtk import Species, GasReservoir, Flux
+    from esbmtk import Flux, GasReservoir, Species
 
     r = R.species.r  # reference ratio
     if isinstance(R, (Species, GasReservoir)):
@@ -1659,13 +1639,11 @@ def get_delta_from_concentration(c, l, r):
 
 
 def get_imass(m: float, d: float, r: float) -> [float, float]:
-    """
-    Calculate the isotope masses from bulk mass and delta value.
+    """Calculate the isotope masses from bulk mass and delta value.
     Arguments are m = mass, d= delta value, r = abundance ratio
     species
 
     """
-
     l: float = (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
     h: float = m - l
     return [l, h]
@@ -1697,7 +1675,6 @@ def get_new_ratio_from_alpha(
     Note that alpha needs to be given as fractional value, i.e., 1.07 rather
     than 70 (i.e., (alpha-1) * 1000
     """
-
     if ref_mass > 0.0:
         new_ratio = -ref_l / (a * ref_l - a * ref_mass - ref_l)
     else:

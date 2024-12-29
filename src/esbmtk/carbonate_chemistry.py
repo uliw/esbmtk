@@ -1,39 +1,38 @@
 """esbmtk: A general purpose Earth Science box model toolkit Copyright
-     (C), 2020-2021 Ulrich G. Wortmann
+(C), 2020-2021 Ulrich G. Wortmann
 
-     This program is free software: you can redistribute it and/or
-     modify it under the terms of the GNU General Public License as
-     published by the Free Software Foundation, either version 3 of
-     the License, or (at your option) any later version.
+This program is free software: you can redistribute it and/or
+modify it under the terms of the GNU General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
 
-     This program is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-     General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
 
-     You should have received a copy of the GNU General Public License
-     along with this program.  If not, see
-     <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see
+<https://www.gnu.org/licenses/>.
 
 """
 
 import typing as tp
 from math import log, sqrt
+
 import numpy as np
 import numpy.typing as npt
-from numba import njit
-from esbmtk import ExternalCode, Reservoir, Flux, SeawaterConstants
+
+from esbmtk import ExternalCode, Flux, Reservoir
 from esbmtk.utility_functions import (
-    __checkkeys__,
     __addmissingdefaults__,
+    __checkkeys__,
     __checktypes__,
     register_return_values,
-    check_for_quantity,
 )
 
-
 if tp.TYPE_CHECKING:
-    from .esbmtk import Q_
+    pass
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
@@ -98,7 +97,6 @@ def carbonate_system_1(dic, ta, hplus_0, co2aq_0, p) -> tuple:
     Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
     Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
     """
-
     k1, k2, k1k2, KW, KB, boron, isotopes = p
     if isotopes:  # dic = (x1, x2)
         dic = dic[0]
@@ -156,7 +154,7 @@ def init_carbonate_system_1(rg: Reservoir):
     return ec
 
 
-def add_carbonate_system_1(rgs: tp.List):
+def add_carbonate_system_1(rgs: list):
     """Creates a new carbonate system virtual reservoir for each
     reservoir in rgs. Note that rgs must be a list of reservoir groups.
 
@@ -304,7 +302,6 @@ def init_carbonate_system_2(
 
 
     """
-
     AD = r_sb.mo.hyp.area_dz(kwargs["z0"], kwargs["zmax"])
     s = r_db.swc
     sp = (s.K1, s.K2, s.K1K2, s.KW, s.KB, s.ca2, s.boron, r_sb.DIC.isotopes)
@@ -385,12 +382,11 @@ def add_carbonate_system_2(**kwargs) -> None:
         Ksp = solubility product of calcite at in situ sea water conditions (mol^2/kg^2)
 
     """
-
     # list of known keywords
     lkk: dict = {
-        "r_db": tp.List,  # list of deep reservoirs
-        "r_sb": tp.List,  # list of corresponding surface reservoirs
-        "carbonate_export_fluxes": tp.List,
+        "r_db": list,  # list of deep reservoirs
+        "r_sb": list,  # list of corresponding surface reservoirs
+        "carbonate_export_fluxes": list,
         "zsat": int,
         "zsat_min": int,
         "zcc": int,
@@ -409,7 +405,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         # "BM": (float, int),
     }
     # provide a list of absolutely required keywords
-    lrk: tp.List[str] = [
+    lrk: list[str] = [
         "r_db",
         "r_sb",
         "carbonate_export_fluxes",
@@ -484,7 +480,6 @@ def add_carbonate_system_2(**kwargs) -> None:
 
 def get_pco2(SW) -> float:
     """Calculate the concentration of pCO2"""
-
     dic_c: float = SW.dic
     hplus_c: float = SW.hplus
     k1: float = SW.K1
@@ -496,7 +491,7 @@ def get_pco2(SW) -> float:
 
 # define a transform function to display the Hplus concentration as pH
 def phc(m: float) -> float:
-    """the reservoir class accepts a plot transform. here we use this to
+    """The reservoir class accepts a plot transform. here we use this to
     display the H+ concentrations as pH. After import, you can use it
     with like this in the reservoir definition
 

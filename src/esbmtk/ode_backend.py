@@ -1,5 +1,4 @@
-"""
-esbmtk: A general purpose Earth Science box model toolkit Copyright
+"""esbmtk: A general purpose Earth Science box model toolkit Copyright
 (C), 2020 Ulrich G.  Wortmann
 
 This program is free software: you can redistribute it and/or modify
@@ -17,15 +16,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from __future__ import annotations
+
+import typing as tp
+
 import numpy as np
 import numpy.typing as npt
-import typing as tp
 
 NDArrayFloat = npt.NDArray[np.float64]
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Flux, Species, Model, Species2Species
-    from esbmtk import ExternalFunction
+    from esbmtk import ExternalFunction, Flux, Model, Species, Species2Species
 
 
 def get_initial_conditions(
@@ -74,12 +74,12 @@ def get_initial_conditions(
     import numpy as np
 
     R = []  # list of initial conditions
-    atol: tp.List = []  # list of tolerances for ode solver
+    atol: list = []  # list of tolerances for ode solver
     # dict that contains the reservoir_handle as key and the index positions
     # for c and l as a list
     icl: dict[Species, List[int, int]] = {}
-    cpl: tp.List = []  # list of reservoirs that are computed
-    ipl: tp.List = []  # list of static reservoirs that serve as input
+    cpl: list = []  # list of reservoirs that are computed
+    ipl: list = []  # list of static reservoirs that serve as input
 
     i: int = 0
     for r in M.lic:
@@ -132,7 +132,6 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
 
     :returns: rel = updated list of reservoirs names
     """
-
     for r in M.lor:  # loop over reservoirs
         """
         Write equations for each reservoir and create unique variable
@@ -175,7 +174,6 @@ def write_reservoir_equations_with_isotopes(
     ind3: str,  # indent 3 times
 ) -> str:  # updated list of reservoirs
     """Loop over reservoirs and their fluxes to build the reservoir equation"""
-
     for r in M.lor:  # loop over reservoirs
         if r.rtype != "flux_only":
             # v_val = f"{r.volume.to(r.v_unit).magnitude}"
@@ -211,10 +209,10 @@ def write_reservoir_equations_with_isotopes(
 
 def write_equations_2(
     M: Model,
-    R: tp.List[float],
+    R: list[float],
     icl: dict,
-    cpl: tp.List,
-    ipl: tp.List,
+    cpl: list,
+    ipl: list,
     eqs_fn: str,
 ) -> tuple:
     """Write file that contains the ode-equations for the Model
@@ -230,8 +228,6 @@ def write_equations_2(
     :param ipl: tp.List of reservoir that do not change in concentration
     :param fn: str, filename
     """
-    from esbmtk import Species
-
     # construct header and static code:
     # add optional import statements
     h1 = """from __future__ import annotations
@@ -253,7 +249,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
     M.lpc_f = set(M.lpc_f)
 
     if len(M.lpc_f) > 0:
-        hi += f"from esbmtk import "
+        hi += "from esbmtk import "
         for f in M.lpc_f:
             hi += f"{f} ,"
         hi = f"{hi[:-2]}\n"  # strip comma and space
@@ -362,7 +358,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
     return eqs_fn.stem
 
 
-def get_flux(flux: Flux, M: Model, R: tp.List[float], icl: dict) -> tuple(str, str):
+def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str):
     """Create formula expressions that calculates the flux F.  Return
     the equation expression as string
 
@@ -387,10 +383,7 @@ def get_flux(flux: Flux, M: Model, R: tp.List[float], icl: dict) -> tuple(str, s
     if c.ctype.casefold() == "regular":
         ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3)
 
-    elif c.ctype == "scale_with_concentration":
-        ex, exl = get_scale_with_concentration_eq(flux, c, cfn, icl, ind2, ind3)
-
-    elif c.ctype == "scale_with_mass":
+    elif c.ctype == "scale_with_concentration" or c.ctype == "scale_with_mass":
         ex, exl = get_scale_with_concentration_eq(flux, c, cfn, icl, ind2, ind3)
 
     elif c.ctype == "scale_with_flux":
@@ -415,7 +408,6 @@ def check_signal_2(ex: str, exl: str, c: Species2Species) -> (str, str):
 
     :returns: (modified) equation string
     """
-
     if c.signal != "None":  # get signal type
         if c.signal.stype == "addition":
             sign = "+"
@@ -455,7 +447,7 @@ def get_ic(r: Species, icl: dict, isotopes=False) -> str:
     :returns: the string s which is the full_name of the reservoir
               concentration or isotope concentration
     """
-    from esbmtk import Source, Sink
+    from esbmtk import Sink, Source
 
     if r in icl:
         s1 = f"R[{icl[r][0]}]"
@@ -479,16 +471,13 @@ def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> st
     to external function objects, and convert them into a suitable string
     format that can be used in the ode equation file
     """
-    from esbmtk import Flux, Species, Reservoir, SeawaterConstants, Q_
-    from esbmtk import GasReservoir
+    from esbmtk import Q_, Flux, GasReservoir, Reservoir, SeawaterConstants, Species
 
     if isinstance(d, str):
         sr = getattr(r.register, d)
         a = f"{ind}{get_ic(sr, icl)},\n"
-    elif isinstance(d, Species):
-        a = f"{ind}({get_ic(d, icl,d.isotopes)}),\n"
-    elif isinstance(d, GasReservoir):
-        a = f"{ind}({get_ic(d, icl,d.isotopes)}),\n"
+    elif isinstance(d, Species) or isinstance(d, GasReservoir):
+        a = f"{ind}({get_ic(d, icl, d.isotopes)}),\n"
     elif isinstance(d, Reservoir):
         a = f"{ind}{d.full_name},\n"
     elif isinstance(d, Flux):
@@ -502,15 +491,13 @@ def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> st
         # get key and reservoiur handle
         sr = getattr(r.register, next(iter(d)))
         a = f"{ind}{get_ic(sr, icl)},\n"
-    elif isinstance(d, Q_):
-        a = f"{ind}{d.magnitude},\n"
-    elif isinstance(d, float):
+    elif isinstance(d, Q_) or isinstance(d, float):
         a = f"{ind}{d.magnitude},\n"
     elif isinstance(d, list):  # loo pover list elements
         a = f"{ind}{d},\n"
         a = f"{ind}npa(["
         for e in d:
-            a += f"{parse_esbmtk_input_data_types(e, r,'',icl)[0:-2]},"
+            a += f"{parse_esbmtk_input_data_types(e, r, '', icl)[0:-2]},"
         a += "]),\n"
     else:
         raise ValueError(
@@ -720,7 +707,6 @@ def get_scale_with_flux_eq(
               in the total reservoir concentration and the
               concentration of the light isotope
     """
-
     # get the reference flux name
     # fn = f"{p.full_name.replace('.', '_')}__F"
     fn = f"{c.ref_flux.full_name.replace('.', '_')}"

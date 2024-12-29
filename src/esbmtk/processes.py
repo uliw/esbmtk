@@ -1,34 +1,28 @@
 """esbmtk: A general purpose Earth Science box model toolkit Copyright
-     (C), 2020-2021 Ulrich G. Wortmann
+(C), 2020-2021 Ulrich G. Wortmann
 
-     This program is free software: you can redistribute it and/or
-     modify it under the terms of the GNU General Public License as
-     published by the Free Software Foundation, either version 3 of
-     the License, or (at your option) any later version.
+This program is free software: you can redistribute it and/or
+modify it under the terms of the GNU General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
 
-     This program is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-     General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
 
-     You should have received a copy of the GNU General Public License
-     along with this program.  If not, see
-     <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see
+<https://www.gnu.org/licenses/>.
 
 """
 
 from __future__ import annotations
+
 import typing as tp
-from numba import njit
-from esbmtk.utility_functions import (
-    __checkkeys__,
-    __addmissingdefaults__,
-    __checktypes__,
-    register_return_values,
-)
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Species2Species, Q_
+    from esbmtk import Q_, Species2Species
 
 # declare numpy types
 # NDArrayFloat = npt.NDArray[np.float64]
@@ -128,6 +122,7 @@ def init_gas_exchange(c: Species2Species):
     ----------
     c : Species2Species
         connection instance
+
     """
     from esbmtk import ExternalCode, check_for_quantity
 
@@ -239,6 +234,7 @@ def gas_exchange(
     The h/c ratio in HCO3 estimated via h/c in DIC. Zeebe writes C12/C13 ratio
     but that does not work. the C13/C ratio results however in -8 permil
     offset, which is closer to observations
+
     """
     scale, p_H2O, solubility, a_db, a_dg, a_u, isotopes = p
 

@@ -1,26 +1,27 @@
 from __future__ import annotations
-from pandas import DataFrame
-import numpy as np
-import numpy.typing as npt
-import matplotlib.pyplot as plt
-import pandas as pd
-import logging
-import os
-import math
+
 import copy as cp
+import logging
+import math
+import os
 import typing as tp
 import warnings
 
+import matplotlib.pyplot as plt
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
+from pandas import DataFrame
+
 if tp.TYPE_CHECKING:
-    from esbmtk import Species2Species, Model
+    from esbmtk import Model, Species2Species
 
+from .esbmtk import Species, SpeciesBase, SpeciesProperties
 from .esbmtk_base import esbmtkBase
-from .esbmtk import SpeciesBase, Species, SpeciesProperties
-
 from .utility_functions import (
+    get_delta,
     # get_string_between_brackets,
     get_imass,
-    get_delta,
     get_l_mass,
 )
 
@@ -136,16 +137,15 @@ class Reservoir(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
         """Initialize a new reservoir group"""
+        from esbmtk import (
+            Q_,
+            Model,
+            SeawaterConstants,
+            SpeciesProperties,
+            get_box_geometry_parameters,
+        )
 
         from .utility_functions import dict_alternatives
-        from esbmtk import (
-            ExternalCode,
-            SpeciesProperties,
-            SeawaterConstants,
-            Model,
-            get_box_geometry_parameters,
-            Q_,
-        )
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -163,15 +163,15 @@ class Reservoir(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: tp.List = [
+        self.lrk: list = [
             "name",
             ["volume", "geometry"],
         ]
 
         if "concentration" in kwargs:
-            self.species: tp.List = list(kwargs["concentration"].keys())
+            self.species: list = list(kwargs["concentration"].keys())
         elif "mass" in kwargs:
-            self.species: tp.List = list(kwargs["mass"].keys())
+            self.species: list = list(kwargs["mass"].keys())
         else:
             raise ReservoirError("You must provide either mass or concentration")
 
@@ -198,12 +198,12 @@ class Reservoir(esbmtkBase):
         self.__register_name_new__()
 
         # if len(self.species) == 1:
-        la = "mass concentration delta plot isotopes".split(" ")
+        la = ["mass", "concentration", "delta", "plot", "isotopes"]
         for a in la:
             if not isinstance(getattr(self, a), dict):
                 setattr(self, a, {self.species[0]: getattr(self, a)})
 
-        self.lor: tp.List = []  # list of reservoirs in this group.
+        self.lor: list = []  # list of reservoirs in this group.
         # loop over all entries in species and create the respective reservoirs
         for s in self.species:
             if not isinstance(s, SpeciesProperties):
@@ -262,8 +262,7 @@ class Reservoir(esbmtkBase):
 
 
 class SourceSinkProperties(esbmtkBase):
-    """
-    This is a meta class to setup  Source/Sink Groups. These are not
+    """This is a meta class to setup  Source/Sink Groups. These are not
     actual reservoirs, but we stil need to have them as objects
     Example::
 
@@ -275,7 +274,7 @@ class SourceSinkProperties(esbmtkBase):
     """
 
     def __init__(self, **kwargs) -> None:
-        from esbmtk import Model, SpeciesProperties, Source, Sink
+        from esbmtk import Model, Sink, Source, SpeciesProperties
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -287,7 +286,7 @@ class SourceSinkProperties(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: tp.List[str] = ["name", "species"]
+        self.lrk: list[str] = ["name", "species"]
         self.__initialize_keyword_variables__(kwargs)
 
         # register this object
@@ -300,11 +299,11 @@ class SourceSinkProperties(esbmtkBase):
         self.parent = self.register
         self.loc: set[Species2Species] = set()  # set of connection objects
         self.__register_name_new__()
-        self.lor: tp.List = []  # list of sub reservoirs in this group
+        self.lor: list = []  # list of sub reservoirs in this group
 
         # input variables can be either dictionaries, single values
         if isinstance(self.species, list):
-            la = "delta isotopes".split(" ")
+            la = ["delta", "isotopes"]
             for a in la:
                 if not isinstance(getattr(self, a), dict):
                     setattr(self, a, {self.species[0]: getattr(self, a)})
@@ -339,8 +338,7 @@ class SourceSinkProperties(esbmtkBase):
 
 
 class SinkProperties(SourceSinkProperties):
-    """
-    This is just a wrapper to setup a Sink object
+    """This is just a wrapper to setup a Sink object
     Example::
 
            SinkProperties(name = "Burial",
@@ -354,8 +352,7 @@ class SinkProperties(SourceSinkProperties):
 
 
 class SourceProperties(SourceSinkProperties):
-    """
-    This is just a wrapper to setup a Source object
+    """This is just a wrapper to setup a Source object
     Example::
 
         SourceProperties(name = "weathering",
@@ -452,8 +449,7 @@ class Signal(esbmtkBase):
 
     def __init__(self, **kwargs) -> None:
         """Parse and initialize variables"""
-
-        from esbmtk import Q_, SpeciesProperties, Source, Sink, Species, Model
+        from esbmtk import Q_, Model, Sink, Source, Species, SpeciesProperties
 
         # provide a list of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -480,7 +476,7 @@ class Signal(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: tp.List[str] = [
+        self.lrk: list[str] = [
             "name",
             ["duration", "filename"],
             "species",
@@ -491,10 +487,10 @@ class Signal(esbmtkBase):
         self.__initialize_keyword_variables__(kwargs)
 
         # list of signals we are based on
-        self.los: tp.List[Signal] = []
+        self.los: list[Signal] = []
 
         # convert units to model units
-        self.st: tp.Union[int, float] = int(
+        self.st: int | float = int(
             Q_(self.start).to(self.species.mo.t_unit).magnitude
         )  # start time
 
@@ -528,7 +524,7 @@ class Signal(esbmtkBase):
         self.sh: str = self.shape  # shape the event
         self.d: float = self.delta  # delta value offset during the event
         self.kwd: dict[str, any] = self.kwargs  # list of keywords
-        self.led: tp.List = []
+        self.led: list = []
 
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
@@ -570,9 +566,6 @@ class Signal(esbmtkBase):
 
         Note that this flux will then be added to an existing flux.
         """
-
-        from esbmtk import Flux
-
         # these are signal times, not model time
         if self.duration != "None":
             self.length: int = int(round(self.duration / self.mo.dt))
@@ -593,8 +586,7 @@ class Signal(esbmtkBase):
         return self.s_m, self.s_l
 
     def __map_signal__(self) -> Flux:
-        """
-        Maps signal to model domain, s.t. signal data fits the time grid of model.
+        """Maps signal to model domain, s.t. signal data fits the time grid of model.
         Returns mapped data.
         """
         from esbmtk import Flux
@@ -668,7 +660,6 @@ class Signal(esbmtkBase):
 
     def __square__(self, s, e) -> None:
         """Create Square Signal"""
-
         self.s_m: NDArrayFloat = np.zeros(e - s)
         self.s_d: NDArrayFloat = np.zeros(e - s)
 
@@ -692,7 +683,6 @@ class Signal(esbmtkBase):
         s = start index
         e = end index
         """
-
         if "mass" in self.kwd:
             h = 2 * self.mass / self.duration  # get the height of the pyramid
 
@@ -722,7 +712,6 @@ class Signal(esbmtkBase):
         Note that the area under the curve equals one.
         So we can scale the result simply with mass
         """
-
         import sys
 
         c: int = int(round((e - s) / 2))  # get the center index for the peak
@@ -796,7 +785,6 @@ class Signal(esbmtkBase):
         to create a source, and connect signal, source and reservoir
         Maybe this logic should be me moved elsewhere?
         """
-
         from esbmtk import Source, Species2Species
 
         if self.source == "None":
@@ -811,10 +799,9 @@ class Signal(esbmtkBase):
         )
 
     def __add__(self, other):
-        """allow the addition of two signals and return a new signal
+        """Allow the addition of two signals and return a new signal
         FIXME: this requires cleanup
         """
-
         new_signal = cp.deepcopy(self)
         new_signal.m = self.m + other.m
         # get delta of self
@@ -848,7 +835,6 @@ class Signal(esbmtkBase):
                                        )
 
         """
-
         ns: Signal = cp.deepcopy(self)
         ns.n: str = self.n + f"_repeated_{times}_times"
         ns.signal_data.n: str = self.n + f"_repeated_{times}_times_data"
@@ -897,8 +883,7 @@ class Signal(esbmtkBase):
         through a process!
 
         """
-
-        from esbmtk import Flux, SpeciesProperties
+        from esbmtk import Flux
 
         self.fo: Flux = flux  # the flux handle
         self.sp: SpeciesProperties = flux.sp  # the species handle
@@ -912,7 +897,6 @@ class Signal(esbmtkBase):
         be costly
 
         """
-
         import numpy as np
 
         m = np.interp(t, self.mo.time, self.m)
@@ -928,7 +912,6 @@ class Signal(esbmtkBase):
         M: Model
         ax: matplotlib axes handle
         """
-
         from esbmtk import set_y_limits
 
         # convert time and data to display units
@@ -1033,8 +1016,6 @@ class VectorData(esbmtkBase):
         """A simple container for 1-dimensional data. Typically used for
         results obtained by postprocessing.
         """
-
-        from esbmtk import Q_
         from pint import Unit
 
         self.defaults: dict[str, list(str, tuple)] = {
@@ -1047,7 +1028,7 @@ class VectorData(esbmtkBase):
             "label": ["None", (str, bool)],
         }
         # provide a list of absolutely required keywords
-        self.lrk: tp.List = [
+        self.lrk: list = [
             "name",
             "register",
             "species",
@@ -1133,9 +1114,9 @@ class VectorData(esbmtkBase):
 
     def get_plot_format(self):
         """Return concentrat data in plot units"""
+        from pint import Unit
 
         from esbmtk import Q_
-        from pint import Unit
 
         if isinstance(self.plt_units, Q_):
             unit = f"{self.plt_units.units:~P}"
@@ -1152,8 +1133,7 @@ class VectorData(esbmtkBase):
 
 
 class DataField(esbmtkBase):
-    """
-    DataField: Datafields can be used to plot data which is computed after
+    """DataField: Datafields can be used to plot data which is computed after
     the model finishes in the overview plot windows. Therefore, datafields will
     plot in the same window as the reservoir they are associated with.
     Datafields must share the same x-axis is the model, and can have up to two
@@ -1215,8 +1195,7 @@ class DataField(esbmtkBase):
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize this instance"""
-
-        from . import SpeciesNoSet, VirtualSpecies, ExternalCode, Model
+        from . import ExternalCode, Model, SpeciesNoSet, VirtualSpecies
 
         # dict of all known keywords and their type
         self.defaults: dict[str, list(str, tuple)] = {
@@ -1265,7 +1244,7 @@ class DataField(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: tp.List = ["name", ["register", "associated_with"], "y1_data"]
+        self.lrk: list = ["name", ["register", "associated_with"], "y1_data"]
 
         # provide a dictionary entry for a keyword specific error message
         # see esbmtkBase.__initerrormessages__()
@@ -1310,7 +1289,7 @@ class DataField(esbmtkBase):
         if self.y1_style == "None":
             self.y1_style = []
             for i, d in enumerate(self.y1_data):
-                self.y1_style.append(f"solid")
+                self.y1_style.append("solid")
 
         if self.y2_color == "None":
             self.y2_color = []
@@ -1320,7 +1299,7 @@ class DataField(esbmtkBase):
         if self.y2_style == "None":
             self.y2_style = []
             for i, d in enumerate(self.y2_data):
-                self.y2_style.append(f"solid")
+                self.y2_style.append("solid")
 
         self.n = self.name
         self.led = []
@@ -1344,7 +1323,6 @@ class DataField(esbmtkBase):
         directory: str,
     ) -> None:
         """To be called by write_data and save_state"""
-
         from pathlib import Path
 
         p = Path(directory)
@@ -1474,7 +1452,6 @@ class DataField(esbmtkBase):
         M: Model
         ax: matplotlib axes handle
         """
-
         # plot external data first
         for i, d in enumerate(self.led):
             time = (d.x * M.t_unit).to(M.d_unit).magnitude
@@ -1600,13 +1577,12 @@ class SpeciesNoSet(SpeciesBase):
         values provided in the keywords
 
         """
-
         from esbmtk import (
             ConnectionProperties,
-            SpeciesProperties,
-            SourceProperties,
-            SinkProperties,
             Reservoir,
+            SinkProperties,
+            SourceProperties,
+            SpeciesProperties,
         )
 
         # provide a dict of all known keywords and their type
@@ -1641,7 +1617,7 @@ class SpeciesNoSet(SpeciesBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: tp.List = [
+        self.lrk: list = [
             "name",
             "species",
         ]
@@ -1674,8 +1650,7 @@ class SpeciesNoSet(SpeciesBase):
 
 
 class ExternalCode(SpeciesNoSet):
-    """
-    This class can be used to implement user-provided functions.
+    """This class can be used to implement user-provided functions.
     The data inside an ExternalCode instance will only change in response to a
     user-provided function but will otherwise remain unaffected. That is, it is
     up to the user-provided function to manage changes in response to external fluxes.
@@ -1712,18 +1687,18 @@ class ExternalCode(SpeciesNoSet):
     def __init__(self, **kwargs) -> None:
         """ """
 
+        from collections.abc import Callable
+
         from esbmtk import (
             ConnectionProperties,
-            SpeciesProperties,
-            SourceProperties,
-            SinkProperties,
+            Model,
             Reservoir,
+            SinkProperties,
+            SourceProperties,
             Species,
             Species2Species,
-            Model,
-            Flux,
+            SpeciesProperties,
         )
-        from typing import Callable
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -1767,7 +1742,7 @@ class ExternalCode(SpeciesNoSet):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: tp.List = [
+        self.lrk: list = [
             "name",
             "species",
             "register",
@@ -1776,7 +1751,7 @@ class ExternalCode(SpeciesNoSet):
         self.__initialize_keyword_variables__(kwargs)
 
         self.__set_legacy_names__(kwargs)
-        self.lro: tp.List = []  # list of all return objects.
+        self.lro: list = []  # list of all return objects.
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
         self.plt_units = self.mo.c_unit
 
@@ -1811,7 +1786,6 @@ class ExternalCode(SpeciesNoSet):
 
     def create_alialises(self) -> None:
         """Register  alialises for each vr_datafield"""
-
         for i, a in enumerate(self.alias_list):
             # print(f"{a} = {self.vr_data[i][0]}")
             setattr(self, a, self.vr_data[i])
@@ -1838,8 +1812,7 @@ class ExternalCode(SpeciesNoSet):
              VR.update(a1=new_parameter, a2=new_parameter)
 
         """
-
-        allowed_keys: tp.List = ["function_input_data, function_params"]
+        allowed_keys: list = ["function_input_data, function_params"]
         # loop over provided kwargs
         for key, value in kwargs.items():
             if key not in allowed_keys:
@@ -1851,7 +1824,6 @@ class ExternalCode(SpeciesNoSet):
 
     def __reset_state__(self):
         """Copy the last value to the first position so that we can restart the computation"""
-
         for i, d in enumerate(self.vr_data):
             d[0] = d[-2]
             setattr(
@@ -1865,7 +1837,6 @@ class ExternalCode(SpeciesNoSet):
         with the saved values
 
         """
-
         # print(f"merging {self.full_name} with whith len of vrd= {len(self.vrd_0)}")
         for i, d in enumerate(self.vr_data):
             self.vr_data[i] = getattr(self, f"vrd_{i}")
@@ -1875,7 +1846,7 @@ class ExternalCode(SpeciesNoSet):
         # print(f"new length = {len(self.vr_data[0])}")
 
     def __read_state__(self, directory: str) -> None:
-        """read virtual reservoir data from csv-file into a dataframe
+        """Read virtual reservoir data from csv-file into a dataframe
 
         The CSV file must have the following columns
 
@@ -1884,7 +1855,6 @@ class ExternalCode(SpeciesNoSet):
         X2
 
         """
-
         from pathlib import Path
 
         if self.sp.mo.register == "None":
@@ -1904,7 +1874,7 @@ class ExternalCode(SpeciesNoSet):
 
         # read csv file into dataframe
         self.df: pd.DataFrame = pd.read_csv(fn)
-        self.headers: tp.List = list(self.df.columns.values)
+        self.headers: list = list(self.df.columns.values)
         df = self.df
         headers = self.headers
         # print(f"reading from {fn}")
@@ -1919,10 +1889,9 @@ class ExternalCode(SpeciesNoSet):
         so we subsample the results before saving, or processing them
 
         """
-
         # print(f"subsampling {self.fullname}")
 
-        new: tp.List = []
+        new: list = []
         for d in self.vr_data:
             n = d[2:-2:stride]
             new.append(n)
@@ -1941,7 +1910,6 @@ class ExternalCode(SpeciesNoSet):
         directory: str,
     ) -> None:
         """To be called by write_data and save_state"""
-
         from pathlib import Path
 
         p = Path(directory)
@@ -2005,7 +1973,9 @@ class VirtualSpecies(Species):
     given reservoirs with whatever the function calculates. This is
     particularly useful e.g., to calculate the pH of a given reservoir
     as function of e.g., Alkalinity and DIC.
-    Parameters:
+
+    Parameters
+    ----------
      - name = name of process,
      - act_on = name of a reservoir this process will act upon
      - function  = a function reference
@@ -2039,7 +2009,6 @@ class VirtualSpecies(Species):
 
     def __aux_inits__(self) -> None:
         """We us the regular init methods of the Species Class, and extend it in this method"""
-
         from .processes import GenericFunction
 
         # if self.register != "None":
@@ -2076,8 +2045,7 @@ class VirtualSpecies(Species):
             VR.update(a1=new_parameter, a2=new_parameter)
 
         """
-
-        allowed_keys: tp.List = ["a1", "a2", "a3", "a4", "a5", "a6", "volume"]
+        allowed_keys: list = ["a1", "a2", "a3", "a4", "a5", "a6", "volume"]
         # loop over provided kwargs
         for key, value in kwargs.items():
             if key not in allowed_keys:
@@ -2126,9 +2094,9 @@ class GasReservoir(SpeciesBase):
 
     def __init__(self, **kwargs) -> None:
         """Initialize a reservoir."""
+        from collections.abc import Callable
 
-        from esbmtk import Q_, SpeciesProperties, Model
-        from typing import Callable
+        from esbmtk import Q_, Model, SpeciesProperties
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -2151,7 +2119,7 @@ class GasReservoir(SpeciesBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: tp.List = [
+        self.lrk: list = [
             "name",
             "species",
             "species_ppm",
@@ -2243,8 +2211,7 @@ class GasReservoir(SpeciesBase):
         self.state = 0
 
     def __set_with_isotopes__(self, i: int, value: float) -> None:
-        """write data by index"""
-
+        """Write data by index"""
         self.m[i]: float = value[0]
         self.l[i]: float = value[1]
         # self.c[i]: float = self.m[i] / self.v[i]  # update concentration
@@ -2254,7 +2221,7 @@ class GasReservoir(SpeciesBase):
         # self.d[i]: float = get_delta(self.l[i], self.h[i], self.sp.r)
 
     def __set_without_isotopes__(self, i: int, value: float) -> None:
-        """write data by index"""
+        """Write data by index"""
         self.m[i]: float = value[0]
         # self.c[i]: float = self.m[i] / self.v[i]  # update concentration
         # self.v[i]: float = self.v[i - 1] + value[0]
@@ -2315,7 +2282,7 @@ class ExternalData(esbmtkBase):
     """
 
     def __init__(self, **kwargs: dict[str, str]):
-        from esbmtk import Q_, Model, Species, DataField
+        from esbmtk import Q_, DataField, Model, Species
 
         # dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -2335,7 +2302,7 @@ class ExternalData(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: tp.List = ["name", "filename", "legend", ["reservoir", "register"]]
+        self.lrk: list = ["name", "filename", "legend", ["reservoir", "register"]]
         self.__initialize_keyword_variables__(kwargs)
 
         # legacy names
@@ -2425,9 +2392,7 @@ class ExternalData(esbmtkBase):
                 self.y = self.y.to(self.mo.r_unit).magnitude
             elif self.yq.is_compatible_with("mol/yr"):  # flux
                 self.y = self.y.to(self.mo.f_unit).magnitude
-            elif self.yq.dimensionality == mol_liter:  # concentration
-                self.y = self.y.to(self.mo.c_unit).magnitude
-            elif self.yq.dimensionality == mol_kg:  # concentration
+            elif self.yq.dimensionality == mol_liter or self.yq.dimensionality == mol_kg:  # concentration
                 self.y = self.y.to(self.mo.c_unit).magnitude
             else:
                 SignalError(f"No conversion to model units for {self.scale} specified")
@@ -2471,7 +2436,6 @@ class ExternalData(esbmtkBase):
 
 
         """
-
         xi: NDArrayFloat = self.model.time
 
         if (self.x[0] > xi[0]) or (self.x[-1] < xi[-1]):
@@ -2495,7 +2459,6 @@ class ExternalData(esbmtkBase):
                 ExternalData.plot()
 
         """
-
         fig, ax = plt.subplots()  #
         ax.scatter(self.x, self.y)
         ax.set_label(self.legend)

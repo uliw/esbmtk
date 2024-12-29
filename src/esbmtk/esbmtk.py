@@ -58,6 +58,7 @@ class ModelError(Exception):
     """Custom Error Class."""
 
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
@@ -66,6 +67,7 @@ class ReservoirError(Exception):
     """Custom Error Class."""
 
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
@@ -74,6 +76,7 @@ class FluxError(Exception):
     """Custom Error Class."""
 
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
@@ -82,6 +85,7 @@ class ScaleError(Exception):
     """Custom Error Class."""
 
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
@@ -90,6 +94,7 @@ class SpeciesError(Exception):
     """Custom Error Class."""
 
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
@@ -168,7 +173,7 @@ class Model(esbmtkBase):
 
         from esbmtk import hypsometry, species_definitions
 
-        self.defaults: dict[str, tp.List[any, tuple]] = {
+        self.defaults: dict[str, list[any, tuple]] = {
             "start": ["0 yrs", (str, Q_)],
             "stop": ["None", (str, Q_)],
             "offset": ["0 yrs", (str, Q_)],  # depreceated
@@ -204,7 +209,7 @@ class Model(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: tp.List[str] = [
+        self.lrk: list[str] = [
             "stop",
             ["timestep", "max_timestep"],
         ]
@@ -218,8 +223,8 @@ class Model(esbmtkBase):
 
         self.name = "M"
         # empty list which will hold all reservoir references
-        self.lmo: tp.List = []
-        self.lmo2: tp.List = []
+        self.lmo: list = []
+        self.lmo2: list = []
         self.dmo: dict = {}  # dict of all model objects. useful for name lookups
 
         # start a log file
@@ -230,34 +235,34 @@ class Model(esbmtkBase):
         logging.basicConfig(filename=fn, filemode="w", level=logging.CRITICAL)
         self.__register_name_new__()
 
-        self.lor: tp.List = []  # list of all reservoir type objects
-        self.lic: tp.List = []  # list of all reservoir type objects
+        self.lor: list = []  # list of all reservoir type objects
+        self.lic: list = []  # list of all reservoir type objects
         # empty list which will hold all connector references
         self.loc: set = set()  # set with connection handles
-        self.lel: tp.List = []  # list which will hold all element references
-        self.led: tp.List[ExternalData] = []  # all external data objects
-        self.lsp: tp.List = []  # list which will hold all species references
-        self.lop: tp.List = []  # set of flux processes
-        self.lpc_f: tp.List = []  # list of external functions affecting fluxes
+        self.lel: list = []  # list which will hold all element references
+        self.led: list[ExternalData] = []  # all external data objects
+        self.lsp: list = []  # list which will hold all species references
+        self.lop: list = []  # set of flux processes
+        self.lpc_f: list = []  # list of external functions affecting fluxes
         # list of external functions that needs to be imported in the ode_backend
-        self.lpc_i: tp.List = []
+        self.lpc_i: list = []
         # list of external functions affecting virtual reservoirs
-        self.lpc_r: tp.List = []
-        self.lvr: tp.List = []  # list of virtual reservoirs
+        self.lpc_r: list = []
+        self.lvr: list = []  # list of virtual reservoirs
         # optional keywords for use in the connector class
-        self.olkk: tp.List = []
+        self.olkk: list = []
         # list of objects which require a delayed initialize
-        self.lto: tp.List = []
-        self.ldf: tp.List = []  # list of datafield objects
-        self.los: tp.List = []  # list of signals
-        self.lof: tp.List = []  # list of fluxes
-        self.lrg: tp.List = []  # list of reservoirgroups
+        self.lto: list = []
+        self.ldf: list = []  # list of datafield objects
+        self.los: list = []  # list of signals
+        self.lof: list = []  # list of fluxes
+        self.lrg: list = []  # list of reservoirgroups
         self.gpt: tuple = ()  # global parameter list
         self.toc: tuple = ()  # global constants list
         self.gcc: int = 0  # constants counter
         self.vpc: int = 0  # parameter counter
         self.luf: dict = {}  # user functions and source
-        self.lvd: tp.List = []  # list of vector data objects
+        self.lvd: list = []  # list of vector data objects
 
         # unit defs
         self.l_unit = ureg.meter  # the length unit
@@ -290,7 +295,7 @@ class Model(esbmtkBase):
         self.n = self.name
         self.mo = self.name
         self.model = self
-        self.plot_style: tp.List = [self.plot_style]
+        self.plot_style: list = [self.plot_style]
 
         self.xl = f"Time [{self.t_unit}]"  # time axis label
         self.length = int(abs(self.stop - self.start))
@@ -509,7 +514,7 @@ class Model(esbmtkBase):
             if hasattr(rg, "swc"):
                 rg.swc.update_parameters(pos=0)
 
-    def plot(self, pl: tp.List = None, **kwargs) -> tuple:
+    def plot(self, pl: list = None, **kwargs) -> tuple:
         """Plot all objects specified in ``pl``.
 
         :param pl: a list of ESBMTK instances (e.g., reservoirs)
@@ -607,7 +612,9 @@ class Model(esbmtkBase):
         wcd = time.time() - wts
         print(f"\n Execution took {duration:.2f} cpu seconds, wt = {wcd:.2f}\n")
         process = psutil.Process(os.getpid())
-        print(f"This run used {process.memory_info().rss / 1e9:.2f} Gbytes of memory \n")
+        print(
+            f"This run used {process.memory_info().rss / 1e9:.2f} Gbytes of memory \n"
+        )
 
     def get_delta_values(self):
         """Calculate masses and isotope ratios."""
@@ -849,7 +856,7 @@ class Model(esbmtkBase):
                 names = M.flux_summary(filter_by="POP A_sb", return_list=True)
         """
         fby = ""
-        rl: tp.List = []
+        rl: list = []
         exclude: str = ""
         check_exlusion: bool = False
 
@@ -858,7 +865,7 @@ class Model(esbmtkBase):
             check_exlusion = True
 
         if "filter_by" in kwargs:
-            fby: tp.List = kwargs["filter_by"].split(" ")
+            fby: list = kwargs["filter_by"].split(" ")
 
         if "filter" in kwargs:
             raise ModelError("use filter_by instead of filter")
@@ -893,7 +900,7 @@ class Model(esbmtkBase):
         """
         rl = []
         if "filter_by" in kwargs:
-            fby: tp.List = kwargs["filter_by"].split(" ")
+            fby: list = kwargs["filter_by"].split(" ")
         else:
             fby: bool = False
 
@@ -905,7 +912,7 @@ class Model(esbmtkBase):
             print("       run the following command to see more details:\n")
 
         # test if all words of the fby list occur in c.full_name. If yes,
-        self.cg_list: tp.List = list(list(self.loc))
+        self.cg_list: list = list(list(self.loc))
         for c in self.cg_list:
             if fby and find_matching_strings(c.full_name, fby) or not fby:
                 if "silent" in kwargs or "return_list" in kwargs:
@@ -974,7 +981,7 @@ class ElementProperties(esbmtkBase):
 
         Required keywords: "name", "model", "mass_unit"
         """
-        self.defaults: dict[str, tp.List[any, tuple]] = {
+        self.defaults: dict[str, list[any, tuple]] = {
             "name": ["M", (str)],
             "model": ["None", (str, Model)],
             "register": ["None", (str, Model)],
@@ -990,7 +997,7 @@ class ElementProperties(esbmtkBase):
         }
 
         # list of absolutely required keywords
-        self.lrk: tp.List = ["name", "model", "mass_unit"]
+        self.lrk: list = ["name", "model", "mass_unit"]
         self.__initialize_keyword_variables__(kwargs)
 
         self.parent = self.model
@@ -1002,7 +1009,7 @@ class ElementProperties(esbmtkBase):
         self.hn: str = self.hi_label  # display name of heavy isotope
         self.dn: str = self.d_label  # display string for delta
         self.ds: str = self.d_scale  # display string for delta scale
-        self.lsp: tp.List = []  # list of species for this element.
+        self.lsp: list = []  # list of species for this element.
         self.mo.lel.append(self)
 
         if self.mo.register == "local" and self.register == "None":
@@ -1106,6 +1113,7 @@ class SpeciesBase(esbmtkBase):
     """Base class for all Species objects."""
 
     def __init__(self, **kwargs) -> None:
+        """Instantiate Class."""
         raise NotImplementedError(
             "SpeciesBase should never be used. Use the derived classes"
         )
@@ -1114,17 +1122,17 @@ class SpeciesBase(esbmtkBase):
         """Move the below out of the way."""
         from esbmtk import get_box_geometry_parameters
 
-        self.atol: tp.List[float] = [1.0, 1.0]  # tolerances
-        self.lof: tp.List[Flux] = []  # flux references
-        self.led: tp.List[ExternalData] = []  # all external data references
+        self.atol: list[float] = [1.0, 1.0]  # tolerances
+        self.lof: list[Flux] = []  # flux references
+        self.led: list[ExternalData] = []  # all external data references
         self.lio: dict[str, int] = {}  # flux name:direction pairs
-        self.lop: tp.List[Process] = []  # list holding all processe references
-        self.loe: tp.List[ElementProperties] = []  # list of elements in thiis reservoir
+        self.lop: list[Process] = []  # list holding all processe references
+        self.loe: list[ElementProperties] = []  # list of elements in thiis reservoir
         self.doe: dict[SpeciesProperties, Flux] = {}  # species flux pairs
         self.loc: set[Species2Species] = set()  # set of connection objects
-        self.ldf: tp.List[DataField] = []  # list of datafield objects
+        self.ldf: list[DataField] = []  # list of datafield objects
         # list of processes which calculate reservoirs
-        self.lpc: tp.List[Process] = []
+        self.lpc: list[Process] = []
         self.ef_results = False  # Species has external function results
 
         # legacy names
@@ -1337,14 +1345,14 @@ class SpeciesBase(esbmtkBase):
             )
 
         self.df: pd.DataFrame = pd.read_csv(fn)
-        self.headers: tp.List = list(self.df.columns.values)
+        self.headers: list = list(self.df.columns.values)
         df = self.df
         headers = self.headers
 
         # the headers contain the object name for each data in the
         # reservoir or flux thus, we must reduce the list to unique
         # object names first. Note, we must preserve order
-        header_list: tp.List = []
+        header_list: list = []
         for x in headers:
             n = x.split(" ")[0]
             if n not in header_list:
@@ -1674,7 +1682,7 @@ class Species(SpeciesBase):
         )
 
         # provide a dict of all known keywords and their type
-        self.defaults: dict[str, tp.List[any, tuple]] = {
+        self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "species": ["None", (str, SpeciesProperties)],
             "delta": ["None", (int, float, str)],
@@ -1721,7 +1729,7 @@ class Species(SpeciesBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: tp.List = [
+        self.lrk: list = [
             "name",
             "species",
             ["volume", "geometry"],
@@ -1796,7 +1804,7 @@ class Species(SpeciesBase):
             elif self.concentration == "None":
                 m = Q_(self.mass)
                 self.plt_units = self.mo.m_unit
-                self.mass: tp.Union[int, float] = m.to(self.mo.m_unit).magnitude
+                self.mass: int | float = m.to(self.mo.m_unit).magnitude
                 self.concentration = self.massto(self.mo.m_unit) / self.volume.to(
                     self.mo.v_unit
                 )
@@ -1987,7 +1995,7 @@ class Flux(esbmtkBase):
         )
 
         # provide a dict of all known keywords and their type
-        self.defaults: dict[str, tp.List[any, tuple]] = {
+        self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "species": ["None", (str, SpeciesProperties)],
             "delta": [0, (str, int, float)],
@@ -2013,7 +2021,7 @@ class Flux(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: tp.List = ["species", "rate", "register"]
+        self.lrk: list = ["species", "rate", "register"]
         self.__initialize_keyword_variables__(kwargs)
         self.parent = self.register
         # if save_flux_data is unsepcified, use model default
@@ -2076,9 +2084,9 @@ class Flux(esbmtkBase):
         self.legend_right: str = f"{self.species.dn} [{self.species.ds}]"
 
         self.xl: str = self.model.xl  # se x-axis label equal to model time
-        self.lop: tp.List[Process] = []  # list of processes
-        self.lpc: tp.List = []  # list of external functions
-        self.led: tp.List[ExternalData] = []  # list of ext data
+        self.lop: list[Process] = []  # list of processes
+        self.lpc: list = []  # list of external functions
+        self.led: list[ExternalData] = []  # list of ext data
         self.source: str = ""  # Name of reservoir which acts as flux source
         self.sink: str = ""  # Name of reservoir which acts as flux sink
 
@@ -2307,7 +2315,7 @@ class SourceSink(esbmtkBase):
             SourceProperties,
         )
 
-        self.defaults: dict[str, tp.List[any, tuple]] = {
+        self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "species": ["None", (str, SpeciesProperties)],
             "display_precision": [0.01, (int, float)],
@@ -2327,7 +2335,7 @@ class SourceSink(esbmtkBase):
             "isotopes": [False, (bool)],
         }
         # provide a list of absolutely required keywords
-        self.lrk: tp.List[str] = ["name", "species"]
+        self.lrk: list[str] = ["name", "species"]
         self.__initialize_keyword_variables__(kwargs)
 
         if self.register == "None":  # use a sensible default
@@ -2344,7 +2352,7 @@ class SourceSink(esbmtkBase):
         self.mo = self.species.mo
         self.model = self.species.mo
         self.u = self.species.mu + "/" + str(self.species.mo.t_unit)
-        self.lio: tp.List = []
+        self.lio: list = []
         self.m = 1  # set default mass and concentration values
         self.c = 1
         self.mo.lic.append(self)  # add source to list of res type objects

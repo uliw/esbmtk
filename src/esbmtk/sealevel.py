@@ -1,31 +1,31 @@
-"""
+"""esbmtk.sealevel
 
-     esbmtk.sealevel
+Classes which provide access to hypsometric data
 
-     Classes which provide access to hypsometric data
+esbmtk: A general purpose Earth Science box model toolkit
+Copyright (C), 2020 Ulrich G. Wortmann
 
-     esbmtk: A general purpose Earth Science box model toolkit
-     Copyright (C), 2020 Ulrich G. Wortmann
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-     This program is free software: you can redistribute it and/or modify
-     it under the terms of the GNU General Public License as published by
-     the Free Software Foundation, either version 3 of the License, or
-     (at your option) any later version.
-
-     This program is distributed in the hope that it will be useful,
-     but WITHOUT ANY WARRANTY; without even the implied warranty of
-     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-     GNU General Public License for more details.
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
  
-     You should have received a copy of the GNU General Public License
-     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
+from math import cos, pi, radians, sin
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+
 from .esbmtk_base import esbmtkBase
-from math import cos, sin, radians, pi
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
@@ -106,7 +106,7 @@ class hypsometry(esbmtkBase):
         self.mo = self.model
         self.__register_name_new__()
         self.read_data(self.hyp_data_fn)
-        self.oa = 361e12  #  m^2 https://en.wikipedia.org/wiki/Ocean
+        self.oa = 361e12  # m^2 https://en.wikipedia.org/wiki/Ocean
 
     def read_data(self, fn: str) -> None:
         """Read the hypsometry data from a pickle file.
@@ -129,8 +129,8 @@ class hypsometry(esbmtkBase):
         -11000, 0
 
         """
-        from importlib import resources as impresources
         import pathlib as pl
+        from importlib import resources as impresources
 
         fn_csv = impresources.files("esbmtk") / f"{fn}.csv"
         fqfn_csv: pl.Path = pl.Path(fn_csv)
@@ -190,14 +190,12 @@ class hypsometry(esbmtkBase):
         """Return the area values between 0 and max_depth
         as 1-D array
         """
-
         return self.hypdata[self.max_elevation :, 1]
 
     def get_lookup_table_area_dz(self) -> NDArrayFloat:
         """Return the are_dz values between 0 and max_depth
         as 1-D array
         """
-
         return self.hypdata[self.max_elevation :, 2]
 
     def area(self, elevation: int) -> float:
@@ -214,22 +212,21 @@ class hypsometry(esbmtkBase):
             area in m^2
 
         """
-
         # calculate index
         i = int(self.max_elevation - elevation)
 
         if (elevation > self.max_elevation) or (elevation < self.max_depth):
             raise ValueError(
-                (
+                
                     f"hyp.area: {elevation} must be between"
                     f"{self.max_elevation} and {self.min_depth}"
-                )
+                
             )
 
         return self.hypdata[i, 1]
 
     def area_dz(self, u: float, l: float) -> float:
-        """calculate the area between two elevation datums
+        """Calculate the area between two elevation datums
 
         Parameters
         ----------
@@ -251,10 +248,10 @@ class hypsometry(esbmtkBase):
         """
         if (u > self.max_elevation) or (l < self.max_depth):
             raise ValueError(
-                (
+                
                     f"hyp.area: {u} must be < {self.max_elevation}"
                     f"and {l} > {self.min_depth}"
-                )
+                
             )
 
         u = self.max_elevation - int(u)
@@ -283,13 +280,12 @@ class hypsometry(esbmtkBase):
             if elevation datums are outside the defined interval
 
         """
-
         if (u > self.max_elevation) or (l < self.max_depth):
             raise ValueError(
-                (
+                
                     f"hyp.area: {u} must be < {self.max_elevation}"
                     f"and {l} > {self.min_depth}"
-                )
+                
             )
 
         u = self.max_elevation - int(u)
@@ -301,7 +297,6 @@ class hypsometry(esbmtkBase):
         """Provide a diagnostic graph that shows the hypsometric data
         use by ESBMTK
         """
-
         elevation = self.hypdata[:, 0]
         area = self.hypdata[:, 1] / self.sa
 
@@ -323,8 +318,7 @@ class hypsometry(esbmtkBase):
 
 
 def get_box_geometry_parameters(box) -> None:
-    """
-    Calculate box volume and area from the data in box.
+    """Calculate box volume and area from the data in box.
 
     :param box: tp.List or dict with the geometry parameters
     :fraction: 0 to 1 to specify a fractional part (i.e., Atlantic)

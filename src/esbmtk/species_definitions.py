@@ -1,5 +1,4 @@
-"""
-esbmtk: A general purpose Earth Science box model toolkit Copyright
+"""esbmtk: A general purpose Earth Science box model toolkit Copyright
 (C), 2020 Ulrich G.  Wortmann
 
 This program is free software: you can redistribute it and/or modify
@@ -17,9 +16,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from __future__ import annotations
+
 import typing as tp
+
 import numpy as np
 import numpy.typing as npt
+
 from .esbmtk import ElementProperties, SpeciesProperties
 
 # declare numpy types
@@ -31,7 +33,6 @@ if tp.TYPE_CHECKING:
 
 def Carbon(model):
     """Some often used definitions"""
-
     eh = ElementProperties(
         name="Carbon",  # ElementProperties Name
         model=model,  # Model handle

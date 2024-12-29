@@ -1,10 +1,12 @@
 from __future__ import annotations
+
 import typing as tp
+
 import numpy as np
 import numpy.typing as npt
 
 if tp.TYPE_CHECKING:
-    from .esbmtk import Reservoir, Species, GasReservoir, SpeciesGroup
+    from .esbmtk import GasReservoir, Reservoir, Species, SpeciesGroup
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
@@ -89,8 +91,7 @@ def carbonate_system_2_pp(
     :param zsat_min: depth of mixed layer
     :param zmax: depth of lookup table
 
-    returns:
-
+    Returns:
     DIC_burial, DIC_burial_l, Hplus, zsnow
 
     Additionally, it calculates  the following critical depth intervals:
@@ -109,6 +110,7 @@ def carbonate_system_2_pp(
 
     """
     from math import log
+
     from esbmtk import VectorData
 
     # ensure that all objects are lists
