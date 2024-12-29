@@ -1,3 +1,21 @@
+"""esbmtk: A general purpose Earth Science box model toolkit.
+
+Copyright (C), 2020 Ulrich G.  Wortmann
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or (at
+your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 from __future__ import annotations
 
 import copy as cp
@@ -14,71 +32,92 @@ import pandas as pd
 from pandas import DataFrame
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Model, Species2Species
+    from esbmtk import Flux, Model, Species2Species
 
 from .esbmtk import Species, SpeciesBase, SpeciesProperties
 from .esbmtk_base import esbmtkBase
-from .utility_functions import (
-    get_delta,
-    # get_string_between_brackets,
-    get_imass,
-    get_l_mass,
-)
+from .utility_functions import get_delta, get_imass, get_l_mass
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
 
 class ReservoirError(Exception):
+    """Custom Error Class."""
+
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class SourceSinkPropertiesError(Exception):
+    """Custom Error Class."""
+
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class FluxError(Exception):
+    """Custom Error Class."""
+
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class SignalError(Exception):
+    """Custom Error Class."""
+
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class DataFieldError(Exception):
+    """Custom Error Class."""
+
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class ESBMTKFunctionError(Exception):
+    """Custom Error Class."""
+
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class ExternalDataError(Exception):
+    """Custom Error Class."""
+
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
-class GasResrvoirError(Exception):
+class GasReservoirError(Exception):
+    """Custom Error Class."""
+
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class Reservoir(esbmtkBase):
-    """This class allows the creation of a group of reservoirs which share
+    """Create a group of reservoirs.
+
+    which share
     a common volume, and potentially connections. E.g., if we have twoy
     reservoir groups with the same reservoirs, and we connect them
     with a flux, this flux will apply to all reservoirs in this group.
@@ -136,7 +175,7 @@ class Reservoir(esbmtkBase):
     """
 
     def __init__(self, **kwargs) -> None:
-        """Initialize a new reservoir group"""
+        """Initialize a new reservoir group."""
         from esbmtk import (
             Q_,
             Model,
@@ -208,10 +247,7 @@ class Reservoir(esbmtkBase):
         for s in self.species:
             if not isinstance(s, SpeciesProperties):
                 raise ReservoirError(f"{s.n} needs to be a valid species name")
-            if s.flux_only:
-                rtype = "flux_only"
-            else:
-                rtype = "regular"
+            rtype = "flux_only" if s.flux_only else "regular"
 
             a = Species(
                 name=f"{s.name}",
@@ -256,14 +292,16 @@ class Reservoir(esbmtkBase):
                 )
                 warnings.warn(
                     f"\n\nUsing SeawaterConstants without provinding DIC "
-                    f"and TA values for {self.name}\n\n"
+                    f"and TA values for {self.name}\n\n",
+                    stacklevel=2,
                 )
         self.register.lrg.append(self)
 
 
 class SourceSinkProperties(esbmtkBase):
-    """This is a meta class to setup  Source/Sink Groups. These are not
-    actual reservoirs, but we stil need to have them as objects
+    """Create Source/Sink Groups.
+
+    These are not actual reservoirs, but we stil need to have them as objects
     Example::
 
            SinkProperties(name = "Pyrite",
@@ -274,6 +312,7 @@ class SourceSinkProperties(esbmtkBase):
     """
 
     def __init__(self, **kwargs) -> None:
+        """Initialize Class Instance."""
         from esbmtk import Model, Sink, Source, SpeciesProperties
 
         # provide a dict of all known keywords and their type
@@ -309,7 +348,7 @@ class SourceSinkProperties(esbmtkBase):
                     setattr(self, a, {self.species[0]: getattr(self, a)})
 
         # loop over species names and setup sub-objects
-        for i, s in enumerate(self.species):
+        for _i, s in enumerate(self.species):
             if not isinstance(s, SpeciesProperties):
                 raise SourceSinkPropertiesError(
                     f"{s.n} needs to be a valid species name"
@@ -338,7 +377,8 @@ class SourceSinkProperties(esbmtkBase):
 
 
 class SinkProperties(SourceSinkProperties):
-    """This is just a wrapper to setup a Sink object
+    """A wrapper to setup a Sink object.
+
     Example::
 
            SinkProperties(name = "Burial",
@@ -352,7 +392,8 @@ class SinkProperties(SourceSinkProperties):
 
 
 class SourceProperties(SourceSinkProperties):
-    """This is just a wrapper to setup a Source object
+    """A wrapper to setup a Source object.
+
     Example::
 
         SourceProperties(name = "weathering",
@@ -364,8 +405,10 @@ class SourceProperties(SourceSinkProperties):
 
 
 class Signal(esbmtkBase):
-    """This class will create a signal which is described by its startime
-    (relative to the model time), it's size (as mass) and duration, or as
+    """Create a signal.
+
+    which is described by its startime (relative to the model time), it's size
+    (as mass) and duration, or as
     duration and magnitude. Furthermore, we can presribe the signal shape
     (square, pyramid, bell, file )and whether the signal will repeat. You can
     also specify whether the event will affect the delta value.
@@ -448,7 +491,7 @@ class Signal(esbmtkBase):
     """
 
     def __init__(self, **kwargs) -> None:
-        """Parse and initialize variables"""
+        """Parse and initialize variables."""
         from esbmtk import Q_, Model, Sink, Source, Species, SpeciesProperties
 
         # provide a list of all known keywords and their type
@@ -505,7 +548,8 @@ class Signal(esbmtkBase):
                 warnings.warn(
                     """\n\n Your signal duration is covered by less than 10
                     Intergration steps. This may not be what you want
-                    Consider adjusting the max_step parameter of the model object\n"""
+                    Consider adjusting the max_step parameter of the model object\n""",
+                    stacklevel=2,
                 )
 
         self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
@@ -558,7 +602,9 @@ class Signal(esbmtkBase):
             self.__apply_signal__()
 
     def __init_signal_data__(self) -> None:
-        """1. Create a vector which contains the signal data. The vector length
+        """1. Create a vector which contains the signal data.
+
+        The vector length
            can exceed the modelling domain.
         2. Trim the signal vector in such a way that it fits within the
            modelling domain
@@ -586,7 +632,9 @@ class Signal(esbmtkBase):
         return self.s_m, self.s_l
 
     def __map_signal__(self) -> Flux:
-        """Maps signal to model domain, s.t. signal data fits the time grid of model.
+        """Map signal to model domain.
+
+        s.t. signal data fits the time grid of model.
         Returns mapped data.
         """
         from esbmtk import Flux
@@ -603,14 +651,8 @@ class Signal(esbmtkBase):
         )
         # Creating signal time array
         dt = self.mo.dt  # model time step
-        model_start = self.mo.start
-        model_end = self.mo.stop
         signal_start = self.st
-        if self.filename == "None":
-            signal_end = self.st + self.duration  # calculated end time
-        else:
-            signal_end = self.et
-
+        signal_end = self.st + self.duration if self.filename == "None" else self.et
         model_time = self.mo.time  # model time array
         # imitate signal time array with same size as interpolated signal data (self.s_m)
         signal_time = np.arange(signal_start, signal_end, dt)
@@ -659,7 +701,7 @@ class Signal(esbmtkBase):
         return mapped_signal_data
 
     def __square__(self, s, e) -> None:
-        """Create Square Signal"""
+        """Create Square Signal."""
         self.s_m: NDArrayFloat = np.zeros(e - s)
         self.s_d: NDArrayFloat = np.zeros(e - s)
 
@@ -678,7 +720,7 @@ class Signal(esbmtkBase):
         self.s_l = get_l_mass(self.s_m, self.s_d, self.sp.r)
 
     def __pyramid__(self, s, e) -> None:
-        """Create pyramid type Signal
+        """Create pyramid type Signal.
 
         s = start index
         e = end index
@@ -704,7 +746,7 @@ class Signal(esbmtkBase):
         self.s_l = get_l_mass(self.s_m, self.s_d, self.sp.r)
 
     def __bell__(self, s, e) -> None:
-        """Create a bell curve type signal
+        """Create a bell curve type signal.
 
         s = start index
         e = end index
@@ -739,7 +781,9 @@ class Signal(esbmtkBase):
             raise SignalError("Bell type signal require either mass or magnitude")
 
     def __int_ext_data__(self) -> None:
-        """Interpolate External data as a signal. Unlike the other signals,
+        """Interpolate External data as a signal.
+
+        Unlike the other signals,
         this will replace the values in the flux with those read from the
         external data source. The external data need to be in the following format
 
@@ -781,8 +825,8 @@ class Signal(esbmtkBase):
         return num_steps
 
     def __apply_signal__(self) -> None:
-        """In case we deal with a source  signal, we need
-        to create a source, and connect signal, source and reservoir
+        """Create a source, and connect signal, source and reservoir.
+
         Maybe this logic should be me moved elsewhere?
         """
         from esbmtk import Source, Species2Species
@@ -799,7 +843,8 @@ class Signal(esbmtkBase):
         )
 
     def __add__(self, other):
-        """Allow the addition of two signals and return a new signal
+        """Allow the addition of two signals and return a new signal.
+
         FIXME: this requires cleanup
         """
         new_signal = cp.deepcopy(self)
@@ -825,7 +870,8 @@ class Signal(esbmtkBase):
         return new_signal
 
     def repeat(self, start, stop, offset, times) -> None:
-        """This method creates a new signal by repeating an existing signal.
+        """Create a new signal by repeating an existing signal.
+
         Example::
 
             new_signal = signal.repeat(start,   # start time of signal slice to be repeated
@@ -879,19 +925,21 @@ class Signal(esbmtkBase):
         return ns
 
     def __register_with_flux__(self, flux) -> None:
-        """Register this signal with a flux. This should probably be done
+        """Register this signal with a flux.
+
+        This should probably be done
         through a process!
 
         """
-        from esbmtk import Flux
-
         self.fo: Flux = flux  # the flux handle
         self.sp: SpeciesProperties = flux.sp  # the species handle
         # list of processes
         flux.lop.append(self)
 
     def __call__(self, t) -> list[float, float]:
-        """Return Signal value at time t (mass and mass for light
+        """Return Signal value at time t.
+
+        (mass and mass for light
         isotope). This will work as long a t is a multiple of dt, and i = t.
         may extend this by addding linear interpolation but that will
         be costly
@@ -900,15 +948,13 @@ class Signal(esbmtkBase):
         import numpy as np
 
         m = np.interp(t, self.mo.time, self.m)
-        if self.isotopes:
-            l = np.interp(t, self.mo.time, self.l)
-        else:
-            l = 0
+        lm = np.interp(t, self.mo.time, self.l) if self.isotopes else 0
 
-        return [m, l]
+        return [m, lm]
 
     def __plot__(self, M: Model, ax) -> None:
         """Plot instructions.
+
         M: Model
         ax: matplotlib axes handle
         """
@@ -961,7 +1007,9 @@ class Signal(esbmtkBase):
         append: bool,
         directory: str,
     ) -> None:
-        """Write data to file.  This function is called by the
+        """Write data to file.
+
+        This function is called by the
         write_data() and save_state() methods
 
         :param prefix:
@@ -1012,10 +1060,13 @@ class Signal(esbmtkBase):
 
 
 class VectorData(esbmtkBase):
+    """A simple container for 1-dimensional data.
+
+    Typically used for results obtained by postprocessing.
+    """
+
     def __init__(self, **kwargs: dict[str, any]) -> None:
-        """A simple container for 1-dimensional data. Typically used for
-        results obtained by postprocessing.
-        """
+        """Initialize Class."""
         from pint import Unit
 
         self.defaults: dict[str, list(str, tuple)] = {
@@ -1057,8 +1108,9 @@ class VectorData(esbmtkBase):
         append: bool,
         directory: str,
     ) -> None:
-        """Write data to file.  This function is called by the
-        write_data() and save_state() methods
+        """Write data to file.
+
+        This function is called by the write_data() and save_state() methods
 
         :param prefix:
         :param start:
@@ -1068,6 +1120,8 @@ class VectorData(esbmtkBase):
         :param directory:
         """
         from pathlib import Path
+
+        from esbmtk import SpeciesError
 
         p = Path(directory)
         p.mkdir(parents=True, exist_ok=True)
@@ -1113,7 +1167,7 @@ class VectorData(esbmtkBase):
         return df
 
     def get_plot_format(self):
-        """Return concentrat data in plot units"""
+        """Return concentrat data in plot units."""
         from pint import Unit
 
         from esbmtk import Q_
@@ -1133,7 +1187,9 @@ class VectorData(esbmtkBase):
 
 
 class DataField(esbmtkBase):
-    """DataField: Datafields can be used to plot data which is computed after
+    """DataField Class.
+
+    Datafields can be used to plot data which is computed after
     the model finishes in the overview plot windows. Therefore, datafields will
     plot in the same window as the reservoir they are associated with.
     Datafields must share the same x-axis is the model, and can have up to two
@@ -1194,7 +1250,7 @@ class DataField(esbmtkBase):
     """
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
-        """Initialize this instance"""
+        """Initialize this instance."""
         from . import ExternalCode, Model, SpeciesNoSet, VirtualSpecies
 
         # dict of all known keywords and their type
@@ -1283,22 +1339,22 @@ class DataField(esbmtkBase):
 
         if self.y1_color == "None":
             self.y1_color = []
-            for i, d in enumerate(self.y1_data):
+            for i, _d in enumerate(self.y1_data):
                 self.y1_color.append(f"C{i}")
 
         if self.y1_style == "None":
             self.y1_style = []
-            for i, d in enumerate(self.y1_data):
+            for _i, _d in enumerate(self.y1_data):
                 self.y1_style.append("solid")
 
         if self.y2_color == "None":
             self.y2_color = []
-            for i, d in enumerate(self.y2_data):
+            for i, _d in enumerate(self.y2_data):
                 self.y2_color.append(f"C{i}")
 
         if self.y2_style == "None":
             self.y2_style = []
-            for i, d in enumerate(self.y2_data):
+            for _i, _d in enumerate(self.y2_data):
                 self.y2_style.append("solid")
 
         self.n = self.name
@@ -1322,7 +1378,11 @@ class DataField(esbmtkBase):
         append: bool,
         directory: str,
     ) -> None:
-        """To be called by write_data and save_state"""
+        """Write_data and save_state.
+
+        This method is called by the respective write_data and save_state
+        functions.
+        """
         from pathlib import Path
 
         p = Path(directory)
@@ -1363,7 +1423,9 @@ class DataField(esbmtkBase):
         return df
 
     def __unify_data__(self, M: Model, x, y, label) -> tuple(list, list):
-        """The input data for the DataField Class can be either missing, be a
+        """Format data so that it can be used by the __plot__ method.
+
+        The input data for the DataField Class can be either missing, be a
         single array, or a list of arrays.  The module analyzes the data and
         modifies is in such a way that it can be used by the __plot__ method
         without further adjustments.
@@ -1396,7 +1458,7 @@ class DataField(esbmtkBase):
             else:  # mutiple y data
                 # print(f" no x-data mutiple y-data y_l = {y_l}")
                 x = []
-                for e in range(y_l):
+                for _e in range(y_l):
                     x.append(M.time)
 
         elif isinstance(x, np.ndarray):
@@ -1406,7 +1468,7 @@ class DataField(esbmtkBase):
                 xx.append(x)
             else:  # mutiple y data
                 # print(f" no x-data mutiple y-data y_l = {y_l}")
-                for e in range(y_l):
+                for _e in range(y_l):
                     xx.append(x)
             x = xx
             # print(f"after: {type(x)}")
@@ -1421,17 +1483,16 @@ class DataField(esbmtkBase):
         if y_l == 1:
             if not isinstance(label, list):
                 label = [label]
-        elif y_l > 1:
-            if not isinstance(label, list):
-                ll = []
-                for e in y_l:
-                    ll.append(label)
-                label = ll
+        elif y_l > 1 and not isinstance(label, list):
+            ll = []
+            for _e in y_l:
+                ll.append(label)
+            label = ll
 
         return x, y, label
 
-    def __plot_data__(self, ax, x, y, t, l, i, color, style) -> None:
-        """Plot data either as line of scatterplot
+    def __plot_data__(self, ax, x, y, t, label, i, color, style) -> None:
+        """Plot data either as line or scatterplot.
 
         :param ax: axis handle
         :param x: x data
@@ -1443,12 +1504,13 @@ class DataField(esbmtkBase):
         """
         if t == "plot":
             # ax.plot(x, y, color=f"C{i}", label=l)
-            ax.plot(x, y, color=color[i], linestyle=style[i], label=l)
+            ax.plot(x, y, color=color[i], linestyle=style[i], label=label)
         else:
-            ax.scatter(x, y, color=color[i], label=l)
+            ax.scatter(x, y, color=color[i], label=label)
 
     def __plot__(self, M: Model, ax) -> None:
         """Plot instructions.
+
         M: Model
         ax: matplotlib axes handle
         """
@@ -1468,7 +1530,7 @@ class DataField(esbmtkBase):
 
         ymin = list()
         ymax = list()
-        for i, d in enumerate(self.y1_data):  # loop over datafield list
+        for i, _d in enumerate(self.y1_data):  # loop over datafield list
             if self.x1_as_time:
                 x1 = (self.x1_data[i] * M.t_unit).to(M.d_unit).magnitude
             else:
@@ -1477,10 +1539,7 @@ class DataField(esbmtkBase):
                 # 1 = self.y
                 # y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
 
-            if isinstance(self.y1_type, list):
-                ptype = self.y1_type[i]
-            else:
-                ptype = self.y1_type
+            ptype = self.y1_type[i] if isinstance(self.y1_type, list) else self.y1_type
 
             self.__plot_data__(
                 ax,
@@ -1520,7 +1579,7 @@ class DataField(esbmtkBase):
                 self.y2_label,
             )
             axt = ax.twinx()
-            for i, d in enumerate(self.y2_data):  # loop over datafield list
+            for i, _d in enumerate(self.y2_data):  # loop over datafield list
                 if self.x2_as_time:
                     x2 = (self.x1_data[i] * M.t_unit).to(M.d_unit).magnitude
                 else:
@@ -1563,20 +1622,16 @@ class DataField(esbmtkBase):
 
 
 class SpeciesNoSet(SpeciesBase):
-    """This class is similar to a regular reservoir, but we make no
-    assumptions about the type of data contained. I.e., all data will be
-    left alone
+    """class that makes no assumptions about the type of data.
 
+    I.e., all data will be left alone. The original class will calculate delta and
+    concentration from mass an d and h and l. Since we want to use this class without a
+    priory knowledge of how the reservoir arrays are being used we overwrite the data
+    generated during initialization with the values provided in the keywords
     """
 
     def __init__(self, **kwargs) -> None:
-        """The original class will calculate delta and concentration from mass
-        an d and h and l. Since we want to use this class without a
-        priory knowledge of how the reservoir arrays are being used we
-        overwrite the data generated during initialization with the
-        values provided in the keywords
-
-        """
+        """Initialize Class."""
         from esbmtk import (
             ConnectionProperties,
             Reservoir,
@@ -1589,11 +1644,11 @@ class SpeciesNoSet(SpeciesBase):
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "species": ["None", (str, SpeciesProperties)],
-            "plot_transform_c": ["None", (str, Callable)],
+            "plot_transform_c": ["None", (str, tp.Callable)],
             "legend_left": ["None", (str)],
             "plot": ["yes", (str)],
             "groupname": ["None", (str)],
-            "function": ["None", (str, Callable)],
+            "function": ["None", (str, tp.Callable)],
             "display_precision": [0.01, (int, float)],
             "register": [
                 "None",
@@ -1650,7 +1705,8 @@ class SpeciesNoSet(SpeciesBase):
 
 
 class ExternalCode(SpeciesNoSet):
-    """This class can be used to implement user-provided functions.
+    """Implement user-provided functions.
+
     The data inside an ExternalCode instance will only change in response to a
     user-provided function but will otherwise remain unaffected. That is, it is
     up to the user-provided function to manage changes in response to external fluxes.
@@ -1685,8 +1741,7 @@ class ExternalCode(SpeciesNoSet):
     """
 
     def __init__(self, **kwargs) -> None:
-        """ """
-
+        """Initialize Class."""
         from collections.abc import Callable
 
         from esbmtk import (
@@ -1768,7 +1823,7 @@ class ExternalCode(SpeciesNoSet):
             # initialize data fields
             self.vr_data = list()
             for e in self.vr_datafields.values():
-                if isinstance(e, (float, int)):
+                if isinstance(e, float | int):
                     self.vr_data.append(np.full(self.mo.steps, e, dtype=float))
                 else:
                     self.vr_data.append(e)
@@ -1785,12 +1840,13 @@ class ExternalCode(SpeciesNoSet):
         self.update_parameter_count()
 
     def create_alialises(self) -> None:
-        """Register  alialises for each vr_datafield"""
+        """Register  alialises for each vr_datafield."""
         for i, a in enumerate(self.alias_list):
             # print(f"{a} = {self.vr_data[i][0]}")
             setattr(self, a, self.vr_data[i])
 
     def update_parameter_count(self):
+        """Update Parameter Count."""
         if len(self.function_params) > 0:
             self.param_start = self.model.vpc
             self.model.vpc = self.param_start + 1
@@ -1801,8 +1857,9 @@ class ExternalCode(SpeciesNoSet):
             self.has_p = False
 
     def append(self, **kwargs) -> None:
-        """This method allows to update GenericFunction parameters after the
-        VirtualSpecies has been initialized. This is most useful
+        """Update GenericFunction parameters.
+
+        After the VirtualSpecies has been initialized. This is most useful
         when parameters have to reference other virtual reservoirs
         which do not yet exist, e.g., when two virtual reservoirs have
         a circular reference.
@@ -1823,7 +1880,7 @@ class ExternalCode(SpeciesNoSet):
                 getattr(self, key).append(value)
 
     def __reset_state__(self):
-        """Copy the last value to the first position so that we can restart the computation"""
+        """Copy the last value to the first position so that we can restart the computation."""
         for i, d in enumerate(self.vr_data):
             d[0] = d[-2]
             setattr(
@@ -1833,12 +1890,9 @@ class ExternalCode(SpeciesNoSet):
             )
 
     def __merge_temp_results__(self) -> None:
-        """Once all iterations are done, replace the data fields
-        with the saved values
-
-        """
+        """Replace the data fields with the saved values."""
         # print(f"merging {self.full_name} with whith len of vrd= {len(self.vrd_0)}")
-        for i, d in enumerate(self.vr_data):
+        for i, _d in enumerate(self.vr_data):
             self.vr_data[i] = getattr(self, f"vrd_{i}")
 
         # update aliases
@@ -1846,7 +1900,7 @@ class ExternalCode(SpeciesNoSet):
         # print(f"new length = {len(self.vr_data[0])}")
 
     def __read_state__(self, directory: str) -> None:
-        """Read virtual reservoir data from csv-file into a dataframe
+        """Read virtual reservoir data from csv-file into a dataframe.
 
         The CSV file must have the following columns
 
@@ -1878,17 +1932,14 @@ class ExternalCode(SpeciesNoSet):
         df = self.df
         headers = self.headers
         # print(f"reading from {fn}")
-        for i, n in enumerate(headers):
+        for i, _n in enumerate(headers):
             # first column is time
             if i > 0:
                 # print(f"i = {i}, header = {n}, data = {df.iloc[-3:, i]}")
                 self.vr_data[i - 1][:3] = df.iloc[-3:, i]
 
     def __sub_sample_data__(self, stride) -> None:
-        """There is usually no need to keep more than a thousand data points
-        so we subsample the results before saving, or processing them
-
-        """
+        """Subsample the results before saving, or processing them."""
         # print(f"subsampling {self.fullname}")
 
         new: list = []
@@ -1909,7 +1960,7 @@ class ExternalCode(SpeciesNoSet):
         append: bool,
         directory: str,
     ) -> None:
-        """To be called by write_data and save_state"""
+        """To be called by write_data and save_state."""
         from pathlib import Path
 
         p = Path(directory)
@@ -1946,11 +1997,13 @@ class ExternalCode(SpeciesNoSet):
 
 
 class VirtualSpeciesNoSet(ExternalCode):
-    """Alias to ensure backwards compatibility"""
+    """Alias to ensure backwards compatibility."""
 
 
 class VirtualSpecies(Species):
-    """A virtual reservoir. Unlike regular reservoirs, the mass of a
+    """A virtual reservoir.
+
+    Unlike regular reservoirs, the mass of a
     virtual reservoir depends entirely on the return value of a function.
 
     Example::
@@ -2008,7 +2061,7 @@ class VirtualSpecies(Species):
     """
 
     def __aux_inits__(self) -> None:
-        """We us the regular init methods of the Species Class, and extend it in this method"""
+        """We us the regular init methods of the Species Class, and extend it in this method."""
         from .processes import GenericFunction
 
         # if self.register != "None":
@@ -2034,8 +2087,9 @@ class VirtualSpecies(Species):
         # print(f"added {self.name} to lvr 2")
 
     def update(self, **kwargs) -> None:
-        """This method allows to update GenericFunction parameters after the
-        VirtualSpecies has been initialized. This is most useful
+        """Update GenericFunction parameters.
+
+        After the VirtualSpecies has been initialized. This is most useful
         when parameters have to reference other virtual reservoirs
         which do not yet exist, e.g., when two virtual reservoirs have
         a circular reference.
@@ -2055,7 +2109,7 @@ class VirtualSpecies(Species):
 
 
 class GasReservoir(SpeciesBase):
-    """This object holds reservoir specific information similar to the Species class
+    """reservoir specific information similar to the Species class.
 
           Example::
 
@@ -2211,7 +2265,7 @@ class GasReservoir(SpeciesBase):
         self.state = 0
 
     def __set_with_isotopes__(self, i: int, value: float) -> None:
-        """Write data by index"""
+        """Write data by index."""
         self.m[i]: float = value[0]
         self.l[i]: float = value[1]
         # self.c[i]: float = self.m[i] / self.v[i]  # update concentration
@@ -2221,14 +2275,16 @@ class GasReservoir(SpeciesBase):
         # self.d[i]: float = get_delta(self.l[i], self.h[i], self.sp.r)
 
     def __set_without_isotopes__(self, i: int, value: float) -> None:
-        """Write data by index"""
+        """Write data by index."""
         self.m[i]: float = value[0]
         # self.c[i]: float = self.m[i] / self.v[i]  # update concentration
         # self.v[i]: float = self.v[i - 1] + value[0]
 
 
 class ExternalData(esbmtkBase):
-    """Instances of this class hold external X/Y data which can be associated with
+    """Instances of this class hold external X/Y data.
+
+    which can be associated with
     a reservoir.
 
     Example::
@@ -2271,7 +2327,8 @@ class ExternalData(esbmtkBase):
     the convert_to keyword can be used to force a specific conversion.
     The default is to convert into the model concentration units.
 
-    Methods:
+    Methods
+    -------
       - name.plot()
 
     Data:
@@ -2282,6 +2339,7 @@ class ExternalData(esbmtkBase):
     """
 
     def __init__(self, **kwargs: dict[str, str]):
+        """Initialize Class."""
         from esbmtk import Q_, DataField, Model, Species
 
         # dict of all known keywords and their type
@@ -2392,7 +2450,9 @@ class ExternalData(esbmtkBase):
                 self.y = self.y.to(self.mo.r_unit).magnitude
             elif self.yq.is_compatible_with("mol/yr"):  # flux
                 self.y = self.y.to(self.mo.f_unit).magnitude
-            elif self.yq.dimensionality == mol_liter or self.yq.dimensionality == mol_kg:  # concentration
+            elif (
+                self.yq.dimensionality == mol_liter or self.yq.dimensionality == mol_kg
+            ):  # concentration
                 self.y = self.y.to(self.mo.c_unit).magnitude
             else:
                 SignalError(f"No conversion to model units for {self.scale} specified")
@@ -2413,7 +2473,9 @@ class ExternalData(esbmtkBase):
         self.__register_name_new__()
 
     def __register__(self, obj):
-        """Register this dataset with a flux or reservoir. This will have the
+        """Register this dataset with a flux or reservoir.
+
+        This will have the
         effect that the data will be printed together with the model
         results for this reservoir
 
@@ -2426,8 +2488,9 @@ class ExternalData(esbmtkBase):
         obj.led.append(self)
 
     def __interpolate__(self) -> None:
-        """Interpolate the input data with a resolution of dt across the model
-        domain The first and last data point must coincide with the
+        """Interpolate the input data with a resolution of dt across the model domain.
+
+        The first and last data point must coincide with the
         model start and end time. In other words, this method will not
         patch data at the end points.
 
@@ -2452,7 +2515,7 @@ class ExternalData(esbmtkBase):
             self.x = xi
 
     def plot(self) -> None:
-        """Plot the data and save a pdf
+        """Plot the data and save a pdf.
 
         Example::
 
