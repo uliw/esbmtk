@@ -636,16 +636,20 @@ class Model(esbmtkBase):
             raise ModelError(f"Solver={self.solver} is unkknown")
 
     def write_temp_equations(self, cwd, write_equations_2, R, icl, cpl, ipl):
-        """Write the equations file."""
+        """Write the equations file return the equation set.
+
+        Note that the equation import needs to be done inside the
+        tempfile context manager, so we cannot simply return the
+        file name.
+        """
+        import pathlib as pl
+
         tempfile.tempdir = cwd
         with tempfile.NamedTemporaryFile(suffix=".py") as tmp_file:
-            eqs_fn = tmp_file.name
-            eqs_mod = eqs_fn.split("/")[-1].split(".")[0]
-            # eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
-            write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
-            eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
-            # eqs = eqs_mod.eqs
-        return eqs
+            eqs_fn = pl.Path(tmp_file.name)
+            eqs_module_name = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
+            eqs_set = getattr(__import__(eqs_module_name), "eqs")
+        return eqs_set
 
     def ode_solver(self, kwargs):
         """Initiate the ODE solver call."""
@@ -664,29 +668,33 @@ class Model(esbmtkBase):
         cwd = Path.cwd()
         sys.path.append(cwd)  # required on windows
         fn: str = "equations.py"  # file name
-        # FIXME: the use of eqs and eqs_file seems overly complicated
         eqs_fn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
-        eqs_mod = eqs_fn.stem
         if self.debug_equations_file:
             if eqs_fn.exists():
-                print("\n\n Warning re-using the equations file \n")
-                print(
-                    "\n type y to proceed. Any other key will delete the file and create a new one"
+                warnings.warn(
+                    "\n\n Warning re-using the equations file \n"
+                    "\n type y to proceed. Any other key will delete the file and create a new one",
+                    stacklevel=2,
                 )
                 k = input("type y/n :")
                 if k == "y":  # read old file
-                    eqs = eqs_mod.eqs  # import equations
+                    eqs_module_name: str = eqs_fn.stem
                 else:  # delete old file, and create new one
-                    eqs_fn.unlink()
-                    eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
-                    eqs = eqs_mod.eqs  # import equations
+                    eqs_fn.unlink()  # delete old file
+                    eqs_module_name = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
             else:  # this is the first run. Create persistent equations file
-                eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
-                eqs = eqs_mod.eqs  # import equations
+                eqs_module_name = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
+
+            # import equations
+            eqs_set = getattr(__import__(eqs_module_name), "eqs")
+
         else:
             if eqs_fn.exists():  # delete any leftover files
                 eqs_fn.unlink()
-            eqs = self.write_temp_equations(cwd, write_equations_2, R, icl, cpl, ipl)
+
+            eqs_set = self.write_temp_equations(
+                cwd, write_equations_2, R, icl, cpl, ipl
+            )
 
         method = kwargs["method"] if "method" in kwargs else "BDF"
         stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
@@ -699,7 +707,7 @@ class Model(esbmtkBase):
 
         if stype == "solve_ivp":
             self.results = solve_ivp(
-                eqs,
+                eqs_set,
                 (self.time[0], self.time[-1]),
                 R,
                 args=(
