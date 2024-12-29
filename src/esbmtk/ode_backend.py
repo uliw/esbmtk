@@ -215,7 +215,7 @@ def write_equations_2(
     icl: dict,
     cpl: tp.List,
     ipl: tp.List,
-    fn: str,
+    eqs_fn: str,
 ) -> tuple:
     """Write file that contains the ode-equations for the Model
     Returns the list R that contains the initial condition for each
@@ -274,7 +274,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
     rel = ""  # list of return values
     # """
     # write file
-    with open(fn, "w", encoding="utf-8") as eqs:
+    with open(eqs_fn, "w", encoding="utf-8") as eqs:
         eqs.write(header)
         sep = (
             "# ---------------- write computed reservoir equations -------- #\n"
@@ -295,7 +295,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         sep = "# ---------------- write all flux equations ------------------- #"
         eqs.write(f"\n{sep}\n")
         for flux in M.lof:  # loop over fluxes
-            """ This loop will only write regular flux equations, withe the sole
+            """This loop will only write regular flux equations, withe the sole
             exception of fluxes belonging to ExternalCode objects that need to be
             in a given sequence" All other fluxes must be on the M.lpr_r list
             below.
@@ -359,7 +359,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
 
         eqs.write(f"{ind2}]\n")
 
-    return fn
+    return eqs_fn.stem
 
 
 def get_flux(flux: Flux, M: Model, R: tp.List[float], icl: dict) -> tuple(str, str):
@@ -579,7 +579,7 @@ def write_ef(
     # if ef.fname == "carbonate_system_2_ode":
     # if ef.fname == "weathering":
     #     breakpoint()
-    
+
     # this can probably be simplified similar to the old parse_return_values()
     for d in ef.function_input_data:
         a += parse_esbmtk_input_data_types(d, ef, ind3, icl)
