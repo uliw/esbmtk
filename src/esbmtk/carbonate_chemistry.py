@@ -1,5 +1,6 @@
-"""esbmtk: A general purpose Earth Science box model toolkit Copyright
-(C), 2020-2021 Ulrich G. Wortmann
+"""esbmtk: A general purpose Earth Science box model toolkit.
+
+Copyright (C), 2020-2021 Ulrich G. Wortmann
 
 This program is free software: you can redistribute it and/or
 modify it under the terms of the GNU General Public License as
@@ -23,7 +24,8 @@ from math import log, sqrt
 import numpy as np
 import numpy.typing as npt
 
-from esbmtk import ExternalCode, Flux, Reservoir
+from esbmtk.esbmtk import Flux
+from esbmtk.extended_classes import ExternalCode, Reservoir
 from esbmtk.utility_functions import (
     __addmissingdefaults__,
     __checkkeys__,
@@ -51,7 +53,8 @@ The process for cs2 is analogous
 
 # @njit(fastmath=True)
 def get_hplus(dic, ta, h0, boron, K1, K1K2, KW, KB) -> float:
-    """Calculate H+ concentration based on a previous estimate
+    """Calculate H+ concentration based on a previous estimate.
+
     [H+]. After Follows et al. 2006,
     doi:10.1016/j.ocemod.2005.05.004
 
@@ -78,8 +81,7 @@ def get_hplus(dic, ta, h0, boron, K1, K1K2, KW, KB) -> float:
 
 # @njit(fastmath=True)
 def carbonate_system_1(dic, ta, hplus_0, co2aq_0, p) -> tuple:
-    """Calculates and returns the H+ and carbonate alkalinity concentrations
-     for the given reservoirgroup
+    """Return the H+ and carbonate alkalinity concentrations.
 
     :param dic: float with the dic concentration
     :param ta: float with the ta concentration
@@ -110,8 +112,9 @@ def carbonate_system_1(dic, ta, hplus_0, co2aq_0, p) -> tuple:
 
 
 def init_carbonate_system_1(rg: Reservoir):
-    """Creates a new carbonate system virtual reservoir for each
-    reservoir in rgs. Note that rgs must be a list of reservoir groups.
+    """Create a new carbonate system virtual reservoir.
+
+    for each reservoir in rgs. Note that rgs must be a list of reservoir groups.
 
     Required keywords:
         rgs: tp.List = []  of Reservoir Group objects
@@ -155,8 +158,9 @@ def init_carbonate_system_1(rg: Reservoir):
 
 
 def add_carbonate_system_1(rgs: list):
-    """Creates a new carbonate system virtual reservoir for each
-    reservoir in rgs. Note that rgs must be a list of reservoir groups.
+    """Create a new carbonate system virtual reservoir.
+
+    For each reservoir in rgs. Note that rgs must be a list of reservoir groups.
 
     Required keywords:
         rgs: tp.List = []  of Reservoir Group objects
@@ -189,8 +193,9 @@ def carbonate_system_2(
     zsnow: float,  # 9 snowline in meters below sealevel at t-1
     p,
 ) -> tuple:
-    """Calculates and returns the fraction of the carbonate rain that is
-    dissolved an returned back into the ocean. This functions returns:
+    """Return the fraction of the carbonate rain that is dissolved.
+
+    This functions returns:
 
     DIC_burial, DIC_burial_l, Hplus, zsnow
 
@@ -285,6 +290,7 @@ def init_carbonate_system_2(
     kwargs: dict,
 ):
     """Initialize a carbonate system 2 instance.
+
     Note that the current implmentation assumes that the export flux is
     the total export flux over surface area of the mixed layer, i.e.,
     the sediment area between z0 and zmax
@@ -295,7 +301,7 @@ def init_carbonate_system_2(
         CaCO3 export flux from the surface box
     r_sb : Reservoir
         Reservoir instance of the surface box
-    box r_db : Reservoir
+    r_db : Reservoir
         Reservoir instance of the deep box
     kwargs : dict
         dictionary of keyword value pairs
@@ -353,7 +359,8 @@ def init_carbonate_system_2(
 
 
 def add_carbonate_system_2(**kwargs) -> None:
-    """Creates a new carbonate system virtual reservoir
+    """Create a new carbonate system virtual reservoir.
+
     which will compute carbon species, saturation, compensation,
     and snowline depth, and compute the associated carbonate burial fluxes
 
@@ -479,7 +486,7 @@ def add_carbonate_system_2(**kwargs) -> None:
 
 
 def get_pco2(SW) -> float:
-    """Calculate the concentration of pCO2"""
+    """Calculate the concentration of pCO2."""
     dic_c: float = SW.dic
     hplus_c: float = SW.hplus
     k1: float = SW.K1
@@ -491,7 +498,9 @@ def get_pco2(SW) -> float:
 
 # define a transform function to display the Hplus concentration as pH
 def phc(m: float) -> float:
-    """The reservoir class accepts a plot transform. here we use this to
+    """Define a plot transform for the reservoir class.
+
+    Here we use this to
     display the H+ concentrations as pH. After import, you can use it
     with like this in the reservoir definition
 
