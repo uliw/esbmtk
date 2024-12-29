@@ -17,39 +17,40 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 from __future__ import annotations
-from pandas import DataFrame
-import time
-import tempfile
-from pathlib import Path
-from time import process_time
-import numpy as np
-import typing as tp
-import numpy.typing as npt
-import matplotlib.pyplot as plt
-import pandas as pd
+
 import logging
 import os
-import psutil
+import tempfile
+import time
+import typing as tp
 import warnings
-from . import ureg, Q_
+from pathlib import Path
+from time import process_time
 
+import matplotlib.pyplot as plt
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
+import psutil
+from pandas import DataFrame
+
+from . import Q_, ureg
 from .esbmtk_base import esbmtkBase
-
 from .utility_functions import (
-    show_data,
-    plot_geometry,
     find_matching_strings,
-    get_l_mass,
-    get_delta_h,
     get_delta_from_concentration,
+    get_delta_h,
+    get_l_mass,
+    plot_geometry,
+    show_data,
 )
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
 if tp.TYPE_CHECKING:
-    from .extended_classes import ExternalData, DataField
     from .connections import Species2Species
+    from .extended_classes import DataField, ExternalData
     from .processes import Process
 
 
@@ -162,9 +163,10 @@ class Model(esbmtkBase):
 
                 :param opt_pH_scale: total = 1, free = 3,
         """
-        from importlib.metadata import version
         import datetime
-        from esbmtk import species_definitions, hypsometry
+        from importlib.metadata import version
+
+        from esbmtk import hypsometry, species_definitions
 
         self.defaults: dict[str, tp.List[any, tuple]] = {
             "start": ["0 yrs", (str, Q_)],
@@ -385,6 +387,7 @@ class Model(esbmtkBase):
         Similar to save data, but only saves the last time step
         """
         from pathlib import Path
+
         from esbmtk import rmtree
 
         fn: str = directory  # file name
@@ -416,6 +419,7 @@ class Model(esbmtkBase):
 
         """
         from pathlib import Path
+
         from esbmtk import rmtree
 
         fn: str = directory  # file name
@@ -449,7 +453,7 @@ class Model(esbmtkBase):
 
         Each reservoir will have their own CSV file
         """
-        from esbmtk import Species, GasReservoir
+        from esbmtk import GasReservoir, Species
 
         prefix = ""
 
@@ -478,7 +482,7 @@ class Model(esbmtkBase):
         # print(f"len of time with stride {len(self.time[0 : -2 : self.stride])}")
         self.timec = np.append(self.timec, self.time[0 : -2 : self.stride])
         t = int(round((self.stop - self.start) * self.dt))
-        self.start = int(round((self.stop * self.dt)))
+        self.start = int(round(self.stop * self.dt))
         self.stop = self.start + t
         self.time = (np.arange(self.steps) * self.dt) + self.start
         print(f"new start = {self.start}, new stop = {self.stop}")
@@ -494,7 +498,7 @@ class Model(esbmtkBase):
         will create the necessary data files to initialize a
         subsequent model run.
         """
-        from esbmtk import Species, GasReservoir  # GasReservoir
+        from esbmtk import GasReservoir, Species  # GasReservoir
 
         for r in self.lor:
             if isinstance(r, (Species, GasReservoir)):
@@ -603,7 +607,7 @@ class Model(esbmtkBase):
         wcd = time.time() - wts
         print(f"\n Execution took {duration:.2f} cpu seconds, wt = {wcd:.2f}\n")
         process = psutil.Process(os.getpid())
-        print(f"This run used {process.memory_info().rss/1e9:.2f} Gbytes of memory \n")
+        print(f"This run used {process.memory_info().rss / 1e9:.2f} Gbytes of memory \n")
 
     def get_delta_values(self):
         """Calculate masses and isotope ratios."""
@@ -648,15 +652,17 @@ class Model(esbmtkBase):
         with tempfile.NamedTemporaryFile(suffix=".py") as tmp_file:
             eqs_fn = pl.Path(tmp_file.name)
             eqs_module_name = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
-            eqs_set = getattr(__import__(eqs_module_name), "eqs")
+            eqs_set = __import__(eqs_module_name).eqs
         return eqs_set
 
     def ode_solver(self, kwargs):
         """Initiate the ODE solver call."""
-        from esbmtk import write_equations_2, get_initial_conditions
-        from scipy.integrate import solve_ivp
-        import sys
         import pathlib as pl
+        import sys
+
+        from scipy.integrate import solve_ivp
+
+        from esbmtk import get_initial_conditions, write_equations_2
 
         # build equation file
         R, icl, cpl, ipl, atol = get_initial_conditions(self, self.rtol)
@@ -686,7 +692,7 @@ class Model(esbmtkBase):
                 eqs_module_name = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
 
             # import equations
-            eqs_set = getattr(__import__(eqs_module_name), "eqs")
+            eqs_set = __import__(eqs_module_name).eqs
 
         else:
             if eqs_fn.exists():  # delete any leftover files
@@ -747,6 +753,7 @@ class Model(esbmtkBase):
             Reservoir instance
         time: : NDArrayFloat
             time vector as returned by the solver
+
         """
         # hplus = getattr(rg, "Hplus")
         hplus = rg.Hplus
@@ -1438,7 +1445,7 @@ class SpeciesBase(esbmtkBase):
         # add any external data if present
         for i, d in enumerate(self.led):
             leg = f"{self.lm} {d.legend}"
-            ax.scatter(d.x[1:-2], d.y[1:-2], color=f"C{i+2}", label=leg)
+            ax.scatter(d.x[1:-2], d.y[1:-2], color=f"C{i + 2}", label=leg)
 
         ax.spines["top"].set_visible(False)
         handler1, label1 = ax.get_legend_handles_labels()
@@ -1492,7 +1499,7 @@ class SpeciesBase(esbmtkBase):
 
         # m = Q_("1 Sv").to("l/a").magnitude
         for i, f in enumerate(self.lof):
-            print(f"{off}{ind}{f.full_name}: {self.lodir[i]*f.m[-2]:.2e}")
+            print(f"{off}{ind}{f.full_name}: {self.lodir[i] * f.m[-2]:.2e}")
 
         print()
         print("Use the info method on any of the above connections")
@@ -1658,10 +1665,10 @@ class Species(SpeciesBase):
         ]
         """
         from esbmtk import (
-            SourceProperties,
-            SinkProperties,
-            Reservoir,
             ConnectionProperties,
+            Reservoir,
+            SinkProperties,
+            SourceProperties,
             get_box_geometry_parameters,
             phc,
         )
@@ -1972,11 +1979,11 @@ class Flux(esbmtkBase):
         """
         from esbmtk import (
             Q_,
-            Species,
-            GasReservoir,
-            Species2Species,
             ExternalCode,
+            GasReservoir,
             Signal,
+            Species,
+            Species2Species,
         )
 
         # provide a dict of all known keywords and their type
@@ -2294,10 +2301,10 @@ class SourceSink(esbmtkBase):
         Required Keywords: "name", "species"
         """
         from esbmtk import (
-            SourceProperties,
-            SinkProperties,
-            Reservoir,
             ConnectionProperties,
+            Reservoir,
+            SinkProperties,
+            SourceProperties,
         )
 
         self.defaults: dict[str, tp.List[any, tuple]] = {
