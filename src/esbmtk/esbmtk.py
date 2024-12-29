@@ -1,6 +1,6 @@
-"""
-esbmtk: A general purpose Earth Science box model toolkit Copyright
-(C), 2020 Ulrich G.  Wortmann
+"""esbmtk: A general purpose Earth Science box model toolkit.
+
+Copyright (C), 2020 Ulrich G.  Wortmann
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -54,35 +54,54 @@ if tp.TYPE_CHECKING:
 
 
 class ModelError(Exception):
+    """Custom Error Class."""
+
     def __init__(self, message):
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class ReservoirError(Exception):
+    """Custom Error Class."""
+
     def __init__(self, message):
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class FluxError(Exception):
+    """Custom Error Class."""
+
     def __init__(self, message):
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class ScaleError(Exception):
+    """Custom Error Class."""
+
+    def __init__(self, message):
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
+class SpeciesError(Exception):
+    """Custom Error Class."""
+
     def __init__(self, message):
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 def deprecated_keyword(message):
+    """Depreciaton Warning."""
     warnings.warn(message, DeprecationWarning, stacklevel=2)
 
 
 class Model(esbmtkBase):
-    """This class is used to specify a new model.  See the __init__()
+    """Specify a new model.
+
+    See the __init__()
     method for a detailed explanation of the parameters
 
     The user facing methods of the model class are
@@ -101,7 +120,7 @@ class Model(esbmtkBase):
     """
 
     def __init__(self, **kwargs: dict[any, any]) -> None:
-        """Initialize a model instance
+        """Initialize a model instance.
 
         :param **kwargs: A dictionary with key value pairs.
 
@@ -236,7 +255,7 @@ class Model(esbmtkBase):
         self.gcc: int = 0  # constants counter
         self.vpc: int = 0  # parameter counter
         self.luf: dict = {}  # user functions and source
-        self.lvd: List = []  # list of vector data objects
+        self.lvd: tp.List = []  # list of vector data objects
 
         # unit defs
         self.l_unit = ureg.meter  # the length unit
@@ -333,8 +352,9 @@ class Model(esbmtkBase):
         hypsometry(name="hyp", model=self, register=self)
 
     def info(self, **kwargs) -> None:
-        """Show an overview of the object properties.  Optional
-        arguments are (name/default/explanation)
+        """Show an overview of the object properties.
+
+        Optional arguments are (name/default/explanation)
 
         :param index: int = 0 # this will show data at the given index
         :param indent: int = 0 # print indentation
@@ -360,8 +380,9 @@ class Model(esbmtkBase):
                 print(f"{off}{off}{ind}{s.n}")
 
     def save_state(self, directory="state", prefix="state_") -> None:
-        """Save model state.  Similar to save data, but only saves the
-        last 10 time-steps
+        """Save model state.
+
+        Similar to save data, but only saves the last time step
         """
         from pathlib import Path
         from esbmtk import rmtree
@@ -383,8 +404,9 @@ class Model(esbmtkBase):
             r.__write_data__(prefix, start, stop, stride, False, directory)
 
     def save_data(self, directory="./data") -> None:
-        """Save the model results to a CSV file. Each reservoir will have
-        their own CSV file
+        """Save the model results to a CSV file.
+
+        Each reservoir will have their own CSV file
 
         Calling save_data() without any arguments,  will create (or
         recreate) the data directory in the current working directory
@@ -423,8 +445,9 @@ class Model(esbmtkBase):
             s.__write_data__(prefix, start, stop, stride, append, directory)
 
     def read_data(self, directory="./data") -> None:
-        """Save the model results to a CSV file. Each reservoir will have
-        their own CSV file
+        """Save the model results to a CSV file.
+
+        Each reservoir will have their own CSV file
         """
         from esbmtk import Species, GasReservoir
 
@@ -439,10 +462,10 @@ class Model(esbmtkBase):
                     r.d = get_delta_from_concentration(r.c, r.l, r.sp.r)
 
     def restart(self):
-        """Restart the model with result of the last run.  This is
-        useful for long runs which otherwise would used to much memory
-        """
+        """Restart the model with result of the last run.
 
+        This is useful for long runs which otherwise would used to much memory
+        """
         for r in self.lor:
             r.__reset_state__()
             for f in r.lof:
@@ -464,13 +487,13 @@ class Model(esbmtkBase):
         # self.time = (arange(self.steps) * self.dt) + self.start
 
     def read_state(self, directory="state"):
-        """This will initialize the model with the result of a
-        previous model run.  For this to work, you will need issue a
+        """Initialize the model with the result of a previous.
+
+        For this to work, you will need issue a
         Model.save_state() command at then end of a model run.  This
         will create the necessary data files to initialize a
         subsequent model run.
         """
-
         from esbmtk import Species, GasReservoir  # GasReservoir
 
         for r in self.lor:
@@ -481,20 +504,6 @@ class Model(esbmtkBase):
         for rg in self.lrg:
             if hasattr(rg, "swc"):
                 rg.swc.update_parameters(pos=0)
-
-    def merge_temp_results(self):
-        """Replace the datafields which were used for an individual
-        iteration with the data we saved from the previous iterations
-        """
-
-        self.time = self.timec
-        for r in self.lor:
-            r.__merge_temp_results__()
-            for f in r.lof:
-                f.__merge_temp_results__()
-
-        for r in self.lvr:
-            r.__merge_temp_results__()
 
     def plot(self, pl: tp.List = None, **kwargs) -> tuple:
         """Plot all objects specified in ``pl``.
@@ -514,7 +523,6 @@ class Model(esbmtkBase):
 
         The above code will plot ``sb.PO4`` and ``sb.DIC`` and save the plot as 'test.pdf'.
         """
-
         if pl is None:
             pl = []
         if not isinstance(pl, list):
@@ -524,13 +532,15 @@ class Model(esbmtkBase):
         blocking = kwargs.get("blocking", True)
         plot_title = kwargs.get("title", "None")
         noo: int = len(pl)
-        size, [row, col] = plot_geometry(noo)  # adjust layout
+        size, geo = plot_geometry(noo)  # adjust layout
+        [row, col] = geo
         fig, ax = plt.subplots(row, col)  # row, col
         axs = [[], []]
 
         """ The shape of the ax value of subplots depends on the figure
         geometry. So we need to ensure we are dealing with a 2-D array
         """
+
         if row == 1 and col == 1:  # row=1, col=1 only one window
             axs = ax
         elif row > 1 and col == 1:  # mutiple rows, one column
@@ -538,7 +548,7 @@ class Model(esbmtkBase):
             for i in range(row):
                 axs.append(ax[i])
         elif row == 1 and col:  # 1 row, multiple columns
-            print(f"one row, mutiple cols")
+            print("one row, mutiple cols")
             for i in range(geo[1]):
                 axs.append(ax[i])
         else:
@@ -578,15 +588,12 @@ class Model(esbmtkBase):
             return plt, fig, axs
 
     def run(self, **kwargs) -> None:
-        """Loop over the time vector, and for each time step, calculate the
-        fluxes for each reservoir
+        """Loop over the time vector.
+
+        For each time step, calculate the fluxes for each reservoir
         """
-
-        # this has nothing todo with self.time below!
-        wts = time.time()
+        wts = time.time()  # this has nothing todo with self.time below!
         start: float = process_time()
-        # new: NDArrayFloat = np.zeros(4)
-
         solver = "ode" if "solver" not in kwargs else kwargs["solver"]
         self.solver = solver
         self.__run_solver__(solver, kwargs)
@@ -599,18 +606,14 @@ class Model(esbmtkBase):
         print(f"This run used {process.memory_info().rss/1e9:.2f} Gbytes of memory \n")
 
     def get_delta_values(self):
-        """Calculate masses and isotope ratios in the usual delta notation"""
+        """Calculate masses and isotope ratios."""
         for r in self.lor:
             if r.isotopes:
                 r.m = r.c * r.volume
                 r.d = get_delta_h(r)
 
     def sub_sample_data(self):
-        """Subsample the data.  No need to save 100k lines of data You
-        need to do this _after_ saving the state, but before plotting
-        and saving the data
-        """
-
+        """Subsample the data."""
         stride = int(len(self.time) / self.number_of_datapoints)
 
         if stride > 1:
@@ -626,25 +629,27 @@ class Model(esbmtkBase):
                 f.__sub_sample_data__(stride)
 
     def __run_solver__(self, solver: str, kwargs: dict) -> None:
+        """Run the ODE solver."""
         if solver == "ode":
             self.ode_solver(kwargs)
         else:
             raise ModelError(f"Solver={self.solver} is unkknown")
 
     def write_temp_equations(self, cwd, write_equations_2, R, icl, cpl, ipl):
+        """Write the equations file."""
         tempfile.tempdir = cwd
         with tempfile.NamedTemporaryFile(suffix=".py") as tmp_file:
             eqs_fn = tmp_file.name
             eqs_mod = eqs_fn.split("/")[-1].split(".")[0]
-            eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
+            # eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
+            write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
             eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
+            # eqs = eqs_mod.eqs
         return eqs
 
     def ode_solver(self, kwargs):
-        """
-        Use the ode solver
-        """
-        from esbmtk import Q_, write_equations_2, get_initial_conditions
+        """Initiate the ODE solver call."""
+        from esbmtk import write_equations_2, get_initial_conditions
         from scipy.integrate import solve_ivp
         import sys
         import pathlib as pl
@@ -659,6 +664,7 @@ class Model(esbmtkBase):
         cwd = Path.cwd()
         sys.path.append(cwd)  # required on windows
         fn: str = "equations.py"  # file name
+        # FIXME: the use of eqs and eqs_file seems overly complicated
         eqs_fn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
         eqs_mod = eqs_fn.stem
         if self.debug_equations_file:
@@ -669,14 +675,14 @@ class Model(esbmtkBase):
                 )
                 k = input("type y/n :")
                 if k == "y":  # read old file
-                    eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
+                    eqs = eqs_mod.eqs  # import equations
                 else:  # delete old file, and create new one
                     eqs_fn.unlink()
                     eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
-                    eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
+                    eqs = eqs_mod.eqs  # import equations
             else:  # this is the first run. Create persistent equations file
                 eqs_file = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
-                eqs = getattr(__import__(eqs_mod), "eqs")  # import equations
+                eqs = eqs_mod.eqs  # import equations
         else:
             if eqs_fn.exists():  # delete any leftover files
                 eqs_fn.unlink()
@@ -723,6 +729,7 @@ class Model(esbmtkBase):
 
     def test_d_pH(self, rg: Species, time: NDArrayFloat) -> None:
         """Test if the change in pH exceeds more than 0.01 units per time step.
+
         Note that this is only a crude test, since the solver interpolates
         between intergration steps. So this may not catch all problems.
 
@@ -733,7 +740,8 @@ class Model(esbmtkBase):
         time: : NDArrayFloat
             time vector as returned by the solver
         """
-        hplus = getattr(rg, "Hplus")
+        # hplus = getattr(rg, "Hplus")
+        hplus = rg.Hplus
         dph = np.diff(-np.log10(hplus.c))
         dph_bool = dph > 0.01
         if sum(dph_bool) > 0:
@@ -741,15 +749,15 @@ class Model(esbmtkBase):
                 if v:
                     warnings.warn(
                         f"\n\n{rg.full_name} delta pH = {dph[i]:.2f} "
-                        f"at t = {time[i]:.2f} {self.t_unit:~P}\n"
+                        f"at t = {time[i]:.2f} {self.t_unit:~P}\n",
+                        stacklevel=2,
                     )
 
     def post_process_data(self, results) -> None:
-        """Map solver results back into esbmtk structures
+        """Map solver results back into esbmtk structures.
 
         :param results: numpy arrays with solver results
         """
-
         from esbmtk import carbonate_system_1_pp
 
         # interpolate signals into the ode time domain
@@ -807,7 +815,7 @@ class Model(esbmtkBase):
             e.list_species()
 
     def flux_summary(self, **kwargs: dict):
-        """Show a summary of all model fluxes
+        """Show a summary of all model fluxes.
 
         Optional parameters:
 
@@ -825,7 +833,6 @@ class Model(esbmtkBase):
 
                 names = M.flux_summary(filter_by="POP A_sb", return_list=True)
         """
-
         fby = ""
         rl: tp.List = []
         exclude: str = ""
@@ -860,7 +867,7 @@ class Model(esbmtkBase):
         return rl
 
     def connection_summary(self, **kwargs: dict) -> None:
-        """Show a summary of all connections
+        """Show a summary of all connections.
 
         Optional parameters:
 
@@ -869,7 +876,6 @@ class Model(esbmtkBase):
         :param return_list: bool if set, return a list object instead of printing to the terminal
 
         """
-
         rl = []
         if "filter_by" in kwargs:
             fby: tp.List = kwargs["filter_by"].split(" ")
@@ -879,9 +885,9 @@ class Model(esbmtkBase):
         if "filter" in kwargs:
             raise ModelError("use filter_by instead of filter")
 
-        if not "return_list" in kwargs:
+        if "return_list" not in kwargs:
             print(f"\n --- Connect Group Summary -- filtered by {fby}\n")
-            print(f"       run the following command to see more details:\n")
+            print("       run the following command to see more details:\n")
 
         # test if all words of the fby list occur in c.full_name. If yes,
         self.cg_list: tp.List = list(list(self.loc))
@@ -894,17 +900,13 @@ class Model(esbmtkBase):
         return rl
 
     def clear(self):
-        """
-        delete all model objects
-        """
+        """Delete all model objects."""
         for o in self.lmo:
             print(f"deleting {o}")
             del __builtins__[o]
 
     def __init_dimensionalities__(self, ureg):
-        """This is need to test the dimensionality of input
-        data
-        """
+        """Test the dimensionality of input data."""
         self.substance_per_volume_d = ureg("mol/liter").dimensionality
         self.substance_per_mass_d = ureg("mol/kg").dimensionality
         self.substance_d = ureg("mol").dimensionality
@@ -915,8 +917,9 @@ class Model(esbmtkBase):
 
 
 class ElementProperties(esbmtkBase):
-    """Each model, can have one or more elements.  This class sets
-    element specific properties
+    r"""Each model, can have one or more elements.
+
+    This class sets element specific properties
 
     Example::
 
@@ -928,13 +931,15 @@ class ElementProperties(esbmtkBase):
                 d_label   =  r"$\delta^{34}$S",  # Label for delta value
                 d_scale   =  "VCDT",       # Isotope scale
                 r         = 0.044162589,   # isotopic abundance ratio for element
-                reference = "https://// or citation",
+                reference = "https link or citation",
               )
     """
 
     # set element properties
     def __init__(self, **kwargs) -> any:
-        """Initialize all instance variables Defaults are as follows::
+        """Initialize all instance variables.
+
+        Defaults are as follows::
 
             self.defaults: dict[str, tp.List[any, tuple]] = {
                "name": ["M", (str)],
@@ -991,25 +996,20 @@ class ElementProperties(esbmtkBase):
         self.__register_name_new__()
 
     def list_species(self) -> None:
-        """
-        List all species which are predefined for this element
-        """
-
+        """List all species which are predefined for this element."""
         for e in self.lsp:
             print(e.n)
 
     def __register_species_with_model__(self) -> None:
-        """
-        Bit of hack, but makes model code more readable
-        """
-
+        """Bit of hack, but makes model code more readable."""
         for s in self.lsp:
             setattr(self.model, s.name, s)
 
 
 class SpeciesProperties(esbmtkBase):
-    """Each model, can have one or more species.  This class sets
-    species specific properties
+    """Each model, can have one or more species.
+
+    This class sets species specific properties
 
     Example::
 
@@ -1038,8 +1038,7 @@ class SpeciesProperties(esbmtkBase):
 
     # set species properties
     def __init__(self, **kwargs) -> None:
-        """Initialize all instance variables"""
-
+        """Initialize all instance variables."""
         from esbmtk import GasReservoir
 
         # provide a list of all known keywords
@@ -1089,9 +1088,7 @@ class SpeciesProperties(esbmtkBase):
 
 
 class SpeciesBase(esbmtkBase):
-    """
-    Base class for all Species objects
-    """
+    """Base class for all Species objects."""
 
     def __init__(self, **kwargs) -> None:
         raise NotImplementedError(
@@ -1099,10 +1096,7 @@ class SpeciesBase(esbmtkBase):
         )
 
     def __set_legacy_names__(self, kwargs) -> None:
-        """
-        Move the below out of the way
-        """
-
+        """Move the below out of the way."""
         from esbmtk import get_box_geometry_parameters
 
         self.atol: tp.List[float] = [1.0, 1.0]  # tolerances
@@ -1162,22 +1156,21 @@ class SpeciesBase(esbmtkBase):
 
         self.parent = self.register
 
-    # setup a placeholder setitem function
     def __setitem__(self, i: int, value: float):
+        """Create a placeholder setitem function."""
         return self.__set_data__(i, value)
 
     def __call__(self) -> None:  # what to do when called as a function ()
+        """Return self when called as a function."""
         return self
 
     def __getitem__(self, i: int) -> NDArrayFloat:
-        """
-        Get flux data by index
-        """
-
+        """Get flux data by index."""
         return np.array([self.m[i], self.l[i], self.c[i]])
 
     def __set_with_isotopes__(self, i: int, value: float) -> None:
-        """
+        """Set values when isotope data is present.
+
         :param i: index
         :param value: array of [mass, li, hi, d]
 
@@ -1189,7 +1182,8 @@ class SpeciesBase(esbmtkBase):
         self.l[i]: float = value[1] / self.v[i]  # update concentration
 
     def __set_without_isotopes__(self, i: int, value: float) -> None:
-        """
+        """Set values when no isotope data is present.
+
         :param i: index
         :param value: array of [mass]
 
@@ -1198,10 +1192,7 @@ class SpeciesBase(esbmtkBase):
         self.c[i]: float = self.m[i] / self.v[i]  # update concentration
 
     def __update_mass__() -> None:
-        """
-        Place holder function
-        """
-
+        """Place holder function."""
         raise NotImplementedError("__update_mass__ is not yet implmented")
 
     def __write_data__(
@@ -1213,8 +1204,9 @@ class SpeciesBase(esbmtkBase):
         append: bool,
         directory: str,
     ) -> None:
-        """Write data to file.  This function is called by the
-        write_data() and save_state() methods
+        """Write data to file.
+
+        This function is called by the write_data() and save_state() methods
 
         :param prefix:
         :param start:
@@ -1233,9 +1225,9 @@ class SpeciesBase(esbmtkBase):
         sp = self.sp  # species handle
         mo = self.sp.mo  # model handle
 
-        smu = f"{mo.m_unit:~P}"
+        # smu = f"{mo.m_unit:~P}"
         mtu = f"{mo.t_unit:~P}"
-        fmu = f"{mo.f_unit:~P}"
+        # fmu = f"{mo.f_unit:~P}"
         cmu = f"{mo.c_unit:~P}"
 
         # sdn = self.sp.dn  # delta name
@@ -1269,23 +1261,18 @@ class SpeciesBase(esbmtkBase):
         return df
 
     def __sub_sample_data__(self, stride) -> None:
-        """There is usually no need to keep more than a thousand data
-        points so we subsample the results before saving, or
-        processing them
-        """
-
-        # print(f"Reset data with {len(self.m)}, stride = {self.mo.reset_stride}")
+        """Subsample the results before saving processing."""
         self.m = self.m[2:-2:stride]
         self.l = self.l[2:-2:stride]
         self.c = self.c[2:-2:stride]
 
     def __reset_state__(self) -> None:
-        """Copy the result of the last computation back to the
+        """Copy the result of the last computation.
+
         beginning so that a new run will start with these values
 
         save the current results into the temp fields
         """
-
         # print(f"Reset data with {len(self.m)}, stride = {self.mo.reset_stride}")
         self.mc = np.append(self.mc, self.m[0 : -2 : self.mo.reset_stride])
         # self.dc = np.append(self.dc, self.d[0 : -2 : self.mo.reset_stride])
@@ -1299,16 +1286,14 @@ class SpeciesBase(esbmtkBase):
         self.c[0] = self.c[-2]
 
     def __merge_temp_results__(self) -> None:
-        """Once all iterations are done, replace the data fields with
-        the saved values
-        """
-
+        """Replace the data fields with saved values."""
         self.m = self.mc
         self.c = self.cc
         # self.d = self.dc
 
     def __read_state__(self, directory: str, prefix="state_") -> None:
-        """read data from csv-file into a dataframe
+        """Read data from csv-file into a dataframe.
+
         The CSV file must have the following columns
             - Model Time t
             - Species_Name m
@@ -1319,9 +1304,6 @@ class SpeciesBase(esbmtkBase):
             - Flux_name m
             - Flux_name l etc etc.
         """
-
-        from .utility_functions import is_name_in_list, get_object_from_list
-
         read: set = set()
         curr: set = set()
 
@@ -1355,7 +1337,6 @@ class SpeciesBase(esbmtkBase):
 
         # loop over all columns
         col: int = 1  # we ignore the time column
-        i: int = 0
         for n in header_list:
             name = n.split(" ")[0]
             logging.debug(f"Looking for {name}")
@@ -1368,12 +1349,14 @@ class SpeciesBase(esbmtkBase):
 
         # test if we missed any fluxes
         for f in list(curr.difference(read)):
-            warnings.warn(f"\nDid not find values for {f}\n in saved state")
+            warnings.warn(
+                f"\nDid not find values for {f}\n in saved state", stacklevel=2
+            )
 
     def __assign_reservoir_data__(
         self, obj: any, df: pd.DataFrame, col: int, res: bool
     ) -> int:
-        """Assign the third last entry data to all values in reservoir
+        """Assign the third last entry data to all values in reservoir.
 
         :param obj: # Species
         :param df: pd.dataframe
@@ -1382,22 +1365,20 @@ class SpeciesBase(esbmtkBase):
 
         :returns: int # index into last column
         """
-
-        # this may need fixing
         if obj.isotopes:
             obj.l[:] = df.iloc[-1, col]  # get last row
             col += 1
             obj.c[:] = df.iloc[-1, col]
             col += 1
         else:
-            v = df.iloc[-1, col]
+            # v = df.iloc[-1, col]
             obj.c[:] = df.iloc[-1, col]
             col += 1
 
         return col
 
     def get_plot_format(self):
-        """Return concentrat data in plot units"""
+        """Return concentrat data in plot units."""
         from pint import Unit
 
         if isinstance(self.plt_units, Q_):
@@ -1429,12 +1410,11 @@ class SpeciesBase(esbmtkBase):
         return y1, y1_label, unit
 
     def __plot__(self, M: Model, ax) -> None:
-        """Plot Model data
+        """Plot Model data.
 
         :param M: Model
         :param ax: # graph axes handle
         """
-
         from esbmtk import set_y_limits
 
         # convert time and data to display units
@@ -1475,13 +1455,13 @@ class SpeciesBase(esbmtkBase):
         ax.set_title(self.full_name)
 
     def info(self, **kwargs) -> None:
-        """Show an overview of the object properties.  Optional
-        arguments are
+        """Show an overview of the object properties.
+
+        Optional arguments are:
 
         :param index: int = 0 # this will show data at the given index
         :param indent: int = 0 # print indentation
         """
-
         off: str = "  "
         index = 0 if "index" not in kwargs else kwargs["index"]
         if "indent" not in kwargs:
@@ -1512,7 +1492,7 @@ class SpeciesBase(esbmtkBase):
 
 
 class Species(SpeciesBase):
-    """This object holds reservoir specific information.
+    """Species specific information data fields.
 
     Example::
 
@@ -1622,7 +1602,7 @@ class Species(SpeciesBase):
     """
 
     def __init__(self, **kwargs) -> None:
-        """Initialize a reservoir
+        """Initialize a reservoir.
 
         Defaults::
 
@@ -1669,13 +1649,11 @@ class Species(SpeciesBase):
 
         ]
         """
-
         from esbmtk import (
             SourceProperties,
             SinkProperties,
             Reservoir,
             ConnectionProperties,
-            SeawaterConstants,
             get_box_geometry_parameters,
             phc,
         )
@@ -1773,7 +1751,8 @@ class Species(SpeciesBase):
                     if mc == "liter" and sc == "kilogram":
                         cc = Q_(f"{cc.magnitude} {str(self.mo.c_unit)}")
                         warnings.warn(
-                            "\nConvert mol/kg to mol/liter assuming density = 1\n"
+                            "\nConvert mol/kg to mol/liter assuming density = 1\n",
+                            stacklevel=2,
                         )
                     elif sc != mc:
                         raise ScaleError(
@@ -1867,14 +1846,17 @@ class Species(SpeciesBase):
 
     @property
     def concentration(self) -> float:
+        """Concentration Setter."""
         return self._concentration
 
     @property
     def delta(self) -> float:
+        """Delta Setter."""
         return self._delta
 
     @property
     def mass(self) -> float:
+        """Mass Setter."""
         return self._mass
 
     # @property
@@ -1918,7 +1900,9 @@ class Species(SpeciesBase):
 
 
 class Flux(esbmtkBase):
-    """A class which defines a flux object.  Flux objects contain
+    """A class which defines a flux object.
+
+    Flux objects contain
     information which links them to an species, describe things like
     the mass and time unit, and store data of the total flux rate at
     any given time step.  Similarly, they store the flux of the light
@@ -1944,8 +1928,9 @@ class Flux(esbmtkBase):
     """
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
-        """
-        Initialize a flux.  Arguments are the species name the flux
+        """Initialize a flux.
+
+        Arguments are the species name the flux
         rate (mol/year), the delta value and unit
 
         Defaults::
@@ -1977,7 +1962,6 @@ class Flux(esbmtkBase):
 
         Required Keywords: "species", "rate", "register"
         """
-
         from esbmtk import (
             Q_,
             Species,
@@ -2109,58 +2093,53 @@ class Flux(esbmtkBase):
 
     # setup a placeholder setitem function
     def __setitem__(self, i: int, value: NDArrayFloat):
+        """Setitem function."""
         return self.__set_data__(i, value)
 
     def __getitem__(self, i: int) -> NDArrayFloat:
-        """
-        Get data by index
-        """
+        """Get data by index."""
         # return self.__get_data__(i)
         return self.fa
 
     def __set_with_isotopes__(self, i: int, value: NDArrayFloat) -> None:
-        """
-        Write data by index
-        """
-
+        """Write data by index."""
         self.m[i] = value[0]
         self.l[i] = value[1]
         self.fa = value[:4]
 
     def __set_without_isotopes__(self, i: int, value: NDArrayFloat) -> None:
-        """
-        Write data by index
-        """
-
+        """Write data by index."""
         self.fa = [value[0], 0]
         self.m[i] = value[0]
 
-    def __call__(self) -> None:  # what to do when called as a function ()
-        pass
-        return
+    # FIXME: this does nothing, do we still need it?
+    # def __call__(self) -> None:  # what to do when called as a function ()
+    #     """"""
+    #     pass
+    #     return
 
     def __add__(self, other):
-        """
-        adding two fluxes works for the masses, but not for delta
-        """
+        """Add two fluxes.
 
+        FIXME: adding two fluxes works for the masses, but not for delta
+        """
         self.fa = self.fa + other.fa
         self.m = self.m + other.m
         self.l = self.l + other.l
 
     def __sub__(self, other):
-        """
-        substracting two fluxes works for the masses, but not for
-        delta
-        """
+        """Substract two fluxes.
 
+        FIXME: This works for the masses, but not for delta
+        """
         self.fa = self.fa - other.fa
         self.m = self.m - other.m
         self.l = self.l - other.l
 
     def info(self, **kwargs) -> None:
-        """Show an overview of the object properties.  Optional
-        arguments are:
+        """Show an overview of the object properties.
+
+        Optional arguments are:
 
         :param index: int = 0 this will show data at the given index
         :param indent: int = 0 indentation
@@ -2205,7 +2184,6 @@ class Flux(esbmtkBase):
         :param M: Model
         :param ax: matplotlib axes handle
         """
-
         from esbmtk import set_y_limits
 
         # convert time and data to display units
@@ -2229,16 +2207,18 @@ class Flux(esbmtkBase):
         # plot second axis
         if self.isotopes:
             axt = ax.twinx()
-            y2 = self.d  # no conversion for isotopes
-            ln2 = axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
+            # FIXME: y2 and ln2 are never used
+            # y2 = self.d  # no conversion for isotopes
+            # ln2 = axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
             axt.set_ylabel(self.data.ld)
             set_y_limits(axt, M)
             ax.spines["top"].set_visible(False)
             # set combined legend
             handler2, label2 = axt.get_legend_handles_labels()
-            legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
-                6
-            )
+            # FIXME: legend is never used
+            # legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
+            #     6
+            # )
         else:
             ax.legend(handler1, label1)
             ax.spines["right"].set_visible(False)
@@ -2247,22 +2227,13 @@ class Flux(esbmtkBase):
         ax.set_title(self.full_name)
 
     def __sub_sample_data__(self, stride) -> None:
-        """There is usually no need to keep more than a thousand data
-        points so we subsample the results before saving, or
-        processing them
-        """
-
+        """Subsample the results before saving, or processing."""
         if self.save_flux_data:
             self.m = self.m[2:-2:stride]
             self.l = self.m[2:-2:stride]
 
     def __reset_state__(self) -> None:
-        """Copy the result of the last computation back to the
-        beginning so that a new run will start with these values.
-
-        Also, copy current results into temp field
-        """
-
+        """Copy the result of the last computation."""
         if self.save_flux_data:
             self.mc = np.append(self.mc, self.m[0 : -2 : self.mo.reset_stride])
             # copy last element to first position
@@ -2270,16 +2241,14 @@ class Flux(esbmtkBase):
             self.l[0] = self.l[-2]
 
     def __merge_temp_results__(self) -> None:
-        """Once all iterations are done, replace the data fields with
-        the saved values
-        """
-
+        """Replace the data fields with saved values."""
         self.m = self.mc
 
 
 class SourceSink(esbmtkBase):
-    """
-    This is a meta class to setup a Source/Sink objects.  These are
+    """Meta class to setup a Source/Sink objects.
+
+    These are
     not actual reservoirs, but we stil need to have them as objects
     Example::
 
@@ -2292,7 +2261,8 @@ class SourceSink(esbmtkBase):
     """
 
     def __init__(self, **kwargs) -> None:
-        """
+        """Initialize class instance.
+
         Defaults::
 
             self.defaults: dict[str, tp.List[any, tuple]] = {
@@ -2315,7 +2285,6 @@ class SourceSink(esbmtkBase):
 
         Required Keywords: "name", "species"
         """
-
         from esbmtk import (
             SourceProperties,
             SinkProperties,
@@ -2381,11 +2350,12 @@ class SourceSink(esbmtkBase):
 
     @property
     def delta(self):
+        """Delta Setter."""
         return self._delta
 
     @delta.setter
     def delta(self, d):
-        """Set/Update delta"""
+        """Set/Update delta."""
         if d != "None":
             self._delta = d
             self.isotopes = True
@@ -2397,8 +2367,9 @@ class SourceSink(esbmtkBase):
 
 
 class Sink(SourceSink):
-    """
-    This is a meta class to setup a Source/Sink objects.  These are
+    """Meta class to setup a Source/Sink objects.
+
+    These are
     not actual reservoirs, but we stil need to have them as objects
     Example::
 
@@ -2412,8 +2383,9 @@ class Sink(SourceSink):
 
 
 class Source(SourceSink):
-    """
-    This is a meta class to setup a Source/Sink objects.  These are
+    """Meta class to setup a Source/Sink objects.
+
+    These are
     not actual reservoirs, but we stil need to have them as objects
     Example::
 
