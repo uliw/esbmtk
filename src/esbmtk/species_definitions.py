@@ -1,5 +1,6 @@
-"""esbmtk: A general purpose Earth Science box model toolkit Copyright
-(C), 2020 Ulrich G.  Wortmann
+"""esbmtk: A general purpose Earth Science box model toolkit.
+
+Copyright(C), 2020 Ulrich G.  Wortmann
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,8 +18,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
-import typing as tp
-
 import numpy as np
 import numpy.typing as npt
 
@@ -27,12 +26,16 @@ from .esbmtk import ElementProperties, SpeciesProperties
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 np.set_printoptions(precision=4)
-if tp.TYPE_CHECKING:
-    from .esbmtk import Model
 
 
 def Carbon(model):
-    """Some often used definitions"""
+    """Element property definitions.
+
+    Parameters
+    ----------
+    model : Model
+        Model instance
+    """
     eh = ElementProperties(
         name="Carbon",  # ElementProperties Name
         model=model,  # Model handle
@@ -78,6 +81,13 @@ def Carbon(model):
 
 
 def Sulfur(model):
+    """Element property definitions.
+
+    Parameters
+    ----------
+    model : Model
+        Model instance
+    """
     eh = ElementProperties(
         name="Sulfur",
         model=model,  # model handle
@@ -122,6 +132,13 @@ def Sulfur(model):
 
 
 def Hydrogen(model):
+    """Element property definitions.
+
+    Parameters
+    ----------
+    model : Model
+        Model instance
+    """
     eh = ElementProperties(
         name="Hydrogen",
         model=model,  # model handle
@@ -150,14 +167,13 @@ def Hydrogen(model):
     )  # Name & element handle
 
 
-def Oxygen(model: Model) -> None:
-    """Common Properties of Oxygen
+def Oxygen(model) -> None:
+    """Element property definitions.
 
     Parameters
     ----------
     model : Model
         Model instance
-
     """
     eh = ElementProperties(
         name="Oxygen",
@@ -187,6 +203,13 @@ def Oxygen(model: Model) -> None:
 
 
 def Phosphor(model):
+    """Element property definitions.
+
+    Parameters
+    ----------
+    model : Model
+        Model instance
+    """
     eh = ElementProperties(
         name="Phosphor",
         model=model,  # model handle
@@ -219,6 +242,13 @@ def Phosphor(model):
 
 
 def Nitrogen(model):
+    """Element property definitions.
+
+    Parameters
+    ----------
+    model : Model
+        Model instance
+    """
     eh = ElementProperties(
         name="Nitrogen",
         model=model,  # model handle
@@ -248,6 +278,13 @@ def Nitrogen(model):
 
 
 def Boron(model):
+    """Element property definitions.
+
+    Parameters
+    ----------
+    model : Model
+        Model instance
+    """
     eh = ElementProperties(
         name="Boron",
         model=model,  # model handle
@@ -268,6 +305,13 @@ def Boron(model):
 
 
 def misc_variables(model):
+    """Element property definitions.
+
+    Parameters
+    ----------
+    model : Model
+        Model instance
+    """
     eh = ElementProperties(
         name="misc_variables",
         model=model,  # model handle
