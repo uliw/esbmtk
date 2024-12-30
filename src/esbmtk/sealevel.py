@@ -1,8 +1,5 @@
-"""esbmtk.sealevel
+"""esbmtk: A general purpose Earth Science box model toolkit.
 
-Classes which provide access to hypsometric data
-
-esbmtk: A general purpose Earth Science box model toolkit
 Copyright (C), 2020 Ulrich G. Wortmann
 
 This program is free software: you can redistribute it and/or modify
@@ -14,7 +11,7 @@ This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
- 
+
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
@@ -32,15 +29,17 @@ NDArrayFloat = npt.NDArray[np.float64]
 
 
 class hypsometry(esbmtkBase):
-    """A class to provide hypsometric data for the depth interval between -6000 to 1000
-    meter (relative to sealevel)
+    """Calculate hypsometric data.
+
+    Depth interval between -6000 to 1000 meter (relative to sealevel)
 
     Invoke as:
                hyspometry(name="hyp")
     """
 
     def __init__(self, **kwargs):
-        """Initialize a hypsometry object
+        """Initialize a hypsometry object.
+
         User facing methods:
 
           hyp.area (z) return the ocean area at a given depth in m^2
@@ -88,7 +87,7 @@ class hypsometry(esbmtkBase):
         }
 
         # required keywords
-        self.lrk: tp.List = [
+        self.lrk: list = [
             "name",
         ]
 
@@ -110,6 +109,7 @@ class hypsometry(esbmtkBase):
 
     def read_data(self, fn: str) -> None:
         """Read the hypsometry data from a pickle file.
+
         If the pickle file is missing, create it from the
         csv data save the hypsometry data as a numpy array with
         elevation, area, and area_dz in self.hypdata
@@ -138,11 +138,9 @@ class hypsometry(esbmtkBase):
         fqfn_pickle: pl.Path = pl.Path(fn_pickle)
 
         if fqfn_pickle.exists():  # check if pickle file exist
-            # get creation date of pickle file
-            pickle_date = pl.Path(fn_pickle).stat().st_ctime
-        else:
-            pickle_date = 0
-
+            pickle_date = (
+                pl.Path(fn_pickle).stat().st_ctime if fqfn_pickle.exists() else 0
+            )
         csv_date = pl.Path(fn_csv).stat().st_ctime
         if csv_date < pickle_date:  # pickle file is newer
             df = pd.read_pickle(fn_pickle)
@@ -178,28 +176,22 @@ class hypsometry(esbmtkBase):
         area = np.flip(area[0:max_el_idx] * self.sa)
 
         # create lookup table with area and area_dz
-        self.hypdata = np.column_stack(
-            (
-                elevation[:-1],
-                area[:-1],
-                np.diff(area),
-            )
-        )
+        self.hypdata = np.column_stack((
+            elevation[:-1],
+            area[:-1],
+            np.diff(area),
+        ))
 
     def get_lookup_table_area(self) -> NDArrayFloat:
-        """Return the area values between 0 and max_depth
-        as 1-D array
-        """
+        """Return the area values between 0 and max_depth as 1-D array."""
         return self.hypdata[self.max_elevation :, 1]
 
     def get_lookup_table_area_dz(self) -> NDArrayFloat:
-        """Return the are_dz values between 0 and max_depth
-        as 1-D array
-        """
+        """Return the are_dz values between 0 and max_depth as 1-D array."""
         return self.hypdata[self.max_elevation :, 2]
 
     def area(self, elevation: int) -> float:
-        """Calculate the ocean area at a given depth
+        """Calculate the ocean area at a given depth.
 
         Parameters
         ----------
@@ -217,16 +209,14 @@ class hypsometry(esbmtkBase):
 
         if (elevation > self.max_elevation) or (elevation < self.max_depth):
             raise ValueError(
-                
-                    f"hyp.area: {elevation} must be between"
-                    f"{self.max_elevation} and {self.min_depth}"
-                
+                f"hyp.area: {elevation} must be between"
+                f"{self.max_elevation} and {self.min_depth}"
             )
 
         return self.hypdata[i, 1]
 
-    def area_dz(self, u: float, l: float) -> float:
-        """Calculate the area between two elevation datums
+    def area_dz(self, upper: float, lower: float) -> float:
+        """Calculate the area between two elevation datums.
 
         Parameters
         ----------
@@ -246,21 +236,19 @@ class hypsometry(esbmtkBase):
             if elevation datums are outside the defined interval
 
         """
-        if (u > self.max_elevation) or (l < self.max_depth):
+        if (upper > self.max_elevation) or (lower < self.max_depth):
             raise ValueError(
-                
-                    f"hyp.area: {u} must be < {self.max_elevation}"
-                    f"and {l} > {self.min_depth}"
-                
+                f"hyp.area: {upper} must be < {self.max_elevation}"
+                f"and {lower} > {self.min_depth}"
             )
 
-        u = self.max_elevation - int(u)
-        l = self.max_elevation - int(l)
+        upper = self.max_elevation - int(upper)
+        lower = self.max_elevation - int(lower)
 
-        return self.hypdata[u, 1] - self.hypdata[l, 1]
+        return self.hypdata[upper, 1] - self.hypdata[lower, 1]
 
-    def volume(self, u: float, l: float) -> float:
-        """Calculate the area between two elevation datums
+    def volume(self, upper: float, lower: float) -> float:
+        """Calculate the area between two elevation datums.
 
         Parameters
         ----------
@@ -280,23 +268,19 @@ class hypsometry(esbmtkBase):
             if elevation datums are outside the defined interval
 
         """
-        if (u > self.max_elevation) or (l < self.max_depth):
+        if (upper > self.max_elevation) or (lower < self.max_depth):
             raise ValueError(
-                
-                    f"hyp.area: {u} must be < {self.max_elevation}"
-                    f"and {l} > {self.min_depth}"
-                
+                f"hyp.area: {upper} must be < {self.max_elevation}"
+                f"and {lower} > {self.min_depth}"
             )
 
-        u = self.max_elevation - int(u)
-        l = self.max_elevation - int(l)
+        upper = self.max_elevation - int(upper)
+        lower = self.max_elevation - int(lower)
 
-        return np.sum(self.hypdata[u:l])
+        return np.sum(self.hypdata[upper:lower])
 
     def show_data(self):
-        """Provide a diagnostic graph that shows the hypsometric data
-        use by ESBMTK
-        """
+        """Provide a diagnostic graph showing the hypsometric data."""
         elevation = self.hypdata[:, 0]
         area = self.hypdata[:, 1] / self.sa
 
@@ -379,7 +363,7 @@ def get_box_geometry_parameters(box) -> None:
 def earth_radius(
     lat: float,
 ) -> float:
-    """Get earth radius as function of latitude
+    """Get earth radius as function of latitude.
 
     :param lat: latitude in degrees
     :type lat: float
@@ -401,8 +385,9 @@ def grid_area(
     lat: float,
     size: float,
 ) -> float:
-    """Calculate the area of a rectangular area of size = 1 deg at a given
-        lat-long position.
+    """Calculate the area of a rectangular area of size = 1 deg.
+
+    At a given lat-long position.
 
     :param lat: latitude in degrees
     :type lat: float
@@ -427,9 +412,10 @@ def slice_count(
     elevations: NDArrayFloat,
     dz: int,
 ) -> NDArrayFloat:
-    """Generate elevation count array for each latitudinal slice which
-        summarized the count of elevation values in each elevation
-        interval in current slice.
+    """Generate elevation count array for each latitudinal slice.
+
+    Summarizing the count of elevation values in each elevation
+    interval in current slice.
 
     :param start: start index of the slice
     :type start: int
@@ -472,10 +458,11 @@ def process_slice(
     elevations: NDArrayFloat,
     dx: float,
 ) -> NDArrayFloat:
-    """Take grid area in to account when calculating the elevation count,
-        as earth is elliptical, the grid area for same latitude and longitude
-        gap is different, the function adjust the weight for each slice and
-        return the weighted elevation count array for each slice.
+    """Take grid area in to account when calculating the elevation count.
+
+    As earth is elliptical, the grid area for same latitude and longitude
+    gap is different, the function adjust the weight for each slice and
+    return the weighted elevation count array for each slice.
 
     :param start: start index of the slice
     :type start: int
