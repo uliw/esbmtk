@@ -1,9 +1,5 @@
-"""esbmtk.connections
+"""esbmtk: A general purpose Earth Science box model toolkit.
 
-Classes which handle the connections and fluxes between esbmtk objects
-like Species, Sources, and Sinks.
-
-esbmtk: A general purpose Earth Science box model toolkit
 Copyright (C), 2020 Ulrich G. Wortmann
 
 This program is free software: you can redistribute it and/or modify
@@ -38,25 +34,35 @@ NDArrayFloat = npt.NDArray[np.float64]
 
 
 class Species2SpeciesError(Exception):
+    """Custom Error Class."""
+
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class ScaleFluxError(Exception):
+    """Custom Error Class."""
+
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class KeywordError(Exception):
+    """Custom Error Class."""
+
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class Species2Species(esbmtkBase):
-    """Two reservoirs connect to each other via at least one flux. This
+    """Connect two reservoir species to each other.
+
      module creates the connecting flux and creates a connector object
      which stores all connection properties.
 
@@ -189,11 +195,11 @@ class Species2Species(esbmtkBase):
       - info() will provide a short description of the connection objects.
       - list_processes() which will list all the processes which are associated with this connection.
       - update() which allows you to update connection properties after the connection has been created
-
     """
 
     def __init__(self, **kwargs):
-        """The init method of the connector obbjects performs sanity checks e.g.:
+        """Perform sanity checks.
+
                - whether the reservoirs exist
                - correct flux properties (this will be handled by the process object)
                - whether the processes do exist (hmmh, that implies that the optional processes do get registered with the model)
@@ -201,7 +207,6 @@ class Species2Species(esbmtkBase):
                - and connects the reservoirs
 
         see the class documentation for details and examples
-
         """
         from esbmtk import (
             Q_,
@@ -297,7 +302,7 @@ class Species2Species(esbmtkBase):
                 self._rate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
             elif isinstance(self.rate, Q_):
                 self._rate: float = self.rate.to(self.mo.f_unit).magnitude
-            elif isinstance(self.rate, (int, float)):
+            elif isinstance(self.rate, int | float):
                 self._rate: float = self.rate
 
         # if no reference reservoir is specified, default to the upstream
@@ -352,7 +357,9 @@ class Species2Species(esbmtkBase):
         self.a_index = self.__update_ode_constants__(self.epsilon)
 
     def __set_name__(self):
-        """The connection name is derived according to the following scheme:
+        """Create connection name.
+
+        The name is derived according to the following scheme:
 
         if manual connection
             if sink and source species are equal
@@ -380,7 +387,7 @@ class Species2Species(esbmtkBase):
 
         # Connect by itself
         if not isinstance(self.parent, ConnectionProperties):  # manual connection
-            if isinstance(self.source.parent, Reservoir) or isinstance(self.source.parent, Source) or isinstance(self.source.parent, SourceProperties):
+            if isinstance(self.source.parent, Reservoir | Source | SourceProperties):
                 so = self.source.parent.name
             else:
                 so = self.source.name
@@ -409,10 +416,11 @@ class Species2Species(esbmtkBase):
                 self.name = f"{self.name}_{self.id}"
 
     def update(self, **kwargs):
-        """Update connection properties. This will delete existing processes
+        """Update connection properties.
+
+        This will delete existing processes
         and fluxes, replace existing key-value pairs in the
         self.kwargs dict, and then re-initialize the connection.
-
         """
         raise NotImplementedError
         self.__delete_process__()
@@ -422,32 +430,27 @@ class Species2Species(esbmtkBase):
         self.__init_connection__(self.kwargs)
 
     def get_species(self, r1, r2) -> None:
-        """In most cases the species is set by r2. However, if we have
-        backward fluxes the species depends on the r2
+        """Set the species by r2.
 
+        However, if we have backward fluxes the species depends on the r2
         """
         from esbmtk import Source
 
         self.r = r1 if isinstance(self.r1, Source) else r2
-        self.sp = self.kwargs["species"] if "species" in self.kwargs else self.r.sp
+        self.sp = self.kwargs.get("species", self.r.sp)
 
     def __create_flux__(self) -> None:
-        """Create flux object, and register with reservoir and global
-        namespace
+        """Create flux object.
+
+        Register with reservoir and global namespace
         """
         from esbmtk import Flux, Sink, Source
 
         # test if default arguments present
         d = 0 if self.delta == "None" else self.delta
         r = f"0 {self.sp.mo.f_unit}" if self.rate == "None" else self.rate
+        isotopes = bool(self.sink.isotopes and self.source.isotopes)
 
-        if self.sink.isotopes and self.source.isotopes:
-            isotopes = True
-        else:
-            isotopes = False
-
-        # if self.ctype == "weathering" and self.sp.name == "DIC":
-        #    breakpoint()
         self.fh = Flux(
             species=self.sp,  # SpeciesProperties handle
             delta=d,  # delta value of flux
@@ -493,15 +496,16 @@ class Species2Species(esbmtkBase):
         self.lof.append(self.fh)
 
     def __register_species__(self, r, sp) -> None:
-        """Add flux to the correct element dictionary"""
+        """Add flux to the correct element dictionary."""
         if sp.eh in r.doe:  # test if element key is present in reservoir
             r.doe[sp.eh].append(self.fh)  # add flux handle to dictionary list
         else:  # add key and first list value
             r.doe[sp.eh] = [self.fh]
 
     def __set_process_type__(self) -> None:
-        """Deduce flux type based on the provided flux properties. The method calls the
-        appropriate method init routine
+        """Deduce flux type based on the provided flux properties.
+
+        The method calls the appropriate method init routine
         """
         from esbmtk import (
             Sink,
@@ -545,7 +549,7 @@ class Species2Species(esbmtkBase):
             print(f"bypassing {self.fh.full_name} in {self.sink.full_name}")
 
     def __scaleflux__(self) -> None:
-        """Scale a flux relative to another flux"""
+        """Scale a flux relative to another flux."""
         from esbmtk import Flux
 
         if not isinstance(self.ref_flux, Flux):
@@ -559,6 +563,7 @@ class Species2Species(esbmtkBase):
             print("\n Warning: use scale instead of k_value for scaleflux type\n")
 
     def __weathering__(self):
+        """Initialize weathering function."""
         from esbmtk import init_weathering, register_return_values
 
         ec = init_weathering(
@@ -572,13 +577,14 @@ class Species2Species(esbmtkBase):
         register_return_values(ec, self.sink)
 
     def __gasexchange__(self):
+        """Initialize gas exachange."""
         from esbmtk import init_gas_exchange, register_return_values
 
         ec = init_gas_exchange(self)
         register_return_values(ec, self.sink)
 
     def __rateconstant__(self) -> None:
-        """Add rate constant type process"""
+        """Add rate constant type process."""
         if self.ctype == "scale_with_concentration":
             self.scale = map_units(
                 self,
@@ -591,12 +597,12 @@ class Species2Species(esbmtkBase):
 
     def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
+
         Optional arguments are
         index  :int = 0 this will show data at the given index
         indent :int = 0 indentation
-
         """
-        index = 0 if "index" not in kwargs else kwargs["index"]
+        index = kwargs.get("index", 0)
         if "indent" not in kwargs:
             indent = 0
             ind = ""
@@ -623,10 +629,12 @@ class Species2Species(esbmtkBase):
     # ---- epsilon ----
     @property
     def epsilon(self) -> float | int:
+        """Epsilon property."""
         return self._epsilon
 
     @epsilon.setter
     def epsilon(self, a: float | int) -> None:
+        """Epsilon Setter."""
         if self.update and a != "None":
             self.__delete_process__()
             self.__delete_flux__()
@@ -636,10 +644,12 @@ class Species2Species(esbmtkBase):
     # ---- rate  ----
     @property
     def rate(self) -> float | int:
+        """Rate property."""
         return self._rate
 
     @rate.setter
     def rate(self, r: str) -> None:
+        """Rate Setter."""
         from . import Q_
 
         if self.update and r != "None":
@@ -652,10 +662,12 @@ class Species2Species(esbmtkBase):
     # ---- delta  ----
     @property
     def delta(self) -> float | int:
+        """Delta property."""
         return self._delta
 
     @delta.setter
     def delta(self, d: float | int) -> None:
+        """Delta Setter."""
         if self.update and d != "None":
             self.__delete_process__()
             self.__delete_flux__()
@@ -666,7 +678,7 @@ class Species2Species(esbmtkBase):
 
 
 class ConnectionProperties(esbmtkBase):
-    """ConnectionProperties
+    """ConnectionProperties Class.
 
         Connect reservoir/sink/source groups when at least one of the
         arguments is a reservoirs_group object. This method will
@@ -772,18 +784,17 @@ class ConnectionProperties(esbmtkBase):
         self.__create_connections__()
 
     def add_connections(self, **kwargs) -> None:
-        """Add connections to the connection group"""
+        """Add connections to the connection group."""
         self.__initialize_keyword_variables__(kwargs)
         self.__create_connections__()
 
     def __create_connections__(self) -> None:
-        """Create Species2Species"""
+        """Create Species2Species connection."""
         from esbmtk import Reservoir, SinkProperties, SourceProperties
 
         self.connections: list = []
-
         if isinstance(self.ctype, str):
-            if isinstance(self.source, (Reservoir, SinkProperties, SourceProperties)):
+            if isinstance(self.source, Reservoir | SinkProperties | SourceProperties):
                 if self.species == "None":
                     for s in self.source.lor:
                         self.connections.append(s.species)
@@ -793,7 +804,7 @@ class ConnectionProperties(esbmtkBase):
 
         elif isinstance(self.ctype, dict):
             # find all sub reservoirs which have been specified by the ctype keyword
-            for r, t in self.ctype.items():
+            for r, _t in self.ctype.items():
                 self.connections.append(r)
 
         # now we need to create defaults for all connections
@@ -817,15 +828,14 @@ class ConnectionProperties(esbmtkBase):
             }
 
             # loop over entries in defaults dict
-            for key, value in self.c_defaults[sp.name].items():
+            for key, _value in self.c_defaults[sp.name].items():
                 # test if key in default dict is also specified as connection keyword
                 # test if rate in kwargs, if sp in rate dict
                 if key in self.kwargs and isinstance(self.kwargs[key], dict):
                     if key in self.kwargs and sp in self.kwargs[key]:
                         self.c_defaults[sp.n][key] = self.kwargs[key][sp]
-                elif key in self.kwargs and self.kwargs[key] != "None":
-                    # if value was supplied, update defaults dict
-                    if self.kwargs[key] != "None":
+                    elif key in self.kwargs and self.kwargs[key] != "None":
+                        # if value was supplied, update defaults dict
                         self.c_defaults[sp.n][key] = self.kwargs[key]
 
             a = Species2Species(
@@ -848,7 +858,7 @@ class ConnectionProperties(esbmtkBase):
             self.loc.append(a)  # add connection to list of connections
 
     def info(self) -> None:
-        """List all connections in this group"""
+        """List all connections in this group."""
         print(f"Group Connect from {self.source.name} to {self.sink.name}\n")
         print("The following Species2Species are part of this group\n")
         print("You can query the details of each connection like this:\n")
