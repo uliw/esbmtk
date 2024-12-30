@@ -1,4 +1,5 @@
-"""esbmtk: A general purpose Earth Science box model toolkit
+"""esbmtk: A general purpose Earth Science box model toolkit.
+
 Copyright (C), 2020 Ulrich G. Wortmann
 
 This program is free software: you can redistribute it and/or modify
@@ -34,38 +35,54 @@ NDArrayFloat = npt.NDArray[np.float64]
 
 
 class KeywordError(Exception):
+    """Custom Error Class."""
+     
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class MissingKeywordError(Exception):
+    """Custom Error Class."""
+    
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class InputError(Exception):
+    """Custom Error Class."""
+    
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class FluxSpecificationError(Exception):
+    """Custom Error Class."""
+    
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class SpeciesPropertiesMolweightError(Exception):
+    """Custom Error Class."""
+    
     def __init__(self, message):
+        """Initialize Error Instance."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class input_parsing:
-    """Provides various routines to parse and process keyword
-    arguments.  All derived classes need to declare the allowed
+    """Provides various routines to parse and process keyword arguments.
+
+    All derived classes need to declare the allowed
     keyword arguments, their defualt values and the type in the
     following format:
 
@@ -83,9 +100,7 @@ class input_parsing:
         raise NotImplementedError("input parsing has no instance!")
 
     def __initialize_keyword_variables__(self, kwargs) -> None:
-        """check, register and update keyword variables"""
-        # import copy
-
+        """check, register and update keyword variables."""
         self.update = False
         # self.defaults_copy = copy.deepcopy(self.defaults)
         # self.defaults_copy = {**self.defaults} # probably the wrong place.
@@ -95,8 +110,9 @@ class input_parsing:
         self.update = True
 
     def __check_mandatory_keywords__(self, lrk: list, kwargs: dict) -> None:
-        """Verify that all elements of lrk have a corresponding key in
-        kwargs.  If not, print error message
+        """Verify that all elements of lrk have a corresponding key in kwargs.
+    
+        If not, print error message
         """
         for key in lrk:
             if isinstance(key, list):
@@ -232,9 +248,9 @@ class esbmtkBase(input_parsing):
                 # check if this is not another esbmtk object
                 if "esbmtk" in str(type(v)):
                     m = f"{m}    {k} = {v.name},\n"
-                elif isinstance(v, str) or isinstance(v, Q_):
+                elif isinstance(v, str | Q_):
                     m = f"{m}    {k} = '{v}',\n"
-                elif isinstance(v, (list, np.ndarray)):
+                elif isinstance(v, list | np.ndarray):
                     m = f"{m}    {k} = '{v[:3]}',\n"
                 else:
                     m = f"{m}    {k} = {v},\n"
