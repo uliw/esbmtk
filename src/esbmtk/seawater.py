@@ -1,5 +1,6 @@
-"""esbmtk: A general purpose Earth Science box model toolkit Copyright
-(C), 2020-2021 Ulrich G. Wortmann
+"""esbmtk: A general purpose Earth Science box model toolkit.
+
+Copyright(C), 2020-2021 Ulrich G. Wortmann
 
 This program is free software: you can redistribute it and/or
 modify it under the terms of the GNU General Public License as
@@ -14,12 +15,10 @@ General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see
 <https://www.gnu.org/licenses/>.
-
 """
 
 from __future__ import annotations
 
-import typing as tp
 import warnings
 
 import numpy as np
@@ -28,16 +27,13 @@ import PyCO2SYS as pyco2
 
 from .esbmtk_base import esbmtkBase
 
-if tp.TYPE_CHECKING:
-    pass
-
-
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
 
 class SeawaterConstants(esbmtkBase):
     """Provide basic seawater properties as a function of T, P and Salinity.
+
     Since we cannot know if TA and DIC have already been specified, creating
     the instance uses standard seawater composition. Updating/Setting TA & DIC
     does not recalculate these values after initialization, unless
@@ -105,7 +101,10 @@ class SeawaterConstants(esbmtkBase):
 
         if self.dic == "None" or self.ta == "None":
             self.__init_std_seawater__()
-            warnings.warn(f"Initializing {self.name} with default seawater")
+            warnings.warn(
+                f"Initializing {self.name} with default seawater",
+                stacklevel=2,
+            )
 
         self.update_parameters()
 
@@ -113,11 +112,8 @@ class SeawaterConstants(esbmtkBase):
             self.__register_name_new__()
 
     def update_parameters(self, **kwargs: dict) -> None:
-        """Update values if necessary"""
-        if "pos" in kwargs:
-            pos = kwargs["pos"]
-        else:
-            pos = -1
+        """Update values if necessary."""
+        pos = kwargs.get("pos", -1)
 
         if hasattr(self.register, "TA"):
             self.ta = self.register.TA.c[pos] * 1e6
@@ -173,8 +169,9 @@ class SeawaterConstants(esbmtkBase):
         self.__init_o_fractionation_factors__()
 
     def show(self) -> None:
-        """Printout constants. Units are mol/kg or
-        (mol**2/kg for doubly charged ions
+        """Printout constants.
+
+        Units are mol/kg or mol**2/kg for doubly charged ions
         """
         from math import log10
 
@@ -203,8 +200,7 @@ class SeawaterConstants(esbmtkBase):
         print()
 
     def get_density(self, S, TC, P) -> float:
-        """Calculate seawater density as function of
-        temperature, salinity and pressure
+        """Calculate density as function of T, P, S.
 
         :param S: salinity in PSU
         :param TC:  temp in C
@@ -264,7 +260,9 @@ class SeawaterConstants(esbmtkBase):
         return rho0 / (1.0 - P / Ksbm)
 
     def __init_std_seawater__(self) -> None:
-        """Provide values for standard seawater. Data after Zeebe and Gladrow
+        """Provide values for standard seawater.
+
+        Data after Zeebe and Gladrow
         all values in mol/kg. All values after Zeebe and Gladrow 2001
 
         This only used so that we can call pyco2SYS in order to get the
@@ -284,14 +282,15 @@ class SeawaterConstants(esbmtkBase):
         self.ta = self.hco3 + 2 * self.co3  # estimate
 
     def __init_gasexchange__(self) -> None:
-        """Initialize constants for gas-exchange processes"""
+        """Initialize constants for gas-exchange processes."""
         self.water_vapor_partial_pressure()
         self.co2_solubility_constant()
         self.o2_solubility_constant()
 
     def water_vapor_partial_pressure(self) -> None:
-        """Calculate the water vapor partial pressure at sealevel (1 atm) as
-        a function of temperature and salinity. Eq. Weiss and Price 1980
+        """Calculate the water vapor partial pressure at sealevel (1 atm).
+
+        As a function of temperature and salinity. Eq. Weiss and Price 1980
         doi:10.1016/0304-4203(80)90024-9
 
         Since we assume that we only use this expression at sealevel,
@@ -330,6 +329,7 @@ class SeawaterConstants(esbmtkBase):
 
     def o2_solubility_constant(self) -> None:
         """Calculate the solubility of CO2 at a given temperature and salinity.
+
         Coefficients after Sarmiento and Gruber 2006 which includes corrections
         for non ideal gas behavior
 
@@ -356,6 +356,7 @@ class SeawaterConstants(esbmtkBase):
         self.SA_O2 = b / VA
 
     def calc_solubility_term(self, S, T, A1, A2, A3, A4, B1, B2, B3) -> float:
+        """Calculate solubility of given gas species."""
         T = T + 273.15
         ln_F = (
             A1
@@ -369,8 +370,9 @@ class SeawaterConstants(esbmtkBase):
         return F
 
     def __init_c_fractionation_factors__(self):
-        """Calculate the fractionation factors for the various carbon species
-        transitions. After Zeebe and Gladrow, 2001, Chapter 3.2.3, page 186
+        """Calculate the fractionation factors for the various carbon species.
+
+        After Zeebe and Gladrow, 2001, Chapter 3.2.3, page 186
 
         e = (a -1) * 1E3  and a =  1 + e / 1E3
 
@@ -380,7 +382,6 @@ class SeawaterConstants(esbmtkBase):
         d = dissolved CO2
         b = bicarbonate ion
         c = carbonate ion
-
         """
         T = 273.15 + self.temperature
 
@@ -409,13 +410,12 @@ class SeawaterConstants(esbmtkBase):
         self.co2_a_u: float = 1 + self.co2_e_u / 1000
 
     def __init_o_fractionation_factors__(self):
-        """Fractionation factors for O2 gas exchange
+        """Fractionation factors for O2 gas exchange.
 
         g = gaseous CO2
         d = dissolved CO2
         b = bicarbonate ion
         c = carbonate ion
-
         """
         T = 273.15 + self.temperature
 
