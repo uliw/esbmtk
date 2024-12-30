@@ -1,5 +1,6 @@
-"""esbmtk: A general purpose Earth Science box model toolkit Copyright
-(C), 2020 Ulrich G.  Wortmann
+"""esbmtk: A general purpose Earth Science box model toolkit.
+
+Copyright (C), 2020 Ulrich G.  Wortmann
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -33,8 +34,9 @@ def get_initial_conditions(
     rtol: float,
     atol_d: float = 1e-7,
 ) -> tuple[list, dict, list, list, NDArrayFloat]:
-    """Get list of initial conditions.  This list needs to match the
-    number of equations.
+    """Get list of initial conditions.
+
+    This list needs to match the number of equations.
 
     :param Model: The model handle
     :param rtol: relative tolerance for BDF solver.
@@ -77,7 +79,7 @@ def get_initial_conditions(
     atol: list = []  # list of tolerances for ode solver
     # dict that contains the reservoir_handle as key and the index positions
     # for c and l as a list
-    icl: dict[Species, List[int, int]] = {}
+    icl: dict[Species, list[int, int]] = {}
     cpl: list = []  # list of reservoirs that are computed
     ipl: list = []  # list of static reservoirs that serve as input
 
@@ -119,8 +121,7 @@ def get_initial_conditions(
 
 
 def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> str:
-    """Loop over reservoirs and their fluxes to build the reservoir
-    equation
+    """Loop over reservoirs to build the reservoir equations.
 
     :param eqs: equation file handle
     :param rel: string with reservoir names used in return function.
@@ -140,19 +141,15 @@ def write_reservoir_equations(eqs, M: Model, rel: str, ind2: str, ind3: str) -> 
         """
 
         if r.rtype != "flux_only":
-            name = f'dCdt_{r.full_name.replace(".", "_")}'
+            name = f"dCdt_{r.full_name.replace('.', '_')}"
             fex = ""
             # v_val = f"{r.volume.to(r.v_unit).magnitude}"
             v_val = f"toc[{r.v_index}]"
 
             # add all fluxes
             for flux in r.lof:  # check if in or outflux
-                if flux.parent.source == r:
-                    sign = "-"
-                else:
-                    sign = "+"
-
-                fname = f'{flux.full_name.replace(".", "_")}'
+                sign = "-" if flux.parent.source == r else "+"
+                fname = f"{flux.full_name.replace('.', '_')}"
                 fex = f"{fex}{ind3}{sign} {fname}\n"
 
             if len(r.lof) > 0:  # avoid reservoirs without active fluxes
@@ -173,7 +170,7 @@ def write_reservoir_equations_with_isotopes(
     ind2: str,  # indent 2 times
     ind3: str,  # indent 3 times
 ) -> str:  # updated list of reservoirs
-    """Loop over reservoirs and their fluxes to build the reservoir equation"""
+    """Loop over reservoirs and their fluxes to build the reservoir equation."""
     for r in M.lor:  # loop over reservoirs
         if r.rtype != "flux_only":
             # v_val = f"{r.volume.to(r.v_unit).magnitude}"
@@ -182,17 +179,12 @@ def write_reservoir_equations_with_isotopes(
             # create unique variable names. Species are typiclally called
             # M.rg.r so we replace all dots with underscore
             if r.isotopes:
-                name = f'dCdt_{r.full_name.replace(".", "_")}_l'
+                name = f"dCdt_{r.full_name.replace('.', '_')}_l"
                 fex = ""
                 # add all fluxes
                 for flux in r.lof:  # check if in or outflux
-                    if flux.parent.source == r:
-                        sign = "-"
-                    else:
-                        # elif flux.parent.sink == r:
-                        sign = "+"
-
-                    fname = f'{flux.full_name.replace(".", "_")}_l'
+                    sign = "-" if flux.parent.source == r else "+"
+                    fname = f"{flux.full_name.replace('.', '_')}_l"
                     fex = f"{fex}{ind3}{sign} {fname}\n"
 
                 # avoid reservoirs without active fluxes
@@ -215,7 +207,8 @@ def write_equations_2(
     ipl: list,
     eqs_fn: str,
 ) -> tuple:
-    """Write file that contains the ode-equations for the Model
+    """Write file that contains the ode-equations for the Model.
+
     Returns the list R that contains the initial condition for each
     reservoir
 
@@ -346,7 +339,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
         rel = write_reservoir_equations_with_isotopes(eqs, M, rel, ind2, ind3)
 
         sep = "# ---------------- bits and pieces --------------------------- #"
-        eqs.write(f"\n{sep}\n" f"{ind2}return [\n")
+        eqs.write(f"\n{sep}\n{ind2}return [\n")
         # Write all initial conditions that are recorded in icl
         for k, v in icl.items():
             eqs.write(f"{ind3}dCdt_{k.full_name.replace('.', '_')},  # {v[0]}\n")
@@ -359,8 +352,9 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
 
 
 def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str):
-    """Create formula expressions that calculates the flux F.  Return
-    the equation expression as string
+    """Create formula expressions that calculates the flux F.
+
+    Return the equation expression as string
 
     :param flux: The flux object for which we create the equation
     :param M: The current model object
@@ -401,7 +395,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
 
 
 def check_signal_2(ex: str, exl: str, c: Species2Species) -> (str, str):
-    """Test if connection is affected by a signal
+    """Test if connection is affected by a signal.
 
     :param ex: equation string
     :param c: connection object
@@ -426,7 +420,9 @@ def check_signal_2(ex: str, exl: str, c: Species2Species) -> (str, str):
 
 
 def get_ic(r: Species, icl: dict, isotopes=False) -> str:
-    """Get initial condition in a reservoir.  If the reservoir is icl,
+    """Get initial condition in a reservoir.
+
+    If the reservoir is icl,
     return index expression into R.c. If the reservoir is not in the
     index, return the Species concentration a t=0
 
@@ -454,7 +450,7 @@ def get_ic(r: Species, icl: dict, isotopes=False) -> str:
         if isotopes:
             s1 += f", R[{icl[r][1]}]"
 
-    elif isinstance(r, (Source, Sink)):
+    elif isinstance(r, Source | Sink):
         s1 = f"{r.full_name}.c"
         if isotopes:
             s1 += f", {r.full_name}.l"
@@ -467,7 +463,9 @@ def get_ic(r: Species, icl: dict, isotopes=False) -> str:
 
 
 def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> str:
-    """Parse esbmtk data types that are provided as arguments
+    """Parse esbmtk data types.
+
+    That are provided as arguments
     to external function objects, and convert them into a suitable string
     format that can be used in the ode equation file
     """
@@ -476,7 +474,7 @@ def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> st
     if isinstance(d, str):
         sr = getattr(r.register, d)
         a = f"{ind}{get_ic(sr, icl)},\n"
-    elif isinstance(d, Species) or isinstance(d, GasReservoir):
+    elif isinstance(d, Species | GasReservoir):
         a = f"{ind}({get_ic(d, icl, d.isotopes)}),\n"
     elif isinstance(d, Reservoir):
         a = f"{ind}{d.full_name},\n"
@@ -485,13 +483,13 @@ def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> st
         a = f"{ind}{sr},\n"
     elif isinstance(d, SeawaterConstants):
         a = f"{ind}{d.full_name},\n"
-    elif isinstance(d, (float, int, np.ndarray)):
+    elif isinstance(d, (float | int | np.ndarray)):
         a = f"{ind}{d},\n"
     elif isinstance(d, dict):
         # get key and reservoiur handle
         sr = getattr(r.register, next(iter(d)))
         a = f"{ind}{get_ic(sr, icl)},\n"
-    elif isinstance(d, Q_) or isinstance(d, float):
+    elif isinstance(d, Q_ | float):
         a = f"{ind}{d.magnitude},\n"
     elif isinstance(d, list):  # loo pover list elements
         a = f"{ind}{d},\n"
@@ -501,14 +499,16 @@ def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> st
         a += "]),\n"
     else:
         raise ValueError(
-            f"\n r = {r.full_name}, d ={d}\n" f"\n{d} is of type {type(d)}\n",
+            f"\n r = {r.full_name}, d ={d}\n\n{d} is of type {type(d)}\n",
         )
 
     return a
 
 
 def parse_function_params(params, ind) -> str:
-    """Parse function_parameters and convert them into a suitable string
+    """Parse function_parameters.
+
+    And convert them into a suitable string
     format that can be used in the ode equation file
     """
     a = ""
@@ -530,7 +530,7 @@ def write_ef(
     ind3: str,
     gpt: tuple,
 ) -> str:
-    """Write external function call code
+    """Write external function call code.
 
     :param eqs: equation file handle
     :param ef: external_function handle
@@ -589,8 +589,9 @@ def get_regular_flux_eq(
     ind2,  # indentation
     ind3,  # indentation
 ) -> tuple:
-    """Create a string containing the equation for a regular (aka
-    fixed rate) connection
+    """Create a string containing the equation for a regular connection.
+
+    Regular = fixed rate
 
     :param flux: flux instance
     :param c: connection object
@@ -617,7 +618,7 @@ def check_isotope_effects(
     ind3: str,
     ind2: str,
 ) -> str:
-    """Test if the connection involves any isotope effects
+    """Test if the connection involves any isotope effects.
 
     :param f_m: string with the flux name
     :param c: connection object
@@ -659,7 +660,9 @@ def get_scale_with_concentration_eq(
     ind2: str,  # whitespace
     ind3: str,  # whitespace
 ) -> tuple(str, str):
-    """Create equation string defining a flux that scales with the
+    """Create equation string for flux.
+
+    The flux will scale with the
     concentration in the upstream reservoir
 
     Example: M1_ConnGrp_D_b_to_L_b_TA_thc__F =
@@ -692,7 +695,9 @@ def get_scale_with_flux_eq(
     ind2: str,  # indentation
     ind3: str,  # indentation
 ) -> tuple(str, str):
-    """Equation defining a flux that scales with strength of another
+    """Equation defining a flux.
+
+    The flux will scale relative to the magnitude of another
     flux. If isotopes are used, use the isotope ratio of the upstream reservoir.
 
     :param flux: Flux object
