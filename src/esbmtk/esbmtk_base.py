@@ -14,9 +14,6 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-This module defines some shared methods
-
 """
 
 from __future__ import annotations
@@ -36,7 +33,7 @@ NDArrayFloat = npt.NDArray[np.float64]
 
 class KeywordError(Exception):
     """Custom Error Class."""
-     
+
     def __init__(self, message):
         """Initialize Error Instance."""
         message = f"\n\n{message}\n"
@@ -45,7 +42,7 @@ class KeywordError(Exception):
 
 class MissingKeywordError(Exception):
     """Custom Error Class."""
-    
+
     def __init__(self, message):
         """Initialize Error Instance."""
         message = f"\n\n{message}\n"
@@ -54,7 +51,7 @@ class MissingKeywordError(Exception):
 
 class InputError(Exception):
     """Custom Error Class."""
-    
+
     def __init__(self, message):
         """Initialize Error Instance."""
         message = f"\n\n{message}\n"
@@ -63,7 +60,7 @@ class InputError(Exception):
 
 class FluxSpecificationError(Exception):
     """Custom Error Class."""
-    
+
     def __init__(self, message):
         """Initialize Error Instance."""
         message = f"\n\n{message}\n"
@@ -72,7 +69,7 @@ class FluxSpecificationError(Exception):
 
 class SpeciesPropertiesMolweightError(Exception):
     """Custom Error Class."""
-    
+
     def __init__(self, message):
         """Initialize Error Instance."""
         message = f"\n\n{message}\n"
@@ -111,7 +108,7 @@ class input_parsing:
 
     def __check_mandatory_keywords__(self, lrk: list, kwargs: dict) -> None:
         """Verify that all elements of lrk have a corresponding key in kwargs.
-    
+
         If not, print error message
         """
         for key in lrk:
@@ -128,6 +125,7 @@ class input_parsing:
         kwargs: dict,
     ) -> None:
         """Register the key value[0] pairs as local instance variables.
+
         We register them with their actual variable name and as _variable_name
         in case we use setter and getter methods.
         to avoid name conflicts.
@@ -144,8 +142,9 @@ class input_parsing:
         defaults: dict[str, list[any, tuple]],
         kwargs: dict[str, list],
     ) -> None:
-        """This function compares the kwargs dictionary with the defaults
-        dictionary. If the kwargs key cannot be found, raise an
+        """Compare the kwargs dictionary with the defaults dictionary.
+
+        If the kwargs key cannot be found, raise an
         error. Otherwise test that the value is of the correct type. If
         yes, update the defaults dictionary with the new value.
 
@@ -169,7 +168,8 @@ class input_parsing:
             setattr(self, f"_{key}", value)
 
     def __register_name_new__(self) -> None:
-        """If self.parent is set, register self as attribute of self.parent,
+        """Register self as attribute of self.parent.
+
         and set full name to parent.full-name + self.name
         if self.parent == "None", full_name = name
         """
@@ -194,6 +194,7 @@ class input_parsing:
         self.reg_time = time.monotonic()
 
     def __test_and_resolve_duplicates__(self, name, lmo):
+        """Test if duplicate instance name."""
         if name in lmo:
             print(f"\n Warning, {name} is a duplicate, trying with {name}_1\n")
             name = name + "_1"
@@ -205,8 +206,10 @@ class input_parsing:
 
 
 class esbmtkBase(input_parsing):
-    """The esbmtk base class template. This class handles keyword
-    arguments, name registration and other common tasks
+    """The esbmtk base class template.
+
+    This class handles keyword arguments, name registration and
+    other common tasks.
 
     Useful methods in this class:
 
@@ -225,14 +228,16 @@ class esbmtkBase(input_parsing):
 
     register the instance
     self.__register_name_new__ ()
-
     """
 
     def __init__(self) -> None:
         raise NotImplementedError
 
     def __repr__(self, log=0) -> str:
-        """Print the basic parameters for this class when called via the print method"""
+        """Print the basic parameters for this class.
+
+        when called via the print method
+        """
         from esbmtk import Q_
 
         m: str = ""
@@ -259,11 +264,12 @@ class esbmtkBase(input_parsing):
         return m
 
     def __str__(self, kwargs=None):
-        """Print the basic parameters for this class when called via the print method
+        """Print the basic parameters for this class.
+
+        when called via the print method
         Optional arguments
 
         indent :int = 0 printing offset
-
         """
         if kwargs is None:
             kwargs = {}
@@ -290,19 +296,19 @@ class esbmtkBase(input_parsing):
         return m
 
     def __lt__(self, other) -> None:
-        """This is needed for sorting with sorted()"""
+        """Sorting with sorted() requires this method."""
         return self.n < other.n
 
     def __gt__(self, other) -> None:
-        """This is needed for sorting with sorted()"""
+        """Sorting with sorted()."""
         return self.n > other.n
 
     def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
+
         Optional arguments are
 
         indent :int = 0 indentation
-
         """
         if "indent" not in kwargs:
             indent = 0
@@ -315,12 +321,13 @@ class esbmtkBase(input_parsing):
         print(f"{ind}{self.__str__(kwargs)}")
 
     def __aux_inits__(self) -> None:
-        """Aux initialization code. Not normally used"""
+        """Aux initialization code. Not normally used."""
         pass
 
     def ensure_q(self, arg):
-        """Test that a given input argument is a quantity. If not convert
-        into quantity
+        """Test that a given input argument is a quantity.
+
+        If not convert into quantity
         """
         from esbmtk import Q_
 
@@ -344,7 +351,8 @@ class esbmtkBase(input_parsing):
             print(f"{kw}")
 
     def set_flux(self, mass: str, time: str, substance: SpeciesProperties):
-        """set_flux converts() a flux rate that is specified as rate, time, substance
+        """Set_flux converts() a flux rate that is specified as rate, time, or substance.
+
         so that it matches the correct model units (i.e., kg/s or mol/s)
 
         Example:
@@ -364,7 +372,6 @@ class esbmtkBase(input_parsing):
 
         :raises: FluxSpecificationError
         :raises: SpeciesPropertiesMolweightError
-
         """
         from esbmtk import Q_, ureg
 
@@ -387,8 +394,9 @@ class esbmtkBase(input_parsing):
         return r / ureg(time)
 
     def __update_ode_constants__(self, value) -> None:
-        """Place the value of self.name onto the global parameter list
-        store the index position and advance the index pointer
+        """Place the value of self.name onto the global parameter list.
+
+        Store the index position and advance the index pointer
 
         :param name: value for the parameter list
         """
