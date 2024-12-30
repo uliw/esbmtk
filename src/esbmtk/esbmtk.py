@@ -42,7 +42,7 @@ from .utility_functions import (
     get_delta_h,
     get_l_mass,
     plot_geometry,
-    show_data,
+    # show_data,
 )
 
 # declare numpy types
@@ -1497,7 +1497,7 @@ class SpeciesBase(esbmtkBase):
         # print basic data bout this reservoir
         print(f"{ind}{self.__str__(kwargs)}")
         print(f"{ind}Data sample:")
-        show_data(self, index=index, indent=indent)
+        # show_data(self, index=index, indent=indent)
 
         print(f"\n{ind}Connnections:")
         for p in sorted(self.loc):
@@ -2178,7 +2178,7 @@ class Flux(esbmtkBase):
         # print basic data bout this object
         print(f"{ind}{self.__str__(kwargs)}")
         print(f"{ind}Data sample:")
-        show_data(self, index=index, indent=indent)
+        # show_data(self, index=index, indent=indent)
 
         if len(self.lop) > 0:
             self._extracted_from_info_27(ind)
