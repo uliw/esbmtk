@@ -1,5 +1,6 @@
-"""esbmtk: A general purpose Earth Science box model toolkit Copyright
-(C), 2020-2021 Ulrich G. Wortmann
+"""esbmtk: A general purpose Earth Science box model toolkit.
+
+Copyright(C), 2020-2021 Ulrich G. Wortmann
 
 This program is free software: you can redistribute it and/or
 modify it under the terms of the GNU General Public License as
@@ -14,7 +15,6 @@ General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see
 <https://www.gnu.org/licenses/>.
-
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ if tp.TYPE_CHECKING:
 
 # @njit(fastmath=True)
 def weathering(c_pco2: float | list[float], p: tuple) -> float | tuple:
-    """Calculate weathering as a function of pCO2
+    """Calculate weathering as a function of pCO2.
 
     Parameters
     ----------
@@ -82,7 +82,7 @@ def init_weathering(
     ex: float,
     f0: float | str | Q_,
 ):
-    """Creates a new external code instance
+    """Create a new external code instance.
 
     :param c: Species2Species
     :param pco2: float current pco2
@@ -116,7 +116,7 @@ def init_weathering(
 
 
 def init_gas_exchange(c: Species2Species):
-    """Create an ExternalCode instance for gas exchange reactions
+    """Create ExternalCode instance for gas exchange reactions.
 
     Parameters
     ----------
@@ -150,10 +150,7 @@ def init_gas_exchange(c: Species2Species):
                 f"consider manual setup?\n"
             )
     else:  # use user supplied values
-        if c.ref_species == "None":
-            ref_species = sink_reservoir.O2
-        else:
-            ref_species = c.ref_species
+        ref_species = sink_reservoir.O2 if c.ref_species == "None" else c.ref_species
         solubility = (
             check_for_quantity(c.solubility, "mol/(m^3 * atm)")
             .to("mol/(m^3 * atm)")
@@ -200,8 +197,9 @@ def gas_exchange(
     gas_aq_c: float,
     p: tuple,
 ) -> float | tuple:
-    """Calculate the gas exchange flux across the air sea interface
-    for co2 including isotope effects.
+    """Calculate the gas exchange flux across the air sea interface.
+    
+    including isotope effects.
 
     Parameters
     ----------
