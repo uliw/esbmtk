@@ -1,3 +1,21 @@
+"""esbmtk: A general purpose Earth Science box model toolkit.
+
+Copyright (C), 2020 Ulrich G.  Wortmann
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or (at
+your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 from __future__ import annotations
 
 import typing as tp
@@ -14,8 +32,9 @@ NDArrayInt = npt.NDArray[np.int64]
 
 
 def carbonate_system_1_pp(box_names: SpeciesGroup) -> None:
-    """Calculates and returns various carbonate species based on previously calculated
-    Hplus, TA, and DIC concentrations.
+    """Calculate carbonate species.
+
+    Based on previously calculated Hplus, TA, and DIC concentrations.
 
     LIMITATIONS:
     - Assumes all concentrations are in mol/kg
@@ -83,15 +102,15 @@ def carbonate_system_2_pp(
     zsat_min: float = 200,
     zmax: float = 10000,
 ) -> None:
-    """Calculates and returns the fraction of the carbonate rain that is
-    dissolved an returned back into the ocean.
+    """Calculatesa the fraction of carbonate that is dissolved.
 
     :param rg: Reservoir, e.g., M.D_b
     :param export: export flux in mol/year
     :param zsat_min: depth of mixed layer
     :param zmax: depth of lookup table
 
-    Returns:
+    Returns
+    -------
     DIC_burial, DIC_burial_l, Hplus, zsnow
 
     Additionally, it calculates  the following critical depth intervals:
@@ -130,7 +149,7 @@ def carbonate_system_2_pp(
         zsnow: NDArrayInt = rg.zsnow.c.astype(int)
         export_data = export_fluxes[i]
         # make sure we have a vector
-        if isinstance(export_data, (float, int)):
+        if isinstance(export_data, float | int):
             export: NDArrayFloat = dic * 0 + export_data
         else:
             export = export_data
@@ -255,7 +274,7 @@ def gas_exchange_fluxes(
     gas_reservoir: GasReservoir,
     pv: str,
 ):
-    """Calculate gas exchange fluxes for a given reservoir
+    """Calculate gas exchange fluxes for a given reservoir.
 
     :param liquid_reservoir: Species handle
     :param gas_reservoir:  Species handle
@@ -292,8 +311,8 @@ def gas_exchange_fluxes(
     else:
         raise ValueError("flux calculation is only supported for DIC and O2")
 
-    c = liquid_reservoir.register
-    swc = liquid_reservoir.register.swc
+    # c = liquid_reservoir.register
+    # swc = liquid_reservoir.register.swc
     p = (
         scale,
         p_H2O,
