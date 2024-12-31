@@ -36,13 +36,12 @@ from pandas import DataFrame
 
 from . import Q_, ureg
 from .esbmtk_base import esbmtkBase
-from .utility_functions import (
+from .utility_functions import (  # show_data,
     find_matching_strings,
     get_delta_from_concentration,
     get_delta_h,
     get_l_mass,
     plot_geometry,
-    # show_data,
 )
 
 # declare numpy types
@@ -171,7 +170,8 @@ class Model(esbmtkBase):
         import datetime
         from importlib.metadata import version
 
-        from esbmtk import hypsometry, species_definitions
+        import esbmtk.species_definitions as species_definitions
+        from esbmtk.sealevel import hypsometry
 
         self.defaults: dict[str, list[any, tuple]] = {
             "start": ["0 yrs", (str, Q_)],
@@ -393,7 +393,7 @@ class Model(esbmtkBase):
         """
         from pathlib import Path
 
-        from esbmtk import rmtree
+        from esbmtk.utility_functions import rmtree
 
         fn: str = directory  # file name
         cwd: Path = Path.cwd()  # get the current working directory
@@ -425,7 +425,7 @@ class Model(esbmtkBase):
         """
         from pathlib import Path
 
-        from esbmtk import rmtree
+        from esbmtk.utility_functions import rmtree
 
         fn: str = directory  # file name
         cwd: Path = Path.cwd()  # get the current working directory
@@ -465,7 +465,7 @@ class Model(esbmtkBase):
         print(f"reading data from {directory}")
 
         for r in self.lor:
-            if isinstance(r, (Species, GasReservoir)):
+            if isinstance(r, Species | GasReservoir):
                 r.__read_state__(directory, prefix)
                 if r.isotopes:
                     r.d = get_delta_from_concentration(r.c, r.l, r.sp.r)
@@ -506,7 +506,7 @@ class Model(esbmtkBase):
         from esbmtk import GasReservoir, Species  # GasReservoir
 
         for r in self.lor:
-            if isinstance(r, (Species, GasReservoir)):
+            if isinstance(r, Species | GasReservoir):
                 r.__read_state__(directory)
 
         # update swc object
@@ -603,7 +603,7 @@ class Model(esbmtkBase):
         """
         wts = time.time()  # this has nothing todo with self.time below!
         start: float = process_time()
-        solver = "ode" if "solver" not in kwargs else kwargs["solver"]
+        solver = kwargs.get("solver", "ode")
         self.solver = solver
         self.__run_solver__(solver, kwargs)
 
@@ -669,7 +669,7 @@ class Model(esbmtkBase):
 
         from scipy.integrate import solve_ivp
 
-        from esbmtk import get_initial_conditions, write_equations_2
+        from esbmtk.ode_backend import get_initial_conditions, write_equations_2
 
         # build equation file
         R, icl, cpl, ipl, atol = get_initial_conditions(self, self.rtol)
@@ -709,8 +709,8 @@ class Model(esbmtkBase):
                 cwd, write_equations_2, R, icl, cpl, ipl
             )
 
-        method = kwargs["method"] if "method" in kwargs else "BDF"
-        stype = kwargs["stype"] if "stype" in kwargs else "solve_ivp"
+        method = kwargs.get("method", "BDF")
+        stype = kwargs.get("stype", "solve_ivp")
 
         # check if using carbonate chemistry, if not provide dummy values
         if not hasattr(self, "area_table"):
@@ -1120,7 +1120,7 @@ class SpeciesBase(esbmtkBase):
 
     def __set_legacy_names__(self, kwargs) -> None:
         """Move the below out of the way."""
-        from esbmtk import get_box_geometry_parameters
+        from esbmtk.sealevel import get_box_geometry_parameters
 
         self.atol: list[float] = [1.0, 1.0]  # tolerances
         self.lof: list[Flux] = []  # flux references
@@ -1438,7 +1438,7 @@ class SpeciesBase(esbmtkBase):
         :param M: Model
         :param ax: # graph axes handle
         """
-        from esbmtk import set_y_limits
+        from esbmtk.utility_functions import set_y_limits
 
         # convert time and data to display units
         x = (M.time * M.t_unit).to(M.d_unit).magnitude
@@ -1486,7 +1486,7 @@ class SpeciesBase(esbmtkBase):
         :param indent: int = 0 # print indentation
         """
         off: str = "  "
-        index = 0 if "index" not in kwargs else kwargs["index"]
+        index = kwargs.get("index", 0)
         if "indent" not in kwargs:
             indent = 0
             ind = ""
@@ -1677,9 +1677,9 @@ class Species(SpeciesBase):
             Reservoir,
             SinkProperties,
             SourceProperties,
-            get_box_geometry_parameters,
             phc,
         )
+        from esbmtk.sealevel import get_box_geometry_parameters
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -1766,7 +1766,7 @@ class Species(SpeciesBase):
 
         if self.sp.stype == "concentration":
             if self.mass == "None":
-                if isinstance(self.concentration, (str, Q_)):
+                if isinstance(self.concentration, str | Q_):
                     cc = Q_(self.concentration)
                     # concentration can be mol/kg or mol/l
                     sm, sc = str(cc.units).split(" / ")  # get
@@ -1799,7 +1799,7 @@ class Species(SpeciesBase):
                 self.c = self.c.to(self.mo.c_unit).magnitude
 
                 if self.species.scale_to != "None":
-                    c, m = str(self.mo.c_unit).split(" / ")
+                    _c, m = str(self.mo.c_unit).split(" / ")
                     self.plt_units = Q_(f"{self.species.scale_to} / {m}")
             elif self.concentration == "None":
                 m = Q_(self.mass)
@@ -2047,7 +2047,7 @@ class Flux(esbmtkBase):
             self.rate: float = Q_(self.rate).to(self.mo.f_unit).magnitude
         elif isinstance(self.rate, Q_):
             self.rate: float = self.rate.to(self.mo.f_unit).magnitude
-        elif isinstance(self.rate, (int, float)):
+        elif isinstance(self.rate, int | float):
             self.rate: float = self.rate
 
         li = get_l_mass(self.rate, self.delta, self.sp.r) if self.delta else 0
@@ -2167,7 +2167,7 @@ class Flux(esbmtkBase):
         :param index: int = 0 this will show data at the given index
         :param indent: int = 0 indentation
         """
-        index = 0 if "index" not in kwargs else kwargs["index"]
+        # index = 0 if "index" not in kwargs else kwargs["index"]
         if "indent" not in kwargs:
             indent = 0
             ind = ""

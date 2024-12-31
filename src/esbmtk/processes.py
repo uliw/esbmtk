@@ -128,7 +128,6 @@ def init_gas_exchange(c: Species2Species):
 
     c.fh.ftype = "computed"
     sink_reservoir = c.sink.register
-
     swc = sink_reservoir.swc  # sink - liquid
 
     if c.solubility == "None":  # use predefined values
@@ -198,7 +197,7 @@ def gas_exchange(
     p: tuple,
 ) -> float | tuple:
     """Calculate the gas exchange flux across the air sea interface.
-    
+
     including isotope effects.
 
     Parameters

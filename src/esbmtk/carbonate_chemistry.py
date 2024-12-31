@@ -16,6 +16,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see
 <https://www.gnu.org/licenses/>.
 """
+
 import typing as tp
 from math import log, sqrt
 
@@ -170,7 +171,6 @@ def add_carbonate_system_1(rgs: list):
     for a given key key in the  vr_datafields dictionary (i.e., H, CA, etc.)
 
     """
-    from esbmtk import init_carbonate_system_1
 
     for rg in rgs:
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):

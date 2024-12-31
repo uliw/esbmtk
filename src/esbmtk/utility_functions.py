@@ -937,7 +937,7 @@ def create_bulk_connections(ct: dict, M: Model, mt: int = "1:1") -> dict:
     dictionary produces the correct results!
 
     """
-    from esbmtk import create_connection, expand_dict
+    from esbmtk.utility_functions import create_connection, expand_dict
 
     # expand dictionary into a well formed dict where each connection
     # has a fully formed entry

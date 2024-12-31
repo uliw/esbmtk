@@ -15,6 +15,7 @@ General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 from __future__ import annotations
 
 import copy as cp
@@ -180,10 +181,9 @@ class Reservoir(esbmtkBase):
             Model,
             SeawaterConstants,
             SpeciesProperties,
-            get_box_geometry_parameters,
         )
-
-        from .utility_functions import dict_alternatives
+        from esbmtk.sealevel import get_box_geometry_parameters
+        from esbmtk.utility_functions import dict_alternatives
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -676,7 +676,7 @@ class Signal(esbmtkBase):
         # If signal time in model time, return True in mask
         # Every time element in model time flagged with True is
         # collected in mapped_time (array is only used within this method)
-        mask = np.in1d(model_time, signal_time)
+        mask = np.isin(model_time, signal_time)
         mapped_time[mask] = model_time[mask]
 
         # Go through mapped_time to check where there was a match between model

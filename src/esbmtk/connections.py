@@ -578,7 +578,8 @@ class Species2Species(esbmtkBase):
 
     def __gasexchange__(self):
         """Initialize gas exachange."""
-        from esbmtk import init_gas_exchange, register_return_values
+        from esbmtk.processes import init_gas_exchange
+        from esbmtk.utility_functions import register_return_values
 
         ec = init_gas_exchange(self)
         register_return_values(ec, self.sink)
@@ -818,6 +819,7 @@ class ConnectionProperties(esbmtkBase):
                 "plot": "yes",
                 "delta": "None",
                 "epsilon": "None",
+                "alpha": "None",
                 "rate": "None",
                 "scale": "None",
                 "ctype": "None",
@@ -827,16 +829,16 @@ class ConnectionProperties(esbmtkBase):
                 "signal": "None",
             }
 
-            # loop over entries in defaults dict
+            """loop over entries in defaults dict
+            test if key in default dict is also specified as connection keyword
+            test if rate in kwargs, if sp in rate dict """
             for key, _value in self.c_defaults[sp.name].items():
-                # test if key in default dict is also specified as connection keyword
-                # test if rate in kwargs, if sp in rate dict
                 if key in self.kwargs and isinstance(self.kwargs[key], dict):
                     if key in self.kwargs and sp in self.kwargs[key]:
                         self.c_defaults[sp.n][key] = self.kwargs[key][sp]
-                    elif key in self.kwargs and self.kwargs[key] != "None":
-                        # if value was supplied, update defaults dict
-                        self.c_defaults[sp.n][key] = self.kwargs[key]
+                elif key in self.kwargs and self.kwargs[key] != "None":
+                    # if value was supplied, update defaults dict
+                    self.c_defaults[sp.n][key] = self.kwargs[key]
 
             a = Species2Species(
                 source=getattr(self.source, sp.n),
