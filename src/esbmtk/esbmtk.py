@@ -2185,7 +2185,7 @@ class Flux(esbmtkBase):
         else:
             print("There are no processes for this flux")
 
-    # TODO Rename this here and in `info`
+    # FIXME Rename this here and in `info`
     def _extracted_from_info_27(self, ind):
         print(f"\n{ind}Process(es) acting on this flux:")
         off: str = "  "

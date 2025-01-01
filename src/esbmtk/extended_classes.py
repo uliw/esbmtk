@@ -2016,7 +2016,7 @@ class VirtualSpecies(Species):
                     display_precision = number, optional, inherited from Model,
                     )
 
-    the concentration argument will be used to initialize the reservoir and
+    The concentration argument will be used to initialize the reservoir and
     to determine the display units.
 
     The function definition follows the GenericFunction class.
@@ -2025,13 +2025,6 @@ class VirtualSpecies(Species):
     given reservoirs with whatever the function calculates. This is
     particularly useful e.g., to calculate the pH of a given reservoir
     as function of e.g., Alkalinity and DIC.
-
-    Parameters
-    ----------
-     - name = name of process,
-     - act_on = name of a reservoir this process will act upon
-     - function  = a function reference
-     - a1 to a3 function arguments
 
     The function must return a list of numbers which correspond to the
     data which describe a reservoir i.e., mass, light isotope, heavy
@@ -2056,7 +2049,6 @@ class VirtualSpecies(Species):
 
     This class provides an update method to resolve cases where e.g., two virtual
     reservoirs have a circular reference. See the documentation of update().
-
     """
 
     def __aux_inits__(self) -> None:
