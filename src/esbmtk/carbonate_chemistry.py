@@ -242,8 +242,25 @@ def carbonate_system_2(
     # zsat = int(zsat0 * log(ca2 * co3 / ksp0))
     # zsat = min(zmax, max(zsat_min, zsat))
 
-    zsat = get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0)
-    zcc = get_zcc(CaCO3_export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3)
+    zsat = get_zsat(
+        int(zsat0),
+        int(zsat_min),
+        int(zmax),
+        round(ca2, 4),
+        round(co3, 8),
+        round(ksp0, 10),
+    )
+    zcc = get_zcc(
+        int(CaCO3_export),
+        int(zmax),
+        int(zsat_min),
+        int(zsat0),
+        round(ca2, 4),
+        round(ksp0, 10),
+        int(AD),
+        round(kc, 6),
+        round(co3, 8),
+    )
     # zcc = int(
     #     zsat0 * log(CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
     # )  # eq3
