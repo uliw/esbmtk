@@ -18,7 +18,7 @@ along with this program.  If not, see
 """
 
 import typing as tp
-from functools import cache, lru_cache
+from functools import lru_cache
 from math import log, sqrt
 
 import numpy as np
@@ -170,9 +170,7 @@ def add_carbonate_system_1(rgs: list):
 
     The respective data fields are available as rgs.r.cs.xxx where xxx stands
     for a given key key in the  vr_datafields dictionary (i.e., H, CA, etc.)
-
     """
-
     for rg in rgs:
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):
             ec = init_carbonate_system_1(rg)
@@ -261,10 +259,7 @@ def carbonate_system_2(
         round(kc, 6),
         round(co3, 8),
     )
-    # zcc = int(
-    #     zsat0 * log(CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
-    # )  # eq3
-    # zcc = int(min(zmax, max(zsat_min, zcc)))
+
     B_AD = CaCO3_export / AD  # get fractional areas
     A_z0_zsat = area_table[z0] - area_table[zsat]
     A_zsat_zcc = area_table[zsat] - area_table[zcc]
