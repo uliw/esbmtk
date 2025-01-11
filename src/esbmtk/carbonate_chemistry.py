@@ -18,6 +18,7 @@ along with this program.  If not, see
 """
 
 import typing as tp
+from functools import cache, lru_cache
 from math import log, sqrt
 
 import numpy as np
@@ -181,6 +182,20 @@ def add_carbonate_system_1(rgs: list):
             raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
 
+@lru_cache
+def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
+    """Calcualte zsat."""
+    zsat = int(zsat0 * log(ca2 * co3 / ksp0))
+    return min(zmax, max(zsat_min, zsat))
+
+
+@lru_cache
+def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
+    """Calcualte zcc."""
+    zcc = int(zsat0 * log(export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
+    return int(min(zmax, max(zsat_min, zcc)))
+
+
 # @njit(fastmath=True)
 def carbonate_system_2(
     CaCO3_export: float,  # 3 CaCO3 export flux as DIC
@@ -224,12 +239,15 @@ def carbonate_system_2(
    Note that these tables are different than the hyspometry data tables
    that expect positive and negative numbers.
     """
-    zsat = int(zsat0 * log(ca2 * co3 / ksp0))
-    zsat = min(zmax, max(zsat_min, zsat))
-    zcc = int(
-        zsat0 * log(CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
-    )  # eq3
-    zcc = int(min(zmax, max(zsat_min, zcc)))
+    # zsat = int(zsat0 * log(ca2 * co3 / ksp0))
+    # zsat = min(zmax, max(zsat_min, zsat))
+
+    zsat = get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0)
+    zcc = get_zcc(CaCO3_export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3)
+    # zcc = int(
+    #     zsat0 * log(CaCO3_export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0)
+    # )  # eq3
+    # zcc = int(min(zmax, max(zsat_min, zcc)))
     B_AD = CaCO3_export / AD  # get fractional areas
     A_z0_zsat = area_table[z0] - area_table[zsat]
     A_zsat_zcc = area_table[zsat] - area_table[zcc]
