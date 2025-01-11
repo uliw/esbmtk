@@ -63,7 +63,7 @@ class KeywordError(Exception):
 class Species2Species(esbmtkBase):
     """Connect two reservoir species to each other.
 
-     module creates the connecting flux and creates a connector object
+     This module creates the connecting flux and creates a connector object
      which stores all connection properties.
 
      For simple connections, the type flux type is derived implcitly
@@ -84,10 +84,10 @@ class Species2Species(esbmtkBase):
          - ctype: connection type, see below
          - bypass :str optional defaults to "None" see scale with flux
 
-    The connection name is derived automatically, see the documentation of
-    __set_name__() for details
+    The connection name is derived automatically, and can be queried with
+    M.connection_summary()
 
-    Connect Types:
+    Connection Types:
     -----------------
     Basic Connects (the advanced ones are below):
 
