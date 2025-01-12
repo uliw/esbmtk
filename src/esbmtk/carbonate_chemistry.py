@@ -18,11 +18,14 @@ along with this program.  If not, see
 """
 
 import typing as tp
-from functools import lru_cache
+
+# from functools import lru_cache
 from math import log, sqrt
 
 import numpy as np
 import numpy.typing as npt
+from cachetools import cached
+from cachetools.keys import hashkey
 
 from esbmtk.esbmtk import Flux
 from esbmtk.extended_classes import ExternalCode, Reservoir
@@ -180,14 +183,14 @@ def add_carbonate_system_1(rgs: list):
             raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
 
-@lru_cache
+# @lru_cache
 def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
     """Calcualte zsat."""
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
     return min(zmax, max(zsat_min, zsat))
 
 
-@lru_cache
+# @lru_cache
 def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
     """Calcualte zcc."""
     zcc = int(zsat0 * log(export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
@@ -195,6 +198,17 @@ def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
 
 
 # @njit(fastmath=True)
+@cached(
+    cache={},
+    key=lambda CaCO3_export, dic_t_db, ta_db, dic_t_sb, hplus_0, zsnow, p: hashkey(
+        int(CaCO3_export),
+        round(dic_t_db, 5),
+        round(ta_db, 5),
+        round(dic_t_sb, 5),
+        hplus_0,
+        int(zsnow),
+    ),
+)
 def carbonate_system_2(
     CaCO3_export: float,  # 3 CaCO3 export flux as DIC
     dic_t_db: float | tuple,  # 4 DIC in the deep box
@@ -202,7 +216,7 @@ def carbonate_system_2(
     dic_t_sb: float | tuple,  # 6 [DIC] in the surface box
     hplus_0: float,  # 8 hplus in the deep box at t-1
     zsnow: float,  # 9 snowline in meters below sealevel at t-1
-    p,
+    p: tuple,
 ) -> tuple:
     """Return the fraction of the carbonate rain that is dissolved.
 
@@ -240,25 +254,8 @@ def carbonate_system_2(
     # zsat = int(zsat0 * log(ca2 * co3 / ksp0))
     # zsat = min(zmax, max(zsat_min, zsat))
 
-    zsat = get_zsat(
-        int(zsat0),
-        int(zsat_min),
-        int(zmax),
-        round(ca2, 4),
-        round(co3, 8),
-        round(ksp0, 10),
-    )
-    zcc = get_zcc(
-        int(CaCO3_export),
-        int(zmax),
-        int(zsat_min),
-        int(zsat0),
-        round(ca2, 4),
-        round(ksp0, 10),
-        int(AD),
-        round(kc, 6),
-        round(co3, 8),
-    )
+    zsat = get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0)
+    zcc = get_zcc(CaCO3_export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3)
 
     B_AD = CaCO3_export / AD  # get fractional areas
     A_z0_zsat = area_table[z0] - area_table[zsat]
