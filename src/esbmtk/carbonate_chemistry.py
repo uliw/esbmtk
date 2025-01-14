@@ -24,7 +24,7 @@ from math import log, sqrt
 
 import numpy as np
 import numpy.typing as npt
-from cachetools import cached
+from cachetools import FIFOCache, cached
 from cachetools.keys import hashkey
 
 from esbmtk.esbmtk import Flux
