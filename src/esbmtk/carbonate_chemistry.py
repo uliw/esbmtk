@@ -24,9 +24,9 @@ from math import log, sqrt
 
 import numpy as np
 import numpy.typing as npt
-from cachetools import FIFOCache, cached
-from cachetools.keys import hashkey
 
+# from cachetools import cached, FIFOCache
+# from cachetools.keys import hashkey
 from esbmtk.esbmtk import Flux
 from esbmtk.extended_classes import ExternalCode, Reservoir
 from esbmtk.utility_functions import (
@@ -198,17 +198,17 @@ def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
 
 
 # @njit(fastmath=True)
-@cached(
-    cache={},
-    key=lambda CaCO3_export, dic_t_db, ta_db, dic_t_sb, hplus_0, zsnow, p: hashkey(
-        int(CaCO3_export),
-        round(dic_t_db, 5),
-        round(ta_db, 5),
-        round(dic_t_sb, 5),
-        hplus_0,
-        int(zsnow),
-    ),
-)
+# @cached(
+#     cache=FIFOCache(maxsize=128),
+#     key=lambda CaCO3_export, dic_t_db, ta_db, dic_t_sb, hplus_0, zsnow, p: hashkey(
+#         int(CaCO3_export),
+#         round(dic_t_db, 5),
+#         round(ta_db, 5),
+#         round(dic_t_sb, 5),
+#         hplus_0,
+#         int(zsnow),
+#     ),
+# )
 def carbonate_system_2(
     CaCO3_export: float,  # 3 CaCO3 export flux as DIC
     dic_t_db: float | tuple,  # 4 DIC in the deep box
