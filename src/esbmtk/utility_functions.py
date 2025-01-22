@@ -25,7 +25,8 @@ import typing as tp
 import matplotlib.pyplot as plt
 import numpy as np
 import numpy.typing as npt
-from numba import njit
+
+# from numba import njit
 
 if tp.TYPE_CHECKING:
     from esbmtk import ExternalFunction, Model, Species
@@ -1506,7 +1507,7 @@ def data_summaries(
     return pl
 
 
-@njit(fastmath=True)
+# @njit(fastmath=True)
 def get_l_mass(m: float, d: float, r: float) -> float:
     """Get mass of light isotope.
 
@@ -1568,7 +1569,7 @@ def get_imass(m: float, d: float, r: float) -> [float, float]:
     return [li, h]
 
 
-@njit(fastmath=True)
+# @njit(fastmath=True)
 def get_delta(li: NDArrayFloat, h: NDArrayFloat, r: float) -> NDArrayFloat:
     """Calculate the delta from the mass of light and heavy isotope.
 
@@ -1582,7 +1583,7 @@ def get_delta(li: NDArrayFloat, h: NDArrayFloat, r: float) -> NDArrayFloat:
     return 1000 * (h / li - r) / r
 
 
-@njit(fastmath=True)
+# @njit(fastmath=True)
 def get_new_ratio_from_alpha(
     ref_mass: float,  # reference mass
     ref_l: float,  # reference light istope

@@ -1,9 +1,8 @@
-python >= 3.9
+python >= 3.11
 matplotlib
-numpy == 2.0
+numpy
 pandas
 scipy
 pint
-numba
 PyCO2SYS >= 1.8.3.3
 psutil

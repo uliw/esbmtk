@@ -225,7 +225,7 @@ def write_equations_2(
     # add optional import statements
     h1 = """from __future__ import annotations
 from numpy import array as npa
-from numba import njit
+# from numba import njit
 """
 
     h2 = """# @njit(fastmath=True)
