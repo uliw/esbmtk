@@ -172,6 +172,11 @@ def carbonate_system_2_pp(
             zcc[i] = int(
                 zsat0 * log(export[i] * ca2 / (ksp0 * AD * kc) + ca2 * co3[i] / ksp0)
             )  # eq3
+            if zcc[i] > zmax:
+                zcc[i] = zmax
+                print(
+                    f"Warning zcc is wrong. co3 = {co3[i] * 1e6} umol/kg, export = {export[i] / 1e12:.2f} Tmol/y"
+                )
             A_z0_zsat: float = area_table[z0] - area_table[z]
             A_zsat_zcc: float = area_table[z] - area_table[zcc[i]]
             A_zcc_zmax: float = area_table[zcc[i]] - area_table[zmax]
