@@ -120,7 +120,6 @@ The relationship between two reservoirs is specified by a connection properties 
 #+END_EXAMPLE
 The model geometry is then parsed to build a suitable equation system which is passed to an ODE solver library which returns the results once integration has finished. Since Python objects are persistent, the object hierarchy is open to introspection using the regular Python syntax.
 
-
 *** Defining the model geometry and initial conditions
 The below code examples are available at https://github.com/uliw/esbmtk-examples
 In the first step, one needs to define a model object that describes fundamental model parameters. The following code first loads the following ESBMTK classes that will help with model construction:
@@ -203,7 +202,6 @@ Reservoir(
     concentration={M.PO4: "0 umol/l"},  # initial concentration
 )
 #+END_SRC
-
 
 
 *** Model processes
@@ -291,7 +289,6 @@ M.plot([M.S_b.PO4, M.D_b.PO4], fn="po4_1.png")
 # optionally, save data
 # M.save_data(directory="./po4_1_data")
 #+END_SRC
-
 
 *** Saving/restoring the model state
 Many models require a spin-up phase. Once the model is in equilibrium, you can save the save the state with the =save_state()= method. 
