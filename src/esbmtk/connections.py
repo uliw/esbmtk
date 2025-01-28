@@ -89,103 +89,38 @@ class Species2Species(esbmtkBase):
 
     Connection Types:
     -----------------
-    Basic Connects (the advanced ones are below):
+    - Connecting two reservoirs with a fixed rate:
+    >>> Species2Species(  # deep box to sediment
+    >>>    ctype="fixed",
+    >>>    source=M.L_b.PO4,
+    >>>    sink=M.Fb.PO4,
+    >>>    scale="108 Gmol/year",
+    >>>    id="shelf_burial",
+    >>> )
 
-     - If both =rate= and =delta= are given, the flux is treated as a
-        fixed flux with a given isotope ratio. This is usually the case for
-        most source objects (they can still be affected by a signal, see
-        above), but makes little sense for reservoirs and sinks.
+    - Connecting two reservoirs with a concentration dependent flux:
+    >>> Species2Species(  # Surface to deep box
+    >>>    source=M.L_b.PO4,
+    >>>    sink=M.D_b.PO4,
+    >>>    ctype="scale_with_concentration",
+    >>>    scale=M.L_b.PO4.volume
+    >>>    / M.tau
+    >>>    * M.L_b.swc.density
+    >>>    / 1000,  # concentration * volume = mass * 1/tau
+    >>>    id="po4_productivity",
+    >>> )
 
-     - If both the =rate= and =epsilon= are given, the flux rate is fixed
-       (subject to any signals), but the isotopic ratio of the output
-       flux depends on the isotopic ratio of the upstream reservoir
-       plus any isotopic fractionation specified by =epsilon=. This is
-       typically the case for fluxes which include an isotopic
-       fractionation (i.e., pyrite burial). This combination is not
-       particularly useful for source objects.
+    - Connecting two reservoirs using another flux as reference:
+    >>> Species2Species(  # deep box to sediment
+    >>>    source=M.D_b.PO4,
+    >>>    sink=M.Fb.PO4,
+    >>>    ctype="scale_with_flux",
+    >>>    ref_flux=M.flux_summary(filter_by="po4_productivity", return_list=True)[0],
+    >>>    # increase p_burial
+    >>>    scale=(1 - M.remin_eff),  # burial of ~1% P
+    >>>    id="burial",
+    >>> )
 
-     - If the connection specifies only =delta= the flux is treated as a
-       variable flux which is computed in such a way that the reservoir
-       maintains steady state with respect to it's mass.
-
-     - If the connection specifies only =rate= the flux is treated as a
-       fixed flux which is computed in such a way that the reservoir
-       maintains steady state with respect to it's isotope ratio.
-
-    Connecting a Source to a Species
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    Unless you use a Signal, a source typically provides a steady stream with a given isotope ratio (if used)
-
-     Example::
-
-        Species2Species(source =  Source,
-                sink = downstrean reservoir,
-                rate = "1 mol/s",
-                delta = optional,
-                signal = optional, see the signal documentation
-                )
-
-    Connecting a Species to Sink or another Species
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    Here we can distinguish between cases where we use fixed flux, or a flux that reacts to in some way to the
-     upstream reservoir (see the Species to Species section for a more complete treatment):
-
-    Fixed outflux, with no isotope fractionation
-
-    Example::
-
-          Species2Species(source =  upstream reservoir,
-                sink = Sink,
-                rate = "1 mol/s",
-                )
-
-    Fixed outflux, with isotope fractionation
-
-    Example::
-
-          Species2Species(source =  upstream reservoir,
-                sink = Sink,
-                epsilon = -28,
-                rate = "1 mol/s",
-                )
-
-    Advanced Connects
-    --------------------
-
-    You can aditionally define connection properties via the ctype
-    keyword. This requires additional keyword parameters. The following values are
-    recognized
-
-    ctype = "scale_with_flux"
-    ~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    This will scale a flux relative to another flux:
-
-    Example::
-
-        Species2Species(source =  upstream reservoir,
-                sink = downstream reservoir,
-                ctype = "scale_with_flux",
-                ref_flux = flux handle,
-                scale = 1, #
-                )
-
-
-    ctype = "scale_with_concentration"
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-    This will scale a flux relative to the mass or concentration of a reservoir
-
-    Example::
-
-         Species2Species(source =  upstream reservoir,
-                sink = downstream reservoir,
-                ctype = "scale_with_concentration",
-                ref_reservoirs = reservoir handle,
-                scale = 1, # scaling factor
-                )
 
     Useful methods in this class
     ----------------------------
