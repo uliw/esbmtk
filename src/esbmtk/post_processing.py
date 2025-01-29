@@ -179,7 +179,6 @@ def carbonate_system_2_pp(
                 )
             elif zcc[i] < zsat0:
                 zcc[i] = zsat0
-                print(f"Warning: zcc < zsat0 i = {i}")
 
             A_z0_zsat: float = area_table[z0] - area_table[z]
             A_zsat_zcc: float = area_table[z] - area_table[zcc[i]]
