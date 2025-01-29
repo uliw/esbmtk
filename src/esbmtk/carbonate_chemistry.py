@@ -192,8 +192,10 @@ def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
 
 # @lru_cache
 def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
-    """Calcualte zcc."""
+    """Calculate zcc."""
+    export = abs(export)
     zcc = int(zsat0 * log(export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
+
     return int(min(zmax, max(zsat_min, zcc)))
 
 
