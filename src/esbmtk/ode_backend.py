@@ -730,33 +730,3 @@ def get_scale_with_flux_eq(
     ex, exl = check_signal_2(ex, exl, c)
 
     return ex, exl
-
-
-def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
-    """Build the coefficient matrix C and Flux vector f.
-
-    So that we can solve dC_dt = C dot flux_values
-    """
-    i = 0
-    for f in M.lof:  # get fluxe index positions
-        print(f"f = {f.full_name}")
-        f.idx = i  # set starting index
-        if f.isotopes:
-            i = i + 1  # isotopes count as additional flux
-        i = i + 1
-
-    flux_values = np.zeros(i)  # initialize flux value vector
-    # Initialize Coefficient matrix, assume that all reservoirs have isotopes
-    C = np.zeros((len(M.lor) * 2, i))  # Initialize Coefficient matrix:
-    ri = 0
-    for r in M.lor:  # loop over M.lor to build the coefficient matrix
-        r.idx = ri  # record index position
-        for f in r.lof:  # loop over reservoir fluxes
-            # check similar code!
-            sign = -1 if f.parent.source == r else 1
-            C[ri, f.idx] = sign  # 1
-            if f.isotopes:  # add equation for isotopes
-                ri = ri + 1
-                C[ri, f.idx + 1] = sign  # 2
-        ri = ri + 1
-    return C[:ri, :], flux_values
