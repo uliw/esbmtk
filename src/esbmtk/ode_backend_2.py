@@ -26,7 +26,7 @@ import numpy.typing as npt
 NDArrayFloat = npt.NDArray[np.float64]
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Model
+    from esbmtk import ExternalFunction, Flux, Model, Species, Species2Species
 
 
 def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
@@ -83,13 +83,12 @@ def write_equations_3(
     """
     # construct header and static code:
     # add optional import statements
-    h1 = """from __future__ import annotations
-from numpy import array as npa
-# from numba import njit
+    h1 = """
+
 """
 
     h2 = """# @njit(fastmath=True)
-def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
+def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, dCdt, F) -> list:
         '''Auto generated esbmtk equations do not edit
         '''
 """
@@ -166,10 +165,12 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
                     continue
                 else:
                     ex, exl = get_flux(flux, M, R, icl)  # get flux expressions
-                    fn = flux.full_name.replace(".", "_")
+                    # fn = flux.full_name.replace(".", "_")
+                    fn = f"F[{flux.idx}]"
                     # all others types that have separate expressions/isotope
                     eqs.write(f"{ind2}{fn} = {ex}\n")
                     if flux.parent.isotopes:  # add line for isotopes
+                        fn = f"F[{flux.idx + 1}]"
                         eqs.write(f"{ind2}{fn}_l =  {exl}\n")
 
         sep = (
@@ -188,24 +189,378 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
             rname = r.full_name.replace(".", "_")
             eqs.write(f"{ind2}{rname} = 0.0")
 
-        sep = "# ---------------- write regular reservoir equations ------------ #"
+        sep = "# ---------------- calculate concentration change ------------ #"
         eqs.write(f"\n{sep}\n")
-
-        rel = write_reservoir_equations(eqs, M, rel, ind2, ind3)
-
-        sep = "# ---------------- write isotope reservoir equations ------------ #"
-        eqs.write(f"\n{sep}\n")
-
-        rel = write_reservoir_equations_with_isotopes(eqs, M, rel, ind2, ind3)
-
-        sep = "# ---------------- bits and pieces --------------------------- #"
-        eqs.write(f"\n{sep}\n{ind2}return [\n")
-        # Write all initial conditions that are recorded in icl
-        for k, v in icl.items():
-            eqs.write(f"{ind3}dCdt_{k.full_name.replace('.', '_')},  # {v[0]}\n")
-            if k.isotopes:
-                eqs.write(f"{ind3}dCdt_{k.full_name.replace('.', '_')}_l,  # {v[1]}\n")
-
-        eqs.write(f"{ind2}]\n")
+        eqs.write(f"{ind2}dCdt = C.dot(F)")
+        eqs.write(f"{ind2}return dCdt")
 
     return eqs_fn.stem
+
+
+# ------------------------ define processes ------------------------- #
+def write_ef(
+    eqs,
+    ef: Species | ExternalFunction,
+    icl: dict,
+    rel: str,
+    ind2: str,
+    ind3: str,
+    gpt: tuple,
+) -> str:
+    """Write external function call code.
+
+    :param eqs: equation file handle
+    :param ef: external_function handle
+    :param icl: dict of reservoirs that have actual fluxes
+    :param rel: string with reservoir names returned by setup_ode
+    :param ind2: indent 2 times
+    :param ind3: indent 3 times
+    :param gpt: tuple with global paramaters
+
+    :returns: rel: modied string of reservoir names
+    """
+    from esbmtk import Flux
+
+    """ get list of return values. This is a bit of hack, since we imply
+    anything that its not a flux, is a reservoir with no other inputs.
+    Although, legacy fluxes do not come with a separate flux for isotopes,
+    whereas newly created fluxes do.
+    """
+    rv = ind2
+    for i, o in enumerate(ef.lro):
+        # FIXME:
+        if isinstance(o, Flux):
+            # v = f"{o.full_name.replace('.', '_')}, "
+            v = f"F[{o.idx}], "
+        else:  # FIXME: THis likely needs to come after dot product
+            v = f"dCdt_{o.full_name.replace('.', '_')}, "
+
+        rv += v
+        if ef.lro[i].isotopes:
+            # rv += f"{v[:-2]}_l, "
+            rv += f"F[{o.idx + 1}], "
+
+    rv = rv[:-2]  # strip the last comma
+    a = ""
+
+    # if ef.fname == "carbonate_system_2_ode":
+    # if ef.fname == "weathering":
+    #     breakpoint()
+
+    # this can probably be simplified similar to the old parse_return_values()
+    for d in ef.function_input_data:
+        a += parse_esbmtk_input_data_types(d, ef, ind3, icl)
+
+    if ef.function_params == "None":
+        eqs.write(f"{rv} = {ef.fname}(\n{a}{ind2})\n\n")
+    else:
+        s = f"gpt[{ef.param_start}]"
+        eqs.write(f"{rv} = {ef.fname}(\n{a}{ind3}{s},\n{ind2})\n\n")
+
+    rel += f"{ind3}{rv},\n"
+
+    return rel
+
+
+def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> str:
+    """Parse esbmtk data types.
+
+    That are provided as arguments
+    to external function objects, and convert them into a suitable string
+    format that can be used in the ode equation file
+    """
+    from esbmtk import Q_, Flux, GasReservoir, Reservoir, SeawaterConstants, Species
+
+    if isinstance(d, str):
+        sr = getattr(r.register, d)
+        a = f"{ind}{get_ic(sr, icl)},\n"
+    elif isinstance(d, Species | GasReservoir):
+        a = f"{ind}({get_ic(d, icl, d.isotopes)}),\n"
+    elif isinstance(d, Reservoir):
+        a = f"{ind}{d.full_name},\n"
+    elif isinstance(d, Flux):
+        sr = d.full_name.replace(".", "_")
+        a = f"{ind}{sr},\n"
+    elif isinstance(d, SeawaterConstants):
+        a = f"{ind}{d.full_name},\n"
+    elif isinstance(d, (float | int | np.ndarray)):
+        a = f"{ind}{d},\n"
+    elif isinstance(d, dict):
+        # get key and reservoiur handle
+        sr = getattr(r.register, next(iter(d)))
+        a = f"{ind}{get_ic(sr, icl)},\n"
+    elif isinstance(d, Q_ | float):
+        a = f"{ind}{d.magnitude},\n"
+    elif isinstance(d, list):  # loo pover list elements
+        a = f"{ind}{d},\n"
+        a = f"{ind}npa(["
+        for e in d:
+            a += f"{parse_esbmtk_input_data_types(e, r, '', icl)[0:-2]},"
+        a += "]),\n"
+    else:
+        raise ValueError(
+            f"\n r = {r.full_name}, d ={d}\n\n{d} is of type {type(d)}\n",
+        )
+
+    return a
+
+
+def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str):
+    """Create formula expressions that calculates the flux F.
+
+    Return the equation expression as string
+
+    :param flux: The flux object for which we create the equation
+    :param M: The current model object
+    :param R: The list of initial conditions for each reservoir
+    :param icl: dict of reservoirs that have actual fluxes
+
+    :returns: A tuple where the first string is the equation for the
+              total flux, and the second string is the equation for
+              the flux of the light isotope
+    """
+    ind2 = 8 * " "  # indentation
+    ind3 = 12 * " "  # indentation
+
+    ex = ""  # expression string
+    exl = ""  # expression string for light isotope
+
+    c = flux.parent  # shorthand for the connection object
+    cfn = flux.parent.full_name  # shorthand for the connection object name
+
+    if c.ctype.casefold() == "regular":
+        ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3)
+
+    elif c.ctype == "scale_with_concentration" or c.ctype == "scale_with_mass":
+        ex, exl = get_scale_with_concentration_eq(flux, c, cfn, icl, ind2, ind3)
+
+    elif c.ctype == "scale_with_flux":
+        ex, exl = get_scale_with_flux_eq(flux, c, cfn, icl, ind2, ind3)
+
+    elif c.ctype == "ignore":
+        pass  # do nothing
+
+    else:
+        raise ValueError(
+            f"Species2Species type {c.ctype} for {c.full_name} is not implemented"
+        )
+
+    return ex, exl
+
+
+def get_scale_with_concentration_eq(
+    flux: Flux,  # flux instance
+    c: Species2Species,  # connection instance
+    cfn: str,  # full name of the connection instance
+    icl: dict,  # list of initial conditions
+    ind2: str,  # whitespace
+    ind3: str,  # whitespace
+) -> tuple(str, str):
+    """Create equation string for flux.
+
+    The flux will scale with the
+    concentration in the upstream reservoir
+
+    Example: M1_ConnGrp_D_b_to_L_b_TA_thc__F =
+    M1.ConnGrp_D_b_to_L_b.TA_thc.scale * R[5]
+
+    :param flux: Flux object
+    :param c: connection instance
+    :param cfn: full name of the connection instance
+    :param icl: dict[Species, list[int, int]] where reservoir
+        indicates the reservoir handle, and the list contains the
+        index into the reservoir data.  list[0] = concentration
+        list[1] concentration of the light isotope.
+
+    :returns: two strings with the respective equations for the change
+              in the total reservoir concentration and the
+              concentration of the light isotope
+    """
+    s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration
+    ex = f"toc[{c.s_index}] * {s_c}"
+    exl = check_isotope_effects(ex, c, icl, ind3, ind2)
+    ex, exl = check_signal_2(ex, exl, c)
+    return ex, exl
+
+
+def get_ic(r: Species, icl: dict, isotopes=False) -> str:
+    """Get initial condition in a reservoir.
+
+    If the reservoir is icl,
+    return index expression into R.c. If the reservoir is not in the
+    index, return the Species concentration a t=0
+
+    In both cases return these a string
+
+    If isotopes == True, return the pointer to the light isotope
+    concentration
+
+    :param r: A reservoir handle
+    :param icl: icl = dict[Species, list[int, int]] where reservoir
+        indicates the reservoir handle, and the list contains the
+        index into the reservoir data.  list[0] = concentration
+        list[1] concentration of the light isotope.
+
+    :raises ValueError: get_ic: can't find {r.full_name} in list of
+        initial conditions
+
+    :returns: the string s which is the full_name of the reservoir
+              concentration or isotope concentration
+    """
+    from esbmtk import Sink, Source
+
+    if r in icl:
+        s1 = f"R[{icl[r][0]}]"
+        if isotopes:
+            s1 += f", R[{icl[r][1]}]"
+
+    elif isinstance(r, Source | Sink):
+        s1 = f"{r.full_name}.c"
+        if isotopes:
+            s1 += f", {r.full_name}.l"
+    else:
+        raise ValueError(
+            f"get_ic: can't find {r.full_name} in list of initial conditions"
+        )
+
+    return s1
+
+
+def get_regular_flux_eq(
+    flux: Flux,  # flux instance
+    c: Species2Species,  # connection instance
+    icl: dict,  # list of initial conditions
+    ind2,  # indentation
+    ind3,  # indentation
+) -> tuple:
+    """Create a string containing the equation for a regular connection.
+
+    Regular = fixed rate
+
+    :param flux: flux instance
+    :param c: connection object
+    :param icl: dict of reservoirs that have actual fluxes
+    :param ind2: indent 2 times
+    :param ind3: indent 3 times
+
+    :returns: two strings, where the first describes the equation for
+              the total flux, and the second describes the rate for
+              the light isotope
+    """
+    ex = f"toc[{c.r_index}]"
+    # ex = f"{flux.full_name}.rate"  # get flux rate string
+    exl = check_isotope_effects(ex, c, icl, ind3, ind2)
+    ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
+
+    return ex, exl
+
+
+def get_scale_with_flux_eq(
+    flux: Flux,  # flux instance
+    c: Species2Species,  # connection instance
+    cfn: str,  # full name of the connection instance
+    icl: dict,  # list of initial conditions
+    ind2: str,  # indentation
+    ind3: str,  # indentation
+) -> tuple(str, str):
+    """Equation defining a flux.
+
+    The flux will scale relative to the magnitude of another
+    flux. If isotopes are used, use the isotope ratio of the upstream reservoir.
+
+    :param flux: Flux object
+    :param c: connection instance
+    :param cfn: full name of the connection instance
+    :param icl: dict[Species, list[int, int]] where reservoir
+        indicates the reservoir handle, and the list contains the
+        index into the reservoir data.  list[0] = concentration
+        list[1] concentration of the light isotope.
+
+    :returns: two strings with the respective equations for the change
+              in the total reservoir concentration and the
+              concentration of the light isotope
+    """
+    # get the reference flux name
+    # fn = f"{p.full_name.replace('.', '_')}__F"
+    fn = f"{c.ref_flux.full_name.replace('.', '_')}"
+
+    # get the equation string for the flux
+    ex = f"toc[{c.s_index}] * {fn}"
+    """ The flux for the light isotope will computed as follows:
+    We will use the mass of the flux we or scaling, but that we will set the
+    delta|epsilon according to isotope ratio of the reference flux
+    """
+    if c.source.isotopes and c.sink.isotopes:
+        exl = check_isotope_effects(ex, c, icl, ind3, ind2)
+
+    else:
+        exl = ""
+    ex, exl = check_signal_2(ex, exl, c)
+
+    return ex, exl
+
+
+def check_isotope_effects(
+    f_m: str,
+    c: Species2Species,
+    icl: dict,
+    ind3: str,
+    ind2: str,
+) -> str:
+    """Test if the connection involves any isotope effects.
+
+    :param f_m: string with the flux name
+    :param c: connection object
+    :param icl: dict of reservoirs that have actual fluxes
+    :param ind2: indent 2 times
+    :param ind3: indent 3 times
+
+    :returns eq: equation string
+    """
+    if c.isotopes:
+        r = c.source.species.r
+        s = get_ic(c.source, icl, True)
+        s_c, s_l = s.replace(" ", "").split(",")
+        """ Calculate the flux of the light isotope (f_l) as a function of the isotope
+        ratios in the source reservoir soncentrations (s_c, s_l), and epsilon (a) as
+        f_l = f_m * 1000/(r * (d + 1000) + 1000)
+
+        Note that the scale has already been applaied to f_m in the calling function.
+        """
+        if c.delta != "None":
+            d = c.delta
+            eq = f"{f_m} * 1000 / ({r} * ({d} + 1000) + 1000)"
+        elif c.epsilon != "None":
+            a = c.epsilon / 1000 + 1
+            eq = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
+        else:
+            eq = f"{f_m} * {s_l} / {s_c}"
+    else:
+        eq = ""
+
+    return eq
+
+
+def check_signal_2(ex: str, exl: str, c: Species2Species) -> (str, str):
+    """Test if connection is affected by a signal.
+
+    :param ex: equation string
+    :param c: connection object
+
+    :returns: (modified) equation string
+    """
+    if c.signal != "None":  # get signal type
+        if c.signal.stype == "addition":
+            sign = "+"
+        elif c.signal.stype == "multiplication":
+            sign = "*"
+        else:
+            raise ValueError(f"stype={c.signal.stype} not implemented")
+
+        ex += f" {sign} {c.signal.full_name}(t)[0]  # Signal"
+        if c.source.isotopes:
+            exl += f" {sign} {c.signal.full_name}(t)[1]  # Signal"
+        else:
+            exl += ""
+
+    return ex, exl
