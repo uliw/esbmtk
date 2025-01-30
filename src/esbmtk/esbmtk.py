@@ -531,6 +531,25 @@ class Model(esbmtkBase):
             M.plot([sb.PO4, sb.DIC], fn='test.pdf')
 
         The above code will plot ``sb.PO4`` and ``sb.DIC`` and save the plot as 'test.pdf'.
+
+        A more complex example would first assemble a list of plot objects, and then return
+        the plot handles to allow for modifications afterwards.
+
+        Example::
+
+            from esbmtk import data_summaries
+            species_names = [M.DIC, M.TA, M.pH, M.CO3, M.zcc, M.zsat, M.zsnow, M.PO4]
+            box_names = [M.L_b, M.H_b, M.D_b]
+            pl = data_summaries(M, species_names, box_names, M.L_b.DIC)
+            pl += [M.CO2_At]
+            # plot the model results, but do not render the plot
+            plt, fig, axs = M.plot(
+                 pl,
+                 fn=f"{case}/steady_state.pdf",
+                 title="ESBMTK Preindustrial Steady State",
+                 no_show=True,
+            )
+
         """
         if pl is None:
             pl = []
