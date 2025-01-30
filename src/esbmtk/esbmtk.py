@@ -701,8 +701,6 @@ class Model(esbmtkBase):
         self.cpl = cpl
         self.ipl = ipl
 
-        # self.dCdt, self.flux_vector = build_eqs_matrix(self)
-
         cwd = Path.cwd()
         sys.path.append(cwd)  # required on windows
         fn: str = "equations.py"  # file name
