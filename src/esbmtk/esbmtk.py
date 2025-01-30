@@ -688,7 +688,11 @@ class Model(esbmtkBase):
 
         from scipy.integrate import solve_ivp
 
-        from esbmtk.ode_backend import get_initial_conditions, write_equations_2
+        from esbmtk.ode_backend import (
+            get_initial_conditions,
+            write_equations_2,
+        )
+        from esbmtk.ode_backend_2 import build_eqs_matrix, write_equations_3
 
         # build equation file
         R, icl, cpl, ipl, atol = get_initial_conditions(self, self.rtol)
@@ -696,6 +700,8 @@ class Model(esbmtkBase):
         self.icl = icl
         self.cpl = cpl
         self.ipl = ipl
+
+        # self.dCdt, self.flux_vector = build_eqs_matrix(self)
 
         cwd = Path.cwd()
         sys.path.append(cwd)  # required on windows
