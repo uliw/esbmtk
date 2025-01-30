@@ -461,6 +461,10 @@ class Species2Species(esbmtkBase):
             self.ctype = "regular"
             if self.delta == "None" and self.epsilon == "None" and self.isotopes:
                 self._epsilon = 0
+            if self.rate == "None":
+                raise ConnectionError(
+                    "fixed/regular connections require the 'rate' keyword instead of 'scale'"
+                )
 
         elif self.ctype == "ignore":
             pass
