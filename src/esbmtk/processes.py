@@ -253,7 +253,6 @@ def gas_exchange(
         gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
         # get exchange of the heavy isotope
         f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_aq_c * 1e3)
-        f_l = f - f_h  # the corresponding flux of the light isotope
-        rv = f, f_l
+        rv = f, f - f_h  # the corresponding flux of the light isotope
 
     return rv
