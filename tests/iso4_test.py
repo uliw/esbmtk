@@ -7,11 +7,13 @@ from esbmtk import (
     GasReservoir,  # sink class
     Species2Species,
 )
+
 M = Model(
     stop="1 yr",  # end time of model
     max_timestep="1 month",  # upper limit of time step
     element=["Oxygen"],  # list of element definitions
 )
+M.debug_equations_file = True
 GasReservoir(
     name="O2_At",
     species=M.O2,

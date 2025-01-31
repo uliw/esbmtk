@@ -65,9 +65,12 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
                 sign = -1 / mass if f.parent.source == r else 1 / mass
                 C[ri, f.idx] = sign
                 if f.isotopes:  # add equation for isotopes
-                    ri = ri + 1
-                    C[ri, f.idx + 1] = sign  # 2
-        ri = ri + 1
+                    C[ri + 1, f.idx + 1] = sign  # 2
+
+        ri = ri + 1  # increase count by 1, or two is isotopes
+        if r.isotopes:
+            ri = ri + 1
+
     return C[:ri, :], flux_values
 
 
@@ -97,15 +100,30 @@ def write_equations_3(
     # add optional import statements
     h1 = """
 
-"""
+    """
 
     h2 = """# @njit(fastmath=True)
-def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F) -> list:
-        '''Auto generated esbmtk equations do not edit
-        '''
-"""
-    ind2 = 8 * " "  # indention
-    ind3 = 12 * " "  # indention
+def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F):
+    '''Calculate dCdt for each reservoir.
+
+    t = time vector
+    R = initial conditions for each reservoir
+    M = model handle. This is currently required for signals
+    gpt = tuple of global constants (is this still used?)
+    toc = is a tuple of containing  constants for each external function
+    area_table = lookuptable used by carbonate_system_2
+    area_dz_table = lookuptable used by carbonate_system_2
+    Csat_table = lookuptable used by carbonate_system_2
+    C = Coefficient Matrix
+    F = flux vector
+
+    Returns: dCdt as numpy array
+   
+    Reservoir and flux name lookup: M.lor[idx] and M.lof[idx]
+    '''
+    """
+    ind2 = 4 * " "  # indention
+    ind3 = 8 * " "  # indention
     hi = ""
 
     # ensure there are no duplicates
@@ -115,13 +133,13 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F) -> list:
     if len(M.lpc_f) > 0:
         hi += "from esbmtk import "
         for f in M.lpc_f:
-            hi += f"{f} ,"
+            hi += f"{f}, "
         hi = f"{hi[:-2]}\n"  # strip comma and space
 
     if len(M.lpc_i) > 0:  # test if functions imports are required
         hi += f"from esbmtk.bio_pump_functions{M.bio_pump_functions} import "
         for f in M.lpc_i:
-            hi += f"{f} ,"
+            hi += f"{f}, "
         hi = f"{hi[:-2]}\n"  # strip comma and space
 
     if M.luf:  # test if user defined function imports are required
@@ -129,7 +147,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F) -> list:
             source = args[0]
             hi += f"from {source} import {function}\n"
 
-    header = f"{h1}{hi}\n{h2}"
+    header = f"{h1}\n{hi}\n{h2}"
 
     rel = ""  # list of return values
     # """
@@ -137,8 +155,8 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F) -> list:
     with open(eqs_fn, "w", encoding="utf-8") as eqs:
         eqs.write(header)
         sep = (
-            "# ---------------- write computed reservoir equations -------- #\n"
-            + "# that do not depend on fluxes"
+            "    # ---------------- write computed reservoir equations -------- #\n"
+            + "    # that do not depend on fluxes"
         )
         eqs.write(f"\n{sep}\n")
 
@@ -152,7 +170,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F) -> list:
 
         # write all fluxes in M.lof
         flist = []
-        sep = "# ---------------- write all flux equations ------------------- #"
+        sep = "    # ---------------- write all flux equations ------------------- #"
         eqs.write(f"\n{sep}\n")
         for flux in M.lof:  # loop over fluxes
             """This loop will only write regular flux equations, withe the sole
@@ -183,10 +201,10 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F) -> list:
                     eqs.write(f"{ind2}{fn} = {ex}\n")
                     if flux.parent.isotopes:  # add line for isotopes
                         fn = f"F[{flux.idx + 1}]"
-                        eqs.write(f"{ind2}{fn}_l =  {exl}\n")
+                        eqs.write(f"{ind2}{fn} =  {exl}\n")
 
         sep = (
-            "# ---------------- write computed reservoir equations -------- #\n"
+            "    # ---------------- write computed reservoir equations -------- #\n"
             + "# that do depend on fluxes"
         )
         eqs.write(f"\n{sep}\n")
@@ -195,13 +213,13 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F) -> list:
             if r.ftype == "computed":  #
                 rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
 
-        sep = "# ---------------- write input only reservoir equations -------- #"
+        sep = "    # ---------------- write input only reservoir equations -------- #"
         eqs.write(f"\n{sep}\n")
         for r in ipl:
             rname = r.full_name.replace(".", "_")
             eqs.write(f"{ind2}{rname} = 0.0")
 
-        sep = "# ---------------- calculate concentration change ------------ #"
+        sep = "    # ---------------- calculate concentration change ------------ #"
         eqs.write(f"\n{sep}\n")
         eqs.write(f"{ind2}return C.dot(F)\n")
 

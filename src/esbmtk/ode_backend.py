@@ -227,8 +227,7 @@ def write_equations_2(
 from numpy import array as npa
 # from numba import njit
 """
-
-    h2 = """# @njit(fastmath=True)
+h2 = """# @njit(fastmath=True)
 def eqs(t, R, gpt, toc, area_table, area_dz_table, Csat_table, C, F) -> NDArrayFloat:
     '''Calculate dCdt for each reservoir.
 
@@ -247,6 +246,7 @@ def eqs(t, R, gpt, toc, area_table, area_dz_table, Csat_table, C, F) -> NDArrayF
     Reservoir and flux name lookup: M.lor[idx] and M.lof[idx]
     '''
 """
+
     ind2 = 8 * " "  # indention
     ind3 = 12 * " "  # indention
     hi = ""
