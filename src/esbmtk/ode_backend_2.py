@@ -34,9 +34,10 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
 
     So that we can solve dC_dt = C dot flux_values
     """
+    from esbmtk import GasReservoir, Species
+
     i = 0
-    for f in M.lof:  # get fluxe index positions
-        print(f"f = {f.full_name}")
+    for f in M.lof:  # get flux index positions
         f.idx = i  # set starting index
         if f.isotopes:
             i = i + 1  # isotopes count as additional flux
@@ -48,13 +49,24 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
     ri = 0
     for r in M.lor:  # loop over M.lor to build the coefficient matrix
         r.idx = ri  # record index position
-        for f in r.lof:  # loop over reservoir fluxes
-            # check similar code!
-            sign = -1 if f.parent.source == r else 1
-            C[ri, f.idx] = sign  # 1
-            if f.isotopes:  # add equation for isotopes
-                ri = ri + 1
-                C[ri, f.idx + 1] = sign  # 2
+        # computed reservoirs may have a single flux
+        if r.rtype == "computed":
+            C[ri, r.lof[0].idx] = 1
+        else:  # regular reservoirs may have multiple fluxes
+            if isinstance(r, Species):
+                # FIXME: this needs to be adjusted for density
+                mass = r.volume.to(r.model.v_unit).magnitude
+            elif isinstance(r, GasReservoir):
+                mass = r.m[0]
+            else:
+                raise ValueError(f"no definition for {type(r)}")
+
+            for f in r.lof:  # loop over reservoir fluxes
+                sign = -1 / mass if f.parent.source == r else 1 / mass
+                C[ri, f.idx] = sign
+                if f.isotopes:  # add equation for isotopes
+                    ri = ri + 1
+                    C[ri, f.idx + 1] = sign  # 2
         ri = ri + 1
     return C[:ri, :], flux_values
 
@@ -88,7 +100,7 @@ def write_equations_3(
 """
 
     h2 = """# @njit(fastmath=True)
-def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, dCdt, F) -> list:
+def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F) -> list:
         '''Auto generated esbmtk equations do not edit
         '''
 """
@@ -191,8 +203,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, dCdt, F) -> li
 
         sep = "# ---------------- calculate concentration change ------------ #"
         eqs.write(f"\n{sep}\n")
-        eqs.write(f"{ind2}dCdt = C.dot(F)")
-        eqs.write(f"{ind2}return dCdt")
+        eqs.write(f"{ind2}return C.dot(F)\n")
 
     return eqs_fn.stem
 
@@ -245,7 +256,6 @@ def write_ef(
 
     # if ef.fname == "carbonate_system_2_ode":
     # if ef.fname == "weathering":
-    #     breakpoint()
 
     # this can probably be simplified similar to the old parse_return_values()
     for d in ef.function_input_data:
@@ -279,7 +289,7 @@ def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> st
     elif isinstance(d, Reservoir):
         a = f"{ind}{d.full_name},\n"
     elif isinstance(d, Flux):
-        sr = d.full_name.replace(".", "_")
+        sr = f"F[{d.idx}]"
         a = f"{ind}{sr},\n"
     elif isinstance(d, SeawaterConstants):
         a = f"{ind}{d.full_name},\n"
@@ -291,7 +301,7 @@ def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> st
         a = f"{ind}{get_ic(sr, icl)},\n"
     elif isinstance(d, Q_ | float):
         a = f"{ind}{d.magnitude},\n"
-    elif isinstance(d, list):  # loo pover list elements
+    elif isinstance(d, list):  # loop over list elements
         a = f"{ind}{d},\n"
         a = f"{ind}npa(["
         for e in d:
@@ -328,22 +338,28 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
     c = flux.parent  # shorthand for the connection object
     cfn = flux.parent.full_name  # shorthand for the connection object name
 
-    if c.ctype.casefold() == "regular":
-        ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3)
+    """flux parent would typically be a connection object. However for computed
+    reservoirs, the flux is registed with a the computed reservoir.
+    """
+    from esbmtk import Species, Species2Species
 
-    elif c.ctype == "scale_with_concentration" or c.ctype == "scale_with_mass":
-        ex, exl = get_scale_with_concentration_eq(flux, c, cfn, icl, ind2, ind3)
-
-    elif c.ctype == "scale_with_flux":
-        ex, exl = get_scale_with_flux_eq(flux, c, cfn, icl, ind2, ind3)
-
-    elif c.ctype == "ignore":
-        pass  # do nothing
-
+    if isinstance(c, Species2Species):
+        if c.ctype.casefold() == "regular":
+            ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3)
+        elif c.ctype == "scale_with_concentration" or c.ctype == "scale_with_mass":
+            ex, exl = get_scale_with_concentration_eq(flux, c, cfn, icl, ind2, ind3)
+        elif c.ctype == "scale_with_flux":
+            ex, exl = get_scale_with_flux_eq(flux, c, cfn, icl, ind2, ind3)
+        elif c.ctype == "ignore":
+            pass
+        else:
+            raise ValueError(
+                f"Species2Species type {c.ctype} for {c.full_name} is not implemented"
+            )
+    elif isinstance(c, Species):
+        ex = f"{0}  # {c.full_name}"  # The flux will simply be zero
     else:
-        raise ValueError(
-            f"Species2Species type {c.ctype} for {c.full_name} is not implemented"
-        )
+        raise ValueError(f"No definition for \n{c.full_name} type = {type(c)}\n")
 
     return ex, exl
 
@@ -482,7 +498,10 @@ def get_scale_with_flux_eq(
     """
     # get the reference flux name
     # fn = f"{p.full_name.replace('.', '_')}__F"
-    fn = f"{c.ref_flux.full_name.replace('.', '_')}"
+    n = f"{c.ref_flux.full_name.replace('.', '_')}"
+    fn = f"F[{c.ref_flux.idx}]"
+
+    print(f"name = {n}, idx = {fn}")
 
     # get the equation string for the flux
     ex = f"toc[{c.s_index}] * {fn}"
@@ -564,3 +583,92 @@ def check_signal_2(ex: str, exl: str, c: Species2Species) -> (str, str):
             exl += ""
 
     return ex, exl
+
+
+def get_initial_conditions(
+    M: Model,
+    rtol: float,
+    atol_d: float = 1e-7,
+) -> tuple[list, dict, list, list, NDArrayFloat]:
+    """Get list of initial conditions.
+
+    This list needs to match the number of equations.
+
+    :param Model: The model handle
+    :param rtol: relative tolerance for BDF solver.
+    :param atol_d: default value for atol if c = 0
+
+    :return: R = list of initial conditions as floats
+    :return: icl = dict[Species, list[int, int]] where reservoir
+             indicates the reservoir handle, and the list contains the
+             index into the reservoir data.  list[0] = concentration
+             list[1] concentration of the light isotope.
+    :return: cpl = list of reservoirs that use function to evaluate
+             reservoir data
+    :return: ipl = list of static reservoirs that serve as input
+    :return: rtol = array of tolerence values for ode solver
+
+        We need to consider 3 types of reservoirs:
+
+        1) Species that change as a result of physical fluxes i.e.
+        r.lof > 0.  These require a flux statements and a reservoir
+        equation.
+
+        2) Species that do not have active fluxes but are computed
+        as a tracer, i.e.. HCO3.  These only require a reservoir
+        equation
+
+        3) Species that do not change but are used as input.  Those
+        should not happen in a well formed model, but we cannot
+        exclude the possibility.  In this case, there is no flux
+        equation, and we state that dR/dt = 0
+
+        get_ic() will look up the index position of the
+        reservoir_handle on icl, and then use this index to retrieve
+        the correspinding value in R
+
+        Isotopes are handled by adding a second entry
+    """
+    import numpy as np
+
+    R = []  # list of initial conditions
+    atol: list = []  # list of tolerances for ode solver
+    # dict that contains the reservoir_handle as key and the index positions
+    # for c and l as a list
+    icl: dict[Species, list[int, int]] = {}
+    cpl: list = []  # list of reservoirs that are computed
+    ipl: list = []  # list of static reservoirs that serve as input
+
+    i: int = 0
+    for r in M.lic:
+        # collect all reservoirs that have initial conditions
+        # if r.rtype != "flux_only":
+        if len(r.lof) > 0 or r.rtype == "computed" or r.rtype == "passive":
+            R.append(r.c[0])  # add initial condition
+            if r.c[0] > 0:
+                # compute tol such that tol < rtol * abs(y)
+                tol = rtol * abs(r.c[0]) / 10
+                atol.append(tol)
+                r.atol[0] = tol
+            else:
+                atol.append(atol_d)
+                r.atol[0] = atol_d
+
+            if r.isotopes:
+                if r.l[0] > 0:
+                    # compute tol such that tol < rtol * abs(y)
+                    tol = rtol * abs(r.l[0]) / 10
+                    atol.append(tol)
+                    r.atol[1] = tol
+                else:
+                    atol.append(atol_d)
+                    r.atol[1] = atol_d
+
+                R.append(r.l[0])  # add initial condition for l
+                icl[r] = [i, i + 1]
+                i += 2
+            else:
+                icl[r] = [i, i]
+                i += 1
+            # if r.name == "O2_At":
+    return R, icl, cpl, ipl, np.array(atol)
