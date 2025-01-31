@@ -501,8 +501,6 @@ def get_scale_with_flux_eq(
     n = f"{c.ref_flux.full_name.replace('.', '_')}"
     fn = f"F[{c.ref_flux.idx}]"
 
-    print(f"name = {n}, idx = {fn}")
-
     # get the equation string for the flux
     ex = f"toc[{c.s_index}] * {fn}"
     """ The flux for the light isotope will computed as follows:
