@@ -229,9 +229,23 @@ from numpy import array as npa
 """
 
     h2 = """# @njit(fastmath=True)
-def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table) -> list:
-        '''Auto generated esbmtk equations do not edit
-        '''
+def eqs(t, R, gpt, toc, area_table, area_dz_table, Csat_table, C, F) -> NDArrayFloat:
+    '''Calculate dCdt for each reservoir.
+
+    t = time vector
+    R = initial conditions for each reservoir
+    M.gpt = tuple of global constants (is this still used?)
+    M.toc = is a tuple of containing  constants for each external function
+    area_table = lookuptable used by carbonate_system_2
+    area_dz_table = lookuptable used by carbonate_system_2
+    Csat_table = lookuptable used by carbonate_system_2
+    C = Coefficient Matrix
+    F = flux vector
+
+    Returns: dCdt as numpy array
+    
+    Reservoir and flux name lookup: M.lor[idx] and M.lof[idx]
+    '''
 """
     ind2 = 8 * " "  # indention
     ind3 = 12 * " "  # indention
