@@ -212,7 +212,6 @@ def register_new_flux(ec, rg, dict_key, dict_value) -> list:
         register=reservoir_object,
         ftype=ec.ftype,
         isotopes=reservoir_object.isotopes,
-        computed_by=ec,
     )
 
     ro.append(f)

@@ -39,8 +39,8 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
     i = 0
     for f in M.lof:  # get flux index positions
         f.idx = i  # set starting index
-        if f.isotopes:
-            i = i + 1  # isotopes count as additional flux
+        # if f.isotopes:
+        #     i = i + 1  # isotopes count as additional flux
         i = i + 1
 
     flux_values = np.zeros(i)  # initialize flux value vector
@@ -71,8 +71,8 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
                 #     C[ri + 1, f.idx + 1] = sign  # 2
 
         ri = ri + 1  # increase count by 1, or two is isotopes
-        if r.isotopes:
-            ri = ri + 1
+        # if r.isotopes:
+        #     ri = ri + 1
 
     return C[:ri, :], flux_values
 
@@ -181,24 +181,15 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F):
             in a given sequence" All other fluxes must be on the M.lpr_r list
             below.
             """
-            if flux.ftype == "computed":
-                continue
-
             # functions can return more than one flux, but we only need to
             # call the function once, so we check against flist first
             if flux not in flist:
-                if flux.computed_by != "None":
-                    # flist = flist + flux.computed_by.lof
-                    pass
-                else:
-                    flist.append(flux)  # add to list of fluxes already computed
-
+                flist.append(flux)  # add to list of fluxes already computed
                 # include computed fluxes that need to be in sequence
                 if flux.ftype == "in_sequence":
                     rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
-                    continue
-                else:
-                    print(f"fn = {flux.full_name}")
+                elif flux.ftype == "None":
+                    # print(f"fn = {flux.full_name}")
                     ex, exl = get_flux(flux, M, R, icl)  # get flux expressions
                     fn = f"F[{flux.idx}]"
                     # all others types that have separate expressions/isotope
@@ -269,9 +260,9 @@ def write_ef(
             v = f"dCdt_{o.full_name.replace('.', '_')}, "
 
         rv += v
-        if ef.lro[i].isotopes:
-            # rv += f"{v[:-2]}_l, "
-            rv += f"F[{o.idx + 1}], "
+        # if ef.lro[i].isotopes:
+        #     # rv += f"{v[:-2]}_l, "
+        #     rv += f"F[{o.idx + 1}], "
 
     rv = rv[:-2]  # strip the last comma
     a = ""
