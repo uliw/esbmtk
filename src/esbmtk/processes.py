@@ -187,6 +187,11 @@ def init_gas_exchange(c: Species2Species):
         ],
     )
     c.mo.lpc_f.append(ec.fname)
+    # this is now initialized through a Species2Species instance. This instance
+    # will create the necessary Flux instances. Since this will compute the
+    # fluxes. We need to set the compute_by flag
+    for f in c.lof:
+        f.computed_by = "gas_exchange"
     return ec
 
 

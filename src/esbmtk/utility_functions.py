@@ -297,7 +297,7 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
                     if isinstance(o, Flux):
                         o: list = [o]
                     elif isinstance(o, Species2Species):
-                        o: list = [o._F]  # get flux handle
+                        o: list = o.lof  # get flux handle
                     elif isinstance(
                         o,
                         Species

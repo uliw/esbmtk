@@ -49,7 +49,9 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
     ri = 0
     for r in M.lor:  # loop over M.lor to build the coefficient matrix
         r.idx = ri  # record index position
-        # computed reservoirs may have a single flux
+        # computed reservoirs are currently not set up by a
+        # Species2Species connection, so we need to add a flux expression
+        # manually. FIXME: What happens if we have isotopes?
         if r.rtype == "computed":
             C[ri, r.lof[0].idx] = 1
         else:  # regular reservoirs may have multiple fluxes
@@ -64,8 +66,9 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
             for f in r.lof:  # loop over reservoir fluxes
                 sign = -1 / mass if f.parent.source == r else 1 / mass
                 C[ri, f.idx] = sign
-                if f.isotopes:  # add equation for isotopes
-                    C[ri + 1, f.idx + 1] = sign  # 2
+                # reservoirs with isotopes shoudl now have a second flux object
+                # if f.isotopes:  # add equation for isotopes
+                #     C[ri + 1, f.idx + 1] = sign  # 2
 
         ri = ri + 1  # increase count by 1, or two is isotopes
         if r.isotopes:
@@ -173,7 +176,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F):
         sep = "    # ---------------- write all flux equations ------------------- #"
         eqs.write(f"\n{sep}\n")
         for flux in M.lof:  # loop over fluxes
-            """This loop will only write regular flux equations, withe the sole
+            """This loop will only write regular flux equations, with the sole
             exception of fluxes belonging to ExternalCode objects that need to be
             in a given sequence" All other fluxes must be on the M.lpr_r list
             below.
@@ -181,11 +184,12 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F):
             if flux.ftype == "computed":
                 continue
 
+            # functions can return more than one flux, but we only need to
+            # call the function once, so we check against flist first
             if flux not in flist:
-                # functions can return more than one flux, but we only need to
-                # call the function once
                 if flux.computed_by != "None":
-                    flist = flist + flux.computed_by.lof
+                    # flist = flist + flux.computed_by.lof
+                    pass
                 else:
                     flist.append(flux)  # add to list of fluxes already computed
 
@@ -194,8 +198,8 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F):
                     rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
                     continue
                 else:
+                    print(f"fn = {flux.full_name}")
                     ex, exl = get_flux(flux, M, R, icl)  # get flux expressions
-                    # fn = flux.full_name.replace(".", "_")
                     fn = f"F[{flux.idx}]"
                     # all others types that have separate expressions/isotope
                     eqs.write(f"{ind2}{fn} = {ex}\n")
@@ -362,13 +366,13 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
     from esbmtk import Species, Species2Species
 
     if isinstance(c, Species2Species):
-        if c.ctype.casefold() == "regular":
+        if c.ctype.casefold() == "regular" or c.ctype.casefold() == "fixed":
             ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3)
         elif c.ctype == "scale_with_concentration" or c.ctype == "scale_with_mass":
             ex, exl = get_scale_with_concentration_eq(flux, c, cfn, icl, ind2, ind3)
         elif c.ctype == "scale_with_flux":
             ex, exl = get_scale_with_flux_eq(flux, c, cfn, icl, ind2, ind3)
-        elif c.ctype == "ignore":
+        elif c.ctype == "ignore" or c.ctype == "gasexchange":
             pass
         else:
             raise ValueError(

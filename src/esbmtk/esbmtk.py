@@ -2119,7 +2119,7 @@ class Flux(esbmtkBase):
 
         if self.name == "None":
             if isinstance(self.parent, (Species2Species)):
-                self.name = "_F"
+                self.name = f"_F{self.id}"
                 self.n = self.name
             else:
                 self.name = f"{self.id}_F"

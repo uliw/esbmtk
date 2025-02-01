@@ -384,51 +384,57 @@ class Species2Species(esbmtkBase):
         # test if default arguments present
         d = 0 if self.delta == "None" else self.delta
         r = f"0 {self.sp.mo.f_unit}" if self.rate == "None" else self.rate
+        num = [""]
         isotopes = bool(self.sink.isotopes and self.source.isotopes)
+        if isotopes:
+            num.append("_l")
 
-        self.fh = Flux(
-            species=self.sp,  # SpeciesProperties handle
-            delta=d,  # delta value of flux
-            rate=r,  # flux value
-            plot=self.plot,  # display this flux?
-            register=self,  # is this part of a group?
-            isotopes=isotopes,
-            id=self.id,
-        )
-        # register flux with its reservoirs
-        if isinstance(self.r1, Source):
-            # add the flux name direction/pair
-            self.r2.lio[self.fh] = self.influx
-            # add the handle to the list of fluxes
-            self.r2.lof.append(self.fh)
-            # register flux and element in the reservoir.
-            self.__register_species__(self.r2, self.r1.sp)
-
-        elif isinstance(self.r2, Sink):
-            # add the flux name direction/pair
-            self.r1.lio[self.fh] = self.outflux
-            # add flux to the upstream reservoir
-            self.r1.lof.append(self.fh)
-            # register flux and element in the reservoir.
-            self.__register_species__(self.r1, self.r2.sp)
-
-        elif isinstance(self.r1, Sink):
-            raise Species2SpeciesError(
-                "The Sink must be specified as a destination (i.e., as second argument"
+        for e in num:
+            self.fh = Flux(
+                species=self.sp,  # SpeciesProperties handle
+                delta=d,  # delta value of flux
+                rate=r,  # flux value
+                plot=self.plot,  # display this flux?
+                register=self,  # is this part of a group?
+                isotopes=isotopes,
+                id=f"{self.id}{e}",
             )
+            # register flux with its reservoirs
+            if isinstance(self.r1, Source):
+                # add the flux name direction/pair
+                self.r2.lio[self.fh] = self.influx
+                # add the handle to the list of fluxes
+                self.r2.lof.append(self.fh)
+                # register flux and element in the reservoir.
+                self.__register_species__(self.r2, self.r1.sp)
 
-        elif isinstance(self.r2, Source):
-            raise Species2SpeciesError("The Source must be specified as first argument")
+            elif isinstance(self.r2, Sink):
+                # add the flux name direction/pair
+                self.r1.lio[self.fh] = self.outflux
+                # add flux to the upstream reservoir
+                self.r1.lof.append(self.fh)
+                # register flux and element in the reservoir.
+                self.__register_species__(self.r1, self.r2.sp)
 
-        else:  # add the flux name direction/pair
-            self.r1.lio[self.fh] = self.outflux
-            self.r2.lio[self.fh] = self.influx
-            self.r1.lof.append(self.fh)  # add flux to the upstream reservoir
-            self.r2.lof.append(self.fh)  # add flux to the downstream reservoir
-            self.__register_species__(self.r1, self.r1.sp)
-            self.__register_species__(self.r2, self.r2.sp)
+            elif isinstance(self.r1, Sink):
+                raise Species2SpeciesError(
+                    "The Sink must be specified as a destination (i.e., as second argument"
+                )
 
-        self.lof.append(self.fh)
+            elif isinstance(self.r2, Source):
+                raise Species2SpeciesError(
+                    "The Source must be specified as first argument"
+                )
+
+            else:  # add the flux name direction/pair
+                self.r1.lio[self.fh] = self.outflux
+                self.r2.lio[self.fh] = self.influx
+                self.r1.lof.append(self.fh)  # add flux to the upstream reservoir
+                self.r2.lof.append(self.fh)  # add flux to the downstream reservoir
+                self.__register_species__(self.r1, self.r1.sp)
+                self.__register_species__(self.r2, self.r2.sp)
+
+            self.lof.append(self.fh)
 
     def __register_species__(self, r, sp) -> None:
         """Add flux to the correct element dictionary."""
