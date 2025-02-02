@@ -42,28 +42,34 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
         fi = fi + 1
 
     # get number of reservoirs
-    ri = 0
+    num_res = 0
     for r in M.lor:
-        ri = ri + 1
+        num_res = num_res + 1
         if r.isotopes:
-            ri = ri + 1
+            num_res = num_res + 1
 
     flux_values = np.zeros(fi)  # initialize flux value vector
-    C = np.zeros((ri, fi), dtype=float)  # Initialize Coefficient matrix:
-    # C = np.zeros((ri, fi), dtype=object)  # Initialize Coefficient matrix:
+    C = np.zeros((num_res, fi), dtype=float)  # Initialize Coefficient matrix:
 
+    """We have n reservoirs, without isotopes, this corresponds to
+    n rows in the coefficinet matrix. However, if reservoirs have
+    isotopes, we need an additional rao to calculate the respective
+    isotope concentration. Thus we have to two counter, cr pointing to
+    the current reservoir, and ri pointing to the respective row index
+    in the coefficient matrix"""
+    cr = 0
     ri = 0
-    for r in M.lor:  # loop over M.lor to build the coefficient matrix
+    while ri < num_res:
+        r = M.lor[cr]  # get current reservoir
         r.idx = ri  # record index position
+        cr = cr + 1
 
         if r.rtype == "computed":
             # computed reservoirs are currently not set up by a Species2Species
             # connection, so we need to add a flux expression manually.
             C[ri, r.lof[0].idx] = 1
-            # C[ri, r.lof[0].idx] = r.lof[0].full_name
             if r.isotopes:
                 C[ri + 1, r.lof[1].idx] = 1
-                # C[ri + 1, r.lof[1].idx] = r.lof[1].full_name
 
         else:  # regular reservoirs may have multiple fluxes
             if isinstance(r, Species):
@@ -80,23 +86,14 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
             fi = 0
             while fi < len(r.lof):  # loop over reservoir fluxes
                 f = r.lof[fi]
-                # print(
-                #     f"r={r.full_name}\n",
-                #     f"f={f.full_name}\n",
-                #     f"fps = {f.parent.full_name}\n",
-                # )
                 sign = -1 / mass if f.parent.source == r else 1 / mass
 
                 if r.isotopes:  # add equation for isotopes
                     C[ri, r.lof[fi].idx] = sign
                     C[ri + 1, r.lof[fi + 1].idx] = sign  # 2
-                    # C[ri, r.lof[fi].idx] = r.lof[fi].full_name
-                    # C[ri + 1, r.lof[fi + 1].idx] = r.lof[fi + 1].full_name
-
                     fi = fi + 2
                 else:
                     C[ri, r.lof[fi].idx] = sign
-                    # C[ri, r.lof[fi]] = r.lof[fi].full_name
                     fi = fi + 1
 
         ri = ri + 1  # increase count by 1, or two is isotopes
