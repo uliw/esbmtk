@@ -79,7 +79,14 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
             matrix. """
             fi = 0
             while fi < len(r.lof):  # loop over reservoir fluxes
+                f = r.lof[fi]
+                # print(
+                #     f"r={r.full_name}\n",
+                #     f"f={f.full_name}\n",
+                #     f"fps = {f.parent.full_name}\n",
+                # )
                 sign = -1 / mass if f.parent.source == r else 1 / mass
+
                 if r.isotopes:  # add equation for isotopes
                     C[ri, r.lof[fi].idx] = sign
                     C[ri + 1, r.lof[fi + 1].idx] = sign  # 2
