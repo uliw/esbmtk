@@ -13,7 +13,6 @@ M = Model(
     max_timestep="1 month",  # upper limit of time step
     element=["Oxygen"],  # list of element definitions
 )
-M.debug_equations_file = True
 GasReservoir(
     name="O2_At",
     species=M.O2,

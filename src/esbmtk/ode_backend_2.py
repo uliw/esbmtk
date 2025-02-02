@@ -36,43 +36,65 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
     """
     from esbmtk import GasReservoir, Species
 
-    i = 0
+    fi = 0
     for f in M.lof:  # get flux index positions
-        f.idx = i  # set starting index
-        # if f.isotopes:
-        #     i = i + 1  # isotopes count as additional flux
-        i = i + 1
+        f.idx = fi  # set starting index
+        fi = fi + 1
 
-    flux_values = np.zeros(i)  # initialize flux value vector
-    # Initialize Coefficient matrix, assume that all reservoirs have isotopes
-    C = np.zeros((len(M.lor) * 2, i))  # Initialize Coefficient matrix:
+    # get number of reservoirs
+    ri = 0
+    for r in M.lor:
+        ri = ri + 1
+        if r.isotopes:
+            ri = ri + 1
+
+    flux_values = np.zeros(fi)  # initialize flux value vector
+    C = np.zeros((ri, fi), dtype=float)  # Initialize Coefficient matrix:
+    # C = np.zeros((ri, fi), dtype=object)  # Initialize Coefficient matrix:
+
     ri = 0
     for r in M.lor:  # loop over M.lor to build the coefficient matrix
         r.idx = ri  # record index position
-        # computed reservoirs are currently not set up by a
-        # Species2Species connection, so we need to add a flux expression
-        # manually. FIXME: What happens if we have isotopes?
+
         if r.rtype == "computed":
+            # computed reservoirs are currently not set up by a Species2Species
+            # connection, so we need to add a flux expression manually.
             C[ri, r.lof[0].idx] = 1
+            # C[ri, r.lof[0].idx] = r.lof[0].full_name
+            if r.isotopes:
+                C[ri + 1, r.lof[1].idx] = 1
+                # C[ri + 1, r.lof[1].idx] = r.lof[1].full_name
+
         else:  # regular reservoirs may have multiple fluxes
             if isinstance(r, Species):
                 # FIXME: this needs to be adjusted for density
                 mass = r.volume.to(r.model.v_unit).magnitude
             elif isinstance(r, GasReservoir):
-                mass = r.m[0]
+                mass = r.v[0]
             else:
                 raise ValueError(f"no definition for {type(r)}")
 
-            for f in r.lof:  # loop over reservoir fluxes
+            """ Regular reservoirs, can have isotopes, If they do we need to treat them
+            like a new reservoir, so they require their own line in the coefficient
+            matrix. """
+            fi = 0
+            while fi < len(r.lof):  # loop over reservoir fluxes
                 sign = -1 / mass if f.parent.source == r else 1 / mass
-                C[ri, f.idx] = sign
-                # reservoirs with isotopes shoudl now have a second flux object
-                # if f.isotopes:  # add equation for isotopes
-                #     C[ri + 1, f.idx + 1] = sign  # 2
+                if r.isotopes:  # add equation for isotopes
+                    C[ri, r.lof[fi].idx] = sign
+                    C[ri + 1, r.lof[fi + 1].idx] = sign  # 2
+                    # C[ri, r.lof[fi].idx] = r.lof[fi].full_name
+                    # C[ri + 1, r.lof[fi + 1].idx] = r.lof[fi + 1].full_name
+
+                    fi = fi + 2
+                else:
+                    C[ri, r.lof[fi].idx] = sign
+                    # C[ri, r.lof[fi]] = r.lof[fi].full_name
+                    fi = fi + 1
 
         ri = ri + 1  # increase count by 1, or two is isotopes
-        # if r.isotopes:
-        #     ri = ri + 1
+        if r.isotopes:
+            ri = ri + 1
 
     return C[:ri, :], flux_values
 
@@ -175,7 +197,9 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F):
         flist = []
         sep = "    # ---------------- write all flux equations ------------------- #"
         eqs.write(f"\n{sep}\n")
-        for flux in M.lof:  # loop over fluxes
+        fi = 0
+        while fi < len(M.lof):
+            # for flux in M.lof:  # loop over fluxes
             """This loop will only write regular flux equations, with the sole
             exception of fluxes belonging to ExternalCode objects that need to be
             in a given sequence" All other fluxes must be on the M.lpr_r list
@@ -183,13 +207,13 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F):
             """
             # functions can return more than one flux, but we only need to
             # call the function once, so we check against flist first
+            flux = M.lof[fi]
             if flux not in flist:
                 flist.append(flux)  # add to list of fluxes already computed
                 # include computed fluxes that need to be in sequence
                 if flux.ftype == "in_sequence":
                     rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
                 elif flux.ftype == "None":
-                    # print(f"fn = {flux.full_name}")
                     ex, exl = get_flux(flux, M, R, icl)  # get flux expressions
                     fn = f"F[{flux.idx}]"
                     # all others types that have separate expressions/isotope
@@ -197,6 +221,9 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F):
                     if flux.parent.isotopes:  # add line for isotopes
                         fn = f"F[{flux.idx + 1}]"
                         eqs.write(f"{ind2}{fn} =  {exl}\n")
+                        fi = fi + 1
+
+            fi = fi + 1
 
         sep = (
             "    # ---------------- write computed reservoir equations -------- #\n"
@@ -257,7 +284,8 @@ def write_ef(
             # v = f"{o.full_name.replace('.', '_')}, "
             v = f"F[{o.idx}], "
         else:  # FIXME: THis likely needs to come after dot product
-            v = f"dCdt_{o.full_name.replace('.', '_')}, "
+            raise NotImplementedError("line 262 in ode backend 2")
+            # v = f"dCdt_{o.full_name.replace('.', '_')}, "
 
         rv += v
         # if ef.lro[i].isotopes:
