@@ -15,7 +15,7 @@ ESBMTK does some rudimentary error checking on the key-value pairs that are used
 
     M = Model(
         stop="6 Myr",
-        timestep="1 kyr",
+        max_timestep="1 kyr",
         elements=["Carbon", "Oxygen"])
 
 ::
@@ -26,7 +26,7 @@ ESBMTK does some rudimentary error checking on the key-value pairs that are used
           1 from esbmtk import Model
     ----> 3 M = Model(
           4     stop="6 Myr",
-          5     timestep="1 kyr",
+          5     max_timestep="1 kyr",
           6     elements=["Carbon", "Oxygen"],
           7 )
 
@@ -71,7 +71,7 @@ an input error since ``time_step`` is given without a time unit.
 
     M = Model(
         stop="6 Myr",
-        timestep=1,
+        max_timestep=1,
         elements=["Carbon", "Oxygen"])
 
 ::
@@ -82,7 +82,7 @@ an input error since ``time_step`` is given without a time unit.
           1 from esbmtk import Model
     ----> 3 M = Model(
           4     stop="6 Myr",
-          5     timestep=1,
+          5     max_timestep=1,
           6     elements=["Carbon", "Oxygen"],
           7 )
     ...
@@ -91,12 +91,12 @@ an input error since ``time_step`` is given without a time unit.
 
     InputError: 
 
-    1 for timestep must be of type (<class 'str'>, <class 'pint.Quantity'>), not <class 'int'>
+    1 for max_timestep must be of type (<class 'str'>, <class 'pint.Quantity'>), not <class 'int'>
 
 Key-type errors
 ~~~~~~~~~~~~~~~
 
-ESBMTK will check that absolutely  necessary keys are provided, e.g., omitting the ``timestep`` key will result in a ``Missingkeyworderror``.
+ESBMTK will check that absolutely  necessary keys are provided, e.g., omitting the ``max_timestep`` key will result in a ``Missingkeyworderror``.
 
 .. code:: ipython
 
@@ -122,7 +122,7 @@ ESBMTK will check that absolutely  necessary keys are provided, e.g., omitting t
 
     MissingKeywordError: 
 
-    timestep is a mandatory keyword
+    max_timestep is a mandatory keyword
 
 However, ESBMTK classes like  ``Connectionproperties`` accept a large range of keywords, and presently ESBMTK has no mechanism to test if all of these are suitable to the given connection or not. A typical mistake is shown in the following example that defines a connection where the flux is based on the concentration in the source reservoir. 
 
@@ -148,7 +148,7 @@ All ESBMTK objects maintain state, it is thus possible to inspect them. If we cr
 
     M = Model(
         stop="6 Myr",
-        timestep="1 kyr",
+        max_timestep="1 kyr",
         element=["Carbon"])
 
     Reservoir(
@@ -169,7 +169,7 @@ we can query the parameters that we used to create the Reservoir instance by pri
 
     M (Model)
       stop = 6 Myr
-      timestep = 1 kyr
+      max_timestep = 1 kyr
       element = ['Carbon']
 
 
@@ -261,7 +261,7 @@ Under normal circumstances the model equations are transient and created on the 
 
     M = Model(
         stop="6 Myr",
-        timestep="1 kyr",
+        max_timestep="1 kyr",
         elements=["Carbon", "Oxygen"],
         debug_equations_file=True,
     )

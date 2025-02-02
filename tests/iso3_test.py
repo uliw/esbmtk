@@ -7,7 +7,6 @@ from esbmtk import (
     SourceProperties,  # the source class
     SinkProperties,  # sink class
 )
-
 M = Model(
     stop="3 kyr",  # end time of model
     max_timestep="100 yr",  # upper limit of time step
@@ -38,7 +37,6 @@ ConnectionProperties(  # thermohaline upwelling
     ctype="scale_with_concentration",
     scale="20 Sv",
     id="upwelling",
-    epsilon=5,  # mUr
+    epsilon=5, # mUr
 )
-
 M.run()

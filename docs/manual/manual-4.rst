@@ -16,9 +16,7 @@ For many modeling tasks, it is important to know a globally averaged hypsometric
     Reservoir(
         name="S_b",  # Name of reservoir group
         geometry=[-200, -800, 1],  # upper, lower, fraction
-        concentration="0 mmol/kg",
-        species=M.DIC,
-        register=M,
+        concentration={M.DIC: "0 mmol/kg"},
     )
     print(f"M.S_b.area = {M.S_b.area:.2e}") # surface area at upper depth datum
     print(f"M.S_b.sed_area = {M.S_b.sed_area:.2e}") # surface between upper and lower datum
