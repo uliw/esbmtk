@@ -23,6 +23,7 @@ import typing as tp
 
 import numpy as np
 import numpy.typing as npt
+from numba import njit
 
 if tp.TYPE_CHECKING:
     from esbmtk import Q_, Species2Species
@@ -51,7 +52,7 @@ def signal_with_isotopes(
     )
 
 
-# @njit(fastmath=True)
+@njit(fastmath=True)
 def weathering(c_pco2: float | list[float], p: tuple) -> float | tuple:
     """Calculate weathering as a function of pCO2.
 
@@ -218,6 +219,7 @@ def init_gas_exchange(c: Species2Species):
     return ec
 
 
+@njit(fastmath=True)
 def gas_exchange(
     gas_c: float | tuple,
     liquid_c: float | tuple,
@@ -263,10 +265,10 @@ def gas_exchange(
     """
     scale, p_H2O, solubility, a_db, a_dg, a_u, isotopes = p
 
-    if isotopes:
-        gas_c, gas_c_l = gas_c
-        gas_aq_c, gas_aq_l = gas_aq_c
-        liquid_c, liquid_c_l = liquid_c
+    # if isotopes:
+    # gas_c, gas_c_l = gas_c
+    #         gas_aq_c, gas_aq_l = gas_aq_c
+    #         liquid_c, liquid_c_l = liquid_c
 
     # Solubility with correction for pH2O
     # beta = solubility * (1 - p_H2O)
@@ -275,12 +277,12 @@ def gas_exchange(
     f = scale * (beta * gas_c - gas_aq_c * 1e3)
     rv = f
 
-    if isotopes:  # isotope ratio of DIC
-        Rt = (liquid_c - liquid_c_l) / liquid_c
-        # get heavy isotope concentrations in atmosphere
-        gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
-        # get exchange of the heavy isotope
-        f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_aq_c * 1e3)
-        rv = f, f - f_h  # the corresponding flux of the light isotope
+    # if isotopes:  # isotope ratio of DIC
+    #     Rt = (liquid_c - liquid_c_l) / liquid_c
+    #     # get heavy isotope concentrations in atmosphere
+    #     gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
+    #     # get exchange of the heavy isotope
+    #     f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_aq_c * 1e3)
+    #     rv = f, f - f_h  # the corresponding flux of the light isotope
 
     return rv
