@@ -26,7 +26,6 @@ import numpy as np
 import numpy.typing as npt
 from cachetools import LRUCache, cached
 from cachetools.keys import hashkey
-from numba import njit
 
 from esbmtk.esbmtk import Flux
 from esbmtk.extended_classes import ExternalCode, Reservoir
@@ -55,7 +54,7 @@ The process for cs2 is analogous
 """
 
 
-@njit(fastmath=True)
+# @njit(fastmath=True)
 def get_hplus(dic, ta, h0, boron, K1, K1K2, KW, KB) -> float:
     """Calculate H+ concentration based on a previous estimate.
 
@@ -83,7 +82,7 @@ def get_hplus(dic, ta, h0, boron, K1, K1K2, KW, KB) -> float:
     return 0.5 * ((gamm - 1.0) * K1 + sqrt(dummy))
 
 
-@njit(fastmath=True)
+# @njit(fastmath=True)
 def carbonate_system_1(dic, ta, hplus_0, co2aq_0, p) -> tuple:
     """Return the H+ and carbonate alkalinity concentrations.
 
@@ -104,8 +103,8 @@ def carbonate_system_1(dic, ta, hplus_0, co2aq_0, p) -> tuple:
     Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
     """
     k1, k2, k1k2, KW, KB, boron, isotopes = p
-    # if isotopes:  # dic = (x1, x2)
-    #     dic = dic[0]
+    if isotopes:  # dic = (x1, x2)
+        dic = dic[0]
 
     hplus = get_hplus(dic, ta, hplus_0, boron, k1, k1k2, KW, KB)
     co2aq = dic / (1 + k1 / hplus + k1k2 / hplus**2)
@@ -185,7 +184,6 @@ def add_carbonate_system_1(rgs: list):
 
 
 # @lru_cache
-@njit
 def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
     """Calcualte zsat."""
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
@@ -193,7 +191,6 @@ def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
 
 
 # @lru_cache
-@njit
 def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
     """Calculate zcc."""
     export = abs(export)
@@ -202,6 +199,7 @@ def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
     return int(min(zmax, max(zsat_min, zcc)))
 
 
+# @njit(fastmath=True)
 # @cached(
 #     cache=LRUCache(maxsize=128),
 #     key=lambda CaCO3_export, dic_t_db, ta_db, dic_t_sb, hplus_0, zsnow, p: hashkey(
@@ -213,7 +211,6 @@ def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
 #         int(zsnow),
 #     ),
 # )
-@njit(fastmath=True)
 def carbonate_system_2(
     CaCO3_export: float,  # 3 CaCO3 export flux as DIC
     dic_t_db: float | tuple,  # 4 DIC in the deep box
@@ -241,12 +238,12 @@ def carbonate_system_2(
     ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0 = cp
     k1, k2, k1k2, KW, KB, ca2, boron, isotopes = sp
 
-    # if isotopes:
-    #     dic_db, dic_db_l = dic_t_db
-    #     dic_sb, dic_sb_l = dic_t_sb
-    # else:
-    dic_db = dic_t_db
-    dic_sb = dic_t_sb
+    if isotopes:
+        dic_db, dic_db_l = dic_t_db
+        dic_sb, dic_sb_l = dic_t_sb
+    else:
+        dic_db = dic_t_db
+        dic_sb = dic_t_sb
 
     hplus = get_hplus(dic_db, ta_db, hplus_0, boron, k1, k1k2, KW, KB)
     co3 = max(dic_db / (1 + hplus / k2 + hplus**2 / k1k2), 3.7e-05)
@@ -304,11 +301,11 @@ def carbonate_system_2(
     value of the sediments we are dissolving, and the delta of the carbonate rain.
     The currrent code, assumes that both are the same.
     """
-    # if isotopes:
-    #     F_diss_l = F_diss * dic_sb_l / dic_sb
-    #     rv = (F_diss, F_diss_l, F_diss * 2, dCdt_Hplus, dzdt_zsnow)
-    # else:
-    rv = (F_diss, F_diss * 2, dCdt_Hplus, dzdt_zsnow)
+    if isotopes:
+        F_diss_l = F_diss * dic_sb_l / dic_sb
+        rv = (F_diss, F_diss_l, F_diss * 2, dCdt_Hplus, dzdt_zsnow)
+    else:
+        rv = (F_diss, F_diss * 2, dCdt_Hplus, dzdt_zsnow)
 
     return rv
 
@@ -504,8 +501,10 @@ def add_carbonate_system_2(**kwargs) -> None:
         else:
             raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
+        export_flux = kwargs["carbonate_export_fluxes"][i]
+        export_flux.serves_as_input = True  # flag this for ode backend
         ec = init_carbonate_system_2(
-            kwargs["carbonate_export_fluxes"][i],
+            export_flux,
             r_sb[i],
             r_db[i],
             kwargs,
