@@ -22,7 +22,6 @@ import typing as tp
 
 import numpy as np
 import numpy.typing as npt
-from numba import njit
 
 NDArrayFloat = npt.NDArray[np.float64]
 
@@ -128,11 +127,12 @@ def write_equations_3(
     """
     # construct header and static code:
     # add optional import statements
-    h1 = """from numba import njit
+    h1 = """
+
     """
 
-    h2 = """@njit(fastmath=True)
-def eqs(t, R, gpt, toc, area_table, area_dz_table, Csat_table, C, F):
+    h2 = """# @njit(fastmath=True)
+def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F):
     '''Calculate dCdt for each reservoir.
 
     t = time vector
