@@ -19,11 +19,10 @@ along with this program.  If not, see
 
 from __future__ import annotations
 
-import typing as tp
-
 import numpy as np
 import numpy.typing as npt
-from numba import njit
+
+import typing as tp
 
 if tp.TYPE_CHECKING:
     from esbmtk import Q_, Species2Species
@@ -32,27 +31,7 @@ if tp.TYPE_CHECKING:
 NDArrayFloat = npt.NDArray[np.float64]
 
 
-def signal_no_isotopes(
-    t: float, model_time: NDArrayFloat, signal_data: NDArrayFloat
-) -> float:
-    """Return signal value at a given time t."""
-    return np.interp(t, model_time, signal_data)
-
-
-def signal_with_isotopes(
-    t: float,
-    model_time: NDArrayFloat,
-    signal_data: NDArrayFloat,
-    signal_data_l: NDArrayFloat,
-) -> tuple(float, float):
-    """Return signal values at a given time t."""
-    return (
-        np.interp(t, model_time, signal_data),
-        np.interp(t, model_time, signal_data_l),
-    )
-
-
-@njit(fastmath=True)
+# @njit(fastmath=True)
 def weathering(c_pco2: float | list[float], p: tuple) -> float | tuple:
     """Calculate weathering as a function of pCO2.
 
@@ -82,7 +61,7 @@ def weathering(c_pco2: float | list[float], p: tuple) -> float | tuple:
 
     The flux itself is calculated as
 
-    F_w = area_fraction * f0 * (pco2/pco2_0)**ex
+     F_w = area_fraction * f0 * (pco2/pco2_0)**ex
 
     """
     pco2_0, area_fraction, ex, f0, isotopes = p
@@ -219,7 +198,6 @@ def init_gas_exchange(c: Species2Species):
     return ec
 
 
-@njit(fastmath=True)
 def gas_exchange(
     gas_c: float | tuple,
     liquid_c: float | tuple,
@@ -265,10 +243,10 @@ def gas_exchange(
     """
     scale, p_H2O, solubility, a_db, a_dg, a_u, isotopes = p
 
-    # if isotopes:
-    # gas_c, gas_c_l = gas_c
-    #         gas_aq_c, gas_aq_l = gas_aq_c
-    #         liquid_c, liquid_c_l = liquid_c
+    if isotopes:
+        gas_c, gas_c_l = gas_c
+        gas_aq_c, gas_aq_l = gas_aq_c
+        liquid_c, liquid_c_l = liquid_c
 
     # Solubility with correction for pH2O
     # beta = solubility * (1 - p_H2O)
@@ -277,12 +255,12 @@ def gas_exchange(
     f = scale * (beta * gas_c - gas_aq_c * 1e3)
     rv = f
 
-    # if isotopes:  # isotope ratio of DIC
-    #     Rt = (liquid_c - liquid_c_l) / liquid_c
-    #     # get heavy isotope concentrations in atmosphere
-    #     gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
-    #     # get exchange of the heavy isotope
-    #     f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_aq_c * 1e3)
-    #     rv = f, f - f_h  # the corresponding flux of the light isotope
+    if isotopes:  # isotope ratio of DIC
+        Rt = (liquid_c - liquid_c_l) / liquid_c
+        # get heavy isotope concentrations in atmosphere
+        gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
+        # get exchange of the heavy isotope
+        f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_aq_c * 1e3)
+        rv = f, f - f_h  # the corresponding flux of the light isotope
 
     return rv
