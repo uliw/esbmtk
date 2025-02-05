@@ -21,11 +21,34 @@ from __future__ import annotations
 
 import typing as tp
 
+import numpy as np
+import numpy.typing as npt
+
 if tp.TYPE_CHECKING:
     from esbmtk import Q_, Species2Species
 
 # declare numpy types
-# NDArrayFloat = npt.NDArray[np.float64]
+NDArrayFloat = npt.NDArray[np.float64]
+
+
+def signal_no_isotopes(
+    t: float, model_time: NDArrayFloat, signal_data: NDArrayFloat
+) -> float:
+    """Return signal value at a given time t."""
+    return np.interp(t, model_time, signal_data)
+
+
+def signal_with_isotopes(
+    t: float,
+    model_time: NDArrayFloat,
+    signal_data: NDArrayFloat,
+    signal_data_l: NDArrayFloat,
+) -> tuple(float, float):
+    """Return signal values at a given time t."""
+    return (
+        np.interp(t, model_time, signal_data),
+        np.interp(t, model_time, signal_data_l),
+    )
 
 
 # @njit(fastmath=True)
@@ -58,7 +81,7 @@ def weathering(c_pco2: float | list[float], p: tuple) -> float | tuple:
 
     The flux itself is calculated as
 
-     F_w = area_fraction * f0 * (pco2/pco2_0)**ex
+    F_w = area_fraction * f0 * (pco2/pco2_0)**ex
 
     """
     pco2_0, area_fraction, ex, f0, isotopes = p

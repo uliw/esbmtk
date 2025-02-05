@@ -1057,6 +1057,30 @@ class Signal(esbmtkBase):
             df.to_csv(file_path, header=True, mode="w", index=False)
         return df
 
+    def __init_signal_function__(self):
+        """Initialize a an external code instance that can be called by the solver."""
+        if self.isotopes:
+            p = (self.mo.time, self.m)
+            function_name = "signal_with_istopes"
+        else:
+            p = (self.mo.time, self.m, self.l)
+            function_name = "signal_no_istopes"
+
+        ec = ExternalCode(
+            name=f"ec_signal_{self.name}",
+            fname=function_name,
+            ftype="std",
+            species=self.species,
+            function_input_data=["t"],
+            function_params=p,
+            register=self.model,
+            return_values=[
+                {"N_one": "None"},
+            ],
+        )
+        self.mo.lpc_f.append(ec.fname)
+        return ec
+
 
 class VectorData(esbmtkBase):
     """A simple container for 1-dimensional data.

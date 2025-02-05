@@ -331,10 +331,11 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
                     )
                 res.lof.append(f)
                 o = [f]
-                # breakpoint()
 
             elif dict_key[:2] == "C_":  # is connection
                 raise NotImplementedError
+            elif dict_key[:2] == "N_":  # is connection
+                pass
             else:
                 raise ValueError(f"{dict_key[0:2]} is not defined")
 

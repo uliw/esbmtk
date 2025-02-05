@@ -282,13 +282,14 @@ def write_ef(
     whereas newly created fluxes do.
     """
     rv = ind2
-    for i, o in enumerate(ef.lro):
-        # FIXME:
+    for _i, o in enumerate(ef.lro):
         if isinstance(o, Flux):
-            # v = f"{o.full_name.replace('.', '_')}, "
             v = f"F[{o.idx}], "
-        else:  # FIXME: THis likely needs to come after dot product
-            raise NotImplementedError("line 262 in ode backend 2")
+        elif isinstance(o, str):
+            if o != "None":
+                raise ValueError(f"type(o) = {type(o)}, o = {o}")
+        else:
+            raise ValueError(f"type(o) = {type(o)}, o = {o}")
             # v = f"dCdt_{o.full_name.replace('.', '_')}, "
 
         rv += v
@@ -352,6 +353,8 @@ def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> st
         for e in d:
             a += f"{parse_esbmtk_input_data_types(e, r, '', icl)[0:-2]},"
         a += "]),\n"
+    elif isinstance(d, str):
+        a = d
     else:
         raise ValueError(
             f"\n r = {r.full_name}, d ={d}\n\n{d} is of type {type(d)}\n",
