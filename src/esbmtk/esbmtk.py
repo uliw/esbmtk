@@ -700,7 +700,7 @@ class Model(esbmtkBase):
         self.ipl = ipl
 
         # build coefficient matrix C
-        self.C, self.F = build_eqs_matrix(self)
+        self.CM, self.F = build_eqs_matrix(self)
 
         cwd = Path.cwd()
         sys.path.append(cwd)  # required on windows
@@ -754,7 +754,7 @@ class Model(esbmtkBase):
                     self.area_table,
                     self.area_dz_table,
                     self.Csat_table,
-                    self.C,  # coefficient matrix
+                    self.CM,  # coefficient matrix
                     self.F,  # flux vector
                 ),
                 method=method,

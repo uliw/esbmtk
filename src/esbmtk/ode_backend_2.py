@@ -30,7 +30,7 @@ if tp.TYPE_CHECKING:
 
 
 def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
-    """Build the coefficient matrix C and Flux vector f.
+    """Build the coefficient matrix CM and Flux vector f.
 
     So that we can solve dC_dt = C dot flux_values
     """
@@ -48,8 +48,8 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
         if r.isotopes:
             num_res = num_res + 1
 
-    flux_values = np.zeros(fi)  # initialize flux value vector
-    C = np.zeros((num_res, fi), dtype=float)  # Initialize Coefficient matrix:
+    F = np.zeros(fi)  # initialize flux value vector
+    CM = np.zeros((num_res, fi), dtype=float)  # Initialize Coefficient matrix:
 
     """We have n reservoirs, without isotopes, this corresponds to
     n rows in the coefficinet matrix. However, if reservoirs have
@@ -67,9 +67,9 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
         if r.rtype == "computed":
             # computed reservoirs are currently not set up by a Species2Species
             # connection, so we need to add a flux expression manually.
-            C[ri, r.lof[0].idx] = 1
+            CM[ri, r.lof[0].idx] = 1
             if r.isotopes:
-                C[ri + 1, r.lof[1].idx] = 1
+                CM[ri + 1, r.lof[1].idx] = 1
 
         else:  # regular reservoirs may have multiple fluxes
             if isinstance(r, Species):
@@ -89,18 +89,18 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
                 sign = -1 / mass if f.parent.source == r else 1 / mass
 
                 if r.isotopes:  # add equation for isotopes
-                    C[ri, r.lof[fi].idx] = sign
-                    C[ri + 1, r.lof[fi + 1].idx] = sign  # 2
+                    CM[ri, r.lof[fi].idx] = sign
+                    CM[ri + 1, r.lof[fi + 1].idx] = sign  # 2
                     fi = fi + 2
                 else:
-                    C[ri, r.lof[fi].idx] = sign
+                    CM[ri, r.lof[fi].idx] = sign
                     fi = fi + 1
 
         ri = ri + 1  # increase count by 1, or two is isotopes
         if r.isotopes:
             ri = ri + 1
 
-    return C[:ri, :], flux_values
+    return CM[:ri, :], F
 
 
 def write_equations_3(
@@ -132,7 +132,7 @@ def write_equations_3(
     """
 
     h2 = """# @njit(fastmath=True)
-def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F):
+def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
     '''Calculate dCdt for each reservoir.
 
     t = time vector
@@ -143,7 +143,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F):
     area_table = lookuptable used by carbonate_system_2
     area_dz_table = lookuptable used by carbonate_system_2
     Csat_table = lookuptable used by carbonate_system_2
-    C = Coefficient Matrix
+    CM = Coefficient Matrix
     F = flux vector
 
     Returns: dCdt as numpy array
@@ -247,7 +247,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, C, F):
 
         sep = "    # ---------------- calculate concentration change ------------ #"
         eqs.write(f"\n{sep}\n")
-        eqs.write(f"{ind2}return C.dot(F)\n")
+        eqs.write(f"{ind2}return CM.dot(F)\n")
 
     return eqs_fn.stem
 
@@ -393,11 +393,13 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
 
     if isinstance(c, Species2Species):
         if c.ctype.casefold() == "regular" or c.ctype.casefold() == "fixed":
-            ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3)
+            ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3, M.CM, M.toc)
         elif c.ctype == "scale_with_concentration" or c.ctype == "scale_with_mass":
-            ex, exl = get_scale_with_concentration_eq(flux, c, cfn, icl, ind2, ind3)
+            ex, exl = get_scale_with_concentration_eq(
+                flux, c, cfn, icl, ind2, ind3, M.CM, M.toc
+            )
         elif c.ctype == "scale_with_flux":
-            ex, exl = get_scale_with_flux_eq(flux, c, cfn, icl, ind2, ind3)
+            ex, exl = get_scale_with_flux_eq(flux, c, cfn, icl, ind2, ind3, M.CM, M.toc)
         elif c.ctype == "ignore" or c.ctype == "gasexchange":
             pass
         else:
@@ -461,6 +463,8 @@ def get_regular_flux_eq(
     icl: dict,  # list of initial conditions
     ind2,  # indentation
     ind3,  # indentation
+    CM: NDArrayFloat,  # coefficient matrix
+    toc: tuple,  # tuple of constants
 ) -> tuple:
     """Create a string containing the equation for a regular connection.
 
@@ -478,13 +482,14 @@ def get_regular_flux_eq(
     """
     if flux.serves_as_input:
         ex = f"toc[{c.r_index}]"
-        # ex = f"{flux.full_name}.rate"  # get flux rate string
         exl = check_isotope_effects(ex, c, icl, ind3, ind2)
         ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
-        if c.mo.debug_equations_file:
-            ex = ex + f" # {flux.full_name}"
     else:
-        pass
+        CM[:, flux.idx] = CM[:, flux.idx] * toc[c.r_index]
+        # FIXME: needs code for signal and isotopes
+
+    if c.mo.debug_equations_file:
+        ex = ex + f"  # {flux.full_name} = {toc[c.r_index]:.2e}"
 
     return ex, exl
 
@@ -496,6 +501,8 @@ def get_scale_with_concentration_eq(
     icl: dict,  # list of initial conditions
     ind2: str,  # whitespace
     ind3: str,  # whitespace
+    CM: NDArrayFloat,  # coefficient matrix
+    toc: tuple,  # tuple of constants
 ) -> tuple(str, str):
     """Create equation string for flux.
 
@@ -522,13 +529,16 @@ def get_scale_with_concentration_eq(
         ex = f"toc[{c.s_index}] * {s_c}"
         exl = check_isotope_effects(ex, c, icl, ind3, ind2)
         ex, exl = check_signal_2(ex, exl, c)
-        if c.mo.debug_equations_file:
-            ex = (
-                ex
-                + f" # {flux.full_name} = toc[{c.s_index}] * {c.ref_reservoirs.full_name}"
-            )
+
     else:
-        pass
+        CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
+        # FIXME: Needs code for isotopes and signals
+
+    if c.mo.debug_equations_file:
+        ex = (
+            ex
+            + f"  # {flux.full_name} = {toc[c.s_index]:.2e} * {c.ref_reservoirs.full_name}"
+        )
     return ex, exl
 
 
@@ -539,6 +549,8 @@ def get_scale_with_flux_eq(
     icl: dict,  # list of initial conditions
     ind2: str,  # indentation
     ind3: str,  # indentation
+    CM: NDArrayFloat,  # coefficient matrix
+    toc: tuple,  # tuple of constants
 ) -> tuple(str, str):
     """Equation defining a flux.
 
@@ -572,10 +584,14 @@ def get_scale_with_flux_eq(
             exl = ""
             ex, exl = check_signal_2(ex, exl, c)
 
-        if c.mo.debug_equations_file:
-            ex = ex + f" # {flux.full_name} = toc[{c.s_index}] * {c.ref_flux.full_name}"
     else:
-        pass
+        CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
+        ex = fn
+
+    if c.mo.debug_equations_file:
+        ex = (
+            ex + f"  # {flux.full_name} = {toc[c.s_index]:.2e} * {c.ref_flux.full_name}"
+        )
 
     return ex, exl
 
