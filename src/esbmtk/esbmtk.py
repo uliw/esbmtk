@@ -2045,6 +2045,7 @@ class Flux(esbmtkBase):
             "id": ["None", (str)],
             "ftype": ["None", (str)],
             "computed_by": ["None", (str, ExternalCode)],
+            "serves_as_input": [True, (bool)],
         }
 
         # provide a list of absolutely required keywords

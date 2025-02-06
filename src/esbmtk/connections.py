@@ -497,6 +497,8 @@ class Species2Species(esbmtkBase):
         """Scale a flux relative to another flux."""
         from esbmtk import Flux
 
+        self.ref_flux.serves_as_input = True
+
         if not isinstance(self.ref_flux, Flux):
             raise Species2SpeciesError("Scale reference must be a flux")
 

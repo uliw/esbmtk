@@ -412,41 +412,6 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
     return ex, exl
 
 
-def get_scale_with_concentration_eq(
-    flux: Flux,  # flux instance
-    c: Species2Species,  # connection instance
-    cfn: str,  # full name of the connection instance
-    icl: dict,  # list of initial conditions
-    ind2: str,  # whitespace
-    ind3: str,  # whitespace
-) -> tuple(str, str):
-    """Create equation string for flux.
-
-    The flux will scale with the
-    concentration in the upstream reservoir
-
-    Example: M1_ConnGrp_D_b_to_L_b_TA_thc__F =
-    M1.ConnGrp_D_b_to_L_b.TA_thc.scale * R[5]
-
-    :param flux: Flux object
-    :param c: connection instance
-    :param cfn: full name of the connection instance
-    :param icl: dict[Species, list[int, int]] where reservoir
-        indicates the reservoir handle, and the list contains the
-        index into the reservoir data.  list[0] = concentration
-        list[1] concentration of the light isotope.
-
-    :returns: two strings with the respective equations for the change
-              in the total reservoir concentration and the
-              concentration of the light isotope
-    """
-    s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration
-    ex = f"toc[{c.s_index}] * {s_c}"
-    exl = check_isotope_effects(ex, c, icl, ind3, ind2)
-    ex, exl = check_signal_2(ex, exl, c)
-    return ex, exl
-
-
 def get_ic(r: Species, icl: dict, isotopes=False) -> str:
     """Get initial condition in a reservoir.
 
@@ -511,11 +476,59 @@ def get_regular_flux_eq(
               the total flux, and the second describes the rate for
               the light isotope
     """
-    ex = f"toc[{c.r_index}]"
-    # ex = f"{flux.full_name}.rate"  # get flux rate string
-    exl = check_isotope_effects(ex, c, icl, ind3, ind2)
-    ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
+    if flux.serves_as_input:
+        ex = f"toc[{c.r_index}]"
+        # ex = f"{flux.full_name}.rate"  # get flux rate string
+        exl = check_isotope_effects(ex, c, icl, ind3, ind2)
+        ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
+        if c.mo.debug_equations_file:
+            ex = ex + f" # {flux.full_name}"
+    else:
+        pass
 
+    return ex, exl
+
+
+def get_scale_with_concentration_eq(
+    flux: Flux,  # flux instance
+    c: Species2Species,  # connection instance
+    cfn: str,  # full name of the connection instance
+    icl: dict,  # list of initial conditions
+    ind2: str,  # whitespace
+    ind3: str,  # whitespace
+) -> tuple(str, str):
+    """Create equation string for flux.
+
+    The flux will scale with the
+    concentration in the upstream reservoir
+
+    Example: M1_ConnGrp_D_b_to_L_b_TA_thc__F =
+    M1.ConnGrp_D_b_to_L_b.TA_thc.scale * R[5]
+
+    :param flux: Flux object
+    :param c: connection instance
+    :param cfn: full name of the connection instance
+    :param icl: dict[Species, list[int, int]] where reservoir
+        indicates the reservoir handle, and the list contains the
+        index into the reservoir data.  list[0] = concentration
+        list[1] concentration of the light isotope.
+
+    :returns: two strings with the respective equations for the change
+              in the total reservoir concentration and the
+              concentration of the light isotope
+    """
+    if flux.serves_as_input:
+        s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration
+        ex = f"toc[{c.s_index}] * {s_c}"
+        exl = check_isotope_effects(ex, c, icl, ind3, ind2)
+        ex, exl = check_signal_2(ex, exl, c)
+        if c.mo.debug_equations_file:
+            ex = (
+                ex
+                + f" # {flux.full_name} = toc[{c.s_index}] * {c.ref_reservoirs.full_name}"
+            )
+    else:
+        pass
     return ex, exl
 
 
@@ -545,22 +558,24 @@ def get_scale_with_flux_eq(
               concentration of the light isotope
     """
     # get the reference flux name
-    # fn = f"{p.full_name.replace('.', '_')}__F"
-    n = f"{c.ref_flux.full_name.replace('.', '_')}"
     fn = f"F[{c.ref_flux.idx}]"
+    if flux.serves_as_input:  # use full expression
+        ex = f"toc[{c.s_index}] * {fn}"
+        """ The flux for the light isotope will computed as follows:
+        We will use the mass of the flux we or scaling, but that we will set the
+        delta|epsilon according to isotope ratio of the reference flux
+        """
+        if c.source.isotopes and c.sink.isotopes:
+            exl = check_isotope_effects(ex, c, icl, ind3, ind2)
 
-    # get the equation string for the flux
-    ex = f"toc[{c.s_index}] * {fn}"
-    """ The flux for the light isotope will computed as follows:
-    We will use the mass of the flux we or scaling, but that we will set the
-    delta|epsilon according to isotope ratio of the reference flux
-    """
-    if c.source.isotopes and c.sink.isotopes:
-        exl = check_isotope_effects(ex, c, icl, ind3, ind2)
+        else:
+            exl = ""
+            ex, exl = check_signal_2(ex, exl, c)
 
+        if c.mo.debug_equations_file:
+            ex = ex + f" # {flux.full_name} = toc[{c.s_index}] * {c.ref_flux.full_name}"
     else:
-        exl = ""
-    ex, exl = check_signal_2(ex, exl, c)
+        pass
 
     return ex, exl
 
