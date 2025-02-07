@@ -218,10 +218,11 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
                 if flux.ftype == "in_sequence":
                     rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
                 elif flux.ftype == "None":
-                    ex, exl = get_flux(flux, M, R, icl)  # get flux expressions
-                    fn = f"F[{flux.idx}]"
+                    ex, exl, we = get_flux(flux, M, R, icl)  # get flux expressions
+                    if we:
+                        fn = f"F[{flux.idx}]"
+                        eqs.write(f"{ind2}{fn} = {ex}\n")
                     # all others types that have separate expressions/isotope
-                    eqs.write(f"{ind2}{fn} = {ex}\n")
                     if flux.parent.isotopes:  # add line for isotopes
                         fn = f"F[{flux.idx + 1}]"
                         eqs.write(f"{ind2}{fn} =  {exl}\n")
@@ -391,9 +392,10 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
     """
     from esbmtk import Species, Species2Species
 
+    we = True
     if isinstance(c, Species2Species):
         if c.ctype.casefold() == "regular" or c.ctype.casefold() == "fixed":
-            ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3, M.CM, M.toc)
+            ex, exl, we = get_regular_flux_eq(flux, c, icl, ind2, ind3, M.CM, M.toc)
         elif c.ctype == "scale_with_concentration" or c.ctype == "scale_with_mass":
             ex, exl = get_scale_with_concentration_eq(
                 flux, c, cfn, icl, ind2, ind3, M.CM, M.toc
@@ -411,7 +413,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
     else:
         raise ValueError(f"No definition for \n{c.full_name} type = {type(c)}\n")
 
-    return ex, exl
+    return ex, exl, we
 
 
 def get_ic(r: Species, icl: dict, isotopes=False) -> str:
@@ -480,6 +482,7 @@ def get_regular_flux_eq(
               the total flux, and the second describes the rate for
               the light isotope
     """
+    we = True
     if flux.serves_as_input:
         ex = f"toc[{c.r_index}]"
         exl = check_isotope_effects(ex, c, icl, ind3, ind2)
@@ -487,11 +490,14 @@ def get_regular_flux_eq(
     else:
         CM[:, flux.idx] = CM[:, flux.idx] * toc[c.r_index]
         # FIXME: needs code for signal and isotopes
+        ex = ""
+        exl = ""
+        we = False
 
     if c.mo.debug_equations_file:
         ex = ex + f"  # {flux.full_name} = {toc[c.r_index]:.2e}"
 
-    return ex, exl
+    return ex, exl, we
 
 
 def get_scale_with_concentration_eq(
@@ -524,14 +530,16 @@ def get_scale_with_concentration_eq(
               in the total reservoir concentration and the
               concentration of the light isotope
     """
+    s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration`
     if flux.serves_as_input:
-        s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration
         ex = f"toc[{c.s_index}] * {s_c}"
         exl = check_isotope_effects(ex, c, icl, ind3, ind2)
         ex, exl = check_signal_2(ex, exl, c)
 
     else:
         CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
+        ex = f"{s_c}"
+        exl = ""
         # FIXME: Needs code for isotopes and signals
 
     if c.mo.debug_equations_file:
@@ -587,6 +595,7 @@ def get_scale_with_flux_eq(
     else:
         CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
         ex = fn
+        exl = ""  # FIXME: needs code for istopes and signals
 
     if c.mo.debug_equations_file:
         ex = (
