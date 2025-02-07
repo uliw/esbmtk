@@ -488,11 +488,13 @@ def get_regular_flux_eq(
         exl = check_isotope_effects(ex, c, icl, ind3, ind2)
         ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
     else:
-        CM[:, flux.idx] = CM[:, flux.idx] * toc[c.r_index]
-        # FIXME: needs code for signal and isotopes
-        ex = ""
+        # # FIXME: needs code for signal and isotopes
+        # FIXME this causes trouble!
+        # CM[:, flux.idx] = CM[:, flux.idx] * toc[c.r_index]
+        # ex = ""
+        ex = f"toc[{c.r_index}]"
         exl = ""
-        we = False
+        we = True
 
     if c.mo.debug_equations_file:
         ex = ex + f"  # {flux.full_name} = {toc[c.r_index]:.2e}"
@@ -581,7 +583,7 @@ def get_scale_with_flux_eq(
     fn = f"F[{c.ref_flux.idx}]"
     if flux.serves_as_input:  # use full expression
         ex = f"toc[{c.s_index}] * {fn}"
-        """ The flux for the light isotope will computed as follows:
+        """The flux for the light isotope will computed as follows:
         We will use the mass of the flux we or scaling, but that we will set the
         delta|epsilon according to isotope ratio of the reference flux
         """
@@ -592,7 +594,7 @@ def get_scale_with_flux_eq(
             exl = ""
             ex, exl = check_signal_2(ex, exl, c)
 
-    else:
+    else:  # FIXME: this seems harmless
         CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
         ex = fn
         exl = ""  # FIXME: needs code for istopes and signals
