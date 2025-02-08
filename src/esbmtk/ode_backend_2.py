@@ -220,12 +220,11 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
                 if flux.ftype == "in_sequence":
                     rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
                 elif flux.ftype == "None":
-                    ex, exl, we = get_flux(flux, M, R, icl)  # get flux expressions
-                    if we:
+                    ex, exl = get_flux(flux, M, R, icl)  # get flux expressions
+                    if ex != "":
                         fn = f"F[{flux.idx}]"
                         eqs.write(f"{ind2}{fn} = {ex}\n")
-                    # all others types that have separate expressions/isotope
-                    if flux.parent.isotopes:  # add line for isotopes
+                    if exl != "":  # add line for isotopes
                         fn = f"F[{flux.idx + 1}]"
                         eqs.write(f"{ind2}{fn} =  {exl}\n")
                         fi = fi + 1
@@ -394,10 +393,9 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
     """
     from esbmtk import Species, Species2Species
 
-    we = True
     if isinstance(c, Species2Species):
         if c.ctype.casefold() == "regular" or c.ctype.casefold() == "fixed":
-            ex, exl, we = get_regular_flux_eq(flux, c, icl, ind2, ind3, M.CM, M.toc)
+            ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3, M.CM, M.toc)
         elif c.ctype == "scale_with_concentration" or c.ctype == "scale_with_mass":
             ex, exl = get_scale_with_concentration_eq(
                 flux, c, cfn, icl, ind2, ind3, M.CM, M.toc
@@ -415,7 +413,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
     else:
         raise ValueError(f"No definition for \n{c.full_name} type = {type(c)}\n")
 
-    return ex, exl, we
+    return ex, exl
 
 
 def get_ic(r: Species, icl: dict, isotopes=False) -> str:
@@ -484,22 +482,22 @@ def get_regular_flux_eq(
               the total flux, and the second describes the rate for
               the light isotope
     """
-    we = True
-    if flux.serves_as_input:
+    ex = ""
+    exl = ""
+    if flux.serves_as_input or c.signal != "None":
         ex = f"toc[{c.r_index}]"
         exl = check_isotope_effects(ex, c, icl, ind3, ind2)
         ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
     else:
-        # # FIXME: needs code for signal and isotopes
         CM[:, flux.idx] = CM[:, flux.idx] * toc[c.r_index]
-        ex = ""
-        exl = ""
-        we = False
+        if flux.isotopes:
+            CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]
+            exl = check_isotope_effects(ex, c, icl, ind3, ind2)
 
     if c.mo.debug_equations_file:
         ex = ex + f"  # {flux.full_name} = {toc[c.r_index]:.2e}"
 
-    return ex, exl, we
+    return ex, exl
 
 
 def get_scale_with_concentration_eq(
@@ -533,16 +531,18 @@ def get_scale_with_concentration_eq(
               concentration of the light isotope
     """
     s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration`
-    if flux.serves_as_input:
+    exl = ""
+    ex = ""
+    if flux.serves_as_input or c.signal != "None":
         ex = f"toc[{c.s_index}] * {s_c}"
         exl = check_isotope_effects(ex, c, icl, ind3, ind2)
         ex, exl = check_signal_2(ex, exl, c)
-
     else:
         CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
         ex = f"{s_c}"
-        exl = ""
-        # FIXME: Needs code for isotopes and signals
+        if flux.isotopes:
+            CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]
+            exl = check_isotope_effects(ex, c, icl, ind3, ind2)
 
     if c.mo.debug_equations_file:
         ex = (
@@ -580,24 +580,27 @@ def get_scale_with_flux_eq(
               concentration of the light isotope
     """
     # get the reference flux name
+    exl = ""
     fn = f"F[{c.ref_flux.idx}]"
-    if flux.serves_as_input:  # use full expression
+    if flux.serves_as_input or c.signal != "None":
         ex = f"toc[{c.s_index}] * {fn}"
         """The flux for the light isotope will computed as follows:
         We will use the mass of the flux we or scaling, but that we will set the
         delta|epsilon according to isotope ratio of the reference flux
         """
+        exl = ""
         if c.source.isotopes and c.sink.isotopes:
             exl = check_isotope_effects(ex, c, icl, ind3, ind2)
 
         else:
-            exl = ""
             ex, exl = check_signal_2(ex, exl, c)
 
-    else:  # FIXME: this seems harmless
+    else:
         CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
         ex = fn
-        exl = ""  # FIXME: needs code for istopes and signals
+        if flux.isotopes:
+            CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]
+            exl = check_isotope_effects(ex, c, icl, ind3, ind2)
 
     if c.mo.debug_equations_file:
         ex = (
