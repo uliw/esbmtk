@@ -73,10 +73,10 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
 
         else:  # regular reservoirs may have multiple fluxes
             if isinstance(r, Species):
-                # FIXME: this needs to be adjusted for density
-                mass = (
-                    r.volume.to(r.model.v_unit).magnitude * r.parent.swc.density / 1000
+                density = (
+                    r.parent.swc.density / 1000 if hasattr(r.parent, "swc") else 1.0
                 )
+                mass = r.volume.to(r.model.v_unit).magnitude * density
             elif isinstance(r, GasReservoir):
                 mass = r.v[0]
             else:
