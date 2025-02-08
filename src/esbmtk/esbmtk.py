@@ -1983,6 +1983,22 @@ class Flux(esbmtkBase):
         Arguments are the species name the flux
         rate (mol/year), the delta value and unit
 
+        Example::
+
+        Flux = (name = "Name" # optional, defaults to _F
+             species = species_handle,
+             delta = any number,
+             rate  = "12 mol/s" # must be a string
+             display_precision = number, optional, inherited from Model
+
+        )
+
+        You can access the flux data as:
+
+        - Name.m # mass
+        - Name.d # delta
+        - Name.c # same as Name.m since flux has no concentration
+
         Defaults::
 
             self.defaults: dict[str, tp.List[any, tuple]] = {
@@ -2045,16 +2061,13 @@ class Flux(esbmtkBase):
             "id": ["None", (str)],
             "ftype": ["None", (str)],
             "computed_by": ["None", (str, ExternalCode)],
-            "serves_as_input": [True, (bool)],
+            "serves_as_input": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["species", "rate", "register"]
         self.__initialize_keyword_variables__(kwargs)
         self.parent = self.register
-        # if save_flux_data is unsepcified, use model default
-        # if self.save_flux_data == "None":
-        #     self.save_flux_data = self.species.mo.save_flux_data
 
         # legacy names
         self.n: str = self.name  # name of flux

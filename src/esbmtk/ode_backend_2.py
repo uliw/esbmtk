@@ -48,7 +48,7 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
         if r.isotopes:
             num_res = num_res + 1
 
-    F = np.zeros(fi)  # initialize flux value vector
+    F = np.ones(fi)  # initialize flux value vector
     CM = np.zeros((num_res, fi), dtype=float)  # Initialize Coefficient matrix:
 
     """We have n reservoirs, without isotopes, this corresponds to
@@ -489,12 +489,10 @@ def get_regular_flux_eq(
         ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
     else:
         # # FIXME: needs code for signal and isotopes
-        # FIXME this causes trouble!
-        # CM[:, flux.idx] = CM[:, flux.idx] * toc[c.r_index]
-        # ex = ""
-        ex = f"toc[{c.r_index}]"
+        CM[:, flux.idx] = CM[:, flux.idx] * toc[c.r_index]
+        ex = ""
         exl = ""
-        we = True
+        we = False
 
     if c.mo.debug_equations_file:
         ex = ex + f"  # {flux.full_name} = {toc[c.r_index]:.2e}"
