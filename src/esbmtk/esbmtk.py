@@ -765,7 +765,7 @@ class Model(esbmtkBase):
                 t_eval=self.time_ode,
                 first_step=self.min_timestep,
                 max_step=self.dt,
-                vectorized=False,
+                vectorized=False,  # flux equations would need to be adjusted
             )
 
         print(
