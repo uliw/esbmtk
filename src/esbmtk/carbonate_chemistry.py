@@ -267,6 +267,23 @@ def carbonate_system_2(
     BCC = A_zcc_zmax * B_AD
     BNS = alpha * A_z0_zsat * B_AD
     diff_co3 = Csat_table[zsat:zcc] - co3
+    """FIXME: Can area_sat_cc = area_dz_table[zsat:zcc]
+    be rewritten as:
+    
+    area_sat_cc = area[zsat] - area[zcc]
+    
+    which would allow for a vectorized expression?
+    But that also would have to work for diff_co3 as well.
+
+    If yes, we can use Einstein summation notation
+    
+   result = np.einsum('ij,ij->i', U, V)
+   
+    `ij,ij->i` means: Multiply element-wise along each row, then sum per row.
+    for  kc * area_sat_cc.dot(diff_co3)
+
+    This would also be helpful for the post-processing step
+    """
     area_sat_cc = area_dz_table[zsat:zcc]
     BDS_under = kc * area_sat_cc.dot(diff_co3)
     BDS_resp = alpha * (A_zsat_zcc * B_AD - BDS_under)
