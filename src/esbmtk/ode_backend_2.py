@@ -484,17 +484,19 @@ def get_regular_flux_eq(
     """
     ex = ""
     exl = ""
+    output = True
     if flux.serves_as_input or c.signal != "None":
         ex = f"toc[{c.r_index}]"
         exl = check_isotope_effects(ex, c, icl, ind3, ind2)
         ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
     else:
+        output = False
         CM[:, flux.idx] = CM[:, flux.idx] * toc[c.r_index]
         if flux.isotopes:
             CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]
             exl = check_isotope_effects(ex, c, icl, ind3, ind2)
 
-    if c.mo.debug_equations_file:
+    if c.mo.debug_equations_file and output:
         ex = ex + f"  # {flux.full_name} = {toc[c.r_index]:.2e}"
 
     return ex, exl
