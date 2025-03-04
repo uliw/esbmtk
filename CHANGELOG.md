@@ -1,10 +1,14 @@
-- [Changelog](#org8d2f12a)
+- [Changelog](#org8926fc4)
 
 
-<a id="org8d2f12a"></a>
+<a id="org8926fc4"></a>
 
 # Changelog
 
+-   0.14.1.x reworked the structure of the equations file, as well as the code that generates forcing functions. `scale_by_concentration` connections now correct for density. Both changes results in small changes to the numerical solutions. Also added link to the GMD publication describing the library.
+-   0.14.0.x simplified the setup of the gas exchange connections, documentation improvements, `number_of_max_datapoints` keyword has been removed. Currently, this results in a huge memory demand for jobs that integrate over millions of years with small time steps (say 10 years)
+-   0.13.0.8 added new testing framework, and 16 unit tests. Updated the documentation
+-   0.13.0.7 the isotope fractionation factor has been renamed from `alpha` to `epsilon`
 -   0.13.0.5 `tinmestep` keyword is now deprecated and should be replaced with `max_timestep`. `min_time_step` is now a configurable option.
 -   0.13.0.x The equations file is now a temporary file with a random name. This allows for the parallel execution of model code.
 -   0.13.0.x plot() will now return the figure and axes handles, and accepts the `no_show` option. This allows for the addition of manual plot elements in post-processing
