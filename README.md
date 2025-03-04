@@ -10,9 +10,7 @@
 <img alt="Documentation Status" src="https://readthedocs.org/projects/esbmtk/badge/?version=latest" />
 </a>
 
-<a href="https://img.shields.io/badge/Python-3.12">
-<img alt="Python 3.12 ready" src="https://www.python.org" />
-</a>
+<a href="https://badge.fury.io/py/esbmtk"><img src="https://badge.fury.io/py/esbmtk.svg" alt="PyPI version" height="18"></a>
 
 <a href="https://doi.org/10.5281/zenodo.14549407"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.14549407.svg" alt="DOI"></a>
 
