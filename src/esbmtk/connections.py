@@ -89,7 +89,7 @@ class Species2Species(esbmtkBase):
 
     Connection Types:
     -----------------
-    - Connecting two reservoirs with a fixed rate:
+    Connecting two reservoirs with a fixed rate:
     >>> Species2Species(  # deep box to sediment
     >>>    ctype="fixed",
     >>>    source=M.L_b.PO4,
@@ -98,7 +98,7 @@ class Species2Species(esbmtkBase):
     >>>    id="shelf_burial",
     >>> )
 
-    - Connecting two reservoirs with a concentration dependent flux:
+    Connecting two reservoirs with a concentration dependent flux:
     >>> Species2Species(  # Surface to deep box
     >>>    source=M.L_b.PO4,
     >>>    sink=M.D_b.PO4,
@@ -110,7 +110,7 @@ class Species2Species(esbmtkBase):
     >>>    id="po4_productivity",
     >>> )
 
-    - Connecting two reservoirs using another flux as reference:
+    Connecting two reservoirs using another flux as reference:
     >>> Species2Species(  # deep box to sediment
     >>>    source=M.D_b.PO4,
     >>>    sink=M.Fb.PO4,
@@ -125,11 +125,10 @@ class Species2Species(esbmtkBase):
     Useful methods in this class
     ----------------------------
 
-    The following methods might prove useful:
-
       - info() will provide a short description of the connection objects.
       - list_processes() which will list all the processes which are associated with this connection.
       - update() which allows you to update connection properties after the connection has been created
+
     """
 
     def __init__(self, **kwargs):
