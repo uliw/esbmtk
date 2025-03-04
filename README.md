@@ -1,21 +1,17 @@
 <a href="https://pypi.org/project/esbmtk/">
 <img alt="Documentation Status" src="https://img.shields.io/pypi/v/esbmtk.svg"/>
 </a>
-
 <a href="https://pyscaffold.org">
 <img alt="Project generated with PyScaffold" src="https://img.shields.io/badge/-PyScaffold-005CA0?logo=pyscaffold"/>
 </a>
-
 <a href="https://esbmtk.readthedocs.io/en/latest/?badge=latest">
 <img alt="Documentation Status" src="https://readthedocs.org/projects/esbmtk/badge/?version=latest" />
 </a>
-
-<a href="https://badge.fury.io/py/esbmtk"><img src="https://badge.fury.io/py/esbmtk.svg" alt="PyPI version" height="18"></a>
-
+<a href="https://www.python.org/doc/versions/">
+  <img alt="Python 3.12 ready" src="https://img.shields.io/badge/python-3.12-blue" />
+</a>
 <a href="https://doi.org/10.5281/zenodo.14549407"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.14549407.svg" alt="DOI"></a>
-
 <a href="https://anaconda.org/conda-forge/scores"> <img src="https://anaconda.org/conda-forge/scores/badges/version.svg" /> </a>
-
 <a href="https://anaconda.org/conda-forge/scores"> <img src="https://anaconda.org/conda-forge/scores/badges/latest_release_relative_date.svg" /> </a>
 
 
