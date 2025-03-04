@@ -19,13 +19,16 @@ along with this program.  If not, see
 
 from __future__ import annotations
 
+import numpy as np
+import numpy.typing as npt
+
 import typing as tp
 
 if tp.TYPE_CHECKING:
     from esbmtk import Q_, Species2Species
 
 # declare numpy types
-# NDArrayFloat = npt.NDArray[np.float64]
+NDArrayFloat = npt.NDArray[np.float64]
 
 
 # @njit(fastmath=True)
@@ -187,6 +190,11 @@ def init_gas_exchange(c: Species2Species):
         ],
     )
     c.mo.lpc_f.append(ec.fname)
+    # this is now initialized through a Species2Species instance. This instance
+    # will create the necessary Flux instances. Since this will compute the
+    # fluxes. We need to set the compute_by flag
+    for f in c.lof:
+        f.ftype = "std"
     return ec
 
 
@@ -253,7 +261,6 @@ def gas_exchange(
         gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
         # get exchange of the heavy isotope
         f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_aq_c * 1e3)
-        f_l = f - f_h  # the corresponding flux of the light isotope
-        rv = f, f_l
+        rv = f, f - f_h  # the corresponding flux of the light isotope
 
     return rv

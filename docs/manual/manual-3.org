@@ -45,6 +45,29 @@ ConnectionProperties(  # thermohaline upwelling
 )
 M.run()
 #+END_SRC
+
+#+RESULTS:
+#+begin_example
+
+ESBMTK 0.14.1.0.post1.dev11+g530dbbd.d20250125  
+ Copyright (C) 2020 - 2025  Ulrich G.Wortmann
+This program comes with ABSOLUTELY NO WARRANTY
+For details see the LICENSE file
+This is free software, and you are welcome to redistribute it
+under certain conditions; See the LICENSE file for details.
+
+
+nfev=101, njev=1, nlu=22
+
+status=0
+message=The solver successfully reached the end of the integration interval.
+
+
+ Execution took 0.00 cpu seconds, wt = 0.00
+
+This run used 0.29 Gbytes of memory 
+#+end_example
+
 Plotting with
 #+BEGIN_SRC ipython :tangle iso_1.py
 M.plot([M.S_b.O2, M.D_b.O2], fn="iso_1.png")
@@ -239,10 +262,10 @@ import  iso4_test # import script
 
 M = iso4_test.M  # get model handle
 test_values = [  # result, reference value
-    (M.S_b.O2.c[-1], 0.0002306171887706928),
-    (M.O2_At.c[-1], 0.20999483573786618),
-    (M.S_b.O2.d[-1], 0.7204862035835163),
-    (M.O2_At.d[-1], -0.00013345986215331608),
+    (M.S_b.O2.c[-1]*1e6, 230.617),
+    (M.O2_At.c[-1]*1e3, 209.99470974440993),
+    (M.S_b.O2.d[-1], 0.720482831),
+    (M.O2_At.d[-1], -0.0001367157717765818),
 ]
 <<testrunner>>
 #+END_SRC

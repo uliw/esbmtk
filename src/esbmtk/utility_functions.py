@@ -212,7 +212,6 @@ def register_new_flux(ec, rg, dict_key, dict_value) -> list:
         register=reservoir_object,
         ftype=ec.ftype,
         isotopes=reservoir_object.isotopes,
-        computed_by=ec,
     )
 
     ro.append(f)
@@ -297,7 +296,7 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
                     if isinstance(o, Flux):
                         o: list = [o]
                     elif isinstance(o, Species2Species):
-                        o: list = [o._F]  # get flux handle
+                        o: list = o.lof  # get flux handle
                     elif isinstance(
                         o,
                         Species
@@ -320,8 +319,23 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
                     r, sp = get_reservoir_reference(dict_key, M)
                     o: list = register_new_reservoir(r, sp, dict_value)
 
+                res = o[0]
+                if res.rtype == "computed":  # register dummy flux
+                    f = Flux(
+                        species=sp,  # SpeciesProperties handle
+                        rate=0,  # flux value
+                        register=res,  # is this part of a group?
+                        isotopes=res.isotopes,
+                        id=f"{res.full_name}_F",
+                        ftype="computed",
+                    )
+                res.lof.append(f)
+                o = [f]
+
             elif dict_key[:2] == "C_":  # is connection
                 raise NotImplementedError
+            elif dict_key[:2] == "N_":  # is connection
+                pass
             else:
                 raise ValueError(f"{dict_key[0:2]} is not defined")
 

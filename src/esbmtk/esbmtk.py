@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import logging
 import os
+import pathlib as pl
+import sys
 import tempfile
 import time
 import typing as tp
@@ -33,6 +35,13 @@ import numpy.typing as npt
 import pandas as pd
 import psutil
 from pandas import DataFrame
+from scipy.integrate import solve_ivp
+
+from esbmtk.ode_backend_2 import (
+    build_eqs_matrix,
+    get_initial_conditions,
+    write_equations_3,
+)
 
 from . import Q_, ureg
 from .esbmtk_base import esbmtkBase
@@ -351,7 +360,9 @@ class Model(esbmtkBase):
             f"This program comes with ABSOLUTELY NO WARRANTY\n"
             f"For details see the LICENSE file\n"
             f"This is free software, and you are welcome to redistribute it\n"
-            f"under certain conditions; See the LICENSE file for details.\n"
+            f"under certain conditions; See the LICENSE file for details.\n\n"
+            f"If use ESBMTK for your research, please cite:\n\n"
+            f"https://doi.org/10.5194/gmd-18-1155-2025\n"
         )
         print(warranty)
 
@@ -677,29 +688,21 @@ class Model(esbmtkBase):
         tempfile.tempdir = cwd
         with tempfile.NamedTemporaryFile(suffix=".py") as tmp_file:
             eqs_fn = pl.Path(tmp_file.name)
-            eqs_module_name = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
+            eqs_module_name = write_equations_3(self, R, icl, cpl, ipl, eqs_fn)
             eqs_set = __import__(eqs_module_name).eqs
         return eqs_set
 
     def ode_solver(self, kwargs):
         """Initiate the ODE solver call."""
-        import pathlib as pl
-        import sys
-
-        from scipy.integrate import solve_ivp
-
-        from esbmtk.ode_backend import (
-            get_initial_conditions,
-            write_equations_2,
-        )
-        from esbmtk.ode_backend_2 import build_eqs_matrix, write_equations_3
-
         # build equation file
         R, icl, cpl, ipl, atol = get_initial_conditions(self, self.rtol)
         self.R = R
         self.icl = icl
         self.cpl = cpl
         self.ipl = ipl
+
+        # build coefficient matrix C
+        self.CM, self.F = build_eqs_matrix(self)
 
         cwd = Path.cwd()
         sys.path.append(cwd)  # required on windows
@@ -717,9 +720,9 @@ class Model(esbmtkBase):
                     eqs_module_name: str = eqs_fn.stem
                 else:  # delete old file, and create new one
                     eqs_fn.unlink()  # delete old file
-                    eqs_module_name = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
+                    eqs_module_name = write_equations_3(self, R, icl, cpl, ipl, eqs_fn)
             else:  # this is the first run. Create persistent equations file
-                eqs_module_name = write_equations_2(self, R, icl, cpl, ipl, eqs_fn)
+                eqs_module_name = write_equations_3(self, R, icl, cpl, ipl, eqs_fn)
 
             # import equations
             eqs_set = __import__(eqs_module_name).eqs
@@ -729,7 +732,7 @@ class Model(esbmtkBase):
                 eqs_fn.unlink()
 
             eqs_set = self.write_temp_equations(
-                cwd, write_equations_2, R, icl, cpl, ipl
+                cwd, write_equations_3, R, icl, cpl, ipl
             )
 
         method = kwargs.get("method", "BDF")
@@ -749,10 +752,12 @@ class Model(esbmtkBase):
                 args=(
                     self,
                     self.gpt,
-                    self.toc,
+                    self.toc,  # tuple of constants
                     self.area_table,
                     self.area_dz_table,
                     self.Csat_table,
+                    self.CM,  # coefficient matrix
+                    self.F,  # flux vector
                 ),
                 method=method,
                 atol=atol,
@@ -760,7 +765,7 @@ class Model(esbmtkBase):
                 t_eval=self.time_ode,
                 first_step=self.min_timestep,
                 max_step=self.dt,
-                vectorized=False,
+                vectorized=False,  # flux equations would need to be adjusted
             )
 
         print(
@@ -1780,6 +1785,7 @@ class Species(SpeciesBase):
         else:
             self.volume = Q_(self.volume).to(self.mo.v_unit)
 
+        # append reservoir volume to list of toc's
         self.model.toc = (*self.model.toc, self.volume.to(self.model.v_unit).magnitude)
         self.v_index = self.model.gcc
         self.model.gcc = self.model.gcc + 1
@@ -1979,6 +1985,22 @@ class Flux(esbmtkBase):
         Arguments are the species name the flux
         rate (mol/year), the delta value and unit
 
+        Example::
+
+        Flux = (name = "Name" # optional, defaults to _F
+             species = species_handle,
+             delta = any number,
+             rate  = "12 mol/s" # must be a string
+             display_precision = number, optional, inherited from Model
+
+        )
+
+        You can access the flux data as:
+
+        - Name.m # mass
+        - Name.d # delta
+        - Name.c # same as Name.m since flux has no concentration
+
         Defaults::
 
             self.defaults: dict[str, tp.List[any, tuple]] = {
@@ -2041,15 +2063,13 @@ class Flux(esbmtkBase):
             "id": ["None", (str)],
             "ftype": ["None", (str)],
             "computed_by": ["None", (str, ExternalCode)],
+            "serves_as_input": [False, (bool)],
         }
 
         # provide a list of absolutely required keywords
         self.lrk: list = ["species", "rate", "register"]
         self.__initialize_keyword_variables__(kwargs)
         self.parent = self.register
-        # if save_flux_data is unsepcified, use model default
-        # if self.save_flux_data == "None":
-        #     self.save_flux_data = self.species.mo.save_flux_data
 
         # legacy names
         self.n: str = self.name  # name of flux
@@ -2115,7 +2135,7 @@ class Flux(esbmtkBase):
 
         if self.name == "None":
             if isinstance(self.parent, (Species2Species)):
-                self.name = "_F"
+                self.name = f"_F{self.id}"
                 self.n = self.name
             else:
                 self.name = f"{self.id}_F"

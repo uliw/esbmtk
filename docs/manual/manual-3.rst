@@ -50,6 +50,27 @@ ESBMTK support the use of isotopes for many processes and species out of the box
     )
     M.run()
 
+::
+
+
+    ESBMTK 0.14.1.0.post1.dev11+g530dbbd.d20250125  
+     Copyright (C) 2020 - 2025  Ulrich G.Wortmann
+    This program comes with ABSOLUTELY NO WARRANTY
+    For details see the LICENSE file
+    This is free software, and you are welcome to redistribute it
+    under certain conditions; See the LICENSE file for details.
+
+
+    nfev=101, njev=1, nlu=22
+
+    status=0
+    message=The solver successfully reached the end of the integration interval.
+
+
+     Execution took 0.00 cpu seconds, wt = 0.00
+
+    This run used 0.29 Gbytes of memory 
+
 Plotting with
 
 .. code:: ipython
