@@ -6,7 +6,8 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools_scm]
 # For smarter version schemes and other configuration options,
 # check out https://github.com/pypa/setuptools_scm
-version_scheme = "no-guess-dev"
+version_scheme = "post-release"
+local_scheme = "no-local-version"
 # version_scheme = "only-version"
 # git_describe_command = ["common/scripts/git-describe.sh", "esbmtk"]
 # git_describe_command = "git describe --all"
