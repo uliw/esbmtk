@@ -6,3 +6,4 @@ scipy
 pint
 PyCO2SYS >= 1.8.3.3
 psutil
+cachetools
