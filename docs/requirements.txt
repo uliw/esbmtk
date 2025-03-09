@@ -12,5 +12,6 @@ psutil
 IPython
 sphinx_rtd_theme
 pyCO2SYS
+cachetools
 importlib-metadata
 -e .
