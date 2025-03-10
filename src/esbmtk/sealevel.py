@@ -141,6 +141,9 @@ class hypsometry(esbmtkBase):
             pickle_date = (
                 pl.Path(fn_pickle).stat().st_ctime if fqfn_pickle.exists() else 0
             )
+        else:
+            pickle_date = 0
+
         csv_date = pl.Path(fn_csv).stat().st_ctime
         if csv_date < pickle_date:  # pickle file is newer
             df = pd.read_pickle(fn_pickle)
