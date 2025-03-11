@@ -425,6 +425,7 @@ class Signal(esbmtkBase):
                  species = SpeciesProperties handle,
                  start = "0 yrs",     # optional
                  duration = "0 yrs",  #
+                 reverse: [False, (bool)], # optional
                  delta = 0,           # optional
                  stype = "addition"   # or multiplication
                  shape = "square/pyramid/bell/filename"
@@ -459,8 +460,9 @@ class Signal(esbmtkBase):
       i.e., the first row needs to be a header line
 
     All time data in the csv file will be treated as realative time
-    (i.e., the start time will be mapped to zero). Use the offset
-    keyword to shift the external signal data in the time domain.
+    (i.e., the start time will be mapped to zero). The reverse
+    keyword can be used to invert a signal that is read from a csv
+    file.
 
     Last but not least, you can provide an optional reservoir name. In
     this case, the signal will create a source as (signal_name_source)
