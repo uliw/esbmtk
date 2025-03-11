@@ -362,7 +362,7 @@ class Model(esbmtkBase):
             f"This is free software, and you are welcome to redistribute it\n"
             f"under certain conditions; See the LICENSE file for details.\n\n"
             f"If use ESBMTK for your research, please cite:\n\n"
-            f"https://doi.org/10.5194/gmd-18-1155-2025\n"
+            f"Wortmann et al. 2025, https://doi.org/10.5194/gmd-18-1155-2025\n"
         )
         print(warranty)
 
