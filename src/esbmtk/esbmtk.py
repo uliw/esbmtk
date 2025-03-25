@@ -514,7 +514,15 @@ class Model(esbmtkBase):
         will create the necessary data files to initialize a
         subsequent model run.
         """
+        from pathlib import Path
+
         from esbmtk import GasReservoir, Species  # GasReservoir
+
+        path = Path(directory).resolve()
+        if not path.exists() or not path.is_dir():
+            raise FileNotFoundError(
+                f"The directory '{path}' does not exist or is not a directory."
+            )
 
         for r in self.lor:
             if isinstance(r, Species | GasReservoir):
