@@ -570,6 +570,8 @@ class Model(esbmtkBase):
         filename = kwargs.get("fn", f"{self.n}.pdf")
         blocking = kwargs.get("blocking", True)
         plot_title = kwargs.get("title", "None")
+        reverse_time = kwargs.get("reverse_time", False)
+
         noo: int = len(pl)
         size, geo = plot_geometry(noo)  # adjust layout
         [row, col] = geo
@@ -618,13 +620,18 @@ class Model(esbmtkBase):
                 i = i + 1
 
         fig.subplots_adjust(top=0.88)
+
+        if reverse_time:
+            for ax in fig.get_axes():
+                ax.invert_xaxis()
+
         if not kwargs.get("no_show", False):
             fig.tight_layout()
             plt.show(block=blocking)  # create the plot windows
             fig.savefig(filename)
             return
         else:
-            return plt, fig, axs
+            return plt, fig, fig.get_axes()
 
     def run(self, **kwargs) -> None:
         """Loop over the time vector.
