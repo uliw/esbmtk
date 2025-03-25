@@ -1112,6 +1112,23 @@ def reverse_key(key: str) -> str:
     return f"{r2}_to_{r1}"
 
 
+def reverse_tick_labels_factory(max_tick_value):
+    """Reverse the label of the x-axis ticks but not the data.
+
+    Usage:
+
+    From matplotlib.ticker import FuncFormatter
+    ax.xaxis.set_major_formatter(FuncFormatter(reverse_tick_labels_factory(x_max)))
+
+    where xmax = max value on the x-axis
+    """
+
+    def formatter(x, pos):
+        return f"{max_tick_value - x:.1f}"
+
+    return formatter
+
+
 def get_connection_keys(
     f_list: set,
     ref_id: str,
