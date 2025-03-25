@@ -358,7 +358,6 @@ class Model(esbmtkBase):
             f"ESBMTK {version('esbmtk')}  \n Copyright (C) 2020 - "
             f"{datetime.date.today().year}  Ulrich G.Wortmann\n"
             f"This program comes with ABSOLUTELY NO WARRANTY\n"
-            f"For details see the LICENSE file\n"
             f"This is free software, and you are welcome to redistribute it\n"
             f"under certain conditions; See the LICENSE file for details.\n\n"
             f"If you use ESBMTK for your research, please cite:\n\n"
@@ -541,7 +540,9 @@ class Model(esbmtkBase):
 
         - fn: a string, optional, default is 'model_name'. The filename to save the plot.
         - title: a string to set the optional plot title
-        - no_show: bool, if set to True, do not show & save figure. Useful if one needs to add figure elements manually.
+        - no_show: bool, if set to True, do not show & save figure. Instead, return the
+          plt, fig and axes handles. Useful if one needs to add figure elements manually.
+        - reverse_time if time and time axes lables need to be reversed.
 
         :returns: a tuple with the figure instance, list of axs objects
 
@@ -570,6 +571,12 @@ class Model(esbmtkBase):
             )
 
         """
+        from matplotlib.ticker import FuncFormatter
+
+        from esbmtk import Q_
+
+        from .utility_functions import reverse_tick_labels_factory
+
         if pl is None:
             pl = []
         if not isinstance(pl, list):
@@ -579,6 +586,7 @@ class Model(esbmtkBase):
         blocking = kwargs.get("blocking", True)
         plot_title = kwargs.get("title", "None")
         reverse_time = kwargs.get("reverse_time", False)
+        no_show = kwargs.get("no_show", False)
 
         noo: int = len(pl)
         size, geo = plot_geometry(noo)  # adjust layout
@@ -630,16 +638,20 @@ class Model(esbmtkBase):
         fig.subplots_adjust(top=0.88)
 
         if reverse_time:
+            t_max = Q_(f"{self.time[-1]} {self.t_unit}").to(self.d_unit).magnitude
             for ax in fig.get_axes():
                 ax.invert_xaxis()
+                ax.xaxis.set_major_formatter(
+                    FuncFormatter(reverse_tick_labels_factory(t_max))
+                )
 
-        if not kwargs.get("no_show", False):
+        if no_show:
+            return plt, fig, fig.get_axes()
+        else:
             fig.tight_layout()
             plt.show(block=blocking)  # create the plot windows
             fig.savefig(filename)
             return
-        else:
-            return plt, fig, fig.get_axes()
 
     def run(self, **kwargs) -> None:
         """Loop over the time vector.
