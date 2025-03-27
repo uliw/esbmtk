@@ -1,22 +1,20 @@
-#+options: toc:nil author:nil num:nil
+# Debugging and Tips & Tricks
 
 
-* Debugging and Tips & Tricks
-** Key spelling errors
-ESBMTK does some rudimentary error checking on the key-value pairs that are used to initialize the ESBMTK objects. It will catch typos if a key is misspelled, e.g., in the following example, we use =elements= instead of =element=, and this will result in stack trace where the first entry points to the location in the model code where the error occurs,, and where the last line indicates that =elements= is not a valid keyword
-#+BEGIN_SRC ipython
+## Key spelling errors
+
+ESBMTK does some rudimentary error checking on the key-value pairs that are used to initialize the ESBMTK objects. It will catch typos if a key is misspelled, e.g., in the following example, we use `elements` instead of `element`, and this will result in stack trace where the first entry points to the location in the model code where the error occurs,, and where the last line indicates that `elements` is not a valid keyword
+
+```ipython
 from esbmtk import Model
 
 M = Model(
     stop="6 Myr",
     max_timestep="1 kyr",
     elements=["Carbon", "Oxygen"])
-#+END_SRC
+```
 
-#+RESULTS:
-:RESULTS:
-# [goto error]
-#+begin_example
+```
 ---------------------------------------------------------------------------
 KeywordError                              Traceback (most recent call last)
 Cell In[4], line 3
@@ -55,24 +53,23 @@ File ~/user/python-scripts/esbmtk/src/esbmtk/esbmtk_base.py:146, in input_parsin
 KeywordError: 
 
 elements is not a valid keyword
-#+end_example
-:END:
-** Value errors
-ESBMTK will test if the provided value is of the right type, (i.e., a number, or a string). So in the following example, it will raise 
-an input error since =time_step= is given without a time unit.
-#+BEGIN_SRC ipython
+```
+
+
+## Value errors
+
+ESBMTK will test if the provided value is of the right type, (i.e., a number, or a string). So in the following example, it will raise an input error since `time_step` is given without a time unit.
+
+```ipython
 from esbmtk import Model
 
 M = Model(
     stop="6 Myr",
     max_timestep=1,
     elements=["Carbon", "Oxygen"])
-#+END_SRC
+```
 
-#+RESULTS:
-:RESULTS:
-# [goto error]
-#+begin_example
+```
 ---------------------------------------------------------------------------
 InputError                                Traceback (most recent call last)
 Cell In[5], line 3
@@ -89,23 +86,22 @@ Cell In[5], line 3
 InputError: 
 
 1 for max_timestep must be of type (<class 'str'>, <class 'pint.Quantity'>), not <class 'int'>
-#+end_example
-:END:
-** Key-type errors
-ESBMTK will check that absolutely  necessary keys are provided, e.g., omitting the =max_timestep= key will result in a =Missingkeyworderror=.
+```
 
-#+BEGIN_SRC ipython
+
+## Key-type errors
+
+ESBMTK will check that absolutely necessary keys are provided, e.g., omitting the `max_timestep` key will result in a `Missingkeyworderror`.
+
+```ipython
 from esbmtk import Model
 
 M = Model(
     stop="6 Myr",
     elements=["Carbon", "Oxygen"])
-#+END_SRC
+```
 
-#+RESULTS:
-:RESULTS:
-# [goto error]
-#+begin_example
+```
 ---------------------------------------------------------------------------
 MissingKeywordError                       Traceback (most recent call last)
 Cell In[7], line 3
@@ -121,22 +117,27 @@ Cell In[7], line 3
 MissingKeywordError: 
 
 max_timestep is a mandatory keyword
-#+end_example
-:END:
+```
 
-However, ESBMTK classes like  =Connectionproperties= accept a large range of keywords, and presently ESBMTK has no mechanism to test if all of these are suitable to the given connection or not. A typical mistake is shown in the following example that defines a connection where the flux is based on the concentration in the source reservoir. 
-#+BEGIN_SRC ipython
+However, ESBMTK classes like `Connectionproperties` accept a large range of keywords, and presently ESBMTK has no mechanism to test if all of these are suitable to the given connection or not. A typical mistake is shown in the following example that defines a connection where the flux is based on the concentration in the source reservoir.
+
+```ipython
 Species2Species(  # Surface to deep box
     source=M.L_b.PO4,
     sink=M.D_b.PO4,
     ctype="scale_with_concentration",
     scale=1,
     id="productivity")
-#+END_SRC
-It is a common mistake to replace the =scale= keyword with the =rate= keyword. This error will not be caught by ESBMTK since =rate= is valid keyword for other connection types. This can result in difficult to track errors. 
-** Using introspection
-All ESBMTK objects maintain state, it is thus possible to inspect them. If we create e.g., the following model 
-#+BEGIN_SRC ipython :results silent
+```
+
+It is a common mistake to replace the `scale` keyword with the `rate` keyword. This error will not be caught by ESBMTK since `rate` is valid keyword for other connection types. This can result in difficult to track errors.
+
+
+## Using introspection
+
+All ESBMTK objects maintain state, it is thus possible to inspect them. If we create e.g., the following model
+
+```ipython
 from esbmtk import Model, Reservoir
 
 M = Model(
@@ -149,103 +150,113 @@ Reservoir(
     volume="3E16 m**3",  # surface box volume
     concentration={M.DIC: "2200 umol/l"},  # initial concentration
 )
-#+END_SRC
-
-
+```
 
 we can query the parameters that we used to create the Reservoir instance by printing the model instance.
-#+BEGIN_SRC ipython
-print(M)
-#+END_SRC
 
-#+RESULTS:
-: M (Model)
-:   stop = 6 Myr
-:   max_timestep = 1 kyr
-:   element = ['Carbon']
-: 
+```ipython
+print(M)
+```
+
+    M (Model)
+      stop = 6 Myr
+      max_timestep = 1 kyr
+      element = ['Carbon']
 
 Since ESBMTK follows a hierarchical structure we can query the element properties for Phosphor like this
-#+BEGIN_SRC ipython
-print(M.Carbon)
-#+END_SRC
 
-#+RESULTS:
-: Carbon (ElementProperties)
-:   mass_unit = mol
-:   li_label = C^{12}$S
-:   hi_label = C^{13}$S
-:   d_label = $\delta^{13}$C
-:   d_scale = mUr VPDB
-:   r = 0.0112372
-:   reference = https://www-pub.iaea.org/MTCD/publications/PDF/te_825_prn.pdf
-:   full_name = M.Carbon
-: 
+```ipython
+print(M.Carbon)
+```
+
+    Carbon (ElementProperties)
+      mass_unit = mol
+      li_label = C^{12}$S
+      hi_label = C^{13}$S
+      d_label = $\delta^{13}$C
+      d_scale = mUr VPDB
+      r = 0.0112372
+      reference = https://www-pub.iaea.org/MTCD/publications/PDF/te_825_prn.pdf
+      full_name = M.Carbon
 
 and the DIC reservoir in the surface box as
-#+BEGIN_SRC ipython
+
+```ipython
 print(M.S_b.DIC)
-#+END_SRC
+```
 
-#+RESULTS:
-: DIC (Species)
-:   delta = None
-:   concentration = 2200 umol/l
-:   isotopes = False
-:   plot = None
-:   volume = 2.9999999999999996e+19 liter
-:   groupname = S_b
-:   rtype = regular
-:   full_name = M.S_b.DIC
-: 
+    DIC (Species)
+      delta = None
+      concentration = 2200 umol/l
+      isotopes = False
+      plot = None
+      volume = 2.9999999999999996e+19 liter
+      groupname = S_b
+      rtype = regular
+      full_name = M.S_b.DIC
 
-to get a list of species that are defined for =M.Carbon= , we can use the =vars()= function (this results in a long list, so it is not shown here)
-#+BEGIN_SRC ipython :results silent
+to get a list of species that are defined for `M.Carbon` , we can use the `vars()` function (this results in a long list, so it is not shown here)
+
+```ipython
 vars(M.Carbon)
-#+END_SRC
+```
 
 
-** Accessing ESBMTK objects that are created implicitly
+## Accessing ESBMTK objects that are created implicitly
+
 Inspecting objects that are explicitly defined is straightforward, however, connection objects like:
-#+BEGIN_SRC ipython
+
+```ipython
 Species2Species(  # Surface to deep box
     source=M.L_b.PO4,
     sink=M.D_b.PO4,
     ctype="scale_with_concentration",
     scale=1,
     id="productivity")
-#+END_SRC
+```
+
 do not have an obvious name. The same is true for Flux instances. I.e., if we want scale the flux of organic bound phosphor as a function of the primary production of organic matter (OM), we need to know how the reference the OM flux. ESBMTK provides a lookup function for fluxes
-#+BEGIN_SRC ipython
+
+```ipython
 M.flux_summary(
     filter_by="productivity",
     exclude="H_b", # optional
     return_list=True, # optional
 )
-#+END_SRC
+```
+
 as well as for connections:
-#+BEGIN_SRC ipython
+
+```ipython
 M.flux_summary(
     filter_by="productivity",
     return_list=True, # optional
 )
-#+END_SRC
+```
+
 The returned objects can then be inspected as usual.
 
-** Inspecting the model equations
-Under normal circumstances the model equations are transient and created on the fly. It is however possible to create a permanent version and write the equations to the file =equations.py= . To enable this feature, on has to set the =debug_equations_file= key
-#+BEGIN_SRC ipython
+
+## Inspecting the model equations
+
+Under normal circumstances the model equations are transient and created on the fly. It is however possible to create a permanent version and write the equations to the file `equations.py` . To enable this feature, on has to set the `debug_equations_file` key
+
+```ipython
 M = Model(
     stop="6 Myr",
     max_timestep="1 kyr",
     elements=["Carbon", "Oxygen"],
     debug_equations_file=True,
 )
-#+END_SRC
-Running the model will now create =equations.py= in the respective project directory. Subsequent runs will query whether to re-use the equations file from the previous run, or to create a new one. Re-using the old file is particularly useful when creating your own extensions, as it allows to edit the equations file manually (i.e, to set breakpoints, or add print statement to trace the solver etc.)
+```
 
-** Numerical errors in the solver
-If the default ODE solver fails to obtain a solution, consider reducing the =max_timestep= value, or switching to another algorithm. The =LSODA= solver often succeeds where BDF fails. It is however slower.
-#+BEGIN_SRC ipython
+Running the model will now create `equations.py` in the respective project directory. Subsequent runs will query whether to re-use the equations file from the previous run, or to create a new one. Re-using the old file is particularly useful when creating your own extensions, as it allows to edit the equations file manually (i.e, to set breakpoints, or add print statement to trace the solver etc.)
+
+
+## Numerical errors in the solver
+
+If the default ODE solver fails to obtain a solution, consider reducing the `max_timestep` value, or switching to another algorithm. The `LSODA` solver often succeeds where BDF fails. It is however slower.
+
+```ipython
 M.run(method="LSODA")
-#+END_SRC
+```
