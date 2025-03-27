@@ -258,7 +258,6 @@ def carbonate_system_2(
 
     zsat = get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0)
     zcc = get_zcc(CaCO3_export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3)
-
     B_AD = CaCO3_export / AD  # get fractional areas
     A_z0_zsat = area_table[z0] - area_table[zsat]
     A_zsat_zcc = area_table[zsat] - area_table[zcc]
