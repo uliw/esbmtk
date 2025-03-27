@@ -1,9 +1,11 @@
-    :Author: uli wortmann
+    :Author: Uli Wortmann
 
 .. contents::
 
 1 Changelog
 -----------
+
+- 0.14.1.4 Fixed a regression that caused incorrect ``zcc`` values in the post-processing step. Added  the ``reverse_time`` keyword to the plot function. This is most useful for models that run forward in time from past starting point.
 
 - 0.14.1.x reworked the structure of the equations file, as well as the code that generates forcing functions. ``scale_by_concentration`` connections now correct for density. Both changes results in small changes to the numerical solutions. Also added link to the GMD publication describing the library.
 
