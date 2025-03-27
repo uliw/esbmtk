@@ -732,36 +732,28 @@ def get_initial_conditions(
     cpl: list = []  # list of reservoirs that are computed
     ipl: list = []  # list of static reservoirs that serve as input
 
+    print(f"rtol = {rtol}")
+    # collect all reservoirs that have initial conditions
+    # if r.rtype != "flux_only":
     i: int = 0
     for r in M.lic:
-        # collect all reservoirs that have initial conditions
-        # if r.rtype != "flux_only":
         if len(r.lof) > 0 or r.rtype == "computed" or r.rtype == "passive":
             R.append(r.c[0])  # add initial condition
-            if r.c[0] > 0:
-                # compute tol such that tol < rtol * abs(y)
-                tol = rtol * abs(r.c[0]) / 10
-                atol.append(tol)
-                r.atol[0] = tol
-            else:
-                atol.append(atol_d)
-                r.atol[0] = atol_d
-
+            tol = rtol * abs(r.c[0]) / 10 if r.c[0] > 0 else atol_d
+            atol.append(tol)
+            r.atol[0] = tol
             if r.isotopes:
-                if r.l[0] > 0:
-                    # compute tol such that tol < rtol * abs(y)
-                    tol = rtol * abs(r.l[0]) / 10
-                    atol.append(tol)
-                    r.atol[1] = tol
-                else:
-                    atol.append(atol_d)
-                    r.atol[1] = atol_d
-
+                tol = rtol * abs(r.l[0]) / 10 if r.l[0] > 0 else atol_d
+                atol.append(tol)
+                r.atol[1] = tol
                 R.append(r.l[0])  # add initial condition for l
                 icl[r] = [i, i + 1]
                 i += 2
             else:
                 icl[r] = [i, i]
                 i += 1
-            # if r.name == "O2_At":
+                # if r.name == "O2_At":
+            if M.debug_equations_file:
+                print(f"r = {r.full_name}, r.c[0] = {r.c[0]:.2e}, rtol = {tol:.2e}")
+
     return R, icl, cpl, ipl, np.array(atol)
