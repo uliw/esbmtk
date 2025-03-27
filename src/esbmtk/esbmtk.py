@@ -657,6 +657,9 @@ class Model(esbmtkBase):
         """Loop over the time vector.
 
         For each time step, calculate the fluxes for each reservoir
+        This function takes the method keyword which can be used to specify
+        the ODE solver. It defaults to 'BDF', and it has also been tested with
+        'LSODA'
         """
         wts = time.time()  # this has nothing todo with self.time below!
         start: float = process_time()
