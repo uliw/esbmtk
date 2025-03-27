@@ -177,8 +177,8 @@ def carbonate_system_2_pp(
                 print(
                     f"Warning zcc > zmax, i = {i}, co3 = {co3[i] * 1e6} umol/kg, export = {export[i] / 1e12:.2f} Tmol/y"
                 )
-            elif zcc[i] < zsat0:
-                zcc[i] = zsat0
+            elif zcc[i] < z0:
+                zcc[i] = z0
 
             A_z0_zsat: float = area_table[z0] - area_table[z]
             A_zsat_zcc: float = area_table[z] - area_table[zcc[i]]
@@ -191,6 +191,7 @@ def carbonate_system_2_pp(
                 BDS_under: float = kc * area_p.dot(diff_co3)
             except:
                 breakpoint()
+
             BDS_resp: float = alpha * (A_zsat_zcc * B_AD[i] - BDS_under)
             BDS: float = BDS_under + BDS_resp
 
