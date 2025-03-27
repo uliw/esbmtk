@@ -267,3 +267,13 @@ Under normal circumstances the model equations are transient and created on the 
     )
 
 Running the model will now create ``equations.py`` in the respective project directory. Subsequent runs will query whether to re-use the equations file from the previous run, or to create a new one. Re-using the old file is particularly useful when creating your own extensions, as it allows to edit the equations file manually (i.e, to set breakpoints, or add print statement to trace the solver etc.)
+
+Numerical errors in the solver
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the default ODE solver fails to obtain a solution, try switching to another algorithm. The ``LSODA`` solver often succeeds where BDF fails. It is however slower. If that fails one can reduce the default tolerance limit (1e-6 is the default value)
+
+.. code:: ipython
+
+    M.run(method="LSODA")
+    M.rtol = 1.e-4  # either in the model definition or before M.run()
