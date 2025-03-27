@@ -71,6 +71,15 @@ class ModelError(Exception):
         super().__init__(message)
 
 
+class SolverError(Exception):
+    """Custom Error Class."""
+
+    def __init__(self, message):
+        """Initialize Error Instance."""
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
 class ReservoirError(Exception):
     """Custom Error Class."""
 
@@ -798,13 +807,18 @@ class Model(esbmtkBase):
                 vectorized=False,  # flux equations would need to be adjusted
             )
 
-        print(
-            f"\nnfev={self.results.nfev}, njev={self.results.njev}, nlu={self.results.nlu}\n"
-        )
-        print(f"status={self.results.status}")
-        print(f"message={self.results.message}\n")
-
-        self.post_process_data(self.results)
+        if self.results.status == 0:
+            print(
+                f"\nnfev={self.results.nfev}, njev={self.results.njev}, nlu={self.results.nlu}\n"
+            )
+            print(f"status={self.results.status}")
+            print(f"message={self.results.message}\n")
+            self.post_process_data(self.results)
+        else:
+            message = """---------------------- Warning ------------------------
+                       "\n\n No solution was obtained, check https://esbmtk.readthedocs.io/en/latest/manual/manual-6.html
+                       \n ---------------------- Warning ------------------------\n"""
+            raise SolverError(message)
 
     def test_d_pH(self, rg: Species, time: NDArrayFloat) -> None:
         """Test if the change in pH exceeds more than 0.01 units per time step.
