@@ -39,6 +39,10 @@ class KeywordError(Exception):
     ----------
     message : str
         Explanation of the error
+
+    Examples
+    --------
+    >>> raise KeywordError("Invalid keyword 'xyz'")
     """
 
     def __init__(self, message):
@@ -54,6 +58,10 @@ class MissingKeywordError(Exception):
     ----------
     message : str
         Explanation of the error
+
+    Examples
+    --------
+    >>> raise MissingKeywordError("'name' is a mandatory keyword")
     """
 
     def __init__(self, message):
@@ -69,6 +77,10 @@ class InputError(Exception):
     ----------
     message : str
         Explanation of the error
+
+    Examples
+    --------
+    >>> raise InputError("Value must be positive")
     """
 
     def __init__(self, message):
@@ -84,6 +96,10 @@ class FluxSpecificationError(Exception):
     ----------
     message : str
         Explanation of the error
+
+    Examples
+    --------
+    >>> raise FluxSpecificationError("Unknown flux units")
     """
 
     def __init__(self, message):
@@ -99,6 +115,10 @@ class SpeciesPropertiesMolweightError(Exception):
     ----------
     message : str
         Explanation of the error
+
+    Examples
+    --------
+    >>> raise SpeciesPropertiesMolweightError("Missing molecular weight for C")
     """
 
     def __init__(self, message):
@@ -139,6 +159,10 @@ class input_parsing:
         Returns
         -------
         None
+
+        Examples
+        --------
+        >>> self.__initialize_keyword_variables__({"name": "test", "value": 10})
         """
         self.update = False
         self.__check_mandatory_keywords__(self.lrk, kwargs)
@@ -163,15 +187,22 @@ class input_parsing:
             If a required keyword is missing
         ValueError
             If exactly one of a list of alternative keywords is not provided
+        TypeError
+            If lrk is not a list or kwargs is not a dictionary
 
         Notes
         -----
         If an element of lrk is a list, it represents alternative keywords
         where exactly one must be provided.
+
+        Examples
+        --------
+        >>> self.__check_mandatory_keywords__(["name", ["option1", "option2"]], {"name": "test", "option1": "value"})
         """
         if not lrk:
             return
 
+        # Type checking using the newer isinstance syntax
         if not isinstance(lrk, list):
             raise TypeError(f"Required keywords list must be a list, not {type(lrk)}")
 
@@ -184,14 +215,25 @@ class input_parsing:
                 valid_keys = [k for k in key if k in kwargs and kwargs[k] != "None"]
 
                 if len(valid_keys) == 0:
-                    raise MissingKeywordError(
-                        f"At least one of these keywords must be provided: {key}"
-                    )
+                    # Use context preservation for exceptions
+                    try:
+                        alternatives = ", ".join(key)
+                        raise ValueError(
+                            f"No valid alternatives found among: {alternatives}"
+                        )
+                    except ValueError as err:
+                        raise MissingKeywordError(
+                            f"At least one of these keywords must be provided: {key}"
+                        ) from err
                 elif len(valid_keys) > 1:
-                    raise ValueError(
-                        f"Only one of these keywords should be provided: {key}. "
-                        f"Found: {valid_keys}"
-                    )
+                    try:
+                        choices = ", ".join(valid_keys)
+                        raise ValueError(f"Multiple choices provided: {choices}")
+                    except ValueError as err:
+                        raise ValueError(
+                            f"Only one of these keywords should be provided: {key}. "
+                            f"Found: {valid_keys}"
+                        ) from err
             elif key not in kwargs:
                 raise MissingKeywordError(f"'{key}' is a mandatory keyword")
             elif kwargs[key] == "None" or kwargs[key] is None:
@@ -220,6 +262,11 @@ class input_parsing:
         Returns
         -------
         None
+
+        Examples
+        --------
+        >>> defaults = {"name": ["default", (str,)], "value": [0, (int, float)]}
+        >>> self.__register_variable_names__(defaults, {})
         """
         for key, value in defaults.items():
             setattr(self, f"_{key}", value[0])
@@ -249,11 +296,18 @@ class input_parsing:
             If a key in kwargs is not in defaults
         InputError
             If a value in kwargs is not of the expected type or fails validation
+        ValueError
+            If defaults dictionary is empty
 
         Notes
         -----
         This function assumes that all defaults have been registered with the
         instance via __register_variable_names__()
+
+        Examples
+        --------
+        >>> defaults = {"name": ["default", (str,)], "value": [0, (int, float)]}
+        >>> self.__update_dict_entries__(defaults, {"name": "test", "value": 10})
         """
         if not defaults:
             raise ValueError("Defaults dictionary cannot be empty")
@@ -273,25 +327,31 @@ class input_parsing:
             # Get the expected types
             expected_types = defaults[key][1]
 
-            # Validate the value type
+            # Validate the value type using the newer isinstance syntax
             if not isinstance(value, expected_types):
-                actual_type = type(value).__name__
-                expected_types_str = (
-                    ", ".join(t.__name__ for t in expected_types)
-                    if isinstance(expected_types, tuple)
-                    else expected_types.__name__
-                )
+                try:
+                    actual_type = type(value).__name__
+                    if isinstance(expected_types, tuple):
+                        expected_types_str = ", ".join(
+                            t.__name__ for t in expected_types
+                        )
+                    else:
+                        expected_types_str = expected_types.__name__
 
-                raise InputError(
-                    f"'{value}' for '{key}' must be of type {expected_types_str}, "
-                    f"not {actual_type}"
-                )
+                    raise TypeError(
+                        f"Value '{value}' has type {actual_type}, expected {expected_types_str}"
+                    )
+                except TypeError as err:
+                    raise InputError(
+                        f"'{value}' for '{key}' must be of type {expected_types_str}, "
+                        f"not {actual_type}"
+                    ) from err
 
             # Perform additional validation based on type
             try:
                 self._validate_value(key, value, expected_types)
-            except Exception as e:
-                raise InputError(f"Validation failed for '{key}': {str(e)}") from e
+            except Exception as err:
+                raise InputError(f"Validation failed for '{key}': {str(err)}") from err
 
             # Update the values
             defaults[key][0] = value  # update defaults dictionary
@@ -315,6 +375,10 @@ class input_parsing:
         ------
         ValueError
             If the value fails validation
+
+        Examples
+        --------
+        >>> self._validate_value("volume", 10.5, (int, float))
         """
         # String validations
         if isinstance(value, str):
@@ -322,7 +386,7 @@ class input_parsing:
                 raise ValueError("Name cannot be empty or just whitespace")
 
         # Numeric validations
-        elif isinstance(value, int | float):
+        elif isinstance(value, int | float):  # Using newer isinstance syntax
             # Example: values that should be positive
             if key in ("volume", "m_weight", "salinity", "temperature") and value <= 0:
                 raise ValueError(f"'{key}' must be positive, got {value}")
@@ -341,6 +405,10 @@ class input_parsing:
         Returns
         -------
         None
+
+        Examples
+        --------
+        >>> self.__register_name_new__()
         """
         if self.parent == "None":
             self.full_name = self.name
@@ -375,6 +443,12 @@ class input_parsing:
         -------
         tuple
             (resolved_name, updated_lmo_list)
+
+        Examples
+        --------
+        >>> name, lmo = self.__test_and_resolve_duplicates__("test", ["existing"])
+        >>> print(name)
+        test
         """
         if name in lmo:
             print(f"\n Warning, {name} is a duplicate, trying with {name}_1\n")
@@ -429,6 +503,11 @@ class esbmtkBase(input_parsing):
         -------
         str
             String representation of the object
+
+        Examples
+        --------
+        >>> repr(obj)
+        'ClassName(name = "example", value = 42)'
         """
         from esbmtk import Q_
 
@@ -443,9 +522,9 @@ class esbmtkBase(input_parsing):
                 # check if this is not another esbmtk object
                 if "esbmtk" in str(type(v)):
                     m = f"{m}    {k} = {v.name},\n"
-                elif isinstance(v, str | Q_):
+                elif isinstance(v, str | Q_):  # Using newer isinstance syntax
                     m = f"{m}    {k} = '{v}',\n"
-                elif isinstance(v, list | np.ndarray):
+                elif isinstance(v, list | np.ndarray):  # Using newer isinstance syntax
                     m = f"{m}    {k} = '{v[:3]}',\n"
                 else:
                     m = f"{m}    {k} = {v},\n"
@@ -470,6 +549,12 @@ class esbmtkBase(input_parsing):
         -------
         str
             Formatted string representation of the object
+
+        Examples
+        --------
+        >>> str(obj)
+        'example (ClassName)
+          value = 42'
         """
         if kwargs is None:
             kwargs = {}
@@ -495,7 +580,7 @@ class esbmtkBase(input_parsing):
 
         return m
 
-    def __lt__(self, other) -> None:
+    def __lt__(self, other) -> bool:  # Fixed return type annotation from None to bool
         """
         Compare if self is less than other for sorting with sorted().
 
@@ -508,10 +593,15 @@ class esbmtkBase(input_parsing):
         -------
         bool
             True if self.n < other.n, False otherwise
+
+        Examples
+        --------
+        >>> sorted([obj2, obj1])  # If obj1.n < obj2.n, returns [obj1, obj2]
+        [obj1, obj2]
         """
         return self.n < other.n
 
-    def __gt__(self, other) -> None:
+    def __gt__(self, other) -> bool:  # Fixed return type annotation from None to bool
         """
         Compare if self is greater than other for sorting with sorted().
 
@@ -524,6 +614,11 @@ class esbmtkBase(input_parsing):
         -------
         bool
             True if self.n > other.n, False otherwise
+
+        Examples
+        --------
+        >>> sorted([obj1, obj2], reverse=True)  # If obj2.n > obj1.n, returns [obj2, obj1]
+        [obj2, obj1]
         """
         return self.n > other.n
 
@@ -541,6 +636,10 @@ class esbmtkBase(input_parsing):
         Returns
         -------
         None
+
+        Examples
+        --------
+        >>> obj.info(indent=2)
         """
         if "indent" not in kwargs:
             indent = 0
@@ -562,6 +661,10 @@ class esbmtkBase(input_parsing):
         Returns
         -------
         None
+
+        Examples
+        --------
+        >>> self.__aux_inits__()
         """
         pass
 
@@ -606,11 +709,11 @@ class esbmtkBase(input_parsing):
         elif isinstance(arg, str):
             try:
                 return Q_(arg)
-            except Exception as e:
+            except Exception as err:
                 raise InputError(
-                    f"Failed to convert '{arg}' to a Quantity: {str(e)}"
-                ) from e
-        elif isinstance(arg, int | float):
+                    f"Failed to convert '{arg}' to a Quantity: {str(err)}"
+                ) from err
+        elif isinstance(arg, int | float):  # Using newer isinstance syntax
             # If only a number is provided with no units, raise an error
             raise InputError(
                 f"Numeric value {arg} provided without units. "
@@ -622,24 +725,28 @@ class esbmtkBase(input_parsing):
                 f"Must be a string or Quantity."
             )
 
-        def help(self) -> None:
-            """
-            Show all keywords, their default values and allowed types.
+    def help(self) -> None:
+        """
+        Show all keywords, their default values and allowed types.
 
-            Prints information about all available keywords and
-            highlights which ones are mandatory.
+        Prints information about all available keywords and
+        highlights which ones are mandatory.
 
-            Returns
-            -------
-            None
-            """
-            print(f"\n{self.full_name} has the following keywords:\n")
-            for k, v in self.defaults_copy.items():
-                print(f"{k} defaults to {v[0]}, allowed types = {v[1]}")
-            print()
-            print("The following keywords are mandatory:")
-            for kw in self.lrk:
-                print(f"{kw}")
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        >>> obj.help()
+        """
+        print(f"\n{self.full_name} has the following keywords:\n")
+        for k, v in self.defaults_copy.items():
+            print(f"{k} defaults to {v[0]}, allowed types = {v[1]}")
+        print()
+        print("The following keywords are mandatory:")
+        for kw in self.lrk:
+            print(f"{kw}")
 
     def set_flux(self, mass: str, time: str, substance: SpeciesProperties):
         """
@@ -688,7 +795,7 @@ class esbmtkBase(input_parsing):
         if substance is None:
             raise InputError("Substance parameter cannot be None")
 
-        # Ensure mass is a string or Quantity
+        # Ensure mass is a string or Quantity using the newer isinstance syntax
         if not isinstance(mass, str | Q_):
             raise InputError(f"Mass must be a string or Quantity, not {type(mass)}")
 
@@ -699,8 +806,8 @@ class esbmtkBase(input_parsing):
         # Validate time units
         try:
             ureg(time)
-        except Exception as e:
-            raise InputError(f"Invalid time unit: '{time}'. Error: {str(e)}") from e
+        except Exception as err:
+            raise InputError(f"Invalid time unit: '{time}'. Error: {str(err)}") from err
 
         # Check if substance has the required properties
         if not hasattr(substance, "m_weight"):
@@ -729,13 +836,13 @@ class esbmtkBase(input_parsing):
                     raise FluxSpecificationError(
                         f"No known conversion for {mass} (units: {mass.units}) and {substance.full_name}"
                     )
-            except Exception as e:
-                if isinstance(e, FluxSpecificationError):
-                    raise
+            except Exception as err:
+                if isinstance(err, FluxSpecificationError):
+                    raise  # Re-raise the specific error without modification
                 else:
                     raise FluxSpecificationError(
-                        f"Failed to convert {mass} for {substance.full_name}: {str(e)}"
-                    ) from e
+                        f"Failed to convert {mass} for {substance.full_name}: {str(err)}"
+                    ) from err
 
         else:
             raise SpeciesPropertiesMolweightError(
@@ -746,10 +853,10 @@ class esbmtkBase(input_parsing):
         try:
             result = r / ureg(time)
             return result
-        except Exception as e:
+        except Exception as err:
             raise FluxSpecificationError(
-                f"Failed to apply time unit '{time}': {str(e)}"
-            ) from e
+                f"Failed to apply time unit '{time}': {str(err)}"
+            ) from err
 
     def __update_ode_constants__(self, value) -> int:
         """
@@ -769,6 +876,14 @@ class esbmtkBase(input_parsing):
         ------
         AttributeError
             If the model attribute is missing or does not have required properties
+        TypeError
+            If model.toc is not a sequence that can be extended
+
+        Examples
+        --------
+        >>> index = self.__update_ode_constants__(42.0)
+        >>> print(index)
+        5  # If this was the 6th constant added (zero-indexed)
         """
         # Check if model attribute exists
         if not hasattr(self, "model"):
@@ -790,10 +905,13 @@ class esbmtkBase(input_parsing):
         # Add the value to the parameter list if it's not "None"
         if value != "None":
             # Validate that toc is a sequence that can be extended
-            if not hasattr(self.model.toc, "__iter__"):
+            try:
+                if not hasattr(self.model.toc, "__iter__"):
+                    raise TypeError("Model.toc must be an iterable")
+            except TypeError as err:
                 raise TypeError(
                     f"Model.toc must be a sequence, not {type(self.model.toc)}"
-                )
+                ) from err
 
             # Update the model's toc tuple with the new value
             self.model.toc = (*self.model.toc, value)
@@ -824,6 +942,8 @@ class esbmtkBase(input_parsing):
         ------
         ValueError
             If the object fails validation
+        AttributeError
+            If required attributes are missing
 
         Examples
         --------
@@ -834,25 +954,39 @@ class esbmtkBase(input_parsing):
         # Check for required attributes
         required_attrs = ["name", "full_name"]
         for attr in required_attrs:
-            if not hasattr(self, attr) or getattr(self, attr) in (None, "None", ""):
-                raise ValueError(f"Required attribute '{attr}' is missing or empty")
+            try:
+                if not hasattr(self, attr):
+                    raise AttributeError(f"Required attribute '{attr}' is missing")
+
+                value = getattr(self, attr)
+                if value in (None, "None", ""):
+                    raise ValueError(f"Required attribute '{attr}' cannot be empty")
+            except (AttributeError, ValueError) as err:
+                raise ValueError(
+                    f"Required attribute '{attr}' is missing or empty"
+                ) from err
 
         # Validate specific attributes based on their expected properties
         if hasattr(self, "volume") and hasattr(self, "model"):
             from esbmtk import Q_
 
             # Example: validate that volume has compatible units with the model
-            if (
-                hasattr(self, "volume")
-                and hasattr(self, "model")
-                and isinstance(self.volume, Q_)
-                and hasattr(self.model, "v_unit")
-                and not self.volume.is_compatible_with(self.model.v_unit)
-            ):
+            try:
+                if (
+                    hasattr(self, "volume")
+                    and hasattr(self, "model")
+                    and isinstance(self.volume, Q_)
+                    and hasattr(self.model, "v_unit")
+                    and not self.volume.is_compatible_with(self.model.v_unit)
+                ):
+                    raise ValueError(
+                        f"Volume units '{self.volume.units}' are incompatible with model units '{self.model.v_unit}'"
+                    )
+            except Exception as err:
                 raise ValueError(
                     f"Volume units {self.volume.units} are not compatible "
                     f"with model volume units {self.model.v_unit}"
-                )
+                ) from err
         # Add other validation rules specific to your application
 
         # If all validations pass, return True
