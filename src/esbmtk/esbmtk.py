@@ -251,7 +251,7 @@ class Model(esbmtkBase):
 
         fn: str = f"{self.name}.log"
         logging.basicConfig(filename=fn, filemode="w", level=logging.CRITICAL)
-        self.__register_name_new__()
+        self.__register_with_parent__()
 
         self.lor: list = []  # list of all reservoir type objects
         self.lic: list = []  # list of all reservoir type objects
@@ -1087,7 +1087,7 @@ class ElementProperties(esbmtkBase):
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
 
-        self.__register_name_new__()
+        self.__register_with_parent__()
 
     def list_species(self) -> None:
         """List all species which are predefined for this element."""
@@ -1178,7 +1178,7 @@ class SpeciesProperties(esbmtkBase):
 
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
-        self.__register_name_new__()
+        self.__register_with_parent__()
 
 
 class SpeciesBase(esbmtkBase):
@@ -1926,7 +1926,7 @@ class Species(SpeciesBase):
         # register instance name in global name space
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
-        self.__register_name_new__()
+        self.__register_with_parent__()
 
         # decide which setitem functions to use
         if self.isotopes:
@@ -2184,7 +2184,7 @@ class Flux(esbmtkBase):
             else:
                 self.name = f"{self.id}_F"
 
-        self.__register_name_new__()
+        self.__register_with_parent__()
         self.mo.lof.append(self)  # register with model flux list
 
         # decide which setitem functions to use
@@ -2455,7 +2455,7 @@ class SourceSink(esbmtkBase):
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
-        self.__register_name_new__()
+        self.__register_with_parent__()
         self.mo.lic.remove(self)
 
     @property

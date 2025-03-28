@@ -233,7 +233,7 @@ class Reservoir(esbmtkBase):
         elif not isinstance(self.volume, Q_):
             raise ReservoirError("Volume must be string or quantity")
 
-        self.__register_name_new__()
+        self.__register_with_parent__()
 
         # if len(self.species) == 1:
         la = ["mass", "concentration", "delta", "plot", "isotopes"]
@@ -336,7 +336,7 @@ class SourceSinkProperties(esbmtkBase):
         self.n = self.name
         self.parent = self.register
         self.loc: set[Species2Species] = set()  # set of connection objects
-        self.__register_name_new__()
+        self.__register_with_parent__()
         self.lor: list = []  # list of sub reservoirs in this group
 
         # input variables can be either dictionaries, single values
@@ -595,7 +595,7 @@ class Signal(esbmtkBase):
         # update isotope values
         # self.data.li = get_l_mass(self.data.m, self.data.d, self.sp.r)
 
-        self.__register_name_new__()
+        self.__register_with_parent__()
         self.mo.los.append(self)  # register with model
 
         # in case we deal with a sink or source signal
@@ -1122,7 +1122,7 @@ class VectorData(esbmtkBase):
         self.c = self.data
         self.label = self.name
         self.register.model.lvd.append(self)
-        self.__register_name_new__()
+        self.__register_with_parent__()
 
     def __write_data__(
         self,
@@ -1392,7 +1392,7 @@ class DataField(esbmtkBase):
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
-        self.__register_name_new__()
+        self.__register_with_parent__()
 
     def __write_data__(
         self,
@@ -1723,7 +1723,7 @@ class SpeciesNoSet(SpeciesBase):
         # self.mo.lvr.append(self)
         # print(f"added {self.name} to lvr 1")
         # register instance name in global name space
-        self.__register_name_new__()
+        self.__register_with_parent__()
 
         self.__aux_inits__()
         self.state = 0
@@ -1838,7 +1838,7 @@ class ExternalCode(SpeciesNoSet):
         # left y-axis label
         self.lm: str = f"{self.species.n} [{self.mu}/l]"
         self.mo.lor.append(self)  # add this reservoir to the model
-        self.__register_name_new__()
+        self.__register_with_parent__()
         self.state = 0
         name = f"{self.full_name}_generic_function".replace(".", "_")
         logging.info(f"creating {name}")
@@ -2268,7 +2268,7 @@ class GasReservoir(SpeciesBase):
             self.register = self.mo
             self.parent = self.register
 
-        self.__register_name_new__()
+        self.__register_with_parent__()
 
         # decide which setitem functions to use
         if self.isotopes:
@@ -2487,7 +2487,7 @@ class ExternalData(esbmtkBase):
         # if self.mo.register == "local" and self.register == "None":
         #     self.register = self.mo
 
-        self.__register_name_new__()
+        self.__register_with_parent__()
 
     def __register__(self, obj):
         """Register this dataset with a flux or reservoir.

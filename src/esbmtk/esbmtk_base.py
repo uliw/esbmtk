@@ -126,7 +126,7 @@ class SpeciesPropertiesMolweightError(Exception):
         super().__init__(message)
 
 
-class input_parsing:
+class InputParsing:
     """
     Provides various routines to parse and process keyword arguments.
 
@@ -145,7 +145,7 @@ class input_parsing:
     """
 
     def __init__(self):
-        raise NotImplementedError("input_parsing has no instance!")
+        raise NotImplementedError("InputParsing has no instance!")
 
     def __initialize_keyword_variables__(self, kwargs) -> None:
         """
@@ -309,54 +309,127 @@ class input_parsing:
         >>> defaults = {"name": ["default", (str,)], "value": [0, (int, float)]}
         >>> self.__update_dict_entries__(defaults, {"name": "test", "value": 10})
         """
-        if not defaults:
-            raise ValueError("Defaults dictionary cannot be empty")
+        self.__validate_defaults_and_kwargs__(defaults, kwargs)
 
         if not kwargs:
             return  # Nothing to update
 
         for key, value in kwargs.items():
-            # Check if the key exists in defaults
-            if key not in defaults:
-                raise KeywordError(f"'{key}' is not a valid keyword")
+            self.__process_keyword__(defaults, key, value)
 
-            # Skip None values as they're handled elsewhere
-            if value is None or value == "None":
-                continue
+    def __validate_defaults_and_kwargs__(self, defaults, kwargs):
+        """
+        Validate that defaults dictionary is not empty.
 
-            # Get the expected types
-            expected_types = defaults[key][1]
+        Parameters
+        ----------
+        defaults : dict
+            Dictionary with default values
+        kwargs : dict
+            Dictionary of keyword arguments
 
-            # Validate the value type using the newer isinstance syntax
-            if not isinstance(value, expected_types):
-                try:
-                    actual_type = type(value).__name__
-                    if isinstance(expected_types, tuple):
-                        expected_types_str = ", ".join(
-                            t.__name__ for t in expected_types
-                        )
-                    else:
-                        expected_types_str = expected_types.__name__
+        Raises
+        ------
+        ValueError
+            If defaults dictionary is empty
+        """
+        if not defaults:
+            raise ValueError("Defaults dictionary cannot be empty")
 
-                    raise TypeError(
-                        f"Value '{value}' has type {actual_type}, expected {expected_types_str}"
-                    )
-                except TypeError as err:
-                    raise InputError(
-                        f"'{value}' for '{key}' must be of type {expected_types_str}, "
-                        f"not {actual_type}"
-                    ) from err
+    def __process_keyword__(self, defaults, key, value):
+        """
+        Process a single keyword argument.
 
-            # Perform additional validation based on type
+        Parameters
+        ----------
+        defaults : dict
+            Dictionary with format {"key": [default_value, (allowed_types)]}
+        key : str
+            The keyword to process
+        value : any
+            The value to validate and set
+
+        Raises
+        ------
+        KeywordError
+            If key is not in defaults
+        InputError
+            If value is not of the expected type or fails validation
+        """
+        # Check if the key exists in defaults
+        if key not in defaults:
+            raise KeywordError(f"'{key}' is not a valid keyword")
+
+        # Skip None values as they're handled elsewhere
+        if value is None or value == "None":
+            return
+
+        # Get the expected types
+        expected_types = defaults[key][1]
+
+        # Validate the value type
+        self.__validate_value_type__(key, value, expected_types)
+
+        # Perform additional validation based on type
+        try:
+            self._validate_value(key, value, expected_types)
+        except Exception as err:
+            raise InputError(f"Validation failed for '{key}': {str(err)}") from err
+
+        # Update the values
+        self.__update_attribute_values__(defaults, key, value)
+
+    def __validate_value_type__(self, key, value, expected_types):
+        """
+        Validate that a value is of the expected type.
+
+        Parameters
+        ----------
+        key : str
+            The keyword being validated
+        value : any
+            The value to validate
+        expected_types : type or tuple of types
+            The expected types for the value
+
+        Raises
+        ------
+        InputError
+            If value is not of the expected type
+        """
+        if not isinstance(value, expected_types):
             try:
-                self._validate_value(key, value, expected_types)
-            except Exception as err:
-                raise InputError(f"Validation failed for '{key}': {str(err)}") from err
+                actual_type = type(value).__name__
+                if isinstance(expected_types, tuple):
+                    expected_types_str = ", ".join(t.__name__ for t in expected_types)
+                else:
+                    expected_types_str = expected_types.__name__
 
-            # Update the values
-            defaults[key][0] = value  # update defaults dictionary
-            setattr(self, key, value)  # update instance variables
-            setattr(self, f"_{key}", value)
+                raise TypeError(
+                    f"Value '{value}' has type {actual_type}, expected {expected_types_str}"
+                )
+            except TypeError as err:
+                raise InputError(
+                    f"'{value}' for '{key}' must be of type {expected_types_str}, "
+                    f"not {actual_type}"
+                ) from err
+
+    def __update_attribute_values__(self, defaults, key, value):
+        """
+        Update the attribute values in both defaults dictionary and instance.
+
+        Parameters
+        ----------
+        defaults : dict
+            Dictionary with format {"key": [default_value, (allowed_types)]}
+        key : str
+            The keyword to update
+        value : any
+            The value to set
+        """
+        defaults[key][0] = value  # update defaults dictionary
+        setattr(self, key, value)  # update instance variables
+        setattr(self, f"_{key}", value)
 
     def _validate_value(self, key, value, expected_types):
         """
@@ -395,7 +468,7 @@ class input_parsing:
             if key == "ph" and (value < 0 or value > 14):
                 raise ValueError(f"pH must be between 0 and 14, got {value}")
 
-    def __register_name_new__(self) -> None:
+    def __register_with_parent__(self) -> None:
         """
         Register self as attribute of self.parent and set full name.
 
@@ -408,7 +481,7 @@ class input_parsing:
 
         Examples
         --------
-        >>> self.__register_name_new__()
+        >>> self.__register_with_parent__()
         """
         if self.parent == "None":
             self.full_name = self.name
@@ -460,7 +533,7 @@ class input_parsing:
         return name, lmo
 
 
-class esbmtkBase(input_parsing):
+class esbmtkBase(InputParsing):
     """
     The esbmtk base class template.
 
@@ -483,7 +556,7 @@ class esbmtkBase(input_parsing):
         self.__initialize_keyword_variables__(kwargs)
 
     Register the instance:
-        self.__register_name_new__()
+        self.__register_with_parent__()
     """
 
     def __init__(self) -> None:
@@ -785,9 +858,39 @@ class esbmtkBase(input_parsing):
         If model mass units are in mol, no mass unit conversion will be made.
         If model mass units are in kg, the flux will be converted accordingly.
         """
+        # Validate all input parameters first
+        self.__validate_flux_inputs__(mass, time, substance)
+
+        # Validate substance properties
+        self.__validate_substance_properties__(substance)
+
+        # Convert the mass quantity
+        r = self.__convert_mass_to_model_units__(mass, substance)
+
+        # Apply the time unit and return the result
+        return self.__apply_time_unit__(r, time)
+
+    def __validate_flux_inputs__(self, mass, time, substance):
+        """
+        Validate the input parameters for set_flux.
+
+        Parameters
+        ----------
+        mass : str or Quantity
+            Mass value with units
+        time : str
+            Time unit
+        substance : SpeciesProperties
+            Species properties object
+
+        Raises
+        ------
+        InputError
+            If any input parameter is invalid
+        """
         from esbmtk import Q_, ureg
 
-        # Validate input parameters
+        # Check for empty inputs
         if not mass:
             raise InputError("Mass parameter cannot be empty")
         if not time:
@@ -795,11 +898,9 @@ class esbmtkBase(input_parsing):
         if substance is None:
             raise InputError("Substance parameter cannot be None")
 
-        # Ensure mass is a string or Quantity using the newer isinstance syntax
+        # Type checks
         if not isinstance(mass, str | Q_):
             raise InputError(f"Mass must be a string or Quantity, not {type(mass)}")
-
-        # Ensure time is a string
         if not isinstance(time, str):
             raise InputError(f"Time must be a string, not {type(time)}")
 
@@ -809,53 +910,111 @@ class esbmtkBase(input_parsing):
         except Exception as err:
             raise InputError(f"Invalid time unit: '{time}'. Error: {str(err)}") from err
 
-        # Check if substance has the required properties
+    def __validate_substance_properties__(self, substance):
+        """
+        Validate that substance has the required properties.
+
+        Parameters
+        ----------
+        substance : SpeciesProperties
+            Species properties object
+
+        Raises
+        ------
+        SpeciesPropertiesMolweightError
+            If substance properties are missing or invalid
+        """
+        # Check for m_weight attribute
         if not hasattr(substance, "m_weight"):
             raise SpeciesPropertiesMolweightError(
                 f"Substance {getattr(substance, 'full_name', str(substance))} has no 'm_weight' attribute"
             )
 
+        # Check for model unit attributes
         if not hasattr(substance, "mo") or not hasattr(substance.mo, "m_unit"):
             raise SpeciesPropertiesMolweightError(
                 f"Substance {getattr(substance, 'full_name', str(substance))} has incomplete model unit definition"
             )
 
-        # Now proceed with the conversion
-        if substance.m_weight > 0:
-            try:
-                mass = Q_(mass) if isinstance(mass, str) else mass
-                g_per_mol = ureg("g/mol")
-
-                if mass.is_compatible_with("g") or mass.is_compatible_with("mol"):
-                    r = mass.to(
-                        substance.mo.m_unit,  # target unit (mol)
-                        "chemistry",  # context
-                        mw=substance.m_weight * g_per_mol,  # g/mol
-                    )
-                else:
-                    raise FluxSpecificationError(
-                        f"No known conversion for {mass} (units: {mass.units}) and {substance.full_name}"
-                    )
-            except Exception as err:
-                if isinstance(err, FluxSpecificationError):
-                    raise  # Re-raise the specific error without modification
-                else:
-                    raise FluxSpecificationError(
-                        f"Failed to convert {mass} for {substance.full_name}: {str(err)}"
-                    ) from err
-
-        else:
+        # Check m_weight value
+        if substance.m_weight <= 0:
             raise SpeciesPropertiesMolweightError(
                 f"No molecular weight definition for {substance.full_name} (m_weight={substance.m_weight})"
             )
 
-        # Validate the final result
+    def __convert_mass_to_model_units__(self, mass, substance):
+        """
+        Convert mass to model units using substance properties.
+
+        Parameters
+        ----------
+        mass : str or Quantity
+            Mass value with units
+        substance : SpeciesProperties
+            Species properties object
+
+        Returns
+        -------
+        Quantity
+            Mass converted to model units
+
+        Raises
+        ------
+        FluxSpecificationError
+            If unit conversion fails
+        """
+        from esbmtk import Q_, ureg
+
         try:
-            result = r / ureg(time)
-            return result
+            mass = Q_(mass) if isinstance(mass, str) else mass
+            g_per_mol = ureg("g/mol")
+
+            if mass.is_compatible_with("g") or mass.is_compatible_with("mol"):
+                return mass.to(
+                    substance.mo.m_unit,  # target unit (mol)
+                    "chemistry",  # context
+                    mw=substance.m_weight * g_per_mol,  # g/mol
+                )
+            else:
+                raise FluxSpecificationError(
+                    f"No known conversion for {mass} (units: {mass.units}) and {substance.full_name}"
+                )
+        except Exception as err:
+            if isinstance(err, FluxSpecificationError):
+                raise
+            else:
+                raise FluxSpecificationError(
+                    f"Failed to convert {mass} for {substance.full_name}: {str(err)}"
+                ) from err
+
+    def __apply_time_unit__(self, quantity, time_unit):
+        """
+        Apply time unit to a quantity to get a rate.
+
+        Parameters
+        ----------
+        quantity : Quantity
+            The quantity to convert to a rate
+        time_unit : str
+            The time unit to apply
+
+        Returns
+        -------
+        Quantity
+            Rate with the specified time unit
+
+        Raises
+        ------
+        FluxSpecificationError
+            If applying the time unit fails
+        """
+        from esbmtk import ureg
+
+        try:
+            return quantity / ureg(time_unit)
         except Exception as err:
             raise FluxSpecificationError(
-                f"Failed to apply time unit '{time}': {str(err)}"
+                f"Failed to apply time unit '{time_unit}': {str(err)}"
             ) from err
 
     def __update_ode_constants__(self, value) -> int:

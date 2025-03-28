@@ -272,7 +272,7 @@ class Species2Species(esbmtkBase):
                 )
 
         self.__set_name__()  # get name of connection
-        self.__register_name_new__()  # register connection in namespace
+        self.__register_with_parent__()  # register connection in namespace
         self.__create_flux__()  # Source/Sink/Fixed
         self.__set_process_type__()  # derive flux type and create flux(es)
 
@@ -727,7 +727,7 @@ class ConnectionProperties(esbmtkBase):
 
         self.base_name = self.name
         self.parent = self.register
-        self.__register_name_new__()
+        self.__register_with_parent__()
         self.__create_connections__()
 
     def add_connections(self, **kwargs) -> None:

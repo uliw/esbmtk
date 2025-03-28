@@ -103,7 +103,7 @@ class hypsometry(esbmtkBase):
         # http://www.physicalgeography.net/fundamentals/8o.html
         self.sa = 510067420e6  # area in m^2
         self.mo = self.model
-        self.__register_name_new__()
+        self.__register_with_parent__()
         self.read_data(self.hyp_data_fn)
         self.oa = 361e12  # m^2 https://en.wikipedia.org/wiki/Ocean
 

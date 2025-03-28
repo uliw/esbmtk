@@ -109,7 +109,7 @@ class SeawaterConstants(esbmtkBase):
         self.update_parameters()
 
         if self.register != "None":
-            self.__register_name_new__()
+            self.__register_with_parent__()
 
     def update_parameters(self, **kwargs: dict) -> None:
         """Update values if necessary."""
