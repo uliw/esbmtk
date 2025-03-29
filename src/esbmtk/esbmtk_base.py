@@ -561,7 +561,6 @@ class esbmtkBase(InputParsing):
     Register the instance:
 
         self.__register_with_parent__()
-
     """
 
     def __init__(self) -> None:
