@@ -541,23 +541,23 @@ class esbmtkBase(InputParsing):
 
     Examples
     --------
-    Usage example:
+    .. code-block:: python
 
-    # Define required keywords in lrk list
-        self.lrk: tp.List = ["name"]
+            # Define required keywords in lrk list
+            self.lrk: tp.List = ["name"]
 
-        # Define allowed type per keyword in defaults dict
-        self.defaults: dict[str, list[any, tuple]] = {
-            "name": ["None", (str)],
-            "model": ["None", (str, Model)],
-            "salinity": [35, (int, float)],  # int or float
-        }
+            # Define allowed type per keyword in defaults dict
+            self.defaults: dict[str, list[any, tuple]] = {
+                "name": ["None", (str)],
+                "model": ["None", (str, Model)],
+                "salinity": [35, (int, float)],  # int or float
+            }
 
-        # Parse and register all keywords with the instance
-        self.__initialize_keyword_variables__(kwargs)
+            # Parse and register all keywords with the instance
+            self.__initialize_keyword_variables__(kwargs)
 
-        # Register the instance
-        self.__register_with_parent__()
+            # Register the instance
+            self.__register_with_parent__()
     """
 
     def __init__(self) -> None:
@@ -698,9 +698,11 @@ class esbmtkBase(InputParsing):
         Parameters
         ----------
         **kwargs : dict, optional
-            Additional keyword arguments
-            - indent : int
-                Number of spaces for indentation
+
+        Additional keyword arguments
+        ----------------------------
+        * ``indent`` : int
+            Number of spaces for indentation
 
         Returns
         -------
@@ -708,7 +710,9 @@ class esbmtkBase(InputParsing):
 
         Examples
         --------
-        >>> obj.info(indent=2)
+        .. code-block:: python
+
+            obj.info(indent=2)
         """
         if "indent" not in kwargs:
             indent = 0
