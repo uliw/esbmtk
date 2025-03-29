@@ -543,9 +543,11 @@ class esbmtkBase(InputParsing):
     Examples
     --------
     Define required keywords in lrk list:
+
         self.lrk: tp.List = ["name"]
 
     Define allowed type per keyword in defaults dict:
+
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "model": ["None", (str, Model)],
@@ -553,9 +555,11 @@ class esbmtkBase(InputParsing):
         }
 
     Parse and register all keywords with the instance:
+
         self.__initialize_keyword_variables__(kwargs)
 
     Register the instance:
+
         self.__register_with_parent__()
 
     """
@@ -713,6 +717,7 @@ class esbmtkBase(InputParsing):
         Examples
         --------
         >>> obj.info(indent=2)
+
         """
         if "indent" not in kwargs:
             indent = 0
