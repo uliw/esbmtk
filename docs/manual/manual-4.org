@@ -6,7 +6,7 @@ ESBMTK provides several classes that abstract the handling of basin geometry, se
 
 ** Hypsography
 
-For many modeling tasks, it is important to know a globally averaged hypsometric curve. ESBMTK will automatically create a suitable hypsography instance if a @@rst::py:class:`esbmtk.esbmtk.Species()`@@ or @@rst::py:class:`esbmtk.extended_classes.Reservoir()`@@ instance is specified with the geometry keyword as in the following example where the first list item denotes the upper depth datum, the second list item, the lower depth datum, and the last list item denotes the fraction of the total ocean area if the upper boundary would be at sea level.
+For many modeling tasks, it is important to know a globally averaged hypsometric curve. ESBMTK will automatically create a suitable hypsography instance if a @@rst::py:class:`base_classes.Species()`@@ or @@rst::py:class:`esbmtk.extended_classes.Reservoir()`@@ instance is specified with the geometry keyword as in the following example where the first list item denotes the upper depth datum, the second list item, the lower depth datum, and the last list item denotes the fraction of the total ocean area if the upper boundary would be at sea level.
 #+BEGIN_SRC ipython
 Reservoir(
     name="S_b",  # Name of reservoir group
@@ -84,7 +84,7 @@ box_names = [A_sb, I_sb, P_sb, H_sb]  # list of Reservoir handles
 add_carbonate_system_1(box_names)
 #+END_SRC
 
-This will create Species @@rst::py:class:`esbmtk.esbmtk.Species()`@@ instances for =Hplus= and =CO2aq=. After running the model, the resulting concentration data is available in the usual manner:
+This will create Species @@rst::py:class:`base_classes.Species()`@@ instances for =Hplus= and =CO2aq=. After running the model, the resulting concentration data is available in the usual manner:
 #+BEGIN_SRC ipython
 A_sb.Hplus.c
 A_sb.CO2aq.c
@@ -98,7 +98,7 @@ A_sb.Omega
 #+END_SRC
 **** Notes:
  - The resulting concentration data depends on the choice of equilibrium constants and how they are calculated (see the =opt_k_carbonic=, =opt_buffers_mode= keywords above).
- - The data from post-processing is currently available as @@rst::py:class:`esbmtk.extended_classes.VectorData()`@@ instance, rather than as @@rst::py:class:`esbmtk.esbmtk.Species()`@@ instance.
+ - The data from post-processing is currently available as @@rst::py:class:`esbmtk.extended_classes.VectorData()`@@ instance, rather than as @@rst::py:class:`base_classes.Species()`@@ instance.
  - Species that use carbonate system 2 (see below), do not need to use carbonate system 1
  - ESBMTK will print a warning message of the pH changes by more than 0.01 units per time step. However, this is only a crude measure, since the solver also uses interpolation between integration steps. So this may not catch all possible scenarios.
 
@@ -164,7 +164,7 @@ see  the @@rst::py:func:`esbmtk.post_processing.carbonate_system_2_pp()`@@ funct
 
 
 ** Gas Exchange
-ESBMTK implements gas exchange across the Air-Sea interface as a @@rst::py:class:`esbmtk.connections.Species2Species()`@@ instance, between a @@rst::py:class:`esbmtk.extended_classes.GasReservoir()`@@ and a @@rst::py:class:`esbmtk.esbmtk.Species()`@@ instance. In the following example, we first declare a =Gasreservoir= and then connect it with a regular surface box. Note that the CO_{2} gas transfer calculation requires that the respective surface reservoir carries the =CO2aq= tracer as calculated by the @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry_carbonate_system_1.()`@@ function since the gas-transfer depends on the dissolved CO_{2} rather than on the DIC concentration.
+ESBMTK implements gas exchange across the Air-Sea interface as a @@rst::py:class:`esbmtk.connections.Species2Species()`@@ instance, between a @@rst::py:class:`esbmtk.extended_classes.GasReservoir()`@@ and a @@rst::py:class:`base_classes.Species()`@@ instance. In the following example, we first declare a =Gasreservoir= and then connect it with a regular surface box. Note that the CO_{2} gas transfer calculation requires that the respective surface reservoir carries the =CO2aq= tracer as calculated by the @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry_carbonate_system_1.()`@@ function since the gas-transfer depends on the dissolved CO_{2} rather than on the DIC concentration.
 #+BEGIN_SRC ipython
 GasReservoir(
     name="CO2_At",

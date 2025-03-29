@@ -2,10 +2,8 @@
 
 * Introduction
 
-
 ** Installation
 *** Conda
-
 Assuming you install into a new virtual environment the following should install the ESBMTK framework
 #+BEGIN_SRC sh
 conda create --name foo
@@ -14,12 +12,9 @@ conda install esbmtk
 #+END_SRC
 
 *** pip & github
-
 If you work with pip, simply install  with =python -m pip install esbmtk=, or download the code from https://github.com/uliw/esbmtk
 
-
 ** A simple example
-
 A simple model of the marine P-cycle would consider the delivery of P from weathering, the burial of P in the sediments, the thermohaline transport of dissolved PO_4 as well as the export of P in the form of sinking organic matter (POP). The concentration in the respective surface and deep water boxes is then the sum of the respective fluxes (see Fig. 1). The model parameters are taken from Glover 2011, Modeling Methods in the Marine Sciences.
 #+attr_org: :width 300
 #+attr_rst: :width 400
@@ -123,11 +118,11 @@ The model geometry is then parsed to build a suitable equation system which is p
 *** Defining the model geometry and initial conditions
 The below code examples are available at https://github.com/uliw/esbmtk-examples
 In the first step, one needs to define a model object that describes fundamental model parameters. The following code first loads the following ESBMTK classes that will help with model construction:
- - @@rst::py:class:`esbmtk.esbmtk.Model()`@@
- - @@rst::py:class:`esbmtk.esbmtk.Reservoir()`@@
+ - @@rst::py:class:`model.Model()`@@
+ - @@rst::py:class:`base_classes.Reservoir()`@@
  - @@rst::py:class:`esbmtk.connections.ConnectionProperties()`@@ class
- - @@rst::py:class:`esbmtk.esbmtk.SourceProperties()`@@ class
- - @@rst::py:class:`esbmtk.esbmtk.SinkProperties()`@@ class
+ - @@rst::py:class:`base_classes.SourceProperties()`@@ class
+ - @@rst::py:class:`base_classes.SinkProperties()`@@ class
  - and =Q_= which belongs to the pint library.
 #+name: p1
 #+BEGIN_SRC ipython :tangle po4_1.py
@@ -140,7 +135,7 @@ from esbmtk import (
     SinkProperties,  # sink class
 )
 #+END_SRC
-Next we use the @@rst::py:class:`esbmtk.esbmtk.Model()`@@  class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
+Next we use the @@rst::py:class:`model.Model()`@@  class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
 Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/l' rather than mol/m**3 or 'kg/s'. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. So your mileage may vary if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.
 #+name: p2
 #+BEGIN_SRC ipython :tangle po4_1.py
@@ -178,7 +173,7 @@ F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
 thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 #+END_SRC
 
-To set up the model geometry, we first use the @@rst::py:class:`esbmtk.esbmtk.Source()`@@ and @@rst::py:class:`esbmtk.esbmtk.Species()`@@ classes to create a source for the weathering flux, a sink for the burial flux, and instances of the surface and deep ocean boxes. Since we loaded the element definitions for phosphor in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
+To set up the model geometry, we first use the @@rst::py:class:`base_classes.Source()`@@ and @@rst::py:class:`base_classes.Species()`@@ classes to create a source for the weathering flux, a sink for the burial flux, and instances of the surface and deep ocean boxes. Since we loaded the element definitions for phosphor in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
 #+name: p5
 #+BEGIN_SRC ipython :tangle po4_1.py
 # Source definitions
@@ -251,7 +246,7 @@ ConnectionProperties(  #
 #+END_SRC
 
 We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity or use the previously calculated flux. We can query the export productivity using the =id_string= of the above connection with the
-@@rst::py:meth:`esbmtk.esbmtk.Model.flux_summary()`@@ method of the model instance:
+@@rst::py:meth:`model.Model.flux_summary()`@@ method of the model instance:
 #+BEGIN_SRC ipython
 M.flux_summary(filter_by="primary_production", return_list=True)[0]
 #+END_SRC
@@ -339,7 +334,7 @@ M.S_b.d  # delta value (if used by model)
 M.S_b.l  # the concentration of the light isotope (if used)
 #+END_SRC
 
-The model time axis is available as =M.time= and the model supports the @@rst::py:class:`esbmtk.esbmtk.Model.connection_summary()`@@ and @@rst::py:class:`esbmtk.esbmtk.Model.flux_summary()`@@   
+The model time axis is available as =M.time= and the model supports the @@rst::py:class:`model.Model.connection_summary()`@@ and @@rst::py:class:`model.Model.flux_summary()`@@   
 
 # output a testcase
 #+name: po41definition

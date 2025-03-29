@@ -557,6 +557,7 @@ class esbmtkBase(InputParsing):
 
     Register the instance:
         self.__register_with_parent__()
+
     """
 
     def __init__(self) -> None:
@@ -696,8 +697,7 @@ class esbmtkBase(InputParsing):
         return self.n > other.n
 
     def info(self, **kwargs) -> None:
-        """
-        Show an overview of the object properties.
+        """Show an overview of the object properties.
 
         Parameters
         ----------

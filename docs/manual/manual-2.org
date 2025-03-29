@@ -40,7 +40,7 @@ ConnectionProperties(
 M.run()
 #+END_SRC
 Note that the =plot()= method accepts the signal object as well. In general, any ESBMTK object that has data that varies with time, can be plotted by the =plot()= method. ESBMTK also provides classes to include
-external data  @@rst::py:class:`esbmtk.extended_classes.ExternalData()`@@   as well as classes to mix and match data into the same plot @@rst::py:class:`esbmtk.extended_classes.DataField()`@@. The file =is92a_comparison_plots.py= (see  https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010) shows a use case. Furthermore, @@rst::py:class:`esbmtk.esbmtk.Model.plot()`@@  returns a tuple with the figure instance, list of =axs= objects, which allows even more complex figure manipulations (see =steady_state_plots.py= in the same repository).
+external data  @@rst::py:class:`esbmtk.extended_classes.ExternalData()`@@   as well as classes to mix and match data into the same plot @@rst::py:class:`esbmtk.extended_classes.DataField()`@@. The file =is92a_comparison_plots.py= (see  https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010) shows a use case. Furthermore, @@rst::py:class:`model.Model.plot()`@@  returns a tuple with the figure instance, list of =axs= objects, which allows even more complex figure manipulations (see =steady_state_plots.py= in the same repository).
 #+BEGIN_SRC ipython :tangle po4_2.py
 M.plot([M.S_b.PO4, M.D_b.PO4, M.CR], fn="po4_2.png")
 #  M.save_data()
