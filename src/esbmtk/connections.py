@@ -25,7 +25,7 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
-from .esbmtk import esbmtkBase
+from .esbmtk_base import esbmtkBase
 from .utility_functions import map_units
 
 np.set_printoptions(precision=4)

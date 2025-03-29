@@ -184,7 +184,7 @@ def register_new_flux(ec, rg, dict_key, dict_value) -> list:
         list of Flux instances
 
     """
-    from .esbmtk import Flux, Species
+    from .base_classes import Flux, Species
     from .extended_classes import Reservoir
 
     if isinstance(rg, Reservoir):
@@ -223,7 +223,7 @@ def register_new_flux(ec, rg, dict_key, dict_value) -> list:
 
 def register_new_reservoir(r, sp, v):
     """Register a new reservoir."""
-    from .esbmtk import Species
+    from .base_classes import Species
 
     rt = Species(  # create new reservoir
         name=sp.name,

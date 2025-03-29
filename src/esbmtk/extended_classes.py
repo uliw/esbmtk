@@ -32,9 +32,9 @@ import pandas as pd
 from pandas import DataFrame
 
 if tp.TYPE_CHECKING:
-    from esbmtk import Flux, Model, Species2Species
+    from .base_classes import Flux, Model, Species2Species
 
-from .esbmtk import Species, SpeciesBase, SpeciesProperties
+from .base_classes import Species, SpeciesBase, SpeciesProperties
 from .esbmtk_base import esbmtkBase
 from .utility_functions import get_delta, get_imass, get_l_mass
 

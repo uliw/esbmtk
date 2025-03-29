@@ -27,7 +27,7 @@ import numpy.typing as npt
 from cachetools import LRUCache, cached
 from cachetools.keys import hashkey
 
-from esbmtk.esbmtk import Flux
+from esbmtk.base_classes import Flux
 from esbmtk.extended_classes import ExternalCode, Reservoir
 from esbmtk.utility_functions import (
     __addmissingdefaults__,

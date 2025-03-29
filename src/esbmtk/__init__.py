@@ -31,6 +31,14 @@ ureg.define("permil = 1e-3 fraction")
 ureg.define("ppm = 1e-6 fraction")
 np.seterr(invalid="ignore")
 
+from .base_classes import (
+    Flux,
+    Sink,
+    Source,
+    Species,
+    SpeciesError,
+    SpeciesProperties,
+)
 from .carbonate_chemistry import (
     add_carbonate_system_1,
     add_carbonate_system_2,
@@ -40,15 +48,6 @@ from .carbonate_chemistry import (
     get_pco2,
 )
 from .connections import ConnectionProperties, Species2Species
-from .esbmtk import (
-    Flux,
-    Model,
-    Sink,
-    Source,
-    Species,
-    SpeciesError,
-    SpeciesProperties,
-)
 from .esbmtk_base import esbmtkBase
 from .extended_classes import (
     DataField,
@@ -63,6 +62,7 @@ from .extended_classes import (
     VectorData,
     VirtualSpecies,
 )
+from .model import Model
 from .post_processing import (
     carbonate_system_1_pp,
     carbonate_system_2_pp,
