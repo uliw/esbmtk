@@ -81,7 +81,7 @@ def deprecated_keyword(message):
 
 
 class Model(esbmtkBase):
-    """Earth Science Box Model Toolkit (ESBMTK) Model class.
+    r"""Earth Science Box Model Toolkit (ESBMTK) Model class.
 
     This class represents the main model framework for creating and running
     Earth science box models. It handles initialization of model parameters,
@@ -93,8 +93,8 @@ class Model(esbmtkBase):
     - Model_Name.info() - Display model information
     - Model_Name.save_data() - Save model data to files
     - Model_Name.plot([sb.DIC, sb.TA]) - Plot specified objects
-    - Model_Name.save_state() - Save current model state
-    - Model_Name.read_state() - Initialize with a previous model state
+    - Model_Name.save\_state() - Save current model state
+    - Model_Name.read\_state() - Initialize with a previous model state
     - Model_Name.run() - Run the model simulation
     - Model_Name.list_species() - List all defined species
     - Model_Name.flux_summary() - Display flux information
@@ -338,7 +338,7 @@ class Model(esbmtkBase):
         )
         self.time = self.time_ode
         self.timec = np.empty(0)
-        self.state = 0
+        self.executionstate = 0
 
         # Set default stride
         self.stride = 1
@@ -435,7 +435,7 @@ class Model(esbmtkBase):
             for species in element.lsp:
                 print(f"{offset}{offset}{indentation}{species.n}")
 
-    def save_state(self, directory: str = "state", prefix: str = "state_") -> None:
+    def save_state(self, directory: str = "state", prefix: str = "state") -> None:
         """Save the current model state to files.
 
         Saves only the last time step of each reservoir to files in the specified directory.
@@ -448,7 +448,7 @@ class Model(esbmtkBase):
             Directory where state files will be saved. Will be created if it doesn't exist
             and deleted if it already exists.
 
-        prefix : str, default="state_"
+        prefix : str, default="state"
             Prefix to add to all saved filenames.
 
         Returns
@@ -612,8 +612,8 @@ class Model(esbmtkBase):
     def read_state(self, directory="state"):
         """Initialize the model with the result of a previous.
 
-        For this to work, you will need issue a
-        Model.save_state() command at then end of a model run.  This
+        For this to work, you will first need to issue a
+        `save_state` command at then end of a model run.  This
         will create the necessary data files to initialize a
         subsequent model run.
         """
@@ -878,7 +878,7 @@ class Model(esbmtkBase):
         self._ode_solver(kwargs)
 
         # Mark model as executed
-        self.state = 1
+        self.executionstate = 1
 
         # Calculate and display performance metrics
         cpu_duration = process_time() - cpu_start
