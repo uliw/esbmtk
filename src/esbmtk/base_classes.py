@@ -372,9 +372,9 @@ class SpeciesBase(esbmtkBase):
         append: bool,
         directory: str,
     ) -> None:
-        """Write data to file.
+        r"""Write data to file.
 
-        This function is called by the write_data() and save_state() methods
+        This function is called by the write_data() and save\_state() methods
 
         :param prefix:
         :param start:
