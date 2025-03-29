@@ -1,9 +1,11 @@
-    :Author: Uli Wortmann
+    :Author: uli wortmann
 
 .. contents::
 
 1 Changelog
 -----------
+
+- 0.14.1.6 Cleaned up repository structure. This may result in import error. Please get in touch if it does. Reworked many class definitions to improve readability and documentation.
 
 - 0.14.1.4 Fixed a regression that caused incorrect ``zcc`` values in the post-processing step. Added  the ``reverse_time`` keyword to the plot function. This is most useful for models that run forward in time from past starting point.
 

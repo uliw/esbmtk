@@ -7,7 +7,7 @@ Extending ESBMTK
 The ElementProperties and SpeciesProperties Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-ESBMTK uses the :py:class:`esbmtk.esbmtk.SpeciesProperties()` and :py:class:`esbmtk.esbmtk.ElementProperties()` class primarily to control plot labeling. Each ``SpeciesProperties`` instance is a child of an ``ElementProperties`` instance. Within the model hierarchy,  one would access e.g., ``DIC`` as ``M.Carbon.DIC`` . However, this results in a lot of redundant code, so the ``SpeciesProperties`` instances are also registered with the ``Model`` instance.
+ESBMTK uses the :py:class:`esbmtk.base_classes.SpeciesProperties()` and :py:class:`esbmtk.base_classes.ElementProperties()` class primarily to control plot labeling. Each ``SpeciesProperties`` instance is a child of an ``ElementProperties`` instance. Within the model hierarchy,  one would access e.g., ``DIC`` as ``M.Carbon.DIC`` . However, this results in a lot of redundant code, so the ``SpeciesProperties`` instances are also registered with the ``Model`` instance.
 
 .. code:: ipython
 
@@ -72,7 +72,7 @@ isotope scale of Oxygen from mUR to permil, and how to set the plot concentratio
     M.Oxygen.d_scale="\u2030"
     M.Oxygen.O2.scale_to="umol"
 
-see the :py:class:`esbmtk.esbmtk.SpeciesProperties()` and :py:class:`esbmtk.esbmtk.ElementProperties()` definitions for a full list of implemented properties.
+see the :py:class:`esbmtk.base_classes.SpeciesProperties()` and :py:class:`esbmtk.base_classes.ElementProperties()` definitions for a full list of implemented properties.
 
 Adding custom SpeciesProperties definitions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -206,7 +206,7 @@ Notes on the below code:
 
 - The ``return_values`` keyword expects a dictionary. If the return value is a flux, the dictionary key must be preceded by ``F_``. The key format must be ``{Species.full_name}.{SpeciesProperties.name}``. The ``id_string`` must be unique within the model, and must not contain blanks or dots. If the return value is a Species, the dictionary entry reads like this  ``{f"R_{rg.full_name}.Hplus": rg.swc.hplus},`` where dictionary value is used to set the initial condition.
 
-- In the last step, the ``register_return_values`` parses the return value dictionary and creates the necessary :py:class:`esbmtk.esbmtk.Flux()` or :py:class:`esbmtk.esbmtk.Species()` instances. This step may move to the init-section of the :py:class:`esbmtk.extended_classes.ExternalCode()` class definition in a future version.
+- In the last step, the ``register_return_values`` parses the return value dictionary and creates the necessary :py:class:`esbmtk.base_classes.Flux()` or :py:class:`esbmtk.base_classes.Species()` instances. This step may move to the init-section of the :py:class:`esbmtk.extended_classes.ExternalCode()` class definition in a future version.
 
 .. code:: ipython
 

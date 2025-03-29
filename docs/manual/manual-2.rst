@@ -41,7 +41,7 @@ The default is to add the signal to a given connection. It is however also possi
     M.run()
 
 Note that the ``plot()`` method accepts the signal object as well. In general, any ESBMTK object that has data that varies with time, can be plotted by the ``plot()`` method. ESBMTK also provides classes to include
-external data  :py:class:`esbmtk.extended_classes.ExternalData()`   as well as classes to mix and match data into the same plot :py:class:`esbmtk.extended_classes.DataField()`. The file ``is92a_comparison_plots.py`` (see  `https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010 <https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010>`_) shows a use case. Furthermore, :py:class:`esbmtk.esbmtk.Model.plot()`  returns a tuple with the figure instance, list of ``axs`` objects, which allows even more complex figure manipulations (see ``steady_state_plots.py`` in the same repository).
+external data  :py:class:`esbmtk.extended_classes.ExternalData()`   as well as classes to mix and match data into the same plot :py:class:`esbmtk.extended_classes.DataField()`. The file ``is92a_comparison_plots.py`` (see  `https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010 <https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010>`_) shows a use case. Furthermore, :py:class:`esbmtk.model.Model.plot()`  returns a tuple with the figure instance, list of ``axs`` objects, which allows even more complex figure manipulations (see ``steady_state_plots.py`` in the same repository).
 
 .. code:: ipython
 

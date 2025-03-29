@@ -80,7 +80,6 @@ extensions = [
 # autosummary_generate = []
 
 
-
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
@@ -101,14 +100,14 @@ copyright = "2024, Ulrich G. Wortmann"
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
-# version: The short X.Y version. 
+# version: The short X.Y version.
 # release: The full version, including alpha/beta/rc tags.
 # If you don’t need the separation provided between version and release,
 # just set them both to the same value.
 try:
     # from esbmtk import __version__ as version
     version = im.version("esbmtk")
-    
+
 except ImportError:
     version = "unknown"
 
@@ -125,7 +124,7 @@ release = version
 # non-false value, then it is used:
 # today = ''
 # Else, today_fmt is used as the format for a strftime call.
-today_fmt = '%B %d, %Y'
+today_fmt = "%B %d, %Y"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -162,7 +161,7 @@ todo_emit_warnings = True
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -199,7 +198,7 @@ html_static_path = []
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
-html_last_updated_fmt = '%b %d, %Y'
+html_last_updated_fmt = "%b %d, %Y"
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
@@ -294,7 +293,6 @@ intersphinx_mapping = {
 }
 
 
-autoapi_member_order = 'bysource'
-
+autoapi_member_order = "bysource"
+strip_signature_backslash = True
 print(f"loading configurations for {project} {version} ...", file=sys.stderr)
-

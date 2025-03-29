@@ -3,7 +3,7 @@
 
 * Extending ESBMTK
 ** The ElementProperties and SpeciesProperties Classes
-ESBMTK uses the @@rst::py:class:`base_classes.SpeciesProperties()`@@ and @@rst::py:class:`base_classes.ElementProperties()`@@ class primarily to control plot labeling. Each =SpeciesProperties= instance is a child of an =ElementProperties= instance. Within the model hierarchy,  one would access e.g., =DIC= as =M.Carbon.DIC= . However, this results in a lot of redundant code, so the =SpeciesProperties= instances are also registered with the =Model= instance.
+ESBMTK uses the @@rst::py:class:`esbmtk.base_classes.SpeciesProperties()`@@ and @@rst::py:class:`esbmtk.base_classes.ElementProperties()`@@ class primarily to control plot labeling. Each =SpeciesProperties= instance is a child of an =ElementProperties= instance. Within the model hierarchy,  one would access e.g., =DIC= as =M.Carbon.DIC= . However, this results in a lot of redundant code, so the =SpeciesProperties= instances are also registered with the =Model= instance.
 #+BEGIN_SRC ipython
 from esbmtk import Model
 
@@ -60,7 +60,7 @@ isotope scale of Oxygen from mUR to permil, and how to set the plot concentratio
 M.Oxygen.d_scale="\u2030"
 M.Oxygen.O2.scale_to="umol"
 #+END_SRC
-see the @@rst::py:class:`base_classes.SpeciesProperties()`@@ and @@rst::py:class:`base_classes.ElementProperties()`@@ definitions for a full list of implemented properties.
+see the @@rst::py:class:`esbmtk.base_classes.SpeciesProperties()`@@ and @@rst::py:class:`esbmtk.base_classes.ElementProperties()`@@ definitions for a full list of implemented properties.
 
 *** Adding custom SpeciesProperties definitions
 To add a new species follow the examples in the =species_definitions.py= source code file. Provided you loaded =Oxygen= in the model definition, defining a new species instance for dissolved oxygen would look like this
@@ -170,7 +170,7 @@ Notes on the below code:
  - If =my_buria()= is defined in the same file as =add_my_burial()= there is no need to import =my_burial()=
  - The =function_input_data= keyword requires the =Species= instance, not the array with the concentration values (i.e., =Species.c=). More than one argument can be given.
  - The =return_values= keyword expects a dictionary. If the return value is a flux, the dictionary key must be preceded by =F_=. The key format must be ={Species.full_name}.{SpeciesProperties.name}=. The =id_string= must be unique within the model, and must not contain blanks or dots. If the return value is a Species, the dictionary entry reads like this  ={f"R_{rg.full_name}.Hplus": rg.swc.hplus},= where dictionary value is used to set the initial condition.
- - In the last step, the =register_return_values= parses the return value dictionary and creates the necessary @@rst::py:class:`base_classes.Flux()`@@ or @@rst::py:class:`base_classes.Species()`@@ instances. This step may move to the init-section of the @@rst::py:class:`esbmtk.extended_classes.ExternalCode()`@@ class definition in a future version.
+ - In the last step, the =register_return_values= parses the return value dictionary and creates the necessary @@rst::py:class:`esbmtk.base_classes.Flux()`@@ or @@rst::py:class:`esbmtk.base_classes.Species()`@@ instances. This step may move to the init-section of the @@rst::py:class:`esbmtk.extended_classes.ExternalCode()`@@ class definition in a future version.
 #+BEGIN_SRC ipython
 def add_my_burial(source, sink, species, scale) -> None:
     """This function initializes a user supplied function

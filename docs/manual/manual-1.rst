@@ -145,15 +145,15 @@ Defining the model geometry and initial conditions
 The below code examples are available at `https://github.com/uliw/esbmtk-examples <https://github.com/uliw/esbmtk-examples>`_
 In the first step, one needs to define a model object that describes fundamental model parameters. The following code first loads the following ESBMTK classes that will help with model construction:
 
-- :py:class:`esbmtk.esbmtk.Model()`
+- :py:class:`esbmtk.model.Model()`
 
-- :py:class:`esbmtk.esbmtk.Reservoir()`
+- :py:class:`esbmtk.base_classes.Reservoir()`
 
 - :py:class:`esbmtk.connections.ConnectionProperties()` class
 
-- :py:class:`esbmtk.esbmtk.SourceProperties()` class
+- :py:class:`esbmtk.base_classes.SourceProperties()` class
 
-- :py:class:`esbmtk.esbmtk.SinkProperties()` class
+- :py:class:`esbmtk.base_classes.SinkProperties()` class
 
 - and ``Q_`` which belongs to the pint library.
 
@@ -169,7 +169,7 @@ In the first step, one needs to define a model object that describes fundamental
         SinkProperties,  # sink class
     )
 
-Next we use the :py:class:`esbmtk.esbmtk.Model()`  class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
+Next we use the :py:class:`esbmtk.model.Model()`  class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
 Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/l' rather than mol/m\*\*3 or 'kg/s'. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. So your mileage may vary if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.
 
 .. code:: ipython
@@ -211,7 +211,7 @@ Most ESBMTK classes accept quantities, strings that represent quantities as well
     F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
     thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 
-To set up the model geometry, we first use the :py:class:`esbmtk.esbmtk.Source()` and :py:class:`esbmtk.esbmtk.Species()` classes to create a source for the weathering flux, a sink for the burial flux, and instances of the surface and deep ocean boxes. Since we loaded the element definitions for phosphor in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
+To set up the model geometry, we first use the :py:class:`esbmtk.base_classes.Source()` and :py:class:`esbmtk.base_classes.Species()` classes to create a source for the weathering flux, a sink for the burial flux, and instances of the surface and deep ocean boxes. Since we loaded the element definitions for phosphor in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
 
 .. code:: ipython
     :name: p5
@@ -290,7 +290,7 @@ There are several ways to define biological export production, e.g., as a functi
     )
 
 We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity or use the previously calculated flux. We can query the export productivity using the ``id_string`` of the above connection with the
-:py:meth:`esbmtk.esbmtk.Model.flux_summary()` method of the model instance:
+:py:meth:`esbmtk.model.Model.flux_summary()` method of the model instance:
 
 .. code:: ipython
 
@@ -394,7 +394,7 @@ The concentration data for a given reservoir is stored in the following instance
     M.S_b.d  # delta value (if used by model)
     M.S_b.l  # the concentration of the light isotope (if used)
 
-The model time axis is available as ``M.time`` and the model supports the :py:class:`esbmtk.esbmtk.Model.connection_summary()` and :py:class:`esbmtk.esbmtk.Model.flux_summary()`   
+The model time axis is available as ``M.time`` and the model supports the :py:class:`esbmtk.model.Model.connection_summary()` and :py:class:`esbmtk.model.Model.flux_summary()`   
 
 .. code:: ipython
     :name: testrunner

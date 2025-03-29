@@ -9,7 +9,7 @@ ESBMTK provides several classes that abstract the handling of basin geometry, se
 Hypsography
 ~~~~~~~~~~~
 
-For many modeling tasks, it is important to know a globally averaged hypsometric curve. ESBMTK will automatically create a suitable hypsography instance if a :py:class:`esbmtk.esbmtk.Species()` or :py:class:`esbmtk.extended_classes.Reservoir()` instance is specified with the geometry keyword as in the following example where the first list item denotes the upper depth datum, the second list item, the lower depth datum, and the last list item denotes the fraction of the total ocean area if the upper boundary would be at sea level.
+For many modeling tasks, it is important to know a globally averaged hypsometric curve. ESBMTK will automatically create a suitable hypsography instance if a :py:class:`esbmtk.base_classes.Species()` or :py:class:`esbmtk.extended_classes.Reservoir()` instance is specified with the geometry keyword as in the following example where the first list item denotes the upper depth datum, the second list item, the lower depth datum, and the last list item denotes the fraction of the total ocean area if the upper boundary would be at sea level.
 
 .. code:: ipython
 
@@ -101,7 +101,7 @@ Provided that the model has terms for DIC and TA, pH calculations for a given :p
     box_names = [A_sb, I_sb, P_sb, H_sb]  # list of Reservoir handles
     add_carbonate_system_1(box_names)
 
-This will create Species :py:class:`esbmtk.esbmtk.Species()` instances for ``Hplus`` and ``CO2aq``. After running the model, the resulting concentration data is available in the usual manner:
+This will create Species :py:class:`esbmtk.base_classes.Species()` instances for ``Hplus`` and ``CO2aq``. After running the model, the resulting concentration data is available in the usual manner:
 
 .. code:: ipython
 
@@ -122,7 +122,7 @@ Notes:
 
 - The resulting concentration data depends on the choice of equilibrium constants and how they are calculated (see the ``opt_k_carbonic``, ``opt_buffers_mode`` keywords above).
 
-- The data from post-processing is currently available as :py:class:`esbmtk.extended_classes.VectorData()` instance, rather than as :py:class:`esbmtk.esbmtk.Species()` instance.
+- The data from post-processing is currently available as :py:class:`esbmtk.extended_classes.VectorData()` instance, rather than as :py:class:`esbmtk.base_classes.Species()` instance.
 
 - Species that use carbonate system 2 (see below), do not need to use carbonate system 1
 
@@ -206,7 +206,7 @@ see  the :py:func:`esbmtk.post_processing.carbonate_system_2_pp()` function for 
 Gas Exchange
 ~~~~~~~~~~~~
 
-ESBMTK implements gas exchange across the Air-Sea interface as a :py:class:`esbmtk.connections.Species2Species()` instance, between a :py:class:`esbmtk.extended_classes.GasReservoir()` and a :py:class:`esbmtk.esbmtk.Species()` instance. In the following example, we first declare a ``Gasreservoir`` and then connect it with a regular surface box. Note that the CO\ :sub:`2`\ gas transfer calculation requires that the respective surface reservoir carries the ``CO2aq`` tracer as calculated by the :py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry_carbonate_system_1.()` function since the gas-transfer depends on the dissolved CO\ :sub:`2`\ rather than on the DIC concentration.
+ESBMTK implements gas exchange across the Air-Sea interface as a :py:class:`esbmtk.connections.Species2Species()` instance, between a :py:class:`esbmtk.extended_classes.GasReservoir()` and a :py:class:`esbmtk.base_classes.Species()` instance. In the following example, we first declare a ``Gasreservoir`` and then connect it with a regular surface box. Note that the CO\ :sub:`2`\ gas transfer calculation requires that the respective surface reservoir carries the ``CO2aq`` tracer as calculated by the :py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry_carbonate_system_1.()` function since the gas-transfer depends on the dissolved CO\ :sub:`2`\ rather than on the DIC concentration.
 
 .. code:: ipython
 
