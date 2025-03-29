@@ -798,7 +798,7 @@ class Signal(esbmtkBase):
             name=f"{self.name}_ed",
             filename=self.filename,
             register=self,
-            legend="None",
+            legend=f"{self.name}_ed",
             disp_units=False,  # we need the data in model units
         )
 
