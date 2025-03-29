@@ -40,8 +40,8 @@ def Carbon(model):
         name="Carbon",  # ElementProperties Name
         model=model,  # Model handle
         mass_unit="mol",  # base mass unit
-        li_label="C^{12}$S",  # Name of light isotope
-        hi_label="C^{13}$S",  # Name of heavy isotope
+        li_label=r"C^{12}$S",  # Name of light isotope
+        hi_label=r"C^{13}$S",  # Name of heavy isotope
         d_label=r"$\delta^{13}$C",  # Name of isotope delta
         d_scale="mUr VPDB",  # Isotope scale. End of plot labels
         r=0.0112372,  # VPDB C13/C12 ratio
@@ -66,9 +66,11 @@ def Carbon(model):
         name="HCO3", element=eh, display_as=r"HCO$_3^-$", register=eh, m_weight=61.01684
     )
     SpeciesProperties(
-        name="CO3", element=eh, display_as="CO$_3^{2-}$", register=eh, m_weight=60.0089
+        name="CO3", element=eh, display_as=r"CO$_3^{2-}$", register=eh, m_weight=60.0089
     )
-    SpeciesProperties(name="D14C", element=eh, display_as="$\Delta^{14}$C", register=eh)
+    SpeciesProperties(
+        name="D14C", element=eh, display_as=r"$\Delta^{14}$C", register=eh
+    )
     SpeciesProperties(name="C", element=eh, register=eh, m_weight=12.0107)
     SpeciesProperties(name="CO2aq", element=eh, register=eh, scale_to="umol")
     SpeciesProperties(name="ALK", element=eh, register=eh)  # Alkalinity
@@ -92,8 +94,8 @@ def Sulfur(model):
         name="Sulfur",
         model=model,  # model handle
         mass_unit="mol",  # base mass unit
-        li_label="$^{32}$S",  # Name of light isotope
-        hi_label="$^{34}$S",  # Name of heavy isotope
+        li_label=r"$^{32}$S",  # Name of light isotope
+        hi_label=r"$^{34}$S",  # Name of heavy isotope
         d_label=r"$\delta^{34}$S",  # Name of isotope delta
         d_scale="mUr VCDT",  # Isotope scale. End of plot labels
         r=0.044162589,  # isotopic abundance ratio for species
@@ -143,8 +145,8 @@ def Hydrogen(model):
         name="Hydrogen",
         model=model,  # model handle
         mass_unit="milli",  # base mass unit
-        li_label="$^{1$}H",  # Name of light isotope
-        hi_label="$^{2}$H",  # Name of heavy isotope
+        li_label=r"$^{1$}H",  # Name of light isotope
+        hi_label=r"$^{2}$H",  # Name of heavy isotope
         d_label=r"$\delta^{2}$D",  # Name of isotope delta
         d_scale="mUr VSMOV",  # Isotope scale. End of plot labels  # needs verification
         r=155.601e-6,
@@ -179,8 +181,8 @@ def Oxygen(model) -> None:
         name="Oxygen",
         model=model,  # model handle
         mass_unit="mol",  # base mass unit
-        li_label="$^{16$}O",  # Name of light isotope
-        hi_label="$^{18}$O",  # Name of heavy isotope
+        li_label=r"$^{16$}O",  # Name of light isotope
+        hi_label=r"$^{18}$O",  # Name of heavy isotope
         d_label=r"$\delta^{18}$O",  # Name of isotope delta
         d_scale="mUr VSMOV",  # Isotope scale. End of plot labels  # needs verification
         r=2005.201e-6,
