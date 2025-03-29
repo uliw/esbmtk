@@ -236,7 +236,7 @@ class InputParsing:
                         ) from err
             elif key not in kwargs:
                 raise MissingKeywordError(f"'{key}' is a mandatory keyword")
-            elif kwargs[key] == "None" or kwargs[key] is None:
+            elif kwargs[key] is None:
                 raise MissingKeywordError(
                     f"'{key}' is a mandatory keyword and cannot be None"
                 )
@@ -361,7 +361,7 @@ class InputParsing:
             raise KeywordError(f"'{key}' is not a valid keyword")
 
         # Skip None values as they're handled elsewhere
-        if value is None or value == "None":
+        if value is None:  # or value == "None":
             return
 
         # Get the expected types
