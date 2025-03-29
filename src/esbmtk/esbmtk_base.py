@@ -534,8 +534,7 @@ class InputParsing:
 
 
 class esbmtkBase(InputParsing):
-    """
-    The esbmtk base class template.
+    """The esbmtk base class template.
 
     This class handles keyword arguments, name registration and
     other common tasks.
@@ -716,7 +715,6 @@ class esbmtkBase(InputParsing):
         Examples
         --------
         >>> obj.info(indent=2)
-
         """
         if "indent" not in kwargs:
             indent = 0
