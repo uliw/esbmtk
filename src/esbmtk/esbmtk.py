@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import logging
 import os
-import pathlib as pl
 import sys
 import tempfile
 import time
@@ -186,10 +185,8 @@ class Model(esbmtkBase):
         opt_pH_scale : int
             pH scale setting: total=1, free=3.
         """
-        import datetime
         from importlib.metadata import version
 
-        import esbmtk.species_definitions as species_definitions
         from esbmtk.sealevel import hypsometry
 
         # Define default values for model parameters
@@ -504,6 +501,7 @@ class Model(esbmtkBase):
             If the directory exists and cannot be deleted.
         """
         from pathlib import Path
+
         from esbmtk.utility_functions import rmtree
 
         # Prepare directory
@@ -559,6 +557,7 @@ class Model(esbmtkBase):
             If the directory exists and cannot be deleted.
         """
         from pathlib import Path
+
         from esbmtk.utility_functions import rmtree
 
         # Prepare directory
@@ -734,10 +733,6 @@ class Model(esbmtkBase):
         >>>     no_show=True,
         >>> )
         """
-        from matplotlib.ticker import FuncFormatter
-        from esbmtk import Q_
-        from .utility_functions import reverse_tick_labels_factory
-
         # Ensure pl is a list
         if pl is None:
             pl = []
@@ -867,7 +862,9 @@ class Model(esbmtkBase):
             The figure containing the axes to modify
         """
         from matplotlib.ticker import FuncFormatter
+
         from esbmtk import Q_
+
         from .utility_functions import reverse_tick_labels_factory
 
         t_max = Q_(f"{self.time[-1]} {self.t_unit}").to(self.d_unit).magnitude
@@ -1251,8 +1248,6 @@ class Model(esbmtkBase):
         3. Update time vector and flux data
         4. Perform specialized checks (pH stability) and calculations (carbonate chemistry)
         """
-        from esbmtk import carbonate_system_1_pp
-
         # Step 1: Interpolate signals to match solver time domain
         self._interpolate_signals_to_solver_timepoints(results)
 
@@ -1697,6 +1692,7 @@ class Model(esbmtkBase):
             del __builtins__[o]
 
     def __init_dimensionalities__(self, ureg):
+        """No longer needed."""
         raise NotImplementedError()
         """Test the dimensionality of input data."""
         self.substance_per_volume_d = ureg("mol/liter").dimensionality
