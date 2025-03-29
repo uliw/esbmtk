@@ -1,6 +1,6 @@
 """esbmtk: A general purpose Earth Science box model toolkit.
 
-Copyright (C), 2020 Ulrich G.  Wortmann
+Copyright (C), 2020 Ulrich G. Wortmann
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ from esbmtk.ode_backend_2 import (
 
 from . import Q_, ureg
 from .esbmtk_base import esbmtkBase
-from .utility_functions import (  # show_data,
+from .utility_functions import (
     find_matching_strings,
     get_delta_from_concentration,
     get_delta_h,
@@ -63,127 +63,128 @@ if tp.TYPE_CHECKING:
 
 
 class ModelError(Exception):
-    """Custom Error Class."""
+    """Custom Error Class for Model-related errors."""
 
     def __init__(self, message):
-        """Initialize Error Instance."""
+        """Initialize Error Instance with formatted message."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class SolverError(Exception):
-    """Custom Error Class."""
+    """Custom Error Class for solver-related errors."""
 
     def __init__(self, message):
-        """Initialize Error Instance."""
+        """Initialize Error Instance with formatted message."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class ReservoirError(Exception):
-    """Custom Error Class."""
+    """Custom Error Class for reservoir-related errors."""
 
     def __init__(self, message):
-        """Initialize Error Instance."""
+        """Initialize Error Instance with formatted message."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class FluxError(Exception):
-    """Custom Error Class."""
+    """Custom Error Class for flux-related errors."""
 
     def __init__(self, message):
-        """Initialize Error Instance."""
+        """Initialize Error Instance with formatted message."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class ScaleError(Exception):
-    """Custom Error Class."""
+    """Custom Error Class for unit scale-related errors."""
 
     def __init__(self, message):
-        """Initialize Error Instance."""
+        """Initialize Error Instance with formatted message."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 class SpeciesError(Exception):
-    """Custom Error Class."""
+    """Custom Error Class for species-related errors."""
 
     def __init__(self, message):
-        """Initialize Error Instance."""
+        """Initialize Error Instance with formatted message."""
         message = f"\n\n{message}\n"
         super().__init__(message)
 
 
 def deprecated_keyword(message):
-    """Depreciaton Warning."""
+    """Issue a deprecation warning with the provided message."""
     warnings.warn(message, DeprecationWarning, stacklevel=2)
 
 
 class Model(esbmtkBase):
-    """Specify a new model.
+    """Earth Science Box Model Toolkit (ESBMTK) Model class.
 
-    See the __init__()
-    method for a detailed explanation of the parameters
+    This class represents the main model framework for creating and running
+    Earth science box models. It handles initialization of model parameters,
+    management of reservoirs, fluxes, and species, and provides methods for
+    running simulations and visualizing results.
 
-    The user facing methods of the model class are
+    The user-facing methods of the model class are:
 
-        - Model_Name.info()
-        - Model_Name.save_data()
-        - Model_Name.plot([sb.DIC, sb.TA]) plot any object in the list
-        - Model_Name.save_state() Save the model state
-        - Model_name.read_state() Initialize with a previous model
-          state
-        - Model_Name.run()
-        - Model_Name.list_species()
-        - Model_name.flux_summary()
-        - Model_Name.connection_summary()
-
+    - Model_Name.info() - Display model information
+    - Model_Name.save_data() - Save model data to files
+    - Model_Name.plot([sb.DIC, sb.TA]) - Plot specified objects
+    - Model_Name.save_state() - Save current model state
+    - Model_Name.read_state() - Initialize with a previous model state
+    - Model_Name.run() - Run the model simulation
+    - Model_Name.list_species() - List all defined species
+    - Model_Name.flux_summary() - Display flux information
+    - Model_Name.connection_summary() - Display connection information
     """
 
-    def __init__(self, **kwargs: dict[any, any]) -> None:
+    def __init__(self, **kwargs: dict[str, any]) -> None:
         """Initialize a model instance.
 
-        :param **kwargs: A dictionary with key value pairs.
+        Parameters
+        ----------
+        **kwargs : dict
+            A dictionary with key-value pairs for model configuration.
 
-            .. Example::
+        Examples
+        --------
+        >>> esbmtkModel(
+        ...     name="Test_Model",  # required
+        ...     stop="10000 yrs",   # end time
+        ...     max_timestep="1 yr",  # maximum time step
+        ...     element=["Carbon", "Sulfur"]
+        ... )
 
-                    esbmtkModel(name   =  "Test_Model", # required
-                                stop     = "10000 yrs", # end time
-                                max_timestep = "1 yr",    # as a string "2 yrs"
-                                element = ["Carbon", "Sulfur" ]
-                              )
-
-                :param name: The model name, e.g., M
-                :param mass_unit: mol
-                :param volume_unit: only tested with liter
-                :param element: tp.List with one or more species names
-                :param max_timestep: Limit automatic step size increase, i.e., the time
-                resolution of the model. Optional, defaults to the model duration/100
-                :number_of_datapoints: defaults to 1E3, increase for complex signal data or postprocessing
-                :param m_type: enables or disables isotope calculation for the
-                entire model.  The default value is "Not set" in this case
-                isotopes will only be calculated for reservoirs which set
-                the isotope keyword.  'mass_only' 'both' will override the
-                reservoir settings
-
-                :param offset: will offset the time axis by the specified
-                amount, when plotting the data, .i.e., the model time runs
-                from to 100, but you want to plot data as if where from
-                2000 to 2100, you would specify a value of 2000.  This is
-                for display purposes only, and does not affect the model.
-                Care must be taken that any external data references the
-                model time domain, and not the display time.
-
-                :param display_precision: affects the on-screen display of data.
-                It is also cutoff for the graphical output.  I.e., the
-                interval f the y-axis will not be smaller than the
-                display_precision.
-
-                :param opt_k_carbonic: see  https://doi.org/10.5194/gmd-15-15-2022
-
-                :param opt_pH_scale: total = 1, free = 3,
+        Important Parameters
+        -------------------
+        name : str
+            The model name, e.g., "M".
+        mass_unit : str
+            Base mass unit for the model, default is "mol".
+        volume_unit : str
+            Volume unit for the model, default is "liter".
+        element : list or str
+            One or more species names to include in the model.
+        max_timestep : str
+            Limit automatic step size increase (time resolution of the model).
+            Optional, defaults to model duration/100.
+        m_type : str
+            Controls isotope calculation for the entire model.
+            Options: "Not set" (default, isotopes calculated only for reservoirs
+            with isotope keyword), "mass_only", or "both" (overrides reservoir settings).
+        offset : str
+            Offset the time axis by the specified amount when plotting data.
+            For display purposes only, does not affect model calculations.
+        display_precision : float
+            Affects on-screen display of data and sets cutoff for graphical output.
+        opt_k_carbonic : int
+            See https://doi.org/10.5194/gmd-15-15-2022.
+        opt_pH_scale : int
+            pH scale setting: total=1, free=3.
         """
         import datetime
         from importlib.metadata import version
@@ -191,11 +192,12 @@ class Model(esbmtkBase):
         import esbmtk.species_definitions as species_definitions
         from esbmtk.sealevel import hypsometry
 
+        # Define default values for model parameters
         self.defaults: dict[str, list[any, tuple]] = {
             "start": ["0 yrs", (str, Q_)],
             "stop": ["None", (str, Q_)],
-            "offset": ["0 yrs", (str, Q_)],  # depreceated
-            "timestep": ["None", (str, Q_)],  # depreceated
+            "offset": ["0 yrs", (str, Q_)],  # deprecated
+            "timestep": ["None", (str, Q_)],  # deprecated
             "max_timestep": ["None", (str, Q_)],
             "min_timestep": ["1 second", (str, Q_)],
             "element": ["None", (str, list)],
@@ -208,7 +210,6 @@ class Model(esbmtkBase):
             "display_precision": [0.01, (float)],
             "plot_style": ["default", (str)],
             "m_type": ["Not Set", (str)],
-            # "number_of_datapoints": [1000, (int)],
             "step_limit": [1e9, (int, float, str)],
             "register": ["local", (str)],
             "save_flux_data": [False, (bool)],
@@ -226,104 +227,155 @@ class Model(esbmtkBase):
             "opt_buffers_mode": [2, (int)],
         }
 
-        # provide a list of absolutely required keywords
+        # Define required keywords
         self.lrk: list[str] = [
             "stop",
             ["timestep", "max_timestep"],
         ]
+
+        # Initialize keyword variables from provided arguments
         self.__initialize_keyword_variables__(kwargs)
-        # chyeck for deprecated key-words
+
+        # Check for deprecated keywords
         if self.timestep != "None":
             self.max_timestep = self.timestep
             raise DeprecationWarning(
-                "\ntimestep is depreceated, please replace with max_timestep\n"
+                "\ntimestep is deprecated, please replace with max_timestep\n"
             )
 
+        # Set default model name
         self.name = "M"
-        # empty list which will hold all reservoir references
-        self.lmo: list = []
-        self.lmo2: list = []
-        self.dmo: dict = {}  # dict of all model objects. useful for name lookups
 
-        # start a log file
+        # Initialize model component containers
+        self._initialize_model_containers()
+
+        # Configure logging
+        self._setup_logging()
+
+        # Register with parent
+        self.__register_with_parent__()
+
+        # Set up unit definitions
+        self._configure_units()
+
+        # Process time parameters
+        self._configure_time_parameters()
+
+        # Create time arrays
+        self._create_time_arrays()
+
+        # Handle step limit
+        self._handle_step_limit()
+
+        # Register elements and species with model
+        self._register_elements_and_species()
+
+        # Display warranty information
+        self._display_warranty(version)
+
+        # Initialize the hypsometry class
+        hypsometry(name="hyp", model=self, register=self)
+
+    def _initialize_model_containers(self):
+        """Initialize all model component containers."""
+        # Model objects
+        self.lmo: list = []  # List of all model objects
+        self.lmo2: list = []  # Secondary list of model objects
+        self.dmo: dict = {}  # Dict of all model objects (for name lookups)
+
+        # Reservoirs and connections
+        self.lor: list = []  # List of all reservoir type objects
+        self.lic: list = []  # List of all reservoir type objects (internal)
+        self.loc: set = set()  # Set of connection objects
+
+        # Elements and species
+        self.lel: list = []  # List of all element references
+        self.lsp: list = []  # List of all species references
+
+        # External data and signals
+        self.led: list = []  # List of all external data objects
+        self.los: list = []  # List of signal objects
+        self.lvd: list = []  # List of vector data objects
+
+        # Fluxes and processes
+        self.lof: list = []  # List of flux objects
+        self.lop: list = []  # List of flux processes
+        self.lpc_f: list = []  # List of external functions affecting fluxes
+        self.lpc_i: list = []  # List of external functions needed in ode_backend
+        self.lpc_r: list = []  # List of external functions affecting virtual reservoirs
+        self.lvr: list = []  # List of virtual reservoirs
+
+        # Other model components
+        self.ldf: list = []  # List of datafield objects
+        self.lrg: list = []  # List of reservoir groups
+        self.lto: list = []  # List of objects requiring delayed initialization
+        self.olkk: list = []  # Optional keywords for use in connector class
+
+        # Global parameters and constants
+        self.gpt: tuple = ()  # Global parameter list
+        self.toc: tuple = ()  # Global constants list
+        self.gcc: int = 0  # Constants counter
+        self.vpc: int = 0  # Parameter counter
+        self.luf: dict = {}  # User functions and source
+
+    def _setup_logging(self):
+        """Configure model logging."""
         for handler in logging.root.handlers[:]:
             logging.root.removeHandler(handler)
 
-        fn: str = f"{self.name}.log"
-        logging.basicConfig(filename=fn, filemode="w", level=logging.CRITICAL)
-        self.__register_with_parent__()
+        log_filename: str = f"{self.name}.log"
+        logging.basicConfig(filename=log_filename, filemode="w", level=logging.CRITICAL)
 
-        self.lor: list = []  # list of all reservoir type objects
-        self.lic: list = []  # list of all reservoir type objects
-        # empty list which will hold all connector references
-        self.loc: set = set()  # set with connection handles
-        self.lel: list = []  # list which will hold all element references
-        self.led: list[ExternalData] = []  # all external data objects
-        self.lsp: list = []  # list which will hold all species references
-        self.lop: list = []  # set of flux processes
-        self.lpc_f: list = []  # list of external functions affecting fluxes
-        # list of external functions that needs to be imported in the ode_backend
-        self.lpc_i: list = []
-        # list of external functions affecting virtual reservoirs
-        self.lpc_r: list = []
-        self.lvr: list = []  # list of virtual reservoirs
-        # optional keywords for use in the connector class
-        self.olkk: list = []
-        # list of objects which require a delayed initialize
-        self.lto: list = []
-        self.ldf: list = []  # list of datafield objects
-        self.los: list = []  # list of signals
-        self.lof: list = []  # list of fluxes
-        self.lrg: list = []  # list of reservoirgroups
-        self.gpt: tuple = ()  # global parameter list
-        self.toc: tuple = ()  # global constants list
-        self.gcc: int = 0  # constants counter
-        self.vpc: int = 0  # parameter counter
-        self.luf: dict = {}  # user functions and source
-        self.lvd: list = []  # list of vector data objects
+    def _configure_units(self):
+        """Set up model units."""
+        self.l_unit = ureg.meter  # Length unit
+        self.t_unit = Q_(self.time_unit).units  # Time unit
+        self.d_unit = Q_(self.stop).units  # Display time units
+        self.m_unit = Q_(self.mass_unit).units  # Mass unit
+        self.v_unit = Q_(self.volume_unit).units  # Volume unit
+        self.a_unit = Q_(self.area_unit).units  # Area unit
+        self.c_unit = Q_(self.concentration_unit).units  # Concentration unit
+        self.f_unit = self.m_unit / self.t_unit  # Flux unit (mass/time)
+        self.r_unit = self.v_unit / self.t_unit  # Flux as volume/time
 
-        # unit defs
-        self.l_unit = ureg.meter  # the length unit
-        self.t_unit = Q_(self.time_unit).units  # the time unit
-        self.d_unit = Q_(self.stop).units  # display time units
-        self.m_unit = Q_(self.mass_unit).units  # the mass unit
-        self.v_unit = Q_(self.volume_unit).units  # the volume unit
-        self.a_unit = Q_(self.area_unit).units  # the area unit
-        self.c_unit = Q_(self.concentration_unit).units
-        self.f_unit = self.m_unit / self.t_unit  # the flux unit (mass/time)
-        self.r_unit = self.v_unit / self.t_unit  # flux as volume/time
-
-        # legacy variable names
+    def _configure_time_parameters(self):
+        """Process and configure time-related parameters."""
+        # Process start and stop times
         self.start = self.ensure_q(self.start).to(self.t_unit).magnitude
         self.stop = self.ensure_q(self.stop).to(self.t_unit).magnitude
 
+        # Handle deprecated timestep parameter
         if self.timestep != "None":
             self.max_timestep = self.ensure_q(self.timestep).to(self.t_unit).magnitude
-            deprecated_keyword("timestep is depreciated. Please use max_timestep")
+            deprecated_keyword("timestep is deprecated. Please use max_timestep")
         else:
             self.max_timestep = (
                 self.ensure_q(self.max_timestep).to(self.t_unit).magnitude
             )
 
+        # Process remaining time parameters
         self.min_timestep = self.ensure_q(self.min_timestep).to(self.t_unit).magnitude
         self.dt = self.max_timestep
         self.offset = self.ensure_q(self.offset).to(self.t_unit).magnitude
         self.start = self.start + self.offset
         self.stop = self.stop + self.offset
+
+        # Legacy variable names
         self.n = self.name
         self.mo = self.name
         self.model = self
         self.plot_style: list = [self.plot_style]
 
-        self.xl = f"Time [{self.t_unit}]"  # time axis label
+        # Configure time axis
+        self.xl = f"Time [{self.t_unit}]"  # Time axis label
         self.length = int(abs(self.stop - self.start))
         self.steps = int(abs(round(self.length / self.dt)))
         self.number_of_datapoints = self.steps
 
-        # self.time = (np.arange(self.steps) * self.dt) + self.start
+    def _create_time_arrays(self):
+        """Create time arrays for model simulation."""
         self.time_ode = np.linspace(
             self.start,
-            # self.stop - (self.stop - self.start) / 100,
             self.stop - self.start,
             num=self.number_of_datapoints + 1,
         )
@@ -331,9 +383,11 @@ class Model(esbmtkBase):
         self.timec = np.empty(0)
         self.state = 0
 
-        # calculate stride
+        # Set default stride
         self.stride = 1
 
+    def _handle_step_limit(self):
+        """Handle step limit configuration."""
         if self.step_limit == "None":
             self.number_of_solving_iterations: int = 0
         elif self.step_limit > self.steps:
@@ -346,25 +400,35 @@ class Model(esbmtkBase):
             self.steps = self.step_limit
             self.time = (np.arange(self.steps) * self.dt) + self.start
 
+    def _register_elements_and_species(self):
+        """Register elements and species with the model."""
+        from importlib import import_module
+
         if "element" in self.kwargs:
             if isinstance(self.kwargs["element"], list):
                 element_list = self.kwargs["element"]
             else:
                 element_list = [self.kwargs["element"]]
 
-            # register elements and species with model
-            for e in element_list:
-                # get function handle
-                fh = getattr(species_definitions, e)
-                fh(self)  # register element with model
-                # get element handle
-                eh = getattr(self, e)
-                # register species with model
-                eh.__register_species_with_model__()
+            # Process each element
+            for element_name in element_list:
+                # Get function handle from species_definitions
+                element_handler = getattr(
+                    import_module("esbmtk.species_definitions"), element_name
+                )
+                element_handler(self)  # Register element with model
 
-        warranty = (
+                # Get element handle and register its species
+                element_handle = getattr(self, element_name)
+                element_handle.__register_species_with_model__()
+
+    def _display_warranty(self, version_func):
+        """Display warranty and citation information."""
+        import datetime
+
+        warranty_text = (
             f"\n"
-            f"ESBMTK {version('esbmtk')}  \n Copyright (C) 2020 - "
+            f"ESBMTK {version_func('esbmtk')}  \n Copyright (C) 2020 - "
             f"{datetime.date.today().year}  Ulrich G.Wortmann\n"
             f"This program comes with ABSOLUTELY NO WARRANTY\n"
             f"This is free software, and you are welcome to redistribute it\n"
@@ -372,147 +436,219 @@ class Model(esbmtkBase):
             f"If you use ESBMTK for your research, please cite:\n\n"
             f"Wortmann et al. 2025, https://doi.org/10.5194/gmd-18-1155-2025\n"
         )
-        print(warranty)
-
-        # initialize the hypsometry class
-        hypsometry(name="hyp", model=self, register=self)
+        print(warranty_text)
 
     def info(self, **kwargs) -> None:
-        """Show an overview of the object properties.
+        """Display an overview of the model properties.
 
-        Optional arguments are (name/default/explanation)
+        Prints information about the model instance including defined elements
+        and their associated species.
 
-        :param index: int = 0 # this will show data at the given index
-        :param indent: int = 0 # print indentation
+        Parameters
+        ----------
+        **kwargs : dict
+            Optional keyword arguments.
+
+        indent : int, default=0
+            Number of spaces to use for indentation in the output.
+
+        index : int, default=0
+            Index to use when showing data samples (if applicable).
+
+        Returns
+        -------
+        None
+            This method prints to stdout but doesn't return a value.
         """
-        off: str = "  "
+        # Handle indentation
+        indent = kwargs.get("indent", 0)
+        indentation = " " * indent
+        offset = "  "  # Standard offset for nested items
 
-        if "indent" not in kwargs:
-            indent = 0
-            ind = ""
-        else:
-            indent = kwargs["indent"]
-            ind = " " * indent
-
-        # print basic data bout this object
+        # Print basic model information
         print(self)
 
-        # list elements
+        # Display elements and their species
         print("Currently defined elements and their species:")
-        for e in self.lel:
-            print(f"{ind}{e}")
-            print(f"{off} Defined SpeciesProperties:")
-            for s in e.lsp:
-                print(f"{off}{off}{ind}{s.n}")
+        for element in self.lel:
+            print(f"{indentation}{element}")
+            print(f"{offset} Defined SpeciesProperties:")
 
-    def save_state(self, directory="state", prefix="state_") -> None:
-        """Save model state.
+            # Display species for this element
+            for species in element.lsp:
+                print(f"{offset}{offset}{indentation}{species.n}")
 
-        Similar to save data, but only saves the last time step
+    def save_state(self, directory: str = "state", prefix: str = "state_") -> None:
+        """Save the current model state to files.
+
+        Saves only the last time step of each reservoir to files in the specified directory.
+        This is similar to save_data() but focuses on capturing the current state rather
+        than the full time series.
+
+        Parameters
+        ----------
+        directory : str, default="state"
+            Directory where state files will be saved. Will be created if it doesn't exist
+            and deleted if it already exists.
+
+        prefix : str, default="state_"
+            Prefix to add to all saved filenames.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        FileExistsError
+            If the directory exists and cannot be deleted.
         """
         from pathlib import Path
-
         from esbmtk.utility_functions import rmtree
 
-        fn: str = directory  # file name
-        cwd: Path = Path.cwd()  # get the current working directory
-        fqfn: Path = Path(f"{cwd}/{fn}")  # fully qualified file name
-        if fqfn.exists():  # check if file exist
-            print(f"Found previous state, deleting {fqfn}")
-            rmtree(fqfn)
-            if fqfn.exists():
-                raise FileExistsError(f"Deleting {fqfn} failed")
+        # Prepare directory
+        target_path = Path.cwd() / directory
 
-        start: int = -2
-        stop: int = None
-        stride: int = 1
+        # Check if directory exists and remove it if it does
+        if target_path.exists():
+            print(f"Found previous state directory, deleting {target_path}")
+            rmtree(target_path)
 
-        for r in self.lor:  # loop over reservoirs
-            r.__write_data__(prefix, start, stop, stride, False, directory)
+            # Verify directory was deleted
+            if target_path.exists():
+                raise FileExistsError(
+                    f"Failed to delete existing directory: {target_path}"
+                )
 
-    def save_data(self, directory="./data") -> None:
-        """Save the model results to a CSV file.
+        # Define slice parameters for the last state only
+        start_idx = -2  # Second-to-last index (to avoid boundary effects)
+        stop_idx = None  # No stop index means go to the end
+        stride_idx = 1  # Use every value
 
-        Each reservoir will have their own CSV file
+        # Write data for each reservoir
+        for reservoir in self.lor:
+            reservoir.__write_data__(
+                prefix=prefix,
+                start=start_idx,
+                stop=stop_idx,
+                stride=stride_idx,
+                append=False,
+                directory=directory,
+            )
 
-        Calling save_data() without any arguments,  will create (or
-        recreate) the data directory in the current working directory
-        which will then be populated by csv-files
+    def save_data(self, directory: str = "./data") -> None:
+        """Save all model results to CSV files.
 
-        :param directory: a string with the directory name. It defaults to 'data'
+        Creates a directory (or recreates if it exists) and saves the full time series
+        of all model components to separate CSV files. Each reservoir, signal, and vector
+        data object will have its own CSV file.
 
+        Parameters
+        ----------
+        directory : str, default="./data"
+            Directory where data files will be saved. Will be created if it doesn't exist
+            and deleted if it already exists.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        FileExistsError
+            If the directory exists and cannot be deleted.
         """
         from pathlib import Path
-
         from esbmtk.utility_functions import rmtree
 
-        fn: str = directory  # file name
-        cwd: Path = Path.cwd()  # get the current working directory
-        fqfn: Path = Path(f"{cwd}/{fn}")  # fully qualified file name
-        if fqfn.exists():  # check if file exist
-            print(f"Found previous state, deleting {fqfn}")
-            rmtree(fqfn)
-            if fqfn.exists():
-                raise FileExistsError(f"Deleting {fqfn} failed")
+        # Prepare directory
+        target_path = Path.cwd() / directory
 
+        # Check if directory exists and remove it if it does
+        if target_path.exists():
+            print(f"Found previous data directory, deleting {target_path}")
+            rmtree(target_path)
+
+            # Verify directory was deleted
+            if target_path.exists():
+                raise FileExistsError(
+                    f"Failed to delete existing directory: {target_path}"
+                )
+
+        # Define common parameters for data writing
         prefix = ""
         stride = self.stride
-        start = 0
-        stop = len(self.time)
-
+        start_idx = 0
+        stop_idx = len(self.time)
         append = False
 
-        for r in self.lor:
-            if r.rtype != "flux_only":
-                r.__write_data__(prefix, start, stop, stride, append, directory)
+        # Save all regular reservoirs (excluding flux-only types)
+        for reservoir in self.lor:
+            if reservoir.rtype != "flux_only":
+                reservoir.__write_data__(
+                    prefix=prefix,
+                    start=start_idx,
+                    stop=stop_idx,
+                    stride=stride,
+                    append=append,
+                    directory=directory,
+                )
 
-        for s in self.los:
-            s.__write_data__(prefix, start, stop, stride, append, directory)
+        # Save all signal objects
+        for signal in self.los:
+            signal.__write_data__(
+                prefix=prefix,
+                start=start_idx,
+                stop=stop_idx,
+                stride=stride,
+                append=append,
+                directory=directory,
+            )
 
-        for s in self.lvd:
-            s.__write_data__(prefix, start, stop, stride, append, directory)
+        # Save all vector data objects
+        for vector_data in self.lvd:
+            vector_data.__write_data__(
+                prefix=prefix,
+                start=start_idx,
+                stop=stop_idx,
+                stride=stride,
+                append=append,
+                directory=directory,
+            )
 
-    def read_data(self, directory="./data") -> None:
-        """Save the model results to a CSV file.
+    def read_data(self, directory: str = "./data") -> None:
+        """Read model results from CSV files.
 
-        Each reservoir will have their own CSV file
+        Loads previously saved model data from CSV files in the specified directory.
+        Updates the model's internal state with the loaded data.
+
+        Parameters
+        ----------
+        directory : str, default="./data"
+            Directory containing the saved model data files.
+
+        Returns
+        -------
+        None
         """
         from esbmtk import GasReservoir, Species
 
         prefix = ""
 
-        print(f"reading data from {directory}")
+        print(f"Reading data from {directory}")
 
-        for r in self.lor:
-            if isinstance(r, Species | GasReservoir):
-                r.__read_state__(directory, prefix)
-                if r.isotopes:
-                    r.d = get_delta_from_concentration(r.c, r.l, r.sp.r)
+        # Process each reservoir
+        for reservoir in self.lor:
+            # Only process Species and GasReservoir objects
+            if isinstance(reservoir, Species | GasReservoir):
+                # Read the state data
+                reservoir.__read_state__(directory, prefix)
 
-    def restart(self):
-        """Restart the model with result of the last run.
-
-        This is useful for long runs which otherwise would used to much memory
-        """
-        for r in self.lor:
-            r.__reset_state__()
-            for f in r.lof:
-                f.__reset_state__()
-
-        for r in self.lvr:
-            r.__reset_state__()
-
-        # print(f"len of time {len(self.time)}, stride = {self.stride}")
-        # print(f"len of time with stride {len(self.time[0 : -2 : self.stride])}")
-        self.timec = np.append(self.timec, self.time[0 : -2 : self.stride])
-        t = int(round((self.stop - self.start) * self.dt))
-        self.start = int(round(self.stop * self.dt))
-        self.stop = self.start + t
-        self.time = (np.arange(self.steps) * self.dt) + self.start
-        print(f"new start = {self.start}, new stop = {self.stop}")
-        print(f"time[0] = {self.time[0]} time[-1] = {self.time[-1]}")
-        # print(f"len of timec {len(self.timec)}")
-        # self.time = (arange(self.steps) * self.dt) + self.start
+                # Calculate delta values for reservoirs with isotopes
+                if reservoir.isotopes:
+                    reservoir.d = get_delta_from_concentration(
+                        reservoir.c, reservoir.l, reservoir.sp.r
+                    )
 
     def read_state(self, directory="state"):
         """Initialize the model with the result of a previous.
@@ -542,456 +678,1017 @@ class Model(esbmtkBase):
                 rg.swc.update_parameters(pos=0)
 
     def plot(self, pl: list = None, **kwargs) -> tuple:
-        """Plot all objects specified in ``pl``.
+        """Plot model objects and save results to a file.
 
-        :param pl: a list of ESBMTK instances (e.g., reservoirs)
-        :kwargs: a dict with optional keywords
+        Creates a figure with subplots for each provided model object and renders
+        their data using the object's __plot__ method.
 
-        - fn: a string, optional, default is 'model_name'. The filename to save the plot.
-        - title: a string to set the optional plot title
-        - no_show: bool, if set to True, do not show & save figure. Instead, return the
-          plt, fig and axes handles. Useful if one needs to add figure elements manually.
-        - reverse_time if time and time axes lables need to be reversed.
+        Parameters
+        ----------
+        pl : list or object, default=None
+            A list of ESBMTK instances (e.g., reservoirs) to plot.
+            If a single object is provided, it will be converted to a list.
+            If None, an empty list will be used.
 
-        :returns: a tuple with the figure instance, list of axs objects
+        **kwargs : dict
+            Optional plotting parameters:
 
-        Example::
+            fn : str, default="{model_name}.pdf"
+                Filename to save the plot.
 
-            M.plot([sb.PO4, sb.DIC], fn='test.pdf')
+            title : str, default=None
+                Title for the plot window.
 
-        The above code will plot ``sb.PO4`` and ``sb.DIC`` and save the plot as 'test.pdf'.
+            no_show : bool, default=False
+                If True, don't display or save the figure; instead return the
+                plt, fig, and axes handles for manual customization.
 
-        A more complex example would first assemble a list of plot objects, and then return
-        the plot handles to allow for modifications afterwards.
+            reverse_time : bool, default=False
+                If True, reverse the time axis and adjust tick labels.
 
-        Example::
+            blocking : bool, default=True
+                If True, block execution until plot window is closed.
 
-            from esbmtk import data_summaries
-            species_names = [M.DIC, M.TA, M.pH, M.CO3, M.zcc, M.zsat, M.zsnow, M.PO4]
-            box_names = [M.L_b, M.H_b, M.D_b]
-            pl = data_summaries(M, species_names, box_names, M.L_b.DIC)
-            pl += [M.CO2_At]
-            # plot the model results, but do not render the plot
-            plt, fig, axs = M.plot(
-                 pl,
-                 fn=f"{case}/steady_state.pdf",
-                 title="ESBMTK Preindustrial Steady State",
-                 no_show=True,
-            )
+        Returns
+        -------
+        tuple or None
+            If no_show=True, returns (plt, fig, axes), otherwise None.
 
+        Examples
+        --------
+        Basic usage:
+
+        >>> M.plot([sb.PO4, sb.DIC], fn='test.pdf')
+
+        Advanced usage with customization:
+
+        >>> from esbmtk import data_summaries
+        >>> species_names = [M.DIC, M.TA, M.pH, M.CO3, M.zcc, M.zsat, M.zsnow, M.PO4]
+        >>> box_names = [M.L_b, M.H_b, M.D_b]
+        >>> pl = data_summaries(M, species_names, box_names, M.L_b.DIC)
+        >>> pl += [M.CO2_At]
+        >>> plt, fig, axs = M.plot(
+        >>>     pl,
+        >>>     fn="steady_state.pdf",
+        >>>     title="ESBMTK Preindustrial Steady State",
+        >>>     no_show=True,
+        >>> )
         """
         from matplotlib.ticker import FuncFormatter
-
         from esbmtk import Q_
-
         from .utility_functions import reverse_tick_labels_factory
 
+        # Ensure pl is a list
         if pl is None:
             pl = []
         if not isinstance(pl, list):
             pl = [pl]
 
+        # Extract plot configuration from kwargs
         filename = kwargs.get("fn", f"{self.n}.pdf")
         blocking = kwargs.get("blocking", True)
         plot_title = kwargs.get("title", "None")
         reverse_time = kwargs.get("reverse_time", False)
         no_show = kwargs.get("no_show", False)
 
-        noo: int = len(pl)
-        size, geo = plot_geometry(noo)  # adjust layout
-        [row, col] = geo
-        fig, ax = plt.subplots(row, col)  # row, col
-        axs = [[], []]
+        # Determine layout based on number of plots
+        num_plots = len(pl)
+        size, geometry = plot_geometry(num_plots)
+        row_count, col_count = geometry
 
-        """ The shape of the ax value of subplots depends on the figure
-        geometry. So we need to ensure we are dealing with a 2-D array
-        """
+        # Create figure and subplots
+        fig, ax = plt.subplots(row_count, col_count)
 
-        if row == 1 and col == 1:  # row=1, col=1 only one window
-            axs = ax
-        elif row > 1 and col == 1:  # mutiple rows, one column
-            axs = []
-            for i in range(row):
-                axs.append(ax[i])
-        elif row == 1 and col:  # 1 row, multiple columns
-            print("one row, mutiple cols")
-            for i in range(geo[1]):
-                axs.append(ax[i])
-        else:
-            axs = ax  # mutiple rows and mutiple columns
+        # Normalize axes structure based on subplot layout
+        axs = self._normalize_axes_structure(ax, row_count, col_count)
 
-        # ste plot parameters
+        # Configure plot style and title
         plt.style.use(self.plot_style)
-        if plot_title == "None":
-            fig.canvas.manager.set_window_title(f"{self.n} Species")
-        else:
-            fig.canvas.manager.set_window_title(plot_title)
+        window_title = plot_title if plot_title != "None" else f"{self.n} Species"
+        fig.canvas.manager.set_window_title(window_title)
         fig.set_size_inches(size)
 
-        i = 0  # loop over objects
-        for c in range(row):  # rows
-            if col > 1:
-                for r in range(col):  # columns
-                    if i < noo:
-                        pl[i].__plot__(self, axs[c][r])
-                        i = i + 1
-                    else:
-                        axs[c][r].remove()
-            elif row > 1:
-                pl[i].__plot__(self, axs[c])
-                i = i + 1
-            else:
-                pl[i].__plot__(self, axs)
-                i = i + 1
+        # Plot each object in the appropriate subplot
+        self._plot_objects_to_subplots(pl, axs, row_count, col_count, num_plots)
 
+        # Adjust figure layout
         fig.subplots_adjust(top=0.88)
 
+        # Handle time axis reversal if requested
         if reverse_time:
-            t_max = Q_(f"{self.time[-1]} {self.t_unit}").to(self.d_unit).magnitude
-            for ax in fig.get_axes():
-                ax.invert_xaxis()
-                ax.xaxis.set_major_formatter(
-                    FuncFormatter(reverse_tick_labels_factory(t_max))
-                )
+            self._reverse_time_axis(fig)
 
+        # Return or display/save the figure
         if no_show:
             return plt, fig, fig.get_axes()
         else:
             fig.tight_layout()
-            plt.show(block=blocking)  # create the plot windows
+            plt.show(block=blocking)
             fig.savefig(filename)
-            return
+            return None
+
+    def _normalize_axes_structure(self, ax, row_count: int, col_count: int) -> list:
+        """Normalize the axes structure based on subplot layout.
+
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes or array of Axes
+            The axes object(s) returned by plt.subplots()
+        row_count : int
+            Number of rows in the subplot grid
+        col_count : int
+            Number of columns in the subplot grid
+
+        Returns
+        -------
+        list
+            Normalized axes structure for consistent handling
+        """
+        if row_count == 1 and col_count == 1:
+            # Single subplot
+            return ax
+        elif row_count > 1 and col_count == 1:
+            # Multiple rows, one column
+            return [ax[i] for i in range(row_count)]
+        elif row_count == 1 and col_count > 1:
+            # One row, multiple columns
+            return [ax[i] for i in range(col_count)]
+        else:
+            # Multiple rows and columns
+            return ax
+
+    def _plot_objects_to_subplots(
+        self, plot_objects: list, axes, row_count: int, col_count: int, num_plots: int
+    ) -> None:
+        """Plot objects to their respective subplots.
+
+        Parameters
+        ----------
+        plot_objects : list
+            List of objects to plot
+        axes : matplotlib.axes.Axes or array of Axes
+            The normalized axes structure
+        row_count : int
+            Number of rows in the subplot grid
+        col_count : int
+            Number of columns in the subplot grid
+        num_plots : int
+            Total number of objects to plot
+        """
+        plot_index = 0  # Index of current plot object
+
+        for row in range(row_count):
+            if col_count > 1:
+                # Multi-column grid
+                for col in range(col_count):
+                    if plot_index < num_plots:
+                        plot_objects[plot_index].__plot__(self, axes[row][col])
+                        plot_index += 1
+                    else:
+                        # Remove unused subplots
+                        axes[row][col].remove()
+            elif row_count > 1:
+                # Single column, multiple rows
+                if plot_index < num_plots:
+                    plot_objects[plot_index].__plot__(self, axes[row])
+                    plot_index += 1
+            else:
+                # Single subplot
+                if plot_index < num_plots:
+                    plot_objects[plot_index].__plot__(self, axes)
+                    plot_index += 1
+
+    def _reverse_time_axis(self, fig) -> None:
+        """Reverse the time axis for all subplots.
+
+        Parameters
+        ----------
+        fig : matplotlib.figure.Figure
+            The figure containing the axes to modify
+        """
+        from matplotlib.ticker import FuncFormatter
+        from esbmtk import Q_
+        from .utility_functions import reverse_tick_labels_factory
+
+        t_max = Q_(f"{self.time[-1]} {self.t_unit}").to(self.d_unit).magnitude
+        for ax in fig.get_axes():
+            ax.invert_xaxis()
+            ax.xaxis.set_major_formatter(
+                FuncFormatter(reverse_tick_labels_factory(t_max))
+            )
 
     def run(self, **kwargs) -> None:
-        """Loop over the time vector.
+        """Run the model simulation.
 
-        For each time step, calculate the fluxes for each reservoir
-        This function takes the method keyword which can be used to specify
-        the ODE solver. It defaults to 'BDF', and it has also been tested with
-        'LSODA'
+        Executes the model simulation by solving the system of ordinary
+        differential equations (ODEs) that describe the model dynamics.
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Optional keyword arguments to control the simulation:
+
+            solver : str, default="ode"
+                The solver type to use. Currently only "ode" is supported.
+
+            method : str, default="BDF"
+                The integration method for the ODE solver.
+                Options include "BDF" and "LSODA".
+
+            stype : str, default="solve_ivp"
+                The solver function to use. Currently only "solve_ivp" is supported.
+
+        Returns
+        -------
+        None
+            Results are stored in the model instance.
+
+        Raises
+        ------
+        ModelError
+            If an unsupported solver type is specified.
+        SolverError
+            If the solver fails to find a solution.
+
+        Notes
+        -----
+        After running, performance metrics (CPU time, memory usage) are printed.
         """
-        wts = time.time()  # this has nothing todo with self.time below!
-        start: float = process_time()
-        solver = kwargs.get("solver", "ode")
-        self.solver = solver
-        self.__run_solver__(solver, kwargs)
+        # Track execution time and resource usage
+        wall_clock_start = time.time()
+        cpu_start = process_time()
+        # Run solver
+        self._ode_solver(kwargs)
 
-        self.state = 1  # flag that the model has executed
-        duration: float = process_time() - start
-        wcd = time.time() - wts
-        print(f"\n Execution took {duration:.2f} cpu seconds, wt = {wcd:.2f}\n")
-        process = psutil.Process(os.getpid())
+        # Mark model as executed
+        self.state = 1
+
+        # Calculate and display performance metrics
+        cpu_duration = process_time() - cpu_start
+        wall_clock_duration = time.time() - wall_clock_start
+
         print(
-            f"This run used {process.memory_info().rss / 1e9:.2f} Gbytes of memory \n"
+            f"\n Execution took {cpu_duration:.2f} CPU seconds, wall time = {wall_clock_duration:.2f} seconds\n"
         )
 
-    def get_delta_values(self):
-        """Calculate masses and isotope ratios."""
-        for r in self.lor:
-            if r.isotopes:
-                r.m = r.c * r.volume
-                r.d = get_delta_h(r)
+        # Get memory usage
+        process = psutil.Process(os.getpid())
+        memory_gb = process.memory_info().rss / 1e9
+        print(f"This run used {memory_gb:.2f} GB of memory\n")
 
-    def sub_sample_data(self):
-        """Subsample the data."""
-        stride = int(len(self.time) / self.number_of_datapoints)
+    def _write_temp_equations(self, cwd, R, icl, cpl, ipl):
+        """Write temporary equations file and return the equation set.
 
-        if stride > 1:
-            self.time = self.time[2:-2:stride]
+        Creates a temporary Python module containing the model equations,
+        imports it, and returns the equation set function.
 
-            for r in self.lor:
-                r.__sub_sample_data__(stride)
+        Parameters
+        ----------
+        cwd : str or Path
+            Current working directory
+        R : ndarray
+            Initial conditions
+        icl : list
+            List of initial condition objects
+        cpl : list
+            List of constant parameters
+        ipl : list
+            List of initial parameters
 
-            for vr in self.lvr:
-                vr.__sub_sample_data__(stride)
-
-            for f in self.lof:
-                f.__sub_sample_data__(stride)
-
-    def __run_solver__(self, solver: str, kwargs: dict) -> None:
-        """Run the ODE solver."""
-        if solver == "ode":
-            self.ode_solver(kwargs)
-        else:
-            raise ModelError(f"Solver={self.solver} is unkknown")
-
-    def write_temp_equations(self, cwd, write_equations_2, R, icl, cpl, ipl):
-        """Write the equations file return the equation set.
-
-        Note that the equation import needs to be done inside the
-        tempfile context manager, so we cannot simply return the
-        file name.
+        Returns
+        -------
+        function
+            The equations function imported from the temporary module
         """
         import pathlib as pl
 
+        # Set temporary directory to current working directory
         tempfile.tempdir = cwd
-        with tempfile.NamedTemporaryFile(suffix=".py") as tmp_file:
-            eqs_fn = pl.Path(tmp_file.name)
-            eqs_module_name = write_equations_3(self, R, icl, cpl, ipl, eqs_fn)
-            eqs_set = __import__(eqs_module_name).eqs
-        return eqs_set
 
-    def ode_solver(self, kwargs):
-        """Initiate the ODE solver call."""
-        # build equation file
+        # Create a temporary Python file
+        with tempfile.NamedTemporaryFile(suffix=".py") as tmp_file:
+            # Get path to temporary file
+            equations_file_path = pl.Path(tmp_file.name)
+
+            # Generate equations module
+            equations_module_name = write_equations_3(
+                self, R, icl, cpl, ipl, equations_file_path
+            )
+
+            # Import the equations module and get the equations function
+            equations_set = __import__(equations_module_name).eqs
+
+        return equations_set
+
+    def _ode_solver(self, kwargs: dict):
+        """Initialize and run the ODE solver.
+
+        Sets up the system of ODEs, generates the equation file, and solves
+        the system using scipy's solve_ivp.
+
+        Parameters
+        ----------
+        kwargs : dict
+            Keyword arguments to control the solver behavior
+
+        Raises
+        ------
+        SolverError
+            If the solver fails to find a solution
+        """
+        # Get initial conditions and build equation matrices
         R, icl, cpl, ipl, atol = get_initial_conditions(self, self.rtol)
+
+        # Store variables for later use
         self.R = R
         self.icl = icl
         self.cpl = cpl
         self.ipl = ipl
 
-        # build coefficient matrix C
+        # Build coefficient matrix
         self.CM, self.F = build_eqs_matrix(self)
 
-        cwd = Path.cwd()
-        sys.path.append(cwd)  # required on windows
-        fn: str = "equations.py"  # file name
-        eqs_fn: pl.Path = pl.Path(f"{cwd}/{fn}")  # fully qualified file name
+        # Set up paths for equation files
+        current_dir = Path.cwd()
+        sys.path.append(str(current_dir))  # Required on Windows
+        equation_filename = "equations.py"
+        equation_file_path = current_dir / equation_filename
+
+        # Handle equation file based on debug settings
+        equations_set = self._handle_equation_file(
+            equation_file_path, R, icl, cpl, ipl, current_dir
+        )
+
+        # Get solver configuration from kwargs
+        method = kwargs.get("method", "BDF")
+
+        # Initialize carbonate chemistry tables if not present
+        self._initialize_carbonate_tables()
+
+        # Run the ODE solver
+        self._run_solve_ivp(R, equations_set, method, atol)
+
+        # Process results
+        self._process_solver_results()
+
+    def _handle_equation_file(self, equation_file_path, R, icl, cpl, ipl, current_dir):
+        """Handle equation file generation based on debug settings.
+
+        Parameters
+        ----------
+        equation_file_path : Path
+            Path to the equation file
+        R, icl, cpl, ipl : various
+            Parameters for equation generation
+        current_dir : Path
+            Current working directory
+
+        Returns
+        -------
+        function
+            The equations function
+        """
+        # If debugging equations is enabled
         if self.debug_equations_file:
-            if eqs_fn.exists():
+            if equation_file_path.exists():
                 warnings.warn(
                     "\n\n Warning re-using the equations file \n"
                     "\n type y to proceed. Any other key will delete the file and create a new one",
                     stacklevel=2,
                 )
-                k = input("type y/n :")
-                if k == "y":  # read old file
-                    eqs_module_name: str = eqs_fn.stem
-                else:  # delete old file, and create new one
-                    eqs_fn.unlink()  # delete old file
-                    eqs_module_name = write_equations_3(self, R, icl, cpl, ipl, eqs_fn)
-            else:  # this is the first run. Create persistent equations file
-                eqs_module_name = write_equations_3(self, R, icl, cpl, ipl, eqs_fn)
+                user_input = input("type y/n: ")
 
-            # import equations
-            eqs_set = __import__(eqs_module_name).eqs
+                if user_input.lower() == "y":  # Use existing file
+                    equation_module_name = equation_file_path.stem
+                else:  # Create new file
+                    equation_file_path.unlink()  # Delete old file
+                    equation_module_name = write_equations_3(
+                        self, R, icl, cpl, ipl, equation_file_path
+                    )
+            else:  # First run - create persistent file
+                equation_module_name = write_equations_3(
+                    self, R, icl, cpl, ipl, equation_file_path
+                )
 
+            # Import equations
+            equations_set = __import__(equation_module_name).eqs
         else:
-            if eqs_fn.exists():  # delete any leftover files
-                eqs_fn.unlink()
+            # Use temporary file for equations
+            if equation_file_path.exists():
+                equation_file_path.unlink()
 
-            eqs_set = self.write_temp_equations(
-                cwd, write_equations_3, R, icl, cpl, ipl
-            )
+            equations_set = self._write_temp_equations(current_dir, R, icl, cpl, ipl)
 
-        method = kwargs.get("method", "BDF")
-        stype = kwargs.get("stype", "solve_ivp")
+        return equations_set
 
-        # check if using carbonate chemistry, if not provide dummy values
+    def _initialize_carbonate_tables(self):
+        """Initialize carbonate chemistry tables with default values if not present."""
         if not hasattr(self, "area_table"):
             self.area_table = 0
             self.area_dz_table = 0
             self.Csat_table = 0
 
-        if stype == "solve_ivp":
-            self.results = solve_ivp(
-                eqs_set,
-                (self.time[0], self.time[-1]),
-                R,
-                args=(
-                    self,
-                    self.gpt,
-                    self.toc,  # tuple of constants
-                    self.area_table,
-                    self.area_dz_table,
-                    self.Csat_table,
-                    self.CM,  # coefficient matrix
-                    self.F,  # flux vector
-                ),
-                method=method,
-                atol=atol,
-                rtol=self.rtol,
-                t_eval=self.time_ode,
-                first_step=self.min_timestep,
-                max_step=self.dt,
-                vectorized=False,  # flux equations would need to be adjusted
-            )
+    def _run_solve_ivp(self, R, equations_set, method, atol):
+        """Run the solve_ivp ODE solver.
 
+        Parameters
+        ----------
+        R : ndarray
+            Initial conditions
+        equations_set : function
+            The ODE function
+        method : str
+            Integration method
+        atol : float or ndarray
+            Absolute tolerance
+        """
+        self.results = solve_ivp(
+            equations_set,
+            (self.time[0], self.time[-1]),
+            R,
+            args=(
+                self,
+                self.gpt,
+                self.toc,  # Tuple of constants
+                self.area_table,
+                self.area_dz_table,
+                self.Csat_table,
+                self.CM,  # Coefficient matrix
+                self.F,  # Flux vector
+            ),
+            method=method,
+            atol=atol,
+            rtol=self.rtol,
+            t_eval=self.time_ode,
+            first_step=self.min_timestep,
+            max_step=self.dt,
+            vectorized=False,  # Flux equations would need to be adjusted
+        )
+
+    def _process_solver_results(self):
+        """Process the solver results and handle errors.
+
+        Raises
+        ------
+        SolverError
+            If the solver fails to find a solution
+        """
         if self.results.status == 0:
+            # Print solver statistics
             print(
                 f"\nnfev={self.results.nfev}, njev={self.results.njev}, nlu={self.results.nlu}\n"
             )
             print(f"status={self.results.status}")
             print(f"message={self.results.message}\n")
+
+            # Process data
             self.post_process_data(self.results)
         else:
-            message = """---------------------- Warning ------------------------
-                       "\n\n No solution was obtained, check https://esbmtk.readthedocs.io/en/latest/manual/manual-6.html
-                       \n ---------------------- Warning ------------------------\n"""
-            raise SolverError(message)
+            # Raise error with helpful message for failed solutions
+            error_message = (
+                "---------------------- Warning ------------------------\n"
+                "No solution was obtained, check "
+                "https://esbmtk.readthedocs.io/en/latest/manual/manual-6.html\n"
+                "---------------------- Warning ------------------------\n"
+            )
+            raise SolverError(error_message)
 
-    def test_d_pH(self, rg: Species, time: NDArrayFloat) -> None:
-        """Test if the change in pH exceeds more than 0.01 units per time step.
+    def get_delta_values(self) -> None:
+        """Calculate reservoir masses and isotope delta values.
 
-        Note that this is only a crude test, since the solver interpolates
-        between intergration steps. So this may not catch all problems.
+        Updates the mass (m) and delta (d) values for all reservoirs
+        in the model that have isotopes enabled. For each reservoir,
+        the mass is calculated from concentration and volume, and
+        the delta value is calculated using the get_delta_h function.
 
         Parameters
         ----------
-        rg : Reservoir
-            Reservoir instance
-        time: : NDArrayFloat
-            time vector as returned by the solver
+        None
 
+        Returns
+        -------
+        None
+            The method modifies reservoir objects in place.
         """
-        # hplus = getattr(rg, "Hplus")
-        hplus = rg.Hplus
-        dph = np.diff(-np.log10(hplus.c))
-        dph_bool = dph > 0.01
-        if sum(dph_bool) > 0:
-            for i, v in enumerate(dph_bool):
-                if v:
-                    warnings.warn(
-                        f"\n\n{rg.full_name} delta pH = {dph[i]:.2f} "
-                        f"at t = {time[i]:.2f} {self.t_unit:~P}\n",
-                        stacklevel=2,
-                    )
+        for reservoir in self.lor:
+            if reservoir.isotopes:
+                # Update mass based on concentration and volume
+                reservoir.m = reservoir.c * reservoir.volume
+
+                # Calculate isotope delta values
+                reservoir.d = get_delta_h(reservoir)
+
+    def sub_sample_data(self) -> None:
+        """Reduce data resolution by subsampling time series data.
+
+        If the number of time points exceeds the desired number of data points,
+        this method reduces the data resolution by taking every nth point
+        (where n is the stride). This affects the time array and all data
+        in reservoirs, virtual reservoirs, and fluxes.
+
+        The method is mainly used to reduce memory usage and file sizes
+        when saving model output.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+            The method modifies model data in place.
+
+        Notes
+        -----
+        Subsampling only occurs if the stride is greater than 1.
+        The time series boundaries (first two and last two points) are excluded
+        from subsampling to avoid boundary effects.
+        """
+        # Calculate stride based on current time array and desired number of points
+        stride = int(len(self.time) / self.number_of_datapoints)
+
+        # Only subsample if stride is greater than 1
+        if stride > 1:
+            # Subsample time array, excluding first two and last two points
+            self.time = self.time[2:-2:stride]
+
+            # Subsample all reservoir data
+            for reservoir in self.lor:
+                reservoir.__sub_sample_data__(stride)
+
+            # Subsample all virtual reservoir data
+            for virtual_reservoir in self.lvr:
+                virtual_reservoir.__sub_sample_data__(stride)
+
+            # Subsample all flux data
+            for flux in self.lof:
+                flux.__sub_sample_data__(stride)
 
     def post_process_data(self, results) -> None:
-        """Map solver results back into esbmtk structures.
+        """Process solver results and update model data structures.
 
-        :param results: numpy arrays with solver results
+        Takes the raw numerical results from the ODE solver and maps them back
+        into the appropriate ESBMTK data structures (reservoirs, signals, fluxes).
+        Also performs post-processing operations like interpolating signals,
+        calculating derived quantities, and checking for pH stability.
+
+        Parameters
+        ----------
+        results : scipy.integrate._ivp.ivp.OdeResult
+            The results object returned by the ODE solver, containing solution
+            time points (t) and state variables (y)
+
+        Returns
+        -------
+        None
+            The method updates model data structures in-place
+
+        Notes
+        -----
+        The processing order is important:
+        1. Interpolate signals and external data to match solver time points
+        2. Map state variables to reservoir concentrations and masses
+        3. Update time vector and flux data
+        4. Perform specialized checks (pH stability) and calculations (carbonate chemistry)
         """
         from esbmtk import carbonate_system_1_pp
 
-        # interpolate signals into the ode time domain
-        # must be done before changing model time domain
-        for s in self.los:
-            s.signal_data.m = np.interp(
-                results.t,
-                self.time,
-                s.signal_data.m,
-            )
-            if s.isotopes:
-                s.signal_data.l = np.interp(
-                    results.t,
-                    self.time,
-                    s.signal_data.l,
+        # Step 1: Interpolate signals to match solver time domain
+        self._interpolate_signals_to_solver_timepoints(results)
+
+        # Step 2: Interpolate external data to match solver time domain
+        self._interpolate_external_data_to_solver_timepoints(results)
+
+        # Step 3: Map solver state variables to reservoir properties
+        self._map_state_variables_to_reservoirs(results)
+
+        # Step 4: Update model time vector to match solver time points
+        self.time = results.t
+
+        # Step 5: Update flux data to match solver time steps
+        steps = len(results.t)  # Get number of solver steps
+        self._update_flux_data(steps)
+
+        # Step 6: Perform specialized post-processing
+        self._perform_specialized_post_processing(results)
+
+    def _interpolate_signals_to_solver_timepoints(self, results) -> None:
+        """Interpolate signal data to match solver time points.
+
+        Parameters
+        ----------
+        results : scipy.integrate._ivp.ivp.OdeResult
+            The ODE solver results
+        """
+        for signal in self.los:
+            # Interpolate mass data
+            signal.signal_data.m = np.interp(results.t, self.time, signal.signal_data.m)
+
+            # Interpolate isotope data if present
+            if signal.isotopes:
+                signal.signal_data.l = np.interp(
+                    results.t, self.time, signal.signal_data.l
                 )
 
-        # interpolate external data into ode time domain
-        # must be done before changing model time domain
-        for ed in self.led:
-            ed.y = np.interp(results.t, ed.x, ed.y)
-        # assign results to the esbmtk variables
-        i = 0
-        for r in self.icl:
-            r.c = results.y[i]
-            # this needs fixing if we have variable volumes
-            r.m = results.y[i] * r.volume
-            i = i + 1
-            if r.isotopes:
-                r.l = results.y[i]
-                i = i + 1
-                r.d = get_delta_from_concentration(r.c, r.l, r.sp.r)
+    def _interpolate_external_data_to_solver_timepoints(self, results) -> None:
+        """Interpolate external data to match solver time points.
 
-        self.time = results.t
-        steps = len(results.t)  # get number of solver steps
-        for f in self.lof:
-            if f.save_flux_data:
-                f.m = f.m[0:steps]
-                if f.isotopes:
-                    f.l = f.l[0:steps]
-                    f.d = get_delta_h(f)
-
-        # test for rapid changes in pH and
-        # calculate carbonate species for cs1
-        for rg in self.lrg:
-            if hasattr(rg, "Hplus"):
-                self.test_d_pH(rg, results.t)
-            if rg.has_cs1:
-                carbonate_system_1_pp(rg)
-
-    def list_species(self):
-        """List all  defined species."""
-        for e in self.lel:
-            print(f"{e.n}")
-            e.list_species()
-
-    def flux_summary(self, **kwargs: dict):
-        """Show a summary of all model fluxes.
-
-        Optional parameters:
-
-        :param filter_by: str = "" # filter on flux name or part of
-            flux name words separated by blanks act as additional
-            conditions, i.e., all words must occur in a given name
-
-        :param return_list: bool = False, # if True return a list of
-            fluxes matching the filter_by string.
-
-        :param exclude: str = "" # exclude all results matching this
-            string
-
-            Example::
-
-                names = M.flux_summary(filter_by="POP A_sb", return_list=True)
+        Parameters
+        ----------
+        results : scipy.integrate._ivp.ivp.OdeResult
+            The ODE solver results
         """
-        fby = ""
-        rl: list = []
-        exclude: str = ""
-        check_exlusion: bool = False
+        for external_data in self.led:
+            external_data.y = np.interp(results.t, external_data.x, external_data.y)
 
-        if "exclude" in kwargs:
-            exclude = kwargs["exclude"]
-            check_exlusion = True
+    def _map_state_variables_to_reservoirs(self, results) -> None:
+        """Map solver state variables to reservoir properties.
 
-        if "filter_by" in kwargs:
-            fby: list = kwargs["filter_by"].split(" ")
+        Parameters
+        ----------
+        results : scipy.integrate._ivp.ivp.OdeResult
+            The ODE solver results
+        """
+        state_index = 0
 
+        for reservoir in self.icl:
+            # Update reservoir concentration
+            reservoir.c = results.y[state_index]
+
+            # Update reservoir mass (assumes constant volume)
+            # Note: This would need modification for variable volumes
+            reservoir.m = results.y[state_index] * reservoir.volume
+
+            # Move to next state variable
+            state_index += 1
+
+            # Process isotope data if present
+            if reservoir.isotopes:
+                reservoir.l = results.y[state_index]
+                state_index += 1
+
+                # Calculate delta values from concentrations
+                reservoir.d = get_delta_from_concentration(
+                    reservoir.c, reservoir.l, reservoir.sp.r
+                )
+
+    def _update_flux_data(self, steps: int) -> None:
+        """Update flux data to match solver time steps.
+
+        Parameters
+        ----------
+        steps : int
+            Number of time steps in the solver results
+        """
+        for flux in self.lof:
+            if flux.save_flux_data:
+                # Trim flux mass data to match time steps
+                flux.m = flux.m[0:steps]
+
+                # Process isotope data if present
+                if flux.isotopes:
+                    flux.l = flux.l[0:steps]
+                    flux.d = get_delta_h(flux)
+
+    def _perform_specialized_post_processing(self, results) -> None:
+        """Perform specialized post-processing tasks.
+
+        Parameters
+        ----------
+        results : scipy.integrate._ivp.ivp.OdeResult
+            The ODE solver results
+        """
+        from esbmtk import carbonate_system_1_pp
+
+        for reservoir_group in self.lrg:
+            # Check for pH stability if hydrogen ions are present
+            if hasattr(reservoir_group, "Hplus"):
+                self.test_d_pH(reservoir_group, results.t)
+
+            # Calculate carbonate system parameters if needed
+            if reservoir_group.has_cs1:
+                carbonate_system_1_pp(reservoir_group)
+
+    def test_d_pH(self, reservoir_group: Species, time_vector: NDArrayFloat) -> None:
+        """Test for large changes in pH between time steps.
+
+        Checks if the pH change between consecutive time steps exceeds 0.01 units,
+        which could indicate numerical instability or unrealistic model behavior.
+        Warnings are issued for any time steps where the threshold is exceeded.
+
+        Parameters
+        ----------
+        reservoir_group : Species
+            The reservoir group containing a Hplus species to be checked
+
+        time_vector : NDArrayFloat
+            Time vector as returned by the solver
+
+        Returns
+        -------
+        None
+            Issues warnings if large pH changes are detected
+
+        Notes
+        -----
+        This is a crude test since the solver interpolates between integration steps,
+        so it may not catch all problems. It only identifies pH changes that exceed
+        0.01 units between the specific time points in the solution.
+
+        The pH is calculated as -log10([H+]), where [H+] is the hydrogen ion concentration.
+        """
+        # Access the hydrogen ion concentration data
+        hydrogen_ions = reservoir_group.Hplus
+
+        # Calculate pH from hydrogen ion concentration and get differences between steps
+        pH_values = -np.log10(hydrogen_ions.c)
+        pH_changes = np.diff(pH_values)
+
+        # Find time steps where pH change exceeds threshold
+        pH_threshold = 0.01
+        large_pH_changes = pH_changes > pH_threshold
+
+        # If any large changes were found, issue warnings
+        if np.any(large_pH_changes):
+            for i, is_large_change in enumerate(large_pH_changes):
+                if is_large_change:
+                    warnings.warn(
+                        f"\n\n{reservoir_group.full_name} delta pH = {pH_changes[i]:.2f} "
+                        f"at t = {time_vector[i]:.2f} {self.t_unit:~P}\n",
+                        stacklevel=2,
+                    )
+
+    def list_species(self) -> None:
+        """Display all elements and species defined in the model.
+
+        Prints a hierarchical list of all elements in the model and their
+        associated species properties. This provides a quick overview of
+        the chemical species available in the model simulation.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+            This method prints to stdout but doesn't return a value.
+
+        Examples
+        --------
+        >>> model.list_species()
+        Currently defined elements and their species:
+        Carbon
+          Defined SpeciesProperties:
+            DIC
+            CO2
+            HCO3
+            CO3
+        Sulfur
+          Defined SpeciesProperties:
+            SO4
+            H2S
+        """
+        # Print header
+        print("\nCurrently defined elements and their species:")
+
+        # Iterate through each element
+        for element in self.lel:
+            # Display element name
+            print(f"{element}")
+            print("  Defined SpeciesProperties:")
+
+            # Display all species for this element
+            for species in element.lsp:
+                print(f"    {species.n}")
+
+    def flux_summary(self, **kwargs: dict) -> list | None:
+        """Display or return a filtered summary of model fluxes.
+
+        Creates a report of fluxes in the model, filtered by name patterns.
+        Can either print the results to the console or return them as a list.
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Optional keyword arguments:
+
+            filter_by : str, default=""
+                Filter fluxes by name or partial name. Multiple words separated
+                by spaces act as additional conditions - all words must appear
+                in the flux name.
+
+            exclude : str, default=""
+                Exclude any fluxes whose names contain this string.
+
+            return_list : bool, default=False
+                If True, return a list of flux objects instead of printing to console.
+
+        Returns
+        -------
+        list or None
+            If return_list=True, returns a list of flux objects matching the filters.
+            If return_list=False, returns None (results are printed to console).
+
+        Raises
+        ------
+        ModelError
+            If the deprecated "filter" parameter is used instead of "filter_by".
+
+        Examples
+        --------
+        # Display all fluxes containing "PO4" in their name
+        >>> model.flux_summary(filter_by="PO4")
+
+        # Get a list of fluxes containing both "POP" and "A_sb" in their names
+        >>> fluxes = model.flux_summary(filter_by="POP A_sb", return_list=True)
+
+        # Display fluxes containing "PO4" but not "H_sb"
+        >>> model.flux_summary(filter_by="PO4", exclude="H_sb")
+        """
+        # Get filter parameters from kwargs with proper defaults
+        filter_terms = (
+            kwargs.get("filter_by", "").split() if "filter_by" in kwargs else []
+        )
+        exclude_term = kwargs.get("exclude", "")
+        return_as_list = kwargs.get("return_list", False)
+
+        # Check for deprecated parameter
         if "filter" in kwargs:
             raise ModelError("use filter_by instead of filter")
 
-        if "return_list" in kwargs:
-            return_list = True
-        else:
-            return_list = False
-            print(f"\n --- Flux Summary -- filtered by {fby}\n")
+        # Print header if displaying results
+        if not return_as_list:
+            print(f"\n --- Flux Summary -- filtered by {filter_terms}\n")
 
-        for f in self.lof:  # loop over flux list
-            if find_matching_strings(f.full_name, fby) and (
-                check_exlusion and exclude not in f.full_name or not check_exlusion
+        # Initialize result list
+        matching_fluxes = []
+
+        # Find all fluxes that match the filter criteria
+        for flux in self.lof:
+            # Check if flux name matches all filter terms and doesn't contain exclude term
+            if find_matching_strings(flux.full_name, filter_terms) and (
+                not exclude_term or exclude_term not in flux.full_name
             ):
-                rl.append(f)
-                if not return_list:
-                    print(f"{f.full_name}")
-        if not return_list:
-            rl = None
+                matching_fluxes.append(flux)
 
-        return rl
+                # Print flux name if not returning a list
+                if not return_as_list:
+                    print(f"{flux.full_name}")
 
-    def connection_summary(self, **kwargs: dict) -> None:
-        """Show a summary of all connections.
+        # Return results based on the return_list parameter
+        return matching_fluxes if return_as_list else None
 
-        Optional parameters:
+    def connection_summary(self, **kwargs) -> None:
+        """Display a summary of model connections.
 
-        :param filter_by: str = "" # filter on connection id. If more than one word is provided, all words must match
+        Prints information about all connections in the model or a filtered subset.
+        For each connection, shows source and target, plus additional attributes
+        if requested.
 
-        :param return_list: bool if set, return a list object instead of printing to the terminal
+        Parameters
+        ----------
+        **kwargs : dict
+            Optional keyword arguments:
 
+            conname : str, default=None
+                If provided, only show connections containing this substring in their name.
+
+            list_all : bool, default=False
+                If True, print all connection attributes including internal ones.
+
+        Returns
+        -------
+        None
+            This method prints to stdout but doesn't return a value.
+
+        Examples
+        --------
+        >>> model.connection_summary()  # Show all connections
+
+        >>> model.connection_summary(conname="DIC")  # Show only DIC connections
+
+        >>> model.connection_summary(list_all=True)  # Show all connection details
         """
-        rl = []
-        if "filter_by" in kwargs:
-            fby: list = kwargs["filter_by"].split(" ")
+        # Extract configuration from kwargs
+        show_all_attributes = kwargs.get("list_all", False)
+        connection_name_filter = kwargs.get("conname")
+
+        # Get filtered list of connections
+        filtered_connections = self._filter_connections(connection_name_filter)
+
+        # Exit early if no matching connections are found
+        if not filtered_connections:
+            self._report_no_connections(connection_name_filter)
+            return
+
+        # Display each connection
+        print("")
+        for connection in filtered_connections:
+            self._display_connection_info(connection, show_all_attributes)
+
+    def _filter_connections(self, name_filter: str = None) -> list:
+        """Filter connections by name.
+
+        Parameters
+        ----------
+        name_filter : str, default=None
+            Substring to match in connection names
+
+        Returns
+        -------
+        list
+            Filtered list of connection objects
+        """
+        filtered_list = []
+
+        for connection in self.loc:
+            # If name filter is provided, only include connections with matching names
+            if name_filter is not None:
+                if name_filter in connection.n:  # Substring search
+                    filtered_list.append(connection)
+            else:
+                # No filter - include all connections
+                filtered_list.append(connection)
+
+        return filtered_list
+
+    def _report_no_connections(self, name_filter: str = None) -> None:
+        """Report when no connections are found.
+
+        Parameters
+        ----------
+        name_filter : str, default=None
+            The filter string that was used (if any)
+        """
+        if name_filter is not None:
+            print(f"No connections with name '{name_filter}' found")
         else:
-            fby: bool = False
+            print("No connections found")
 
-        if "filter" in kwargs:
-            raise ModelError("use filter_by instead of filter")
+    def _display_connection_info(self, connection, show_all_attributes: bool) -> None:
+        """Display information about a single connection.
 
-        if "return_list" not in kwargs:
-            print(f"\n --- Connect Group Summary -- filtered by {fby}\n")
-            print("       run the following command to see more details:\n")
+        Parameters
+        ----------
+        connection : Connection
+            The connection object to display
+        show_all_attributes : bool
+            Whether to show all attributes of the connection
+        """
+        # Get basic source and target info
+        source = connection.source_name
+        target = connection.target_name
 
-        # test if all words of the fby list occur in c.full_name. If yes,
-        self.cg_list: list = list(list(self.loc))
-        for c in self.cg_list:
-            if fby and find_matching_strings(c.full_name, fby) or not fby:
-                if "silent" in kwargs or "return_list" in kwargs:
-                    rl.append(c)
-                else:
-                    print(f"{c.full_name}.info()\n")
-        return rl
+        # Display connection header with appropriate format based on connection type
+        if isinstance(connection, Species2Species):
+            # For species-to-species connections, show the specific species
+            source_species = f"{connection.source.sp.n}"
+            target_species = f"{connection.target.sp.n}"
+            print(
+                f"Connection: {connection.id}: {source}.{source_species} -> {target}.{target_species}"
+            )
+        else:
+            # For reservoir-to-reservoir connections
+            print(f"Connection: {connection.id}: {source} -> {target}")
+
+        # Display connection attributes
+        self._display_connection_attributes(connection, show_all_attributes)
+
+        # Add empty line after each connection for readability
+        print("")
+
+    def _display_connection_attributes(
+        self, connection, show_all_attributes: bool
+    ) -> None:
+        """Display the attributes of a connection.
+
+        Parameters
+        ----------
+        connection : Connection
+            The connection object
+        show_all_attributes : bool
+            Whether to show all attributes
+        """
+        # If all attributes requested, show the entire __dict__
+        if show_all_attributes:
+            print(f"    {connection.__dict__}")
+            return
+
+        # Otherwise, show only selected attributes
+        excluded_attributes = [
+            "source",
+            "target",
+            "flux",
+            "source_name",
+            "target_name",
+            *self.olkk,  # Optional keywords to exclude
+        ]
+
+        for attr_name, attr_value in connection.__dict__.items():
+            # Skip private attributes and excluded ones
+            if attr_name[0] != "_" and attr_name not in excluded_attributes:
+                print(f"    {attr_name}: {attr_value}")
 
     def clear(self):
         """Delete all model objects."""
@@ -1000,6 +1697,7 @@ class Model(esbmtkBase):
             del __builtins__[o]
 
     def __init_dimensionalities__(self, ureg):
+        raise NotImplementedError()
         """Test the dimensionality of input data."""
         self.substance_per_volume_d = ureg("mol/liter").dimensionality
         self.substance_per_mass_d = ureg("mol/kg").dimensionality
@@ -1515,7 +2213,7 @@ class SpeciesBase(esbmtkBase):
         # convert time and data to display units
         x = (M.time * M.t_unit).to(M.d_unit).magnitude
 
-        y1, y1_label, unit = self.get_plot_format()
+        y1, y1_label, _unit = self.get_plot_format()
 
         # plot first axis
         ax.plot(x[1:-2], y1[1:-2], color="C0", label=y1_label)
@@ -1558,7 +2256,7 @@ class SpeciesBase(esbmtkBase):
         :param indent: int = 0 # print indentation
         """
         off: str = "  "
-        index = kwargs.get("index", 0)
+        # index = kwargs.get("index", 0)
         if "indent" not in kwargs:
             indent = 0
             ind = ""
@@ -1842,8 +2540,8 @@ class Species(SpeciesBase):
                 if isinstance(self.concentration, str | Q_):
                     cc = Q_(self.concentration)
                     # concentration can be mol/kg or mol/l
-                    sm, sc = str(cc.units).split(" / ")  # get
-                    mm, mc = str(self.mo.c_unit).split(" / ")  # model
+                    _sm, sc = str(cc.units).split(" / ")  # get
+                    _mm, mc = str(self.mo.c_unit).split(" / ")  # model
                     if mc == "liter" and sc == "kilogram":
                         cc = Q_(f"{cc.magnitude} {str(self.mo.c_unit)}")
                         warnings.warn(
@@ -2324,7 +3022,7 @@ class Flux(esbmtkBase):
             set_y_limits(axt, M)
             ax.spines["top"].set_visible(False)
             # set combined legend
-            handler2, label2 = axt.get_legend_handles_labels()
+            _handler2, _label2 = axt.get_legend_handles_labels()
             # FIXME: legend is never used
             # legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
             #     6
