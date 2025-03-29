@@ -541,24 +541,22 @@ class esbmtkBase(InputParsing):
 
     Examples
     --------
-    Define required keywords in lrk list:
+    Usage example:
 
+    # Define required keywords in lrk list
         self.lrk: tp.List = ["name"]
 
-    Define allowed type per keyword in defaults dict:
-
+        # Define allowed type per keyword in defaults dict
         self.defaults: dict[str, list[any, tuple]] = {
             "name": ["None", (str)],
             "model": ["None", (str, Model)],
             "salinity": [35, (int, float)],  # int or float
         }
 
-    Parse and register all keywords with the instance:
-
+        # Parse and register all keywords with the instance
         self.__initialize_keyword_variables__(kwargs)
 
-    Register the instance:
-
+        # Register the instance
         self.__register_with_parent__()
     """
 
@@ -566,8 +564,7 @@ class esbmtkBase(InputParsing):
         raise NotImplementedError
 
     def __repr__(self, log=0) -> str:
-        """
-        Return string representation of the object.
+        """Return string representation of the object.
 
         Parameters
         ----------
@@ -609,8 +606,7 @@ class esbmtkBase(InputParsing):
         return m
 
     def __str__(self, kwargs=None):
-        """
-        Return a string representation of the object with its key attributes.
+        """Return a string representation of the object with its key attributes.
 
         Parameters
         ----------
@@ -657,8 +653,7 @@ class esbmtkBase(InputParsing):
         return m
 
     def __lt__(self, other) -> bool:  # Fixed return type annotation from None to bool
-        """
-        Compare if self is less than other for sorting with sorted().
+        """Compare if self is less than other for sorting with sorted().
 
         Parameters
         ----------
@@ -678,8 +673,7 @@ class esbmtkBase(InputParsing):
         return self.n < other.n
 
     def __gt__(self, other) -> bool:  # Fixed return type annotation from None to bool
-        """
-        Compare if self is greater than other for sorting with sorted().
+        """Compare if self is greater than other for sorting with sorted().
 
         Parameters
         ----------
@@ -727,8 +721,7 @@ class esbmtkBase(InputParsing):
         print(f"{ind}{self.__str__(kwargs)}")
 
     def __aux_inits__(self) -> None:
-        """
-        Auxiliary initialization code.
+        """Auxiliary initialization code.
 
         This method is a placeholder for additional initialization steps
         that subclasses might implement.
@@ -744,8 +737,7 @@ class esbmtkBase(InputParsing):
         pass
 
     def ensure_q(self, arg):
-        """
-        Ensure that a given input argument is a quantity object.
+        """Ensure that a given input argument is a quantity object.
 
         Parameters
         ----------
