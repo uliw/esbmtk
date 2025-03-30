@@ -466,6 +466,9 @@ class Model(esbmtkBase):
 
         # Prepare directory
         target_path = Path.cwd() / directory
+        # ugly workaround because sphinx stumbles over the underscore when
+        # we set it in the function signature
+        prefix = f"{prefix}_"
 
         # Check if directory exists and remove it if it does
         if target_path.exists():
