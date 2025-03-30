@@ -1703,7 +1703,7 @@ class SpeciesNoSet(SpeciesBase):
         ]
 
         self.__validateandregister__(kwargs)
-        self.__set_legacy_names__(kwargs)
+        self._initialize_legacy_attributes(kwargs)
 
         self.isotopes = False
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
@@ -1830,7 +1830,7 @@ class ExternalCode(SpeciesNoSet):
 
         self.__initialize_keyword_variables__(kwargs)
 
-        self.__set_legacy_names__(kwargs)
+        self._initialize_legacy_attributes(kwargs)
         self.lro: list = []  # list of all return objects.
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
         self.plt_units = self.mo.c_unit
@@ -2197,7 +2197,7 @@ class GasReservoir(SpeciesBase):
         ]
 
         self.__initialize_keyword_variables__(kwargs)
-        self.__set_legacy_names__(kwargs)
+        self._initialize_legacy_attributes(kwargs)
 
         # we re-use the volume instance variable but instead of a
         # volume, we use it store the mass. Use .m instead?
