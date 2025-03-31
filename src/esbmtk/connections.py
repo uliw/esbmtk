@@ -197,7 +197,12 @@ class Species2Species(esbmtkBase):
             "water_vapor_pressure": ["None", (str, float)],
         }
 
+        # FIXME: We need a mechanism to first check for the
+        # connection type (ctype) and then set the lrk list
+        # depending on the connection type.!
         # provide a list of absolutely required keywords
+        # the __scaleflux__ method (and similarm could return the
+        # necessary information).
         self.lrk: list = ["source", "sink"]
         self.lop: list = []
         self.lof: list = []
@@ -221,6 +226,8 @@ class Species2Species(esbmtkBase):
         self.r1 = self.source
         self.r2 = self.sink
         self.parent = self.register
+        self.source.name = self.source.full_name
+        self.sink.name = self.sink.full_name
 
         if isinstance(self.pco2_0, str):
             self.pco2_0 = Q_(self.pco2_0).to("ppm").magnitude * 1e-6
@@ -717,6 +724,8 @@ class ConnectionProperties(esbmtkBase):
         # # self.source.lor is a  list with the object names in the group
         self.mo = self.sink.lor[0].mo
         self.model = self.mo
+        self.source_name = self.source.full_name
+        self.sink_name = self.sink.full_name
         self.loc: list = []  # list of connection objects
 
         self.name = f"ConnGrp_{self.source.name}_to_{self.sink.name}_{self.id}"
