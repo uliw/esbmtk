@@ -68,7 +68,7 @@ from .post_processing import (
     carbonate_system_2_pp,
     gas_exchange_fluxes,
 )
-from .processes import gas_exchange, weathering
+from .processes import gas_exchange, init_weathering, weathering
 from .seawater import SeawaterConstants
 from .utility_functions import (
     check_for_quantity,
@@ -78,3 +78,46 @@ from .utility_functions import (
     phc,
     set_y_limits,
 )
+
+__all__ = [
+    "Flux",
+    "Sink",
+    "Source",
+    "Species",
+    "SpeciesError",
+    "SpeciesProperties",
+    "add_carbonate_system_1",
+    "add_carbonate_system_2",
+    "carbonate_system_1",
+    "carbonate_system_2",
+    "get_hplus",
+    "get_pco2",
+    "ConnectionProperties",
+    "Species2Species",
+    "esbmtkBase",
+    "DataField",
+    "ExternalCode",
+    "ExternalData",
+    "GasReservoir",
+    "Reservoir",
+    "Signal",
+    "SinkProperties",
+    "SourceProperties",
+    "SpeciesNoSet",
+    "VectorData",
+    "VirtualSpecies",
+    "Model",
+    "carbonate_system_1_pp",
+    "carbonate_system_2_pp",
+    "gas_exchange_fluxes",
+    "gas_exchange",
+    "weathering",
+    "init_weathering",
+    "SeawaterConstants",
+    "check_for_quantity",
+    "create_bulk_connections",
+    "data_summaries",
+    "initialize_reservoirs",
+    "phc",
+    "set_y_limits",
+]
