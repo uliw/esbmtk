@@ -76,6 +76,7 @@ from .utility_functions import (
     data_summaries,
     initialize_reservoirs,
     phc,
+    register_return_values,
     set_y_limits,
 )
 
@@ -100,6 +101,7 @@ __all__ = [
     "ExternalData",
     "GasReservoir",
     "Reservoir",
+    "register_return_values",
     "Signal",
     "SinkProperties",
     "SourceProperties",
