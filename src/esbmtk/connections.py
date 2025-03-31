@@ -226,8 +226,8 @@ class Species2Species(esbmtkBase):
         self.r1 = self.source
         self.r2 = self.sink
         self.parent = self.register
-        self.source.name = self.source.full_name
-        self.sink.name = self.sink.full_name
+        self.source_name = self.source.full_name
+        self.sink_name = self.sink.full_name
 
         if isinstance(self.pco2_0, str):
             self.pco2_0 = Q_(self.pco2_0).to("ppm").magnitude * 1e-6
