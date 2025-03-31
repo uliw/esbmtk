@@ -598,8 +598,8 @@ def get_scale_with_flux_eq(
             ex, exl = check_signal_2(ex, exl, c)
 
     else:
-        CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
-        ex = fn
+        # CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
+        ex = f"toc[{c.s_index}] * {fn}"
         if flux.isotopes:
             CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]
             exl = check_isotope_effects(ex, c, icl, ind3, ind2)
