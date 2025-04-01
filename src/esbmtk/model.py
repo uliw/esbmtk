@@ -961,10 +961,10 @@ class Model(esbmtkBase):
             If the solver fails to find a solution
         """
         # Get initial conditions and build equation matrices
-        R, icl, cpl, ipl, atol = get_initial_conditions(self, self.rtol)
+        self.R_names, icl, cpl, ipl, atol = get_initial_conditions(self, self.rtol)
 
         # Store variables for later use
-        self.R = R
+        R = np.array(list(self.R_names.values()))
         self.icl = icl
         self.cpl = cpl
         self.ipl = ipl
