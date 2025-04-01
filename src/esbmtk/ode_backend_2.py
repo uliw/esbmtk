@@ -37,7 +37,9 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
     from esbmtk import GasReservoir, Species
 
     fi = 0
+    F_names = []
     for f in M.lof:  # get flux index positions
+        F_names.append(f.full_name)
         f.idx = fi  # set starting index
         fi = fi + 1
 
@@ -101,7 +103,7 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
         if r.isotopes:
             ri = ri + 1
 
-    return CM[:ri, :], F
+    return CM[:ri, :], F, F_names
 
 
 def write_equations_3(
