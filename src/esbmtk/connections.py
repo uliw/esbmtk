@@ -252,8 +252,10 @@ class Species2Species(esbmtkBase):
         if self.ref_reservoirs == "None":
             self.ref_reservoirs = kwargs["source"]
 
-        if self.source.isotopes and self.sink.isotopes:
-            self.isotopes = True
+        if isinstance(self.source, Source):
+            self.isotopes = self.sink.isotopes
+        else:
+            self.isotopes = self.source.isotopes
 
         self.get_species(self.r1, self.r2)  #
         self.mo: Model = self.sp.mo  # the current model handle
@@ -401,6 +403,8 @@ class Species2Species(esbmtkBase):
         else:
             isotopes = self.source.isotopes
 
+        if self.model.debug:
+            print(f"cf: {self.full_name}, isotopes = {self.isotopes}")
         if isotopes:
             num.append("_l")
 
@@ -528,6 +532,7 @@ class Species2Species(esbmtkBase):
         """Initialize weathering function."""
         from esbmtk import init_weathering, register_return_values
 
+        self.isotopes = self.sink.isotopes
         ec = init_weathering(
             self,  # connection object
             self.reservoir_ref,  # current pCO2
