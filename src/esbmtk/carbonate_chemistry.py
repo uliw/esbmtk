@@ -367,10 +367,11 @@ def init_carbonate_system_2(
     )
 
     ec = ExternalCode(
-        name="cs",
+        name="cs2",
         species=r_sb.mo.Carbon.CO2,
         function=carbonate_system_2,
         fname="carbonate_system_2",
+        isotopes=r_sb.DIC.isotopes,
         r_s=r_sb,  # source (RG) of CaCO3 flux,
         r_d=r_db,  # sink (RG) of CaCO3 flux,
         function_input_data=[
