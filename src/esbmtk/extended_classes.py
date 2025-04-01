@@ -1224,6 +1224,7 @@ class DataField(esbmtkBase):
 
              DataField(name = "Name"
                        register = Model handle,
+                       x1_data =  ["None", (np.ndarray, list)], defaults to model time
                        y1_data = NDArrayFloat or list of arrays
                        y1_label = Data label(s)
                        y1_legend = Y-Axis Label
@@ -1510,6 +1511,7 @@ class DataField(esbmtkBase):
                 label = [label]
         elif y_l > 1 and not isinstance(label, list):
             ll = []
+            # FIXME: Add test that this is list otherwise error
             for _e in y_l:
                 ll.append(label)
             label = ll
@@ -1842,6 +1844,9 @@ class ExternalCode(SpeciesNoSet):
         self.state = 0
         name = f"{self.full_name}_generic_function".replace(".", "_")
         logging.info(f"creating {name}")
+
+        if self.model.debug:
+            print(f"{self.name}, isotopes = {self.isotopes}")
 
         if self.vr_datafields != "None":
             self.alias_list = list(self.vr_datafields.keys())
@@ -2285,11 +2290,6 @@ class GasReservoir(SpeciesBase):
         """Write data by index."""
         self.m[i]: float = value[0]
         self.l[i]: float = value[1]
-        # self.c[i]: float = self.m[i] / self.v[i]  # update concentration
-        # self.v[i]: float = self.v[i - 1] + value[0]
-        # self.c[i]: float = self.m[i] / self.v[i]  # update concentration
-        # self.h[i]: float = value[2]
-        # self.d[i]: float = get_delta(self.l[i], self.h[i], self.sp.r)
 
     def __set_without_isotopes__(self, i: int, value: float) -> None:
         """Write data by index."""
