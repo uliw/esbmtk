@@ -1846,7 +1846,7 @@ class ExternalCode(SpeciesNoSet):
         logging.info(f"creating {name}")
 
         if self.model.debug:
-            print(f"EC: {self.name}, isotopes = {self.isotopes}")
+            print(f"EC: {self.full_name}, isotopes = {self.isotopes}")
 
         if self.vr_datafields != "None":
             self.alias_list = list(self.vr_datafields.keys())
