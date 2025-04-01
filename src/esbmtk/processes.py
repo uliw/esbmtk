@@ -172,7 +172,6 @@ def init_gas_exchange(c: Species2Species):
     scale = area * piston_velocity
     p = (
         scale,
-        swc.p_H2O,
         solubility,
         a_db,
         a_dg,
@@ -244,11 +243,11 @@ def gas_exchange(
     offset, which is closer to observations
 
     """
-    scale, p_H2O, solubility, a_db, a_dg, a_u, isotopes = p
+    scale, solubility, a_db, a_dg, a_u, isotopes = p
 
     if isotopes:
         gas_c, gas_c_l = gas_c
-        gas_aq_c, gas_aq_l = gas_aq_c
+        gas_aq_c = gas_aq_c
         liquid_c, liquid_c_l = liquid_c
 
     # Solubility with correction for pH2O
