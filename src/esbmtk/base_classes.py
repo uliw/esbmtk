@@ -1116,6 +1116,12 @@ class SpeciesBase(esbmtkBase):
         print("Use the info method on any of the above connections")
         print("to see information on fluxes and processes")
 
+    def flux_summary(self) -> None:
+        """Display all flux names in self.lof."""
+        print(f"Fluxes in {self.full_name}")
+        for f in self.lof:
+            print(f"    {f.full_name}")
+
 
 class Species(SpeciesBase):
     """
