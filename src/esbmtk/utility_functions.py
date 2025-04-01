@@ -189,34 +189,37 @@ def register_new_flux(ec, rg, dict_key, dict_value) -> list:
 
     if isinstance(rg, Reservoir):
         spn = dict_key.split(".")[-1]
-        sp = getattr(rg.mo, spn)
-        reservoir_object = getattr(rg, sp.name)  # species to regester flux with
+        species_properties = getattr(rg.mo, spn)
+        species = getattr(rg, species_properties.name)  # species to register flux with
     elif isinstance(rg, Species):
         # in this case rg contains a species not a reservoirgroup
-        sp = rg.species
+        species_properties = rg.species
         rg = rg.register  # get associated reservoir
-        reservoir_object = getattr(rg, sp.name)
+        species = getattr(rg, species_properties.name)
     else:
         print(f" type(rg) = {type(rg)}")
         raise NotImplementedError
 
-    if not hasattr(reservoir_object, "source"):
-        reservoir_object.source = sp.name
+    if not hasattr(species, "source"):
+        species.source = species_properties.name
 
     ro = list()
     # this also registers the flux with M.lof
-    f = Flux(
-        name=dict_value,
-        species=sp,
-        rate=0,
-        register=reservoir_object,
-        ftype=ec.ftype,
-        isotopes=reservoir_object.isotopes,
-    )
+    num = ["", "_l"] if species.isotopes else [""]
 
-    ro.append(f)
-    ec.lof.append(f)
-    reservoir_object.lof.append(f)  # register flux
+    for e in num:
+        f = Flux(
+            # name=dict_value,
+            species=species_properties,
+            rate=0,
+            register=species,
+            ftype=ec.ftype,
+            isotopes=species.isotopes,
+            id=f"{species.name}{e}",
+        )
+        ro.append(f)
+        ec.lof.append(f)
+        species.lof.append(f)  # register flux
 
     return ro
 
