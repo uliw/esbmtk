@@ -1513,7 +1513,7 @@ class Model(esbmtkBase):
         **kwargs : dict
             Optional keyword arguments:
 
-            conname : str, default=None
+            filter_by : str, default=None
                 If provided, only show connections containing this substring in their name.
 
             list_all : bool, default=False
@@ -1528,13 +1528,13 @@ class Model(esbmtkBase):
         --------
         >>> model.connection_summary()  # Show all connections
 
-        >>> model.connection_summary(conname="DIC")  # Show only DIC connections
+        >>> model.connection_summary(filter_by="DIC")  # Show only DIC connections
 
         >>> model.connection_summary(list_all=True)  # Show all connection details
         """
         # Extract configuration from kwargs
         show_all_attributes = kwargs.get("list_all", False)
-        connection_name_filter = kwargs.get("conname")
+        connection_name_filter = kwargs.get("filter_by")
 
         # Get filtered list of connections
         filtered_connections = self._filter_connections(connection_name_filter)
@@ -1599,23 +1599,25 @@ class Model(esbmtkBase):
             Whether to show all attributes of the connection
         """
         # Get basic source and target info
+        from esbmtk import Species2Species
+
         source = connection.source_name
-        target = connection.target_name
+        target = connection.sink_name
 
         # Display connection header with appropriate format based on connection type
         if isinstance(connection, Species2Species):
             # For species-to-species connections, show the specific species
             source_species = f"{connection.source.sp.n}"
-            target_species = f"{connection.target.sp.n}"
+            target_species = f"{connection.sink.sp.n}"
             print(
-                f"Connection: {connection.id}: {source}.{source_species} -> {target}.{target_species}"
+                f"Connection: {connection.full_name}: {source}.{source_species} -> {target}.{target_species}"
             )
         else:
             # For reservoir-to-reservoir connections
-            print(f"Connection: {connection.id}: {source} -> {target}")
+            print(f"Connection: {connection.full_name}: {source} -> {target}")
 
         # Display connection attributes
-        self._display_connection_attributes(connection, show_all_attributes)
+        # self._display_connection_attributes(connection, show_all_attributes)
 
         # Add empty line after each connection for readability
         print("")
