@@ -970,7 +970,7 @@ class Model(esbmtkBase):
         self.ipl = ipl
 
         # Build coefficient matrix
-        self.CM, self.F = build_eqs_matrix(self)
+        self.CM, self.F, self.F_names = build_eqs_matrix(self)
 
         # Set up paths for equation files
         current_dir = Path.cwd()
