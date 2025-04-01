@@ -89,7 +89,6 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
             while fi < len(r.lof):  # loop over reservoir fluxes
                 f = r.lof[fi]
                 sign = -1 / mass if f.parent.source == r else 1 / mass
-
                 if r.isotopes:  # add equation for isotopes
                     CM[ri, r.lof[fi].idx] = sign
                     CM[ri + 1, r.lof[fi + 1].idx] = sign  # 2
@@ -402,7 +401,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
             )
         elif c.ctype == "scale_with_flux":
             ex, exl = get_scale_with_flux_eq(flux, c, cfn, icl, ind2, ind3, M.CM, M.toc)
-        elif c.ctype == "ignore" or c.ctype == "gasexchange":
+        elif c.ctype == "ignore" or c.ctype == "gasexchange" or c.ctype == "weathering":
             pass
         else:
             raise ValueError(

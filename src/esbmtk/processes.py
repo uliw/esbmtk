@@ -101,10 +101,12 @@ def init_weathering(
     pco2_0 = check_for_quantity(pco2_0, "ppm").magnitude
     p = (pco2_0, area_fraction, ex, f0, c.sink.isotopes)
     c.fh.ftype = "computed"
+    c.isotopes = c.sink.isotopes  # the co may have missed this
 
     ec = ExternalCode(
         name=f"ec_weathering_{c.id}",
         fname="weathering",
+        isotopes=c.sink.isotopes,
         ftype="std",
         species=c.sink.species,
         function_input_data=[pco2],
@@ -184,6 +186,7 @@ def init_gas_exchange(c: Species2Species):
         species=c.source.species,
         function_input_data=[c.source, c.sink, ref_species],
         function_params=p,
+        isotopes=c.isotopes,
         register=c.sink,
         return_values=[
             {f"F_{c.fh.full_name}": "gex"},

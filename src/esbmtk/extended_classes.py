@@ -1831,8 +1831,8 @@ class ExternalCode(SpeciesNoSet):
         ]
 
         self.__initialize_keyword_variables__(kwargs)
-
         self._initialize_legacy_attributes(kwargs)
+
         self.lro: list = []  # list of all return objects.
         self.mu: str = self.sp.e.mass_unit  # massunit xxxx
         self.plt_units = self.mo.c_unit
@@ -1846,7 +1846,7 @@ class ExternalCode(SpeciesNoSet):
         logging.info(f"creating {name}")
 
         if self.model.debug:
-            print(f"{self.name}, isotopes = {self.isotopes}")
+            print(f"EC: {self.name}, isotopes = {self.isotopes}")
 
         if self.vr_datafields != "None":
             self.alias_list = list(self.vr_datafields.keys())

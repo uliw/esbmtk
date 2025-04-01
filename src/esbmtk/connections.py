@@ -279,6 +279,9 @@ class Species2Species(esbmtkBase):
                 )
 
         self.__set_name__()  # get name of connection
+        if self.model.debug:
+            print(f"{self.name} isotopes = {self.isotopes}")
+
         self.__register_with_parent__()  # register connection in namespace
         self.__create_flux__()  # Source/Sink/Fixed
         self.__set_process_type__()  # derive flux type and create flux(es)
@@ -391,7 +394,12 @@ class Species2Species(esbmtkBase):
         d = 0 if self.delta == "None" else self.delta
         r = f"0 {self.sp.mo.f_unit}" if self.rate == "None" else self.rate
         num = [""]
-        isotopes = bool(self.sink.isotopes and self.source.isotopes)
+
+        if isinstance(self.source, Source):
+            isotopes = self.sink.isotopes
+        else:
+            isotopes = self.source.isotopes
+
         if isotopes:
             num.append("_l")
 
