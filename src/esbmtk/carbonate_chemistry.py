@@ -526,7 +526,6 @@ def add_carbonate_system_2(**kwargs) -> None:
             r_db[i],
             kwargs,
         )
-
         register_return_values(ec, rg)
         rg.has_cs2 = True
 
