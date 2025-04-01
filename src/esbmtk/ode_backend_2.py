@@ -93,7 +93,10 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
                 sign = -1 / mass if f.parent.source == r else 1 / mass
                 if r.isotopes:  # add equation for isotopes
                     CM[ri, r.lof[fi].idx] = sign
-                    CM[ri + 1, r.lof[fi + 1].idx] = sign  # 2
+                    try:
+                        CM[ri + 1, r.lof[fi + 1].idx] = sign  # 2
+                    except:
+                        breakpoint()
                     fi = fi + 2
                 else:
                     CM[ri, r.lof[fi].idx] = sign
