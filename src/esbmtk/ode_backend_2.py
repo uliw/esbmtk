@@ -681,7 +681,7 @@ def get_initial_conditions(
     M: Model,
     rtol: float,
     atol_d: float = 1e-7,
-) -> tuple[list, dict, list, list, NDArrayFloat]:
+) -> tuple[dict[str, float], dict, list, list, NDArrayFloat]:
     """Get list of initial conditions.
 
     This list needs to match the number of equations.
@@ -690,7 +690,7 @@ def get_initial_conditions(
     :param rtol: relative tolerance for BDF solver.
     :param atol_d: default value for atol if c = 0
 
-    :return: R = list of initial conditions as floats
+    :return: lic = dict of initial conditions
     :return: icl = dict[Species, list[int, int]] where reservoir
              indicates the reservoir handle, and the list contains the
              index into the reservoir data.  list[0] = concentration
@@ -723,7 +723,7 @@ def get_initial_conditions(
     """
     import numpy as np
 
-    R = []  # list of initial conditions
+    lic = {}  # list of initial conditions
     atol: list = []  # list of tolerances for ode solver
     # dict that contains the reservoir_handle as key and the index positions
     # for c and l as a list
@@ -737,7 +737,7 @@ def get_initial_conditions(
     i: int = 0
     for r in M.lic:
         if len(r.lof) > 0 or r.rtype == "computed" or r.rtype == "passive":
-            R.append(r.c[0])  # add initial condition
+            lic[r.full_name] = r.c[0]
             tol = rtol * abs(r.c[0]) / 10 if r.c[0] > 0 else atol_d
             atol.append(tol)
             r.atol[0] = tol
@@ -745,7 +745,8 @@ def get_initial_conditions(
                 tol = rtol * abs(r.l[0]) / 10 if r.l[0] > 0 else atol_d
                 atol.append(tol)
                 r.atol[1] = tol
-                R.append(r.l[0])  # add initial condition for l
+                lic[f"{r.full_name}_l"] = r.l[0]
+                lic[f"{r.full_name}"] = r.l[0]
                 icl[r] = [i, i + 1]
                 i += 2
             else:
@@ -755,4 +756,4 @@ def get_initial_conditions(
             if M.debug_equations_file:
                 print(f"r = {r.full_name}, r.c[0] = {r.c[0]:.2e}, rtol = {tol:.2e}")
 
-    return R, icl, cpl, ipl, np.array(atol)
+    return lic, icl, cpl, ipl, np.array(atol)
