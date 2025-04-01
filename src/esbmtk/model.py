@@ -144,6 +144,10 @@ class Model(esbmtkBase):
             See https://doi.org/10.5194/gmd-15-15-2022.
         opt_pH_scale : int
             pH scale setting: total=1, free=3.
+        debug: bool
+            output debug information
+        debug_equations_file: bool
+            write a debug version of the equations file.
         """
         from importlib.metadata import version
 
