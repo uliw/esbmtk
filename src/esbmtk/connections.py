@@ -522,11 +522,13 @@ class Species2Species(esbmtkBase):
             raise Species2SpeciesError(f"Unknown connection type {self.ctype}")
 
         # check if flux should bypass any reservoirs
-        if self.bypass == "source" and not isinstance(self.source, Source):
-            self.source.lof.remove(self.fh)
-        elif self.bypass == "sink" and not isinstance(self.sink, Sink):
-            self.sink.lof.remove(self.fh)
-            print(f"bypassing {self.fh.full_name} in {self.sink.full_name}")
+        for f in self.lof:
+            if self.bypass == "source" and not isinstance(self.source, Source):
+                self.source.lif.append(f)
+                print(f"bypassing {f.full_name} in {self.source.full_name}")
+            elif self.bypass == "sink" and not isinstance(self.sink, Sink):
+                self.sink.lif.append(f)
+                print(f"bypassing {f.full_name} in {self.sink.full_name}")
 
     def __scaleflux__(self) -> None:
         """Scale a flux relative to another flux."""
