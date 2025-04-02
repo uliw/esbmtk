@@ -418,6 +418,9 @@ class Species2Species(esbmtkBase):
                 isotopes=isotopes,
                 id=f"{self.id}{e}",
             )
+            if self.model.debug:
+                print(f"cf: created {self.fh.full_name}, isotopes = {self.isotopes}")
+
             # register flux with its reservoirs
             if isinstance(self.r1, Source):
                 # add the flux name direction/pair
@@ -426,6 +429,10 @@ class Species2Species(esbmtkBase):
                 self.r2.lof.append(self.fh)
                 # register flux and element in the reservoir.
                 self.__register_species__(self.r2, self.r1.sp)
+                if self.model.debug:
+                    print(
+                        f"cf: registered {self.fh.full_name} with {self.r2.full_name}"
+                    )
 
             elif isinstance(self.r2, Sink):
                 # add the flux name direction/pair
@@ -434,6 +441,10 @@ class Species2Species(esbmtkBase):
                 self.r1.lof.append(self.fh)
                 # register flux and element in the reservoir.
                 self.__register_species__(self.r1, self.r2.sp)
+                if self.model.debug:
+                    print(
+                        f"cf: registered {self.fh.full_name} with {self.r1.full_name}"
+                    )
 
             elif isinstance(self.r1, Sink):
                 raise Species2SpeciesError(
@@ -452,6 +463,11 @@ class Species2Species(esbmtkBase):
                 self.r2.lof.append(self.fh)  # add flux to the downstream reservoir
                 self.__register_species__(self.r1, self.r1.sp)
                 self.__register_species__(self.r2, self.r2.sp)
+                if self.model.debug:
+                    print(
+                        f"cf: registered {self.fh.full_name} with {self.r1.full_name}\n"
+                        f"cf: registered {self.fh.full_name} with {self.r2.full_name}\n"
+                    )
 
             self.lof.append(self.fh)
 
@@ -517,6 +533,9 @@ class Species2Species(esbmtkBase):
         from esbmtk import Flux
 
         self.ref_flux.serves_as_input = True
+
+        if self.model.debug:
+            print(f"sf: {self.full_name}, isotopes = {self.isotopes}")
 
         if not isinstance(self.ref_flux, Flux):
             raise Species2SpeciesError("Scale reference must be a flux")
