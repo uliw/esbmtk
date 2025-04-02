@@ -165,13 +165,13 @@ def get_reservoir_reference(k: str, M: Model) -> tuple:
     return reservoir, species
 
 
-def register_new_flux(ec, rg, dict_key, dict_value) -> list:
+def register_new_flux(ec, model_object, dict_key, dict_value) -> list:
     """Register a new flux object with a Species2Species instance.
 
     Parameters
     ----------
     ec : ExternalCode object
-    rg : Species | Reservoir
+    model_object : Species | Reservoir
         instance to register with
     dict_key : str
         E.g., "M.A_db.DIC"
@@ -187,17 +187,19 @@ def register_new_flux(ec, rg, dict_key, dict_value) -> list:
     from .base_classes import Flux, Species
     from .extended_classes import Reservoir
 
-    if isinstance(rg, Reservoir):
+    if isinstance(model_object, Reservoir):
         spn = dict_key.split(".")[-1]
-        species_properties = getattr(rg.mo, spn)
-        species = getattr(rg, species_properties.name)  # species to register flux with
-    elif isinstance(rg, Species):
+        species_properties = getattr(model_object.mo, spn)
+        species = getattr(
+            model_object, species_properties.name
+        )  # species to register flux with
+    elif isinstance(model_object, Species):
         # in this case rg contains a species not a reservoirgroup
-        species_properties = rg.species
-        rg = rg.register  # get associated reservoir
+        species_properties = model_object.species
+        rg = model_object.register  # get associated reservoir
         species = getattr(rg, species_properties.name)
     else:
-        print(f" type(rg) = {type(rg)}")
+        print(f" type(rg) = {type(model_object)}")
         raise NotImplementedError
 
     if not hasattr(species, "source"):
@@ -208,8 +210,10 @@ def register_new_flux(ec, rg, dict_key, dict_value) -> list:
     num = ["", "_l"] if species.isotopes else [""]
 
     for e in num:
+        if model_object.model.debug:
+            print(f"ro= {model_object.full_name}, dv = {dict_value}, num = {num}")
         f = Flux(
-            # name=dict_value,
+            name=f"{dict_value}{e}",
             species=species_properties,
             rate=0,
             register=species,
@@ -220,6 +224,8 @@ def register_new_flux(ec, rg, dict_key, dict_value) -> list:
         ro.append(f)
         ec.lof.append(f)
         species.lof.append(f)  # register flux
+        if model_object.model.debug:
+            print(f"fname = {f.full_name}")
 
     return ro
 
