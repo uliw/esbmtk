@@ -97,15 +97,9 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
                 else:
                     sign = -1 / mass if f.parent.source == r else 1 / mass
 
-                if r.model.debug:
-                    print(f"bem2: {r.lof[fi].full_name} value = {sign}")
-
                 if r.isotopes:  # add equation for isotopes
                     CM[ri, r.lof[fi].idx] = sign
-                    try:
-                        CM[ri + 1, r.lof[fi + 1].idx] = sign  # 2
-                    except:
-                        breakpoint()
+                    CM[ri + 1, r.lof[fi + 1].idx] = sign  # 2
                     fi = fi + 2
                 else:
                     CM[ri, r.lof[fi].idx] = sign
@@ -546,15 +540,14 @@ def get_scale_with_concentration_eq(
               concentration of the light isotope
     """
     s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration`
-    exl = ""
-    ex = ""
+    exl: str = ""
     if flux.serves_as_input or c.signal != "None":
-        ex = f"toc[{c.s_index}] * {s_c}"
+        ex = f"toc[{c.s_index}] * {s_c}"  # get flux (c * scale)
         exl = check_isotope_effects(ex, c, icl, ind3, ind2)
         ex, exl = check_signal_2(ex, exl, c)
     else:
         CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
-        ex = f"{s_c}"
+        ex = f"{s_c}"  # f"toc[{c.s_index}] * {s_c}"  # get flux (c * scale)
         if flux.isotopes:
             CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]
             exl = check_isotope_effects(ex, c, icl, ind3, ind2)
@@ -627,7 +620,7 @@ def get_scale_with_flux_eq(
 
 
 def check_isotope_effects(
-    f_m: str,  # e.g., toc[2] * R[0]
+    f_m: str,  # flux expression
     c: Species2Species,  # connection object
     icl: dict,  # initial conditions
     ind3: str,
@@ -641,37 +634,32 @@ def check_isotope_effects(
     :param ind2: indent 2 times
     :param ind3: indent 3 times
 
-    :returns eq: equation string
+    :returns equation string:
     """
     if c.isotopes:
-        r: float = c.source.species.r  # isotope reference value
-        s: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
-        s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
-        """ Calculate the flux of the light isotope (f_l) as a function of the isotope
+        """Calculate the flux of the light isotope (f_l) as a function of the isotope
         ratios in the source reservoir soncentrations (s_c, s_l), and epsilon (a) as
         f_l = f_m * 1000/(r * (d + 1000) + 1000)
 
         where fm = flux, s_l = source light isotope, s_c source total mass/concentration.
-        
+
         Note that the scale has already been applaied to f_m in the calling function.
         """
-        if c.delta != "None":
-            d = c.delta
-            # eq = f"{f_m} * 1000 / ({r} * ({d} + 1000) + 1000)"
-            eq = f"1000 / ({r} * ({d} + 1000) + 1000)"
-        elif c.epsilon != "None":
+        r: float = c.source.species.r  # isotope reference value
+        s: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
+        s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
+        if c.alpha != "None":
+            a = c.alpha
+            equation_string = f"{f_m} * 1000 / ({r} * ({a} + 1000) + 1000)"
+        if c.epsilon != "None":
             a = c.epsilon / 1000 + 1
-            # eq = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
-            eq = f"{s_l} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
+            equation_string = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
         else:
-            eq = f"{f_m} * {s_l} / {s_c}"
-            # eq = f"{s_l} / {s_c}"
-        # if self.model.debug_equations_file:
-        #     eq = f"{eq}  # {eq}"
+            equation_string = f"{f_m} * {s_l} / {s_c}"
     else:
-        eq = ""
+        equation_string = ""
 
-    return eq
+    return equation_string
 
 
 def check_signal_2(ex: str, exl: str, c: Species2Species) -> (str, str):
@@ -768,7 +756,6 @@ def get_initial_conditions(
                 atol.append(tol)
                 r.atol[1] = tol
                 lic[f"{r.full_name}_l"] = r.l[0]
-                lic[f"{r.full_name}"] = r.l[0]
                 icl[r] = [i, i + 1]
                 i += 2
             else:
