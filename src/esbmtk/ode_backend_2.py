@@ -648,6 +648,7 @@ def check_isotope_effects(
         r: float = c.source.species.r  # isotope reference value
         s: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
         s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
+
         if c.alpha != "None":
             a = c.alpha
             equation_string = f"{f_m} * 1000 / ({r} * ({a} + 1000) + 1000)"
@@ -655,7 +656,7 @@ def check_isotope_effects(
             a = c.epsilon / 1000 + 1
             equation_string = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
         else:
-            equation_string = f"{f_m} * {s_l} / {s_c}"
+            equation_string = f"{s_l}" if f_m == s_c else f"{f_m} * {s_l} / {s_c}"
     else:
         equation_string = ""
 
