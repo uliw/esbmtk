@@ -494,6 +494,7 @@ class SpeciesBase(esbmtkBase):
         # Lists and collections for references
         # see scipy.solve_ivp docs for the meaning of this
         self.tolerances: list[float] = [1.0, 1.0]  # tolerances
+        self.ignored_fluxes: list[Flux] = []
         self.flux_references: list[Flux] = []  # flux references
         self.external_data_references: list[
             ExternalData
@@ -519,6 +520,7 @@ class SpeciesBase(esbmtkBase):
         # Legacy aliases for backward compatibility
         self.atol = self.tolerances
         self.lof = self.flux_references
+        self.lif = self.ignored_fluxes
         self.led = self.external_data_references
         self.lio = self.flux_direction_pairs
         self.lop = self.process_references
@@ -1314,125 +1316,6 @@ class Species(SpeciesBase):
         self.c = np.zeros(len(self.model.time))
         self.l = np.zeros(len(self.model.time))
         self.m = np.zeros(len(self.model.time))
-
-    def _initialize_legacy_attributes(self, kwargs) -> None:
-        """
-        Initialize common attributes and legacy names.
-
-        This method sets up attributes required by all species objects
-        and maintains backward compatibility with legacy naming conventions.
-        Replaces the __set_legacy_names__ method from SpeciesBase.
-
-        Parameters
-        ----------
-        kwargs : dict
-            Initialization parameters
-
-        Returns
-        -------
-        None
-        """
-        from esbmtk.sealevel import get_box_geometry_parameters
-
-        # Initialize data structures with appropriate typing
-        # Lists and collections for references
-        self.absolute_tolerances: list[float] = [1.0, 1.0]  # absolute_tolerances
-        self.flux_references: list[Flux] = []  # flux references
-        self.external_data_references: list[
-            ExternalData
-        ] = []  # all external data references
-        self.flux_direction_pairs: dict[str, int] = {}  # flux name:direction pairs
-        self.process_references: list[
-            Process
-        ] = []  # list holding all process references
-        self.element_references: list[
-            ElementProperties
-        ] = []  # list of elements in this reservoir
-        self.species_flux_pairs: dict[
-            SpeciesProperties, Flux
-        ] = {}  # species flux pairs
-        self.connection_objects: set[Species2Species] = (
-            set()
-        )  # set of connection objects
-        self.datafield_objects: list[DataField] = []  # list of datafield objects
-        self.calculated_processes: list[
-            Process
-        ] = []  # list of processes which calculate reservoirs
-
-        # Legacy aliases for backward compatibility
-        self.atol = self.absolute_tolerances
-        self.lof = self.flux_references
-        self.led = self.external_data_references
-        self.lio = self.flux_direction_pairs
-        self.lop = self.process_references
-        self.loe = self.element_references
-        self.doe = self.species_flux_pairs
-        self.loc = self.connection_objects
-        self.ldf = self.datafield_objects
-        self.lpc = self.calculated_processes
-
-        # Flag for external function results
-        self.has_external_function_results = False
-        self.ef_results = self.has_external_function_results
-
-        # Initialize core attributes with appropriate naming
-        # Name and identification attributes
-        self.n: str = self.name  # Legacy name alias
-
-        # Set path name based on registration
-        if self.register == "None":
-            self.path_name = self.name
-        else:
-            self.path_name: str = f"{self.register.name}_{self.name}"
-            self.groupname = self.register.name
-
-        # Legacy alias
-        self.pt = self.path_name
-
-        # Species and model relationships
-        self.species_properties: SpeciesProperties = self.species
-
-        # Legacy aliases
-        self.sp = self.species_properties
-        self.mo = self.model
-
-        # Isotope ratio value
-        self.rvalue = self.species_properties.r
-
-        # Set up unit attributes from model
-        self.m_unit = self.model.m_unit  # Mass unit
-        self.v_unit = self.model.v_unit  # Volume unit
-        self.c_unit = self.model.c_unit  # Concentration unit
-
-        # Axis labels and legends
-        self.right_axis_label: str = (
-            f"{self.species.delta_label} [{self.species.delta_scale}]"
-        )
-        self.x_axis_label: str = self.model.xl  # Set x-axis label to model time
-
-        # Legacy aliases
-        self.ld = self.right_axis_label
-        self.xl = self.x_axis_label
-
-        # Set legend labels
-        if self.legend_left == "None":
-            self.legend_left = self.species.display_string
-
-        self.legend_right = f"{self.species.delta_label} [{self.species.delta_scale}]"
-
-        # Determine whether to use isotopes
-        if self.model.m_type == "both":
-            self.isotopes = True
-        elif self.model.m_type == "mass_only":
-            self.isotopes = False
-
-        # Configure geometry parameters if needed
-        if self.geometry != "None" and self.geometry_unset:
-            get_box_geometry_parameters(self)
-
-        # Set display precision from model if not specified
-        if self.display_precision == 0:
-            self.display_precision = self.model.display_precision
 
     def _initialize_geometry(self) -> None:
         """
