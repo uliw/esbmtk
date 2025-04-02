@@ -247,7 +247,7 @@ def gas_exchange(
 
     if isotopes:
         gas_c, gas_c_l = gas_c
-        gas_aq_c = gas_aq_c
+        gas_aq_c = gas_aq_c[0]
         liquid_c, liquid_c_l = liquid_c
 
     # Solubility with correction for pH2O
