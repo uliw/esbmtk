@@ -32,8 +32,7 @@ NDArrayFloat = npt.NDArray[np.float64]
 
 
 class KeywordError(Exception):
-    """
-    Exception raised for errors in keyword arguments.
+    """Exception raised for errors in keyword arguments.
 
     Parameters
     ----------
@@ -51,8 +50,7 @@ class KeywordError(Exception):
 
 
 class MissingKeywordError(Exception):
-    """
-    Exception raised when a required keyword argument is missing.
+    """Exception raised when a required keyword argument is missing.
 
     Parameters
     ----------
@@ -70,8 +68,7 @@ class MissingKeywordError(Exception):
 
 
 class InputError(Exception):
-    """
-    Exception raised for errors in the input parameters.
+    """Exception raised for errors in the input parameters.
 
     Parameters
     ----------
@@ -89,8 +86,7 @@ class InputError(Exception):
 
 
 class FluxSpecificationError(Exception):
-    """
-    Exception raised for errors in flux specifications.
+    """Exception raised for errors in flux specifications.
 
     Parameters
     ----------
@@ -108,8 +104,7 @@ class FluxSpecificationError(Exception):
 
 
 class SpeciesPropertiesMolweightError(Exception):
-    """
-    Exception raised when molecular weight is missing or invalid.
+    """Exception raised when molecular weight is missing or invalid.
 
     Parameters
     ----------
@@ -127,8 +122,7 @@ class SpeciesPropertiesMolweightError(Exception):
 
 
 class InputParsing:
-    """
-    Provides various routines to parse and process keyword arguments.
+    """Provides various routines to parse and process keyword arguments.
 
     All derived classes need to declare the allowed keyword arguments,
     their default values and the type in the following format:
@@ -171,8 +165,7 @@ class InputParsing:
         self.update = True
 
     def __check_mandatory_keywords__(self, lrk: list, kwargs: dict) -> None:
-        """
-        Verify that all required keywords are present in kwargs.
+        """Verify that all required keywords are present in kwargs.
 
         Parameters
         ----------
@@ -246,8 +239,7 @@ class InputParsing:
         defaults: dict[str, list[any, tuple]],
         kwargs: dict,
     ) -> None:
-        """
-        Register the key-value pairs as local instance variables.
+        """Register the key-value pairs as local instance variables.
 
         We register them with their actual variable name and as _variable_name
         to support setter and getter methods and avoid name conflicts.
