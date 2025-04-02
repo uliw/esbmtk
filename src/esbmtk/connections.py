@@ -166,6 +166,7 @@ class Species2Species(esbmtkBase):
             "pl": ["None", (list, str)],
             "epsilon": ["None", (int, float, str, dict)],
             "species": ["None", (SpeciesProperties, str)],
+            "alpha": ["None", (str, float)],
             "ctype": ["regular", (str)],
             "ref_reservoirs": ["None", (Species, GasReservoir, str, list)],
             "reservoir_ref": ["None", (GasReservoir, str)],
