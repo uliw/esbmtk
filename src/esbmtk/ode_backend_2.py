@@ -510,7 +510,7 @@ def get_regular_flux_eq(
             exl = check_isotope_effects(ex, c, icl, ind3, ind2)
 
     if c.mo.debug_equations_file and output:
-        ex = ex + f"  # {flux.full_name} = {toc[c.r_index]:.2e}"
+        ex = ex + f"  #ob1: {flux.full_name} = {toc[c.r_index]:.2e}"
 
     return ex, exl
 
@@ -548,21 +548,21 @@ def get_scale_with_concentration_eq(
     s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration`
     exl = ""
     ex = ""
-    if flux.serves_as_input or c.signal != "None":
-        ex = f"toc[{c.s_index}] * {s_c}"
-        exl = check_isotope_effects(ex, c, icl, ind3, ind2)
-        ex, exl = check_signal_2(ex, exl, c)
-    else:
-        CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
-        ex = f"{s_c}"
-        if flux.isotopes:
-            CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]
-            exl = check_isotope_effects(ex, c, icl, ind3, ind2)
+    # if flux.serves_as_input or c.signal != "None":
+    ex = f"toc[{c.s_index}] * {s_c}"
+    exl = check_isotope_effects(ex, c, icl, ind3, ind2)
+    ex, exl = check_signal_2(ex, exl, c)
+    # else:
+    #     CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
+    #     ex = f"{s_c}"
+    #     if flux.isotopes:
+    #         CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]
+    #         exl = check_isotope_effects(ex, c, icl, ind3, ind2)
 
     if c.mo.debug_equations_file:
         ex = (
             ex
-            + f"  # {flux.full_name} = {toc[c.s_index]:.2e} * {c.ref_reservoirs.full_name}"
+            + f"  #ob2: {flux.full_name} = {toc[c.s_index]:.2e} * {c.ref_reservoirs.full_name}"
         )
     return ex, exl
 
@@ -619,16 +619,17 @@ def get_scale_with_flux_eq(
 
     if c.mo.debug_equations_file:
         ex = (
-            ex + f"  # {flux.full_name} = {toc[c.s_index]:.2e} * {c.ref_flux.full_name}"
+            ex
+            + f"  #ob3: {flux.full_name} = {toc[c.s_index]:.2e} * {c.ref_flux.full_name}"
         )
 
     return ex, exl
 
 
 def check_isotope_effects(
-    f_m: str,
-    c: Species2Species,
-    icl: dict,
+    f_m: str,  # e.g., toc[2] * R[0]
+    c: Species2Species,  # connection object
+    icl: dict,  # initial conditions
     ind3: str,
     ind2: str,
 ) -> str:
@@ -643,23 +644,30 @@ def check_isotope_effects(
     :returns eq: equation string
     """
     if c.isotopes:
-        r = c.source.species.r
-        s = get_ic(c.source, icl, True)
-        s_c, s_l = s.replace(" ", "").split(",")
+        r: float = c.source.species.r  # isotope reference value
+        s: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
+        s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
         """ Calculate the flux of the light isotope (f_l) as a function of the isotope
         ratios in the source reservoir soncentrations (s_c, s_l), and epsilon (a) as
         f_l = f_m * 1000/(r * (d + 1000) + 1000)
 
+        where fm = flux, s_l = source light isotope, s_c source total mass/concentration.
+        
         Note that the scale has already been applaied to f_m in the calling function.
         """
         if c.delta != "None":
             d = c.delta
-            eq = f"{f_m} * 1000 / ({r} * ({d} + 1000) + 1000)"
+            # eq = f"{f_m} * 1000 / ({r} * ({d} + 1000) + 1000)"
+            eq = f"1000 / ({r} * ({d} + 1000) + 1000)"
         elif c.epsilon != "None":
             a = c.epsilon / 1000 + 1
-            eq = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
+            # eq = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
+            eq = f"{s_l} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
         else:
             eq = f"{f_m} * {s_l} / {s_c}"
+            # eq = f"{s_l} / {s_c}"
+        # if self.model.debug_equations_file:
+        #     eq = f"{eq}  # {eq}"
     else:
         eq = ""
 
