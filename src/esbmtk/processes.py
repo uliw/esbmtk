@@ -177,6 +177,7 @@ def init_gas_exchange(c: Species2Species):
         a_dg,
         a_u,
         c.isotopes,  # c.source.isotopes,
+        ref_species.isotopes,
     )
     ec = ExternalCode(
         name=f"gas_exchange{c.id}",
@@ -243,12 +244,15 @@ def gas_exchange(
     offset, which is closer to observations
 
     """
-    scale, solubility, a_db, a_dg, a_u, isotopes = p
+    scale, solubility, a_db, a_dg, a_u, species_isotopes, ref_species_isotopes = p
 
-    if isotopes:
+    if species_isotopes:
         gas_c, gas_c_l = gas_c
-        gas_aq_c = gas_aq_c[0]
         liquid_c, liquid_c_l = liquid_c
+        if ref_species_isotopes:
+            gas_aq_c, _l = gas_aq_c
+        else:
+            gas_aq_c = gas_aq_c
 
     # Solubility with correction for pH2O
     # beta = solubility * (1 - p_H2O)
@@ -257,7 +261,7 @@ def gas_exchange(
     f = scale * (beta * gas_c - gas_aq_c * 1e3)
     rv = f
 
-    if isotopes:  # isotope ratio of DIC
+    if species_isotopes:  # isotope ratio of DIC
         Rt = (liquid_c - liquid_c_l) / liquid_c
         # get heavy isotope concentrations in atmosphere
         gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
