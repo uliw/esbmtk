@@ -1477,6 +1477,7 @@ class Model(esbmtkBase):
         # Display fluxes containing "PO4" but not "H_sb"
         >>> model.flux_summary(filter_by="PO4", exclude="H_sb")
         """
+        # FIXME: Thios needs proper keyword parsing!
         # Get filter parameters from kwargs with proper defaults
         filter_terms = (
             kwargs.get("filter_by", "").split() if "filter_by" in kwargs else []
