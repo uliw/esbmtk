@@ -75,6 +75,15 @@ class SolverError(Exception):
         super().__init__(message)
 
 
+class FluxNameError(Exception):
+    """Custom Error Class for Flux lookup errors."""
+
+    def __init__(self, message):
+        """Initialize Error Instance with formatted message."""
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
 def deprecated_keyword(message):
     """Issue a deprecation warning with the provided message."""
     warnings.warn(message, DeprecationWarning, stacklevel=2)
@@ -1494,8 +1503,11 @@ class Model(esbmtkBase):
             ):
                 matching_fluxes.append(flux)
 
-                # Print flux name if not returning a list
-                if not return_as_list:
+                if return_as_list:
+                    if len(matching_fluxes) == 0:
+                        raise FluxNameError(f"No flux {filter_terms} found")
+                else:
+                    # Print flux name if not returning a list
                     print(f"{flux.full_name}")
 
         # Return results based on the return_list parameter
