@@ -1505,7 +1505,7 @@ class Model(esbmtkBase):
 
                 if return_as_list:
                     if len(matching_fluxes) == 0:
-                        raise FluxNameError(f"No flux {filter_terms} found")
+                        raise FluxNameError(f"No flux {filter_terms} found. Typo?")
                 else:
                     # Print flux name if not returning a list
                     print(f"{flux.full_name}")
