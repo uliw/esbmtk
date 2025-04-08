@@ -593,8 +593,8 @@ def get_scale_with_flux_eq(
     if flux.serves_as_input or c.signal != "None":
         ex = f"toc[{c.s_index}] * {fn}"
         """The flux for the light isotope will computed as follows:
-        We will use the mass of the flux we or scaling, but that we will set the
-        delta|epsilon according to isotope ratio of the reference flux
+        We will use the mass of the flux for scaling, but we
+        isotope ratio of the source. 
         """
         exl = ""
         if c.source.isotopes and c.sink.isotopes:
@@ -637,23 +637,29 @@ def check_isotope_effects(
     :returns equation string:
     """
     if c.isotopes:
-        """Calculate the flux of the light isotope (f_l) as a function of the isotope
-        ratios in the source reservoir soncentrations (s_c, s_l), and epsilon (a) as
-        f_l = f_m * 1000/(r * (d + 1000) + 1000)
+        """Calculate the flux of the light isotope (f_l).
 
-        where fm = flux, s_l = source light isotope, s_c source total mass/concentration.
+        If delta is given: fl = fm * 1000 / (r * (d + 1000) + 1000)
+        If epsilon is given: fl = sl * fm / (e * sc + sl - a * sl)
 
-        Note that the scale has already been applaied to f_m in the calling function.
+        If neither: If flux mass equals source concentration, this is a scale
+        with concentration connection, and f_l = s_l * scale where scale is
+        part of the constants on the equations matrix. Otherwise, the flux
+        isotope ratio is similar to the source isotope ratio:
+        fl = fm * sl/sc * scale. Note that scale is dropped in the below equations
+        since it is moved to the equations matrix.
+
+        Where fl = flux light isotope, fm = flux mass, s_c = source concentration
+        s_l = source light isotope
         """
         r: float = c.source.species.r  # isotope reference value
         s: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
         s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
 
-        if c.alpha != "None":
-            a = c.alpha
-            equation_string = f"{f_m} * 1000 / ({r} * ({a} + 1000) + 1000)"
-        if c.epsilon != "None":
-            a = c.epsilon / 1000 + 1
+        if c.delta != "None":
+            equation_string = f"{f_m} * 1000 / ({r} * ({c.delta} + 1000) + 1000)"
+        elif c.epsilon != "None":
+            a = c.epsilon / 1000 + 1  # convert to alpha notation
             equation_string = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
         else:
             equation_string = f"{s_l}" if f_m == s_c else f"{f_m} * {s_l} / {s_c}"
