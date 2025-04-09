@@ -71,8 +71,10 @@ from .post_processing import (
 from .processes import gas_exchange, init_weathering, weathering
 from .seawater import SeawaterConstants
 from .utility_functions import (
+    build_ct_dict,
     check_for_quantity,
     create_bulk_connections,
+    create_reservoirs,
     data_summaries,
     initialize_reservoirs,
     phc,
@@ -114,10 +116,12 @@ __all__ = [
     "gas_exchange_fluxes",
     "gas_exchange",
     "weathering",
+    "build_ct_dict",
     "init_weathering",
     "SeawaterConstants",
     "check_for_quantity",
     "create_bulk_connections",
+    "create_reservoirs",
     "data_summaries",
     "initialize_reservoirs",
     "phc",
