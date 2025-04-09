@@ -3,6 +3,7 @@
 * Introduction
 
 ** Installation
+*Note that ESBMTK requires python 3.12 or higher.*
 *** Conda
 Assuming you install into a new virtual environment the following should install the ESBMTK framework
 #+BEGIN_SRC sh
