@@ -1,5 +1,5 @@
+import iso3_test  # import script
 import pytest
-import  iso3_test # import script
 
 M = iso3_test.M  # get model handle
 test_values = [  # result, reference value
@@ -8,6 +8,8 @@ test_values = [  # result, reference value
     (M.S_b.O2.d[-1], 2.4921132299215945),
     (M.D_b.O2.d[-1], -2.492088372772069),
 ]
+
+
 # run tests
 @pytest.mark.parametrize("test_input, expected", test_values)
 def test_values(test_input, expected):
