@@ -74,13 +74,17 @@ from .utility_functions import (
     build_ct_dict,
     check_for_quantity,
     create_bulk_connections,
-    create_reservoirs,
     data_summaries,
     initialize_reservoirs,
     phc,
     register_return_values,
     set_y_limits,
 )
+
+try:
+    from .utility_functions import create_reservoirs
+except ImportError:
+    raise Exception("create_reservoirs is no longer used")
 
 __all__ = [
     "Flux",
@@ -121,7 +125,6 @@ __all__ = [
     "SeawaterConstants",
     "check_for_quantity",
     "create_bulk_connections",
-    "create_reservoirs",
     "data_summaries",
     "initialize_reservoirs",
     "phc",
