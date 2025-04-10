@@ -359,3 +359,79 @@ ConnectionProperties(  # thermohaline upwelling
 M.run()
 #+END_SRC
 
+
+#+BEGIN_SRC jupyter-python :noweb yes :tangle delta_test_regular.py :exports none
+"""Test isotope calculations for connections with a delta value."""
+
+from esbmtk import (
+    ConnectionProperties,  # the connection class
+    Model,  # the model class
+    Reservoir,  # the reservoir class
+    SourceProperties,
+)
+
+M = Model(
+    stop="500 yr",  # end time of model
+    max_timestep="10 yr",  # upper limit of time step
+    element=["Carbon"],  # list of element definitions
+)
+# ---------------- Source to Reservoir rtegular flux --------------- #
+SourceProperties(
+    name="Fw",  # box name
+    species=[M.DIC],
+    delta={"DIC": 0},
+)
+Reservoir(
+    name="S_b",  # box name
+    volume="50E16 m**3",  # Surface box volume
+    concentration={M.DIC: "0 umol/l"},  # initial concentration
+    delta={M.DIC: 0},
+)
+ConnectionProperties(  # thermohaline upwelling
+    source=M.Fw,  # source of flux
+    sink=M.S_b,  # target of flux
+    ctype="regular",
+    rate="5 Tmol/yr",
+    delta=5,
+    id="weathering",
+)
+
+# M.debug_equations_file = True
+M.run()
+# M.plot([M.S_b.DIC])
+#+END_SRC
+
+
+
+#+BEGIN_SRC jupyter-python :noweb yes :tangle test_delta_regular.py :exports none
+"""Test isotope delta calculations."""
+
+import delta_test_regular as model  # import script
+import pytest
+
+M = model.M  # get model handle
+tolerance = 1e-6
+test_values = [  # result, reference value, tolerance
+    (M.S_b.DIC.d[-1], 5, tolerance),
+]
+
+# run tests
+@pytest.mark.parametrize("test_input, expected, tolerance", test_values)
+def test_values(test_input, expected, tolerance):
+    """Test against known values."""
+    assert (
+        abs(expected) * (1 - tolerance)
+        <= abs(test_input)
+        <= abs(expected) * (1 + tolerance)
+    )
+#+END_SRC
+
+
+#+BEGIN_SRC jupyter-python :noweb yes :tangle xxx.py :exports none
+
+#+END_SRC
+
+
+#+BEGIN_SRC jupyter-python :noweb yes :tangle xxx.py :exports none
+
+#+END_SRC
