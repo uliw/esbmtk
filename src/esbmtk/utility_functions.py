@@ -1666,3 +1666,8 @@ def register_user_function(M: Model, lib_name: str, func_name: str | list) -> No
 
     for f in func_name:
         M.luf[f] = [lib_name, cwd]
+
+
+def create_reservoirs():
+    """Raise Error on use."""
+    raise NotImplementedError("create_reservoirs is no longer supported")
