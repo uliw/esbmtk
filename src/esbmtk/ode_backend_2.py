@@ -657,7 +657,10 @@ def check_isotope_effects(
         s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
 
         if c.delta != "None":
-            equation_string = f"{f_m} * 1000 / ({r} * ({c.delta} + 1000) + 1000)"
+            if c.ctype == "regular":
+                equation_string = f"1000 / ({r} * ({c.delta} + 1000) + 1000)"
+            else:
+                equation_string = f"{f_m} * 1000 / ({r} * ({c.delta} + 1000) + 1000)"
         elif c.epsilon != "None":
             a = c.epsilon / 1000 + 1  # convert to alpha notation
             equation_string = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
