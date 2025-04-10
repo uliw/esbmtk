@@ -81,11 +81,6 @@ from .utility_functions import (
     set_y_limits,
 )
 
-try:
-    from .utility_functions import create_reservoirs
-except ImportError:
-    raise Exception("create_reservoirs is no longer used")
-
 __all__ = [
     "Flux",
     "Sink",
