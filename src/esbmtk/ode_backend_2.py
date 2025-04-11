@@ -492,8 +492,8 @@ def get_regular_flux_eq(
     ex = ""
     exl = ""
     output = True
+    ex = f"toc[{c.r_index}]"
     if flux.serves_as_input or c.signal != "None":
-        ex = f"toc[{c.r_index}]"
         exl = check_isotope_effects(ex, c, icl, ind3, ind2)
         ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
     else:
