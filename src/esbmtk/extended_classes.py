@@ -358,7 +358,8 @@ class SourceSinkProperties(esbmtkBase):
                     name=f"{s.name}",
                     register=self,
                     species=s,
-                    isotopes=self.isotopes.get(s, False),
+                    delta=self.delta.get(s.name, "None"),
+                    isotopes=self.isotopes.get(s.name, False),
                 )
             elif type(self).__name__ == "SinkProperties":
                 a = Sink(
@@ -386,8 +387,6 @@ class SinkProperties(SourceSinkProperties):
                 )
 
     """
-
-    # f __init__(self,super):
 
 
 class SourceProperties(SourceSinkProperties):
