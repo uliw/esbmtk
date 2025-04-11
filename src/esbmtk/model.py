@@ -1026,12 +1026,12 @@ class Model(esbmtkBase):
             if equation_file_path.exists():
                 warnings.warn(
                     "\n\n Warning re-using the equations file \n"
-                    "\n type y to proceed. Any other key will delete the file and create a new one",
+                    "\n type r to reuse old file or n to create a new one",
                     stacklevel=2,
                 )
-                user_input = input("type y/n: ")
+                user_input = input("type r/n: ")
 
-                if user_input.lower() == "y":  # Use existing file
+                if user_input.lower() == "r":  # Use existing file
                     equation_module_name = equation_file_path.stem
                 else:  # Create new file
                     equation_file_path.unlink()  # Delete old file
