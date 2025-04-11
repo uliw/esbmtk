@@ -2112,3 +2112,15 @@ class Source(SourceSink):
             register = Model handle
         )
     """
+
+    def __init__(self, **kwargs) -> None:
+        """Initialize Source Properties instance.
+
+        This method extends the parent class initialization with source-specific functionality.
+        """
+        # Call the parent class's __init__ method to handle basic initialization
+        super().__init__(**kwargs)
+
+        if self.delta != "None":
+            self.l = get_l_mass(self.c, self.delta, self.sp.r)
+            self.isotopes = True
