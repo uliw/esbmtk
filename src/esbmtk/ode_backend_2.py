@@ -119,7 +119,7 @@ def write_equations_3(
     cpl: list,
     ipl: list,
     eqs_fn: str,
-) -> tuple:
+) -> str:
     """Write file that contains the ode-equations for the Model.
 
     Returns the list R that contains the initial condition for each
