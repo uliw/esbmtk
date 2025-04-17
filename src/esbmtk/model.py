@@ -941,17 +941,14 @@ class Model(esbmtkBase):
         # Create a temporary Python file
         with tempfile.NamedTemporaryFile(suffix=".py") as tmp_file:
             # Get path to temporary file
-            equations_file_path = pl.Path(tmp_file.name)
+            equation_file_path = pl.Path(tmp_file.name)
 
             # Generate equations module
             equations_module_name = write_equations_3(
-                self, R, icl, cpl, ipl, equations_file_path
+                self, R, icl, cpl, ipl, equation_file_path
             )
 
-            # Import the equations module and get the equations function
-            equations_set = __import__(equations_module_name).eqs
-
-        return equations_set
+        return equations_module_name, equation_file_path
 
     def _ode_solver(self, kwargs: dict):
         """Initialize and run the ODE solver.
@@ -974,12 +971,24 @@ class Model(esbmtkBase):
 
         # Store variables for later use
         R = np.array(list(self.R_names.values()))
+
+        # icl = dict[Species, list[int, int]] where reservoir
+        #     indicates the reservoir handle, and the list contains the
+        #     index into the reservoir data.  list[0] = concentration
+        #     list[1] concentration of the light isotope.
         self.icl = icl
+        # cpl = list of reservoirs that use function to evaluate
+        #       reservoir data
         self.cpl = cpl
+        #  ipl = list of static reservoirs that serve as input
         self.ipl = ipl
 
         # Build coefficient matrix
         self.CM, self.F, self.F_names = build_eqs_matrix(self)
+        if self.debug:
+            print(f"bem: CM hash: {hash(str(self.CM))}")
+            print(f"bem: F hash: {hash(str(self.F))}")
+            print(f"bem: F_names hash: {hash(str(self.F_names))}")
 
         # Set up paths for equation files
         current_dir = Path.cwd()
@@ -1021,6 +1030,8 @@ class Model(esbmtkBase):
         function
             The equations function
         """
+        import importlib
+
         # If debugging equations is enabled
         if self.debug_equations_file:
             if equation_file_path.exists():
@@ -1033,26 +1044,56 @@ class Model(esbmtkBase):
 
                 if user_input.lower() == "r":  # Use existing file
                     equation_module_name = equation_file_path.stem
+                    # Also load saved matrices if they exist
+                    matrix_file = Path(
+                        str(equation_file_path).replace(".py", "_matrices.npz")
+                    )
+                    if matrix_file.exists():
+                        saved_data = np.load(matrix_file)
+                        self.CM = saved_data["CM"]
+                        self.F = saved_data["F"]
+                        self.F_names = (
+                            saved_data["F_names"].tolist()
+                            if "F_names" in saved_data
+                            else []
+                        )
+                    else:
+                        print(
+                            "Warning: Reusing equation file but matrix file not found. Results may be inconsistent."
+                        )
+
                 else:  # Create new file
                     equation_file_path.unlink()  # Delete old file
                     equation_module_name = write_equations_3(
                         self, R, icl, cpl, ipl, equation_file_path
                     )
+                    # Save matrices for future reuse
+                    matrix_file = Path(
+                        str(equation_file_path).replace(".py", "_matrices.npz")
+                    )
+                    np.savez(
+                        matrix_file,
+                        CM=self.CM,
+                        F=self.F,
+                        F_names=np.array(self.F_names),
+                    )
+
             else:  # First run - create persistent file
                 equation_module_name = write_equations_3(
                     self, R, icl, cpl, ipl, equation_file_path
                 )
-
-            # Import equations
-            equations_set = __import__(equation_module_name).eqs
-        else:
-            # Use temporary file for equations
+        else:  # Use temporary file for equations
             if equation_file_path.exists():
                 equation_file_path.unlink()
 
-            equations_set = self._write_temp_equations(current_dir, R, icl, cpl, ipl)
+            equation_module_name, equation_file_path = self._write_temp_equations(
+                current_dir, R, icl, cpl, ipl
+            )
+        # make sure we avoid import errors
+        if equation_module_name in sys.modules:
+            importlib.reload(sys.modules[equation_module_name])
 
-        return equations_set
+        return __import__(equation_module_name).eqs
 
     def _initialize_carbonate_tables(self):
         """Initialize carbonate chemistry tables with default values if not present."""
@@ -1075,6 +1116,22 @@ class Model(esbmtkBase):
         atol : float or ndarray
             Absolute tolerance
         """
+        if self.debug:
+            print(f"R: {R}")
+            print(
+                f"self.gpt shape: {np.shape(self.gpt) if hasattr(self.gpt, 'shape') else len(self.gpt)}"
+            )
+            print(
+                f"self.toc shape: {np.shape(self.toc) if hasattr(self.toc, 'shape') else len(self.toc)}"
+            )
+            print(f"CM shape: {np.shape(self.CM)}")
+            print(f"F shape: {np.shape(self.F)}")
+            print(f"time_ode shape: {np.shape(self.time_ode)}")
+            # Add hash values for large arrays to verify content
+            print(f"CM hash: {hash(str(self.CM))}")
+            print(f"F hash: {hash(str(self.F))}")
+            print(f"time_ode hash: {hash(str(self.time_ode))}")
+
         self.results = solve_ivp(
             equations_set,
             (self.time[0], self.time[-1]),
