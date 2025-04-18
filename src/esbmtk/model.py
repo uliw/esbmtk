@@ -970,7 +970,7 @@ class Model(esbmtkBase):
         # Get initial conditions and build equation matrices
         self.R_names, icl, cpl, ipl, atol = get_initial_conditions(self, self.rtol)
 
-        # Store variables for later use
+        # get initial concentrations for each reservoir
         R = np.array(list(self.R_names.values()))
 
         # icl = dict[Species, list[int, int]] where reservoir
@@ -1154,7 +1154,6 @@ class Model(esbmtkBase):
             max_step=self.dt,
             vectorized=False,  # Flux equations would need to be adjusted
         )
-        breakpoint()
 
     def _process_solver_results(self):
         """Process the solver results and handle errors.
