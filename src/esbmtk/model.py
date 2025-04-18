@@ -1154,6 +1154,7 @@ class Model(esbmtkBase):
             max_step=self.dt,
             vectorized=False,  # Flux equations would need to be adjusted
         )
+        breakpoint()
 
     def _process_solver_results(self):
         """Process the solver results and handle errors.
