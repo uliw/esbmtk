@@ -97,6 +97,7 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
                 else:
                     sign = -1 / mass if f.parent.source == r else 1 / mass
 
+                print(f"name = {f.full_name}, sign = {sign:.2e}, mass = {mass:.2e}")
                 if r.isotopes:  # add equation for isotopes
                     CM[ri, r.lof[fi].idx] = sign
                     CM[ri + 1, r.lof[fi + 1].idx] = sign  # 2
