@@ -1071,6 +1071,7 @@ class Model(esbmtkBase):
                     matrix_file = Path(
                         str(equation_file_path).replace(".py", "_matrices.npz")
                     )
+                    self.matrix_file = matrix_file
                     np.savez(
                         matrix_file,
                         CM=self.CM,
