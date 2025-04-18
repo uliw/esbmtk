@@ -596,7 +596,7 @@ M.run()
 # M.plot([M.S_b.DIC, M.D_b.DIC])
 #+END_SRC
 
-#+BEGIN_SRC jupyter-python :noweb yes :tangle test_delta_scale_with_concentration.py :exports none
+#+BEGIN_SRC jupyter-python :noweb yes :tangle test_delta_scale_with_flux.py :exports none
 """Test isotope delta calculations."""
 
 import delta_scale_with_flux_test as model  # import script

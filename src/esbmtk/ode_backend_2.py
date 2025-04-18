@@ -587,7 +587,7 @@ def get_scale_with_flux_eq(
               concentration of the light isotope
     """
     # get the reference flux name
-    exl = ""
+    ex, exl = "", ""
     fn = f"F[{c.ref_flux.idx}]"
     if flux.serves_as_input or c.signal != "None":
         ex = f"toc[{c.s_index}] * {fn}"
@@ -603,8 +603,8 @@ def get_scale_with_flux_eq(
             ex, exl = check_signal_2(ex, exl, c)
 
     else:
-        # FIXME?: # CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
-        ex = f"toc[{c.s_index}] * {fn}"
+        ex = fn
+        CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
         if flux.isotopes:
             CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]
             exl = check_isotope_effects(ex, c, icl, ind3, ind2)
@@ -656,11 +656,13 @@ def check_isotope_effects(
         s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
 
         if c.delta != "None":
-            # if c.ctype == "regular":
-            #     equation_string = f"1000 / ({r} * ({c.delta} + 1000) + 1000)"
-            # else:
-            equation_string = f"{f_m} * 1000 / ({r} * ({c.delta} + 1000) + 1000)"
-            equation_string = f"1000 / ({r} * ({c.delta} + 1000) + 1000)"
+            if c.ctype == "regular":
+                equation_string = f"1000 / ({r} * ({c.delta} + 1000) + 1000)"
+            elif c.ctype == "scale_with_concentration" or c.ctype == "scale_with_flux":
+                equation_string = f"{f_m} * 1000 / ({r} * ({c.delta} + 1000) + 1000)"
+            else:
+                raise ValueError(f"no isotope effects for {c.ctype}")
+
         elif c.epsilon != "None":
             a = c.epsilon / 1000 + 1  # convert to alpha notation
             equation_string = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
