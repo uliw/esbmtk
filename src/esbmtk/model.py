@@ -948,7 +948,7 @@ class Model(esbmtkBase):
             equations_module_name = write_equations_3(
                 self, R, icl, cpl, ipl, equation_file_path
             )
-            eqs = __import__(f"{equation_file_path}/{equations_module_name}").eqs
+            eqs = __import__(equations_module_name).eqs
 
         return eqs
 
@@ -1083,14 +1083,14 @@ class Model(esbmtkBase):
                 equations_module_name = write_equations_3(
                     self, R, icl, cpl, ipl, equation_file_path
                 )
+            eqs = __import__(equations_module_name).eqs
+
         else:  # Use temporary file for equations
             if equation_file_path.exists():
                 equation_file_path.unlink()
 
-            equations_module_name = self._write_temp_equations(
-                current_dir, R, icl, cpl, ipl
-            )
-        return equations_module_name
+            eqs = self._write_temp_equations(current_dir, R, icl, cpl, ipl)
+        return eqs  # module reference
 
     def _initialize_carbonate_tables(self):
         """Initialize carbonate chemistry tables with default values if not present."""
