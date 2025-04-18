@@ -54,7 +54,8 @@ NDArrayFloat = npt.NDArray[np.float64]
 
 if tp.TYPE_CHECKING:
     from .base_classes import Species
-    from .connections import Species2Species
+
+    # from .connections import Species2Species
 
 
 class ModelError(Exception):
@@ -985,10 +986,6 @@ class Model(esbmtkBase):
 
         # Build coefficient matrix
         self.CM, self.F, self.F_names = build_eqs_matrix(self)
-        if self.debug:
-            print(f"bem: CM hash: {hash(str(self.CM))}")
-            print(f"bem: F hash: {hash(str(self.F))}")
-            print(f"bem: F_names hash: {hash(str(self.F_names))}")
 
         # Set up paths for equation files
         current_dir = Path.cwd()
