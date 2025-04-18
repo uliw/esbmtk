@@ -948,8 +948,9 @@ class Model(esbmtkBase):
             equations_module_name = write_equations_3(
                 self, R, icl, cpl, ipl, equation_file_path
             )
+            eqs = __import__(f"{equation_file_path}/{equations_module_name}").eqs
 
-        return equations_module_name, equation_file_path
+        return eqs
 
     def _ode_solver(self, kwargs: dict):
         """Initialize and run the ODE solver.
@@ -1042,7 +1043,7 @@ class Model(esbmtkBase):
                 user_input = input("type r/n: ")
 
                 if user_input.lower() == "r":  # Use existing file
-                    equation_module_name = equation_file_path.stem
+                    equations_module_name = equation_file_path.stem
                     # Also load saved matrices if they exist
                     matrix_file = Path(
                         str(equation_file_path).replace(".py", "_matrices.npz")
@@ -1063,7 +1064,7 @@ class Model(esbmtkBase):
 
                 else:  # Create new file
                     equation_file_path.unlink()  # Delete old file
-                    equation_module_name = write_equations_3(
+                    equations_module_name = write_equations_3(
                         self, R, icl, cpl, ipl, equation_file_path
                     )
                     # Save matrices for future reuse
@@ -1079,21 +1080,17 @@ class Model(esbmtkBase):
                     )
 
             else:  # First run - create persistent file
-                equation_module_name = write_equations_3(
+                equations_module_name = write_equations_3(
                     self, R, icl, cpl, ipl, equation_file_path
                 )
         else:  # Use temporary file for equations
             if equation_file_path.exists():
                 equation_file_path.unlink()
 
-            equation_module_name, equation_file_path = self._write_temp_equations(
+            equations_module_name = self._write_temp_equations(
                 current_dir, R, icl, cpl, ipl
             )
-        # make sure we avoid import errors
-        if equation_module_name in sys.modules:
-            importlib.reload(sys.modules[equation_module_name])
-
-        return __import__(equation_module_name).eqs
+        return equations_module_name
 
     def _initialize_carbonate_tables(self):
         """Initialize carbonate chemistry tables with default values if not present."""
