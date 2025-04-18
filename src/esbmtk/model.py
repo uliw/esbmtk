@@ -987,6 +987,8 @@ class Model(esbmtkBase):
         # Build coefficient matrix
         self.CM, self.F, self.F_names = build_eqs_matrix(self)
 
+        np.savez("staging2.npz", CM=self.CM, F=self.F)
+
         # Set up paths for equation files
         current_dir = Path.cwd()
         sys.path.append(str(current_dir))  # Required on Windows
