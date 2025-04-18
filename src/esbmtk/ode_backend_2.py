@@ -97,7 +97,6 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
                 else:
                     sign = -1 / mass if f.parent.source == r else 1 / mass
 
-                print(f"name = {f.full_name}, sign = {sign:.2e}, mass = {mass:.2e}")
                 if r.isotopes:  # add equation for isotopes
                     CM[ri, r.lof[fi].idx] = sign
                     CM[ri + 1, r.lof[fi + 1].idx] = sign  # 2
@@ -123,9 +122,6 @@ def write_equations_3(
 ) -> str:
     """Write file that contains the ode-equations for the Model.
 
-    Returns the list R that contains the initial condition for each
-    reservoir
-
     :param Model: Model handle
     :param R: tp.List of floats with the initial conditions for each
               reservoir
@@ -134,6 +130,8 @@ def write_equations_3(
         computed based on other reservoirs
     :param ipl: tp.List of reservoir that do not change in concentration
     :param fn: str, filename
+
+    Returns: equationfile name
     """
     # construct header and static code:
     # add optional import statements
@@ -493,8 +491,8 @@ def get_regular_flux_eq(
     ex = ""
     exl = ""
     output = True
-    ex = f"toc[{c.r_index}]"
     if flux.serves_as_input or c.signal != "None":
+        ex = f"toc[{c.r_index}]"
         exl = check_isotope_effects(ex, c, icl, ind3, ind2)
         ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
     else:
@@ -605,7 +603,7 @@ def get_scale_with_flux_eq(
             ex, exl = check_signal_2(ex, exl, c)
 
     else:
-        # CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
+        # FIXME?: # CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
         ex = f"toc[{c.s_index}] * {fn}"
         if flux.isotopes:
             CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]
@@ -662,6 +660,7 @@ def check_isotope_effects(
             #     equation_string = f"1000 / ({r} * ({c.delta} + 1000) + 1000)"
             # else:
             equation_string = f"{f_m} * 1000 / ({r} * ({c.delta} + 1000) + 1000)"
+            equation_string = f"1000 / ({r} * ({c.delta} + 1000) + 1000)"
         elif c.epsilon != "None":
             a = c.epsilon / 1000 + 1  # convert to alpha notation
             equation_string = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
@@ -752,7 +751,6 @@ def get_initial_conditions(
     cpl: list = []  # list of reservoirs that are computed
     ipl: list = []  # list of static reservoirs that serve as input
 
-    print(f"rtol = {rtol}")
     # collect all reservoirs that have initial conditions
     # if r.rtype != "flux_only":
     i: int = 0
