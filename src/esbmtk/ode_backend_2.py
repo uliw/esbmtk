@@ -225,14 +225,21 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
                 # include computed fluxes that need to be in sequence
                 if flux.ftype == "in_sequence":
                     rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
-                elif flux.ftype == "None":
-                    ex, exl, rhs_out = get_flux(flux, M, R, icl)  # get flux expressions
+                elif flux.ftype == "None":  # get flux expressions
+                    rhs, rhs_out, rhs_debug = get_flux(flux, M, R, icl)
+                    # write regular equation
+                    if rhs_debug[0] != "":  # add debug if need be
+                        eqs.write(f"{ind2}{rhs_debug[0]}")
                     if rhs_out[0]:
                         fn = f"F[{flux.idx}]"
-                        eqs.write(f"{ind2}{fn} = {ex}\n")
+                        eqs.write(f"{ind2}{fn} = {rhs[0]}\n")
+
+                    # write isotope equations
+                    if rhs_debug[1] != "":  # add debug if need beg
+                        eqs.write(f"{ind2}{rhs_debug[1]}")
                     if rhs_out[1]:  # add line for isotopes
                         fn = f"F[{flux.idx + 1}]"
-                        eqs.write(f"{ind2}{fn} =  {exl}\n")
+                        eqs.write(f"{ind2}{fn} = {rhs[1]}\n")
                         fi = fi + 1
 
             fi = fi + 1
@@ -387,10 +394,9 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple[str, str,
     """
     ind2 = 8 * " "  # indentation
     ind3 = 12 * " "  # indentation
-
-    rhs = ""  # expression string
-    rhs_l = ""  # expression string for light isotope
-
+    rhs = ["", ""]
+    rhs_debug = ["", ""]
+    rhs_out = [False, False]
     c = flux.parent  # shorthand for the connection object
     cfn = flux.parent.full_name  # shorthand for the connection object name
 
@@ -401,15 +407,15 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple[str, str,
 
     if isinstance(c, Species2Species):
         if c.ctype.casefold() == "regular" or c.ctype.casefold() == "fixed":
-            rhs, rhs_l, rhs_out = get_regular_flux_eq(
+            rhs, rhs_out, rhs_debug = get_regular_flux_eq(
                 flux, c, icl, ind2, ind3, M.CM, M.toc
             )
         elif c.ctype == "scale_with_concentration" or c.ctype == "scale_with_mass":
-            rhs, rhs_l, rhs_out = get_scale_with_concentration_eq(
+            rhs, rhs_out, rhs_debug = get_scale_with_concentration_eq(
                 flux, c, cfn, icl, ind2, ind3, M.CM, M.toc
             )
         elif c.ctype == "scale_with_flux":
-            rhs, rhs_l, rhs_out = get_scale_with_flux_eq(
+            rhs, rhs_out, rhs_debug = get_scale_with_flux_eq(
                 flux, c, cfn, icl, ind2, ind3, M.CM, M.toc
             )
         elif c.ctype == "ignore" or c.ctype == "gasexchange" or c.ctype == "weathering":
@@ -423,7 +429,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple[str, str,
     else:
         raise ValueError(f"No definition for \n{c.full_name} type = {type(c)}\n")
 
-    return rhs, rhs_l, rhs_out
+    return rhs, rhs_out, rhs_debug
 
 
 def get_ic(r: Species, icl: dict, isotopes=False) -> str:
@@ -499,11 +505,11 @@ def get_regular_flux_eq(
 
     ditto for isotopes
     """
-    rhs = ""  # right hand side of equation
-    rhs_l = ""  # ditto for light isotopes
+    rhs, rhs_l = ["", ""]
+    debug_rhs = ["", ""]
     rhs_out = [False, False]
+    # FIXME constants = toc[{c.r_index}]
     if flux.serves_as_input or c.signal != "None":
-        # FIXME constants = toc[{c.r_index}]
         rhs_l = check_isotope_effects(rhs, c, icl, ind3, ind2)
         rhs, rhs_l = check_signal_2(rhs, rhs_l, c)  # check if we hav to add a signal
         rhs_out[0] = True
@@ -511,23 +517,22 @@ def get_regular_flux_eq(
         # get constants and place them on matrix
         CM[:, flux.idx] = CM[:, flux.idx] * toc[c.r_index]
         if flux.isotopes:
-            CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]
-            rhs_l, rhs_out[1] = isotopes_regular_flux(c, icl, ind3, ind2, CM, toc, flux)
+            rhs_l, rhs_out[1], debug_rhs[1] = isotopes_regular_flux(
+                rhs, c, icl, ind3, ind2, CM, toc, flux
+            )
 
     if c.mo.debug_equations_file:  # and output:
-        debug_string = (
-            f'\t"""\n'
-            f"\t {c.ctype}: {c.name}\n"
-            f"\t constants =  CM[:, flux.idx] * toc[c.r_index]\n"
-            f"\t constants = CM[:, {flux.idx}] * toc[{c.r_index}]\n"
-            f"\t constants = {CM[:, flux.idx]} * {toc[c.r_index]}\n"
-            f"\t rhs   = {rhs}\n"
-            f"\t rhs_l = {rhs_l}\n"
-            f'\t """\n'
+        debug_rhs[0] = (
+            f'"""\n'
+            f"    {c.ctype}: {c.name}\n"
+            f"    constants =  CM[:, flux.idx] * toc[c.r_index]\n"
+            f"    constants = CM[:, {flux.idx}] * toc[{c.r_index}]\n"
+            f"    constants = {CM[:, flux.idx]} * {toc[c.r_index]}\n"
+            f"    rhs   = None\n"
+            f'    """\n'
         )
-        rhs = debug_string + rhs
 
-    return rhs, rhs_l, rhs_out
+    return [rhs, rhs_l], rhs_out, debug_rhs
 
 
 def get_scale_with_concentration_eq(
@@ -579,7 +584,7 @@ def get_scale_with_concentration_eq(
             ex
             + f"  #ob2: {flux.full_name} = {toc[c.s_index]:.2e} * {c.ref_reservoirs.full_name}"
         )
-    return ex, exl, rhs_out
+    return [ex, exl], rhs_out, ["", ""]
 
 
 def get_scale_with_flux_eq(
@@ -640,7 +645,7 @@ def get_scale_with_flux_eq(
             + f"  #ob3: {flux.full_name} = {toc[c.s_index]:.2e} * {c.ref_flux.full_name}"
         )
 
-    return ex, exl, rhs_out
+    return [ex, exl], rhs_out, ["", ""]
 
 
 def add_isotope_effects(
@@ -741,15 +746,18 @@ def isotopes_regular_flux(
     r: float = c.source.species.r  # isotope reference value
     s: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
     s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
+    debug_str = ""
 
     # light isotope flux with no effects
     CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]
     if c.delta != "None":
         equation_string = f"1000 / ({r} * ({c.delta} + 1000) + 1000)"
+        ds1 = "1000 / (r * (c.delta + 1000) + 1000)"
         rhs_out = True
     elif c.epsilon != "None":
         a = c.epsilon / 1000 + 1  # convert to alpha notation
         equation_string = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
+        ds1 = "s_l * f_m / (a * s_c + s_l - a * s_l)"
         rhs_out = True
     else:
         raise ValueError(
@@ -758,14 +766,16 @@ def isotopes_regular_flux(
 
     if c.mo.debug_equations_file:
         debug_str = (
-            f'\t"""\n'
-            f"\t rhs_l = equation_string \n"
-            f"\t rhs_l = {equation_string}\n"
-            f'\t """\n'
+            f'"""\n'
+            f"    isotope equations for {c.full_name}\n"
+            f"    constants = CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]\n"
+            f"    constants = CM[:, {flux.idx + 1}] = {CM[:, flux.idx + 1]} * {toc[c.r_index]}\n"
+            f"    rhs_l = {ds1}\n"
+            f"    rhs_l = {equation_string}\n"
+            f'    """\n'
         )
-        equation_string = debug_str + equation_string
 
-    return equation_string, rhs_out
+    return equation_string, rhs_out, debug_str
 
 
 def check_isotope_effects(

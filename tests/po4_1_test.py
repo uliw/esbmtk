@@ -81,6 +81,6 @@ ConnectionProperties(  #
     id="burial",
     species=[M.PO4],
 )
-M.debug_equations_file = True
+# M.debug_equations_file = True
 M.run()
 # M.plot([M.S_b.PO4, M.D_b.PO4])
