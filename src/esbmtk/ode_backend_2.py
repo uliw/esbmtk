@@ -226,11 +226,11 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
                 if flux.ftype == "in_sequence":
                     rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
                 elif flux.ftype == "None":
-                    ex, exl = get_flux(flux, M, R, icl)  # get flux expressions
-                    if ex != "":
+                    ex, exl, rhs_out = get_flux(flux, M, R, icl)  # get flux expressions
+                    if rhs_out[0]:
                         fn = f"F[{flux.idx}]"
                         eqs.write(f"{ind2}{fn} = {ex}\n")
-                    if exl != "":  # add line for isotopes
+                    if rhs_out[1]:  # add line for isotopes
                         fn = f"F[{flux.idx + 1}]"
                         eqs.write(f"{ind2}{fn} =  {exl}\n")
                         fi = fi + 1
@@ -371,7 +371,7 @@ def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> st
     return a
 
 
-def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str):
+def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple[str, str, list]:
     """Create formula expressions that calculates the flux F.
 
     Return the equation expression as string
@@ -388,8 +388,8 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
     ind2 = 8 * " "  # indentation
     ind3 = 12 * " "  # indentation
 
-    ex = ""  # expression string
-    exl = ""  # expression string for light isotope
+    rhs = ""  # expression string
+    rhs_l = ""  # expression string for light isotope
 
     c = flux.parent  # shorthand for the connection object
     cfn = flux.parent.full_name  # shorthand for the connection object name
@@ -401,13 +401,17 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
 
     if isinstance(c, Species2Species):
         if c.ctype.casefold() == "regular" or c.ctype.casefold() == "fixed":
-            ex, exl = get_regular_flux_eq(flux, c, icl, ind2, ind3, M.CM, M.toc)
+            rhs, rhs_l, rhs_out = get_regular_flux_eq(
+                flux, c, icl, ind2, ind3, M.CM, M.toc
+            )
         elif c.ctype == "scale_with_concentration" or c.ctype == "scale_with_mass":
-            ex, exl = get_scale_with_concentration_eq(
+            rhs, rhs_l, rhs_out = get_scale_with_concentration_eq(
                 flux, c, cfn, icl, ind2, ind3, M.CM, M.toc
             )
         elif c.ctype == "scale_with_flux":
-            ex, exl = get_scale_with_flux_eq(flux, c, cfn, icl, ind2, ind3, M.CM, M.toc)
+            rhs, rhs_l, rhs_out = get_scale_with_flux_eq(
+                flux, c, cfn, icl, ind2, ind3, M.CM, M.toc
+            )
         elif c.ctype == "ignore" or c.ctype == "gasexchange" or c.ctype == "weathering":
             pass
         else:
@@ -415,11 +419,11 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple(str, str)
                 f"Species2Species type {c.ctype} for {c.full_name} is not implemented"
             )
     elif isinstance(c, Species):
-        ex = f"{0}  # {c.full_name}"  # The flux will simply be zero
+        rhs = f"{0}  # {c.full_name}"  # The flux will simply be zero
     else:
         raise ValueError(f"No definition for \n{c.full_name} type = {type(c)}\n")
 
-    return ex, exl
+    return rhs, rhs_l, rhs_out
 
 
 def get_ic(r: Species, icl: dict, isotopes=False) -> str:
@@ -473,7 +477,7 @@ def get_regular_flux_eq(
     ind3,  # indentation
     CM: NDArrayFloat,  # coefficient matrix
     toc: tuple,  # tuple of constants
-) -> tuple:
+) -> tuple[str, str, list]:
     """Create a string containing the equation for a regular connection.
 
     Regular = fixed rate
@@ -488,24 +492,42 @@ def get_regular_flux_eq(
               the total flux, and the second describes the rate for
               the light isotope
     """
-    ex = ""
-    exl = ""
-    output = True
+    """FIXME: write 3 blocks
+    1) debug information: connection name, constants, RHS
+    2) constants
+    3) RHS
+
+    ditto for isotopes
+    """
+    rhs = ""  # right hand side of equation
+    rhs_l = ""  # ditto for light isotopes
+    rhs_out = [False, False]
     if flux.serves_as_input or c.signal != "None":
-        ex = f"toc[{c.r_index}]"
-        exl = check_isotope_effects(ex, c, icl, ind3, ind2)
-        ex, exl = check_signal_2(ex, exl, c)  # check if we hav to add a signal
+        # FIXME constants = toc[{c.r_index}]
+        rhs_l = check_isotope_effects(rhs, c, icl, ind3, ind2)
+        rhs, rhs_l = check_signal_2(rhs, rhs_l, c)  # check if we hav to add a signal
+        rhs_out[0] = True
     else:
-        output = False
+        # get constants and place them on matrix
         CM[:, flux.idx] = CM[:, flux.idx] * toc[c.r_index]
         if flux.isotopes:
             CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]
-            exl = check_isotope_effects(ex, c, icl, ind3, ind2)
+            rhs_l, rhs_out[1] = isotopes_regular_flux(c, icl, ind3, ind2, CM, toc, flux)
 
-    if c.mo.debug_equations_file and output:
-        ex = ex + f"  #ob1: {flux.full_name} = {toc[c.r_index]:.2e}"
+    if c.mo.debug_equations_file:  # and output:
+        debug_string = (
+            f'\t"""\n'
+            f"\t {c.ctype}: {c.name}\n"
+            f"\t constants =  CM[:, flux.idx] * toc[c.r_index]\n"
+            f"\t constants = CM[:, {flux.idx}] * toc[{c.r_index}]\n"
+            f"\t constants = {CM[:, flux.idx]} * {toc[c.r_index]}\n"
+            f"\t rhs   = {rhs}\n"
+            f"\t rhs_l = {rhs_l}\n"
+            f'\t """\n'
+        )
+        rhs = debug_string + rhs
 
-    return ex, exl
+    return rhs, rhs_l, rhs_out
 
 
 def get_scale_with_concentration_eq(
@@ -517,7 +539,7 @@ def get_scale_with_concentration_eq(
     ind3: str,  # whitespace
     CM: NDArrayFloat,  # coefficient matrix
     toc: tuple,  # tuple of constants
-) -> tuple(str, str):
+) -> tuple[str, str, list]:
     """Create equation string for flux.
 
     The flux will scale with the
@@ -540,6 +562,7 @@ def get_scale_with_concentration_eq(
     """
     s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration`
     exl: str = ""
+    rhs_out = [True, False]  # we always have a right hand side
     if flux.serves_as_input or c.signal != "None":
         ex = f"toc[{c.s_index}] * {s_c}"  # get flux (c * scale)
         exl = check_isotope_effects(ex, c, icl, ind3, ind2)
@@ -556,7 +579,7 @@ def get_scale_with_concentration_eq(
             ex
             + f"  #ob2: {flux.full_name} = {toc[c.s_index]:.2e} * {c.ref_reservoirs.full_name}"
         )
-    return ex, exl
+    return ex, exl, rhs_out
 
 
 def get_scale_with_flux_eq(
@@ -588,6 +611,8 @@ def get_scale_with_flux_eq(
     """
     # get the reference flux name
     ex, exl = "", ""
+    rhs_out = [True, False]
+
     fn = f"F[{c.ref_flux.idx}]"
     if flux.serves_as_input or c.signal != "None":
         ex = f"toc[{c.s_index}] * {fn}"
@@ -615,7 +640,132 @@ def get_scale_with_flux_eq(
             + f"  #ob3: {flux.full_name} = {toc[c.s_index]:.2e} * {c.ref_flux.full_name}"
         )
 
-    return ex, exl
+    return ex, exl, rhs_out
+
+
+def add_isotope_effects(
+    f_m: str,  # flux expression
+    c: Species2Species,  # connection object
+    icl: dict,  # initial conditions
+    ind3: str,
+    ind2: str,
+    CM: NDArrayFloat,  # matrix
+    toc: NDArrayFloat,  # table of constants
+    flux: Flux,  #
+) -> str:
+    """Test if the connection involves any isotope effects.
+
+    :param f_m: string with the flux name
+    :param c: connection object
+    :param icl: dict of reservoirs that have actual fluxes
+    :param ind2: indent 2 times
+    :param ind3: indent 3 times
+
+    :returns equation string:
+    """
+    if c.isotopes:
+        """Calculate the flux of the light isotope (f_l).
+
+        If delta is given: fl = fm * 1000 / (r * (d + 1000) + 1000)
+        If epsilon is given: fl = sl * fm / (e * sc + sl - a * sl)
+
+        If neither: If flux mass equals source concentration, this is a scale
+        with concentration connection, and f_l = s_l * scale where scale is
+        part of the constants on the equations matrix. Otherwise, the flux
+        isotope ratio is similar to the source isotope ratio:
+        fl = fm * sl/sc * scale. Note that scale is dropped in the below equations
+        since it is moved to the equations matrix.
+
+        Where fl = flux light isotope, fm = flux mass, s_c = source concentration
+        s_l = source light isotope
+        """
+        r: float = c.source.species.r  # isotope reference value
+        s: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
+        s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
+
+        if c.delta != "None":
+            if c.ctype == "regular":
+                CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]
+                equation_string = f"1000 / ({r} * ({c.delta} + 1000) + 1000)"
+            elif c.ctype == "scale_with_concentration" or c.ctype == "scale_with_flux":
+                equation_string = f"{f_m} * 1000 / ({r} * ({c.delta} + 1000) + 1000)"
+            else:
+                raise ValueError(f"no isotope effects for {c.ctype}")
+
+        elif c.epsilon != "None":
+            a = c.epsilon / 1000 + 1  # convert to alpha notation
+            equation_string = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
+        else:
+            equation_string = f"{s_l}" if f_m == s_c else f"{f_m} * {s_l} / {s_c}"
+    else:
+        equation_string = ""
+
+    return equation_string
+
+
+def isotopes_regular_flux(
+    f_m: str,  # flux expression
+    c: Species2Species,  # connection object
+    icl: dict,  # initial conditions
+    ind3: str,
+    ind2: str,
+    CM: NDArrayFloat,  # matrix
+    toc: NDArrayFloat,  # table of constants
+    flux: Flux,  #
+) -> str:
+    """Test if the connection involves any isotope effects.
+
+    :param f_m: string with the flux name
+    :param c: connection object
+    :param icl: dict of reservoirs that have actual fluxes
+    :param ind2: indent 2 times
+    :param ind3: indent 3 times
+
+    :returns equation string:
+    """
+    """Calculate the flux of the light isotope (f_l).
+
+        If delta is given: fl = fm * 1000 / (r * (d + 1000) + 1000)
+       If epsilon is given: fl = sl * fm / (e * sc + sl - a * sl)
+
+        If neither: If flux mass equals source concentration, this is a scale
+        with concentration connection, and f_l = s_l * scale where scale is
+        part of the constants on the equations matrix. Otherwise, the flux
+        isotope ratio is similar to the source isotope ratio:
+        fl = fm * sl/sc * scale. Note that scale is dropped in the below equations
+        since it is moved to the equations matrix.
+
+        Where fl = flux light isotope, fm = flux mass, s_c = source concentration
+        s_l = source light isotope
+    """
+    r: float = c.source.species.r  # isotope reference value
+    s: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
+    s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
+
+    # light isotope flux with no effects
+    CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]
+    if c.delta != "None":
+        equation_string = f"1000 / ({r} * ({c.delta} + 1000) + 1000)"
+        rhs_out = True
+    elif c.epsilon != "None":
+        a = c.epsilon / 1000 + 1  # convert to alpha notation
+        equation_string = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
+        rhs_out = True
+    else:
+        raise ValueError(
+            "This should never happen: isotope_regular_flux in ode_backend2.py"
+        )
+
+    if c.mo.debug_equations_file:
+        debug_str = (
+            f'\t"""\n'
+            f"\t rhs_l = equation_string \n"
+            f"\t rhs_l = {equation_string}\n"
+            f'\t """\n'
+        )
+        equation_string = debug_str + equation_string
+
+    return equation_string, rhs_out
 
 
 def check_isotope_effects(
