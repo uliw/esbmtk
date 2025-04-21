@@ -707,8 +707,6 @@ def isotopes_regular_flux(
     s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
     debug_str = ""
 
-    # FIXME: missing signal?
-
     # light isotope flux with no effects
     CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]
     if c.delta != "None":
