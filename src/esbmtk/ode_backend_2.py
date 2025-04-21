@@ -529,7 +529,7 @@ def get_regular_flux_eq(
             f"    {c.ctype}: {c.name}\n"
             f"    constants =  CM[:, flux.idx] * toc[c.r_index]\n"
             f"    constants = CM[:, {flux.idx}] * toc[{c.r_index}]\n"
-            f"    constants = {CM[:, flux.idx]} * {toc[c.r_index]}\n"
+            f"    constants = {CM[flux.idx, flux.idx]} * {toc[c.r_index]}\n"
             f"    rhs   = None\n"
             f'    """\n'
         )
@@ -571,21 +571,21 @@ def get_scale_with_concentration_eq(
     debug_rhs = ["", ""]
     rhs_out = [True, False]  # we always have a right hand side
     s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration`
-    CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
     rhs = f"{s_c}"  # get flux (c * scale)
+
     if flux.serves_as_input or c.signal != "None":
-        # rhs = f"toc[{c.s_index}] * {s_c}"  # get flux (c * scale)
+        # place all constants into the rhs so we can re-use the expression
+        rhs = f"toc[{c.s_index}] * {s_c}"  # get flux (c * scale)
         if flux.isotopes:
-            rhs_l, rhs_out[1], debug_rhs[1] = isotopes_scale_flux(
+            rhs_l, rhs_out[1], debug_rhs[1] = isotopes_scale_concentration(
                 rhs, c, icl, ind3, ind2, CM, toc, flux
             )
-        # rhs_l = check_isotope_effects(rhs, c, icl, ind3, ind2)
         rhs, rhs_l = check_signal_2(rhs, rhs_l, c)
-    else:  # place constants on matrix
-        # CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
-        # rhs = f"{s_c}"  # flux changes with concentration in source
+    else:  # place all constants on matrix
+        CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
+        rhs = f"{s_c}"  # flux changes with concentration in source
         if flux.isotopes:
-            rhs_l, rhs_out[1], debug_rhs[1] = isotopes_scale_flux(
+            rhs_l, rhs_out[1], debug_rhs[1] = isotopes_scale_concentration(
                 rhs, c, icl, ind3, ind2, CM, toc, flux
             )
 
@@ -595,7 +595,7 @@ def get_scale_with_concentration_eq(
             f"    {c.ctype}: {c.name}\n"
             f"    constants =  CM[:, flux.idx] * toc[c.s_index]\n"
             f"    constants = CM[:, {flux.idx}] * toc[{c.s_index}]\n"
-            f"    constants = {CM[:, flux.idx]} * {toc[c.s_index]}\n"
+            f"    constants = {CM[flux.idx, flux.idx]} * {toc[c.s_index]}\n"
             f"    rhs   = {flux.full_name} = {rhs}"
             f'    """\n'
         )
@@ -640,20 +640,18 @@ def get_scale_with_flux_eq(
         We will use the mass of the flux for scaling, but we
         isotope ratio of the source. 
         """
-        rhs_l = ""
         if c.source.isotopes and c.sink.isotopes:
-            #  rhs_l = check_isotope_effects(rhs, c, icl, ind3, ind2)
             if flux.isotopes:
-            rhs_l, rhs_out[1], debug_rhs[1] = isotopes_scale_flux2(
-                rhs, c, icl, ind3, ind2, CM, toc, flux
-            )
+                rhs_l, rhs_out[1], debug_rhs[1] = isotopes_scale_flux(
+                    rhs, c, icl, ind3, ind2, CM, toc, flux
+                )
         else:
             rhs, rhs_l = check_signal_2(rhs, rhs_l, c)
     else:
         CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
         rhs = f"F[{c.ref_flux.idx}]"
         if flux.isotopes:
-            rhs_l, rhs_out[1], debug_rhs[1] = isotopes_scale_flux2(
+            rhs_l, rhs_out[1], debug_rhs[1] = isotopes_scale_flux(
                 rhs, c, icl, ind3, ind2, CM, toc, flux
             )
 
@@ -663,7 +661,7 @@ def get_scale_with_flux_eq(
             f"    {c.ctype}: {c.name}\n"
             f"    constants =  CM[:, flux.idx] * toc[c.s_index]\n"
             f"    constants = CM[:, {flux.idx}] * toc[{c.s_index}]\n"
-            f"    constants = {CM[:, flux.idx]} * {toc[c.s_index]}\n"
+            f"    constants = {CM[flux.idx, flux.idx]} * {toc[c.s_index]}\n"
             f"    rhs   = {c.ref_flux.full_name} = {rhs}"
             f'    """\n'
         )
@@ -732,7 +730,7 @@ def isotopes_regular_flux(
             f'"""\n'
             f"    isotope equations for {c.full_name}\n"
             f"    constants = CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]\n"
-            f"    constants = CM[:, {flux.idx + 1}] = {CM[:, flux.idx + 1]} * {toc[c.r_index]}\n"
+            f"    constants = CM[:, {flux.idx + 1}] = {CM[flux.idx + 1, flux.idx + 1]} * {toc[c.r_index]}\n"
             f"    rhs_l = {ds1}\n"
             f"    rhs_l = {equation_string}\n"
             f'    """\n'
@@ -741,7 +739,7 @@ def isotopes_regular_flux(
     return equation_string, rhs_out, debug_str
 
 
-def isotopes_scale_flux(
+def isotopes_scale_concentration(
     f_m: str,  # flux expression
     c: Species2Species,  # connection object
     icl: dict,  # initial conditions
@@ -811,7 +809,7 @@ def isotopes_scale_flux(
             f'"""\n'
             f"    isotope equations for {c.full_name}\n"
             f"    constants = CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]\n"
-            f"    constants = CM[:, {flux.idx + 1}] = {CM[:, flux.idx + 1]} * {toc[c.s_index]}\n"
+            f"    constants = CM[:, {flux.idx + 1}] = {CM[flux.idx + 1, flux.idx + 1]} * {toc[c.s_index]}\n"
             f"    rhs_l = {ds1}\n"
             f"    rhs_l = {equation_string}\n"
             f'    """\n'
@@ -820,7 +818,7 @@ def isotopes_scale_flux(
     return equation_string, rhs_out, debug_str
 
 
-def isotopes_scale_flux2(
+def isotopes_scale_flux(
     f_m: str,  # flux expression
     c: Species2Species,  # connection object
     icl: dict,  # initial conditions
@@ -865,8 +863,9 @@ def isotopes_scale_flux2(
     rhs_out = True
 
     if c.delta != "None":
-        equation_string = f"{s_c} * 1000 / ({r} * ({c.delta} + 1000) + 1000)"
-        ds1 = f"{c.source.full_name}.c * 1000 / (r * (c.delta + 1000) + 1000)"
+        # equation_string = f"{s_c} * 1000 / ({r} * ({c.delta} + 1000) + 1000)"
+        equation_string = f"F[{flux.idx}] * 1000 / ({r} * ({c.delta} + 1000) + 1000)"
+        ds1 = f"{flux.full_name}.c * 1000 / (r * (c.delta + 1000) + 1000)"
     elif c.epsilon != "None":
         a = c.epsilon / 1000 + 1  # convert to alpha notation
         equation_string = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
@@ -888,7 +887,7 @@ def isotopes_scale_flux2(
             f'"""\n'
             f"    isotope equations for {c.full_name}\n"
             f"    constants = CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]\n"
-            f"    constants = CM[:, {flux.idx + 1}] = {CM[:, flux.idx + 1]} * {toc[c.s_index]}\n"
+            f"    constants = CM[:, {flux.idx + 1}] = {CM[flux.idx + 1, flux.idx + 1]} * {toc[c.s_index]}\n"
             f"    rhs_l = {ds1}\n"
             f"    rhs_l = {equation_string}\n"
             f'    """\n'
