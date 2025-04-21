@@ -17,13 +17,13 @@ Reservoir(
     name="S_b",  # box name
     volume="1E16 m**3",  # Surface box volume
     concentration={M.DIC: "2000 umol/l"},  # initial concentration
-    delta={M.DIC: -10},
+    delta={M.DIC: 0},
 )
 Reservoir(
     name="D_b",  # box name
     volume="1E16 m**3",  # deeb box volume
     concentration={M.DIC: "1 umol/l"},  # initial concentration
-    delta={M.DIC: 10},
+    delta={M.DIC: 0},
 )
 ConnectionProperties(  # thermohaline upwelling
     source=M.S_b,  # source of flux
@@ -40,6 +40,6 @@ ConnectionProperties(  # thermohaline upwelling
     scale=1e16,
     id="upwelling",
 )
-M.debug_equations_file = True
+# M.debug_equations_file = True
 M.run()
-M.plot([M.S_b.DIC, M.D_b.DIC])
+# M.plot([M.S_b.DIC, M.D_b.DIC])

@@ -17,7 +17,7 @@ M = Model(
 Reservoir(
     name="S_b1",  # box name
     volume="1E16 m**3",  # Surface box volume
-    concentration={M.DIC: "200 umol/l"},  # initial concentration
+    concentration={M.DIC: "2000 umol/l"},  # initial concentration
     delta={M.DIC: 0},
 )
 Reservoir(
@@ -27,19 +27,19 @@ Reservoir(
     delta={M.DIC: 0},
 )
 ConnectionProperties(  # thermohaline upwelling
+    ctype="scale_with_concentration",
     source=M.S_b1,  # source of flux
     sink=M.D_b1,  # target of flux
-    ctype="scale_with_concentration",
     scale=1e16,
     delta=5,
-    id="downwelling1",
+    id="downwelling_ref",
 )
 ConnectionProperties(  # thermohaline upwelling
-    sink=M.S_b1,  # source of flux
-    source=M.D_b1,  # target of flux
     ctype="scale_with_concentration",
+    source=M.D_b1,  # target of flux
+    sink=M.S_b1,  # source of flux
     scale=1e16,
-    id="upwelling1",
+    id="upwelling_ref",
 )
 
 """Now set up the reservoirs we use for the computation.
@@ -51,7 +51,7 @@ and initial concentration.
 Reservoir(
     name="S_b",  # box name
     volume="1E16 m**3",  # Surface box volume
-    concentration={M.DIC: "200 umol/l"},  # initial concentration
+    concentration={M.DIC: "2000 umol/l"},  # initial concentration
     delta={M.DIC: 0},
 )
 Reservoir(
@@ -60,8 +60,8 @@ Reservoir(
     concentration={M.DIC: "1 umol/l"},  # initial concentration
     delta={M.DIC: 0},
 )
-Fd = M.flux_summary(filter_by="downwelling1", return_list=True)[0]
-Fu = M.flux_summary(filter_by="upwelling1", return_list=True)[0]
+Fd = M.flux_summary(filter_by="downwelling_ref", return_list=True)[0]
+Fu = M.flux_summary(filter_by="upwelling_ref", return_list=True)[0]
 
 ConnectionProperties(
     ctype="scale_with_flux",
