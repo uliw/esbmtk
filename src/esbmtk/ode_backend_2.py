@@ -97,7 +97,7 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
                 else:
                     sign = -1 / mass if f.parent.source == r else 1 / mass
 
-                if r.isotopes:  # add equation for isotopes
+                if r.isotopes:  # add line for isotope calculations
                     CM[ri, r.lof[fi].idx] = sign
                     CM[ri + 1, r.lof[fi + 1].idx] = sign  # 2
                     fi = fi + 2
@@ -707,6 +707,8 @@ def isotopes_regular_flux(
     s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
     debug_str = ""
 
+    # FIXME: missing signal?
+
     # light isotope flux with no effects
     CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]
     if c.delta != "None":
@@ -715,7 +717,10 @@ def isotopes_regular_flux(
         rhs_out = True
     elif c.epsilon != "None":
         a = c.epsilon / 1000 + 1  # convert to alpha notation
-        equation_string = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
+        if f_m == "":
+            equation_string = f"{s_l} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
+        else:
+            equation_string = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
         ds1 = (
             f"{c.source.full_name}.l * {flux.full_name}"
             f" / (a * {c.source.full_name}.c + {c.source.full_name}.l"
