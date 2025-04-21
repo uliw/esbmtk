@@ -306,7 +306,6 @@ def gas_exchange_fluxes(
 
     scale = liquid_reservoir.register.area * pv
     gas_c = gas_reservoir
-    p_H2O = liquid_reservoir.register.swc.p_H2O
 
     if liquid_reservoir.species.name == "DIC":
         solubility = liquid_reservoir.register.swc.SA_co2
@@ -323,15 +322,13 @@ def gas_exchange_fluxes(
     else:
         raise ValueError("flux calculation is only supported for DIC and O2")
 
-    # c = liquid_reservoir.register
-    # swc = liquid_reservoir.register.swc
     p = (
         scale,
-        p_H2O,
         solubility,
         a_db,
         a_dg,
         a_u,
+        gas_reservoir.isotopes,
         liquid_reservoir.isotopes,
     )
 
