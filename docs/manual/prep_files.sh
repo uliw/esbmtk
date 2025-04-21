@@ -38,4 +38,4 @@ pandoc README.org -o README.md
 emacsclient -e "(progn (switch-to-buffer (find-file-noselect \"README.org\")) (end-of-buffer) (org-gfm-export-to-markdown) (kill-buffer))"
 
 cd /home/uliw/user/python-scripts/esbmtk/tests2/
-mv *.py /home/uliw/user/python-scripts/esbmtk/tests/
+cp *.py /home/uliw/user/python-scripts/esbmtk/tests/
