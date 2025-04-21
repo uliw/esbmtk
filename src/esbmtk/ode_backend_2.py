@@ -565,26 +565,34 @@ def get_scale_with_concentration_eq(
               in the total reservoir concentration and the
               concentration of the light isotope
     """
-    s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration`
-    exl: str = ""
+    rhs, rhs_l = ["", ""]
+    debug_rhs = ["", ""]
     rhs_out = [True, False]  # we always have a right hand side
+    s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration`
     if flux.serves_as_input or c.signal != "None":
-        ex = f"toc[{c.s_index}] * {s_c}"  # get flux (c * scale)
-        exl = check_isotope_effects(ex, c, icl, ind3, ind2)
-        ex, exl = check_signal_2(ex, exl, c)
-    else:
+        rhs = f"toc[{c.s_index}] * {s_c}"  # get flux (c * scale)
+        rhs_l = check_isotope_effects(rhs, c, icl, ind3, ind2)
+        rhs, rhs_l = check_signal_2(rhs, rhs_l, c)
+    else:  # place constants on matrix
         CM[:, flux.idx] = CM[:, flux.idx] * toc[c.s_index]
-        ex = f"{s_c}"  # f"toc[{c.s_index}] * {s_c}"  # get flux (c * scale)
+        rhs = f"{s_c}"  # flux changes with concentration in source
         if flux.isotopes:
-            CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]
-            exl = check_isotope_effects(ex, c, icl, ind3, ind2)
+            rhs_l, rhs_out[1], debug_rhs[1] = isotopes_scale_flux(
+                rhs, c, icl, ind3, ind2, CM, toc, flux
+            )
 
     if c.mo.debug_equations_file:
-        ex = (
-            ex
-            + f"  #ob2: {flux.full_name} = {toc[c.s_index]:.2e} * {c.ref_reservoirs.full_name}"
+        debug_rhs[0] = (
+            f'"""\n'
+            f"    {c.ctype}: {c.name}\n"
+            f"    constants =  CM[:, flux.idx] * toc[c.r_index]\n"
+            f"    constants = CM[:, {flux.idx}] * toc[{c.r_index}]\n"
+            f"    constants = {CM[:, flux.idx]} * {toc[c.r_index]}\n"
+            f"    rhs   = {flux.full_name} = {s_c}"
+            f'    """\n'
         )
-    return [ex, exl], rhs_out, ["", ""]
+
+    return [rhs, rhs_l], rhs_out, debug_rhs
 
 
 def get_scale_with_flux_eq(
@@ -731,7 +739,7 @@ def isotopes_regular_flux(
     """Calculate the flux of the light isotope (f_l).
 
         If delta is given: fl = fm * 1000 / (r * (d + 1000) + 1000)
-       If epsilon is given: fl = sl * fm / (e * sc + sl - a * sl)
+        If epsilon is given: fl = sl * fm / (e * sc + sl - a * sl)
 
         If neither: If flux mass equals source concentration, this is a scale
         with concentration connection, and f_l = s_l * scale where scale is
@@ -757,12 +765,12 @@ def isotopes_regular_flux(
     elif c.epsilon != "None":
         a = c.epsilon / 1000 + 1  # convert to alpha notation
         equation_string = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
-        ds1 = "s_l * f_m / (a * s_c + s_l - a * s_l)"
-        rhs_out = True
-    else:
-        raise ValueError(
-            "This should never happen: isotope_regular_flux in ode_backend2.py"
+        ds1 = (
+            f"{c.source.full_name}.l * {flux.full_name}"
+            f" / (a * {c.source.full_name}.c + {c.source.full_name}.l"
+            f" - a * {c.source.full_name}.l)"
         )
+        rhs_out = True
 
     if c.mo.debug_equations_file:
         debug_str = (
@@ -770,6 +778,85 @@ def isotopes_regular_flux(
             f"    isotope equations for {c.full_name}\n"
             f"    constants = CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]\n"
             f"    constants = CM[:, {flux.idx + 1}] = {CM[:, flux.idx + 1]} * {toc[c.r_index]}\n"
+            f"    rhs_l = {ds1}\n"
+            f"    rhs_l = {equation_string}\n"
+            f'    """\n'
+        )
+
+    return equation_string, rhs_out, debug_str
+
+
+def isotopes_scale_flux(
+    f_m: str,  # flux expression
+    c: Species2Species,  # connection object
+    icl: dict,  # initial conditions
+    ind3: str,
+    ind2: str,
+    CM: NDArrayFloat,  # matrix
+    toc: NDArrayFloat,  # table of constants
+    flux: Flux,  #
+) -> str:
+    """Test if the connection involves any isotope effects.
+
+    :param f_m: string with the flux name
+    :param c: connection object
+    :param icl: dict of reservoirs that have actual fluxes
+    :param ind2: indent 2 times
+    :param ind3: indent 3 times
+
+    :returns equation string:
+    """
+    """Calculate the flux of the light isotope (f_l).
+
+        If delta is given: fl = fm * 1000 / (r * (d + 1000) + 1000)
+        If epsilon is given: fl = sl * fm / (e * sc + sl - a * sl)
+
+        If neither: If flux mass equals source concentration, this is a scale
+        with concentration connection, and f_l = s_l * scale where scale is
+        part of the constants on the equations matrix. Otherwise, the flux
+        isotope ratio is similar to the source isotope ratio:
+        fl = fm * sl/sc * scale. Note that scale is dropped in the below equations
+        since it is moved to the equations matrix.
+
+        Where fl = flux light isotope, fm = flux mass/t, s_c = source concentration
+        s_l = source concentration of light isotope
+        r_index references the rate keyword in a given connection instance
+        s_index references the scale keyword in a given connection instance
+        FIXME: unify rate & scale?
+    """
+    r: float = c.source.species.r  # isotope reference value
+    s: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
+    s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
+    debug_str = ""
+    rhs_out = True
+
+    # light isotope flux with no effects
+    CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]
+    if c.delta != "None":
+        equation_string = f"{s_c} * 1000 / ({r} * ({c.delta} + 1000) + 1000)"
+        ds1 = f"{c.source.full_name}.c * 1000 / (r * (c.delta + 1000) + 1000)"
+    elif c.epsilon != "None":
+        a = c.epsilon / 1000 + 1  # convert to alpha notation
+        equation_string = f"{s_l} * {f_m} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
+        ds1 = (
+            f"{c.source.full_name}.l * {flux.full_name}.c"
+            f"/ (a * {c.source.full_name}.c + {c.source.full_name}.l"
+            f"- a * {c.source.full_name}.l)"
+        )
+    else:
+        if f_m == s_c:
+            equation_string = f"{s_l}"
+            ds1 = f"{c.source.full_name}.c"
+        else:
+            equation_string = f"{f_m} * {s_l} / {s_c}"
+            ds1 = f"{flux.full_name} * {c.source.full_name}.l / {c.source.full_name}.c"
+
+    if c.mo.debug_equations_file:
+        debug_str = (
+            f'"""\n'
+            f"    isotope equations for {c.full_name}\n"
+            f"    constants = CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]\n"
+            f"    constants = CM[:, {flux.idx + 1}] = {CM[:, flux.idx + 1]} * {toc[c.s_index]}\n"
             f"    rhs_l = {ds1}\n"
             f"    rhs_l = {equation_string}\n"
             f'    """\n'
