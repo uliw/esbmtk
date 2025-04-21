@@ -509,6 +509,7 @@ def get_regular_flux_eq(
     debug_rhs = ["", ""]
     rhs_out = [False, False]
     if flux.serves_as_input or c.signal != "None":
+        rhs = toc[c.r_index]
         if flux.isotopes:
             rhs_l, rhs_out[1], debug_rhs[1] = isotopes_regular_flux(
                 rhs, c, icl, ind3, ind2, CM, toc, flux
@@ -529,7 +530,6 @@ def get_regular_flux_eq(
             f"    {c.ctype}: {c.name}\n"
             f"    constants =  CM[:, flux.idx] * toc[c.r_index]\n"
             f"    constants = CM[:, {flux.idx}] * toc[{c.r_index}]\n"
-            f"    constants = {CM[flux.idx, flux.idx]} * {toc[c.r_index]}\n"
             f"    rhs   = None\n"
             f'    """\n'
         )
@@ -595,7 +595,6 @@ def get_scale_with_concentration_eq(
             f"    {c.ctype}: {c.name}\n"
             f"    constants =  CM[:, flux.idx] * toc[c.s_index]\n"
             f"    constants = CM[:, {flux.idx}] * toc[{c.s_index}]\n"
-            f"    constants = {CM[flux.idx, flux.idx]} * {toc[c.s_index]}\n"
             f"    rhs   = {flux.full_name} = {rhs}"
             f'    """\n'
         )
@@ -661,7 +660,6 @@ def get_scale_with_flux_eq(
             f"    {c.ctype}: {c.name}\n"
             f"    constants =  CM[:, flux.idx] * toc[c.s_index]\n"
             f"    constants = CM[:, {flux.idx}] * toc[{c.s_index}]\n"
-            f"    constants = {CM[flux.idx, flux.idx]} * {toc[c.s_index]}\n"
             f"    rhs   = {c.ref_flux.full_name} = {rhs}"
             f'    """\n'
         )
@@ -730,7 +728,7 @@ def isotopes_regular_flux(
             f'"""\n'
             f"    isotope equations for {c.full_name}\n"
             f"    constants = CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]\n"
-            f"    constants = CM[:, {flux.idx + 1}] = {CM[flux.idx + 1, flux.idx + 1]} * {toc[c.r_index]}\n"
+            f"    constants = CM[:, {flux.idx + 1}] = CM[:, {flux.idx + 1}] * {toc[c.r_index]}\n"
             f"    rhs_l = {ds1}\n"
             f"    rhs_l = {equation_string}\n"
             f'    """\n'
@@ -809,7 +807,7 @@ def isotopes_scale_concentration(
             f'"""\n'
             f"    isotope equations for {c.full_name}\n"
             f"    constants = CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]\n"
-            f"    constants = CM[:, {flux.idx + 1}] = {CM[flux.idx + 1, flux.idx + 1]} * {toc[c.s_index]}\n"
+            f"    constants = CM[:, {flux.idx + 1}] = CM[:, flux.idx + 1] * {toc[c.s_index]}\n"
             f"    rhs_l = {ds1}\n"
             f"    rhs_l = {equation_string}\n"
             f'    """\n'
@@ -887,7 +885,7 @@ def isotopes_scale_flux(
             f'"""\n'
             f"    isotope equations for {c.full_name}\n"
             f"    constants = CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]\n"
-            f"    constants = CM[:, {flux.idx + 1}] = {CM[flux.idx + 1, flux.idx + 1]} * {toc[c.s_index]}\n"
+            f"    constants = CM[:, {flux.idx + 1}] = CM[:, {flux.idx + 1}] * {toc[c.s_index]}\n"
             f"    rhs_l = {ds1}\n"
             f"    rhs_l = {equation_string}\n"
             f'    """\n'
@@ -896,7 +894,7 @@ def isotopes_scale_flux(
     return equation_string, rhs_out, debug_str
 
 
-def check_signal_2(ex: str, exl: str, c: Species2Species) -> (str, str):
+def check_signal_2(rhs: str, rhs_l: str, c: Species2Species) -> (str, str):
     """Test if connection is affected by a signal.
 
     :param ex: equation string
@@ -912,13 +910,11 @@ def check_signal_2(ex: str, exl: str, c: Species2Species) -> (str, str):
         else:
             raise ValueError(f"stype={c.signal.stype} not implemented")
 
-        ex += f" {sign} {c.signal.full_name}(t)[0]  # Signal"
-        if c.source.isotopes:
-            exl += f" {sign} {c.signal.full_name}(t)[1]  # Signal"
-        else:
-            exl += ""
+        rhs = f"{rhs} {sign} {c.signal.full_name}(t)[0]  # Signal"
+        if rhs_l != "":
+            rhs_l = f"{rhs_l} {sign} {c.signal.full_name}(t)[1]  # Signal"
 
-    return ex, exl
+    return rhs, rhs_l
 
 
 def get_initial_conditions(
