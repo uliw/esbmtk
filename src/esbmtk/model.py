@@ -911,10 +911,10 @@ class Model(esbmtkBase):
         print(f"This run used {memory_gb:.2f} GB of memory\n")
 
     def _write_temp_equations(self, cwd, R, icl, cpl, ipl):
-        """Write temporary equations file and return the equation set.
+        """Write temporary equations file and return the equationsset.
 
         Creates a temporary Python module containing the model equations,
-        imports it, and returns the equation set function.
+        imports it, and returns the equationsset function.
 
         Parameters
         ----------
@@ -934,7 +934,7 @@ class Model(esbmtkBase):
         function
             The equations function imported from the temporary module
         """
-        import pathlib as pl
+        from pathlib import Path
 
         # Set temporary directory to current working directory
         tempfile.tempdir = cwd
@@ -942,11 +942,11 @@ class Model(esbmtkBase):
         # Create a temporary Python file
         with tempfile.NamedTemporaryFile(suffix=".py") as tmp_file:
             # Get path to temporary file
-            equation_file_path = pl.Path(tmp_file.name)
+            equations_file_path = Path(tmp_file.name)
 
             # Generate equations module
             equations_module_name = write_equations_3(
-                self, R, icl, cpl, ipl, equation_file_path
+                self, R, icl, cpl, ipl, equations_file_path
             )
             eqs = __import__(equations_module_name).eqs
 
@@ -955,7 +955,7 @@ class Model(esbmtkBase):
     def _ode_solver(self, kwargs: dict):
         """Initialize and run the ODE solver.
 
-        Sets up the system of ODEs, generates the equation file, and solves
+        Sets up the system of ODEs, generates the equationsfile, and solves
         the system using scipy's solve_ivp.
 
         Parameters
@@ -968,7 +968,7 @@ class Model(esbmtkBase):
         SolverError
             If the solver fails to find a solution
         """
-        # Get initial conditions and build equation matrices
+        # Get initial conditions and build equationsmatrices
         self.R_names, icl, cpl, ipl, atol = get_initial_conditions(self, self.rtol)
 
         # get initial concentrations for each reservoir
@@ -988,17 +988,22 @@ class Model(esbmtkBase):
         # Build coefficient matrix
         self.CM, self.F, self.F_names = build_eqs_matrix(self)
 
-        np.savez("staging2.npz", CM=self.CM, F=self.F)
-
-        # Set up paths for equation files
+        # Set up paths for equationsfiles
         current_dir = Path.cwd()
         sys.path.append(str(current_dir))  # Required on Windows
-        equation_filename = "equations.py"
-        equation_file_path = current_dir / equation_filename
+        equations_filename = "equations.py"
+        coefficients_file = "eqs_coeff.npz"
+        coeff_file_path = Path(f"{current_dir}/{coefficients_file}")
+        equations_file_path = Path(f"{current_dir}/{equations_filename}")
 
-        # Handle equation file based on debug settings
-        equations_set = self._handle_equation_file(
-            equation_file_path, R, icl, cpl, ipl, current_dir
+        if self.debug_equations_file:
+            np.savez(coeff_file_path, CM=self.CM, F=self.F)
+        elif coeff_file_path.exists():
+            coeff_file_path.unlink()
+
+        # Handle equations file based on debug settings
+        equations_set = self._handle_equations_file(
+            equations_file_path, R, icl, cpl, ipl, current_dir
         )
 
         # Get solver configuration from kwargs
@@ -1013,15 +1018,17 @@ class Model(esbmtkBase):
         # Process results
         self._process_solver_results()
 
-    def _handle_equation_file(self, equation_file_path, R, icl, cpl, ipl, current_dir):
-        """Handle equation file generation based on debug settings.
+    def _handle_equations_file(
+        self, equations_file_path, R, icl, cpl, ipl, current_dir
+    ):
+        """Handle equationsfile generation based on debug settings.
 
         Parameters
         ----------
-        equation_file_path : Path
-            Path to the equation file
+        equations_file_path : Path
+            Path to the equationsfile
         R, icl, cpl, ipl : various
-            Parameters for equation generation
+            Parameters for equationsgeneration
         current_dir : Path
             Current working directory
 
@@ -1034,7 +1041,7 @@ class Model(esbmtkBase):
 
         # If debugging equations is enabled
         if self.debug_equations_file:
-            if equation_file_path.exists():
+            if equations_file_path.exists():
                 warnings.warn(
                     "\n\n Warning re-using the equations file \n"
                     "\n type r to reuse old file or n to create a new one",
@@ -1043,10 +1050,10 @@ class Model(esbmtkBase):
                 user_input = input("type r/n: ")
 
                 if user_input.lower() == "r":  # Use existing file
-                    equations_module_name = equation_file_path.stem
+                    equations_module_name = equations_file_path.stem
                     # Also load saved matrices if they exist
                     matrix_file = Path(
-                        str(equation_file_path).replace(".py", "_matrices.npz")
+                        str(equations_file_path).replace(".py", "_matrices.npz")
                     )
                     if matrix_file.exists():
                         saved_data = np.load(matrix_file)
@@ -1059,17 +1066,17 @@ class Model(esbmtkBase):
                         )
                     else:
                         print(
-                            "Warning: Reusing equation file but matrix file not found. Results may be inconsistent."
+                            "Warning: Reusing equationsfile but matrix file not found. Results may be inconsistent."
                         )
 
                 else:  # Create new file
-                    equation_file_path.unlink()  # Delete old file
+                    equations_file_path.unlink()  # Delete old file
                     equations_module_name = write_equations_3(
-                        self, R, icl, cpl, ipl, equation_file_path
+                        self, R, icl, cpl, ipl, equations_file_path
                     )
                     # Save matrices for future reuse
                     matrix_file = Path(
-                        str(equation_file_path).replace(".py", "_matrices.npz")
+                        str(equations_file_path).replace(".py", "_matrices.npz")
                     )
                     self.matrix_file = matrix_file
                     np.savez(
@@ -1081,12 +1088,12 @@ class Model(esbmtkBase):
 
             else:  # First run - create persistent file
                 equations_module_name = write_equations_3(
-                    self, R, icl, cpl, ipl, equation_file_path
+                    self, R, icl, cpl, ipl, equations_file_path
                 )
             eqs = __import__(equations_module_name).eqs
 
         else:  # Use temporary file for equations
-            if equation_file_path.exists():
+            if equations_file_path.exists():
                 equation_file_path.unlink()
 
             eqs = self._write_temp_equations(current_dir, R, icl, cpl, ipl)
