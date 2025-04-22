@@ -42,4 +42,4 @@ ConnectionProperties(  # thermohaline upwelling
 )
 # M.debug_equations_file = True
 M.run()
-M.plot([M.S_b.DIC, M.D_b.DIC])
+# M.plot([M.S_b.DIC, M.D_b.DIC])
