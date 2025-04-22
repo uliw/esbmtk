@@ -30,7 +30,7 @@ ConnectionProperties(  # thermohaline upwelling
     sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
     scale=1e16,
-    epsilon=5,
+    epsilon=-5,
     id="downwelling",
 )
 ConnectionProperties(  # thermohaline upwelling
@@ -42,4 +42,4 @@ ConnectionProperties(  # thermohaline upwelling
 )
 # M.debug_equations_file = True
 M.run()
-# M.plot([M.S_b.DIC, M.D_b.DIC])
+M.plot([M.S_b.DIC, M.D_b.DIC])
