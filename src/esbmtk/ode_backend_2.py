@@ -594,7 +594,7 @@ def get_scale_with_concentration_eq(
 
     if c.mo.debug_equations_file:
         debug_rhs[0] = (
-            f'"""\n'
+            f'\n    """\n'
             f"    {c.ctype}: {c.name}\n"
             f"    {flux.full_name} = CM[{c.source.idx}, {flux.idx}] * toc[{c.s_index}] * {c.ref_reservoirs.full_name}.\n"
             f"    {flux.full_name} = {CM[c.source.idx, flux.idx]:.2e} * {toc[c.s_index]:.2e} * {s_c}\n"
@@ -636,7 +636,7 @@ def get_scale_with_flux_eq(
     rhs_out = [True, False]
 
     if flux.serves_as_input or c.signal != "None":
-        rhs = f"toc[{c.s_index}] * {c.ref_flux.idx}"
+        rhs = f"toc[{c.s_index}] * F[{c.ref_flux.idx}]"
         """The flux for the light isotope will computed as follows:
         We will use the mass of the flux for scaling, but we
         isotope ratio of the source. 
