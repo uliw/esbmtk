@@ -45,9 +45,12 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
 
     # get number of reservoirs
     num_res = 0
+    # M.r_list = []
     for r in M.lor:
+        # M.r_list.append(r.full_name)
         num_res = num_res + 1
         if r.isotopes:
+            # M.r_list.append(f"{r.full_name}_i")
             num_res = num_res + 1
 
     F = np.ones(fi)  # initialize flux value vector
@@ -55,8 +58,8 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
 
     """We have n reservoirs, without isotopes, this corresponds to
     n rows in the coefficinet matrix. However, if reservoirs have
-    isotopes, we need an additional rao to calculate the respective
-    isotope concentration. Thus we have to two counter, cr pointing to
+    isotopes, we need an additional row to calculate the respective
+    isotope concentration. Thus we have two counters, cr pointing to
     the current reservoir, and ri pointing to the respective row index
     in the coefficient matrix"""
     cr = 0
@@ -593,9 +596,8 @@ def get_scale_with_concentration_eq(
         debug_rhs[0] = (
             f'"""\n'
             f"    {c.ctype}: {c.name}\n"
-            f"    constants =  CM[:, flux.idx] * toc[c.s_index]\n"
-            f"    constants = CM[:, {flux.idx}] * toc[{c.s_index}]\n"
-            f"    rhs   = {flux.full_name} = {rhs}"
+            f"    {flux.full_name} = CM[{c.source.idx}, {flux.idx}] * toc[{c.s_index}] * {c.ref_reservoirs.full_name}.\n"
+            f"    {flux.full_name} = {CM[c.source.idx, flux.idx]:.2e} * {toc[c.s_index]:.2e} * {s_c}\n"
             f'    """\n'
         )
 
@@ -659,7 +661,7 @@ def get_scale_with_flux_eq(
             f'"""\n'
             f"    {c.ctype}: {c.name}\n"
             f"    constants =  CM[:, flux.idx] * toc[c.s_index]\n"
-            f"    constants = CM[:, {flux.idx}] * toc[{c.s_index}]\n"
+            f"    constants = CM[, {flux.idx}] * toc[{c.s_index}]\n"
             f"    rhs   = {c.ref_flux.full_name} = {rhs}"
             f'    """\n'
         )
