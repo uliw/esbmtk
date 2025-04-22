@@ -57,6 +57,7 @@ def Carbon(model):
     SpeciesProperties(name="OM", element=eh, register=eh)
     # Particulate OM
     SpeciesProperties(name="POM", element=eh, register=eh, flux_only=True)
+    SpeciesProperties(name="POC", element=eh, register=eh, flux_only=True)
     SpeciesProperties(name="PIC", element=eh, register=eh, flux_only=True)
     SpeciesProperties(name="DOC", element=eh, register=eh)
     SpeciesProperties(
