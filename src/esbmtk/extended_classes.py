@@ -352,14 +352,12 @@ class SourceSinkProperties(esbmtkBase):
                 raise SourceSinkPropertiesError(
                     f"{s.n} needs to be a valid species name"
                 )
-
             if type(self).__name__ == "SourceProperties":
                 a = Source(
                     name=f"{s.name}",
                     register=self,
                     species=s,
-                    delta=self.delta.get(s.name, "None"),
-                    isotopes=self.isotopes.get(s.name, False),
+                    delta=self.delta.get(s, "None"),
                 )
             elif type(self).__name__ == "SinkProperties":
                 a = Sink(
