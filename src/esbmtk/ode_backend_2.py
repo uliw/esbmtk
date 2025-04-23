@@ -26,7 +26,15 @@ import numpy.typing as npt
 NDArrayFloat = npt.NDArray[np.float64]
 
 if tp.TYPE_CHECKING:
-    from esbmtk import ExternalFunction, Flux, Model, Species, Species2Species
+    from esbmtk import (
+        ExternalFunction,
+        Flux,
+        Model,
+        Sink,
+        Source,
+        Species,
+        Species2Species,
+    )
 
 
 def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
@@ -631,6 +639,8 @@ def get_scale_with_flux_eq(
               in the total reservoir concentration and the
               concentration of the light isotope
     """
+    from esbmtk import Sink, Source
+
     rhs, rhs_l = ["", ""]
     debug_rhs = ["", ""]
     rhs_out = [True, False]
@@ -657,13 +667,22 @@ def get_scale_with_flux_eq(
             )
 
     if c.mo.debug_equations_file:
-        debug_rhs[0] = (
-            f'\n    """\n'
-            f"    {c.ctype}: {c.name}\n"
-            f"    {flux.full_name} = CM[{c.source.idx}, {flux.idx}] * toc[{c.s_index}] * {c.ref_flux.full_name}\n"
-            f"    {flux.full_name} = {CM[c.source.idx, flux.idx]:.2e} * {toc[c.s_index]:.2e} * F[{c.ref_flux.idx}]\n"
-            f'    """\n'
-        )
+        if isinstance(c.source, Source | Sink):
+            debug_rhs[0] = (
+                f'\n    """\n'
+                f"    {c.ctype}: {c.name}\n"
+                f"    {flux.full_name} = toc[{c.s_index}] * {c.ref_flux.full_name}\n"
+                f"    {flux.full_name} = {toc[c.s_index]:.2e} * F[{c.ref_flux.idx}]\n"
+                f'    """\n'
+            )
+        else:
+            debug_rhs[0] = (
+                f'\n    """\n'
+                f"    {c.ctype}: {c.name}\n"
+                f"    {flux.full_name} = CM[{c.source.idx}, {flux.idx}] * toc[{c.s_index}] * {c.ref_flux.full_name}\n"
+                f"    {flux.full_name} = {CM[c.source.idx, flux.idx]:.2e} * {toc[c.s_index]:.2e} * F[{c.ref_flux.idx}]\n"
+                f'    """\n'
+            )
 
     return [rhs, rhs_l], rhs_out, debug_rhs
 
@@ -730,7 +749,7 @@ def isotopes_regular_flux(
     if c.mo.debug_equations_file:
         debug_str = (
             f'"""\n'
-            f"    isotope equations for {c.full_name}\n"
+            f"    isotope equations for {c.full_name}:{c.ctype}\n"
             f"    constants = CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]\n"
             f"    constants = CM[:, {flux.idx + 1}] = CM[:, {flux.idx + 1}] * {toc[c.r_index]}\n"
             f"    rhs_l = {ds1}\n"
@@ -809,7 +828,7 @@ def isotopes_scale_concentration(
     if c.mo.debug_equations_file:
         debug_str = (
             f'"""\n'
-            f"    isotope equations for {c.full_name}\n"
+            f"    isotope equations for {c.full_name}:{c.ctype}\n"
             f"    constants = CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]\n"
             f"    constants = CM[:, {flux.idx + 1}] = CM[:, flux.idx + 1] * {toc[c.s_index]}\n"
             f"    rhs_l = {ds1}\n"
@@ -858,6 +877,8 @@ def isotopes_scale_flux(
         s_index references the scale keyword in a given connection instance
         FIXME: unify rate & scale?
     """
+    from esbmtk import Source
+
     r: float = c.source.species.r  # isotope reference value
     s: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
     s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
@@ -880,14 +901,21 @@ def isotopes_scale_flux(
         if f_m == s_c:
             equation_string = f"{s_l}"
             ds1 = f"{c.source.full_name}.c"
+        elif isinstance(c.source, Source):
+            # source isotope ratios are fixed, so we can place it on the coefficient matrix
+            CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * c.source.isotope_ratio
+            equation_string = f"{f_m}"
+            ds1 = f"{flux.full_name} * {c.source.isotope_ratio}"
         else:
             equation_string = f"{f_m} * {s_l} / {s_c}"
             ds1 = f"{flux.full_name} * {c.source.full_name}.l / {c.source.full_name}.c"
 
     if c.mo.debug_equations_file:
+        # FIXME: this should reflect the above expressions using the same pattern as in
+        # scale with concentration.
         debug_str = (
             f'"""\n'
-            f"    isotope equations for {c.full_name}\n"
+            f"    isotope equations for {c.full_name}:{c.ctype}\n"
             f"    constants = CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]\n"
             f"    constants = CM[:, {flux.idx + 1}] = CM[:, {flux.idx + 1}] * {toc[c.s_index]}\n"
             f"    rhs_l = {ds1}\n"
