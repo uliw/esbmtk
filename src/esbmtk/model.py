@@ -1094,7 +1094,7 @@ class Model(esbmtkBase):
 
         else:  # Use temporary file for equations
             if equations_file_path.exists():
-                equation_file_path.unlink()
+                equations_file_path.unlink()
 
             eqs = self._write_temp_equations(current_dir, R, icl, cpl, ipl)
         return eqs  # module reference
