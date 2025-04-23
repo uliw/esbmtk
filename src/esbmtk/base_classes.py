@@ -2078,8 +2078,7 @@ class SourceSink(esbmtkBase):
             self.m = 1
             self.c = 1
             self.l = get_l_mass(self.c, d, self.species.r)
-            # self.c = self.l / (self.m - self.l)
-            # self.provided_kwargs.update({"delta": d})
+            self.isotope_ratio = self.l / self.c
 
 
 class Sink(SourceSink):
