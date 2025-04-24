@@ -1007,7 +1007,7 @@ def get_initial_conditions(
     # if r.rtype != "flux_only":
     i: int = 0
     for r in M.lic:
-        if len(r.lof) > 0 or r.rtype == "computed" or r.rtype == "passive":
+        if len(r.lof) >= 0 or r.rtype == "computed" or r.rtype == "passive":
             lic[r.full_name] = r.c[0]
             tol = rtol * abs(r.c[0]) / 10 if r.c[0] > 0 else atol_d
             atol.append(tol)
