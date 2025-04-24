@@ -68,7 +68,13 @@ from .post_processing import (
     carbonate_system_2_pp,
     gas_exchange_fluxes,
 )
-from .processes import gas_exchange, init_weathering, weathering
+from .processes import (
+    gas_exchange,
+    init_weathering,
+    weathering_all_isotopes,
+    weathering_no_isotopes,
+    weathering_ref_isotopes,
+)
 from .seawater import SeawaterConstants
 from .utility_functions import (
     build_ct_dict,
@@ -114,7 +120,9 @@ __all__ = [
     "carbonate_system_2_pp",
     "gas_exchange_fluxes",
     "gas_exchange",
-    "weathering",
+    "weathering_no_isotopes",
+    "weathering_ref_isotopes",
+    "weathering_all_isotopes",
     "build_ct_dict",
     "init_weathering",
     "SeawaterConstants",
