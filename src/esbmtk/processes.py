@@ -31,8 +31,7 @@ if tp.TYPE_CHECKING:
 NDArrayFloat = npt.NDArray[np.float64]
 
 
-# @njit(fastmath=True)
-def weathering(c_pco2: float | list[float], p: tuple) -> float | tuple:
+def weathering_no_isotopes(c_pco2: float | list[float], p: tuple) -> float | tuple:
     """Calculate weathering as a function of pCO2.
 
     Parameters
@@ -45,12 +44,11 @@ def weathering(c_pco2: float | list[float], p: tuple) -> float | tuple:
         area_fraction = fraction of total surface area
         ex = exponent used in the equation
         f0 = flux at the reference value
-        isotopes = True/False
 
     Returns
     -------
-    float | tuple
-        a float or list value for the weathering flux
+    float
+        a float value for the weathering flux
 
     Explanation
     -----------
@@ -64,16 +62,35 @@ def weathering(c_pco2: float | list[float], p: tuple) -> float | tuple:
      F_w = area_fraction * f0 * (pco2/pco2_0)**ex
 
     """
-    pco2_0, area_fraction, ex, f0, isotopes = p
-    if isotopes:
-        pco2, pco2i = c_pco2
-        F_w = area_fraction * f0 * (pco2 / pco2_0) ** ex
-        F_w_i = F_w * pco2i / pco2
-        rv = F_w, F_w_i
-    else:
-        F_w = area_fraction * f0 * (c_pco2 / pco2_0) ** ex
-        rv = F_w
+    pco2_0, area_fraction, ex, f0 = p
+    return area_fraction * f0 * (c_pco2 / pco2_0) ** ex
 
+
+# @njit(fastmath=True)
+def weathering_ref_isotopes(c_pco2: float | list[float], p: tuple) -> float | tuple:
+    """Calculate weathering as a function of pCO2.
+
+    This is the same function as weathering_no_isotopes, but assumes that the
+    data is a tuple.
+    """
+    pco2_0, area_fraction, ex, f0 = p
+    pco2, pco2i = c_pco2
+    return area_fraction * f0 * (pco2 / pco2_0) ** ex
+
+
+# @njit(fastmath=True)
+def weathering_all_isotopes(c_pco2: float | list[float], p: tuple) -> float | tuple:
+    """Calculate weathering as a function of pCO2.
+
+    This is the same function as weathering_no_isotopes, but assumes that we
+    weather a species (e.g., carbonate) that requires fluxes for both isotopes.
+    data is a tuple.
+    """
+    pco2_0, area_fraction, ex, f0 = p
+    pco2, pco2i = c_pco2
+    F_w = area_fraction * f0 * (pco2 / pco2_0) ** ex
+    F_w_i = F_w * pco2i / pco2
+    rv = F_w, F_w_i
     return rv
 
 
@@ -99,14 +116,21 @@ def init_weathering(
 
     f0 = check_for_quantity(f0, "mol/year").magnitude
     pco2_0 = check_for_quantity(pco2_0, "ppm").magnitude
-    p = (pco2_0, area_fraction, ex, f0, c.sink.isotopes)
+    p = (pco2_0, area_fraction, ex, f0)
     c.fh.ftype = "computed"
     c.isotopes = c.sink.isotopes  # the co may have missed this
 
+    if c.reservoir_ref.isotopes and c.sink.isotopes:
+        weathering_function = "weathering_all_isotopes"
+    elif c.reservoir_ref.isotopes:
+        weathering_function = "weathering_ref_isotopes"
+    else:
+        weathering_function = "weathering_no_isotopes"
+
     ec = ExternalCode(
         name=f"ec_weathering_{c.id}",
-        fname="weathering",
-        isotopes=c.sink.isotopes,
+        fname=weathering_function,
+        isotopes=c.reservoir_ref.isotopes,
         ftype="std",
         species=c.sink.species,
         function_input_data=[pco2],
