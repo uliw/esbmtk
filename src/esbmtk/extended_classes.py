@@ -348,6 +348,9 @@ class SourceSinkProperties(esbmtkBase):
 
         # loop over species names and setup sub-objects
         for _i, s in enumerate(self.species):
+            if isinstance(s, str) and s != "None":
+                raise ValueError(f"{s} need to be a species object, not a string")
+
             if not isinstance(s, SpeciesProperties):
                 raise SourceSinkPropertiesError(
                     f"{s.n} needs to be a valid species name"

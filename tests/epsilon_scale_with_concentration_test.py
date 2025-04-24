@@ -30,7 +30,7 @@ ConnectionProperties(  # thermohaline upwelling
     sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
     scale=1e16,
-    epsilon=-5,
+    epsilon=5,
     id="downwelling",
 )
 ConnectionProperties(  # thermohaline upwelling

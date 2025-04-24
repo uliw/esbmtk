@@ -7,6 +7,8 @@ Introduction
 Installation
 ~~~~~~~~~~~~
 
+**Note that ESBMTK requires python 3.12 or higher.**
+
 Conda
 ^^^^^
 
@@ -402,5 +404,5 @@ The model time axis is available as ``M.time`` and the model supports the :py:cl
     # run tests
     @pytest.mark.parametrize("test_input, expected", test_values)
     def test_values(test_input, expected):
-        t = 1e-12
+        t = 1e-4
         assert abs(expected) * (1 - t) <= abs(test_input) <= abs(expected) * (1 + t)

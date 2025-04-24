@@ -1,12 +1,11 @@
 # This example is available as iso_3.py in ESBMTK Examples Repository
 # https://github.com/uliw/ESBMTK-Examples/tree/main/Examples_from_the_manual
 from esbmtk import (
+    ConnectionProperties,  # the connection class
     Model,  # the model class
     Reservoir,  # the reservoir class
-    ConnectionProperties,  # the connection class
-    SourceProperties,  # the source class
-    SinkProperties,  # sink class
 )
+
 M = Model(
     stop="3 kyr",  # end time of model
     max_timestep="100 yr",  # upper limit of time step
@@ -37,6 +36,7 @@ ConnectionProperties(  # thermohaline upwelling
     ctype="scale_with_concentration",
     scale="20 Sv",
     id="upwelling",
-    epsilon=5, # mUr
+    epsilon=5,  # mUr
 )
 M.run()
+# M.plot([M.D_b.O2, M.S_b.O2])

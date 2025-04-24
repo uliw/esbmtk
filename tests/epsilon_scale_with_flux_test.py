@@ -82,6 +82,6 @@ ConnectionProperties(  # thermohaline upwelling
     id="upwelling",
 )
 # M.debug_equations_file = True
-M.run()
+M.run(method="BDF")
 # M.plot([M.S_b1.DIC, M.D_b1.DIC])
 # M.plot([M.S_b.DIC, M.D_b.DIC])

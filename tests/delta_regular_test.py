@@ -16,7 +16,7 @@ M = Model(
 SourceProperties(
     name="Fw",  # box name
     species=[M.DIC],
-    delta={"DIC": 0},
+    delta={M.DIC: 0},
 )
 Reservoir(
     name="S_b",  # box name
