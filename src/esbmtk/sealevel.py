@@ -137,12 +137,8 @@ class hypsometry(esbmtkBase):
         fn_pickle: str = impresources.files("esbmtk") / f"{fn}.pickle"
         fqfn_pickle: pl.Path = pl.Path(fn_pickle)
 
-        if fqfn_pickle.exists():  # check if pickle file exist
-            pickle_date = (
-                pl.Path(fn_pickle).stat().st_ctime if fqfn_pickle.exists() else 0
-            )
-        else:
-            pickle_date = 0
+        # if fqfn_pickle.exists():  # check if pickle file exist
+        pickle_date = pl.Path(fn_pickle).stat().st_ctime if fqfn_pickle.exists() else 0
 
         csv_date = pl.Path(fn_csv).stat().st_ctime
         if csv_date < pickle_date:  # pickle file is newer
