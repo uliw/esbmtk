@@ -1007,7 +1007,7 @@ class Model(esbmtkBase):
         )
 
         # Get solver configuration from kwargs
-        method = kwargs.get("method", "BDF")
+        method = kwargs.get("method", "LSODA")
 
         # Initialize carbonate chemistry tables if not present
         self._initialize_carbonate_tables()
