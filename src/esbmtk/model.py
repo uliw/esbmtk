@@ -194,7 +194,7 @@ class Model(esbmtkBase):
             "ideal_water": [True, (bool)],
             "use_ode": [True, (bool)],
             "debug_equations_file": [False, (bool)],
-            "rtol": [1.0e-6, (float)],
+            "rtol": [1.0e-4, (float)],
             "bio_pump_functions": [0, (int)],  # custom/old
             "opt_k_carbonic": [15, (int)],
             "opt_pH_scale": [1, (int)],  # 1: total scale
