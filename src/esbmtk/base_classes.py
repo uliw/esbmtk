@@ -95,7 +95,7 @@ class ElementProperties(esbmtkBase):
         The element name, e.g., "S"
     model : Model
         The model handle
-    mass_unit : str | Q_
+    mass_unit : str | Q\_
         Base mass unit, e.g., "mol"
     li_label : str, optional
         Label of light isotope, e.g., "$^{32}$S"
@@ -1127,7 +1127,7 @@ class SpeciesBase(esbmtkBase):
 
 
 class Species(SpeciesBase):
-    """
+    r"""
     Species implementation for chemical species in a model.
 
     This class provides a concrete implementation of SpeciesBase
@@ -1142,11 +1142,11 @@ class Species(SpeciesBase):
         Handle to the species properties
     delta : float | int | str, optional
         Initial delta value for isotope calculation
-    concentration : str | Q_ | float, optional
+    concentration : str | Q\_ | float, optional
         Species concentration (must provide either this or mass)
-    mass : str | Q_, optional
+    mass : str | Q\_, optional
         Species mass (must provide either this or concentration)
-    volume : str | Q_, optional
+    volume : str | Q\_, optional
         Reservoir volume (must provide either this or geometry)
     geometry : list | dict | str, optional
         Geometry parameters for volume calculation
@@ -1581,18 +1581,18 @@ class Species(SpeciesBase):
         """
         return self._mass
 
-    def massto(self, unit) -> Q_:
-        """
+    def massto(self, unit):
+        r"""
         Convert mass to specified unit.
 
         Parameters
         ----------
-        unit : str | Q_
+        unit : str | Q\_
             Unit to convert to
 
         Returns
         -------
-        Q_
+        Q\_
             Converted mass
         """
         if isinstance(self._mass, Q_):
@@ -1658,7 +1658,7 @@ class Flux(esbmtkBase):
               "name": ["None", (str)],
               "species": ["None", (str, SpeciesProperties)],
               "delta": [0, (str, int, float)],
-              "rate": ["None", (str, Q_, int, float)],
+              "rate": ["None", (str, Q, int, float)],
               "plot": ["yes", (str)],
               "display_precision": [0.01, (int, float)],
               "isotopes": [False, (bool)],
