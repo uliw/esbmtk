@@ -826,8 +826,10 @@ def isotopes_scale_concentration(
         debug_str = (
             f'"""\n'
             f"    isotope equations for {c.full_name}:{c.ctype}\n"
+            f"    Flux = {flux.full_name}, d = {c.delta}, e = {c.epsilon}\n"
             f"    constants = CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]\n"
-            f"    constants = CM[:, {flux.idx + 1}] = CM[:, flux.idx + 1] * {toc[c.s_index]}\n"
+            f"    constants = CM[{c.source.idx + 1}, {flux.idx + 1}] ="
+            f" {CM[c.source.idx + 1, flux.idx + 1]:.2e} * {toc[c.s_index]:.2e}\n"
             f"    rhs_l = {ds1}\n"
             f"    rhs_l = {equation_string}\n"
             f'    """\n'
@@ -882,6 +884,8 @@ def isotopes_scale_flux(
     debug_str = ""
     rhs_out = True
 
+    debug_expression = ""
+
     if c.delta != "None":
         # equation_string = f"{s_c} * 1000 / ({r} * ({c.delta} + 1000) + 1000)"
         equation_string = f"F[{flux.idx}] * 1000 / ({r} * ({c.delta} + 1000) + 1000)"
@@ -898,11 +902,16 @@ def isotopes_scale_flux(
         if f_m == s_c:
             equation_string = f"{s_l}"
             ds1 = f"{c.source.full_name}.c"
+            debug_expression = "Flux from Reservoir = [flux.idx + 1] * c\n"
         elif isinstance(c.source, Source):
             # source isotope ratios are fixed, so we can place it on the coefficient matrix
             CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * c.source.isotope_ratio
             equation_string = f"{f_m}"
             ds1 = f"{flux.full_name} * {c.source.isotope_ratio}"
+            debug_expression = (
+                f"Flux from Source = [flux.idx + 1] * c.source.isotope_ratio\n"
+                f"Flux from Source = {[flux.idx + 1]} * {c.source.isotope_ratio}\n"
+            )
         else:
             equation_string = f"{f_m} * {s_l} / {s_c}"
             ds1 = f"{flux.full_name} * {c.source.full_name}.l / {c.source.full_name}.c"
@@ -913,8 +922,8 @@ def isotopes_scale_flux(
         debug_str = (
             f'"""\n'
             f"    isotope equations for {c.full_name}:{c.ctype}\n"
-            f"    constants = CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]\n"
-            f"    constants = CM[:, {flux.idx + 1}] = CM[:, {flux.idx + 1}] * {toc[c.s_index]}\n"
+            f"    Flux = {flux.full_name}, d = {c.delta}, e = {c.epsilon}\n"
+            f"{debug_expression}"
             f"    rhs_l = {ds1}\n"
             f"    rhs_l = {equation_string}\n"
             f'    """\n'
