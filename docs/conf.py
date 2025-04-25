@@ -1,16 +1,18 @@
-# This file is execfile()d with the current directory set to its containing dir.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
-#
-# All configuration values have a default; values that are commented out
-# serve to show the default.
+"""Sphinx configuration.
 
-import os
-import sys
-import shutil
+execfile()d with the current directory set to its containing dir.
+
+This file only contains a selection of the most common options. For a full
+list see the documentation:
+https://www.sphinx-doc.org/en/master/usage/configuration.html
+All configuration values have a default; values that are commented out
+serve to show the default.
+"""
+
 import importlib.metadata as im
+import os
+import shutil
+import sys
 
 # -- Path setup --------------------------------------------------------------
 
@@ -290,9 +292,9 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
     "setuptools": ("https://setuptools.pypa.io/en/stable/", None),
     "pyscaffold": ("https://pyscaffold.org/en/stable", None),
+    "pint": ("https://pint.readthedocs.io/en/stable/", None),
 }
 
-
 autoapi_member_order = "bysource"
-strip_signature_backslash = True
+# strip_signature_backslash = True
 print(f"loading configurations for {project} {version} ...", file=sys.stderr)
