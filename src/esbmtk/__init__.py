@@ -84,7 +84,6 @@ from .utility_functions import (
     check_for_quantity,
     create_bulk_connections,
     data_summaries,
-    esbmtk_version,
     initialize_reservoirs,
     phc,
     register_return_values,
