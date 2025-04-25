@@ -17,7 +17,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 import numpy as np
+import pkg_resources
 from pint import UnitRegistry
+
+__version__ = pkg_resources.get_distribution("esbmtk").version
 
 # Units are needed for the subsequent imports
 ureg = UnitRegistry(on_redefinition="ignore")
@@ -81,6 +84,7 @@ from .utility_functions import (
     check_for_quantity,
     create_bulk_connections,
     data_summaries,
+    esbmtk_version,
     initialize_reservoirs,
     phc,
     register_return_values,
@@ -88,6 +92,8 @@ from .utility_functions import (
 )
 
 __all__ = [
+    "__version__",
+    "esbmtk",
     "Flux",
     "Sink",
     "Source",
