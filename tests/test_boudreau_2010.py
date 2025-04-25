@@ -1,4 +1,4 @@
-"""Test isotope delta calculations."""
+"""Test complex model calculations."""
 
 import boudreau_2010_test as bd  # import script
 import pytest
