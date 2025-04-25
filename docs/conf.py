@@ -296,5 +296,5 @@ intersphinx_mapping = {
 }
 
 autoapi_member_order = "bysource"
-# strip_signature_backslash = True
+strip_signature_backslash = True
 print(f"loading configurations for {project} {version} ...", file=sys.stderr)
