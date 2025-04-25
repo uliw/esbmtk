@@ -263,7 +263,7 @@ class Model(esbmtkBase):
     # Define a custom warning handler that captures warnings
     def capture_warnings(self, message, category, filename, lineno, file=None, line=None):
         """Custom warning handler that captures warnings."""
-        self.warning_log.write(f"{category.__name__}: {message} (in {filename}, line {lineno})\n")
+        self.warning_log.write(f"{category.__name__}: {message} (in {filename}, line {lineno})\n\n")
 
     def _initialize_model_containers(self):
         """Initialize all model component containers."""
