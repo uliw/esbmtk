@@ -39,4 +39,3 @@ ConnectionProperties(  # thermohaline upwelling
     epsilon=5,  # mUr
 )
 M.run()
-# M.plot([M.D_b.O2, M.S_b.O2])

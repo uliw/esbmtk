@@ -1,12 +1,11 @@
 # import classes from the esbmtk library
 from esbmtk import (
-    ConnectionProperties,  # the connection class
     Model,  # the model class
     Reservoir,  # the reservoir class
-    SinkProperties,  # sink class
+    ConnectionProperties,  # the connection class
     SourceProperties,  # the source class
+    SinkProperties,  # sink class
 )
-
 # define the basic model parameters
 M = Model(
     stop="3 Myr",  # end time of model
@@ -15,11 +14,10 @@ M = Model(
 )
 # now try this
 from esbmtk import Q_
-
 tau = Q_("100 years")
 tau * 12
 # boundary conditions
-F_w = M.set_flux("45 Gmol", "year", M.P)  # P @280 ppm (Filipelli 2002)
+F_w =  M.set_flux("45 Gmol", "year", M.P) # P @280 ppm (Filipelli 2002)
 tau = Q_("100 year")  # PO4 residence time in surface box
 F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
 thc = "20*Sv"  # Thermohaline circulation in Sverdrup
@@ -76,11 +74,9 @@ ConnectionProperties(  #
     source=M.D_b,  # source of flux
     sink=M.burial,  # target of flux
     ctype="scale_with_flux",
-    ref_flux=M.flux_summary(filter_by="primary_production", return_list=True)[0],
+    ref_flux=M.flux_summary(filter_by="primary_production",return_list=True)[0],
     scale=F_b,
     id="burial",
     species=[M.PO4],
 )
-# M.debug_equations_file = True
 M.run()
-# M.plot([M.S_b.PO4, M.D_b.PO4])

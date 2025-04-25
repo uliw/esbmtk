@@ -18,9 +18,11 @@ Assuming you install into a new virtual environment the following should install
 
     conda create --name foo
     conda activate foo
+    conda config --add channels conda-forge
+    conda config --set channel_priority strict
     conda install esbmtk
 
-pip & github
+pip & GitHub
 ^^^^^^^^^^^^
 
 If you work with pip, simply install  with ``python -m pip install esbmtk``, or download the code from `https://github.com/uliw/esbmtk <https://github.com/uliw/esbmtk>`_

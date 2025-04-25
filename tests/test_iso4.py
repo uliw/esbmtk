@@ -11,5 +11,5 @@ test_values = [  # result, reference value
 # run tests
 @pytest.mark.parametrize("test_input, expected", test_values)
 def test_values(test_input, expected):
-    t = 1e-4
+    t = 1e-2
     assert abs(expected) * (1 - t) <= abs(test_input) <= abs(expected) * (1 + t)

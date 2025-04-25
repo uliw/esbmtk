@@ -1,4 +1,4 @@
-    :Author: uli wortmann
+    :Author: Uli Wortmann
 
 .. contents::
 

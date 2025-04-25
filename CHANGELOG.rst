@@ -1,11 +1,11 @@
-    :Author: uli wortmann
+    :Author: Uli Wortmann
 
 .. contents::
 
 1 Changelog
 -----------
 
-- 0.14.1.6 Cleaned up repository structure. This may result in import error. Please get in touch if it does. Reworked many class definitions to improve readability and documentation.
+- 0.14.2.1 ESBMTK now requires python 3.12. Cleaned up repository structure. This may result in import errors. Please get in touch if it does. Reworked many class definitions to improve readability and documentation. Fixed a variety of regressions for isotope calculations that were introduces in 0.14.1.x  Added ``debug`` keyword to the Model object. Expanded the debug information in the equations file. The default solver has changed from BDF to LSODA.
 
 - 0.14.1.4 Fixed a regression that caused incorrect ``zcc`` values in the post-processing step. Added  the ``reverse_time`` keyword to the plot function. This is most useful for models that run forward in time from past starting point.
 
