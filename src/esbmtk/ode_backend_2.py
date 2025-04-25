@@ -30,8 +30,6 @@ if tp.TYPE_CHECKING:
         ExternalFunction,
         Flux,
         Model,
-        Sink,
-        Source,
         Species,
         Species2Species,
     )
@@ -146,13 +144,10 @@ def write_equations_3(
     """
     # construct header and static code:
     # add optional import statements
-    h1 = """
-
-    """
-
-    h2 = """# @njit(fastmath=True)
+    h1 = ""
+    h2 = '''# @njit(fastmath=True)
 def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
-    '''Calculate dCdt for each reservoir.
+    """Calculate dCdt for each reservoir.
 
     t = time vector
     R = initial conditions for each reservoir
@@ -166,12 +161,14 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
     F = flux vector
 
     Returns: dCdt as numpy array
-   
-    Reservoir and flux name lookup: M.lor[idx] and M.lof[idx]
-    '''
+
+    Reservoir name lookup list(M.R_names.keys())[15]
+    Flux name lookup: M.lof[2]
     """
+    '''
     ind2 = 4 * " "  # indention
     ind3 = 8 * " "  # indention
+    h1 = '"""ESBMTk equationsfile."""'
     hi = ""
 
     # ensure there are no duplicates
@@ -195,18 +192,18 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
             source = args[0]
             hi += f"from {source} import {function}\n"
 
-    header = f"{h1}\n{hi}\n{h2}"
+    header = f"{h1}\n\n{h2}" if hi == "" else f"{h1}\n{hi}\n\n{h2}"
 
     rel = ""  # list of return values
-    # """
+
     # write file
     with open(eqs_fn, "w", encoding="utf-8") as eqs:
         eqs.write(header)
         sep = (
-            "    # ---------------- write computed reservoir equations -------- #\n"
+            "# ---------------- write computed reservoir equations -------- #\n"
             + "    # that do not depend on fluxes"
         )
-        eqs.write(f"\n{sep}\n")
+        eqs.write(f"{sep}\n")
 
         """  Computed reservoirs and computed fluxes are both stored in  M.lpc_r
         At this point, we only print the reservoirs.
