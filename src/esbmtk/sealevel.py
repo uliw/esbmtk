@@ -303,15 +303,15 @@ class hypsometry(esbmtkBase):
 def get_box_geometry_parameters(box) -> None:
     """Calculate box volume and area from the data in box.
 
-    :param box: tp.List or dict with the geometry parameters
+    :param box: list or dict with the geometry parameters
     :fraction: 0 to 1 to specify a fractional part (i.e., Atlantic)
 
     If box is a list the first entry is the upper
     depth datum, the second entry is the lower depth datum, and the
-    third entry is the total ocean area.  E.g., to specify the upper
+    third entry is the fraction of ocean area.  E.g., to specify the upper
     200 meters of the entire ocean, you would write:
 
-    geometry=[0,-200,3.6e14]
+    geometry=[0, -200, 1]
 
     the corresponding ocean volume will then be calculated by the
     calc_volume method in this case the following instance variables
@@ -340,12 +340,15 @@ def get_box_geometry_parameters(box) -> None:
         # Calculate volume and area as a function of box geometry
         top = box.geometry[0]
         bottom = box.geometry[1]
+        fraction = box.geometry[2]
         volume = f"{box.mo.hyp.volume(top, bottom)} m**3"
         box.volume = Q_(volume)
         box.volume = box.volume.to(box.mo.v_unit)
-        box.area = Q_(f"{box.mo.hyp.area(top)} m**2")
-        box.sed_area = box.mo.hyp.area_dz(top, bottom)
-        box.sed_area = Q_(f"{box.sed_area} m**2")
+        box.area = Q_(f"{box.mo.hyp.area(top)} m**2") * fraction
+        box.sed_area = box.mo.hyp.area_dz(top, bottom) * fraction
+        box.sed_area = Q_(f"{box.sed_area} m**2") * fraction
+        if fraction == 1:
+            box.set_area_warning = True  # this will be checked by init_gas_exchange
 
     elif isinstance(box.geometry, dict):
         box.volume = Q_(box.geometry["volume"]).to(box.mo.v_unit)
