@@ -19,10 +19,10 @@ along with this program.  If not, see
 
 from __future__ import annotations
 
+import typing as tp
+
 import numpy as np
 import numpy.typing as npt
-
-import typing as tp
 
 if tp.TYPE_CHECKING:
     from esbmtk import Q_, Species2Species
@@ -153,11 +153,20 @@ def init_gas_exchange(c: Species2Species):
         connection instance
 
     """
+    import warnings
+
     from esbmtk import ExternalCode, check_for_quantity
 
     c.fh.ftype = "computed"
     sink_reservoir = c.sink.register
     swc = sink_reservoir.swc  # sink - liquid
+
+    if sink_reservoir.set_area_warning:
+        warnings.warn(
+            f"\nGEX for {sink_reservoir.full_name} is using the entire ocean area.\n"
+            "Consider adjusting the area fraction parameter of the box geometry:\n"
+            "g = [upper depth, lower depth, area fraction] \n"
+        )
 
     if c.solubility == "None":  # use predefined values
         if c.species.name == "CO2":
