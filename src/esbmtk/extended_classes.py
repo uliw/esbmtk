@@ -218,6 +218,7 @@ class Reservoir(esbmtkBase):
         if self.register == "None":
             self.register = self.species[0].mo
         # legacy variable
+        self.set_area_warning = False
         self.n = self.name
         self.mo = self.species[0].mo
         self.model = self.species[0].mo
