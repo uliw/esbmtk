@@ -496,6 +496,7 @@ class SpeciesBase(esbmtkBase):
         self.tolerances: list[float] = [1.0, 1.0]  # tolerances
         self.ignored_fluxes: list[Flux] = []
         self.flux_references: list[Flux] = []  # flux references
+        self.set_area_warning = False
         self.external_data_references: list[
             ExternalData
         ] = []  # all external data references
