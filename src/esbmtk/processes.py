@@ -37,7 +37,9 @@ def weathering_no_isotopes(c_pco2: float | list[float], p: tuple) -> float | tup
     Parameters
     ----------
     c_pco2 : float | list[float]
-        current pCO2 concentration
+        current pCO2 concentration as absolute concentration, e.g.
+        280 ppm = 0.00028
+
     p : tuple
         a tuple with the following entries:
         pco2_0 = reference pCO2
