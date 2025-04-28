@@ -223,13 +223,13 @@ class Model(esbmtkBase):
         # collect all warnings so they can be printed at the end
         # Create a string IO to capture warnings
         self.warning_log = io.StringIO()
-    
+
         # Keep a backup of the original function
         self.original_showwarning = warnings.showwarning
 
         # Initialize customized warnings collection:
         warnings.showwarning = self.capture_warnings
-        
+
         # Initialize model component containers
         self._initialize_model_containers()
 
@@ -261,9 +261,13 @@ class Model(esbmtkBase):
         hypsometry(name="hyp", model=self, register=self)
 
     # Define a custom warning handler that captures warnings
-    def capture_warnings(self, message, category, filename, lineno, file=None, line=None):
+    def capture_warnings(
+        self, message, category, filename, lineno, file=None, line=None
+    ):
         """Custom warning handler that captures warnings."""
-        self.warning_log.write(f"{category.__name__}: {message} (in {filename}, line {lineno})\n\n")
+        self.warning_log.write(
+            f"{category.__name__}: {message} (in {filename}, line {lineno})\n\n"
+        )
 
     def _initialize_model_containers(self):
         """Initialize all model component containers."""
@@ -930,14 +934,14 @@ class Model(esbmtkBase):
 
         # printout any warnings
         # Now display all collected warnings at the end
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("WARNINGS COLLECTED DURING EXECUTION:")
-        print("="*80)
+        print("=" * 80)
         print(self.warning_log.getvalue() or "No warnings generated")
-        print("\n" + "="*80)
+        print("\n" + "=" * 80)
         print("END WARNINGS COLLECTED DURING EXECUTION:")
-        print("="*80)
-    
+        print("=" * 80)
+
         # Restore the original warning behavior
         warnings.showwarning = self.original_showwarning
 

@@ -1483,6 +1483,18 @@ def data_summaries(
     :param register_with: defaults to M
     :returns pl: a list of datafield instance to be plotted
 
+    Note: because pl is a list, you need to expand it before
+    using it in the plot method. Either use
+
+    M.plot(pl)
+
+    or
+    M.plot([*pl])
+
+    If you call a plot with many subfigures, use pl like this:
+
+    M.plot([o1, o2, *pl])
+
     """
     from esbmtk import DataField, VectorData
 
