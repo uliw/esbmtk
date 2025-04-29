@@ -81,19 +81,67 @@ def weathering_ref_isotopes(c_pco2: float | list[float], p: tuple) -> float | tu
 
 
 # @njit(fastmath=True)
-def weathering_all_isotopes(c_pco2: float | list[float], p: tuple) -> float | tuple:
+def weathering_isotopes(
+    c_pco2: float | list[float],
+    source_data: float | list[float],
+    p: tuple,
+) -> float | tuple:
     """Calculate weathering as a function of pCO2.
 
     This is the same function as weathering_no_isotopes, but assumes that we
     weather a species (e.g., carbonate) that requires fluxes for both isotopes.
     data is a tuple.
     """
-    pco2_0, area_fraction, ex, f0 = p
-    pco2, pco2i = c_pco2
-    F_w = area_fraction * f0 * (pco2 / pco2_0) ** ex
-    F_w_i = F_w * pco2i / pco2
-    rv = F_w, F_w_i
-    return rv
+    pco2_0, area_fraction, ex, f0, source_isotope_ratio = p
+    pco2, pco2_l = c_pco2  # pco2 data
+    s_c, s_l = source_data
+    w_scale = area_fraction * (pco2 / pco2_0) ** ex
+    F_w = f0 * w_scale
+    F_w_i = f0 * w_scale * s_c / s_l
+    return (F_w, F_w_i)
+
+
+# @njit(fastmath=True)
+def weathering_isotopes_delta(
+    c_pco2: float | list[float],
+    source_data: float | list[float],
+    p: tuple,
+) -> float | tuple:
+    """Calculate weathering as a function of pCO2.
+
+    This is the same function as weathering_no_isotopes, but assumes that we
+    weather a species (e.g., carbonate) that requires fluxes for both isotopes.
+    data is a tuple.
+    """
+    pco2_0, area_fraction, ex, f0, delta, r = p
+    pco2, pco2i = c_pco2  # pco2 data
+    w_scale = area_fraction * (pco2 / pco2_0) ** ex
+    F_w = f0 * w_scale
+    F_w_i = f0 * 1000 / (r * (delta + 1000) + 1000)
+    return (F_w, F_w_i)
+
+
+# @njit(fastmath=True)
+def weathering_isotopes_alpha(
+    c_pco2: float | list[float],
+    source_data: float | list[float],
+    p: tuple,
+) -> float | tuple:
+    """Calculate weathering as a function of pCO2.
+
+    This is the same function as weathering_no_isotopes, but assumes that we
+    weather a species (e.g., carbonate) that requires fluxes for both isotopes.
+    data is a tuple.
+    s_c = source mass
+    s_l = source mass of light isotope
+    """
+    pco2_0, area_fraction, ex, f0, alpha, r = p
+    pco2, pco2i = c_pco2  # atmosphere mass and light isotope mass
+    s_c, s_l = source_data
+    w_scale = area_fraction * (pco2 / pco2_0) ** ex
+    F_w = f0 * w_scale  # flux at a given pco2 value
+    F_w_i = s_l * f0 / (alpha * s_c + s_l - alpha * s_l)
+    return (F_w, F_w_i)
 
 
 def init_weathering(
@@ -118,15 +166,31 @@ def init_weathering(
 
     f0 = check_for_quantity(f0, "mol/year").magnitude
     pco2_0 = check_for_quantity(pco2_0, "ppm").magnitude
-    p = (pco2_0, area_fraction, ex, f0)
+    # p = (pco2_0, area_fraction, ex, f0)
     c.fh.ftype = "computed"
-    c.isotopes = c.sink.isotopes  # the co may have missed this
-
-    if c.reservoir_ref.isotopes and c.sink.isotopes:
-        weathering_function = "weathering_all_isotopes"
-    elif c.reservoir_ref.isotopes:
+    c.isotopes = c.source.isotopes  # the co may have missed this
+    if c.delta != "None":
+        p = (pco2_0, area_fraction, ex, f0, c.delta, c.source.species.r)
+        weathering_function = "weathering_isotopes_delta"
+    elif c.epsilon != "None":
+        alpha = c.epsilon / 1000 + 1  # convert to alpha notation
+        p = (
+            pco2_0,  # reference pCO2
+            area_fraction,  # area relative to total ocean area
+            ex,  # exponent
+            f0,  # flux at pCO2_0
+            alpha,  # fractionation factor
+            c.source.species.r,  # isotope reference species
+        )
+        weathering_function = "weathering_isotopes_alpha"
+    elif c.isotopes and c.sink.isotopes:
+        p = (pco2_0, area_fraction, ex, f0, c.source.isotope_ratio)
+        weathering_function = "weathering_isotopes"
+    elif c.reservoir_ref.isotopes:  # pco2 data is a tuple
+        p = (pco2_0, area_fraction, ex, f0)
         weathering_function = "weathering_ref_isotopes"
     else:
+        p = (pco2_0, area_fraction, ex, f0)
         weathering_function = "weathering_no_isotopes"
 
     ec = ExternalCode(
@@ -135,7 +199,7 @@ def init_weathering(
         isotopes=c.reservoir_ref.isotopes,
         ftype="std",
         species=c.sink.species,
-        function_input_data=[pco2],
+        function_input_data=[pco2, c.source],
         function_params=p,
         register=c.model,
         return_values=[
