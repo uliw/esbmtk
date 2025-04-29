@@ -636,6 +636,8 @@ def initialize_reservoirs(M: Model, box_dict: dict) -> list(Species):
                       }
         species_list = initialize_reservoirs(M, box_parameters)
 
+    Note: the first entry in the box_parameters dict must be a regular reservoir, not
+    a Source or Sink.
     """
     from esbmtk import Reservoir, SinkProperties, SourceProperties, SpeciesProperties
 
@@ -674,6 +676,14 @@ def initialize_reservoirs(M: Model, box_dict: dict) -> list(Species):
                     register=M,
                 )
     first_key = list(box_dict.keys())[0]
+    b_type = box_dict[first_key].get("ty")
+    if b_type == "Source" or b_type == "Sink":
+        raise ValueError(
+            "\nThe first entry in the box_parameter dict must be a regular reservoir\n"
+            "You likely started with a Source or Sink\n"
+            "Check your arguments to initialize_reservoirs()\n"
+        )
+
     species_dict = box_dict[first_key].get("c", "None")
     if isinstance(species_dict, dict):
         species_list = list(species_dict.keys())
