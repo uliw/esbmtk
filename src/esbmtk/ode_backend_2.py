@@ -348,14 +348,22 @@ def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> st
     to external function objects, and convert them into a suitable string
     format that can be used in the ode equation file
     """
-    from esbmtk import Q_, Flux, GasReservoir, Reservoir, SeawaterConstants, Species
+    from esbmtk import (
+        Q_,
+        Flux,
+        GasReservoir,
+        Reservoir,
+        SeawaterConstants,
+        Source,
+        Species,
+    )
 
     if isinstance(d, str):
         sr = getattr(r.register, d)
         a = f"{ind}{get_ic(sr, icl)},\n"
     elif isinstance(d, Species | GasReservoir):
         a = f"{ind}({get_ic(d, icl, d.isotopes)}),\n"
-    elif isinstance(d, Reservoir):
+    elif isinstance(d, Reservoir | Source):
         a = f"{ind}{d.full_name},\n"
     elif isinstance(d, Flux):
         sr = f"F[{d.idx}]"
@@ -380,7 +388,8 @@ def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> st
         a = d
     else:
         raise ValueError(
-            f"\n r = {r.full_name}, d ={d}\n\n{d} is of type {type(d)}\n",
+            f"\n r = {r.full_name}, d ={d}\n\n{d} is of type {type(d)}\n"
+            f"I have no recpie for this type in parse_esbmtk_input_data_types\n"
         )
 
     return a
@@ -707,7 +716,7 @@ def isotopes_regular_flux(
     """Calculate the flux of the light isotope (f_l).
 
         If delta is given: fl = fm * 1000 / (r * (d + 1000) + 1000)
-        If epsilon is given: fl = sl * fm / (e * sc + sl - a * sl)
+        If epsilon is given: fl = sl * fm / (a * sc + sl - a * sl)
 
         If neither: If flux mass equals source concentration, this is a scale
         with concentration connection, and f_l = s_l * scale where scale is
@@ -717,7 +726,8 @@ def isotopes_regular_flux(
         since it is moved to the equations matrix.
 
         Where fl = flux light isotope, fm = flux mass, s_c = source concentration
-        s_l = source light isotope
+        s_l = source light isotope, a = fractionation factor alpha,
+        r = isotopic reference ratio
     """
     r: float = c.source.species.r  # isotope reference value
     s: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
