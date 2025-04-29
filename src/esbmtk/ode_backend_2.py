@@ -313,7 +313,6 @@ def write_ef(
                 raise ValueError(f"type(o) = {type(o)}, o = {o}")
         else:
             raise ValueError(f"type(o) = {type(o)}, o = {o}")
-            # v = f"dCdt_{o.full_name.replace('.', '_')}, "
 
         rv += v
 
@@ -356,9 +355,9 @@ def parse_esbmtk_input_data_types(d: any, r: Species, ind: str, icl: dict) -> st
     if isinstance(d, str):
         sr = getattr(r.register, d)
         a = f"{ind}{get_ic(sr, icl)},\n"
-    elif isinstance(d, Species | GasReservoir):
+    elif isinstance(d, Species | GasReservoir | Source):
         a = f"{ind}({get_ic(d, icl, d.isotopes)}),\n"
-    elif isinstance(d, Reservoir | Source):
+    elif isinstance(d, Reservoir):
         a = f"{ind}{d.full_name},\n"
     elif isinstance(d, Flux):
         sr = f"F[{d.idx}]"
