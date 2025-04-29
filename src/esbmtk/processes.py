@@ -31,7 +31,11 @@ if tp.TYPE_CHECKING:
 NDArrayFloat = npt.NDArray[np.float64]
 
 
-def weathering_no_isotopes(c_pco2: float | list[float], p: tuple) -> float | tuple:
+def weathering_no_isotopes(
+    c_pco2: float | list[float],
+    source_data: float | list[float],
+    p: tuple,
+) -> float | tuple:
     """Calculate weathering as a function of pCO2.
 
     Parameters
@@ -65,11 +69,17 @@ def weathering_no_isotopes(c_pco2: float | list[float], p: tuple) -> float | tup
 
     """
     pco2_0, area_fraction, ex, f0 = p
-    return area_fraction * f0 * (c_pco2 / pco2_0) ** ex
+    f = area_fraction * f0 * (c_pco2 / pco2_0) ** ex
+
+    return f
 
 
 # @njit(fastmath=True)
-def weathering_ref_isotopes(c_pco2: float | list[float], p: tuple) -> float | tuple:
+def weathering_ref_isotopes(
+    c_pco2: float | list[float],
+    source_data: float | list[float],
+    p: tuple,
+) -> float | tuple:
     """Calculate weathering as a function of pCO2.
 
     This is the same function as weathering_no_isotopes, but assumes that the
@@ -97,7 +107,7 @@ def weathering_isotopes(
     s_c, s_l = source_data
     w_scale = area_fraction * (pco2 / pco2_0) ** ex
     F_w = f0 * w_scale
-    F_w_i = f0 * w_scale * s_c / s_l
+    F_w_i = F_w * s_c / s_l
     return (F_w, F_w_i)
 
 
