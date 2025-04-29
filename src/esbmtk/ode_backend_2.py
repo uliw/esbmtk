@@ -316,15 +316,9 @@ def write_ef(
             # v = f"dCdt_{o.full_name.replace('.', '_')}, "
 
         rv += v
-        # if ef.lro[i].isotopes:
-        #     # rv += f"{v[:-2]}_l, "
-        #     rv += f"F[{o.idx + 1}], "
 
     rv = rv[:-2]  # strip the last comma
     a = ""
-
-    # if ef.fname == "carbonate_system_2_ode":
-    # if ef.fname == "weathering":
 
     # this can probably be simplified similar to the old parse_return_values()
     for d in ef.function_input_data:
@@ -334,6 +328,7 @@ def write_ef(
         eqs.write(f"{rv} = {ef.fname}(\n{a}{ind2})\n\n")
     else:
         s = f"gpt[{ef.param_start}]"
+        eqs.write(f"    # id: {ef.name}\n")
         eqs.write(f"{rv} = {ef.fname}(\n{a}{ind3}{s},\n{ind2})\n\n")
 
     rel += f"{ind3}{rv},\n"
