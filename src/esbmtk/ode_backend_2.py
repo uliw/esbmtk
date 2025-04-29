@@ -535,7 +535,7 @@ def get_regular_flux_eq(
     if c.mo.debug_equations_file:  # and output:
         debug_rhs[0] = (
             f'"""\n'
-            f"    {c.ctype}: {c.name}\n"
+            f"    {c.ctype}: {c.name}, id={c.id}\n"
             f"    constants =  CM[:, flux.idx] * toc[c.r_index]\n"
             f"    constants = CM[:, {flux.idx}] * toc[{c.r_index}]\n"
             f"    rhs   = None\n"
@@ -600,7 +600,7 @@ def get_scale_with_concentration_eq(
     if c.mo.debug_equations_file:
         debug_rhs[0] = (
             f'\n    """\n'
-            f"    {c.ctype}: {c.name}\n"
+            f"    {c.ctype}: {c.name}, id = {c.id}\n"
             f"    {flux.full_name} = CM[{c.source.idx}, {flux.idx}] * toc[{c.s_index}] * {c.ref_reservoirs.full_name}.\n"
             f"    {flux.full_name} = {CM[c.source.idx, flux.idx]:.2e} * {toc[c.s_index]:.2e} * {s_c}\n"
             f'    """\n'
@@ -667,7 +667,7 @@ def get_scale_with_flux_eq(
         if isinstance(c.source, Source | Sink):
             debug_rhs[0] = (
                 f'\n    """\n'
-                f"    {c.ctype}: {c.name}\n"
+                f"    {c.ctype}: {c.name}, id = {c.id}\n"
                 f"    {flux.full_name} = toc[{c.s_index}] * {c.ref_flux.full_name}\n"
                 f"    {flux.full_name} = {toc[c.s_index]:.2e} * F[{c.ref_flux.idx}]\n"
                 f'    """\n'
@@ -675,7 +675,7 @@ def get_scale_with_flux_eq(
         else:
             debug_rhs[0] = (
                 f'\n    """\n'
-                f"    {c.ctype}: {c.name}\n"
+                f"    {c.ctype}: {c.name}, id = {c.id}\n"
                 f"    {flux.full_name} = CM[{c.source.idx}, {flux.idx}] * toc[{c.s_index}] * {c.ref_flux.full_name}\n"
                 f"    {flux.full_name} = {CM[c.source.idx, flux.idx]:.2e} * {toc[c.s_index]:.2e} * F[{c.ref_flux.idx}]\n"
                 f'    """\n'
