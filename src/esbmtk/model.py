@@ -199,6 +199,7 @@ class Model(esbmtkBase):
             "opt_k_carbonic": [15, (int)],
             "opt_pH_scale": [1, (int)],  # 1: total scale
             "opt_buffers_mode": [2, (int)],
+            "display_steps": [1000, (int)],
         }
 
         # Define required keywords
@@ -371,6 +372,11 @@ class Model(esbmtkBase):
             self.start,
             self.stop - self.start,
             num=self.number_of_datapoints + 1,
+        )
+        self.display_time = np.linspace(
+            self.start,
+            self.stop - self.start,
+            num=self.display_steps + 1,
         )
         self.time = self.time_ode
         self.timec = np.empty(0)
@@ -1188,7 +1194,8 @@ class Model(esbmtkBase):
             method=method,
             atol=atol,
             rtol=self.rtol,
-            t_eval=self.time_ode,
+            # t_eval=self.time_ode,
+            t_eval=self.display_time,
             first_step=self.min_timestep,
             max_step=self.dt,
             vectorized=False,  # Flux equations would need to be adjusted
