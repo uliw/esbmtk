@@ -74,7 +74,9 @@ from .post_processing import (
 from .processes import (
     gas_exchange,
     init_weathering,
-    weathering_all_isotopes,
+    weathering_isotopes,
+    weathering_isotopes_delta,
+    weathering_isotopes_alpha,
     weathering_no_isotopes,
     weathering_ref_isotopes,
 )
