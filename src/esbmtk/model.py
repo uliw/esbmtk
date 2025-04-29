@@ -1683,7 +1683,7 @@ class Model(esbmtkBase):
         for connection in self.loc:
             # If name filter is provided, only include connections with matching names
             if name_filter is not None:
-                if name_filter in connection.n:  # Substring search
+                if name_filter in connection.name:  # Substring search
                     filtered_list.append(connection)
             else:
                 # No filter - include all connections
