@@ -2121,6 +2121,16 @@ class Source(SourceSink):
         # Call the parent class's __init__ method to handle basic initialization
         super().__init__(**kwargs)
 
+        # self.m = np.zeros(self.model.number_of_datapoints + 1)
+        # self.c = np.zeros(self.model.number_of_datapoints + 1)
+
         if self.delta != "None":
             self.l = get_l_mass(self.c, self.delta, self.sp.r)
             self.isotopes = True
+
+        # register with model
+        # self.mo.lic.append(self)
+        # # wee need these for the ode backend
+        # self.rtype = "passive"
+        # self.lof: list = []
+        # self.atol = [1e-4, 1e-4]
