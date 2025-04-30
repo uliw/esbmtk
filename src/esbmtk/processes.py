@@ -87,7 +87,7 @@ def weathering_ref_isotopes(
     """
     pco2_0, area_fraction, ex, f0 = p
     pco2, pco2i = c_pco2
-    return area_fraction * f0 * (pco2 / pco2_0) ** ex
+    return f0 * area_fraction * (pco2 / pco2_0) ** ex
 
 
 # @njit(fastmath=True)
@@ -102,12 +102,13 @@ def weathering_isotopes(
     weather a species (e.g., carbonate) that requires fluxes for both isotopes.
     data is a tuple.
     """
-    pco2_0, area_fraction, ex, f0, source_isotope_ratio = p
     pco2, pco2_l = c_pco2  # pco2 data
     s_c, s_l = source_data
+    pco2_0, area_fraction, ex, f0 = p  # constants
     w_scale = area_fraction * (pco2 / pco2_0) ** ex
     F_w = f0 * w_scale
-    F_w_i = F_w * s_c / s_l
+    F_w_i = F_w * s_l / s_c
+
     return (F_w, F_w_i)
 
 
@@ -180,9 +181,10 @@ def init_weathering(
     c.fh.ftype = "computed"
     c.isotopes = c.source.isotopes  # the co may have missed this
     if c.delta != "None":
-        p = (pco2_0, area_fraction, ex, f0, c.delta, c.source.species.r)
         weathering_function = "weathering_isotopes_delta"
+        p = (pco2_0, area_fraction, ex, f0, c.delta, c.source.species.r)
     elif c.epsilon != "None":
+        weathering_function = "weathering_isotopes_alpha"
         alpha = c.epsilon / 1000 + 1  # convert to alpha notation
         p = (
             pco2_0,  # reference pCO2
@@ -192,16 +194,15 @@ def init_weathering(
             alpha,  # fractionation factor
             c.source.species.r,  # isotope reference species
         )
-        weathering_function = "weathering_isotopes_alpha"
     elif c.isotopes and c.sink.isotopes:
-        p = (pco2_0, area_fraction, ex, f0, c.source.isotope_ratio)
         weathering_function = "weathering_isotopes"
+        p = (pco2_0, area_fraction, ex, f0)
     elif c.reservoir_ref.isotopes:  # pco2 data is a tuple
-        p = (pco2_0, area_fraction, ex, f0)
         weathering_function = "weathering_ref_isotopes"
-    else:
         p = (pco2_0, area_fraction, ex, f0)
+    else:
         weathering_function = "weathering_no_isotopes"
+        p = (pco2_0, area_fraction, ex, f0)
 
     ec = ExternalCode(
         name=f"ec_weathering_{c.id}",
