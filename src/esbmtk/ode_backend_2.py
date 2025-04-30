@@ -475,14 +475,12 @@ def get_ic(r: Species, icl: dict, isotopes=False) -> str:
             s1 += f", R[{icl[r][1]}]"
 
     elif isinstance(r, Source | Sink):
-        # 1 = f"R[{icl[r][0]}]"
-        # s1 = f"{r.full_name}.c"
+        # FIXME: this should really point to a variable, maybe add to
+        # gpt?
         s1 = f"{r.c}"
         if isotopes:
-            # s1 += f", {r.full_name}.l"
-            # s1 += f", R[{icl[r][1]}]"
+            # FIXME: this should really point to a variable
             s1 += f", {r.l}"
-            breakpoint()
     else:
         raise ValueError(
             f"get_ic: can't find {r.full_name} in list of initial conditions"
