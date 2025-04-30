@@ -279,7 +279,8 @@ class Model(esbmtkBase):
 
         # Reservoirs and connections
         self.lor: list = []  # List of all reservoir type objects
-        self.lic: list = []  # List of all reservoir type objects (internal)
+        self.lic: list = []  # List reservoirs with initial conditions
+        # self.lis: list = []  # List of sources with initial conditions
         self.loc: set = set()  # Set of connection objects
 
         # Elements and species
