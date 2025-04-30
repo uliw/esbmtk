@@ -46,6 +46,18 @@ box_parameters: dict = {
         "S": 35,
         "d": {M.DIC: 0},
     },
+    "b3": {  # empty box, no isotopes
+        "c": {
+            M.DIC: "0 umol/kg",
+            M.TA: "0 umol/kg",
+            M.O2: "0 umol/kg",
+        },
+        "g": [0, -10000, 1],
+        "T": 2,
+        "P": 240,
+        "S": 35,
+        "d": {M.DIC: 0},
+    },
     "Fw": {
         "ty": "Source",
         "sp": [M.DIC, M.O2],
@@ -60,13 +72,11 @@ GasReservoir(
     species_ppm="280 ppm",
     delta=-7,
 )
-
 GasReservoir(
     name="CO2_At_no_isotopes",
     species=M.CO2,
     species_ppm="280 ppm",
 )
-
 
 # ---- Test regular weathering flux ---- #
 Species2Species(  # CaCO3 weathering as function of carbonate weathering
@@ -108,21 +118,57 @@ Species2Species(  # CaCO3 weathering as function of carbonate weathering
     id="weathering_yes_yes_1",
 )
 
+# case two: constant delta
+Species2Species(  # CaCO3 weathering as function of carbonate weathering
+    ctype="weathering",
+    source=M.Fw.DIC,  # source of flux
+    sink=M.b2.DIC,
+    reservoir_ref=M.CO2_At_with_isotopes,  # pCO2
+    scale=1,  # optional, defaults to 1
+    ex=0.4,  # exponent c
+    pco2_0="280 ppm",  # reference pCO2
+    rate="10 Tmol/yr",  # rate at pco2_0
+    id="weathering_yes_yes_2",
+    delta=5,
+)
+
+# case three: constant delta
+Species2Species(  # CaCO3 weathering as function of carbonate weathering
+    ctype="weathering",
+    source=M.Fw.DIC,  # source of flux
+    sink=M.b3.DIC,
+    reservoir_ref=M.CO2_At_with_isotopes,  # pCO2
+    scale=1,  # optional, defaults to 1
+    ex=0.4,  # exponent c
+    pco2_0="280 ppm",  # reference pCO2
+    rate="10 Tmol/yr",  # rate at pco2_0
+    id="weathering_yes_yes_3",
+    epsilon=21,
+)
+
 # M.debug_equations_file = True
 M.run()
 
 # regular weathering flux
 wnn_mass = M.b1.O2.volume * M.b1.swc.density / 1000 * M.b1.O2.c[-1]
 wyn_mass = M.b2.O2.volume * M.b1.swc.density / 1000 * M.b1.O2.c[-1]
-wyy_mass = M.b1.DIC.volume * M.b1.swc.density / 1000 * M.b1.DIC.c[-1]
-wyy_c1 = M.b1.DIC.d[-1]
+wyy1_mass = M.b1.DIC.volume * M.b1.swc.density / 1000 * M.b1.DIC.c[-1]
+wyy2_mass = M.b2.DIC.volume * M.b2.swc.density / 1000 * M.b2.DIC.c[-1]
+wyy3_mass = M.b3.DIC.volume * M.b3.swc.density / 1000 * M.b3.DIC.c[-1]
+wyy_d1 = M.b1.DIC.d[-1]
+wyy_d2 = M.b2.DIC.d[-1]
+wyy_d3 = M.b3.DIC.d[-1]
 
 tolerance = 1e-5
 test_values = [  # result, reference value, tolerance
     (wnn_mass.magnitude, 1e16, tolerance, "mass isotopes no no"),
     (wyn_mass.magnitude, 1e16, tolerance, "mass isotopes yes no"),
-    (wyy_mass.magnitude, 1e16, tolerance, "mass isotopes yes yes 1"),
-    (wyy_c1, 0, tolerance, "delta isotopes yes yes 1"),
+    (wyy1_mass.magnitude, 1e16, tolerance, "mass isotopes yes yes 1"),
+    (wyy2_mass.magnitude, 1e16, tolerance, "mass isotopes yes yes 2"),
+    (wyy3_mass.magnitude, 1e16, tolerance, "mass isotopes yes yes 3"),
+    (wyy_d1, 0, tolerance, "delta isotopes yes yes 1"),
+    (wyy_d2, 5, tolerance, "delta isotopes yes yes 2"),
+    (wyy_d3, 21, tolerance, "delta isotopes yes yes 2"),
 ]
 
 
@@ -131,11 +177,18 @@ test_values = [  # result, reference value, tolerance
 def test_values(test_input, expected, tolerance, message):
     """Test against known values."""
     try:
-        assert (
-            abs(expected) * (1 - tolerance)
-            <= abs(test_input)
-            <= abs(expected) * (1 + tolerance)
-        )
+        if expected == 0:
+            # Special case for expected value being zero
+            assert abs(test_input) <= tolerance, (
+                f"{message}\n"
+                f"expected {expected} but got {test_input}, tol = {tolerance:.2e}\n"
+            )
+        else:
+            assert (
+                abs(expected) * (1 - tolerance)
+                <= abs(test_input)
+                <= abs(expected) * (1 + tolerance)
+            )
     except AssertionError as e:
         raise Exception(
             f"{message}\n"
