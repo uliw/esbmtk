@@ -7,16 +7,17 @@ Introduction
 Installation
 ~~~~~~~~~~~~
 
-**Note that ESBMTK requires python 3.12 or higher.**
+**Note that ESBMTK 0.14.2.x requires python 3.12 or higher.**
 
 Conda
 ^^^^^
 
+ESBMTK is available via through the conda-forge channel `https://conda-forge.org/ <https://conda-forge.org/>`_
 Assuming you install into a new virtual environment the following should install the ESBMTK framework
 
 .. code:: sh
 
-    conda create --name foo
+    conda create --name foo python=3.12
     conda activate foo
     conda config --add channels conda-forge
     conda config --set channel_priority strict

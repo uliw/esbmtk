@@ -48,7 +48,7 @@ ESBMTK support the use of isotopes for many processes and species out of the box
         scale="20 Sv",
         id="upwelling",
     )
-    M.run()
+    M.run(method="BDF")
 
 ::
 
@@ -233,7 +233,7 @@ Presently ESBMTK does not support the automatic matching of liquid species to ga
         ctype="gasexchange",
         id="ex_O2",
     )
-    M.run()
+    M.run(method="BDF")
 
 In the following example the atmosphere equilibrates withe the surface ocean within a couple of months.
 plotting with

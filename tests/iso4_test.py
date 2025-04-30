@@ -33,4 +33,4 @@ Species2Species(  # Ocean to atmosphere F8
     ctype="gasexchange",
     id="ex_O2",
 )
-M.run()
+M.run(method="BDF")

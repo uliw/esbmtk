@@ -43,7 +43,7 @@ ConnectionProperties(  # thermohaline upwelling
     scale="20 Sv",
     id="upwelling",
 )
-M.run()
+M.run(method="BDF")
 #+END_SRC
 
 #+RESULTS:
@@ -234,7 +234,7 @@ Species2Species(  # Ocean to atmosphere F8
     ctype="gasexchange",
     id="ex_O2",
 )
-M.run()
+M.run(method="BDF")
 #+END_SRC
 In the following example the atmosphere equilibrates withe the surface ocean within a couple of months.
 plotting with
@@ -355,6 +355,6 @@ ConnectionProperties(  # thermohaline upwelling
     id="PIC",
 )
 
-M.run()
+M.run(method="BDF")
 #+END_SRC
 
