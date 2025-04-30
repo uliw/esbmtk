@@ -74,6 +74,9 @@ def weathering_no_isotopes(
     return f
 
 
+# Note this only works for for the case where the atmosphere
+# has isotopes, and the sink has none, But fails if both
+# have isotopes.
 # @njit(fastmath=True)
 def weathering_ref_isotopes(
     c_pco2: float | list[float],
@@ -173,7 +176,7 @@ def init_weathering(
     :f0: flux at pco2_0
 
     """
-    from esbmtk import ExternalCode, check_for_quantity
+    from esbmtk import ExternalCode, Sink, check_for_quantity
 
     f0 = check_for_quantity(f0, "mol/year").magnitude
     pco2_0 = check_for_quantity(pco2_0, "ppm").magnitude
@@ -194,10 +197,14 @@ def init_weathering(
             alpha,  # fractionation factor
             c.source.species.r,  # isotope reference species
         )
-    elif c.isotopes and c.sink.isotopes:
+    elif (
+        (c.isotopes and c.sink.isotopes)
+        or (c.reservoir_ref.isotopes and c.sink.isotopes)
+        or (c.isotopes and isinstance(c.sink, Sink))
+    ):
         weathering_function = "weathering_isotopes"
         p = (pco2_0, area_fraction, ex, f0)
-    elif c.reservoir_ref.isotopes:  # pco2 data is a tuple
+    elif c.reservoir_ref.isotopes and not c.sink.isotopes:
         weathering_function = "weathering_ref_isotopes"
         p = (pco2_0, area_fraction, ex, f0)
     else:
