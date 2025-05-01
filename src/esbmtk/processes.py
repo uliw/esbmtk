@@ -110,8 +110,7 @@ def weathering_isotopes(
     pco2_0, area_fraction, ex, f0 = p  # constants
     w_scale = area_fraction * (pco2 / pco2_0) ** ex
     F_w = f0 * w_scale
-    F_w_i = F_w * s_l / s_c
-
+    F_w_i = f0 * w_scale * s_l / s_c
     return (F_w, F_w_i)
 
 
@@ -131,7 +130,7 @@ def weathering_isotopes_delta(
     pco2, pco2i = c_pco2  # pco2 data
     w_scale = area_fraction * (pco2 / pco2_0) ** ex
     F_w = f0 * w_scale
-    F_w_i = f0 * 1000 / (r * (delta + 1000) + 1000)
+    F_w_i = f0 * w_scale * 1000 / (r * (delta + 1000) + 1000)
     return (F_w, F_w_i)
 
 
@@ -154,7 +153,7 @@ def weathering_isotopes_alpha(
     s_c, s_l = source_data
     w_scale = area_fraction * (pco2 / pco2_0) ** ex
     F_w = f0 * w_scale  # flux at a given pco2 value
-    F_w_i = s_l * f0 / (alpha * s_c + s_l - alpha * s_l)
+    F_w_i = f0 * w_scale * s_l / (alpha * s_c + s_l - alpha * s_l)
     return (F_w, F_w_i)
 
 
