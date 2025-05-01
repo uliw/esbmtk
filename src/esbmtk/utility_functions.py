@@ -1485,13 +1485,14 @@ def data_summaries(
     box_names: list,
     register_with="None",
 ) -> list:
-    """Group results by species and Reservoirs.
+    r"""Group results by species and Reservoirs.
 
     :param M: model instance
     :param species_names: tp.List of species instances
     :param box_names: tp.List of Reservoir instances
     :param register_with: defaults to M
-    :returns pl: a list of datafield instance to be plotted
+
+    :returns pl: a list of datafield instances to be plotted
 
     Note: because pl is a list, you need to expand it before
     using it in the plot method. Either use
@@ -1499,11 +1500,11 @@ def data_summaries(
     M.plot(pl)
 
     or
-    M.plot([*pl])
+    M.plot([\*pl])
 
     If you call a plot with many subfigures, use pl like this:
 
-    M.plot([o1, o2, *pl])
+    M.plot([o1, o2, \*pl])
 
     """
     from esbmtk import DataField, VectorData
