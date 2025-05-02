@@ -1121,6 +1121,7 @@ class VectorData(esbmtkBase):
         self.mo = self.species.mo
         self.model = self.species.mo
         self.c = self.data
+        self.x = self.c
         self.label = self.name
         self.register.model.lvd.append(self)
         self.__register_with_parent__()
