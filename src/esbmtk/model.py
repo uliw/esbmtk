@@ -1011,7 +1011,8 @@ class Model(esbmtkBase):
             If the solver fails to find a solution
         """
         # Get initial conditions and build equationsmatrices
-        self.R_names, icl, cpl, ipl, atol = get_initial_conditions(self, self.rtol)
+        self.R_names_dict, icl, cpl, ipl, atol = get_initial_conditions(self, self.rtol)
+        self.R_names = list(self.R_names_dict.keys())
 
         # get initial concentrations for each reservoir
         R = np.array(list(self.R_names.values()))

@@ -162,8 +162,8 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
 
     Returns: dCdt as numpy array
 
-    Reservoir name lookup list(M.R_names.keys())[15]
-    Flux name lookup: M.lof[2]
+    Reservoir name lookup: M.R_names[15]
+    Flux name lookup: M.F_names[2]
     """
     '''
     ind2 = 4 * " "  # indention
