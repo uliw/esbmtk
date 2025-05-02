@@ -164,6 +164,8 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
 
     Reservoir name lookup: M.R_names[15]
     Flux name lookup: M.F_names[2]
+    Matrix Coefficients: M.CM[reservoir index, flux index]
+    Table of constants: M.toc[idx]
     """
     '''
     ind2 = 4 * " "  # indention
