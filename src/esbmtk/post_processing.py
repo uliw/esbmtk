@@ -102,21 +102,24 @@ def carbonate_system_2_pp(
     zsat_min: float = 200,
     zmax: float = 10000,
 ) -> None:
-    """Calculatesa the fraction of carbonate that is dissolved.
+    """Calculate the fraction of carbonate that is dissolved.
 
     :param rg: Reservoir, e.g., M.D_b
     :param export: export flux in mol/year
     :param zsat_min: depth of mixed layer
     :param zmax: depth of lookup table
 
-    Returns
-    -------
-    DIC_burial, DIC_burial_l, Hplus, zsnow
+    This function then saves the data as
 
-    Additionally, it calculates  the following critical depth intervals:
-
-    zsat: top of lysocline
-    zcc: carbonate compensation depth
+    M.box_name.Hplus
+    M.box_name.CO3
+    M.box_name.CO2aq
+    M.box_name.pH
+    M.box_name.zsat # top of lysocline
+    M.box_name.zcc # bottom of lysocline
+    M.box_name.zsnow # snow line
+    M.box_name.Fburial # The CaCO3 burial flux (Export - dissolution)
+    M.box_name.Fdiss  # The CaCO3 dissolution flux
 
     LIMITATIONS:
     - Assumes all concentrations are in mol/kg
