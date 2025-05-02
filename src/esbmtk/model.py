@@ -1015,7 +1015,7 @@ class Model(esbmtkBase):
         self.R_names = list(self.R_names_dict.keys())
 
         # get initial concentrations for each reservoir
-        R = np.array(list(self.R_names.values()))
+        R = np.array(list(self.R_names_dict.values()))
 
         # icl = dict[Species, list[int, int]] where reservoir
         #     indicates the reservoir handle, and the list contains the
