@@ -175,7 +175,7 @@ def init_weathering(
     :f0: flux at pco2_0
 
     """
-    from esbmtk import ExternalCode, Sink, check_for_quantity
+    from esbmtk import ExternalCode, Sink, Source, check_for_quantity
 
     f0 = check_for_quantity(f0, "mol/year").magnitude
     pco2_0 = check_for_quantity(pco2_0, "ppm").magnitude
@@ -196,6 +196,13 @@ def init_weathering(
             alpha,  # fractionation factor
             c.source.species.r,  # isotope reference species
         )
+    elif isinstance(c.source, Source) and isinstance(c.sink, Sink):
+        if c.reservoir_ref.isotopes:
+            weathering_function = "weathering_ref_isotopes"
+            p = (pco2_0, area_fraction, ex, f0)
+        else:
+            weathering_function = "weathering_no_isotopes"
+            p = (pco2_0, area_fraction, ex, f0)
     elif (
         (c.isotopes and c.sink.isotopes)
         or (c.reservoir_ref.isotopes and c.sink.isotopes)
