@@ -68,9 +68,18 @@ ConnectionProperties(
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
     ref_flux=Fd,
-    scale=1,
+    scale=0.1,
     epsilon=5,
     id="downwelling",
+)
+ConnectionProperties(
+    ctype="scale_with_flux",
+    source=M.S_b,  # source of flux
+    sink=M.D_b,  # target of flux
+    ref_flux=Fd,
+    scale=0.9,
+    epsilon=5,
+    id="downwelling2",
 )
 
 ConnectionProperties(  # thermohaline upwelling
