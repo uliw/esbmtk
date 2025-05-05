@@ -26,8 +26,9 @@ M = bm.initialize_model_geometry(
     debug,
 )
 
-M.debug_equations_file = False
+# M.debug_equations_file = True
 M.run()
+# M.plot([M.L_b.DIC, M.D_b.DIC])
 
 tolerance = 1e-3
 test_values = [  # result, reference value, tolerance, message
