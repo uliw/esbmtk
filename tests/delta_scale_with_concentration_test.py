@@ -29,10 +29,20 @@ ConnectionProperties(  # thermohaline upwelling
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
-    scale=1e16,
+    scale=1e16 * 0.1,
     delta=5,
     id="downwelling",
 )
+
+ConnectionProperties(  # thermohaline upwelling
+    source=M.S_b,  # source of flux
+    sink=M.D_b,  # target of flux
+    ctype="scale_with_concentration",
+    scale=1e16 * 0.9,
+    delta=5,
+    id="downwelling2",
+)
+
 ConnectionProperties(  # thermohaline upwelling
     sink=M.S_b,  # source of flux
     source=M.D_b,  # target of flux
