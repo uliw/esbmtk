@@ -13,7 +13,8 @@ alpha = 0.6
 
 # import the model definition
 M = bd.initialize_model(rain_ratio, alpha, run_time, time_step)
-M.run()
+M.debug_equations_file = True
+M.run(method="BDF")
 # post process data
 CaCO3_export = M.CaCO3_export.to(f"{M.f_unit}").magnitude
 carbonate_system_2_pp(M.D_b, CaCO3_export, 200, 10999)
