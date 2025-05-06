@@ -271,12 +271,15 @@ class Species2Species(esbmtkBase):
             self.scale = Q_(self.scale)
 
         if isinstance(self.scale, Q_):  # test what type of Quantity we have
-            if self.scale.check(["volume]/[time"]):  # flux
-                self.scale = self.scale.to(self.mo.r_unit)
-            elif self.scale.check(["mass] / [time"]):  # flux
-                self.scale = self.scale.to(self.mo.f_unit)
+            if self.scale.check("[volume]/[time]"):  # flux
+                self.scale = self.scale.to(self.mo.r_unit).magnitude
+            # test if flux
+            elif self.scale.check("[mass]/[time]") or self.scale.check(
+                "[substance]/[time]"
+            ):
+                self.scale = self.scale.to(self.mo.f_unit).magnitude
             elif self.scale.check("[mass]/[volume]"):  # concentration
-                self.scale = self.scale.to(self.mo.c_unit)
+                self.scale = self.scale.to(self.mo.c_unit).magnitude
             else:
                 Species2SpeciesError(
                     f"No conversion to model units for {self.scale} specified"
