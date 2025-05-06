@@ -244,6 +244,37 @@ def Phosphor(model):
     )  # Name & element handle
 
 
+def Calcium(model):
+    """Element property definitions.
+
+    Parameters
+    ----------
+    model : Model
+        Model instance
+    """
+    eh = ElementProperties(
+        name="Calcium",
+        model=model,  # model handle
+        mass_unit="mol",  # base mass unit
+        li_label="LI",  # Name of light isotope
+        hi_label="HL",  # Name of heavy isotope
+        d_label="D",  # Name of isotope delta
+        d_scale="DS",  # Isotope scale. End of plot labels  # needs verification
+        r=1,  # isotopic abundance ratio for species # needs verification
+        register=model,
+    )
+
+    # add species
+    SpeciesProperties(
+        name="Ca2+",
+        element=eh,
+        display_as=r"Ca$^{2+}$",
+        register=eh,
+        m_weight=40.007,
+        scale_to="umol",
+    )  # Name & element handle
+
+
 def Nitrogen(model):
     """Element property definitions.
 
