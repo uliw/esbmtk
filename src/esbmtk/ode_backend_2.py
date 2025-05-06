@@ -521,6 +521,8 @@ def get_regular_flux_eq(
 
     ditto for isotopes
     """
+    from esbmtk import Source
+
     rhs, rhs_l = ["", ""]
     debug_rhs = ["", ""]
     rhs_out = [False, False]
@@ -547,11 +549,18 @@ def get_regular_flux_eq(
             )
 
     if c.mo.debug_equations_file:  # and output:
+        if isinstance(c.source, Source):
+            m1 = "constant flux from a source\n"
+            m2 = "\n"
+        else:
+            m1 = "    constants =  CM[c.source.idx, flux.idx] * toc[c.r_index]\n"
+            m2 = "    constants = CM[{c.source.idx}:, {flux.idx}] * toc[{c.r_index}]\n"
+
         debug_rhs[0] = (
             f'"""\n'
             f"    {c.ctype}: {c.name}, id={c.id}\n"
-            f"    constants =  CM[c.sink.idx, flux.idx] * toc[c.r_index]\n"
-            f"    constants = CM[{c.sink.idx}:, {flux.idx}] * toc[{c.r_index}]\n"
+            f"{m1}"
+            f"{m2}"
             f"    rhs   = None\n"
             f'    """\n'
         )
@@ -777,8 +786,8 @@ def isotopes_regular_flux(
         debug_str = (
             f'"""\n'
             f"    isotope equations for {c.full_name}:{c.ctype}\n"
-            f"    constants = CM[c.sink.idx:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]\n"
-            f"    constants = CM[c.sink.idx:, {flux.idx + 1}] = CM[:, {flux.idx + 1}] * {toc[c.r_index]}\n"
+            f"    constants = CM[c.source.idx:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]\n"
+            f"    constants = CM[c.source.idx:, {flux.idx + 1}] = CM[:, {flux.idx + 1}] * {toc[c.r_index]}\n"
             f"    rhs_l = {ds1}\n"
             f"    rhs_l = {equation_string}\n"
             f'    """\n'
@@ -855,9 +864,9 @@ def isotopes_scale_concentration(
             f'"""\n'
             f"    isotope equations for {c.full_name}:{c.ctype}\n"
             f"    Flux = {flux.full_name}, d = {c.delta}, e = {c.epsilon}\n"
-            f"    constants = CM[s.sink.idx:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]\n"
-            f"    constants = CM[{c.sink.idx + 1}, {flux.idx + 1}] ="
-            f"    {CM[c.sink.idx + 1, flux.idx + 1]:.2e} * {toc[c.s_index]:.2e}\n"
+            f"    constants = CM[s.source.idx:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.s_index]\n"
+            f"    constants = CM[{c.source.idx + 1}, {flux.idx + 1}] ="
+            f"    {CM[c.source.idx + 1, flux.idx + 1]:.2e} * {toc[c.s_index]:.2e}\n"
             f"    rhs_l = {ds1}\n"
             f"    rhs_l = {equation_string}\n"
             f'    """\n'
