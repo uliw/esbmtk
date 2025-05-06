@@ -395,7 +395,7 @@ class Species2Species(esbmtkBase):
 
         Register with reservoir and global namespace
         """
-        from esbmtk import Flux, Sink, Source, Species
+        from esbmtk import Flux, GasReservoir, Sink, Source, Species
 
         # test if default arguments present
         d = 0 if self.delta == "None" else self.delta
@@ -428,7 +428,7 @@ class Species2Species(esbmtkBase):
             # register flux with its reservoirs
             if isinstance(self.r1, Source):
                 # add the flux name direction/pair
-                if isinstance(self.r2, Species):
+                if isinstance(self.r2, Species | GasReservoir):
                     self.r2.lio[self.fh] = self.influx
                     # add the handle to the list of fluxes
                     self.r2.lof.append(self.fh)
