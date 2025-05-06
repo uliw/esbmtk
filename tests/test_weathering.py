@@ -3,6 +3,8 @@
 import pytest
 
 from esbmtk import (
+    Q_,
+    ConnectionProperties,
     GasReservoir,
     Model,
     Species2Species,
@@ -106,8 +108,25 @@ box_parameters: dict = {
         "S": 35,
         "d": {M.DIC: 0},
     },
+    "b7": {
+        "c": {
+            M.DIC: "0 umol/kg",
+            M.TA: "0 umol/kg",
+            M.O2: "0 umol/kg",
+        },
+        "g": [0, -10000, 1],
+        "T": 2,
+        "P": 240,
+        "S": 35,
+        "d": {M.DIC: 0},
+    },
     "Fw": {
         "ty": "Source",
+        "sp": [M.DIC, M.O2],
+        "d": {M.DIC: 0},
+    },
+    "Fb": {
+        "ty": "Sink",
         "sp": [M.DIC, M.O2],
         "d": {M.DIC: 0},
     },
@@ -140,7 +159,6 @@ Species2Species(  # CaCO3 weathering as function of carbonate weathering
     source=M.Fw.O2,  # source of flux
     sink=M.b1.O2,
     reservoir_ref=M.CO2_At_no_isotopes,  # pCO2
-    scale=1,  # optional, defaults to 1
     ex=0.4,  # exponent c
     pco2_0="280 ppm",  # reference pCO2
     rate="10 Tmol/yr",  # rate at pco2_0
@@ -153,7 +171,6 @@ Species2Species(  # CaCO3 weathering as function of carbonate weathering
     source=M.Fw.O2,  # source of flux
     sink=M.b2.O2,
     reservoir_ref=M.CO2_At_with_isotopes,  # pCO2
-    scale=1,  # optional, defaults to 1
     ex=0.4,  # exponent c
     pco2_0="280 ppm",  # reference pCO2
     rate="10 Tmol/yr",  # rate at pco2_0
@@ -167,7 +184,6 @@ Species2Species(  # CaCO3 weathering as function of carbonate weathering
 #     source=M.Fw.DIC,  # source of flux
 #     sink=M.b0.DIC,
 #     reservoir_ref=M.CO2_At_with_isotopes,  # pCO2
-#     scale=1,  # optional, defaults to 1
 #     ex=0.4,  # exponent c
 #     pco2_0="280 ppm",  # reference pCO2
 #     rate="10 Tmol/yr",  # rate at pco2_0
@@ -181,7 +197,6 @@ Species2Species(  # CaCO3 weathering as function of carbonate weathering
     source=M.Fw.DIC,  # source of flux
     sink=M.b1.DIC,
     reservoir_ref=M.CO2_At_with_isotopes,  # pCO2
-    scale=1,  # optional, defaults to 1
     ex=0.4,  # exponent c
     pco2_0="280 ppm",  # reference pCO2
     rate="10 Tmol/yr",  # rate at pco2_0
@@ -194,7 +209,6 @@ Species2Species(  # CaCO3 weathering as function of carbonate weathering
     source=M.Fw.DIC,  # source of flux
     sink=M.b2.DIC,
     reservoir_ref=M.CO2_At_with_isotopes,  # pCO2
-    scale=1,  # optional, defaults to 1
     ex=0.4,  # exponent c
     pco2_0="280 ppm",  # reference pCO2
     rate="10 Tmol/yr",  # rate at pco2_0
@@ -208,7 +222,6 @@ Species2Species(  # CaCO3 weathering as function of carbonate weathering
     source=M.Fw.DIC,  # source of flux
     sink=M.b3.DIC,
     reservoir_ref=M.CO2_At_with_isotopes,  # pCO2
-    scale=1,  # optional, defaults to 1
     ex=0.4,  # exponent c
     pco2_0="280 ppm",  # reference pCO2
     rate="10 Tmol/yr",  # rate at pco2_0
@@ -222,7 +235,6 @@ Species2Species(  # CaCO3 weathering as function of carbonate weathering
     source=M.Fw.DIC,  # source of flux
     sink=M.b4.DIC,
     reservoir_ref=M.CO2_At_with_isotopes_240,  # pCO2
-    scale=1,  # optional, defaults to 1
     ex=0.4,  # exponent c
     pco2_0="280 ppm",  # reference pCO2
     rate="10 Tmol/yr",  # rate at pco2_0
@@ -257,6 +269,32 @@ Species2Species(  # CaCO3 weathering as function of carbonate weathering
     id="weathering_yes_yes_6_240",
 )
 
+# case 7: test weathering as reference flux
+Species2Species(  # weathering as ref flux without any reservoirs
+    ctype="weathering",
+    source=M.Fw.DIC,  # source of flux
+    sink=M.Fb.DIC,
+    reservoir_ref=M.CO2_At_with_isotopes_240,  # pCO2
+    ex=0.4,  # exponent c
+    pco2_0="280 ppm",  # reference pCO2
+    rate=1,  # rate at pco2_0
+    id="weathering_s2s",
+)
+
+Fd = M.flux_summary(filter_by="weathering_s2s", return_list=True)[0]
+
+ConnectionProperties(
+    ctype="scale_with_flux",
+    source=M.Fw,  # source of flux
+    sink=M.b7,  # target of flux
+    ref_flux=Fd,
+    # scale=Q_("10 Tmol/yr").to(M.f_unit).magnitude,
+    scale="10 Tmol/yr",
+    delta=5,
+    species=[M.DIC],
+    id="weathering_ref_flux_test",
+)
+
 
 # M.debug_equations_file = True
 M.run()
@@ -268,6 +306,9 @@ wyy0_mass = M.b1.DIC.volume * M.b1.swc.density / 1000 * M.b1.DIC.c[-1]
 wyy1_mass = M.b1.DIC.volume * M.b1.swc.density / 1000 * M.b1.DIC.c[-1]
 wyy2_mass = M.b2.DIC.volume * M.b2.swc.density / 1000 * M.b2.DIC.c[-1]
 wyy3_mass = M.b3.DIC.volume * M.b3.swc.density / 1000 * M.b3.DIC.c[-1]
+wyy4_mass = M.b4.DIC.volume * M.b4.swc.density / 1000 * M.b4.DIC.c[-1]
+wyy7_mass = M.b7.DIC.volume * M.b7.swc.density / 1000 * M.b7.DIC.c[-1]
+
 # wyy_d0 = M.b0.DIC.d[-1]
 wyy_d1 = M.b1.DIC.d[-1]
 wyy_d2 = M.b2.DIC.d[-1]
@@ -275,6 +316,7 @@ wyy_d3 = M.b3.DIC.d[-1]
 wyy_d4 = M.b4.DIC.d[-1]
 wyy_d5 = M.b5.DIC.d[-1]
 wyy_d6 = M.b6.DIC.d[-1]
+wyy_d7 = M.b7.DIC.d[-1]
 
 tolerance = 1e-5
 test_values = [  # result, reference value, tolerance
@@ -290,6 +332,8 @@ test_values = [  # result, reference value, tolerance
     (wyy_d4, 5, tolerance, "delta isotopes yes yes 4_240"),
     (wyy_d5, 21, tolerance, "delta isotopes yes yes 5_240"),
     (wyy_d6, 0, tolerance, "delta isotopes yes yes 6_240"),
+    (wyy_d7, 5, tolerance, "refscale d = 5 7_240"),
+    (wyy7_mass.m, wyy4_mass.m, tolerance, "refscale mass_test"),
 ]
 
 
