@@ -111,11 +111,20 @@ class Species2Species(esbmtkBase):
     >>> )
 
     Connecting two reservoirs using another flux as reference:
+    The reference flux can either be given as a flux object, e.g., as
+    returned from a flux lookup:
+
+    M.flux_summary(filter_by="po4_productivity", return_list=True)[0]
+
+    or simply as the id string:
+
+    "po4_productivity"
+
     >>> Species2Species(  # deep box to sediment
     >>>    source=M.D_b.PO4,
     >>>    sink=M.Fb.PO4,
     >>>    ctype="scale_with_flux",
-    >>>    ref_flux=M.flux_summary(filter_by="po4_productivity", return_list=True)[0],
+    >>>    ref_flux=""po4_productivity",
     >>>    # increase p_burial
     >>>    scale=(1 - M.remin_eff),  # burial of ~1% P
     >>>    id="burial",
@@ -540,13 +549,19 @@ class Species2Species(esbmtkBase):
         """Scale a flux relative to another flux."""
         from esbmtk import Flux
 
-        self.ref_flux.serves_as_input = True
-
         if self.model.debug:
             print(f"sf: {self.full_name}, isotopes = {self.isotopes}")
 
+        if isinstance(self.ref_flux, str):
+            f = self.mo.flux_summary(filter_by=self.ref_flux, return_list=True)[0]
+            self.ref_flux = f
+
         if not isinstance(self.ref_flux, Flux):
-            raise Species2SpeciesError("Scale reference must be a flux")
+            raise ScaleFluxError(
+                f"\n {self.ref_flux} must be flux or a an id-string. Check spelling\n"
+            )
+
+        self.ref_flux.serves_as_input = True
 
         if self.isotopes == "None":
             raise ScaleFluxError(f"{self.name}: You need to set the isotope keyword")
