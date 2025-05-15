@@ -19,7 +19,7 @@
 
 <img src="https://raw.githubusercontent.com/uliw/esbmtk/staging/mpc.png" width="600px" align="center">"
 
-The Earth Science Box Modeling Toolkit (ESBMTK) is a user-friendly Python library that simplifies the creation of models to study Earth system processes, such as the carbon cycle and ocean chemistry. It enhances learning by emphasizing concepts over programming and is accessible to students and researchers alike. By automating complex calculations and promoting code clarity, ESBMTK accelerates model development while improving reproducibility and the usability of scientific research. It uses a declarative approach to describe models, and abstracts typical modeling tasks like gas-exchange and carbonate dissolution through python classes. See Wortmann et al. 2025 <https://gmd.copernicus.org/articles/18/1155/2025/> as well as the manual at <https://esbmtk.readthedocs.io/> for installation instructions, usage, and example code.
+The Earth Science Box Modeling Toolkit (ESBMTK) is a user-friendly Python library that simplifies the creation of models to study Earth system processes, such as the carbon cycle and ocean chemistry. It enhances learning by emphasizing concepts over programming and is accessible to students and researchers alike. By abstracting complex calculations and promoting code clarity, ESBMTK accelerates model development while improving reproducibility and the usability of scientific research. It uses an object oriented declarative approach to describe models, and encapsulated typical modeling tasks like gas-exchange and carbonate dissolution through python classes. See Wortmann et al. 2025 <https://gmd.copernicus.org/articles/18/1155/2025/> as well as the manual at <https://esbmtk.readthedocs.io/> for installation instructions, usage, and example code.
 
 Note: ESBMTK 0.14.2.x is a major update that now requires python 3.12 (released May 1<sup>st</sup> 2025). See the [Changelog](https://esbmtk.readthedocs.io/en/latest/changelog.html) for details.
 
@@ -29,6 +29,6 @@ ESBMTK is available via
 -   pypi <https://pypi.org/project/esbmtk/>
 -   conda-forge <https://anaconda.org/conda-forge/esbmtk>
 -   sample code is available at <https://github.com/uliw/ESBMTK-Examples>
--   See the documentation at <https://esbmtk.readthedocs.io/>
+-   See the documentation at <https://esbmtk.readthedocs.io/> and <https://gmd.copernicus.org/articles/18/1155/2025/>
 
 ESBMTK is under active development, before updating, please check the [Changelog](https://esbmtk.readthedocs.io/en/latest/changelog.html)
