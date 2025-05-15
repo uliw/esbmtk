@@ -1340,6 +1340,7 @@ class Model(esbmtkBase):
 
         # Step 4: Update model time vector to match solver time points
         self.time = results.t
+        self.time_u = self.time * self.t_unit
 
         # Step 5: Update flux data to match solver time steps
         steps = len(results.t)  # Get number of solver steps
@@ -1385,15 +1386,30 @@ class Model(esbmtkBase):
         results : scipy.integrate._ivp.ivp.OdeResult
             The ODE solver results
         """
+        from esbmtk import GasReservoir
+
         state_index = 0
 
         for reservoir in self.icl:
             # Update reservoir concentration
             reservoir.c = results.y[state_index]
+            reservoir.c_u = reservoir.c * self.c_unit
 
             # Update reservoir mass (assumes constant volume)
             # Note: This would need modification for variable volumes
-            reservoir.m = results.y[state_index] * reservoir.volume
+            density = reservoir.swc.density.m / 1000 if hasattr(reservoir, "swc") else 1
+
+            if isinstance(reservoir, GasReservoir):
+                # FIXME: GasReservoirs do have a volume and the current code
+                # assumes a constant mass
+                reservoir.m_u = reservoir.m * self.m_unit
+            else:
+                reservoir.m = (
+                    results.y[state_index]
+                    * reservoir.volume.to(self.v_unit).m
+                    * density
+                )
+                reservoir.m_u = reservoir.m * self.m_unit
 
             # Move to next state variable
             state_index += 1
