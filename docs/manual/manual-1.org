@@ -336,6 +336,12 @@ M.S_b.m  # mass
 M.S_b.v  # volume
 M.S_b.d  # delta value (if used by model)
 M.S_b.l  # the concentration of the light isotope (if used)
+
+# Appending _u will pprovide the data with units. This currently works for
+M.S_b.c_u  # concentration
+M.S_b.m_u  # mass
+M.S_b.v_u  # volume
+M.time_u # time
 #+END_SRC
 
 The model time axis is available as =M.time= and the model supports the @@rst::py:class:`esbmtk.model.Model.connection_summary()`@@ and @@rst::py:class:`esbmtk.model.Model.flux_summary()`@@   

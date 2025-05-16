@@ -1,14 +1,16 @@
 
 # Table of Contents
 
-1.  [Changelog](#orgc094cad)
+1.  [Changelog](#org032ad27)
 
 
-<a id="orgc094cad"></a>
+<a id="org032ad27"></a>
 
 # Changelog
 
--   0.14.2.1 ESBMTK now requires python 3.12. Cleaned up repository structure. This may result in import errors. Please get in touch if it does. Reworked many class definitions to improve readability and documentation. Fixed a variety of regressions for isotope calculations that were introduces in 0.14.1.x  Added `debug` keyword to the Model object. Expanded the debug information in the equations file.
+-   0.14.2.8 fixed `reverse_time` display for plots with more than one x-axis. Added unit registered output variables (e.g., adding `_u` to  `M.D_b.PO4.c` than `M.D_b.PO4.c_u` will show the concentration with the units added. Reservoir mass calculations are now updated once integration finishes.)
+-   0.14.2.2 May 1<sup>st</sup> 2025, mostly  a bugfix release that adds isotope related unit test.
+-   0.14.2.1 ESBMTK now requires python 3.12. Cleaned up repository structure. This may result in import errors. Please get in touch if it does. Reworked many class definitions to improve readability and documentation. Fixed a variety of regressions for isotope calculations that were introduces in 0.14.1.x  Added `debug` keyword to the Model object. Expanded the debug information in the equations file. The default solver has changed from BDF to LSODA.
 -   0.14.1.4 Fixed a regression that caused incorrect `zcc` values in the post-processing step. Added  the `reverse_time` keyword to the plot function. This is most useful for models that run forward in time from past starting point.
 -   0.14.1.x reworked the structure of the equations file, as well as the code that generates forcing functions. `scale_by_concentration` connections now correct for density. Both changes results in small changes to the numerical solutions. Also added link to the GMD publication describing the library.
 -   0.14.0.x simplified the setup of the gas exchange connections, documentation improvements, `number_of_max_datapoints` keyword has been removed. Currently, this results in a huge memory demand for jobs that integrate over millions of years with small time steps (say 10 years)

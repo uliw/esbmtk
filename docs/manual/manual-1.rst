@@ -1,6 +1,5 @@
 
 
-
 Introduction
 ------------
 
@@ -398,6 +397,12 @@ The concentration data for a given reservoir is stored in the following instance
     M.S_b.v  # volume
     M.S_b.d  # delta value (if used by model)
     M.S_b.l  # the concentration of the light isotope (if used)
+
+    # Appending _u will pprovide the data with units. This currently works for
+    M.S_b.c_u  # concentration
+    M.S_b.m_u  # mass
+    M.S_b.v_u  # volume
+    M.time_u # time
 
 The model time axis is available as ``M.time`` and the model supports the :py:class:`esbmtk.model.Model.connection_summary()` and :py:class:`esbmtk.model.Model.flux_summary()`   
 
