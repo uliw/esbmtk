@@ -994,11 +994,14 @@ class Signal(esbmtkBase):
             legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
                 6
             )
+            self.mo.axd[ax] = "main"  # register with axes dict
+            self.mo.axd[axt] = "twin"
         else:
             ax.legend()
             ax.spines["right"].set_visible(False)
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
+            self.mo.axd[ax] = "main"  # register with axes dict
 
     def __write_data__(
         self,
@@ -1549,6 +1552,7 @@ class DataField(esbmtkBase):
             # yd = (d.y * M.c_unit).to(self.plt_units).magnitude
             leg = f"{d.legend}"
             ax.scatter(time[1:-2], d.y[1:-2], color=f"C{i}", label=leg)
+            M.axd[ax] = "main"
 
         self.x1_data, self.y1_data, self.y1_label = self.__unify_data__(
             M,
@@ -1595,6 +1599,7 @@ class DataField(esbmtkBase):
         ax.set_ylabel(self.y1_legend)
         # remove unnecessary frame species
         ax.spines["top"].set_visible(False)
+        M.axd[ax] = "main"
         handler1, label1 = ax.get_legend_handles_labels()
 
         # test if independeny y_data is present
@@ -1608,6 +1613,7 @@ class DataField(esbmtkBase):
                 self.y2_label,
             )
             axt = ax.twinx()
+            M.axd[ax] = "twin"
             for i, _d in enumerate(self.y2_data):  # loop over datafield list
                 if self.x2_as_time:
                     x2 = (self.x1_data[i] * M.t_unit).to(M.d_unit).magnitude

@@ -305,6 +305,7 @@ class Model(esbmtkBase):
         self.lrg: list = []  # List of reservoir groups
         self.lto: list = []  # List of objects requiring delayed initialization
         self.olkk: list = []  # Optional keywords for use in connector class
+        self.axd: dict = {}  # list of axes objects
 
         # Global parameters and constants
         self.gpt: tuple = ()  # Global parameter list
@@ -874,11 +875,17 @@ class Model(esbmtkBase):
         from .utility_functions import reverse_tick_labels_factory
 
         t_max = Q_(f"{self.time[-1]} {self.t_unit}").to(self.d_unit).magnitude
-        for ax in fig.get_axes():
-            ax.invert_xaxis()
-            ax.xaxis.set_major_formatter(
-                FuncFormatter(reverse_tick_labels_factory(t_max))
-            )
+        axes = fig.get_axes()
+
+        for ax in axes:
+            try:
+                if self.axd[ax] == "main":
+                    ax.invert_xaxis()
+                    ax.xaxis.set_major_formatter(
+                        FuncFormatter(reverse_tick_labels_factory(t_max))
+                    )
+            except:
+                raise ValueError(f"{ax} not in self.axd")
 
     def run(self, **kwargs) -> None:
         """Run the model simulation.

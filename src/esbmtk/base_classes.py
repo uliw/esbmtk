@@ -1069,12 +1069,15 @@ class SpeciesBase(esbmtkBase):
             # Create combined legend with both axes
             handler2, label2 = axt.get_legend_handles_labels()
             axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(6)
+            self.mo.axd[ax] = "main"  # register with axes dict
+            self.mo.axd[axt] = "twin"
         else:
             # Single axis legend for concentration only
             ax.legend(handler1, label1)
             ax.spines["right"].set_visible(False)
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
+            self.mo.axd[ax] = "main"
 
         # Set title
         ax.set_title(self.full_name)
