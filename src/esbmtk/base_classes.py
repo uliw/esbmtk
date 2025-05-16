@@ -905,7 +905,7 @@ class SpeciesBase(esbmtkBase):
             )
 
         # Read CSV file into dataframe
-        self.df: pd.DataFrame = pd.read_csv(filename)
+        self.df: pd.DataFrame = pd.read_csv(filename, engine="python")
         self.headers: list = list(self.df.columns.values)
         df = self.df
         headers = self.headers
@@ -919,6 +919,11 @@ class SpeciesBase(esbmtkBase):
 
         # Process data from columns
         col: int = 1  # Skip the time column
+
+        # ensure that all numbers are read as numbers
+        for col in self.df.columns[1:]:
+            self.df[col] = pd.to_numeric(self.df[col], errors="coerce")
+
         for n in header_list:
             name = n.split(" ")[0]
             logging.debug(f"Looking for {name}")

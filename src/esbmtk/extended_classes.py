@@ -114,6 +114,15 @@ class GasReservoirError(Exception):
         super().__init__(message)
 
 
+class CSVReadError(Exception):
+    """Custom Error Class."""
+
+    def __init__(self, message):
+        """Initialize Error Instance."""
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
 class Reservoir(esbmtkBase):
     """Create a group of reservoirs.
 
@@ -1965,7 +1974,7 @@ class ExternalCode(SpeciesNoSet):
         logging.info(f"reading state for {self.full_name} from {fn}")
 
         # read csv file into dataframe
-        self.df: pd.DataFrame = pd.read_csv(fn)
+        self.df: pd.DataFrame = pd.read_csv(fn, encoding="utf-8", engine="python")
         self.headers: list = list(self.df.columns.values)
         df = self.df
         headers = self.headers
@@ -2414,7 +2423,9 @@ class ExternalData(esbmtkBase):
         if not os.path.exists(self.fn):  # check if the file is actually there
             raise ExternalDataError(f"Cannot find file {self.fn}")
 
-        self.df: pd.DataFrame = pd.read_csv(self.fn)  # read file
+        self.df: pd.DataFrame = pd.read_csv(
+            self.fn, encoding="utf-8", engine="python"
+        )  # read file
 
         ncols = len(self.df.columns)
         if ncols < 2:  # test of we have at elast 2 columns
@@ -2433,7 +2444,17 @@ class ExternalData(esbmtkBase):
         self.offset = self.offset.to(self.mo.t_unit).magnitude
 
         # get unit information from each header
-        xh = self.df.columns[0].split("[")[1].split("]")[0]
+        try:
+            xh = self.df.columns[0].split("[")[1].split("]")[0]
+        except:
+            raise CSVReadError(
+                f"Unable to parse column headers in {self.fn}\n"
+                "make sure your headers follow this template:\n"
+                "Time [kyr], Rate [mol/yr], delta [dimensionless]\n"
+                "If the headers are ok, there is likely an encoding error\n"
+                "Try saving/converting your csv file to utf-8\n"
+            )
+
         yh = self.df.columns[1].split("[")[1].split("]")[0]
         self.zh = (
             self.df.columns[2].split("[")[1].split("]")[0]
@@ -2444,6 +2465,10 @@ class ExternalData(esbmtkBase):
         # create the associated quantities
         self.xq = Q_(xh)
         self.yq = Q_(yh)
+
+        # ensure that all numbers are read as numbers
+        for col in self.df.columns[1:]:
+            self.df[col] = pd.to_numeric(self.df[col], errors="coerce")
 
         # add these to the data we are are reading
         self.x: NDArrayFloat = self.df.iloc[:, 0].to_numpy() * self.xq
