@@ -160,7 +160,6 @@ class Model(esbmtkBase):
             write a debug version of the equations file.
         """
         import io
-        import sys
         import warnings
         from importlib.metadata import version
 
@@ -265,7 +264,7 @@ class Model(esbmtkBase):
     def capture_warnings(
         self, message, category, filename, lineno, file=None, line=None
     ):
-        """Custom warning handler that captures warnings."""
+        """Capture custom warnings."""
         self.warning_log.write(
             f"{category.__name__}: {message} (in {filename}, line {lineno})\n\n"
         )
@@ -1087,10 +1086,7 @@ class Model(esbmtkBase):
         function
             The equations function
         """
-        import importlib
-
-        # If debugging equations is enabled
-        if self.debug_equations_file:
+        if self.debug_equations_file:  # If debugging equations is enabled
             if equations_file_path.exists():
                 warnings.warn(
                     "\n\n Warning re-using the equations file \n"
@@ -1364,10 +1360,11 @@ class Model(esbmtkBase):
         results : scipy.integrate._ivp.ivp.OdeResult
             The ODE solver results
         """
+        # raise NotImplementedError("This method is currently not used")
+
         for signal in self.los:
             # Interpolate mass data
             signal.signal_data.m = np.interp(results.t, self.time, signal.signal_data.m)
-
             # Interpolate isotope data if present
             if signal.isotopes:
                 signal.signal_data.l = np.interp(
@@ -1382,6 +1379,7 @@ class Model(esbmtkBase):
         results : scipy.integrate._ivp.ivp.OdeResult
             The ODE solver results
         """
+        # raise NotImplementedError("This method is currently not used")
         for external_data in self.led:
             external_data.y = np.interp(results.t, external_data.x, external_data.y)
 
