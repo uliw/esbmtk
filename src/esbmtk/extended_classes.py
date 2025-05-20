@@ -1007,11 +1007,11 @@ class Signal(esbmtkBase):
         # plot second axis
         if self.isotopes:
             axt = ax.twinx()
-            y2 = self.d  # no conversion for isotopes
+            y2 = self.signal_data.d  # no conversion for isotopes
             _ln2 = axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
             axt.set_ylabel(self.signal_data.ld)
             set_y_limits(axt, M)
-            x.spines["top"].set_visible(False)
+            ax.spines["top"].set_visible(False)
             # set combined legend
             handler2, label2 = axt.get_legend_handles_labels()
             legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
