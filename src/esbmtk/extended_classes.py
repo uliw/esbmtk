@@ -123,6 +123,15 @@ class CSVReadError(Exception):
         super().__init__(message)
 
 
+class CSVDataError(Exception):
+    """Custom Error Class."""
+
+    def __init__(self, message):
+        """Initialize Error Instance."""
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
 class Reservoir(esbmtkBase):
     """Create a group of reservoirs.
 
@@ -603,7 +612,7 @@ class Signal(esbmtkBase):
         self.legend_left = self.signal_data.legend_left
         self.legend_right = self.signal_data.legend_right
         # update isotope values
-        # self.data.li = get_l_mass(self.data.m, self.data.d, self.sp.r)
+        # self.data.l = get_l_mass(self.data.m, self.data.d, self.sp.r)
 
         self.__register_with_parent__()
         self.mo.los.append(self)  # register with model
@@ -650,7 +659,7 @@ class Signal(esbmtkBase):
         """
         from esbmtk import Flux
 
-        # Create a dummy flux we can act up
+        # Create a dummy flux we can act up. Flux masses are all zero
         mapped_signal_data: Flux = Flux(
             name=self.n + "_data",
             species=self.sp,
@@ -660,6 +669,7 @@ class Signal(esbmtkBase):
             save_flux_data=True,
             register=self,
         )
+
         # Creating signal time array
         dt = self.mo.dt  # model time step
         signal_start = self.st
@@ -668,9 +678,10 @@ class Signal(esbmtkBase):
         # imitate signal time array with same size as interpolated signal data (self.s_m)
         signal_time = np.arange(signal_start, signal_end, dt)
 
-        # Create initial results, which are all nan Check with self.stype
-        # whether it's addition, then 0 as default, or multiplication then 1 as
-        # default (instead of nan)
+        """ Create empty arrays that are NaN for data we do not touch,
+        zero for data that is treated as additive, and one for data
+        that is multiplied.
+        """
         mapped_time = np.full_like(model_time, np.nan, dtype=float)
         if self.stype == "addition":
             mapped_m = np.full_like(model_time, 0, dtype=float)
@@ -680,9 +691,8 @@ class Signal(esbmtkBase):
             # in case something is wrong with stype, still create mapped data
             mapped_m = np.full_like(model_time, np.nan, dtype=float)
 
-        mapped_l = np.full_like(
-            model_time, np.nan, dtype=float
-        )  # keep it as is for isotopes until clarified
+        # isotopes are always additive
+        mapped_l = np.full_like(model_time, 0, dtype=float)
 
         # Filter signal time which exists in model time
         # If signal time in model time, return True in mask
@@ -811,7 +821,7 @@ class Signal(esbmtkBase):
             legend=f"{self.name}_ed",
             disp_units=False,  # we need the data in model units
         )
-
+        self.isotopes = self.ed.isotopes
         self.s_time = self.ed.x
         self.s_data = self.ed.y * self.scale
         self.st: float = self.s_time[0]  # signal start time
@@ -841,6 +851,10 @@ class Signal(esbmtkBase):
         Maybe this logic should be me moved elsewhere?
         """
         from esbmtk import Source, Species2Species
+
+        raise DeprecationWarning(
+            "This method is no longer supported. Please notify the esbmtk author"
+        )
 
         if self.source == "None":
             self.source = Source(name=f"{self.name}_Source", species=self.sp)
@@ -984,7 +998,7 @@ class Signal(esbmtkBase):
         #         raise ValueError("Plot transform must be a function")
 
         # plot first axis
-        ln1 = ax.plot(x[1:-2], y1[1:-2], color="C0", label=self.legend_left)
+        _ln1 = ax.plot(x[1:-2], y1[1:-2], color="C0", label=self.legend_left)
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
         ax.set_ylabel(legend)
         ax.spines["top"].set_visible(False)
@@ -994,7 +1008,7 @@ class Signal(esbmtkBase):
         if self.isotopes:
             axt = ax.twinx()
             y2 = self.d  # no conversion for isotopes
-            ln2 = axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
+            _ln2 = axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
             axt.set_ylabel(self.signal_data.ld)
             set_y_limits(axt, M)
             x.spines["top"].set_visible(False)
@@ -1043,13 +1057,13 @@ class Signal(esbmtkBase):
         sp = self.sp  # species handle
         mo = self.sp.mo  # model handle
 
-        smu = f"{mo.m_unit:~P}"
+        _smu = f"{mo.m_unit:~P}"
         mtu = f"{mo.t_unit:~P}"
-        fmu = f"{mo.f_unit:~P}"
+        _fmu = f"{mo.f_unit:~P}"
         cmu = f"{mo.c_unit:~P}"
 
         rn = self.full_name  # reservoir name
-        mn = self.sp.mo.n  # model name
+        _mn = self.sp.mo.n  # model name
         fn = f"{directory}/{prefix}{rn}.csv"  # file name
 
         # build the dataframe
@@ -1074,12 +1088,16 @@ class Signal(esbmtkBase):
 
     def __init_signal_function__(self):
         """Initialize a an external code instance that can be called by the solver."""
+        raise NotImplementedError("not yet implemented")
+
         if self.isotopes:
-            p = (self.mo.time, self.m)
+            p = (self.mo.time, self.m, self.l)
             function_name = "signal_with_istopes"
         else:
-            p = (self.mo.time, self.m, self.l)
+            p = (self.mo.time, self.m)
             function_name = "signal_no_istopes"
+
+        breakpoint()
 
         ec = ExternalCode(
             name=f"ec_signal_{self.name}",
@@ -1170,9 +1188,9 @@ class VectorData(esbmtkBase):
         sp = self.sp  # species handle
         mo = self.sp.mo  # model handle
 
-        smu = f"{mo.m_unit:~P}"
+        _smu = f"{mo.m_unit:~P}"
         mtu = f"{mo.t_unit:~P}"
-        fmu = f"{mo.f_unit:~P}"
+        _fmu = f"{mo.f_unit:~P}"
         cmu = f"{mo.c_unit:~P}"
 
         # sdn = self.sp.dn  # delta name
@@ -1974,7 +1992,7 @@ class ExternalCode(SpeciesNoSet):
         logging.info(f"reading state for {self.full_name} from {fn}")
 
         # read csv file into dataframe
-        self.df: pd.DataFrame = pd.read_csv(fn, encoding="utf-8", engine="python")
+        self.df: pd.DataFrame = pd.read_csv(fn)
         self.headers: list = list(self.df.columns.values)
         df = self.df
         headers = self.headers
@@ -2438,6 +2456,14 @@ class ExternalData(esbmtkBase):
             raise ExternalDataError("External data only supports up to 2 Y columns")
         else:
             raise ExternalDataError("ED: This should not happen")
+
+        # test if we invalid values
+        for c in range(ncols):
+            if self.df.iloc[:, c].isnull().values.any():
+                raise CSVDataError(
+                    f"Column {c} of {self.fn} contains invalid data\n"
+                    "check for typos or encoding errors"
+                )
 
         # print(f"Model = {self.mo.full_name}, t_unit = {self.mo.t_unit}")
         self.offset = self.ensure_q(self.offset)
