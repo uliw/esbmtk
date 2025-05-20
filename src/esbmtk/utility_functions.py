@@ -1694,3 +1694,10 @@ def register_user_function(M: Model, lib_name: str, func_name: str | list) -> No
 def create_reservoirs():
     """Raise Error on use."""
     raise NotImplementedError("create_reservoirs is no longer supported")
+
+
+def check_for_NaN(a: NDArrayFloat)-> bool:
+    """Test if a contains NaN values."""
+    r = True if np.sum(np.isnan(a)) > 0, else False
+
+    return r
