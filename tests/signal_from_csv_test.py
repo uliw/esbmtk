@@ -48,13 +48,6 @@ Reservoir(
     volume="100E16 m**3",  # deeb box volume
     concentration={M.DIC: "0 umol/l"},  # initial concentration
 )
-ConnectionProperties(
-    source=M.weathering,  # source of flux
-    sink=M.S_b,  # target of flux
-    rate=F_w,  # rate of flux
-    id="river",  # connection id
-    ctype="regular",
-)
 ConnectionProperties(  # thermohaline downwelling
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux

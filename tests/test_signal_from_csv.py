@@ -5,8 +5,8 @@ import signal_from_csv_test  # import script
 
 M = signal_from_csv_test.M  # get model handle
 test_values = [  # result, reference value
-    (M.S_b.DIC.c[-1] * 1e6, 31.55),
-    (M.D_b.DIC.c[-1] * 1e6, 46.40),
+    (M.S_b.DIC.c[-1] * 1e6, 16.591),
+    (M.D_b.DIC.c[-1] * 1e6, 24.406),
 ]
 
 
