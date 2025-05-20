@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
 import uuid
+import warnings
 from collections.abc import Callable
 from typing import Any
 
@@ -297,6 +298,19 @@ class Species2Species(esbmtkBase):
         self.__set_name__()  # get name of connection
         if self.model.debug:
             print(f"{self.name} isotopes = {self.isotopes}")
+
+        if all([
+            self.isotopes,
+            isinstance(self.source, Source),
+            self.delta == "None",
+            self.epsilon == "None",
+        ]):
+            self.delta = self.source.delta
+            warnings.warn(
+                f"\n\nPlease specify the delta value for the weathering flux in {self.name}\n"
+                "Using {self.delta} for now, but this may not be what you want.\n\n",
+                stacklevel=2,
+            )
 
         self.__register_with_parent__()  # register connection in namespace
         self.__create_flux__()  # Source/Sink/Fixed
@@ -679,12 +693,12 @@ class Species2Species(esbmtkBase):
     def delta(self, d: float | int) -> None:
         """Delta Setter."""
         if self.update and d != "None":
-            self.__delete_process__()
-            self.__delete_flux__()
+            # self.__delete_process__()
+            # self.__delete_flux__()
             self._delta = d
             self.kwargs["delta"] = d
-            self.__create_flux__()  # Source/Sink/Fixed
-            self.__set_process_type__()  # derive flux type and create flux(es)
+            # self.__create_flux__()  # Source/Sink/Fixed
+            # self.__set_process_type__()  # derive flux type and create flux(es)
 
 
 class ConnectionProperties(esbmtkBase):
