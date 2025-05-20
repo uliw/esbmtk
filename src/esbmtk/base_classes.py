@@ -921,8 +921,8 @@ class SpeciesBase(esbmtkBase):
         col: int = 1  # Skip the time column
 
         # ensure that all numbers are read as numbers
-        for col in self.df.columns[1:]:
-            self.df[col] = pd.to_numeric(self.df[col], errors="coerce")
+        # for col in self.df.columns[1:]:
+        #     self.df[col] = pd.to_numeric(self.df[col], errors="coerce")
 
         for n in header_list:
             name = n.split(" ")[0]
