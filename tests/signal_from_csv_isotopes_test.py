@@ -20,7 +20,7 @@ M = Model(
     stop="3 Myr",  # end time of model
     max_timestep="1 kyr",  # upper limit of time step
     element=["Carbon"],  # list of element definitions
-    debug_equations_file=True,
+    # debug_equations_file=True,
 )
 
 tau = Q_("100 years") * 12
