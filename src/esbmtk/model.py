@@ -1361,6 +1361,7 @@ class Model(esbmtkBase):
             The ODE solver results
         """
         # raise NotImplementedError("This method is currently not used")
+        from esbmtk.utility_functions import get_delta_from_concentration
 
         for signal in self.los:
             # Interpolate mass data
@@ -1369,6 +1370,9 @@ class Model(esbmtkBase):
             if signal.isotopes:
                 signal.signal_data.l = np.interp(
                     results.t, self.time, signal.signal_data.l
+                )
+                signal.signal_data.d = get_delta_from_concentration(
+                    signal.signal_data.m, signal.signal_data.l, signal.species.r
                 )
 
     def _interpolate_external_data_to_solver_timepoints(self, results) -> None:
