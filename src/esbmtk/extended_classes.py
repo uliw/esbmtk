@@ -1100,8 +1100,6 @@ class Signal(esbmtkBase):
             p = (self.mo.time, self.m)
             function_name = "signal_no_istopes"
 
-        breakpoint()
-
         ec = ExternalCode(
             name=f"ec_signal_{self.name}",
             fname=function_name,
@@ -1671,9 +1669,9 @@ class DataField(esbmtkBase):
             # remove unnecessary frame species
             axt.spines["top"].set_visible(False)
             handler2, label2 = axt.get_legend_handles_labels()
-            legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
-                6
-            )
+            _legend = axt.legend(
+                handler1 + handler2, label1 + label2, loc=0
+            ).set_zorder(6)
             axt.legend()
         else:
             ax.legend(handler1, label1)
@@ -2396,6 +2394,7 @@ class ExternalData(esbmtkBase):
     def __init__(self, **kwargs: dict[str, str]):
         """Initialize Class."""
         from esbmtk import Q_, DataField, Model, Species
+        from esbmtk.utility_functions import warn_if_non_numeric
 
         # dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -2495,9 +2494,14 @@ class ExternalData(esbmtkBase):
         self.xq = Q_(xh)
         self.yq = Q_(yh)
 
-        # ensure that all numbers are read as numbers
-        for col in self.df.columns[1:]:
-            self.df[col] = pd.to_numeric(self.df[col], errors="coerce")
+        # check for misread data
+        if warn_if_non_numeric(self.df):
+            raise CSVReadError(
+                f"\n\nNon Numeric data in {self.fn}\n"
+                "Check for missing Exponents (i.e., 1E instead of 1E0), \n"
+                "and/or encoding problems (files must be UTF8)\n"
+                "Check for warnings above\n\n"
+            )
 
         # add these to the data we are are reading
         self.x: NDArrayFloat = self.df.iloc[:, 0].to_numpy() * self.xq
