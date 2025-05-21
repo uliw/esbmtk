@@ -248,13 +248,11 @@ def carbonate_system_2(
     hplus = get_hplus(dic_db, ta_db, hplus_0, boron, k1, k1k2, KW, KB)
     co3 = max(dic_db / (1 + hplus / k2 + hplus**2 / k1k2), 3.7e-05)
 
-    """ --- Compute critical depth intervals eq after  Boudreau (2010) ---
+    """ --- Compute critical depth intervals eqs after  Boudreau (2010) ---
    All depths will be positive to facilitate the use of lookup_tables.
    Note that these tables are different than the hyspometry data tables
    that expect positive and negative numbers.
     """
-    # zsat = int(zsat0 * log(ca2 * co3 / ksp0))
-    # zsat = min(zmax, max(zsat_min, zsat))
 
     zsat = get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0)
     zcc = get_zcc(CaCO3_export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3)
