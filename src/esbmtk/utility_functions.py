@@ -1696,8 +1696,32 @@ def create_reservoirs():
     raise NotImplementedError("create_reservoirs is no longer supported")
 
 
-def check_for_NaN(a: NDArrayFloat)-> bool:
+def check_for_NaN(a: NDArrayFloat) -> bool:
     """Test if a contains NaN values."""
-    r = True if np.sum(np.isnan(a)) > 0, else False
+    return np.isnan(a).any()
 
-    return r
+
+def warn_if_non_numeric(df):
+    """Warn about non numeric data in dataframe.
+
+    Checks all columns in the DataFrame for non-numeric values.
+    Prints warnings with the row indices and offending values for each column.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to check.
+    """
+    import pandas as pd
+
+    ed = False
+    for col in df.columns:
+        numeric_col = pd.to_numeric(df[col], errors="coerce")
+        non_numeric_mask = numeric_col.isna() & df[col].notna()
+        if non_numeric_mask.any():
+            bad_indices = df.index[non_numeric_mask].tolist()
+            print(
+                f"Warning: Non-numeric data found in column '{col}' at rows: {bad_indices}"
+            )
+            print(df.loc[bad_indices, col])
+            ed = True
+
+    return ed
