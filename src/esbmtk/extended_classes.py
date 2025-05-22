@@ -606,8 +606,10 @@ class Signal(esbmtkBase):
         """
         self.mo.lof.remove(self.signal_data)
         self.m = self.signal_data.m
+        self.cd_m = self.m.copy()
         if self.isotopes:
             self.l = self.signal_data.l
+            self.cd_l = self.l.copy()
 
         self.signal_data.n: str = (
             self.name + "_data"
@@ -975,8 +977,8 @@ class Signal(esbmtkBase):
         """
         import numpy as np
 
-        m = np.interp(t, self.mo.time, self.m)
-        lm = np.interp(t, self.mo.time, self.l) if self.isotopes else 0
+        m = np.interp(t, self.mo.time, self.cd_m)
+        lm = np.interp(t, self.mo.time, self.cd_l) if self.isotopes else 0
 
         return [m, lm]
 

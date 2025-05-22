@@ -1,6 +1,5 @@
 
 
-
 Adding Complexity
 -----------------
 
@@ -57,6 +56,11 @@ This will result in the following output:
 
 
     Example output for the ``CR`` signal above. See ``po4_2.py`` in the examples directory.
+
+Signal data structure
+^^^^^^^^^^^^^^^^^^^^^
+
+The original signal data (as read from a csv etc.) is available through the ``.s_time``, ``.s_data`` instance variables. The padded/cropped data that is interpolated for each time point, is stored in the ``.cd_m`` (and ``.cd_l`` if isotope data is present) instance variables.The sub-sampled signal data that is used for plotting is stored in ``.m``, ``.l`` and ``.d`` respectively.  Signal data can also be queried interactively by calling the signal with a given time values, e.g., ``M.PO4_signal(12)``. 
 
 Working with multiple species
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
