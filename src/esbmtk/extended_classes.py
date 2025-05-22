@@ -2481,7 +2481,7 @@ class ExternalData(esbmtkBase):
                 "Time [kyr], Rate [mol/yr], delta [dimensionless]\n"
                 "If the headers are ok, there is likely an encoding error\n"
                 "Try saving/converting your csv file to utf-8\n"
-            )
+            ) from None
 
         yh = self.df.columns[1].split("[")[1].split("]")[0]
         self.zh = (
