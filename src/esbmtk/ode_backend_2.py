@@ -495,8 +495,8 @@ def get_ic(r: Species, icl: dict, isotopes=False) -> str:
                 s1 += f", {r.l}"
             except:
                 raise SourceIsotopeError(
-                    "\n {r.full_name} needs to specify a delta value\n"
-                )
+                    f"\n {r.full_name} needs to specify a delta value\n"
+                ) from None
     else:
         raise ValueError(
             f"get_ic: can't find {r.full_name} in list of initial conditions"
