@@ -35,6 +35,15 @@ if tp.TYPE_CHECKING:
     )
 
 
+class SourceIsotopeError(Exception):
+    """Custom Error Class."""
+
+    def __init__(self, message):
+        """Initialize Error Instance with formatted message."""
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
 def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
     """Build the coefficient matrix CM and Flux vector f.
 
@@ -482,7 +491,12 @@ def get_ic(r: Species, icl: dict, isotopes=False) -> str:
         s1 = f"{r.c}"
         if isotopes:
             # FIXME: this should really point to a variable
-            s1 += f", {r.l}"
+            try:
+                s1 += f", {r.l}"
+            except:
+                raise SourceIsotopeError(
+                    "\n {r.full_name} needs to specify a delta value\n"
+                )
     else:
         raise ValueError(
             f"get_ic: can't find {r.full_name} in list of initial conditions"
@@ -764,7 +778,6 @@ def isotopes_regular_flux(
     elif c.epsilon != "None":
         a = c.epsilon / 1000 + 1  # convert to alpha notation
         if f_m == "":  # if f_m is not provided.
-            breakpoint()
             equation_string = f"{s_l} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
             ds1 = (
                 f"{c.source.full_name}.l"
@@ -913,7 +926,7 @@ def isotopes_scale_flux(
         s_index references the scale keyword in a given connection instance
         FIXME: unify rate & scale?
     """
-    from esbmtk import Source
+    from esbmtk import Source, Sink
 
     r: float = c.source.species.r  # isotope reference value
     s: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
