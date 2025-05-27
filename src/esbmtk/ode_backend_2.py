@@ -995,16 +995,35 @@ def check_signal_2(rhs: str, rhs_l: str, c: Species2Species) -> (str, str):
     :returns: (modified) equation string
     """
     if c.signal != "None":  # get signal type
-        if c.signal.stype == "addition":
-            sign = "+"
-        elif c.signal.stype == "multiplication":
-            sign = "*"
-        else:
-            raise ValueError(f"stype={c.signal.stype} not implemented")
+        operators = {  # Map signal types to their operators
+            "addition": "+",
+            "multiplication": "*",
+        }
 
-        rhs = f"{rhs} {sign} {c.signal.full_name}(t)[0]  # Signal"
-        if rhs_l != "":
-            rhs_l = f"{rhs_l} {sign} {c.signal.full_name}(t)[1]  # Signal"
+        # Get the operator for this signal type (if applicable)
+        sign = operators.get(c.signal.stype, "")
+
+        # Apply the signal based on its type
+        if c.signal.stype in ("addition", "multiplication"):
+            rhs = f"{rhs} {sign} {c.signal.full_name}(t)[0]  # Signal"
+            if rhs_l != "":  # isotopes are always additive
+                rhs_l = f"{rhs_l} + {c.signal.full_name}(t)[1]  # Signal"
+        elif c.signal.stype == "isotopes_only":
+            rhs_l = f"{rhs_l} + {c.signal.full_name}(t)[1]  # Signal"
+
+    # if c.signal != "None":  # get signal type
+    #     if c.signal.stype == "addition":
+    #         sign = "+"
+    #         rhs = f"{rhs} {sign} {c.signal.full_name}(t)[0]  # Signal"
+    #         if rhs_l != "":
+    #             rhs_l = f"{rhs_l} {sign} {c.signal.full_name}(t)[1]  # Signal"
+    #     elif c.signal.stype == "multiplication":
+    #         sign = "*"
+    #         rhs = f"{rhs} {sign} {c.signal.full_name}(t)[0]  # Signal"
+    #         if rhs_l != "":
+    #             rhs_l = f"{rhs_l} {sign} {c.signal.full_name}(t)[1]  # Signal"
+    #     elif c.signal.stype == "isotopes_only":
+    #        rhs_l = f"{rhs_l} {sign} {c.signal.full_name}(t)[1]  # Signal"
 
     return rhs, rhs_l
 
