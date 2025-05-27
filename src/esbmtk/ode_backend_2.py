@@ -1011,20 +1011,6 @@ def check_signal_2(rhs: str, rhs_l: str, c: Species2Species) -> (str, str):
         elif c.signal.stype == "isotopes_only":
             rhs_l = f"{rhs_l} + {c.signal.full_name}(t)[1]  # Signal"
 
-    # if c.signal != "None":  # get signal type
-    #     if c.signal.stype == "addition":
-    #         sign = "+"
-    #         rhs = f"{rhs} {sign} {c.signal.full_name}(t)[0]  # Signal"
-    #         if rhs_l != "":
-    #             rhs_l = f"{rhs_l} {sign} {c.signal.full_name}(t)[1]  # Signal"
-    #     elif c.signal.stype == "multiplication":
-    #         sign = "*"
-    #         rhs = f"{rhs} {sign} {c.signal.full_name}(t)[0]  # Signal"
-    #         if rhs_l != "":
-    #             rhs_l = f"{rhs_l} {sign} {c.signal.full_name}(t)[1]  # Signal"
-    #     elif c.signal.stype == "isotopes_only":
-    #        rhs_l = f"{rhs_l} {sign} {c.signal.full_name}(t)[1]  # Signal"
-
     return rhs, rhs_l
 
 
