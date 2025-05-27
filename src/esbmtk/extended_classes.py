@@ -688,7 +688,7 @@ class Signal(esbmtkBase):
         that is multiplied.
         """
         mapped_time = np.full_like(model_time, np.nan, dtype=float)
-        if self.stype == "addition" or self.type == "isotopes_only":
+        if self.stype == "addition" or self.stype == "isotopes_only":
             mapped_m = np.full_like(model_time, 0, dtype=float)
         elif self.stype == "multiplication":
             mapped_m = np.full_like(model_time, 1, dtype=float)
