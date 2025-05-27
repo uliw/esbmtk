@@ -446,7 +446,7 @@ class Signal(esbmtkBase):
                  duration = "0 yrs",  #
                  reverse: [False, (bool)], # optional
                  delta = 0,           # optional
-                 stype = "addition"   # or multiplication
+                 stype = "addition"   # or multiplication/isotopes_only
                  shape = "square/pyramid/bell/filename"
                  mass/magnitude/filename  # give one
                  offset = '0 yrs',     #
@@ -688,13 +688,17 @@ class Signal(esbmtkBase):
         that is multiplied.
         """
         mapped_time = np.full_like(model_time, np.nan, dtype=float)
-        if self.stype == "addition":
+        if self.stype == "addition" or self.type == "isotopes_only":
             mapped_m = np.full_like(model_time, 0, dtype=float)
         elif self.stype == "multiplication":
             mapped_m = np.full_like(model_time, 1, dtype=float)
         else:
             # in case something is wrong with stype, still create mapped data
-            mapped_m = np.full_like(model_time, np.nan, dtype=float)
+            raise SignalError(
+                f"\nYou need to specify the signal type. Allowed keywords are:\n"
+                f"addition/mutiplication/isotopes_only\n"
+                f"\n{self.stype} is not defined. Typo?\n"
+            )
 
         # isotopes are always additive
         mapped_l = np.full_like(model_time, 0, dtype=float)
