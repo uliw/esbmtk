@@ -1009,6 +1009,8 @@ def check_signal_2(rhs: str, rhs_l: str, c: Species2Species) -> (str, str):
             if rhs_l != "":  # isotopes are always additive
                 rhs_l = f"{rhs_l} + {c.signal.full_name}(t)[1]  # Signal"
         elif c.signal.stype == "isotopes_only":
+            # this needs to be treated a variable epsilon where we take the
+            # the epsilon value from the Signal.!
             rhs_l = f"{rhs_l} + {c.signal.full_name}(t)[1]  # Signal"
 
     return rhs, rhs_l
