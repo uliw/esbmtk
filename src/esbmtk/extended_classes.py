@@ -600,7 +600,7 @@ class Signal(esbmtkBase):
         if self.display_precision == 0:
             self.display_precision = self.mo.display_precision
 
-        self.s_m, self.s_l = self.__init_signal_data__()
+        self.s_m, self.s_l, self.s_d = self.__init_signal_data__()
         self.signal_data = self.__map_signal__()
 
         """ self.__map_signal__() returns a Flux object, so we need to remove this
@@ -615,6 +615,7 @@ class Signal(esbmtkBase):
         if self.isotopes:
             self.l = self.signal_data.l
             self.cd_l = self.l.copy()
+            self.cd_d = self.s_d.copy()
 
         self.signal_data.n: str = (
             self.name + "_data"
@@ -659,7 +660,7 @@ class Signal(esbmtkBase):
                 "argument needs to be either square/pyramid, or an ExternalData object. "
             )
 
-        return self.s_m, self.s_l
+        return self.s_m, self.s_l, self.s_d
 
     def __map_signal__(self) -> Flux:
         """Map signal to model domain.
@@ -707,6 +708,7 @@ class Signal(esbmtkBase):
 
         # isotopes are always additive
         mapped_l = np.full_like(model_time, 0, dtype=float)
+        mapped_d = np.full_like(model_time, 0, dtype=float)
 
         # Filter signal time which exists in model time
         # If signal time in model time, return True in mask
@@ -725,13 +727,18 @@ class Signal(esbmtkBase):
                     mapped_l[i] = self.s_l[
                         signal_index
                     ]  # TODO: for future thinking how to calculate isotope fluxes
+                    mapped_d[i] = self.s_d[
+                        signal_index
+                    ]  # TODO: for future thinking how to calculate isotope fluxes
 
         if self.reverse:
             mapped_signal_data.m = np.flip(mapped_m)
             mapped_signal_data.l = np.flip(mapped_l)
+            mapped_signal_data.d = np.flip(mapped_d)
         else:
             mapped_signal_data.m = mapped_m
             mapped_signal_data.l = mapped_l
+            mapped_signal_data.d = mapped_d
 
         return mapped_signal_data
 
@@ -856,6 +863,7 @@ class Signal(esbmtkBase):
             self.s_l = get_l_mass(self.s_m, self.s_d, self.sp.r)
         else:
             self.s_l: NDArrayFloat = np.zeros(num_steps)
+            self.s_d: NDArrayFloat = np.zeros(num_steps)
 
         return num_steps
 
@@ -987,9 +995,14 @@ class Signal(esbmtkBase):
         import numpy as np
 
         m = np.interp(t, self.mo.time, self.cd_m)
-        lm = np.interp(t, self.mo.time, self.cd_l) if self.isotopes else 0
+        if self.isotopes:
+            lm = np.interp(t, self.mo.time, self.cd_l)
+            ld = np.interp(t, self.mo.time, self.cd_d)
+        else:
+            lm = 0
+            ld = 0
 
-        return [m, lm]
+        return [m, lm, ld]
 
     def __plot__(self, M: Model, ax) -> None:
         """Plot instructions.
