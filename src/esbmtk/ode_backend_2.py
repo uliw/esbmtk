@@ -245,8 +245,9 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
                 if flux.ftype == "in_sequence":
                     rel = write_ef(eqs, r, icl, rel, ind2, ind3, M.gpt)
                 elif flux.ftype == "None":  # get flux expressions
-                    rhs, rhs_out, rhs_debug = get_flux(flux, M, R, icl)
+                    rhs, rhs_out, rhs_debug, prefix_code = get_flux(flux, M, R, icl)
                     # write regular equation
+
                     if rhs_debug[0] != "":  # add debug if need be
                         eqs.write(f"{ind2}{rhs_debug[0]}")
                     if rhs_out[0]:
@@ -257,6 +258,8 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
                     if rhs_debug[1] != "":  # add debug if need beg
                         eqs.write(f"{ind2}{rhs_debug[1]}")
                     if rhs_out[1]:  # add line for isotopes
+                        if prefix_code != "":
+                            eqs.write(f"{ind2}{prefix_code}\n")
                         fn = f"F[{flux.idx + 1}]"
                         eqs.write(f"{ind2}{fn} = {rhs[1]}\n")
                         fi = fi + 1
@@ -427,17 +430,18 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple[str, str,
     """
     from esbmtk import Species, Species2Species
 
+    prefix_code = ""
     if isinstance(c, Species2Species):
         if c.ctype.casefold() == "regular" or c.ctype.casefold() == "fixed":
-            rhs, rhs_out, rhs_debug = get_regular_flux_eq(
+            rhs, rhs_out, rhs_debug, prefix_code = get_regular_flux_eq(
                 flux, c, icl, ind2, ind3, M.CM, M.toc
             )
         elif c.ctype == "scale_with_concentration" or c.ctype == "scale_with_mass":
-            rhs, rhs_out, rhs_debug = get_scale_with_concentration_eq(
+            rhs, rhs_out, rhs_debug, prefix_code = get_scale_with_concentration_eq(
                 flux, c, cfn, icl, ind2, ind3, M.CM, M.toc
             )
         elif c.ctype == "scale_with_flux":
-            rhs, rhs_out, rhs_debug = get_scale_with_flux_eq(
+            rhs, rhs_out, rhs_debug, prefix_code = get_scale_with_flux_eq(
                 flux, c, cfn, icl, ind2, ind3, M.CM, M.toc
             )
         elif c.ctype == "ignore" or c.ctype == "gasexchange" or c.ctype == "weathering":
@@ -451,7 +455,7 @@ def get_flux(flux: Flux, M: Model, R: list[float], icl: dict) -> tuple[str, str,
     else:
         raise ValueError(f"No definition for \n{c.full_name} type = {type(c)}\n")
 
-    return rhs, rhs_out, rhs_debug
+    return rhs, rhs_out, rhs_debug, prefix_code
 
 
 def get_ic(r: Species, icl: dict, isotopes=False) -> str:
@@ -540,6 +544,8 @@ def get_regular_flux_eq(
     rhs, rhs_l = ["", ""]
     debug_rhs = ["", ""]
     rhs_out = [False, False]
+    prefix_code = ""
+
     if flux.serves_as_input or c.signal != "None":
         # Needs full expression with all constants, so that we can
         # reference the expression elsewhere.
@@ -548,7 +554,9 @@ def get_regular_flux_eq(
             rhs_l, rhs_out[1], debug_rhs[1] = isotopes_regular_flux(
                 rhs, c, icl, ind3, ind2, CM, toc, flux
             )
-        rhs, rhs_l = check_signal_2(rhs, rhs_l, c)  # check if we hav to add a signal
+        rhs, rhs_l, prefix_code = check_signal_2(
+            rhs, rhs_l, c, icl
+        )  # check if we hav to add a signal
         rhs_out[0] = True
     else:
         # get constants and place them on matrix
@@ -579,7 +587,7 @@ def get_regular_flux_eq(
             f'    """\n'
         )
 
-    return [rhs, rhs_l], rhs_out, debug_rhs
+    return [rhs, rhs_l], rhs_out, debug_rhs, prefix_code
 
 
 def get_scale_with_concentration_eq(
@@ -625,7 +633,7 @@ def get_scale_with_concentration_eq(
             rhs_l, rhs_out[1], debug_rhs[1] = isotopes_scale_concentration(
                 rhs, c, icl, ind3, ind2, CM, toc, flux
             )
-        rhs, rhs_l = check_signal_2(rhs, rhs_l, c)
+        rhs, rhs_l, prefix_code = check_signal_2(rhs, rhs_l, c, icl)
     else:  # place all constants on matrix
         # FIXME: moving this to the matrix, creates problems in the
         # isotope module. Create a second version?
@@ -646,7 +654,7 @@ def get_scale_with_concentration_eq(
             f'    """\n'
         )
 
-    return [rhs, rhs_l], rhs_out, debug_rhs
+    return [rhs, rhs_l], rhs_out, debug_rhs, prefix_code
 
 
 def get_scale_with_flux_eq(
@@ -694,7 +702,7 @@ def get_scale_with_flux_eq(
                     rhs, c, icl, ind3, ind2, CM, toc, flux
                 )
         else:
-            rhs, rhs_l = check_signal_2(rhs, rhs_l, c)
+            rhs, rhs_l, prefix_code = check_signal_2(rhs, rhs_l, c, icl)
     else:
         # FIXME: moving this to the matrix, creates problems in the
         # isotope module
@@ -723,7 +731,7 @@ def get_scale_with_flux_eq(
                 f'    """\n'
             )
 
-    return [rhs, rhs_l], rhs_out, debug_rhs
+    return [rhs, rhs_l], rhs_out, debug_rhs, prefix_code
 
 
 def isotopes_regular_flux(
@@ -986,14 +994,17 @@ def isotopes_scale_flux(
     return equation_string, rhs_out, debug_str
 
 
-def check_signal_2(rhs: str, rhs_l: str, c: Species2Species) -> (str, str):
+def check_signal_2(rhs: str, rhs_l: str, c: Species2Species, icl: dict) -> (str, str):
     """Test if connection is affected by a signal.
 
     :param ex: equation string
     :param c: connection object
+    :param icl: dict of reservoirs that have actual fluxes
 
     :returns: (modified) equation string
     """
+    prefix_code = ""
+
     if c.signal != "None":  # get signal type
         operators = {  # Map signal types to their operators
             "addition": "+",
@@ -1008,12 +1019,16 @@ def check_signal_2(rhs: str, rhs_l: str, c: Species2Species) -> (str, str):
             rhs = f"{rhs} {sign} {c.signal.full_name}(t)[0]  # Signal"
             if rhs_l != "":  # isotopes are always additive
                 rhs_l = f"{rhs_l} + {c.signal.full_name}(t)[1]  # Signal"
-        elif c.signal.stype == "isotopes_only":
-            # this needs to be treated a variable epsilon where we take the
-            # the epsilon value from the Signal.!
-            rhs_l = f"{rhs_l} + {c.signal.full_name}(t)[1]  # Signal"
+        elif c.signal.stype == "epsilon_only":
+            """Here we override any previous isotope effects and calculate
+            the flux of the light isotope as governed by the epsilon values
+            as read from the signal data"""
+            s: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
+            prefix_code = f"a = {c.signal.full_name}(t)[2] / 1000 + 1  # S to a"
+            s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
+            rhs_l = f"{rhs} * {s_l} / (a * {s_c} + {s_l} - a * {s_l})"
 
-    return rhs, rhs_l
+    return rhs, rhs_l, prefix_code
 
 
 def get_initial_conditions(
