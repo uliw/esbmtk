@@ -446,7 +446,7 @@ class Signal(esbmtkBase):
                  duration = "0 yrs",  #
                  reverse: [False, (bool)], # optional
                  delta = 0,           # optional
-                 stype = "addition"   # or multiplication/isotopes_only
+                 stype = "addition"   # or multiplication/epsilon_only
                  shape = "square/pyramid/bell/filename"
                  mass/magnitude/filename  # give one
                  offset = '0 yrs',     #
@@ -508,6 +508,11 @@ class Signal(esbmtkBase):
         self.ed is the object reference for the externaldata
                    instance in cases wher data is read from
                    a csv file
+
+    Isotopes: Delta values are always additive, regardless of signal type.
+    The epsilon_only type ignores are flux values (the column must be present though),
+    and applies the delta value to a given flux. This setting is most useful
+    to dynamically control the fractionation factor of an output flux.
     """
 
     def __init__(self, **kwargs) -> None:
@@ -688,7 +693,7 @@ class Signal(esbmtkBase):
         that is multiplied.
         """
         mapped_time = np.full_like(model_time, np.nan, dtype=float)
-        if self.stype == "addition" or self.stype == "isotopes_only":
+        if self.stype == "addition" or self.stype == "epsilon_only":
             mapped_m = np.full_like(model_time, 0, dtype=float)
         elif self.stype == "multiplication":
             mapped_m = np.full_like(model_time, 1, dtype=float)
@@ -696,7 +701,7 @@ class Signal(esbmtkBase):
             # in case something is wrong with stype, still create mapped data
             raise SignalError(
                 f"\nYou need to specify the signal type. Allowed keywords are:\n"
-                f"addition/mutiplication/isotopes_only\n"
+                f"addition/mutiplication/epsilon_only\n"
                 f"\n{self.stype} is not defined. Typo?\n"
             )
 
