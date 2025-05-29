@@ -292,7 +292,7 @@ def init_gas_exchange(c: Species2Species):
     )
     area = check_for_quantity(sink_reservoir.area, "m**2").to("meter**2").magnitude
 
-    scale = area * piston_velocity
+    scale = area * piston_velocity * c.scale
     p = (
         scale,
         solubility,
