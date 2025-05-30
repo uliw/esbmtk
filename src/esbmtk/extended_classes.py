@@ -602,7 +602,6 @@ class Signal(esbmtkBase):
 
         self.s_m, self.s_l, self.s_d = self.__init_signal_data__()
         self.signal_data = self.__map_signal__()
-
         """ self.__map_signal__() returns a Flux object, so we need to remove this
         from the list of model Fluxes, with
         self.mo.lof.remove(self.data)
@@ -614,8 +613,9 @@ class Signal(esbmtkBase):
         self.cd_m = self.m.copy()
         if self.isotopes:
             self.l = self.signal_data.l
+            self.d = self.signal_data.d
             self.cd_l = self.l.copy()
-            self.cd_d = self.s_d.copy()
+            self.cd_d = self.d.copy()
 
         self.signal_data.n: str = (
             self.name + "_data"
