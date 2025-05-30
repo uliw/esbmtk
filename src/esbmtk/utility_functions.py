@@ -1570,6 +1570,19 @@ def data_summaries(
     return pl
 
 
+def fractionate_with_epsilon(
+    epsilon: float,
+    source_c: float,
+    source_l: float,
+    sink_c: float,
+) -> float:
+    """Calculate how a given epsilon would affect the downstream isotoe ratio."""
+    alpha = epsilon / 1000 + 1  # get alpha
+    sink_l = (alpha * source_l * sink_c) / (alpha * source_l - source_l + source_c)
+
+    return sink_l
+
+
 # @njit(fastmath=True)
 def get_l_mass(m: float, d: float, r: float) -> float:
     """Get mass of light isotope.
