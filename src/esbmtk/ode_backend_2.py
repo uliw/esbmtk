@@ -625,6 +625,7 @@ def get_scale_with_concentration_eq(
     rhs_out = [True, False]  # we always have a right hand side
     s_c = get_ic(c.ref_reservoirs, icl)  # get index to concentration`
     rhs = f"{s_c}"  # source concentration
+    prefix_code = ""
 
     if flux.serves_as_input or c.signal != "None":
         # place all constants into the rhs so we can re-use the expression
@@ -689,6 +690,7 @@ def get_scale_with_flux_eq(
     rhs, rhs_l = ["", ""]
     debug_rhs = ["", ""]
     rhs_out = [True, False]
+    prefix_code = ""
 
     if flux.serves_as_input or c.signal != "None":
         """The flux for the light isotope will computed as follows:
