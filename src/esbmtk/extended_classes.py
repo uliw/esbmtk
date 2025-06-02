@@ -1030,6 +1030,7 @@ class Signal(esbmtkBase):
         ax.set_ylabel(legend)
         ax.spines["top"].set_visible(False)
         handler1, label1 = ax.get_legend_handles_labels()
+        ax.set_title(self.full_name)
 
         # plot second axis
         if self.isotopes:
