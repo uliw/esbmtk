@@ -40,7 +40,7 @@ from esbmtk.ode_backend_2 import (
     write_equations_3,
 )
 
-from . import Q_, ureg
+from . initialize_unit_registry import Q_, ureg
 from .esbmtk_base import esbmtkBase
 from .utility_functions import (
     find_matching_strings,
@@ -266,7 +266,8 @@ class Model(esbmtkBase):
     ):
         """Capture custom warnings."""
         self.warning_log.write(
-            f"{category.__name__}: {message} (in {filename}, line {lineno})\n\n"
+            f"{category.__name__}: {
+                message} (in {filename}, line {lineno})\n\n"
         )
 
     def _initialize_model_containers(self):
@@ -319,7 +320,8 @@ class Model(esbmtkBase):
             logging.root.removeHandler(handler)
 
         log_filename: str = f"{self.name}.log"
-        logging.basicConfig(filename=log_filename, filemode="w", level=logging.CRITICAL)
+        logging.basicConfig(filename=log_filename,
+                            filemode="w", level=logging.CRITICAL)
 
     def _configure_units(self):
         """Set up model units."""
@@ -341,15 +343,18 @@ class Model(esbmtkBase):
 
         # Handle deprecated timestep parameter
         if self.timestep != "None":
-            self.max_timestep = self.ensure_q(self.timestep).to(self.t_unit).magnitude
-            deprecated_keyword("timestep is deprecated. Please use max_timestep")
+            self.max_timestep = self.ensure_q(
+                self.timestep).to(self.t_unit).magnitude
+            deprecated_keyword(
+                "timestep is deprecated. Please use max_timestep")
         else:
             self.max_timestep = (
                 self.ensure_q(self.max_timestep).to(self.t_unit).magnitude
             )
 
         # Process remaining time parameters
-        self.min_timestep = self.ensure_q(self.min_timestep).to(self.t_unit).magnitude
+        self.min_timestep = self.ensure_q(
+            self.min_timestep).to(self.t_unit).magnitude
         self.dt = self.max_timestep
         self.offset = self.ensure_q(self.offset).to(self.t_unit).magnitude
         self.start = self.start + self.offset
@@ -395,8 +400,10 @@ class Model(esbmtkBase):
             self.step_limit = "None"
         else:
             self.step_limit = int(self.step_limit)
-            self.number_of_solving_iterations = int(round(self.steps / self.step_limit))
-            self.reset_stride = int(round(self.steps / self.number_of_datapoints))
+            self.number_of_solving_iterations = int(
+                round(self.steps / self.step_limit))
+            self.reset_stride = int(
+                round(self.steps / self.number_of_datapoints))
             self.steps = self.step_limit
             self.time = (np.arange(self.steps) * self.dt) + self.start
 
@@ -765,12 +772,14 @@ class Model(esbmtkBase):
 
         # Configure plot style and title
         plt.style.use(self.plot_style)
-        window_title = plot_title if plot_title != "None" else f"{self.n} Species"
+        window_title = plot_title if plot_title != "None" else f"{
+            self.n} Species"
         fig.canvas.manager.set_window_title(window_title)
         fig.set_size_inches(size)
 
         # Plot each object in the appropriate subplot
-        self._plot_objects_to_subplots(pl, axs, row_count, col_count, num_plots)
+        self._plot_objects_to_subplots(
+            pl, axs, row_count, col_count, num_plots)
 
         # Adjust figure layout
         fig.subplots_adjust(top=0.88)
@@ -937,7 +946,8 @@ class Model(esbmtkBase):
         wall_clock_duration = time.time() - wall_clock_start
 
         print(
-            f"\n Execution took {cpu_duration:.2f} CPU seconds, wall time = {wall_clock_duration:.2f} seconds\n"
+            f"\n Execution took {cpu_duration:.2f} CPU seconds, wall time = {
+                wall_clock_duration:.2f} seconds\n"
         )
 
         # Get memory usage
@@ -1017,7 +1027,8 @@ class Model(esbmtkBase):
             If the solver fails to find a solution
         """
         # Get initial conditions and build equationsmatrices
-        self.R_names_dict, icl, cpl, ipl, atol = get_initial_conditions(self, self.rtol)
+        self.R_names_dict, icl, cpl, ipl, atol = get_initial_conditions(
+            self, self.rtol)
         self.R_names = list(self.R_names_dict.keys())
 
         # get initial concentrations for each reservoir
@@ -1099,7 +1110,8 @@ class Model(esbmtkBase):
                     equations_module_name = equations_file_path.stem
                     # Also load saved matrices if they exist
                     matrix_file = Path(
-                        str(equations_file_path).replace(".py", "_matrices.npz")
+                        str(equations_file_path).replace(
+                            ".py", "_matrices.npz")
                     )
                     if matrix_file.exists():
                         saved_data = np.load(matrix_file)
@@ -1122,7 +1134,8 @@ class Model(esbmtkBase):
                     )
                     # Save matrices for future reuse
                     matrix_file = Path(
-                        str(equations_file_path).replace(".py", "_matrices.npz")
+                        str(equations_file_path).replace(
+                            ".py", "_matrices.npz")
                     )
                     self.matrix_file = matrix_file
                     np.savez(
@@ -1169,10 +1182,12 @@ class Model(esbmtkBase):
         if self.debug:
             print(f"R: {R}")
             print(
-                f"self.gpt shape: {np.shape(self.gpt) if hasattr(self.gpt, 'shape') else len(self.gpt)}"
+                f"self.gpt shape: {np.shape(self.gpt) if hasattr(
+                    self.gpt, 'shape') else len(self.gpt)}"
             )
             print(
-                f"self.toc shape: {np.shape(self.toc) if hasattr(self.toc, 'shape') else len(self.toc)}"
+                f"self.toc shape: {np.shape(self.toc) if hasattr(
+                    self.toc, 'shape') else len(self.toc)}"
             )
             print(f"CM shape: {np.shape(self.CM)}")
             print(f"F shape: {np.shape(self.F)}")
@@ -1217,7 +1232,8 @@ class Model(esbmtkBase):
         if self.results.status == 0:
             # Print solver statistics
             print(
-                f"\nnfev={self.results.nfev}, njev={self.results.njev}, nlu={self.results.nlu}\n"
+                f"\nnfev={self.results.nfev}, njev={
+                    self.results.njev}, nlu={self.results.nlu}\n"
             )
             print(f"status={self.results.status}")
             print(f"message={self.results.message}\n")
@@ -1365,7 +1381,8 @@ class Model(esbmtkBase):
 
         for signal in self.los:
             # Interpolate mass data
-            signal.signal_data.m = np.interp(results.t, self.time, signal.signal_data.m)
+            signal.signal_data.m = np.interp(
+                results.t, self.time, signal.signal_data.m)
             # Interpolate isotope data if present
             if signal.isotopes:
                 signal.signal_data.l = np.interp(
@@ -1385,7 +1402,8 @@ class Model(esbmtkBase):
         """
         # raise NotImplementedError("This method is currently not used")
         for external_data in self.led:
-            external_data.y = np.interp(results.t, external_data.x, external_data.y)
+            external_data.y = np.interp(
+                results.t, external_data.x, external_data.y)
 
     def _map_state_variables_to_reservoirs(self, results) -> None:
         """Map solver state variables to reservoir properties.
@@ -1406,7 +1424,8 @@ class Model(esbmtkBase):
 
             # Update reservoir mass (assumes constant volume)
             # Note: This would need modification for variable volumes
-            density = reservoir.swc.density.m / 1000 if hasattr(reservoir, "swc") else 1
+            density = reservoir.swc.density.m / \
+                1000 if hasattr(reservoir, "swc") else 1
 
             if isinstance(reservoir, GasReservoir):
                 # FIXME: GasReservoirs do have a volume and the current code
@@ -1514,7 +1533,8 @@ class Model(esbmtkBase):
             for i, is_large_change in enumerate(large_pH_changes):
                 if is_large_change:
                     warnings.warn(
-                        f"\n\n{reservoir_group.full_name} delta pH = {pH_changes[i]:.2f} "
+                        f"\n\n{reservoir_group.full_name} delta pH = {
+                            pH_changes[i]:.2f} "
                         f"at t = {time_vector[i]:.2f} {self.t_unit:~P}\n",
                         stacklevel=2,
                     )
@@ -1610,7 +1630,8 @@ class Model(esbmtkBase):
         # FIXME: Thios needs proper keyword parsing!
         # Get filter parameters from kwargs with proper defaults
         filter_terms = (
-            kwargs.get("filter_by", "").split() if "filter_by" in kwargs else []
+            kwargs.get("filter_by", "").split(
+            ) if "filter_by" in kwargs else []
         )
         exclude_term = kwargs.get("exclude", "")
         return_as_list = kwargs.get("return_list", False)
@@ -1636,7 +1657,8 @@ class Model(esbmtkBase):
 
                 if return_as_list:
                     if len(matching_fluxes) == 0:
-                        raise FluxNameError(f"No flux {filter_terms} found. Typo?")
+                        raise FluxNameError(
+                            f"No flux {filter_terms} found. Typo?")
                 else:
                     # Print flux name if not returning a list
                     print(f"{flux.full_name}")
@@ -1753,7 +1775,8 @@ class Model(esbmtkBase):
             source_species = f"{connection.source.sp.n}"
             target_species = f"{connection.sink.sp.n}"
             print(
-                f"Connection: {connection.full_name}: {source}.{source_species} -> {target}.{target_species}"
+                f"Connection: {connection.full_name}: {source}.{
+                    source_species} -> {target}.{target_species}"
             )
         else:
             # For reservoir-to-reservoir connections

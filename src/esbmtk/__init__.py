@@ -16,42 +16,35 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import numpy as np
-import pkg_resources
-from pint import UnitRegistry
 
-__version__ = pkg_resources.get_distribution("esbmtk").version
-
-# Units are needed for the subsequent imports
-ureg = UnitRegistry(on_redefinition="ignore")
-ureg.enable_contexts("chemistry")
-Q_ = ureg.Quantity
-ureg.define("Sverdrup = 1e6 * meter **3 / second = Sv = Sverdrups")
-ureg.define("Mol = 1 * mol / liter = M")
-ureg.define("fraction = [] = frac")
-ureg.define("percent = 1e-2 frac = pct")
-ureg.define("permil = 1e-3 fraction")
-ureg.define("ppm = 1e-6 fraction")
-np.seterr(invalid="ignore")
-
-from .base_classes import (
-    Flux,
-    Sink,
-    Source,
-    Species,
-    SpeciesError,
-    SpeciesProperties,
+from . initialize_unit_registry import Q_, ureg
+from .version import get_version
+from .utility_functions import (
+    build_ct_dict,
+    check_for_quantity,
+    create_bulk_connections,
+    data_summaries,
+    initialize_reservoirs,
+    phc,
+    register_return_values,
+    set_y_limits,
 )
-from .carbonate_chemistry import (
-    add_carbonate_system_1,
-    add_carbonate_system_2,
-    carbonate_system_1,
-    carbonate_system_2,
-    get_hplus,
-    get_pco2,
+from .seawater import SeawaterConstants
+from .processes import (
+    gas_exchange,
+    init_weathering,
+    weathering_isotopes,
+    weathering_isotopes_delta,
+    weathering_isotopes_alpha,
+    weathering_no_isotopes,
+    weathering_ref_isotopes,
 )
-from .connections import ConnectionProperties, Species2Species
-from .esbmtk_base import esbmtkBase
+from .post_processing import (
+    carbonate_system_1_pp,
+    carbonate_system_2_pp,
+    gas_exchange_fluxes,
+)
+from .model import Model
 from .extended_classes import (
     DataField,
     ExternalCode,
@@ -65,77 +58,23 @@ from .extended_classes import (
     VectorData,
     VirtualSpecies,
 )
-from .model import Model
-from .post_processing import (
-    carbonate_system_1_pp,
-    carbonate_system_2_pp,
-    gas_exchange_fluxes,
+from .esbmtk_base import esbmtkBase
+from .connections import ConnectionProperties, Species2Species
+from .carbonate_chemistry import (
+    add_carbonate_system_1,
+    add_carbonate_system_2,
+    carbonate_system_1,
+    carbonate_system_2,
+    get_hplus,
+    get_pco2,
 )
-from .processes import (
-    gas_exchange,
-    init_weathering,
-    weathering_isotopes,
-    weathering_isotopes_delta,
-    weathering_isotopes_alpha,
-    weathering_no_isotopes,
-    weathering_ref_isotopes,
+from .base_classes import (
+    Flux,
+    Sink,
+    Source,
+    Species,
+    SpeciesError,
+    SpeciesProperties,
 )
-from .seawater import SeawaterConstants
-from .utility_functions import (
-    build_ct_dict,
-    check_for_quantity,
-    create_bulk_connections,
-    data_summaries,
-    initialize_reservoirs,
-    phc,
-    register_return_values,
-    set_y_limits,
-)
-
-# __all__ = [
-#     "ConnectionProperties",
-#     "DataField",
-#     "ExternalCode",
-#     "ExternalData",
-#     "Flux",
-#     "GasReservoir",
-#     "Model",
-#     "Reservoir",
-#     "SeawaterConstants",
-#     "Signal",
-#     "Sink",
-#     "SinkProperties",
-#     "Source",
-#     "SourceProperties",
-#     "Species",
-#     "Species2Species",
-#     "SpeciesError",
-#     "SpeciesNoSet",
-#     "SpeciesProperties",
-#     "VectorData",
-#     "VirtualSpecies",
-#     "__version__",
-#     "add_carbonate_system_1",
-#     "add_carbonate_system_2",
-#     "build_ct_dict",
-#     "carbonate_system_1",
-#     "carbonate_system_1_pp",
-#     "carbonate_system_2",
-#     "carbonate_system_2_pp",
-#     "check_for_quantity",
-#     "create_bulk_connections",
-#     "data_summaries",
-#     "esbmtkBase",
-#     "gas_exchange",
-#     "gas_exchange_fluxes",
-#     "get_hplus",
-#     "get_pco2",
-#     "init_weathering",
-#     "initialize_reservoirs",
-#     "phc",
-#     "register_return_values",
-#     "set_y_limits",
-#     "weathering_all_isotopes",
-#     "weathering_no_isotopes",
-#     "weathering_ref_isotopes",
-# ]
+import numpy as np
+np.seterr(invalid="ignore")
