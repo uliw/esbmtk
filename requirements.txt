@@ -1,4 +1,4 @@
-python > 3.11
+python > 3.12
 matplotlib
 numpy
 pandas
@@ -8,7 +8,8 @@ PyCO2SYS >= 1.8.3.3
 psutil
 cachetools
 packaging
-importlib
 warnings
 sys
 io
+setuptools
+importlib-metadata
