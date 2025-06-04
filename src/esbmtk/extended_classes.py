@@ -1329,7 +1329,8 @@ class DataField(esbmtkBase):
 
             DataField(
                     name="df_pH",
-                    x1_data=[M.time, M.time, M.time, M.ef_hplus_l.x, M.ef_hplus_h.x, M.ef_hplus_d.x],
+                    x1_data=[M.time, M.time, M.time, M.ef_hplus_l.x,
+                        M.ef_hplus_h.x, M.ef_hplus_d.x],
                     y1_data=[
                     -np.log10(M.L_b.Hplus.c),
                     -np.log10(M.H_b.Hplus.c),
@@ -1338,9 +1339,11 @@ class DataField(esbmtkBase):
                     -np.log10(M.ef_hplus_h.y),
                     -np.log10(M.ef_hplus_d.y),
                     ],
-                    y1_label="Low latitude, High latitude, Deep box, d_L, d_H, d_D".split(", "),
+                    y1_label="Low latitude, High latitude, Deep box, d_L, d_H, d_D".split(
+                        ", "),
                     y1_color="C0 C1 C2 C0 C1 C2".split(" "),
-                    y1_style="solid solid solid dotted dotted dotted".split(" "),
+                    y1_style="solid solid solid dotted dotted dotted".split(
+                        " "),
                     y1_legend="pH",
                     register=M,
                     )
@@ -1829,7 +1832,8 @@ class ExternalCode(SpeciesNoSet):
             function=calc_carbonates,   # function reference, see below
             fname="function name as string",
             function_input_data="DIC TA",
-            function_params=(float),    # Note that parameters must be individual float values
+            # Note that parameters must be individual float values
+            function_params=(float),
             return_values={             # list of return values, these must be known species definitions
                 "Hplus": rg.swc.hplus,
                 "zsnow": float(abs(kwargs["zsnow"])),
@@ -2155,7 +2159,8 @@ class VirtualSpecies(Species):
 
             # calc some stuff and return it as
 
-            return [m, l, h, d, c] # where m= mass, and l & h are the respective
+            # where m= mass, and l & h are the respective
+            return [m, l, h, d, c]
                                    # isotopes. d denotes the delta value and
                                    # c the concentration
                                    # Use dummy value as necessary.
@@ -2219,7 +2224,8 @@ class GasReservoir(SpeciesBase):
 
                   Species(name = "foo",     # Name of reservoir
                             species = CO2,    # SpeciesProperties handle
-                            delta = 20,       # initial delta - optional (defaults  to 0)
+                            # initial delta - optional (defaults  to 0)
+                            delta = 20,
                             reservoir_mass = quantity # total mass of all gases
                                              defaults to 1.78E20 mol
                             species_ppm =  number # concentration in ppm
@@ -2454,6 +2460,7 @@ class ExternalData(esbmtkBase):
             "display_precision": [0.01, (int, float)],
             "scale": [1, (int, float)],
             "disp_units": [True, (bool)],
+            "reverse_time": [False, (bool)],
             "register": [
                 "None",
                 (str, Model, Species, DataField, GasReservoir, Signal),
@@ -2496,6 +2503,16 @@ class ExternalData(esbmtkBase):
             self.fn, encoding="utf-8", engine="python"
         )  # read file
 
+        # check for misread data
+        if warn_if_non_numeric(self.df):
+            raise CSVReadError(
+                f"\n\nNon Numeric data in {self.fn}\n"
+                "Check for missing Exponents (i.e., 1E instead of 1E0), \n"
+                "and/or encoding problems (files must be UTF8)\n"
+                "Check for warnings above\n\n"
+            )
+
+        # Extract headers
         ncols = len(self.df.columns)
         if ncols < 2:  # test of we have at elast 2 columns
             raise ExternalDataError("CSV file must have at least 2 columns")
@@ -2509,7 +2526,7 @@ class ExternalData(esbmtkBase):
         else:
             raise ExternalDataError("ED: This should not happen")
 
-        # test if we invalid values
+        # test if we have invalid values
         for c in range(ncols):
             if self.df.iloc[:, c].isnull().values.any():
                 raise CSVDataError(
@@ -2517,21 +2534,20 @@ class ExternalData(esbmtkBase):
                     "check for typos or encoding errors"
                 )
 
-        # print(f"Model = {self.mo.full_name}, t_unit = {self.mo.t_unit}")
         self.offset = self.ensure_q(self.offset)
         self.offset = self.offset.to(self.mo.t_unit).magnitude
 
         # get unit information from each header
         try:
             xh = self.df.columns[0].split("[")[1].split("]")[0]
-        except:
+        except Exception as e:
             raise CSVReadError(
                 f"Unable to parse column headers in {self.fn}\n"
                 "make sure your headers follow this template:\n"
                 "Time [kyr], Rate [mol/yr], delta [dimensionless]\n"
                 "If the headers are ok, there is likely an encoding error\n"
                 "Try saving/converting your csv file to utf-8\n"
-            ) from None
+            ) from e
 
         yh = self.df.columns[1].split("[")[1].split("]")[0]
         self.zh = (
@@ -2540,56 +2556,54 @@ class ExternalData(esbmtkBase):
             else None
         )
 
-        # create the associated quantities
+        # create the associated quantities. Note that zh is always dimensionless
         self.xq = Q_(xh)
         self.yq = Q_(yh)
 
-        # check for misread data
-        if warn_if_non_numeric(self.df):
-            raise CSVReadError(
-                f"\n\nNon Numeric data in {self.fn}\n"
-                "Check for missing Exponents (i.e., 1E instead of 1E0), \n"
-                "and/or encoding problems (files must be UTF8)\n"
-                "Check for warnings above\n\n"
-            )
-
-        # add these to the data we are are reading
+        # Get data as numpy array and add units
         self.x: NDArrayFloat = self.df.iloc[:, 0].to_numpy() * self.xq
         self.y: NDArrayFloat = self.df.iloc[:, 1].to_numpy() * self.yq
 
-        if self.zh:
-            # delta is assumed to be without units
-            self.d: NDArrayFloat = self.df.iloc[:, 2].to_numpy()
-        else:
-            self.zh = False
+        # Map time data into model units
+        self.x = self.x.to(self.mo.t_unit)
+        # if self.disp_units:
+        #     self.x = self.x.to(self.mo.d_unit)
+        # else:
 
-        # map into model space
-        # self.x = self.x - self.x[0] + self.offset
-        # map into model units, and strip unit information
-        if self.disp_units:
-            self.x = self.x.to(self.mo.d_unit).magnitude
-        else:
-            self.x = self.x.to(self.mo.t_unit).magnitude
-        # self.s_data = self.s_data.to(self.mo.f_unit).magnitude * self.scale
-
-        mol_liter = Q_("1 mol/liter").dimensionality
-        mol_kg = Q_("1 mol/kg").dimensionality
-
+        # Map y data into model units
         if isinstance(self.yq, Q_):
+            mol_liter = Q_("1 mol/liter").dimensionality
+            mol_kg = Q_("1 mol/kg").dimensionality
+
             # test what type of Quantity we have
-            if self.yq.is_compatible_with("dimensionless"):  # dimensionless
-                self.y = self.y.magnitude
+            if self.yq.dimensionless:  # dimensionless
+                pass
             elif self.yq.is_compatible_with("liter/yr"):  # flux
-                self.y = self.y.to(self.mo.r_unit).magnitude
+                self.y = self.y.to(self.mo.r_unit)
             elif self.yq.is_compatible_with("mol/yr"):  # flux
-                self.y = self.y.to(self.mo.f_unit).magnitude
+                self.y = self.y.to(self.mo.f_unit)
             elif (
                 self.yq.dimensionality == mol_liter or self.yq.dimensionality == mol_kg
             ):  # concentration
-                self.y = self.y.to(self.mo.c_unit).magnitude
+                self.y = self.y.to(self.mo.c_unit)
             else:
                 SignalError(f"No conversion to model units for {
                             self.scale} specified")
+
+        # Strip unit information
+        self.x = self.x.magnitude
+        self.y = self.y.magnitude
+
+        if self.zh:
+            # z data is assumed to be without units
+            self.d: NDArrayFloat = self.df.iloc[:, 2].to_numpy()
+            self.z = self.d
+
+        if self.reverse_time:
+            self.x = np.flip(self.x)
+            self.y = np.flip(self.y)
+            if self.zh:
+                self.d = np.flip(self.d)
 
         # test for plt_transform
         if self.plot_transform_c != "None":
