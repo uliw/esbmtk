@@ -1351,8 +1351,9 @@ class Model(esbmtkBase):
         # Step 1: Interpolate signals to match solver time domain
         self._interpolate_signals_to_solver_timepoints(results)
 
+        # FIXME: Is this needed? It messes with external data
         # Step 2: Interpolate external data to match solver time domain
-        self._interpolate_external_data_to_solver_timepoints(results)
+        # self._interpolate_external_data_to_solver_timepoints(results)
 
         # Step 3: Map solver state variables to reservoir properties
         self._map_state_variables_to_reservoirs(results)
