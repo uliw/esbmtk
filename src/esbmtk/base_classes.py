@@ -500,7 +500,8 @@ class SpeciesBase(esbmtkBase):
         self.external_data_references: list[
             ExternalData
         ] = []  # all external data references
-        self.flux_direction_pairs: dict[str, int] = {}  # flux name:direction pairs
+        # flux name:direction pairs
+        self.flux_direction_pairs: dict[str, int] = {}
         self.process_references: list[
             Process
         ] = []  # list holding all process references
@@ -513,7 +514,8 @@ class SpeciesBase(esbmtkBase):
         self.connection_objects: set[Species2Species] = (
             set()
         )  # set of connection objects
-        self.datafield_objects: list[DataField] = []  # list of datafield objects
+        # list of datafield objects
+        self.datafield_objects: list[DataField] = []
         self.calculated_processes: list[
             Process
         ] = []  # list of processes which calculate reservoirs
@@ -615,7 +617,8 @@ class SpeciesBase(esbmtkBase):
         if self.legend_left == "None":
             self.legend_left = self.species.display_string
 
-        self.legend_right = f"{self.species.delta_label} [{self.species.delta_scale}]"
+        self.legend_right = f"{
+            self.species.delta_label} [{self.species.delta_scale}]"
 
         # Determine whether to use isotopes
         if self.model.m_type == "both":
@@ -683,7 +686,8 @@ class SpeciesBase(esbmtkBase):
         # Update concentration and delta next. This is computationally inefficient
         # but the next time step may depend on both variables.
         self.c[i]: float = value[0] / self.v[i]  # Update concentration
-        self.l[i]: float = value[1] / self.v[i]  # Update light isotope concentration
+        # Update light isotope concentration
+        self.l[i]: float = value[1] / self.v[i]
 
     def __set_without_isotopes__(self, i: int, value: float) -> None:
         """Set values when no isotope data is present.
@@ -777,7 +781,8 @@ class SpeciesBase(esbmtkBase):
             filename = f"{directory}/{prefix}{reservoir_name}.csv"
         else:
             raise SpeciesError(
-                f"Model register keyword must be 'None'/'local' not {self.species_properties.model.register}"
+                f"Model register keyword must be 'None'/'local' not {
+                    self.species_properties.model.register}"
             )
 
         # Build the dataframe with time and data columns
@@ -789,7 +794,8 @@ class SpeciesBase(esbmtkBase):
         # Add isotope data if available
         if self.isotopes:
             df[
-                f"{reservoir_name} {species.light_isotope_label} [{concentration_unit}]"
+                f"{reservoir_name} {
+                    species.light_isotope_label} [{concentration_unit}]"
             ] = self.l[start:stop:stride]
 
         # Add concentration data
@@ -834,8 +840,8 @@ class SpeciesBase(esbmtkBase):
         None
         """
         # Append current results to temporary storage with specified stride
-        self.mc = np.append(self.mc, self.m[0 : -2 : self.model.reset_stride])
-        self.cc = np.append(self.cc, self.c[0 : -2 : self.model.reset_stride])
+        self.mc = np.append(self.mc, self.m[0: -2: self.model.reset_stride])
+        self.cc = np.append(self.cc, self.c[0: -2: self.model.reset_stride])
 
         # Copy last result into first position for next run
         self.m[0] = self.m[-2]
@@ -890,12 +896,14 @@ class SpeciesBase(esbmtkBase):
 
         # Determine filename based on registration
         if self.species_properties.model.register == "None":
-            filename = f"{directory}/{prefix}{self.model.name}_{self.full_name}.csv"
+            filename = f"{
+                directory}/{prefix}{self.model.name}_{self.full_name}.csv"
         elif self.species_properties.model.register == "local":
             filename = f"{directory}/{prefix}{self.full_name}.csv"
         else:
             raise SpeciesError(
-                f"Model register keyword must be 'None'/'local' not {self.species_properties.model.register}"
+                f"Model register keyword must be 'None'/'local' not {
+                    self.species_properties.model.register}"
             )
 
         # Check if file exists
@@ -932,7 +940,8 @@ class SpeciesBase(esbmtkBase):
             if name == self.full_name:
                 col = self.__assign_reservoir_data__(self, df, col, True)
             else:
-                raise SpeciesError(f"Unable to find Flux {n} in {self.full_name}")
+                raise SpeciesError(f"Unable to find Flux {
+                                   n} in {self.full_name}")
 
         # Check for missing fluxes
         for f in list(curr.difference(read)):
@@ -1073,7 +1082,8 @@ class SpeciesBase(esbmtkBase):
 
             # Create combined legend with both axes
             handler2, label2 = axt.get_legend_handles_labels()
-            axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(6)
+            axt.legend(handler1 + handler2, label1 +
+                       label2, loc=0).set_zorder(6)
             self.mo.axd[ax] = "main"  # register with axes dict
             self.mo.axd[axt] = "twin"
         else:
@@ -1325,6 +1335,7 @@ class Species(SpeciesBase):
         self.c = np.zeros(len(self.model.time))
         self.l = np.zeros(len(self.model.time))
         self.m = np.zeros(len(self.model.time))
+        self.d = np.zeros(len(self.model.time))
 
     def _initialize_geometry(self) -> None:
         """
@@ -1343,7 +1354,8 @@ class Species(SpeciesBase):
             self.volume = Q_(self.volume).to(self.model.v_unit)
 
         # Append reservoir volume to list of toc's
-        self.model.toc = (*self.model.toc, self.volume.to(self.model.v_unit).magnitude)
+        self.model.toc = (
+            *self.model.toc, self.volume.to(self.model.v_unit).magnitude)
         self.v_index = self.model.gcc
         self.model.gcc += 1
         self.c_unit = self.model.c_unit
@@ -1447,7 +1459,8 @@ class Species(SpeciesBase):
                 )
             elif sc != mc:
                 raise ScaleError(
-                    f"No transformation available from {cc.units} to {self.model.c_unit}"
+                    f"No transformation available from {
+                        cc.units} to {self.model.c_unit}"
                 )
 
             self._concentration = cc.to(self.model.c_unit)
@@ -1458,7 +1471,8 @@ class Species(SpeciesBase):
             self.plt_units = self.model.c_unit
 
         # Calculate mass from concentration and volume
-        concentration_magnitude = self._concentration.to(self.model.c_unit).magnitude
+        concentration_magnitude = self._concentration.to(
+            self.model.c_unit).magnitude
         volume_magnitude = self.volume.to(self.model.v_unit).magnitude
         mass_value = concentration_magnitude * volume_magnitude
 
@@ -1508,7 +1522,8 @@ class Species(SpeciesBase):
 
         # Set concentration array with uniform value
         concentration_magnitude = Q_(self.concentration).magnitude
-        self.c = np.zeros(self.model.number_of_datapoints + 1) + concentration_magnitude
+        self.c = np.zeros(self.model.number_of_datapoints +
+                          1) + concentration_magnitude
 
         # Store properties
         self._concentration = concentration_magnitude
@@ -1540,6 +1555,7 @@ class Species(SpeciesBase):
         # Calculate isotope values if delta is provided
         if self.delta != "None":
             self.l = get_l_mass(self.c, self.delta, self.species.r)
+            self.d = self.d * self.delta
 
     def _register_with_model(self) -> None:
         """
@@ -1762,7 +1778,8 @@ class Flux(esbmtkBase):
             )  # add the flux
 
             if self.isotopes:
-                self.l: NDArrayFloat = np.zeros(self.model.number_of_datapoints + 1)
+                self.l: NDArrayFloat = np.zeros(
+                    self.model.number_of_datapoints + 1)
                 if self.rate != 0:
                     self.l = get_l_mass(self.m, self.delta, self.species.r)
                     self.fa[1] = self.l[0]
@@ -1780,7 +1797,8 @@ class Flux(esbmtkBase):
                 self.fa[1] = get_l_mass(self.fa[0], self.delta, self.species.r)
 
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
-        self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
+        self.ld: str = f"{self.species.dn} [{
+            self.species.ds}]"  # right y-axis a label
 
         self.legend_left: str = self.species.dsa
         self.legend_right: str = f"{self.species.dn} [{self.species.ds}]"
@@ -1960,7 +1978,7 @@ class Flux(esbmtkBase):
     def __reset_state__(self) -> None:
         """Copy the result of the last computation."""
         if self.save_flux_data:
-            self.mc = np.append(self.mc, self.m[0 : -2 : self.mo.reset_stride])
+            self.mc = np.append(self.mc, self.m[0: -2: self.mo.reset_stride])
             # copy last element to first position
             self.m[0] = self.m[-2]
             self.l[0] = self.l[-2]
