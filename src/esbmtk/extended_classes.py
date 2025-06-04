@@ -447,7 +447,7 @@ class Signal(esbmtkBase):
                  species = SpeciesProperties handle,
                  start = "0 yrs",     # optional
                  duration = "0 yrs",  #
-                 reverse: [False, (bool)], # optional
+                 reverse_time: [False, (bool)], # optional
                  delta = 0,           # optional
                  stype = "addition"   # or multiplication/epsilon_only
                  shape = "square/pyramid/bell/filename"
@@ -530,7 +530,7 @@ class Signal(esbmtkBase):
             "species": ["None", (SpeciesProperties)],
             "delta": [0, (int, float)],
             "stype": ["addition", (str)],
-            "reverse": [False, (bool)],
+            "reverse_time": [False, (bool)],
             "shape": ["None", (str)],
             "filename": ["None", (str)],
             "mass": ["None", (str, Q_)],
@@ -736,7 +736,7 @@ class Signal(esbmtkBase):
                         signal_index
                     ]  # TODO: for future thinking how to calculate isotope fluxes
 
-        if self.reverse:
+        if self.reverse_time:
             mapped_signal_data.m = np.flip(mapped_m)
             mapped_signal_data.l = np.flip(mapped_l)
             mapped_signal_data.d = np.flip(mapped_d)
