@@ -2402,6 +2402,7 @@ class ExternalData(esbmtkBase):
                         scale      = scaling factor, optional
                         display_precision = number, optional, inherited from Model
                         convert_to = optional, see below
+                        y_as_z = False
                        )
 
     The data must exist as CSV file, where the first column contains
@@ -2414,14 +2415,15 @@ class ExternalData(esbmtkBase):
     defined in the model instance. So your data file mujst look like this
 
     Time [years], Data [units], Data [units]
-    1, 12
-    2, 13
+    1, 12, -12
+    2, 13, 12
 
     By convention, the secon column should contain the same type of
     data as the reservoir (i.e., a concentration), whereas the third
-    column contain isotope delta values. Columns with no data should
-    be left empty (and have no header!) The optional scale argument, will
-    only affect the Y-col data, not the isotope data
+    column contain isotope delta values. In cases were there is no
+    concentration data, set y_as_z = True, and the second column will
+    be printed on the right side of the plot. This will only work
+    for reservoirs that have isotope data though!
 
     The column headers are only used for the time or concentration
     data conversion, and are ignored by the default plotting
@@ -2461,6 +2463,7 @@ class ExternalData(esbmtkBase):
             "scale": [1, (int, float)],
             "disp_units": [True, (bool)],
             "reverse_time": [False, (bool)],
+            "y_as_z": [False, (bool)],
             "register": [
                 "None",
                 (str, Model, Species, DataField, GasReservoir, Signal),
@@ -2677,3 +2680,26 @@ class ExternalData(esbmtkBase):
         ax.set_ylabel(self.yh)
         plt.show()
         plt.savefig(self.n + ".pdf")
+
+    def __plot__(edo, i, ax, axt="None") -> None:
+        """Plot data in existing figure.
+
+        Parameters
+        ----------
+        edo : ExternalData
+            external data object
+        i : int
+            counter
+        ax : plt.axes
+            axes object
+        axt : plt.axes
+            Optional twinx axes object
+        """
+
+        if edo.y_as_z:  # ignore y data
+            axt.scatter(edo.x, edo.y, color=f"C{i + 2}", label=edo.legend)
+        elif edo.has_z:  # plot y and z data
+            axt.scatter(edo.x, edo.z, color=f"C{i + 2}", label=edo.legend)
+            ax.scatter(edo.x, edo.y, color=f"C{i + 2}", label=edo.legend)
+        else:  # plot only y data
+            ax.scatter(edo.x, edo.y, color=f"C{i + 2}", label=edo.legend)

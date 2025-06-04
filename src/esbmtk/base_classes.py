@@ -1060,11 +1060,6 @@ class SpeciesBase(esbmtkBase):
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
         ax.set_ylabel(y1_label)
 
-        # Add any external data points if present
-        for i, d in enumerate(self.external_data_references):
-            legend = f"{self.lm} {d.legend}"
-            ax.scatter(d.x[1:-2], d.y[1:-2], color=f"C{i + 2}", label=legend)
-
         # Remove top spine and get legend handles
         ax.spines["top"].set_visible(False)
         handler1, label1 = ax.get_legend_handles_labels()
@@ -1079,20 +1074,30 @@ class SpeciesBase(esbmtkBase):
             axt.set_ylabel(self.right_axis_label)
             set_y_limits(axt, self)
             ax.spines["top"].set_visible(False)
-
-            # Create combined legend with both axes
-            handler2, label2 = axt.get_legend_handles_labels()
-            axt.legend(handler1 + handler2, label1 +
-                       label2, loc=0).set_zorder(6)
             self.mo.axd[ax] = "main"  # register with axes dict
             self.mo.axd[axt] = "twin"
         else:
             # Single axis legend for concentration only
-            ax.legend(handler1, label1)
             ax.spines["right"].set_visible(False)
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
             self.mo.axd[ax] = "main"
+
+        # Add any external data points if present
+        for i, d in enumerate(self.external_data_references):
+            if self.isotopes:
+                d.__plot__(i, ax, axt)
+            else:
+                d.__plot__(i, ax)
+
+        # build legend
+        handler1, label1 = ax.get_legend_handles_labels()
+        if self.isotopes:
+            handler2, label2 = axt.get_legend_handles_labels()
+            axt.legend(handler1 + handler2, label1 +
+                       label2, loc=0).set_zorder(6)
+        else:
+            axt.legend(handler1, label1).set_zorder(6)
 
         # Set title
         ax.set_title(self.full_name)
