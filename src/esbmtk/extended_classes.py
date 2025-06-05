@@ -313,6 +313,7 @@ class Reservoir(esbmtkBase):
                     f"and TA values for {self.name}\n\n",
                     stacklevel=2,
                 )
+                self.model.now = self.model.now + 1
         self.register.lrg.append(self)
 
 
@@ -576,6 +577,7 @@ class Signal(esbmtkBase):
                     Consider adjusting the max_step parameter of the model object\n""",
                     stacklevel=2,
                 )
+                self.model.now = self.model.now + 1
 
         self.offset = Q_(self.offset).to(self.species.mo.t_unit).magnitude
 
@@ -877,6 +879,7 @@ class Signal(esbmtkBase):
         raise DeprecationWarning(
             "This method is no longer supported. Please notify the esbmtk author"
         )
+        self.model.now = self.model.now + 1
 
         if self.source == "None":
             self.source = Source(name=f"{self.name}_Source", species=self.sp)

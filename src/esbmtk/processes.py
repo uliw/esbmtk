@@ -257,6 +257,7 @@ def init_gas_exchange(c: Species2Species):
             "Consider adjusting the area fraction parameter of the box geometry:\n"
             "g = [upper depth, lower depth, area fraction] \n"
         )
+        c.model.now = c.model.now + 1
 
     if c.solubility == "None":  # use predefined values
         if c.species.name == "CO2":

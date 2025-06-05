@@ -78,9 +78,10 @@ class SpeciesError(Exception):
         super().__init__(message)
 
 
-def deprecated_keyword(message):
+def deprecated_keyword(model, message):
     """Issue a deprecation warning with the provided message."""
     warnings.warn(message, DeprecationWarning, stacklevel=2)
+    model.now = model.now + 1
 
 
 class ElementProperties(esbmtkBase):
@@ -946,6 +947,7 @@ class SpeciesBase(esbmtkBase):
             warnings.warn(
                 f"\nDid not find values for {f}\n in saved state", stacklevel=2
             )
+            self.model.now = self.model.now + 1
 
     def __assign_reservoir_data__(
         self, obj: any, df: pd.DataFrame, col: int, res: bool
@@ -1458,6 +1460,7 @@ class Species(SpeciesBase):
                     "\nConvert mol/kg to mol/liter assuming density = 1\n",
                     stacklevel=2,
                 )
+                self.model.now = self.model.now + 1
             elif sc != mc:
                 raise ScaleError(
                     f"No transformation available from {cc.units} to {

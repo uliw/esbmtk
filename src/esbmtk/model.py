@@ -40,8 +40,8 @@ from esbmtk.ode_backend_2 import (
     write_equations_3,
 )
 
-from .initialize_unit_registry import Q_, ureg
 from .esbmtk_base import esbmtkBase
+from .initialize_unit_registry import Q_, ureg
 from .utility_functions import (
     find_matching_strings,
     get_delta_from_concentration,
@@ -55,7 +55,11 @@ NDArrayFloat = npt.NDArray[np.float64]
 if tp.TYPE_CHECKING:
     from .base_classes import Species
 
-    # from .connections import Species2Species
+
+def deprecated_keyword(model, message):
+    """Issue a deprecation warning with the provided message."""
+    warnings.warn(message, DeprecationWarning, stacklevel=2)
+    model.now = model.now + 1
 
 
 class ModelError(Exception):
@@ -83,11 +87,6 @@ class FluxNameError(Exception):
         """Initialize Error Instance with formatted message."""
         message = f"\n\n{message}\n"
         super().__init__(message)
-
-
-def deprecated_keyword(message):
-    """Issue a deprecation warning with the provided message."""
-    warnings.warn(message, DeprecationWarning, stacklevel=2)
 
 
 class Model(esbmtkBase):
@@ -216,19 +215,10 @@ class Model(esbmtkBase):
             raise DeprecationWarning(
                 "\ntimestep is deprecated, please replace with max_timestep\n"
             )
+            self.now = self.now + 1
 
         # Set default model name
         self.name = "M"
-
-        # collect all warnings so they can be printed at the end
-        # Create a string IO to capture warnings
-        self.warning_log = io.StringIO()
-
-        # Keep a backup of the original function
-        self.original_showwarning = warnings.showwarning
-
-        # Initialize customized warnings collection:
-        warnings.showwarning = self.capture_warnings
 
         # Initialize model component containers
         self._initialize_model_containers()
@@ -259,15 +249,6 @@ class Model(esbmtkBase):
 
         # Initialize the hypsometry class
         hypsometry(name="hyp", model=self, register=self)
-
-    # Define a custom warning handler that captures warnings
-    def capture_warnings(
-        self, message, category, filename, lineno, file=None, line=None
-    ):
-        """Capture custom warnings."""
-        self.warning_log.write(
-            f"{category.__name__}: {message} (in {filename}, line {lineno})\n\n"
-        )
 
     def _initialize_model_containers(self):
         """Initialize all model component containers."""
@@ -312,6 +293,7 @@ class Model(esbmtkBase):
         self.gcc: int = 0  # Constants counter
         self.vpc: int = 0  # Parameter counter
         self.luf: dict = {}  # User functions and source
+        self.now: float = 0  # number of warnings
 
     def _setup_logging(self):
         """Configure model logging."""
@@ -319,7 +301,9 @@ class Model(esbmtkBase):
             logging.root.removeHandler(handler)
 
         log_filename: str = f"{self.name}.log"
-        logging.basicConfig(filename=log_filename, filemode="w", level=logging.CRITICAL)
+        logging.basicConfig(filename=log_filename, filemode="w", level=logging.INFO)
+        # Redirect warnings to logging
+        logging.captureWarnings(True)
 
     def _configure_units(self):
         """Set up model units."""
@@ -342,7 +326,7 @@ class Model(esbmtkBase):
         # Handle deprecated timestep parameter
         if self.timestep != "None":
             self.max_timestep = self.ensure_q(self.timestep).to(self.t_unit).magnitude
-            deprecated_keyword("timestep is deprecated. Please use max_timestep")
+            deprecated_keyword(self, "timestep is deprecated. Please use max_timestep")
         else:
             self.max_timestep = (
                 self.ensure_q(self.max_timestep).to(self.t_unit).magnitude
@@ -924,7 +908,18 @@ class Model(esbmtkBase):
         After running, performance metrics (CPU time, memory usage) are printed.
         """
         # Track execution time and resource usage
+        import os
+        import sys
+        from datetime import datetime
+
+        script_path = sys.argv[0]
+        script_name = os.path.basename(script_path)
         wall_clock_start = time.time()
+        logging.info(
+            f"{script_name} started at {datetime.fromtimestamp(wall_clock_start)}"
+        )
+        logging.info(f"{80 * '='}")
+
         cpu_start = process_time()
         # Run solver
         self._ode_solver(kwargs)
@@ -943,22 +938,20 @@ class Model(esbmtkBase):
         )
 
         # Get memory usage
+        logging.info(
+            f"\n\n{script_name} stopped at {datetime.fromtimestamp(time.time())}"
+        )
+
         process = psutil.Process(os.getpid())
         memory_gb = process.memory_info().rss / 1e9
-        print(f"This run used {memory_gb:.2f} GB of memory\n")
-
-        # printout any warnings
-        # Now display all collected warnings at the end
-        print("\n" + "=" * 80)
-        print("WARNINGS COLLECTED DURING EXECUTION:")
-        print("=" * 80)
-        print(self.warning_log.getvalue() or "No warnings generated")
-        print("\n" + "=" * 80)
-        print("END WARNINGS COLLECTED DURING EXECUTION:")
-        print("=" * 80)
-
-        # Restore the original warning behavior
-        warnings.showwarning = self.original_showwarning
+        logging.info(f"This run used {memory_gb:.2f} GB of memory\n")
+        logging.info(f"{80 * '='}")
+        if self.now > 0:
+            print(
+                f"{80 * '='}\n\n"
+                f"There were {self.now} warnings, check M.log\n\n"
+                f"{80 * '='}\n"
+            )
 
     def _write_temp_equations(self, cwd, R, icl, cpl, ipl):
         """Write temporary equations file and return the equationsset.
@@ -1090,10 +1083,9 @@ class Model(esbmtkBase):
         """
         if self.debug_equations_file:  # If debugging equations is enabled
             if equations_file_path.exists():
-                warnings.warn(
+                print(
                     "\n\n Warning re-using the equations file \n"
                     "\n type r to reuse old file or n to create a new one",
-                    stacklevel=2,
                 )
                 user_input = input("type r/n: ")
 
@@ -1222,8 +1214,9 @@ class Model(esbmtkBase):
         """
         if self.results.status == 0:
             # Print solver statistics
-            print(
-                f"\nnfev={self.results.nfev}, njev={self.results.njev}, nlu={
+            logging.info(
+                f"Intergration finished:"
+                f"\fev={self.results.nfev}, njev={self.results.njev}, nlu={
                     self.results.nlu
                 }\n"
             )
@@ -1522,6 +1515,7 @@ class Model(esbmtkBase):
         if np.any(large_pH_changes):
             for i, is_large_change in enumerate(large_pH_changes):
                 if is_large_change:
+                    self.now = self.now + 1
                     warnings.warn(
                         f"\n\n{reservoir_group.full_name} delta pH = {
                             pH_changes[i]:.2f

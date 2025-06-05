@@ -18,6 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 
+import logging
 import uuid
 import warnings
 from collections.abc import Callable
@@ -311,6 +312,7 @@ class Species2Species(esbmtkBase):
                 "Using {self.delta} for now, but this may not be what you want.\n\n",
                 stacklevel=2,
             )
+            self.model.now = self.model.now + 1
 
         self.__register_with_parent__()  # register connection in namespace
         self.__create_flux__()  # Source/Sink/Fixed
@@ -554,10 +556,10 @@ class Species2Species(esbmtkBase):
         for f in self.lof:
             if self.bypass == "source" and not isinstance(self.source, Source):
                 self.source.lif.append(f)
-                print(f"bypassing {f.full_name} in {self.source.full_name}")
+                logging.info(f"bypassing {f.full_name} in {self.source.full_name}")
             elif self.bypass == "sink" and not isinstance(self.sink, Sink):
                 self.sink.lif.append(f)
-                print(f"bypassing {f.full_name} in {self.sink.full_name}")
+                logging.info(f"bypassing {f.full_name} in {self.sink.full_name}")
 
     def __scaleflux__(self) -> None:
         """Scale a flux relative to another flux."""

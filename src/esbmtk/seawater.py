@@ -105,6 +105,7 @@ class SeawaterConstants(esbmtkBase):
                 f"Initializing {self.name} with default seawater",
                 stacklevel=2,
             )
+            self.model.now = self.model.now + 1
 
         self.update_parameters()
 
