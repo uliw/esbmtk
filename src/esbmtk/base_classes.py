@@ -1016,22 +1016,26 @@ class SpeciesBase(esbmtkBase):
         # Calculate y values based on display type
         if self.display_as == "mass":
             scale = (1 * self.model.m_unit).to(self.plt_units).magnitude
+            y1 = self.m * scale
         elif self.display_as == "ppm":
             scale = 1e6
+            y1 = self.c * scale
             unit = "ppm"
         elif self.display_as == "length":
             scale = (1 * self.model.l_unit).to(self.plt_units).magnitude
+            y1 = self.c * scale
         else:  # concentration is the default
             scale = (1 * self.model.c_unit).to(self.plt_units).magnitude
+            y1 = self.c * scale
 
         # Apply transform function if provided
         if self.plot_transform_c != "None":
             if callable(self.plot_transform_c):
-                scale = scale * self.plot_transform_c(self.c)
+                y1 = y1 * self.plot_transform_c(self.c)
             else:
                 raise SpeciesError("Plot transform must be a function")
 
-        return unit, scale
+        return y1, unit, scale
 
     def __plot__(self, M: Model, ax) -> None:
         """Plot Model data.
@@ -1053,8 +1057,7 @@ class SpeciesBase(esbmtkBase):
         x = (M.time * M.t_unit).to(M.d_unit).magnitude
 
         # get conversion factor from model to display_units
-        unit, d_scale = self.get_conversion_unit_information()
-        y1 = self.c * d_scale
+        y1, unit, d_scale = self.get_conversion_unit_information()
         y1_label = f"{self.legend_left} [{unit}]"
 
         # Plot first axis with concentration data
@@ -1076,7 +1079,7 @@ class SpeciesBase(esbmtkBase):
             self.mo.axd[ax] = "main"
 
         # Add any external data points if present
-        i = 0
+        i = 1
         for edo in self.external_data_references:
             edo.d_scale = d_scale
             i = edo.__plot__(i, ax, axt) if self.isotopes else edo.__plot__(i, ax)

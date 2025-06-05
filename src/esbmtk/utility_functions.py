@@ -1525,9 +1525,8 @@ def data_summaries(
                 t = b.name
             if hasattr(b, f"{sp.name}"):
                 a = getattr(b, f"{sp.name}")  # this is a reservoir
-                # y1, y1_label, unit = a.get_plot_format()
-                unit, d_scale = a.get_conversion_unit_information()
-                data_list.append(a.c * d_scale)
+                y1, unit, d_scale = a.get_conversion_unit_information()
+                data_list.append(y1)
                 label_list.append(f"{b.name}")
                 t = sp.display_as if hasattr(sp, "display_as") else sp.name
 

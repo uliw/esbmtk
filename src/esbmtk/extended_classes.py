@@ -1253,7 +1253,7 @@ class VectorData(esbmtkBase):
             df.to_csv(file_path, header=True, mode="w", index=False)
         return df
 
-    def get_plot_format(self):
+    def get_conversion_unit_information(self):
         """Return concentrat data in plot units."""
         from pint import Unit
 
@@ -1266,11 +1266,7 @@ class VectorData(esbmtkBase):
         else:
             unit = f"{self.plt_units}"
 
-        y1_label = f"{self.label} [{unit}]"
-
-        y1 = self.c
-
-        return y1, y1_label, unit
+        return self.c, unit, 1
 
 
 class DataField(esbmtkBase):
