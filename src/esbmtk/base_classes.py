@@ -617,8 +617,7 @@ class SpeciesBase(esbmtkBase):
         if self.legend_left == "None":
             self.legend_left = self.species.display_string
 
-        self.legend_right = f"{
-            self.species.delta_label} [{self.species.delta_scale}]"
+        self.legend_right = f"{self.species.delta_label} [{self.species.delta_scale}]"
 
         # Determine whether to use isotopes
         if self.model.m_type == "both":
@@ -782,7 +781,8 @@ class SpeciesBase(esbmtkBase):
         else:
             raise SpeciesError(
                 f"Model register keyword must be 'None'/'local' not {
-                    self.species_properties.model.register}"
+                    self.species_properties.model.register
+                }"
             )
 
         # Build the dataframe with time and data columns
@@ -794,8 +794,7 @@ class SpeciesBase(esbmtkBase):
         # Add isotope data if available
         if self.isotopes:
             df[
-                f"{reservoir_name} {
-                    species.light_isotope_label} [{concentration_unit}]"
+                f"{reservoir_name} {species.light_isotope_label} [{concentration_unit}]"
             ] = self.l[start:stop:stride]
 
         # Add concentration data
@@ -840,8 +839,8 @@ class SpeciesBase(esbmtkBase):
         None
         """
         # Append current results to temporary storage with specified stride
-        self.mc = np.append(self.mc, self.m[0: -2: self.model.reset_stride])
-        self.cc = np.append(self.cc, self.c[0: -2: self.model.reset_stride])
+        self.mc = np.append(self.mc, self.m[0 : -2 : self.model.reset_stride])
+        self.cc = np.append(self.cc, self.c[0 : -2 : self.model.reset_stride])
 
         # Copy last result into first position for next run
         self.m[0] = self.m[-2]
@@ -896,14 +895,14 @@ class SpeciesBase(esbmtkBase):
 
         # Determine filename based on registration
         if self.species_properties.model.register == "None":
-            filename = f"{
-                directory}/{prefix}{self.model.name}_{self.full_name}.csv"
+            filename = f"{directory}/{prefix}{self.model.name}_{self.full_name}.csv"
         elif self.species_properties.model.register == "local":
             filename = f"{directory}/{prefix}{self.full_name}.csv"
         else:
             raise SpeciesError(
                 f"Model register keyword must be 'None'/'local' not {
-                    self.species_properties.model.register}"
+                    self.species_properties.model.register
+                }"
             )
 
         # Check if file exists
@@ -940,8 +939,7 @@ class SpeciesBase(esbmtkBase):
             if name == self.full_name:
                 col = self.__assign_reservoir_data__(self, df, col, True)
             else:
-                raise SpeciesError(f"Unable to find Flux {
-                                   n} in {self.full_name}")
+                raise SpeciesError(f"Unable to find Flux {n} in {self.full_name}")
 
         # Check for missing fluxes
         for f in list(curr.difference(read)):
@@ -989,13 +987,16 @@ class SpeciesBase(esbmtkBase):
 
         return col
 
-    def get_plot_format(self) -> tuple:
-        """Return concentration data in plot units.
+    def get_conversion_unit_information(self) -> tuple:
+        """Extract unit and scaling information.
+
+        This method provides the unit information and a scaling factor
+        that maps from model units to display units.
 
         Returns
         -------
         tuple
-            Tuple containing (y_values, y_label, unit)
+            Tuple containing (unit name, scaling factor)
 
         Raises
         ------
@@ -1012,28 +1013,25 @@ class SpeciesBase(esbmtkBase):
         else:
             unit = f"{self.plt_units}"
 
-        # Create y-axis label
-        y1_label = f"{self.legend_left} [{unit}]"
-
         # Calculate y values based on display type
         if self.display_as == "mass":
-            y1 = (self.m * self.model.m_unit).to(self.plt_units).magnitude
+            scale = (1 * self.model.m_unit).to(self.plt_units).magnitude
         elif self.display_as == "ppm":
-            y1 = self.c * 1e6
-            y1_label = "ppm"
+            scale = 1e6
+            unit = "ppm"
         elif self.display_as == "length":
-            y1 = (self.c * self.model.l_unit).to(self.plt_units).magnitude
-        else:
-            y1 = (self.c * self.model.c_unit).to(self.plt_units).magnitude
+            scale = (1 * self.model.l_unit).to(self.plt_units).magnitude
+        else:  # concentration is the default
+            scale = (1 * self.model.c_unit).to(self.plt_units).magnitude
 
         # Apply transform function if provided
         if self.plot_transform_c != "None":
             if callable(self.plot_transform_c):
-                y1 = self.plot_transform_c(self.c)
+                scale = scale * self.plot_transform_c(self.c)
             else:
                 raise SpeciesError("Plot transform must be a function")
 
-        return y1, y1_label, unit
+        return unit, scale
 
     def __plot__(self, M: Model, ax) -> None:
         """Plot Model data.
@@ -1053,54 +1051,50 @@ class SpeciesBase(esbmtkBase):
 
         # Convert time and data to display units
         x = (M.time * M.t_unit).to(M.d_unit).magnitude
-        y1, y1_label, _unit = self.get_plot_format()
+
+        # get conversion factor from model to display_units
+        unit, d_scale = self.get_conversion_unit_information()
+        y1 = self.c * d_scale
+        y1_label = f"{self.legend_left} [{unit}]"
 
         # Plot first axis with concentration data
-        ax.plot(x[1:-2], y1[1:-2], color="C0", label=y1_label)
+        ax.plot(x, y1, color="C0", label=y1_label)
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
         ax.set_ylabel(y1_label)
-
-        # Remove top spine and get legend handles
-        ax.spines["top"].set_visible(False)
-        handler1, label1 = ax.get_legend_handles_labels()
-        set_y_limits(ax, self)
 
         # Add isotope data on second y-axis if available
         if self.isotopes:
             # Create twin axis for isotope data
             axt = ax.twinx()
             y2 = self.d  # No conversion for isotopes
-            axt.plot(x[1:-2], y2[1:-2], color="C1", label=self.legend_right)
+            axt.plot(x, y2, color="C1", label=self.legend_right)
             axt.set_ylabel(self.right_axis_label)
             set_y_limits(axt, self)
-            ax.spines["top"].set_visible(False)
             self.mo.axd[ax] = "main"  # register with axes dict
             self.mo.axd[axt] = "twin"
         else:
-            # Single axis legend for concentration only
-            ax.spines["right"].set_visible(False)
-            ax.yaxis.set_ticks_position("left")
-            ax.xaxis.set_ticks_position("bottom")
             self.mo.axd[ax] = "main"
 
         # Add any external data points if present
-        for i, d in enumerate(self.external_data_references):
-            if self.isotopes:
-                d.__plot__(i, ax, axt)
-            else:
-                d.__plot__(i, ax)
+        i = 0
+        for edo in self.external_data_references:
+            edo.d_scale = d_scale
+            i = edo.__plot__(i, ax, axt) if self.isotopes else edo.__plot__(i, ax)
 
-        # build legend
-        handler1, label1 = ax.get_legend_handles_labels()
-        if self.isotopes:
-            handler2, label2 = axt.get_legend_handles_labels()
-            axt.legend(handler1 + handler2, label1 +
-                       label2, loc=0).set_zorder(6)
-        else:
-            axt.legend(handler1, label1).set_zorder(6)
-
-        # Set title
+        # build legend and tweak appearance
+        set_y_limits(ax, self)
         ax.set_title(self.full_name)
+        handler1, label1 = ax.get_legend_handles_labels()
+        ax.spines["top"].set_visible(False)
+        if self.isotopes and axt is not None:
+            axt.spines["top"].set_visible(False)
+            handler2, label2 = axt.get_legend_handles_labels()
+            axt.legend(handler1 + handler2, label1 + label2, loc=1).set_zorder(6)
+        else:
+            ax.legend(handler1, label1).set_zorder(6)
+            ax.spines["right"].set_visible(False)
+            ax.yaxis.set_ticks_position("left")
+            ax.xaxis.set_ticks_position("bottom")
 
     def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
@@ -1359,8 +1353,7 @@ class Species(SpeciesBase):
             self.volume = Q_(self.volume).to(self.model.v_unit)
 
         # Append reservoir volume to list of toc's
-        self.model.toc = (
-            *self.model.toc, self.volume.to(self.model.v_unit).magnitude)
+        self.model.toc = (*self.model.toc, self.volume.to(self.model.v_unit).magnitude)
         self.v_index = self.model.gcc
         self.model.gcc += 1
         self.c_unit = self.model.c_unit
@@ -1464,8 +1457,9 @@ class Species(SpeciesBase):
                 )
             elif sc != mc:
                 raise ScaleError(
-                    f"No transformation available from {
-                        cc.units} to {self.model.c_unit}"
+                    f"No transformation available from {cc.units} to {
+                        self.model.c_unit
+                    }"
                 )
 
             self._concentration = cc.to(self.model.c_unit)
@@ -1476,8 +1470,7 @@ class Species(SpeciesBase):
             self.plt_units = self.model.c_unit
 
         # Calculate mass from concentration and volume
-        concentration_magnitude = self._concentration.to(
-            self.model.c_unit).magnitude
+        concentration_magnitude = self._concentration.to(self.model.c_unit).magnitude
         volume_magnitude = self.volume.to(self.model.v_unit).magnitude
         mass_value = concentration_magnitude * volume_magnitude
 
@@ -1527,8 +1520,7 @@ class Species(SpeciesBase):
 
         # Set concentration array with uniform value
         concentration_magnitude = Q_(self.concentration).magnitude
-        self.c = np.zeros(self.model.number_of_datapoints +
-                          1) + concentration_magnitude
+        self.c = np.zeros(self.model.number_of_datapoints + 1) + concentration_magnitude
 
         # Store properties
         self._concentration = concentration_magnitude
@@ -1783,8 +1775,7 @@ class Flux(esbmtkBase):
             )  # add the flux
 
             if self.isotopes:
-                self.l: NDArrayFloat = np.zeros(
-                    self.model.number_of_datapoints + 1)
+                self.l: NDArrayFloat = np.zeros(self.model.number_of_datapoints + 1)
                 if self.rate != 0:
                     self.l = get_l_mass(self.m, self.delta, self.species.r)
                     self.fa[1] = self.l[0]
@@ -1802,8 +1793,7 @@ class Flux(esbmtkBase):
                 self.fa[1] = get_l_mass(self.fa[0], self.delta, self.species.r)
 
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
-        self.ld: str = f"{self.species.dn} [{
-            self.species.ds}]"  # right y-axis a label
+        self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
 
         self.legend_left: str = self.species.dsa
         self.legend_right: str = f"{self.species.dn} [{self.species.ds}]"
@@ -1983,7 +1973,7 @@ class Flux(esbmtkBase):
     def __reset_state__(self) -> None:
         """Copy the result of the last computation."""
         if self.save_flux_data:
-            self.mc = np.append(self.mc, self.m[0: -2: self.mo.reset_stride])
+            self.mc = np.append(self.mc, self.m[0 : -2 : self.mo.reset_stride])
             # copy last element to first position
             self.m[0] = self.m[-2]
             self.l[0] = self.l[-2]
