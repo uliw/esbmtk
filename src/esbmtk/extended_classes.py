@@ -2463,7 +2463,12 @@ class ExternalData(esbmtkBase):
         }
 
         # provide a list of absolutely required keywords
-        self.lrk: list = ["name", "filename", "legend", ["reservoir", "register"]]
+        self.lrk: list = [
+            "name",
+            "filename",
+            ["legend", "legend_z"],
+            ["reservoir", "register"],
+        ]
         self.__initialize_keyword_variables__(kwargs)
 
         # legacy names
@@ -2586,23 +2591,19 @@ class ExternalData(esbmtkBase):
         self.x = self.x.magnitude
         self.y = self.y.magnitude
 
+        # clip values outside of the model domain
+        mask = (self.x >= self.model.start) & (self.x <= self.model.stop)
+        self.x = self.x[mask]
+        self.y = self.y[mask]
+
         if self.zh:
             # z data is assumed to be without units
             self.d: NDArrayFloat = self.df.iloc[:, 2].to_numpy()
+            self.d = self.d[mask]
             self.z = self.d
 
         if self.reverse_time:
             self.x = np.flip(self.x)
-            self.y = np.flip(self.y)
-            if self.zh:
-                self.d = np.flip(self.d)
-
-        # test for plt_transform
-        if self.plot_transform_c != "None":
-            if callable(self.plot_transform_c):
-                self.y = self.plot_transform_c(self.y)
-            else:
-                raise ExternalDataError("Plot transform must be a function")
 
         # register with reservoir
         self.__register__(self.register)
@@ -2687,7 +2688,7 @@ class ExternalData(esbmtkBase):
         # Convert time and data to display units
         x = (edo.x * edo.model.t_unit).to(edo.model.d_unit).magnitude
         if edo.y_as_z:  # ignore y data
-            axt.scatter(x, edo.z, color=f"C{i}", label=edo.legend_z)
+            axt.scatter(x, edo.y, color=f"C{i}", label=edo.legend_z)
             i = i + 1
         elif edo.zh:  # plot y and z data
             ax.scatter(x, edo.y * edo.d_scale, color=f"C{i}", label=edo.legend)
