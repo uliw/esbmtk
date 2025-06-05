@@ -915,10 +915,10 @@ class Model(esbmtkBase):
         script_path = sys.argv[0]
         script_name = os.path.basename(script_path)
         wall_clock_start = time.time()
-        logging.info(
-            f"{script_name} started at {datetime.fromtimestamp(wall_clock_start)}"
-        )
         logging.info(f"{80 * '='}")
+        logging.info(
+            f"Intergration started at {datetime.fromtimestamp(wall_clock_start)}"
+        )
 
         cpu_start = process_time()
         # Run solver
@@ -1215,10 +1215,10 @@ class Model(esbmtkBase):
         if self.results.status == 0:
             # Print solver statistics
             logging.info(
-                f"Intergration finished:"
-                f"\fev={self.results.nfev}, njev={self.results.njev}, nlu={
+                f"Intergration finished: "
+                f"nfev={self.results.nfev}, njev={self.results.njev}, nlu={
                     self.results.nlu
-                }\n"
+                }
             )
             print(f"status={self.results.status}")
             print(f"message={self.results.message}\n")
@@ -1517,11 +1517,9 @@ class Model(esbmtkBase):
                 if is_large_change:
                     self.now = self.now + 1
                     warnings.warn(
-                        f"\n\n{reservoir_group.full_name} delta pH = {
-                            pH_changes[i]:.2f
-                        } "
-                        f"at t = {time_vector[i]:.2f} {self.t_unit:~P}\n",
-                        stacklevel=2,
+                        f"{reservoir_group.full_name} delta pH = {pH_changes[i]:.2f} "
+                        f"at t = {time_vector[i]:.2f} {self.t_unit:~P}",
+                        # stacklevel=2,
                     )
 
     def list_species(self) -> None:
