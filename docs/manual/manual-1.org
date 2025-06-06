@@ -140,7 +140,7 @@ from esbmtk import (
 )
 #+END_SRC
 Next we use the @@rst::py:class:`esbmtk.model.Model()`@@  class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
-Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/l' rather than mol/m**3 or 'kg/s'. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. So your mileage may vary if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.
+Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/kg' rather than mol/m**3 or 'kg/s'. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. So your mileage may vary if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.
 #+name: p2
 #+BEGIN_SRC ipython :tangle po4_1.py
 # define the basic model parameters
@@ -204,7 +204,7 @@ Reservoir(
 
 
 *** Model processes
-For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework, this is accomplished through the @@rst::py:class:`esbmtk.connections.Species2Species()`@@ class. To connect the weathering flux from the source object (M.w) to the surface ocean (M.S_b) we declare a connection instance describing this relationship as follows:
+For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework, this is accomplished through the @@rst::py:class:`esbmtk.connections.Species2Species()`@@ class. To connect the weathering flux from the source object (M.weathering) to the surface ocean (M.S_b) we declare a connection instance describing this relationship as follows:
 #+name: p6
 #+BEGIN_SRC ipython :tangle po4_1.py
 ConnectionProperties(
@@ -212,12 +212,15 @@ ConnectionProperties(
     sink=M.S_b,  # target of flux
     rate=F_w,  # rate of flux
     id="river",  # connection id
-    ctype="regular",
+    ctype="regular", #connection type
 )
 #+END_SRC
 Unless the =register= keyword is given, connections will be automatically registered with the parent of the source, i.e., the model =M=. Unless explicitly given through the =name= keyword, connection names will be automatically constructed from the names of the source and sink instances. However, it is a good habit to provide the =id= keyword to keep connections separate in cases where two reservoir instances share more than one connection. The list of all connection instances can be obtained from the model object (see below).
 
-To map the process of thermohaline circulation, we connect the surface and deep ocean boxes using a connection type that scales the mass transfer as a function of the concentration in a given reservoir (=ctype ="scale_with_concentration"= ). The concentration data is taken from the reference reservoir which defaults to the source reservoir. As such, in most cases, the =ref_reservoirs= keyword can be omitted. The =scale= keyword can be a string or a numerical value. If it is provided as a string ESBMTK will map the value into model units. Note that the connection class does not require the =name= keyword. Rather the name is derived from the source and sink reservoir instances. Since reservoir instances can have more than one connection (i.e., surface to deep via downwelling, and surface to deep via primary production), it is required to set the =id= keyword.
+The connection type =ctype = "regular"= or =ctype = "fixed"= is used when connecting reservoirs with a fixed rate (eg: F_w = 45 Gmol/year, as defined above). However, we may also create a concentration-dependent flux connection. To map the process of thermohaline circulation, for example, we connect the surface and deep ocean boxes using a connection type that scales the mass transfer as a function of the concentration in a given reservoir (=ctype ="scale_with_concentration"= ). 
+
+The concentration data is taken from the reference reservoir, which by default is the source reservoir. As such, in most cases, the =ref_reservoirs= keyword can be omitted. The =scale= keyword can be a string or a numerical value. If it is provided as a string, ESBMTK will map the value into model units. Note that the connection class does not require the =name= keyword. Rather, the name is derived from the source and sink reservoir instances. Since reservoir instances can have more than one connection (i.e., surface to deep via downwelling, and surface to deep via primary production), it is required to set the =id= keyword.
+
 #+name: p7
 #+BEGIN_SRC ipython :tangle po4_1.py
 ConnectionProperties(  # thermohaline downwelling
@@ -237,19 +240,21 @@ ConnectionProperties(  # thermohaline upwelling
 #+END_SRC
 
 There are several ways to define biological export production, e.g., as a function of the upwelling PO_4, or as a function of the residence time of PO_4 in the surface ocean. Here we follow Glover (2011) and use the residence time \tau = 100 years. Note that the below code species explicitly specifies the species that is affected by this process.
+
 #+name: p8
 #+BEGIN_SRC ipython :tangle po4_1.py
 ConnectionProperties(  #
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
-    scale=M.S_b.volume / tau,
+    scale=M.S_b.volume / tau, 
+    # volume / residence-time * concentration (i.e. mass per unit volume) = flux (i.e mass per unit time)
     id="primary_production",
     species=[M.PO4],  # apply this only to PO4
 )
 #+END_SRC
 
-We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity or use the previously calculated flux. We can query the export productivity using the =id_string= of the above connection with the
+We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity or use the previously calculated flux via =ctype ="scale_with_flux"= and =ref_flux=. We can query the export productivity using the =id_string= of the above connection with the
 @@rst::py:meth:`esbmtk.model.Model.flux_summary()`@@ method of the model instance:
 #+BEGIN_SRC ipython
 M.flux_summary(filter_by="primary_production", return_list=True)[0]
