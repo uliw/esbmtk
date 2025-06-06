@@ -219,7 +219,7 @@ Unless the =register= keyword is given, connections will be automatically regist
 
 The connection type =ctype = "regular"= or =ctype = "fixed"= is used when connecting reservoirs with a fixed rate (eg: F_w = 45 Gmol/year, as defined above). However, we may also create a concentration-dependent flux connection. To map the process of thermohaline circulation, for example, we connect the surface and deep ocean boxes using a connection type that scales the mass transfer as a function of the concentration in a given reservoir (=ctype ="scale_with_concentration"= ). 
 
-The concentration data is taken from the reference reservoir, which by default is the source reservoir. As such, in most cases, the =ref_reservoirs= keyword can be omitted. The =scale= keyword can be a string or a numerical value. If it is provided as a string, ESBMTK will map the value into model units. Note that the connection class does not require the =name= keyword. Rather, the name is derived from the source and sink reservoir instances. Since reservoir instances can have more than one connection (i.e., surface to deep via downwelling, and surface to deep via primary production), it is required to set the =id= keyword.
+The concentration data is taken from the reference reservoir, which by default is the source reservoir. As such, in most cases, the =ref_reservoirs= keyword can be omitted. Note that the connection class does not require the =name= keyword. Rather, the name is derived from the source and sink reservoir instances. Since reservoir instances can have more than one connection (i.e., surface to deep via downwelling, and surface to deep via primary production), it is required to set the =id= keyword.
 
 #+name: p7
 #+BEGIN_SRC ipython :tangle po4_1.py
@@ -227,7 +227,8 @@ ConnectionProperties(  # thermohaline downwelling
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
-    scale=thc,
+    scale=thc, #(in sverdrups, i.e. volumetric rate) 
+    #volume / time * concentration (i.e. mass per unit volume) = flux (i.e. mass transfer per unit time)
     id="downwelling_PO4",
 )
 ConnectionProperties(  # thermohaline upwelling
@@ -238,6 +239,7 @@ ConnectionProperties(  # thermohaline upwelling
     id="upwelling_PO4",
 )
 #+END_SRC
+As seen above, the =scale= keyword can be a string or a numerical value. If it is provided as a string, ESBMTK will map the value into model units, i.e., the toolkit automatically handles unit conversions when scaling. For example, if concentration is described in mol/kg instead of mol/l, the above code for thermohaline circulation will automatically use the density of the relevant reservoirs to calculate the correct flux.
 
 There are several ways to define biological export production, e.g., as a function of the upwelling PO_4, or as a function of the residence time of PO_4 in the surface ocean. Here we follow Glover (2011) and use the residence time \tau = 100 years. Note that the below code species explicitly specifies the species that is affected by this process.
 
@@ -248,7 +250,7 @@ ConnectionProperties(  #
     sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
     scale=M.S_b.volume / tau, 
-    # volume / residence-time * concentration (i.e. mass per unit volume) = flux (i.e mass per unit time)
+    # volume / time * concentration (i.e. mass per unit volume) = flux (i.e mass transfer per unit time)
     id="primary_production",
     species=[M.PO4],  # apply this only to PO4
 )
