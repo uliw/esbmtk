@@ -1215,10 +1215,12 @@ class Model(esbmtkBase):
         if self.results.status == 0:
             # Print solver statistics
             logging.info(
-                f"Intergration finished: "
-                f"nfev={self.results.nfev}, njev={self.results.njev}, nlu={
-                    self.results.nlu
-                }
+                f"Intergration finished:\n "
+                f"Number of evaluations of the right-hand side = {self.results.nfev}\n"
+                f"Number of evaluations of the Jacobian = {self.results.njev}\n"
+                f"Number of LU decompositions = {self.results.nlu}\n"
+                f"status={self.results.status}\n"
+                f"message={self.results.message}\n"
             )
             print(f"status={self.results.status}")
             print(f"message={self.results.message}\n")
