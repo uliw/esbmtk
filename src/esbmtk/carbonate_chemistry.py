@@ -42,6 +42,16 @@ if tp.TYPE_CHECKING:
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
+
+class CarbonateSystem2Error(Exception):
+    """Custom Error Class for Model-related errors."""
+
+    def __init__(self, message):
+        """Initialize Error Instance with formatted message."""
+        message = f"\n\n{message}\n"
+        super().__init__(message)
+
+
 """
 Carbonate System 1 setup requires 3 steps: First we define the actual function,
 carbonate_system_1_ode().  In the second step we create a wrapper
@@ -491,12 +501,25 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     r_db = kwargs["r_db"]
     r_sb = kwargs["r_sb"]
+
+    if len(r_db) != len(r_sb):
+        raise CarbonateSystem2Error(
+            f"The Number of surface boxes ({len(r_sb)} does not match the number of deeb boxes ({len(r_db)}"
+        )
+
     pg = kwargs["pg"]
     pc = kwargs["pc"]
     zmax = abs(int(kwargs["zmax"]))
+    export_fluxes = kwargs["carbonate_export_fluxes"]
+
+    if len(r_db) != len(export_fluxes):
+        raise CarbonateSystem2Error(
+            f"The Number of deep boxes ({len(r_db)}) does not match the"
+            f"number of export fluxes({len(export_fluxes)})"
+        )
     # test if corresponding surface reservoirs have been defined
     if len(r_sb) == 0:
-        raise ValueError(
+        raise CarbonateSystem2Error(
             "Please update your call to add_carbonate_system_2 and add\
             the list of corresponding surface reservoirs"
         )
