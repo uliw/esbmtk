@@ -6,6 +6,13 @@
 -----------
 
 - 0.14.2.8 fixed ``reverse_time`` display for plots with more than one x-axis. Added unit registered output variables (e.g., adding ``_u`` to  ``M.D_b.PO4.c`` than ``M.D_b.PO4.c_u`` will show the concentration with the units added. Reservoir mass calculations are now updated once integration finishes.) Reading third party generated CSV data is now more robust and aims to detect encoding errors (who knew that some excel versions write UTF-7 ...)
+  New Features:
+
+  - Gas Exchange Connections now allow the ``scale`` keyword
+
+  - Signal, ExternalData, and plot now accept the ``reverse_time`` keyword
+
+  - Warnings are now written to the log file
 
 - 0.14.2.2 May 1\ :sup:`st`\ 2025, mostly  a bugfix release that adds isotope related unit test.
 
