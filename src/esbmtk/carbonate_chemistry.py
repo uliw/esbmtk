@@ -511,12 +511,14 @@ def add_carbonate_system_2(**kwargs) -> None:
     pc = kwargs["pc"]
     zmax = abs(int(kwargs["zmax"]))
     export_fluxes = kwargs["carbonate_export_fluxes"]
+    n_flux = int(len(export_fluxes) / 2) if r_db[0].DIC.isotopes else len(export_fluxes)
 
-    if len(r_db) != len(export_fluxes):
+    if len(r_db) != n_flux:
         raise CarbonateSystem2Error(
             f"The Number of deep boxes ({len(r_db)}) does not match the"
-            f"number of export fluxes({len(export_fluxes)})"
+            f"number of export fluxes({n_flux})"
         )
+
     # test if corresponding surface reservoirs have been defined
     if len(r_sb) == 0:
         raise CarbonateSystem2Error(
