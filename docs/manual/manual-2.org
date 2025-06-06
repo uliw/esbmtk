@@ -275,7 +275,6 @@ initial_conditions= {
 create_reservoirs(box_names, initial_conditions, M)
 #+END_SRC
 
-
 The above code could also be written with explicit initial conditions on a per reservoir/species base and then initialized with the @@rst::py:class:`esbmtk.utility_functions.initialize_reservoirs()`@@ function. The =Boudrea2010.py= example at https://github.com/uliw/ESBMTK-Examples shows a use case for this approach.
 #+BEGIN_SRC ipython
 box_parameters = {  # name: [[ud, ld ap], T, P, S]
