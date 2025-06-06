@@ -5,7 +5,7 @@
 ** Installation
 *Note that ESBMTK 0.14.2.x requires python 3.12 or higher.*
 *** Conda
-ESBMTK is available via through the conda-forge channel https://conda-forge.org/
+ESBMTK is available via the conda-forge channel https://conda-forge.org/
 Assuming you install into a new virtual environment the following should install the ESBMTK framework
 #+BEGIN_SRC sh
 conda create --name foo python=3.12
@@ -42,7 +42,7 @@ and for the deep ocean,
 \]
 
 
-which is easily encoded as a Python function
+which is easily encoded as a Python function:
 #+BEGIN_SRC ipython
 def dCdt(t, C_0, V, F_w, thx):
     """ Calculate the change in concentration as
@@ -167,7 +167,7 @@ tau = Q_("100 years")
 tau * 12
 #+END_SRC
 
-Most ESBMTK classes accept quantities, strings that represent quantities as well as numerical values. Weathering and burial fluxes are often defined in =mol/year=, whereas ocean models use =kg/year=. ESBMTK provides a method (=set_flux()= )  that will automatically convert the input into the correct units. In this example, it is not necessary since the flux and the model both use =mol=. It is however good practice to rely on the automatic conversion. Note that it makes a difference for the mol to kilogram conversion whether one uses =M.P= or =M.PO4= as the reference species!
+Most ESBMTK classes accept quantities, strings that represent quantities, as well as numerical values. Weathering and burial fluxes are often defined in =mol/year=, whereas ocean models use =kg/year=. ESBMTK provides a method (=set_flux()= )  that will automatically convert the input into the correct units. In this example, it is not necessary since the flux and the model both use =mol=. It is however good practice to rely on the automatic conversion. Note that it makes a difference for the mol to kilogram conversion whether one uses =M.P= or =M.PO4= as the reference species!
 #+name: p4
 #+BEGIN_SRC ipython :tangle po4_1.py
 # boundary conditions
@@ -204,7 +204,7 @@ Reservoir(
 
 
 *** Model processes
-For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework, this is accomplished through the @@rst::py:class:`esbmtk.connections.Species2Species()`@@ class. To connect the weathering flux from the source object (M.weathering) to the surface ocean (M.S_b) we declare a connection instance describing this relationship as follows:
+For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework, this is accomplished through the @@rst::py:class:`esbmtk.connections.Species2Species()`@@ class or the @@rst::py:class:`esbmtk.connections.ConnectionProperties()`@@ class. To connect the weathering flux from the source object (M.weathering) to the surface ocean (M.S_b) we declare a connection instance describing this relationship as follows:
 #+name: p6
 #+BEGIN_SRC ipython :tangle po4_1.py
 ConnectionProperties(
