@@ -89,7 +89,7 @@ The original signal data (as read from a csv etc.) is available through the =.s_
 
 ** Working with multiple species
 The basic building blocks introduced so far are sufficient to create a single species model. Adding further species is straightforward. First one needs to import the species definitions. They than can be simply used by extending the dictionaries and lists used in the previous example.
-Using the previous example of a simple P-cycle model, we now express the P-cycling as a function of photosynthetic organic matter (OM) production and remineralization. First, we import the new classes and we additionally load the species definitions for carbon (this code is available as =po4_3.p4= see https://github.com/uliw/ESBMTK-Examples).
+Using the previous example of a simple P-cycle model, we now express the P-cycling as a function of photosynthetic organic matter (OM) production and remineralization. First, we import the new classes and we additionally load the species definitions for carbon (this code is available as =po4_3.py= see https://github.com/uliw/ESBMTK-Examples).
 #+name: po43_1
 #+BEGIN_SRC ipython :tangle po4_3.py
 from esbmtk import (
@@ -239,7 +239,9 @@ test_values = [ # result, reference value
 ** Using many boxes
 Using the ESBMTK classes introduced thus far is sufficient to build complex models. However, it is beneficial to leverage Python syntax to create utility functions that help reduce overly verbose code. The ESBMTK library includes several routines that aid in this process; however, they are not part of the core API, are not yet well documented, and have not undergone extensive testing. The following provides a brief introduction, but it may be useful to examine the code for the Boudreau 2010 model in the example directory, as it makes significant use of the Python dictionary class.
 
-For these functions to operate correctly, box names must adhere to the following template: =Area_depth=, such as =L_sb= for a low latitude surface water box or =D_db= for a deep water box. While the actual names are flexible, the underscore is utilized to distinguish between ocean area (i.e. low-latitude, high-latitude, etc.) and depth interval (i.e. surface, intermediate, deep, etc.). The following code examples demonstrate how to create multiple boxes simultaneously by first defining a dictionary containing the box geometry and initial values, followed by the @@rst::py:class:`esbmtk.utility_functions.initialize_reservoirs()`@@ function to instantiate the corresponding =Reservoir= objects. The =Boudreau2010.py= example available at https://github.com/uliw/ESBMTK-Examples illustrates a practical application of this approach.
+For these functions to operate correctly, box names must adhere to the following template: =Area_depth=, such as =L_sb= for a low latitude surface water box or =D_db= for a deep water box. While the actual names are flexible, the underscore is utilized to distinguish between ocean area (eg. low-latitude, high-latitude, etc.) and depth interval (eg. surface, intermediate, deep, etc.). 
+
+The following code examples demonstrate how to create multiple boxes simultaneously by first defining a dictionary containing the box geometry and initial values, followed by the @@rst::py:class:`esbmtk.utility_functions.initialize_reservoirs()`@@ function to instantiate the corresponding =Reservoir= objects. The =Boudreau2010.py= example available at https://github.com/uliw/ESBMTK-Examples illustrates a practical application of this approach.
 #+BEGIN_SRC ipython
 box_parameters: dict = {  # name: [[geometry], T, P]
     "H_b": {  # High-Lat Box
@@ -305,7 +307,7 @@ connection_dictionary = build_ct_dict(thx_dict, species_names)
 create_bulk_connections(connection_dictionary, M, mt="1:1")
 #+END_SRC
 
-In the following example, we build the =connection_dictionary= in a more explicit way to define primary production as a function of P upwelling: The first line finds all the upwelling fluxes, and we can then use them as an argument in the =connection_dictionary= definition:
+In the following example, we build the =connection_dictionary= in a more explicit way to define primary production as a function of P upwelling: the first line finds all the upwelling fluxes, and we can then use them as an argument in the =connection_dictionary= definition:
 #+BEGIN_SRC ipython
 # get all upwelling P fluxes except for the high latitude box
 pfluxes = M.flux_summary(filter_by="PO4_mix_up", exclude="H_", return_list=True)
