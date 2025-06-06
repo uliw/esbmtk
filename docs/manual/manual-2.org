@@ -237,57 +237,36 @@ test_values = [ # result, reference value
 #+END_SRC
 
 ** Using many boxes
-Using the ESBMTK classes introduced so far is sufficient to build complex models. However, it is easy to leverage Python syntax to create a few utility functions that help in reducing overly verbose code. The ESBMTK library comes with a few routines that help in this regard. However, they are not part of the core API, are not (yet) well documented and have not seen much testing. The following provides a brief introduction, but it may be useful to study the code for the Boudreau 2010 and LOSCAR-type models in the example directory. All of these make heavy use of the Python dictionary class.
+Using the ESBMTK classes introduced thus far is sufficient to build complex models. However, it is beneficial to leverage Python syntax to create utility functions that help reduce overly verbose code. The ESBMTK library includes several routines that aid in this process; however, they are not part of the core API, are not yet well documented, and have not undergone extensive testing. The following provides a brief introduction, but it may be useful to examine the code for the Boudreau 2010 and LOSCAR-type models in the example directory, as all of these make significant use of the Python dictionary class.
 
-For this function to work correctly, box names need to be specified following this template =Area_depth=, e.g., =A_sb= for the Atlantic surface water box, or =A_ib= for the Atlantic intermediate water box. The actual names, do not matter, but the underscore is used to differentiate between ocean area and depth interval. The following code uses two dictionaries to specify the species and initial conditions for a multi-box model. Both dictionaries are then used as input for a function that creates the actual instances. Note that the meaning and syntax for the geometry list and seawater parameters are explained in the next chapter. Both dictionaries are than passed to the @@rst::py:class:`esbmtk.utility_functions.create_reservoirs()`@@  function to instantiate the respective =Reservoir= objects.
+For these functions to operate correctly, box names must adhere to the following template: =Area_depth=, such as =L_sb= for a low latitude surface water box or =D_db= for a deep water box. While the actual names are flexible, the underscore is utilized to distinguish between ocean area and depth interval. The following code examples demonstrate how to create multiple boxes simultaneously by first defining a dictionary containing the box geometry and initial values, followed by the @@rst::py:class:`esbmtk.utility_functions.initialize_reservoirs()`@@ function to instantiate the corresponding =Reservoir= objects. The =Boudrea2010.py= example available at https://github.com/uliw/ESBMTK-Examples illustrates a practical application of this approach.
 #+BEGIN_SRC ipython
-# ud = upper depth datum, ld = lower depth datum, ap = area percentage
-# T = Temperature (C), P = Pressure (bar), S = Salinity in PSU 
-"""
-box_parameters = {  # name: [[ud, ld ap], T, P, S]
-        # Atlantic Ocean
-        "M.A_sb": {"g": [0, -100, A_ap], "T": 20, "P": 5, "S": 34.7},
-        "M.A_ib": {"g": [-100, -1000, A_ap], "T": 10, "P": 100, "S": 34.7},
-        "M.A_db": {"g": [-1000, -6000, A_ap], "T": 2, "P": 240, "S": 34.7},
-        # Indian Ocean
-        "I_sb": {"g": [0, -100, I_ap], "T": 20, "P": 5},
-        "I_ib": {"g": [-100, -1000, I_ap], "T": 10, "P": 100, "S": 34.7},
-        "I_db": {"g": [-1000, -6000, I_ap], "T": 2, "P": 240, "S": 34.7},
-        # Pacific Ocean
-        "P_sb": {"g": [0, -100, P_ap], "T": 20, "P": 5, "S": 34.7},
-        "P_ib": {"g": [-100, -1000, P_ap], "T": 10, "P": 100, "S": 34.7},
-        "P_db": {"g": [-1000, -6000, P_ap], "T": 2, "P": 240, "S": 34.7},
-         # High latitude box
-        "H_sb": {"g": [0, -250, H_ap], "T": 2, "P": 10, "S": 34.7},
-        # Weathering sources
-        "Fw": {"ty": "Source", "sp": [M.DIC, M.TA, M.PO4]},
-        # Burial Sinks
-        "Fb": {"ty": "Sink", "sp": [M.DIC, M.TA, M.PO4]},
-    }
-
-initial_conditions= {
-        # species: [concentration, Isotopes, delta value]
-        M.PO4: [Q_("2.1 * umol/kg"), False, 0],
-        M.DIC: [Q_("2.21 mmol/kg"), True, 2],
-        M.TA: [Q_("2.31 mmol/kg"), False, 0],
-    }
-
-create_reservoirs(box_names, initial_conditions, M)
-#+END_SRC
-
-The above code could also be written with explicit initial conditions on a per reservoir/species base and then initialized with the @@rst::py:class:`esbmtk.utility_functions.initialize_reservoirs()`@@ function. The =Boudrea2010.py= example at https://github.com/uliw/ESBMTK-Examples shows a use case for this approach.
-#+BEGIN_SRC ipython
-box_parameters = {  # name: [[ud, ld ap], T, P, S]
-    # Atlantic Ocean
-    "M.A_sb": {
-        "g": [0, -100, A_ap],
-        "T": 20,
+box_parameters: dict = {  # name: [[geometry], T, P]
+    "H_b": {  # High-Lat Box
+        "c": {
+            M.DIC: "2153 umol/kg",
+            M.TA: "2345 umol/kg",
+            M.PO4: "1.5 umol/kg",
+            M.O2: "200 umol/kg",
+        },
+        "g": {"area": "0.5e14m**2", "volume": "1.76e16 m**3"},  # geometry
+        "T": 2,  # temperature in C
+        "P": 17.6,  # pressure in bar
+        "S": 35,  # salinity in psu
+    },
+    "L_b": {  # Low-Lat Box
+        "c": {
+            M.DIC: "1952 umol/kg",
+            M.TA: "2288 umol/kg",
+            M.PO4: "1.5 umol/kg",
+            M.O2: "200 umol/kg",
+        },
+        "g": {"area": "2.85e14m**2", "volume": "2.85e16 m**3"},
+        "T": 21.5,
         "P": 5,
-        "S": 34.7,
-        "c": {M.PO4: "2.1 mmol/kg",
-              M.DIC: "2.21 mmol/kg",
-              M.TA: "2.31 mmol/kg",
-              }
+        "S": 35,
+    },
+# Instantiate Reservoir objects        
 species_list = initialize_reservoirs(M, box_parameters)
 #+END_SRC
 Similarly, we can leverage  Python dictionaries to set up the transport matrix. The dictionary key must use the following template: =boxname_to_boxname@id= where the =id= is used similarly to the connection id in the =Species2Species= and =ConnectionProperties= classes. So to specify thermohaline upwelling from the Atlantic deep water to the Atlantic intermediate water you would use =A_db_to_A_ib@thc=  as the dictionary key, followed by the rate. The following examples define the thermohaline transport in a LOSCAR-type model:
