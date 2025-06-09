@@ -1,15 +1,16 @@
-python > 3.12
+PyCO2SYS >= 1.8.3.3
+python >= 3.12
 matplotlib
 numpy
 pandas
 scipy
 pint
-PyCO2SYS >= 1.8.3.3
 psutil
 cachetools
-packaging
-warnings
 sys
 io
 setuptools
 importlib-metadata
+tox
+sphinx
+ruff
