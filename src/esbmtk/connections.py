@@ -566,7 +566,7 @@ class Species2Species(esbmtkBase):
         from esbmtk import Flux
 
         if self.model.debug:
-            print(f"sf: {self.full_name}, isotopes = {self.isotopes}")
+            logging.info(f"sf: {self.full_name}, isotopes = {self.isotopes}")
 
         if isinstance(self.ref_flux, str):
             f = self.mo.flux_summary(filter_by=self.ref_flux, return_list=True)[0]
