@@ -19,7 +19,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from __future__ import annotations
 
 import logging
-import os
 import sys
 import tempfile
 import time
@@ -499,7 +498,7 @@ class Model(esbmtkBase):
 
         # Check if directory exists and remove it if it does
         if target_path.exists():
-            print(f"Found previous state directory, deleting {target_path}")
+            looging.info(f"Found previous state directory, deleting {target_path}")
             rmtree(target_path)
 
             # Verify directory was deleted
@@ -555,7 +554,7 @@ class Model(esbmtkBase):
 
         # Check if directory exists and remove it if it does
         if target_path.exists():
-            print(f"Found previous data directory, deleting {target_path}")
+            logging.info(f"Found previous data directory, deleting {target_path}")
             rmtree(target_path)
 
             # Verify directory was deleted
@@ -624,7 +623,7 @@ class Model(esbmtkBase):
 
         prefix = ""
 
-        print(f"Reading data from {directory}")
+        looging.info(f"Reading data from {directory}")
 
         # Process each reservoir
         for reservoir in self.lor:
@@ -1161,24 +1160,24 @@ class Model(esbmtkBase):
             Absolute tolerance
         """
         if self.debug:
-            print(f"R: {R}")
-            print(
+            logging.info(f"R: {R}")
+            logging.info(
                 f"self.gpt shape: {
                     np.shape(self.gpt) if hasattr(self.gpt, 'shape') else len(self.gpt)
                 }"
             )
-            print(
+            logging.info(
                 f"self.toc shape: {
                     np.shape(self.toc) if hasattr(self.toc, 'shape') else len(self.toc)
                 }"
             )
-            print(f"CM shape: {np.shape(self.CM)}")
-            print(f"F shape: {np.shape(self.F)}")
-            print(f"time_ode shape: {np.shape(self.time_ode)}")
+            logging.info(f"CM shape: {np.shape(self.CM)}")
+            logging.info(f"F shape: {np.shape(self.F)}")
+            logging.info(f"time_ode shape: {np.shape(self.time_ode)}")
             # Add hash values for large arrays to verify content
-            print(f"CM hash: {hash(str(self.CM))}")
-            print(f"F hash: {hash(str(self.F))}")
-            print(f"time_ode hash: {hash(str(self.time_ode))}")
+            logging.info(f"CM hash: {hash(str(self.CM))}")
+            logging.info(f"F hash: {hash(str(self.F))}")
+            logging.info(f"time_ode hash: {hash(str(self.time_ode))}")
 
         self.results = solve_ivp(
             equations_set,

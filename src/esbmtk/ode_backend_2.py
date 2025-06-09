@@ -22,6 +22,7 @@ import typing as tp
 
 import numpy as np
 import numpy.typing as npt
+import logging
 
 NDArrayFloat = npt.NDArray[np.float64]
 
@@ -88,7 +89,8 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
             # computed reservoirs are currently not set up by a Species2Species
             # connection, so we need to add a flux expression manually.
             if r.model.debug:
-                print(f"bem1: {r.full_name} type = {r.rtype}")
+                logging.info(f"bem1: {r.full_name} type = {r.rtype}")
+
             CM[ri, r.lof[0].idx] = 1
             if r.isotopes:
                 CM[ri + 1, r.lof[1].idx] = 1
@@ -497,7 +499,8 @@ def get_ic(r: Species, icl: dict, isotopes=False) -> str:
             # FIXME: this should really point to a variable
             try:
                 s1 += f", {r.l}"
-            except:
+            except SourceIsotopeError:
+                logging.critical(f"\n {r.full_name} needs to specify a delta value\n")
                 raise SourceIsotopeError(
                     f"\n {r.full_name} needs to specify a delta value\n"
                 ) from None
@@ -629,6 +632,7 @@ def get_scale_with_concentration_eq(
 
     if flux.serves_as_input or c.signal != "None":
         # place all constants into the rhs so we can re-use the expression
+
         rhs = f"toc[{c.s_index}] * {s_c}"  # (scale * c)
         if flux.isotopes:
             rhs_l, rhs_out[1], debug_rhs[1] = isotopes_scale_concentration(
@@ -936,7 +940,7 @@ def isotopes_scale_flux(
         s_index references the scale keyword in a given connection instance
         FIXME: unify rate & scale?
     """
-    from esbmtk import Source, Sink
+    from esbmtk import Source
 
     r: float = c.source.species.r  # isotope reference value
     s: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
@@ -1108,6 +1112,8 @@ def get_initial_conditions(
                 i += 1
                 # if r.name == "O2_At":
             if M.debug_equations_file:
-                print(f"r = {r.full_name}, r.c[0] = {r.c[0]:.2e}, rtol = {tol:.2e}")
+                logging.info(
+                    f"r = {r.full_name}, r.c[0] = {r.c[0]:.2e}, rtol = {tol:.2e}"
+                )
 
     return lic, icl, cpl, ipl, np.array(atol)
