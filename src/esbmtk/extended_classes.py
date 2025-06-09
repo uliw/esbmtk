@@ -1625,8 +1625,8 @@ class DataField(esbmtkBase):
             time = (d.x * M.t_unit).to(M.d_unit).magnitude
             # yd = (d.y * M.c_unit).to(self.plt_units).magnitude
             leg = f"{d.legend}"
-            ax.scatter(time[1:-2], d.y[1:-2], color=f"C{i}", label=leg)
-            M.axd[ax] = "main"
+            ax.scatter(time, d.y, color=f"C{i}", label=leg)
+            M.axd[ax] = "External"
 
         self.x1_data, self.y1_data, self.y1_label = self.__unify_data__(
             M,
@@ -1664,6 +1664,7 @@ class DataField(esbmtkBase):
             ymin.append(u)
             ymax.append(v)
             # set_y_limits(ax, self)
+            
         # add any external data if present
         ymin = min(ymin)
         ymax = max(ymax)
@@ -2622,6 +2623,10 @@ class ExternalData(esbmtkBase):
         if self.reverse_time:
             self.x = np.flip(self.x)
             self.y = np.flip(self.y)
+            
+            if self.zh:
+                self.d = np.flip(self.d)
+                self.z = np.flip(self.z)
 
         # register with reservoir
         self.__register__(self.register)
