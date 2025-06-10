@@ -84,7 +84,7 @@ Signal(
     name="CR",  # Signal name
     species=M.DIC,  # SpeciesProperties
     filename="signal_from_csv_data_reverse.csv",
-    reverse=True,
+    reverse_time=True,
 )
 
 ConnectionProperties(

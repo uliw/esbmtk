@@ -78,9 +78,9 @@ ConnectionProperties(
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
     ref_flux=Fd,
-    scale=0.9,
+    # scale=0.9,
     delta=5,
-    id="downwelling2",
+    id="xxx",
 )
 
 ConnectionProperties(  # thermohaline upwelling
@@ -91,7 +91,12 @@ ConnectionProperties(  # thermohaline upwelling
     scale=1,
     id="upwelling",
 )
+
+M.Conn_S_b_to_D_b_DIC_xxx.scale = 0.9
+
 # M.debug_equations_file = True
 M.run(method="BDF")
 # M.plot([M.S_b1.DIC, M.D_b1.DIC])
 # M.plot([M.S_b.DIC, M.D_b.DIC])
+# print(f"len(M.toc) = {len(M.toc):.2e}")
+# print(M.toc)

@@ -173,13 +173,12 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
     as the amount of carbonate that it dissolved.
     """
     surface_boxes: list = [M.L_b, M.H_b]
-    deep_boxes: list = [M.D_b]
     ef = M.flux_summary(filter_by="PIC_DIC", return_list=True)
     add_carbonate_system_1(surface_boxes)
 
     add_carbonate_system_2(  # F6/F2
-        r_sb=surface_boxes,  # list of reservoir groups
-        r_db=deep_boxes,  # list of reservoir groups
+        r_sb=[M.L_b],  # list of reservoir groups
+        r_db=[M.D_b],  # list of reservoir groups
         carbonate_export_fluxes=ef,  # list of export fluxes
         z0=-200,  # depth of shelf
         alpha=alpha,  # dissolution coefficient
