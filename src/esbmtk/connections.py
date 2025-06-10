@@ -168,49 +168,54 @@ class Species2Species(esbmtkBase):
         )
 
         # provide a dict of all known keywords and their type
-        self.defaults: dict[str, list[any, tuple]] = {
-            "init_delta": [0, (int)],
-            "init_rate": [0, (int)],
-            "init_scale": [0, (int)],
-            "init_epsilon": [0, (int)],
-            "id": ["", (str)],
-            "source": ["None", (str, Source, Species, GasReservoir)],
-            "sink": ["None", (str, Sink, Species, GasReservoir)],
-            "delta": ["None", (int, float, str, dict)],
-            "rate": ["None", (str, int, float, Q_, dict)],
-            "pl": ["None", (list, str)],
-            "epsilon": ["None", (int, float, str, dict)],
-            "species": ["None", (SpeciesProperties, str)],
-            "alpha": ["None", (str, float)],
-            "ctype": ["regular", (str)],
-            "ref_reservoirs": ["None", (Species, GasReservoir, str, list)],
-            "reservoir_ref": ["None", (GasReservoir, str)],
-            "ref_flux": ["None", (Flux, str, list)],
-            "ratio": ["None", (int, float, str)],
-            "scale": [1, (int, float, Q_, str)],
-            "ref_value": ["None", (str, int, float, Q_)],
-            "k_value": ["None", (int, float, str, Q_)],
-            "a_value": ["None", (int, float)],
-            "b_value": ["None", (int, float)],
-            "left": ["None", (list, int, float, Species, GasReservoir)],
-            "right": ["None", (list, int, float, Species, GasReservoir)],
-            "plot": ["yes", (str)],
-            "groupname": [False, (bool)],
-            "register": ["None", (str, Model, Species2Species, ConnectionProperties)],
-            "signal": ["None", (Signal, str)],
-            "bypass": ["None", (str, Species, GasReservoir)],
-            "isotopes": [False, (bool)],
-            "solubility": ["None", (str, int, float)],
-            "a_db": [1, (Callable, int, float)],
-            "a_dg": [1, (Callable, int, float)],
-            "a_u": [1, (Callable, int, float)],
-            "area": ["None", (str, int, float, Q_)],
-            "ex": [1, (int, float)],
-            "pco2_0": ["280 ppm", (str, Q_)],
-            "piston_velocity": ["None", (str, int, float)],
-            "function_ref": ["None", (str, callable)],
-            "ref_species": ["None", (str, Species)],
-            "water_vapor_pressure": ["None", (str, float)],
+        self.defaults: dict[str, list[any, tuple, bool]] = {
+            "init_delta": [0, (int), False],
+            "init_rate": [0, (int), False],
+            "init_scale": [0, (int), False],
+            "init_epsilon": [0, (int), False],
+            "init_done": [False, (bool)],
+            "id": ["", (str), False],
+            "source": ["None", (str, Source, Species, GasReservoir), False],
+            "sink": ["None", (str, Sink, Species, GasReservoir), False],
+            "delta": ["None", (int, float, str, dict), True],
+            "rate": ["None", (str, int, float, Q_, dict), True],
+            "pl": ["None", (list, str), False],
+            "epsilon": ["None", (int, float, str, dict), True],
+            "scale": [1, (int, float, Q_, str), True],
+            "species": ["None", (SpeciesProperties, str), False],
+            "alpha": ["None", (str, float), False],
+            "ctype": ["regular", (str), False],
+            "ref_reservoirs": ["None", (Species, GasReservoir, str, list), False],
+            "reservoir_ref": ["None", (GasReservoir, str), False],
+            "ref_flux": ["None", (Flux, str, list), False],
+            "ratio": ["None", (int, float, str), False],
+            "ref_value": ["None", (str, int, float, Q_), False],
+            "k_value": ["None", (int, float, str, Q_), False],
+            "a_value": ["None", (int, float), False],
+            "b_value": ["None", (int, float), False],
+            "left": ["None", (list, int, float, Species, GasReservoir), False],
+            "right": ["None", (list, int, float, Species, GasReservoir), False],
+            "plot": ["yes", (str), False],
+            "groupname": [False, (bool), False],
+            "register": [
+                "None",
+                (str, Model, Species2Species, ConnectionProperties),
+                False,
+            ],
+            "signal": ["None", (Signal, str), False],
+            "bypass": ["None", (str, Species, GasReservoir), False],
+            "isotopes": [False, (bool), False],
+            "solubility": ["None", (str, int, float), False],
+            "a_db": [1, (Callable, int, float), False],
+            "a_dg": [1, (Callable, int, float), False],
+            "a_u": [1, (Callable, int, float), False],
+            "area": ["None", (str, int, float, Q_), False],
+            "ex": [1, (int, float), False],
+            "pco2_0": ["280 ppm", (str, Q_), False],
+            "piston_velocity": ["None", (str, int, float), False],
+            "function_ref": ["None", (str, callable), False],
+            "ref_species": ["None", (str, Species), False],
+            "water_vapor_pressure": ["None", (str, float), False],
         }
 
         # FIXME: We need a mechanism to first check for the
@@ -223,16 +228,11 @@ class Species2Species(esbmtkBase):
         self.lop: list = []
         self.lof: list = []
 
-        self.kwargs = kwargs
-        if kwargs.get("id", None) == "xxx":
-            print(f"S2S 0:")
-
         self.__initialize_keyword_variables__(kwargs)
 
         if self.register == "None":
             self.register = self.source.model
-        elif isinstance(self.register, str):
-            breakpoint()
+
         if self.id == "None":
             self.id = str(uuid.uuid4())[:8]
 
@@ -249,6 +249,12 @@ class Species2Species(esbmtkBase):
         self.source_name = self.source.full_name
         self.sink_name = self.sink.full_name
         self.target = self.sink.full_name
+
+        # Initialize setters
+        self.scale = self._scale  # This will trigger the setter with the current value
+        self.delta = self._delta
+        self.epsilon = self._epsilon
+        self.rate = self._rate
 
         if isinstance(self.pco2_0, str):
             self.pco2_0 = Q_(self.pco2_0).to("ppm").magnitude * 1e-6
@@ -283,12 +289,6 @@ class Species2Species(esbmtkBase):
         # get a list of all reservoirs registered for this species
         self.lor: list[Species] = self.mo.lor
 
-        # Initialize _scale to be used by the property
-        self._scale = self.scale  # This will trigger the setter with the current value
-        self._delta = self.delta
-        self._epsilon = self.epsilon
-        self._rate = self._rate
-
         self.__set_name__()  # get name of connection
         if self.model.debug:
             print(f"{self.name} isotopes = {self.isotopes}")
@@ -311,7 +311,6 @@ class Species2Species(esbmtkBase):
         self.__create_flux__()  # Source/Sink/Fixed
         self.__set_process_type__()  # derive flux type and create flux(es)
 
-        # print(f"mo.reg = {self.mo.register}, slf reg = {self.register}")
         if self.mo.register == "local" and self.register == "None":
             self.register = self.mo
 
@@ -319,15 +318,11 @@ class Species2Species(esbmtkBase):
         self.sink.loc.add(self)  # register connector with reservoir
         self.mo.loc.add(self)  # register connector with model
 
-        # update ode constants
-        # moved to setter
-        # self.s_index = self.__add_to_ode_constants__(self.scale)
-        if "xxx" in self.name:
-            print("S2S 1")
-        self.r_index = self.__add_to_ode_constants__(self.rate)
-        self.d_index = self.__add_to_ode_constants__(self.delta)
-        self.a_index = self.__add_to_ode_constants__(self.epsilon)
-        self.s_index = self.__add_to_ode_constants__(self.scale)
+        self.r_index = self.__add_to_ode_constants__(self.rate, "rate")
+        self.d_index = self.__add_to_ode_constants__(self.delta, "delta")
+        self.a_index = self.__add_to_ode_constants__(self.epsilon, "epsilon")
+        self.s_index = self.__add_to_ode_constants__(self.scale, "scale")
+        self.init_done = True
 
     def __set_name__(self):
         """Create connection name.
@@ -658,13 +653,11 @@ class Species2Species(esbmtkBase):
     @epsilon.setter
     def epsilon(self, a: float | int) -> None:
         """Epsilon Setter."""
-        if self.init_epsilon > 2 and a != "None":
-            self._epsilon = a
+        self._epsilon = a
+
+        if self.init_done and a != "None":
             self.__set_process_type__()  # derive flux type and create flux(es)
-            self.a_index = self.__add_to_ode_constants__(self.epsilon)
-            self.init_epsilon += 1
-        else:
-            self.init_epsilon += 1
+            self.__update_ode_constants__(self._epsilon, "epsilon")
 
     # ---- rate  ----
     @property
@@ -677,14 +670,18 @@ class Species2Species(esbmtkBase):
         """Rate Setter."""
         from . import Q_
 
-        if self.init_rate > 2 and r != "None":
+        if r == "None":
+            self._rate = "None"
+        elif isinstance(r, str):
+            r = Q_(r)
             self._rate = Q_(r).to(self.model.f_unit).magnitude
-            # self.__create_flux__()  # Source/Sink/Fixed
-            self.__set_process_type__()  # derive flux type and create flux(es)
-            self.r_index = self.__add_to_ode_constants__(self.rate)
-            self.init_rate += 1
+        elif isinstance(r, Q_):
+            self._rate = Q_(r).to(self.model.f_unit).magnitude
         else:
-            self.init_rate += 1
+            self._rate = r
+
+        if self.init_done and r != "None":
+            self.__update_ode_constants__(self._rate, "rate")
 
     # ---- delta  ----
     @property
@@ -695,15 +692,10 @@ class Species2Species(esbmtkBase):
     @delta.setter
     def delta(self, d: float | int) -> None:
         """Delta Setter."""
-        if self.init_delta > 1 and d != "None":
-            self._delta = d
-            self.kwargs["delta"] = d
-            # self.__create_flux__()  # Source/Sink/Fixed
-            # self.__set_process_type__()  # derive flux type and create flux(es)
-            self.d_index = self.__add_to_ode_constants__(self.delta)
-            self.init_delta += 1
-        else:
-            self.init_delta += 1
+        self._delta = d
+
+        if self.init_done and d != "None":
+            self.__update_ode_constants__(self._delta, "delta")
 
     @property
     def scale(self) -> float | int | Q_:
@@ -714,9 +706,6 @@ class Species2Species(esbmtkBase):
     def scale(self, s: float | int | str | Q_) -> None:
         """Scale Setter."""
         from . import Q_
-
-        if self.kwargs["id"] == "xxx":
-            print(f"ss0 init_scale =  {self.init_scale}")
 
         if s == "None":
             s = 1.0
@@ -737,17 +726,8 @@ class Species2Species(esbmtkBase):
         else:
             self._scale = s
 
-        if self.kwargs["id"] == "xxx":
-            print(f"ss1 init_scale = {self.init_scale}, scale = {s}")
-
-        if self.init_scale > 1:  # this is an update
-            if self.kwargs["id"] == "xxx":
-                print(f"ss2 init_scale = {self.init_scale}, scale = {s}")
-            # self.__set_process_type__()  # derive flux type and create flux(es)
-            self.s_index = self.__add_to_ode_constants__(s)
-            self.init_scale += 1
-        else:
-            self.init_scale += 1
+        if self.init_done:  # this is an update
+            self.__update_ode_constants__(s, "scale")
 
 
 class ConnectionProperties(esbmtkBase):
@@ -886,7 +866,6 @@ class ConnectionProperties(esbmtkBase):
         self.c_defaults: dict = {}  # connection dictionary with defaults
         # loop over species
         for sp in self.connections:  # ["SO4", "H2S"]
-            # print(f"found species: ----------- {sp.name} ------------")
             self.c_defaults[sp.n] = {
                 # "cid": self.id,
                 "cid": "None",

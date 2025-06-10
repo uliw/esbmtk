@@ -1481,7 +1481,7 @@ class Species(SpeciesBase):
         mass_value = concentration_magnitude * volume_magnitude
 
         # Store calculated mass and set display properties
-        self._mass = Q_(f"{mass_value} {self.model.c_unit}")
+        self.mass = Q_(f"{mass_value} {self.model.c_unit}")
         self.display_as = "concentration"
 
         # Convert concentration to dimensionless magnitude (fix units)
@@ -1503,10 +1503,10 @@ class Species(SpeciesBase):
         # Convert mass to model units
         m = Q_(self.mass)
         self.plt_units = self.model.m_unit
-        self._mass = m.to(self.model.m_unit).magnitude
+        self.mass = m.to(self.model.m_unit).magnitude
 
         # Calculate concentration from mass and volume
-        mass_magnitude = self._mass
+        mass_magnitude = self.mass
         volume_magnitude = self.volume.to(self.model.v_unit).magnitude
         concentration_value = mass_magnitude / volume_magnitude
 
@@ -1545,10 +1545,10 @@ class Species(SpeciesBase):
             self.m = np.zeros(self.model.number_of_datapoints + 1)
         else:
             # Make sure we're using a numerical value
-            if isinstance(self._mass, Q_):
-                mass_value = self._mass.magnitude
+            if isinstance(self.mass, Q_):
+                mass_value = self.mass.magnitude
             else:
-                mass_value = self._mass
+                mass_value = self.mass
 
             self.m = np.zeros(self.species.model.steps) + mass_value
 
@@ -1606,7 +1606,7 @@ class Species(SpeciesBase):
         float
             The mass value
         """
-        return self._mass
+        return self.mass
 
     def massto(self, unit):
         r"""
@@ -1622,11 +1622,11 @@ class Species(SpeciesBase):
         Q\_
             Converted mass
         """
-        if isinstance(self._mass, Q_):
-            return self._mass.to(unit)
+        if isinstance(self.mass, Q_):
+            return self.mass.to(unit)
         else:
             # Create a quantity with the model's mass unit and convert
-            return Q_(f"{self._mass} {self.model.m_unit}").to(unit)
+            return Q_(f"{self.mass} {self.model.m_unit}").to(unit)
 
 
 class Flux(esbmtkBase):
@@ -2051,8 +2051,8 @@ class SourceSink(esbmtkBase):
                     str,
                 ),
             ],
-            "delta": ["None", (str, int, float)],
-            "epsilon": ["None", (str, int, float)],
+            "delta": ["None", (str, int, float), True],
+            "epsilon": ["None", (str, int, float), True],
             "isotopes": [False, (bool)],
         }
         # provide a list of absolutely required keywords

@@ -288,7 +288,8 @@ class Model(esbmtkBase):
 
         # Global parameters and constants
         self.gpt: tuple = ()  # Global parameter list
-        self.toc: tuple = ()  # Global constants list
+        self.toc: tuple = ()  # Global constant tuple
+        self.doc: dict = {}  # Global dict of index values for toc
         self.gcc: int = 0  # Constants counter
         self.vpc: int = 0  # Parameter counter
         self.luf: dict = {}  # User functions and source

@@ -162,8 +162,6 @@ class InputParsing:
         self.update = False
         self.__check_mandatory_keywords__(self.lrk, kwargs)
         x = kwargs.get("id", None)
-        if x == "xxx":
-            print(" __initialize_keyword_variables__")
         self.__register_variable_names__(self.defaults, kwargs)
         self.__update_dict_entries__(self.defaults, kwargs)
         self.update = True
@@ -265,16 +263,13 @@ class InputParsing:
         >>> self.__register_variable_names__(defaults, {})
         """
         for key, value in defaults.items():
-            # logging.info(f"Setting {key} with {value[0]}")
-            x = kwargs.get("id", None)
-            # if x == "xxx":
-            #     print(f"rvn0 id = {x}")
-            setattr(self, f"_{key}", value[0])
-            # if x == "xxx":
-            #     print(f"rvn1 id = {x}")
-            setattr(self, key, value[0])
-            # if x == "xxx":
-            #    print(f"rvn2 id = {x}")
+            if len(value) > 2:  # check for properties
+                if value[2]:
+                    setattr(self, f"_{key}", value[0])
+                else:
+                    setattr(self, f"{key}", value[0])
+            else:
+                setattr(self, key, value[0])
 
         # save kwargs dict
         self.kwargs: dict = kwargs
@@ -418,7 +413,7 @@ class InputParsing:
                     f"not {actual_type}"
                 ) from err
 
-    def __update_attribute_values__(self, defaults, key, value):
+    def __update_attribute_values__(self, defaults, key, new_value):
         """
         Update the attribute values in both defaults dictionary and instance.
 
@@ -431,9 +426,16 @@ class InputParsing:
         value : any
             The value to set
         """
-        defaults[key][0] = value  # update defaults dictionary
-        setattr(self, key, value)  # update instance variables
-        # setattr(self, f"_{key}", value)
+        current_value = defaults[key]
+        defaults[key][0] = new_value  # update defaults dictionary
+
+        if len(current_value) > 2:
+            if current_value[2]:
+                setattr(self, f"_{key}", new_value)
+            else:
+                setattr(self, key, new_value)  # update instance variables
+        else:
+            setattr(self, key, new_value)
 
     def _validate_value(self, key, value, expected_types):
         """
@@ -1019,7 +1021,17 @@ class esbmtkBase(InputParsing):
                 f"Failed to apply time unit '{time_unit}': {str(err)}"
             ) from err
 
-    def __add_to_ode_constants__(self, value) -> int:
+    def __update_ode_constants__(self, value: int | float, vname: str) -> int:
+        """Replace a value to the global parameter list."""
+        key = f"{self.full_name}_{vname}"
+        index = self.model.doc.get(key, None)
+        print(f"uoc: index = {index}, value = {value}")
+        if index != None:
+            self.model.toc = (
+                self.model.toc[:index] + (value,) + self.model.toc[index + 1 :]
+            )
+
+    def __add_to_ode_constants__(self, value: int | float, vname: str) -> int:
         """
         Add a value to the global parameter list and track its index.
 
@@ -1079,6 +1091,11 @@ class esbmtkBase(InputParsing):
 
             # Get the current index
             index = self.model.gcc
+
+            # update index dict
+            name = f"{self.full_name}_{vname}"
+            print(f"Adding {name} to M.doc")
+            self.model.doc[name] = index
 
             # Increment the counter
             self.model.gcc = self.model.gcc + 1
@@ -1151,4 +1168,5 @@ class esbmtkBase(InputParsing):
         # Add other validation rules specific to your application
 
         # If all validations pass, return True
+        return True
         return True
