@@ -169,7 +169,11 @@ class Species2Species(esbmtkBase):
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
-            "id": ["", str],
+            "init_delta": [0, (int)],
+            "init_rate": [0, (int)],
+            "init_scale": [0, (int)],
+            "init_epsilon": [0, (int)],
+            "id": ["", (str)],
             "source": ["None", (str, Source, Species, GasReservoir)],
             "sink": ["None", (str, Sink, Species, GasReservoir)],
             "delta": ["None", (int, float, str, dict)],
@@ -218,6 +222,10 @@ class Species2Species(esbmtkBase):
         self.lrk: list = ["source", "sink"]
         self.lop: list = []
         self.lof: list = []
+
+        self.kwargs = kwargs
+        if kwargs.get("id", None) == "xxx":
+            print(f"S2S 0:")
 
         self.__initialize_keyword_variables__(kwargs)
 
@@ -275,26 +283,11 @@ class Species2Species(esbmtkBase):
         # get a list of all reservoirs registered for this species
         self.lor: list[Species] = self.mo.lor
 
-        if self.scale == "None":
-            self.scale = 1.0
-
-        if isinstance(self.scale, str):
-            self.scale = Q_(self.scale)
-
-        if isinstance(self.scale, Q_):  # test what type of Quantity we have
-            if self.scale.check("[volume]/[time]"):  # flux
-                self.scale = self.scale.to(self.mo.r_unit).magnitude
-            # test if flux
-            elif self.scale.check("[mass]/[time]") or self.scale.check(
-                "[substance]/[time]"
-            ):
-                self.scale = self.scale.to(self.mo.f_unit).magnitude
-            elif self.scale.check("[mass]/[volume]"):  # concentration
-                self.scale = self.scale.to(self.mo.c_unit).magnitude
-            else:
-                Species2SpeciesError(
-                    f"No conversion to model units for {self.scale} specified"
-                )
+        # Initialize _scale to be used by the property
+        self._scale = self.scale  # This will trigger the setter with the current value
+        self._delta = self.delta
+        self._epsilon = self.epsilon
+        self._rate = self._rate
 
         self.__set_name__()  # get name of connection
         if self.model.debug:
@@ -327,10 +320,14 @@ class Species2Species(esbmtkBase):
         self.mo.loc.add(self)  # register connector with model
 
         # update ode constants
-        self.s_index = self.__update_ode_constants__(self.scale)
-        self.r_index = self.__update_ode_constants__(self.rate)
-        self.d_index = self.__update_ode_constants__(self.delta)
-        self.a_index = self.__update_ode_constants__(self.epsilon)
+        # moved to setter
+        # self.s_index = self.__add_to_ode_constants__(self.scale)
+        if "xxx" in self.name:
+            print("S2S 1")
+        self.r_index = self.__add_to_ode_constants__(self.rate)
+        self.d_index = self.__add_to_ode_constants__(self.delta)
+        self.a_index = self.__add_to_ode_constants__(self.epsilon)
+        self.s_index = self.__add_to_ode_constants__(self.scale)
 
     def __set_name__(self):
         """Create connection name.
@@ -399,8 +396,8 @@ class Species2Species(esbmtkBase):
         self.kwargs dict, and then re-initialize the connection.
         """
         raise NotImplementedError
-        self.__delete_process__()
-        self.__delete_flux__()
+        # self.__delete_process__()
+        # self.__delete_flux__()
         self.kwargs.update(kwargs)
         self.__set__name__()  # get name of connection
         self.__init_connection__(self.kwargs)
@@ -661,11 +658,13 @@ class Species2Species(esbmtkBase):
     @epsilon.setter
     def epsilon(self, a: float | int) -> None:
         """Epsilon Setter."""
-        if self.update and a != "None":
-            self.__delete_process__()
-            self.__delete_flux__()
+        if self.init_epsilon > 2 and a != "None":
             self._epsilon = a
             self.__set_process_type__()  # derive flux type and create flux(es)
+            self.a_index = self.__add_to_ode_constants__(self.epsilon)
+            self.init_epsilon += 1
+        else:
+            self.init_epsilon += 1
 
     # ---- rate  ----
     @property
@@ -678,12 +677,14 @@ class Species2Species(esbmtkBase):
         """Rate Setter."""
         from . import Q_
 
-        if self.update and r != "None":
-            self.__delete_process__()
-            self.__delete_flux__()
+        if self.init_rate > 2 and r != "None":
             self._rate = Q_(r).to(self.model.f_unit).magnitude
-            self.__create_flux__()  # Source/Sink/Fixed
+            # self.__create_flux__()  # Source/Sink/Fixed
             self.__set_process_type__()  # derive flux type and create flux(es)
+            self.r_index = self.__add_to_ode_constants__(self.rate)
+            self.init_rate += 1
+        else:
+            self.init_rate += 1
 
     # ---- delta  ----
     @property
@@ -694,13 +695,59 @@ class Species2Species(esbmtkBase):
     @delta.setter
     def delta(self, d: float | int) -> None:
         """Delta Setter."""
-        if self.update and d != "None":
-            # self.__delete_process__()
-            # self.__delete_flux__()
+        if self.init_delta > 1 and d != "None":
             self._delta = d
             self.kwargs["delta"] = d
             # self.__create_flux__()  # Source/Sink/Fixed
             # self.__set_process_type__()  # derive flux type and create flux(es)
+            self.d_index = self.__add_to_ode_constants__(self.delta)
+            self.init_delta += 1
+        else:
+            self.init_delta += 1
+
+    @property
+    def scale(self) -> float | int | Q_:
+        """Scale property."""
+        return self._scale
+
+    @scale.setter
+    def scale(self, s: float | int | str | Q_) -> None:
+        """Scale Setter."""
+        from . import Q_
+
+        if self.kwargs["id"] == "xxx":
+            print(f"ss0 init_scale =  {self.init_scale}")
+
+        if s == "None":
+            s = 1.0
+
+        if isinstance(s, str):
+            s = Q_(s)
+
+        if isinstance(s, Q_):  # test what type of Quantity we have
+            if s.check("[volume]/[time]"):  # flux
+                self._scale = s.to(self.mo.r_unit).magnitude
+            # test if flux
+            elif s.check("[mass]/[time]") or s.check("[substance]/[time]"):
+                self._scale = s.to(self.mo.f_unit).magnitude
+            elif s.check("[mass]/[volume]"):  # concentration
+                self._scale = s.to(self.mo.c_unit).magnitude
+            else:
+                Species2SpeciesError(f"No conversion to model units for {s} specified")
+        else:
+            self._scale = s
+
+        if self.kwargs["id"] == "xxx":
+            print(f"ss1 init_scale = {self.init_scale}, scale = {s}")
+
+        if self.init_scale > 1:  # this is an update
+            if self.kwargs["id"] == "xxx":
+                print(f"ss2 init_scale = {self.init_scale}, scale = {s}")
+            # self.__set_process_type__()  # derive flux type and create flux(es)
+            self.s_index = self.__add_to_ode_constants__(s)
+            self.init_scale += 1
+        else:
+            self.init_scale += 1
 
 
 class ConnectionProperties(esbmtkBase):

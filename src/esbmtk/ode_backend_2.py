@@ -696,10 +696,15 @@ def get_scale_with_flux_eq(
     rhs_out = [True, False]
     prefix_code = ""
 
+    # update toc with optional scaling factor
+
     if flux.serves_as_input or c.signal != "None":
         """The flux for the light isotope will computed as follows:
         We will use the mass of the flux for scaling, but we
         isotope ratio of the source.
+        Note the scale_with_flux connection also supports an arbitrary
+        scaling factor, which is set with the __add_to_ode_constants__
+        methods in base_classes.py, and thus part of the toc[i]
         """
         rhs = f"toc[{c.s_index}] * F[{c.ref_flux.idx}]"
         if c.source.isotopes and c.sink.isotopes:
@@ -725,7 +730,7 @@ def get_scale_with_flux_eq(
                 f'\n    """\n'
                 f"    {c.ctype}: {c.name}, id = {c.id}\n"
                 f"    {flux.full_name} = toc[{c.s_index}] * {c.ref_flux.full_name}\n"
-                f"    {flux.full_name} = {toc[c.s_index]:.2e} * F[{c.ref_flux.idx}]\n"
+                f"    {flux.full_name} = toc[{c.s_index:.2e}\ * F[{c.ref_flux.idx}]\n"
                 f'    """\n'
             )
         else:

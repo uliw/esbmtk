@@ -23,6 +23,7 @@ import typing as tp
 
 import numpy as np
 import numpy.typing as npt
+import logging
 
 if tp.TYPE_CHECKING:
     from .esbmtk import SpeciesProperties
@@ -160,6 +161,9 @@ class InputParsing:
         """
         self.update = False
         self.__check_mandatory_keywords__(self.lrk, kwargs)
+        x = kwargs.get("id", None)
+        if x == "xxx":
+            print(" __initialize_keyword_variables__")
         self.__register_variable_names__(self.defaults, kwargs)
         self.__update_dict_entries__(self.defaults, kwargs)
         self.update = True
@@ -261,8 +265,16 @@ class InputParsing:
         >>> self.__register_variable_names__(defaults, {})
         """
         for key, value in defaults.items():
+            # logging.info(f"Setting {key} with {value[0]}")
+            x = kwargs.get("id", None)
+            # if x == "xxx":
+            #     print(f"rvn0 id = {x}")
             setattr(self, f"_{key}", value[0])
+            # if x == "xxx":
+            #     print(f"rvn1 id = {x}")
             setattr(self, key, value[0])
+            # if x == "xxx":
+            #    print(f"rvn2 id = {x}")
 
         # save kwargs dict
         self.kwargs: dict = kwargs
@@ -421,7 +433,7 @@ class InputParsing:
         """
         defaults[key][0] = value  # update defaults dictionary
         setattr(self, key, value)  # update instance variables
-        setattr(self, f"_{key}", value)
+        # setattr(self, f"_{key}", value)
 
     def _validate_value(self, key, value, expected_types):
         """
@@ -1007,7 +1019,7 @@ class esbmtkBase(InputParsing):
                 f"Failed to apply time unit '{time_unit}': {str(err)}"
             ) from err
 
-    def __update_ode_constants__(self, value) -> int:
+    def __add_to_ode_constants__(self, value) -> int:
         """
         Add a value to the global parameter list and track its index.
 
@@ -1030,7 +1042,7 @@ class esbmtkBase(InputParsing):
 
         Examples
         --------
-        >>> index = self.__update_ode_constants__(42.0)
+        >>> index = self.__add_to_ode_constants__(42.0)
         >>> print(index)
         5  # If this was the 6th constant added (zero-indexed)
         """
