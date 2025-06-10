@@ -1025,7 +1025,6 @@ class esbmtkBase(InputParsing):
         """Replace a value to the global parameter list."""
         key = f"{self.full_name}_{vname}"
         index = self.model.doc.get(key, None)
-        print(f"uoc: index = {index}, value = {value}")
         if index != None:
             self.model.toc = (
                 self.model.toc[:index] + (value,) + self.model.toc[index + 1 :]
@@ -1094,7 +1093,6 @@ class esbmtkBase(InputParsing):
 
             # update index dict
             name = f"{self.full_name}_{vname}"
-            print(f"Adding {name} to M.doc")
             self.model.doc[name] = index
 
             # Increment the counter
