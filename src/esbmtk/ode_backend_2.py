@@ -730,7 +730,7 @@ def get_scale_with_flux_eq(
                 f'\n    """\n'
                 f"    {c.ctype}: {c.name}, id = {c.id}\n"
                 f"    {flux.full_name} = toc[{c.s_index}] * {c.ref_flux.full_name}\n"
-                f"    {flux.full_name} = toc[{c.s_index:.2e}\ * F[{c.ref_flux.idx}]\n"
+                f"    {flux.full_name} = toc[{c.s_index:.2e}] * F[{c.ref_flux.idx}]\n"
                 f'    """\n'
             )
         else:
