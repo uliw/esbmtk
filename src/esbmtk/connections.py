@@ -291,7 +291,7 @@ class Species2Species(esbmtkBase):
 
         self.__set_name__()  # get name of connection
         if self.model.debug:
-            print(f"{self.name} isotopes = {self.isotopes}")
+            logging.info(f"{self.name} isotopes = {self.isotopes}")
 
         if all([
             self.isotopes,
@@ -425,7 +425,7 @@ class Species2Species(esbmtkBase):
             isotopes = self.source.isotopes
 
         if self.model.debug:
-            print(f"cf: {self.full_name}, isotopes = {self.isotopes}")
+            logging.info(f"cf: {self.full_name}, isotopes = {self.isotopes}")
         if isotopes:
             num.append("_l")
 
@@ -440,7 +440,9 @@ class Species2Species(esbmtkBase):
                 id=f"{self.id}{e}",
             )
             if self.model.debug:
-                print(f"cf: created {self.fh.full_name}, isotopes = {self.isotopes}")
+                logging.info(
+                    f"cf: created {self.fh.full_name}, isotopes = {self.isotopes}"
+                )
 
             # register flux with its reservoirs
             if isinstance(self.r1, Source):
@@ -453,7 +455,7 @@ class Species2Species(esbmtkBase):
                     # register flux and element in the reservoir.
                     self.__register_species__(self.r2, self.r1.sp)
                     if self.model.debug:
-                        print(
+                        logging.info(
                             f"cf: registered {self.fh.full_name} with {self.r2.full_name}"
                         )
 
@@ -465,7 +467,7 @@ class Species2Species(esbmtkBase):
                 # register flux and element in the reservoir.
                 self.__register_species__(self.r1, self.r2.sp)
                 if self.model.debug:
-                    print(
+                    logging.info(
                         f"cf: registered {self.fh.full_name} with {self.r1.full_name}"
                     )
 
@@ -487,7 +489,7 @@ class Species2Species(esbmtkBase):
                 self.__register_species__(self.r1, self.r1.sp)
                 self.__register_species__(self.r2, self.r2.sp)
                 if self.model.debug:
-                    print(
+                    logging.info(
                         f"cf: registered {self.fh.full_name} with {self.r1.full_name}\n"
                         f"cf: registered {self.fh.full_name} with {self.r2.full_name}\n"
                     )
@@ -541,7 +543,7 @@ class Species2Species(esbmtkBase):
         elif self.ctype == "scale_with_concentration":
             self.__rateconstant__()
         elif self.ctype != "manual":
-            print(f"Species2Species Type {self.ctype} is unknown")
+            logging.info(f"Species2Species Type {self.ctype} is unknown")
             raise Species2SpeciesError(f"Unknown connection type {self.ctype}")
 
         # check if flux should bypass any reservoirs
@@ -576,7 +578,9 @@ class Species2Species(esbmtkBase):
 
         if self.k_value != "None":
             self.scale = self.k_value
-            print("\n Warning: use scale instead of k_value for scaleflux type\n")
+            logging.warning(
+                "\n Warning: use scale instead of k_value for scaleflux type\n"
+            )
 
     def __weathering__(self):
         """Initialize weathering function."""
