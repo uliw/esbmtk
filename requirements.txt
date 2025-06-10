@@ -14,3 +14,4 @@ importlib-metadata
 tox
 sphinx
 ruff
+pytest
