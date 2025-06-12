@@ -229,8 +229,7 @@ class Reservoir(esbmtkBase):
         elif "mass" in kwargs:
             self.species: list = list(kwargs["mass"].keys())
         else:
-            raise ReservoirError(
-                "You must provide either mass or concentration")
+            raise ReservoirError("You must provide either mass or concentration")
 
         self.__initialize_keyword_variables__(kwargs)
 
@@ -285,8 +284,7 @@ class Reservoir(esbmtkBase):
 
         # register a seawater_parameter instance if necessary
         if self.seawater_parameters != "None":
-            temp = dict_alternatives(
-                self.seawater_parameters, "temperature", "T")
+            temp = dict_alternatives(self.seawater_parameters, "temperature", "T")
             sal = dict_alternatives(self.seawater_parameters, "salinity", "S")
             bar = dict_alternatives(self.seawater_parameters, "pressure", "P")
 
@@ -371,8 +369,7 @@ class SourceSinkProperties(esbmtkBase):
         # loop over species names and setup sub-objects
         for _i, s in enumerate(self.species):
             if isinstance(s, str) and s != "None":
-                raise ValueError(
-                    f"{s} need to be a species object, not a string")
+                raise ValueError(f"{s} need to be a species object, not a string")
 
             if not isinstance(s, SpeciesProperties):
                 raise SourceSinkPropertiesError(
@@ -569,12 +566,10 @@ class Signal(esbmtkBase):
         if "mass" in self.kwargs:
             self.mass = Q_(self.mass).to(self.species.mo.m_unit).magnitude
         elif "magnitude" in self.kwargs:
-            self.magnitude = Q_(self.magnitude).to(
-                self.species.mo.f_unit).magnitude
+            self.magnitude = Q_(self.magnitude).to(self.species.mo.f_unit).magnitude
 
         if "duration" in self.kwargs:
-            self.duration = int(Q_(self.duration).to(
-                self.species.mo.t_unit).magnitude)
+            self.duration = int(Q_(self.duration).to(self.species.mo.t_unit).magnitude)
             if self.duration / self.species.mo.dt < 10:
                 warnings.warn(
                     """\n\n Your signal duration is covered by less than 10
@@ -762,8 +757,7 @@ class Signal(esbmtkBase):
             h = self.magnitude
             self.mass = h * self.duration
         else:
-            raise SignalError(
-                "You must specify mass or magnitude of the signal")
+            raise SignalError("You must specify mass or magnitude of the signal")
 
         self.s_m = self.s_m + h  # add this to the section
         self.s_d = self.s_d + self.d  # add the delta offset
@@ -781,8 +775,7 @@ class Signal(esbmtkBase):
         elif "magnitude" in self.kwd:
             h = self.magnitude
         else:
-            raise SignalError(
-                "You must specify mass or magnitude of the signal")
+            raise SignalError("You must specify mass or magnitude of the signal")
 
         # create pyramid
         c: int = int(round((e - s) / 2))  # get the center index for the peak
@@ -829,8 +822,7 @@ class Signal(esbmtkBase):
         elif "magnitude" in self.kwargs:
             self.s_m = self.s_m * self.magnitude / max(self.s_m)
         else:
-            raise SignalError(
-                "Bell type signal require either mass or magnitude")
+            raise SignalError("Bell type signal require either mass or magnitude")
 
     def __int_ext_data__(self) -> None:
         """Interpolate External data as a signal.
@@ -909,10 +901,8 @@ class Signal(esbmtkBase):
         new_signal.m = self.m + other.m
         # get delta of self
         if self.isotopes:
-            this_delta = get_delta(
-                self.l, self.m - self.l, self.signal_data.sp.r)
-            other_delta = get_delta(
-                other.l, other.m - other.l, other.data.sp.r)
+            this_delta = get_delta(self.l, self.m - self.l, self.signal_data.sp.r)
+            other_delta = get_delta(other.l, other.m - other.l, other.data.sp.r)
             new_signal.l = get_l_mass(
                 new_signal.m, this_delta + other_delta, new_signal.signal_data.sp.r
             )
@@ -1037,20 +1027,21 @@ class Signal(esbmtkBase):
         #     else:
         #         raise ValueError("Plot transform must be a function")
 
+        # Best to plot external data on a secondary x-axis
         # plot first axis
-        _ln1 = ax.plot(x[1:-2], y1[1:-2], color="C0", label=self.legend_left)
+        _ln1 = ax.plot(x, y1, color="C0", label=self.legend_left)
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
         ax.set_ylabel(legend)
         ax.spines["top"].set_visible(False)
         handler1, label1 = ax.get_legend_handles_labels()
         ax.set_title(self.full_name)
+        self.mo.axd[ax] = "reversible"  # M0
 
         # plot second axis
         if self.isotopes:
             axt = ax.twinx()
             y2 = self.signal_data.d  # no conversion for isotopes
-            _ln2 = axt.plot(x[1:-2], y2[1:-2], color="C1",
-                            label=self.legend_right)
+            _ln2 = axt.plot(x, y2, color="C1", label=self.legend_right)
             axt.set_ylabel(self.signal_data.ld)
             set_y_limits(axt, M)
             ax.spines["top"].set_visible(False)
@@ -1059,14 +1050,11 @@ class Signal(esbmtkBase):
             legend = axt.legend(handler1 + handler2, label1 + label2, loc=0).set_zorder(
                 6
             )
-            self.mo.axd[ax] = "main"  # register with axes dict
-            self.mo.axd[axt] = "twin"
         else:
             ax.legend()
             ax.spines["right"].set_visible(False)
             ax.yaxis.set_ticks_position("left")
             ax.xaxis.set_ticks_position("bottom")
-            self.mo.axd[ax] = "main"  # register with axes dict
 
     def __write_data__(
         self,
@@ -1551,8 +1539,7 @@ class DataField(esbmtkBase):
         elif isinstance(y, list):
             y_l = len(y)
         else:
-            raise DataFieldError(
-                "Y data needs to be array, numpy array or list")
+            raise DataFieldError("Y data needs to be array, numpy array or list")
 
         # consider the x-axis next
         if isinstance(x, str):  # no x-data has been provided
@@ -1578,8 +1565,7 @@ class DataField(esbmtkBase):
             # print(f"after: {type(x)}")
         elif isinstance(x, list):  # assume that lists match
             if len(x) != len(y):
-                raise DataFieldError(
-                    f"Y data needs to match x data for {label}")
+                raise DataFieldError(f"Y data needs to match x data for {label}")
         else:
             raise DataFieldError(
                 f"Y data needs to be array, numpy array or list for {label}"
@@ -1621,12 +1607,12 @@ class DataField(esbmtkBase):
         ax: matplotlib axes handle
         """
         # plot external data first
+        M.axd[ax] = "reversible"
         for i, d in enumerate(self.led):
             time = (d.x * M.t_unit).to(M.d_unit).magnitude
             # yd = (d.y * M.c_unit).to(self.plt_units).magnitude
             leg = f"{d.legend}"
             ax.scatter(time, d.y, color=f"C{i}", label=leg)
-            M.axd[ax] = "External"
 
         self.x1_data, self.y1_data, self.y1_label = self.__unify_data__(
             M,
@@ -1646,8 +1632,7 @@ class DataField(esbmtkBase):
                 # 1 = self.y
                 # y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
 
-            ptype = self.y1_type[i] if isinstance(
-                self.y1_type, list) else self.y1_type
+            ptype = self.y1_type[i] if isinstance(self.y1_type, list) else self.y1_type
 
             self.__plot_data__(
                 ax,
@@ -1664,7 +1649,7 @@ class DataField(esbmtkBase):
             ymin.append(u)
             ymax.append(v)
             # set_y_limits(ax, self)
-            
+
         # add any external data if present
         ymin = min(ymin)
         ymax = max(ymax)
@@ -1675,7 +1660,6 @@ class DataField(esbmtkBase):
         ax.set_ylabel(self.y1_legend)
         # remove unnecessary frame species
         ax.spines["top"].set_visible(False)
-        M.axd[ax] = "main"
         handler1, label1 = ax.get_legend_handles_labels()
 
         # test if independeny y_data is present
@@ -1689,7 +1673,6 @@ class DataField(esbmtkBase):
                 self.y2_label,
             )
             axt = ax.twinx()
-            M.axd[ax] = "twin"
             for i, _d in enumerate(self.y2_data):  # loop over datafield list
                 if self.x2_as_time:
                     x2 = (self.x1_data[i] * M.t_unit).to(M.d_unit).magnitude
@@ -2001,8 +1984,7 @@ class ExternalCode(SpeciesNoSet):
             setattr(
                 self,
                 f"vrd_{i}",
-                np.append(getattr(self, f"vrd_{i}"),
-                          d[0: -2: self.mo.reset_stride]),
+                np.append(getattr(self, f"vrd_{i}"), d[0 : -2 : self.mo.reset_stride]),
             )
 
     def __merge_temp_results__(self) -> None:
@@ -2463,7 +2445,7 @@ class ExternalData(esbmtkBase):
             "filename": ["None", (str)],
             "legend": ["None", (str)],
             "legend_z": ["None", (str)],
-            "reservoir": ["None", (str, Species, DataField, GasReservoir)],
+            "reservoir": ["None", (str, Species, DataField, GasReservoir, Signal)],
             "offset": ["0 yrs", (Q_, str)],
             "display_precision": [0.01, (int, float)],
             "scale": [1, (int, float)],
@@ -2496,7 +2478,7 @@ class ExternalData(esbmtkBase):
         if isinstance(self.reservoir, Species):
             self.mo: Model = self.reservoir.species.mo
         if isinstance(self.reservoir, Signal):
-            self.mo: Model = self.signal.species.mo
+            self.mo: Model = self.register.species.mo
         if isinstance(self.register, Model):
             self.mo: Model = self.register
         else:
@@ -2535,8 +2517,7 @@ class ExternalData(esbmtkBase):
         elif ncols == 3:
             self.isotopes = True
         elif ncols > 3:
-            raise ExternalDataError(
-                "External data only supports up to 2 Y columns")
+            raise ExternalDataError("External data only supports up to 2 Y columns")
         else:
             raise ExternalDataError("ED: This should not happen")
 
@@ -2602,8 +2583,7 @@ class ExternalData(esbmtkBase):
             ):  # concentration
                 self.y = self.y.to(self.mo.c_unit)
             else:
-                SignalError(f"No conversion to model units for {
-                            self.scale} specified")
+                SignalError(f"No conversion to model units for {self.scale} specified")
 
         # Strip unit information
         self.x = self.x.magnitude
@@ -2620,10 +2600,11 @@ class ExternalData(esbmtkBase):
             self.d = self.d[mask]
             self.z = self.d
 
+        # reverse ordering
         if self.reverse_time:
-            self.x = np.flip(self.x)
-            self.y = np.flip(self.y)
-            
+            # self.x = np.flip(self.x)
+            # self.y = np.flip(self.y)
+
             if self.zh:
                 self.d = np.flip(self.d)
                 self.z = np.flip(self.z)
@@ -2710,10 +2691,15 @@ class ExternalData(esbmtkBase):
         """
         # Convert time and data to display units
         x = (edo.x * edo.model.t_unit).to(edo.model.d_unit).magnitude
+
+        # x = np.flip(x)
+        # edo.y = np.flip(edo.y)
+
         if edo.y_as_z:  # ignore y data
             axt.scatter(x, edo.y, color=f"C{i}", label=edo.legend_z)
             i = i + 1
         elif edo.zh:  # plot y and z data
+            edo.z = np.flip(edo.z)
             ax.scatter(x, edo.y * edo.d_scale, color=f"C{i}", label=edo.legend)
             axt.scatter(x, edo.z, color=f"C{i + 1}", label=edo.legend_z)
             i = i + 2

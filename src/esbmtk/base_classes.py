@@ -1066,6 +1066,7 @@ class SpeciesBase(esbmtkBase):
         ax.plot(x, y1, color="C0", label=y1_label)
         ax.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
         ax.set_ylabel(y1_label)
+        self.mo.axd[ax] = "reversible"
 
         # Add isotope data on second y-axis if available
         if self.isotopes:
@@ -1075,10 +1076,6 @@ class SpeciesBase(esbmtkBase):
             axt.plot(x, y2, color="C1", label=self.legend_right)
             axt.set_ylabel(self.right_axis_label)
             set_y_limits(axt, self)
-            self.mo.axd[ax] = "main"  # register with axes dict
-            self.mo.axd[axt] = "twin"
-        else:
-            self.mo.axd[ax] = "main"
 
         # Add any external data points if present
         i = 1

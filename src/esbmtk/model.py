@@ -499,7 +499,7 @@ class Model(esbmtkBase):
 
         # Check if directory exists and remove it if it does
         if target_path.exists():
-            looging.info(f"Found previous state directory, deleting {target_path}")
+            logging.info(f"Found previous state directory, deleting {target_path}")
             rmtree(target_path)
 
             # Verify directory was deleted
@@ -624,7 +624,7 @@ class Model(esbmtkBase):
 
         prefix = ""
 
-        looging.info(f"Reading data from {directory}")
+        logging.info(f"Reading data from {directory}")
 
         # Process each reservoir
         for reservoir in self.lor:
@@ -862,13 +862,14 @@ class Model(esbmtkBase):
 
         for ax in axes:
             try:
-                if self.axd[ax] == "main":
+                if self.axd[ax] == "reversible":
+                    print(f"Inverting axis for {ax.get_title()}")
                     ax.invert_xaxis()
                     ax.xaxis.set_major_formatter(
                         FuncFormatter(reverse_tick_labels_factory(t_max))
                     )
-            except:
-                raise ValueError(f"{ax} not in self.axd")
+            except KeyError:
+                pass
 
     def run(self, **kwargs) -> None:
         """Run the model simulation.
