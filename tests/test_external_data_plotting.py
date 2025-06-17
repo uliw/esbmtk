@@ -28,8 +28,8 @@ def run_model(M, sr, pr, i):
     )
     ExternalData(
         name="CR_external",
-        filename="signal_from_csv_data_reverse.csv",
-        legend="Externanl",
+        filename="external_test_data_DIC.csv",
+        legend="External",
         reservoir=M.D_b.DIC,
         reverse_time=sr,
     )
@@ -39,13 +39,18 @@ def run_model(M, sr, pr, i):
         [M.CR, M.D_b.DIC],
         reverse_time=pr,
         no_show=True,
-        fn=f"M{i}_{sr}_{pr}.pdf",
+        # fn=f"M{i}_{sr}_{pr}.pdf",
     )
-    M.plot(
-        [M.CR, M.D_b.DIC],
-        reverse_time=pr,
-        fn=f"M{i}_{sr}_{pr}.pdf",
-    )
+
+    # plt, fig, axs = (1, 1, 1)
+    # M.plot(
+    #     [M.CR, M.D_b.DIC],
+    #     reverse_time=pr,
+    #     no_show=False,
+    #     fn=f"M{i}_S_{sr}_R_{pr}.pdf",
+    #     blocking=False,
+    # )
+
     return plt, fig, axs
 
 
@@ -58,6 +63,7 @@ fig = []
 axs = []
 
 for i, M in enumerate(models):
+    print(f"------ Model {i} ---------------")
     p, f, a = run_model(M, sr[i], pr[i], i)
     plt.append(p)
     fig.append(f)
