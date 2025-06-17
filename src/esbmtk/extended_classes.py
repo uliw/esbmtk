@@ -2600,14 +2600,10 @@ class ExternalData(esbmtkBase):
             self.d = self.d[mask]
             self.z = self.d
 
-        # reverse ordering
+        # map external time data from Ma to model space
+        # x must be in model t units! See above
         if self.reverse_time:
-            # self.x = np.flip(self.x)
-            # self.y = np.flip(self.y)
-
-            if self.zh:
-                self.d = np.flip(self.d)
-                self.z = np.flip(self.z)
+            self.x = self.model.stop - self.x
 
         # register with reservoir
         self.__register__(self.register)
@@ -2692,14 +2688,10 @@ class ExternalData(esbmtkBase):
         # Convert time and data to display units
         x = (edo.x * edo.model.t_unit).to(edo.model.d_unit).magnitude
 
-        # x = np.flip(x)
-        # edo.y = np.flip(edo.y)
-
         if edo.y_as_z:  # ignore y data
             axt.scatter(x, edo.y, color=f"C{i}", label=edo.legend_z)
             i = i + 1
         elif edo.zh:  # plot y and z data
-            edo.z = np.flip(edo.z)
             ax.scatter(x, edo.y * edo.d_scale, color=f"C{i}", label=edo.legend)
             axt.scatter(x, edo.z, color=f"C{i + 1}", label=edo.legend_z)
             i = i + 2
