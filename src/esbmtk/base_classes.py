@@ -1072,6 +1072,7 @@ class SpeciesBase(esbmtkBase):
         if self.isotopes:
             # Create twin axis for isotope data
             axt = ax.twinx()
+            # self.mo.axd[axt] = "reversible"
             y2 = self.d  # No conversion for isotopes
             axt.plot(x, y2, color="C1", label=self.legend_right)
             axt.set_ylabel(self.right_axis_label)

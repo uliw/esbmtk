@@ -864,6 +864,7 @@ class Model(esbmtkBase):
             try:
                 if self.axd[ax] == "reversible":
                     print(f"Inverting axis for {ax.get_title()}")
+                    # ax.xaxis.set_inverted(True)
                     ax.invert_xaxis()
                     ax.xaxis.set_major_formatter(
                         FuncFormatter(reverse_tick_labels_factory(t_max))
