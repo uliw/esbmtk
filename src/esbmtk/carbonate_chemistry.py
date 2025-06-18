@@ -24,8 +24,6 @@ from math import log, sqrt
 
 import numpy as np
 import numpy.typing as npt
-from cachetools import LRUCache, cached
-from cachetools.keys import hashkey
 
 from esbmtk.base_classes import Flux
 from esbmtk.extended_classes import ExternalCode, Reservoir
@@ -336,8 +334,8 @@ def carbonate_system_2(
 
 def init_carbonate_system_2(
     export_flux: Flux,
-    r_sb: Reservoir,  # Surface box
-    r_db: Reservoir,  # deep box
+    source_box: Reservoir,  # Surface box
+    this_box: Reservoir,  # deep box
     kwargs: dict,
 ):
     """Initialize a carbonate system 2 instance.
@@ -350,19 +348,29 @@ def init_carbonate_system_2(
     ----------
     export_flux : Flux
         CaCO3 export flux from the surface box
-    r_sb : Reservoir
+    source_box : Reservoir
         Reservoir instance of the surface box
-    r_db : Reservoir
+    this_box : Reservoir
         Reservoir instance of the deep box
     kwargs : dict
         dictionary of keyword value pairs
 
 
     """
-    AD = r_sb.mo.hyp.area_dz(kwargs["z0"], kwargs["zmax"])
-    s = r_db.swc
-    sp = (s.K1, s.K2, s.K1K2, s.KW, s.KB, s.ca2, s.boron, r_sb.DIC.isotopes)
-    cp = (
+    # Area between z0 and zmax
+    AD = source_box.mo.hyp.area_dz(kwargs["z0"], kwargs["zmax"])
+    swc = this_box.swc  # shorthand for seawater constants
+    swc_p = (  # seawater parameters as tuple
+        swc.K1,
+        swc.K2,
+        swc.K1K2,
+        swc.KW,
+        swc.KB,
+        swc.ca2,
+        swc.boron,
+        source_box.DIC.isotopes,
+    )
+    cp = (  # other constants
         kwargs["Ksp0"],  # 7
         float(kwargs["kc"]),  # 8
         AD,  # 9
@@ -374,38 +382,39 @@ def init_carbonate_system_2(
         int(abs(kwargs["z0"])),  # 15
     )
 
+    # initialize an external code instance
     ec = ExternalCode(
         name="cs2",
-        species=r_sb.mo.Carbon.CO2,
+        species=source_box.mo.Carbon.CO2,
         function=carbonate_system_2,
         fname="carbonate_system_2",
-        isotopes=r_sb.DIC.isotopes,
-        r_s=r_sb,  # source (RG) of CaCO3 flux,
-        r_d=r_db,  # sink (RG) of CaCO3 flux,
-        function_input_data=[
+        isotopes=source_box.DIC.isotopes,
+        r_s=source_box,  # source (RG) of CaCO3 flux,
+        r_d=this_box,  # sink (RG) of CaCO3 flux,
+        function_input_data=[  # variable input data
             export_flux,  # 1
-            r_db.DIC,  # 2
-            r_db.TA,  # 3
-            r_sb.DIC,  # 4
+            this_box.DIC,  # 2
+            this_box.TA,  # 3
+            source_box.DIC,  # 4
             "Hplus",  # 5
             "zsnow",  # 6
         ],
-        function_params=(
-            sp,
+        function_params=(  # constant input data
+            swc_p,
             cp,
-            r_db.mo.area_table,
-            r_db.mo.area_dz_table,
-            r_db.mo.Csat_table,
+            this_box.mo.area_table,
+            this_box.mo.area_dz_table,
+            this_box.mo.Csat_table,
         ),
         return_values=[
-            {f"F_{r_db.full_name}.DIC": "db_cs2"},
-            {f"F_{r_db.full_name}.TA": "db_cs2"},
-            {f"R_{r_db.full_name}.Hplus": r_db.swc.hplus},
-            {f"R_{r_db.full_name}.zsnow": float(abs(kwargs["zsnow"]))},
+            {f"F_{this_box.full_name}.DIC": "db_cs2"},
+            {f"F_{this_box.full_name}.TA": "db_cs2"},
+            {f"R_{this_box.full_name}.Hplus": this_box.swc.hplus},
+            {f"R_{this_box.full_name}.zsnow": float(abs(kwargs["zsnow"]))},
         ],
-        register=r_db,
+        register=this_box,
     )
-    r_db.mo.lpc_f.append(ec.fname)  # list of function to be imported in ode backend
+    this_box.mo.lpc_f.append(ec.fname)  # list of function to be imported in ode backend
 
     return ec
 
@@ -417,8 +426,8 @@ def add_carbonate_system_2(**kwargs) -> None:
     and snowline depth, and compute the associated carbonate burial fluxes
 
     Required keywords:
-        r_sb: tp.List of Reservoir objects in the surface layer
-        r_db: tp.List of Reservoir objects in the deep layer
+        source_box: tp.List of Reservoir objects in the surface layer
+        this_box: tp.List of Reservoir objects in the deep layer
         carbonate_export_fluxes: tp.List of flux objects which must match the
         list of Reservoir objects.
         zsat_min = depth of the upper boundary of the deep box
@@ -443,6 +452,8 @@ def add_carbonate_system_2(**kwargs) -> None:
     """
     # list of known keywords
     lkk: dict = {
+        "this_box": list,  # list of deep reservoirs
+        "source_box": list,  # list of corresponding surface reservoirs
         "r_db": list,  # list of deep reservoirs
         "r_sb": list,  # list of corresponding surface reservoirs
         "carbonate_export_fluxes": list,
@@ -465,20 +476,23 @@ def add_carbonate_system_2(**kwargs) -> None:
     }
     # provide a list of absolutely required keywords
     lrk: list[str] = [
-        "r_db",
-        "r_sb",
+        ["r_sb", "source_box"],
+        ["r_db", "this_box"],
         "carbonate_export_fluxes",
         "z0",
     ]
 
+    source_box = kwargs.get("source_box", kwargs["r_sb"])
+    this_box = kwargs.get("this_box_box", kwargs["r_db"])
+
     # we need the reference to the Model in order to set some
     # default values.
-    reservoir = kwargs["r_db"][0]
+    reservoir = this_box[0]
     model = reservoir.mo
 
     # list of default values if none provided
     lod: dict = {
-        "r_sb": [],  # empty list
+        "source_box": [],  # empty list
         "zsat": -3715,  # m
         "zcc": -4750,  # m
         "zsnow": -4750,  # m
@@ -499,28 +513,33 @@ def add_carbonate_system_2(**kwargs) -> None:
     if "zsat_min" not in kwargs:
         kwargs["zsat_min"] = kwargs["z0"]
 
-    r_db = kwargs["r_db"]
-    r_sb = kwargs["r_sb"]
+    if not isinstance(this_box, list):
+        this_box = [this_box]
 
-    if len(r_db) != len(r_sb):
+    if not isinstance(source_box, list):
+        source_box = [source_box]
+
+    if len(this_box) != len(source_box):
         raise CarbonateSystem2Error(
-            f"The Number of surface boxes ({len(r_sb)} does not match the number of deeb boxes ({len(r_db)}"
+            f"The Number of surface boxes ({len(source_box)} does not match the number of deeb boxes ({len(this_box)}"
         )
 
     pg = kwargs["pg"]
     pc = kwargs["pc"]
     zmax = abs(int(kwargs["zmax"]))
     export_fluxes = kwargs["carbonate_export_fluxes"]
-    n_flux = int(len(export_fluxes) / 2) if r_db[0].DIC.isotopes else len(export_fluxes)
+    n_flux = (
+        int(len(export_fluxes) / 2) if this_box[0].DIC.isotopes else len(export_fluxes)
+    )
 
-    if len(r_db) != n_flux:
+    if len(this_box) != n_flux:
         raise CarbonateSystem2Error(
-            f"The Number of deep boxes ({len(r_db)}) does not match the"
+            f"The Number of deep boxes ({len(this_box)}) does not match the"
             f"number of export fluxes({n_flux})"
         )
 
     # test if corresponding surface reservoirs have been defined
-    if len(r_sb) == 0:
+    if len(source_box) == 0:
         raise CarbonateSystem2Error(
             "Please update your call to add_carbonate_system_2 and add\
             the list of corresponding surface reservoirs"
@@ -535,7 +554,7 @@ def add_carbonate_system_2(**kwargs) -> None:
             (depth_range * pg) / pc
         )
 
-    for i, rg in enumerate(r_db):  # Setup the virtual reservoirs
+    for i, rg in enumerate(this_box):  # Setup the virtual reservoirs
         if hasattr(rg, "DIC") and hasattr(rg, "TA"):
             rg.swc.update_parameters()
         else:
@@ -545,8 +564,8 @@ def add_carbonate_system_2(**kwargs) -> None:
         export_flux.serves_as_input = True  # flag this for ode backend
         ec = init_carbonate_system_2(
             export_flux,
-            r_sb[i],
-            r_db[i],
+            source_box[i],
+            this_box[i],
             kwargs,
         )
         register_return_values(ec, rg)
