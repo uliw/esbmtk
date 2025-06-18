@@ -17,64 +17,64 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-from . initialize_unit_registry import Q_, ureg
-from .version import get_version
+from . initialize_unit_registry import Q_ as Q_, ureg as ureg
+from .version import get_version as get_version
 from .utility_functions import (
-    build_ct_dict,
-    check_for_quantity,
-    create_bulk_connections,
-    data_summaries,
-    initialize_reservoirs,
-    phc,
-    register_return_values,
-    set_y_limits,
+    build_ct_dict as build_ct_dict,
+    check_for_quantity as check_for_quantity,
+    create_bulk_connections as create_bulk_connections,
+    data_summaries as data_summaries,
+    initialize_reservoirs as initialize_reservoirs,
+    phc as phc,
+    register_return_values as register_return_values,
+    set_y_limits as set_y_limits,
 )
-from .seawater import SeawaterConstants
+from .seawater import SeawaterConstants as SeawaterConstants
 from .processes import (
-    gas_exchange,
-    init_weathering,
-    weathering_isotopes,
-    weathering_isotopes_delta,
-    weathering_isotopes_alpha,
-    weathering_no_isotopes,
-    weathering_ref_isotopes,
+    gas_exchange as gas_exchange,
+    init_weathering as init_weathering,
+    weathering_isotopes as weathering_isotopes,
+    weathering_isotopes_delta as weathering_isotopes_delta,
+    weathering_isotopes_alpha as weathering_isotopes_alpha,
+    weathering_no_isotopes as weathering_no_isotopes,
+    weathering_ref_isotopes as weathering_ref_isotopes,
 )
 from .post_processing import (
-    carbonate_system_1_pp,
-    carbonate_system_2_pp,
-    gas_exchange_fluxes,
+    carbonate_system_1_pp as carbonate_system_1_pp,
+    carbonate_system_2_pp as carbonate_system_2_pp,
+    gas_exchange_fluxes as gas_exchange_fluxes,
 )
-from .model import Model
+from .model import Model as Model
 from .extended_classes import (
-    DataField,
-    ExternalCode,
-    ExternalData,
-    GasReservoir,
-    Reservoir,
-    Signal,
-    SinkProperties,
-    SourceProperties,
-    SpeciesNoSet,
-    VectorData,
-    VirtualSpecies,
+    DataField as DataField,
+    ExternalCode as ExternalCode,
+    ExternalData as ExternalData,
+    GasReservoir as GasReservoir,
+    Reservoir as Reservoir,
+    Signal as Signal,
+    SinkProperties as SinkProperties,
+    SourceProperties as SourceProperties,
+    SpeciesNoSet as SpeciesNoSet,
+    VectorData as VectorData,
+    VirtualSpecies as VirtualSpecies,
 )
-from .esbmtk_base import esbmtkBase
-from .connections import ConnectionProperties, Species2Species
+from .esbmtk_base import esbmtkBase as esbmtkBase
+from .connections import ConnectionProperties as ConnectionProperties, Species2Species as Species2Species
 from .carbonate_chemistry import (
-    add_carbonate_system_1,
-    add_carbonate_system_2,
-    carbonate_system_1,
-    carbonate_system_2,
-    get_hplus,
-    get_pco2,
+    add_carbonate_system_1 as add_carbonate_system_1,
+    add_carbonate_system_2 as add_carbonate_system_2,
+    carbonate_system_1 as carbonate_system_1,
+    carbonate_system_2 as carbonate_system_2,
+    get_hplus as get_hplus,
+    get_pco2 as get_pco2,
 )
 from .base_classes import (
-    Flux,
-    Sink,
-    Source,
-    Species,
-    SpeciesError,
-    SpeciesProperties,
+    Flux as Flux,
+    Sink as Sink,
+    Source as Source,
+    Species as Species,
+    SpeciesError as SpeciesError,
+    SpeciesProperties as SpeciesProperties,
 )
 import numpy as np
 np.seterr(invalid="ignore")
