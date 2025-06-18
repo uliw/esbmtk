@@ -157,8 +157,6 @@ class Model(esbmtkBase):
         debug_equations_file: bool
             write a debug version of the equations file.
         """
-        import io
-        import warnings
         from importlib.metadata import version
 
         from esbmtk.sealevel import hypsometry
