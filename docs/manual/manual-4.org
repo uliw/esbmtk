@@ -125,8 +125,8 @@ deep_boxes: tp.List = [M.D_b]
 export_fluxes: tp.List = M.flux_summary(filter_by="PIC_DIC L_b", return_list=True)
 
 add_carbonate_system_2(
-        r_db=deep_boxes,  # list of reservoir groups
-        r_sb=surface_boxes,  # list of reservoir groups
+        this_box=deep_boxes,  # list of reservoir groups
+        source_box=surface_boxes,  # list of reservoir groups
         carbonate_export_fluxes=export_fluxes,  # list of export fluxes
         z0=-200,  # depth of shelf
         alpha=alpha,  # dissolution coefficient, typically around 0.6
