@@ -23,7 +23,6 @@ import typing as tp
 
 import numpy as np
 import numpy.typing as npt
-import logging
 
 if tp.TYPE_CHECKING:
     from .esbmtk import SpeciesProperties
