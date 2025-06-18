@@ -160,7 +160,7 @@ class InputParsing:
         """
         self.update = False
         self.__check_mandatory_keywords__(self.lrk, kwargs)
-        x = kwargs.get("id", None)
+        _x = kwargs.get("id", None)
         self.__register_variable_names__(self.defaults, kwargs)
         self.__update_dict_entries__(self.defaults, kwargs)
         self.update = True
@@ -191,7 +191,8 @@ class InputParsing:
 
         Examples
         --------
-        >>> self.__check_mandatory_keywords__(["name", ["option1", "option2"]], {"name": "test", "option1": "value"})
+        >>> self.__check_mandatory_keywords__(["name", ["option1", "option2"]],
+        {"name": "test", "option1": "value"})
         """
         if not lrk:
             return
@@ -1165,5 +1166,4 @@ class esbmtkBase(InputParsing):
         # Add other validation rules specific to your application
 
         # If all validations pass, return True
-        return True
         return True
