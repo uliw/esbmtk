@@ -861,7 +861,6 @@ class Model(esbmtkBase):
         for ax in axes:
             try:
                 if self.axd[ax] == "reversible":
-                    print(f"Inverting axis for {ax.get_title()}")
                     # ax.xaxis.set_inverted(True)
                     ax.invert_xaxis()
                     ax.xaxis.set_major_formatter(
