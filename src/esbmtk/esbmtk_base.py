@@ -698,6 +698,17 @@ class esbmtkBase(InputParsing):
         """
         return self.n > other.n
 
+    def __add_flux__(self, lof, flux):
+        """Check if flux is already defined.
+
+        Otherwise add flux to lof
+        """
+        if flux in lof:
+            raise FluxSpecificationError(f"Duplicate entry for {flux.name}")
+        else:
+            if flux is not None:
+                lof.append(flux)
+
     def info(self, **kwargs) -> None:
         """Show an overview of the object properties.
 
