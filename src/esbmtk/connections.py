@@ -112,7 +112,10 @@ class Species2Species(esbmtkBase):
     >>>    id="po4_productivity",
     >>> )
 
-    Connecting two reservoirs using another flux as reference:
+    Connecting two reservoirs using another flux as reference. Note
+    presently, you cannot chain flux references! You can use a reference
+    flux multiple times, but it is not possible to reference f1 for f2,
+    and then reference f2 for f3.
     The reference flux can either be given as a flux object, e.g., as
     returned from a flux lookup:
 
