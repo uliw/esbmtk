@@ -1817,7 +1817,8 @@ class Flux(esbmtkBase):
                 self.name = f"{self.id}_F"
 
         self.__register_with_parent__()
-        self.mo.lof.append(self)  # register with model flux list
+        self.__add_flux__(self.mo.lof, self)
+        # self.mo.lof.append(self)  # register with model flux list
 
         # decide which setitem functions to use
         # decide whether we use isotopes
