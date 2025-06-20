@@ -256,25 +256,20 @@ ConnectionProperties(  #
 )
 #+END_SRC
 
-We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity or use the previously calculated flux via =ctype ="scale_with_flux"= and =ref_flux=. We can query the export productivity using the =id_string= of the above connection with the
-@@rst::py:meth:`esbmtk.model.Model.flux_summary()`@@ method of the model instance:
-#+BEGIN_SRC ipython
-M.flux_summary(filter_by="primary_production", return_list=True)[0]
-#+END_SRC
-The =flux_summary()= method will return a list of matching fluxes but since there is only one match, we can simply use  the first result, and use it to define the phosphor burial as a consequence of export production in the following way:
+We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity or use the previously calculated flux via =ctype ="scale_with_flux"= and =ref_flux=.
 #+name: p9
 #+BEGIN_SRC ipython :tangle po4_1.py
 ConnectionProperties(  #
     source=M.D_b,  # source of flux
     sink=M.burial,  # target of flux
     ctype="scale_with_flux",
-    ref_flux=M.flux_summary(filter_by="primary_production",return_list=True)[0],
+    ref_flux="primary_production",
     scale=F_b,
     id="burial",
     species=[M.PO4],
 )
 #+END_SRC
-
+Note that it is currently not possible to chain =scale_with_flux= references, e.g., referencing =f1= to calculate =f2= will work, but referencing =f2= to calculate =f3= will fail. Rather, calculate =f3= from =f1=.
 #+BEGIN_SRC ipython :tangle po4_1.py :exports none
 M.run()
 #+END_SRC
