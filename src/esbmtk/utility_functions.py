@@ -199,7 +199,7 @@ def register_new_flux(ec, model_object, dict_key, dict_value) -> list:
         rg = model_object.register  # get associated reservoir
         species = getattr(rg, species_properties.name)
     else:
-        print(f" type(rg) = {type(model_object)}")
+        logging.debug(f" type(rg) = {type(model_object)}")
         raise NotImplementedError
 
     if not hasattr(species, "source"):
@@ -210,8 +210,7 @@ def register_new_flux(ec, model_object, dict_key, dict_value) -> list:
     num = ["", "_l"] if species.isotopes else [""]
 
     for e in num:
-        if model_object.model.debug:
-            print(f"ro= {model_object.full_name}, dv = {dict_value}, num = {num}")
+        logging.debug(f"ro= {model_object.full_name}, dv = {dict_value}, num = {num}")
         f = Flux(
             name=f"{dict_value}{e}",
             species=species_properties,
@@ -224,8 +223,7 @@ def register_new_flux(ec, model_object, dict_key, dict_value) -> list:
         ro.append(f)
         ec.lof.append(f)
         species.lof.append(f)  # register flux
-        if model_object.model.debug:
-            print(f"fname = {f.full_name}")
+        logging.debug(f"fname = {f.full_name}")
 
     return ro
 
