@@ -807,9 +807,9 @@ class Signal(esbmtkBase):
         mu: float = 0
         phi: float = c / 4
 
-        print(f"mu = {mu} ,phi = {phi}")
-        print(f"x[0] = {x[0]}, x[-1] = {x[-1]}")
-        print(sys.float_info)
+        logging.debug(f"mu = {mu} ,phi = {phi}")
+        logging.debug(f"x[0] = {x[0]}, x[-1] = {x[-1]}")
+        logging.debug(sys.float_info)
 
         a = -((x - mu) ** 2) / (2 * phi**2)
         # get bell curve
@@ -1914,7 +1914,7 @@ class ExternalCode(SpeciesNoSet):
         logging.info(f"creating {name}")
 
         if self.model.debug:
-            print(f"EC: {self.full_name}, isotopes = {self.isotopes}")
+            logging.debug(f"EC: {self.full_name}, isotopes = {self.isotopes}")
 
         if self.vr_datafields != "None":
             self.alias_list = list(self.vr_datafields.keys())
