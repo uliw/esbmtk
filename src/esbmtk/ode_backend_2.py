@@ -249,7 +249,6 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
                 elif flux.ftype == "None":  # get flux expressions
                     rhs, rhs_out, rhs_debug, prefix_code = get_flux(flux, M, R, icl)
                     # write regular equation
-
                     if rhs_debug[0] != "":  # add debug if need be
                         eqs.write(f"{ind2}{rhs_debug[0]}")
                     if rhs_out[0]:
@@ -265,7 +264,8 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
                         fn = f"F[{flux.idx + 1}]"
                         eqs.write(f"{ind2}{fn} = {rhs[1]}\n")
                         fi = fi + 1
-
+            # FIXME: This counter invcrement fails for chained scale with flux
+            # expressions.
             fi = fi + 1
 
         sep = (
@@ -696,15 +696,12 @@ def get_scale_with_flux_eq(
     rhs_out = [True, False]
     prefix_code = ""
 
-    # update toc with optional scaling factor
-
     if flux.serves_as_input or c.signal != "None":
-        """The flux for the light isotope will computed as follows:
-        We will use the mass of the flux for scaling, but we
-        isotope ratio of the source.
-        Note the scale_with_flux connection also supports an arbitrary
-        scaling factor, which is set with the __add_to_ode_constants__
-        methods in base_classes.py, and thus part of the toc[i]
+        """The flux for the light isotope will computed as follows: We will use the mass
+        of the flux for scaling, but we isotope ratio of the source.  Note the
+        scale_with_flux connection also supports an arbitrary scaling factor, which is
+        set with the __add_to_ode_constants__ methods in base_classes.py, and thus part
+        of the toc[i]
         """
         rhs = f"toc[{c.s_index}] * F[{c.ref_flux.idx}]"
         if c.source.isotopes and c.sink.isotopes:
