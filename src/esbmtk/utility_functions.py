@@ -314,7 +314,8 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
                         | Source
                         | SourceProperties,
                     ):
-                        o: list = register_new_flux(ef, rg, dict_key[2:], dict_value)
+                        # o: list = register_new_flux(ef, rg, dict_key[2:], dict_value)
+                        o: list = register_new_flux(ef, o, dict_key[2:], dict_value)
                     else:
                         raise ValueError(f"No recipie for {type(o)}")
                 else:
