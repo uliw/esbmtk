@@ -299,7 +299,12 @@ class Model(esbmtkBase):
             logging.root.removeHandler(handler)
 
         log_filename: str = f"{self.name}.log"
-        logging.basicConfig(filename=log_filename, filemode="w", level=logging.INFO)
+        if self.debug:
+            logging.basicConfig(
+                filename=log_filename, filemode="w", level=logging.DEBUG
+            )
+        else:
+            logging.basicConfig(filename=log_filename, filemode="w", level=logging.INFO)
         # Redirect warnings to logging
         logging.captureWarnings(True)
 

@@ -298,6 +298,7 @@ def register_return_values(ef: ExternalFunction, rg) -> None:
                 M.Conn_CO2_At_to_H_b_CO2_H_b._F
                 """
                 key_str = dict_key[2:].split(".")[1]
+                logging.debug(f"register_return_values key_str = {key_str}")
                 if hasattr(M, key_str):
                     o = getattr(M, key_str)
                     if isinstance(o, Flux):
