@@ -141,7 +141,7 @@ Notes:
 Please study the actual model implementations provided in the examples folder.
 
 *** Post-Processing
-As with =carbonate_system_1= the remaining carbonate species are not part of the equation system, rather they are calculated once a solution has been found. Since the solver does not store the carbonate export fluxes, one first has to calculate the relevant fluxes from the concentration data in the model solution. This is however model dependent (i.e., export productivity as a function of residence time, or as a function of upwelling flux), and as such post-processing of =carbonate_system_2=  is not done automatically, but has to be initiated manually, e.g., like this:
+As with =carbonate_system_1=, the remaining carbonate species are not part of the equation system, rather they are calculated once a solution has been found. Since the solver does not store the carbonate export fluxes, one first has to calculate the relevant fluxes from the concentration data in the model solution. This is however model dependent (i.e., export productivity as a function of residence time, or as a function of upwelling flux), and as such post-processing of =carbonate_system_2=  is not done automatically, but has to be initiated manually, e.g., like this:
 #+BEGIN_SRC ipython
 # get CaCO3_export in mol/year
 CaCO3_export = M.CaCO3_export.to(f"{M.f_unit}").magnitude
@@ -163,7 +163,7 @@ M.D_b.zsnow  # Snowline depth in mbsl
 #+END_SRC
 see  the @@rst::py:func:`esbmtk.post_processing.carbonate_system_2_pp()`@@ function for details.
 
-** Carbonate System 3:
+*** Carbonate System 3:
 
 *NOTE: this is currently in the early stages of development.*
 
@@ -175,13 +175,11 @@ Carbonate System 3 may be added to a model as follows:
 
 #+BEGIN_SRC ipython
 
-export_fluxes: tp.List = M.flux_summary(filter_by="PIC_DIC L_b", return_list=True)
-
 add_carbonate_system_3(
         source_box=[M.S_b],  # list of reservoir groups; S_b is Surface box
         this_box=[M.D_b1],  # list of reservoir groups; D_b1 is Deep box 1
         next_box=[M.D_b2],  # list of reservoir groups; D_b2 is Deep box 2
-        carbonate_export_fluxes=export_fluxes,  # list of export fluxes
+        carbonate_export_fluxes=export_fluxes,  # list of export fluxes; declared in the same way as in CS2
         z0=-200,  # depth of shelf
         alpha=alpha,  # dissolution coefficient, typically around 0.6
     )
