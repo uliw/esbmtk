@@ -136,8 +136,9 @@ Notes:
  - boxes and fluxes are lists, since in some models there is more than one surface box (e.g., models that resolve individual ocean basins)
  - ESBMTK only considers the sediment area to 6000 mbsl. The area contributed by the elevations below 6000 mbsl is negligible, and this constrain simplifies the hypsographic fit.
  - The total sediment area of a given =Reservoir= is known provided the box-geometry was specified correctly.
- - The @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry.carbonate_system_2()`@@ function only returns [H^{+}] and the dissolution flux for  given box. It does not return the burial flux.
- - Please study the actual model implementations provided in the examples folder.
+ - The @@rst::py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry.carbonate_system_2()`@@ function only returns [H^{+}] and the dissolution flux for the given box. It does not return the burial flux.
+ - Since carbonate_system_2 is based heavily on the Boudreau model, it cannot currently handle carbonate chemistry dynamics for models with more than two vertical ocean boxes, eg: it cannot be used within a model with a surface, intermediate, as well as deep box. 
+Please study the actual model implementations provided in the examples folder.
 
 *** Post-Processing
 As with =carbonate_system_1= the remaining carbonate species are not part of the equation system, rather they are calculated once a solution has been found. Since the solver does not store the carbonate export fluxes, one first has to calculate the relevant fluxes from the concentration data in the model solution. This is however model dependent (i.e., export productivity as a function of residence time, or as a function of upwelling flux), and as such post-processing of =carbonate_system_2=  is not done automatically, but has to be initiated manually, e.g., like this:
