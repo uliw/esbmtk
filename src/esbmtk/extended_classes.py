@@ -2387,7 +2387,9 @@ class ExternalData(esbmtkBase):
                         scale      = scaling factor, optional
                         display_precision = number, optional, inherited from Model
                         convert_to = optional, see below
-                        y_as_z = False
+                        y_as_z = False,
+                        plot_as_line = False,
+                        plot_args = {}, e.g., {"alpha": 0.5}
                        )
 
     The data must exist as CSV file, where the first column contains
@@ -2421,6 +2423,8 @@ class ExternalData(esbmtkBase):
     in the `name` field, and the name of the reservoir the data is associated
     with.
 
+    The plot_args keyword allows to pass arbitrary plot arguments
+
     Methods
     -------
       - name.plot()
@@ -2450,6 +2454,8 @@ class ExternalData(esbmtkBase):
             "disp_units": [True, (bool)],
             "reverse_time": [False, (bool)],
             "y_as_z": [False, (bool)],
+            "plot_as_line": [False, bool],
+            "plot_args": [{}, dict],
             "register": [
                 "None",
                 (str, Model, Species, DataField, GasReservoir, Signal),
@@ -2687,11 +2693,22 @@ class ExternalData(esbmtkBase):
         x = (edo.x * edo.model.t_unit).to(edo.model.d_unit).magnitude
 
         if edo.y_as_z:  # ignore y data
-            axt.scatter(x, edo.y, color=f"C{i}", label=edo.legend_z)
-            i = i + 1
+            if edo.plot_as_line:
+                axt.plot(
+                    x, edo.y, color=f"C{i + 1}", label=edo.legend_z, **edo.plot_args
+                )
+                i = i + 2
+            else:
+                axt.scatter(x, edo.y, color=f"C{i}", label=edo.legend_z)
+                i = i + 1
         elif edo.zh:  # plot y and z data
-            ax.scatter(x, edo.y * edo.d_scale, color=f"C{i}", label=edo.legend)
-            axt.scatter(x, edo.z, color=f"C{i + 1}", label=edo.legend_z)
+            if edo.plot_as_line:
+                ax.plot(x, edo.y * edo.d_scale, color=f"C{i + 1}", label=edo.legend)
+                axt.plot(x, edo.z, color=f"C{i + 2}", label=edo.legend_z)
+                i = i + 3
+            else:
+                ax.scatter(x, edo.y * edo.d_scale, color=f"C{i}", label=edo.legend)
+                axt.scatter(x, edo.z, color=f"C{i + 1}", label=edo.legend_z)
             i = i + 2
         else:  # plot only y data
             ax.scatter(x, edo.y * edo.d_scale, color=f"C{i}", label=edo.legend)

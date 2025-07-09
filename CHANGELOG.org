@@ -4,6 +4,7 @@
   - Gas Exchange Connections now allow the =scale= keyword
   - Signal, ExternalData, and plot now accept the =reverse_time= keyword
   - Warnings are now written to the log file
+  - ExternalData now accepts the =plot_args= keyword which allows to pass arbitrary arguments to a plot command in the form of a dictionary (e.g., =plot_args = {"alpha": -.5"}= ).
 - 0.14.2.2 May 1^{st} 2025, mostly  a bugfix release that adds isotope related unit test.
 - 0.14.2.1 ESBMTK now requires python 3.12. Cleaned up repository structure. This may result in import errors. Please get in touch if it does. Reworked many class definitions to improve readability and documentation. Fixed a variety of regressions for isotope calculations that were introduces in 0.14.1.x  Added =debug= keyword to the Model object. Expanded the debug information in the equations file. The default solver has changed from BDF to LSODA.
 - 0.14.1.4 Fixed a regression that caused incorrect =zcc= values in the post-processing step. Added  the =reverse_time= keyword to the plot function. This is most useful for models that run forward in time from past starting point.
