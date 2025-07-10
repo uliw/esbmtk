@@ -571,6 +571,376 @@ def add_carbonate_system_2(**kwargs) -> None:
         register_return_values(ec, rg)
         rg.has_cs2 = True
 
+"""
+Carbonate System 3:
+
+Current vers. (last updated July 3 2025): adds a "next_box" into which 
+undissolved CaCO3 (or "burial" fluxes) are explicitly transferred into 
+another box. This was not explicitly handled in Carbonate System 2.
+
+"""
+
+def carbonate_system_3(
+    CaCO3_export: float,  # 3 CaCO3 export flux as DIC
+    dic_t_db: float | tuple,  # 4 DIC in the deep box
+    ta_db: float,  # 5 TA in the deep box
+    dic_t_sb: float | tuple,  # 6 [DIC] in the surface box
+    hplus_0: float,  # 8 hplus in the deep box at t-1
+    zsnow: float,  # 9 snowline in meters below sealevel at t-1
+    p: tuple,
+) -> tuple:
+    """Return the fraction of the carbonate rain that is dissolved.
+
+    This functions returns:
+
+    DIC_burial, DIC_burial_l, Hplus, zsnow
+
+    LIMITATIONS:
+    - Assumes all concentrations are in mol/kg
+    - Assumes your Model is in mol/kg
+
+    Calculations are based off equations from:
+    Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
+
+    """
+    sp, cp, area_table, area_dz_table, Csat_table = p
+    ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0 = cp
+    k1, k2, k1k2, KW, KB, ca2, boron, isotopes = sp
+
+    if isotopes:
+        dic_db, dic_db_l = dic_t_db
+        dic_sb, dic_sb_l = dic_t_sb
+    else:
+        dic_db = dic_t_db
+        dic_sb = dic_t_sb
+
+    hplus = get_hplus(dic_db, ta_db, max(hplus_0, 1e-12), boron, k1, k1k2, KW, KB)
+    co3 = dic_db / (1 + hplus / k2 + hplus**2 / k1k2)
+    
+
+    """ --- Compute critical depth intervals eqs after  Boudreau (2010) ---
+   All depths will be positive to facilitate the use of lookup_tables.
+   Note that these tables are different than the hyspometry data tables
+   that expect positive and negative numbers.
+    """
+
+    zsat = get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0)
+    zcc = get_zcc(CaCO3_export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3)
+    B_AD = CaCO3_export / AD  # get fractional areas
+    A_z0_zsat = area_table[z0] - area_table[zsat]
+    A_zsat_zcc = area_table[zsat] - area_table[zcc]
+    A_zcc_zmax = area_table[zcc] - area_table[zmax]
+    
+    # ------------------------Calculate Burial Fluxes----------------------------- #
+    BCC = A_zcc_zmax * B_AD
+    BNS = alpha * A_z0_zsat * B_AD
+    diff_co3 = Csat_table[zsat:zcc] - co3
+    """FIXME: Can area_sat_cc = area_dz_table[zsat:zcc]
+    be rewritten as:
+    
+    area_sat_cc = area[zsat] - area[zcc]
+    
+    which would allow for a vectorized expression?
+    But that also would have to work for diff_co3 as well.
+
+    If yes, we can use Einstein summation notation
+    
+   result = np.einsum('ij,ij->i', U, V)
+   
+    `ij,ij->i` means: Multiply element-wise along each row, then sum per row.
+    for  kc * area_sat_cc.dot(diff_co3)
+
+    This would also be helpful for the post-processing step
+    """
+    area_sat_cc = area_dz_table[zsat:zcc]
+    BDS_under = kc * area_sat_cc.dot(diff_co3)
+    BDS_resp = alpha * (A_zsat_zcc * B_AD - BDS_under)
+    BDS = BDS_under + BDS_resp
+
+    # sediment dissolution if zcc is deeper than snowline
+    if zsnow <= zcc:  # reset zsnow
+        dzdt_zsnow = abs(zsnow - zcc)
+        BPDC = 0
+        zsnow = zcc
+    else:  # integrate saturation difference over area
+        if zsnow > zmax:  # limit zsnow to ocean depth
+            zsnow = zmax
+
+        diff: NDArrayFloat = Csat_table[zcc : int(zsnow)] - co3
+        area_cc_snow: NDArrayFloat = area_dz_table[zcc : int(zsnow)]
+        BPDC = max(0, kc * area_cc_snow.dot(diff))
+        dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
+
+    """ CACO3_export is the flux of CaCO3 into this_box (i.e. export from surface layer)
+    Boudreau's orginal approach is as follows.
+    CACO3_export = B_diss + Fburial
+    However, the model should use the bypass option for the source_box --> this_box connection, 
+    and leave all flux calculations to the carbonate_system code. Furthermore, the model does not 
+    need to define a separate CaCO3 connection between this_box and next_box, as this connection 
+    is handled entirely by the CS3 code.
+    """
+    F_diss = BDS + BCC + BNS + BPDC
+    dCdt_Hplus = hplus - hplus_0
+
+    F_exp = CaCO3_export - F_diss
+
+    """ The isotope ratio of the dissolution flux is determined by the delta
+    value of the sediments we are dissolving, and the delta of the carbonate rain.
+    The currrent code assumes that both are the same.
+    """
+    if isotopes:
+        F_diss_l = F_diss * dic_sb_l / dic_sb
+        F_exp_l = F_exp * dic_sb_l / dic_sb
+        rv = (F_diss, F_diss_l, F_diss * 2, dCdt_Hplus, dzdt_zsnow, F_exp, F_exp_l, F_exp *2,)
+    else:
+        rv = (F_diss, F_diss * 2, dCdt_Hplus, dzdt_zsnow, F_exp, F_exp *2,)
+
+    return rv
+
+
+def init_carbonate_system_3(
+    export_flux: Flux,
+    source_box: Reservoir,  # Surface box
+    this_box: Reservoir,  # deep box
+    next_box: Reservoir, 
+    kwargs: dict,
+):
+    """Initialize a carbonate system 3 instance.
+
+    Note that the current implmentation assumes that the export flux into 
+    this_box is the total export flux over surface area of the mixed layer, 
+    i.e., the sediment area between z0 and zmax
+
+    Parameters
+    ----------
+    export_flux : Flux
+        CaCO3 export flux from the surface box
+    source_box : Reservoir
+        Reservoir instance of the surface box
+    this_box : Reservoir
+        Reservoir instance of the deep box
+    next_box :
+        Reservoir instance of the sink box 
+    kwargs : dict
+        dictionary of keyword value pairs
+
+
+    """
+    # Area between z0 and zmax
+    AD = source_box.mo.hyp.area_dz(kwargs["z0"], kwargs["zmax"])
+    swc = this_box.swc  # shorthand for seawater constants
+    swc_p = (  # seawater parameters as tuple
+        swc.K1,
+        swc.K2,
+        swc.K1K2,
+        swc.KW,
+        swc.KB,
+        swc.ca2,
+        swc.boron,
+        source_box.DIC.isotopes,
+    )
+    cp = (  # other constants
+        kwargs["Ksp0"],  # 7
+        float(kwargs["kc"]),  # 8
+        AD,  # 9
+        int(abs(kwargs["zsat0"])),  # 10
+        kwargs["I_caco3"],  # 11
+        kwargs["alpha"],  # 12
+        int(abs(kwargs["zsat_min"])),  # 13
+        int(abs(kwargs["zmax"])),  # 14
+        int(abs(kwargs["z0"])),  # 15
+    )
+
+    # initialize an external code instance
+    ec = ExternalCode(
+        name="cs3",
+        species=source_box.mo.Carbon.CO2,
+        function=carbonate_system_3,
+        fname="carbonate_system_3",
+        isotopes=source_box.DIC.isotopes,
+        r_s=source_box,  # source (RG) of CaCO3 flux,
+        r_d=this_box,  # sink (RG) of CaCO3 flux,
+        r_n=next_box, #sink (RG) of undissolved CaCO3
+        function_input_data=[  # variable input data
+            export_flux,  # 1
+            this_box.DIC,  # 2
+            this_box.TA,  # 3
+            source_box.DIC,  # 4
+            "Hplus",  # 5
+            "zsnow",  # 6
+        ],
+        function_params=(  # constant input data
+            swc_p,
+            cp,
+            this_box.mo.area_table,
+            this_box.mo.area_dz_table,
+            this_box.mo.Csat_table,
+        ),
+        return_values=[
+            {f"F_{this_box.full_name}.DIC": "db_cs3"},
+            {f"F_{this_box.full_name}.TA": "db_cs3"}, 
+            {f"R_{this_box.full_name}.Hplus": this_box.swc.hplus},
+            {f"R_{this_box.full_name}.zsnow": float(abs(kwargs["zsnow"]))},
+            {f"F_{next_box.full_name}.DIC": "db_export_DIC"}, 
+            {f"F_{next_box.full_name}.TA": "db_export_TA"},
+        ],
+        register=this_box,
+    )
+    this_box.mo.lpc_f.append(ec.fname)  # list of function to be imported in ode backend
+    
+
+
+    return ec
+
+def add_carbonate_system_3(**kwargs) -> None:
+    """Create a new carbonate system virtual reservoir.
+
+    This function initializes carbonate system 2 (cs2) for each specified deep box.
+    It computes saturation, compensation, and snowline depth, and the associated 
+    carbonate burial fluxes.
+
+    Required keywords:
+        r_sb / source_box: list of surface Reservoirs
+        r_db / this_box: list of deep Reservoirs
+        r_nb / next_box: list of sink Reservoirs
+        carbonate_export_fluxes: list of CaCO3 export Flux objects
+        z0: depth (m) for burial calculations
+
+    Optional (defaulted) keywords:
+        zsat, zcc, zsnow, zsat0, Ksp0, kc, alpha, pg, pc, I_caco3, zmax, Ksp
+    """
+    # list of known keywords
+    lkk: dict = {
+        "this_box": list,
+        "source_box": list,
+        "next_box": list,
+        "r_db": list,
+        "r_sb": list,
+        "r_nb": list,
+        "carbonate_export_fluxes": list,
+        "zsat": int,
+        "zsat_min": int,
+        "zcc": int,
+        "zsnow": int,
+        "zsat0": int,
+        "Ksp0": float,
+        "kc": float,
+        "Ca2": float,
+        "pc": (float, int),
+        "pg": (float, int),
+        "I_caco3": (float, int),
+        "alpha": float,
+        "zmax": (float, int),
+        "z0": (float, int),
+        "Ksp": (float, int),
+    }
+
+    # provide a list of absolutely required keywords:
+    lrk: list = [
+        ["r_sb", "source_box"],
+        ["r_db", "this_box"],
+        ["r_nb", "next_box"],
+        "carbonate_export_fluxes",
+        "z0",
+    ]
+
+    source_box = kwargs.get("source_box", kwargs.get("r_sb"))
+    this_box = kwargs.get("this_box", kwargs.get("r_db"))
+    next_box = kwargs.get("next_box", kwargs.get("r_nb"))
+    carbonate_export_fluxes = kwargs.get("carbonate_export_fluxes")
+
+    #we need the reference to the Model in order to set some default values
+
+    reservoir = this_box[0]
+    model = reservoir.mo
+
+    #list of default values if none provided:
+    lod: dict = {
+        "source_box": [],
+        "zsat": -3715,
+        "zcc": -4750,
+        "zsnow": -4750,
+        "zsat0": -5078,
+        "Ksp0": None,  # will be set later from reservoir.swc
+        "kc": 8.84 * 1000,
+        "alpha": 0.6,
+        "pg": 0.103,
+        "pc": 511,
+        "I_caco3": 529,
+        "zmax": -10999,
+        "Ksp": None,
+    }
+
+    if lod["Ksp0"] is None:
+        lod["Ksp0"] = reservoir.swc.Ksp0
+    if lod["Ksp"] is None:
+        lod["Ksp"] = reservoir.swc.Ksp_ca
+
+    __checkkeys__(lrk, lkk, kwargs)
+    kwargs = __addmissingdefaults__(lod, kwargs)
+    __checktypes__(lkk, kwargs)
+
+    if source_box is None or this_box is None or carbonate_export_fluxes is None:
+        raise CarbonateSystem2Error("Missing required inputs: source_box, this_box, or export_fluxes")
+
+    if "zsat_min" not in kwargs:        
+        kwargs["zsat_min"] = kwargs["z0"]
+   
+    if not isinstance(this_box, list):
+        this_box = [this_box]
+
+    if not isinstance(source_box, list):
+        source_box = [source_box]
+
+    if not isinstance(next_box, list):
+        next_box = [next_box]
+
+    if len(this_box) != len(source_box):
+        raise CarbonateSystem2Error(
+            f"Number of surface boxes ({len(source_box)}) does not match deep boxes ({len(this_box)})"
+        )
+    if len(next_box) != len(this_box):
+        raise CarbonateSystem2Error(
+            f"Number of next boxes ({len(next_box)}) does not match deep boxes ({len(this_box)})"
+        )
+
+
+    pg = kwargs["pg"]
+    pc = kwargs["pc"]
+    zmax = abs(int(kwargs["zmax"]))
+
+    #check if we already have the hypsometry and saturation tables
+    if not hasattr(model, "area_table"):
+        depth_range = np.arange(0, zmax, 1, dtype=float)
+        model.area_table = model.hyp.get_lookup_table_area()
+        model.area_dz_table = model.hyp.get_lookup_table_area_dz() * -1
+        model.Csat_table = (
+            reservoir.swc.Ksp0 / reservoir.swc.ca2 * np.exp(
+                (depth_range * kwargs["pg"]) / kwargs["pc"]
+            )
+        )
+
+    #set up virtual reservoirs:
+    for i, (sb, db, nb) in enumerate(zip(source_box, this_box, next_box)):
+
+        if not (hasattr(db, "DIC") and hasattr(db, "TA")):
+            raise AttributeError(f"{db.full_name} must have a DIC and TA reservoir")
+
+        db.swc.update_parameters()
+
+        export_flux = kwargs["carbonate_export_fluxes"][i]
+        export_flux.serves_as_input = True  # flag this for ode backend
+        ec = init_carbonate_system_3(
+            export_flux,
+            source_box[i],
+            this_box[i],
+            next_box[i],
+            kwargs,
+        )
+
+        register_return_values(ec, db)
+        db.has_cs3 = True
+
 
 def get_pco2(SW) -> float:
     """Calculate the concentration of pCO2."""

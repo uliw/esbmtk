@@ -42,6 +42,7 @@ from .processes import (
 from .post_processing import (
     carbonate_system_1_pp as carbonate_system_1_pp,
     carbonate_system_2_pp as carbonate_system_2_pp,
+    carbonate_system_3_pp as carbonate_system_3_pp,
     gas_exchange_fluxes as gas_exchange_fluxes,
 )
 from .model import Model as Model
@@ -63,8 +64,10 @@ from .connections import ConnectionProperties as ConnectionProperties, Species2S
 from .carbonate_chemistry import (
     add_carbonate_system_1 as add_carbonate_system_1,
     add_carbonate_system_2 as add_carbonate_system_2,
+    add_carbonate_system_3 as add_carbonate_system_3,
     carbonate_system_1 as carbonate_system_1,
     carbonate_system_2 as carbonate_system_2,
+    carbonate_system_3 as carbonate_system_3,
     get_hplus as get_hplus,
     get_pco2 as get_pco2,
 )
