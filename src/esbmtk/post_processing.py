@@ -284,64 +284,11 @@ def carbonate_system_2_pp(
         )
 
 
-def gas_exchange_fluxes(
-    liquid_reservoir: Species,
-    gas_reservoir: GasReservoir,
-    pv: str,
-):
-    """Calculate gas exchange fluxes for a given reservoir.
-
-    :param liquid_reservoir: Species handle
-    :param gas_reservoir:  Species handle
-    :param pv: piston velocity as string e.g., "4.8 m/d"
-
-    :returns:
-
-    """
-    from esbmtk import Q_, gas_exchange
-
-    if isinstance(pv, str):
-        pv = Q_(pv).to("meter/yr").magnitude
-    elif isinstance(pv, Q_):
-        pv = pv.to("meter/yr").magnitude
-    else:
-        raise ValueError("pv must be quantity or string")
-
-    scale = liquid_reservoir.register.area * pv
-    gas_c = gas_reservoir
-
-    if liquid_reservoir.species.name == "DIC":
-        solubility = liquid_reservoir.register.swc.SA_co2
-        g_c_aq = liquid_reservoir.register.CO2aq
-        a_db = liquid_reservoir.register.swc.co2_a_db
-        a_dg = liquid_reservoir.register.swc.co2_a_dg
-        a_u = liquid_reservoir.register.swc.co2_a_u
-    elif liquid_reservoir.species.name == "O2":
-        solubility = liquid_reservoir.register.swc.SA_o2
-        g_c_aq = liquid_reservoir.register.O2
-        a_db = liquid_reservoir.register.swc.o2_a_db
-        a_dg = liquid_reservoir.register.swc.o2_a_dg
-        a_u = liquid_reservoir.register.swc.o2_a_u
-    else:
-        raise ValueError("flux calculation is only supported for DIC and O2")
-
-    p = (
-        scale,
-        solubility,
-        a_db,
-        a_dg,
-        a_u,
-        gas_reservoir.isotopes,
-        liquid_reservoir.isotopes,
-    )
-
-    return gas_exchange(gas_c.c, liquid_reservoir.c, g_c_aq.c, p)
-
 """
 Carbonate system 3 post processing:
 Currently works in the same manner as carbonate_system_2_post_processng
-"""
 
+"""
 def carbonate_system_3_pp(
     bn: Reservoir | list,  # 2 Reservoir handle
     export_fluxes: float | list,  # 3 CaCO3 export flux as DIC
@@ -528,3 +475,57 @@ def carbonate_system_3_pp(
             label="CaCO3_export",
             plt_units="mol/year",
         )
+
+
+def gas_exchange_fluxes(
+    liquid_reservoir: Species,
+    gas_reservoir: GasReservoir,
+    pv: str,
+):
+    """Calculate gas exchange fluxes for a given reservoir.
+
+    :param liquid_reservoir: Species handle
+    :param gas_reservoir:  Species handle
+    :param pv: piston velocity as string e.g., "4.8 m/d"
+
+    :returns:
+
+    """
+    from esbmtk import Q_, gas_exchange
+
+    if isinstance(pv, str):
+        pv = Q_(pv).to("meter/yr").magnitude
+    elif isinstance(pv, Q_):
+        pv = pv.to("meter/yr").magnitude
+    else:
+        raise ValueError("pv must be quantity or string")
+
+    scale = liquid_reservoir.register.area * pv
+    gas_c = gas_reservoir
+
+    if liquid_reservoir.species.name == "DIC":
+        solubility = liquid_reservoir.register.swc.SA_co2
+        g_c_aq = liquid_reservoir.register.CO2aq
+        a_db = liquid_reservoir.register.swc.co2_a_db
+        a_dg = liquid_reservoir.register.swc.co2_a_dg
+        a_u = liquid_reservoir.register.swc.co2_a_u
+    elif liquid_reservoir.species.name == "O2":
+        solubility = liquid_reservoir.register.swc.SA_o2
+        g_c_aq = liquid_reservoir.register.O2
+        a_db = liquid_reservoir.register.swc.o2_a_db
+        a_dg = liquid_reservoir.register.swc.o2_a_dg
+        a_u = liquid_reservoir.register.swc.o2_a_u
+    else:
+        raise ValueError("flux calculation is only supported for DIC and O2")
+
+    p = (
+        scale,
+        solubility,
+        a_db,
+        a_dg,
+        a_u,
+        gas_reservoir.isotopes,
+        liquid_reservoir.isotopes,
+    )
+
+    return gas_exchange(gas_c.c, liquid_reservoir.c, g_c_aq.c, p)
