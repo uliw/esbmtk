@@ -1,6 +1,6 @@
 """Test complex model calculations."""
 
-import boudreau_2010_test as bd  # import script
+import boudreau_cs3_test as bd  # import script
 import pytest
 
 from esbmtk import carbonate_system_3_pp
