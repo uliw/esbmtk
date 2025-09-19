@@ -482,8 +482,8 @@ def add_carbonate_system_2(**kwargs) -> None:
         "z0",
     ]
 
-    source_box = kwargs.get("source_box", kwargs["r_sb"])
-    this_box = kwargs.get("this_box_box", kwargs["r_db"])
+    source_box = kwargs.get("source_box", kwargs.get("r_sb"))
+    this_box = kwargs.get("this_box", kwargs.get("r_db"))
 
     # we need the reference to the Model in order to set some
     # default values.
