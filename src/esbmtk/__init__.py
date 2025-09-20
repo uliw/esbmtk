@@ -71,6 +71,10 @@ from .carbonate_chemistry import (
     get_hplus as get_hplus,
     get_pco2 as get_pco2,
 )
+from .carbonate_system_4 import (
+    add_carbonate_system_4 as add_carbonate_system_4,
+    carbonate_system_4 as carbonate_system_4,
+)
 from .base_classes import (
     Flux as Flux,
     Sink as Sink,
