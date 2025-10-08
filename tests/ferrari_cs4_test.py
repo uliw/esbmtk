@@ -110,39 +110,29 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
             "sc": "30 Sverdrup",
             "sp": species_list,
         },
-        "H_b_to_D_b@mix_down": {  # High Lat mix down 
-            "ty": "scale_with_concentration",  
-            "sc": "30 Sverdrup",  
-            "sp": species_list,  
-        },
-        "H_b_to_D_b@mix_up": {  # High Lat mix up 
-            "ty": "scale_with_concentration",
-            "sc": "30 Sverdrup",
-            "sp": species_list,
-        },
         "L_b_to_H_b@thc": {  # thc L to H
             "ty": "scale_with_concentration",
-            "sc": "5 Sverdrup",
+            "sc": "25 Sverdrup",
             "sp": species_list,
         },
-        "H_b_to_D_b@thc": {  # thc H to D 
+        "H_b_to_I_b@thc": {  # thc H to D 
             "ty": "scale_with_concentration",
-            "sc": "5 Sverdrup",
+            "sc": "25 Sverdrup",
             "sp": species_list,
         },
-        "D_b_to_L_b@thc": {  # thc D to L 
+        "I_b_to_L_b@thc": {  # thc D to L 
             "ty": "scale_with_concentration",
-            "sc": "5 Sverdrup",
+            "sc": "25 Sverdrup",
             "sp": species_list,
         },
         "I_b_to_D_b@mix_down": {  #Deep-intermediate mixing
             "ty": "scale_with_concentration", 
-            "sc": "1000 Sverdrup",  
+            "sc": "100 Sverdrup",  
             "sp": species_list,  
         },
         "D_b_to_I_b@mix_up": {  #Deep-intermediate mixing
             "ty": "scale_with_concentration",  
-            "sc": "1000 Sverdrup",  
+            "sc": "100 Sverdrup",  
             "sp": species_list, 
         }
     }
@@ -165,14 +155,23 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
     combined into one flux for DIC and one flux for TA.
     """
 
-    M.OM_export = Q_("20 Tmol/yr")  # convert into Quantity so we can multiply
+    M.OM_export = Q_("200 Tmol/yr")  # convert into Quantity so we can multiply
     M.CaCO3_export = Q_("60 Tmol/yr")  # with 2 for the alkalinity term
 
     # Fluxes going into deep box
     connection_dict = {
 
         #Not using POM currently to simplify test model
-        
+        "L_b_to_I_b@POM": {  # DIC from organic matter F5
+            "sp": M.DIC,
+            "ty": "Fixed",
+            "ra": M.OM_export,
+        },
+        "I_b_to_D_b@POM": {  # DIC from organic matter F5
+            "sp": M.DIC,
+            "ty": "Fixed",
+            "ra": 0.25*M.OM_export,
+        },
         "L_b_to_I_b@PIC_DIC": {  # DIC from CaCO3 
             "sp": M.DIC,
             "ty": "Fixed",
@@ -265,11 +264,9 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
         ctype="fixed",
         id="weathering",
     )
-
-    
-
     return M
-run_time = "10 kyr"
+
+run_time = "100 kyr"
 time_step = "100 yr"  # this is max timestep
 rain_ratio = 0.3
 alpha = 0.6
