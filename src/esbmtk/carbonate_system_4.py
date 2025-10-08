@@ -117,8 +117,11 @@ def carbonate_system_4(
     CaCO3_export: float,  # 3 CaCO3 export flux as DIC
     dic_t_db: float | tuple,  # 4 DIC in the deep box
     ta_db: float,  # 5 TA in the deep box
+    dic_t_ib: float | tuple, #DIC in the intermediate box
+    ta_ib, #TA in the intermediate box
     dic_t_sb: float | tuple,  # 6 [DIC] in the surface box
-    hplus_0: float,  # 8 hplus in the deep box at t-1
+    hplus_db_0: float,  # 8 hplus in the deep box at t-1
+    hplus_ib_0: float, # hplus in the intermediate box at t -1
     zsnow: float,  # 9 snowline in meters below sealevel at t-1
     p: tuple,
 ) -> tuple:
@@ -150,12 +153,21 @@ def carbonate_system_4(
     if isotopes:
         dic_db, dic_db_l = dic_t_db
         dic_sb, dic_sb_l = dic_t_sb
+        dic_ib, dic_ib_l = dic_t_ib
     else:
         dic_db = dic_t_db
         dic_sb = dic_t_sb
+        dic_ib = dic_t_ib
 
-    hplus = get_hplus(dic_db, ta_db, max(hplus_0, 1e-12), boron, k1, k1k2, KW, KB)
-    co3 = dic_db / (1 + hplus / k2 + hplus**2 / k1k2)
+    hplus = get_hplus(dic_db, ta_db, max(hplus_db_0, 1e-12), boron, k1, k1k2, KW, KB)
+    hplus_ib = get_hplus(dic_ib, ta_ib, max(hplus_ib_0, 1e-12), boron, k1, k1k2, KW, KB)
+
+    co3_deep = dic_db / (1 + hplus / k2 + hplus**2 / k1k2)
+    co3_int = dic_ib / (1 + hplus_ib / k2 + hplus_ib**2 / k1k2)
+
+    #taking a simple average of the CO3 of both boxes to calculate zsat
+    co3 = 0.5 * (co3_int + co3_deep) 
+    
     
 
     """ --- Compute critical depth intervals eqs after  Boudreau (2010) ---
@@ -181,7 +193,7 @@ def carbonate_system_4(
     if zsat_above_zint:
     # Surface to zsat to zint to zcc
     
-    #define area tables:
+        #define area tables:
         A_z0_zsat = area_table[z0] - area_table[zsat]
         A_zsat_zint = area_table[zsat] - area_table[zint]
         A_zint_zcc = area_table[zint] - area_table[zcc]
@@ -189,8 +201,8 @@ def carbonate_system_4(
         BNS = alpha * A_z0_zsat * B_AD 
     
         #z_sat -> z_cc is split by z_int so BDS needs to be split too
-        diff_co3_int = Csat_table[zsat:zint] - co3
-        diff_co3_deep = Csat_table[zint:zcc] - co3
+        diff_co3_int = Csat_table[zsat:zint] - co3_int
+        diff_co3_deep = Csat_table[zint:zcc] - co3_deep
 
         area_sat_int = area_dz_table[zsat:zint]
         area_int_cc = area_dz_table[zint:zcc]
@@ -207,16 +219,16 @@ def carbonate_system_4(
     else:
     # Surface to zint to zsat to zcc
     
-    #define area tables:
+        #define area tables:
         A_z0_zint = area_table[z0] - area_table[zint]
         A_zint_zsat = area_table[zint] - area_table[zsat]
         A_zsat_zcc = area_table[zsat] - area_table[zcc]
     
-    #z0 -> z_sat is split by z_int so BNS needs to be split also
+        #z0 -> z_sat is split by z_int so BNS needs to be split also
         BNS_int = alpha * A_z0_zint * B_AD
         BNS_deep = alpha * A_zint_zsat * B_AD
 
-        diff_co3 = Csat_table[zsat:zcc] - co3
+        diff_co3 = Csat_table[zsat:zcc] - co3_deep
 
         area_sat_cc = area_dz_table[zsat:zcc]
 
@@ -233,7 +245,7 @@ def carbonate_system_4(
         zsnow = zcc  # reset
     else:
         zsnow = min(zsnow, zmax)  # limit to ocean bottom
-        diff = Csat_table[zcc:int(zsnow)] - co3
+        diff = Csat_table[zcc:int(zsnow)] - co3_deep
         area_cc_snow = area_dz_table[zcc:int(zsnow)]
         BPDC = max(0.0, kc * np.dot(area_cc_snow, diff))
         dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
@@ -241,7 +253,7 @@ def carbonate_system_4(
 
 # H+ concentration rate change 
 #does this need modification re: intermediate box?
-    dCdt_Hplus = hplus - hplus_0
+    dCdt_Hplus = hplus - hplus_db_0
 
 #F_diss_int and F_diss_deep are going to be connected to different boxes:
     if zsat < zint:
@@ -326,14 +338,17 @@ def init_carbonate_system_4(
         r_n=next_box, #sink (RG) of CaCO3 flux associated with intermediate box
         r_b=burial_box, #sink (RG) of undissolved CaCO3 flux
         function_input_data=[  # variable input data
-            export_flux,  # 1
-            this_box.DIC,  # 2
-            this_box.TA,  # 3
-            source_box.DIC,  # 4
-            "Hplus",  # 5
-            "zsnow",  # 6
-            
+            export_flux,         # CaCO3_export
+            next_box.DIC,        # dic_t_db (deep box)
+            next_box.TA,         # ta_db (deep box)
+            this_box.DIC,        # dic_t_ib (intermediate box)
+            this_box.TA,         # ta_ib (intermediate box)
+            source_box.DIC,      # dic_t_sb (surface box)
+            "Hplus",             # hplus_db_0 (deep box H+ at t-1)
+            this_box.swc.hplus,  # hplus_ib_0 (intermediate box H+ at t-1)
+            "zsnow",             # zsnow
         ],
+
         function_params=(  # constant input data
             swc_p,
             cp,
