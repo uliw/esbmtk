@@ -1,6 +1,5 @@
 
 
-
 Seawater and Carbon Chemistry
 -----------------------------
 
@@ -94,7 +93,7 @@ pH
 
 Unless explicitly requested (see above), pH will be reported on the total scale. The hydrogen ion concentration ([H\ :sup:`+`\]) is computed by pyCO2SYS based on the initial DIC and total alkalinity (TA) concentrations. Subsequent hydrogen concentration calculations use the iterative approach of Follows et al. 2005 (`https://doi.org/10.1016/j.ocemod.2005.05.004 <https://doi.org/10.1016/j.ocemod.2005.05.004>`_). 
 
-Provided that the model has terms for DIC and TA, pH calculations for a given :py:class:`esbmtk.extended_classes.Reservoir()` instance are added using the :py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry.add_carbonate_system_1()` function:
+Provided that the model has terms for DIC and TA, pH calculations for a given :py:class:`esbmtk.extended_classes.Reservoir()` instance are added using the :py:func:`esbmtk.carbonate_chemistry.add_carbonate_system_1()` function:
 
 .. code:: ipython
 
@@ -137,7 +136,7 @@ Carbonate burial and dissolution use the parametrization proposed by Boudreau et
 
 - Results will only be correct as long as the depth of the saturation horizon remains below the upper depth datum of the deep-water box. Future versions will address this limitation.
 
-The following figure provides an overview of the parametrizations and variables used by the  :py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry.carbonate_system_2()` and :py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry.add_carbonate_system_2()` functions.
+The following figure provides an overview of the parametrizations and variables used by the  :py:func:`esbmtk.carbonate_chemistry.carbonate_system_2()` and :py:func:`esbmtk.carbonate_chemistry.add_carbonate_system_2()` functions.
 
 .. _boudreau:
 
@@ -145,7 +144,7 @@ The following figure provides an overview of the parametrizations and variables 
     :width: 800
 
 
-    Overview of the parametrizations and variables used by the :py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry.carbonate_system_2()` and :py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry.add_carbonate_system_2()` functions. Image Credit: Tina Tsan & Mahruk Niazi
+    Overview of the parametrizations and variables used by the :py:func:`esbmtk.carbonate_chemistry.carbonate_system_2()` and :py:func:`esbmtk.carbonate_chemistry.add_carbonate_system_2()` functions. Image Credit: Tina Tsan & Mahruk Niazi
 
 Provided a given model has data for DIC & TA, and that the carbonate export flux is known, ``carbonate_system_2`` can be added to a Reservoir instance in the following way:
 
@@ -156,8 +155,8 @@ Provided a given model has data for DIC & TA, and that the carbonate export flux
     export_fluxes: tp.List = M.flux_summary(filter_by="PIC_DIC L_b", return_list=True)
 
     add_carbonate_system_2(
-            r_db=deep_boxes,  # list of reservoir groups
-            r_sb=surface_boxes,  # list of reservoir groups
+            this_box=deep_boxes,  # list of reservoir groups
+            source_box=surface_boxes,  # list of reservoir groups
             carbonate_export_fluxes=export_fluxes,  # list of export fluxes
             z0=-200,  # depth of shelf
             alpha=alpha,  # dissolution coefficient, typically around 0.6
@@ -171,14 +170,16 @@ Notes:
 
 - The total sediment area of a given ``Reservoir`` is known provided the box-geometry was specified correctly.
 
-- The :py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry.carbonate_system_2()` function only returns [H\ :sup:`+`\] and the dissolution flux for  given box. It does not return the burial flux.
+- The :py:func:`esbmtk.carbonate_chemistry.carbonate_system_2()` function only returns [H\ :sup:`+`\] and the dissolution flux for the given box. It does not return the burial flux.
 
-- Please study the actual model implementations provided in the examples folder.
+- Since ``carbonate_system_2`` is based heavily on the Boudreau model, it cannot currently handle carbonate chemistry dynamics for models with more than two vertical ocean boxes, e.g., it cannot be used within a model with a surface, intermediate, as well as deep box.
+
+Please study the actual model implementations provided in the examples folder.
 
 Post-Processing
 ^^^^^^^^^^^^^^^
 
-As with ``carbonate_system_1`` the remaining carbonate species are not part of the equation system, rather they are calculated once a solution has been found. Since the solver does not store the carbonate export fluxes, one first has to calculate the relevant fluxes from the concentration data in the model solution. This is however model dependent (i.e., export productivity as a function of residence time, or as a function of upwelling flux), and as such post-processing of ``carbonate_system_2``  is not done automatically, but has to be initiated manually, e.g., like this:
+As with ``carbonate_system_1``, the remaining carbonate species are not part of the equation system, rather they are calculated once a solution has been found. Since the solver does not store the carbonate export fluxes, one first has to calculate the relevant fluxes from the concentration data in the model solution. This is however model dependent (i.e., export productivity as a function of residence time, or as a function of upwelling flux), and as such post-processing of ``carbonate_system_2``  is not done automatically, but has to be initiated manually, e.g., like this:
 
 .. code:: ipython
 
@@ -203,10 +204,46 @@ This will compute all carbonate species similar to ``carbonate_system_1_pp``, an
 
 see  the :py:func:`esbmtk.post_processing.carbonate_system_2_pp()` function for details.
 
+Carbonate System 3:
+^^^^^^^^^^^^^^^^^^^
+
+**NOTE: this is currently in the early stages of development.**
+
+``carbonate_system_3`` aims to extend the ``carbonate_system_2`` (CS2) code to be able to compute carbonate chemistry dynamics in models with more than two vertical ocean layers, for example, a model with a surface layer (0m to 100m), an intermediate layer (100m to 2000m), and a deep layer (2000m to 6000m). Like CS2, it is also based on the Boudreau (2010) model, but it aims to enable the partitioning of Boudreau's deep box into multiple vertical ocean layers. Its current capabilities are described below.
+
+As of July 2025, CS3 functions almost entirely similarly to CS2, except in that it explicitly computes the "burial flux" (i.e. the carbonate flux that remains undissolved in a given box) and adds it to the reservoir box directly beneath it. 
+
+Carbonate System 3 may be added to a model as follows:
+
+.. code:: ipython
+
+
+    add_carbonate_system_3(
+            source_box=[M.S_b],  # list of reservoir groups; S_b is Surface box
+            this_box=[M.D_b1],  # list of reservoir groups; D_b1 is Deep box 1
+            next_box=[M.D_b2],  # list of reservoir groups; D_b2 is Deep box 2
+            carbonate_export_fluxes=export_fluxes,  # list of export fluxes; declared in the same way as in CS2
+            z0=-200,  # depth of shelf
+            alpha=alpha,  # dissolution coefficient, typically around 0.6
+        )
+    f = M.flux_summary(filter_by="db2_export") #"db2_export" is the flux from D_b1 to D_b2 (i.e. "burial flux")
+    M.D_b2.DIC.lif.append(f) #appends the db2_export flux object to the sink.lif list
+
+Notes:
+
+- At the moment, ``next_box`` must be a Reservoir class object and cannot be a Sink class object. However, one can still use this setup to pass burial flux from an ocean box to a sediment box by defining the sediment box as a Reservoir class object with seawater parameters (T, P, S) exactly equal to the ocean box just above it, and initial DIC and TA set to 0.
+
+- As in CS2, the CS3 code adds carbonate export fluxes to ``this_box``, but relies on a ConnectionProperties instance (with the bypass "bp" keyword) to remove those same fluxes from the source box. However, there is no need to use ConnectionProperties to set up a PIC flux connection between ``this_box`` and ``next_box`` at all, as this is handled entirely by the CS3 code.
+
+Post Processing
+:::::::::::::::
+
+CS3 post-processing currently (As of July 2025) functions in the same manner as CS2 post-processing. The sole difference is the name of the function, which for CS3 is ``carbonate_system_3_pp``.
+
 Gas Exchange
 ~~~~~~~~~~~~
 
-ESBMTK implements gas exchange across the Air-Sea interface as a :py:class:`esbmtk.connections.Species2Species()` instance, between a :py:class:`esbmtk.extended_classes.GasReservoir()` and a :py:class:`esbmtk.base_classes.Species()` instance. In the following example, we first declare a ``Gasreservoir`` and then connect it with a regular surface box. Note that the CO\ :sub:`2`\ gas transfer calculation requires that the respective surface reservoir carries the ``CO2aq`` tracer as calculated by the :py:func:`esbmtk.bio_pump_functions0.carbonate_chemistry_carbonate_system_1.()` function since the gas-transfer depends on the dissolved CO\ :sub:`2`\ rather than on the DIC concentration.
+ESBMTK implements gas exchange across the Air-Sea interface as a :py:class:`esbmtk.connections.Species2Species()` instance, between a :py:class:`esbmtk.extended_classes.GasReservoir()` and a :py:class:`esbmtk.base_classes.Species()` instance. In the following example, we first declare a ``Gasreservoir`` and then connect it with a regular surface box. Note that the CO\ :sub:`2`\ gas transfer calculation requires that the respective surface reservoir carries the ``CO2aq`` tracer as calculated by the :py:func:`esbmtk.carbonate_chemistry_carbonate_system_1.()` function since the gas-transfer depends on the dissolved CO\ :sub:`2`\ rather than on the DIC concentration.
 
 .. code:: ipython
 

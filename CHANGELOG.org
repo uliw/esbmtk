@@ -1,11 +1,83 @@
 * Changelog
-- 0.14.2.8 fixed =reverse_time= display for plots with more than one x-axis. Added unit registered output variables (e.g., adding =_u= to  =M.D_b.PO4.c= than =M.D_b.PO4.c_u= will show the concentration with the units added. Reservoir mass calculations are now updated once integration finishes.) Reading third party generated CSV data is now more robust and aims to detect encoding errors (who knew that some excel versions write UTF-7 ...)
-  New Features:
-  - Gas Exchange Connections now allow the =scale= keyword
-  - Signal, ExternalData, and plot now accept the =reverse_time= keyword
-  - Warnings are now written to the log file
-  - ExternalData now accepts the =plot_args= keyword which allows to pass arbitrary arguments to a plot command in the form of a dictionary (e.g., =plot_args = {"alpha": -.5"}= ).
-- 0.14.2.2 May 1^{st} 2025, mostly  a bugfix release that adds isotope related unit test.
+** 0.14.2.8 Nov 2025
+*** New Features:
+- Gas Exchange Connections now allow the =scale= keyword
+- Signal, ExternalData, and plot now accept the =reverse_time= keyword
+- Warnings are now written to the log file
+- ExternalData now accepts the =plot_args= keyword which allows to pass arbitrary arguments to a plot command in the form of a dictionary (e.g., =plot_args = {"alpha": -.5"}= ).
+- Unit-registered output variables: append _u to reservoir attributes
+  (e.g., M.S_b.c_u, M.S_b.m_u, M.time_u) to retrieve values with units
+  attached.
+- Improved toolchain settings and linting configuration added to
+  pyproject.toml (ruff, basedpyright) and updated requirements for
+  development tooling.
+*** Bug fixes
+:PROPERTIES:
+:CUSTOM_ID: bug-fixes
+:END:
+- Fix reverse_time plot display for figures with multiple x-axes (plots
+  now correctly invert/time-format only axes marked as reversible).
+- Reservoir mass bookkeeping fixed: reservoir mass values are updated at
+  the end of integration and _u suffixed properties reflect units
+  correctly.
+- Multiple plotting fixes: improved unit-conversion logic for plotting
+  functions, fewer formatting errors, and more consistent legends.
+
+
+*** Tests
+:PROPERTIES:
+:CUSTOM_ID: tests
+:END:
+- Added many new integration/unit tests and CSV fixtures under tests/:
+  - Signal/ExternalData parsing and plotting (including =reverse_time=
+    cases).
+  - Isotope-signal handling (=epsilon_only=, mixed units).
+  - Misc. fixes to existing tests to match new behavior.
+
+*** Internal / developer changes
+:PROPERTIES:
+:CUSTOM_ID: internal-developer-changes
+:END:
+- src/esbmtk/*init*.py reorganized --- package public API exports were
+  restructured and some symbol names/locations changed; initialization
+  now uses a centralized unit registry.
+- Added =src/esbmtk/initialize_unit_registry.py= to centralize Q_/ureg.
+- Added =src/esbmtk/version.py= to provide package version without
+  circular imports.
+- Reworked ODE-constant bookkeeping: new toc/doc/gcc mechanism for
+  tracking constants passed to the ODE backend (affects how
+  scale/rate/delta/epsilon constants are added).
+- Replaced many print statements with structured logging (logging
+  module) and improved run() logging + resource reporting.
+- Updated pyproject.toml, requirements.txt, and setup.cfg for Python >=
+  3.12 and new dev dependencies (ruff, basedpyright, sphinx, pytest,
+  tox, etc).
+
+*** Breaking changes / migration notes
+:PROPERTIES:
+:CUSTOM_ID: breaking-changes-migration-notes
+:END:
+- Python requirement: ESBMTK now requires Python 3.12+.
+- Public API reshuffle:
+  - *init* reorganized; some imports that previously came from top-level
+    esbmtk may have moved or been renamed. Users importing internal
+    names should re-check imports 
+  - Unit registry: Q_ and ureg are now provided by
+    =esbmtk.initialize_unit_registry= (available via from esbmtk import
+    Q_, ureg). If you previously created your own UnitRegistry, adopt
+    the package-provided registry.
+- Connections:
+  - Chaining of =scale_with_flux= references is still unsupported and will
+    not work --- do not create flux A scaled by B when B itself is
+    =scale_with_flux= of C.
+- ODE constants and indexing changed:
+  - Connections now register rate/scale/delta/epsilon constants into the
+    global ODE constant table (toc/doc). If you generate or parse the
+    equations file programmatically, check for changed constant
+    indices/keys.
+  
+** Older versions 
+  - 0.14.2.2 May 1^{st} 2025, mostly  a bugfix release that adds isotope related unit test.
 - 0.14.2.1 ESBMTK now requires python 3.12. Cleaned up repository structure. This may result in import errors. Please get in touch if it does. Reworked many class definitions to improve readability and documentation. Fixed a variety of regressions for isotope calculations that were introduces in 0.14.1.x  Added =debug= keyword to the Model object. Expanded the debug information in the equations file. The default solver has changed from BDF to LSODA.
 - 0.14.1.4 Fixed a regression that caused incorrect =zcc= values in the post-processing step. Added  the =reverse_time= keyword to the plot function. This is most useful for models that run forward in time from past starting point.
 - 0.14.1.x reworked the structure of the equations file, as well as the code that generates forcing functions. =scale_by_concentration= connections now correct for density. Both changes results in small changes to the numerical solutions. Also added link to the GMD publication describing the library.
