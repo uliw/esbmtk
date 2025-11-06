@@ -1232,9 +1232,8 @@ class VectorData(esbmtkBase):
             fn = f"{directory}/{prefix}{rn}.csv"  # file name
         else:
             raise SpeciesError(
-                f"Model register keyword must be 'None'/'local' not {
-                    self.sp.mo.register
-                }"
+                "Model register keyword must be 'None' or 'local' "
+                f" not {self.sp.mo.register}"
             )
 
         df: pd.dataframe = DataFrame()

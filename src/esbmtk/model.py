@@ -936,9 +936,8 @@ class Model(esbmtkBase):
         wall_clock_duration = time.time() - wall_clock_start
 
         print(
-            f"\n Execution took {cpu_duration:.2f} CPU seconds, wall time = {
-                wall_clock_duration:.2f
-            } seconds\n"
+            f"\n Execution took {cpu_duration:.2f} CPU seconds, "
+            f"wall time = {wall_clock_duration:.2f} seconds\n"
         )
 
         # Get memory usage
