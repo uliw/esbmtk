@@ -781,9 +781,8 @@ class SpeciesBase(esbmtkBase):
             filename = f"{directory}/{prefix}{reservoir_name}.csv"
         else:
             raise SpeciesError(
-                f"Model register keyword must be 'None'/'local' not {
-                    self.species_properties.model.register
-                }"
+                "Model register keyword must be 'None' or 'local' "
+                f"not {self.species_properties.model.register}"
             )
 
         # Build the dataframe with time and data columns
