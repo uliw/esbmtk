@@ -35,7 +35,7 @@ Reservoir(
 )
 Reservoir(
     name="D_b",
-    volume="100E16 m**3",  # deeb box volume
+    volume="100E16 m**3",  # deep box volume
     concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"},
 )
 ConnectionProperties(  # thermohaline downwelling
