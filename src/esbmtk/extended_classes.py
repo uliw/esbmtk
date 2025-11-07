@@ -2694,24 +2694,55 @@ class ExternalData(esbmtkBase):
 
         if edo.y_as_z:  # ignore y data
             if edo.plot_as_line:
-                axt.plot(
-                    x, edo.y, color=f"C{i + 1}", label=edo.legend_z, **edo.plot_args
-                )
+                if axt == "None":
+                    ax.plot(
+                        x, edo.y, color=f"C{i + 1}", label=edo.legend_z, **edo.plot_args
+                    )
+                else:
+                    axt.plot(
+                        x, edo.y, color=f"C{i + 1}", label=edo.legend_z, **edo.plot_args
+                    )
                 i = i + 2
             else:
-                axt.scatter(x, edo.y, color=f"C{i}", label=edo.legend_z)
+                if axt == "None":
+                    ax.scatter(
+                        x, edo.y, color=f"C{i}", label=edo.legend_z, **edo.plot_args
+                    )
+                else:
+                    axt.scatter(
+                        x, edo.y, color=f"C{i}", label=edo.legend_z, **edo.plot_args
+                    )
                 i = i + 1
         elif edo.zh:  # plot y and z data
             if edo.plot_as_line:
-                ax.plot(x, edo.y * edo.d_scale, color=f"C{i + 1}", label=edo.legend)
-                axt.plot(x, edo.z, color=f"C{i + 2}", label=edo.legend_z)
+                ax.plot(
+                    x,
+                    edo.y * edo.d_scale,
+                    color=f"C{i + 1}",
+                    label=edo.legend,
+                    **edo.plot_args,
+                )
+                if edo.isotopes:
+                    axt.plot(
+                        x, edo.z, color=f"C{i + 2}", label=edo.legend_z, **edo.plot_args
+                    )
                 i = i + 3
             else:
-                ax.scatter(x, edo.y * edo.d_scale, color=f"C{i}", label=edo.legend)
-                axt.scatter(x, edo.z, color=f"C{i + 1}", label=edo.legend_z)
+                ax.scatter(
+                    x,
+                    edo.y * edo.d_scale,
+                    color=f"C{i}",
+                    label=edo.legend,
+                    **edo.plot_args,
+                )
+                axt.scatter(
+                    x, edo.z, color=f"C{i + 1}", label=edo.legend_z, **edo.plot_args
+                )
             i = i + 2
         else:  # plot only y data
-            ax.scatter(x, edo.y * edo.d_scale, color=f"C{i}", label=edo.legend)
+            ax.scatter(
+                x, edo.y * edo.d_scale, color=f"C{i}", label=edo.legend, **edo.plot_args
+            )
             i = i + 1
 
         return i
