@@ -50,7 +50,7 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
 
     So that we can solve dC_dt = C dot flux_values
     """
-    from esbmtk import GasReservoir, Species
+    from esbmtk import GasReservoir, Species, Species2Species
 
     fi = 0
     F_names = []
@@ -552,7 +552,7 @@ def get_regular_flux_eq(
     if flux.serves_as_input or c.signal != "None":
         # Needs full expression with all constants, so that we can
         # reference the expression elsewhere.
-        rhs = toc[c.r_index]  # constant flux -> rhs = c
+        rhs = toc[c.r_index] * toc[c.s_index]  # constant flux -> rhs = c
         if flux.isotopes:
             rhs_l, rhs_out[1], debug_rhs[1] = isotopes_regular_flux(
                 rhs, c, icl, ind3, ind2, CM, toc, flux
@@ -566,7 +566,7 @@ def get_regular_flux_eq(
         # FIXME: moving this to the matrix, creates problems in the
         # isotope module. add second one?
         # CM[:, flux.idx] = CM[:, flux.idx] * toc[c.r_index]
-        rhs = toc[c.r_index]
+        rhs = toc[c.r_index] * toc[c.s_index]
         rhs_out[0] = True
         if flux.isotopes:
             rhs_l, rhs_out[1], debug_rhs[1] = isotopes_regular_flux(
