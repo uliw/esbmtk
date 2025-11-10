@@ -46,13 +46,14 @@ ConnectionProperties(
     sink=M.S_b,  # target of flux
     rate=F_w,  # rate of flux
     id="river",  # connection id
-    ctype="regular",
+    ctype="regular", #connection type
 )
 ConnectionProperties(  # thermohaline downwelling
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
-    scale=thc,
+    scale=thc, #(in sverdrups, i.e. volumetric rate) 
+    #volume / time * concentration (i.e. mass per unit volume) = flux (i.e. mass transfer per unit time)
     id="downwelling_PO4",
 )
 ConnectionProperties(  # thermohaline upwelling
@@ -66,7 +67,8 @@ ConnectionProperties(  #
     source=M.S_b,  # source of flux
     sink=M.D_b,  # target of flux
     ctype="scale_with_concentration",
-    scale=M.S_b.volume / tau,
+    scale=M.S_b.volume / tau, 
+    # volume / time * concentration (i.e. mass per unit volume) = flux (i.e mass transfer per unit time)
     id="primary_production",
     species=[M.PO4],  # apply this only to PO4
 )
@@ -74,7 +76,7 @@ ConnectionProperties(  #
     source=M.D_b,  # source of flux
     sink=M.burial,  # target of flux
     ctype="scale_with_flux",
-    ref_flux=M.flux_summary(filter_by="primary_production",return_list=True)[0],
+    ref_flux="primary_production",
     scale=F_b,
     id="burial",
     species=[M.PO4],

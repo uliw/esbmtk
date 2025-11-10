@@ -107,56 +107,56 @@ class Model(esbmtkBase):
     - Model_Name.list_species() - List all defined species
     - Model_Name.flux_summary() - Display flux information
     - Model_Name.connection_summary() - Display connection information
+
+
+    Parameters
+    ----------
+    **kwargs : dict
+        A dictionary with key-value pairs for model configuration.
+
+    Examples
+    --------
+    >>> esbmtkModel(
+    ...     name="Test_Model",  # required
+    ...     stop="10000 yrs",   # end time
+    ...     max_timestep="1 yr",  # maximum time step
+    ...     element=["Carbon", "Sulfur"]
+    ... )
+
+    Important Parameters
+    -------------------
+    name : str
+        The model name, e.g., "M".
+    mass_unit : str
+        Base mass unit for the model, default is "mol".
+    volume_unit : str
+        Volume unit for the model, default is "liter".
+    element : list or str
+        One or more species names to include in the model.
+    max_timestep : str
+        Limit automatic step size increase (time resolution of the model).
+        Optional, defaults to model duration/100.
+    m_type : str
+        Controls isotope calculation for the entire model.
+        Options: "Not set" (default, isotopes calculated only for reservoirs
+        with isotope keyword), "mass_only", or "both" (overrides reservoir settings).
+    offset : str
+        Offset the time axis by the specified amount when plotting data.
+        For display purposes only, does not affect model calculations.
+    display_precision : float
+        Affects on-screen display of data and sets cutoff for graphical output.
+    opt_k_carbonic : int
+        See https://doi.org/10.5194/gmd-15-15-2022.
+    opt_pH_scale : int
+        pH scale setting: total=1, free=3.
+    debug: bool
+        output debug information
+    debug_equations_file: bool
+        write a debug version of the equations file.
     """
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
-        """Initialize a model instance.
-
-        Parameters
-        ----------
-        **kwargs : dict
-            A dictionary with key-value pairs for model configuration.
-
-        Examples
-        --------
-        >>> esbmtkModel(
-        ...     name="Test_Model",  # required
-        ...     stop="10000 yrs",   # end time
-        ...     max_timestep="1 yr",  # maximum time step
-        ...     element=["Carbon", "Sulfur"]
-        ... )
-
-        Important Parameters
-        -------------------
-        name : str
-            The model name, e.g., "M".
-        mass_unit : str
-            Base mass unit for the model, default is "mol".
-        volume_unit : str
-            Volume unit for the model, default is "liter".
-        element : list or str
-            One or more species names to include in the model.
-        max_timestep : str
-            Limit automatic step size increase (time resolution of the model).
-            Optional, defaults to model duration/100.
-        m_type : str
-            Controls isotope calculation for the entire model.
-            Options: "Not set" (default, isotopes calculated only for reservoirs
-            with isotope keyword), "mass_only", or "both" (overrides reservoir settings).
-        offset : str
-            Offset the time axis by the specified amount when plotting data.
-            For display purposes only, does not affect model calculations.
-        display_precision : float
-            Affects on-screen display of data and sets cutoff for graphical output.
-        opt_k_carbonic : int
-            See https://doi.org/10.5194/gmd-15-15-2022.
-        opt_pH_scale : int
-            pH scale setting: total=1, free=3.
-        debug: bool
-            output debug information
-        debug_equations_file: bool
-            write a debug version of the equations file.
-        """
+        """Initialize a model instance."""
         from importlib.metadata import version
 
         from esbmtk.sealevel import hypsometry
@@ -936,9 +936,8 @@ class Model(esbmtkBase):
         wall_clock_duration = time.time() - wall_clock_start
 
         print(
-            f"\n Execution took {cpu_duration:.2f} CPU seconds, wall time = {
-                wall_clock_duration:.2f
-            } seconds\n"
+            f"\n Execution took {cpu_duration:.2f} CPU seconds, "
+            f"wall time = {wall_clock_duration:.2f} seconds\n"
         )
 
         # Get memory usage

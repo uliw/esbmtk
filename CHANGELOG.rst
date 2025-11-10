@@ -5,14 +5,117 @@
 1 Changelog
 -----------
 
-- 0.14.2.8 fixed ``reverse_time`` display for plots with more than one x-axis. Added unit registered output variables (e.g., adding ``_u`` to  ``M.D_b.PO4.c`` than ``M.D_b.PO4.c_u`` will show the concentration with the units added. Reservoir mass calculations are now updated once integration finishes.) Reading third party generated CSV data is now more robust and aims to detect encoding errors (who knew that some excel versions write UTF-7 ...)
-  New Features:
+1.1 0.14.2.8 Nov 2025
+~~~~~~~~~~~~~~~~~~~~~
 
-  - Gas Exchange Connections now allow the ``scale`` keyword
+1.1.1 New Features:
+^^^^^^^^^^^^^^^^^^^
 
-  - Signal, ExternalData, and plot now accept the ``reverse_time`` keyword
+- Gas Exchange Connections now allow the ``scale`` keyword
 
-  - Warnings are now written to the log file
+- Signal, ExternalData, and plot now accept the ``reverse_time`` keyword
+
+- Warnings are now written to the log file
+
+- ExternalData now accepts the ``plot_args`` keyword which allows to pass arbitrary arguments to a plot command in the form of a dictionary (e.g., ``plot_args = {"alpha": -.5"}`` ).
+
+- Unit-registered output variables: append \_u to reservoir attributes
+  (e.g., M.S\ :sub:`b.c`\ \ :sub:`u`\, M.S\ :sub:`b.m`\ \ :sub:`u`\, M.time\ :sub:`u`\) to retrieve values with units
+  attached.
+
+- Improved toolchain settings and linting configuration added to
+  pyproject.toml (ruff, basedpyright) and updated requirements for
+  development tooling.
+
+.. _bug-fixes:
+
+1.1.2 Bug fixes
+^^^^^^^^^^^^^^^
+
+- Fix reverse\ :sub:`time`\ plot display for figures with multiple x-axes (plots
+  now correctly invert/time-format only axes marked as reversible).
+
+- Reservoir mass bookkeeping fixed: reservoir mass values are updated at
+  the end of integration and \_u suffixed properties reflect units
+  correctly.
+
+- Multiple plotting fixes: improved unit-conversion logic for plotting
+  functions, fewer formatting errors, and more consistent legends.
+
+.. _tests:
+
+1.1.3 Tests
+^^^^^^^^^^^
+
+- Added many new integration/unit tests and CSV fixtures under tests/:
+
+  - Signal/ExternalData parsing and plotting (including ``reverse_time``
+    cases).
+
+  - Isotope-signal handling (``epsilon_only``, mixed units).
+
+  - Misc. fixes to existing tests to match new behavior.
+
+.. _internal-developer-changes:
+
+1.1.4 Internal / developer changes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- src/esbmtk/\*init\*.py reorganized --- package public API exports were
+  restructured and some symbol names/locations changed; initialization
+  now uses a centralized unit registry.
+
+- Added ``src/esbmtk/initialize_unit_registry.py`` to centralize Q\_/ureg.
+
+- Added ``src/esbmtk/version.py`` to provide package version without
+  circular imports.
+
+- Reworked ODE-constant bookkeeping: new toc/doc/gcc mechanism for
+  tracking constants passed to the ODE backend (affects how
+  scale/rate/delta/epsilon constants are added).
+
+- Replaced many print statements with structured logging (logging
+  module) and improved run() logging + resource reporting.
+
+- Updated pyproject.toml, requirements.txt, and setup.cfg for Python >=
+  3.12 and new dev dependencies (ruff, basedpyright, sphinx, pytest,
+  tox, etc).
+
+.. _breaking-changes-migration-notes:
+
+1.1.5 Breaking changes / migration notes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Python requirement: ESBMTK now requires Python 3.12+.
+
+- Public API reshuffle:
+
+  - **init** reorganized; some imports that previously came from top-level
+    esbmtk may have moved or been renamed. Users importing internal
+    names should re-check imports
+
+  - Unit registry: Q\_ and ureg are now provided by
+    ``esbmtk.initialize_unit_registry`` (available via from esbmtk import
+    Q\_, ureg). If you previously created your own UnitRegistry, adopt
+    the package-provided registry.
+
+- Connections:
+
+  - Chaining of ``scale_with_flux`` references is still unsupported and will
+    not work --- do not create flux A scaled by B when B itself is
+    ``scale_with_flux`` of C.
+
+- ODE constants and indexing changed:
+
+  - Connections now register rate/scale/delta/epsilon constants into the
+    global ODE constant table (toc/doc). If you generate or parse the
+    equations file programmatically, check for changed constant
+    indices/keys.
+
+1.2 Older versions
+~~~~~~~~~~~~~~~~~~
+
+  - ExternalData now accepts the ``plot_args`` keyword which allows to pass arbitrary arguments to a plot command in the form of a dictionary (e.g., ``plot_args = {"alpha": -.5"}`` ).
 
 - 0.14.2.2 May 1\ :sup:`st`\ 2025, mostly  a bugfix release that adds isotope related unit test.
 

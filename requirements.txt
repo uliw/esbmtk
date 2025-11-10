@@ -11,7 +11,4 @@ sys
 io
 setuptools
 importlib-metadata
-tox
-sphinx
-ruff
-pytest
+

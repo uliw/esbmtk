@@ -11,7 +11,7 @@ Installation
 Conda
 ^^^^^
 
-ESBMTK is available via through the conda-forge channel `https://conda-forge.org/ <https://conda-forge.org/>`_
+ESBMTK is available via the conda-forge channel `https://conda-forge.org/ <https://conda-forge.org/>`_
 Assuming you install into a new virtual environment the following should install the ESBMTK framework
 
 .. code:: sh
@@ -57,7 +57,7 @@ and for the deep ocean,
     \frac{d[PO_{4}]_{D}}{dt}= \frac{F_{POP} + F_d - F_u - F_b}{V_D}
 
 
-which is easily encoded as a Python function
+which is easily encoded as a Python function:
 
 .. code:: ipython
 
@@ -174,7 +174,7 @@ In the first step, one needs to define a model object that describes fundamental
     )
 
 Next we use the :py:class:`esbmtk.model.Model()`  class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
-Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/l' rather than mol/m\*\*3 or 'kg/s'. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. So your mileage may vary if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.
+Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/kg' rather than mol/m\*\*3 or 'kg/s'. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. So your mileage may vary if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.
 
 .. code:: ipython
     :name: p2
@@ -204,7 +204,7 @@ To avoid this we have to manually parse the string into a quantity. This is done
     tau = Q_("100 years")
     tau * 12
 
-Most ESBMTK classes accept quantities, strings that represent quantities as well as numerical values. Weathering and burial fluxes are often defined in ``mol/year``, whereas ocean models use ``kg/year``. ESBMTK provides a method (``set_flux()`` )  that will automatically convert the input into the correct units. In this example, it is not necessary since the flux and the model both use ``mol``. It is however good practice to rely on the automatic conversion. Note that it makes a difference for the mol to kilogram conversion whether one uses ``M.P`` or ``M.PO4`` as the reference species!
+Most ESBMTK classes accept quantities, strings that represent quantities, as well as numerical values. Weathering and burial fluxes are often defined in ``mol/year``, whereas ocean models use ``kg/year``. ESBMTK provides a method (``set_flux()`` )  that will automatically convert the input into the correct units. In this example, it is not necessary since the flux and the model both use ``mol``. It is however good practice to rely on the automatic conversion. Note that it makes a difference for the mol to kilogram conversion whether one uses ``M.P`` or ``M.PO4`` as the reference species!
 
 .. code:: ipython
     :name: p4
@@ -244,7 +244,7 @@ To set up the model geometry, we first use the :py:class:`esbmtk.base_classes.So
 Model processes
 ^^^^^^^^^^^^^^^
 
-For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework, this is accomplished through the :py:class:`esbmtk.connections.Species2Species()` class. To connect the weathering flux from the source object (M.w) to the surface ocean (M.S\ :sub:`b`\) we declare a connection instance describing this relationship as follows:
+For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework, this is accomplished through the :py:class:`esbmtk.connections.Species2Species()` class or the :py:class:`esbmtk.connections.ConnectionProperties()` class. To connect the weathering flux from the source object (M.weathering) to the surface ocean (M.S\ :sub:`b`\) we declare a connection instance describing this relationship as follows:
 
 .. code:: ipython
     :name: p6
@@ -254,12 +254,14 @@ For many models, processes can mapped as the transfer of mass from one box to th
         sink=M.S_b,  # target of flux
         rate=F_w,  # rate of flux
         id="river",  # connection id
-        ctype="regular",
+        ctype="regular", #connection type
     )
 
 Unless the ``register`` keyword is given, connections will be automatically registered with the parent of the source, i.e., the model ``M``. Unless explicitly given through the ``name`` keyword, connection names will be automatically constructed from the names of the source and sink instances. However, it is a good habit to provide the ``id`` keyword to keep connections separate in cases where two reservoir instances share more than one connection. The list of all connection instances can be obtained from the model object (see below).
 
-To map the process of thermohaline circulation, we connect the surface and deep ocean boxes using a connection type that scales the mass transfer as a function of the concentration in a given reservoir (``ctype ="scale_with_concentration"`` ). The concentration data is taken from the reference reservoir which defaults to the source reservoir. As such, in most cases, the ``ref_reservoirs`` keyword can be omitted. The ``scale`` keyword can be a string or a numerical value. If it is provided as a string ESBMTK will map the value into model units. Note that the connection class does not require the ``name`` keyword. Rather the name is derived from the source and sink reservoir instances. Since reservoir instances can have more than one connection (i.e., surface to deep via downwelling, and surface to deep via primary production), it is required to set the ``id`` keyword.
+The connection type ``ctype = "regular"`` or ``ctype = "fixed"`` is used when connecting reservoirs with a fixed rate (eg: F\ :sub:`w`\ = 45 Gmol/year, as defined above). However, we may also create a concentration-dependent flux connection. To map the process of thermohaline circulation, for example, we connect the surface and deep ocean boxes using a connection type that scales the mass transfer as a function of the concentration in a given reservoir (``ctype ="scale_with_concentration"`` ). 
+
+The concentration data is taken from the reference reservoir, which by default is the source reservoir. As such, in most cases, the ``ref_reservoirs`` keyword can be omitted. Note that the connection class does not require the ``name`` keyword. Rather, the name is derived from the source and sink reservoir instances. Since reservoir instances can have more than one connection (i.e., surface to deep via downwelling, and surface to deep via primary production), it is required to set the ``id`` keyword.
 
 .. code:: ipython
     :name: p7
@@ -268,7 +270,8 @@ To map the process of thermohaline circulation, we connect the surface and deep 
         source=M.S_b,  # source of flux
         sink=M.D_b,  # target of flux
         ctype="scale_with_concentration",
-        scale=thc,
+        scale=thc, #(in sverdrups, i.e. volumetric rate) 
+        #volume / time * concentration (i.e. mass per unit volume) = flux (i.e. mass transfer per unit time)
         id="downwelling_PO4",
     )
     ConnectionProperties(  # thermohaline upwelling
@@ -279,6 +282,8 @@ To map the process of thermohaline circulation, we connect the surface and deep 
         id="upwelling_PO4",
     )
 
+As seen above, the ``scale`` keyword can be a string or a numerical value. If it is provided as a string, ESBMTK will map the value into model units, i.e., the toolkit automatically handles unit conversions when scaling. For example, if concentration is described in mol/kg instead of mol/l, the above code for thermohaline circulation will automatically use the density of the relevant reservoirs to calculate the correct flux.
+
 There are several ways to define biological export production, e.g., as a function of the upwelling PO\ :sub:`4`\, or as a function of the residence time of PO\ :sub:`4`\ in the surface ocean. Here we follow Glover (2011) and use the residence time :math:`\tau` = 100 years. Note that the below code species explicitly specifies the species that is affected by this process.
 
 .. code:: ipython
@@ -288,19 +293,13 @@ There are several ways to define biological export production, e.g., as a functi
         source=M.S_b,  # source of flux
         sink=M.D_b,  # target of flux
         ctype="scale_with_concentration",
-        scale=M.S_b.volume / tau,
+        scale=M.S_b.volume / tau, 
+        # volume / time * concentration (i.e. mass per unit volume) = flux (i.e mass transfer per unit time)
         id="primary_production",
         species=[M.PO4],  # apply this only to PO4
     )
 
-We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity or use the previously calculated flux. We can query the export productivity using the ``id_string`` of the above connection with the
-:py:meth:`esbmtk.model.Model.flux_summary()` method of the model instance:
-
-.. code:: ipython
-
-    M.flux_summary(filter_by="primary_production", return_list=True)[0]
-
-The ``flux_summary()`` method will return a list of matching fluxes but since there is only one match, we can simply use  the first result, and use it to define the phosphor burial as a consequence of export production in the following way:
+We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity or use the previously calculated flux via ``ctype ="scale_with_flux"`` and ``ref_flux``.
 
 .. code:: ipython
     :name: p9
@@ -309,12 +308,13 @@ The ``flux_summary()`` method will return a list of matching fluxes but since th
         source=M.D_b,  # source of flux
         sink=M.burial,  # target of flux
         ctype="scale_with_flux",
-        ref_flux=M.flux_summary(filter_by="primary_production",return_list=True)[0],
+        ref_flux="primary_production",
         scale=F_b,
         id="burial",
         species=[M.PO4],
     )
 
+Note that it is currently not possible to chain ``scale_with_flux`` references, e.g., referencing ``f1`` to calculate ``f2`` will work, but referencing ``f2`` to calculate ``f3`` will fail. Rather, calculate ``f3`` from ``f1``.
 Running the above code (see the file ``po4_1.py`` at `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_) and results in the following graph:
 
 .. _po41:

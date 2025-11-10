@@ -65,28 +65,37 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
             "P": 5,
             "S": 35,
         },
-        "I_b": {  
-            "c": {M.DIC: "2291 umol/kg", M.TA: "2399 umol/kg"}, 
-            "g": {"area": "3.36e14m**2", "volume": "0.43e18 m**3"}, #1/3rd of the Boudreau deep box
+        "I_b": {
+            "c": {M.DIC: "2291 umol/kg", M.TA: "2399 umol/kg"},
+            "g": {
+                "area": "3.36e14m**2",
+                "volume": "0.43e18 m**3",
+            },  # 1/3rd of the Boudreau deep box
             "T": 5,
             "P": 80,
             "S": 35,
-        }, 
-        "D_b": { #Deep box 
-            "c":{M.DIC: "2291 umol/kg", M.TA: "2399 umol/kg"},
-            "g":{"area": "3.36e14m**2", "volume": "0.86e18 m**3"}, #2/3rds of the Boudreau deep box
+        },
+        "D_b": {  # Deep box
+            "c": {M.DIC: "2291 umol/kg", M.TA: "2399 umol/kg"},
+            "g": {
+                "area": "3.36e14m**2",
+                "volume": "0.86e18 m**3",
+            },  # 2/3rds of the Boudreau deep box
             "T": 2,
             "P": 240,
             "S": 35,
         },
-        "B_b": { #Burial box - defined as an ocean reservoir because CS4 cannot currently work with Sink objects
-            "c":{M.DIC: "0 umol/kg", M.TA: "0 umol/kg"},
-            "g":{"area": "3.36e14m**2", "volume": "1.4e17 m**3"}, #Based on a sediment depth of approx 400m 
+        "B_b": {  # Burial box - defined as an ocean reservoir because CS4 cannot currently work with Sink objects
+            "c": {M.DIC: "0 umol/kg", M.TA: "0 umol/kg"},
+            "g": {
+                "area": "3.36e14m**2",
+                "volume": "1.4e17 m**3",
+            },  # Based on a sediment depth of approx 400m
             "T": 2,
             "P": 240,
             "S": 35,
         },
-         # sources and sinks
+        # sources and sinks
         "Fw": {"ty": "Source", "sp": [M.DIC, M.TA]},
         "Fb": {"ty": "Sink", "sp": [M.DIC, M.TA]},
     }
@@ -100,12 +109,12 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
     """
     connection_dict = {
         # source_to_sink@id
-        "H_b_to_I_b@mix_down": {  # High Lat mix down 
+        "H_b_to_I_b@mix_down": {  # High Lat mix down
             "ty": "scale_with_concentration",  # type
             "sc": "30 Sverdrup",  # scale
             "sp": species_list,  # list of affected species
         },
-        "H_b_to_I_b@mix_up": {  # High Lat mix up 
+        "H_b_to_I_b@mix_up": {  # High Lat mix up
             "ty": "scale_with_concentration",
             "sc": "30 Sverdrup",
             "sp": species_list,
@@ -115,26 +124,26 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
             "sc": "25 Sverdrup",
             "sp": species_list,
         },
-        "H_b_to_I_b@thc": {  # thc H to D 
+        "H_b_to_I_b@thc": {  # thc H to D
             "ty": "scale_with_concentration",
             "sc": "25 Sverdrup",
             "sp": species_list,
         },
-        "I_b_to_L_b@thc": {  # thc D to L 
+        "I_b_to_L_b@thc": {  # thc D to L
             "ty": "scale_with_concentration",
             "sc": "25 Sverdrup",
             "sp": species_list,
         },
-        "I_b_to_D_b@mix_down": {  #Deep-intermediate mixing
-            "ty": "scale_with_concentration", 
-            "sc": "100 Sverdrup",  
-            "sp": species_list,  
+        "I_b_to_D_b@mix_down": {  # Deep-intermediate mixing
+            "ty": "scale_with_concentration",
+            "sc": "100 Sverdrup",
+            "sp": species_list,
         },
-        "D_b_to_I_b@mix_up": {  #Deep-intermediate mixing
-            "ty": "scale_with_concentration",  
-            "sc": "100 Sverdrup",  
-            "sp": species_list, 
-        }
+        "D_b_to_I_b@mix_up": {  # Deep-intermediate mixing
+            "ty": "scale_with_concentration",
+            "sc": "100 Sverdrup",
+            "sp": species_list,
+        },
     }
     create_bulk_connections(connection_dict, M)
 
@@ -160,8 +169,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
 
     # Fluxes going into deep box
     connection_dict = {
-
-        #Not using POM currently to simplify test model
+        # Not using POM currently to simplify test model
         "L_b_to_I_b@POM": {  # DIC from organic matter F5
             "sp": M.DIC,
             "ty": "Fixed",
@@ -170,15 +178,15 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
         "I_b_to_D_b@POM": {  # DIC from organic matter F5
             "sp": M.DIC,
             "ty": "Fixed",
-            "ra": 0.25*M.OM_export,
+            "ra": 0.25 * M.OM_export,
         },
-        "L_b_to_I_b@PIC_DIC": {  # DIC from CaCO3 
+        "L_b_to_I_b@PIC_DIC": {  # DIC from CaCO3
             "sp": M.DIC,
             "ty": "Fixed",
             "ra": M.CaCO3_export,
             "bp": "sink",
         },
-        "L_b_to_I_b@PIC_TA": {  # TA from CaCO3 
+        "L_b_to_I_b@PIC_TA": {  # TA from CaCO3
             "sp": M.TA,
             "ty": "Fixed",
             "ra": M.CaCO3_export * 2,
@@ -206,9 +214,9 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
     ef = M.flux_summary(filter_by="PIC_DIC", return_list=True)
     add_carbonate_system_1(surface_boxes)
 
-    add_carbonate_system_4(  
+    add_carbonate_system_4(
         source_box=[M.L_b],
-        this_box=[M.I_b], 
+        this_box=[M.I_b],
         next_box=[M.D_b],
         burial_box=[M.B_b],
         carbonate_export_fluxes=ef,
@@ -217,11 +225,9 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
         alpha=alpha,
     )
 
-    f = M.flux_summary(filter_by="burial", return_list=True) 
+    f = M.flux_summary(filter_by="burial", return_list=True)
     M.B_b.DIC.lif.append(f)
-    
 
-    
     # -------------------- Atmosphere -------------------------
     GasReservoir(
         name="CO2_At",
@@ -266,6 +272,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
     )
     return M
 
+
 run_time = "100 kyr"
 time_step = "100 yr"  # this is max timestep
 rain_ratio = 0.3
@@ -276,12 +283,11 @@ M = initialize_model(rain_ratio, alpha, run_time, time_step)
 
 M.run()
 
-#calculated for testing/sanity checks:
+# calculated for testing/sanity checks:
 dic_conc_i_b = M.I_b.DIC.c  # returns time series of DIC concentration
 dic_conc_d_b = M.D_b.DIC.c  # returns time series of DIC concentration
 
 print(f"Final DIC concentration in I_b: {dic_conc_i_b[-1]}")
 print(f"Final DIC concentration in D_b: {dic_conc_d_b[-1]}")
 
-M.plot([M.L_b.DIC, M.I_b.DIC, M.D_b.DIC, M.B_b.DIC])
-
+# M.plot([M.L_b.DIC, M.I_b.DIC, M.D_b.DIC, M.B_b.DIC])

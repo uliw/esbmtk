@@ -1,6 +1,5 @@
 
 
-
 Extending ESBMTK
 ----------------
 
@@ -19,7 +18,7 @@ ESBMTK uses the :py:class:`esbmtk.base_classes.SpeciesProperties()` and :py:clas
     # Access using shorthand
     print(M.DIC)
 
-The distinction between ElementProperties and SpeciesProperties exists to group information that is common to all species of a given element. The current entry for Oxygen reads, e.g., like this
+The distinction between \`ElementProperties\` and \`SpeciesProperties\` exists to group information that is common to all species of a given element. The current entry for Oxygen reads, e.g., like this
 
 .. code:: ipython
 
@@ -196,6 +195,8 @@ ESBMTK needs to import this function into the code that builds the equation syst
 
 Note that the last argument can also be a list of function names.
 
+The same may also be done by modifying the ``__init__.py`` file in the locally-hosted ESBMTK source code, and using the standard python syntax of ``from file_name.py import function_name as function_alias``.
+
 Next, we need to create code that maps the model variables required by ``my_burial()`` to the actual function call. Most of this work is done by the :py:class:`esbmtk.extended_classes.ExternalCode()` class. In the following example, we wrap this task into a dedicated function, but this is not a hard requirement. I add this function to the ``my_functions.py`` file, but you can also keep it with the code that defines the model.  Since we want to use this function to calculate a flux between two reservoirs (or a sink/source), we need to pass the source and sink reservoirs, as well as the species and the scale information, to ``add_my_burial()``.
 
 Notes on the below code:
@@ -264,12 +265,18 @@ Once these functions are defined, we can use them in the model definition as fol
 
 Note that  ``M.D_b.volume.magnitude`` is not a number but a quantity. So one needs to query the numerical value with ``.magnitude``  or add code to  ``add_my_burial`` to query the type of the input arguments and convert as necessary.
 
+Also note that if introducing new keywords that are not already defined within the relevant ESBMTK class, it may be necessary to modify ``ExtendedClasses.py`` in the locally-hosted ESBMTK source code. 
+
 The file ``user_defined_functions.py`` in the ``examples`` directory shows a working example. 
 
 Debugging custom function integration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The current custom function integration interface is not very user-friendly and often requires investigating the actual ``equations.py`` file. In the default operating mode, ESBMTK will recreate this file for each model run, so that print statements and breakpoints that have been placed in ``equations.py`` have no effect.
+The current custom function integration interface is not very user-friendly and often requires investigating the actual ``equations.py`` file. The equations file is generated via setting ``M.debug_equations_file=True`` before running the model. 
+
+The flux connections for any particular reservoir box and associated species (e.g., ``M.box_name.species``) can be inspected by calling  ``M.box_name.species.flux_summary()`` in the python console after the model run is finished. This will show all flux connections that are registered with the reservoir, and if the custom function has been successfully registered, this should include the fluxes created by the custom function.
+
+One can also add print statements into the equations.py file in order to obtain the flux values for any specific flux for each time-step. In the default operating mode, ESBMTK will recreate the equations.py file for each model run, so that print statements and breakpoints that have been placed in ``equations.py`` have no effect.
 Use the ``parse_model`` keyword in the model instance to keep the edited ``equations.py`` for the next run:
 
 .. code:: ipython

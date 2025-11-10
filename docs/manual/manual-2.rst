@@ -65,8 +65,8 @@ The original signal data (as read from a csv etc.) is available through the ``.s
 Working with multiple species
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The basic building blocks introduced so far, are sufficient to create a single species model. Adding further species, is straightforward. First one needs to import the species definitions. They than can be simply used by extending the dictionaries and lists used in the previous example.
-Using the previous example of a simple P-cycle model, we now express the P-cycling as a function of photosynthetic organic matter (OM) production and remineralization. First, we import the new classes and we additionally load the species definitions for carbon (this code is available as ``po4_3.p4`` see `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_).
+The basic building blocks introduced so far are sufficient to create a single species model. Adding further species is straightforward. First one needs to import the species definitions. They than can be simply used by extending the dictionaries and lists used in the previous example.
+Using the previous example of a simple P-cycle model, we now express the P-cycling as a function of photosynthetic organic matter (OM) production and remineralization. First, we import the new classes and we additionally load the species definitions for carbon (this code is available as ``po4_3.py`` see `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_).
 
 .. code:: ipython
     :name: po43_1
@@ -108,7 +108,7 @@ Using the previous example of a simple P-cycle model, we now express the P-cycli
     )
     Reservoir(
         name="D_b",
-        volume="100E16 m**3",  # deeb box volume
+        volume="100E16 m**3",  # deep box volume
         concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"},
     )
 
@@ -132,7 +132,7 @@ The :py:class:`esbmtk.connections.ConnectionProperties.()` class definition is e
         id="thc_down",
     )
 
-It is also possible, to specify individual rates or scales using a dictionary, as in this example that sets two different weathering fluxes:
+It is also possible to specify individual rates or scales using a dictionary, as in this example that sets two different weathering fluxes:
 
 .. code:: ipython
     :name: po43_3
@@ -204,9 +204,11 @@ which results in the below plot. The full code is available in the examples dire
 Using many boxes
 ~~~~~~~~~~~~~~~~
 
-Using the ESBMTK classes introduced thus far is sufficient to build complex models. However, it is beneficial to leverage Python syntax to create utility functions that help reduce overly verbose code. The ESBMTK library includes several routines that aid in this process; however, they are not part of the core API, are not yet well documented, and have not undergone extensive testing. The following provides a brief introduction, but it may be useful to examine the code for the Boudreau 2010 and LOSCAR-type models in the example directory, as all of these make significant use of the Python dictionary class.
+Using the ESBMTK classes introduced thus far is sufficient to build complex models. However, it is beneficial to leverage Python syntax to create utility functions that help reduce overly verbose code. The ESBMTK library includes several routines that aid in this process; however, they are not part of the core API, are not yet well documented, and have not undergone extensive testing. The following provides a brief introduction, but it may be useful to examine the code for the Boudreau 2010 model in the example directory, as it makes significant use of the Python dictionary class.
 
-For these functions to operate correctly, box names must adhere to the following template: ``Area_depth``, such as ``L_sb`` for a low latitude surface water box or ``D_db`` for a deep water box. While the actual names are flexible, the underscore is utilized to distinguish between ocean area and depth interval. The following code examples demonstrate how to create multiple boxes simultaneously by first defining a dictionary containing the box geometry and initial values, followed by the :py:class:`esbmtk.utility_functions.initialize_reservoirs()` function to instantiate the corresponding ``Reservoir`` objects. The ``Boudrea2010.py`` example available at `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_ illustrates a practical application of this approach.
+For these functions to operate correctly, box names must adhere to the following template: ``Area_depth``, such as ``L_sb`` for a low latitude surface water box or ``D_db`` for a deep water box. While the actual names are flexible, the underscore is utilized to distinguish between ocean area (eg. low-latitude, high-latitude, etc.) and depth interval (eg. surface, intermediate, deep, etc.). 
+
+The following code examples demonstrate how to create multiple boxes simultaneously by first defining a dictionary containing the box geometry and initial values, followed by the :py:class:`esbmtk.utility_functions.initialize_reservoirs()` function to instantiate the corresponding ``Reservoir`` objects. The ``Boudreau2010.py`` example available at `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_ illustrates a practical application of this approach.
 
 .. code:: ipython
 
@@ -238,7 +240,9 @@ For these functions to operate correctly, box names must adhere to the following
     # Instantiate Reservoir objects        
     species_list = initialize_reservoirs(M, box_parameters)
 
-Similarly, we can leverage  Python dictionaries to set up the transport matrix. The dictionary key must use the following template: ``boxname_to_boxname@id`` where the ``id`` is used similarly to the connection id in the ``Species2Species`` and ``ConnectionProperties`` classes. So to specify thermohaline upwelling from the Atlantic deep water to the Atlantic intermediate water you would use ``A_db_to_A_ib@thc``  as the dictionary key, followed by the rate. The following examples define the thermohaline transport in a LOSCAR-type model:
+Similarly, we can leverage  Python dictionaries to set up the transport matrix. The dictionary key must use the following template: ``boxname_to_boxname@id`` where the ``id`` is used similarly to the connection id in the ``Species2Species`` and ``ConnectionProperties`` classes. 
+
+So to specify, for example, thermohaline upwelling from the Atlantic deep water to the Atlantic intermediate water, you would use ``A_db_to_A_ib@thc``  as the dictionary key, followed by the rate. The following examples define the thermohaline transport in a LOSCAR-type model (based on `https://gmd.copernicus.org/articles/5/149/2012/ <https://gmd.copernicus.org/articles/5/149/2012/>`_):
 
 .. code:: ipython
 
@@ -277,7 +281,7 @@ to create the actual connections we need to:
     connection_dictionary = build_ct_dict(thx_dict, species_names)
     create_bulk_connections(connection_dictionary, M, mt="1:1")
 
-In the following example, we build the ``connection_dictinary`` in a more explicit way to define primary production as a function of P upwelling: The first line finds all the upwelling fluxes, and we can then use them as an argument in the ``connection_dictionary`` definition:
+In the following example, we build the ``connection_dictionary`` in a more explicit way to define primary production as a function of P upwelling: the first line finds all the upwelling fluxes, and we can then use them as an argument in the ``connection_dictionary`` definition:
 
 .. code:: ipython
 
@@ -285,12 +289,12 @@ In the following example, we build the ``connection_dictinary`` in a more explic
     pfluxes = M.flux_summary(filter_by="PO4_mix_up", exclude="H_", return_list=True)
 
     # define export productivity in the high latitude box
-    PO4_ex = Q_(f"{1.8 * M.H_sb.area/M.PC_ratio} mol/a")
+    PO4_ex = Q_(f"{1.8 * M.H_sb.area/M.PC_ratio} mol/a") #PC ratio = Phosphorus:Carbon ratio
 
     c_dict = {  # Surface box to ib, about 78% is remineralized in the ib
         ("A_sb_to_A_ib@POM_P", "I_sb_to_I_ib@POM_P", "P_sb_to_P_ib@POM_P"): {
             "ty": "scale_with_flux",
-            "sc": M.PUE * M.ib_remin,
+            "sc": M.PUE * M.ib_remin, #PUE = Phosphorus Utilization Efficiency 
             "re": pfluxes,
             "sp": M.PO4,
         },  # surface box to deep box

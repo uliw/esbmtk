@@ -11,3 +11,4 @@ Contributors
 * Bernardo S. Chede <https://github.com/bechedeuff>
 * Magnus Roland Marun <https://github.com/maagusrm>
 * Morgan Wolfe <https://github.com/Morgan-Wolfe>
+* Atlas Changulani <https://github.com/theatlasexperiment>   
