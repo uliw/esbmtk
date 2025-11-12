@@ -1713,6 +1713,7 @@ class Flux(esbmtkBase):
             Species,
             Species2Species,
         )
+        from esbmtk.utility_functions import get_imass
 
         # provide a dict of all known keywords and their type
         self.defaults: dict[str, list[any, tuple]] = {
@@ -1768,9 +1769,8 @@ class Flux(esbmtkBase):
         elif isinstance(self.rate, int | float):
             self.rate: float = self.rate
 
-        li = get_l_mass(self.rate, self.delta, self.sp.r) if self.delta else 0
-        # self.fa: NDArrayFloat = np.asarray([self.rate, li])
-        self.fa: NDArrayFloat = np.asarray([li, self.rate - li])
+        self.fa = get_imass(self.rate, self.delta, self.sp.r) if self.delta else 0
+        # self.fa: NDArrayFloat = np.asarray([li, hi])
 
         # in case we want to keep the flux data
         if self.save_flux_data:
@@ -1794,7 +1794,7 @@ class Flux(esbmtkBase):
             self.l = np.zeros(2)
 
             if self.rate != 0:
-                self.fa[1] = get_l_mass(self.fa[0], self.delta, self.species.r)
+                self.fa = get_imass(self.rate, self.delta, self.species.r)
 
         self.lm: str = f"{self.species.n} [{self.mu}]"  # left y-axis a label
         self.ld: str = f"{self.species.dn} [{self.species.ds}]"  # right y-axis a label
