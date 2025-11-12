@@ -1769,7 +1769,8 @@ class Flux(esbmtkBase):
             self.rate: float = self.rate
 
         li = get_l_mass(self.rate, self.delta, self.sp.r) if self.delta else 0
-        self.fa: NDArrayFloat = np.asarray([self.rate, li])
+        # self.fa: NDArrayFloat = np.asarray([self.rate, li])
+        self.fa: NDArrayFloat = np.asarray([li, self.rate - li])
 
         # in case we want to keep the flux data
         if self.save_flux_data:
