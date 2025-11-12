@@ -1696,13 +1696,13 @@ class Model(esbmtkBase):
             self._report_no_connections(connection_name_filter)
             return
 
-        # Display each connection
-        print("")
-        for connection in filtered_connections:
-            self._display_connection_info(connection, show_all_attributes)
-
         if return_as_list:
             return filtered_connections
+        else:
+            # Display each connection
+            print("")
+            for connection in filtered_connections:
+                self._display_connection_info(connection, show_all_attributes)
 
     def _filter_connections(self, name_filter: str = None) -> list:
         """Filter connections by name.
