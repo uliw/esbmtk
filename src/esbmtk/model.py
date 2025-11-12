@@ -1667,13 +1667,13 @@ class Model(esbmtkBase):
             filter_by : str, default=None
                 If provided, only show connections containing this substring in their name.
 
-            list_all : bool, default=False
-                If True, print all connection attributes including internal ones.
+            return_as_list: bool, default=False
+                Return connection objects as list
 
         Returns
         -------
         None
-            This method prints to stdout but doesn't return a value.
+            This method prints to stdout but doesn't return a value unless return_as_list is True
 
         Examples
         --------
@@ -1685,6 +1685,7 @@ class Model(esbmtkBase):
         """
         # Extract configuration from kwargs
         show_all_attributes = kwargs.get("list_all", False)
+        return_as_list = kwargs.get("return_as_list", False)
         connection_name_filter = kwargs.get("filter_by")
 
         # Get filtered list of connections
@@ -1699,6 +1700,9 @@ class Model(esbmtkBase):
         print("")
         for connection in filtered_connections:
             self._display_connection_info(connection, show_all_attributes)
+
+        if return_as_list:
+            return filtered_connections
 
     def _filter_connections(self, name_filter: str = None) -> list:
         """Filter connections by name.
