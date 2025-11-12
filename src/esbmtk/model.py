@@ -1685,7 +1685,7 @@ class Model(esbmtkBase):
         """
         # Extract configuration from kwargs
         show_all_attributes = kwargs.get("list_all", False)
-        return_list = kwargs.get("return_as_list", False)
+        return_list = kwargs.get("return_list", False)
         connection_name_filter = kwargs.get("filter_by")
 
         # Get filtered list of connections
