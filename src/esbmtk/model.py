@@ -1667,7 +1667,7 @@ class Model(esbmtkBase):
             filter_by : str, default=None
                 If provided, only show connections containing this substring in their name.
 
-            return_as_list: bool, default=False
+            return_list: bool, default=False
                 Return connection objects as list
 
         Returns
@@ -1685,7 +1685,7 @@ class Model(esbmtkBase):
         """
         # Extract configuration from kwargs
         show_all_attributes = kwargs.get("list_all", False)
-        return_as_list = kwargs.get("return_as_list", False)
+        return_list = kwargs.get("return_as_list", False)
         connection_name_filter = kwargs.get("filter_by")
 
         # Get filtered list of connections
@@ -1696,7 +1696,7 @@ class Model(esbmtkBase):
             self._report_no_connections(connection_name_filter)
             return
 
-        if return_as_list:
+        if return_list:
             return filtered_connections
         else:
             # Display each connection
