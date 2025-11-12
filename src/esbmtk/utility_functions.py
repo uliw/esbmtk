@@ -1591,7 +1591,7 @@ def get_l_mass(m: float, d: float, r: float) -> float:
     :param d: delta value
     :param r: isotopic reference ratio
 
-    return mass or concentration of the light isotopeb
+    return mass or concentration of the light isotope
     """
     return (1000.0 * m) / ((d + 1000.0) * r + 1000.0)
 
