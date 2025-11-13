@@ -84,7 +84,12 @@ class Species2Species(esbmtkBase):
            automatic name creation
          - signal: An object handle of signal, optional
          - ctype: connection type, see below
-         - bypass :str optional defaults to "None" see scale with flux
+         - bypass: str optional defaults to "None" see scale with flux
+         - scale: int/float
+
+    Note: that the scale keyword will only affect the flux rate, it will not!
+    affec the flux + signal. Use the scale keyword in the signal class to scale
+    the signal data.
 
     The connection name is derived automatically, and can be queried with
     M.connection_summary()
@@ -747,7 +752,7 @@ class ConnectionProperties(esbmtkBase):
         Use the connection.update() method to fine tune connections
         after creation
 
-    Example::
+
 
         ConnectionProperties(source =  upstream reservoir / upstream reservoir group
            sink = downstrean reservoir / downstream reservoirs_group
@@ -755,6 +760,7 @@ class ConnectionProperties(esbmtkBase):
            epsilon =  defaults to zero and has to be set manually
            rate = shared between all connections
            ref_reservoirs = shared between all connections
+           scale= int/float scaling factor, see below
            ref_flux = shared between all connections
            species = list, optional, if present, only these species will be connected
            ctype = needs to be set for all connections. Use "Fixed"
@@ -763,6 +769,12 @@ class ConnectionProperties(esbmtkBase):
            id = optional identifier, passed on to individual connection
            plot = "yes/no" # defaults to yes, shared between all connections
         )
+
+    Note: that the scale keyword will only affect the flux rate, it will not!
+    affec the flux + signal. Use the scale keyword in the signal class to scale
+    the signal data.
+
+    Example::
 
         ConnectionProperties(
                   source=OM_Weathering,
