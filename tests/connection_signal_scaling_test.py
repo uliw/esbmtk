@@ -2,7 +2,11 @@
 
 1. read signal from file
 2. connect signal to pre-existing connection
-3. modify connection scalingf factor after the fact.
+3. modify connection scaling factor after the fact.
+
+Note: The scale will only affect the flux, and not the signal
+This may be counter intuitive. Use the Signal scale to affect
+the signal scaling.
 """
 
 # import classes from the esbmtk library
