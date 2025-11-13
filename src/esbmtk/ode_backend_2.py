@@ -47,7 +47,7 @@ class SourceIsotopeError(Exception):
 
 def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
     """Build the coefficient matrix CM and Flux vector f.
-    
+
     So that we can solve dC_dt = C dot flux_values
     """
     from esbmtk import GasReservoir, Species
@@ -551,7 +551,8 @@ def get_regular_flux_eq(
 
     if flux.serves_as_input or c.signal != "None":
         # Needs full expression with all constants, so that we can
-        # reference the expression elsewhere.
+        # reference the expression elsewhere. Note, that the
+        # scaling factor only affects the flux, and not the signal!
         rhs = toc[c.r_index] * toc[c.s_index]  # constant flux -> rhs = c
         if flux.isotopes:
             rhs_l, rhs_out[1], debug_rhs[1] = isotopes_regular_flux(
