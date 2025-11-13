@@ -47,10 +47,10 @@ class SourceIsotopeError(Exception):
 
 def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
     """Build the coefficient matrix CM and Flux vector f.
-
+    
     So that we can solve dC_dt = C dot flux_values
     """
-    from esbmtk import GasReservoir, Species, Species2Species
+    from esbmtk import GasReservoir, Species
 
     fi = 0
     F_names = []
