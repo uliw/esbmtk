@@ -87,6 +87,39 @@ test_values = [ # result, reference value
 *** Signal data structure 
 The original signal data (as read from a csv etc.) is available through the =.s_time=, =.s_data= instance variables. The padded/cropped data that is interpolated for each time point, is stored in the =.cd_m= (and =.cd_l= if isotope data is present) instance variables.The sub-sampled signal data that is used for plotting is stored in =.m=, =.l= and =.d= respectively.  Signal data can also be queried interactively by calling the signal with a given time values, e.g., =M.PO4_signal(12)=. 
 
+*** Applying a signal to multiple connections 
+Adding signals is a computationally expensive process due to the involvement of multiple function calls. When the same signal shape is used to modify multiple connections, it is more efficient to create a placeholder connection with the signal and then use a =scale_with_flux= connection type to reference the placeholder flux. This approach has the added advantage that each =scale_with_flux= connection can set its own scaling factor.
+#+BEGIN_SRC ipython
+# read the forcing (signal) data
+M.PW_SO4_Koelling = Signal(
+    name="PW_SO4_Koelling",
+    species=M.SO4,
+    filename="koelling_pyrite_data_3Ma_w_isotopes.csv",
+    stype="addition",
+    register=M,
+)
+
+# Create a placeholder flux that does not affect the model 
+# and connect the signal data 
+Species2Species(
+    ctype="regular",
+    source=M.Fw.SO4,
+    sink=M.Fb.SO4,
+    signal=M.PW_SO4_Koelling,
+    id="signal_as_flux",
+)
+
+Species2Species(
+    ctype="scale_with_flux",
+    id="actual_flux",
+    source=M.Fw.SO4,
+    sink=M.L_b.SO4,
+    ref_flux="signal_as_flux",
+    scale=3, 
+)
+#+END_SRC
+
+
 ** Working with multiple species
 The basic building blocks introduced so far are sufficient to create a single species model. Adding further species is straightforward. First one needs to import the species definitions. They than can be simply used by extending the dictionaries and lists used in the previous example.
 Using the previous example of a simple P-cycle model, we now express the P-cycling as a function of photosynthetic organic matter (OM) production and remineralization. First, we import the new classes and we additionally load the species definitions for carbon (this code is available as =po4_3.py= see https://github.com/uliw/ESBMTK-Examples).

@@ -98,7 +98,7 @@ class Species2Species(esbmtkBase):
     -----------------
     Connecting two reservoirs with a fixed rate:
     >>> Species2Species(  # deep box to sediment
-    >>>    ctype="fixed",
+    >>>    ctype="fixed", # or "regular"
     >>>    source=M.L_b.PO4,
     >>>    sink=M.Fb.PO4,
     >>>    scale="108 Gmol/year",
