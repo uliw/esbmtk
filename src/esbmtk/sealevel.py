@@ -83,7 +83,7 @@ class hypsometry(esbmtkBase):
             "max_elevation": [1000, int],
             "max_depth": [-11000, int],
             "basin": ["global", str],
-            "hyp_data_fn": ["Hypsometric_Curve_05m_100", str],
+            "hyp_data_fn": ["Hypsometric_Curve_05m_1", str],
         }
 
         # required keywords
