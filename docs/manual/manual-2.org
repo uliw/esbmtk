@@ -119,6 +119,10 @@ Species2Species(
 )
 #+END_SRC
 
+*** Signals and isotopes 
+Signal data can be applied to isotope effects as well. For this you need to specify a second column in the signal data file that contains delta values with a header like this =d34S [dimensionless]=. The data is interpreted according to the connection setting. I.e., if the connection specifies a delta-value, the third column will be interpreted as delta value (ditto for epsilon values).
+
+Isotope effects are always additive. I.e., If there is a flux A, and a signal B, ESBMTK will calculate the isotope effects for A according to the delta/epsilon value that is set in the connection properties, and the calculate the isotope effects for the  signal flux based on the values delta/epsilon values in the signal data file.
 
 ** Working with multiple species
 The basic building blocks introduced so far are sufficient to create a single species model. Adding further species is straightforward. First one needs to import the species definitions. They than can be simply used by extending the dictionaries and lists used in the previous example.

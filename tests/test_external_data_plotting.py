@@ -42,14 +42,14 @@ def run_model(M, sr, pr, i):
         # fn=f"M{i}_{sr}_{pr}.pdf",
     )
 
-    # plt, fig, axs = (1, 1, 1)
-    # M.plot(
-    #     [M.CR, M.D_b.DIC],
-    #     reverse_time=pr,
-    #     no_show=False,
-    #     fn=f"M{i}_S_{sr}_R_{pr}.pdf",
-    #     blocking=False,
-    # )
+    plt, fig, axs = (1, 1, 1)
+    M.plot(
+        [M.CR, M.D_b.DIC],
+        reverse_time=pr,
+        no_show=False,
+        fn=f"M{i}_S_{sr}_R_{pr}.pdf",
+        blocking=False,
+    )
 
     return plt, fig, axs
 
