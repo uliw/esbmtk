@@ -303,13 +303,23 @@ class Species2Species(esbmtkBase):
 
         if all([
             self.isotopes,
+            self.signal != "None",
+            self.delta == "None",
+            self.epsilon == "None",
+        ]):
+            raise ConnectionError(
+                f"{self.name} has signal, but does not specify whether to interpret it as delta, or epsilon!"
+            )
+
+        if all([
+            self.isotopes,
             isinstance(self.source, Source),
             self.delta == "None",
             self.epsilon == "None",
         ]):
             self.delta = self.source.delta
             warnings.warn(
-                f"\n\nPlease specify the delta value for the weathering flux in {self.name}\n"
+                f"\n\nPlease specify the delta value for the flux in {self.name}\n"
                 "Using {self.delta} for now, but this may not be what you want.\n\n",
                 stacklevel=2,
             )
