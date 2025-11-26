@@ -59,6 +59,7 @@ ConnectionProperties(
     source=M.D_b,  # target of flux
     rate=0,  # rate of flux
     id="burial",  # connection id
+    delta=0,
     signal=M.CR,
     species=[M.DIC],
 )

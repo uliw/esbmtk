@@ -7,7 +7,7 @@ M = mod.M  # get model handle
 
 test_values = [  # result, reference value
     (M.D_b.DIC.c[-1] * 1e6, 1169),
-    (M.D_b.DIC.d[-1], 12.52),
+    (M.D_b.DIC.d[-1], 12.5233),
 ]
 
 

@@ -6,7 +6,6 @@ of phosphate, we use carbon.
 
 # import classes from the esbmtk library
 from esbmtk import (
-    Q_,
     ConnectionProperties,  # the connection class
     Model,  # the model class
     Reservoir,  # the reservoir class
@@ -59,6 +58,7 @@ ConnectionProperties(
     sink=M.burial,  # source of flux
     source=M.D_b,  # target of flux
     rate=0,  # rate of flux
+    delta=0,
     id="burial",  # connection id
     signal=M.CR,
     species=[M.DIC],

@@ -212,8 +212,14 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
     # write file
     with open(eqs_fn, "w", encoding="utf-8") as eqs:
         eqs.write(header)
+
+        eqs.write("# ---------------- Create Signal References -------- #\n")
+        # create signal references
+        for s in M.los:
+            eqs.write(f"{ind2}{s.name} = {s.full_name}(t)\n")
+
         sep = (
-            "# ---------------- write computed reservoir equations -------- #\n"
+            f"\n{ind2}# ---------------- write computed reservoir equations -------- #\n"
             + "    # that do not depend on fluxes"
         )
         eqs.write(f"{sep}\n")
@@ -264,13 +270,13 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
                         fn = f"F[{flux.idx + 1}]"
                         eqs.write(f"{ind2}{fn} = {rhs[1]}\n")
                         fi = fi + 1
-            # FIXME: This counter invcrement fails for chained scale with flux
+            # FIXME: This counter increment fails for chained scale with flux
             # expressions.
             fi = fi + 1
 
         sep = (
             "    # ---------------- write computed reservoir equations -------- #\n"
-            + "# that do depend on fluxes"
+            + "    # that do depend on fluxes"
         )
         eqs.write(f"\n{sep}\n")
 
@@ -549,30 +555,36 @@ def get_regular_flux_eq(
     rhs_out = [False, False]
     prefix_code = ""
 
-    if flux.serves_as_input or c.signal != "None":
+    if flux.serves_as_input or c.signal or flux.isotopes != "None":
         # Needs full expression with all constants, so that we can
         # reference the expression elsewhere. Note, that the
         # scaling factor only affects the flux, and not the signal!
         rhs = toc[c.r_index] * toc[c.s_index]  # constant flux -> rhs = c
+        if c.signal != "None" and c.signal.stype != "epsilon_only":
+            operators = {  # Map signal types to their operators
+                "addition": "+",
+                "epsilon_only": "+",
+                "multiplication": "*",
+            }
+            sign = operators.get(c.signal.stype, "")
+            rhs = f"{rhs} {sign} {c.signal.name}[0]  # Signal"
+        else:
+            rhs = toc[c.r_index] * toc[c.s_index]  # constant flux -> rhs = c
+
         if flux.isotopes:
             rhs_l, rhs_out[1], debug_rhs[1] = isotopes_regular_flux(
                 rhs, c, icl, ind3, ind2, CM, toc, flux
             )
-        rhs, rhs_l, prefix_code = check_signal_2(
-            rhs, rhs_l, c, icl
-        )  # check if we hav to add a signal
+        # rhs, rhs_l, prefix_code = check_signal_2(
+        #     rhs, rhs_l, c, icl
+        # )  # check if we hav to add a signal
         rhs_out[0] = True
     else:
         # get constants and place them on matrix
-        # FIXME: moving this to the matrix, creates problems in the
-        # isotope module. add second one?
+        # FIXME: moving to matrix instead?
         # CM[:, flux.idx] = CM[:, flux.idx] * toc[c.r_index]
         rhs = toc[c.r_index] * toc[c.s_index]
         rhs_out[0] = True
-        if flux.isotopes:
-            rhs_l, rhs_out[1], debug_rhs[1] = isotopes_regular_flux(
-                rhs, c, icl, ind3, ind2, CM, toc, flux
-            )
 
     if c.mo.debug_equations_file:  # and output:
         if isinstance(c.source, Source):
@@ -744,7 +756,7 @@ def get_scale_with_flux_eq(
 
 
 def isotopes_regular_flux(
-    f_m: str,  # flux expression
+    flux_m: str,  # flux expression
     c: Species2Species,  # connection object
     icl: dict,  # initial conditions
     ind3: str,
@@ -761,16 +773,28 @@ def isotopes_regular_flux(
     :param ind2: indent 2 times
     :param ind3: indent 3 times
 
-    :returns equation string:
-    """
-    """Calculate the flux of the light isotope 
-    Where f_m = flux mass/t, s_c = source concentration
-    s_l = source light isotope, a = fractionation factor alpha,
-    r = isotopic reference ratio
-         
-    If delta is given: fl = f_m * 1000 / (r * (d + 1000) + 1000)
-    If epsilon is given: fl = f_m * s_l / (a * sc + sl - a * sl)
-    If neither: fl = f_m * s_l
+    :returns equation string
+
+    We calculate the isotope signal as follows:
+    If delta is given given the isotopic ratio of the flux leaving/extering a
+    reservoir is independent of the source. So we can calculate light isotope
+    flux without signal as
+
+    flux_l = flux_m * 1000 / (r * (flux_d + 1000) + 1000)
+
+    and the contribution from the signal
+
+    as
+
+    signal_l = signal_m * 1000 / (r * (signal_d + 1000) + 1000)
+
+    and the actual flux_l as a combbination of the two.
+
+    If epsilon (alpha) is given we calculate the flux without signal as
+
+    flux_l = flux_m * source_l / (flux_a * source_c + source_l - flux_a * source_l)
+
+    We use the same equation to calculate the signal flux, but replace it with  the signal_a.
 
     If flux mass equals source concentration, this is a scale
     with concentration connection, and f_l = s_l * scale where scale is
@@ -782,33 +806,67 @@ def isotopes_regular_flux(
     FIXME: move constants in the matrix?
     """
     r: float = c.source.species.r  # isotope reference value
-    s: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
-    s_c, s_l = s.replace(" ", "").split(",")  # total c, light isotope c
+    source: str = get_ic(c.source, icl, True)  # R[0], R[1] reservoir concentrations
+    source_c, source_l = source.replace(" ", "").split(",")  # total c, light isotope c
     debug_str = ""
     rhs_out = True
 
-    # light isotope flux with no effects
-    # CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]
-    if c.delta != "None":
-        equation_string = f"{f_m} * 1000 / ({r} * ({c.delta} + 1000) + 1000)"
-        ds1 = "{f_m} * 1000 / (r * (c.delta + 1000) + 1000)"
-    elif c.epsilon != "None":
-        a = c.epsilon / 1000 + 1  # convert to alpha notation
-        if f_m == "":  # if f_m is not provided.
-            equation_string = f"{s_l} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
-            ds1 = (
-                f"{c.source.full_name}.l"
-                f" / (a * {c.source.full_name}.c + {c.source.full_name}.l"
-                f" - a * {c.source.full_name}.l)"
-            )
-        else:
-            equation_string = f"{f_m} * {s_l} / ({a} * {s_c} + {s_l} - {a} * {s_l})"
-            ds1 = (
-                f"{c.source.full_name}.l * {flux.full_name}"
-                f" / (a * {c.source.full_name}.c + {c.source.full_name}.l"
-                f" - a * {c.source.full_name}.l)"
-            )
+    flux_value = toc[c.r_index] * toc[c.s_index]
+
+    if c.delta != "None":  # delta is given
+        equation_string = f"{flux_value} * 1000 / ({r} * ({c.delta} + 1000) + 1000)"
+        if c.signal != "None":
+            delta_s = f"{c.signal.name}[2]"
+            # get expression for signal
+            sl = f"{c.signal.name}[0] * 1000 / ({r} * ({delta_s} + 1000) + 1000)"
+            equation_string = f"{equation_string} + {sl}"
+        ds1 = equation_string
+
+    elif c.epsilon != "None":  # epsilon is given
+        # get light isotope of flux without signal
+        alpha_flux = c.epsilon / 1000 + 1
+
+        equation_string = f"{flux_value} * {source_l} / ({alpha_flux} * {source_c} + {source_l} - {alpha_flux} * {source_l})"
+        ds1 = (  # debug string
+            f"{flux.full_name} * {c.source.full_name}.l"
+            f" / (a_flux * {c.source.full_name}.c + {c.source.full_name}.l"
+            f" - a_flux * {c.source.full_name}.l)"
+        )
+
+        # avoid duplication
+        if c.signal != "None":
+            alpha_signal = f"({c.signal.name}[2]/1000 + 1)"
+            # we apply the signal only to the flux alpha
+            if c.signal.stype == "epsilon_only":
+                sl = f"{flux_value} * {source_l} / ({alpha_signal} * {source_c} + {source_l} - {alpha_signal} * {source_l})"
+                equation_string = f"{sl}"
+                # debug string
+                ds1 = (
+                    f"{ds1} \n +"
+                    f"{ind2}F{[flux.idx]} * {c.source.full_name}.l"
+                    f" / (a_signal * {c.source.full_name}.c + {c.source.full_name}.l"
+                    f" - a_signal * {c.source.full_name}.l)"
+                )
+            # We add flux and signal
+            else:
+                sl = f"{c.signal.name}[0] * {source_l} / ({alpha_signal} * {source_c} + {source_l} - {alpha_flux} * {source_l})"
+                equation_string = f"{equation_string} + {sl}"
+                # debug string
+                ds1 = (
+                    f"{ds1} \n +"
+                    f"{ind2}{flux.full_name} * {c.source.full_name}.l"
+                    f" / (a_signal * {c.source.full_name}.c + {c.source.full_name}.l"
+                    f" - a_signal * {c.source.full_name}.l)"
+                )
+
     else:
+        # light isotope flux with no effects
+        # CM[:, flux.idx + 1] = CM[:, flux.idx + 1] * toc[c.r_index]
+        if c.signal:
+            raise ValueError(
+                f"Your connection {c.full_name} specifies a signal but no isotope effect. Add delta, or epsilon to the connection."
+            )
+
         equation_string = f"toc[{c.r_index}]"
         ds1 = f"{c.source.full_name}.l * {flux.full_name}"
 
@@ -822,7 +880,6 @@ def isotopes_regular_flux(
             f"    rhs_l = {equation_string}\n"
             f'    """\n'
         )
-
     return equation_string, rhs_out, debug_str
 
 
@@ -1013,21 +1070,30 @@ def check_signal_2(rhs: str, rhs_l: str, c: Species2Species, icl: dict) -> (str,
     :returns: (modified) equation string
     """
     prefix_code = ""
+    r: float = c.source.species.r  # isotope reference value
 
     if c.signal != "None":  # get signal type
         operators = {  # Map signal types to their operators
             "addition": "+",
             "multiplication": "*",
         }
-
         # Get the operator for this signal type (if applicable)
         sign = operators.get(c.signal.stype, "")
 
         # Apply the signal based on its type
         if c.signal.stype in ("addition", "multiplication"):
             rhs = f"{rhs} {sign} {c.signal.full_name}(t)[0]  # Signal"
-            if rhs_l != "":  # isotopes are always additive
-                rhs_l = f"{rhs_l} + {c.signal.full_name}(t)[1]  # Signal"
+            # check if we have isotope data. If the connection specifies
+            # the light isotope value of the signal flux, and add it to
+            # any pre-existing flux.
+            if rhs_l != "":
+                if sign == "+":
+                    # calculate signal light isotope flux
+                    slif = f"{c.signal.full_name}(t)[0] * 1000 / ({r} * ({c.signal.full_name}(t)[1] + 1000) + 1000)"
+                    rhs_l = f"{rhs_l} + {slif}"
+                else:
+                    raise NotImplementedError("Isotope signals must be additive!")
+                rhs_l = f"{c.signal.full_name}(t)[1]+ {rhs_l} # Signal"
         elif c.signal.stype == "epsilon_only":
             """Here we override any previous isotope effects and calculate
             the flux of the light isotope as governed by the epsilon values

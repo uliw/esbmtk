@@ -526,7 +526,7 @@ class Signal(esbmtkBase):
             "start": ["0 yrs", (str, Q_)],
             "duration": ["None", (str, Q_)],
             "species": ["None", (SpeciesProperties)],
-            "delta": [0, (int, float)],
+            "delta": [0, (int, float, list)],
             "stype": ["addition", (str)],
             "reverse_time": [False, (bool)],
             "shape": ["None", (str)],
@@ -768,6 +768,8 @@ class Signal(esbmtkBase):
 
         s = start index
         e = end index
+
+        Note that for isotops, you need to set a floor value 
         """
         if "mass" in self.kwd:
             h = 2 * self.mass / self.duration  # get the height of the pyramid
