@@ -726,6 +726,8 @@ class Model(esbmtkBase):
         >>>     no_show=True,
         >>> )
         """
+        import matplotlib as mpl
+
         # Ensure pl is a list
         if pl is None:
             pl = []
@@ -744,6 +746,8 @@ class Model(esbmtkBase):
         size, geometry = plot_geometry(num_plots)
         row_count, col_count = geometry
 
+        # avoid exponent offset.
+        mpl.rcParams["axes.formatter.useoffset"] = False
         # Create figure and subplots
         fig, ax = plt.subplots(row_count, col_count)
 
@@ -752,6 +756,7 @@ class Model(esbmtkBase):
 
         # Configure plot style and title
         plt.style.use(self.plot_style)
+
         window_title = plot_title if plot_title != "None" else f"{self.n} Species"
         fig.canvas.manager.set_window_title(window_title)
         fig.set_size_inches(size)
