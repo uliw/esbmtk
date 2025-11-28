@@ -819,7 +819,10 @@ def isotopes_regular_flux(
             delta_s = f"{c.signal.name}[2]"
             # get expression for signal
             sl = f"{c.signal.name}[0] * 1000 / ({r} * ({delta_s} + 1000) + 1000)"
-            equation_string = f"{equation_string} + {sl}"
+            if c.rate != 0:
+                equation_string = f"{equation_string} + {sl}"
+            else:
+                equation_string = sl
         ds1 = equation_string
 
     elif c.epsilon != "None":  # epsilon is given
@@ -836,9 +839,9 @@ def isotopes_regular_flux(
         # avoid duplication
         if c.signal != "None":
             alpha_signal = f"({c.signal.name}[2]/1000 + 1)"
+            sl = f"{c.signal.name}[0] * {source_l} / ({alpha_signal} * {source_c} + {source_l} - {alpha_signal} * {source_l})"
             # we apply the signal only to the flux alpha
             if c.signal.stype == "epsilon_only":
-                sl = f"{flux_value} * {source_l} / ({alpha_signal} * {source_c} + {source_l} - {alpha_signal} * {source_l})"
                 equation_string = f"{sl}"
                 # debug string
                 ds1 = (
@@ -847,10 +850,11 @@ def isotopes_regular_flux(
                     f" / (a_signal * {c.source.full_name}.c + {c.source.full_name}.l"
                     f" - a_signal * {c.source.full_name}.l)"
                 )
-            # We add flux and signal
-            else:
-                sl = f"{c.signal.name}[0] * {source_l} / ({alpha_signal} * {source_c} + {source_l} - {alpha_flux} * {source_l})"
-                equation_string = f"{equation_string} + {sl}"
+            else:  # check if we need a flux expression, and add signla expression
+                if c.rate != 0:
+                    equation_string = f"{equation_string} + {sl}"
+                else:
+                    equation_string = sl
                 # debug string
                 ds1 = (
                     f"{ds1} \n +"
