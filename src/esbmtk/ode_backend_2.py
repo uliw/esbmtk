@@ -828,7 +828,6 @@ def isotopes_regular_flux(
     elif c.epsilon != "None":  # epsilon is given
         # get light isotope of flux without signal
         alpha_flux = c.epsilon / 1000 + 1
-
         equation_string = f"{flux_value} * {source_l} / ({alpha_flux} * {source_c} + {source_l} - {alpha_flux} * {source_l})"
         ds1 = (  # debug string
             f"{flux.full_name} * {c.source.full_name}.l"
@@ -842,7 +841,7 @@ def isotopes_regular_flux(
             sl = f"{c.signal.name}[0] * {source_l} / ({alpha_signal} * {source_c} + {source_l} - {alpha_signal} * {source_l})"
             # we apply the signal only to the flux alpha
             if c.signal.stype == "epsilon_only":
-                equation_string = f"{sl}"
+                equation_string = f"F[{flux.idx}] * {source_l} / ({alpha_signal} * {source_c} + {source_l} - {alpha_signal} * {source_l})"
                 # debug string
                 ds1 = (
                     f"{ds1} \n +"
@@ -850,7 +849,8 @@ def isotopes_regular_flux(
                     f" / (a_signal * {c.source.full_name}.c + {c.source.full_name}.l"
                     f" - a_signal * {c.source.full_name}.l)"
                 )
-            else:  # check if we need a flux expression, and add signla expression
+                # check if we need a flux expression, and add signal expression
+            elif c.signal.stype == "addition":
                 if c.rate != 0:
                     equation_string = f"{equation_string} + {sl}"
                 else:
@@ -861,6 +861,11 @@ def isotopes_regular_flux(
                     f"{ind2}{flux.full_name} * {c.source.full_name}.l"
                     f" / (a_signal * {c.source.full_name}.c + {c.source.full_name}.l"
                     f" - a_signal * {c.source.full_name}.l)"
+                )
+            else:
+                raise ConnectionError(
+                    f"{c.full_name} isotope operations must be of type"
+                    f"'addition or 'epsilon_only' but not {c.signal.type}"
                 )
 
     else:
