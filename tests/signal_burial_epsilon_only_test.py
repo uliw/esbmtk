@@ -55,7 +55,7 @@ ConnectionProperties(
     source=M.D_b,  # target of flux
     rate="12 Tmol/yr",  # rate of flux
     species=[M.SO4],
-    # epsilon=-39,
+    epsilon=20,
 )
 
 Signal(

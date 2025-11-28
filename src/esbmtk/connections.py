@@ -308,7 +308,7 @@ class Species2Species(esbmtkBase):
             self.epsilon == "None",
         ]):
             raise ConnectionError(
-                f"{self.name} has signal, but does not specify whether to interpret it as delta, or epsilon!"
+                f"{self.name} has isotopes and a signal, but does not specify whether to interpret it as delta, or epsilon!"
             )
 
         if all([
@@ -543,8 +543,8 @@ class Species2Species(esbmtkBase):
             or self.ctype.casefold() == "fixed"
         ):
             self.ctype = "regular"
-            if self.delta == "None" and self.epsilon == "None" and self.isotopes:
-                self._epsilon = 0
+            # if self.delta == "None" and self.epsilon == "None" and self.isotopes:
+            #     self._epsilon = 0
             if self.rate == "None":
                 raise ConnectionError(
                     "fixed/regular connections require the 'rate' keyword instead of 'scale'"
