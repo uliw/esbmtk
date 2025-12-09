@@ -165,8 +165,6 @@ see  the @@rst::py:func:`esbmtk.post_processing.carbonate_system_2_pp()`@@ funct
 
 *** Carbonate System 3:
 
-*NOTE: this is currently in the early stages of development.*
-
 =carbonate_system_3= aims to extend the =carbonate_system_2= (CS2) code to be able to compute carbonate chemistry dynamics in models with more than two vertical ocean layers. Like CS2, it is also based on the Boudreau (2010) model, but it aims to enable the partitioning of Boudreau's deep box into multiple vertical ocean layers. Its current capabilities are described below.
 
 As of July 2025, CS3 functions almost entirely similarly to CS2, except in that it explicitly computes the "burial flux" (i.e. the carbonate flux that remains undissolved in a given box) and adds it to the reservoir box directly beneath it. 
@@ -196,13 +194,29 @@ CS3 post-processing currently (As of July 2025) functions in the same manner as 
 
 *** Carbonate System 4: 
 
-*NOTE: this is currently in the early stages of development.*
+*NOTE (November 2025): this is currently in the early stages of development.*
 
-=carbonate_system_4= is an extension of CS2 and CS3, and enables carbonate chemistry for models with three vertical ocean layers, i.e., models with a surface layer, an intermediate layer, and a deep layer (in addition to a sediment layer/burial box). =carbonate_system_4= splits Boudreau's carbonate dissolution fluxes and adds them to either the intermediate box or the deep box depending on the relative depth of =zsat= (i.e., saturation depth) in each timestep. The flux-splitting scheme therefore consists of two scenarios: either =zsat= is deeper than =zint=, or =zint= is deeper than =zsat=. Both scenarios are visualized below:
+=carbonate_system_4= is an extension of CS2 and CS3, and enables carbonate chemistry for models with three vertical ocean layers, i.e., models with a surface layer, an intermediate layer, and a deep layer (in addition to a sediment layer/burial box). =carbonate_system_4= splits Boudreau's carbonate dissolution fluxes and adds them to either the intermediate box or the deep box depending on the relative depth of =zsat= (i.e., saturation depth) in each timestep. The flux-splitting scheme therefore consists of two scenarios: either =zsat= is deeper than =zint=, or =zint= is deeper than =zsat=. 
 
-[to add: flux splitting diagram 1]
+Both scenarios are visualized below:
 
-[to add: flux splitting diagram 2]
+#+attr_org: :width 600
+#+attr_rst: :width 800
+#+attr_latex: :width 0.8\textwidth
+#+name: CS4 flux-splitting scheme 1
+#+caption:  Overview of the modifications made by CS4 for the scenario where =zsat= is deeper than =zint=.
+#+caption: Image Credit: Atlas Changulani
+[[./CS4fluxsplittingscheme1.png]]
+
+#+attr_org: :width 600
+#+attr_rst: :width 800
+#+attr_latex: :width 0.8\textwidth
+#+name: CS4 flux-splitting scheme 1
+#+caption:  Overview of the modifications made by CS4 for the scenario where =zint= is deeper than =zsat=.
+#+caption: Image Credit: Atlas Changulani
+[[./CS4fluxsplittingscheme2.png]]
+
+In the first scenario (=zint= deeper than =zsat=), BNS, i.e., the CaCO3 dissolution between =z0= and =zsat=, is now split into two by =zint=, one of which is added to the intermediate box, and the other to the deep box. BDS, BCC, and BPDC remain unmodified (i.e., are computed in the same manner as CS2). In the second scenario ((=zsat= deeper than =zint=), the computation of BNS is unmodified, and the whole of it is added to the intermediate box. However, both the undersaturation and respiration components of BDS (i.e., dissolution of CaCO3 raining down between zsat and zcc) are split into two, and added accordingly to either the intermediate or the deep box. BCC and BPDC again remain unmodified and are computed in the same manner as they are in CS2.
 
 =carbonate_system_4= may be added to a model as follows:
 
@@ -221,6 +235,12 @@ add_carbonate_system_4(
 f = M.flux_summary(filter_by="burial", return_list=True) #"burial" is the flux from D_b to B_b 
 M.B_b.DIC.lif.append(f) #appends the db2_export flux object to the sink.lif list
 #+END_SRC
+
+Notes: 
+- The flux splitting scheme employed in =carbonate_system_4= currently assumes that the carbonate compensation depth (i.e. =zcc=) is always in the deep box.
+- There is no need to add a =ConnectionProperties= instance to handle PIC flux connections between the Intermediate and Deep boxes, or the Deep and Burial boxes. This is handled entirely by CS4. As in CS3, however, one must declare a =ConnectionProperties= instance (with the bypass "bp" keyword) to remove the total carbonate export fluxe from =source box=.
+- At the moment, =burial_box= must be a Reservoir class object and cannot be a Sink class object. However, one can still use this setup to pass burial flux from an ocean box to a sediment box by defining the sediment box as a Reservoir class object with seawater parameters (T, P, S) exactly equal to the ocean box just above it, and initial DIC and TA set to 0.
+
 
 ** Gas Exchange
 ESBMTK implements gas exchange across the Air-Sea interface as a @@rst::py:class:`esbmtk.connections.Species2Species()`@@ instance, between a @@rst::py:class:`esbmtk.extended_classes.GasReservoir()`@@ and a @@rst::py:class:`esbmtk.base_classes.Species()`@@ instance. In the following example, we first declare a =Gasreservoir= and then connect it with a regular surface box. Note that the CO_{2} gas transfer calculation requires that the respective surface reservoir carries the =CO2aq= tracer as calculated by the @@rst::py:func:`esbmtk.carbonate_chemistry_carbonate_system_1.()`@@ function since the gas-transfer depends on the dissolved CO_{2} rather than on the DIC concentration.
