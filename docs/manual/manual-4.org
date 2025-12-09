@@ -216,9 +216,9 @@ The =carbonate_system_4= function splits Boudreau (2010)'s carbonate dissolution
 #+caption: Image Credit: Atlas Changulani
 [[./CS4fluxsplittingscheme2.png]]
 
-In the first scenario (z_{int} deeper than z_{sat}), B_{NS} (the CaCO_{3} dissolution between z_{0} and z_{sat}) is now split into two by z_{int}. One of these split components is added to the intermediate box, and the other to the deep box. B_{DS}, B_{CC}, and B_{PDC} remain unmodified and are computed in the same manner as they are in CS2. 
+In the first scenario (z_{sat} deeper than z_{int}), B_{NS} (the CaCO_{3} dissolution between z_{0} and z_{sat}) is now split into two by z_{int}. One of these split components is added to the intermediate box, and the other to the deep box. B_{DS}, B_{CC}, and B_{PDC} remain unmodified and are computed in the same manner as they are in CS2. 
 
-In the second scenario (z_{sat} deeper than z_{int}), the computation of B_{NS} is unmodified, and the whole of it is added to the intermediate box. However, both the undersaturation and respiration components of B_{DS} (dissolution of CaCO_{3} raining down between z_{sat} and z_{cc}) are split into two by z_{int}, and added accordingly to either the intermediate or the deep box. B_{CC} and B_{PDC} again remain unmodified and are computed in the same manner as they are in CS2.
+In the second scenario (z_{int} deeper than z_{sat}), the computation of B_{NS} is unmodified, and the whole of it is added to the intermediate box. However, both the undersaturation and respiration components of B_{DS} (dissolution of CaCO_{3} raining down between z_{sat} and z_{cc}) are split into two by z_{int}, and added accordingly to either the intermediate or the deep box. B_{CC} and B_{PDC} again remain unmodified and are computed in the same manner as they are in CS2.
 
 Carbonate System 4 may be added to a model using the =add_carbonate_system_4= function as follows:
 
