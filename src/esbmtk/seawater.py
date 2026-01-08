@@ -287,6 +287,7 @@ class SeawaterConstants(esbmtkBase):
         self.water_vapor_partial_pressure()
         self.co2_solubility_constant()
         self.o2_solubility_constant()
+        self.n2_solubility_constant()
 
     def water_vapor_partial_pressure(self) -> None:
         """Calculate the water vapor partial pressure at sealevel (1 atm).
@@ -329,7 +330,7 @@ class SeawaterConstants(esbmtkBase):
         self.SA_co2 = self.F / (1 - self.p_H2O)
 
     def o2_solubility_constant(self) -> None:
-        """Calculate the solubility of CO2 at a given temperature and salinity.
+        """Calculate the solubility of O2 at a given temperature and salinity.
 
         Coefficients after Sarmiento and Gruber 2006 which includes corrections
         for non ideal gas behavior
@@ -355,6 +356,34 @@ class SeawaterConstants(esbmtkBase):
         VA = 22.4136  # molar volume page 80
 
         self.SA_O2 = b / VA
+
+    def n2_solubility_constant(self) -> None:
+        """Calculate the solubility of N2 at a given temperature and salinity.
+
+        Coefficients after Sarmiento and Gruber 2006 which includes corrections
+        for non ideal gas behavior
+
+        Parameters Ai & Bi from Tab 3.2.2 in  Sarmiento and Gruber 2006
+
+        The result is in mol/(l atm)
+        """
+        # Calculate the volumetric solubility function F_A in mol/l/m^3
+        S = self.salinity  # unit less
+        T = self.temperature  # in C
+        A1 = -59.6274
+        A2 = 85.7761
+        A3 = 24.3696
+        A4 = 0
+        B1 = -0.051580
+        B2 = 0.026329
+        B3 = -0.0037252
+
+        b = self.calc_solubility_term(S, T, A1, A2, A3, A4, B1, B2, B3)
+
+        # and convert from bunsen coefficient to solubility
+        VA = 22.4136  # molar volume page 80
+
+        self.SA_N2 = b / VA
 
     def calc_solubility_term(self, S, T, A1, A2, A3, A4, B1, B2, B3) -> float:
         """Calculate solubility of given gas species."""
@@ -413,10 +442,10 @@ class SeawaterConstants(esbmtkBase):
     def __init_o_fractionation_factors__(self):
         """Fractionation factors for O2 gas exchange.
 
-        g = gaseous CO2
-        d = dissolved CO2
-        b = bicarbonate ion
-        c = carbonate ion
+        g = gaseous O2
+        d = dissolved O2
+        b = not used
+        c = not used
         """
         T = 273.15 + self.temperature
 
@@ -425,3 +454,20 @@ class SeawaterConstants(esbmtkBase):
         # equilibrium fractionation factor alpha # Benson & Krause 1984
         self.o2_a_dg = 1 + (-0.73 + (427 / T)) / 1000
         self.o2_a_db = 1  # not used for O2, but must be present
+
+     def __init_n_fractionation_factors__(self):
+        """Fractionation factors for O2 gas exchange.
+
+        g = gaseous N2
+        d = dissolved N2
+        b = not used
+        c = not used 
+        """
+        T = 273.15 + self.temperature
+
+        # kinetic fractionation factor alpha # Knox et al. 1992
+        self.n2_a_u = 0.9987 
+        # equilibrium fractionation factor after McPaul et al
+        # https://doi.org/10.1002/rcm.10094
+        self.n2_a_dg = 1 + (0.753 - 0.004 * self.temperature)/1000
+        self.n2_a_db = 1  # not used for N2, but must be present
