@@ -168,6 +168,7 @@ class SeawaterConstants(esbmtkBase):
         self.__init_gasexchange__()
         self.__init_c_fractionation_factors__()
         self.__init_o_fractionation_factors__()
+        self.__init_n_fractionation_factors__()
 
     def show(self) -> None:
         """Printout constants.

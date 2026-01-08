@@ -272,6 +272,12 @@ def init_gas_exchange(c: Species2Species):
             a_db = swc.o2_a_db
             a_dg = swc.o2_a_dg
             a_u = swc.o2_a_u
+        elif c.species.name == "N2":
+            ref_species = sink_reservoir.N2
+            solubility = swc.SA_N2
+            a_db = swc.n2_a_db
+            a_dg = swc.n2_a_dg
+            a_u = swc.n2_a_u
         else:
             raise ValueError(
                 f"Gas exchange is undefined for {c.species.name}\n"
