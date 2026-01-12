@@ -1525,7 +1525,7 @@ class DataField(esbmtkBase):
         without further adjustments.
 
         :param x: str, array, list, withe the x-data
-        :param y: str, array, list, withe the y-data
+        :param y: str, array, list, with the y-data
 
         :return x,y: as list
         """
@@ -1667,7 +1667,7 @@ class DataField(esbmtkBase):
         if not isinstance(self.y2_data, str):
             self.x2_data, self.y2_data, self.y2_label = self.__unify_data__(
                 M,
-                self.x2_data,
+                self.x2_data,  # y2 shares the same x-axis!
                 self.y2_data,
                 self.y2_label,
             )
@@ -1677,7 +1677,7 @@ class DataField(esbmtkBase):
                 if self.x2_as_time:
                     x2 = (self.x1_data[j] * M.t_unit).to(M.d_unit).magnitude
                 else:
-                    x2 = self.x2_data[j]
+                    x2 = self.x1_data[j]
                 self.__plot_data__(
                     axt,
                     x2,
