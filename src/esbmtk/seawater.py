@@ -456,19 +456,19 @@ class SeawaterConstants(esbmtkBase):
         self.o2_a_dg = 1 + (-0.73 + (427 / T)) / 1000
         self.o2_a_db = 1  # not used for O2, but must be present
 
-     def __init_n_fractionation_factors__(self):
+    def __init_n_fractionation_factors__(self):
         """Fractionation factors for O2 gas exchange.
 
         g = gaseous N2
         d = dissolved N2
         b = not used
-        c = not used 
+        c = not used
         """
         T = 273.15 + self.temperature
 
         # kinetic fractionation factor alpha # Knox et al. 1992
-        self.n2_a_u = 0.9987 
+        self.n2_a_u = 0.9987
         # equilibrium fractionation factor after McPaul et al
         # https://doi.org/10.1002/rcm.10094
-        self.n2_a_dg = 1 + (0.753 - 0.004 * self.temperature)/1000
+        self.n2_a_dg = 1 + (0.753 - 0.004 * self.temperature) / 1000
         self.n2_a_db = 1  # not used for N2, but must be present
