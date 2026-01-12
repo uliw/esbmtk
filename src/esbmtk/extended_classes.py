@@ -1287,13 +1287,15 @@ class DataField(esbmtkBase):
                        register = Model handle,
                        x1_data =  ["None", (np.ndarray, list)], defaults to model time
                        y1_data = NDArrayFloat or list of arrays
-                       y1_label = Data label(s)
+                       y1_label = Data label(s)  [list | string]
                        y1_legend = Y-Axis Label
                        y1_type = "plot", | "scatter"
-                       y2_data = NDArrayFloat    # optional
-                       y2_legend = Y-Axis label # optional
-                       y2_label = Data legend(s) # optional
-                       y2_type = "plot", | "scatter"
+                       y1_style = "dashed" #  [list | string]
+                       y2_data = NDArrayFloat    # optional  [list | string]
+                       y2_legend = Y-Axis label # optional  [list | string]
+                       y2_label = Data legend(s) # optional  [list | string]
+                       y2_type = "plot", | "scatter"  [list | string]
+                       y2_style = "dashed" [list | string]
                        common_y_scale = "no",  #optional, default "no"
                        display_precision = number, optional, inherited from Model
                        )
@@ -1628,9 +1630,6 @@ class DataField(esbmtkBase):
                 x1 = (self.x1_data[i] * M.t_unit).to(M.d_unit).magnitude
             else:
                 x1 = self.x1_data[i]
-                # y1 = (self.y * M.c_unit).to(self.plt_units).magnitude
-                # 1 = self.y
-                # y1_label = f"{self.legend_left} [{self.plt_units:~P}]"
 
             ptype = self.y1_type[i] if isinstance(self.y1_type, list) else self.y1_type
 
@@ -1674,16 +1673,11 @@ class DataField(esbmtkBase):
             )
             axt = ax.twinx()
             for i, _d in enumerate(self.y2_data):  # loop over datafield list
+                j = i
                 if self.x2_as_time:
-                    if self.x2 == "None":
-                        x2 = (self.x1_data[0] * M.t_unit).to(M.d_unit).magnitude
-                    elif isinstance(self.x2, list | np.ndarray):
-                        x2 = (self.x2_data[i] * M.t_unit).to(M.d_unit).magnitude
+                    x2 = (self.x1_data[j] * M.t_unit).to(M.d_unit).magnitude
                 else:
-                    if self.x2_data == "None":
-                        x2 = self.x1_data[0]
-                    elif isinstance(self.x2_data, list | np.ndarray):
-                        x2 = self.x2_data[i]
+                    x2 = self.x2_data[j]
                 self.__plot_data__(
                     axt,
                     x2,
