@@ -769,7 +769,7 @@ class Signal(esbmtkBase):
         s = start index
         e = end index
 
-        Note that for isotops, you need to set a floor value 
+        Note that for isotops, you need to set a floor value
         """
         if "mass" in self.kwd:
             h = 2 * self.mass / self.duration  # get the height of the pyramid
@@ -1596,10 +1596,9 @@ class DataField(esbmtkBase):
 
         """
         if t == "plot":
-            # ax.plot(x, y, color=f"C{i}", label=l)
             ax.plot(x, y, color=color[i], linestyle=style[i], label=label)
         else:
-            ax.scatter(x, y, color=color[i], label=label)
+            ax.scatter(x, y, color=self.color[i], label=label)
 
     def __plot__(self, M: Model, ax) -> None:
         """Plot instructions.
@@ -1676,16 +1675,22 @@ class DataField(esbmtkBase):
             axt = ax.twinx()
             for i, _d in enumerate(self.y2_data):  # loop over datafield list
                 if self.x2_as_time:
-                    x2 = (self.x1_data[i] * M.t_unit).to(M.d_unit).magnitude
+                    if self.x2 == "None":
+                        x2 = (self.x1_data[0] * M.t_unit).to(M.d_unit).magnitude
+                    elif isinstance(self.x2, list | np.ndarray):
+                        x2 = (self.x2_data[i] * M.t_unit).to(M.d_unit).magnitude
                 else:
-                    x2 = self.x1_data[i]
+                    if self.x2_data == "None":
+                        x2 = self.x1_data[0]
+                    elif isinstance(self.x2_data, list | np.ndarray):
+                        x2 = self.x2_data[i]
                 self.__plot_data__(
                     axt,
                     x2,
                     self.y2_data[i],
                     self.y2_type,
                     self.y2_label[i],
-                    i + last_i + 1,
+                    i,  # i + last_i + 1,
                     self.y2_color,
                     self.y2_style,
                 )
