@@ -1694,7 +1694,6 @@ class DataField(esbmtkBase):
             ymax = max(ymax)
             axt.set_ylim([ymin, ymax])
 
-            axt.set_xlabel(f"{M.time_label} [{M.d_unit:~P}]")
             axt.set_ylabel(self.y2_legend)
             # remove unnecessary frame species
             axt.spines["top"].set_visible(False)
