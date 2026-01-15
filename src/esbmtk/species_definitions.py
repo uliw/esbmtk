@@ -310,13 +310,19 @@ def Nitrogen(model):
         name="NO3", element=eh, display_as=r"NO$_{3}^{-}$"
     )  # Name & element handle
     SpeciesProperties(
+        name="P_NO3", element=eh, display_as=r"NO$_{3}^{-}$"
+    )  # Name & element handle
+    SpeciesProperties(
         name="NH3", element=eh, display_as=r"NH$_{3}$"
     )  # Name & element handle
     SpeciesProperties(
         name="NH4", element=eh, display_as=r"NH$_{4}^{+}$"
     )  # Name & element handle
     SpeciesProperties(
-        name="Norg", element=eh, display_as=r"N$_{org}$"
+        name="P_NH4", element=eh, display_as=r"NH$_{4}^{+}$"
+    )  # Name & element handle
+    SpeciesProperties(
+        name="PN", element=eh, display_as=r"N$_{org}$"
     )  # Name & element handle
 
 
