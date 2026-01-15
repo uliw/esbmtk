@@ -1388,7 +1388,7 @@ class Species(SpeciesBase):
             If unit conversion fails
         """
         # Handle concentration vs mass setup based on species type
-        if self.sp.stype == "concentration":
+        if self.sp.stype == "concentration" or self.sp.stype == "particulate":
             self._setup_concentration_type()
         elif self.sp.stype == "length":
             self._setup_length_type()
