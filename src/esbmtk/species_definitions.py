@@ -56,12 +56,23 @@ def Carbon(model):
     SpeciesProperties(name="DIC", element=eh, register=eh, display_as="DIC")
     SpeciesProperties(name="OM", element=eh, register=eh)
     # Particulate OM
-    SpeciesProperties(name="POM", element=eh, register=eh, flux_only=True)
-    SpeciesProperties(name="POC", element=eh, register=eh, flux_only=True)
-    SpeciesProperties(name="PIC", element=eh, register=eh, flux_only=True)
+    SpeciesProperties(
+        name="POM", element=eh, register=eh, flux_only=True, stype="particulate"
+    )
+    SpeciesProperties(
+        name="POC", element=eh, register=eh, flux_only=True, stype="particulate"
+    )
+    SpeciesProperties(
+        name="PIC", element=eh, register=eh, flux_only=True, stype="particulate"
+    )
     SpeciesProperties(name="DOC", element=eh, register=eh)
     SpeciesProperties(
-        name="CaCO3", element=eh, display_as=r"CaCO$_3$", register=eh, m_weight=100.0869
+        name="CaCO3",
+        element=eh,
+        display_as=r"CaCO$_3$",
+        register=eh,
+        m_weight=100.0869,
+        stype="particulate",
     )
     SpeciesProperties(
         name="HCO3", element=eh, display_as=r"HCO$_3^-$", register=eh, m_weight=61.01684
@@ -298,31 +309,52 @@ def Nitrogen(model):
     # add species
     SpeciesProperties(name="N", element=eh, display_as=r"N")
     SpeciesProperties(
-        name="N2", element=eh, display_as=r"N$_{2}$"
+        name="N2",
+        element=eh,
+        display_as=r"N$_{2}$",
+        scale_to="umol",
     )  # Name & element handle
     SpeciesProperties(
-        name="NOx", element=eh, display_as=r"NOx"
+        name="NOx",
+        element=eh,
+        display_as=r"NOx",
+        scale_to="umol",
     )  # Name & element handle
     SpeciesProperties(
-        name="NO2", element=eh, display_as=r"NO$_{2}^{-}$"
+        name="NO2",
+        element=eh,
+        display_as=r"NO$_{2}^{-}$",
+        scale_to="umol",
     )  # Name & element handle
     SpeciesProperties(
-        name="NO3", element=eh, display_as=r"NO$_{3}^{-}$"
+        name="NO3",
+        element=eh,
+        display_as=r"NO$_{3}^{-}$",
+        scale_to="umol",
     )  # Name & element handle
     SpeciesProperties(
-        name="P_NO3", element=eh, display_as=r"NO$_{3}^{-}$"
+        name="P_NO3",
+        element=eh,
+        display_as=r"NO$_{3}^{-}$",
+        scale_to="umol",
     )  # Name & element handle
     SpeciesProperties(
-        name="NH3", element=eh, display_as=r"NH$_{3}$"
+        name="NH3",
+        element=eh,
+        display_as=r"NH$_{3}$",
+        scale_to="umol",
     )  # Name & element handle
     SpeciesProperties(
-        name="NH4", element=eh, display_as=r"NH$_{4}^{+}$"
+        name="NH4",
+        element=eh,
+        display_as=r"NH$_{4}^{+}$",
+        scale_to="umol",
     )  # Name & element handle
     SpeciesProperties(
-        name="P_NH4", element=eh, display_as=r"NH$_{4}^{+}$"
+        name="P_NH4", element=eh, display_as=r"NH$_{4}^{+}$", stype="particulate"
     )  # Name & element handle
     SpeciesProperties(
-        name="PN", element=eh, display_as=r"N$_{org}$"
+        name="PN", element=eh, display_as=r"N$_{org}$", stype="particulate"
     )  # Name & element handle
 
 

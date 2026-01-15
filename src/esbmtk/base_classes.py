@@ -292,7 +292,10 @@ class SpeciesProperties(esbmtkBase):
     scale_to : str, optional
         Unit to scale to for display, defaults to "mmol"
     stype : str, optional
-        Species type, defaults to "concentration"
+        Species type, defaults to "concentration", can also be length|particulate
+
+    The species_list returned by the initialize_reservoirs function does not contain species
+    that are not of type `concentration`
 
     Examples
     --------

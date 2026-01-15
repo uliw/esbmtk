@@ -613,7 +613,7 @@ def initialize_reservoirs(M: Model, box_dict: dict) -> list(Species):
     Returns
     -------
     tp.List
-        list of all Species objects in box_dict
+        list of all Species objects in box_dict that are != particular
 
     Raises
     ------
@@ -694,6 +694,12 @@ def initialize_reservoirs(M: Model, box_dict: dict) -> list(Species):
             )
     else:
         raise ValueError("No species in species dict!")
+
+    # remove species that are bot affected by transport processes
+    for s in species_list:
+        if s.stype == "particulate" or s.stype == "length":
+            species_list.remove(s)
+
     return species_list
 
 
