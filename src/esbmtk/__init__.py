@@ -24,6 +24,7 @@ from .utility_functions import (
     check_for_quantity as check_for_quantity,
     create_bulk_connections as create_bulk_connections,
     data_summaries as data_summaries,
+    gen_dict_entries as gen_dict_entries,
     initialize_reservoirs as initialize_reservoirs,
     phc as phc,
     register_return_values as register_return_values,
