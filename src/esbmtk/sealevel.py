@@ -175,11 +175,13 @@ class hypsometry(esbmtkBase):
         area = np.flip(area[0:max_el_idx] * self.sa)
 
         # create lookup table with area and area_dz
-        self.hypdata = np.column_stack((
-            elevation[:-1],
-            area[:-1],
-            np.diff(area),
-        ))
+        self.hypdata = np.column_stack(
+            (
+                elevation[:-1],
+                area[:-1],
+                np.diff(area),
+            )
+        )
 
     def get_lookup_table_area(self) -> NDArrayFloat:
         """Return the area values between 0 and max_depth as 1-D array."""
@@ -341,12 +343,11 @@ def get_box_geometry_parameters(box) -> None:
         top = box.geometry[0]
         bottom = box.geometry[1]
         fraction = box.geometry[2]
-        volume = f"{box.mo.hyp.volume(top, bottom)} m**3"
-        box.volume = Q_(volume)
-        box.volume = box.volume.to(box.mo.v_unit)
-        box.area = Q_(f"{box.mo.hyp.area(top)} m**2") * fraction
+        volume = box.mo.hyp.volume(top, bottom) * fraction
+        box.volume = Q_(f"{volume} m**3").to(box.mo.v_unit)
+        box.area = Q_(f"{box.mo.hyp.area(top)} m**2").to(box.mo.a_unit) * fraction
         box.sed_area = box.mo.hyp.area_dz(top, bottom) * fraction
-        box.sed_area = Q_(f"{box.sed_area} m**2") * fraction
+        box.sed_area = Q_(f"{box.sed_area} m**2").to(box.mo.a_unit)
         if fraction == 1:
             box.set_area_warning = True  # this will be checked by init_gas_exchange
 
