@@ -65,11 +65,22 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
             "P": 5,
             "S": 35,
         },
+<<<<<<< HEAD
         "I_b": {  
             "c": {M.DIC: "2291 umol/kg", M.TA: "2399 umol/kg"}, 
             "g": {"area": "3.36e14m**2", "volume": "0.43e18 m**3"}, #1/3rd of the Boudreau deep box
             "T": 5,
             "P": 80,
+=======
+        "I_b": {
+            "c": {M.DIC: "2291 umol/kg", M.TA: "2399 umol/kg"},
+            "g": {
+                "area": "3.36e14m**2",
+                "volume": "0.43e18 m**3",
+            },  # 1/3rd of the Boudreau deep box
+            "T": 2,
+            "P": 240,
+>>>>>>> 7877434 (minor corrections)
             "S": 35,
         }, 
         "D_b": { #Deep box 
@@ -125,10 +136,22 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
             "sc": "25 Sverdrup",
             "sp": species_list,
         },
+<<<<<<< HEAD
         "I_b_to_D_b@mix_down": {  #Deep-intermediate mixing
             "ty": "scale_with_concentration", 
             "sc": "100 Sverdrup",  
             "sp": species_list,  
+=======
+        "I_b_to_D_b@mix_down": {  # Deep-intermediate mixing
+            "ty": "scale_with_concentration",
+            "sc": "10000 Sverdrup",
+            "sp": species_list,
+        },
+        "D_b_to_I_b@mix_up": {  # Deep-intermediate mixing
+            "ty": "scale_with_concentration",
+            "sc": "10000 Sverdrup",
+            "sp": species_list,
+>>>>>>> 7877434 (minor corrections)
         },
         "D_b_to_I_b@mix_up": {  #Deep-intermediate mixing
             "ty": "scale_with_concentration",  

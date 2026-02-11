@@ -194,11 +194,21 @@ def add_carbonate_system_1(rgs: list):
 # @lru_cache
 def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
     """Calcualte zsat."""
+<<<<<<< HEAD
     try:
         zsat = int(zsat0 * log(ca2 * co3 / ksp0))
     except:
         breakpoint()
+=======
+
+    if co3 <= 0 or ca2 <= 0:
+        return zsat_min
+        
+    zsat = int(zsat0 * log(ca2 * co3 / ksp0))
+>>>>>>> 7877434 (minor corrections)
     return min(zmax, max(zsat_min, zsat))
+
+
 
 
 # @lru_cache
