@@ -55,137 +55,65 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
     I_ap = 0.18  # Area percentage Indian ocean
     P_ap = 0.46  # Area precentage Pacific ocean
     H_ap = 0.10  # Area percentage High latidude ocean
-    
-    box_parameters: dict = {  # name: [[geometry], T, P]
-        
 
-        "H_b": {  # High-Lat Box
-            "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"},
-            "g": {"area": "0.349e14m**2", "volume": "87.5e14 m**3"},  # geometry
-            "T": 2,  # temperature in C
-            "P": 10,  # pressure in bar
-            "S": 34.7,  # salinity in psu
-        },
-
-        "A_sb": {  # Atlantic low
-            "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"},
-            "g": {"area": "0.907e14m**2", "volume": "0.907e16 m**3"},  # geometry
-            "T": 20,  # temperature in C
-            "P": 5,  # pressure in bar
-            "S": 34.7,  # salinity in psu
-        },
-        "A_ib": {  # Atlantic intermediate
-            "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"},
-            "g": {"area": "0.907e14m**2", "volume": "0.817e17 m**3"},
-            "T": 10,
-            "P": 80,
-            "S": 34.7,
-        },
-        "A_db": {  #Atlantic deep
-            "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"},
-            "g": {"area": "0.907e14m**2", "volume": "2.853e17 m**3"}, #z_int = 1000 m
-            "T": 2,
-            "P": 240,
-            "S": 34.7,
-        }, 
-        
-        "A_bb": { #Atlantic Burial box - defined as an ocean reservoir because CS3 cannot currently work with Sink objects
-            "c":{M.DIC: "0 umol/kg", M.TA: "0 umol/kg", M.PO4: "0 umol/kg"},
-            "g":{"area": "0.907e14m**2", "volume": "3.628e16 m**3"}, #Based on a sediment depth of approx 400m 
-            "T": 2,
-            "P": 240,
-            "S": 34.7,
-        },
-
-        #PACIFIC:
-
-        "P_sb": {  # Pacific low
-            "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"},
-            "g": {"area": "1.605e14m**2", "volume": "1.605e16 m**3"},  # geometry
-            "T": 20,  # temperature in C
-            "P": 5,  # pressure in bar
-            "S": 34.7,  # salinity in psu
-        },
-        "P_ib": {  # Pacific intermediate
-            "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"},
-            "g": {"area": "1.605e14m**2", "volume": "1.445e17 m**3"},
-            "T": 10,
-            "P": 80,
-            "S": 34.7,
-        },
-        "P_db": {  # Pacific deep
-            "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"}, 
-            "g": {"area": "1.605e14m**2", "volume": "4.739e17 m**3"}, #z_int = 1000 m
-            "T": 2,
-            "P": 240,
-            "S": 34.7,
-        }, 
-        
-        "P_bb": { # Pacific Burial box - defined as an ocean reservoir because CS3 cannot currently work with Sink objects
-            "c":{M.DIC: "0 umol/kg", M.TA: "0 umol/kg", M.PO4: "0 umol/kg"},
-            "g":{"area": "1.605e14m**2", "volume": "6.42e16 m**3"}, #Based on a sediment depth of approx 400m 
-            "T": 2,
-            "P": 240,
-            "S": 34.7,
-        },
-
-        #INDIAN: 
-
-        "I_sb": {  # Indian low
-            "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"},
-            "g": {"area": "0.628e14m**2", "volume": "0.628e16 m**3"},  # geometry
-            "T": 20,  # temperature in C
-            "P": 5,  # pressure in bar
-            "S": 34.7,  # salinity in psu
-        },
-        "I_ib": {  # Indian intermediate
-            "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"},
-            "g": {"area": "0.628e14m**2", "volume": "0.565e17 m**3"},
-            "T": 10,
-            "P": 80,
-            "S": 34.7,
-        },
-        "I_db": {  # Indian deep
-            "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"}, 
-            "g": {"area": "0.628e14m**2", "volume": "2.099e17 m**3"}, #z_int = 1000 m
-            "T": 2,
-            "P": 240,
-            "S": 34.7,
-        }, 
-        
-        "I_bb": { # Indian Burial box - defined as an ocean reservoir because CS5 cannot currently work with Sink objects
-            "c":{M.DIC: "0 umol/kg", M.TA: "0 umol/kg", M.PO4: "0 umol/kg"},
-            "g":{"area": "0.628e14m**2", "volume": "2.512e16 m**3"}, #Based on a sediment depth of approx 400m 
-            "T": 2,
-            "P": 240,
-            "S": 34.7,
-        },
-
-         # sources and sinks
+    # initialize reservoirs
+    bn: dict = {  # name: [[geometry], T, P, S]
+        # Atlantic Ocean
+        "A_sb": {"g": [0, -100, A_ap], "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"}, "T": 20, "P": 5, "S": 34.7},
+        "A_ib": {"g": [-100, -1000, A_ap], "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"},"T": 10, "P": 100, "S": 34.7},
+        "A_db": {"g": [-1000, -6000, A_ap],"c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"}, "T": 2, "P": 240, "S": 34.7},
+        "A_bb": {"g": [-6000, -6500, A_ap],"c": {M.DIC: "0 umol/kg", M.TA: "0 umol/kg", M.PO4: "0 umol/kg"},"T": 2, "P": 240, "S": 34.7},
+        # Indian Ocean
+        "I_sb": {"g": [0, -100, I_ap], "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"},"T": 20, "P": 5, "S": 34.7},
+        "I_ib": {"g": [-100, -1000, I_ap], "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"},"T": 10, "P": 100, "S": 34.7},
+        "I_db": {"g": [-1000, -6000, I_ap], "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"},"T": 2, "P": 240, "S": 34.7},
+        "I_bb": {"g": [-6000, -6500, I_ap],"c": {M.DIC: "0 umol/kg", M.TA: "0 umol/kg", M.PO4: "0 umol/kg"},"T": 2, "P": 240, "S": 34.7},
+        # Pacific Ocean
+        "P_sb": {"g": [0, -100, P_ap], "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"}, "T": 20, "P": 5, "S": 34.7},
+        "P_ib": {"g": [-100, -1000, P_ap], "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"}, "T": 10, "P": 100, "S": 34.7},
+        "P_db": {"g": [-1000, -6000, P_ap],"c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"}, "T": 2, "P": 240, "S": 34.7},
+        "P_bb": {"g": [-6000, -6500, P_ap],"c": {M.DIC: "0 umol/kg", M.TA: "0 umol/kg", M.PO4: "0 umol/kg"},"T": 2, "P": 240, "S": 34.7},
+        # High latidude box
+        "H_b": {"g": [0, -250, H_ap], "c": {M.DIC: "2210 umol/kg", M.TA: "2310 umol/kg", M.PO4: "2.1 umol/kg"}, "T": 2, "P": 10, "S": 34.7},
+        # Weathering sources
         "Fw": {"ty": "Source", "sp": [M.DIC, M.TA, M.PO4]},
+        # Burial Sinks
         "Fb": {"ty": "Sink", "sp": [M.DIC, M.TA, M.PO4]},
     }
 
-    species_list = initialize_reservoirs(M, box_parameters)
+    species_list = initialize_reservoirs(M, bn)
+
+    #circulation:
+    
+    thc = Q_("20*Sv")
+    ta = 0.2 
+    ti = 0.2
 
     connection_dict = {
         # source_to_sink@id
 
-        "H_b_to_A_db@thermohaline": {"ty": "scale_with_concentration", "sc": "20 Sverdrup", "sp": species_list,},
-        "A_db_to_A_ib@upwelling": {"ty": "scale_with_concentration", "sc": "4 Sverdrup", "sp": species_list,},
-        "I_db_to_I_ib@upwelling": {"ty": "scale_with_concentration", "sc": "4 Sverdrup", "sp": species_list,},
-        "A_db_to_I_db@thermohaline": {"ty": "scale_with_concentration", "sc": "16 Sverdrup","sp": species_list,},
-        "I_db_to_P_db@thermohaline": {"ty": "scale_with_concentration", "sc": "12 Sverdrup", "sp": species_list,},
-        "P_db_to_P_ib@thermohaline": {"ty": "scale_with_concentration", "sc": "12 Sverdrup", "sp": species_list,},
-        "P_ib_to_I_ib@thermohaline": {"ty": "scale_with_concentration", "sc": "12 Sverdrup", "sp": species_list,},
-        "I_ib_to_A_ib@thermohaline": {"ty": "scale_with_concentration", "sc": "16 Sverdrup", "sp": species_list,},
-        "A_ib_to_H_b@thermohaline": {"ty": "scale_with_concentration", "sc": "20 Sverdrup", "sp": species_list,},
+        #thermohaline, upwelling, and advection
+        "H_b_to_A_db@thermohaline": {"ty": "scale_with_concentration", "sc": thc, "sp": species_list,},
+        "A_ib_to_H_b@thermohaline": {"ty": "scale_with_concentration", "sc": thc, "sp": species_list,},
+
+        "A_db_to_A_ib@upwelling": {"ty": "scale_with_concentration", "sc": ta * thc, "sp": species_list,},
+        "I_db_to_I_ib@upwelling": {"ty": "scale_with_concentration", "sc": ti * thc, "sp": species_list,},
+
+        "A_db_to_I_db@thermohaline": {"ty": "scale_with_concentration", "sc": (1 - ta) * thc,"sp": species_list,},
+        "I_db_to_P_db@thermohaline": {"ty": "scale_with_concentration", "sc": (1 - ta - ti) * thc, "sp": species_list,},
+        "P_db_to_P_ib@thermohaline": {"ty": "scale_with_concentration", "sc": (1 - ta - ti) * thc, "sp": species_list,},
+        "P_ib_to_I_ib@thermohaline": {"ty": "scale_with_concentration", "sc": (1 - ta - ti) * thc, "sp": species_list,},
+        "I_ib_to_A_ib@thermohaline": {"ty": "scale_with_concentration", "sc": (1 - ta) * thc, "sp": species_list,},
+        
+        # surface/intemediate water mixing
         "A_ib_to_A_sb@mix_up": {"ty": "scale_with_concentration", "sc": "21 Sverdrup", "sp": species_list,},
         "A_sb_to_A_ib@mix_down": {"ty": "scale_with_concentration", "sc": "21 Sverdrup", "sp": species_list,},
         "I_ib_to_I_sb@mix_up": {"ty": "scale_with_concentration", "sc": "17 Sverdrup", "sp": species_list,},
         "I_sb_to_I_ib@mix_down": {"ty": "scale_with_concentration",  "sc": "17 Sverdrup",  "sp": species_list, },
         "P_ib_to_P_sb@mix_up": {"ty": "scale_with_concentration", "sc": "25 Sverdrup", "sp": species_list,},
         "P_sb_to_P_ib@mix_down": {"ty": "scale_with_concentration", "sc": "25 Sverdrup", "sp": species_list,},
+        
+        #deep/high box mixing
         "A_db_to_H_b@mix_up": { "ty": "scale_with_concentration", "sc": "4 Sverdrup","sp": species_list, },
         "H_b_to_A_db@mix_down": { "ty": "scale_with_concentration", "sc": "4 Sverdrup", "sp": species_list,},
         "I_db_to_H_b@mix_up": {"ty": "scale_with_concentration", "sc": "3 Sverdrup","sp": species_list, },
@@ -236,7 +164,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
     
     # export productivity in the high latidude box
     PO4_ex = Q_(
-        f"{1.8 * M.H_b.area / M.PC_ratio} mol/a"
+        f"{1.8 * M.H_b.area.magnitude / M.PC_ratio} mol/a"
     )  # Export productivity in the H box
     
 
@@ -305,7 +233,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
 
     # DIC connection
         ct[dic_flux_id] = {
-            "re": f,                     # reference = Flux object
+            "re": f,                     
             "sp": M.DIC,
             "ty": "scale_with_flux",
             "sc": M.PC_ratio,
@@ -363,9 +291,11 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
 
     # get P-fluxes that drive export productivity
     pfluxes = M.flux_summary(filter_by="PO4_mix_up", exclude="H_b", return_list=True)
-    af_sb = 0.05
-    #af_sb = M.A_sb.sed_area / M.A_sb.area  # shelf/area vs total area
+
+    af_sb = M.A_sb.sed_area.magnitude / M.A_sb.area.magnitude  # shelf/area vs total area
+
     sb = M.PUE * M.PC_ratio * (af_sb) * (1 - M.alpha) / M.rain
+
     # surface box burial and dissolution
     ct = {  # DIC
         (
@@ -396,9 +326,11 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
     deposits it on the slope.  As before this depends on the export production
     flux, the slope area and the water column dissolution.
     """
-    af_ib = 0.05
-    #af_ib = M.A_ib.area_dz / M.A_sb.area  # slope area/total area
+   
+    af_ib = M.A_ib.sed_area.magnitude / M.A_sb.area.magnitude  # slope area/total area
+
     ib = M.PUE * M.PC_ratio * af_ib * (1 - M.alpha) / M.rain
+
     ct = {
         (  # DIC
             "A_sb_to_Fb@DIC_burial_ib_A",
@@ -434,12 +366,10 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
     carbonate system module, so here we just specify the the export
     production/area
     """
-    af_db = 0.9 #arbitrary 
+    
+    af_db = M.A_db.sed_area.magnitude / M.A_sb.area.magnitude
 
-    #af_db = M.A_db.area_dz / M.A_sb.area
     db = M.PUE * M.PC_ratio * af_db / M.rain
-
-    print(f"areas = {[af_sb, af_ib, af_db]}")
 
     ct = {  # surface box to deep box  PIC_DIC
         ("A_sb_to_A_db@PIC_DIC_A", "I_sb_to_I_db@PIC_DIC_I", "P_sb_to_P_db@PIC_DIC_P"): {
@@ -515,7 +445,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
         source_box=[M.A_sb, M.I_sb, M.P_sb],  # corresponding surface boxes
         next_box = [M.A_bb, M.I_bb, M.P_bb],
         carbonate_export_fluxes=cef,
-        zsat_min=-1000,  # zsat_max
+        zsat_min=-1000,  
         z0=-1000,
         alpha=alpha,
     )
@@ -595,7 +525,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
         scale=1.0,  # optional, defaults to 1
         ex=0.4,  # exponent c
         pco2_0="280 ppm",  # reference pCO2
-        rate=1.0,  # rate at pco2_0
+        rate= M.Fw_Ca,  # rate at pco2_0
         id="weathering_carbonate",
     )
     
@@ -611,7 +541,6 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
         id="weathering_silicate",
     )
 
-
      # DIC fluxes from carbonate weathering:
 
     Species2Species(  # Atlantic
@@ -619,7 +548,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
         source=M.Fw.DIC,
         sink=M.A_sb.DIC,
         ref_flux="weathering_carbonate",
-        scale= M.Fw_Ca * A_ap/(1 - H_ap),
+        scale= A_ap/(1 - H_ap),
         id="weathering_caco3_A",
     )
 
@@ -628,7 +557,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
         source=M.Fw.DIC,
         sink=M.P_sb.DIC,
         ref_flux="weathering_carbonate",
-        scale= M.Fw_Ca * P_ap/(1 - H_ap),
+        scale= P_ap/(1 - H_ap),
         id="weathering_caco3_P",
     )
 
@@ -637,7 +566,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
         source=M.Fw.DIC,
         sink=M.I_sb.DIC,
         ref_flux="weathering_carbonate",
-        scale= M.Fw_Ca * I_ap/(1 - H_ap),
+        scale= I_ap/(1 - H_ap),
         id="weathering_caco3_I",
     )
 
@@ -728,12 +657,13 @@ def initialize_model(rain_ratio, alpha, run_time, time_step):
         id="wsi_I_TA",
     
     )
+    
 
     return M
 
 run_time = "10000 kyr"
 time_step = "1000 yr"  
-rain_ratio = 5.1
+rain_ratio = 6.1
 alpha = 0.45
 
 M = initialize_model(rain_ratio, alpha, run_time, time_step)
@@ -743,6 +673,9 @@ M.run()
 
 """
 M.plot([M.CO2_At])
+M.plot([M.H_b.DIC, M.A_sb.DIC, M.A_ib.DIC, M.A_db.DIC])
+M.plot([M.H_b.TA, M.A_sb.TA, M.A_ib.TA, M.A_db.TA])
+
 print(f"CO2 {M.CO2_At.c[-2]:.6f}")
 
 print(f"DIC Atlantic surface {M.A_sb.DIC.c[-2]:.6f}")
@@ -757,8 +690,6 @@ print(f"DIC Indian surface {M.I_sb.DIC.c[-2]:.6f}")
 print(f"DIC Indian intermediate {M.I_ib.DIC.c[-2]:.6f}")
 print(f"DIC Indian deep {M.I_db.DIC.c[-2]:.6f}")
 
-M.plot([M.H_b.DIC, M.A_sb.DIC, M.A_ib.DIC, M.A_db.DIC])
-M.plot([M.H_b.TA, M.A_sb.TA, M.A_ib.TA, M.A_db.TA])
 M.plot([M.P_sb.DIC, M.P_ib.DIC, M.P_db.DIC])
 M.plot([M.I_sb.DIC, M.I_ib.DIC, M.I_db.DIC])
 M.plot([M.A_bb.DIC, M.I_bb.DIC, M.P_bb.DIC,])
