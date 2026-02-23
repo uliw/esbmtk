@@ -256,6 +256,7 @@ class Model(esbmtkBase):
 
         # Reservoirs and connections
         self.lor: list = []  # List of all reservoir type objects
+        # self.log: list = []  # List of all gas reservoir type objects
         self.lic: list = []  # List reservoirs with initial conditions
         # self.lis: list = []  # List of sources with initial conditions
         self.loc: set = set()  # Set of connection objects
@@ -1178,12 +1179,16 @@ class Model(esbmtkBase):
         """
         if self.debug:
             logging.info(f"R: {R}")
-            logging.info(f"self.gpt shape: {
+            logging.info(
+                f"self.gpt shape: {
                     np.shape(self.gpt) if hasattr(self.gpt, 'shape') else len(self.gpt)
-                }")
-            logging.info(f"self.toc shape: {
+                }"
+            )
+            logging.info(
+                f"self.toc shape: {
                     np.shape(self.toc) if hasattr(self.toc, 'shape') else len(self.toc)
-                }")
+                }"
+            )
             logging.info(f"CM shape: {np.shape(self.CM)}")
             logging.info(f"F shape: {np.shape(self.F)}")
             logging.info(f"time_ode shape: {np.shape(self.time_ode)}")
@@ -1774,9 +1779,11 @@ class Model(esbmtkBase):
             # For species-to-species connections, show the specific species
             source_species = f"{connection.source.sp.n}"
             target_species = f"{connection.sink.sp.n}"
-            print(f"Connection: {connection.full_name}: {source}.{source_species} -> {
+            print(
+                f"Connection: {connection.full_name}: {source}.{source_species} -> {
                     target
-                }.{target_species}")
+                }.{target_species}"
+            )
         else:
             # For reservoir-to-reservoir connections
             print(f"Connection: {connection.full_name}: {source} -> {target}")
