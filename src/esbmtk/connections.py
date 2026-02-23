@@ -205,6 +205,8 @@ class Species2Species(esbmtkBase):
             "right": ["None", (list, int, float, Species, GasReservoir), False],
             "plot": ["yes", (str), False],
             "groupname": [False, (bool), False],
+            "full_name": ["None, str"],
+            "name": ["None, str"],
             "register": [
                 "None",
                 (str, Model, Species2Species, ConnectionProperties),
@@ -298,6 +300,7 @@ class Species2Species(esbmtkBase):
         self.lor: list[Species] = self.mo.lor
 
         self.__set_name__()  # get name of connection
+
         if self.model.debug:
             logging.info(f"{self.name} isotopes = {self.isotopes}")
 
@@ -345,6 +348,8 @@ class Species2Species(esbmtkBase):
         self.a_index = self.__add_to_ode_constants__(self.epsilon, "epsilon")
         self.s_index = self.__add_to_ode_constants__(self.scale, "scale")
         self.init_done = True
+        # if self.id == "weathering_x":
+        #     breakpoint()
 
     def __set_name__(self):
         """Create connection name.
@@ -367,7 +372,7 @@ class Species2Species(esbmtkBase):
         taken as as connection name, otherwise, append id to the name
 
         """
-        from esbmtk import Reservoir, Source, SourceProperties
+        from esbmtk import Reservoir, Source, SourceProperties, GasReservoir
 
         # same species?
         if self.sink.species.name == self.source.species.name:
@@ -377,14 +382,16 @@ class Species2Species(esbmtkBase):
 
         # Connect by itself
         if not isinstance(self.parent, ConnectionProperties):  # manual connection
-            if isinstance(self.source.parent, Reservoir | Source | SourceProperties):
+            if isinstance(
+                self.source.parent, Reservoir | GasReservoir | Source | SourceProperties
+            ):
                 so = self.source.parent.name
             else:
                 so = self.source.name
 
             si = (
                 self.sink.parent.name
-                if isinstance(self.sink.parent, Reservoir)
+                if isinstance(self.sink.parent, Reservoir | GasReservoir)
                 else self.sink.name
             )
 
@@ -585,8 +592,10 @@ class Species2Species(esbmtkBase):
             logging.info(f"sf: {self.full_name}, isotopes = {self.isotopes}")
 
         if isinstance(self.ref_flux, str):
-            f = self.mo.flux_summary(filter_by=self.ref_flux, return_list=True)[0]
-            self.ref_flux = f
+            f = self.mo.flux_summary(filter_by=self.ref_flux, return_list=True)
+            if not f:
+                raise ValueError(f"{self.ref_flux} did not match existing fluxes")
+            self.ref_flux = f[0]  # we go with the first match
 
         if not isinstance(self.ref_flux, Flux):
             raise ScaleFluxError(
