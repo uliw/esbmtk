@@ -348,8 +348,6 @@ class Species2Species(esbmtkBase):
         self.a_index = self.__add_to_ode_constants__(self.epsilon, "epsilon")
         self.s_index = self.__add_to_ode_constants__(self.scale, "scale")
         self.init_done = True
-        # if self.id == "weathering_x":
-        #     breakpoint()
 
     def __set_name__(self):
         """Create connection name.
@@ -405,12 +403,13 @@ class Species2Species(esbmtkBase):
         if self.ctype == "weathering":
             self.name = f"{self.name}_{self.id}"
         elif self.id != "None":
-            if (self.source.species.name in self.id) or (
-                self.sink.species.name in self.id
-            ):
-                self.name = f"{self.id}"
-            else:
-                self.name = f"{self.name}_{self.id}"
+            self.name = f"{self.name}_{self.id}"
+            # if (self.source.species.name in self.id) or (
+            #     self.sink.species.name in self.id
+            # ):
+            #     self.name = f"{self.id}"
+            # else:
+            #     self.name = f"{self.name}_{self.id}"
 
     def update(self, **kwargs):
         """Update connection properties.
