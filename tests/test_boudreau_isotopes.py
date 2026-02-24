@@ -13,7 +13,7 @@ import pytest
 
 run_time = "4 Myr"
 debug = False
-time_step = "1000 year"  # this is max timestep
+time_step = "100 year"  # this is max timestep
 rain_ratio = 0.3  # rain ratio CaCO3/OM
 alpha = 0.6  # alpha RD
 initial_mixing = "30 Sverdrup"  # High latitude mixing 280 ppm
