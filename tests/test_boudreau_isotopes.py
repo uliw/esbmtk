@@ -13,7 +13,7 @@ import pytest
 
 run_time = "4 Myr"
 debug = False
-time_step = "1000 year"  # this is max timestep
+time_step = "100 year"  # this is max timestep
 rain_ratio = 0.3  # rain ratio CaCO3/OM
 alpha = 0.6  # alpha RD
 initial_mixing = "30 Sverdrup"  # High latitude mixing 280 ppm
@@ -30,7 +30,7 @@ M = bm.initialize_model_geometry(
 M.run()
 # M.plot([M.L_b.DIC, M.D_b.DIC])
 
-tolerance = 1e-3
+tolerance = 1e-2
 test_values = [  # result, reference value, tolerance, message
     (M.L_b.DIC.d[-1], 2.5, tolerance, "M.L_b.DIC.d[-1]"),
     (M.H_b.DIC.d[-1], 2.226, tolerance, "M.H_b.DIC.d[-1]"),

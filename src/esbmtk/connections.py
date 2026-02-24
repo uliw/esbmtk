@@ -301,8 +301,7 @@ class Species2Species(esbmtkBase):
 
         self.__set_name__()  # get name of connection
 
-        if self.model.debug:
-            logging.info(f"{self.name} isotopes = {self.isotopes}")
+        logging.debug(f"{self.name} isotopes = {self.isotopes}")
 
         if all(
             [
@@ -452,8 +451,7 @@ class Species2Species(esbmtkBase):
         else:
             isotopes = self.source.isotopes
 
-        if self.model.debug:
-            logging.info(f"cf: {self.full_name}, isotopes = {self.isotopes}")
+        logging.debug(f"cf: {self.full_name}, isotopes = {self.isotopes}")
         if isotopes:
             num.append("_l")
 
@@ -467,10 +465,9 @@ class Species2Species(esbmtkBase):
                 isotopes=isotopes,
                 id=f"{self.id}{e}",
             )
-            if self.model.debug:
-                logging.info(
-                    f"cf: created {self.fh.full_name}, isotopes = {self.isotopes}"
-                )
+            logging.debug(
+                f"cf: created {self.fh.full_name}, isotopes = {self.isotopes}"
+            )
 
             # register flux with its reservoirs
             if isinstance(self.r1, Source):
@@ -482,10 +479,9 @@ class Species2Species(esbmtkBase):
 
                     # register flux and element in the reservoir.
                     self.__register_species__(self.r2, self.r1.sp)
-                    if self.model.debug:
-                        logging.info(
-                            f"cf: registered {self.fh.full_name} with {self.r2.full_name}"
-                        )
+                    logging.debug(
+                        f"cf: registered {self.fh.full_name} with {self.r2.full_name}"
+                    )
 
             elif isinstance(self.r2, Sink):
                 # add the flux name direction/pair
@@ -494,10 +490,9 @@ class Species2Species(esbmtkBase):
                 self.r1.lof.append(self.fh)
                 # register flux and element in the reservoir.
                 self.__register_species__(self.r1, self.r2.sp)
-                if self.model.debug:
-                    logging.info(
-                        f"cf: registered {self.fh.full_name} with {self.r1.full_name}"
-                    )
+                logging.debug(
+                    f"cf: registered {self.fh.full_name} with {self.r1.full_name}"
+                )
 
             elif isinstance(self.r1, Sink):
                 raise Species2SpeciesError(
@@ -516,11 +511,10 @@ class Species2Species(esbmtkBase):
                 self.r2.lof.append(self.fh)  # add flux to the downstream reservoir
                 self.__register_species__(self.r1, self.r1.sp)
                 self.__register_species__(self.r2, self.r2.sp)
-                if self.model.debug:
-                    logging.info(
-                        f"cf: registered {self.fh.full_name} with {self.r1.full_name}\n"
-                        f"cf: registered {self.fh.full_name} with {self.r2.full_name}\n"
-                    )
+                logging.debug(
+                    f"cf: registered {self.fh.full_name} with {self.r1.full_name}\n"
+                    f"cf: registered {self.fh.full_name} with {self.r2.full_name}\n"
+                )
 
             self.lof.append(self.fh)
 
@@ -587,8 +581,7 @@ class Species2Species(esbmtkBase):
         """Scale a flux relative to another flux."""
         from esbmtk import Flux
 
-        if self.model.debug:
-            logging.info(f"sf: {self.full_name}, isotopes = {self.isotopes}")
+        logging.debug(f"sf: {self.full_name}, isotopes = {self.isotopes}")
 
         if isinstance(self.ref_flux, str):
             f = self.mo.flux_summary(filter_by=self.ref_flux, return_list=True)

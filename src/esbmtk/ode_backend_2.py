@@ -88,8 +88,7 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
         if r.rtype == "computed":
             # computed reservoirs are currently not set up by a Species2Species
             # connection, so we need to add a flux expression manually.
-            if r.model.debug:
-                logging.info(f"bem1: {r.full_name} type = {r.rtype}")
+            logging.debug(f"bem1: {r.full_name} type = {r.rtype}")
 
             CM[ri, r.lof[0].idx] = 1
             if r.isotopes:
@@ -114,6 +113,7 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
                 f = r.lof[fi]
                 if f in r.lif:
                     sign = 0  # we ignore those fluxes
+                    logging.debug(f"setting {f.full_name} to zero")
                 else:
                     sign = -1 / mass if f.parent.source == r else 1 / mass
 
