@@ -205,6 +205,8 @@ class Species2Species(esbmtkBase):
             "right": ["None", (list, int, float, Species, GasReservoir), False],
             "plot": ["yes", (str), False],
             "groupname": [False, (bool), False],
+            "full_name": ["None, str"],
+            "name": ["None, str"],
             "register": [
                 "None",
                 (str, Model, Species2Species, ConnectionProperties),
@@ -298,25 +300,30 @@ class Species2Species(esbmtkBase):
         self.lor: list[Species] = self.mo.lor
 
         self.__set_name__()  # get name of connection
+
         if self.model.debug:
             logging.info(f"{self.name} isotopes = {self.isotopes}")
 
-        if all([
-            self.isotopes,
-            self.signal != "None",
-            self.delta == "None",
-            self.epsilon == "None",
-        ]):
+        if all(
+            [
+                self.isotopes,
+                self.signal != "None",
+                self.delta == "None",
+                self.epsilon == "None",
+            ]
+        ):
             raise ConnectionError(
                 f"{self.name} has isotopes and a signal, but does not specify whether to interpret it as delta, or epsilon!"
             )
 
-        if all([
-            self.isotopes,
-            isinstance(self.source, Source),
-            self.delta == "None",
-            self.epsilon == "None",
-        ]):
+        if all(
+            [
+                self.isotopes,
+                isinstance(self.source, Source),
+                self.delta == "None",
+                self.epsilon == "None",
+            ]
+        ):
             self.delta = self.source.delta
             warnings.warn(
                 f"\n\nPlease specify the delta value for the flux in {self.name}\n"
@@ -363,7 +370,7 @@ class Species2Species(esbmtkBase):
         taken as as connection name, otherwise, append id to the name
 
         """
-        from esbmtk import Reservoir, Source, SourceProperties
+        from esbmtk import Reservoir, Source, SourceProperties, GasReservoir
 
         # same species?
         if self.sink.species.name == self.source.species.name:
@@ -373,14 +380,16 @@ class Species2Species(esbmtkBase):
 
         # Connect by itself
         if not isinstance(self.parent, ConnectionProperties):  # manual connection
-            if isinstance(self.source.parent, Reservoir | Source | SourceProperties):
+            if isinstance(
+                self.source.parent, Reservoir | GasReservoir | Source | SourceProperties
+            ):
                 so = self.source.parent.name
             else:
                 so = self.source.name
 
             si = (
                 self.sink.parent.name
-                if isinstance(self.sink.parent, Reservoir)
+                if isinstance(self.sink.parent, Reservoir | GasReservoir)
                 else self.sink.name
             )
 
@@ -394,12 +403,13 @@ class Species2Species(esbmtkBase):
         if self.ctype == "weathering":
             self.name = f"{self.name}_{self.id}"
         elif self.id != "None":
-            if (self.source.species.name in self.id) or (
-                self.sink.species.name in self.id
-            ):
-                self.name = f"{self.id}"
-            else:
-                self.name = f"{self.name}_{self.id}"
+            self.name = f"{self.name}_{self.id}"
+            # if (self.source.species.name in self.id) or (
+            #     self.sink.species.name in self.id
+            # ):
+            #     self.name = f"{self.id}"
+            # else:
+            #     self.name = f"{self.name}_{self.id}"
 
     def update(self, **kwargs):
         """Update connection properties.
@@ -581,8 +591,10 @@ class Species2Species(esbmtkBase):
             logging.info(f"sf: {self.full_name}, isotopes = {self.isotopes}")
 
         if isinstance(self.ref_flux, str):
-            f = self.mo.flux_summary(filter_by=self.ref_flux, return_list=True)[0]
-            self.ref_flux = f
+            f = self.mo.flux_summary(filter_by=self.ref_flux, return_list=True)
+            if not f:
+                raise ValueError(f"{self.ref_flux} did not match existing fluxes")
+            self.ref_flux = f[0]  # we go with the first match
 
         if not isinstance(self.ref_flux, Flux):
             raise ScaleFluxError(

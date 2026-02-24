@@ -256,6 +256,7 @@ class Model(esbmtkBase):
 
         # Reservoirs and connections
         self.lor: list = []  # List of all reservoir type objects
+        # self.log: list = []  # List of all gas reservoir type objects
         self.lic: list = []  # List reservoirs with initial conditions
         # self.lis: list = []  # List of sources with initial conditions
         self.loc: set = set()  # Set of connection objects
@@ -301,10 +302,18 @@ class Model(esbmtkBase):
         log_filename: str = f"{self.name}.log"
         if self.debug:
             logging.basicConfig(
-                filename=log_filename, filemode="w", level=logging.DEBUG
+                filename=log_filename,
+                filemode="w",
+                level=logging.DEBUG,
+                format="%(levelname)s:%(module)s:%(message)s",
             )
         else:
-            logging.basicConfig(filename=log_filename, filemode="w", level=logging.INFO)
+            logging.basicConfig(
+                filename=log_filename,
+                filemode="w",
+                level=logging.INFO,
+                format="%(levelname)s:%(module)s:%(message)s",
+            )
         # Redirect warnings to logging
         logging.captureWarnings(True)
 
@@ -1679,6 +1688,7 @@ class Model(esbmtkBase):
         -------
         None
             This method prints to stdout but doesn't return a value unless return_as_list is True
+
 
         Examples
         --------
