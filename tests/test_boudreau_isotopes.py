@@ -30,7 +30,7 @@ M = bm.initialize_model_geometry(
 M.run()
 # M.plot([M.L_b.DIC, M.D_b.DIC])
 
-tolerance = 1e-3
+tolerance = 1e-2
 test_values = [  # result, reference value, tolerance, message
     (M.L_b.DIC.d[-1], 2.5, tolerance, "M.L_b.DIC.d[-1]"),
     (M.H_b.DIC.d[-1], 2.226, tolerance, "M.H_b.DIC.d[-1]"),

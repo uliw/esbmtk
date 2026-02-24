@@ -1177,25 +1177,24 @@ class Model(esbmtkBase):
         atol : float or ndarray
             Absolute tolerance
         """
-        if self.debug:
-            logging.info(f"R: {R}")
-            logging.info(
-                f"self.gpt shape: {
-                    np.shape(self.gpt) if hasattr(self.gpt, 'shape') else len(self.gpt)
-                }"
-            )
-            logging.info(
-                f"self.toc shape: {
-                    np.shape(self.toc) if hasattr(self.toc, 'shape') else len(self.toc)
-                }"
-            )
-            logging.info(f"CM shape: {np.shape(self.CM)}")
-            logging.info(f"F shape: {np.shape(self.F)}")
-            logging.info(f"time_ode shape: {np.shape(self.time_ode)}")
-            # Add hash values for large arrays to verify content
-            logging.info(f"CM hash: {hash(str(self.CM))}")
-            logging.info(f"F hash: {hash(str(self.F))}")
-            logging.info(f"time_ode hash: {hash(str(self.time_ode))}")
+        logging.debug(f"R: {R}")
+        logging.debug(
+            f"self.gpt shape: {
+            np.shape(self.gpt) if hasattr(self.gpt, 'shape') else len(self.gpt)
+        }"
+        )
+        logging.debug(
+            f"self.toc shape: {
+            np.shape(self.toc) if hasattr(self.toc, 'shape') else len(self.toc)
+        }"
+        )
+        logging.debug(f"CM shape: {np.shape(self.CM)}")
+        logging.debug(f"F shape: {np.shape(self.F)}")
+        logging.debug(f"time_ode shape: {np.shape(self.time_ode)}")
+        # Add hash values for large arrays to verify content
+        logging.debug(f"CM hash: {hash(str(self.CM))}")
+        logging.debug(f"F hash: {hash(str(self.F))}")
+        logging.debug(f"time_ode hash: {hash(str(self.time_ode))}")
 
         self.results = solve_ivp(
             equations_set,
