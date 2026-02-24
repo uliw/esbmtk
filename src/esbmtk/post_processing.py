@@ -133,7 +133,7 @@ def carbonate_system_2_pp(
     """
     from math import log
 
-    from esbmtk import VectorData
+    from esbmtk import VectorData, Q_
 
     # ensure that all objects are lists
     if not isinstance(bn, list):
@@ -145,7 +145,7 @@ def carbonate_system_2_pp(
     for i, rg in enumerate(bn):
         p = rg.cs2.function_params
         sp, cp, area_table, area_dz_table, Csat_table = p
-        ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0, area_fraction = cp
+        ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0 = cp
         k1, k2, k1k2, KW, KB, ca2, boron, isotopes = sp
         hplus: NDArrayFloat = rg.Hplus.c
         dic: NDArrayFloat = rg.DIC.c
@@ -274,11 +274,13 @@ def carbonate_system_2_pp(
             label="zcc",
             plt_units="m",
         )
+        if isinstance(export, Q_):
+            export = export.magnitude
         VectorData(
             name="CaCO3_export",
             register=rg,
             species=rg.mo.DIC,
-            data=export.magnitude,
+            data=export,
             label="CaCO3_export",
             plt_units="mol/year",
         )

@@ -114,6 +114,7 @@ def build_eqs_matrix(M: Model) -> tuple[NDArrayFloat, NDArrayFloat]:
                 f = r.lof[fi]
                 if f in r.lif:
                     sign = 0  # we ignore those fluxes
+                    logging.debug(f"setting {f.full_name} to zero")
                 else:
                     sign = -1 / mass if f.parent.source == r else 1 / mass
 
