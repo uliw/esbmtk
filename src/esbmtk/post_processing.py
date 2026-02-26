@@ -480,6 +480,183 @@ def carbonate_system_3_pp(
             plt_units="mol/year",
         )
 
+def carbonate_system_4_pp(
+    bn: Reservoir | list,
+    export_fluxes: float | list,
+    zsat_min: float = 200,
+    zmax: float = 10000,
+) -> None:
+    """Calculate the fraction of carbonate that is dissolved.
+
+    NOTE: THIS CURRENTLY ONLY WORKS FOR DEEP BOXES. 
+
+    LIMITATIONS:
+    - Assumes all concentrations are in mol/kg
+    - Assumes your Model is in mol/kg
+
+    """
+
+    from math import log
+    from esbmtk import VectorData
+
+    # ensure list inputs
+    if not isinstance(bn, list):
+        bn = [bn]
+    if not isinstance(export_fluxes, list):
+        export_fluxes = [export_fluxes]
+
+    for i, rg in enumerate(bn):
+
+        # --- Pull CS4 parameters ---
+        p = rg.cs4.function_params
+        sp, cp, area_table, area_dz_table, Csat_table = p
+
+        ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0, zint = cp
+        k1, k2, k1k2, KW, KB, ca2, boron, isotopes = sp
+
+        # --- State variables ---
+        hplus: NDArrayFloat = rg.Hplus.c
+        dic: NDArrayFloat = rg.DIC.c
+        zsnow: NDArrayInt = rg.zsnow.c.astype(int)
+
+        export_data = export_fluxes[i]
+
+        # ensure export is a vector
+        if isinstance(export_data, float | int):
+            export: NDArrayFloat = dic * 0 + export_data
+        else:
+            export = export_data
+
+        # --- Carbonate chemistry ---
+        co3: NDArrayFloat = dic / (1 + hplus / k2 + hplus**2 / k1k2)
+        co2aq: NDArrayFloat = dic / (1 + k1 / hplus + k1k2 / hplus**2)
+
+        zsat: NDArrayInt = np.clip(
+            zsat0 * np.log(ca2 * co3 / ksp0),
+            zsat_min,
+            zmax,
+        ).astype(int)
+
+        B_AD: NDArrayFloat = export / AD
+        Fdiss: NDArrayFloat = co3 * 0
+        Fburial: NDArrayFloat = co3 * 0
+        zcc: NDArrayInt = co3.astype(int) * 0
+
+        for i, z in enumerate(zsat):
+
+            zcc[i] = int(
+                zsat0 * log(export[i] * ca2 / (ksp0 * AD * kc)
+                            + ca2 * co3[i] / ksp0)
+            )
+
+            if zcc[i] > zmax:
+                zcc[i] = zmax
+                print(
+                    f"Warning zcc > zmax, i = {i}, "
+                    f"co3 = {co3[i] * 1e6} umol/kg, "
+                    f"export = {export[i] / 1e12:.2f} Tmol/y"
+                )
+            elif zcc[i] < z0:
+                zcc[i] = z0
+
+            A_z0_zsat = area_table[z0] - area_table[z]
+            A_zsat_zcc = area_table[z] - area_table[zcc[i]]
+            A_zcc_zmax = area_table[zcc[i]] - area_table[zmax]
+
+            BCC = A_zcc_zmax * B_AD[i]
+            BNS = alpha * A_z0_zsat * B_AD[i]
+
+            diff_co3 = Csat_table[z:zcc[i]] - co3[i]
+            area_p = area_dz_table[z:zcc[i]]
+
+            BDS_under = kc * area_p.dot(diff_co3)
+            BDS_resp = alpha * (A_zsat_zcc * B_AD[i] - BDS_under)
+            BDS = BDS_under + BDS_resp
+
+            # snowline contribution
+            if zsnow[i] <= zcc[i]:
+                BPDC = 0.0
+            else:
+                diff = Csat_table[zcc[i]:zsnow[i]] - co3[i]
+                area_p_snow = area_dz_table[zcc[i]:zsnow[i]]
+                BPDC = max(0, kc * area_p_snow.dot(diff))
+
+            Fdiss[i] = BDS + BCC + BNS + BPDC
+            Fburial[i] = export[i] - Fdiss[i]
+
+        # --- Save results ---
+        VectorData(
+            name="Fburial",
+            register=rg,
+            species=rg.mo.Fburial,
+            data=Fburial,
+            label="Fburial",
+            plt_units=rg.mo.f_unit,
+        )
+
+        VectorData(
+            name="Fdiss",
+            register=rg,
+            species=rg.mo.Fdiss,
+            data=Fdiss,
+            label="Fdiss",
+            plt_units=rg.mo.f_unit,
+        )
+
+        VectorData(
+            name="CO3",
+            register=rg,
+            species=rg.mo.CO3,
+            data=co3,
+            label="CO32-",
+            plt_units=rg.mo.c_unit,
+        )
+
+        VectorData(
+            name="CO2aq",
+            register=rg,
+            species=rg.mo.CO2aq,
+            data=co2aq,
+            label="CO2aq",
+            plt_units=rg.mo.c_unit,
+        )
+
+        VectorData(
+            name="pH",
+            register=rg,
+            species=rg.mo.pH,
+            data=-np.log10(hplus),
+            label="pH",
+            plt_units="total scale",
+        )
+
+        VectorData(
+            name="zsat",
+            register=rg,
+            species=rg.mo.zsat,
+            data=zsat,
+            label="zsat",
+            plt_units="m",
+        )
+
+        VectorData(
+            name="zcc",
+            register=rg,
+            species=rg.mo.zcc,
+            data=zcc,
+            label="zcc",
+            plt_units="m",
+        )
+
+        VectorData(
+            name="CaCO3_export",
+            register=rg,
+            species=rg.mo.DIC,
+            data=export,
+            label="CaCO3_export",
+            plt_units="mol/year",
+        )
+
 
 def gas_exchange_fluxes(
     liquid_reservoir: Species,

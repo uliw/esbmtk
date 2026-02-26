@@ -44,6 +44,7 @@ from .post_processing import (
     carbonate_system_1_pp as carbonate_system_1_pp,
     carbonate_system_2_pp as carbonate_system_2_pp,
     carbonate_system_3_pp as carbonate_system_3_pp,
+    carbonate_system_4_pp as carbonate_system_4_pp,
     gas_exchange_fluxes as gas_exchange_fluxes,
 )
 from .model import Model as Model
@@ -76,11 +77,6 @@ from .carbonate_chemistry import (
 from .carbonate_system_4 import (
     add_carbonate_system_4 as add_carbonate_system_4,
     carbonate_system_4 as carbonate_system_4,
-)
-
-from .carbonate_system_5 import (
-    add_carbonate_system_5 as add_carbonate_system_5,
-    carbonate_system_5 as carbonate_system_5,
 )
 
 from .base_classes import (

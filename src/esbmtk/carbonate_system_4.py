@@ -335,7 +335,7 @@ def init_carbonate_system_4(
         isotopes=source_box.DIC.isotopes,
         r_s=source_box,  # source (RG) of CaCO3 flux,
         r_d=this_box,  # sink (RG) of dissolved CaCO3 flux associated with intermediate box
-        r_n=next_box, #sink (RG) of CaCO3 flux associated with intermediate box
+        r_n=next_box, #sink (RG) of CaCO3 flux associated with deep box
         r_b=burial_box, #sink (RG) of undissolved CaCO3 flux
         function_input_data=[  # variable input data
             export_flux,         # CaCO3_export
@@ -352,26 +352,25 @@ def init_carbonate_system_4(
         function_params=(  # constant input data
             swc_p,
             cp,
-            this_box.mo.area_table,
-            this_box.mo.area_dz_table,
-            this_box.mo.Csat_table,
+            next_box.mo.area_table,
+            next_box.mo.area_dz_table,
+            next_box.mo.Csat_table,
         ),
         return_values=[
-            {f"F_{this_box.full_name}.DIC": "ib_DIC"},
-            {f"F_{this_box.full_name}.TA": "ib_TA"}, 
-            {f"R_{this_box.full_name}.Hplus": this_box.swc.hplus},
-            {f"R_{this_box.full_name}.zsnow": float(abs(kwargs["zsnow"]))},
-            {f"F_{next_box.full_name}.DIC": "db_DIC"}, 
-            {f"F_{next_box.full_name}.TA": "db_TA"},
+            {f"F_{this_box.full_name}.DIC": "ib_DIC_cs4"},
+            {f"F_{this_box.full_name}.TA": "ib_TA_cs4"}, 
+            {f"R_{next_box.full_name}.Hplus": next_box.swc.hplus},
+            {f"R_{next_box.full_name}.zsnow": float(abs(kwargs["zsnow"]))},
+            {f"F_{next_box.full_name}.DIC": "db_DIC_cs4"}, 
+            {f"F_{next_box.full_name}.TA": "db_TA_cs4"},
             {f"F_{burial_box.full_name}.DIC": "burial_DIC"},
             {f"F_{burial_box.full_name}.TA": "burial_TA"},
         ],
-        register=this_box,
+        register=next_box, 
+
     )
-    this_box.mo.lpc_f.append(ec.fname)  # list of function to be imported in ode backend
+    next_box.mo.lpc_f.append(ec.fname)  # list of function to be imported in ode backend
     
-
-
     return ec
 
 def add_carbonate_system_4(**kwargs) -> None:
@@ -411,7 +410,7 @@ def add_carbonate_system_4(**kwargs) -> None:
         "zsat0": int,
         "Ksp0": float,
         "kc": float,
-        "Ca2": float,
+        "ca2": float,
         "pc": (float, int),
         "pg": (float, int),
         "I_caco3": (float, int),
@@ -487,19 +486,19 @@ def add_carbonate_system_4(**kwargs) -> None:
         next_box = [next_box]
 
     if not isinstance(burial_box, list):
-        next_box = [burial_box]
+        burial_box = [burial_box]
 
     if len(this_box) != len(source_box):
         raise CarbonateSystem2Error(
-            f"Number of surface boxes ({len(source_box)}) does not match deep boxes ({len(this_box)})"
+            f"Number of surface boxes ({len(source_box)}) does not match intermediate boxes ({len(this_box)})"
         )
     if len(next_box) != len(this_box):
         raise CarbonateSystem2Error(
-            f"Number of next boxes ({len(next_box)}) does not match deep boxes ({len(this_box)})"
+            f"Number of deep boxes ({len(next_box)}) does not match intermediate boxes ({len(this_box)})"
         )
-    if len(burial_box) != len(this_box):
+    if len(burial_box) != len(next_box):
         raise CarbonateSystem2Error(
-            f"Number of burial boxes ({len(burial_box)}) does not match deep boxes ({len(this_box)})"
+            f"Number of burial boxes ({len(burial_box)}) does not match deep boxes ({len(next_box)})"
         )
 
 
@@ -524,7 +523,7 @@ def add_carbonate_system_4(**kwargs) -> None:
         if not (hasattr(db, "DIC") and hasattr(db, "TA")):
             raise AttributeError(f"{db.full_name} must have a DIC and TA reservoir")
 
-        nb.swc.update_parameters()
+        db.swc.update_parameters()
 
         export_flux = kwargs["carbonate_export_fluxes"][i]
         export_flux.serves_as_input = True  # flag this for ode backend
@@ -537,6 +536,8 @@ def add_carbonate_system_4(**kwargs) -> None:
             kwargs,
         )
 
-        register_return_values(ec, nb)
+        register_return_values(ec, db)
+        db.has_cs4 = True
         nb.has_cs4 = True
+        
     
