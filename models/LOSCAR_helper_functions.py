@@ -2,6 +2,8 @@ from __future__ import annotations
 import typing as tp
 import numpy.typing as npt
 import numpy as np
+import pandas as pd
+import os
 
 NDArrayFloat = npt.NDArray[np.float64]
 
@@ -140,7 +142,7 @@ def create_weathering_fluxes(
     logging.debug("\n")
 
 
-def create_gas_exchange_connections(model, basin_list, species, piston_velocity):
+def create_gas_exchange_connections(model, basin_list, species, piston_velocity, scale):
     """Create gas exchange connection objects."""
     from esbmtk import Species2Species
 
@@ -160,9 +162,182 @@ def create_gas_exchange_connections(model, basin_list, species, piston_velocity)
             sink=sink,  # Reservoir Species
             species=species,
             piston_velocity=piston_velocity,
+            scale=scale,
             ctype="gasexchange",
             id=cid,
         )
+
+def extract_diagnostics(M):
+    """Extract final model diagnostics for experiment logging."""
+
+    diag = {}
+
+    # ---------------- Atmosphere ----------------
+    diag["CO2_ppm"] = round(M.CO2_At.c[-1]*1e6, 1)
+
+    # ---------------- Deep ocean carbonate chemistry ----------------
+    diag["A_zsat"] = round(M.A_db.zsat.c[-1], 0)
+    diag["I_zsat"] = round(M.I_db.zsat.c[-1], 0)
+    diag["P_zsat"] = round(M.P_db.zsat.c[-1], 0)
+
+    diag["A_zcc"] = round(M.A_db.zcc.c[-1], 0)
+    diag["I_zcc"] = round(M.I_db.zcc.c[-1], 0)
+    diag["P_zcc"] = round(M.P_db.zcc.c[-1], 0)
+
+    # ---------------- Deep ocean carbonate ----------------
+    diag["A_deep_CO3"] = round(M.A_db.CO3.c[-1] * 1e6, 2)
+    diag["I_deep_CO3"] = round(M.I_db.CO3.c[-1] * 1e6, 2)
+    diag["P_deep_CO3"] = round(M.P_db.CO3.c[-1] * 1e6, 2)
+
+    # ---------------- Deep ocean carbon ----------------
+    diag["A_deep_DIC"] = round(M.A_db.DIC.c[-1] * 1e6, 1)
+    diag["I_deep_DIC"] = round(M.I_db.DIC.c[-1] * 1e6, 1)
+    diag["P_deep_DIC"] = round(M.P_db.DIC.c[-1] * 1e6, 1)
+
+    diag["A_deep_TA"] = round(M.A_db.TA.c[-1] * 1e6, 1)
+    diag["I_deep_TA"] = round(M.I_db.TA.c[-1] * 1e6, 1)
+    diag["P_deep_TA"] = round(M.P_db.TA.c[-1] * 1e6, 1)
+
+    # ---------------- High latitude surface box ----------------
+    diag["H_DIC"] = round(M.H_sb.DIC.c[-1] * 1e6, 1)
+    diag["H_TA"] = round(M.H_sb.TA.c[-1] * 1e6, 1)
+
+    return diag
+
+def log_experiment(M, experiment_name, params):
+
+    diagnostics = extract_diagnostics(M)
+
+    row = {"experiment": experiment_name}
+
+    # record modified parameters
+    row.update(params)
+
+    # record diagnostics
+    row.update(diagnostics)
+
+    file = "results_summary.csv"
+
+    if os.path.exists(file):
+        df = pd.read_csv(file)
+        df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
+    else:
+        df = pd.DataFrame([row])
+
+    df.to_csv(file, index=False)
+
+    print("Experiment logged:", experiment_name)
+
+import pandas as pd
+
+def log_full_timeseries(M, filename: str):
+    """
+    Extract the full time series of key model variables and save to CSV.
+    
+    :param M: Model instance
+    :param filename: Path to CSV file to write
+    """
+    # Prepare dictionary of time series
+    ts_dict = {
+        "time": M.time,  # model time vector
+        # Atmosphere
+        "CO2_ppm": M.CO2_At.c * 1e6,
+        # Deep ocean carbonate chemistry
+        "A_zsat": M.A_db.zsat.c,
+        "I_zsat": M.I_db.zsat.c,
+        "P_zsat": M.P_db.zsat.c,
+        "A_zcc": M.A_db.zcc.c,
+        "I_zcc": M.I_db.zcc.c,
+        "P_zcc": M.P_db.zcc.c,
+        # Deep ocean carbonate
+        "A_deep_CO3": M.A_db.CO3.c * 1e6,
+        "I_deep_CO3": M.I_db.CO3.c * 1e6,
+        "P_deep_CO3": M.P_db.CO3.c * 1e6,
+        # Deep ocean carbon
+        "A_deep_DIC": M.A_db.DIC.c * 1e6,
+        "I_deep_DIC": M.I_db.DIC.c * 1e6,
+        "P_deep_DIC": M.P_db.DIC.c * 1e6,
+        "A_deep_TA": M.A_db.TA.c * 1e6,
+        "I_deep_TA": M.I_db.TA.c * 1e6,
+        "P_deep_TA": M.P_db.TA.c * 1e6,
+        # High latitude surface box
+        "H_DIC": M.H_sb.DIC.c * 1e6,
+        "H_TA": M.H_sb.TA.c * 1e6,
+    }
+
+    # Convert to DataFrame
+    df = pd.DataFrame(ts_dict)
+
+    # Optionally round for readability
+    df = df.round({
+        "CO2_ppm": 1,
+        "A_zsat": 0, "I_zsat": 0, "P_zsat": 0,
+        "A_zcc": 0, "I_zcc": 0, "P_zcc": 0,
+        "A_deep_CO3": 2, "I_deep_CO3": 2, "P_deep_CO3": 2,
+        "A_deep_DIC": 1, "I_deep_DIC": 1, "P_deep_DIC": 1,
+        "A_deep_TA": 1, "I_deep_TA": 1, "P_deep_TA": 1,
+        "H_DIC": 1, "H_TA": 1,
+    })
+
+    # Write to CSV
+    df.to_csv(filename, index=False)
+    print(f"Full time series logged to {filename}")
+
+import os
+import pandas as pd
+
+def log_experiment_timeseries(M, experiment_name: str, params: dict, filename: str = "results_timeseries.csv"):
+    """
+    Log the full time series of an experiment, including parameters.
+    
+    :param M: Model instance
+    :param experiment_name: Name of the experiment
+    :param params: Dictionary of experiment parameters
+    :param filename: CSV file to write
+    """
+    # ---------------- Build time series dictionary ----------------
+    ts_dict = {
+        "experiment": [experiment_name] * len(M.time),
+        "time": M.time,  # model time vector
+        # Atmosphere
+        "CO2_ppm": M.CO2_At.c * 1e6,
+        # Deep ocean carbonate chemistry
+        "A_zsat": M.A_db.zsat.c,
+        "I_zsat": M.I_db.zsat.c,
+        "P_zsat": M.P_db.zsat.c,
+        "A_zcc": M.A_db.zcc.c,
+        "I_zcc": M.I_db.zcc.c,
+        "P_zcc": M.P_db.zcc.c,
+        # Deep ocean carbonate
+        "A_deep_CO3": M.A_db.CO3.c * 1e6,
+        "I_deep_CO3": M.I_db.CO3.c * 1e6,
+        "P_deep_CO3": M.P_db.CO3.c * 1e6,
+        # Deep ocean carbon
+        "A_deep_DIC": M.A_db.DIC.c * 1e6,
+        "I_deep_DIC": M.I_db.DIC.c * 1e6,
+        "P_deep_DIC": M.P_db.DIC.c * 1e6,
+        "A_deep_TA": M.A_db.TA.c * 1e6,
+        "I_deep_TA": M.I_db.TA.c * 1e6,
+        "P_deep_TA": M.P_db.TA.c * 1e6,
+        # High latitude surface box
+        "H_DIC": M.H_sb.DIC.c * 1e6,
+        "H_TA": M.H_sb.TA.c * 1e6,
+    }
+
+    # Add parameter values as constant columns
+    for key, val in params.items():
+        ts_dict[key] = [val] * len(M.time)
+
+    # Convert to DataFrame
+    df_ts = pd.DataFrame(ts_dict)
+
+    # ---------------- Append or create CSV ----------------
+    if os.path.exists(filename):
+        df_existing = pd.read_csv(filename)
+        df_ts = pd.concat([df_existing, df_ts], ignore_index=True)
+
+    df_ts.to_csv(filename, index=False)
+    print(f"Experiment time series logged: {experiment_name} -> {filename}")
 
 
 def get_matrix_coefficients(

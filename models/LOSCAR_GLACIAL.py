@@ -257,6 +257,21 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
     ta = 0.2
     ti = 0.2
 
+    # Attach to model for logging
+    M.thc = thc
+    M.ta = ta
+    M.ti = ti
+
+    # Define deep/high box mixing fluxes 
+    mix_A_H = Q_("4 Sv")
+    mix_I_H = Q_("3 Sv")
+    mix_P_H = Q_("10 Sv")
+
+    # Attach to model for logging
+    M.mix_A_H = mix_A_H
+    M.mix_I_H = mix_I_H
+    M.mix_P_H = mix_P_H
+
     connection_dict = {
         # source_to_sink@id
         # thermohaline, upwelling, and advection
@@ -339,32 +354,32 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
         # deep/high box mixing
         "A_db_to_H_sb@mix_up": {
             "ty": "scale_with_concentration",
-            "sc": "4 Sverdrup",
+            "sc": mix_A_H,
             "sp": species_list,
         },
         "H_sb_to_A_db@mix_down": {
             "ty": "scale_with_concentration",
-            "sc": "4 Sverdrup",
+            "sc": mix_A_H,
             "sp": species_list,
         },
         "I_db_to_H_sb@mix_up": {
             "ty": "scale_with_concentration",
-            "sc": "3 Sverdrup",
+            "sc": mix_I_H,
             "sp": species_list,
         },
         "H_sb_to_I_db@mix_down": {
             "ty": "scale_with_concentration",
-            "sc": "3 Sverdrup",
+            "sc": mix_I_H,
             "sp": species_list,
         },
         "P_db_to_H_sb@mix_up": {
             "ty": "scale_with_concentration",
-            "sc": "10 Sverdrup",
+            "sc": mix_P_H,
             "sp": species_list,
         },
         "H_sb_to_P_db@mix_down": {
             "ty": "scale_with_concentration",
-            "sc": "10 Sverdrup",
+            "sc": mix_P_H,
             "sp": species_list,
         },
     }
@@ -434,9 +449,15 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
     # low latitude export flux = 80% of upwelling PO4
     pfluxes = M.flux_summary(filter_by="PO4_mix_up", exclude="H_", return_list=True)
 
-    # Export productivity in the high latidude box is fixed (after Zeebe)
+    # Export productivity in the high latitude box is fixed (after Zeebe)
     # to mimic iron limitation.
-    pp_hl = Q_(f"{1.8 * M.H_sb.area.magnitude / M.PC_ratio} mol/a")
+
+    export_constant_PO4_hl = 1.8
+
+    #Attach to model for logging
+    M.export_constant_PO4_hl = export_constant_PO4_hl
+
+    pp_hl = Q_(f"{export_constant_PO4_hl * M.H_sb.area.magnitude / M.PC_ratio} mol/a")
 
     # Particulate (OM bound) phosphate export productivity in the low latidude boxes
     ct = {  # Surface box to ib, about 78% is remineralized in the ib
@@ -592,6 +613,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
         zsat_min=-100,
         z0=-100,
         zint=-1000,
+        zmax=-6000,
         alpha=alpha,
     )
 
@@ -604,7 +626,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
         [M.A_sb, M.I_sb, M.P_sb],
         M.CO2,
         "4.8 m/d",  # piston velocity
-        1.0 #scale
+        1.0
     )
 
     # ------------------ Air Sea Gas Exchange --------------------- #
@@ -621,7 +643,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
         [M.A_sb, M.I_sb, M.P_sb, M.H_sb],
         M.O2,
         "4.8 m/d",  # piston velocity
-        1.0 #scale
+        1.0
     )
 
     return M
@@ -660,37 +682,41 @@ def pp_carbonate_cs4(M: Model, ocean_names: list) -> None:
 
 
 if __name__ == "__main__":
-    from LOSCAR_helper_functions import get_matrix_coefficients
+    from LOSCAR_helper_functions import get_matrix_coefficients, extract_diagnostics, log_experiment, log_experiment_timeseries
 
-    run_time = "10 Myr"
-    time_step = "1 kyr"
+    run_time = "100 kyr"
+    time_step = "100 yr"
     rain_ratio = 6.1
     alpha = 0.3
-    debug = True
+    debug = False
 
-    M_modern = initialize_model(rain_ratio, alpha, run_time, time_step, debug)
+    M_glacial = initialize_model(rain_ratio, alpha, run_time, time_step, debug)
 
-    M_modern.debug_equations_file = False
+    experiment_name = "CONTROL"
 
-    M_modern.run()
-    M_modern.save_state("modern_state.pkl")
+    M_glacial.read_state("modern_state.pkl")
+    M_glacial.run()
 
-    M_modern.plot(M_modern.CO2_At)
+    pp_carbonate_cs4(M_glacial, ["A","I","P"])
+    
+    params = {
+        "deep temperature": M_glacial.A_db.swc.temperature,
+        "surface temperature": M_glacial.A_sb.swc.temperature,
+        "high-deep mixing (Atlantic)":  M_glacial.mix_A_H,
+        "high-deep mixing (Indian)": M_glacial.mix_I_H,
+        "high-deep mixing (Pacific)": M_glacial.mix_P_H,
+        "thermohaline circulation:": M_glacial.thc,
+        "thermohaline upwelling (Atlantic)": M_glacial.ta,
+        "thermohaline upwelling (Indian)": M_glacial.ti,
+        "high-lat PO4 export constant": M_glacial.export_constant_PO4_hl 
+    }
 
-    '''
-    M.plot([M.CO2_At])
-    M.plot([M.A_sb.PO4, M.A_ib.PO4, M.A_db.PO4])
-    M.plot([M.H_sb.DIC, M.A_sb.DIC, M.A_ib.DIC, M.A_db.DIC])
-    M.plot([M.H_sb.TA, M.A_sb.TA, M.A_ib.TA, M.A_db.TA])
+    # --- log experiment ---
+    log_experiment(M_glacial, experiment_name, params)
+
+    log_experiment_timeseries(M_glacial, experiment_name, params)
 
 
-    # ---- sanity checks ---
-    search_terms = ["shelf", "slope", "deep"]
-    for f_name in M.F_names:
-        if any(term in f_name for term in search_terms):
-            coeff = get_matrix_coefficients(f_name, M.CM, M.F, M.F_names, M.R_names)
-            print(coeff)
-    '''
 
 
 
