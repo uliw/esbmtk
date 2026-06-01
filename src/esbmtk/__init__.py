@@ -79,6 +79,11 @@ from .carbonate_system_4 import (
     carbonate_system_4 as carbonate_system_4,
 )
 
+from .excel_connection_functions import create_reservoirs_from_excel as create_reservoirs_from_excel
+from .excel_connection_functions import create_transport_matrix_from_excel as create_transport_matrix_from_excel
+from .excel_connection_functions import create_gas_reservoirs_from_excel as create_gas_reservoirs_from_excel
+from .excel_connection_functions import create_gas_exchange_connections_from_excel as create_gas_exchange_connections_from_excel
+
 from .base_classes import (
     Flux as Flux,
     Sink as Sink,
