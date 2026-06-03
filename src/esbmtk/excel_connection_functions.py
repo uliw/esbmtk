@@ -7,7 +7,6 @@ from esbmtk.extended_classes import GasReservoir
 from esbmtk.base_classes import SpeciesProperties
 from esbmtk.utility_functions import initialize_reservoirs
 
-
 def create_reservoirs_from_excel(
     M,
     excel_file: str,
@@ -93,6 +92,8 @@ def create_reservoirs_from_excel(
 
     Any additional column whose name matches a SpeciesProperties object
     registered in the model is interpreted as a species concentration.
+
+    TO ADD: DELTA (FOR ISOTOPES)
     """
 
     if species_units is None:
@@ -201,22 +202,28 @@ def create_transport_matrix_from_excel(
     M,
     excel_file: str,
     species_list,
+    sheet_name: str = "transport_matrix",
     connection_type: str = "scale_with_concentration",
 ):
-    """Construct transport connections for a model from an Excel specification.
+    """Construct transport connections for a model from an Excel sheet.
 
     The function reads an Excel file defining transport connections
-    between reservoirs, and registers the resulting connections in the model.
+    between reservoirs, and registers them in the model.
 
     Parameters
     ----------
     M : object
-        Model object containing parameters/variables referenced in scaling
-        expressions (via attribute access).
+        Model object.
+
     excel_file : str
-        Path to an Excel file defining transport connections.
-    species_list : list
+        Path to an Excel file defining the transport matrix.
+
+    species_list : list [SpeciesProperties]
         List of species associated with each transport connection.
+
+    sheet_name: str
+        Name of the Excel worksheet containing the transport matrix. Default is "transport_matrix".
+
     connection_type : str, optional
         Type identifier for the connection. Default is "scale_with_concentration".
 
@@ -233,23 +240,17 @@ def create_transport_matrix_from_excel(
             - sp : list
                 Species list.
 
-    Excel Format
-    ------------
-    Required columns:
+    Notes
+    -----
+    Excel required columns format:
         - source : str
         - sink : str
         - flux_id : str
         - sc : str
 
-    Notes
-    -----
-    - The ``sc`` column is first evaluated as a Python expression in a
-      restricted namespace containing attributes of ``M``.
-    - If evaluation fails, it is interpreted as a physical quantity string
-      (e.g., "21 Sverdrup") using ``Q_``.
-    - Automatic reverse connections (i.e. "mix_down") are created for flux_id == "mix_up",
-      unless explicitly defined in the Excel file.
-    - Uses ``eval``; ensure Excel inputs are trusted.
+    Connections with ``flux_id == "mix_up"`` automatically generate a
+    corresponding reverse connection named ``mix_down`` unless that
+    connection already exists in the spreadsheet.
 
     Examples
     --------
@@ -258,27 +259,23 @@ def create_transport_matrix_from_excel(
     source | sink | flux_id     | sc
     -------|------|------------|----------------
     H_sb   | A_db | thermohaline | thc
-    A_db   | A_ib | upwelling    | ta * thc
+    A_db   | A_ib | thermohaline | ta * thc
     A_ib   | A_sb | mix_up       | 21 Sverdrup
+    
+    TO ADD: EPSILON (FOR ISOTOPES)
     """
 
     # Load transport definition table from Excel
-    df = pd.read_excel(excel_file)
+    df = pd.read_excel(excel_file, sheet_name=sheet_name)
 
-    # Build evaluation namespace from model attributes
-    # Only public attributes are exposed for expression evaluation
     lookup = {
         name: getattr(M, name)
         for name in dir(M)
         if not name.startswith("_")
     }
 
-    # Temporary storage for connections
-    ct = {}
+    ct = {} # Empty dictionary for connections
 
-    # ---------------------------------------------------------------------
-    # Parse each row into a structured connection
-    # ---------------------------------------------------------------------
     for _, row in df.iterrows():
 
         source = str(row["source"]).strip()
@@ -293,10 +290,10 @@ def create_transport_matrix_from_excel(
             scale = eval(scale_expr, {}, lookup)
 
         except Exception:
-            # Fallback: interpret as physical quantity (e.g., "21 Sverdrup")
+            # Alternately interpret as physical quantity (e.g., "21 Sverdrup")
             scale = Q_(scale_expr)
 
-        # Unique connection identifier
+        # Unique connection identifier string
         connection_name = f"{source}_to_{sink}@{flux_id}"
 
         ct[connection_name] = {
@@ -347,20 +344,63 @@ def create_gas_reservoirs_from_excel(
     excel_file: str,
     sheet_name: str = "gas_reservoirs",
 ):
-    """
-    Create GasReservoir objects from Excel.
+    """ Create atmospheric reservoirs from an Excel worksheet.
 
-    Required columns
-    ----------------
-    name
-    species
-    species_ppm
+    Parameters
+    ----------
+    M : Model
+        ESBMTK model instance containing the species definitions
+        referenced by the worksheet.
 
-    Optional columns
-    ----------------
-    delta
-    reservoir_mass
-    plot
+    excel_file : str
+        Path to the Excel workbook.
+
+    sheet_name : str, default="gas_reservoirs"
+        Worksheet containing gas reservoir definitions.
+
+    Returns
+    -------
+    dict
+        Dictionary mapping reservoir names to the created
+        ``GasReservoir`` objects.
+
+    Raises
+    ------
+    ValueError
+        If no ``SpeciesProperties`` objects are found in the model.
+
+    ValueError
+        If a referenced species does not exist.
+
+    ValueError
+        If ``species_ppm`` is missing.
+
+    Notes
+    -----
+    Required columns::
+
+        name
+        species
+        species_ppm
+
+    Optional columns::
+
+        delta
+        reservoir_mass
+        plot
+
+    Numeric values supplied in the ``species_ppm`` column are
+    automatically interpreted as ppm and converted to strings of
+    the form ``"<value> ppm"``.
+
+    Examples
+    --------
+    Excel sheet::
+
+        name      | species | species_ppm | delta
+        ----------|---------|-------------|------
+        CO2_At    | CO2     | 420         | 0
+        O2_At     | O2      | 209000      | 0
     """
 
     df = pd.read_excel(excel_file, sheet_name=sheet_name)
