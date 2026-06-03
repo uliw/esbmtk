@@ -7,8 +7,6 @@ scipy
 pint
 psutil
 cachetools
-sys
-io
 setuptools
 importlib-metadata
 
