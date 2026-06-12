@@ -213,6 +213,50 @@ Species2Species(  # Example for CO2
 #+END_SRC
 Defining gas transfer for O_2  uses the same approach.  Currently ESBMTK provides useful defaults for CO_{2,} O_2 and N_2 only. See the isotope chapter on how to define gas exchange reactions for custom species.
 
+*** Creating gas reservoirs and gas-exchange connections via Excel
+
+For models with several atmospheric reservoirs and gas-exchange connections, gas reservoirs and connections can be defined using Excel worksheets, using the =create_gas_reservoirs_from_excel= and the =create_gas_exchange_connections_from_excel= functions. 
+
+**** Creating gas reservoirs from Excel
+
+The function =create_gas_reservoirs_from_excel= can be used to read gas-reservoir definitions from an Excel worksheet. Each row describes one gas reservoir.
+
+| name | species	| species_ppm |
+|CO2_At	| CO2	| 280 ppm |
+| O2_At |	O2	| 21 percent |
+
+The species concentrations can be specified in terms of ppm or percentage, as demonstrated above. Note that numeric values supplied in the =species_ppm= column with no specified units are automatically interpreted as ppm.
+
+The function can be called as follows:
+
+#+BEGIN_SRC ipython
+create_gas_reservoirs_from_excel(
+        M, #Model object
+        "LOSCAR_sheets.xlsx", #specify file path
+        sheet_name="gas_reservoirs" #specify worksheet (default = "gas_reservoirs")
+    )
+#+END_SRC
+
+**** Creating gas exchange connections from Excel
+
+The function =create_gas_exchange_connections_from_excel= can be used to read gas-exchange connection definitions from an Excel worksheet. Each row describes the gas exchange connections for one gaseous species.
+
+| species	| basins	| piston_velocity |
+|CO2	|A_sb, I_sb, P_sb, H_sb	| 4.8 m/d|
+| O2	|A_sb, I_sb, P_sb, H_sb	| 4.8 m/d|
+
+The function can be called as follows:
+
+#+BEGIN_SRC ipython
+    create_gas_exchange_connections_from_excel(
+        M, #Model object
+        "LOSCAR_sheets.xlsx", #specify file path
+        sheet_name="gas_exchange" #specify worksheet (default = "gas_exchange")
+    )
+#+END_SRC
+
+Note that since gas exchange connections require the initialization of Carbonate System 1 to work, the function =create_gas_exchange_connections_from_excel= must be placed after =add_carbonate_system_1= in the model definition.
+    
 
 ** pCO_{2} Dependent Weathering
 ESBMTK defines a simple power law function to calculate pCO_{2} dependent weathering fluxes (see e.g., Walker and Hays, 1981, https://doi.org/10.1029/jc086ic10p09776):
