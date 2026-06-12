@@ -194,8 +194,6 @@ CS3 post-processing currently (As of July 2025) functions in the same manner as 
 
 *** Carbonate System 4: 
 
-*NOTE (November 2025): this is currently in the early stages of development.*
-
 Carbonate system 4 is an extension of CS2 and CS3, and enables carbonate chemistry for models with three vertical ocean layers, i.e., models with a surface layer, an intermediate layer, and a deep layer (in addition to a sediment layer/burial box). 
 
 The =carbonate_system_4= function splits Boudreau (2010)'s carbonate dissolution fluxes and adds them to either the intermediate box or the deep box depending on the relative depth of z_{sat} (i.e., saturation depth) computed in each timestep. The flux-splitting scheme therefore consists of two scenarios: either z_{sat} is deeper than z_{int}, or z_{int} is deeper than z_{sat}. Both scenarios are visualized below:
@@ -243,7 +241,7 @@ Notes:
 - There is no need to add a =ConnectionProperties= instance to handle PIC flux connections between the Intermediate and Deep boxes, or the Deep and Burial boxes. This is handled entirely by CS4. However, one must still declare a =ConnectionProperties= instance (with the bypass "bp" keyword) to remove the total carbonate export fluxe from =source_box=.
 - At the moment, =burial_box= must be a Reservoir class object and cannot be a Sink class object. However, one can still use this setup to pass burial flux from an ocean box to a sediment box by defining the sediment box as a Reservoir class object with seawater parameters (T, P, S) exactly equal to the ocean box just above it, and initial DIC and TA set to 0.
 
-A more generalized version of Carbonate System 2/3/4 capable of handling n vertical ocean layers is currently in development. 
+
 
 ** Gas Exchange
 ESBMTK implements gas exchange across the Air-Sea interface as a @@rst::py:class:`esbmtk.connections.Species2Species()`@@ instance, between a @@rst::py:class:`esbmtk.extended_classes.GasReservoir()`@@ and a @@rst::py:class:`esbmtk.base_classes.Species()`@@ instance. In the following example, we first declare a =Gasreservoir= and then connect it with a regular surface box. Note that the CO_{2} gas transfer calculation requires that the respective surface reservoir carries the =CO2aq= tracer as calculated by the @@rst::py:func:`esbmtk.carbonate_chemistry_carbonate_system_1.()`@@ function since the gas-transfer depends on the dissolved CO_{2} rather than on the DIC concentration.
