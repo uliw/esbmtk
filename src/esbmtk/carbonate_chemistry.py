@@ -194,18 +194,11 @@ def add_carbonate_system_1(rgs: list):
 # @lru_cache
 def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
     """Calcualte zsat."""
-<<<<<<< HEAD
-    try:
-        zsat = int(zsat0 * log(ca2 * co3 / ksp0))
-    except:
-        breakpoint()
-=======
 
     if co3 <= 0 or ca2 <= 0:
         return zsat_min
         
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
->>>>>>> 7877434 (minor corrections)
     return min(zmax, max(zsat_min, zsat))
 
 
@@ -731,8 +724,8 @@ def carbonate_system_3(
 def init_carbonate_system_3(
     export_flux: Flux,
     source_box: Reservoir,  # Surface box
-    this_box: Reservoir,  # deep box
-    next_box: Reservoir,
+    this_box: Reservoir,  # intermediate box
+    next_box: Reservoir, #deep box
     kwargs: dict,
 ):
     """Initialize a carbonate system 3 instance.
@@ -824,7 +817,7 @@ def init_carbonate_system_3(
 def add_carbonate_system_3(**kwargs) -> None:
     """Create a new carbonate system virtual reservoir.
 
-    This function initializes carbonate system 2 (cs2) for each specified deep box.
+    This function initializes carbonate system 3 (cs3) for each specified deep box.
     It computes saturation, compensation, and snowline depth, and the associated
     carbonate burial fluxes.
 

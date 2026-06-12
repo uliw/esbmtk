@@ -4,13 +4,15 @@ import numpy.typing as npt
 import numpy as np
 import pandas as pd
 import os
+from copy import deepcopy
+import gc
+from esbmtk import Model, SpeciesProperties
+
 
 NDArrayFloat = npt.NDArray[np.float64]
 
 # if tp.TYPE_CHECKING:
 #    from esbmtk import Model, SpeciesProperties
-
-from esbmtk import Model, SpeciesProperties
 
 
 def create_connections_from_flux_list(
@@ -19,7 +21,7 @@ def create_connections_from_flux_list(
     target_id: str,
     species: SpeciesProperties,
     scale: int | float,
-    **kwargs: dict,
+    **kwargs: dict, #doesnt work, error says takes 5 positional arguments but 6 were given 
 ) -> None:
     """Create new connections based on a list of existing fluxes.
 
@@ -41,6 +43,10 @@ def create_connections_from_flux_list(
 
     source_arg = kwargs.get("source", "auto")
     sink_arg = kwargs.get("sink", "auto")
+
+    delta = kwargs.get("delta", None)
+    epsilon = kwargs.get("epsilon", None)
+
     bypass = "None"
 
     if len(flux_list) < 1:
@@ -78,6 +84,8 @@ def create_connections_from_flux_list(
             ctype="scale_with_flux",
             ref_flux=f,  # <-- indexed reference
             scale=scale,
+            delta=delta,
+            epsilon=epsilon,
             id=f"C_{source_name}_to_{sink_name}_{target_id}",
             bypass=bypass,
         )
@@ -93,6 +101,8 @@ def create_weathering_fluxes(
     area_dict: dict,
     ref_flux_name: str,
     scale: int | float,
+    delta: float | None = None,
+    alpha: float | None = None,
     **kwargs: dict,
 ) -> None:
     """Create the connection objects for weathering fluxes.
@@ -126,7 +136,8 @@ def create_weathering_fluxes(
             logging.debug(f"ref_flux = {ref_flux_name}")
             logging.debug(f"id = {cid}")
 
-        c = Species2Species(  # Atlantic
+        # ---------------- Species2Species ---------------- #
+        kwargs_s2s = dict(
             ctype="scale_with_flux",
             source=source,
             sink=sink,
@@ -135,37 +146,21 @@ def create_weathering_fluxes(
             scale=area * scale,
             id=cid,
         )
+
+        # only forward if provided
+        if delta is not None:
+            kwargs_s2s["delta"] = delta
+        if alpha is not None:
+            kwargs_s2s["alpha"] = alpha
+
+        Species2Species(**kwargs_s2s)
+        
         # c.name = (f"C_{source.name}_to_{sink.name}_{species.name}_{c.id}",)
         # c.full_name = (f"M.C_{source.name}_to_{sink.name}_{species.name}_{c.id}",)
         # logging.debug(f"Created {c.full_name}")
         # breakpoint()
     logging.debug("\n")
 
-
-def create_gas_exchange_connections(model, basin_list, species, piston_velocity, scale):
-    """Create gas exchange connection objects."""
-    from esbmtk import Species2Species
-
-    # get reservoirgroup object
-    for basin in basin_list:
-        reservoir = getattr(model, basin.name)
-        source = getattr(model, f"{species.name}_At")
-        if species.name == "CO2":
-            sink = getattr(reservoir, "DIC")
-        else:
-            sink = getattr(reservoir, species.name)
-
-        cid = f"{basin.name}_{species.name}_gex"
-
-        Species2Species(  # Pacific surface to atmosphere
-            source=source,  # Reservoir Species
-            sink=sink,  # Reservoir Species
-            species=species,
-            piston_velocity=piston_velocity,
-            scale=scale,
-            ctype="gasexchange",
-            id=cid,
-        )
 
 def extract_diagnostics(M):
     """Extract final model diagnostics for experiment logging."""
@@ -198,9 +193,14 @@ def extract_diagnostics(M):
     diag["I_deep_TA"] = round(M.I_db.TA.c[-1] * 1e6, 1)
     diag["P_deep_TA"] = round(M.P_db.TA.c[-1] * 1e6, 1)
 
+    diag["A_deep_O2"] = round(M.A_db.O2.c[-1] * 1e6, 1)
+    diag["I_deep_O2"] = round(M.I_db.O2.c[-1] * 1e6, 1)
+    diag["P_deep_O2"] = round(M.P_db.O2.c[-1] * 1e6, 1)
+
     # ---------------- High latitude surface box ----------------
     diag["H_DIC"] = round(M.H_sb.DIC.c[-1] * 1e6, 1)
     diag["H_TA"] = round(M.H_sb.TA.c[-1] * 1e6, 1)
+    diag["H_O2"] = round(M.H_sb.O2.c[-1] * 1e6, 1)
 
     return diag
 
@@ -228,7 +228,7 @@ def log_experiment(M, experiment_name, params):
 
     print("Experiment logged:", experiment_name)
 
-import pandas as pd
+
 
 def log_full_timeseries(M, filename: str):
     """
@@ -268,7 +268,7 @@ def log_full_timeseries(M, filename: str):
     # Convert to DataFrame
     df = pd.DataFrame(ts_dict)
 
-    # Optionally round for readability
+    # Round for readability
     df = df.round({
         "CO2_ppm": 1,
         "A_zsat": 0, "I_zsat": 0, "P_zsat": 0,
@@ -283,8 +283,7 @@ def log_full_timeseries(M, filename: str):
     df.to_csv(filename, index=False)
     print(f"Full time series logged to {filename}")
 
-import os
-import pandas as pd
+
 
 def log_experiment_timeseries(M, experiment_name: str, params: dict, filename: str = "results_timeseries.csv"):
     """
@@ -338,6 +337,143 @@ def log_experiment_timeseries(M, experiment_name: str, params: dict, filename: s
 
     df_ts.to_csv(filename, index=False)
     print(f"Experiment time series logged: {experiment_name} -> {filename}")
+
+
+def sensitivity_test(
+    param_name: str,
+    values,
+    base_params: dict,
+    run_time="100 kyr",
+    time_step="100 yr",
+    rain_ratio=6.1,
+    alpha=0.3,
+    debug=False,
+    ocean_names=["A", "I", "P"],
+    experiment_prefix="sens"
+):
+    """
+    Sensitivity analysis extracting key diagnostics:
+    - CO2
+    - zcc (all basins)
+    - CO3 (all basins)
+    - deep O2 (all basins)
+
+    If a particular parameter run fails, NaNs are returned for that value.
+    """
+
+    from LOSCAR_GLACIAL import initialize_model, pp_carbonate_cs4
+
+    results = []
+
+    for val in values:
+        print(f"\nRunning: {param_name} = {val}")
+
+        # --- clean memory ---
+        try:
+            del M
+        except NameError:
+            pass
+        gc.collect()
+
+        # --- copy + modify parameters ---
+        params = deepcopy(base_params)
+
+        # --- special case: simultaneous mixing scaling ---
+        if param_name == "mix_all":
+            # Extract modern values (assumed strings like "4 Sv")
+            def to_float(x):
+                return float(str(x).replace("Sv","").strip())
+
+            mix_A = to_float(base_params["mix_A_H"])
+            mix_I = to_float(base_params["mix_I_H"])
+            mix_P = to_float(base_params["mix_P_H"])
+
+            # Apply scaling
+            params["mix_A_H"] = f"{mix_A * val} Sv"
+            params["mix_I_H"] = f"{mix_I * val} Sv"
+            params["mix_P_H"] = f"{mix_P * val} Sv"
+
+        else:
+            if param_name not in params:
+                raise ValueError(f"{param_name} not in base_params")
+            params[param_name] = val
+
+        try:
+            # --- initialize model ---
+            M = initialize_model(
+                high_lat_piston=params["high_lat_piston"],
+                high_lat_PO4_export=params["high_lat_PO4_export"],
+                T_surf=params["T_surf"],
+                T_deep=params["T_deep"],
+                thc=params["thc"],
+                ta=params["ta"],
+                ti=params["ti"],
+                mix_A_H=params["mix_A_H"],
+                mix_I_H=params["mix_I_H"],
+                mix_P_H=params["mix_P_H"],
+                rain_ratio=rain_ratio,
+                alpha=alpha,
+                run_time=run_time,
+                time_step=time_step,
+                debug=debug,
+            )
+
+            # --- load spun-up state ---
+            M.read_state("modern_state.pkl")
+
+            # --- run model ---
+            M.run()
+
+            # --- carbonate post-processing ---
+            pp_carbonate_cs4(M, ocean_names)
+
+            # --- extract diagnostics ---
+            diag = extract_diagnostics(M)
+
+            # --- log full experiment ---
+            experiment_name = f"{experiment_prefix}_{param_name}_{val}"
+            try:
+                log_experiment(M, experiment_name, params)
+            except Exception as e:
+                print(f"Logging failed for {experiment_name}: {e}")
+
+            # --- build output row ---
+            output = {
+                "param_name": param_name,
+                "param_value": val,
+                "CO2_ppm": diag.get("CO2_ppm", np.nan),
+                "A_zcc": diag.get("A_zcc", np.nan),
+                "I_zcc": diag.get("I_zcc", np.nan),
+                "P_zcc": diag.get("P_zcc", np.nan),
+                "A_deep_CO3": diag.get("A_deep_CO3", np.nan),
+                "I_deep_CO3": diag.get("I_deep_CO3", np.nan),
+                "P_deep_CO3": diag.get("P_deep_CO3", np.nan),
+                "A_deep_O2": diag.get("A_deep_O2", np.nan),
+                "I_deep_O2": diag.get("I_deep_O2", np.nan),
+                "P_deep_O2": diag.get("P_deep_O2", np.nan),
+            }
+
+        except Exception as e:
+            # --- handle crash ---
+            print(f"Run failed for {param_name}={val}: {e}")
+            output = {
+                "param_name": param_name,
+                "param_value": val,
+                "CO2_ppm": np.nan,
+                "A_zcc": np.nan,
+                "I_zcc": np.nan,
+                "P_zcc": np.nan,
+                "A_deep_CO3": np.nan,
+                "I_deep_CO3": np.nan,
+                "P_deep_CO3": np.nan,
+                "A_deep_O2": np.nan,
+                "I_deep_O2": np.nan,
+                "P_deep_O2": np.nan,
+            }
+
+        results.append(output)
+
+    return pd.DataFrame(results)
 
 
 def get_matrix_coefficients(

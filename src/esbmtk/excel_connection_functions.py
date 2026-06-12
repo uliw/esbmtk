@@ -1,3 +1,22 @@
+"""esbmtk: A general purpose Earth Science box model toolkit.
+
+Copyright (C), 2020-2021 Ulrich G. Wortmann
+
+This program is free software: you can redistribute it and/or
+modify it under the terms of the GNU General Public License as
+published by the Free Software Foundation, either version 3 of
+the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see
+<https://www.gnu.org/licenses/>.
+"""
+
 from __future__ import annotations
 
 import pandas as pd
@@ -31,40 +50,34 @@ def create_reservoirs_from_excel(
     ----------
     M : Model
         ESBMTK model instance.
-
     excel_file : str
         Path to the Excel workbook.
-
     sheet_name : str, default="reservoirs"
         Worksheet containing reservoir definitions.
-
     species_units : dict, optional
         Dictionary mapping species names to concentration units.
-
         Example::
-
             {
                 "DIC": "umol/kg",
                 "TA": "umol/kg",
                 "PO4": "umol/kg",
             }
-
         Species not listed default to ``"umol/kg"``.
-
-    default_temperature : float, optional
-        Default temperature used when a row does not specify a value.
-
-    default_salinity : float, optional
-        Default salinity used when a row does not specify a value.
-
-    default_pressure : float, optional
-        Default pressure used when a row does not specify a value.
-
+    
     Returns
     -------
     list
         List of objects returned by
         ``initialize_reservoirs()``.
+
+    Other Parameters:
+    -------
+    default_temperature : float, optional
+        Default temperature used when a row does not specify a value.
+    default_salinity : float, optional
+        Default salinity used when a row does not specify a value.
+    default_pressure : float, optional
+        Default pressure used when a row does not specify a value.  
 
     Raises
     ------
@@ -95,7 +108,6 @@ def create_reservoirs_from_excel(
 
     TO ADD: DELTA (FOR ISOTOPES)
     """
-
     if species_units is None:
         species_units = {}
 
@@ -139,10 +151,14 @@ def create_reservoirs_from_excel(
             ]
 
             concentrations = {}
+            delta_values = {}
 
             for col in df.columns:
 
                 if col in metadata_columns:
+                    continue
+
+                if col.startswith("delta_"):
                     continue
 
                 if col not in model_species:
@@ -157,6 +173,31 @@ def create_reservoirs_from_excel(
                 concentrations[species] = f"{row[col]} {unit}"
 
             entry["c"] = concentrations
+
+            # ------------------------------------------------------------------
+            # Parse isotope columns
+            # ------------------------------------------------------------------
+
+            for col in df.columns:
+
+                if not col.startswith("delta_"):
+                    continue
+
+                species_name = col.removeprefix("delta_")
+
+                if species_name not in model_species:
+                    raise ValueError(
+                        f"Delta column '{col}' refers to unknown species "
+                        f"'{species_name}'"
+                    )
+
+                if pd.isna(row[col]):
+                    continue
+
+                delta_values[model_species[species_name]] = row[col]
+
+            if delta_values:
+                entry["delta"] = delta_values
 
             entry["T"] = (
                 row["temperature"]
@@ -214,16 +255,12 @@ def create_transport_matrix_from_excel(
     ----------
     M : object
         Model object.
-
     excel_file : str
         Path to an Excel file defining the transport matrix.
-
     species_list : list [SpeciesProperties]
         List of species associated with each transport connection.
-
     sheet_name: str
         Name of the Excel worksheet containing the transport matrix. Default is "transport_matrix".
-
     connection_type : str, optional
         Type identifier for the connection. Default is "scale_with_concentration".
 
@@ -252,9 +289,7 @@ def create_transport_matrix_from_excel(
     corresponding reverse connection named ``mix_down`` unless that
     connection already exists in the spreadsheet.
 
-    Examples
-    --------
-    Excel table:
+    Example Excel table:
 
     source | sink | flux_id     | sc
     -------|------|------------|----------------
@@ -262,7 +297,6 @@ def create_transport_matrix_from_excel(
     A_db   | A_ib | thermohaline | ta * thc
     A_ib   | A_sb | mix_up       | 21 Sverdrup
     
-    TO ADD: EPSILON (FOR ISOTOPES)
     """
 
     # Load transport definition table from Excel
@@ -351,10 +385,8 @@ def create_gas_reservoirs_from_excel(
     M : Model
         ESBMTK model instance containing the species definitions
         referenced by the worksheet.
-
     excel_file : str
         Path to the Excel workbook.
-
     sheet_name : str, default="gas_reservoirs"
         Worksheet containing gas reservoir definitions.
 
@@ -368,23 +400,19 @@ def create_gas_reservoirs_from_excel(
     ------
     ValueError
         If no ``SpeciesProperties`` objects are found in the model.
-
     ValueError
         If a referenced species does not exist.
-
     ValueError
         If ``species_ppm`` is missing.
 
     Notes
     -----
     Required columns::
-
         name
         species
         species_ppm
 
     Optional columns::
-
         delta
         reservoir_mass
         plot
@@ -461,8 +489,28 @@ def create_gas_reservoirs_from_excel(
 
     return created
 
-def create_gas_exchange_connections(model, basin_list, species, piston_velocity, scale):
-    """Create gas exchange connection objects."""
+def create_gas_exchange_connections(model, basin_list, species, piston_velocity, scale, delta=None):
+    """Create gas exchange connection objects.
+
+    Parameters
+    ----------
+    model : Model
+        ESBMTK model instance.
+    basin_list : list
+        List of basins participating in gas exchange.
+    species : SpeciesProperties
+        Gas species being exchanged.
+    piston_velocity : str or Quantity
+        Gas transfer velocity.
+    scale : float, optional
+        Scaling factor.
+    delta : float or str, optional
+        Isotopic composition of the flux. 
+
+    Returns
+    -------
+    None
+    """
     from esbmtk import Species2Species
 
     # get reservoirgroup object
@@ -476,15 +524,20 @@ def create_gas_exchange_connections(model, basin_list, species, piston_velocity,
 
         cid = f"{basin.name}_{species.name}_gex"
 
-        Species2Species(  
-            source=source,  # Reservoir Species
-            sink=sink,  # Reservoir Species
-            species=species,
-            piston_velocity=piston_velocity,
-            scale=scale,
-            ctype="gasexchange",
-            id=cid,
-        )
+        kwargs = {
+            "source": source,
+            "sink": sink,
+            "species": species,
+            "piston_velocity": piston_velocity,
+            "scale": scale,
+            "ctype": "gasexchange",
+            "id": cid,
+        }
+
+        if delta is not None:
+            kwargs["delta"] = delta
+
+        Species2Species(**kwargs)
 
 
 def create_gas_exchange_connections_from_excel(
@@ -499,10 +552,8 @@ def create_gas_exchange_connections_from_excel(
     ----------
     M : Model
         ESBMTK model instance.
-
     excel_file : str
         Path to Excel workbook.
-
     sheet_name : str, default="gas_exchange"
         Worksheet containing gas exchange definitions.
 
@@ -513,18 +564,17 @@ def create_gas_exchange_connections_from_excel(
     Notes
     -----
     Required columns::
-
         species
         basins
         piston_velocity
 
     Optional columns::
-
         scale
+        delta
 
-    Example
+    Notes:
     -------
-    Excel sheet::
+    Example Excel sheet::
 
         species | basins                  | piston_velocity | scale
         CO2     | A_sb,I_sb,P_sb,H_sb     | 4.8             | 1.0
@@ -566,10 +616,16 @@ def create_gas_exchange_connections_from_excel(
         if pd.isna(scale):
             scale = 1.0
 
+        delta = None
+
+        if "delta" in df.columns and pd.notna(row["delta"]):
+            delta = row["delta"]
+
         create_gas_exchange_connections(
             model=M,
             basin_list=basin_list,
             species=species,
             piston_velocity=piston_velocity,
             scale=scale,
+            delta=delta,
         )

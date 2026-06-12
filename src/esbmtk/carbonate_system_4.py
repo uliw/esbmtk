@@ -80,7 +80,8 @@ def get_hplus(dic, ta, h0, boron, K1, K1K2, KW, KB) -> float:
 # @lru_cache
 def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
     """Calcualte zsat."""
-    zsat = int(zsat0 * log(ca2 * co3 / ksp0))
+    value = max(ca2 * co3 / ksp0, 1e-12)
+    zsat = int(zsat0 * log(value))
     return min(zmax, max(zsat_min, zsat))
 
 
@@ -88,7 +89,8 @@ def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
 def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
     """Calculate zcc."""
     export = abs(export)
-    zcc = int(zsat0 * log(export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0))  # eq3
+    value = max(export * ca2 / (ksp0 * AD * kc) + ca2 * co3 / ksp0, 1e-12)
+    zcc = int(zsat0 * log(value))  # eq3
 
     return int(min(zmax, max(zsat_min, zcc)))
 
@@ -105,13 +107,6 @@ def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
 #         int(zsnow),
 #     ),
 # )
-"""
-Carbonate System 4:
-
-Update September 2025 (testing): handles carbonate chemistry for a model with three ocean layers 
-(surface, intermediate, deep) and one sediment layer. Based on Boudreau et al., (2010).
-
-"""
 
 def carbonate_system_4(
     CaCO3_export: float,  # 3 CaCO3 export flux as DIC
@@ -125,26 +120,72 @@ def carbonate_system_4(
     zsnow: float,  # 9 snowline in meters below sealevel at t-1
     p: tuple,
 ) -> tuple:
-    """
+    """ Compute carbonate burial and dissolution fluxes for a three vertical layer ocean.
 
-    This functions returns (in order):
+    This routine represents carbonate sediment dynamics for a system
+    consisting of surface, intermediate, and deep ocean reservoirs coupled
+    to a sediment reservoir. Carbonate dissolution, burial, snowline
+    evolution, and alkalinity feedbacks are calculated following
+    Boudreau et al. (2010).
 
-    - Intermediate Box DIC
-    - Intermediate Box TA
-    - Hplus
-    - zsnow
-    - Deep Box DIC
-    - Deep Box TA
-    - Burial DIC 
-    - Burial TA
+    Parameters
+    ----------
+    CaCO3_export : float
+        Export flux of CaCO₃ from the surface ocean.
+    dic_t_db : float or tuple
+        Deep-box DIC concentration. If isotopes are enabled, a tuple
+        containing total and isotope-specific values.
+    ta_db : float
+        Deep-box total alkalinity.
+    dic_t_ib : float or tuple
+        Intermediate-box DIC concentration.
+    ta_ib : float
+        Intermediate-box total alkalinity.
+    dic_t_sb : float or tuple
+        Surface-box DIC concentration.
+    hplus_db_0 : float
+        Deep-box hydrogen ion concentration from the previous timestep.
+    hplus_ib_0 : float
+        Intermediate-box hydrogen ion concentration from the previous
+        timestep.
+    zsnow : float
+        Snowline depth from the previous timestep.
+    p : tuple
+        Collection of constant model parameters and lookup tables:
 
-    LIMITATIONS:
-    - Assumes all concentrations are in mol/kg
-    - Assumes your Model is in mol/kg
+        - seawater chemistry constants
+        - carbonate-system parameters
+        - area lookup table
+        - area-per-depth lookup table
+        - carbonate saturation lookup table
 
-    Calculations are based off equations from:
-    Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
+    Returns
+    -------
+    tuple
+        Tuple containing:
 
+        - Intermediate-box DIC dissolution flux
+        - Intermediate-box TA dissolution flux
+        - Deep-box hydrogen ion rate of change
+        - Snowline migration rate
+        - Deep-box DIC dissolution flux
+        - Deep-box TA dissolution flux
+        - Burial DIC flux
+        - Burial TA flux
+
+    Notes
+    -----
+    Assumptions:
+
+    - All concentrations are expressed in mol kg⁻¹.
+    - Carbonate chemistry follows the approximation of
+      Follows et al. (2006).
+    - Sediment dissolution and burial follow
+      Boudreau et al. (2010).
+
+    References
+    ----------
+    Boudreau, B. P. et al. (2010), https://doi.org/10.1029/2009GB003654
     """
     sp, cp, area_table, area_dz_table, Csat_table = p
     ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0, zint = cp
@@ -277,28 +318,37 @@ def init_carbonate_system_4(
     burial_box: Reservoir,
     kwargs: dict,
 ):
-    """Initialize a carbonate system 4 instance.
+    """Initialize a carbonate_system_4 external-code instance.
 
-    Note that the current implmentation assumes that the export flux into 
-    this_box is the total export flux over surface area of the mixed layer, 
-    i.e., the sediment area between z0 and zmax
+    Creates and registers an :class:`ExternalCode` object that evaluates
+    carbonate dissolution, burial, and snowline dynamics for a coupled
+    intermediate-deep ocean system.
 
     Parameters
     ----------
     export_flux : Flux
-        CaCO3 export flux from the surface box
+        CaCO₃ export flux from the surface reservoir.
     source_box : Reservoir
-        Reservoir instance of the surface box
+        Surface-ocean reservoir supplying exported carbonate.
     this_box : Reservoir
-        Reservoir instance of the deep box
-    next_box :
-        Reservoir instance of the sink box 
-    burial_box :
-        Reservoir instance of the sediment box
+        Intermediate-ocean reservoir receiving dissolved carbonate.
+    next_box : Reservoir
+        Deep-ocean reservoir receiving dissolved carbonate and storing
+        snowline state variables.
+    burial_box : Reservoir
+        Sediment reservoir receiving permanently buried carbonate.
     kwargs : dict
-        dictionary of keyword value pairs
+        Carbonate-system configuration parameters.
 
+    Returns
+    -------
+    ExternalCode
+        Configured Carbonate System 4 external-code instance.
 
+    Notes
+    -----
+    The implementation assumes that the export flux represents total
+    CaCO₃ export over the sediment area bounded by ``z0`` and ``zmax``.
     """
     # Area between z0 and zmax
     AD = source_box.mo.hyp.area_dz(kwargs["z0"], kwargs["zmax"])

@@ -1,11 +1,11 @@
 from __future__ import annotations
 import typing as tp
-import numpy as np
+
 
 if tp.TYPE_CHECKING:
     from esbmtk import Model, ConnectionGroup
 
-def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
+def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, ta, ti, mix_A_H, mix_I_H, mix_P_H, rain_ratio, alpha, run_time, time_step, debug):
     """Package the model definition inside a function."""
     from esbmtk import (
         Q_,
@@ -16,6 +16,10 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
         add_carbonate_system_4,
         create_bulk_connections,
         initialize_reservoirs,
+        create_reservoirs_from_excel,
+        create_gas_reservoirs_from_excel,
+        create_transport_matrix_from_excel,
+        create_gas_exchange_connections_from_excel,
     )
     from LOSCAR_helper_functions import (
         create_connections_from_flux_list,
@@ -42,7 +46,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
         debug=debug,
     )
 
-    # -------------------- Set up box parameters ------------------------ #
+    # -------------------- Set up biogeochemical constants ------------------------ #
 
     # weathering fluxes at steady state
     M.Fw_Ca = Q_("12 Tmol/yr")  # Carbonate weathering @280 ppm
@@ -61,12 +65,35 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
     M.rain = rain_ratio
     M.alpha = alpha
 
-    # ------- setup box parameters ----------
+    M.high_lat_piston = high_lat_piston
+
+    M.high_lat_PO4_export = high_lat_PO4_export
+
+    # ------- setup box parameters ----------#
+
     A_ap = 0.26  # Area percentage Atlantic ocean
     I_ap = 0.18  # Area percentage Indian ocean
     P_ap = 0.46  # Area precentage Pacific ocean
     H_ap = 0.10  # Area percentage High latidude ocean
 
+    M.T_surf = T_surf
+    M.T_deep = T_deep
+
+    thc = Q_(thc)
+    mix_A_H = Q_(mix_A_H)
+    mix_I_H = Q_(mix_I_H)
+    mix_P_H = Q_(mix_P_H)
+
+    # Attach to model for logging
+    M.thc = thc
+    M.ta = ta
+    M.ti = ti
+    M.mix_A_H = mix_A_H
+    M.mix_I_H = mix_I_H
+    M.mix_P_H = mix_P_H
+
+
+    """
     # ---------- initialize boxes ------------------------- #
 
     # initialize reservoirs
@@ -80,7 +107,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
                 M.PO4: "2.1 umol/kg",
                 M.O2: "200 umol/kg",
             },
-            "T": 20,
+            "T": T_surf,
             "P": 5,
             "S": 34.7,
         },
@@ -104,7 +131,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
                 M.PO4: "2.1 umol/kg",
                 M.O2: "200 umol/kg",
             },
-            "T": 2,
+            "T": T_deep,
             "P": 240,
             "S": 34.7,
         },
@@ -116,7 +143,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
                 M.PO4: "0 umol/kg",
                 M.O2: "0 umol/kg",
             },
-            "T": 2,
+            "T": T_deep,
             "P": 240,
             "S": 34.7,
         },
@@ -129,7 +156,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
                 M.PO4: "2.1 umol/kg",
                 M.O2: "200 umol/kg",
             },
-            "T": 20,
+            "T": T_surf,
             "P": 5,
             "S": 34.7,
         },
@@ -153,7 +180,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
                 M.PO4: "2.1 umol/kg",
                 M.O2: "200 umol/kg",
             },
-            "T": 2,
+            "T": T_deep,
             "P": 240,
             "S": 34.7,
         },
@@ -165,7 +192,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
                 M.PO4: "0 umol/kg",
                 M.O2: "0 umol/kg",
             },
-            "T": 2,
+            "T": T_deep,
             "P": 240,
             "S": 34.7,
         },
@@ -178,7 +205,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
                 M.PO4: "2.1 umol/kg",
                 M.O2: "200 umol/kg",
             },
-            "T": 20,
+            "T": T_surf,
             "P": 5,
             "S": 34.7,
         },
@@ -202,7 +229,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
                 M.PO4: "2.1 umol/kg",
                 M.O2: "200 umol/kg",
             },
-            "T": 2,
+            "T": T_deep,
             "P": 240,
             "S": 34.7,
         },
@@ -214,7 +241,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
                 M.PO4: "0 umol/kg",
                 M.O2: "0 umol/kg",
             },
-            "T": 2,
+            "T": T_deep,
             "P": 240,
             "S": 34.7,
         },
@@ -227,7 +254,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
                 M.PO4: "2.1 umol/kg",
                 M.O2: "200 umol/kg",
             },
-            "T": 2,
+            "T": T_deep,
             "P": 10,
             "S": 34.7,
         },
@@ -239,6 +266,14 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
 
     species_list = initialize_reservoirs(M, bn)
 
+    """
+
+    species_list = create_reservoirs_from_excel(M, "/home/atlas/esbmtk/models/reservoir.xlsx")
+
+    create_gas_reservoirs_from_excel(M, "/home/atlas/esbmtk/models/gas_reservoirs.xlsx")
+
+
+    """
     # gas reservoirs
     GasReservoir(
         name="CO2_At",
@@ -252,26 +287,8 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
         species_ppm="21 percent",
     )
 
-    # ----- set up transport matrix -------------------- #
-    thc = Q_("20*Sv")
-    ta = 0.2
-    ti = 0.2
-
-    # Attach to model for logging
-    M.thc = thc
-    M.ta = ta
-    M.ti = ti
-
-    # Define deep/high box mixing fluxes 
-    mix_A_H = Q_("4 Sv")
-    mix_I_H = Q_("3 Sv")
-    mix_P_H = Q_("10 Sv")
-
-    # Attach to model for logging
-    M.mix_A_H = mix_A_H
-    M.mix_I_H = mix_I_H
-    M.mix_P_H = mix_P_H
-
+   
+    
     connection_dict = {
         # source_to_sink@id
         # thermohaline, upwelling, and advection
@@ -384,6 +401,14 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
         },
     }
     create_bulk_connections(connection_dict, M)
+    """
+
+    create_transport_matrix_from_excel(
+        M,
+        "/home/atlas/esbmtk/models/esbmtk_connections.xlsx",
+        species_list
+    )
+
 
     # ---------------------  weathering fluxes ----------------- #
     # unitless weathering strength
@@ -429,8 +454,8 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
     }
 
     """Carbonate weathering removes one C from the crust, and one C from the atmosphere.
-    Carbonate precipitation returns one C back to the atmosphere, so there is not
-    removal.  However, we keep the C from carbonate weathering as this will be removed
+    Carbonate precipitation returns one C back to the atmosphere, so there is no
+    removal.  However, we keep the C from the crust as this will be removed
     through carbonate sedimentation.
 
     Silicate weathering takes both C from the atmosphere, but one is returned, so there
@@ -445,21 +470,18 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
     create_weathering_fluxes(M, M.DIC, areas, "weathering_silicate", 1, source="atmosphere")
     create_weathering_fluxes(M, M.TA, areas, "weathering_silicate", 2, source="crust")
 
-    # -------- biological pump particular P export ---------------------- #
+    # -------- biological pump particulate P export ---------------------- #
     # low latitude export flux = 80% of upwelling PO4
     pfluxes = M.flux_summary(filter_by="PO4_mix_up", exclude="H_", return_list=True)
+    print(pfluxes)
+   
 
     # Export productivity in the high latitude box is fixed (after Zeebe)
     # to mimic iron limitation.
 
-    export_constant_PO4_hl = 1.8
+    pp_hl = Q_(f"{high_lat_PO4_export * M.H_sb.area.magnitude / M.PC_ratio} mol/a")
 
-    #Attach to model for logging
-    M.export_constant_PO4_hl = export_constant_PO4_hl
-
-    pp_hl = Q_(f"{export_constant_PO4_hl * M.H_sb.area.magnitude / M.PC_ratio} mol/a")
-
-    # Particulate (OM bound) phosphate export productivity in the low latidude boxes
+    # Particulate (OM bound) phosphate export productivity in the low latitude boxes
     ct = {  # Surface box to ib, about 78% is remineralized in the ib
         (
             "A_sb_to_A_ib@A_sb_2_A_ib_POP_ex",
@@ -482,23 +504,55 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
             "re": pfluxes,
             "sp": M.PO4,
         },
-        # high latitude box to deep ocean boxes POP
-        (
-            "H_sb_to_A_db@H_sb_2_A_db_POP_ex",
-            "H_sb_to_I_db@H_sb_2_I_db_POP_ex",
-            "H_sb_to_P_db@H_sb_2_P_db_POP_ex",
-        ): {
-            # here we use a fixed rate following Zeebe's Loscar model
-            "ra": [
-                pp_hl * 0.3,
-                pp_hl * 0.3,
-                pp_hl * 0.4,
-            ],
-            "sp": M.PO4,
-            "ty": "Regular",
-        },
     }
+
     create_bulk_connections(ct, M)
+    
+    # choose limitation regime: "iron" or "phosphate"
+    limitation_regime = "iron"   # toggle this
+
+    if limitation_regime == "iron":
+        # iron-limited: fixed export rates (Zeebe, 2012)
+        ct = {
+            (
+                "H_sb_to_A_db@H_sb_2_A_db_POP_ex",
+                "H_sb_to_I_db@H_sb_2_I_db_POP_ex",
+                "H_sb_to_P_db@H_sb_2_P_db_POP_ex",
+            ): {
+                "ra": [
+                    pp_hl * 0.3,
+                    pp_hl * 0.3,
+                    pp_hl * 0.4,
+                ],
+                "sp": M.PO4,
+                "ty": "Regular",
+            },
+        }
+        create_bulk_connections(ct, M)
+
+    elif limitation_regime == "phosphate":
+        # phosphate-limited: scale with PO4 flux
+        highlat_pfluxes = M.flux_summary(
+            filter_by="H_sb_PO4_mix_up",
+            return_list=True
+        )
+
+        ct = {
+            (
+                "H_sb_to_A_db@H_sb_2_A_db_POP_ex",
+                "H_sb_to_I_db@H_sb_2_I_db_POP_ex",
+                "H_sb_to_P_db@H_sb_2_P_db_POP_ex",
+            ): {
+                "ty": "scale_with_flux",
+                "sc": M.PUE,
+                "re": highlat_pfluxes,
+                "sp": M.PO4,
+            },
+        }
+        create_bulk_connections(ct, M)
+
+    else:
+        raise ValueError("limitation_regime must be 'iron' or 'phosphate'")
 
     # -------------- biological pump particulate organic matter export -------- #
     """OM export transports DIC from the surface to the sink, and TA from the sink to
@@ -621,6 +675,8 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
     add_carbonate_system_1([M.A_sb, M.I_sb, M.P_sb, M.H_sb, M.A_ib, M.I_ib, M.P_ib])
 
     # ------------------ Air Sea Gas Exchange --------------------- #
+    create_gas_exchange_connections_from_excel(M, "/home/atlas/esbmtk/models/gas_exchange.xlsx")
+    """
     create_gas_exchange_connections(  # CO2
         M,
         [M.A_sb, M.I_sb, M.P_sb],
@@ -634,7 +690,7 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
         M,
         [M.H_sb],
         M.CO2,
-        "4.8 m/d",  # piston velocity
+        high_lat_piston,  # piston velocity
         1.0 #scale
     )
 
@@ -645,12 +701,13 @@ def initialize_model(rain_ratio, alpha, run_time, time_step, debug):
         "4.8 m/d",  # piston velocity
         1.0
     )
+    """
 
     return M
 
 
 def pp_carbonate_cs4(M: Model, ocean_names: list) -> None:
-    """Calculate marine carbonate chemistry. Essentially a helper function for post_processing. 
+    """Essentially a helper function for post_processing. Calculates marine carbonate chemistry. 
 
     Surface and intermediate boxes use CS1, 
     deep boxes use CS4 (deep-box-only carbonate dissolution).
@@ -678,43 +735,60 @@ def pp_carbonate_cs4(M: Model, ocean_names: list) -> None:
         # calculate CaCO3 export productivity
         ep = F_PO4 * M.PUE * M.PC_ratio * M.int_fraction / M.rain
         carbonate_system_4_pp(db, ep)
-    
 
 
 if __name__ == "__main__":
-    from LOSCAR_helper_functions import get_matrix_coefficients, extract_diagnostics, log_experiment, log_experiment_timeseries
+    from LOSCAR_helper_functions import get_matrix_coefficients
 
-    run_time = "100 kyr"
+    run_time = "1 kyr"
     time_step = "100 yr"
     rain_ratio = 6.1
     alpha = 0.3
     debug = False
+    T_surf = 20
+    T_deep = 2
+    thc = "20 Sv"
+    ta = 0.2
+    ti = 0.2
+    mix_A_H = "4 Sv"
+    mix_I_H = "3 Sv"
+    mix_P_H = "10 Sv"
+    high_lat_PO4_export=1.8
+    high_lat_piston= "4.8m/d"
 
-    M_glacial = initialize_model(rain_ratio, alpha, run_time, time_step, debug)
+    M_glacial = initialize_model(
+        high_lat_piston, high_lat_PO4_export, 
+        T_surf, T_deep, thc, ta, ti, 
+        mix_A_H, mix_I_H, mix_P_H, 
+        rain_ratio, alpha, run_time, time_step, debug)
 
-    experiment_name = "CONTROL"
 
     M_glacial.read_state("modern_state.pkl")
     M_glacial.run()
 
-    pp_carbonate_cs4(M_glacial, ["A","I","P"])
+    M_glacial.plot(M_glacial.CO2_At)
+    print(M_glacial.CO2_At.c[-1])
+    M_glacial.plot([M_glacial.A_db.O2, M_glacial.I_db.O2, M_glacial.P_db.O2])
     
-    params = {
-        "deep temperature": M_glacial.A_db.swc.temperature,
-        "surface temperature": M_glacial.A_sb.swc.temperature,
-        "high-deep mixing (Atlantic)":  M_glacial.mix_A_H,
-        "high-deep mixing (Indian)": M_glacial.mix_I_H,
-        "high-deep mixing (Pacific)": M_glacial.mix_P_H,
-        "thermohaline circulation:": M_glacial.thc,
-        "thermohaline upwelling (Atlantic)": M_glacial.ta,
-        "thermohaline upwelling (Indian)": M_glacial.ti,
-        "high-lat PO4 export constant": M_glacial.export_constant_PO4_hl 
-    }
+    pp_carbonate_cs4(M_glacial, ["A","I","P"])
+    print(M_glacial.A_db.zcc.c[-1])
+    print(M_glacial.I_db.zcc.c[-1])
+    print(M_glacial.P_db.zcc.c[-1])
 
-    # --- log experiment ---
-    log_experiment(M_glacial, experiment_name, params)
+    
 
-    log_experiment_timeseries(M_glacial, experiment_name, params)
+
+
+
+    
+    
+    
+    
+
+    
+    
+
+
 
 
 

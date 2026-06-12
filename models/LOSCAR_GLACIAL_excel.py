@@ -372,11 +372,13 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
         alpha=alpha,
     )
 
-    #--------Air-Sea Gas Exchange----------
-
+    #--------Air-Sea Gas Exchange----------#
+    """Requires the initialization of carbonate_system_1 to work, and therefore 
+    must be placed after add_carbonate_system_1 in the model definition.
+    """
     create_gas_exchange_connections_from_excel(
         M, #Model object
-        "/home/atlas/esbmtk/models/gas_exchange.xlsx", #specify file path
+        "/home/atlas/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
         sheet_name="gas_exchange" #specify worksheet (default = "gas_exchange")
     )
 
