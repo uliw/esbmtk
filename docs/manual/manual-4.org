@@ -197,8 +197,6 @@ CS3 post-processing functions in the same manner as CS2 post-processing. The sol
 
 *** Carbonate System 4: 
 
-*NOTE (November 2025): this is currently in the early stages of development.*
-
 Carbonate system 4 is an extension of CS2 and CS3, and enables carbonate chemistry for models with three vertical ocean layers, i.e., models with a surface layer, an intermediate layer, and a deep layer (in addition to a sediment layer/burial box). 
 
 The =carbonate_system_4= function splits Boudreau (2010)'s carbonate dissolution fluxes and adds them to either the intermediate box or the deep box depending on the relative depth of z_{sat} (i.e., saturation depth) computed in each timestep. The flux-splitting scheme therefore consists of two scenarios: either z_{sat} is deeper than z_{int}, or z_{int} is deeper than z_{sat}. Both scenarios are visualized below:
@@ -209,7 +207,7 @@ The =carbonate_system_4= function splits Boudreau (2010)'s carbonate dissolution
 #+name: CS4 flux-splitting scheme 1
 #+caption:  Overview of the modifications made by CS4 for the scenario where =zsat= is deeper than =zint=.
 #+caption: Image Credit: Atlas Changulani
-[[./CS4fluxsplittingscheme1.png]]
+[[./CS4fluxsplitscheme.png]]
 
 #+attr_org: :width 600
 #+attr_rst: :width 800
@@ -217,7 +215,7 @@ The =carbonate_system_4= function splits Boudreau (2010)'s carbonate dissolution
 #+name: CS4 flux-splitting scheme 1
 #+caption:  Overview of the modifications made by CS4 for the scenario where =zint= is deeper than =zsat=.
 #+caption: Image Credit: Atlas Changulani
-[[./CS4fluxsplittingscheme2.png]]
+[[./CS4fluxsplitscheme.png]]
 
 In the first scenario (z_{sat} deeper than z_{int}), B_{NS} (the CaCO_{3} dissolution between z_{0} and z_{sat}) is now split into two by z_{int}. One of these split components is added to the intermediate box, and the other to the deep box. B_{DS}, B_{CC}, and B_{PDC} remain unmodified and are computed in the same manner as they are in CS2. 
 
