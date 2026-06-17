@@ -32,20 +32,48 @@ NDArrayInt = npt.NDArray[np.int64]
 
 
 def carbonate_system_1_pp(box_names: SpeciesGroup) -> None:
-    """Calculate carbonate species.
+    """
+    Calculate carbonate system diagnostic variables from DIC and H⁺.
 
-    Based on previously calculated Hplus, TA, and DIC concentrations.
+    Computes bicarbonate concentration (HCO3⁻), carbonate concentration
+    (CO_3^2-), pH, and calcite saturation state (Ω) from previously
+    calculated DIC and H⁺ concentrations.
 
-    LIMITATIONS:
-    - Assumes all concentrations are in mol/kg
-    - Assumes your Model is in mol/kg ! Otherwise, DIC and TA updating will not
-    be correct.
+    Parameters
+    ----------
+    box_names : SpeciesGroup or list[SpeciesGroup]
+        Reservoir group(s) containing initialized carbonate system
+        variables. Each reservoir must contain at minimum:
 
-    Calculations are based off equations from:
-    Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
-    Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
+        - ``DIC``
+        - ``Hplus``
+        - ``swc`` (seawater chemistry constants)
 
-    :param rg: A reservoirgroup object with initialized carbonate system
+    Returns
+    -------
+    None
+        Results are stored as ``VectorData`` objects attached to each
+        reservoir group.
+
+    Notes
+    -----
+    The following variables are created:
+
+    - ``HCO3`` : bicarbonate concentration
+    - ``CO3`` : carbonate concentration
+    - ``pH`` : pH on the total scale
+    - ``Omega`` : calcite saturation state
+
+    - Concentrations must be expressed as mol kg⁻¹.
+    - The model state variables must be stored as mol kg⁻¹.
+
+    References
+    ----------
+    Boudreau et al. (2010),
+    https://doi.org/10.1029/2009GB003654
+
+    Follows et al. (2006),
+    https://doi.org/10.1016/j.ocemod.2005.05.004
     """
     from esbmtk import VectorData
 
@@ -102,34 +130,64 @@ def carbonate_system_2_pp(
     zsat_min: float = 200,
     zmax: float = 10000,
 ) -> None:
-    """Calculate the fraction of carbonate that is dissolved.
+    """
+    Carbonate chemistry post-processing diagnostics for CS2.
 
-    :param rg: Reservoir, e.g., M.D_b
-    :param export: export flux in mol/year
-    :param zsat_min: depth of mixed layer
-    :param zmax: depth of lookup table
+    Computes carbonate concentration, CO2aq concentration, pH,
+    lysocline depth, carbonate compensation depth, dissolution flux,
+    and burial flux from model DIC and H⁺ concentrations.
 
-    This function then saves the data as
+    Parameters
+    ----------
+    bn : Reservoir or list[Reservoir]
+        Reservoir(s) for post-processing.
+    export_fluxes : float or array-like or list
+        CaCO₃ export flux supplied to each reservoir. Scalar values are
+        expanded to a full time series.
+    zsat_min : float, default=200
+        Minimum saturation depth (m).
+    zmax : float, default=10000
+        Maximum depth represented by the carbonate lookup tables (m).
 
-    M.box_name.Hplus
-    M.box_name.CO3
-    M.box_name.CO2aq
-    M.box_name.pH
-    M.box_name.zsat # top of lysocline
-    M.box_name.zcc # bottom of lysocline
-    M.box_name.zsnow # snow line
-    M.box_name.Fburial # The CaCO3 burial flux (Export - dissolution)
-    M.box_name.Fdiss  # The CaCO3 dissolution flux
+    Returns
+    -------
+    None
+        Results are written as ``VectorData`` objects attached to each
+        reservoir.
 
-    LIMITATIONS:
-    - Assumes all concentrations are in mol/kg
-    - Assumes your Model is in mol/kg ! Otherwise, DIC and TA updating will not
-    be correct.
+    Creates
+    -------
+    CO3
+        Carbonate ion concentration.
+    CO2aq
+        Dissolved aqueous CO₂ concentration.
+    pH
+        pH on the total scale.
+    zsat
+        Saturation horizon depth (m).
+    zcc
+        Carbonate compensation depth (m).
+    Fdiss
+        Carbonate dissolution flux (mol yr⁻¹).
+    Fburial
+        Carbonate burial flux (mol yr⁻¹).
+    CaCO3_export
+        Export flux used in the calculation (mol yr⁻¹).
 
-    Calculations are based off equations from:
-    Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
-    Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
+    Assumptions
+    -----------
+    - Concentrations are expressed in mol kg⁻¹.
+    - Model state variables are stored in mol kg⁻¹.
+    - Lookup tables defining seafloor area and saturation carbonate
+      concentrations have already been initialized.
 
+    References
+    ----------
+    Boudreau et al. (2010),
+    https://doi.org/10.1029/2009GB003654
+
+    Follows et al. (2006),
+    https://doi.org/10.1016/j.ocemod.2005.05.004
     """
     from math import log
 
@@ -285,48 +343,70 @@ def carbonate_system_2_pp(
             plt_units="mol/year",
         )
 
-
-"""
-Carbonate system 3 post processing:
-Currently works in the same manner as carbonate_system_2_post_processng
-
-"""
-
-
 def carbonate_system_3_pp(
     bn: Reservoir | list,  # 2 Reservoir handle
     export_fluxes: float | list,  # 3 CaCO3 export flux as DIC
     zsat_min: float = 200,
     zmax: float = 10000,
 ) -> None:
-    """Calculate the fraction of carbonate that is dissolved.
+    """
+    Carbonate chemistry post-processing diagnostics for CS3.
 
-    :param rg: Reservoir, e.g., M.D_b
-    :param export: export flux in mol/year
-    :param zsat_min: depth of mixed layer
-    :param zmax: depth of lookup table
+    Computes carbonate concentration, CO2aq concentration, pH,
+    lysocline depth, carbonate compensation depth, dissolution flux,
+    and burial flux from model DIC and H⁺ concentrations.
 
-    This function then saves the data as
+    Parameters
+    ----------
+    bn : Reservoir or list[Reservoir]
+        Reservoir(s) for post-processing.
+    export_fluxes : float or array-like or list
+        CaCO₃ export flux supplied to each reservoir. Scalar values are
+        expanded to a full time series.
+    zsat_min : float, default=200
+        Minimum saturation depth (m).
+    zmax : float, default=10000
+        Maximum depth represented by the carbonate lookup tables (m).
 
-    M.box_name.Hplus
-    M.box_name.CO3
-    M.box_name.CO2aq
-    M.box_name.pH
-    M.box_name.zsat # top of lysocline
-    M.box_name.zcc # bottom of lysocline
-    M.box_name.zsnow # snow line
-    M.box_name.Fburial # The CaCO3 burial flux (Export - dissolution)
-    M.box_name.Fdiss  # The CaCO3 dissolution flux
+    Returns
+    -------
+    None
+        Results are written as ``VectorData`` objects attached to each
+        reservoir.
 
-    LIMITATIONS:
-    - Assumes all concentrations are in mol/kg
-    - Assumes your Model is in mol/kg ! Otherwise, DIC and TA updating will not
-    be correct.
+    Creates
+    -------
+    CO3
+        Carbonate ion concentration.
+    CO2aq
+        Dissolved aqueous CO₂ concentration.
+    pH
+        pH on the total scale.
+    zsat
+        Saturation horizon depth (m).
+    zcc
+        Carbonate compensation depth (m).
+    Fdiss
+        Carbonate dissolution flux (mol yr⁻¹).
+    Fburial
+        Carbonate burial flux (mol yr⁻¹).
+    CaCO3_export
+        Export flux used in the calculation (mol yr⁻¹).
 
-    Calculations are based off equations from:
-    Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
-    Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
+    Assumptions
+    -----------
+    - Concentrations are expressed in mol kg⁻¹.
+    - Model state variables are stored in mol kg⁻¹.
+    - Lookup tables defining seafloor area and saturation carbonate
+      concentrations have already been initialized.
 
+    References
+    ----------
+    Boudreau et al. (2010),
+    https://doi.org/10.1029/2009GB003654
+
+    Follows et al. (2006),
+    https://doi.org/10.1016/j.ocemod.2005.05.004
     """
     from math import log
 
@@ -486,16 +566,70 @@ def carbonate_system_4_pp(
     zsat_min: float = 200,
     zmax: float = 10000,
 ) -> None:
-    """Calculate the fraction of carbonate that is dissolved.
-
-    NOTE: THIS CURRENTLY ONLY WORKS FOR DEEP BOXES. 
-
-    LIMITATIONS:
-    - Assumes all concentrations are in mol/kg
-    - Assumes your Model is in mol/kg
-
     """
+    Carbonate chemistry post-processing diagnostics for CS4.
 
+    Computes carbonate concentration, CO2aq concentration, pH,
+    lysocline depth, carbonate compensation depth, dissolution flux,
+    and burial flux from model DIC and H⁺ concentrations.
+
+    Parameters
+    ----------
+    bn : Reservoir or list[Reservoir]
+        Reservoir(s) for post-processing.
+    export_fluxes : float or array-like or list
+        CaCO₃ export flux supplied to each reservoir. Scalar values are
+        expanded to a full time series.
+    zsat_min : float, default=200
+        Minimum saturation depth (m).
+    zmax : float, default=10000
+        Maximum depth represented by the carbonate lookup tables (m).
+
+    Returns
+    -------
+    None
+        Results are written as ``VectorData`` objects attached to each
+        reservoir.
+
+    Creates
+    -------
+    CO3
+        Carbonate ion concentration.
+    CO2aq
+        Dissolved aqueous CO₂ concentration.
+    pH
+        pH on the total scale.
+    zsat
+        Saturation horizon depth (m).
+    zcc
+        Carbonate compensation depth (m).
+    Fdiss
+        Carbonate dissolution flux (mol yr⁻¹).
+    Fburial
+        Carbonate burial flux (mol yr⁻¹).
+    CaCO3_export
+        Export flux used in the calculation (mol yr⁻¹).
+
+    Notes
+    -----
+    This is intended only for deep boxes. Surface and intermediate boxes should 
+    be post-processed with ``carbonate_system_1_pp``.
+
+    Assumptions
+    -----------
+    - Concentrations are expressed in mol kg⁻¹.
+    - Model state variables are stored in mol kg⁻¹.
+    - Lookup tables defining seafloor area and saturation carbonate
+      concentrations have already been initialized.
+
+    References
+    ----------
+    Boudreau et al. (2010),
+    https://doi.org/10.1029/2009GB003654
+
+    Follows et al. (2006),
+    https://doi.org/10.1016/j.ocemod.2005.05.004
+    """
     from math import log
     from esbmtk import VectorData
 
@@ -663,14 +797,35 @@ def gas_exchange_fluxes(
     gas_reservoir: GasReservoir,
     pv: str,
 ):
-    """Calculate gas exchange fluxes for a given reservoir.
+    """
+    Calculate air-sea gas exchange fluxes.
 
-    :param liquid_reservoir: Species handle
-    :param gas_reservoir:  Species handle
-    :param pv: piston velocity as string e.g., "4.8 m/d"
+    Computes bidirectional gas exchange between a dissolved species in 
+    an ocean reservoir and its atmospheric reservoir using a piston
+    velocity formula.
 
-    :returns:
+    Parameters
+    ----------
+    liquid_reservoir : Species
+        Reservoir species participating in gas exchange.
+        Species that are currently supported are O2 and CO2.
+    gas_reservoir : GasReservoir
+        Atmospheric reservoir coupled to the liquid reservoir.
+    pv : str or Quantity
+        Piston velocity. E.g.: ``"4.8 m/d"`` 
 
+    Returns
+    -------
+    ndarray
+        Gas exchange flux time series returned by
+        ``esbmtk.gas_exchange``.
+
+    Raises
+    ------
+    ValueError
+        If ``pv`` cannot be interpreted as a quantity.
+    ValueError
+        If the liquid species is not ``DIC`` or ``O2``.
     """
     from esbmtk import Q_, gas_exchange
 

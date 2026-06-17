@@ -185,7 +185,9 @@ def carbonate_system_4(
 
     References
     ----------
-    Boudreau, B. P. et al. (2010), https://doi.org/10.1029/2009GB003654
+    Boudreau, Bernard P., Jack J. Middelburg, Andreas F. Hofmann, 
+    and Filip J. R. Meysman. 2010. “Ongoing Transients in Carbonate Compensation.” 
+    Global Biogeochemical Cycles 24 (4). https://doi.org/10.1029/2009GB003654.
     """
     sp, cp, area_table, area_dz_table, Csat_table = p
     ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0, zint = cp
@@ -208,7 +210,6 @@ def carbonate_system_4(
 
     #taking a simple average of the CO3 of both boxes to calculate zsat
     co3 = 0.5 * (co3_int + co3_deep) 
-    
     
 
     """ --- Compute critical depth intervals eqs after  Boudreau (2010) ---
@@ -434,22 +435,37 @@ def init_carbonate_system_4(
     return ec
 
 def add_carbonate_system_4(**kwargs) -> None:
-    """Create a new carbonate system virtual reservoir.
+    """
+    Create a new carbonate system virtual reservoir.
 
-    This function initializes carbonate system 4 (cs4) for each specified deep box.
+    This function initializes carbonate system 4 for the specified set of boxes.
     It computes saturation, compensation, and snowline depth, and the associated 
     carbonate burial fluxes.
 
-    Required keywords:
-        r_sb / source_box: list of surface Reservoirs
-        r_db / this_box: list of intermediate Reservoirs
-        r_nb / next_box: list of deep Reservoirs
-        r_bb / burial_box: list of burial Reservoirs
-        carbonate_export_fluxes: list of CaCO3 export Flux objects from the surface reservoirs
-        z0: depth (m) for burial calculations
-        zint: depth of intermediate box 
+    Parameters
+    ----------
+    source_box, r_sb : list[ Reservoir]
+        list of surface Reservoirs.
+    this_box, r_db : list[ Reservoir]
+        list of intermediate Reservoirs
+    next_box, r_nb : list[Reservoir]
+        list of deep Reservoirs.
+    burial_box, r_bb : list[Reservoir]
+        Burial reservoirs receiving permanently buried CaCO3.
+    carbonate_export_fluxes : list[Flux]
+        list of CaCO3 export Flux objects from the surface reservoir.
+    z0 : float
+        Depth of surface ocean box. 
+    zint : float
+        Depth of the intermediate ocean box.
 
-    Optional (defaulted) keywords:
+    Returns
+    -------
+    None
+
+    Other Parameters
+    ----------------
+    Optional (defaulted) parameters:
         zsat, zcc, zsnow, zsat0, Ksp0, kc, alpha, pg, pc, I_caco3, zmax, Ksp
     """
     # list of known keywords
