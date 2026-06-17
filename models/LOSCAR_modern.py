@@ -53,14 +53,7 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     M.PUE = 0.8 #Phosphorus Uptake Efficiency
     M.NC_ratio = 15 / 130 #Nitrogen-to-Carbon ratio
     M.O2C_ratio = 165 / 130  # oxygen consumption per mol C
-
-    # Isotope ratios
-    M.Fw_DIC_d = 1.5  # Carbonate weathering delta
-    M.Fw_v_d = -4  # Volcanic flux delta
-    M.OM_frac = -28  # fractionation during photosynthesis
-    M.CO2_DIC_a = 8.0  # enrichment during CO2 dissolution in water
     
-
     M.ib_remin = 0.78
     M.db_remin = 1 - M.ib_remin
 
@@ -96,19 +89,19 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
 
     species_list = create_reservoirs_from_excel(
         M, #Model object
-        "/home/atlas/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
+        "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
         sheet_name="reservoirs" #specify worksheet (default = "reservoirs")
     )
 
     create_gas_reservoirs_from_excel(
         M, #Model object
-        "/home/atlas/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
-        sheet_name="gas_reservoirs" #specify worksheet (default = "gas_reservoirs")
+        "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
+        sheet_name="gas_reservoirs", #specify worksheet (default = "gas_reservoirs")
     )
-
+   
     create_transport_matrix_from_excel(
         M, #Model object
-        "/home/atlas/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
+        "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
         species_list, #list of species being transported via advection and mixing
         sheet_name="transport_matrix" #specify worksheet (default = "transport_matrix")
     )
@@ -125,7 +118,6 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
         ex=0.4,  # exponent c
         pco2_0="280 ppm",  # reference pCO2
         rate=M.Fw_Ca,  # rate at pco2_0
-        delta=M.Fw_DIC_d,
         id="weathering_carbonate",
     )
     Species2Species(  # CaSiO3 weathering
@@ -138,7 +130,6 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
         ex=0.2,  # exponent c
         pco2_0="280 ppm",  # reference pCO2
         rate=M.Fw_Si,  # rate at pco2_0
-        alpha=M.CO2_DIC_a,
         id="weathering_silicate",
     )
     # volcanic flux:
@@ -148,7 +139,6 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
         species=M.CO2,
         ctype="Fixed",
         rate=M.Fw_v,
-        delta=M.Fw_v_d,
         id="volcanic_weathering",
     )
 
@@ -170,7 +160,6 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     Both processes contribute 2 mol alkalinity for each mol Carbon, since calcium
     carries a double charge.
     """
-    #figure out delta and alpha for these two
     create_weathering_fluxes(M, M.DIC, areas, "weathering_carbonate", 1, source="crust") 
     create_weathering_fluxes(M, M.TA, areas, "weathering_carbonate", 2, source="crust")
 
@@ -244,7 +233,6 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
         "POM_DIC",  # new ID
         M.DIC,  # species
         M.PC_ratio,  # scale
-        M.OM_frac, #fractionation of OM
     )
     # Particulate OM TA from Nitrate
     create_connections_from_flux_list(
@@ -351,7 +339,7 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
 
     create_gas_exchange_connections_from_excel(
         M, #Model object
-        "/home/atlas/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
+        "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
         sheet_name="gas_exchange" #specify worksheet (default = "gas_exchange")
     )
 
@@ -391,8 +379,8 @@ def pp_carbonate_cs4(M: Model, ocean_names: list) -> None:
 
 if __name__ == "__main__":
 
-    run_time = "1 kyr"
-    time_step = "100 yr"
+    run_time = "10 Myr"
+    time_step = "1 kyr"
     rain_ratio = 6.1
     alpha = 0.3
     debug = False
@@ -416,8 +404,11 @@ if __name__ == "__main__":
 
     M_modern.debug_equations_file = False
 
+
     M_modern.run()
-    #M_modern.save_state("modern_state.pkl")
+    M_modern.save_state("modern_state.pkl")
+
+    M_modern.plot(M_modern.CO2_At)
 
      
 

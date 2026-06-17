@@ -106,7 +106,6 @@ def create_reservoirs_from_excel(
     Any additional column whose name matches a SpeciesProperties object
     registered in the model is interpreted as a species concentration.
 
-    TO ADD: DELTA (FOR ISOTOPES)
     """
     if species_units is None:
         species_units = {}
@@ -197,7 +196,7 @@ def create_reservoirs_from_excel(
                 delta_values[model_species[species_name]] = row[col]
 
             if delta_values:
-                entry["delta"] = delta_values
+                entry["d"] = delta_values
 
             entry["T"] = (
                 row["temperature"]
@@ -474,14 +473,21 @@ def create_gas_reservoirs_from_excel(
         }
 
         # Optional arguments: only pass if present
+
+        isotopes_flag = False
+
         if "delta" in row.index and pd.notna(row["delta"]):
             kwargs["delta"] = row["delta"]
+            isotopes_flag=True
 
         if "reservoir_mass" in row.index and pd.notna(row["reservoir_mass"]):
             kwargs["reservoir_mass"] = Q_(str(row["reservoir_mass"]))
 
         if "plot" in row.index and pd.notna(row["plot"]):
             kwargs["plot"] = row["plot"]
+        
+        if isotopes_flag:
+            kwargs["isotopes"] = True
 
         obj = GasReservoir(**kwargs)
 

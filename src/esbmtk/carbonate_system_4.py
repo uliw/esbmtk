@@ -306,7 +306,17 @@ def carbonate_system_4(
 
     F_burial = CaCO3_export - F_diss_int - F_diss_deep 
 
-    rv = (F_diss_int, F_diss_int * 2, dCdt_Hplus, dzdt_zsnow, F_diss_deep, F_diss_deep *2, F_burial, F_burial*2)
+    if isotopes:
+        F_diss_int_l = F_diss_int * dic_sb_l / dic_sb
+        F_diss_deep_l = F_diss_deep * dic_ib_l / dic_ib
+
+        F_burial_l = F_burial * dic_db_l / dic_db
+    
+        rv = (F_diss_int, F_diss_int_l, F_diss_int * 2, dCdt_Hplus, dzdt_zsnow, F_diss_deep, F_diss_deep_l, F_diss_deep *2, F_burial, F_burial_l, F_burial*2)
+
+    else:
+        rv = (F_diss_int, F_diss_int * 2, dCdt_Hplus, dzdt_zsnow, F_diss_deep, F_diss_deep *2, F_burial, F_burial*2)
+    
     return rv
 
 

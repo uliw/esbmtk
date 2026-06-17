@@ -1,7 +1,6 @@
 from __future__ import annotations
 import typing as tp
 
-
 if tp.TYPE_CHECKING:
     from esbmtk import Model, ConnectionGroup
 
@@ -50,11 +49,17 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     M.Fw_v = Q_("5 Tmol/yr")  # Volcanic flux
     M.Fw_Si = M.Fw_v  # Silicate weathering @280 ppm
 
-    M.PC_ratio = 130
-    M.OM_frac = -28
-    M.PUE = 0.8
-    M.NC_ratio = 15 / 130
+    M.PC_ratio = 130 #Phosphorus-to-Carbon Redfield ratio
+    M.PUE = 0.8 #Phosphorus Uptake Efficiency
+    M.NC_ratio = 15 / 130 #Nitrogen-to-Carbon ratio
     M.O2C_ratio = 165 / 130  # oxygen consumption per mol C
+
+    # Isotope ratios
+    M.Fw_DIC_d = 1.5  # Carbonate weathering delta
+    M.Fw_v_d = -4  # Volcanic flux delta
+    M.OM_frac = -28  # fractionation during photosynthesis
+    M.CO2_DIC_a = 8.0  # enrichment during CO2 dissolution in water
+    
 
     M.ib_remin = 0.78
     M.db_remin = 1 - M.ib_remin
@@ -89,25 +94,213 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     M.mix_I_H = mix_I_H
     M.mix_P_H = mix_P_H
 
+    """
+    # initialize reservoirs
+    bn: dict = {  # name: [[geometry], T, P, S]
+        # Atlantic Ocean
+        "A_sb": {
+            "g": [0, -100, A_ap],
+            "c": {
+                M.DIC: "2210 umol/kg",
+                M.TA: "2310 umol/kg",
+                M.PO4: "2.1 umol/kg",
+                M.O2: "200 umol/kg",
+            },
+            "d":{M.DIC: 2},
+            "T": T_surf,
+            "P": 5,
+            "S": 34.7,
+        },
+        "A_ib": {
+            "g": [-100, -1000, A_ap],
+            "c": {
+                M.DIC: "2210 umol/kg",
+                M.TA: "2310 umol/kg",
+                M.PO4: "2.1 umol/kg",
+                M.O2: "200 umol/kg",
+            },
+            "d":{M.DIC: 2},
+            "T": 10,
+            "P": 100,
+            "S": 34.7,
+        },
+        "A_db": {
+            "g": [-1000, -6000, A_ap],
+            "c": {
+                M.DIC: "2210 umol/kg",
+                M.TA: "2310 umol/kg",
+                M.PO4: "2.1 umol/kg",
+                M.O2: "200 umol/kg",
+            },
+            "d":{M.DIC: 2},
+            "T": T_deep,
+            "P": 240,
+            "S": 34.7,
+        },
+        "A_bb": { #burial box, 
+            "g": [-6000, -6500, A_ap],
+            "c": {
+                M.DIC: "0 umol/kg",
+                M.TA: "0 umol/kg",
+                M.PO4: "0 umol/kg",
+                M.O2: "0 umol/kg",
+            },
+            "d":{M.DIC: 2},
+            "T": T_deep,
+            "P": 240,
+            "S": 34.7,
+        },
+        # Indian Ocean
+        "I_sb": {
+            "g": [0, -100, I_ap],
+            "c": {
+                M.DIC: "2210 umol/kg",
+                M.TA: "2310 umol/kg",
+                M.PO4: "2.1 umol/kg",
+                M.O2: "200 umol/kg",
+            },
+            "d":{M.DIC: 2},
+            "T": T_surf,
+            "P": 5,
+            "S": 34.7,
+        },
+        "I_ib": {
+            "g": [-100, -1000, I_ap],
+            "c": {
+                M.DIC: "2210 umol/kg",
+                M.TA: "2310 umol/kg",
+                M.PO4: "2.1 umol/kg",
+                M.O2: "200 umol/kg",
+            },
+            "d":{M.DIC: 2},
+            "T": 10,
+            "P": 100,
+            "S": 34.7,
+        },
+        "I_db": {
+            "g": [-1000, -6000, I_ap],
+            "c": {
+                M.DIC: "2210 umol/kg",
+                M.TA: "2310 umol/kg",
+                M.PO4: "2.1 umol/kg",
+                M.O2: "200 umol/kg",
+            },
+            "d":{M.DIC: 2},
+            "T": T_deep,
+            "P": 240,
+            "S": 34.7,
+        },
+        "I_bb": {
+            "g": [-6000, -6500, I_ap],
+            "c": {
+                M.DIC: "0 umol/kg",
+                M.TA: "0 umol/kg",
+                M.PO4: "0 umol/kg",
+                M.O2: "0 umol/kg",
+            },
+            "d":{M.DIC: 2},
+            "T": T_deep,
+            "P": 240,
+            "S": 34.7,
+        },
+        # Pacific Ocean
+        "P_sb": {
+            "g": [0, -100, P_ap],
+            "c": {
+                M.DIC: "2210 umol/kg",
+                M.TA: "2310 umol/kg",
+                M.PO4: "2.1 umol/kg",
+                M.O2: "200 umol/kg",
+            },
+            "d":{M.DIC: 2},
+            "T": T_surf,
+            "P": 5,
+            "S": 34.7,
+        },
+        "P_ib": {
+            "g": [-100, -1000, P_ap],
+            "c": {
+                M.DIC: "2210 umol/kg",
+                M.TA: "2310 umol/kg",
+                M.PO4: "2.1 umol/kg",
+                M.O2: "200 umol/kg",
+            },
+            "d":{M.DIC: 2},
+            "T": 10,
+            "P": 100,
+            "S": 34.7,
+        },
+        "P_db": {
+            "g": [-1000, -6000, P_ap],
+            "c": {
+                M.DIC: "2210 umol/kg",
+                M.TA: "2310 umol/kg",
+                M.PO4: "2.1 umol/kg",
+                M.O2: "200 umol/kg",
+            },
+            "d":{M.DIC: 2},
+            "T": T_deep,
+            "P": 240,
+            "S": 34.7,
+        },
+        "P_bb": {
+            "g": [-6000, -6500, P_ap],
+            "c": {
+                M.DIC: "0 umol/kg",
+                M.TA: "0 umol/kg",
+                M.PO4: "0 umol/kg",
+                M.O2: "0 umol/kg",
+            },
+            "d":{M.DIC: 2},
+            "T": T_deep,
+            "P": 240,
+            "S": 34.7,
+        },
+        # High latitude box
+        "H_sb": {
+            "g": [0, -250, H_ap],
+            "c": {
+                M.DIC: "2210 umol/kg",
+                M.TA: "2310 umol/kg",
+                M.PO4: "2.1 umol/kg",
+                M.O2: "200 umol/kg",
+            },
+            "d":{M.DIC: 2},
+            "T": T_deep,
+            "P": 10,
+            "S": 34.7,
+        },
+        # Weathering sources
+        "Fw": {"ty": "Source", "sp": [M.DIC, M.TA, M.PO4, M.O2]},
+        # Burial Sinks
+        "Fb": {"ty": "Sink", "sp": [M.DIC, M.TA, M.PO4, M.O2]},
+    }
+
+    species_list = initialize_reservoirs(M, bn)
+    """
+
     species_list = create_reservoirs_from_excel(
         M, #Model object
         "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
         sheet_name="reservoirs" #specify worksheet (default = "reservoirs")
     )
+    
+
+    M.Fw.DIC.delta = M.Fw_DIC_d #initialize delta for Source object
 
     create_gas_reservoirs_from_excel(
         M, #Model object
         "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
-        sheet_name="gas_reservoirs" #specify worksheet (default = "gas_reservoirs")
+        sheet_name="gas_reservoirs", #specify worksheet (default = "gas_reservoirs")
     )
-
+    
     create_transport_matrix_from_excel(
         M, #Model object
         "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
         species_list, #list of species being transported via advection and mixing
         sheet_name="transport_matrix" #specify worksheet (default = "transport_matrix")
     )
-
+    
     # ---------------------  weathering fluxes ----------------- #
     # unitless weathering strength
     Species2Species(
@@ -141,6 +334,7 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
         species=M.CO2,
         ctype="Fixed",
         rate=M.Fw_v,
+        delta=M.Fw_v_d,
         id="volcanic_weathering",
     )
 
@@ -150,10 +344,10 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
         "P_sb": P_ap / (1 - H_ap),
         "I_sb": I_ap / (1 - H_ap),
     }
-
-    """Carbonate weathering removes one C from the crust, and one C from the atmosphere.
-    Carbonate precipitation returns one C back to the atmosphere, so there is no
-    removal.  However, we keep the C from the crust as this will be removed
+    """
+    Carbonate weathering removes one C from the crust, and one C from the atmosphere.
+    Carbonate precipitation returns one C back to the atmosphere, so there is not
+    removal.  However, we keep the C from carbonate weathering as this will be removed
     through carbonate sedimentation.
 
     Silicate weathering takes both C from the atmosphere, but one is returned, so there
@@ -162,24 +356,22 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     Both processes contribute 2 mol alkalinity for each mol Carbon, since calcium
     carries a double charge.
     """
-    create_weathering_fluxes(M, M.DIC, areas, "weathering_carbonate", 1, source="crust")
+    
+    create_weathering_fluxes(M, M.DIC, areas, "weathering_carbonate", 1, source="crust", delta=M.Fw_DIC_d) 
     create_weathering_fluxes(M, M.TA, areas, "weathering_carbonate", 2, source="crust")
 
-    create_weathering_fluxes(M, M.DIC, areas, "weathering_silicate", 1, source="atmosphere")
+    create_weathering_fluxes(M, M.DIC, areas, "weathering_silicate", 1, source="atmosphere", alpha=M.CO2_DIC_a)
     create_weathering_fluxes(M, M.TA, areas, "weathering_silicate", 2, source="crust")
 
-    # -------- biological pump particulate P export ---------------------- #
+    # -------- biological pump particular P export ---------------------- #
     # low latitude export flux = 80% of upwelling PO4
     pfluxes = M.flux_summary(filter_by="PO4_mix_up", exclude="H_", return_list=True)
-    print(pfluxes)
-   
 
-    # Export productivity in the high latitude box is fixed (after Zeebe)
+    # Export productivity in the high latidude box is fixed (after Zeebe)
     # to mimic iron limitation.
+    pp_hl = Q_(f"{1.8 * M.H_sb.area.magnitude / M.PC_ratio} mol/a")
 
-    pp_hl = Q_(f"{high_lat_PO4_export * M.H_sb.area.magnitude / M.PC_ratio} mol/a")
-
-    # Particulate (OM bound) phosphate export productivity in the low latitude boxes
+    # Particulate (OM bound) phosphate export productivity in the low latidude boxes
     ct = {  # Surface box to ib, about 78% is remineralized in the ib
         (
             "A_sb_to_A_ib@A_sb_2_A_ib_POP_ex",
@@ -202,55 +394,23 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
             "re": pfluxes,
             "sp": M.PO4,
         },
+        # high latitude box to deep ocean boxes POP
+        (
+            "H_sb_to_A_db@H_sb_2_A_db_POP_ex",
+            "H_sb_to_I_db@H_sb_2_I_db_POP_ex",
+            "H_sb_to_P_db@H_sb_2_P_db_POP_ex",
+        ): {
+            # here we use a fixed rate following Zeebe's Loscar model
+            "ra": [
+                pp_hl * 0.3,
+                pp_hl * 0.3,
+                pp_hl * 0.4,
+            ],
+            "sp": M.PO4,
+            "ty": "Regular",
+        },
     }
-
     create_bulk_connections(ct, M)
-    
-    # choose limitation regime: "iron" or "phosphate"
-    limitation_regime = "iron"   # toggle this
-
-    if limitation_regime == "iron":
-        # iron-limited: fixed export rates (Zeebe, 2012)
-        ct = {
-            (
-                "H_sb_to_A_db@H_sb_2_A_db_POP_ex",
-                "H_sb_to_I_db@H_sb_2_I_db_POP_ex",
-                "H_sb_to_P_db@H_sb_2_P_db_POP_ex",
-            ): {
-                "ra": [
-                    pp_hl * 0.3,
-                    pp_hl * 0.3,
-                    pp_hl * 0.4,
-                ],
-                "sp": M.PO4,
-                "ty": "Regular",
-            },
-        }
-        create_bulk_connections(ct, M)
-
-    elif limitation_regime == "phosphate":
-        # phosphate-limited: scale with PO4 flux
-        highlat_pfluxes = M.flux_summary(
-            filter_by="H_sb_PO4_mix_up",
-            return_list=True
-        )
-
-        ct = {
-            (
-                "H_sb_to_A_db@H_sb_2_A_db_POP_ex",
-                "H_sb_to_I_db@H_sb_2_I_db_POP_ex",
-                "H_sb_to_P_db@H_sb_2_P_db_POP_ex",
-            ): {
-                "ty": "scale_with_flux",
-                "sc": M.PUE,
-                "re": highlat_pfluxes,
-                "sp": M.PO4,
-            },
-        }
-        create_bulk_connections(ct, M)
-
-    else:
-        raise ValueError("limitation_regime must be 'iron' or 'phosphate'")
 
     # -------------- biological pump particulate organic matter export -------- #
     """OM export transports DIC from the surface to the sink, and TA from the sink to
@@ -270,6 +430,7 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
         "POM_DIC",  # new ID
         M.DIC,  # species
         M.PC_ratio,  # scale
+        delta=M.OM_frac, #fractionation of OM
     )
     # Particulate OM TA from Nitrate
     create_connections_from_flux_list(
@@ -290,6 +451,7 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     Since OM and CaCO3 mineralization behave differently, the 
     export production explicity based on the upwelling phosphate
     """
+    
     # CaCO3 export to shelf is based on export primary productivity
     upwelling = M.flux_summary(filter_by="PO4_mix_up", exclude="H_", return_list=True)
     # get shelf fraction
@@ -355,10 +517,7 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     # FIXME: The filtering routine needs to be more robust and better logic
     cef = M.flux_summary(filter_by="PIC_DIC_int", return_list=True)
     M.cef = cef
-
-    # calculate carbonate system parameters for the surface and intermediate boxes
-    add_carbonate_system_1([M.A_sb, M.I_sb, M.P_sb, M.H_sb, M.A_ib, M.I_ib, M.P_ib])
-  
+    
     add_carbonate_system_4(
         this_box=[M.A_ib, M.I_ib, M.P_ib],  # intermediate boxes where the carbonate export flux gets added
         source_box=[M.A_sb, M.I_sb, M.P_sb],  # corresponding surface boxes
@@ -371,11 +530,13 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
         zmax=-6000,
         alpha=alpha,
     )
+    
 
-    #--------Air-Sea Gas Exchange----------#
-    """Requires the initialization of carbonate_system_1 to work, and therefore 
-    must be placed after add_carbonate_system_1 in the model definition.
-    """
+    # calculate carbonate system parameters for the surface and intermediate boxes
+    add_carbonate_system_1([M.A_sb, M.I_sb, M.P_sb, M.H_sb, M.A_ib, M.I_ib, M.P_ib])
+
+    #--------Air-Sea Gas Exchange----------
+    
     create_gas_exchange_connections_from_excel(
         M, #Model object
         "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
@@ -386,7 +547,7 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
 
 
 def pp_carbonate_cs4(M: Model, ocean_names: list) -> None:
-    """Essentially a helper function for post_processing. Calculates marine carbonate chemistry. 
+    """Calculate marine carbonate chemistry. Essentially a helper function for post_processing. 
 
     Surface and intermediate boxes use CS1, 
     deep boxes use CS4 (deep-box-only carbonate dissolution).
@@ -413,12 +574,12 @@ def pp_carbonate_cs4(M: Model, ocean_names: list) -> None:
         # calculate CaCO3 export productivity
         ep = F_PO4 * M.PUE * M.PC_ratio * M.int_fraction / M.rain
         carbonate_system_4_pp(db, ep)
-
+    
 
 if __name__ == "__main__":
 
-    run_time = "1 kyr"
-    time_step = "100 yr"
+    run_time = "100 kyr"
+    time_step = "1 kyr"
     rain_ratio = 6.1
     alpha = 0.3
     debug = False
@@ -433,41 +594,21 @@ if __name__ == "__main__":
     high_lat_PO4_export=1.8
     high_lat_piston= "4.8m/d"
 
-    M_glacial = initialize_model(
+    M_modern = initialize_model(
         high_lat_piston, high_lat_PO4_export, 
         T_surf, T_deep, thc, ta, ti, 
         mix_A_H, mix_I_H, mix_P_H, 
-        rain_ratio, alpha, run_time, time_step, debug)
+        rain_ratio, alpha, run_time, time_step, debug
+    )
 
+    M_modern.debug_equations_file = False
 
-    M_glacial.read_state("modern_state.pkl")
-    M_glacial.run()
+        
+    M_modern.run()
+    #M_modern.save_state("modern_state.pkl")
 
-    M_glacial.plot(M_glacial.CO2_At)
-    print(M_glacial.CO2_At.c[-1])
-    M_glacial.plot([M_glacial.A_db.O2, M_glacial.I_db.O2, M_glacial.P_db.O2])
-    
-    pp_carbonate_cs4(M_glacial, ["A","I","P"])
-    print(M_glacial.A_db.zcc.c[-1])
-    print(M_glacial.I_db.zcc.c[-1])
-    print(M_glacial.P_db.zcc.c[-1])
+    M_modern.plot(M_modern.CO2_At)
+    M_modern.plot(M_modern.A_sb.DIC)
 
-    
-
-
-
-
-    
-    
-    
-    
-
-    
-    
-
-
-
-
-
-
+     
 

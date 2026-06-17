@@ -21,22 +21,55 @@ def create_connections_from_flux_list(
     target_id: str,
     species: SpeciesProperties,
     scale: int | float,
-    **kwargs: dict, #doesnt work, error says takes 5 positional arguments but 6 were given 
+    **kwargs: dict,  
 ) -> None:
-    """Create new connections based on a list of existing fluxes.
+    """ 
+    Create Species2Species connections from an existing list of flux objects.
 
-    This function will evaluate the following keywords
+    This function constructs coupling relationships between reservoir species
+    based on a list of reference fluxes. It interprets flux naming conventions
+    to infer source/sink reservoirs unless explicitly overridden.
 
-        - source: str = auto | from_sink_name | any str
-        - sink: str | ReservoirGroup =  auto | RG
+    Parameters
+    ----------
+    model : Model
+        The ESBMTK model instance containing reservoir groups.
+    flux_list : list
+        List of flux objects used as references for constructing connections.
+        Each flux is expected to have at least an ``id`` attribute following
+        a naming convention such as ``A_sb_2_A_ib_POP_ex``.
+    target_id : str
+        Identifier used to label the resulting connection group.
+    species : SpeciesProperties
+        Species object defining which tracer is being coupled (e.g. DIC, PO4).
+    scale : int or float
+        Scaling factor applied to the reference flux when constructing the
+        Species2Species coupling.
 
-    The first value being the default.
-    - "auto" will determine the source and sink reservoirs based on the flux name
-       i.e., "A_sb_2_A_ib_POP_ex" will create a connection from A_sb to A_ib
-    - "from_sink_name" will determine the source from the sink in the flux name,
-      i.e,  "A_ib_2_A_sb_mix_up" will set the source to "A_sb". In this case the sink must be specified explicitly (i.e., sink="Fb")f
-    - source_name must be a string with a valide model source name (e.g. "Fw")
-    - sink_name must be a string with a valide model sink name (e.g. "Fb")
+    Other Parameters
+    ----------------
+    source : str, optional
+        Source selection mode or explicit source name.
+
+        Options:
+        - "auto" (default): infer source from flux name
+        - "from_sink": infer source from sink portion of flux name
+        - str: explicit model attribute name for source reservoir group
+    sink : str or ReservoirGroup, optional
+        Sink selection mode or explicit sink identifier.
+
+        Options:
+        - "auto" (default): infer sink from flux name
+        - str: explicit sink reservoir group name
+    delta : float, optional
+        Isotopic fractionation passed to Species2Species.
+    epsilon : float, optional
+        Additional isotopic or parameter modifier passed to Species2Species.
+
+    Returns
+    -------
+    None
+        The function modifies the model by adding connection objects.
     """
     import logging
     from esbmtk import Species2Species
@@ -105,11 +138,52 @@ def create_weathering_fluxes(
     alpha: float | None = None,
     **kwargs: dict,
 ) -> None:
-    """Create the connection objects for weathering fluxes.
+    """
+    Create Species2Species connections representing weathering fluxes.
 
-    This function will evaluate the following keywords
+    This function generates coupling terms between a crustal or atmospheric
+    source reservoir and basin sink reservoirs, scaled by basin area and a
+    reference flux.
 
-    - source: str = crust | atmosphere
+    Parameters
+    ----------
+    model : Model
+        ESBMTK model instance containing reservoirs and flux definitions.
+    species : SpeciesProperties
+        Species being transported (e.g. DIC, alkalinity).
+    area_dict : dict
+        Dictionary mapping basin names to their surface areas.
+    ref_flux_name : str
+        Name of the reference flux used.
+    scale : int or float
+        Scaling factor applied to all basin weathering fluxes.
+    delta : float, optional
+        Optional isotopic fractionation parameter passed to Species2Species.
+    alpha : float, optional
+        Optional isotopic fractionation parameter passed to Species2Species.
+
+    Other Parameters
+    ----------------
+    source : str, optional
+        Source reservoir selection mode.
+
+        Options:
+        - "crust" (default): use crustal reservoir (Fw.<species>)
+        - "atmosphere": use atmospheric reservoir (e.g., CO2_At for DIC)
+
+    Returns
+    -------
+    None
+        The function modifies the model by adding connection objects.
+
+    Notes
+    -----
+    - Weathering fluxes are constructed per basin.
+    - Source selection currently supports crust and atmosphere only.
+
+    Examples
+    --------
+    >>> create_weathering_fluxes(model, DIC, areas, "weathering_silicate", 1.0)
     """
     from operator import attrgetter
     import logging
