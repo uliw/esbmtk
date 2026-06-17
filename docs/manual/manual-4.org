@@ -141,7 +141,7 @@ Notes:
 Please study the actual model implementations provided in the examples folder.
 
 *** Post-Processing
-As with =carbonate_system_1=, the remaining carbonate species are not part of the equation system, rather they are calculated once a solution has been found. Since the solver does not store the carbonate export fluxes, one first has to calculate the relevant fluxes from the concentration data in the model solution. This is however model dependent (i.e., export productivity as a function of residence time, or as a function of upwelling flux), and as such post-processing of =carbonate_system_2=  is not done automatically, but has to be initiated manually, e.g., like this:
+As with =carbonate_system_1=, the remaining carbonate species are not part of the equation system; rather, they are calculated once a solution has been found. Since the solver does not store the carbonate export fluxes, one first has to calculate the relevant fluxes from the concentration data in the model solution. This, however, is model dependent (i.e., export productivity as a function of residence time, or as a function of upwelling flux), and as such post-processing of =carbonate_system_2=  is not done automatically, but has to be initiated manually, e.g., like this:
 #+BEGIN_SRC ipython
 # get CaCO3_export in mol/year
 CaCO3_export = M.CaCO3_export.to(f"{M.f_unit}").magnitude
@@ -165,11 +165,7 @@ see  the @@rst::py:func:`esbmtk.post_processing.carbonate_system_2_pp()`@@ funct
 
 *** Carbonate System 3:
 
-*NOTE: this is currently in the early stages of development.*
-
-=carbonate_system_3= aims to extend the =carbonate_system_2= (CS2) code to be able to compute carbonate chemistry dynamics in models with more than two vertical ocean layers, for example, a model with a surface layer (0m to 100m), an intermediate layer (100m to 2000m), and a deep layer (2000m to 6000m). Like CS2, it is also based on the Boudreau (2010) model, but it aims to enable the partitioning of Boudreau's deep box into multiple vertical ocean layers. Its current capabilities are described below.
-
-As of July 2025, CS3 functions almost entirely similarly to CS2, except in that it explicitly computes the "burial flux" (i.e. the carbonate flux that remains undissolved in a given box) and adds it to the reservoir box directly beneath it. 
+=carbonate_system_3= currently functions almost entirely similarly to =carbonate_system_2=, except in that it explicitly computes the "burial flux" (i.e. the carbonate flux that remains undissolved in a given box) and adds it to the reservoir box directly beneath it. 
 
 Carbonate System 3 may be added to a model as follows:
 
@@ -194,10 +190,9 @@ Notes:
 **** Post Processing
 CS3 post-processing functions in the same manner as CS2 post-processing. The sole difference is the name of the function, which for CS3 is =carbonate_system_3_pp=.
 
-
 *** Carbonate System 4: 
 
-Carbonate system 4 is an extension of CS2 and CS3, and enables carbonate chemistry for models with three vertical ocean layers, i.e., models with a surface layer, an intermediate layer, and a deep layer (in addition to a sediment layer/burial box). 
+Carbonate system 4 is an extension of =carbonate_system_2= and =carbonate_system_3= that enables carbonate chemistry calculations for models with three vertical ocean layers, i.e., models with a surface layer, an intermediate layer, and a deep layer (in addition to a sediment layer/burial box). 
 
 The =carbonate_system_4= function splits Boudreau (2010)'s carbonate dissolution fluxes and adds them to either the intermediate box or the deep box depending on the relative depth of z_{sat} (i.e., saturation depth) computed in each timestep. The flux-splitting scheme therefore consists of two scenarios: either z_{sat} is deeper than z_{int}, or z_{int} is deeper than z_{sat}. Both scenarios are visualized below:
 
@@ -236,14 +231,87 @@ add_carbonate_system_4(
         zmax=-6000, #lower depth of deep box
         alpha=alpha,  # dissolution coefficient, typically around 0.6
     )
-f = M.flux_summary(filter_by="burial", return_list=True) #"burial" is the flux from D_b to B_b 
-M.B_b.DIC.lif.append(f) #appends the "burial" flux object to the sink.lif list
 #+END_SRC
 
 Notes: 
-- The flux splitting scheme employed in =carbonate_system_4= currently assumes that the carbonate compensation depth (i.e. =z_{cc}=) is always in the deep box.
+- The flux splitting scheme employed in =carbonate_system_4= currently assumes that the carbonate compensation depth (i.e. =z_{cc}=) is always in the deep box. Therefore, it may not work correctly for model geometries with a very deep z_{int}.
 - There is no need to add a =ConnectionProperties= instance to handle PIC flux connections between the Intermediate and Deep boxes, or the Deep and Burial boxes. This is handled entirely by CS4. However, one must still declare a =ConnectionProperties= instance (with the bypass "bp" keyword) to remove the total carbonate export fluxe from =source_box=.
 - At the moment, =burial_box= must be a Reservoir class object and cannot be a Sink class object. However, one can still use this setup to pass burial flux from an ocean box to a sediment box by defining the sediment box as a Reservoir class object with seawater parameters (T, P, S) exactly equal to the ocean box just above it, and initial DIC and TA set to 0.
+
+**** Post-processing: 
+Post-processing for =carbonate_system_4= works in a manner very similar to post-processing for =carbonate_system_2=, and can be used to calculate carbonate species and diagnostics that are not part of the equation system after a solution has been found. 
+
+Note, once again, that since the solver does not store the carbonate export fluxes, one first has to calculate the relevant fluxes from the concentration data in the model solution, which is model dependent (i.e., export productivity as a function of residence time, or as a function of upwelling flux). 
+
+Note additionally that =carbonate_system_4_pp= only supports post-processing calculations for deep boxes. It is recommended to use =carbonate_system_1= for the post-processing of surface and intermediate boxes in a 3-ocean-layer model. 
+
+Since it is necessary to separately calculate the relevant, model-specific carbonate export fluxes outside the model definition, one may include a model-specific wrapper function after the model definition in order to efficiently calculate =carbonate_system_4= post processing diagnostics, especially if the model contains multiple ocean basins (e.g.: separate Atlantic, Indian, and Pacific basins). An example of such a wrapper function is provided below. 
+
+#+BEGIN_SRC ipython
+def cs4_pp_helper(M: Model, ocean_names: list) -> None:
+    """Example wrapper function for carbonate_system_4 post-processing.
+
+    ``carbonate_system_4_pp`` requires a CaCO3 export flux as input, and therefore 
+    cannot be applied directly to a reservoir without additional calculations for 
+    obtaining the export flux outside the model definition. The calculation of this 
+    export flux depends entirely on the the specific model and is therefore not 
+    included in ``carbonate_system_4_pp`` itself.
+
+    This function applies carbonate_system_1_pp to surface and intermediate boxes for 
+    each specified basin, calculates CaCO3 export fluxes for each basin, and then uses 
+    carbonate_system_4_pp to obtain carbonate system diagnostics for the deep boxes.
+
+    Example taken from the ESBMTK implementation of the LOSCAR model (Zeebe, 2012).
+
+    Parameters
+    ----------
+    M : Model
+        ESBMTK model instance.
+    ocean_names : list[str]
+        Ocean basin identifiers (e.g. ``["A", "I", "P"]``).
+
+    Returns
+    -------
+    None
+        Carbonate diagnostics are attached to the corresponding
+        reservoirs as ``VectorData`` objects.
+
+    References
+    ----------
+    Zeebe, R. E.: LOSCAR: Long-term Ocean-atmosphere-Sediment CArbon 
+    cycle Reservoir Model v2.0.4, Geosci. Model Dev., 5, 149–166, 
+    https://doi.org/10.5194/gmd-5-149-2012, 2012.
+
+    """
+    from esbmtk import carbonate_system_1_pp, carbonate_system_4_pp
+
+    for o in ocean_names:
+
+        # ---- Get the surface, intermediate, and deep reservoirs for each specified basin ----
+        sb = eval(f"M.{o}_sb")  # surface
+        ib = eval(f"M.{o}_ib")  # intermediate
+        db = eval(f"M.{o}_db")  # deep
+
+        # ---- Calculate carbonate diagnostics in surface & intermediate boxes ----
+        carbonate_system_1_pp(sb)
+        carbonate_system_1_pp(ib)
+
+        # ---- MODEL-SPECIFIC EXPORT PRODUCTION CALCULATION ----
+        c_name = f"Conn_{ib.name}_to_{sb.name}_PO4_mix_up"
+        C: ConnectionGroup = M.connection_summary(filter_by=c_name, return_list=True)[0]
+        F_PO4 = C.scale * ib.PO4.c
+        ep = F_PO4 * M.PUE * M.PC_ratio * M.int_fraction / M.rain #export productivity
+
+        #---- Apply carbonate_system_4_pp ----
+        carbonate_system_4_pp(db, ep)
+#+END_SRC
+
+The function may then be called after the model run, as follows:
+
+#+BEGIN_SRC ipython
+M.run()
+cs4_pp_helper(M, ["A","I","P"]) #for post-processing of Atlantic, Indian, and Pacific basins
+#+END_SRC
 
 ** Gas Exchange
 ESBMTK implements gas exchange across the Air-Sea interface as a @@rst::py:class:`esbmtk.connections.Species2Species()`@@ instance, between a @@rst::py:class:`esbmtk.extended_classes.GasReservoir()`@@ and a @@rst::py:class:`esbmtk.base_classes.Species()`@@ instance. In the following example, we first declare a =Gasreservoir= and then connect it with a regular surface box. Note that the CO_{2} gas transfer calculation requires that the respective surface reservoir carries the =CO2aq= tracer as calculated by the @@rst::py:func:`esbmtk.carbonate_chemistry_carbonate_system_1.()`@@ function since the gas-transfer depends on the dissolved CO_{2} rather than on the DIC concentration.
