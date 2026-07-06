@@ -5,8 +5,7 @@
 ** Installation
 *Note that ESBMTK 0.14.2.x requires python 3.12 or higher.*
 *** Conda
-ESBMTK is available via the conda-forge channel https://conda-forge.org/
-Assuming you install into a new virtual environment the following should install the ESBMTK framework
+ESBMTK is available via the conda-forge channel. To install ESBMTK into a new virtual environment:
 #+BEGIN_SRC sh
 conda create --name foo python=3.12
 conda activate foo
@@ -15,11 +14,27 @@ conda config --set channel_priority strict
 conda install esbmtk
 #+END_SRC
 
-*** pip & GitHub
-If you work with pip, simply install  with =python -m pip install esbmtk=, or download the code from https://github.com/uliw/esbmtk
+*** pip 
 
-** A simple example
-A simple model of the marine P-cycle would consider the delivery of P from weathering, the burial of P in the sediments, the thermohaline transport of dissolved PO_4 as well as the export of P in the form of sinking organic matter (POP). The concentration in the respective surface and deep water boxes is then the sum of the respective fluxes (see Fig. 1). The model parameters are taken from Glover 2011, Modeling Methods in the Marine Sciences.
+To install the latest released version from PyPI:
+#+BEGIN_SRC sh
+ python -m pip install esbmtk
+#+END_SRC
+
+*** GitHub
+
+The package is also available through the ESBMTK GitHub repository:
+
+https://github.com/uliw/esbmtk.
+
+
+** A simple example:
+
+Consider a simple model of the marine phosphorus cycle consisting of two ocean reservoirs:
+- Surface reservoir
+- Deep reservoir
+In this model, phosphate enters the system through weathering, is transported via the thermohaline transport of dissolved PO_4 as well as the export of P in the form of sinking particulate organic matter, and is buried in the sediments. The concentration in the respective surface and deep water boxes is then the sum of the respective fluxes. The model is illustrated below in Figure 1, with parameters taken from Glover (2011), Modeling Methods for Marine Science.
+
 #+attr_org: :width 300
 #+attr_rst: :width 400
 #+attr_latex: :width 0.5\textwidth
@@ -29,20 +44,22 @@ A simple model of the marine P-cycle would consider the delivery of P from weath
 #+caption: organic phosphor, F_b = burial.
 [[./mpc.png]]
 
-If we define equations that control the export of particulate P (F_{POP}) as a fraction of the upwelling P (F_u), and the burial of P (F_b) as a fraction of (F_{POP}), we express this model as coupled ordinary differential equations (ODE, or initial value problem):
+If we define equations that control the export of particulate P (F_{POP}) as a fraction of the upwelling P (F_u), and the burial of P (F_b) as a fraction of (F_{POP}), we can express this model as a system of coupled ordinary differential equations (ODEs):
 
 \[
 \frac{d[PO_{4}]_{S}}{dt} = \frac{F_w + F_u - F_d - F_{POP}}{V_S}
 \]
 
-and for the deep ocean, 
+for the surface ocean, 
 
 \[
 \frac{d[PO_{4}]_{D}}{dt}= \frac{F_{POP} + F_d - F_u - F_b}{V_D}
 \]
 
+for the deep ocean. 
 
-which is easily encoded as a Python function:
+The above can easily be implemented in Python as:
+
 #+BEGIN_SRC ipython
 def dCdt(t, C_0, V, F_w, thx):
     """ Calculate the change in concentration as
@@ -71,12 +88,18 @@ def dCdt(t, C_0, V, F_w, thx):
     return dCdt
 #+END_SRC
 
+While straightforward for a highly simple model, explicit implementation of ODEs in Python rapidly becomes more complicated with increasing model complexity. ESBMTK resolves this issue by replacing explicit equation writing with a higher-level description of the model structure, and automatically constructing the corresponding system of differential equations.
+
+The remainder of this tutorial demonstrates how the same phosphorus cycle model can be implemented using ESBMTK.
+
 ** Implementing the P-cycle with ESBMTK
-While ESBMTK provides abstractions to efficiently define complex models, the following section will use the basic ESBMTK classes to define the above model. While quite verbose, it demonstrates the design philosophy behind ESBMTK. More complex approaches are described further down. 
 
 *** Foundational Concepts
-ESBMTK uses a hierarchically structured object-oriented approach to describe a model. 
- The topmost object is the model object that describes fundamental properties like run time, time step, elements and species information. All other objects derive from the model object. Reservoir objects define properties like volume or geometry, pressure and temperature, whereas species objects store initial conditions and concentration versus time data. Species Property objects store names and labels, and Element Property objects store e.g., isotopic reference ratios etc. 
+ESBMTK uses a hierarchically structured, object-oriented approach to describe a model. 
+
+The topmost object in the ESBMTK heirarchy is the =Model= object. The =Model= object describes fundamental model properties like run time, time step, elements, and species information. All other objects derive from the model object. 
+
+=Reservoir= objects define reservoirs and their properties, including reservoir volume or geometry, pressure and temperature, etc. Each =Reservoir= object contains one or more =species= objects, which store store initial species concentration within the reservoir and concentration versus time data for the corresponding species. =SpeciesProperties= objects store names and labels, and ElementProperties objects store e.g., isotopic reference ratios etc. 
 #+BEGIN_EXAMPLE
  Model
     ├── Reservoir_1
@@ -94,7 +117,13 @@ ESBMTK uses a hierarchically structured object-oriented approach to describe a m
             └── SpeciesProperties
                 └── ElementProperties
 #+END_EXAMPLE
-The relationship between two reservoirs is specified by a connection properties object that specifies which reservoir is the upstream source, and which is the downstream sink. It also specifies the type of connection, e.g., to scale the flux between from upstream to downstream by the respective species concentrations. 
+
+The biogeochemical relationship between two reservoirs is specified by a =ConnectionProperties= object. This object specifies:
+- Which reservoir is the upstream source, 
+- Which reservoir is the downstream sink,
+- The type of flux connection, 
+And other parameters required to compute any given flux. 
+
 #+BEGIN_EXAMPLE
  Model
     └── ConnectionProperties
@@ -117,17 +146,18 @@ The relationship between two reservoirs is specified by a connection properties 
             └── Type
                 └── ProcessProperties
 #+END_EXAMPLE
-The model geometry is then parsed to build a suitable equation system which is passed to an ODE solver library which returns the results once integration has finished. Since Python objects are persistent, the object hierarchy is open to introspection using the regular Python syntax.
+
+The model geometry and connections are parsed to build a suitable equation system, which is passed to an ODE solver library which returns the results once integration has finished. Since Python objects are persistent, the object hierarchy is open to introspection using the regular Python syntax.
 
 *** Defining the model geometry and initial conditions
-The below code examples are available at https://github.com/uliw/esbmtk-examples
+The following code examples are available at https://github.com/uliw/esbmtk-examples.
 In the first step, one needs to define a model object that describes fundamental model parameters. The following code first loads the following ESBMTK classes that will help with model construction:
  - @@rst::py:class:`esbmtk.model.Model()`@@
  - @@rst::py:class:`esbmtk.base_classes.Reservoir()`@@
  - @@rst::py:class:`esbmtk.connections.ConnectionProperties()`@@ class
  - @@rst::py:class:`esbmtk.base_classes.SourceProperties()`@@ class
  - @@rst::py:class:`esbmtk.base_classes.SinkProperties()`@@ class
- - and =Q_= which belongs to the pint library.
+ - and =Q_= which belongs to the Pint library.
 #+name: p1
 #+BEGIN_SRC ipython :tangle po4_1.py
 # import classes from the esbmtk library
@@ -197,7 +227,7 @@ Reservoir(
 )
 Reservoir(
     name="D_b",  # box name
-    volume="100E16 m**3",  # deeb box volume
+    volume="100E16 m**3",  # deep box volume
     concentration={M.PO4: "0 umol/l"},  # initial concentration
 )
 #+END_SRC
