@@ -19,9 +19,10 @@ Column names: reservoirs
 - z_bottom: Lower depth boundary of the reservoir (m).
 - area_percentage: Fraction (%) of total ocean surface area occupied by the reservoir.
 - temperature: Initial reservoir temperature (°C)
-- pressure: Reservoir pressure (atm).
+- pressure: Reservoir pressure (atm)
 - salinity: Reservoir salinity (psu)
 - [chemical species]: Initial concentration of the specified species (in umol/lg). Column names must match species names defined in the model. 
+- delta_[chemical species]: Initial isotope ratio of the specified species (optional).
 
 Column names: transport_matrix
 - source: Name of the source reservoir.
@@ -33,6 +34,7 @@ Column names: gas_reservoirs
 - name: name of atmospheric reservoir
 - species: gaseous species to which the atmospheric reservoir corresponds to. Must exist as a registered species within ESBMTK.
 - species_ppm: initial concentration of the gas species. May be specified in ppm or percent (e.g.: 280 ppm; e.g.: 21 percent)
+- delta_[gaseous species]: Initial isotope ratio of the specified species in the gas reservoir (optional). Note that no value should be entered for species for which isotopes are not enabled.
 
 Column names: gas_exchange
 - species: gaseous species being exchanged between the atmosphere and ocean
