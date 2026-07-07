@@ -56,6 +56,13 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     M.NC_ratio = 15 / 130
     M.O2C_ratio = 165 / 130  # oxygen consumption per mol C
 
+    # Isotope ratios
+    M.Fw_DIC_d = 1.5  # Carbonate weathering delta
+    M.Fw_v_d = -4  # Volcanic flux delta
+    M.OM_frac = -28  # fractionation during photosynthesis
+    M.CO2_DIC_a = 8.0  # enrichment during CO2 dissolution in water
+    M.Fb_DIC_d = 0 
+
     M.ib_remin = 0.78
     M.db_remin = 1 - M.ib_remin
 
@@ -94,6 +101,9 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
         "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
         sheet_name="reservoirs" #specify worksheet (default = "reservoirs")
     )
+
+    M.Fw.DIC.delta = M.Fw_DIC_d #initialize delta for Source object
+    M.Fb.DIC.delta = M.Fb_DIC_d #initialize delta fro Sink object
 
     create_gas_reservoirs_from_excel(
         M, #Model object
@@ -141,6 +151,7 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
         species=M.CO2,
         ctype="Fixed",
         rate=M.Fw_v,
+        delta=M.Fw_v_d,
         id="volcanic_weathering",
     )
 
@@ -162,10 +173,10 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     Both processes contribute 2 mol alkalinity for each mol Carbon, since calcium
     carries a double charge.
     """
-    create_weathering_fluxes(M, M.DIC, areas, "weathering_carbonate", 1, source="crust")
+    create_weathering_fluxes(M, M.DIC, areas, "weathering_carbonate", 1, source="crust", delta=M.Fw_DIC_d) 
     create_weathering_fluxes(M, M.TA, areas, "weathering_carbonate", 2, source="crust")
 
-    create_weathering_fluxes(M, M.DIC, areas, "weathering_silicate", 1, source="atmosphere")
+    create_weathering_fluxes(M, M.DIC, areas, "weathering_silicate", 1, source="atmosphere", alpha=M.CO2_DIC_a)
     create_weathering_fluxes(M, M.TA, areas, "weathering_silicate", 2, source="crust")
 
     # -------- biological pump particulate P export ---------------------- #
@@ -270,6 +281,7 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
         "POM_DIC",  # new ID
         M.DIC,  # species
         M.PC_ratio,  # scale
+        delta=M.OM_frac, #fractionation of OM
     )
     # Particulate OM TA from Nitrate
     create_connections_from_flux_list(
@@ -352,9 +364,13 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     )
 
     # calculate intermediate and deep sea carbonate dissolution
-    # FIXME: The filtering routine needs to be more robust and better logic
-    cef = M.flux_summary(filter_by="PIC_DIC_int", return_list=True)
+    cef = [
+    M.flux_summary(filter_by="A_sb_to_Fb_PIC_DIC_int", return_list=True)[0],
+    M.flux_summary(filter_by="I_sb_to_Fb_PIC_DIC_int", return_list=True)[0],
+    M.flux_summary(filter_by="P_sb_to_Fb_PIC_DIC_int", return_list=True)[0],
+    ]
     M.cef = cef
+    
 
     # calculate carbonate system parameters for the surface and intermediate boxes
     add_carbonate_system_1([M.A_sb, M.I_sb, M.P_sb, M.H_sb, M.A_ib, M.I_ib, M.P_ib])
@@ -385,14 +401,29 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     return M
 
 
-def pp_carbonate_cs4(M: Model, ocean_names: list) -> None:
-    """Essentially a helper function for post_processing. Calculates marine carbonate chemistry. 
+def cs4_pp_helper(M: Model, ocean_names: list) -> None:
+    """Model-specific helper function for carbonate_system_4 post-processing.
 
-    Surface and intermediate boxes use CS1, 
-    deep boxes use CS4 (deep-box-only carbonate dissolution).
+    carbonate_system_4_pp requires a CaCO3 export flux as input and therefore 
+    cannot be applied directly to a reservoir without additional model-specific
+    calculations for obtaining the export flux outside the model definition.
 
-    :param M: Model Instance
-    :param ocean_names: List of ocean names, e.g., ["A", "I", "P"]
+    This function applies carbonate_system_1_pp to surface and intermediate boxes for 
+    each specified basin, calculates CaCO3 export fluxes for each basin, and then uses 
+    carbonate_system_4_pp to obtain carbonate system diagnostics for the deep boxes.
+
+    Parameters
+    ----------
+    M : Model
+        ESBMTK model instance.
+    ocean_names : list[str]
+        Ocean basin identifiers (e.g. ``["A", "I", "P"]``).
+
+    Returns
+    -------
+    None
+        Carbonate diagnostics are attached to the corresponding
+        reservoirs as ``VectorData`` objects.
     """
     from esbmtk import carbonate_system_1_pp, carbonate_system_4_pp
 
@@ -413,7 +444,6 @@ def pp_carbonate_cs4(M: Model, ocean_names: list) -> None:
         # calculate CaCO3 export productivity
         ep = F_PO4 * M.PUE * M.PC_ratio * M.int_fraction / M.rain
         carbonate_system_4_pp(db, ep)
-
 
 if __name__ == "__main__":
 
@@ -444,13 +474,9 @@ if __name__ == "__main__":
     M_glacial.run()
 
     M_glacial.plot(M_glacial.CO2_At)
-    print(M_glacial.CO2_At.c[-1])
-    M_glacial.plot([M_glacial.A_db.O2, M_glacial.I_db.O2, M_glacial.P_db.O2])
+
     
-    pp_carbonate_cs4(M_glacial, ["A","I","P"])
-    print(M_glacial.A_db.zcc.c[-1])
-    print(M_glacial.I_db.zcc.c[-1])
-    print(M_glacial.P_db.zcc.c[-1])
+    
 
     
 

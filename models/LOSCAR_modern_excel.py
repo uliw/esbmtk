@@ -59,8 +59,8 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     M.Fw_v_d = -4  # Volcanic flux delta
     M.OM_frac = -28  # fractionation during photosynthesis
     M.CO2_DIC_a = 8.0  # enrichment during CO2 dissolution in water
+    M.Fb_DIC_d = 0
     
-
     M.ib_remin = 0.78
     M.db_remin = 1 - M.ib_remin
 
@@ -94,199 +94,14 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     M.mix_I_H = mix_I_H
     M.mix_P_H = mix_P_H
 
-    """
-    # initialize reservoirs
-    bn: dict = {  # name: [[geometry], T, P, S]
-        # Atlantic Ocean
-        "A_sb": {
-            "g": [0, -100, A_ap],
-            "c": {
-                M.DIC: "2210 umol/kg",
-                M.TA: "2310 umol/kg",
-                M.PO4: "2.1 umol/kg",
-                M.O2: "200 umol/kg",
-            },
-            "d":{M.DIC: 2},
-            "T": T_surf,
-            "P": 5,
-            "S": 34.7,
-        },
-        "A_ib": {
-            "g": [-100, -1000, A_ap],
-            "c": {
-                M.DIC: "2210 umol/kg",
-                M.TA: "2310 umol/kg",
-                M.PO4: "2.1 umol/kg",
-                M.O2: "200 umol/kg",
-            },
-            "d":{M.DIC: 2},
-            "T": 10,
-            "P": 100,
-            "S": 34.7,
-        },
-        "A_db": {
-            "g": [-1000, -6000, A_ap],
-            "c": {
-                M.DIC: "2210 umol/kg",
-                M.TA: "2310 umol/kg",
-                M.PO4: "2.1 umol/kg",
-                M.O2: "200 umol/kg",
-            },
-            "d":{M.DIC: 2},
-            "T": T_deep,
-            "P": 240,
-            "S": 34.7,
-        },
-        "A_bb": { #burial box, 
-            "g": [-6000, -6500, A_ap],
-            "c": {
-                M.DIC: "0 umol/kg",
-                M.TA: "0 umol/kg",
-                M.PO4: "0 umol/kg",
-                M.O2: "0 umol/kg",
-            },
-            "d":{M.DIC: 2},
-            "T": T_deep,
-            "P": 240,
-            "S": 34.7,
-        },
-        # Indian Ocean
-        "I_sb": {
-            "g": [0, -100, I_ap],
-            "c": {
-                M.DIC: "2210 umol/kg",
-                M.TA: "2310 umol/kg",
-                M.PO4: "2.1 umol/kg",
-                M.O2: "200 umol/kg",
-            },
-            "d":{M.DIC: 2},
-            "T": T_surf,
-            "P": 5,
-            "S": 34.7,
-        },
-        "I_ib": {
-            "g": [-100, -1000, I_ap],
-            "c": {
-                M.DIC: "2210 umol/kg",
-                M.TA: "2310 umol/kg",
-                M.PO4: "2.1 umol/kg",
-                M.O2: "200 umol/kg",
-            },
-            "d":{M.DIC: 2},
-            "T": 10,
-            "P": 100,
-            "S": 34.7,
-        },
-        "I_db": {
-            "g": [-1000, -6000, I_ap],
-            "c": {
-                M.DIC: "2210 umol/kg",
-                M.TA: "2310 umol/kg",
-                M.PO4: "2.1 umol/kg",
-                M.O2: "200 umol/kg",
-            },
-            "d":{M.DIC: 2},
-            "T": T_deep,
-            "P": 240,
-            "S": 34.7,
-        },
-        "I_bb": {
-            "g": [-6000, -6500, I_ap],
-            "c": {
-                M.DIC: "0 umol/kg",
-                M.TA: "0 umol/kg",
-                M.PO4: "0 umol/kg",
-                M.O2: "0 umol/kg",
-            },
-            "d":{M.DIC: 2},
-            "T": T_deep,
-            "P": 240,
-            "S": 34.7,
-        },
-        # Pacific Ocean
-        "P_sb": {
-            "g": [0, -100, P_ap],
-            "c": {
-                M.DIC: "2210 umol/kg",
-                M.TA: "2310 umol/kg",
-                M.PO4: "2.1 umol/kg",
-                M.O2: "200 umol/kg",
-            },
-            "d":{M.DIC: 2},
-            "T": T_surf,
-            "P": 5,
-            "S": 34.7,
-        },
-        "P_ib": {
-            "g": [-100, -1000, P_ap],
-            "c": {
-                M.DIC: "2210 umol/kg",
-                M.TA: "2310 umol/kg",
-                M.PO4: "2.1 umol/kg",
-                M.O2: "200 umol/kg",
-            },
-            "d":{M.DIC: 2},
-            "T": 10,
-            "P": 100,
-            "S": 34.7,
-        },
-        "P_db": {
-            "g": [-1000, -6000, P_ap],
-            "c": {
-                M.DIC: "2210 umol/kg",
-                M.TA: "2310 umol/kg",
-                M.PO4: "2.1 umol/kg",
-                M.O2: "200 umol/kg",
-            },
-            "d":{M.DIC: 2},
-            "T": T_deep,
-            "P": 240,
-            "S": 34.7,
-        },
-        "P_bb": {
-            "g": [-6000, -6500, P_ap],
-            "c": {
-                M.DIC: "0 umol/kg",
-                M.TA: "0 umol/kg",
-                M.PO4: "0 umol/kg",
-                M.O2: "0 umol/kg",
-            },
-            "d":{M.DIC: 2},
-            "T": T_deep,
-            "P": 240,
-            "S": 34.7,
-        },
-        # High latitude box
-        "H_sb": {
-            "g": [0, -250, H_ap],
-            "c": {
-                M.DIC: "2210 umol/kg",
-                M.TA: "2310 umol/kg",
-                M.PO4: "2.1 umol/kg",
-                M.O2: "200 umol/kg",
-            },
-            "d":{M.DIC: 2},
-            "T": T_deep,
-            "P": 10,
-            "S": 34.7,
-        },
-        # Weathering sources
-        "Fw": {"ty": "Source", "sp": [M.DIC, M.TA, M.PO4, M.O2]},
-        # Burial Sinks
-        "Fb": {"ty": "Sink", "sp": [M.DIC, M.TA, M.PO4, M.O2]},
-    }
-
-    species_list = initialize_reservoirs(M, bn)
-    """
-
     species_list = create_reservoirs_from_excel(
         M, #Model object
         "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
         sheet_name="reservoirs" #specify worksheet (default = "reservoirs")
     )
     
-
     M.Fw.DIC.delta = M.Fw_DIC_d #initialize delta for Source object
+    M.Fb.DIC.delta = M.Fb_DIC_d #initialize delta fro Sink object
 
     create_gas_reservoirs_from_excel(
         M, #Model object
@@ -328,9 +143,9 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
         id="weathering_silicate",
     )
     # volcanic flux:
-    Species2Species(  # Low Latitude surface to atmosphere F7
-        source=M.Fw.DIC,  # Reservoir Species
-        sink=M.CO2_At,  # Reservoir Species
+    Species2Species( 
+        source=M.Fw.DIC, 
+        sink=M.CO2_At,  
         species=M.CO2,
         ctype="Fixed",
         rate=M.Fw_v,
@@ -477,6 +292,7 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
 
     # CaCO3 export from low lat ocean to intermediate ocean.
     M.int_fraction = 1 - M.shelf_fraction
+
     create_connections_from_flux_list(
         M,
         upwelling,
@@ -514,8 +330,11 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     )
 
     # calculate intermediate and deep sea carbonate dissolution
-    # FIXME: The filtering routine needs to be more robust and better logic
-    cef = M.flux_summary(filter_by="PIC_DIC_int", return_list=True)
+    cef = [
+    M.flux_summary(filter_by="A_sb_to_Fb_PIC_DIC_int", return_list=True)[0],
+    M.flux_summary(filter_by="I_sb_to_Fb_PIC_DIC_int", return_list=True)[0],
+    M.flux_summary(filter_by="P_sb_to_Fb_PIC_DIC_int", return_list=True)[0],
+    ]
     M.cef = cef
     
     add_carbonate_system_4(
@@ -531,29 +350,44 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
         alpha=alpha,
     )
     
-
     # calculate carbonate system parameters for the surface and intermediate boxes
     add_carbonate_system_1([M.A_sb, M.I_sb, M.P_sb, M.H_sb, M.A_ib, M.I_ib, M.P_ib])
 
     #--------Air-Sea Gas Exchange----------
-    
+    """Requires the initialization of carbonate_system_1 to work, and therefore 
+    must be placed after add_carbonate_system_1 in the model definition.
+    """
     create_gas_exchange_connections_from_excel(
         M, #Model object
         "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
         sheet_name="gas_exchange" #specify worksheet (default = "gas_exchange")
     )
-
+    
     return M
 
+def cs4_pp_helper(M: Model, ocean_names: list) -> None:
+    """Model-specific helper function for carbonate_system_4 post-processing.
 
-def pp_carbonate_cs4(M: Model, ocean_names: list) -> None:
-    """Calculate marine carbonate chemistry. Essentially a helper function for post_processing. 
+    carbonate_system_4_pp requires a CaCO3 export flux as input and therefore 
+    cannot be applied directly to a reservoir without additional model-specific
+    calculations for obtaining the export flux outside the model definition.
 
-    Surface and intermediate boxes use CS1, 
-    deep boxes use CS4 (deep-box-only carbonate dissolution).
+    This function applies carbonate_system_1_pp to surface and intermediate boxes for 
+    each specified basin, calculates CaCO3 export fluxes for each basin, and then uses 
+    carbonate_system_4_pp to obtain carbonate system diagnostics for the deep boxes.
 
-    :param M: Model Instance
-    :param ocean_names: List of ocean names, e.g., ["A", "I", "P"]
+    Parameters
+    ----------
+    M : Model
+        ESBMTK model instance.
+    ocean_names : list[str]
+        Ocean basin identifiers (e.g. ``["A", "I", "P"]``).
+
+    Returns
+    -------
+    None
+        Carbonate diagnostics are attached to the corresponding
+        reservoirs as ``VectorData`` objects.
     """
     from esbmtk import carbonate_system_1_pp, carbonate_system_4_pp
 
@@ -574,12 +408,11 @@ def pp_carbonate_cs4(M: Model, ocean_names: list) -> None:
         # calculate CaCO3 export productivity
         ep = F_PO4 * M.PUE * M.PC_ratio * M.int_fraction / M.rain
         carbonate_system_4_pp(db, ep)
-    
 
 if __name__ == "__main__":
 
-    run_time = "100 kyr"
-    time_step = "1 kyr"
+    run_time = "1 Myr"
+    time_step = "50 kyr"
     rain_ratio = 6.1
     alpha = 0.3
     debug = False
@@ -602,13 +435,12 @@ if __name__ == "__main__":
     )
 
     M_modern.debug_equations_file = False
-
         
     M_modern.run()
     #M_modern.save_state("modern_state.pkl")
 
     M_modern.plot(M_modern.CO2_At)
-    M_modern.plot(M_modern.A_sb.DIC)
+    
 
      
 

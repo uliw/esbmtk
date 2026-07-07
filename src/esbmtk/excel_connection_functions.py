@@ -523,6 +523,7 @@ def create_gas_exchange_connections(model, basin_list, species, piston_velocity,
     for basin in basin_list:
         reservoir = getattr(model, basin.name)
         source = getattr(model, f"{species.name}_At")
+
         if species.name == "CO2":
             sink = getattr(reservoir, "DIC")
         else:
@@ -541,7 +542,7 @@ def create_gas_exchange_connections(model, basin_list, species, piston_velocity,
         }
 
         if delta is not None:
-            kwargs["delta"] = delta
+            kwargs["d"] = delta
 
         Species2Species(**kwargs)
 
