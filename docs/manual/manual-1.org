@@ -343,7 +343,7 @@ ConnectionProperties(
 
 Note: Unless the =register= keyword is given, connections will be automatically registered with the parent of the source, i.e., the model =M=. Unless explicitly given through the =name= keyword, connection names will be automatically constructed from the names of the source and sink instances. However, it is a good habit to provide the =id= keyword to keep connections separate in cases where two reservoir instances share more than one connection. The list of all connection instances can be obtained from the model object (see below).
 
-**** Concentration-dependent flux: thermohaline circulation
+**** Concentration-dependent flux: Thermohaline Circulation
 
 We may also create a connection where the flux depends on the concentration of a tracer in the source reservoir. To map the process of thermohaline circulation, for example, we connect the surface and deep ocean boxes using =ctype ="scale_with_concentration"=, which scales the mass transfer as a function of the concentration in surface box. 
 
@@ -378,20 +378,23 @@ The flux is computed as:
 \]
 
 where:
-- =scale= represents the volumetric flow rate (in Sverdrup)
-- tracer concentration is taken from the refernce reservoir
+- =scale= represents the volumetric flow rate (in Sverdrup),
+- tracer concentration is taken from the refernce reservoir,
 
 Thus, ESBMTK automatically converts circulation strength into a mass flux.
 
-Note that by default, the reference reservoir for =scale_with_concentration= is the source reservoir. As such, in most cases, the =ref_reservoirs= keyword can be omitted. Note that the connection class does not require the =name= keyword. Rather, the name is derived from the source and sink reservoir instances. Since reservoir instances can have more than one connection (i.e., surface to deep via downwelling, and surface to deep via primary production), it is required to set the =id= keyword.
-
-As seen above, the =scale= keyword can be a string or a numerical value. If it is provided as a string, ESBMTK will map the value into model units, i.e., the toolkit automatically handles unit conversions when scaling. For example, if concentration is described in mol/kg instead of mol/l, the above code for thermohaline circulation will automatically use the density of the relevant reservoirs to calculate the correct flux.
+Note:
+- By default, the reference reservoir for =scale_with_concentration= is the source reservoir. The optional =ref_reservoirs= keyword can be used to change this reference reservoir. 
+- Since reservoir instances can have more than one connection (i.e., surface to deep via downwelling, and surface to deep via primary production), it is required to set a unique =id= keyword.
+- As seen above, the =scale= keyword can be a string or a numerical value. If it is provided as a string, ESBMTK will map the value into model units, i.e., the toolkit automatically handles unit conversions when scaling. For example, if concentration is described in mol/kg instead of mol/l, the above code for thermohaline circulation will automatically use the density of the relevant reservoirs to calculate the correct flux.
 
 **** Concentration-dependent flux: Biological export production
 
-There are several ways to define biological export production, e.g., as a function of the upwelling PO_4, or as a function of the residence time of PO_4 in the surface ocean. Here we follow Glover (2011) and use the residence time \tau = 100 years. Note that the below code species explicitly specifies the species that is affected by this process.
+Another example of a flux that can employ =scale_with_concentration= is biological export production.
 
-#+name: p8
+There are several ways to define biological export production; here, we define it as a function of the residence time of PO_4 in the surface ocean following Glover (2011), with residence time \tau = 100 years.
+
+#+name: p9
 #+BEGIN_SRC ipython :tangle po4_1.py
 ConnectionProperties(  #
     source=M.S_b,  # source of flux
@@ -404,8 +407,13 @@ ConnectionProperties(  #
 )
 #+END_SRC
 
-We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity or use the previously calculated flux via =ctype ="scale_with_flux"= and =ref_flux=.
-#+name: p9
+Note that the =species= argument restricts the connection to specific tracers. If omitted, ESBMTK applies the flux to all compatible species shared by source and sink reservoirs (as is the case for the thermohaline circulation example).
+
+**** 4. Flux-dependent processes: burial in sediments
+
+We can describe the burial flux of phosphorus into sediments as a fraction of the primary export productivity. To create the connection, we can either recalculate the export productivity, or use the previously calculated flux via =ctype ="scale_with_flux"=.
+
+#+name: p10
 #+BEGIN_SRC ipython :tangle po4_1.py
 ConnectionProperties(  #
     source=M.D_b,  # source of flux
@@ -417,7 +425,24 @@ ConnectionProperties(  #
     species=[M.PO4],
 )
 #+END_SRC
-Note that it is currently not possible to chain =scale_with_flux= references, e.g., referencing =f1= to calculate =f2= will work, but referencing =f2= to calculate =f3= will fail. Rather, calculate =f3= from =f1=.
+
+The burial flux is therefore:
+\[
+F_b = 0.01 \times F_{\mathrm{primary\ production}}
+\]
+
+Note that it is currently not possible to chain =scale_with_flux= references, e.g., referencing =f1= to calculate =f2= will work, but referencing =f2= to calculate =f3= will fail. Rather, it is suggested to calculate =f3= from =f1=.
+
+**** Final model assembly
+
+At this stage, the phosphorus cycle model is fully defined:
+- 2 reservoirs (surface and deep ocean)
+- 1 source (weathering)
+- 1 sink (burial)
+- 3 transport processes (circulation + export + burial)
+
+ESBMTK now automatically constructs the full system of coupled differential equations from this structure.
+
 #+BEGIN_SRC ipython :tangle po4_1.py :exports none
 M.run()
 #+END_SRC
@@ -426,8 +451,6 @@ Running the above code (see the file =po4_1.py= at https://github.com/uliw/ESBMT
 #+name: po41
 #+caption: Example output from =po4_1.png=
 [[./po4_1.png]]
-
-
 
 ** Working with the model instance  
 *** Running the model, visualizing and saving the results
