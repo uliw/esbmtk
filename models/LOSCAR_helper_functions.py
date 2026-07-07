@@ -235,6 +235,84 @@ def create_weathering_fluxes(
         # breakpoint()
     logging.debug("\n")
 
+def get_matrix_coefficients(
+    flux_name: str,
+    CM: NDArrayFloat,
+    F: NDArrayFloat,
+    F_names: list[str],
+    R_names: list[str],
+    *,
+    include_zeros: bool = False,
+    atol: float = 0.0,
+) -> list[tuple[str, float]]:
+    """Return reservoir rows affected by a given flux (and their CM coefficients).
+
+    A flux corresponds to one column in CM. Reservoirs correspond to rows in CM.
+    This function finds the column index for `flux_name` in `F_names`, then returns
+    (reservoir_name, CM[row, col]) for each reservoir row where that coefficient is
+    non-zero (or all rows if include_zeros=True).
+
+    Parameters
+    ----------
+    flux_name
+        Name as stored in F_names (e.g., entries produced by f.full_name).
+    CM
+        Coefficient matrix with shape (n_reservoir_rows, n_fluxes).
+    F
+        Flux value vector with shape (n_fluxes,). (Not required for coefficients,
+        but kept to match your provided signature and for sanity checks.)
+    F_names
+        Flux names aligned with flux indices (columns of CM, entries of F).
+    R_names
+        Reservoir row names aligned with row indices of CM.
+    include_zeros
+        If True, return all reservoirs with their coefficient (including 0.0).
+        If False, only return reservoirs with non-zero coefficients.
+    atol
+        Absolute tolerance for treating very small coefficients as zero.
+
+    Returns
+    -------
+    list[tuple[str, float]]
+        List of (reservoir_name, coefficient) tuples.
+    """
+    if flux_name not in F_names:
+        raise KeyError(f"Flux name not found in F_names: {flux_name!r}")
+
+    col = F_names.index(flux_name)
+
+    # Basic alignment checks (optional but helpful)
+    if CM.shape[1] != len(F_names):
+        raise ValueError(
+            f"CM has {CM.shape[1]} columns but F_names has {len(F_names)} entries."
+        )
+    if CM.shape[0] != len(R_names):
+        raise ValueError(
+            f"CM has {CM.shape[0]} rows but R_names has {len(R_names)} entries."
+        )
+    if len(F) != len(F_names):
+        raise ValueError(f"F has length {len(F)} but F_names has {len(F_names)}.")
+
+    coeff_col = CM[:, col]
+
+    if include_zeros:
+        return [(R_names[i], float(coeff_col[i])) for i in range(len(R_names))]
+
+    if atol > 0.0:
+        rows = np.where(np.abs(coeff_col) > atol)[0]
+    else:
+        rows = np.nonzero(coeff_col)[0]
+
+    return [
+        (flux_name, R_names[i], f"coeff = {coeff_col[i]:.2e}, val = {F[col]:.2e}")
+        for i in rows
+    ]
+
+
+
+#the above ^ should be integrated into utility functions
+
+# the below should be generalized such that they can be used for other models also
 
 def extract_diagnostics(M):
     """Extract final model diagnostics for experiment logging."""
@@ -550,75 +628,3 @@ def sensitivity_test(
     return pd.DataFrame(results)
 
 
-def get_matrix_coefficients(
-    flux_name: str,
-    CM: NDArrayFloat,
-    F: NDArrayFloat,
-    F_names: list[str],
-    R_names: list[str],
-    *,
-    include_zeros: bool = False,
-    atol: float = 0.0,
-) -> list[tuple[str, float]]:
-    """Return reservoir rows affected by a given flux (and their CM coefficients).
-
-    A flux corresponds to one column in CM. Reservoirs correspond to rows in CM.
-    This function finds the column index for `flux_name` in `F_names`, then returns
-    (reservoir_name, CM[row, col]) for each reservoir row where that coefficient is
-    non-zero (or all rows if include_zeros=True).
-
-    Parameters
-    ----------
-    flux_name
-        Name as stored in F_names (e.g., entries produced by f.full_name).
-    CM
-        Coefficient matrix with shape (n_reservoir_rows, n_fluxes).
-    F
-        Flux value vector with shape (n_fluxes,). (Not required for coefficients,
-        but kept to match your provided signature and for sanity checks.)
-    F_names
-        Flux names aligned with flux indices (columns of CM, entries of F).
-    R_names
-        Reservoir row names aligned with row indices of CM.
-    include_zeros
-        If True, return all reservoirs with their coefficient (including 0.0).
-        If False, only return reservoirs with non-zero coefficients.
-    atol
-        Absolute tolerance for treating very small coefficients as zero.
-
-    Returns
-    -------
-    list[tuple[str, float]]
-        List of (reservoir_name, coefficient) tuples.
-    """
-    if flux_name not in F_names:
-        raise KeyError(f"Flux name not found in F_names: {flux_name!r}")
-
-    col = F_names.index(flux_name)
-
-    # Basic alignment checks (optional but helpful)
-    if CM.shape[1] != len(F_names):
-        raise ValueError(
-            f"CM has {CM.shape[1]} columns but F_names has {len(F_names)} entries."
-        )
-    if CM.shape[0] != len(R_names):
-        raise ValueError(
-            f"CM has {CM.shape[0]} rows but R_names has {len(R_names)} entries."
-        )
-    if len(F) != len(F_names):
-        raise ValueError(f"F has length {len(F)} but F_names has {len(F_names)}.")
-
-    coeff_col = CM[:, col]
-
-    if include_zeros:
-        return [(R_names[i], float(coeff_col[i])) for i in range(len(R_names))]
-
-    if atol > 0.0:
-        rows = np.where(np.abs(coeff_col) > atol)[0]
-    else:
-        rows = np.nonzero(coeff_col)[0]
-
-    return [
-        (flux_name, R_names[i], f"coeff = {coeff_col[i]:.2e}, val = {F[col]:.2e}")
-        for i in rows
-    ]

@@ -50,51 +50,50 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     M.Fw_v = Q_("5 Tmol/yr")  # Volcanic flux
     M.Fw_Si = M.Fw_v  # Silicate weathering @280 ppm
 
-    M.PC_ratio = 130
-    M.OM_frac = -28
-    M.PUE = 0.8
-    M.NC_ratio = 15 / 130
+    # Species ratios 
+    M.PC_ratio = 130 #phosphorus to carbon Redfield ratio
+    M.PUE = 0.8 #Phosphate Uptake Efficiency
+    M.NC_ratio = 15 / 130 #nitrogen to carbon Redfield ratio
     M.O2C_ratio = 165 / 130  # oxygen consumption per mol C
+
+    #Phosphate remineralization ratios
+    M.ib_remin = 0.78 #intermediate box remineralization
+    M.db_remin = 1 - M.ib_remin #deep box remineralization
 
     # Isotope ratios
     M.Fw_DIC_d = 1.5  # Carbonate weathering delta
+    M.Fb_DIC_d = 0 # burial delta (included for isotope initialization in Sink)
     M.Fw_v_d = -4  # Volcanic flux delta
     M.OM_frac = -28  # fractionation during photosynthesis
     M.CO2_DIC_a = 8.0  # enrichment during CO2 dissolution in water
-    M.Fb_DIC_d = 0 
 
-    M.ib_remin = 0.78
-    M.db_remin = 1 - M.ib_remin
-
-    M.rain = rain_ratio
-    M.alpha = alpha
-
-    M.high_lat_piston = high_lat_piston
-
-    M.high_lat_PO4_export = high_lat_PO4_export
-
-    # ------- setup box parameters ----------#
+    # ------- set up box parameters ----------#
 
     A_ap = 0.26  # Area percentage Atlantic ocean
     I_ap = 0.18  # Area percentage Indian ocean
     P_ap = 0.46  # Area precentage Pacific ocean
     H_ap = 0.10  # Area percentage High latidude ocean
 
-    M.T_surf = T_surf
-    M.T_deep = T_deep
-
     thc = Q_(thc)
     mix_A_H = Q_(mix_A_H)
     mix_I_H = Q_(mix_I_H)
     mix_P_H = Q_(mix_P_H)
 
-    # Attach to model for logging
+    #----------Attach variables to model for logging---------#
+    M.T_surf = T_surf
+    M.T_deep = T_deep
     M.thc = thc
     M.ta = ta
     M.ti = ti
     M.mix_A_H = mix_A_H
     M.mix_I_H = mix_I_H
     M.mix_P_H = mix_P_H
+    M.rain = rain_ratio
+    M.alpha = alpha
+    M.high_lat_piston = high_lat_piston
+    M.high_lat_PO4_export = high_lat_PO4_export
+
+    #------Create reservoirs and transport matrix from excel------#
 
     species_list = create_reservoirs_from_excel(
         M, #Model object
@@ -103,7 +102,7 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     )
 
     M.Fw.DIC.delta = M.Fw_DIC_d #initialize delta for Source object
-    M.Fb.DIC.delta = M.Fb_DIC_d #initialize delta fro Sink object
+    M.Fb.DIC.delta = M.Fb_DIC_d #initialize delta for Sink object
 
     create_gas_reservoirs_from_excel(
         M, #Model object

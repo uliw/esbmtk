@@ -49,66 +49,66 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     M.Fw_v = Q_("5 Tmol/yr")  # Volcanic flux
     M.Fw_Si = M.Fw_v  # Silicate weathering @280 ppm
 
-    M.PC_ratio = 130 #Phosphorus-to-Carbon Redfield ratio
-    M.PUE = 0.8 #Phosphorus Uptake Efficiency
-    M.NC_ratio = 15 / 130 #Nitrogen-to-Carbon ratio
+    # Species ratios 
+    M.PC_ratio = 130 #phosphorus to carbon Redfield ratio
+    M.PUE = 0.8 #Phosphate Uptake Efficiency
+    M.NC_ratio = 15 / 130 #nitrogen to carbon Redfield ratio
     M.O2C_ratio = 165 / 130  # oxygen consumption per mol C
+
+    #Phosphate remineralization ratios
+    M.ib_remin = 0.78 #intermediate box remineralization
+    M.db_remin = 1 - M.ib_remin #deep box remineralization
 
     # Isotope ratios
     M.Fw_DIC_d = 1.5  # Carbonate weathering delta
+    M.Fb_DIC_d = 0 # burial delta (included for isotope initialization in Sink)
     M.Fw_v_d = -4  # Volcanic flux delta
     M.OM_frac = -28  # fractionation during photosynthesis
     M.CO2_DIC_a = 8.0  # enrichment during CO2 dissolution in water
-    M.Fb_DIC_d = 0
-    
-    M.ib_remin = 0.78
-    M.db_remin = 1 - M.ib_remin
 
-    M.rain = rain_ratio
-    M.alpha = alpha
-
-    M.high_lat_piston = high_lat_piston
-
-    M.high_lat_PO4_export = high_lat_PO4_export
-
-    # ------- setup box parameters ----------#
+    # ------- set up box parameters ----------#
 
     A_ap = 0.26  # Area percentage Atlantic ocean
     I_ap = 0.18  # Area percentage Indian ocean
     P_ap = 0.46  # Area precentage Pacific ocean
     H_ap = 0.10  # Area percentage High latidude ocean
 
-    M.T_surf = T_surf
-    M.T_deep = T_deep
-
     thc = Q_(thc)
     mix_A_H = Q_(mix_A_H)
     mix_I_H = Q_(mix_I_H)
     mix_P_H = Q_(mix_P_H)
 
-    # Attach to model for logging
+    #----------Attach variables to model for logging---------#
+    M.T_surf = T_surf
+    M.T_deep = T_deep
     M.thc = thc
     M.ta = ta
     M.ti = ti
     M.mix_A_H = mix_A_H
     M.mix_I_H = mix_I_H
     M.mix_P_H = mix_P_H
+    M.rain = rain_ratio
+    M.alpha = alpha
+    M.high_lat_piston = high_lat_piston
+    M.high_lat_PO4_export = high_lat_PO4_export
+
+    #------Create reservoirs and transport matrix from excel------#
 
     species_list = create_reservoirs_from_excel(
         M, #Model object
         "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
         sheet_name="reservoirs" #specify worksheet (default = "reservoirs")
     )
-    
+
     M.Fw.DIC.delta = M.Fw_DIC_d #initialize delta for Source object
-    M.Fb.DIC.delta = M.Fb_DIC_d #initialize delta fro Sink object
+    M.Fb.DIC.delta = M.Fb_DIC_d #initialize delta for Sink object
 
     create_gas_reservoirs_from_excel(
         M, #Model object
         "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
-        sheet_name="gas_reservoirs", #specify worksheet (default = "gas_reservoirs")
+        sheet_name="gas_reservoirs" #specify worksheet (default = "gas_reservoirs")
     )
-    
+
     create_transport_matrix_from_excel(
         M, #Model object
         "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
@@ -264,7 +264,7 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
       dissolution flux computed by carbonate system 4.
 
     Since OM and CaCO3 mineralization behave differently, the 
-    export production explicity based on the upwelling phosphate
+    export production explicity based on the upwelling phosphate.
     """
     
     # CaCO3 export to shelf is based on export primary productivity
@@ -353,7 +353,7 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     # calculate carbonate system parameters for the surface and intermediate boxes
     add_carbonate_system_1([M.A_sb, M.I_sb, M.P_sb, M.H_sb, M.A_ib, M.I_ib, M.P_ib])
 
-    #--------Air-Sea Gas Exchange----------
+    #--------Air-Sea Gas Exchange----------#
     """Requires the initialization of carbonate_system_1 to work, and therefore 
     must be placed after add_carbonate_system_1 in the model definition.
     """
@@ -411,8 +411,8 @@ def cs4_pp_helper(M: Model, ocean_names: list) -> None:
 
 if __name__ == "__main__":
 
-    run_time = "1 Myr"
-    time_step = "50 kyr"
+    run_time = "10 Myr"
+    time_step = "100 kyr"
     rain_ratio = 6.1
     alpha = 0.3
     debug = False
