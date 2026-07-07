@@ -2,131 +2,20 @@
 #+number-offset: 5
 
 * Adding Complexity
-** Model forcing
-ESBMTK realizes model forcing through the @@rst::py:class:`esbmtk.extended_classes.Signal()`@@ class. Once defined, a signal instance can be associated with a @@rst::py:class:`esbmtk.connections.Species2Species()`@@ instance that will then act on the associated connection. This class provides the following keywords to create a signal:
-
-- =square()=, =pyramid()=, =bell()=  These are defined by specifying the signal start time (relative to the model time), its size (as mass) and duration, or as duration and magnitude (see the example below)
-- =filename()= a string pointing to a CSV file that specifies the following columns: =Time [yr]=, =Rate/Scale [units]=, =delta value [dimensionless]= The class will attempt to convert the data into the correct model units. This process is however not very robust.
-
-The default is to add the signal to a given connection. It is however also possible to use the signal data as a scaling factor. Signals are cumulative, i.e., complex signals are created by adding one signal to another (i.e., Snew = S1 + S2). Using the P-cycle model from the previous chapter (see =po4_1.py=) we can add a signal by first defining a signal instance, and then associating the instance with a weathering connection instance (this model is available as =po4_2.p4= see https://github.com/uliw/ESBMTK-Examples)
-# import the model code from manual-1
-#+name:po42_1
-#+BEGIN_SRC ipython :noweb yes :tangle po4_2.py :exports none
-<<manual-1.org:po41definition()>>
-#+END_SRC
-
-#+name:po42_2
-#+BEGIN_SRC ipython :tangle po4_2.py
-from esbmtk import Signal
-
-Signal(
-    name="CR",  # Signal name
-    species=M.PO4,  # SpeciesProperties
-    start="1 Myrs",
-    shape="pyramid",
-    duration="1 Myrs",
-    mass="45 Pmol",
-)
-
-ConnectionProperties(
-    source=M.weathering,  # source of flux
-    sink=M.S_b,  # target of flux
-    rate=F_w,  # rate of flux
-    id="river",  # connection id
-    signal=M.CR,
-    species=[M.PO4],
-    ctype="regular",
-)
-M.run()
-#+END_SRC
-Note that the =plot()= method accepts the signal object as well. In general, any ESBMTK object that has data that varies with time, can be plotted by the =plot()= method. ESBMTK also provides classes to include
-external data  @@rst::py:class:`esbmtk.extended_classes.ExternalData()`@@   as well as classes to mix and match data into the same plot @@rst::py:class:`esbmtk.extended_classes.DataField()`@@. The file =is92a_comparison_plots.py= (see  https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010) shows a use case. Furthermore, @@rst::py:class:`esbmtk.model.Model.plot()`@@  returns a tuple with the figure instance, list of =axs= objects, which allows even more complex figure manipulations (see =steady_state_plots.py= in the same repository).
-#+BEGIN_SRC ipython :tangle po4_2.py
-M.plot([M.S_b.PO4, M.D_b.PO4, M.CR], fn="po4_2.png")
-#  M.save_data()
-#+END_SRC
-
-This will result in the following output:
-#+attr_org: :width 300
-#+attr_rst: :width 400
-#+attr_latex: :width 0.5\textwidth
-#+name: pcycle
-#+name: sig
-#+caption: Example output for the =CR= signal above. See =po4_2.py=
-#+caption: in the examples directory.
-[[./po4_2.png]]
-
-#+BEGIN_SRC org :noweb yes :tangle po4_2_test.py :exports none
-<<po42_1>>
-<<po42_2>>
-#+END_SRC
-
-# define a test function
-#+name: testrunner
-#+BEGIN_SRC ipython :exports none
-# run tests
-@pytest.mark.parametrize("test_input, expected", test_values)
-def test_values(test_input, expected):
-    t = 1e-1 # +- 1 mu mol is good enough 
-    assert abs(expected) * (1 - t) <= abs(test_input) <= abs(expected) * (1 + t)
-#+END_SRC
-
-# define a testcase
-#+BEGIN_SRC ipython :noweb yes :tangle test_po4_2.py :exports none
-import pytest
-import po4_2_test  # import script
-
-M = po4_2_test.M  # get model handle 
-test_values = [ # result, reference value
-    (M.S_b.PO4.c[-1]*1e6, 31.55),
-    (M.D_b.PO4.c[-1]*1e6, 46.40),
-]
-<<testrunner>>
-#+END_SRC
-
-*** Signal data structure 
-The original signal data (as read from a csv etc.) is available through the =.s_time=, =.s_data= instance variables. The padded/cropped data that is interpolated for each time point, is stored in the =.cd_m= (and =.cd_l= if isotope data is present) instance variables.The sub-sampled signal data that is used for plotting is stored in =.m=, =.l= and =.d= respectively.  Signal data can also be queried interactively by calling the signal with a given time values, e.g., =M.PO4_signal(12)=. 
-
-*** Applying a signal to multiple connections 
-Adding signals is a computationally expensive process due to the involvement of multiple function calls. When the same signal shape is used to modify multiple connections, it is more efficient to create a placeholder connection with the signal and then use a =scale_with_flux= connection type to reference the placeholder flux. This approach has the added advantage that each =scale_with_flux= connection can set its own scaling factor.
-#+BEGIN_SRC ipython
-# read the forcing (signal) data
-M.PW_SO4_Koelling = Signal(
-    name="PW_SO4_Koelling",
-    species=M.SO4,
-    filename="koelling_pyrite_data_3Ma_w_isotopes.csv",
-    stype="addition",
-    register=M,
-)
-
-# Create a placeholder flux that does not affect the model 
-# and connect the signal data 
-Species2Species(
-    ctype="regular",
-    source=M.Fw.SO4,
-    sink=M.Fb.SO4,
-    signal=M.PW_SO4_Koelling,
-    id="signal_as_flux",
-)
-
-Species2Species(
-    ctype="scale_with_flux",
-    id="actual_flux",
-    source=M.Fw.SO4,
-    sink=M.L_b.SO4,
-    ref_flux="signal_as_flux",
-    scale=3, 
-)
-#+END_SRC
-
-*** Signals and isotopes 
-Signal data can be applied to isotope effects as well. For this you need to specify a second column in the signal data file that contains delta values with a header like this =d34S [dimensionless]=. The data is interpreted according to the connection setting. I.e., if the connection specifies a delta-value, the third column will be interpreted as delta value (ditto for epsilon values).
-
-Isotope effects are always additive. I.e., If there is a flux A, and a signal B, ESBMTK will calculate the isotope effects for A according to the delta/epsilon value that is set in the connection properties, and the calculate the isotope effects for the  signal flux based on the values delta/epsilon values in the signal data file.
 
 ** Working with multiple species
-The basic building blocks introduced so far are sufficient to create a single species model. Adding further species is straightforward. First one needs to import the species definitions. They than can be simply used by extending the dictionaries and lists used in the previous example.
-Using the previous example of a simple P-cycle model, we now express the P-cycling as a function of photosynthetic organic matter (OM) production and remineralization. First, we import the new classes and we additionally load the species definitions for carbon (this code is available as =po4_3.py= see https://github.com/uliw/ESBMTK-Examples).
+
+The basic building blocks introduced so far are sufficient to create a single-species model. Adding further species is straightforward. The primary
+difference is that reservoirs, sources, sinks, and connections must now specify which species they contain or transport.
+
+In the example below, we extend the previous simple P-cycle model into a multispecies model by expressing phosphorus cycling as a function of organic matter (OM) production and remineralization. Organic matter production is represented using a fixed C:P Redfield ratio so that carbon export is linked directly to phosphorus uptake.
+
+The complete example is available as =po4_3.py= in the ESBMTK-Examples repository.
+
+**** Defining the Model instance 
+
+We begin by defining the model instance and register the required species definitions. Multiple species can be registered in the model by simply extending the list of elements, as shown below:
+
 #+name: po43_1
 #+BEGIN_SRC ipython :tangle po4_3.py
 from esbmtk import (
@@ -138,6 +27,7 @@ from esbmtk import (
     data_summaries,
     Q_,
 )
+
 M = Model(
     stop="6 Myr",  # end time of model
     max_timestep="1 kyr",  # upper limit of time step
@@ -150,28 +40,39 @@ tau = Q_("100 year")  # PO4 residence time in surface boxq
 F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
 thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 Redfield = 106 # C:P
+#+END_SRC
 
+Similarly, multiple species can be registered with the source, sink, and reservoir objects, by extending the lists and dictionaries associated with species or concentrations keywords. 
+
+#+name: po43_2
+#+BEGIN_SRC ipython :tangle po4_3.py
 SourceProperties(
     name="weathering",
-    species=[M.PO4, M.DIC],
+    species=[M.PO4, M.DIC], #multi-species syntax
 )
 SinkProperties(
     name="burial",
-    species=[M.PO4, M.DIC],
+    species=[M.PO4, M.DIC], #multi-species syntax
 )
 Reservoir(
     name="S_b",
     volume="3E16 m**3",  # surface box volume
-    concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"},
+    concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"}, #multi-species syntax
 )
 Reservoir(
     name="D_b",
     volume="100E16 m**3",  # deep box volume
-    concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"},
+    concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"}, #multi-species syntax
 )
 #+END_SRC
-The @@rst::py:class:`esbmtk.connections.ConnectionProperties.()`@@ class definition is equally straightforward, and the following expression will apply the thermohaline downwelling to all species in the =M.S_b= group.
-#+name:po43_2
+
+**** Transporting Multiple Species
+
+Connections created between reservoir groups using =ConnectionProperties= automatically apply to every species contained within those groups unless an explicit species list is supplied.
+
+For example, thermohaline circulation can be applied simultaneously to both DIC and PO4 by connecting the reservoir groups via =ConnectionProperties=.
+
+#+name:po43_3
 #+BEGIN_SRC ipython :tangle po4_3.py
 ConnectionProperties(  # thermohaline downwelling
     source=M.S_b,  # source of flux
@@ -188,7 +89,11 @@ ConnectionProperties(  # thermohaline upwelling
     id="thc_down",
 )
 #+END_SRC
-It is also possible to specify individual rates or scales using a dictionary, as in this example that sets two different weathering fluxes:
+
+If different species require different transport rates, the =rate= (or =scale=) keyword can instead be provided as a dictionary.
+
+For example,
+
 #+name:po43_3
 #+BEGIN_SRC ipython :tangle po4_3.py
 ConnectionProperties(
@@ -199,7 +104,11 @@ ConnectionProperties(
     id="weathering",  # connection id
 )
 #+END_SRC
-The following code defines primary production and its effects on DIC in the surface and deep box. The example is a bit contrived but demonstrates the principle. Note the use of the =ref_reservoirs= keyword and =Redfield= ratio
+
+Connections may also use one species to determine the transport rate of another. This is done using the =ref_reservoirs= or =ref_flux= keywords.
+
+For example, the code below links organic carbon production to phosphate uptake using a fixed Redfield ratio.
+
 #+name:po43_4
 #+BEGIN_SRC ipython :tangle po4_3.py
 # P-uptake by photosynthesis
@@ -472,3 +381,124 @@ create_transport_matrix_from_excel(
 #+END_SRC
 
 It is recommended to check out [example] in [[https://github.com/uliw/ESBMTK-Examples/tree/main][ESBMTK-Examples]] for a more detailed overview of the functions described above.
+** Model forcing
+ESBMTK realizes model forcing through the @@rst::py:class:`esbmtk.extended_classes.Signal()`@@ class. Once defined, a signal instance can be associated with a @@rst::py:class:`esbmtk.connections.Species2Species()`@@ instance that will then act on the associated connection. This class provides the following keywords to create a signal:
+
+- =square()=, =pyramid()=, =bell()=  These are defined by specifying the signal start time (relative to the model time), its size (as mass) and duration, or as duration and magnitude (see the example below)
+- =filename()= a string pointing to a CSV file that specifies the following columns: =Time [yr]=, =Rate/Scale [units]=, =delta value [dimensionless]= The class will attempt to convert the data into the correct model units. This process is however not very robust.
+
+The default is to add the signal to a given connection. It is however also possible to use the signal data as a scaling factor. Signals are cumulative, i.e., complex signals are created by adding one signal to another (i.e., Snew = S1 + S2). Using the P-cycle model from the previous chapter (see =po4_1.py=) we can add a signal by first defining a signal instance, and then associating the instance with a weathering connection instance (this model is available as =po4_2.p4= see https://github.com/uliw/ESBMTK-Examples)
+# import the model code from manual-1
+#+name:po42_1
+#+BEGIN_SRC ipython :noweb yes :tangle po4_2.py :exports none
+<<manual-1.org:po41definition()>>
+#+END_SRC
+
+#+name:po42_2
+#+BEGIN_SRC ipython :tangle po4_2.py
+from esbmtk import Signal
+
+Signal(
+    name="CR",  # Signal name
+    species=M.PO4,  # SpeciesProperties
+    start="1 Myrs",
+    shape="pyramid",
+    duration="1 Myrs",
+    mass="45 Pmol",
+)
+
+ConnectionProperties(
+    source=M.weathering,  # source of flux
+    sink=M.S_b,  # target of flux
+    rate=F_w,  # rate of flux
+    id="river",  # connection id
+    signal=M.CR,
+    species=[M.PO4],
+    ctype="regular",
+)
+M.run()
+#+END_SRC
+Note that the =plot()= method accepts the signal object as well. In general, any ESBMTK object that has data that varies with time, can be plotted by the =plot()= method. ESBMTK also provides classes to include
+external data  @@rst::py:class:`esbmtk.extended_classes.ExternalData()`@@   as well as classes to mix and match data into the same plot @@rst::py:class:`esbmtk.extended_classes.DataField()`@@. The file =is92a_comparison_plots.py= (see  https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010) shows a use case. Furthermore, @@rst::py:class:`esbmtk.model.Model.plot()`@@  returns a tuple with the figure instance, list of =axs= objects, which allows even more complex figure manipulations (see =steady_state_plots.py= in the same repository).
+#+BEGIN_SRC ipython :tangle po4_2.py
+M.plot([M.S_b.PO4, M.D_b.PO4, M.CR], fn="po4_2.png")
+#  M.save_data()
+#+END_SRC
+
+This will result in the following output:
+#+attr_org: :width 300
+#+attr_rst: :width 400
+#+attr_latex: :width 0.5\textwidth
+#+name: pcycle
+#+name: sig
+#+caption: Example output for the =CR= signal above. See =po4_2.py=
+#+caption: in the examples directory.
+[[./po4_2.png]]
+
+#+BEGIN_SRC org :noweb yes :tangle po4_2_test.py :exports none
+<<po42_1>>
+<<po42_2>>
+#+END_SRC
+
+# define a test function
+#+name: testrunner
+#+BEGIN_SRC ipython :exports none
+# run tests
+@pytest.mark.parametrize("test_input, expected", test_values)
+def test_values(test_input, expected):
+    t = 1e-1 # +- 1 mu mol is good enough 
+    assert abs(expected) * (1 - t) <= abs(test_input) <= abs(expected) * (1 + t)
+#+END_SRC
+
+# define a testcase
+#+BEGIN_SRC ipython :noweb yes :tangle test_po4_2.py :exports none
+import pytest
+import po4_2_test  # import script
+
+M = po4_2_test.M  # get model handle 
+test_values = [ # result, reference value
+    (M.S_b.PO4.c[-1]*1e6, 31.55),
+    (M.D_b.PO4.c[-1]*1e6, 46.40),
+]
+<<testrunner>>
+#+END_SRC
+
+*** Signal data structure 
+The original signal data (as read from a csv etc.) is available through the =.s_time=, =.s_data= instance variables. The padded/cropped data that is interpolated for each time point, is stored in the =.cd_m= (and =.cd_l= if isotope data is present) instance variables.The sub-sampled signal data that is used for plotting is stored in =.m=, =.l= and =.d= respectively.  Signal data can also be queried interactively by calling the signal with a given time values, e.g., =M.PO4_signal(12)=. 
+
+*** Applying a signal to multiple connections 
+Adding signals is a computationally expensive process due to the involvement of multiple function calls. When the same signal shape is used to modify multiple connections, it is more efficient to create a placeholder connection with the signal and then use a =scale_with_flux= connection type to reference the placeholder flux. This approach has the added advantage that each =scale_with_flux= connection can set its own scaling factor.
+#+BEGIN_SRC ipython
+# read the forcing (signal) data
+M.PW_SO4_Koelling = Signal(
+    name="PW_SO4_Koelling",
+    species=M.SO4,
+    filename="koelling_pyrite_data_3Ma_w_isotopes.csv",
+    stype="addition",
+    register=M,
+)
+
+# Create a placeholder flux that does not affect the model 
+# and connect the signal data 
+Species2Species(
+    ctype="regular",
+    source=M.Fw.SO4,
+    sink=M.Fb.SO4,
+    signal=M.PW_SO4_Koelling,
+    id="signal_as_flux",
+)
+
+Species2Species(
+    ctype="scale_with_flux",
+    id="actual_flux",
+    source=M.Fw.SO4,
+    sink=M.L_b.SO4,
+    ref_flux="signal_as_flux",
+    scale=3, 
+)
+#+END_SRC
+
+*** Signals and isotopes 
+Signal data can be applied to isotope effects as well. For this you need to specify a second column in the signal data file that contains delta values with a header like this =d34S [dimensionless]=. The data is interpreted according to the connection setting. I.e., if the connection specifies a delta-value, the third column will be interpreted as delta value (ditto for epsilon values).
+
+Isotope effects are always additive. I.e., If there is a flux A, and a signal B, ESBMTK will calculate the isotope effects for A according to the delta/epsilon value that is set in the connection properties, and the calculate the isotope effects for the  signal flux based on the values delta/epsilon values in the signal data file.
