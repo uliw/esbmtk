@@ -318,7 +318,7 @@ The functions =create_reservoirs_from_excel= and =create_transport_matrix_from_e
 For more information on =create_gas_reservoirs_from_excel= and =create_gas_exchange_connections_from_excel=, please see the manual's section on [[https://esbmtk.readthedocs.io/en/latest/manual/manual-4.html#gas-exchange][gas exchange]].
 
 Notes:
-- Column names must exactly match the expected names described below.
+- Column names must /exactly/ match the expected names described below.
 - Reservoir names used in the worksheets must match those used in the model.
 - Any variables specified herein must also be defined in the python model file. 
 - Numerical values may be entered directly or calculated using standard Excel formulas.
@@ -327,37 +327,57 @@ Notes:
 
 The function =create_reservoirs_from_excel= creates ocean reservoirs, sources, and sinks from information provided in an Excel file. 
 
-Each row in the excel table represents one reservoir definition. Reservoir geometry, temperature, pressure, and salinity, initial species concentrations, and isotope concentrations can be specified as columns, as shown in the example table below:
+Each row in the excel table represents one reservoir definition. Reservoir geometry, temperature, pressure, and salinity, initial species concentrations, and initial isotope compositions can be specified as columns, as shown in the example table below:
 
-|name | type | z_top | z_bottom | area_percentage | temperature | pressure | salinity | DIC | TA  |
+|name | type | z_top | z_bottom | area_percentage | temperature | pressure | salinity | DIC | delta_DIC |
 |-----+------+------+----------+-----------------+-------------+----------+----------+-----+-------+----+----|
-| A_sb | reservoir| 0| -100	| 0.26	| 20	| 5	| 34.7	| 2210	| 2310 |
-| A_ib |reservoir |-100	|-1000	|0.26	|10	|100	|34.7	|2210	|2310| 
-| A_db|reservoir|-1000	|-6000	|0.26	|2	|240	|34.7	|2210	|2310|	
+| A_sb | reservoir| 0| -100	| 0.26	| 20	| 5	| 34.7	| 2210	|  2 |
+| A_ib |reservoir |-100	|-1000	|0.26	|10	|100	|34.7	|2210	| 2 | 
+| A_db |reservoir|-1000	|-6000	|0.26	|2	|240	|34.7	|2210	| 2 |
 | Fw | source| | | | | | | | | 
 | Fb	| sink| | | | | | | | | 
 
 Ocean reservoir rows necessarily require the =name=, =type=, and geometry columns (=z_top=, =z_bottom=, and =area_percentage=), whereas only the =name= and =type= columns are necessary for the source and sink reservoirs. Default temperature, pressure, and salinity values can be specified as a function parameter.
 
+Isotope compositions can optionally be specified using columns named =delta_[species]=. For example, the column =delta_DIC= specifies the initial \delta^{13}C isotopic composition of any given reservoir. Note that isotopes are not initialized for reservoirs for which the isotope column is left blank (e.g., =Fw= and =Fb= in the table above).
+
+Important: at present, isotopes must be initialized separately for the Source and Sink. This can be done as shown in the function call example below.
+
 The function can be called as follows:
 
 #+BEGIN_SRC ipython
+
+#----- Isotope ratios ----- #
+M.Fw_DIC_d = 1.5  # Carbonate weathering delta
+M.Fb_DIC_d = 0 # burial delta (included for isotope initialization in Sink) 
+
+#---- Create reservoirs from excel ----#
 species_list = create_reservoirs_from_excel(
         M, #Model object
         "LOSCAR_sheets.xlsx", #specify Excel file name / file path
         sheet_name="reservoirs" #specify Excel worksheet (default = "reservoirs")
         )
+
+#---- Separately initialize reservoirs for Source and Sink ----#
+M.Fw.DIC.delta = M.Fw_DIC_d #initialize delta for Source object
+M.Fb.DIC.delta = M.Fb_DIC_d #initialize delta for Sink object
 #+END_SRC
 
 Notes:
-- The function only accepts reservoir geometry information provided via the =z_top=, =z_bottom=, and =area_percentage= parameters at this moment. 
+- The function only accepts reservoir geometry information provided via the =z_top=, =z_bottom=, and =area_percentage= parameters at present. 
 - Species columns are detected automatically from species registered in the model. 
 - Species concentrations are assumed to be in umol/kg, unless otherwise specified. 
-- All columns named =delta_[species]= are interpreted as isotope values of [species].
+- Only isotope columns corresponding to species registered in the model are permitted; otherwise an error is raised.
 
 *** Creating transport matrices from Excel
 
-The function =create_transport_matrix_from_excel= creates transport connections between reservoirs from a worksheet. Each row defines a single connection. Required excel columns are =source=, =sink=, =flux_id=, and =sc=. 
+The function =create_transport_matrix_from_excel= creates mixing and thermohaline transport connections between reservoirs via a worksheet. Each row defines a single connection. 
+
+Required excel columns:
+- =source= 
+- =sink=
+- =flux_id=
+- =sc= 
 
 Example rows and columns may look like the following:
 
@@ -365,9 +385,9 @@ Example rows and columns may look like the following:
 | H_sb| 	A_db |	thermohaline	| thc|
 |A_ib	|A_sb	|mix_up	|21 Sverdrup|
 
-The scaling factor =sc= be specified in Sverdrups (e.g. “10 Sverdrup”) or as a variable defined within the python file.
+The scaling factor =sc= may be specified in Sverdrups (e.g., “10 Sverdrup”) or as a variable defined within the python file (e.g., =thc=).
 
-Note that mixing fluxes are symmetric, so for each mix_up flux, a corresponding “mix_down” flux need not be specified and will be created automatically.
+Note: mixing fluxes are symmetric, so for each mix_up flux, a corresponding “mix_down” flux does not need to be specified and will be created automatically. 
 
 The function can be called as follows:
 
@@ -380,7 +400,7 @@ create_transport_matrix_from_excel(
         )
 #+END_SRC
 
-It is recommended to check out [example] in [[https://github.com/uliw/ESBMTK-Examples/tree/main][ESBMTK-Examples]] for a more detailed overview of the functions described above.
+It is recommended to check out the =LOSCAR_2012= directory in [[https://github.com/uliw/ESBMTK-Examples/tree/main][ESBMTK-Examples]] for a detailed example of the functions described above.
 ** Model forcing
 ESBMTK realizes model forcing through the @@rst::py:class:`esbmtk.extended_classes.Signal()`@@ class. Once defined, a signal instance can be associated with a @@rst::py:class:`esbmtk.connections.Species2Species()`@@ instance that will then act on the associated connection. This class provides the following keywords to create a signal:
 
