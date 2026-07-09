@@ -171,7 +171,6 @@ we can query the parameters that we used to create the Reservoir instance by pri
       max_timestep = 1 kyr
       element = ['Carbon']
 
-
 Since ESBMTK follows a hierarchical structure we can query the element properties for Phosphor like this
 
 .. code:: ipython
@@ -190,7 +189,6 @@ Since ESBMTK follows a hierarchical structure we can query the element propertie
       reference = https://www-pub.iaea.org/MTCD/publications/PDF/te_825_prn.pdf
       full_name = M.Carbon
 
-
 and the DIC reservoir in the surface box as
 
 .. code:: ipython
@@ -208,7 +206,6 @@ and the DIC reservoir in the surface box as
       groupname = S_b
       rtype = regular
       full_name = M.S_b.DIC
-
 
 to get a list of species that are defined for ``M.Carbon`` , we can use the ``vars()`` function (this results in a long list, so it is not shown here)
 

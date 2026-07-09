@@ -11,8 +11,7 @@ Installation
 Conda
 ^^^^^
 
-ESBMTK is available via the conda-forge channel `https://conda-forge.org/ <https://conda-forge.org/>`_
-Assuming you install into a new virtual environment the following should install the ESBMTK framework
+ESBMTK is available via the conda-forge channel. To install ESBMTK into a new virtual environment:
 
 .. code:: sh
 
@@ -22,15 +21,32 @@ Assuming you install into a new virtual environment the following should install
     conda config --set channel_priority strict
     conda install esbmtk
 
-pip & GitHub
-^^^^^^^^^^^^
+pip
+^^^
 
-If you work with pip, simply install  with ``python -m pip install esbmtk``, or download the code from `https://github.com/uliw/esbmtk <https://github.com/uliw/esbmtk>`_
+To install the latest released version from PyPI:
 
-A simple example
-~~~~~~~~~~~~~~~~
+.. code:: sh
 
-A simple model of the marine P-cycle would consider the delivery of P from weathering, the burial of P in the sediments, the thermohaline transport of dissolved PO\ :sub:`4`\ as well as the export of P in the form of sinking organic matter (POP). The concentration in the respective surface and deep water boxes is then the sum of the respective fluxes (see Fig. 1). The model parameters are taken from Glover 2011, Modeling Methods in the Marine Sciences.
+    python -m pip install esbmtk
+
+GitHub
+^^^^^^
+
+The package is also available through the ESBMTK GitHub repository:
+
+`https://github.com/uliw/esbmtk <https://github.com/uliw/esbmtk>`_.
+
+A simple example:
+~~~~~~~~~~~~~~~~~
+
+Consider a simple model of the marine phosphorus cycle consisting of two ocean reservoirs:
+
+- Surface reservoir
+
+- Deep reservoir
+
+In this model, phosphate enters the system through weathering, is transported via the thermohaline transport of dissolved PO\ :sub:`4`\ as well as the export of P in the form of sinking particulate organic matter, and is buried in the sediments. The concentration in the respective surface and deep water boxes is then the sum of the respective fluxes. The model is illustrated below in Figure 1, with parameters taken from Glover (2011), Modeling Methods for Marine Science.
 
 .. _pcycle:
 
@@ -40,7 +56,7 @@ A simple model of the marine P-cycle would consider the delivery of P from weath
 
     A two-box model of the marine P-cycle. F\ :sub:`w`\ = weathering F\ :sub:`u`\ = upwelling, F\ :sub:`d`\ = downwelling, F\ :sub:`POP`\ = particulate organic phosphor, F\ :sub:`b`\ = burial.
 
-If we define equations that control the export of particulate P (F\ :sub:`POP`\) as a fraction of the upwelling P (F\ :sub:`u`\), and the burial of P (F\ :sub:`b`\) as a fraction of (F\ :sub:`POP`\), we express this model as coupled ordinary differential equations (ODE, or initial value problem):
+If we define equations that control the export of particulate P (F\ :sub:`POP`\) as a fraction of the upwelling P (F\ :sub:`u`\), and the burial of P (F\ :sub:`b`\) as a fraction of (F\ :sub:`POP`\), we can express this model as a system of coupled ordinary differential equations (ODEs):
 
 
 
@@ -48,7 +64,7 @@ If we define equations that control the export of particulate P (F\ :sub:`POP`\)
 
     \frac{d[PO_{4}]_{S}}{dt} = \frac{F_w + F_u - F_d - F_{POP}}{V_S}
 
-and for the deep ocean, 
+for the surface ocean, 
 
 
 
@@ -56,8 +72,9 @@ and for the deep ocean,
 
     \frac{d[PO_{4}]_{D}}{dt}= \frac{F_{POP} + F_d - F_u - F_b}{V_D}
 
+for the deep ocean. 
 
-which is easily encoded as a Python function:
+The above can easily be implemented in Python as:
 
 .. code:: ipython
 
@@ -87,16 +104,23 @@ which is easily encoded as a Python function:
 
         return dCdt
 
+While straightforward for a highly simple model, explicit implementation of ODEs in Python rapidly becomes more complicated with increasing model complexity. ESBMTK resolves this issue by replacing explicit equation writing with a higher-level description of the model structure, and automatically constructing the corresponding system of differential equations.
+
+The remainder of this tutorial demonstrates how the same phosphorus cycle model can be implemented using ESBMTK.
+
 Implementing the P-cycle with ESBMTK
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-While ESBMTK provides abstractions to efficiently define complex models, the following section will use the basic ESBMTK classes to define the above model. While quite verbose, it demonstrates the design philosophy behind ESBMTK. More complex approaches are described further down. 
 
 Foundational Concepts
 ^^^^^^^^^^^^^^^^^^^^^
 
-ESBMTK uses a hierarchically structured object-oriented approach to describe a model. 
- The topmost object is the model object that describes fundamental properties like run time, time step, elements and species information. All other objects derive from the model object. Reservoir objects define properties like volume or geometry, pressure and temperature, whereas species objects store initial conditions and concentration versus time data. Species Property objects store names and labels, and Element Property objects store e.g., isotopic reference ratios etc. 
+ESBMTK uses a hierarchically structured, object-oriented approach to describe a model. 
+
+The topmost object in the ESBMTK heirarchy is the ``Model`` object. The ``Model`` object describes fundamental model properties like run time, time step, elements, and species information. All other objects derive from the model object. 
+
+``Reservoir`` objects define reservoirs and their properties, including reservoir volume or geometry, pressure and temperature, etc. Each ``Reservoir`` object contains one or more ``species`` objects, which store store initial species concentration within the reservoir and concentration versus time data for the corresponding species. 
+
+``SpeciesProperties`` objects store names and labels, and ElementProperties objects store e.g., isotopic reference ratios etc. 
 
 ::
 
@@ -116,7 +140,15 @@ ESBMTK uses a hierarchically structured object-oriented approach to describe a m
                └── SpeciesProperties
                    └── ElementProperties
 
-The relationship between two reservoirs is specified by a connection properties object that specifies which reservoir is the upstream source, and which is the downstream sink. It also specifies the type of connection, e.g., to scale the flux between from upstream to downstream by the respective species concentrations. 
+The biogeochemical relationship between two reservoirs is specified by a ``ConnectionProperties`` object. This object specifies:
+
+- Which reservoir is the upstream source,
+
+- Which reservoir is the downstream sink,
+
+- The type of flux connection (i.e., how flux is computed),
+
+And other parameters required to calculate any given flux. 
 
 ::
 
@@ -141,13 +173,17 @@ The relationship between two reservoirs is specified by a connection properties 
                └── Type
                    └── ProcessProperties
 
-The model geometry is then parsed to build a suitable equation system which is passed to an ODE solver library which returns the results once integration has finished. Since Python objects are persistent, the object hierarchy is open to introspection using the regular Python syntax.
+The model geometry and connections are parsed to build a suitable equation system, which is passed to an ODE solver library which returns the results once integration has finished. Since Python objects are persistent, the object hierarchy is open to introspection using the regular Python syntax.
 
 Defining the model geometry and initial conditions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The below code examples are available at `https://github.com/uliw/esbmtk-examples <https://github.com/uliw/esbmtk-examples>`_
-In the first step, one needs to define a model object that describes fundamental model parameters. The following code first loads the following ESBMTK classes that will help with model construction:
+The following section builds the full phosphorus cycle model using ESBMTK objects. The code examples shown here are available in the ESBMTK examples repository: `https://github.com/uliw/esbmtk-examples <https://github.com/uliw/esbmtk-examples>`_
+
+Importing ESBMTK Components
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+We begin by importing the core ESBMTK classes required to construct the model:
 
 - :py:class:`esbmtk.model.Model()`
 
@@ -159,7 +195,7 @@ In the first step, one needs to define a model object that describes fundamental
 
 - :py:class:`esbmtk.base_classes.SinkProperties()` class
 
-- and ``Q_`` which belongs to the pint library.
+We also import ``Q_``, which is belongs to the `Pint library <https://pint.readthedocs.io/en/stable/>`_, for parsing units. 
 
 .. code:: ipython
     :name: p1
@@ -170,41 +206,80 @@ In the first step, one needs to define a model object that describes fundamental
         Reservoir,  # the reservoir class
         ConnectionProperties,  # the connection class
         SourceProperties,  # the source class
-        SinkProperties,  # sink class
+        SinkProperties,  # the sink class
+        Q_, #for unit parsing
     )
 
-Next we use the :py:class:`esbmtk.model.Model()`  class to create a model instance that defines basic model properties. Note that units are automatically translated into model units. While convenient, there are some important caveats: 
-Internally, the model uses 'year' as the time unit, mol as the mass unit, and liter as the volume unit. You can change this by setting these values to e.g., 'mol' and 'kg', however, some functions assume that their input values are in 'mol/kg' rather than mol/m\*\*3 or 'kg/s'. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. So your mileage may vary if you fiddle with these settings.  Note: Using mol/kg e.g., for seawater, will be discussed below.
+Creating the Model Object
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Next, we use the :py:class:`esbmtk.model.Model()`  class to create a model instance, which defines fundamental model properties.
 
 .. code:: ipython
     :name: p2
 
-    # define the basic model parameters
+    # define fundamental model parameters
     M = Model(
         stop="3 Myr",  # end time of model
         max_timestep="1 kyr",  # upper limit of time step
         element=["Phosphor"],  # list of element definitions
     )
 
-Next, we need to declare some boundary conditions. Most ESBMTK classes will be able to accept input in the form of strings that also contain units (e.g., ``"30 Gmol/a"`` ). Internally these strings are parsed and converted into the model base units. This works most of the time, but not always. In the below example, we define the residence time :math:`\tau`.  This variable is then used as input to calculate the scale for the primary production as ``M.S_b.volume / tau`` which must fail since ``M.S_b.volume`` is a numeric value and ``tau`` is a string. 
+Units and Quantities
+::::::::::::::::::::
 
-.. code:: ipython
+ESBMTK supports flexible unit handling, with a few caveats. Within ESBMTK classes, most parameters can be provided as strings that also contain units (as shown in the code above), which are automatically converted into internal model units.
 
-    # try the following
-    tau = "100 years"
-    tau * 12
+The default internal model units are:
 
-To avoid this we have to manually parse the string into a quantity. This is done with the quantity operator ``Q_`` Note that ``Q_`` is not part of ESBMTk but imported from the ``pint`` library. 
+- 'year' as the time unit,
+
+- 'mol' as the mass unit,
+
+- 'liter' as the volume unit.
+
+- 'mol/liter' as the concentration unit.
+
+These defaults can be changed by explicitly clarifying units in the model definition as follows:
 
 .. code:: ipython
     :name: p3
 
-    # now try this
+    M = Model(
+        stop="3 Myr",  # end time of model
+        max_timestep="1 kyr",  # upper limit of time step
+        element=["Phosphor"],  # list of element definitions
+        mass_unit="mol", #can be changed to another mass unit
+        concentration_unit="mol/kg", #can be changed to another concentration unit
+    )
+
+Note, however, that some ESBMTK functions assume that species concentration values are in 'mol/kg' specifically. Ideally, this would be caught by ESBMTK, but at present, this is not guaranteed. 
+
+Importantly, strings with units (e.g., "1 kyr") are automatically parsed as physical quantities only when specified as parameters *within* ESBMTK functions. However, they are *not* valid Python quantities outside ESBMTK functions. For example, if we try to declare a residence time variable ``tau`` as follows:
+
+.. code:: ipython
+
+    tau = "100 years" 
+    tau * 0.5 # Raises TypeError
+
+Doing so results in a TypeError, since Python parses "100 years" as a string and not a physical quantity.
+
+To avoid this issue, we have to manually convert the string into a quantity. This is done with the quantity operator ``Q_`` from the Pint library. 
+
+.. code:: ipython
+    :name: p3
+
+    # try this:
     from esbmtk import Q_
     tau = Q_("100 years")
-    tau * 12
+    tau * 0.5 # Does not raise any error
 
-Most ESBMTK classes accept quantities, strings that represent quantities, as well as numerical values. Weathering and burial fluxes are often defined in ``mol/year``, whereas ocean models use ``kg/year``. ESBMTK provides a method (``set_flux()`` )  that will automatically convert the input into the correct units. In this example, it is not necessary since the flux and the model both use ``mol``. It is however good practice to rely on the automatic conversion. Note that it makes a difference for the mol to kilogram conversion whether one uses ``M.P`` or ``M.PO4`` as the reference species!
+ESBMTK also provides a method (``set_flux()``) that will automatically convert flux inputs into the correct units. 
+
+Boundary conditions and external parameters:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Having created the Model object, we need to declare some key boundary conditions that control system dynamics. This can include residence time, external input rates (e.g., from weathering), external output rates (e.g., sediment burial), etc. 
 
 .. code:: ipython
     :name: p4
@@ -213,9 +288,23 @@ Most ESBMTK classes accept quantities, strings that represent quantities, as wel
     F_w =  M.set_flux("45 Gmol", "year", M.P) # P @280 ppm (Filipelli 2002)
     tau = Q_("100 year")  # PO4 residence time in surface box
     F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
-    thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 
-To set up the model geometry, we first use the :py:class:`esbmtk.base_classes.Source()` and :py:class:`esbmtk.base_classes.Species()` classes to create a source for the weathering flux, a sink for the burial flux, and instances of the surface and deep ocean boxes. Since we loaded the element definitions for phosphor in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
+(Note that it makes a difference for the mol to kilogram conversion whether one uses ``M.P`` or ``M.PO4`` as the reference species!)
+
+Here, 
+
+- ``F_w`` = external phosphorus input from weathering
+
+- ``tau`` = residence time of phosphate in surface ocean
+
+- ``F_b`` = fraction of export buried in sediments
+
+Sources, Sinks, and Reservoirs:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To set up the model geometry, we first use the :py:class:`esbmtk.base_classes.Source()` and :py:class:`esbmtk.base_classes.Sink()` classes to create a source for the weathering flux, and a sink for the burial flux. This can be done using the ``SourceProperties`` and ``SinkProperties`` functions.
+
+Note that since we loaded the element definitions for ``phosphor`` in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
 
 .. code:: ipython
     :name: p5
@@ -225,46 +314,100 @@ To set up the model geometry, we first use the :py:class:`esbmtk.base_classes.So
         name="weathering",
         species=[M.PO4],
     )
+
     SinkProperties(
         name="burial",
         species=[M.PO4],
     )
-    # reservoir definitions
-    Reservoir(
-        name="S_b",  # box name
-        volume="3E16 m**3",  # surface box volume
-        concentration={M.PO4: "0 umol/l"},  # initial concentration
-    )
-    Reservoir(
-        name="D_b",  # box name
-        volume="100E16 m**3",  # deeb box volume
-        concentration={M.PO4: "0 umol/l"},  # initial concentration
-    )
 
-Model processes
-^^^^^^^^^^^^^^^
-
-For many models, processes can mapped as the transfer of mass from one box to the next. Within the ESBMTK framework, this is accomplished through the :py:class:`esbmtk.connections.Species2Species()` class or the :py:class:`esbmtk.connections.ConnectionProperties()` class. To connect the weathering flux from the source object (M.weathering) to the surface ocean (M.S\ :sub:`b`\) we declare a connection instance describing this relationship as follows:
+We next define the model reservoirs:
 
 .. code:: ipython
     :name: p6
 
+    # reservoir definitions
+    Reservoir( #Surface Box
+        name="S_b",  # box name 
+        volume="3E16 m**3",  # surface box volume
+        concentration={M.PO4: "0 umol/l"},  # initial concentration
+    )
+
+    Reservoir( #Deep Box
+        name="D_b",  # box name
+        volume="100E16 m**3",  # deep box volume
+        concentration={M.PO4: "0 umol/l"},  # initial concentration
+    )
+
+Note here that:
+
+- ``M.S_b`` refers to reservoir 'S\ :sub:`b`\' (within model M),
+
+- ``M.PO4`` refers to the species 'PO4',
+
+- ``M.S_b.PO4`` refers to 'PO4' inside reservoir 'S\ :sub:`b`\' specifically.
+
+Model processes:
+^^^^^^^^^^^^^^^^
+
+The code above specifies the reservoirs and external boundary conditions, but does not yet describe the biogeochemical processes occurring in the system. In many models, these processes are mapped as the transfer of mass fluxes from one box (the source) to another (the sink). Within the ESBMTK framework, two boxes can be connected with a flux through the :py:class:`esbmtk.connections.ConnectionProperties()` class. 
+
+Each connection specifies:
+
+- the source reservoir or source object,
+
+- the sink reservoir or sink object,
+
+- the type of process (``ctype``),
+
+- and the parameters required to compute the flux.
+
+The connection type determines how ESBMTK calculates the mass transfer during each solver step. ESBMTK provides several built-in connection types for common types of processes: 
+
+- ``fixed`` or ``regular``
+
+- ``scale_with_concentration``
+
+- ``scale_with_flux``
+
+These define how a flux is computed:
+
+- ``fixed`` / ``regular``: explicitly prescribed flux independent of system state
+
+- ``scale_with_concentration``: flux proportional to the species' concentration within a reservoir
+
+- ``scale_with_flux``: flux proportional to another previously defined flux
+
+Note that ``fixed`` and ``regular`` are functionally equivalent in most cases.
+
+Below are some examples of biogeochemical processes that use different connection types:
+
+Fixed / regular flux: Weathering input
+::::::::::::::::::::::::::::::::::::::
+
+The ``fixed`` or ``regular`` connection type is used when a process has an externally prescribed rate that does not depend on the system state, e.g.: F\ :sub:`w`\ = 45 Gmol/year for a weathering flux.
+
+To connect the weathering flux from the source object (``M.weathering``) to the surface ocean (``M.S_b``), we define:
+
+.. code:: ipython
+    :name: p7
+
     ConnectionProperties(
         source=M.weathering,  # source of flux
         sink=M.S_b,  # target of flux
-        rate=F_w,  # rate of flux
+        rate=F_w,  # rate of flux 
         id="river",  # connection id
         ctype="regular", #connection type
     )
 
-Unless the ``register`` keyword is given, connections will be automatically registered with the parent of the source, i.e., the model ``M``. Unless explicitly given through the ``name`` keyword, connection names will be automatically constructed from the names of the source and sink instances. However, it is a good habit to provide the ``id`` keyword to keep connections separate in cases where two reservoir instances share more than one connection. The list of all connection instances can be obtained from the model object (see below).
+Note: Unless the ``register`` keyword is given, connections will be automatically registered with the parent of the source, i.e., the model ``M``. Unless explicitly given through the ``name`` keyword, connection names will be automatically constructed from the names of the source and sink instances. However, it is a good habit to provide the ``id`` keyword to keep connections separate in cases where two reservoir instances share more than one connection. The list of all connection instances can be obtained from the model object (see below).
 
-The connection type ``ctype = "regular"`` or ``ctype = "fixed"`` is used when connecting reservoirs with a fixed rate (eg: F\ :sub:`w`\ = 45 Gmol/year, as defined above). However, we may also create a concentration-dependent flux connection. To map the process of thermohaline circulation, for example, we connect the surface and deep ocean boxes using a connection type that scales the mass transfer as a function of the concentration in a given reservoir (``ctype ="scale_with_concentration"`` ). 
+Concentration-dependent flux: Thermohaline Circulation
+::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-The concentration data is taken from the reference reservoir, which by default is the source reservoir. As such, in most cases, the ``ref_reservoirs`` keyword can be omitted. Note that the connection class does not require the ``name`` keyword. Rather, the name is derived from the source and sink reservoir instances. Since reservoir instances can have more than one connection (i.e., surface to deep via downwelling, and surface to deep via primary production), it is required to set the ``id`` keyword.
+We may also create a connection where the flux depends on the concentration of a tracer in the source reservoir. To map the process of thermohaline circulation, for example, we connect the surface and deep ocean boxes using ``ctype ="scale_with_concentration"``, which scales the mass transfer as a function of the concentration in surface box. 
 
 .. code:: ipython
-    :name: p7
+    :name: p8
 
     ConnectionProperties(  # thermohaline downwelling
         source=M.S_b,  # source of flux
@@ -278,16 +421,49 @@ The concentration data is taken from the reference reservoir, which by default i
         source=M.D_b,  # source of flux
         sink=M.S_b,  # target of flux
         ctype="scale_with_concentration",
-        scale=thc,
+        scale=thc, 
         id="upwelling_PO4",
     )
 
-As seen above, the ``scale`` keyword can be a string or a numerical value. If it is provided as a string, ESBMTK will map the value into model units, i.e., the toolkit automatically handles unit conversions when scaling. For example, if concentration is described in mol/kg instead of mol/l, the above code for thermohaline circulation will automatically use the density of the relevant reservoirs to calculate the correct flux.
+Here, we define two opposing fluxes:
 
-There are several ways to define biological export production, e.g., as a function of the upwelling PO\ :sub:`4`\, or as a function of the residence time of PO\ :sub:`4`\ in the surface ocean. Here we follow Glover (2011) and use the residence time :math:`\tau` = 100 years. Note that the below code species explicitly specifies the species that is affected by this process.
+- downwelling (surface → deep)
+
+- upwelling (deep → surface)
+
+The flux is computed as:
+
+
+
+.. math::
+
+    \mathrm{Flux} = (\mathrm{volumetric\ transport}) \times (\mathrm{concentration})
+
+where:
+
+- ``scale`` represents the volumetric flow rate (in Sverdrup),
+
+- tracer concentration is taken from the refernce reservoir,
+
+Thus, ESBMTK automatically converts circulation strength into a mass flux.
+
+Note:
+
+- By default, the reference reservoir for ``scale_with_concentration`` is the source reservoir. The optional ``ref_reservoirs`` keyword can be used to change this reference reservoir.
+
+- Since reservoir instances can have more than one connection (i.e., surface to deep via downwelling, and surface to deep via primary production), it is required to set a unique ``id`` keyword.
+
+- As seen above, the ``scale`` keyword can be a string or a numerical value. If it is provided as a string, ESBMTK will map the value into model units, i.e., the toolkit automatically handles unit conversions when scaling. For example, if concentration is described in mol/kg instead of mol/l, the above code for thermohaline circulation will automatically use the density of the relevant reservoirs to calculate the correct flux.
+
+Concentration-dependent flux: Biological export production
+::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
+Another example of a flux that can employ ``scale_with_concentration`` is biological export production.
+
+There are several ways to define biological export production; here, we define it as a function of the residence time of PO\ :sub:`4`\ in the surface ocean following Glover (2011), with residence time :math:`\tau` = 100 years.
 
 .. code:: ipython
-    :name: p8
+    :name: p9
 
     ConnectionProperties(  #
         source=M.S_b,  # source of flux
@@ -299,10 +475,15 @@ There are several ways to define biological export production, e.g., as a functi
         species=[M.PO4],  # apply this only to PO4
     )
 
-We require one more connection to describe the burial of P in the sediment. We describe this flux as a fraction of the primary export productivity. To create the connection we can either recalculate the export productivity or use the previously calculated flux via ``ctype ="scale_with_flux"`` and ``ref_flux``.
+Note that the ``species`` argument restricts the connection to specific tracers. If omitted, ESBMTK applies the flux to all compatible species shared by source and sink reservoirs (as is the case for the thermohaline circulation example).
+
+4. Flux-dependent processes: burial in sediments
+::::::::::::::::::::::::::::::::::::::::::::::::
+
+We can describe the burial flux of phosphorus into sediments as a fraction of the primary export productivity. To create the connection, we can either recalculate the export productivity, or use the previously calculated flux via ``ctype ="scale_with_flux"``.
 
 .. code:: ipython
-    :name: p9
+    :name: p10
 
     ConnectionProperties(  #
         source=M.D_b,  # source of flux
@@ -314,7 +495,30 @@ We require one more connection to describe the burial of P in the sediment. We d
         species=[M.PO4],
     )
 
-Note that it is currently not possible to chain ``scale_with_flux`` references, e.g., referencing ``f1`` to calculate ``f2`` will work, but referencing ``f2`` to calculate ``f3`` will fail. Rather, calculate ``f3`` from ``f1``.
+The burial flux is therefore:
+
+
+.. math::
+
+    F_b = 0.01 \times F_{\mathrm{primary\ production}}
+
+Note that it is currently not possible to chain ``scale_with_flux`` references, e.g., referencing ``f1`` to calculate ``f2`` will work, but referencing ``f2`` to calculate ``f3`` will fail. Rather, it is suggested to calculate ``f3`` from ``f1``.
+
+Final model assembly
+::::::::::::::::::::
+
+At this stage, the phosphorus cycle model is fully defined:
+
+- 2 reservoirs (surface and deep ocean)
+
+- 1 source (weathering)
+
+- 1 sink (burial)
+
+- 3 transport processes (circulation + export + burial)
+
+ESBMTK now automatically constructs the full system of coupled differential equations from this structure.
+
 Running the above code (see the file ``po4_1.py`` at `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_) and results in the following graph:
 
 .. _po41:

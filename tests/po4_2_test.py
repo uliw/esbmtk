@@ -4,47 +4,53 @@ from esbmtk import (
     Reservoir,  # the reservoir class
     ConnectionProperties,  # the connection class
     SourceProperties,  # the source class
-    SinkProperties,  # sink class
+    SinkProperties,  # the sink class
+    Q_, #for unit parsing
 )
-# define the basic model parameters
+
+# define fundamental model parameters
 M = Model(
     stop="3 Myr",  # end time of model
     max_timestep="1 kyr",  # upper limit of time step
     element=["Phosphor"],  # list of element definitions
 )
-# now try this
-from esbmtk import Q_
-tau = Q_("100 years")
-tau * 12
+M = Model(
+    stop="3 Myr",  # end time of model
+    max_timestep="1 kyr",  # upper limit of time step
+    element=["Phosphor"],  # list of element definitions
+    mass_unit="mol", #can be changed to another mass unit
+    concentration_unit="mol/kg", #can be changed to another concentration unit
+)
 # boundary conditions
 F_w =  M.set_flux("45 Gmol", "year", M.P) # P @280 ppm (Filipelli 2002)
 tau = Q_("100 year")  # PO4 residence time in surface box
 F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
-thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 # Source definitions
 SourceProperties(
     name="weathering",
     species=[M.PO4],
 )
+
 SinkProperties(
     name="burial",
     species=[M.PO4],
 )
 # reservoir definitions
-Reservoir(
-    name="S_b",  # box name
+Reservoir( #Surface Box
+    name="S_b",  # box name 
     volume="3E16 m**3",  # surface box volume
     concentration={M.PO4: "0 umol/l"},  # initial concentration
 )
-Reservoir(
+
+Reservoir( #Deep Box
     name="D_b",  # box name
-    volume="100E16 m**3",  # deeb box volume
+    volume="100E16 m**3",  # deep box volume
     concentration={M.PO4: "0 umol/l"},  # initial concentration
 )
 ConnectionProperties(
     source=M.weathering,  # source of flux
     sink=M.S_b,  # target of flux
-    rate=F_w,  # rate of flux
+    rate=F_w,  # rate of flux 
     id="river",  # connection id
     ctype="regular", #connection type
 )
@@ -60,7 +66,7 @@ ConnectionProperties(  # thermohaline upwelling
     source=M.D_b,  # source of flux
     sink=M.S_b,  # target of flux
     ctype="scale_with_concentration",
-    scale=thc,
+    scale=thc, 
     id="upwelling_PO4",
 )
 ConnectionProperties(  #
@@ -71,15 +77,6 @@ ConnectionProperties(  #
     # volume / time * concentration (i.e. mass per unit volume) = flux (i.e mass transfer per unit time)
     id="primary_production",
     species=[M.PO4],  # apply this only to PO4
-)
-ConnectionProperties(  #
-    source=M.D_b,  # source of flux
-    sink=M.burial,  # target of flux
-    ctype="scale_with_flux",
-    ref_flux="primary_production",
-    scale=F_b,
-    id="burial",
-    species=[M.PO4],
 )
 from esbmtk import Signal
 

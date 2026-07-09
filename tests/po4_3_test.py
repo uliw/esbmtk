@@ -7,6 +7,7 @@ from esbmtk import (
     data_summaries,
     Q_,
 )
+
 M = Model(
     stop="6 Myr",  # end time of model
     max_timestep="1 kyr",  # upper limit of time step
@@ -19,24 +20,23 @@ tau = Q_("100 year")  # PO4 residence time in surface boxq
 F_b = 0.01  # About 1% of the exported P is buried in the deep ocean
 thc = "20*Sv"  # Thermohaline circulation in Sverdrup
 Redfield = 106 # C:P
-
 SourceProperties(
     name="weathering",
-    species=[M.PO4, M.DIC],
+    species=[M.PO4, M.DIC], #multi-species syntax
 )
 SinkProperties(
     name="burial",
-    species=[M.PO4, M.DIC],
+    species=[M.PO4, M.DIC], #multi-species syntax
 )
 Reservoir(
     name="S_b",
     volume="3E16 m**3",  # surface box volume
-    concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"},
+    concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"}, #multi-species syntax
 )
 Reservoir(
     name="D_b",
     volume="100E16 m**3",  # deep box volume
-    concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"},
+    concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"}, #multi-species syntax
 )
 ConnectionProperties(  # thermohaline downwelling
     source=M.S_b,  # source of flux
@@ -51,13 +51,6 @@ ConnectionProperties(  # thermohaline upwelling
     ctype="scale_with_concentration",
     scale=thc,
     id="thc_down",
-)
-ConnectionProperties(
-    source=M.weathering,  # source of flux
-    sink=M.S_b,  # target of flux
-    rate={M.DIC: F_w_PO4 * Redfield, M.PO4: F_w_PO4},  # rate of flux
-    ctype="regular",
-    id="weathering",  # connection id
 )
 # P-uptake by photosynthesis
 ConnectionProperties(  #

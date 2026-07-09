@@ -3,70 +3,20 @@
 Adding Complexity
 -----------------
 
-Model forcing
-~~~~~~~~~~~~~
-
-ESBMTK realizes model forcing through the :py:class:`esbmtk.extended_classes.Signal()` class. Once defined, a signal instance can be associated with a :py:class:`esbmtk.connections.Species2Species()` instance that will then act on the associated connection. This class provides the following keywords to create a signal:
-
-- ``square()``, ``pyramid()``, ``bell()``  These are defined by specifying the signal start time (relative to the model time), its size (as mass) and duration, or as duration and magnitude (see the example below)
-
-- ``filename()`` a string pointing to a CSV file that specifies the following columns: ``Time [yr]``, ``Rate/Scale [units]``, ``delta value [dimensionless]`` The class will attempt to convert the data into the correct model units. This process is however not very robust.
-
-The default is to add the signal to a given connection. It is however also possible to use the signal data as a scaling factor. Signals are cumulative, i.e., complex signals are created by adding one signal to another (i.e., Snew = S1 + S2). Using the P-cycle model from the previous chapter (see ``po4_1.py``) we can add a signal by first defining a signal instance, and then associating the instance with a weathering connection instance (this model is available as ``po4_2.p4`` see `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_)
-
-.. code:: ipython
-    :name: po42_2
-
-    from esbmtk import Signal
-
-    Signal(
-        name="CR",  # Signal name
-        species=M.PO4,  # SpeciesProperties
-        start="1 Myrs",
-        shape="pyramid",
-        duration="1 Myrs",
-        mass="45 Pmol",
-    )
-
-    ConnectionProperties(
-        source=M.weathering,  # source of flux
-        sink=M.S_b,  # target of flux
-        rate=F_w,  # rate of flux
-        id="river",  # connection id
-        signal=M.CR,
-        species=[M.PO4],
-        ctype="regular",
-    )
-    M.run()
-
-Note that the ``plot()`` method accepts the signal object as well. In general, any ESBMTK object that has data that varies with time, can be plotted by the ``plot()`` method. ESBMTK also provides classes to include
-external data  :py:class:`esbmtk.extended_classes.ExternalData()`   as well as classes to mix and match data into the same plot :py:class:`esbmtk.extended_classes.DataField()`. The file ``is92a_comparison_plots.py`` (see  `https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010 <https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010>`_) shows a use case. Furthermore, :py:class:`esbmtk.model.Model.plot()`  returns a tuple with the figure instance, list of ``axs`` objects, which allows even more complex figure manipulations (see ``steady_state_plots.py`` in the same repository).
-
-.. code:: ipython
-
-    M.plot([M.S_b.PO4, M.D_b.PO4, M.CR], fn="po4_2.png")
-    #  M.save_data()
-
-This will result in the following output:
-
-.. _sig:
-
-.. figure:: ./po4_2.png
-    :width: 400
-
-
-    Example output for the ``CR`` signal above. See ``po4_2.py`` in the examples directory.
-
-Signal data structure
-^^^^^^^^^^^^^^^^^^^^^
-
-The original signal data (as read from a csv etc.) is available through the ``.s_time``, ``.s_data`` instance variables. The padded/cropped data that is interpolated for each time point, is stored in the ``.cd_m`` (and ``.cd_l`` if isotope data is present) instance variables.The sub-sampled signal data that is used for plotting is stored in ``.m``, ``.l`` and ``.d`` respectively.  Signal data can also be queried interactively by calling the signal with a given time values, e.g., ``M.PO4_signal(12)``. 
-
 Working with multiple species
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The basic building blocks introduced so far are sufficient to create a single species model. Adding further species is straightforward. First one needs to import the species definitions. They than can be simply used by extending the dictionaries and lists used in the previous example.
-Using the previous example of a simple P-cycle model, we now express the P-cycling as a function of photosynthetic organic matter (OM) production and remineralization. First, we import the new classes and we additionally load the species definitions for carbon (this code is available as ``po4_3.py`` see `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_).
+The basic building blocks introduced so far are sufficient to create a single-species model. Adding further species is straightforward. The primary
+difference is that reservoirs, sources, sinks, and connections must now specify which species they contain or transport.
+
+In the example below, we extend the previous simple P-cycle model into a multispecies model by expressing phosphorus cycling as a function of organic matter (OM) production and remineralization. Organic matter production is represented using a fixed C:P Redfield ratio so that carbon export is linked directly to phosphorus uptake.
+
+The complete example is available as ``po4_3.py`` in the ESBMTK-Examples repository.
+
+Defining the Model instance
+:::::::::::::::::::::::::::
+
+We begin by defining the model instance and register the required species definitions. Multiple species can be registered in the model by simply extending the list of elements, as shown below:
 
 .. code:: ipython
     :name: po43_1
@@ -80,6 +30,7 @@ Using the previous example of a simple P-cycle model, we now express the P-cycli
         data_summaries,
         Q_,
     )
+
     M = Model(
         stop="6 Myr",  # end time of model
         max_timestep="1 kyr",  # upper limit of time step
@@ -93,29 +44,39 @@ Using the previous example of a simple P-cycle model, we now express the P-cycli
     thc = "20*Sv"  # Thermohaline circulation in Sverdrup
     Redfield = 106 # C:P
 
+Similarly, multiple species can be registered with the source, sink, and reservoir objects, by extending the lists and dictionaries associated with species or concentrations keywords. 
+
+.. code:: ipython
+    :name: po43_2
+
     SourceProperties(
         name="weathering",
-        species=[M.PO4, M.DIC],
+        species=[M.PO4, M.DIC], #multi-species syntax
     )
     SinkProperties(
         name="burial",
-        species=[M.PO4, M.DIC],
+        species=[M.PO4, M.DIC], #multi-species syntax
     )
     Reservoir(
         name="S_b",
         volume="3E16 m**3",  # surface box volume
-        concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"},
+        concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"}, #multi-species syntax
     )
     Reservoir(
         name="D_b",
         volume="100E16 m**3",  # deep box volume
-        concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"},
+        concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"}, #multi-species syntax
     )
 
-The :py:class:`esbmtk.connections.ConnectionProperties.()` class definition is equally straightforward, and the following expression will apply the thermohaline downwelling to all species in the ``M.S_b`` group.
+Transporting Multiple Species
+:::::::::::::::::::::::::::::
+
+Connections created between reservoir groups using ``ConnectionProperties`` automatically apply to every species contained within those groups unless an explicit species list is supplied.
+
+For example, thermohaline circulation can be applied simultaneously to both DIC and PO4 by connecting the reservoir groups via ``ConnectionProperties``.
 
 .. code:: ipython
-    :name: po43_2
+    :name: po43_3
 
     ConnectionProperties(  # thermohaline downwelling
         source=M.S_b,  # source of flux
@@ -132,7 +93,9 @@ The :py:class:`esbmtk.connections.ConnectionProperties.()` class definition is e
         id="thc_down",
     )
 
-It is also possible to specify individual rates or scales using a dictionary, as in this example that sets two different weathering fluxes:
+If different species require different transport rates, the ``rate`` (or ``scale``) keyword can instead be provided as a dictionary.
+
+For example,
 
 .. code:: ipython
     :name: po43_3
@@ -145,7 +108,9 @@ It is also possible to specify individual rates or scales using a dictionary, as
         id="weathering",  # connection id
     )
 
-The following code defines primary production and its effects on DIC in the surface and deep box. The example is a bit contrived but demonstrates the principle. Note the use of the ``ref_reservoirs`` keyword and ``Redfield`` ratio
+Connections may also use one species to determine the transport rate of another. This is done using the ``ref_reservoirs`` or ``ref_flux`` keywords.
+
+For example, the code below links organic carbon production to phosphate uptake using a fixed Redfield ratio.
 
 .. code:: ipython
     :name: po43_4
@@ -333,3 +298,236 @@ In the last example, we use the ``gen_dict_entries`` function to extract a list 
         }
     }
     create_bulk_connections(c_dict, M, mt="1:1")
+
+Using Excel sheets for model definitions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For models with many reservoirs and transport connections, creating reservoir and connections using python dictionaries can become repetitive and difficult to maintain. ESBMTK therefore provides helper functions that read reservoir and transport matrix definitions directly from Excel workbooks. These helper functions include:
+
+- ``create_reservoirs_from_excel``
+
+- ``create_transport_matrix_from_excel``
+
+- ``create_gas_reservoirs_from_excel``
+
+- ``create_gas_exchange_connections_from_excel``
+
+Which can be used to initialize ocean reservoirs, transport matrix, atmospheric reservoirs, and air-sea gas-exchange connections respectively using an excel sheet (.xlsx or .odf). 
+
+The functions ``create_reservoirs_from_excel`` and ``create_transport_matrix_from_excel`` are described in further detail below. 
+
+For more information on ``create_gas_reservoirs_from_excel`` and ``create_gas_exchange_connections_from_excel``, please see the manual's section on `gas exchange <https://esbmtk.readthedocs.io/en/latest/manual/manual-4.html#gas-exchange>`_.
+
+Notes:
+
+- Column names must *exactly* match the expected names described below.
+
+- Reservoir names used in the worksheets must match those used in the model.
+
+- Any variables specified herein must also be defined in the python model file.
+
+- Numerical values may be entered directly or calculated using standard Excel formulas.
+
+Creating reservoirs from Excel
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The function ``create_reservoirs_from_excel`` creates ocean reservoirs, sources, and sinks from information provided in an Excel file. 
+
+Each row in the excel table represents one reservoir definition. Reservoir geometry, temperature, pressure, and salinity, initial species concentrations, and initial isotope compositions can be specified as columns, as shown in the example table below:
+
+.. table::
+
+    +---------------+-----------+----------------+-------------------+--------------------------+-------------+----------+----------+------+--------------------+
+    | name          | type      | z\ :sub:`top`\ | z\ :sub:`bottom`\ | area\ :sub:`percentage`\ | temperature | pressure | salinity |  DIC | delta\ :sub:`DIC`\ |
+    +===============+===========+================+===================+==========================+=============+==========+==========+======+====================+
+    | A\ :sub:`sb`\ | reservoir |              0 |              -100 |                     0.26 |          20 |        5 |     34.7 | 2210 |                  2 |
+    +---------------+-----------+----------------+-------------------+--------------------------+-------------+----------+----------+------+--------------------+
+    | A\ :sub:`ib`\ | reservoir |           -100 |             -1000 |                     0.26 |          10 |      100 |     34.7 | 2210 |                  2 |
+    +---------------+-----------+----------------+-------------------+--------------------------+-------------+----------+----------+------+--------------------+
+    | A\ :sub:`db`\ | reservoir |          -1000 |             -6000 |                     0.26 |           2 |      240 |     34.7 | 2210 |                  2 |
+    +---------------+-----------+----------------+-------------------+--------------------------+-------------+----------+----------+------+--------------------+
+    | Fw            | source    | \              | \                 | \                        | \           | \        | \        | \    | \                  |
+    +---------------+-----------+----------------+-------------------+--------------------------+-------------+----------+----------+------+--------------------+
+    | Fb            | sink      | \              | \                 | \                        | \           | \        | \        | \    | \                  |
+    +---------------+-----------+----------------+-------------------+--------------------------+-------------+----------+----------+------+--------------------+
+
+Ocean reservoir rows necessarily require the ``name``, ``type``, and geometry columns (``z_top``, ``z_bottom``, and ``area_percentage``), whereas only the ``name`` and ``type`` columns are necessary for the source and sink reservoirs. Default temperature, pressure, and salinity values can be specified as a function parameter.
+
+Isotope compositions can optionally be specified using columns named ``delta_[species]``. For example, the column ``delta_DIC`` specifies the initial :math:`\delta`\ :sup:`13`\C isotopic composition of any given reservoir. Note that isotopes are not initialized for reservoirs for which the isotope column is left blank (e.g., ``Fw`` and ``Fb`` in the table above).
+
+Important: at present, isotopes must be initialized separately for the Source and Sink. This can be done as shown in the function call example below.
+
+The function can be called as follows:
+
+.. code:: ipython
+
+
+    #----- Isotope ratios ----- #
+    M.Fw_DIC_d = 1.5  # Carbonate weathering delta
+    M.Fb_DIC_d = 0 # burial delta (included for isotope initialization in Sink) 
+
+    #---- Create reservoirs from excel ----#
+    species_list = create_reservoirs_from_excel(
+            M, #Model object
+            "LOSCAR_sheets.xlsx", #specify Excel file name / file path
+            sheet_name="reservoirs" #specify Excel worksheet (default = "reservoirs")
+            )
+
+    #---- Separately initialize reservoirs for Source and Sink ----#
+    M.Fw.DIC.delta = M.Fw_DIC_d #initialize delta for Source object
+    M.Fb.DIC.delta = M.Fb_DIC_d #initialize delta for Sink object
+
+Notes:
+
+- The function only accepts reservoir geometry information provided via the ``z_top``, ``z_bottom``, and ``area_percentage`` parameters at present.
+
+- Species columns are detected automatically from species registered in the model.
+
+- Species concentrations are assumed to be in umol/kg, unless otherwise specified.
+
+- Only isotope columns corresponding to species registered in the model are permitted; otherwise an error is raised.
+
+Creating transport matrices from Excel
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The function ``create_transport_matrix_from_excel`` creates mixing and thermohaline transport connections between reservoirs via a worksheet. Each row defines a single connection. 
+
+Required excel columns:
+
+- ``source``
+
+- ``sink``
+
+- ``flux_id``
+
+- ``sc``
+
+Example rows and columns may look like the following:
+
+.. table::
+
+    +---------------+---------------+------------------+-------------+
+    | source        | sink          | flux\ :sub:`id`\ | sc          |
+    +---------------+---------------+------------------+-------------+
+    | H\ :sub:`sb`\ | A\ :sub:`db`\ | thermohaline     | thc         |
+    +---------------+---------------+------------------+-------------+
+    | A\ :sub:`ib`\ | A\ :sub:`sb`\ | mix\ :sub:`up`\  | 21 Sverdrup |
+    +---------------+---------------+------------------+-------------+
+
+The scaling factor ``sc`` may be specified in Sverdrups (e.g., “10 Sverdrup”) or as a variable defined within the python file (e.g., ``thc``).
+
+Note: mixing fluxes are symmetric, so for each mix\ :sub:`up`\ flux, a corresponding “mix\ :sub:`down`\” flux does not need to be specified and will be created automatically. 
+
+The function can be called as follows:
+
+.. code:: ipython
+
+    create_transport_matrix_from_excel(
+            M, #Model object
+            "LOSCAR_sheets.xlsx", #specify file path
+            species_list, #list of species being transported via advection and mixing
+            sheet_name="transport_matrix" #specify worksheet (default = "transport_matrix")
+            )
+
+It is recommended to check out the ``LOSCAR_2012`` directory in `ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples/tree/main>`_ for a detailed example of the functions described above.
+
+Model forcing
+~~~~~~~~~~~~~
+
+ESBMTK realizes model forcing through the :py:class:`esbmtk.extended_classes.Signal()` class. Once defined, a signal instance can be associated with a :py:class:`esbmtk.connections.Species2Species()` instance that will then act on the associated connection. This class provides the following keywords to create a signal:
+
+- ``square()``, ``pyramid()``, ``bell()``  These are defined by specifying the signal start time (relative to the model time), its size (as mass) and duration, or as duration and magnitude (see the example below)
+
+- ``filename()`` a string pointing to a CSV file that specifies the following columns: ``Time [yr]``, ``Rate/Scale [units]``, ``delta value [dimensionless]`` The class will attempt to convert the data into the correct model units. This process is however not very robust.
+
+The default is to add the signal to a given connection. It is however also possible to use the signal data as a scaling factor. Signals are cumulative, i.e., complex signals are created by adding one signal to another (i.e., Snew = S1 + S2). Using the P-cycle model from the previous chapter (see ``po4_1.py``) we can add a signal by first defining a signal instance, and then associating the instance with a weathering connection instance (this model is available as ``po4_2.p4`` see `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_)
+
+.. code:: ipython
+    :name: po42_2
+
+    from esbmtk import Signal
+
+    Signal(
+        name="CR",  # Signal name
+        species=M.PO4,  # SpeciesProperties
+        start="1 Myrs",
+        shape="pyramid",
+        duration="1 Myrs",
+        mass="45 Pmol",
+    )
+
+    ConnectionProperties(
+        source=M.weathering,  # source of flux
+        sink=M.S_b,  # target of flux
+        rate=F_w,  # rate of flux
+        id="river",  # connection id
+        signal=M.CR,
+        species=[M.PO4],
+        ctype="regular",
+    )
+    M.run()
+
+Note that the ``plot()`` method accepts the signal object as well. In general, any ESBMTK object that has data that varies with time, can be plotted by the ``plot()`` method. ESBMTK also provides classes to include
+external data  :py:class:`esbmtk.extended_classes.ExternalData()`   as well as classes to mix and match data into the same plot :py:class:`esbmtk.extended_classes.DataField()`. The file ``is92a_comparison_plots.py`` (see  `https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010 <https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010>`_) shows a use case. Furthermore, :py:class:`esbmtk.model.Model.plot()`  returns a tuple with the figure instance, list of ``axs`` objects, which allows even more complex figure manipulations (see ``steady_state_plots.py`` in the same repository).
+
+.. code:: ipython
+
+    M.plot([M.S_b.PO4, M.D_b.PO4, M.CR], fn="po4_2.png")
+    #  M.save_data()
+
+This will result in the following output:
+
+.. _sig:
+
+.. figure:: ./po4_2.png
+    :width: 400
+
+
+    Example output for the ``CR`` signal above. See ``po4_2.py`` in the examples directory.
+
+Signal data structure
+^^^^^^^^^^^^^^^^^^^^^
+
+The original signal data (as read from a csv etc.) is available through the ``.s_time``, ``.s_data`` instance variables. The padded/cropped data that is interpolated for each time point, is stored in the ``.cd_m`` (and ``.cd_l`` if isotope data is present) instance variables.The sub-sampled signal data that is used for plotting is stored in ``.m``, ``.l`` and ``.d`` respectively.  Signal data can also be queried interactively by calling the signal with a given time values, e.g., ``M.PO4_signal(12)``. 
+
+Applying a signal to multiple connections
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Adding signals is a computationally expensive process due to the involvement of multiple function calls. When the same signal shape is used to modify multiple connections, it is more efficient to create a placeholder connection with the signal and then use a ``scale_with_flux`` connection type to reference the placeholder flux. This approach has the added advantage that each ``scale_with_flux`` connection can set its own scaling factor.
+
+.. code:: ipython
+
+    # read the forcing (signal) data
+    M.PW_SO4_Koelling = Signal(
+        name="PW_SO4_Koelling",
+        species=M.SO4,
+        filename="koelling_pyrite_data_3Ma_w_isotopes.csv",
+        stype="addition",
+        register=M,
+    )
+
+    # Create a placeholder flux that does not affect the model 
+    # and connect the signal data 
+    Species2Species(
+        ctype="regular",
+        source=M.Fw.SO4,
+        sink=M.Fb.SO4,
+        signal=M.PW_SO4_Koelling,
+        id="signal_as_flux",
+    )
+
+    Species2Species(
+        ctype="scale_with_flux",
+        id="actual_flux",
+        source=M.Fw.SO4,
+        sink=M.L_b.SO4,
+        ref_flux="signal_as_flux",
+        scale=3, 
+    )
+
+Signals and isotopes
+^^^^^^^^^^^^^^^^^^^^
+
+Signal data can be applied to isotope effects as well. For this you need to specify a second column in the signal data file that contains delta values with a header like this ``d34S [dimensionless]``. The data is interpreted according to the connection setting. I.e., if the connection specifies a delta-value, the third column will be interpreted as delta value (ditto for epsilon values).
+
+Isotope effects are always additive. I.e., If there is a flux A, and a signal B, ESBMTK will calculate the isotope effects for A according to the delta/epsilon value that is set in the connection properties, and the calculate the isotope effects for the  signal flux based on the values delta/epsilon values in the signal data file.
