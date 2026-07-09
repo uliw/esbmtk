@@ -9,6 +9,7 @@ psutil
 cachetools
 setuptools
 importlib-metadata
+tox
 
 
 
