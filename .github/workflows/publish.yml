@@ -1,0 +1,35 @@
+name: Publish Python Distribution to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*' # Initiates publishing only when a release tag starting with 'v' is created/pushed
+
+jobs:
+  pypi-publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    permissions:
+      # Required for Trusted Publishing (OIDC) to authenticate with PyPI without secrets
+      id-token: write
+      # Required to check out the repository
+      contents: read
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # Verification step to ensure dist directory exists and contains files
+      - name: Check for build distributions
+        run: |
+          if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
+            echo "::error::The 'dist' directory is missing or empty! Make sure you build locally and commit/upload the dist folder."
+            exit 1
+          fi
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        # Optional: If you prefer using a PyPI API Token instead of Trusted Publishing,
+        # uncomment the 'with' block below and configure a repository secret named PYPI_API_TOKEN.
+        # with:
+        #   password: ${{ secrets.PYPI_API_TOKEN }}
