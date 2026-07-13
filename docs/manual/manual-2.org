@@ -12,7 +12,7 @@ In the example below, we extend the previous simple P-cycle model into a multisp
 
 The complete example is available as =po4_3.py= in the ESBMTK-Examples repository.
 
-**** Defining the Model instance 
+*** Defining the Model instance 
 
 We begin by defining the model instance and register the required species definitions. Multiple species can be registered in the model by simply extending the list of elements, as shown below:
 
@@ -66,7 +66,7 @@ Reservoir(
 )
 #+END_SRC
 
-**** Transporting Multiple Species
+*** Transporting Multiple Species
 
 Connections created between reservoir groups using =ConnectionProperties= automatically apply to every species contained within those groups unless an explicit species list is supplied.
 
@@ -94,7 +94,7 @@ If different species require different transport rates, the =rate= (or =scale=) 
 
 For example,
 
-#+name:po43_3
+#+name:po43_4
 #+BEGIN_SRC ipython :tangle po4_3.py
 ConnectionProperties(
     source=M.weathering,  # source of flux
@@ -109,7 +109,7 @@ Connections may also use one species to determine the transport rate of another.
 
 For example, the code below links organic carbon production to phosphate uptake using a fixed Redfield ratio.
 
-#+name:po43_4
+#+name:po43_5
 #+BEGIN_SRC ipython :tangle po4_3.py
 # P-uptake by photosynthesis
 ConnectionProperties(  #
@@ -164,6 +164,7 @@ which results in the below plot. The full code is available in the examples dire
 <<po43_2>>
 <<po43_3>>
 <<po43_4>>
+<<po43_5>>
 M.run()
 #+END_SRC
 
