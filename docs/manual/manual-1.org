@@ -227,7 +227,7 @@ tau * 0.5 # Raises TypeError
 Doing so results in a TypeError, since Python parses "100 years" as a string and not a physical quantity.
 
 To avoid this issue, we have to manually convert the string into a quantity. This is done with the quantity operator =Q_= from the Pint library. 
-#+name: p3
+#+name: p4
 #+BEGIN_SRC ipython :tangle po4_1.py
 # try this:
 from esbmtk import Q_
@@ -240,7 +240,7 @@ ESBMTK also provides a method (=set_flux()=) that will automatically convert flu
 *** Boundary conditions and external parameters:
 Having created the Model object, we need to declare some key boundary conditions that control system dynamics. This can include residence time, external input rates (e.g., from weathering), external output rates (e.g., sediment burial), etc. 
 
-#+name: p4
+#+name: p5
 #+BEGIN_SRC ipython :tangle po4_1.py
 # boundary conditions
 F_w =  M.set_flux("45 Gmol", "year", M.P) # P @280 ppm (Filipelli 2002)
@@ -261,7 +261,7 @@ To set up the model geometry, we first use the @@rst::py:class:`esbmtk.base_clas
 
 Note that since we loaded the element definitions for =phosphor= in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
 
-#+name: p5
+#+name: p6
 #+BEGIN_SRC ipython :tangle po4_1.py
 # Source definitions
 SourceProperties(
@@ -277,7 +277,7 @@ SinkProperties(
 
 We next define the model reservoirs:
 
-#+name: p6
+#+name: p7
 #+BEGIN_SRC ipython
 # reservoir definitions
 Reservoir( #Surface Box
@@ -330,7 +330,7 @@ The =fixed= or =regular= connection type is used when a process has an externall
 
 To connect the weathering flux from the source object (=M.weathering=) to the surface ocean (=M.S_b=), we define:
 
-#+name: p7
+#+name: p8
 #+BEGIN_SRC ipython :tangle po4_1.py
 ConnectionProperties(
     source=M.weathering,  # source of flux
@@ -347,7 +347,7 @@ Note: Unless the =register= keyword is given, connections will be automatically 
 
 We may also create a connection where the flux depends on the concentration of a tracer in the source reservoir. To map the process of thermohaline circulation, for example, we connect the surface and deep ocean boxes using =ctype ="scale_with_concentration"=, which scales the mass transfer as a function of the concentration in surface box. 
 
-#+name: p8
+#+name: p9
 #+BEGIN_SRC ipython :tangle po4_1.py
 ConnectionProperties(  # thermohaline downwelling
     source=M.S_b,  # source of flux
@@ -394,7 +394,7 @@ Another example of a flux that can employ =scale_with_concentration= is biologic
 
 There are several ways to define biological export production; here, we define it as a function of the residence time of PO_4 in the surface ocean following Glover (2011), with residence time \tau = 100 years.
 
-#+name: p9
+#+name: p10
 #+BEGIN_SRC ipython :tangle po4_1.py
 ConnectionProperties(  #
     source=M.S_b,  # source of flux
@@ -413,7 +413,7 @@ Note that the =species= argument restricts the connection to specific tracers. I
 
 We can describe the burial flux of phosphorus into sediments as a fraction of the primary export productivity. To create the connection, we can either recalculate the export productivity, or use the previously calculated flux via =ctype ="scale_with_flux"=.
 
-#+name: p10
+#+name: p11
 #+BEGIN_SRC ipython :tangle po4_1.py
 ConnectionProperties(  #
     source=M.D_b,  # source of flux
@@ -455,7 +455,7 @@ Running the above code (see the file =po4_1.py= at https://github.com/uliw/ESBMT
 ** Working with the model instance  
 *** Running the model, visualizing and saving the results
 To run the model, use the =run()= method of the model instance, and plot the results with the =plot()= method. This method accepts a list of ESBMTK instances, that will be plotted in a common window. Without further arguments, the plot will also be saved as a pdf file where =filename= defaults to the name of the model instance. The =save_data()= method will create (or recreate) the =data= directory which will then be populated by csv-files. 
-#+name: p10
+#+name: p12
 #+BEGIN_SRC ipython :tangle po4_1.py
 M.plot([M.S_b.PO4, M.D_b.PO4], fn="po4_1.png")
 # optionally, save data
@@ -531,6 +531,7 @@ The model time axis is available as =M.time= and the model supports the @@rst::p
 <<p7>>
 <<p8>>
 <<p9>>
+<<p10>>
 #+END_SRC
 
 #+name: po41testwrapper
