@@ -207,10 +207,10 @@ The =carbonate_system_4= function splits Boudreau (2010)'s carbonate dissolution
 #+attr_org: :width 600
 #+attr_rst: :width 800
 #+attr_latex: :width 0.8\textwidth
-#+name: CS4 flux-splitting scheme 1
+#+name: CS4 flux-splitting scheme 2
 #+caption:  Overview of the modifications made by CS4 for the scenario where =zint= is deeper than =zsat=.
 #+caption: Image Credit: Atlas Changulani
-[[./CS4fluxsplitscheme.png]]
+[[./CS4fluxsplitscheme2.png]]
 
 In the first scenario (z_{sat} deeper than z_{int}), B_{NS} (the CaCO_{3} dissolution between z_{0} and z_{sat}) is now split into two by z_{int}. One of these split components is added to the intermediate box, and the other to the deep box. B_{DS}, B_{CC}, and B_{PDC} remain unmodified and are computed in the same manner as they are in CS2. 
 
