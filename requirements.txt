@@ -10,6 +10,8 @@ cachetools
 setuptools
 importlib-metadata
 tox
+openpyxl
+numba
 
 
 
