@@ -110,7 +110,7 @@ class Model(esbmtkBase):
 
 
     Parameters
-    ----------
+    -----------
     **kwargs : dict
         A dictionary with key-value pairs for model configuration.
 
@@ -124,7 +124,7 @@ class Model(esbmtkBase):
     ... )
 
     Important Parameters
-    -------------------
+    ---------------------
     name : str
         The model name, e.g., "M".
     mass_unit : str

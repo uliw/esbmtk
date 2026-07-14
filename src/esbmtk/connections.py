@@ -760,30 +760,28 @@ class Species2Species(esbmtkBase):
 class ConnectionProperties(esbmtkBase):
     """ConnectionProperties Class.
 
-        Connect reservoir/sink/source groups when at least one of the
-        arguments is a reservoirs_group object. This method will
-        create regular connections for each matching species.
+    Connect reservoir/sink/source groups when at least one of the
+    arguments is a reservoirs_group object. This method will
+    create regular connections for each matching species.
 
-        Use the connection.update() method to fine tune connections
-        after creation
+    Use the connection.update() method to fine tune connections
+    after creation
 
-
-
-        ConnectionProperties(source =  upstream reservoir / upstream reservoir group
-           sink = downstrean reservoir / downstream reservoirs_group
-           delta = defaults to zero and has to be set manually
-           epsilon =  defaults to zero and has to be set manually
-           rate = shared between all connections
-           ref_reservoirs = shared between all connections
-           scale= int/float scaling factor, see below
-           ref_flux = shared between all connections
-           species = list, optional, if present, only these species will be connected
-           ctype = needs to be set for all connections. Use "Fixed"
-                   unless you require a specific connection type
-           pl = [list]) process list. optional, shared between all connections
-           id = optional identifier, passed on to individual connection
-           plot = "yes/no" # defaults to yes, shared between all connections
-        )
+    ConnectionProperties(source =  upstream reservoir / upstream reservoir group
+        sink = downstrean reservoir / downstream reservoirs_group
+        delta = defaults to zero and has to be set manually
+        epsilon =  defaults to zero and has to be set manually
+        rate = shared between all connections
+        ref_reservoirs = shared between all connections
+        scale= int/float scaling factor, see below
+        ref_flux = shared between all connections
+        species = list, optional, if present, only these species will be connected
+        ctype = needs to be set for all connections. Use "Fixed"
+                unless you require a specific connection type
+        pl = [list]) process list. optional, shared between all connections
+        id = optional identifier, passed on to individual connection
+        plot = "yes/no" # defaults to yes, shared between all connections
+    )
 
     Note: that the scale keyword will only affect the flux rate, it will not!
     affec the flux + signal. Use the scale keyword in the signal class to scale
@@ -792,15 +790,13 @@ class ConnectionProperties(esbmtkBase):
     Example::
 
         ConnectionProperties(
-                  source=OM_Weathering,
-                  sink=Ocean,
-                  rate={DIC: f"{OM_w} Tmol/yr" ,
-                        ALK: f"{0} Tmol/yr"},
-                  ctype = {DIC: "Fixed",
-                           ALK: "Fixed"},
-                )
-
-
+            source=OM_Weathering,
+            sink=Ocean,
+            rate={DIC: f"{OM_w} Tmol/yr" ,
+                    ALK: f"{0} Tmol/yr"},
+            ctype = {DIC: "Fixed",
+                    ALK: "Fixed"},
+            )
     """
 
     def __init__(self, **kwargs) -> None:
