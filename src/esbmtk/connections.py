@@ -303,26 +303,22 @@ class Species2Species(esbmtkBase):
 
         logging.debug(f"{self.name} isotopes = {self.isotopes}")
 
-        if all(
-            [
-                self.isotopes,
-                self.signal != "None",
-                self.delta == "None",
-                self.epsilon == "None",
-            ]
-        ):
+        if all([
+            self.isotopes,
+            self.signal != "None",
+            self.delta == "None",
+            self.epsilon == "None",
+        ]):
             raise ConnectionError(
                 f"{self.name} has isotopes and a signal, but does not specify whether to interpret it as delta, or epsilon!"
             )
 
-        if all(
-            [
-                self.isotopes,
-                isinstance(self.source, Source),
-                self.delta == "None",
-                self.epsilon == "None",
-            ]
-        ):
+        if all([
+            self.isotopes,
+            isinstance(self.source, Source),
+            self.delta == "None",
+            self.epsilon == "None",
+        ]):
             self.delta = self.source.delta
             warnings.warn(
                 f"\n\nPlease specify the delta value for the flux in {self.name}\n"
@@ -369,7 +365,7 @@ class Species2Species(esbmtkBase):
         taken as as connection name, otherwise, append id to the name
 
         """
-        from esbmtk import Reservoir, Source, SourceProperties, GasReservoir
+        from esbmtk import GasReservoir, Reservoir, Source, SourceProperties
 
         # same species?
         if self.sink.species.name == self.source.species.name:
@@ -760,15 +756,15 @@ class Species2Species(esbmtkBase):
 class ConnectionProperties(esbmtkBase):
     """ConnectionProperties Class.
 
-        Connect reservoir/sink/source groups when at least one of the
-        arguments is a reservoirs_group object. This method will
-        create regular connections for each matching species.
+    Connect reservoir/sink/source groups when at least one of the
+    arguments is a reservoirs_group object. This method will
+    create regular connections for each matching species.
 
-        Use the connection.update() method to fine tune connections
-        after creation
+    Use the connection.update() method to fine tune connections
+    after creation
 
-
-
+    Example::
+    
         ConnectionProperties(source =  upstream reservoir / upstream reservoir group
            sink = downstrean reservoir / downstream reservoirs_group
            delta = defaults to zero and has to be set manually
@@ -778,8 +774,7 @@ class ConnectionProperties(esbmtkBase):
            scale= int/float scaling factor, see below
            ref_flux = shared between all connections
            species = list, optional, if present, only these species will be connected
-           ctype = needs to be set for all connections. Use "Fixed"
-                   unless you require a specific connection type
+           ctype = needs to be set for all connections. Use "Fixed" unless you require a specific connection type
            pl = [list]) process list. optional, shared between all connections
            id = optional identifier, passed on to individual connection
            plot = "yes/no" # defaults to yes, shared between all connections
@@ -799,8 +794,6 @@ class ConnectionProperties(esbmtkBase):
                   ctype = {DIC: "Fixed",
                            ALK: "Fixed"},
                 )
-
-
     """
 
     def __init__(self, **kwargs) -> None:
