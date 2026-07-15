@@ -184,7 +184,7 @@ from esbmtk import (
 
 Next, we use the @@rst::py:class:`esbmtk.model.Model()`@@  class to create a model instance, which defines fundamental model properties.
 #+name: p2
-#+BEGIN_SRC ipython :tangle po4_1.py
+#+BEGIN_SRC ipython
 # define fundamental model parameters
 M = Model(
     stop="3 Myr",  # end time of model
@@ -205,7 +205,7 @@ The default internal model units are:
 These defaults can be changed by explicitly clarifying units in the model definition as follows:
 
 #+name: p3
-#+BEGIN_SRC ipython 
+#+BEGIN_SRC ipython :tangle po4_1.py
 M = Model(
     stop="3 Myr",  # end time of model
     max_timestep="1 kyr",  # upper limit of time step
@@ -524,7 +524,6 @@ The model time axis is available as =M.time= and the model supports the @@rst::p
 #+name: po41definition
 #+BEGIN_SRC org :noweb yes :exports none
 <<p1>>
-<<p2>>
 <<p3>>
 <<p4>>
 <<p5>>
@@ -533,6 +532,7 @@ The model time axis is available as =M.time= and the model supports the @@rst::p
 <<p8>>
 <<p9>>
 <<p10>>
+<<p11>>
 #+END_SRC
 
 #+name: po41testwrapper
