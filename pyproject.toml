@@ -21,9 +21,9 @@ line-length = 88
 indent-width = 4
 
 # Assume Python 3.11
-target-version = "py312"
+target-version = "py314"
 
-[lint]
+[tool.ruff.lint]
 select = [
     # pydocstyle
     "D",
@@ -59,9 +59,11 @@ ignore = ["E501"]
 [lint.pydocstyle]
 convention = "numpy"
 
-[format]
+[tool.ruff.format]
 # 5. Use single quotes in `ruff format`.
 quote-style = "double"
+skip-magic-trailing-comma = false
+docstring-code-format = true
 
 [tool.basedpyright]
 include = ["src"]
@@ -78,7 +80,7 @@ reportMissingImports = "error"
 reportMissingTypeStubs = false
 typeCheckingMode = 'basic'
 
-pythonVersion = "3.12"
+pythonVersion = "3.14"
 pythonPlatform = "Linux"
 
 executionEnvironments = [
