@@ -24,10 +24,14 @@ from .utility_functions import (
     check_for_quantity as check_for_quantity,
     create_bulk_connections as create_bulk_connections,
     data_summaries as data_summaries,
+    gen_dict_entries as gen_dict_entries,
     initialize_reservoirs as initialize_reservoirs,
     phc as phc,
     register_return_values as register_return_values,
     set_y_limits as set_y_limits,
+    create_connections_from_flux_list as create_connections_from_flux_list,
+    create_weathering_fluxes as create_weathering_fluxes,
+    get_matrix_coefficients as get_matrix_coefficients,
 )
 from .seawater import SeawaterConstants as SeawaterConstants
 from .processes import (
@@ -43,6 +47,7 @@ from .post_processing import (
     carbonate_system_1_pp as carbonate_system_1_pp,
     carbonate_system_2_pp as carbonate_system_2_pp,
     carbonate_system_3_pp as carbonate_system_3_pp,
+    carbonate_system_4_pp as carbonate_system_4_pp,
     gas_exchange_fluxes as gas_exchange_fluxes,
 )
 from .model import Model as Model
@@ -71,6 +76,18 @@ from .carbonate_chemistry import (
     get_hplus as get_hplus,
     get_pco2 as get_pco2,
 )
+
+from .carbonate_system_4 import (
+    add_carbonate_system_4 as add_carbonate_system_4,
+    carbonate_system_4 as carbonate_system_4,
+)
+
+from .excel_connection_functions import create_reservoirs_from_excel as create_reservoirs_from_excel
+from .excel_connection_functions import create_transport_matrix_from_excel as create_transport_matrix_from_excel
+from .excel_connection_functions import create_gas_reservoirs_from_excel as create_gas_reservoirs_from_excel
+from .excel_connection_functions import create_gas_exchange_connections as create_gas_exchange_connections
+from .excel_connection_functions import create_gas_exchange_connections_from_excel as create_gas_exchange_connections_from_excel
+
 from .base_classes import (
     Flux as Flux,
     Sink as Sink,

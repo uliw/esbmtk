@@ -759,6 +759,7 @@ class ConnectionProperties(esbmtkBase):
     Connect reservoir/sink/source groups when at least one of the
     arguments is a reservoirs_group object. This method will
     create regular connections for each matching species.
+<<<<<<< HEAD
 
     Use the connection.update() method to fine tune connections
     after creation
@@ -779,6 +780,27 @@ class ConnectionProperties(esbmtkBase):
            id = optional identifier, passed on to individual connection
            plot = "yes/no" # defaults to yes, shared between all connections
         )
+=======
+
+    Use the connection.update() method to fine tune connections
+    after creation
+
+    ConnectionProperties(source =  upstream reservoir / upstream reservoir group
+        sink = downstrean reservoir / downstream reservoirs_group
+        delta = defaults to zero and has to be set manually
+        epsilon =  defaults to zero and has to be set manually
+        rate = shared between all connections
+        ref_reservoirs = shared between all connections
+        scale= int/float scaling factor, see below
+        ref_flux = shared between all connections
+        species = list, optional, if present, only these species will be connected
+        ctype = needs to be set for all connections. Use "Fixed"
+                unless you require a specific connection type
+        pl = [list]) process list. optional, shared between all connections
+        id = optional identifier, passed on to individual connection
+        plot = "yes/no" # defaults to yes, shared between all connections
+    )
+>>>>>>> atlas
 
     Note: that the scale keyword will only affect the flux rate, it will not!
     affec the flux + signal. Use the scale keyword in the signal class to scale
@@ -789,9 +811,17 @@ class ConnectionProperties(esbmtkBase):
         ConnectionProperties(
             source=OM_Weathering,
             sink=Ocean,
+<<<<<<< HEAD
             rate={DIC: f"{OM_w} Tmol/yr", ALK: f"{0} Tmol/yr"},
             ctype={DIC: "Fixed", ALK: "Fixed"},
         )
+=======
+            rate={DIC: f"{OM_w} Tmol/yr" ,
+                    ALK: f"{0} Tmol/yr"},
+            ctype = {DIC: "Fixed",
+                    ALK: "Fixed"},
+            )
+>>>>>>> atlas
     """
 
     def __init__(self, **kwargs) -> None:

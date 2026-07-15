@@ -109,7 +109,7 @@ class Model(esbmtkBase):
     - Model_Name.connection_summary() - Display connection information
 
     Parameters
-    ----------
+    -----------
     **kwargs : dict
         A dictionary with key-value pairs for model configuration.
 
@@ -123,7 +123,11 @@ class Model(esbmtkBase):
     ... )
 
     Important Parameters
+<<<<<<< HEAD
     --------------------
+=======
+    ---------------------
+>>>>>>> atlas
     name : str
         The model name, e.g., "M".
     mass_unit : str

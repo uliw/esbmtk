@@ -39,7 +39,7 @@ def run_model(M, sr, pr, i):
         [M.CR, M.D_b.DIC],
         reverse_time=pr,
         no_show=True,
-        # fn=f"M{i}_{sr}_{pr}.pdf",
+        fn=f"M{i}_{sr}_{pr}.pdf",
     )
 
     # plt, fig, axs = (1, 1, 1)

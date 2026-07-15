@@ -1890,6 +1890,8 @@ class ExternalCode(SpeciesNoSet):
             "r_s": ["None", (str, Reservoir)],
             "r_d": ["None", (str, Reservoir)],
             "r_n": ["None", (str, Reservoir)],
+            "r_a": ["None", (str, Reservoir)],
+            "r_b": ["None", (str, Reservoir)],
         }
 
         # provide a list of absolutely required keywords
