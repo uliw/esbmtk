@@ -1,4 +1,5 @@
 * Changelog
+- 0.14.3.0 Added nitrogen cycle support (including new nitrogen species =P_NO3=, =P_NH4=, and =PN=, solubility parameters, fractionation factors, and nitrogen gas exchange), upgraded hypsography source data to 1-meter resolution, and converted concentration units to =umol/kg=. Added CS4 post-processing support and diagrams. Implemented =create_connections_from_flux_list=, signal isotope refactoring, and automated PyPI publishing. Updated Python runtime version requirements to 3.14.
 - 0.14.2.14 fixed =reverse_time= display for plots with more than one x-axis. Added unit registered output variables (e.g., adding =_u= to  =M.D_b.PO4.c= than =M.D_b.PO4.c_u= will show the concentration with the units added. Reservoir mass calculations are now updated once integration finishes.) Reading third party generated CSV data is now more robust and aims to detect encoding errors (who knew that some excel versions write UTF-7 ...)
   New Features:
   - Gas Exchange Connections now allow the =scale= keyword
