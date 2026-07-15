@@ -29,7 +29,7 @@ import numpy.typing as npt
 # from numba import njit
 
 if tp.TYPE_CHECKING:
-    from esbmtk import ExternalFunction, Model, Species
+    from esbmtk import ExternalFunction, Model, Species, SpeciesProperties
 
 np.set_printoptions(precision=4)
 # declare numpy types
@@ -1744,3 +1744,307 @@ def warn_if_non_numeric(df):
             ed = True
 
     return ed
+
+
+NDArrayFloat = npt.NDArray[np.float64]
+
+# if tp.TYPE_CHECKING:
+#    from esbmtk import Model, SpeciesProperties
+
+
+def create_connections_from_flux_list(
+    model: Model,
+    flux_list: list,
+    target_id: str,
+    species: SpeciesProperties,
+    scale: float,
+    **kwargs: dict,  
+) -> None:
+    """ 
+    Create Species2Species connections from an existing list of flux objects.
+
+    This function constructs coupling relationships between reservoir species
+    based on a list of reference fluxes. It interprets flux naming conventions
+    to infer source/sink reservoirs unless explicitly overridden.
+
+    Parameters
+    ----------
+    model : Model
+        The ESBMTK model instance containing reservoir groups.
+    flux_list : list
+        List of flux objects used as references for constructing connections.
+        Each flux is expected to have at least an ``id`` attribute following
+        a naming convention such as ``A_sb_2_A_ib_POP_ex``.
+    target_id : str
+        Identifier used to label the resulting connection group.
+    species : SpeciesProperties
+        Species object defining which tracer is being coupled (e.g. DIC, PO4).
+    scale : int or float
+        Scaling factor applied to the reference flux when constructing the
+        Species2Species coupling.
+
+    Other Parameters
+    ----------------
+    source : str, optional
+        Source selection mode or explicit source name.
+
+        Options:
+        - "auto" (default): infer source from flux name
+        - "from_sink": infer source from sink portion of flux name
+        - str: explicit model attribute name for source reservoir group
+    sink : str or ReservoirGroup, optional
+        Sink selection mode or explicit sink identifier.
+
+        Options:
+        - "auto" (default): infer sink from flux name
+        - str: explicit sink reservoir group name
+    delta : float, optional
+        Isotopic fractionation passed to Species2Species.
+    epsilon : float, optional
+        Additional isotopic or parameter modifier passed to Species2Species.
+
+    Returns
+    -------
+    None
+        The function modifies the model by adding connection objects.
+    """
+    import logging
+
+    from esbmtk import Species2Species
+
+    source_arg = kwargs.get("source", "auto")
+    sink_arg = kwargs.get("sink", "auto")
+
+    delta = kwargs.get("delta", None)
+    epsilon = kwargs.get("epsilon", None)
+
+    bypass = "None"
+
+    if len(flux_list) < 1:
+        raise ValueError("Flux_list")
+
+    logging.debug("# --- create_connections_from_flux_list ---- #")  # ruff:ignore[root-logger-call]
+    for f in flux_list:
+        if source_arg == "auto":
+            # Extract source and sink, assuming that the flux name
+            # looks like: "A_sb_2_A_ib_POP_ex"
+            source_name = "_".join(f.id.split("_")[:2])
+        elif source_arg == "from_sink":
+            source_name = "_".join(f.full_name.split("_")[4:6])
+        else:
+            source_name = source_arg.name
+
+        if sink_arg == "auto":
+            sink_name = "_".join(f.id.split("_")[3:5])
+        else:
+            sink_name = sink_arg
+            bypass = "sink"
+
+            # get reservoirgroups
+        source_reservoir_group_handle = getattr(model, source_name)
+        sink_reservoir_group_handle = getattr(model, sink_name)
+
+        # Reservoir objects
+        source = getattr(source_reservoir_group_handle, species.name)
+        sink = getattr(sink_reservoir_group_handle, species.name)
+
+        c = Species2Species(
+            source=source,
+            sink=sink,
+            species=species,
+            ctype="scale_with_flux",
+            ref_flux=f,  # <-- indexed reference
+            scale=scale,
+            delta=delta,
+            epsilon=epsilon,
+            id=f"C_{source_name}_to_{sink_name}_{target_id}",
+            bypass=bypass,
+        )
+        logging.debug(f"Created {c.full_name}")
+    logging.debug("\n")  # ruff:ignore[root-logger-call]
+    # if target_id == "PIC_DIC_shelf":
+    #     breakpoint()
+
+
+def create_weathering_fluxes(
+    model: Model,
+    species: SpeciesProperties,
+    area_dict: dict,
+    ref_flux_name: str,
+    scale: float,
+    delta: float | None = None,
+    alpha: float | None = None,
+    **kwargs: dict,
+) -> None:
+    """
+    Create Species2Species connections representing weathering fluxes.
+
+    This function generates coupling terms between a crustal or atmospheric
+    source reservoir and basin sink reservoirs, scaled by basin area and a
+    reference flux.
+
+    Parameters
+    ----------
+    model : Model
+        ESBMTK model instance containing reservoirs and flux definitions.
+    species : SpeciesProperties
+        Species being transported (e.g. DIC, alkalinity).
+    area_dict : dict
+        Dictionary mapping basin names to their surface areas.
+    ref_flux_name : str
+        Name of the reference flux used.
+    scale : int or float
+        Scaling factor applied to all basin weathering fluxes.
+    delta : float, optional
+        Optional isotopic fractionation parameter passed to Species2Species.
+    alpha : float, optional
+        Optional isotopic fractionation parameter passed to Species2Species.
+
+    Other Parameters
+    ----------------
+    source : str, optional
+        Source reservoir selection mode.
+
+        Options:
+        - "crust" (default): use crustal reservoir (Fw.<species>)
+        - "atmosphere": use atmospheric reservoir (e.g., CO2_At for DIC)
+
+    Returns
+    -------
+    None
+        The function modifies the model by adding connection objects.
+
+    Notes
+    -----
+    - Weathering fluxes are constructed per basin.
+    - Source selection currently supports crust and atmosphere only.
+
+    Examples
+    --------
+    >>> create_weathering_fluxes(model, DIC, areas, "weathering_silicate", 1.0)
+    """
+    import logging
+    from operator import attrgetter
+
+    from esbmtk import Species2Species
+
+    source_arg = kwargs.get("source", "crust")
+
+    logging.debug("# --- create_connections_from_flux_list ---- #")
+    for basin, area in area_dict.items():
+        if source_arg == "crust":
+            # FIXME: query list of sources
+            source = attrgetter(f"Fw.{species.name}")(model)
+        elif source_arg == "atmosphere":
+            if species.name == "DIC":
+                # FIXME: query list of gas reservoirs
+                source = getattr(model, "CO2_At")
+
+        sink = attrgetter(f"{basin}.{species.name}")(model)
+        cid = f"{sink.full_name.split('.')[1]}.{species.name}_{ref_flux_name}_weathering_x"
+        if model.debug:
+            logging.debug(f"source = {source.full_name}, type = {type(source)}")
+            logging.debug(f"sink = {sink.full_name}, type = {type(sink)}")
+            logging.debug(f"species = {species.full_name}, type = {type(species)}")
+            logging.debug(f"ref_flux = {ref_flux_name}")
+            logging.debug(f"id = {cid}")
+
+        # ---------------- Species2Species ---------------- #
+        kwargs_s2s = {
+            "ctype": "scale_with_flux",
+            "source": source,
+            "sink": sink,
+            "species": species,
+            "ref_flux": ref_flux_name,
+            "scale": area * scale,
+            "id": cid,
+        }
+
+        # only forward if provided
+        if delta is not None:
+            kwargs_s2s["delta"] = delta
+        if alpha is not None:
+            kwargs_s2s["alpha"] = alpha
+
+        Species2Species(**kwargs_s2s)
+        
+        # c.name = (f"C_{source.name}_to_{sink.name}_{species.name}_{c.id}",)
+        # c.full_name = (f"M.C_{source.name}_to_{sink.name}_{species.name}_{c.id}",)
+        # logging.debug(f"Created {c.full_name}")
+        # breakpoint()
+    logging.debug("\n")
+
+def get_matrix_coefficients(
+    flux_name: str,
+    CM: NDArrayFloat,
+    F: NDArrayFloat,
+    F_names: list[str],
+    R_names: list[str],
+    *,
+    include_zeros: bool = False,
+    atol: float = 0.0,
+) -> list[tuple[str, float]]:
+    """Return reservoir rows affected by a given flux (and their CM coefficients).
+
+    A flux corresponds to one column in CM. Reservoirs correspond to rows in CM.
+    This function finds the column index for `flux_name` in `F_names`, then returns
+    (reservoir_name, CM[row, col]) for each reservoir row where that coefficient is
+    non-zero (or all rows if include_zeros=True).
+
+    Parameters
+    ----------
+    flux_name
+        Name as stored in F_names (e.g., entries produced by f.full_name).
+    CM
+        Coefficient matrix with shape (n_reservoir_rows, n_fluxes).
+    F
+        Flux value vector with shape (n_fluxes,). (Not required for coefficients,
+        but kept to match your provided signature and for sanity checks.)
+    F_names
+        Flux names aligned with flux indices (columns of CM, entries of F).
+    R_names
+        Reservoir row names aligned with row indices of CM.
+    include_zeros
+        If True, return all reservoirs with their coefficient (including 0.0).
+        If False, only return reservoirs with non-zero coefficients.
+    atol
+        Absolute tolerance for treating very small coefficients as zero.
+
+    Returns
+    -------
+    list[tuple[str, float]]
+        List of (reservoir_name, coefficient) tuples.
+    """
+    if flux_name not in F_names:
+        raise KeyError(f"Flux name not found in F_names: {flux_name!r}")
+
+    col = F_names.index(flux_name)
+
+    # Basic alignment checks (optional but helpful)
+    if CM.shape[1] != len(F_names):
+        raise ValueError(
+            f"CM has {CM.shape[1]} columns but F_names has {len(F_names)} entries."
+        )
+    if CM.shape[0] != len(R_names):
+        raise ValueError(
+            f"CM has {CM.shape[0]} rows but R_names has {len(R_names)} entries."
+        )
+    if len(F) != len(F_names):
+        raise ValueError(f"F has length {len(F)} but F_names has {len(F_names)}.")
+
+    coeff_col = CM[:, col]
+
+    if include_zeros:
+        return [(R_names[i], float(coeff_col[i])) for i in range(len(R_names))]
+
+    if atol > 0.0:
+        rows = np.where(np.abs(coeff_col) > atol)[0]
+    else:
+        rows = np.nonzero(coeff_col)[0]
+
+    return [
+        (flux_name, R_names[i], f"coeff = {coeff_col[i]:.2e}, val = {F[col]:.2e}")
+        for i in rows
+    ]
+
+

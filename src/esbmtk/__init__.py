@@ -29,6 +29,9 @@ from .utility_functions import (
     phc as phc,
     register_return_values as register_return_values,
     set_y_limits as set_y_limits,
+    create_connections_from_flux_list as create_connections_from_flux_list,
+    create_weathering_fluxes as create_weathering_fluxes,
+    get_matrix_coefficients as get_matrix_coefficients,
 )
 from .seawater import SeawaterConstants as SeawaterConstants
 from .processes import (

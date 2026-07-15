@@ -1,9 +1,10 @@
 from __future__ import annotations
+
+import pathlib as pl
 import typing as tp
 
-
 if tp.TYPE_CHECKING:
-    from esbmtk import Model, ConnectionGroup
+    from esbmtk import ConnectionGroup, Model
 
 def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, ta, ti, mix_A_H, mix_I_H, mix_P_H, rain_ratio, alpha, run_time, time_step, debug):
     """Package the model definition inside a function."""
@@ -14,13 +15,11 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
         add_carbonate_system_1,
         add_carbonate_system_4,
         create_bulk_connections,
-        create_reservoirs_from_excel,
-        create_gas_reservoirs_from_excel,
-        create_transport_matrix_from_excel,
-        create_gas_exchange_connections_from_excel,
-    )
-    from LOSCAR_helper_functions import (
         create_connections_from_flux_list,
+        create_gas_exchange_connections_from_excel,
+        create_gas_reservoirs_from_excel,
+        create_reservoirs_from_excel,
+        create_transport_matrix_from_excel,
         create_weathering_fluxes,
     )
 
@@ -62,7 +61,8 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
 
     # Isotope ratios
     M.Fw_DIC_d = 1.5  # Carbonate weathering delta
-    M.Fb_DIC_d = 0 # burial delta (included for isotope initialization in Sink)
+    M.Fb_DIC_d = 0 # burial delta (included for isotope initialization in Sink) 
+    
     M.Fw_v_d = -4  # Volcanic flux delta
     M.OM_frac = -28  # fractionation during photosynthesis
     M.CO2_DIC_a = 8.0  # enrichment during CO2 dissolution in water
@@ -93,26 +93,36 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     M.high_lat_piston = high_lat_piston
     M.high_lat_PO4_export = high_lat_PO4_export
 
+    # ------ Locate workbook relative to the current working directory ------#
+
+    fn = "esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx"
+
+    cwd: pl.Path = pl.Path.cwd() # get the current working directory
+    fqfn: pl.Path = cwd / fn # get the current working directory
+
+    if not fqfn.exists(): # check if file exists 
+        raise FileNotFoundError(f"Cannot find file {fqfn}")
+
     #------Create reservoirs and transport matrix from excel------#
 
     species_list = create_reservoirs_from_excel(
         M, #Model object
-        "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
+        fqfn, #specify file path
         sheet_name="reservoirs" #specify worksheet (default = "reservoirs")
     )
 
     M.Fw.DIC.delta = M.Fw_DIC_d #initialize delta for Source object
-    M.Fb.DIC.delta = M.Fb_DIC_d #initialize delta for Sink object
+    M.Fb.DIC.delta = M.Fb_DIC_d #initialize delta for Sink object 
 
     create_gas_reservoirs_from_excel(
         M, #Model object
-        "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
+        fqfn, #specify file path
         sheet_name="gas_reservoirs" #specify worksheet (default = "gas_reservoirs")
     )
 
     create_transport_matrix_from_excel(
         M, #Model object
-        "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
+        fqfn, #specify file path
         species_list, #list of species being transported via advection and mixing
         sheet_name="transport_matrix" #specify worksheet (default = "transport_matrix")
     )
@@ -393,7 +403,7 @@ def initialize_model(high_lat_piston, high_lat_PO4_export, T_surf, T_deep, thc, 
     """
     create_gas_exchange_connections_from_excel(
         M, #Model object
-        "/home/atlas/esbmtk/esbmtk/models/LOSCAR_sheets/LOSCAR_sheets.xlsx", #specify file path
+        fqfn, #specify file path
         sheet_name="gas_exchange" #specify worksheet (default = "gas_exchange")
     )
 
