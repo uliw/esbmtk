@@ -468,12 +468,15 @@ create_transport_matrix_from_excel(
 It is recommended to check out the =LOSCAR_2012= directory in [[https://github.com/uliw/ESBMTK-Examples/tree/main][ESBMTK-Examples]] for a detailed example of the functions described above.
 
 ** Model forcing
-ESBMTK realizes model forcing through the @@rst::py:class:`esbmtk.extended_classes.Signal()`@@ class. Once defined, a signal instance can be associated with a @@rst::py:class:`esbmtk.connections.Species2Species()`@@ instance that will then act on the associated connection. This class provides the following keywords to create a signal:
+ESBMTK implements model forcing through the @@rst::py:class:`esbmtk.extended_classes.Signal()`@@ class. A signal represents a time-dependent change in a model parameter or flux and can be attached to a @@rst::py:class:`esbmtk.connections.Species2Species()`@@ instance that will then act on the associated connection.
 
-- =square()=, =pyramid()=, =bell()=  These are defined by specifying the signal start time (relative to the model time), its size (as mass) and duration, or as duration and magnitude (see the example below)
-- =filename()= a string pointing to a CSV file that specifies the following columns: =Time [yr]=, =Rate/Scale [units]=, =delta value [dimensionless]= The class will attempt to convert the data into the correct model units. This process is however not very robust.
+This class provides the following ways to create a signal:
 
-The default is to add the signal to a given connection. It is however also possible to use the signal data as a scaling factor. Signals are cumulative, i.e., complex signals are created by adding one signal to another (i.e., Snew = S1 + S2). Using the P-cycle model from the previous chapter (see =po4_1.py=) we can add a signal by first defining a signal instance, and then associating the instance with a weathering connection instance (this model is available as =po4_2.p4= see https://github.com/uliw/ESBMTK-Examples)
+- Pre-defined functions, e.g., =square()=, =pyramid()=, or =bell()=. These are defined by specifying the signal start time (relative to the model time), signal duration, and signal size or magnitude. 
+- External data via =filename()=. This keyword is a string pointing to a CSV file that specifies the following columns: =Time [yr]=, =Rate/Scale [units]=, =delta value [dimensionless]= The class will attempt to convert the data into the correct model units. This process is not, however, very robust.
+
+The default is to add the signal to a given connection. It is however also possible to use the signal data as a scaling factor. Signals are cumulative, i.e., complex signals are created by adding one signal to another (i.e., S_new = S1 + S2). Using the P-cycle model from the previous chapter (see =po4_1.py=) we can add a signal by first defining a signal instance, and then associating the instance with a weathering connection instance (this model is available as =po4_2.p4= see https://github.com/uliw/ESBMTK-Examples)
+
 # import the model code from manual-1
 #+name:po42_1
 #+BEGIN_SRC ipython :noweb yes :tangle po4_2.py :exports none
@@ -504,8 +507,12 @@ ConnectionProperties(
 )
 M.run()
 #+END_SRC
-Note that the =plot()= method accepts the signal object as well. In general, any ESBMTK object that has data that varies with time, can be plotted by the =plot()= method. ESBMTK also provides classes to include
-external data  @@rst::py:class:`esbmtk.extended_classes.ExternalData()`@@   as well as classes to mix and match data into the same plot @@rst::py:class:`esbmtk.extended_classes.DataField()`@@. The file =is92a_comparison_plots.py= (see  https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010) shows a use case. Furthermore, @@rst::py:class:`esbmtk.model.Model.plot()`@@  returns a tuple with the figure instance, list of =axs= objects, which allows even more complex figure manipulations (see =steady_state_plots.py= in the same repository).
+Note that the =plot()= method accepts the signal object as well. In general, any ESBMTK object that has data that varies with time, can be plotted by the =plot()= method. ESBMTK also provides classes to include external data  @@rst::py:class:`esbmtk.extended_classes.ExternalData()`@@  as well as classes to mix and match data into the same plot @@rst::py:class:`esbmtk.extended_classes.DataField()`@@. 
+
+The file =is92a_comparison_plots.py= (see  https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010) shows a use case. 
+
+Furthermore, @@rst::py:class:`esbmtk.model.Model.plot()`@@  returns a tuple with the figure instance, list of =axs= objects, which allows even more complex figure manipulations (see =steady_state_plots.py= in the same repository).
+
 #+BEGIN_SRC ipython :tangle po4_2.py
 M.plot([M.S_b.PO4, M.D_b.PO4, M.CR], fn="po4_2.png")
 #  M.save_data()
