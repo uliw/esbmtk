@@ -306,7 +306,7 @@ M.db_remin = 1 - M.ib_remin #Phosphate remineralization coefficient deep box
 # Get all upwelling phosphate fluxes except the high-latitude box
 pfluxes = M.flux_summary(filter_by="PO4_mix_up", exclude="H_", return_list=True)
     
-# Export productivity in the high latidude box is fixed (Zeebe, 2012)
+# Export productivity in the high latitude box is fixed (Zeebe, 2012)
 pp_hl = Q_(f"{1.8 * M.H_sb.area.magnitude / M.PC_ratio} mol/a")
 
 ct = {  # Surface box to intermediate box (sb to ib)
@@ -350,22 +350,24 @@ ct = {  # Surface box to intermediate box (sb to ib)
 create_bulk_connections(ct, M)
 #+END_SRC
 
-In the last example, we use the =gen_dict_entries= function to extract a list of connection keys that can be used in the =connection_dictionary= . The following code finds all connection keys that match the particulate organic phosphor fluxes (=POM_P=) defined in the code above, and to replace them with a connection key that uses =POM_DIC= as id-string. The function returns a list of fluxes and matching keys that can be used to specify new connections. See also =boudreau2010.py= which uses a less complex setup (https://github.com/uliw/ESBMTK-Examples).
+You can also use the =create_connections_from_flux_list= function to create a set of @@rst::py:class:`esbmtk.connections.Species2Species`@@ connections based on an existing list of flux objects. This is particularly useful when multiple species are transported along the same pathway and their fluxes can be expressed as a scaled version of an already existing flux.
+
+For each reference flux in the provided list, the function identifies the source and sink reservoirs from the flux naming convention and creates a new connection between the corresponding species reservoirs for the given species. The new connection uses the original flux as a reference flux and applies a user-provided scaling factor. An example is given below:
 
 #+BEGIN_SRC ipython
-keys_POM_DIC, ref_fluxes = gen_dict_entries(M, ref_id="POM_P", target_id="POM_DIC")
+pfluxes = M.flux_summary(filter_by="POP_ex", return_list=True) #flux list of POP export fluxes
 
-c_dict = {
-    keys_POM_DIC: {
-        "re": ref_fluxes,
-        "sp": M.DIC,
-        "ty": "scale_with_flux",
-        "sc": M.PC_ratio,
-        "al": M.OM_frac,
-    }
-}
-create_bulk_connections(c_dict, M, mt="1:1")
+    # Particulate OM DIC
+    create_connections_from_flux_list(
+        M,  # model
+        pfluxes,  # flux list
+        "POM_DIC",  # new ID
+        M.DIC,  # species
+        M.PC_ratio,  # scale
+    )
 #+END_SRC
+
+This creates a set of new DIC connections following the same pathways as the POP export fluxes, scaled by the phosphorus-to-carbon ratio.
 
 ** Using Excel sheets for model definitions
 
