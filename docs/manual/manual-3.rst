@@ -3,7 +3,23 @@
 Adding isotopes
 ---------------
 
-ESBMTK support the use of isotopes for many processes and species out of the box. This is best demonstrated with an example. In the following we use tow reservoirs of equal size, and apply an exchange flux. The reservoirs have similar concentrations but their isotopic ratios are different (-20 mUr versus +20 mUr [VSMOV].  After 3 ky both reservoirs are isotopically homogeneous and have approached a :math:`\delta`\ :sup:`18`\O value of 0 mUr  [VSMOV]. Note that this only required code changes on lines 17 and 23 where declare the initial delta values.
+ESBMTK support the use of isotopes for many processes and species out of the box. 
+
+Isotopes are represented as isotope ratios using the conventional delta notation: 
+
+
+
+.. math::
+
+    \delta = \left(\frac{R}{R_{standard}} - 1\right) \times 1000
+
+Where :math:`R` is the ratio of the heavy to light isotope and :math:`R_{standard}` is the isotope ratio of a reference standard.
+
+Delta values are typically expressed in per mil (‰) relative to a reference standard. For example, oxygen isotopes are reported relative to the Vienna Standard Mean Ocean Water (VSMOW) standard. In ESBMTK, isotope compositions are expressed as 'mUr', which is equivalent to the conventional per mil (‰) delta notation used in isotope geochemistry.
+
+In the following example, we demonstrate isotope mixing between two equal-sized reservoirs containing oxygen with identical concentrations but different isotope compositions (-20‰ and +20‰ VSMOW). A bidirectional exchange flux gradually mixes the reservoirs, causing both isotope compositions to converge toward the equilibrium :math:`\delta`\ :sup:`18`\O value of 0 mUr [VSMOV] after 3 ky.
+
+Note that only the initial isotope values need to be specified. The isotope transport equations are handled automatically by ESBMTK.
 
 .. code:: ipython
 
@@ -86,16 +102,27 @@ results in the following output:
 
     It takes about 3 kys to equilibrate both ocean boxes.
 
+In addition to isotope mixing, ESBMTK can model isotope fractionation during processes such as evaporation or gas exchange. 
 
-In the next example, we use two reservoirs of equal size, and equal isotope ratios. This time, we declare that the transport from the ``D_b`` to ``S_b`` involves a fractionation of 5 mUr (line 38). Note that the fractionation has to be provided as the enrichment factor :math:`\epsilon` and not as the fractionation factor :math:`\alpha`, where 
+Isotope fractionation can be expressed via the isotopic fractionation factor (:math:`\alpha`):
+
+
+
+.. math::
+
+    \alpha = \frac{R_{product}}{R_{reactant}}
+
+where :math:`R` is the ratio of the heavy to light isotope. In ESBMTK, however, isotope fractionation has to be provided as the enrichment factor :math:`\epsilon` and not as the fractionation factor :math:`\alpha`, where, 
+
 
 
 .. math::
 
     \epsilon = (\alpha -1) \times 1000
 
+In the next example, we use two reservoirs of equal size and equal isotope ratios. This time, we additionally declare that the transport from ``D_b`` to ``S_b`` involves a fractionation with an enrichment factor :math:`\epsilon` = 5 mUr. 
 
-Similarly to the first example, the system reaches equilibrium after about 3 kyrs. The above is then easily adapted to model, e.g., isotope fractionation during the evaporation of water.
+Similarly to the first example, the system reaches equilibrium after about 3 kyrs. 
 
 .. code:: ipython
     :name: iso3code
@@ -117,13 +144,13 @@ Similarly to the first example, the system reaches equilibrium after about 3 kyr
         name="S_b",  # box name
         volume="50E16 m**3",  # surface box volume
         concentration={M.O2: "200 umol/l"},  # initial concentration
-        delta={M.O2: 0},
+        delta={M.O2: 0}, #initial isotope ratio in the reservoir
     )
     Reservoir(
         name="D_b",  # box name
         volume="50E16 m**3",  # deeb box volume
         concentration={M.O2: "200 umol/l"},  # initial concentration
-        delta={M.O2: 0},
+        delta={M.O2: 0}, #initial isotope ratio in the reservoir
     )
     ConnectionProperties(  # thermohaline downwelling
         source=M.S_b,  # source of flux
@@ -138,7 +165,7 @@ Similarly to the first example, the system reaches equilibrium after about 3 kyr
         ctype="scale_with_concentration",
         scale="20 Sv",
         id="upwelling",
-        epsilon=5,  # mUr
+        epsilon=5,  # isotope enrichment factor in mUr
     )
     M.run()
 

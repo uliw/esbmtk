@@ -14,7 +14,7 @@ In the example below, we extend the previous simple P-cycle model into a multisp
 The complete example is available as ``po4_3.py`` in the ESBMTK-Examples repository.
 
 Defining the Model instance
-:::::::::::::::::::::::::::
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We begin by defining the model instance and register the required species definitions. Multiple species can be registered in the model by simply extending the list of elements, as shown below:
 
@@ -60,16 +60,16 @@ Similarly, multiple species can be registered with the source, sink, and reservo
     Reservoir(
         name="S_b",
         volume="3E16 m**3",  # surface box volume
-        concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"}, #multi-species syntax
+        concentration={M.DIC: "0 umol/kg", M.PO4: "0 umol/kg"}, #multi-species syntax
     )
     Reservoir(
         name="D_b",
         volume="100E16 m**3",  # deep box volume
-        concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"}, #multi-species syntax
+        concentration={M.DIC: "0 umol/kg", M.PO4: "0 umol/kg"}, #multi-species syntax
     )
 
 Transporting Multiple Species
-:::::::::::::::::::::::::::::
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Connections created between reservoir groups using ``ConnectionProperties`` automatically apply to every species contained within those groups unless an explicit species list is supplied.
 
@@ -98,7 +98,7 @@ If different species require different transport rates, the ``rate`` (or ``scale
 For example,
 
 .. code:: ipython
-    :name: po43_3
+    :name: po43_4
 
     ConnectionProperties(
         source=M.weathering,  # source of flux
@@ -113,7 +113,7 @@ Connections may also use one species to determine the transport rate of another.
 For example, the code below links organic carbon production to phosphate uptake using a fixed Redfield ratio.
 
 .. code:: ipython
-    :name: po43_4
+    :name: po43_5
 
     # P-uptake by photosynthesis
     ConnectionProperties(  #
@@ -169,11 +169,15 @@ which results in the below plot. The full code is available in the examples dire
 Using many boxes
 ~~~~~~~~~~~~~~~~
 
-Using the ESBMTK classes introduced thus far is sufficient to build complex models. However, it is beneficial to leverage Python syntax to create utility functions that help reduce overly verbose code. The ESBMTK library includes several routines that aid in this process; however, they are not part of the core API, are not yet well documented, and have not undergone extensive testing. The following provides a brief introduction, but it may be useful to examine the code for the Boudreau 2010 model in the example directory, as it makes significant use of the Python dictionary class.
+The ESBMTK classes introduced thus far are sufficient to build complex models. As models grow larger, however, defining every reservoir and connection individually becomes repetitive. A helpful approach is therefore to use Python dictionaries together with a set of utility functions that simplify the creation of reservoirs and connections.
 
-For these functions to operate correctly, box names must adhere to the following template: ``Area_depth``, such as ``L_sb`` for a low latitude surface water box or ``D_db`` for a deep water box. While the actual names are flexible, the underscore is utilized to distinguish between ocean area (eg. low-latitude, high-latitude, etc.) and depth interval (eg. surface, intermediate, deep, etc.). 
+These helper functions are included with ESBMTK; however, they are not part of the core API and are therefore less extensively documented and tested. It may be useful to refer to the ``Boudreau2010.py`` example in the ESBMTK examples repository to understand their use in a complete model.
 
-The following code examples demonstrate how to create multiple boxes simultaneously by first defining a dictionary containing the box geometry and initial values, followed by the :py:class:`esbmtk.utility_functions.initialize_reservoirs()` function to instantiate the corresponding ``Reservoir`` objects. The ``Boudreau2010.py`` example available at `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_ illustrates a practical application of this approach.
+For these functions to operate correctly, reservoir names should follow the convention ``area_depth``. For example, ``L_sb`` may represent a low-latitude surface box, while ``A_db`` may represent an Atlantic deep-ocean box. The specific names are arbitrary, but the underscore is used to separate the horizontal region (e.g., Atlantic, Pacific, low latitude, high latitude) from the vertical layer (e.g., surface, intermediate, deep).
+
+The following code examples demonstrate how to create multiple boxes simultaneously by first defining a dictionary containing the box geometry and initial values, followed by the :py:class:`esbmtk.utility_functions.initialize_reservoirs()` function to instantiate the corresponding ``Reservoir`` objects. 
+
+The ``Boudreau2010.py`` example available at `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_ illustrates a practical application of this approach.
 
 .. code:: ipython
 
@@ -186,6 +190,7 @@ The following code examples demonstrate how to create multiple boxes simultaneou
                 M.O2: "200 umol/kg",
             },
             "g": {"area": "0.5e14m**2", "volume": "1.76e16 m**3"},  # geometry
+            #Note: geometry can also be defined in terms of [z_top, z_bottom, area_percentage]
             "T": 2,  # temperature in C
             "P": 17.6,  # pressure in bar
             "S": 35,  # salinity in psu
@@ -205,9 +210,11 @@ The following code examples demonstrate how to create multiple boxes simultaneou
     # Instantiate Reservoir objects        
     species_list = initialize_reservoirs(M, box_parameters)
 
-Similarly, we can leverage  Python dictionaries to set up the transport matrix. The dictionary key must use the following template: ``boxname_to_boxname@id`` where the ``id`` is used similarly to the connection id in the ``Species2Species`` and ``ConnectionProperties`` classes. 
+Transport connections can be defined in a similar manner. Each dictionary key must follow the convention ``source_to_target@id``, where ``id`` identifies the transport process in the same way as the ``id`` argument of the ``Species2Species`` and ``ConnectionProperties`` classes. 
 
-So to specify, for example, thermohaline upwelling from the Atlantic deep water to the Atlantic intermediate water, you would use ``A_db_to_A_ib@thc``  as the dictionary key, followed by the rate. The following examples define the thermohaline transport in a LOSCAR-type model (based on `https://gmd.copernicus.org/articles/5/149/2012/ <https://gmd.copernicus.org/articles/5/149/2012/>`_):
+Therefore, to specify, e.g., thermohaline upwelling from the Atlantic deep box  to the Atlantic intermediate box, one would use ``A_db_to_A_ib@thc``  as the dictionary key. 
+
+The following examples define the thermohaline transport in a LOSCAR-type model (based on `Zeebe, 2012 <https://gmd.copernicus.org/articles/5/149/2012/>`_):
 
 .. code:: ipython
 
@@ -217,87 +224,135 @@ So to specify, for example, thermohaline upwelling from the Atlantic deep water 
     ti = 0.2  # upwelling coefficient Indian ocean
 
     # Specify the mixing and upwelling terms as dictionary
-    thx_dict = {  # Conveyor belt
-        "H_sb_to_A_db@thc": thc,
-        # Upwelling
-        "A_db_to_A_ib@thc": ta * thc,
-        "I_db_to_I_ib@thc": ti * thc,
-        "P_db_to_P_ib@thc": (1 - ta - ti) * thc,
-        "A_ib_to_H_sb@thc": thc,
-        # Advection
-        "A_db_to_I_db@adv": (1 - ta) * thc,
-        "I_db_to_P_db@adv": (1 - ta - ti),
-        "P_ib_to_I_ib@adv": (1 - ta - ti),
-        "I_ib_to_A_ib@adv": (1 - ta) * thc,
-    }
+    connection_dict = {
+            # source_to_sink@id
+            # thermohaline, upwelling, and advection
+            "H_b_to_A_db@thermohaline": {
+                "ty": "scale_with_concentration",
+                "sc": thc,
+                "sp": species_list,
+            },
+            "A_ib_to_H_b@thermohaline": {
+                "ty": "scale_with_concentration",
+                "sc": thc,
+                "sp": species_list,
+            },
+            "A_db_to_A_ib@upwelling": {
+                "ty": "scale_with_concentration",
+                "sc": ta * thc,
+                "sp": species_list,
+            },
+            "I_db_to_I_ib@upwelling": {
+                "ty": "scale_with_concentration",
+                "sc": ti * thc,
+                "sp": species_list,
+            },
+            "A_db_to_I_db@thermohaline": {
+                "ty": "scale_with_concentration",
+                "sc": (1 - ta) * thc,
+                "sp": species_list,
+            },
+            "I_db_to_P_db@thermohaline": {
+                "ty": "scale_with_concentration",
+                "sc": (1 - ta - ti) * thc,
+                "sp": species_list,
+            },
+            "P_db_to_P_ib@thermohaline": {
+                "ty": "scale_with_concentration",
+                "sc": (1 - ta - ti) * thc,
+                "sp": species_list,
+            },
+            "P_ib_to_I_ib@thermohaline": {
+                "ty": "scale_with_concentration",
+                "sc": (1 - ta - ti) * thc,
+                "sp": species_list,
+            },
+            "I_ib_to_A_ib@thermohaline": {
+                "ty": "scale_with_concentration",
+                "sc": (1 - ta) * thc,
+                "sp": species_list,
+            },
+        }
+        create_bulk_connections(connection_dict, M)
 
-to create the actual connections we need to:
+Where ``connection_dict`` is a dictionary describing the connection names (in the format of ``source_to_sink@id``), types, scale, and species; whereas the ``create_bulk_connections()`` function is used to instantiate the necessary connections.
 
-1. Assemble a list of all species that are affected by thermohaline circulation
+The previous example applies the same transport rules to every species. More complex connection dictionaries can also be created explicitly. 
 
-2. Specify the connection type that describes thermohaline transport, i.e., ``scale_by_concentration``
+In the following example, primary production is defined as a function of phosphate upwelling. Here, we first obtain the relevant upwelling fluxes using ``M.flux_summary()``, which are then used as reference fluxes when defining the particulate organic phosphate (POP) export in the ``connection_dictionary`` definition.
 
-3. Combine #1 & #2 into a dictionary that can be used by the ``create_bulk_connections()`` function to instantiate the necessary connections.
+This example can be found in ``LOSCAR_modern_example.py`` within the `ESBMTK Examples repository <https://github.com/uliw/ESBMTK-Examples/tree/staging/LOSCAR_2012>`_.
 
 .. code:: ipython
 
-    species_names = list(ic.keys())  # get species list
-    connection_type = {"ty": "scale_with_concentration", "sp": sl}
-    connection_dictionary = build_ct_dict(thx_dict, species_names)
-    create_bulk_connections(connection_dictionary, M, mt="1:1")
+    M.PUE = 0.8 #Phosphorus Uptake Efficiency
+    M.ib_remin = 0.78 #Phosphate remineralization coefficient intermediate box 
+    M.db_remin = 1 - M.ib_remin #Phosphate remineralization coefficient deep box
 
-In the following example, we build the ``connection_dictionary`` in a more explicit way to define primary production as a function of P upwelling: the first line finds all the upwelling fluxes, and we can then use them as an argument in the ``connection_dictionary`` definition:
-
-.. code:: ipython
-
-    # get all upwelling P fluxes except for the high latitude box
+    # Get all upwelling phosphate fluxes except the high-latitude box
     pfluxes = M.flux_summary(filter_by="PO4_mix_up", exclude="H_", return_list=True)
 
-    # define export productivity in the high latitude box
-    PO4_ex = Q_(f"{1.8 * M.H_sb.area/M.PC_ratio} mol/a") #PC ratio = Phosphorus:Carbon ratio
+    # Export productivity in the high latitude box is fixed (Zeebe, 2012)
+    pp_hl = Q_(f"{1.8 * M.H_sb.area.magnitude / M.PC_ratio} mol/a")
 
-    c_dict = {  # Surface box to ib, about 78% is remineralized in the ib
-        ("A_sb_to_A_ib@POM_P", "I_sb_to_I_ib@POM_P", "P_sb_to_P_ib@POM_P"): {
-            "ty": "scale_with_flux",
-            "sc": M.PUE * M.ib_remin, #PUE = Phosphorus Utilization Efficiency 
-            "re": pfluxes,
-            "sp": M.PO4,
-        },  # surface box to deep box
-        ("A_sb_to_A_db@POM_P", "I_sb_to_I_db@POM_P", "P_sb_to_P_db@POM_P"): {
-            "ty": "scale_with_flux",
-            "sc": M.PUE * M.db_remin,
-            "re": pfluxes,
-            "sp": M.PO4,
-        },  # high latitude box to deep ocean boxes POM_P
-        ("H_sb_to_A_db@POM_P", "H_sb_to_I_db@POM_P", "H_sb_to_P_db@POM_P"): {
-            # here we use a fixed rate following Zeebe's Loscar model
-            "ra": [
-                PO4_ex * 0.3,
-                PO4_ex * 0.3,
-                PO4_ex * 0.4,
-            ],
-            "sp": M.PO4,
-            "ty": "Fixed",
-        },
+    ct = {  # Surface box to intermediate box (sb to ib)
+            (
+                "A_sb_to_A_ib@A_sb_2_A_ib_POP_ex",
+                "I_sb_to_I_ib@I_sb_2_I_ib_POP_ex",
+                "P_sb_to_P_ib@P_sb_2_P_ib_POP_ex",
+            ): {
+                "ty": "scale_with_flux",
+                "sc": M.PUE * M.ib_remin, #scale 
+                "re": pfluxes, #reference flux
+                "sp": M.PO4,
+            },
+            # surface box to deep box (sb to db)
+            (
+                "A_sb_to_A_db@A_sb_2_A_db_POP_ex",
+                "I_sb_to_I_db@I_sb_2_I_db_POP_ex",
+                "P_sb_to_P_db@P_sb_2_P_db_POP_ex",
+            ): {
+                "ty": "scale_with_flux",
+                "sc": M.PUE * M.db_remin,
+                "re": pfluxes,
+                "sp": M.PO4,
+            },
+            # high latitude box to deep ocean boxes (H_sb to db)
+            (
+                "H_sb_to_A_db@H_sb_2_A_db_POP_ex",
+                "H_sb_to_I_db@H_sb_2_I_db_POP_ex",
+                "H_sb_to_P_db@H_sb_2_P_db_POP_ex",
+            ): {
+                # here we use a fixed rate following Zeebe's LOSCAR model
+                "ra": [
+                    pp_hl * 0.3,
+                    pp_hl * 0.3,
+                    pp_hl * 0.4,
+                ],
+                "sp": M.PO4,
+                "ty": "Regular",
+            },
     }
-    create_bulk_connections(c_dict, M, mt="1:1")
+    create_bulk_connections(ct, M)
 
-In the last example, we use the ``gen_dict_entries`` function to extract a list of connection keys that can be used in the ``connection_dictionary`` . The following code finds all connection keys that match the particulate organic phosphor fluxes (``POM_P``) defined in the code above, and to replace them with a connection key that uses ``POM_DIC`` as id-string. The function returns a list of fluxes and matching keys that can be used to specify new connections. See also ``boudreau2010.py`` which uses a less complex setup (`https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_).
+You can also use the ``create_connections_from_flux_list`` function to create a set of :py:class:`esbmtk.connections.Species2Species` connections based on an existing list of flux objects. This is particularly useful when multiple species are transported along the same pathway and their fluxes can be expressed as a scaled version of an already existing flux.
+
+For each reference flux in the provided list, the function identifies the source and sink reservoirs from the flux naming convention and creates a new connection between the corresponding species reservoirs for the given species. The new connection uses the original flux as a reference flux and applies a user-provided scaling factor. An example is given below:
 
 .. code:: ipython
 
-    keys_POM_DIC, ref_fluxes = gen_dict_entries(M, ref_id="POM_P", target_id="POM_DIC")
+    pfluxes = M.flux_summary(filter_by="POP_ex", return_list=True) #flux list of POP export fluxes
 
-    c_dict = {
-        keys_POM_DIC: {
-            "re": ref_fluxes,
-            "sp": M.DIC,
-            "ty": "scale_with_flux",
-            "sc": M.PC_ratio,
-            "al": M.OM_frac,
-        }
-    }
-    create_bulk_connections(c_dict, M, mt="1:1")
+        # Particulate OM DIC
+        create_connections_from_flux_list(
+            M,  # model
+            pfluxes,  # flux list
+            "POM_DIC",  # new ID
+            M.DIC,  # species
+            M.PC_ratio,  # scale
+        )
+
+This creates a set of new DIC connections following the same pathways as the POP export fluxes, scaled by the phosphorus-to-carbon ratio.
 
 Using Excel sheets for model definitions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -434,13 +489,15 @@ It is recommended to check out the ``LOSCAR_2012`` directory in `ESBMTK-Examples
 Model forcing
 ~~~~~~~~~~~~~
 
-ESBMTK realizes model forcing through the :py:class:`esbmtk.extended_classes.Signal()` class. Once defined, a signal instance can be associated with a :py:class:`esbmtk.connections.Species2Species()` instance that will then act on the associated connection. This class provides the following keywords to create a signal:
+ESBMTK implements model forcing through the :py:class:`esbmtk.extended_classes.Signal()` class. A signal represents a time-dependent change in a model parameter or flux and can be attached to a :py:class:`esbmtk.connections.Species2Species()` instance that will then act on the associated connection.
 
-- ``square()``, ``pyramid()``, ``bell()``  These are defined by specifying the signal start time (relative to the model time), its size (as mass) and duration, or as duration and magnitude (see the example below)
+This class provides the following ways to create a signal:
 
-- ``filename()`` a string pointing to a CSV file that specifies the following columns: ``Time [yr]``, ``Rate/Scale [units]``, ``delta value [dimensionless]`` The class will attempt to convert the data into the correct model units. This process is however not very robust.
+- Pre-defined functions, e.g., ``square()``, ``pyramid()``, or ``bell()``. These are defined by specifying the signal start time (relative to the model time), signal duration, and signal size or magnitude.
 
-The default is to add the signal to a given connection. It is however also possible to use the signal data as a scaling factor. Signals are cumulative, i.e., complex signals are created by adding one signal to another (i.e., Snew = S1 + S2). Using the P-cycle model from the previous chapter (see ``po4_1.py``) we can add a signal by first defining a signal instance, and then associating the instance with a weathering connection instance (this model is available as ``po4_2.p4`` see `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_)
+- External data via ``filename()``. This keyword is a string pointing to a CSV file that specifies the following columns: ``Time [yr]``, ``Rate/Scale [units]``, ``delta value [dimensionless]`` The class will attempt to convert the data into the correct model units. This process is not, however, very robust.
+
+The default is to add the signal to a given connection. It is however also possible to use the signal data as a scaling factor. Signals are cumulative, i.e., complex signals are created by adding one signal to another (i.e., S\ :sub:`new`\ = S1 + S2). Using the P-cycle model from the previous chapter (see ``po4_1.py``) we can add a signal by first defining a signal instance, and then associating the instance with a weathering connection instance (this model is available as ``po4_2.p4`` see `https://github.com/uliw/ESBMTK-Examples <https://github.com/uliw/ESBMTK-Examples>`_)
 
 .. code:: ipython
     :name: po42_2
@@ -467,8 +524,11 @@ The default is to add the signal to a given connection. It is however also possi
     )
     M.run()
 
-Note that the ``plot()`` method accepts the signal object as well. In general, any ESBMTK object that has data that varies with time, can be plotted by the ``plot()`` method. ESBMTK also provides classes to include
-external data  :py:class:`esbmtk.extended_classes.ExternalData()`   as well as classes to mix and match data into the same plot :py:class:`esbmtk.extended_classes.DataField()`. The file ``is92a_comparison_plots.py`` (see  `https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010 <https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010>`_) shows a use case. Furthermore, :py:class:`esbmtk.model.Model.plot()`  returns a tuple with the figure instance, list of ``axs`` objects, which allows even more complex figure manipulations (see ``steady_state_plots.py`` in the same repository).
+Note that the ``plot()`` method accepts the signal object as well. In general, any ESBMTK object that has data that varies with time, can be plotted by the ``plot()`` method. ESBMTK also provides classes to include external data  :py:class:`esbmtk.extended_classes.ExternalData()`  as well as classes to mix and match data into the same plot :py:class:`esbmtk.extended_classes.DataField()`. 
+
+The file ``is92a_comparison_plots.py`` (see  `https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010 <https://github.com/uliw/ESBMTK-Examples/tree/main/Boudreau/2010>`_) shows a use case. 
+
+Furthermore, :py:class:`esbmtk.model.Model.plot()`  returns a tuple with the figure instance, list of ``axs`` objects, which allows even more complex figure manipulations (see ``steady_state_plots.py`` in the same repository).
 
 .. code:: ipython
 

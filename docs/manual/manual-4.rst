@@ -251,9 +251,9 @@ The ``carbonate_system_4`` function splits Boudreau (2010)'s carbonate dissoluti
 
     Overview of the modifications made by CS4 for the scenario where ``zsat`` is deeper than ``zint``. Image Credit: Atlas Changulani
 
-.. _CS4 flux-splitting scheme 1:
+.. _CS4 flux-splitting scheme 2:
 
-.. figure:: ./CS4fluxsplitscheme.png
+.. figure:: ./CS4fluxsplitscheme2.png
     :width: 800
 
 

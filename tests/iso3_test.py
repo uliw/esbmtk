@@ -15,13 +15,13 @@ Reservoir(
     name="S_b",  # box name
     volume="50E16 m**3",  # surface box volume
     concentration={M.O2: "200 umol/l"},  # initial concentration
-    delta={M.O2: 0},
+    delta={M.O2: 0}, #initial isotope ratio in the reservoir
 )
 Reservoir(
     name="D_b",  # box name
     volume="50E16 m**3",  # deeb box volume
     concentration={M.O2: "200 umol/l"},  # initial concentration
-    delta={M.O2: 0},
+    delta={M.O2: 0}, #initial isotope ratio in the reservoir
 )
 ConnectionProperties(  # thermohaline downwelling
     source=M.S_b,  # source of flux
@@ -36,6 +36,6 @@ ConnectionProperties(  # thermohaline upwelling
     ctype="scale_with_concentration",
     scale="20 Sv",
     id="upwelling",
-    epsilon=5,  # mUr
+    epsilon=5,  # isotope enrichment factor in mUr
 )
 M.run()

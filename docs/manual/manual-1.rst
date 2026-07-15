@@ -116,7 +116,7 @@ Foundational Concepts
 
 ESBMTK uses a hierarchically structured, object-oriented approach to describe a model. 
 
-The topmost object in the ESBMTK heirarchy is the ``Model`` object. The ``Model`` object describes fundamental model properties like run time, time step, elements, and species information. All other objects derive from the model object. 
+The topmost object in the ESBMTK hierarchy is the ``Model`` object. The ``Model`` object describes fundamental model properties like run time, time step, elements, and species information. All other objects derive from the model object. 
 
 ``Reservoir`` objects define reservoirs and their properties, including reservoir volume or geometry, pressure and temperature, etc. Each ``Reservoir`` object contains one or more ``species`` objects, which store store initial species concentration within the reservoir and concentration versus time data for the corresponding species. 
 
@@ -267,12 +267,13 @@ Doing so results in a TypeError, since Python parses "100 years" as a string and
 To avoid this issue, we have to manually convert the string into a quantity. This is done with the quantity operator ``Q_`` from the Pint library. 
 
 .. code:: ipython
-    :name: p3
+    :name: p4
 
     # try this:
     from esbmtk import Q_
     tau = Q_("100 years")
     tau * 0.5 # Does not raise any error
+    thc = Q_("20 Sverdrup")
 
 ESBMTK also provides a method (``set_flux()``) that will automatically convert flux inputs into the correct units. 
 
@@ -282,7 +283,7 @@ Boundary conditions and external parameters:
 Having created the Model object, we need to declare some key boundary conditions that control system dynamics. This can include residence time, external input rates (e.g., from weathering), external output rates (e.g., sediment burial), etc. 
 
 .. code:: ipython
-    :name: p4
+    :name: p5
 
     # boundary conditions
     F_w =  M.set_flux("45 Gmol", "year", M.P) # P @280 ppm (Filipelli 2002)
@@ -307,7 +308,7 @@ To set up the model geometry, we first use the :py:class:`esbmtk.base_classes.So
 Note that since we loaded the element definitions for ``phosphor`` in the model definition above, we can directly refer to the "PO4" species in the reservoir definition. 
 
 .. code:: ipython
-    :name: p5
+    :name: p6
 
     # Source definitions
     SourceProperties(
@@ -323,19 +324,19 @@ Note that since we loaded the element definitions for ``phosphor`` in the model 
 We next define the model reservoirs:
 
 .. code:: ipython
-    :name: p6
+    :name: p7
 
     # reservoir definitions
     Reservoir( #Surface Box
         name="S_b",  # box name 
         volume="3E16 m**3",  # surface box volume
-        concentration={M.PO4: "0 umol/l"},  # initial concentration
+        concentration={M.PO4: "0 umol/kg"},  # initial concentration
     )
 
     Reservoir( #Deep Box
         name="D_b",  # box name
         volume="100E16 m**3",  # deep box volume
-        concentration={M.PO4: "0 umol/l"},  # initial concentration
+        concentration={M.PO4: "0 umol/kg"},  # initial concentration
     )
 
 Note here that:
@@ -389,7 +390,7 @@ The ``fixed`` or ``regular`` connection type is used when a process has an exter
 To connect the weathering flux from the source object (``M.weathering``) to the surface ocean (``M.S_b``), we define:
 
 .. code:: ipython
-    :name: p7
+    :name: p8
 
     ConnectionProperties(
         source=M.weathering,  # source of flux
@@ -407,7 +408,7 @@ Concentration-dependent flux: Thermohaline Circulation
 We may also create a connection where the flux depends on the concentration of a tracer in the source reservoir. To map the process of thermohaline circulation, for example, we connect the surface and deep ocean boxes using ``ctype ="scale_with_concentration"``, which scales the mass transfer as a function of the concentration in surface box. 
 
 .. code:: ipython
-    :name: p8
+    :name: p9
 
     ConnectionProperties(  # thermohaline downwelling
         source=M.S_b,  # source of flux
@@ -463,7 +464,7 @@ Another example of a flux that can employ ``scale_with_concentration`` is biolog
 There are several ways to define biological export production; here, we define it as a function of the residence time of PO\ :sub:`4`\ in the surface ocean following Glover (2011), with residence time :math:`\tau` = 100 years.
 
 .. code:: ipython
-    :name: p9
+    :name: p10
 
     ConnectionProperties(  #
         source=M.S_b,  # source of flux
@@ -483,7 +484,7 @@ Note that the ``species`` argument restricts the connection to specific tracers.
 We can describe the burial flux of phosphorus into sediments as a fraction of the primary export productivity. To create the connection, we can either recalculate the export productivity, or use the previously calculated flux via ``ctype ="scale_with_flux"``.
 
 .. code:: ipython
-    :name: p10
+    :name: p11
 
     ConnectionProperties(  #
         source=M.D_b,  # source of flux
@@ -536,7 +537,7 @@ Running the model, visualizing and saving the results
 To run the model, use the ``run()`` method of the model instance, and plot the results with the ``plot()`` method. This method accepts a list of ESBMTK instances, that will be plotted in a common window. Without further arguments, the plot will also be saved as a pdf file where ``filename`` defaults to the name of the model instance. The ``save_data()`` method will create (or recreate) the ``data`` directory which will then be populated by csv-files. 
 
 .. code:: ipython
-    :name: p10
+    :name: p12
 
     M.plot([M.S_b.PO4, M.D_b.PO4], fn="po4_1.png")
     # optionally, save data

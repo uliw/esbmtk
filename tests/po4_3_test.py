@@ -31,12 +31,12 @@ SinkProperties(
 Reservoir(
     name="S_b",
     volume="3E16 m**3",  # surface box volume
-    concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"}, #multi-species syntax
+    concentration={M.DIC: "0 umol/kg", M.PO4: "0 umol/kg"}, #multi-species syntax
 )
 Reservoir(
     name="D_b",
     volume="100E16 m**3",  # deep box volume
-    concentration={M.DIC: "0 umol/l", M.PO4: "0 umol/l"}, #multi-species syntax
+    concentration={M.DIC: "0 umol/kg", M.PO4: "0 umol/kg"}, #multi-species syntax
 )
 ConnectionProperties(  # thermohaline downwelling
     source=M.S_b,  # source of flux
@@ -51,6 +51,13 @@ ConnectionProperties(  # thermohaline upwelling
     ctype="scale_with_concentration",
     scale=thc,
     id="thc_down",
+)
+ConnectionProperties(
+    source=M.weathering,  # source of flux
+    sink=M.S_b,  # target of flux
+    rate={M.DIC: F_w_PO4 * Redfield, M.PO4: F_w_PO4},  # rate of flux
+    ctype="regular",
+    id="weathering",  # connection id
 )
 # P-uptake by photosynthesis
 ConnectionProperties(  #

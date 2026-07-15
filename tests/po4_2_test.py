@@ -21,6 +21,11 @@ M = Model(
     mass_unit="mol", #can be changed to another mass unit
     concentration_unit="mol/kg", #can be changed to another concentration unit
 )
+# try this:
+from esbmtk import Q_
+tau = Q_("100 years")
+tau * 0.5 # Does not raise any error
+thc = Q_("20 Sverdrup")
 # boundary conditions
 F_w =  M.set_flux("45 Gmol", "year", M.P) # P @280 ppm (Filipelli 2002)
 tau = Q_("100 year")  # PO4 residence time in surface box
@@ -39,13 +44,13 @@ SinkProperties(
 Reservoir( #Surface Box
     name="S_b",  # box name 
     volume="3E16 m**3",  # surface box volume
-    concentration={M.PO4: "0 umol/l"},  # initial concentration
+    concentration={M.PO4: "0 umol/kg"},  # initial concentration
 )
 
 Reservoir( #Deep Box
     name="D_b",  # box name
     volume="100E16 m**3",  # deep box volume
-    concentration={M.PO4: "0 umol/l"},  # initial concentration
+    concentration={M.PO4: "0 umol/kg"},  # initial concentration
 )
 ConnectionProperties(
     source=M.weathering,  # source of flux
