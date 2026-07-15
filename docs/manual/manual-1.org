@@ -97,7 +97,7 @@ The remainder of this tutorial demonstrates how the same phosphorus cycle model 
 *** Foundational Concepts
 ESBMTK uses a hierarchically structured, object-oriented approach to describe a model. 
 
-The topmost object in the ESBMTK heirarchy is the =Model= object. The =Model= object describes fundamental model properties like run time, time step, elements, and species information. All other objects derive from the model object. 
+The topmost object in the ESBMTK hierarchy is the =Model= object. The =Model= object describes fundamental model properties like run time, time step, elements, and species information. All other objects derive from the model object. 
 
 =Reservoir= objects define reservoirs and their properties, including reservoir volume or geometry, pressure and temperature, etc. Each =Reservoir= object contains one or more =species= objects, which store store initial species concentration within the reservoir and concentration versus time data for the corresponding species. 
 
@@ -233,6 +233,7 @@ To avoid this issue, we have to manually convert the string into a quantity. Thi
 from esbmtk import Q_
 tau = Q_("100 years")
 tau * 0.5 # Does not raise any error
+thc = Q_("20 Sverdrup")
 #+END_SRC
 
 ESBMTK also provides a method (=set_flux()=) that will automatically convert flux inputs into the correct units. 
@@ -278,18 +279,18 @@ SinkProperties(
 We next define the model reservoirs:
 
 #+name: p7
-#+BEGIN_SRC ipython
+#+BEGIN_SRC ipython :tangle po4_1.py
 # reservoir definitions
 Reservoir( #Surface Box
     name="S_b",  # box name 
     volume="3E16 m**3",  # surface box volume
-    concentration={M.PO4: "0 umol/l"},  # initial concentration
+    concentration={M.PO4: "0 umol/kg"},  # initial concentration
 )
 
 Reservoir( #Deep Box
     name="D_b",  # box name
     volume="100E16 m**3",  # deep box volume
-    concentration={M.PO4: "0 umol/l"},  # initial concentration
+    concentration={M.PO4: "0 umol/kg"},  # initial concentration
 )
 #+END_SRC
 
