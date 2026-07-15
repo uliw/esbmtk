@@ -135,7 +135,7 @@ class Species2Species(esbmtkBase):
     >>>    sink=M.Fb.PO4,
     >>>    ctype="scale_with_flux",
     >>>    ref_flux=""po4_productivity",
-    >>>    # increase p_burial
+    >>> # increase p_burial
     >>>    scale=(1 - M.remin_eff),  # burial of ~1% P
     >>>    id="burial",
     >>> )
@@ -764,7 +764,7 @@ class ConnectionProperties(esbmtkBase):
     after creation
 
     Example::
-    
+
         ConnectionProperties(source =  upstream reservoir / upstream reservoir group
            sink = downstrean reservoir / downstream reservoirs_group
            delta = defaults to zero and has to be set manually
@@ -787,13 +787,11 @@ class ConnectionProperties(esbmtkBase):
     Example::
 
         ConnectionProperties(
-                  source=OM_Weathering,
-                  sink=Ocean,
-                  rate={DIC: f"{OM_w} Tmol/yr" ,
-                        ALK: f"{0} Tmol/yr"},
-                  ctype = {DIC: "Fixed",
-                           ALK: "Fixed"},
-                )
+            source=OM_Weathering,
+            sink=Ocean,
+            rate={DIC: f"{OM_w} Tmol/yr", ALK: f"{0} Tmol/yr"},
+            ctype={DIC: "Fixed", ALK: "Fixed"},
+        )
     """
 
     def __init__(self, **kwargs) -> None:
