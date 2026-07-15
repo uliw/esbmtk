@@ -108,7 +108,6 @@ class Model(esbmtkBase):
     - Model_Name.flux_summary() - Display flux information
     - Model_Name.connection_summary() - Display connection information
 
-
     Parameters
     ----------
     **kwargs : dict
@@ -124,7 +123,7 @@ class Model(esbmtkBase):
     ... )
 
     Important Parameters
-    -------------------
+    --------------------
     name : str
         The model name, e.g., "M".
     mass_unit : str
