@@ -8,12 +8,6 @@ from esbmtk import (
     Q_, #for unit parsing
 )
 
-# define fundamental model parameters
-M = Model(
-    stop="3 Myr",  # end time of model
-    max_timestep="1 kyr",  # upper limit of time step
-    element=["Phosphor"],  # list of element definitions
-)
 M = Model(
     stop="3 Myr",  # end time of model
     max_timestep="1 kyr",  # upper limit of time step
@@ -82,5 +76,14 @@ ConnectionProperties(  #
     # volume / time * concentration (i.e. mass per unit volume) = flux (i.e mass transfer per unit time)
     id="primary_production",
     species=[M.PO4],  # apply this only to PO4
+)
+ConnectionProperties(  #
+    source=M.D_b,  # source of flux
+    sink=M.burial,  # target of flux
+    ctype="scale_with_flux",
+    ref_flux="primary_production",
+    scale=F_b,
+    id="burial",
+    species=[M.PO4],
 )
 M.run()
