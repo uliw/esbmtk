@@ -763,21 +763,24 @@ class ConnectionProperties(esbmtkBase):
     Use the connection.update() method to fine tune connections
     after creation
 
-    ConnectionProperties(source =  upstream reservoir / upstream reservoir group
-        sink = downstrean reservoir / downstream reservoirs_group
-        delta = defaults to zero and has to be set manually
-        epsilon =  defaults to zero and has to be set manually
-        rate = shared between all connections
-        ref_reservoirs = shared between all connections
-        scale= int/float scaling factor, see below
-        ref_flux = shared between all connections
-        species = list, optional, if present, only these species will be connected
-        ctype = needs to be set for all connections. Use "Fixed"
-                unless you require a specific connection type
-        pl = [list]) process list. optional, shared between all connections
-        id = optional identifier, passed on to individual connection
-        plot = "yes/no" # defaults to yes, shared between all connections
-    )
+    ConnectionProperties signature::
+
+        ConnectionProperties(
+            source = upstream reservoir / upstream reservoir group
+            sink = downstrean reservoir / downstream reservoirs_group
+            delta = defaults to zero and has to be set manually
+            epsilon = defaults to zero and has to be set manually
+            rate = shared between all connections
+            ref_reservoirs = shared between all connections
+            scale = int/float scaling factor, see below
+            ref_flux = shared between all connections
+            species = list, optional, if present, only these species will be connected
+            ctype = needs to be set for all connections. Use "Fixed"
+                    unless you require a specific connection type
+            pl = [list] process list. optional, shared between all connections
+            id = optional identifier, passed on to individual connection
+            plot = "yes/no" # defaults to yes, shared between all connections
+        )
 
     Note: that the scale keyword will only affect the flux rate, it will not!
     affec the flux + signal. Use the scale keyword in the signal class to scale
