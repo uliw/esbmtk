@@ -19,12 +19,15 @@ along with this program.  If not, see
 
 from __future__ import annotations
 
+from typing import Any, cast
+
 import pandas as pd
 
-from esbmtk import Q_, create_bulk_connections
-from esbmtk.extended_classes import GasReservoir
-from esbmtk.base_classes import SpeciesProperties
-from esbmtk.utility_functions import initialize_reservoirs
+from . import Q_, create_bulk_connections
+from .base_classes import SpeciesProperties
+from .extended_classes import GasReservoir
+from .utility_functions import initialize_reservoirs
+
 
 def create_reservoirs_from_excel(
     M,
@@ -38,7 +41,7 @@ def create_reservoirs_from_excel(
     """Create ESBMTK reservoirs, sources, and sinks from an Excel worksheet.
 
     This function reads a spreadsheet describing model boxes, converts each
-    row into a dictionary key, and then calls ``initialize_reservoirs()`` to 
+    row into a dictionary key, and then calls ``initialize_reservoirs()`` to
     create the corresponding ESBMTK objects.
 
     Reservoir rows must contain geometry information and may contain any
@@ -52,32 +55,35 @@ def create_reservoirs_from_excel(
         ESBMTK model instance.
     excel_file : str
         Path to the Excel workbook.
-    sheet_name : str, default="reservoirs"
-        Worksheet containing reservoir definitions.
+    sheet_name : str, optional
+        Worksheet containing reservoir definitions. Default is "reservoirs".
     species_units : dict, optional
         Dictionary mapping species names to concentration units.
+
         Example::
+
             {
                 "DIC": "umol/kg",
                 "TA": "umol/kg",
                 "PO4": "umol/kg",
             }
+
         Species not listed default to ``"umol/kg"``.
-    
+
     Returns
     -------
     list
         List of objects returned by
         ``initialize_reservoirs()``.
 
-    Other Parameters:
-    -------
+    Other Parameters
+    ----------------
     default_temperature : float, optional
         Default temperature used when a row does not specify a value.
     default_salinity : float, optional
         Default salinity used when a row does not specify a value.
     default_pressure : float, optional
-        Default pressure used when a row does not specify a value.  
+        Default pressure used when a row does not specify a value.
 
     Raises
     ------
@@ -89,23 +95,25 @@ def create_reservoirs_from_excel(
     Minimal required spreadsheet columns::
 
         "name"
+
         "type"
 
     Reservoir rows additionally require::
 
         "z_top"
+
         "z_bottom"
         "area_percentage"
 
     Optional columns (for reservoirs)::
 
         "temperature"
+
         "pressure"
         "salinity"
 
     Any additional column whose name matches a SpeciesProperties object
     registered in the model is interpreted as a species concentration.
-
     """
     if species_units is None:
         species_units = {}
@@ -135,14 +143,13 @@ def create_reservoirs_from_excel(
     box_dict = {}
 
     for _, row in df.iterrows():
-
+        row = cast(Any, row)
         name = str(row["name"]).strip()
         box_type = str(row["type"]).strip().lower()
 
         entry = {}
 
         if box_type == "reservoir":
-
             entry["g"] = [
                 float(row["z_top"]),
                 float(row["z_bottom"]),
@@ -153,7 +160,6 @@ def create_reservoirs_from_excel(
             delta_values = {}
 
             for col in df.columns:
-
                 if col in metadata_columns:
                     continue
 
@@ -163,7 +169,7 @@ def create_reservoirs_from_excel(
                 if col not in model_species:
                     continue
 
-                if pd.isna(row[col]):
+                if bool(pd.isna(row[col])):
                     continue
 
                 species = model_species[col]
@@ -178,7 +184,6 @@ def create_reservoirs_from_excel(
             # ------------------------------------------------------------------
 
             for col in df.columns:
-
                 if not col.startswith("delta_"):
                     continue
 
@@ -190,7 +195,7 @@ def create_reservoirs_from_excel(
                         f"'{species_name}'"
                     )
 
-                if pd.isna(row[col]):
+                if bool(pd.isna(row[col])):
                     continue
 
                 delta_values[model_species[species_name]] = row[col]
@@ -200,43 +205,37 @@ def create_reservoirs_from_excel(
 
             entry["T"] = (
                 row["temperature"]
-                if "temperature" in df.columns
-                and not pd.isna(row["temperature"])
+                if "temperature" in df.columns and not bool(pd.isna(row["temperature"]))
                 else default_temperature
             )
 
             entry["P"] = (
                 row["pressure"]
-                if "pressure" in df.columns
-                and not pd.isna(row["pressure"])
+                if "pressure" in df.columns and not bool(pd.isna(row["pressure"]))
                 else default_pressure
             )
 
             entry["S"] = (
                 row["salinity"]
-                if "salinity" in df.columns
-                and not pd.isna(row["salinity"])
+                if "salinity" in df.columns and not bool(pd.isna(row["salinity"]))
                 else default_salinity
             )
 
         elif box_type == "source":
-
             entry["ty"] = "Source"
             entry["sp"] = list(model_species.values())
 
         elif box_type == "sink":
-
             entry["ty"] = "Sink"
             entry["sp"] = list(model_species.values())
 
         else:
-            raise ValueError(
-                f"Unknown box type '{box_type}' for row '{name}'"
-            )
+            raise ValueError(f"Unknown box type '{box_type}' for row '{name}'")
 
         box_dict[name] = entry
 
     return initialize_reservoirs(M, box_dict)
+
 
 def create_transport_matrix_from_excel(
     M,
@@ -256,10 +255,11 @@ def create_transport_matrix_from_excel(
         Model object.
     excel_file : str
         Path to an Excel file defining the transport matrix.
-    species_list : list [SpeciesProperties]
+    species_list : list[SpeciesProperties]
         List of species associated with each transport connection.
-    sheet_name: str
-        Name of the Excel worksheet containing the transport matrix. Default is "transport_matrix".
+    sheet_name : str, optional
+        Name of the Excel worksheet containing the transport matrix.
+        Default is "transport_matrix".
     connection_type : str, optional
         Type identifier for the connection. Default is "scale_with_concentration".
 
@@ -288,29 +288,23 @@ def create_transport_matrix_from_excel(
     corresponding reverse connection named ``mix_down`` unless that
     connection already exists in the spreadsheet.
 
-    Example Excel table:
+    Example Excel table::
 
-    source | sink | flux_id     | sc
-    -------|------|------------|----------------
-    H_sb   | A_db | thermohaline | thc
-    A_db   | A_ib | thermohaline | ta * thc
-    A_ib   | A_sb | mix_up       | 21 Sverdrup
-    
+        source | sink | flux_id     | sc
+        -------|------|------------|----------------
+        H_sb   | A_db | thermohaline | thc
+        A_db   | A_ib | thermohaline | ta * thc
+        A_ib   | A_sb | mix_up       | 21 Sverdrup
+
     """
-
     # Load transport definition table from Excel
     df = pd.read_excel(excel_file, sheet_name=sheet_name)
 
-    lookup = {
-        name: getattr(M, name)
-        for name in dir(M)
-        if not name.startswith("_")
-    }
+    lookup = {name: getattr(M, name) for name in dir(M) if not name.startswith("_")}
 
-    ct = {} # Empty dictionary for connections
+    ct = {}  # Empty dictionary for connections
 
     for _, row in df.iterrows():
-
         source = str(row["source"]).strip()
         sink = str(row["sink"]).strip()
         flux_id = str(row["flux_id"]).strip()
@@ -341,7 +335,6 @@ def create_transport_matrix_from_excel(
     additions = {}
 
     for connection_name, entry in ct.items():
-
         source_sink, flux_id = connection_name.split("@")
 
         # Only handle symmetric mixing fluxes
@@ -377,7 +370,7 @@ def create_gas_reservoirs_from_excel(
     excel_file: str,
     sheet_name: str = "gas_reservoirs",
 ):
-    """ Create atmospheric reservoirs from an Excel worksheet.
+    """Create atmospheric reservoirs from an Excel worksheet.
 
     Parameters
     ----------
@@ -386,8 +379,8 @@ def create_gas_reservoirs_from_excel(
         referenced by the worksheet.
     excel_file : str
         Path to the Excel workbook.
-    sheet_name : str, default="gas_reservoirs"
-        Worksheet containing gas reservoir definitions.
+    sheet_name : str, optional
+        Worksheet containing gas reservoir definitions. Default is "gas_reservoirs".
 
     Returns
     -------
@@ -429,7 +422,6 @@ def create_gas_reservoirs_from_excel(
         CO2_At    | CO2     | 420         | 0
         O2_At     | O2      | 209000      | 0
     """
-
     df = pd.read_excel(excel_file, sheet_name=sheet_name)
 
     species_lookup = {
@@ -444,19 +436,17 @@ def create_gas_reservoirs_from_excel(
     created = {}
 
     for _, row in df.iterrows():
-
+        row = cast(Any, row)
         name = str(row["name"]).strip()
 
         species_name = str(row["species"]).strip()
         if species_name not in species_lookup:
-            raise ValueError(
-                f"Unknown species '{species_name}' for reservoir '{name}'"
-            )
+            raise ValueError(f"Unknown species '{species_name}' for reservoir '{name}'")
 
         species = species_lookup[species_name]
 
         species_ppm = row.get("species_ppm")
-        if pd.isna(species_ppm):
+        if bool(pd.isna(species_ppm)):
             raise ValueError(f"Missing species_ppm for '{name}'")
 
         # Preserve original string values exactly.
@@ -476,16 +466,16 @@ def create_gas_reservoirs_from_excel(
 
         isotopes_flag = False
 
-        if "delta" in row.index and pd.notna(row["delta"]):
+        if "delta" in row.index and bool(pd.notna(row["delta"])):
             kwargs["delta"] = row["delta"]
-            isotopes_flag=True
+            isotopes_flag = True
 
-        if "reservoir_mass" in row.index and pd.notna(row["reservoir_mass"]):
+        if "reservoir_mass" in row.index and bool(pd.notna(row["reservoir_mass"])):
             kwargs["reservoir_mass"] = Q_(str(row["reservoir_mass"]))
 
-        if "plot" in row.index and pd.notna(row["plot"]):
+        if "plot" in row.index and bool(pd.notna(row["plot"])):
             kwargs["plot"] = row["plot"]
-        
+
         if isotopes_flag:
             kwargs["isotopes"] = True
 
@@ -495,7 +485,10 @@ def create_gas_reservoirs_from_excel(
 
     return created
 
-def create_gas_exchange_connections(model, basin_list, species, piston_velocity, scale, delta=None):
+
+def create_gas_exchange_connections(
+    model, basin_list, species, piston_velocity, scale, delta=None
+):
     """Create gas exchange connection objects.
 
     Parameters
@@ -511,7 +504,7 @@ def create_gas_exchange_connections(model, basin_list, species, piston_velocity,
     scale : float, optional
         Scaling factor.
     delta : float or str, optional
-        Isotopic composition of the flux. 
+        Isotopic composition of the flux.
 
     Returns
     -------
@@ -524,10 +517,7 @@ def create_gas_exchange_connections(model, basin_list, species, piston_velocity,
         reservoir = getattr(model, basin.name)
         source = getattr(model, f"{species.name}_At")
 
-        if species.name == "CO2":
-            sink = getattr(reservoir, "DIC")
-        else:
-            sink = getattr(reservoir, species.name)
+        sink = reservoir.DIC if species.name == "CO2" else getattr(reservoir, species.name)
 
         cid = f"{basin.name}_{species.name}_gex"
 
@@ -552,8 +542,7 @@ def create_gas_exchange_connections_from_excel(
     excel_file: str,
     sheet_name: str = "gas_exchange",
 ):
-    """
-    Create gas exchange connections from an Excel worksheet.
+    """Create gas exchange connections from an Excel worksheet.
 
     Parameters
     ----------
@@ -561,8 +550,8 @@ def create_gas_exchange_connections_from_excel(
         ESBMTK model instance.
     excel_file : str
         Path to Excel workbook.
-    sheet_name : str, default="gas_exchange"
-        Worksheet containing gas exchange definitions.
+    sheet_name : str, optional
+        Worksheet containing gas exchange definitions. Default is "gas_exchange".
 
     Returns
     -------
@@ -579,15 +568,13 @@ def create_gas_exchange_connections_from_excel(
         scale
         delta
 
-    Notes:
-    -------
     Example Excel sheet::
 
-        species | basins                  | piston_velocity | scale
-        CO2     | A_sb,I_sb,P_sb,H_sb     | 4.8             | 1.0
-        O2      | A_sb,I_sb,P_sb,H_sb     | 4.8             | 1.0
-    """
+        species | basins | piston_velocity | scale
+        CO2 | A_sb, I_sb, P_sb, H_sb | 4.8 | 1.0
+        O2 | A_sb, I_sb, P_sb, H_sb | 4.8 | 1.0
 
+    """
     df = pd.read_excel(excel_file, sheet_name=sheet_name)
 
     species_lookup = {
@@ -597,7 +584,7 @@ def create_gas_exchange_connections_from_excel(
     }
 
     for _, row in df.iterrows():
-
+        row = cast(Any, row)
         species_name = str(row["species"]).strip()
 
         if species_name not in species_lookup:
@@ -608,7 +595,6 @@ def create_gas_exchange_connections_from_excel(
         basin_list = []
 
         for basin_name in str(row["basins"]).split(","):
-
             basin_name = basin_name.strip()
 
             if not hasattr(M, basin_name):
@@ -620,12 +606,12 @@ def create_gas_exchange_connections_from_excel(
 
         scale = row["scale"] if "scale" in df.columns else 1.0
 
-        if pd.isna(scale):
+        if bool(pd.isna(scale)):
             scale = 1.0
 
         delta = None
 
-        if "delta" in df.columns and pd.notna(row["delta"]):
+        if "delta" in df.columns and bool(pd.notna(row["delta"])):
             delta = row["delta"]
 
         create_gas_exchange_connections(
