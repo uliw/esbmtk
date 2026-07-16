@@ -60,15 +60,17 @@ def create_reservoirs_from_excel(
     species_units : dict, optional
         Dictionary mapping species names to concentration units.
 
-        Example::
+    Example
+    -------
+    Create a dict like this::
+    
+        {
+            "DIC": "umol/kg",
+            "TA": "umol/kg",
+            "PO4": "umol/kg",
+        }
 
-            {
-                "DIC": "umol/kg",
-                "TA": "umol/kg",
-                "PO4": "umol/kg",
-            }
-
-        Species not listed default to ``"umol/kg"``.
+    Species not listed default to ``"umol/kg"``.
 
     Returns
     -------
@@ -255,7 +257,7 @@ def create_transport_matrix_from_excel(
         Model object.
     excel_file : str
         Path to an Excel file defining the transport matrix.
-    species_list : list[SpeciesProperties]
+    species_list : list of SpeciesProperties
         List of species associated with each transport connection.
     sheet_name : str, optional
         Name of the Excel worksheet containing the transport matrix.
@@ -269,6 +271,7 @@ def create_transport_matrix_from_excel(
         Dictionary of constructed connections. Keys are connection names of
         the form ``"{source}_to_{sink}@{flux_id}"`` and values are dicts
         containing:
+
             - ty : str
                 Connection type.
             - sc : float or Quantity
