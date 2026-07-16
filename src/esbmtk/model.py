@@ -123,11 +123,7 @@ class Model(esbmtkBase):
     ... )
 
     Important Parameters
-<<<<<<< HEAD
-    --------------------
-=======
     ---------------------
->>>>>>> atlas
     name : str
         The model name, e.g., "M".
     mass_unit : str
