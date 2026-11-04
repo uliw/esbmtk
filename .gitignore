@@ -10,7 +10,7 @@
 *.pot
 *.tex
 *.pickle
-__pycache__/*
+__pycache__
 .cache/*
 .*.swp
 .ipynb_checkpoints
