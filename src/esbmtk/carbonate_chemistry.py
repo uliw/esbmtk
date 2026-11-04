@@ -22,6 +22,8 @@ import typing as tp
 # from functools import lru_cache
 from math import log, sqrt
 
+from numba import njit
+
 import numpy as np
 import numpy.typing as npt
 
@@ -62,7 +64,7 @@ The process for cs2 is analogous
 """
 
 
-# @njit(fastmath=True)
+@njit(fastmath=False, cache=True)
 def get_hplus(dic, ta, h0, boron, K1, K1K2, KW, KB) -> float:
     """Calculate H+ concentration based on a previous estimate.
 
@@ -90,7 +92,7 @@ def get_hplus(dic, ta, h0, boron, K1, K1K2, KW, KB) -> float:
     return 0.5 * ((gamm - 1.0) * K1 + sqrt(dummy))
 
 
-# @njit(fastmath=True)
+@njit(fastmath=False, cache=True)
 def carbonate_system_1(dic, ta, hplus_0, co2aq_0, p) -> tuple:
     """Return the H+ and carbonate alkalinity concentrations.
 
@@ -110,8 +112,8 @@ def carbonate_system_1(dic, ta, hplus_0, co2aq_0, p) -> tuple:
     Boudreau et al., 2010, https://doi.org/10.1029/2009GB003654
     Follows, 2006, doi:10.1016/j.ocemod.2005.05.004
     """
-    k1, k2, k1k2, KW, KB, boron, isotopes = p
-    if isotopes:  # dic = (x1, x2)
+    k1, k2, k1k2, KW, KB, boron, _isotopes = p
+    if isinstance(dic, tuple):  # isotopes: dic = (x1, x2)
         dic = dic[0]
 
     hplus = get_hplus(dic, ta, hplus_0, boron, k1, k1k2, KW, KB)
@@ -191,7 +193,7 @@ def add_carbonate_system_1(rgs: list):
             raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
 
-# @lru_cache
+@njit(fastmath=False, cache=True)
 def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
     """Calcualte zsat."""
 
@@ -204,7 +206,7 @@ def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
 
 
 
-# @lru_cache
+@njit(fastmath=False, cache=True)
 def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
     """Calculate zcc."""
     export = abs(export)
@@ -225,6 +227,7 @@ def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
 #         int(zsnow),
 #     ),
 # )
+@njit(fastmath=False, cache=True)
 def carbonate_system_2(
     CaCO3_export: float,  # 3 CaCO3 export flux as DIC
     dic_t_db: float | tuple,  # 4 DIC in the deep box
@@ -250,9 +253,12 @@ def carbonate_system_2(
     """
     sp, cp, area_table, area_dz_table, Csat_table = p
     ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0 = cp
-    k1, k2, k1k2, KW, KB, ca2, boron, isotopes = sp
+    k1, k2, k1k2, KW, KB, ca2, boron, _isotopes = sp
 
-    if isotopes:
+    # defined up front, numba cannot handle one-sided phi nodes
+    dic_db_l = 0.0
+    dic_sb_l = 0.0
+    if isinstance(dic_t_db, tuple):
         dic_db, dic_db_l = dic_t_db
         dic_sb, dic_sb_l = dic_t_sb
     else:
@@ -329,7 +335,7 @@ def carbonate_system_2(
     value of the sediments we are dissolving, and the delta of the carbonate rain.
     The currrent code, assumes that both are the same.
     """
-    if isotopes:
+    if isinstance(dic_t_db, tuple):
         F_diss_l = F_diss * dic_sb_l / dic_sb
         rv = (F_diss, F_diss_l, F_diss * 2, dCdt_Hplus, dzdt_zsnow)
     else:
@@ -588,6 +594,7 @@ another box. This was not explicitly handled in Carbonate System 2.
 """
 
 
+@njit(fastmath=False, cache=True)
 def carbonate_system_3(
     CaCO3_export: float,  # 3 CaCO3 export flux as DIC
     dic_t_db: float | tuple,  # 4 DIC in the deep box
@@ -613,9 +620,12 @@ def carbonate_system_3(
     """
     sp, cp, area_table, area_dz_table, Csat_table = p
     ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0 = cp
-    k1, k2, k1k2, KW, KB, ca2, boron, isotopes = sp
+    k1, k2, k1k2, KW, KB, ca2, boron, _isotopes = sp
 
-    if isotopes:
+    # defined up front, numba cannot handle one-sided phi nodes
+    dic_db_l = 0.0
+    dic_sb_l = 0.0
+    if isinstance(dic_t_db, tuple):
         dic_db, dic_db_l = dic_t_db
         dic_sb, dic_sb_l = dic_t_sb
     else:
@@ -695,7 +705,7 @@ def carbonate_system_3(
     value of the sediments we are dissolving, and the delta of the carbonate rain.
     The currrent code assumes that both are the same.
     """
-    if isotopes:
+    if isinstance(dic_t_db, tuple):
         F_diss_l = F_diss * dic_sb_l / dic_sb
         F_exp_l = F_exp * dic_sb_l / dic_sb
         rv = (
