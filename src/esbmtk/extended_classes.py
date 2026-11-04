@@ -2515,6 +2515,12 @@ class ExternalData(esbmtkBase):
                 "Check for warnings above\n\n"
             )
 
+        # If 3 columns and the 3rd column is completely empty, drop it
+        if len(self.df.columns) == 3 and self.df.iloc[:, 2].isnull().all():
+            header_name = self.df.columns[2]
+            logging.info(f"{self.fn}: Column '{header_name}' had no data and was ignored")
+            self.df = self.df.iloc[:, :2]
+
         # Extract headers
         ncols = len(self.df.columns)
         if ncols < 2:  # test of we have at elast 2 columns
