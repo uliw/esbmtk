@@ -22,6 +22,7 @@ from __future__ import annotations
 import typing as tp
 
 import numpy as np
+from numba import njit
 import numpy.typing as npt
 
 if tp.TYPE_CHECKING:
@@ -31,6 +32,7 @@ if tp.TYPE_CHECKING:
 NDArrayFloat = npt.NDArray[np.float64]
 
 
+@njit(fastmath=False, cache=True)
 def weathering_no_isotopes(
     c_pco2: float | list[float],
     source_data: float | list[float],
@@ -77,7 +79,7 @@ def weathering_no_isotopes(
 # Note this only works for for the case where the atmosphere
 # has isotopes, and the sink has none, But fails if both
 # have isotopes.
-# @njit(fastmath=True)
+@njit(fastmath=False, cache=True)
 def weathering_ref_isotopes(
     c_pco2: float | list[float],
     source_data: float | list[float],
@@ -93,7 +95,7 @@ def weathering_ref_isotopes(
     return f0 * area_fraction * (pco2 / pco2_0) ** ex
 
 
-# @njit(fastmath=True)
+@njit(fastmath=False, cache=True)
 def weathering_isotopes(
     c_pco2: float | list[float],
     source_data: float | list[float],
@@ -114,7 +116,7 @@ def weathering_isotopes(
     return (F_w, F_w_i)
 
 
-# @njit(fastmath=True)
+@njit(fastmath=False, cache=True)
 def weathering_isotopes_delta(
     c_pco2: float | list[float],
     source_data: float | list[float],
@@ -134,7 +136,7 @@ def weathering_isotopes_delta(
     return (F_w, F_w_i)
 
 
-# @njit(fastmath=True)
+@njit(fastmath=False, cache=True)
 def weathering_isotopes_alpha(
     c_pco2: float | list[float],
     source_data: float | list[float],
@@ -331,6 +333,7 @@ def init_gas_exchange(c: Species2Species):
     return ec
 
 
+@njit(fastmath=False, cache=True)
 def gas_exchange(
     gas_c: float | tuple,
     liquid_c: float | tuple,
@@ -374,29 +377,35 @@ def gas_exchange(
     offset, which is closer to observations
 
     """
-    scale, solubility, a_db, a_dg, a_u, species_isotopes, ref_species_isotopes = p
+    scale, solubility, a_db, a_dg, a_u, _species_isotopes, _ref_species_isotopes = p
 
-    if species_isotopes:
-        gas_c, gas_c_l = gas_c
-        liquid_c, liquid_c_l = liquid_c
-        if ref_species_isotopes:
-            gas_aq_c, _l = gas_aq_c
-        else:
-            gas_aq_c = gas_aq_c
+    # isinstance() lets numba prune the dead branches at compile time
+    g_c_l = 0.0  # defined up front, numba cannot handle one-sided phi nodes
+    l_c_l = 0.0
+    if isinstance(gas_c, tuple):
+        g_c, g_c_l = gas_c
+        l_c, l_c_l = liquid_c
+    else:
+        g_c = gas_c
+        l_c = liquid_c
+
+    if isinstance(gas_aq_c, tuple):
+        g_aq, _l = gas_aq_c
+    else:
+        g_aq = gas_aq_c
 
     # Solubility with correction for pH2O
     # beta = solubility * (1 - p_H2O)
     beta = solubility  # solubility is already corrected for p_H20
     # f as afunction of solubility difference
-    f = scale * (beta * gas_c - gas_aq_c * 1e3)
-    rv = f
+    f = scale * (beta * g_c - g_aq * 1e3)
 
-    if species_isotopes:  # isotope ratio of DIC
-        Rt = (liquid_c - liquid_c_l) / liquid_c
+    if isinstance(gas_c, tuple):  # isotope ratio of DIC
+        Rt = (l_c - l_c_l) / l_c
         # get heavy isotope concentrations in atmosphere
-        gas_c_h = gas_c - gas_c_l  # gas heavy isotope concentration
+        gas_c_h = g_c - g_c_l  # gas heavy isotope concentration
         # get exchange of the heavy isotope
-        f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * gas_aq_c * 1e3)
-        rv = f, f - f_h  # the corresponding flux of the light isotope
+        f_h = scale * a_u * (a_dg * gas_c_h * beta - Rt * a_db * g_aq * 1e3)
+        return f, f - f_h  # the corresponding flux of the light isotope
 
-    return rv
+    return f
