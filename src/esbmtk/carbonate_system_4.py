@@ -22,6 +22,8 @@ import typing as tp
 # from functools import lru_cache
 from math import log, sqrt
 
+from numba import njit
+
 import numpy as np
 import numpy.typing as npt
 
@@ -50,7 +52,7 @@ class CarbonateSystem2Error(Exception):
         super().__init__(message)
 
 
-# @njit(fastmath=True)
+@njit(fastmath=False, cache=True)
 def get_hplus(dic, ta, h0, boron, K1, K1K2, KW, KB) -> float:
     """Calculate H+ concentration based on a previous estimate.
 
@@ -77,7 +79,7 @@ def get_hplus(dic, ta, h0, boron, K1, K1K2, KW, KB) -> float:
 
     return 0.5 * ((gamm - 1.0) * K1 + sqrt(dummy))
 
-# @lru_cache
+@njit(fastmath=False, cache=True)
 def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
     """Calcualte zsat."""
     value = max(ca2 * co3 / ksp0, 1e-12)
@@ -85,7 +87,7 @@ def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
     return min(zmax, max(zsat_min, zsat))
 
 
-# @lru_cache
+@njit(fastmath=False, cache=True)
 def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
     """Calculate zcc."""
     export = abs(export)
@@ -108,6 +110,7 @@ def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
 #     ),
 # )
 
+@njit(fastmath=False, cache=True)
 def carbonate_system_4(
     CaCO3_export: float,  # 3 CaCO3 export flux as DIC
     dic_t_db: float | tuple,  # 4 DIC in the deep box
@@ -191,9 +194,14 @@ def carbonate_system_4(
     """
     sp, cp, area_table, area_dz_table, Csat_table = p
     ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0, zint = cp
-    k1, k2, k1k2, KW, KB, ca2, boron, isotopes = sp
+    k1, k2, k1k2, KW, KB, ca2, boron, _isotopes = sp
 
-    if isotopes:
+    # isinstance() lets numba prune the dead branch at compile time
+    # defined up front, numba cannot handle one-sided phi nodes
+    dic_db_l = 0.0
+    dic_sb_l = 0.0
+    dic_ib_l = 0.0
+    if isinstance(dic_t_db, tuple):
         dic_db, dic_db_l = dic_t_db
         dic_sb, dic_sb_l = dic_t_sb
         dic_ib, dic_ib_l = dic_t_ib
@@ -230,6 +238,14 @@ def carbonate_system_4(
     BCC = A_zcc_zmax * B_AD
 
     zsat_above_zint = zsat < zint
+
+    # numba needs all branch-dependent variables defined up front
+    BNS = 0.0
+    BNS_int = 0.0
+    BNS_deep = 0.0
+    BDS = 0.0
+    BDS_int = 0.0
+    BDS_deep = 0.0
 
     # Calculating burial fluxes and diff_co3 
     if zsat_above_zint:
@@ -307,7 +323,7 @@ def carbonate_system_4(
 
     F_burial = CaCO3_export - F_diss_int - F_diss_deep 
 
-    if isotopes:
+    if isinstance(dic_t_db, tuple):
         F_diss_int_l = F_diss_int * dic_sb_l / dic_sb
         F_diss_deep_l = F_diss_deep * dic_ib_l / dic_ib
 
