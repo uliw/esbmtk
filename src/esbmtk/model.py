@@ -1011,21 +1011,25 @@ class Model(esbmtkBase):
 
         return eqs
 
-    def _ode_solver(self, kwargs: dict):
-        """Initialize and run the ODE solver.
+    def _prepare_equations(self, force_temp: bool = False):
+        """Build everything required to evaluate or solve the ODE system.
 
-        Sets up the system of ODEs, generates the equationsfile, and solves
-        the system using scipy's solve_ivp.
+        Gets the initial conditions, builds the coefficient matrix ``CM``
+        and flux vector ``F``, and generates the equationsfile.  This is
+        shared by :meth:`run` and :meth:`debug_matrix`.
 
         Parameters
         ----------
-        kwargs : dict
-            Keyword arguments to control the solver behavior
+        force_temp : bool
+            If True, always use a temporary equationsfile and do not touch
+            ``equations.py`` or ``eqs_coeff.npz`` (used by ``debug_matrix``).
 
-        Raises
-        ------
-        SolverError
-            If the solver fails to find a solution
+        Returns
+        -------
+        tuple
+            ``(R, atol, equations_set)``, where R is the vector of initial
+            conditions, atol the absolute tolerances, and equations_set the
+            ``eqs`` function.
         """
         # Get initial conditions and build equationsmatrices
         self.R_names_dict, icl, cpl, ipl, atol = get_initial_conditions(self, self.rtol)
@@ -1033,6 +1037,7 @@ class Model(esbmtkBase):
 
         # get initial concentrations for each reservoir
         R = np.array(list(self.R_names_dict.values()))
+        self.R0 = R
 
         # icl = dict[Species, list[int, int]] where reservoir
         #     indicates the reservoir handle, and the list contains the
@@ -1056,21 +1061,52 @@ class Model(esbmtkBase):
         coeff_file_path = Path(f"{current_dir}/{coefficients_file}")
         equations_file_path = Path(f"{current_dir}/{equations_filename}")
 
-        if self.debug_equations_file:
-            np.savez(coeff_file_path, CM=self.CM, F=self.F)
-        elif coeff_file_path.exists():
-            coeff_file_path.unlink()
+        if force_temp:
+            equations_set = self._write_temp_equations(current_dir, R, icl, cpl, ipl)
+        else:
+            if self.debug_equations_file:
+                np.savez(coeff_file_path, CM=self.CM, F=self.F)
+            elif coeff_file_path.exists():
+                coeff_file_path.unlink()
 
-        # Handle equations file based on debug settings
-        equations_set = self._handle_equations_file(
-            equations_file_path, R, icl, cpl, ipl, current_dir
-        )
-
-        # Get solver configuration from kwargs
-        method = kwargs.get("method", "LSODA")
+            # Handle equations file based on debug settings
+            equations_set = self._handle_equations_file(
+                equations_file_path, R, icl, cpl, ipl, current_dir
+            )
 
         # Initialize carbonate chemistry tables if not present
         self._initialize_carbonate_tables()
+        return R, atol, equations_set
+
+    def debug_matrix(self, filename: str = "debug_matrix.csv", **kwargs):
+        """Write a human readable report of all fluxes per reservoir.
+
+        See :func:`esbmtk.debug_matrix.debug_matrix` for details.
+        """
+        from .debug_matrix import debug_matrix
+
+        return debug_matrix(self, filename, **kwargs)
+
+    def _ode_solver(self, kwargs: dict):
+        """Initialize and run the ODE solver.
+
+        Sets up the system of ODEs, generates the equationsfile, and solves
+        the system using scipy's solve_ivp.
+
+        Parameters
+        ----------
+        kwargs : dict
+            Keyword arguments to control the solver behavior
+
+        Raises
+        ------
+        SolverError
+            If the solver fails to find a solution
+        """
+        R, atol, equations_set = self._prepare_equations()
+
+        # Get solver configuration from kwargs
+        method = kwargs.get("method", "LSODA")
 
         # Run the ODE solver
         self._run_solve_ivp(R, equations_set, method, atol)
