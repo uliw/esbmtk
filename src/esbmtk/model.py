@@ -1200,6 +1200,24 @@ class Model(esbmtkBase):
             self.area_dz_table = 0
             self.Csat_table = 0
 
+    def _signal_arrays(self):
+        """Return signal data as arrays for the numba compiled RHS.
+
+        Returns
+        -------
+        tuple
+            ``(sig_time, sig_data)`` where sig_data has the shape
+            (signal, [m, l, d], time).
+        """
+        sig_time = np.asarray(self.time, dtype=np.float64)
+        sig_data = np.zeros((len(self.los), 3, len(sig_time)))
+        for si, sig in enumerate(self.los):
+            sig_data[si, 0] = sig.cd_m
+            if sig.isotopes:
+                sig_data[si, 1] = sig.cd_l
+                sig_data[si, 2] = sig.cd_d
+        return sig_time, sig_data
+
     def _run_solve_ivp(self, R, equations_set, method, atol):
         """Run the solve_ivp ODE solver.
 
@@ -1254,13 +1272,7 @@ class Model(esbmtkBase):
 
             # Signals are sampled on the model time grid (np.interp inside the
             # RHS reproduces Signal.__call__). Shape: (signal, [m, l, d], time)
-            sig_time = np.asarray(self.time, dtype=np.float64)
-            sig_data = np.zeros((len(self.los), 3, len(sig_time)))
-            for si, sig in enumerate(self.los):
-                sig_data[si, 0] = sig.cd_m
-                if sig.isotopes:
-                    sig_data[si, 1] = sig.cd_l
-                    sig_data[si, 2] = sig.cd_d
+            sig_time, sig_data = self._signal_arrays()
 
             @njit(fastmath=False)
             def rhs(t, R, sig_time, sig_data):

@@ -158,7 +158,25 @@ def _evaluate(M, state: str):
         t, R = float(M.results.t[-1]), M.results.y[:, -1]
 
     F = np.full(len(M.F), np.nan)  # NaN marks fluxes that were never written
-    eqs(t, R, M, M.gpt, M.toc, M.area_table, M.area_dz_table, M.Csat_table, M.CM, F)
+    if M.jit_rhs:  # compiled RHS: no model handle, array valued parameters
+        sig_time, sig_data = M._signal_arrays()
+        eqs(
+            t,
+            R,
+            M.gpt,
+            np.asarray(M.toc, dtype=np.float64),
+            M.area_table,
+            M.area_dz_table,
+            M.Csat_table,
+            M.CM,
+            F,
+            sig_time,
+            sig_data,
+        )
+    else:
+        eqs(
+            t, R, M, M.gpt, M.toc, M.area_table, M.area_dz_table, M.Csat_table, M.CM, F
+        )
     return t, R, F
 
 
