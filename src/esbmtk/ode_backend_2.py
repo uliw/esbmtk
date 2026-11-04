@@ -156,8 +156,20 @@ def write_equations_3(
     # construct header and static code:
     # add optional import statements
     h1 = ""
-    h2 = '''# @njit(fastmath=True)
-def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
+    jit = getattr(M, "jit_rhs", True)
+    if jit:
+        deco = "@njit(fastmath=False)\n"
+        sig = (
+            "def eqs(t, R, gpt, toc, area_table, area_dz_table, Csat_table, "
+            "CM, F, sig_time, sig_data):"
+        )
+    else:
+        deco = "# @njit(fastmath=True)\n"
+        sig = (
+            "def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, "
+            "CM, F):"
+        )
+    h2 = f'''{deco}{sig}
     """Calculate dCdt for each reservoir.
 
     t = time vector
@@ -182,7 +194,7 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
     ind2 = 4 * " "  # indention
     ind3 = 8 * " "  # indention
     h1 = '"""ESBMTk equationsfile."""'
-    hi = ""
+    hi = "import numpy as np\nfrom numba import njit\n" if jit else ""
 
     # ensure there are no duplicates
     M.lpc_i = set(M.lpc_i)
@@ -215,8 +227,19 @@ def eqs(t, R, M, gpt, toc, area_table, area_dz_table, Csat_table, CM, F):
 
         eqs.write("# ---------------- Create Signal References -------- #\n")
         # create signal references
-        for s in M.los:
-            eqs.write(f"{ind2}{s.name} = {s.full_name}(t)\n")
+        for si, s in enumerate(M.los):
+            if jit:
+                # same as Signal.__call__, but numba compatible. sig_data has
+                # the shape (signal, [m, l, d], time)
+                eqs.write(
+                    f"{ind2}{s.name} = (\n"
+                    f"{ind3}np.interp(t, sig_time, sig_data[{si}, 0]),\n"
+                    f"{ind3}np.interp(t, sig_time, sig_data[{si}, 1]),\n"
+                    f"{ind3}np.interp(t, sig_time, sig_data[{si}, 2]),\n"
+                    f"{ind2})\n"
+                )
+            else:
+                eqs.write(f"{ind2}{s.name} = {s.full_name}(t)\n")
 
         sep = (
             f"\n{ind2}# ---------------- write computed reservoir equations -------- #\n"
