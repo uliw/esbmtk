@@ -287,6 +287,8 @@ class Model(esbmtkBase):
         # Global parameters and constants
         self.gpt: tuple = ()  # Global parameter list
         self.toc: tuple = ()  # Global constant tuple
+        # compile the RHS with numba (raises on failure, no silent fallback)
+        self.jit_rhs: bool = True
         self.doc: dict = {}  # Global dict of index values for toc
         self.gcc: int = 0  # Constants counter
         self.vpc: int = 0  # Parameter counter
@@ -1231,11 +1233,57 @@ class Model(esbmtkBase):
         logging.debug(f"F hash: {hash(str(self.F))}")
         logging.debug(f"time_ode hash: {hash(str(self.time_ode))}")
 
-        self.results = solve_ivp(
-            equations_set,
-            (self.time[0], self.time[-1]),
-            R,
-            args=(
+        if self.jit_rhs:
+            # numba cannot handle the model object, so it is not passed.
+            # Passing the large heterogeneous parameter tuples on every call
+            # makes numba's argument type dispatch dominate the runtime.
+            # Instead we freeze them as compile time constants in a closure,
+            # so that the solver only passes (t, R). F is scratch space and
+            # must be writable, so it is allocated inside the closure.
+            from numba import njit
+
+            gpt = self.gpt
+            toc = np.asarray(self.toc, dtype=np.float64)
+            area_table = self.area_table
+            area_dz_table = self.area_dz_table
+            Csat_table = self.Csat_table
+            CM = self.CM
+            nF = len(self.F)
+            F0 = np.ones(nF)
+            eqs_jit = equations_set
+
+            # Signals are sampled on the model time grid (np.interp inside the
+            # RHS reproduces Signal.__call__). Shape: (signal, [m, l, d], time)
+            sig_time = np.asarray(self.time, dtype=np.float64)
+            sig_data = np.zeros((len(self.los), 3, len(sig_time)))
+            for si, sig in enumerate(self.los):
+                sig_data[si, 0] = sig.cd_m
+                if sig.isotopes:
+                    sig_data[si, 1] = sig.cd_l
+                    sig_data[si, 2] = sig.cd_d
+
+            @njit(fastmath=False)
+            def rhs(t, R, sig_time, sig_data):
+                F = F0.copy()
+                return eqs_jit(
+                    t,
+                    R,
+                    gpt,
+                    toc,
+                    area_table,
+                    area_dz_table,
+                    Csat_table,
+                    CM,
+                    F,
+                    sig_time,
+                    sig_data,
+                )
+
+            fun = rhs
+            args = (sig_time, sig_data)
+        else:
+            fun = equations_set
+            args = (
                 self,
                 self.gpt,
                 self.toc,  # Tuple of constants
@@ -1244,7 +1292,13 @@ class Model(esbmtkBase):
                 self.Csat_table,
                 self.CM,  # Coefficient matrix
                 self.F,  # Flux vector
-            ),
+            )
+
+        self.results = solve_ivp(
+            fun,
+            (self.time[0], self.time[-1]),
+            R,
+            args=args,
             method=method,
             atol=atol,
             rtol=self.rtol,
