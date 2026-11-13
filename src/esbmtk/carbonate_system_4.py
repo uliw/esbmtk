@@ -42,43 +42,6 @@ if tp.TYPE_CHECKING:
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
 
-
-class CarbonateSystem2Error(Exception):
-    """Custom Error Class for Model-related errors."""
-
-    def __init__(self, message):
-        """Initialize Error Instance with formatted message."""
-        message = f"\n\n{message}\n"
-        super().__init__(message)
-
-
-@njit(fastmath=False, cache=True)
-def get_hplus(dic, ta, h0, boron, K1, K1K2, KW, KB) -> float:
-    """Calculate H+ concentration based on a previous estimate.
-
-    [H+]. After Follows et al. 2006,
-    doi:10.1016/j.ocemod.2005.05.004
-
-    :param dic: DIC in mol/kg
-    :param ta: TA in mol/kg
-    :param h0: initial guess for H+ mol/kg
-    :param boron: boron concentration
-    :param K1: Ksp1
-    :param K1K2: Ksp1 * Ksp2
-    :param KW: K_water
-    :param KB: K_boron
-
-    :returns H: new H+ concentration in mol/kg
-    """
-    oh = KW / h0
-    boh4 = boron * KB / (h0 + KB)
-    fg = h0 - boh4 - oh
-    cag = ta + fg
-    gamm = dic / cag
-    dummy = (1 - gamm) ** 2 * K1**2 - 4.0 * K1K2 * (1.0 - 2.0 * gamm)
-
-    return 0.5 * ((gamm - 1.0) * K1 + sqrt(dummy))
-
 @njit(fastmath=False, cache=True)
 def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
     """Calcualte zsat."""
@@ -109,6 +72,8 @@ def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
 #         int(zsnow),
 #     ),
 # )
+
+from esbmtk.carbonate_chemistry import get_hplus, CarbonateSystem2Error
 
 @njit(fastmath=False, cache=True)
 def carbonate_system_4(
@@ -216,7 +181,10 @@ def carbonate_system_4(
     co3_deep = dic_db / (1 + hplus / k2 + hplus**2 / k1k2)
     co3_int = dic_ib / (1 + hplus_ib / k2 + hplus_ib**2 / k1k2)
 
-    #taking a simple average of the CO3 of both boxes to calculate zsat
+    # taking a simple average of the CO3 of both boxes to calculate zsat 
+    """FIXME: a simple avg is very crude. this should consider the vertical extent 
+    of the intermediate and deep boxes actually.
+    """
     co3 = 0.5 * (co3_int + co3_deep) 
     
 
@@ -247,6 +215,11 @@ def carbonate_system_4(
     BDS_int = 0.0
     BDS_deep = 0.0
 
+    """FIXME: The flux splitting scheme employed in carbonate_system_4 currently assumes 
+    that the carbonate compensation depth (i.e. zcc) is always in the deep box. This assumption
+    will obviously not hold true for every model / every box geometry. This limitation should 
+    be addressed to allow CS4 to be implemented in a wider range of models.
+    """
     # Calculating burial fluxes and diff_co3 
     if zsat_above_zint:
     # Surface to zsat to zint to zcc
@@ -303,7 +276,7 @@ def carbonate_system_4(
         zsnow = zcc  # reset
     else:
         zsnow = min(zsnow, zmax)  # limit to ocean bottom
-        diff = Csat_table[zcc:int(zsnow)] - co3_deep
+        diff = Csat_table[zcc:int(zsnow)] - co3_deep #FIXME: probably need to consider H+ changes in the int-box as well
         area_cc_snow = area_dz_table[zcc:int(zsnow)]
         BPDC = max(0.0, kc * np.dot(area_cc_snow, diff))
         dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
@@ -314,6 +287,9 @@ def carbonate_system_4(
     dCdt_Hplus = hplus - hplus_db_0
 
 #F_diss_int and F_diss_deep are going to be connected to different boxes:
+    """FIXME: need to implement a way to incorporate intermediate box burial fluxes 
+    within CS4 as well. At present intermediate box burial has to be handled separately.
+    """
     if zsat < zint:
         F_diss_int = BNS + BDS_int
         F_diss_deep = BDS_deep + BCC + BPDC
