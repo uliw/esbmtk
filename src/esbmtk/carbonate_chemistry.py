@@ -267,15 +267,17 @@ def carbonate_system_2(
 
     hplus = get_hplus(dic_db, ta_db, hplus_0, boron, k1, k1k2, KW, KB)
 
-    """FIXME (2026-11-12): the equation for co3 originally was:
+    """FIXME: the equation for co3 right now is:
         >> co3 = max(dic_db / (1 + hplus / k2 + hplus**2 / k1k2), 3.7e-05)
-
-    The 3.7e-05 mol/kg co3 value was specific to modern seawater chemistry. 
-    This hardcoded constant value caused nonmodern models (e.g. PETM) with different 
-    seawater chemistry to crash. I've temporarily removed it, but this is probably 
-    not the best idea. It should instead be an appropriate variable. 
+    The 3.7e-05 mol/kg co3 value is specific to modern seawater chemistry. 
+    This hardcoded constant value causes nonmodern models (e.g. PETM) with different 
+    seawater chemistry to crash. One way to patch this is to temporarily remove the
+    hardcoded constant entirely:
+        >> co3 = dic_db / (1 + hplus / k2 + hplus**2 / k1k2
+    but this is probably not the best fix. The constant should instead be replaced with 
+    an appropriate variable that can change with seawater chemistry. 
     """
-    co3 = dic_db / (1 + hplus / k2 + hplus**2 / k1k2) 
+    co3 = max(dic_db / (1 + hplus / k2 + hplus**2 / k1k2), 3.7e-05) 
 
     """ --- Compute critical depth intervals eqs after  Boudreau (2010) ---
    All depths will be positive to facilitate the use of lookup_tables.
