@@ -203,7 +203,7 @@ def carbonate_system_2_pp(
     for i, rg in enumerate(bn):
         p = rg.cs2.function_params
         sp, cp, area_table, area_dz_table, Csat_table = p
-        ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0 = cp
+        ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0, co3_min = cp
         k1, k2, k1k2, KW, KB, ca2, boron, isotopes = sp
         hplus: NDArrayFloat = rg.Hplus.c
         dic: NDArrayFloat = rg.DIC.c

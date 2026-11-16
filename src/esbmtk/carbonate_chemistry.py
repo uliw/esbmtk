@@ -252,7 +252,7 @@ def carbonate_system_2(
 
     """
     sp, cp, area_table, area_dz_table, Csat_table = p
-    ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0 = cp
+    ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0, co3_min = cp
     k1, k2, k1k2, KW, KB, ca2, boron, _isotopes = sp
 
     # defined up front, numba cannot handle one-sided phi nodes
@@ -271,11 +271,13 @@ def carbonate_system_2(
         >> co3 = max(dic_db / (1 + hplus / k2 + hplus**2 / k1k2), 3.7e-05)
 
     The 3.7e-05 mol/kg co3 value was specific to modern seawater chemistry. 
-    This hardcoded constant value caused nonmodern models (e.g. PETM) with different 
-    seawater chemistry to crash. I've temporarily removed it, but this is probably 
-    not the best idea. It should instead be an appropriate variable. 
+    This hardcoded constant value caused nonmodern models (e.g. PETM) with a 
+    different seawater chemistry to crash. 
+    
+    UPDATE (2026-11-16): this value is replaced by an optional user-provided 
+    kwarg: 'co3_min' (that defaults to 3.7e-05 if no value provided)
     """
-    co3 = dic_db / (1 + hplus / k2 + hplus**2 / k1k2) 
+    co3 = max(dic_db / (1 + hplus / k2 + hplus**2 / k1k2), co3_min)
 
     """ --- Compute critical depth intervals eqs after  Boudreau (2010) ---
    All depths will be positive to facilitate the use of lookup_tables.
@@ -401,6 +403,7 @@ def init_carbonate_system_2(
         int(abs(kwargs["zsat_min"])),  # 13
         int(abs(kwargs["zmax"])),  # 14
         int(abs(kwargs["z0"])),  # 15
+        float(kwargs["co3_min"]), # 16
     )
 
     # initialize an external code instance
@@ -493,6 +496,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "zmax": (float, int),
         "z0": (float, int),
         "Ksp": (float, int),
+        "co3_min": (float, int),
         # "BM": (float, int),
     }
     # provide a list of absolutely required keywords
@@ -526,6 +530,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "I_caco3": 529,  # dissolveable CaCO3 in mol/m^2
         "zmax": -10999,  # max model depth
         "Ksp": reservoir.swc.Ksp_ca,  # mol^2/kg^2
+        "co3_min": 3.7e-05
     }
     __checkkeys__(lrk, lkk, kwargs)
     kwargs = __addmissingdefaults__(lod, kwargs)
