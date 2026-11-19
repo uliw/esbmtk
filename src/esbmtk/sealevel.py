@@ -84,6 +84,7 @@ class hypsometry(esbmtkBase):
             "max_depth": [-11000, int],
             "basin": ["global", str],
             "hyp_data_fn": ["Hypsometric_Curve_05m_1", str],
+            "smooth_step": [100, int],
         }
 
         # required keywords
@@ -173,6 +174,36 @@ class hypsometry(esbmtkBase):
         max_el_idx = self.max_elevation + abs(deepest) + 1
         elevation = np.flip(elevation[0:max_el_idx])  # deepest to max_elev
         area = np.flip(area[0:max_el_idx] * self.sa)
+
+        ocean_area = area[self.max_elevation :]
+        raw_dz = -np.diff(ocean_area)
+        nz = np.flatnonzero(raw_dz > 0)
+        z_deep = int(nz[-1]) if len(nz) > 0 else len(raw_dz) - 1
+        self.max_seafloor_depth = z_deep
+
+        if self.smooth_step > 0 and z_deep >= 1:
+            from scipy.interpolate import PchipInterpolator
+
+            step = max(int(self.smooth_step), int(abs(dz)))
+            z_end = z_deep + 1
+            z_knots = [0]
+            a_knots = [float(ocean_area[0])]
+            for z in range(step, z_end, step):
+                if ocean_area[z] < a_knots[-1]:
+                    z_knots.append(z)
+                    a_knots.append(float(ocean_area[z]))
+            if ocean_area[z_end] < a_knots[-1]:
+                z_knots.append(z_end)
+                a_knots.append(float(ocean_area[z_end]))
+            elif z_knots[-1] < z_end:
+                z_knots[-1] = z_end
+                a_knots[-1] = float(ocean_area[z_end])
+
+            pchip = PchipInterpolator(z_knots, a_knots)
+            ocean_smooth = np.empty_like(ocean_area)
+            ocean_smooth[: z_end + 1] = pchip(np.arange(0, z_end + 1, dtype=float))
+            ocean_smooth[z_end + 1 :] = ocean_area[z_end]
+            area[self.max_elevation :] = ocean_smooth
 
         # create lookup table with area and area_dz
         self.hypdata = np.column_stack(

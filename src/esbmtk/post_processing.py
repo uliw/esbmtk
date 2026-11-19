@@ -23,6 +23,8 @@ import typing as tp
 import numpy as np
 import numpy.typing as npt
 
+from .carbonate_chemistry import compute_bpdc_and_dzsnow
+
 if tp.TYPE_CHECKING:
     from .esbmtk import GasReservoir, Reservoir, Species, SpeciesGroup
 
@@ -207,7 +209,7 @@ def carbonate_system_2_pp(
         k1, k2, k1k2, KW, KB, ca2, boron, isotopes = sp
         hplus: NDArrayFloat = rg.Hplus.c
         dic: NDArrayFloat = rg.DIC.c
-        zsnow: NDArrayInt = rg.zsnow.c.astype(int)
+        zsnow: NDArrayFloat = rg.zsnow.c
         export_data = export_fluxes[i]
         # make sure we have a vector
         if isinstance(export_data, float | int):
@@ -259,18 +261,17 @@ def carbonate_system_2_pp(
             """ Note that we do not recalculate zsnow in post processing
             since it is already known from the original run
             """
-            if zsnow[i] <= zcc[i]:  # reset zsnow
-                # dzdt_zsnow: int = abs(zsnow - zcc)
-                # zsnow[i] = zcc[i]
-                BPDC: float = 0.0
-            else:  # integrate saturation difference over area
-                # if zsnow[i] > zmax:
-                # zsnow[i] = zmax
-                # integrate saturation difference over area
-                diff: float = Csat_table[zcc[i] : zsnow[i]] - co3[i]
-                area_p_snow: NDArrayFloat = area_dz_table[zcc[i] : zsnow[i]]
-                BPDC = max(0, kc * area_p_snow.dot(diff))
-                # dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
+            BPDC, _ = compute_bpdc_and_dzsnow(
+                int(zcc[i]),
+                float(zsnow[i]),
+                zmax,
+                float(co3[i]),
+                kc,
+                I_caco3,
+                AD,
+                area_dz_table,
+                Csat_table,
+            )
 
             Fdiss[i] = BDS + BCC + BNS + BPDC
             Fburial[i] = export[i] - Fdiss[i]
@@ -426,7 +427,7 @@ def carbonate_system_3_pp(
         k1, k2, k1k2, KW, KB, ca2, boron, isotopes = sp
         hplus: NDArrayFloat = rg.Hplus.c
         dic: NDArrayFloat = rg.DIC.c
-        zsnow: NDArrayInt = rg.zsnow.c.astype(int)
+        zsnow: NDArrayFloat = rg.zsnow.c
         export_data = export_fluxes[i]
         # make sure we have a vector
         if isinstance(export_data, float | int):
@@ -478,18 +479,17 @@ def carbonate_system_3_pp(
             """ Note that we do not recalculate zsnow in post processing
             since it is already known from the original run
             """
-            if zsnow[i] <= zcc[i]:  # reset zsnow
-                # dzdt_zsnow: int = abs(zsnow - zcc)
-                # zsnow[i] = zcc[i]
-                BPDC: float = 0.0
-            else:  # integrate saturation difference over area
-                # if zsnow[i] > zmax:
-                # zsnow[i] = zmax
-                # integrate saturation difference over area
-                diff: float = Csat_table[zcc[i] : zsnow[i]] - co3[i]
-                area_p_snow: NDArrayFloat = area_dz_table[zcc[i] : zsnow[i]]
-                BPDC = max(0, kc * area_p_snow.dot(diff))
-                # dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
+            BPDC, _ = compute_bpdc_and_dzsnow(
+                int(zcc[i]),
+                float(zsnow[i]),
+                zmax,
+                float(co3[i]),
+                kc,
+                I_caco3,
+                AD,
+                area_dz_table,
+                Csat_table,
+            )
 
             Fdiss[i] = BDS + BCC + BNS + BPDC
             Fburial[i] = export[i] - Fdiss[i]
@@ -651,7 +651,7 @@ def carbonate_system_4_pp(
         # --- State variables ---
         hplus: NDArrayFloat = rg.Hplus.c
         dic: NDArrayFloat = rg.DIC.c
-        zsnow: NDArrayInt = rg.zsnow.c.astype(int)
+        zsnow: NDArrayFloat = rg.zsnow.c
 
         export_data = export_fluxes[i]
 
@@ -708,12 +708,17 @@ def carbonate_system_4_pp(
             BDS = BDS_under + BDS_resp
 
             # snowline contribution
-            if zsnow[i] <= zcc[i]:
-                BPDC = 0.0
-            else:
-                diff = Csat_table[zcc[i]:zsnow[i]] - co3[i]
-                area_p_snow = area_dz_table[zcc[i]:zsnow[i]]
-                BPDC = max(0, kc * area_p_snow.dot(diff))
+            BPDC, _ = compute_bpdc_and_dzsnow(
+                int(zcc[i]),
+                float(zsnow[i]),
+                zmax,
+                float(co3[i]),
+                kc,
+                I_caco3,
+                AD,
+                area_dz_table,
+                Csat_table,
+            )
 
             Fdiss[i] = BDS + BCC + BNS + BPDC
             Fburial[i] = export[i] - Fdiss[i]

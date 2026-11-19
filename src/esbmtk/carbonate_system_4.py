@@ -28,6 +28,7 @@ import numpy as np
 import numpy.typing as npt
 
 from esbmtk.base_classes import Flux
+from esbmtk.carbonate_chemistry import compute_bpdc_and_dzsnow
 from esbmtk.extended_classes import ExternalCode, Reservoir
 from esbmtk.utility_functions import (
     __addmissingdefaults__,
@@ -270,16 +271,9 @@ def carbonate_system_4(
 
 # Sediment dissolution (BPDC) if snowline is deeper than CCD
 #always in deep box
-    if zsnow <= zcc:
-        dzdt_zsnow = abs(zsnow - zcc)
-        BPDC = 0.0
-        zsnow = zcc  # reset
-    else:
-        zsnow = min(zsnow, zmax)  # limit to ocean bottom
-        diff = Csat_table[zcc:int(zsnow)] - co3_deep #FIXME: probably need to consider H+ changes in the int-box as well
-        area_cc_snow = area_dz_table[zcc:int(zsnow)]
-        BPDC = max(0.0, kc * np.dot(area_cc_snow, diff))
-        dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
+    BPDC, dzdt_zsnow = compute_bpdc_and_dzsnow(
+        zcc, zsnow, zmax, co3_deep, kc, I_caco3, AD, area_dz_table, Csat_table
+    )
 
 
 # H+ concentration rate change 
@@ -374,7 +368,7 @@ def init_carbonate_system_4(
         kwargs["I_caco3"],  # 11
         kwargs["alpha"],  # 12
         int(abs(kwargs["zsat_min"])),  # 13
-        int(abs(kwargs["zmax"])),  # 14
+        min(int(abs(kwargs["zmax"])), this_box.mo.hyp.max_seafloor_depth),  # 14
         int(abs(kwargs["z0"])),  # 15
         int(abs(kwargs["zint"])),
     )
@@ -576,9 +570,9 @@ def add_carbonate_system_4(**kwargs) -> None:
 
     #check if we already have the hypsometry and saturation tables
     if not hasattr(model, "area_table"):
-        depth_range = np.arange(0, zmax, 1, dtype=float)
         model.area_table = model.hyp.get_lookup_table_area()
         model.area_dz_table = model.hyp.get_lookup_table_area_dz() * -1
+        depth_range = np.arange(0, len(model.area_table), 1, dtype=float)
         model.Csat_table = (
             reservoir.swc.Ksp0 / reservoir.swc.ca2 * np.exp(
                 (depth_range * kwargs["pg"]) / kwargs["pc"]

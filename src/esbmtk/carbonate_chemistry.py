@@ -215,6 +215,47 @@ def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
     return int(min(zmax, max(zsat_min, zcc)))
 
 
+@njit(fastmath=False, cache=True)
+def compute_bpdc_and_dzsnow(
+    zcc: int,
+    zsnow: float,
+    zmax: int,
+    co3: float,
+    kc: float,
+    I_caco3: float,
+    AD: float,
+    area_dz_table: NDArrayFloat,
+    Csat_table: NDArrayFloat,
+) -> tuple:
+    """Compute transient PDC dissolution (BPDC) and dzsnow/dt (Boudreau 2010 Eq. 4 & 10)."""
+    if zsnow <= zcc:
+        return 0.0, float(abs(zsnow - zcc))
+
+    max_idx = min(zmax, len(area_dz_table) - 1, len(Csat_table) - 1)
+    if zsnow > max_idx:
+        zsnow = float(max_idx)
+
+    iz = int(zsnow)
+    if iz <= zcc:
+        return 0.0, 0.0
+
+    diff = Csat_table[zcc:iz] - co3
+    area_cc_snow = area_dz_table[zcc:iz]
+    BPDC = max(0.0, kc * area_cc_snow.dot(diff))
+    if BPDC <= 0.0:
+        return 0.0, 0.0
+
+    frac = zsnow - iz
+    iz_hi = iz + 1 if iz + 1 <= max_idx else max_idx
+    a_prime = area_dz_table[iz] * (1.0 - frac) + area_dz_table[iz_hi] * frac
+    a_min = 1e-10 * AD
+    if a_prime < a_min:
+        a_prime = a_min
+
+    dzdt_zsnow = -BPDC / (a_prime * I_caco3)
+    return BPDC, dzdt_zsnow
+
+
 # @njit(fastmath=True)
 # @cached(
 #     cache=LRUCache(maxsize=128),
@@ -318,18 +359,9 @@ def carbonate_system_2(
     BDS = BDS_under + BDS_resp
 
     # sediment dissolution if zcc is deeper than snowline
-    if zsnow <= zcc:  # reset zsnow
-        dzdt_zsnow = abs(zsnow - zcc)
-        BPDC = 0
-        zsnow = zcc
-    else:  # integrate saturation difference over area
-        if zsnow > zmax:  # limit zsnow to ocean depth
-            zsnow = zmax
-
-        diff: NDArrayFloat = Csat_table[zcc : int(zsnow)] - co3
-        area_cc_snow: NDArrayFloat = area_dz_table[zcc : int(zsnow)]
-        BPDC = max(0, kc * area_cc_snow.dot(diff))
-        dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
+    BPDC, dzdt_zsnow = compute_bpdc_and_dzsnow(
+        zcc, zsnow, zmax, co3, kc, I_caco3, AD, area_dz_table, Csat_table
+    )
 
     """ CACO3_export is the flux of CaCO3 into the box.
     Boudreau's orginal approach is as follows.
@@ -401,7 +433,7 @@ def init_carbonate_system_2(
         kwargs["I_caco3"],  # 11
         kwargs["alpha"],  # 12
         int(abs(kwargs["zsat_min"])),  # 13
-        int(abs(kwargs["zmax"])),  # 14
+        min(int(abs(kwargs["zmax"])), this_box.mo.hyp.max_seafloor_depth),  # 14
         int(abs(kwargs["z0"])),  # 15
         float(kwargs["co3_min"]), # 16
     )
@@ -528,7 +560,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         "pg": 0.103,  # pressure in atm/km
         "pc": 511,  # characteristic pressure after Boudreau 2010
         "I_caco3": 529,  # dissolveable CaCO3 in mol/m^2
-        "zmax": -10999,  # max model depth
+        "zmax": -10099,  # max model depth
         "Ksp": reservoir.swc.Ksp_ca,  # mol^2/kg^2
         "co3_min": 3.7e-05
     }
@@ -573,9 +605,9 @@ def add_carbonate_system_2(**kwargs) -> None:
 
     # check if we already have the hypsometry and saturation tables
     if not hasattr(model, "area_table"):
-        depth_range = np.arange(0, zmax, 1, dtype=float)  # mbsl
         model.area_table = model.hyp.get_lookup_table_area()  # area in m^2(z)
         model.area_dz_table = model.hyp.get_lookup_table_area_dz() * -1  # area_dz
+        depth_range = np.arange(0, len(model.area_table), 1, dtype=float)  # mbsl
         model.Csat_table = (reservoir.swc.Ksp0 / reservoir.swc.ca2) * np.exp(
             (depth_range * pg) / pc
         )
@@ -689,18 +721,9 @@ def carbonate_system_3(
     BDS = BDS_under + BDS_resp
 
     # sediment dissolution if zcc is deeper than snowline
-    if zsnow <= zcc:  # reset zsnow
-        dzdt_zsnow = abs(zsnow - zcc)
-        BPDC = 0
-        zsnow = zcc
-    else:  # integrate saturation difference over area
-        if zsnow > zmax:  # limit zsnow to ocean depth
-            zsnow = zmax
-
-        diff: NDArrayFloat = Csat_table[zcc : int(zsnow)] - co3
-        area_cc_snow: NDArrayFloat = area_dz_table[zcc : int(zsnow)]
-        BPDC = max(0, kc * area_cc_snow.dot(diff))
-        dzdt_zsnow = -BPDC / (area_dz_table[int(zsnow)] * I_caco3)
+    BPDC, dzdt_zsnow = compute_bpdc_and_dzsnow(
+        zcc, zsnow, zmax, co3, kc, I_caco3, AD, area_dz_table, Csat_table
+    )
 
     """ CACO3_export is the flux of CaCO3 into this_box (i.e. export from surface layer)
     Boudreau's orginal approach is as follows.
@@ -794,7 +817,7 @@ def init_carbonate_system_3(
         kwargs["I_caco3"],  # 11
         kwargs["alpha"],  # 12
         int(abs(kwargs["zsat_min"])),  # 13
-        int(abs(kwargs["zmax"])),  # 14
+        min(int(abs(kwargs["zmax"])), this_box.mo.hyp.max_seafloor_depth),  # 14
         int(abs(kwargs["z0"])),  # 15
     )
 
@@ -958,9 +981,9 @@ def add_carbonate_system_3(**kwargs) -> None:
 
     # check if we already have the hypsometry and saturation tables
     if not hasattr(model, "area_table"):
-        depth_range = np.arange(0, zmax, 1, dtype=float)
         model.area_table = model.hyp.get_lookup_table_area()
         model.area_dz_table = model.hyp.get_lookup_table_area_dz() * -1
+        depth_range = np.arange(0, len(model.area_table), 1, dtype=float)
         model.Csat_table = (
             reservoir.swc.Ksp0
             / reservoir.swc.ca2
