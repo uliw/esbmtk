@@ -109,7 +109,7 @@ class Model(esbmtkBase):
     - Model_Name.connection_summary() - Display connection information
 
     Parameters
-    -----------
+    ----------
     **kwargs : dict
         A dictionary with key-value pairs for model configuration.
 
@@ -152,6 +152,7 @@ class Model(esbmtkBase):
         output debug information
     debug_equations_file: bool
         write a debug version of the equations file.
+
     """
 
     def __init__(self, **kwargs: dict[str, any]) -> None:
@@ -456,6 +457,7 @@ class Model(esbmtkBase):
         -------
         None
             This method prints to stdout but doesn't return a value.
+
         """
         # Handle indentation
         indent = kwargs.get("indent", 0)
@@ -499,6 +501,7 @@ class Model(esbmtkBase):
         ------
         FileExistsError
             If the directory exists and cannot be deleted.
+
         """
         from pathlib import Path
 
@@ -558,6 +561,7 @@ class Model(esbmtkBase):
         ------
         FileExistsError
             If the directory exists and cannot be deleted.
+
         """
         from pathlib import Path
 
@@ -632,6 +636,7 @@ class Model(esbmtkBase):
         Returns
         -------
         None
+
         """
         from esbmtk import GasReservoir, Species
 
@@ -735,6 +740,7 @@ class Model(esbmtkBase):
         >>>     title="ESBMTK Preindustrial Steady State",
         >>>     no_show=True,
         >>> )
+
         """
         import matplotlib as mpl
 
@@ -806,6 +812,7 @@ class Model(esbmtkBase):
         -------
         list
             Normalized axes structure for consistent handling
+
         """
         if row_count == 1 and col_count == 1:
             # Single subplot
@@ -837,6 +844,7 @@ class Model(esbmtkBase):
             Number of columns in the subplot grid
         num_plots : int
             Total number of objects to plot
+
         """
         plot_index = 0  # Index of current plot object
 
@@ -868,6 +876,7 @@ class Model(esbmtkBase):
         ----------
         fig : matplotlib.figure.Figure
             The figure containing the axes to modify
+
         """
         from matplotlib.ticker import FuncFormatter
 
@@ -925,6 +934,7 @@ class Model(esbmtkBase):
         Notes
         -----
         After running, performance metrics (CPU time, memory usage) are printed.
+
         """
         # Track execution time and resource usage
         import os
@@ -994,6 +1004,7 @@ class Model(esbmtkBase):
         -------
         function
             The equations function imported from the temporary module
+
         """
         from pathlib import Path
 
@@ -1032,6 +1043,7 @@ class Model(esbmtkBase):
             ``(R, atol, equations_set)``, where R is the vector of initial
             conditions, atol the absolute tolerances, and equations_set the
             ``eqs`` function.
+
         """
         # Get initial conditions and build equationsmatrices
         self.R_names_dict, icl, cpl, ipl, atol = get_initial_conditions(self, self.rtol)
@@ -1104,6 +1116,7 @@ class Model(esbmtkBase):
         ------
         SolverError
             If the solver fails to find a solution
+
         """
         R, atol, equations_set = self._prepare_equations()
 
@@ -1134,6 +1147,7 @@ class Model(esbmtkBase):
         -------
         function
             The equations function
+
         """
         if self.debug_equations_file:  # If debugging equations is enabled
             if equations_file_path.exists():
@@ -1208,6 +1222,7 @@ class Model(esbmtkBase):
         tuple
             ``(sig_time, sig_data)`` where sig_data has the shape
             (signal, [m, l, d], time).
+
         """
         sig_time = np.asarray(self.time, dtype=np.float64)
         sig_data = np.zeros((len(self.los), 3, len(sig_time)))
@@ -1231,6 +1246,7 @@ class Model(esbmtkBase):
             Integration method
         atol : float or ndarray
             Absolute tolerance
+
         """
         logging.debug(f"R: {R}")
         logging.debug(
@@ -1328,6 +1344,7 @@ class Model(esbmtkBase):
         ------
         SolverError
             If the solver fails to find a solution
+
         """
         if self.results.status == 0:
             # Print solver statistics
@@ -1370,6 +1387,7 @@ class Model(esbmtkBase):
         -------
         None
             The method modifies reservoir objects in place.
+
         """
         for reservoir in self.lor:
             if reservoir.isotopes:
@@ -1404,6 +1422,7 @@ class Model(esbmtkBase):
         Subsampling only occurs if the stride is greater than 1.
         The time series boundaries (first two and last two points) are excluded
         from subsampling to avoid boundary effects.
+
         """
         # Calculate stride based on current time array and desired number of points
         stride = int(len(self.time) / self.number_of_datapoints)
@@ -1451,6 +1470,7 @@ class Model(esbmtkBase):
         2. Map state variables to reservoir concentrations and masses
         3. Update time vector and flux data
         4. Perform specialized checks (pH stability) and calculations (carbonate chemistry)
+
         """
         # Step 1: Interpolate signals to match solver time domain
         self._interpolate_signals_to_solver_timepoints(results)
@@ -1480,6 +1500,7 @@ class Model(esbmtkBase):
         ----------
         results : scipy.integrate._ivp.ivp.OdeResult
             The ODE solver results
+
         """
         # raise NotImplementedError("This method is currently not used")
         from esbmtk.utility_functions import get_delta_from_concentration
@@ -1503,6 +1524,7 @@ class Model(esbmtkBase):
         ----------
         results : scipy.integrate._ivp.ivp.OdeResult
             The ODE solver results
+
         """
         # raise NotImplementedError("This method is currently not used")
         for external_data in self.led:
@@ -1515,6 +1537,7 @@ class Model(esbmtkBase):
         ----------
         results : scipy.integrate._ivp.ivp.OdeResult
             The ODE solver results
+
         """
         from esbmtk import GasReservoir
 
@@ -1561,6 +1584,7 @@ class Model(esbmtkBase):
         ----------
         steps : int
             Number of time steps in the solver results
+
         """
         for flux in self.lof:
             if flux.save_flux_data:
@@ -1579,6 +1603,7 @@ class Model(esbmtkBase):
         ----------
         results : scipy.integrate._ivp.ivp.OdeResult
             The ODE solver results
+
         """
         from esbmtk import carbonate_system_1_pp
 
@@ -1618,6 +1643,7 @@ class Model(esbmtkBase):
         0.01 units between the specific time points in the solution.
 
         The pH is calculated as -log10([H+]), where [H+] is the hydrogen ion concentration.
+
         """
         # Access the hydrogen ion concentration data
         hydrogen_ions = reservoir_group.Hplus
@@ -1671,6 +1697,7 @@ class Model(esbmtkBase):
           Defined SpeciesProperties:
             SO4
             H2S
+
         """
         # Print header
         print("\nCurrently defined elements and their species:")
@@ -1707,6 +1734,10 @@ class Model(esbmtkBase):
             return_list : bool, default=False
                 If True, return a list of flux objects instead of printing to console.
 
+            include_isotopes : bool, default=False
+                If False, omit internal light-isotope companion fluxes ending in
+                ``_l`` unless a term in ``filter_by`` explicitly ends with ``_l``.
+
         Returns
         -------
         list or None
@@ -1728,6 +1759,7 @@ class Model(esbmtkBase):
 
         # Display fluxes containing "PO4" but not "H_sb"
         >>> model.flux_summary(filter_by="PO4", exclude="H_sb")
+
         """
         # FIXME: Thios needs proper keyword parsing!
         # Get filter parameters from kwargs with proper defaults
@@ -1736,6 +1768,7 @@ class Model(esbmtkBase):
         )
         exclude_term = kwargs.get("exclude", "")
         return_as_list = kwargs.get("return_list", False)
+        include_isotopes = kwargs.get("include_isotopes", False)
 
         # Check for deprecated parameter
         if "filter" in kwargs:
@@ -1750,6 +1783,14 @@ class Model(esbmtkBase):
 
         # Find all fluxes that match the filter criteria
         for flux in self.lof:
+            if (
+                not include_isotopes
+                and getattr(flux, "isotopes", False)
+                and flux.id.endswith("_l")
+                and not any(t.endswith("_l") for t in filter_terms)
+            ):
+                continue
+
             # Check if flux name matches all filter terms and doesn't contain exclude term
             if find_matching_strings(flux.full_name, filter_terms) and (
                 not exclude_term or exclude_term not in flux.full_name
@@ -1797,6 +1838,7 @@ class Model(esbmtkBase):
         >>> model.connection_summary(filter_by="DIC")  # Show only DIC connections
 
         >>> model.connection_summary(list_all=True)  # Show all connection details
+
         """
         # Extract configuration from kwargs
         show_all_attributes = kwargs.get("list_all", False)
@@ -1831,6 +1873,7 @@ class Model(esbmtkBase):
         -------
         list
             Filtered list of connection objects
+
         """
         filtered_list = []
 
@@ -1852,6 +1895,7 @@ class Model(esbmtkBase):
         ----------
         name_filter : str, default=None
             The filter string that was used (if any)
+
         """
         if name_filter is not None:
             print(f"No connections with name '{name_filter}' found")
@@ -1867,6 +1911,7 @@ class Model(esbmtkBase):
             The connection object to display
         show_all_attributes : bool
             Whether to show all attributes of the connection
+
         """
         # Get basic source and target info
         from esbmtk import Species2Species
@@ -1905,6 +1950,7 @@ class Model(esbmtkBase):
             The connection object
         show_all_attributes : bool
             Whether to show all attributes
+
         """
         # If all attributes requested, show the entire __dict__
         if show_all_attributes:

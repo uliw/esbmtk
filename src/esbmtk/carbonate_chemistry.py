@@ -22,10 +22,9 @@ import typing as tp
 # from functools import lru_cache
 from math import log, sqrt
 
-from numba import njit
-
 import numpy as np
 import numpy.typing as npt
+from numba import njit
 
 from esbmtk.base_classes import Flux
 from esbmtk.extended_classes import ExternalCode, Reservoir
@@ -196,14 +195,11 @@ def add_carbonate_system_1(rgs: list):
 @njit(fastmath=False, cache=True)
 def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
     """Calcualte zsat."""
-
     if co3 <= 0 or ca2 <= 0:
         return zsat_min
         
     zsat = int(zsat0 * log(ca2 * co3 / ksp0))
     return min(zmax, max(zsat_min, zsat))
-
-
 
 
 @njit(fastmath=False, cache=True)
@@ -435,7 +431,7 @@ def init_carbonate_system_2(
         int(abs(kwargs["zsat_min"])),  # 13
         min(int(abs(kwargs["zmax"])), this_box.mo.hyp.max_seafloor_depth),  # 14
         int(abs(kwargs["z0"])),  # 15
-        float(kwargs["co3_min"]), # 16
+        float(kwargs["co3_min"]),  # 16
     )
 
     # initialize an external code instance
@@ -585,10 +581,12 @@ def add_carbonate_system_2(**kwargs) -> None:
     pg = kwargs["pg"]
     pc = kwargs["pc"]
     zmax = abs(int(kwargs["zmax"]))
-    export_fluxes = kwargs["carbonate_export_fluxes"]
-    n_flux = (
-        int(len(export_fluxes) / 2) if this_box[0].DIC.isotopes else len(export_fluxes)
-    )
+    export_fluxes = [
+        f
+        for f in kwargs["carbonate_export_fluxes"]
+        if not (getattr(f, "isotopes", False) and f.id.endswith("_l"))
+    ]
+    n_flux = len(export_fluxes)
 
     if len(this_box) != n_flux:
         raise CarbonateSystem2Error(
@@ -618,7 +616,7 @@ def add_carbonate_system_2(**kwargs) -> None:
         else:
             raise AttributeError(f"{rg.full_name} must have a TA and DIC reservoir")
 
-        export_flux = kwargs["carbonate_export_fluxes"][i]
+        export_flux = export_fluxes[i]
         export_flux.serves_as_input = True  # flag this for ode backend
         ec = init_carbonate_system_2(
             export_flux,
@@ -772,7 +770,7 @@ def init_carbonate_system_3(
     export_flux: Flux,
     source_box: Reservoir,  # Surface box
     this_box: Reservoir,  # intermediate box
-    next_box: Reservoir, #deep box
+    next_box: Reservoir,  # deep box
     kwargs: dict,
 ):
     """Initialize a carbonate system 3 instance.
@@ -990,6 +988,17 @@ def add_carbonate_system_3(**kwargs) -> None:
             * np.exp((depth_range * kwargs["pg"]) / kwargs["pc"])
         )
 
+    export_fluxes = [
+        f
+        for f in kwargs["carbonate_export_fluxes"]
+        if not (getattr(f, "isotopes", False) and f.id.endswith("_l"))
+    ]
+    if len(this_box) != len(export_fluxes):
+        raise CarbonateSystem2Error(
+            f"Number of deep boxes ({len(this_box)}) does not match "
+            f"number of export fluxes ({len(export_fluxes)})"
+        )
+
     # set up virtual reservoirs:
     for i, (sb, db, nb) in enumerate(zip(source_box, this_box, next_box)):
         if not (hasattr(db, "DIC") and hasattr(db, "TA")):
@@ -997,7 +1006,7 @@ def add_carbonate_system_3(**kwargs) -> None:
 
         db.swc.update_parameters()
 
-        export_flux = kwargs["carbonate_export_fluxes"][i]
+        export_flux = export_fluxes[i]
         export_flux.serves_as_input = True  # flag this for ode backend
         ec = init_carbonate_system_3(
             export_flux,
@@ -1010,6 +1019,7 @@ def add_carbonate_system_3(**kwargs) -> None:
         register_return_values(ec, db)
         db.has_cs3 = True
     
+
 def get_pco2(SW) -> float:
     """Calculate the concentration of pCO2."""
     dic_c: float = SW.dic

@@ -20,12 +20,11 @@ along with this program.  If not, see
 import typing as tp
 
 # from functools import lru_cache
-from math import log, sqrt
-
-from numba import njit
+from math import log
 
 import numpy as np
 import numpy.typing as npt
+from numba import njit
 
 from esbmtk.base_classes import Flux
 from esbmtk.carbonate_chemistry import compute_bpdc_and_dzsnow
@@ -42,6 +41,7 @@ if tp.TYPE_CHECKING:
 
 # declare numpy types
 NDArrayFloat = npt.NDArray[np.float64]
+
 
 @njit(fastmath=False, cache=True)
 def get_zsat(zsat0, zsat_min, zmax, ca2, co3, ksp0):
@@ -74,22 +74,23 @@ def get_zcc(export, zmax, zsat_min, zsat0, ca2, ksp0, AD, kc, co3):
 #     ),
 # )
 
-from esbmtk.carbonate_chemistry import get_hplus, CarbonateSystem2Error
+from esbmtk.carbonate_chemistry import CarbonateSystem2Error, get_hplus
+
 
 @njit(fastmath=False, cache=True)
 def carbonate_system_4(
     CaCO3_export: float,  # 3 CaCO3 export flux as DIC
     dic_t_db: float | tuple,  # 4 DIC in the deep box
     ta_db: float,  # 5 TA in the deep box
-    dic_t_ib: float | tuple, #DIC in the intermediate box
-    ta_ib, #TA in the intermediate box
+    dic_t_ib: float | tuple,  # DIC in the intermediate box
+    ta_ib,  # TA in the intermediate box
     dic_t_sb: float | tuple,  # 6 [DIC] in the surface box
     hplus_db_0: float,  # 8 hplus in the deep box at t-1
-    hplus_ib_0: float, # hplus in the intermediate box at t -1
+    hplus_ib_0: float,  # hplus in the intermediate box at t -1
     zsnow: float,  # 9 snowline in meters below sealevel at t-1
     p: tuple,
 ) -> tuple:
-    """ Compute carbonate burial and dissolution fluxes for a three vertical layer ocean.
+    """Compute carbonate burial and dissolution fluxes for a three vertical layer ocean.
 
     This routine represents carbonate sediment dynamics for a system
     consisting of surface, intermediate, and deep ocean reservoirs coupled
@@ -157,6 +158,7 @@ def carbonate_system_4(
     Boudreau, Bernard P., Jack J. Middelburg, Andreas F. Hofmann, 
     and Filip J. R. Meysman. 2010. “Ongoing Transients in Carbonate Compensation.” 
     Global Biogeochemical Cycles 24 (4). https://doi.org/10.1029/2009GB003654.
+
     """
     sp, cp, area_table, area_dz_table, Csat_table = p
     ksp0, kc, AD, zsat0, I_caco3, alpha, zsat_min, zmax, z0, zint = cp
@@ -188,7 +190,6 @@ def carbonate_system_4(
     """
     co3 = 0.5 * (co3_int + co3_deep) 
     
-
     """ --- Compute critical depth intervals eqs after  Boudreau (2010) ---
    All depths will be positive to facilitate the use of lookup_tables.
    Note that these tables are different than the hyspometry data tables
@@ -225,14 +226,14 @@ def carbonate_system_4(
     if zsat_above_zint:
     # Surface to zsat to zint to zcc
     
-        #define area tables:
+        # define area tables:
         A_z0_zsat = area_table[z0] - area_table[zsat]
         A_zsat_zint = area_table[zsat] - area_table[zint]
         A_zint_zcc = area_table[zint] - area_table[zcc]
 
         BNS = alpha * A_z0_zsat * B_AD 
     
-        #z_sat -> z_cc is split by z_int so BDS needs to be split too
+        # z_sat -> z_cc is split by z_int so BDS needs to be split too
         diff_co3_int = Csat_table[zsat:zint] - co3_int
         diff_co3_deep = Csat_table[zint:zcc] - co3_deep
 
@@ -251,12 +252,12 @@ def carbonate_system_4(
     else:
     # Surface to zint to zsat to zcc
     
-        #define area tables:
+        # define area tables:
         A_z0_zint = area_table[z0] - area_table[zint]
         A_zint_zsat = area_table[zint] - area_table[zsat]
         A_zsat_zcc = area_table[zsat] - area_table[zcc]
     
-        #z0 -> z_sat is split by z_int so BNS needs to be split also
+        # z0 -> z_sat is split by z_int so BNS needs to be split also
         BNS_int = alpha * A_z0_zint * B_AD
         BNS_deep = alpha * A_zint_zsat * B_AD
 
@@ -270,17 +271,17 @@ def carbonate_system_4(
         BDS = BDS_under + BDS_resp
 
 # Sediment dissolution (BPDC) if snowline is deeper than CCD
-#always in deep box
+# always in deep box
     BPDC, dzdt_zsnow = compute_bpdc_and_dzsnow(
         zcc, zsnow, zmax, co3_deep, kc, I_caco3, AD, area_dz_table, Csat_table
     )
 
 
 # H+ concentration rate change 
-#does this need modification re: intermediate box?
+# does this need modification re: intermediate box?
     dCdt_Hplus = hplus - hplus_db_0
 
-#F_diss_int and F_diss_deep are going to be connected to different boxes:
+# F_diss_int and F_diss_deep are going to be connected to different boxes:
     """FIXME: need to implement a way to incorporate intermediate box burial fluxes 
     within CS4 as well. At present intermediate box burial has to be handled separately.
     """
@@ -299,10 +300,10 @@ def carbonate_system_4(
 
         F_burial_l = F_burial * dic_db_l / dic_db
     
-        rv = (F_diss_int, F_diss_int_l, F_diss_int * 2, dCdt_Hplus, dzdt_zsnow, F_diss_deep, F_diss_deep_l, F_diss_deep *2, F_burial, F_burial_l, F_burial*2)
+        rv = (F_diss_int, F_diss_int_l, F_diss_int * 2, dCdt_Hplus, dzdt_zsnow, F_diss_deep, F_diss_deep_l, F_diss_deep * 2, F_burial, F_burial_l, F_burial * 2)
 
     else:
-        rv = (F_diss_int, F_diss_int * 2, dCdt_Hplus, dzdt_zsnow, F_diss_deep, F_diss_deep *2, F_burial, F_burial*2)
+        rv = (F_diss_int, F_diss_int * 2, dCdt_Hplus, dzdt_zsnow, F_diss_deep, F_diss_deep * 2, F_burial, F_burial * 2)
     
     return rv
 
@@ -311,7 +312,7 @@ def init_carbonate_system_4(
     export_flux: Flux,
     source_box: Reservoir,  # Surface box
     this_box: Reservoir,  # currently intermediate box
-    next_box: Reservoir, #currently deep box
+    next_box: Reservoir,  # currently deep box
     burial_box: Reservoir,
     kwargs: dict,
 ):
@@ -346,6 +347,7 @@ def init_carbonate_system_4(
     -----
     The implementation assumes that the export flux represents total
     CaCO₃ export over the sediment area bounded by ``z0`` and ``zmax``.
+
     """
     # Area between z0 and zmax
     AD = source_box.mo.hyp.area_dz(kwargs["z0"], kwargs["zmax"])
@@ -382,8 +384,8 @@ def init_carbonate_system_4(
         isotopes=source_box.DIC.isotopes,
         r_s=source_box,  # source (RG) of CaCO3 flux,
         r_d=this_box,  # sink (RG) of dissolved CaCO3 flux associated with intermediate box
-        r_n=next_box, #sink (RG) of CaCO3 flux associated with deep box
-        r_b=burial_box, #sink (RG) of undissolved CaCO3 flux
+        r_n=next_box,  # sink (RG) of CaCO3 flux associated with deep box
+        r_b=burial_box,  # sink (RG) of undissolved CaCO3 flux
         function_input_data=[  # variable input data
             export_flux,         # CaCO3_export
             next_box.DIC,        # dic_t_db (deep box)
@@ -420,9 +422,9 @@ def init_carbonate_system_4(
     
     return ec
 
+
 def add_carbonate_system_4(**kwargs) -> None:
-    """
-    Create a new carbonate system virtual reservoir.
+    """Create a new carbonate system virtual reservoir.
 
     This function initializes carbonate system 4 for the specified set of boxes.
     It computes saturation, compensation, and snowline depth, and the associated 
@@ -453,6 +455,7 @@ def add_carbonate_system_4(**kwargs) -> None:
     ----------------
     Optional (defaulted) parameters:
         zsat, zcc, zsnow, zsat0, Ksp0, kc, alpha, pg, pc, I_caco3, zmax, Ksp
+
     """
     # list of known keywords
     lkk: dict = {
@@ -488,7 +491,7 @@ def add_carbonate_system_4(**kwargs) -> None:
         ["r_sb", "source_box"],
         ["r_db", "this_box"],
         ["r_nb", "next_box"],
-        ["r_bb","burial_box"],
+        ["r_bb", "burial_box"],
         "carbonate_export_fluxes",
         "z0",
         "zint",
@@ -500,12 +503,12 @@ def add_carbonate_system_4(**kwargs) -> None:
     burial_box = kwargs.get("burial_box", kwargs.get("r_bb"))
     carbonate_export_fluxes = kwargs.get("carbonate_export_fluxes")
 
-    #we need the reference to the Model in order to set some default values
+    # we need the reference to the Model in order to set some default values
 
     reservoir = this_box[0]
     model = reservoir.mo
 
-    #list of default values if none provided:
+    # list of default values if none provided:
     lod: dict = {
         "source_box": [],
         "zsat": -3715,
@@ -563,12 +566,11 @@ def add_carbonate_system_4(**kwargs) -> None:
             f"Number of burial boxes ({len(burial_box)}) does not match deep boxes ({len(next_box)})"
         )
 
-
     pg = kwargs["pg"]
     pc = kwargs["pc"]
     zmax = abs(int(kwargs["zmax"]))
 
-    #check if we already have the hypsometry and saturation tables
+    # check if we already have the hypsometry and saturation tables
     if not hasattr(model, "area_table"):
         model.area_table = model.hyp.get_lookup_table_area()
         model.area_dz_table = model.hyp.get_lookup_table_area_dz() * -1
@@ -579,7 +581,18 @@ def add_carbonate_system_4(**kwargs) -> None:
             )
         )
 
-    #set up virtual reservoirs:
+    export_fluxes = [
+        f
+        for f in kwargs["carbonate_export_fluxes"]
+        if not (getattr(f, "isotopes", False) and f.id.endswith("_l"))
+    ]
+    if len(this_box) != len(export_fluxes):
+        raise CarbonateSystem2Error(
+            f"Number of intermediate boxes ({len(this_box)}) does not match "
+            f"number of export fluxes ({len(export_fluxes)})"
+        )
+
+    # set up virtual reservoirs:
     for i, (sb, db, nb, bb) in enumerate(zip(source_box, this_box, next_box, burial_box)):
 
         if not (hasattr(db, "DIC") and hasattr(db, "TA")):
@@ -587,7 +600,7 @@ def add_carbonate_system_4(**kwargs) -> None:
 
         db.swc.update_parameters()
 
-        export_flux = kwargs["carbonate_export_fluxes"][i]
+        export_flux = export_fluxes[i]
         export_flux.serves_as_input = True  # flag this for ode backend
         ec = init_carbonate_system_4(
             export_flux,

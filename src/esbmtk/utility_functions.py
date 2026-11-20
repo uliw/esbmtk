@@ -638,6 +638,7 @@ def initialize_reservoirs(M: Model, box_dict: dict) -> list(Species):
 
     Note: the first entry in the box_parameters dict must be a regular reservoir, not
     a Source or Sink.
+
     """
     from esbmtk import Reservoir, SinkProperties, SourceProperties, SpeciesProperties
 
@@ -1728,6 +1729,7 @@ def warn_if_non_numeric(df):
 
     Args:
         df (pd.DataFrame): The DataFrame to check.
+
     """
     import pandas as pd
 
@@ -1758,7 +1760,7 @@ def create_connections_from_flux_list(
     target_id: str,
     species: SpeciesProperties,
     scale: float,
-    **kwargs: dict,  
+    **kwargs: dict, 
 ) -> None:
     """ 
     Create Species2Species connections from an existing list of flux objects.
@@ -1807,6 +1809,7 @@ def create_connections_from_flux_list(
     -------
     None
         The function modifies the model by adding connection objects.
+
     """
     import logging
 
@@ -1815,10 +1818,16 @@ def create_connections_from_flux_list(
     source_arg = kwargs.get("source", "auto")
     sink_arg = kwargs.get("sink", "auto")
 
-    delta = kwargs.get("delta", None)
-    epsilon = kwargs.get("epsilon", None)
+    delta = kwargs.get("delta")
+    epsilon = kwargs.get("epsilon")
 
     bypass = "None"
+
+    flux_list = [
+        f
+        for f in flux_list
+        if not (getattr(f, "isotopes", False) and f.id.endswith("_l"))
+    ]
 
     if len(flux_list) < 1:
         raise ValueError("Flux_list")
@@ -1876,8 +1885,7 @@ def create_weathering_fluxes(
     alpha: float | None = None,
     **kwargs: dict,
 ) -> None:
-    """
-    Create Species2Species connections representing weathering fluxes.
+    """Create Species2Species connections representing weathering fluxes.
 
     This function generates coupling terms between a crustal or atmospheric
     source reservoir and basin sink reservoirs, scaled by basin area and a
@@ -1922,6 +1930,7 @@ def create_weathering_fluxes(
     Examples
     --------
     >>> create_weathering_fluxes(model, DIC, areas, "weathering_silicate", 1.0)
+
     """
     import logging
     from operator import attrgetter
@@ -1935,10 +1944,9 @@ def create_weathering_fluxes(
         if source_arg == "crust":
             # FIXME: query list of sources
             source = attrgetter(f"Fw.{species.name}")(model)
-        elif source_arg == "atmosphere":
-            if species.name == "DIC":
-                # FIXME: query list of gas reservoirs
-                source = getattr(model, "CO2_At")
+        elif source_arg == "atmosphere" and species.name == "DIC":
+            # FIXME: query list of gas reservoirs
+            source = model.CO2_At
 
         sink = attrgetter(f"{basin}.{species.name}")(model)
         cid = f"{sink.full_name.split('.')[1]}.{species.name}_{ref_flux_name}_weathering_x"
@@ -1973,6 +1981,7 @@ def create_weathering_fluxes(
         # logging.debug(f"Created {c.full_name}")
         # breakpoint()
     logging.debug("\n")
+
 
 def get_matrix_coefficients(
     flux_name: str,
@@ -2014,6 +2023,7 @@ def get_matrix_coefficients(
     -------
     list[tuple[str, float]]
         List of (reservoir_name, coefficient) tuples.
+
     """
     if flux_name not in F_names:
         raise KeyError(f"Flux name not found in F_names: {flux_name!r}")
