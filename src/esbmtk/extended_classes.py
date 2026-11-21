@@ -216,6 +216,7 @@ class Reservoir(esbmtkBase):
             "seawater_parameters": ["None", (dict, str)],
             "carbonate_system": [False, (bool)],
             "register": ["None", (str, Model)],
+            "hypsometry": ["None", (object, str)],
         }
 
         # provide a list of absolutely required keywords
@@ -243,6 +244,12 @@ class Reservoir(esbmtkBase):
         self.parent = self.register
         self.has_cs1 = False
         self.has_cs2 = False
+
+        # hypsometry reference (if specified)
+        if self.hypsometry != "None":
+            self.hyp = self.hypsometry
+        elif not hasattr(self, "hyp"):
+            self.hyp = None
 
         # geoemtry information
         if self.volume == "None":
