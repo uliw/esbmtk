@@ -349,8 +349,23 @@ def init_carbonate_system_4(
     CaCO₃ export over the sediment area bounded by ``z0`` and ``zmax``.
 
     """
+    # hypsometry reference (check if next_box, this_box, source_box, or model has dedicated hypsometry)
+    hyp = getattr(next_box, "hyp", None)
+    if hyp is None or hyp == "None":
+        hyp = getattr(next_box, "hypsometry", None)
+    if hyp is None or hyp == "None":
+        hyp = getattr(this_box, "hyp", None)
+    if hyp is None or hyp == "None":
+        hyp = getattr(this_box, "hypsometry", None)
+    if hyp is None or hyp == "None":
+        hyp = getattr(source_box, "hyp", None)
+    if hyp is None or hyp == "None":
+        hyp = getattr(source_box, "hypsometry", None)
+    if hyp is None or hyp == "None":
+        hyp = source_box.mo.hyp
+
     # Area between z0 and zmax
-    AD = source_box.mo.hyp.area_dz(kwargs["z0"], kwargs["zmax"])
+    AD = hyp.area_dz(kwargs["z0"], kwargs["zmax"])
     swc = this_box.swc  # shorthand for seawater constants
     swc_p = (  # seawater parameters as tuple
         swc.K1,
@@ -370,10 +385,27 @@ def init_carbonate_system_4(
         kwargs["I_caco3"],  # 11
         kwargs["alpha"],  # 12
         int(abs(kwargs["zsat_min"])),  # 13
-        min(int(abs(kwargs["zmax"])), this_box.mo.hyp.max_seafloor_depth),  # 14
+        min(int(abs(kwargs["zmax"])), hyp.max_seafloor_depth),  # 14
         int(abs(kwargs["z0"])),  # 15
         int(abs(kwargs["zint"])),
     )
+
+    # tables associated with this box's hypsometry
+    if hyp is next_box.mo.hyp:
+        area_table = next_box.mo.area_table
+        area_dz_table = next_box.mo.area_dz_table
+        Csat_table = next_box.mo.Csat_table
+    else:
+        if not hasattr(hyp, "area_table"):
+            hyp.area_table = hyp.get_lookup_table_area()
+            hyp.area_dz_table = hyp.get_lookup_table_area_dz() * -1
+            depth_range = np.arange(0, len(hyp.area_table), 1, dtype=float)
+            hyp.Csat_table = (next_box.swc.Ksp0 / next_box.swc.ca2) * np.exp(
+                (depth_range * kwargs["pg"]) / kwargs["pc"]
+            )
+        area_table = hyp.area_table
+        area_dz_table = hyp.area_dz_table
+        Csat_table = hyp.Csat_table
 
     # initialize an external code instance
     ec = ExternalCode(
@@ -401,9 +433,9 @@ def init_carbonate_system_4(
         function_params=(  # constant input data
             swc_p,
             cp,
-            next_box.mo.area_table,
-            next_box.mo.area_dz_table,
-            next_box.mo.Csat_table,
+            area_table,
+            area_dz_table,
+            Csat_table,
         ),
         return_values=[
             {f"F_{this_box.full_name}.DIC": "ib_DIC_cs4"},

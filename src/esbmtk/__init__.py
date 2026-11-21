@@ -88,6 +88,7 @@ from .excel_connection_functions import create_gas_reservoirs_from_excel as crea
 from .excel_connection_functions import create_gas_exchange_connections as create_gas_exchange_connections
 from .excel_connection_functions import create_gas_exchange_connections_from_excel as create_gas_exchange_connections_from_excel
 
+from .sealevel import hypsometry as hypsometry
 from .base_classes import (
     Flux as Flux,
     Sink as Sink,
