@@ -371,13 +371,19 @@ def get_box_geometry_parameters(box) -> None:
 
     if isinstance(box.geometry, list):
         # Calculate volume and area as a function of box geometry
+        hyp = getattr(box, "hyp", None)
+        if hyp is None or hyp == "None":
+            hyp = getattr(box, "hypsometry", None)
+        if hyp is None or hyp == "None":
+            hyp = box.mo.hyp
+
         top = box.geometry[0]
         bottom = box.geometry[1]
         fraction = box.geometry[2]
-        volume = box.mo.hyp.volume(top, bottom) * fraction
+        volume = hyp.volume(top, bottom) * fraction
         box.volume = Q_(f"{volume} m**3").to(box.mo.v_unit)
-        box.area = Q_(f"{box.mo.hyp.area(top)} m**2").to(box.mo.a_unit) * fraction
-        box.sed_area = box.mo.hyp.area_dz(top, bottom) * fraction
+        box.area = Q_(f"{hyp.area(top)} m**2").to(box.mo.a_unit) * fraction
+        box.sed_area = hyp.area_dz(top, bottom) * fraction
         box.sed_area = Q_(f"{box.sed_area} m**2").to(box.mo.a_unit)
         if fraction == 1:
             box.set_area_warning = True  # this will be checked by init_gas_exchange
